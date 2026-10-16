@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import Database from 'better-sqlite3';
 import { openDatabase, schemaVersion, MIGRATIONS } from '../server/db.js';
 import { tempDir } from './helpers.js';
 
@@ -96,4 +97,19 @@ test('rouvrir une base existante ne refait pas les migrations et garde les donn�
   assert.equal(schemaVersion(second), MIGRATIONS.length);
   assert.equal(second.prepare('SELECT name FROM stores').pluck().get(), 'Marché');
   second.close();
+});
+
+test("une base de l'étape 1 est mise à jour sans perte (migration 2)", (t) => {
+  const file = path.join(tempDir(t), 'listo.db');
+  // Base créée avec seulement la migration 1, comme à l'étape 1
+  const old = new Database(file);
+  old.exec(MIGRATIONS[0]);
+  old.pragma('user_version = 1');
+  old.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('marie', 'Marie', 'x')").run();
+  old.close();
+
+  const db = openDatabase(file);
+  assert.equal(schemaVersion(db), MIGRATIONS.length);
+  assert.deepEqual(db.prepare('SELECT username, totp_last_step FROM users').get(), { username: 'marie', totp_last_step: null });
+  db.close();
 });

@@ -1,0 +1,13 @@
+# Fichiers gardés hors de l'image Docker : l'image ne doit contenir
+# ni base de données, ni secret, ni fichiers inutiles.
+data/
+secrets/
+.git
+.github
+.env
+node_modules
+design/maquettes
+test/
+docs/
+*.log
+.DS_Store

@@ -1,0 +1,27 @@
+# Listo en local, pour tester sur son ordinateur avant de publier.
+#
+# Construit l'image à partir du code du dépôt, puis la démarre :
+#   docker compose -f docker-compose.dev.yml up --build
+# Ensuite, ouvrir http://localhost:3000 (ou http://localhost:3000/healthz).
+# Arrêt : Ctrl+C, puis « docker compose -f docker-compose.dev.yml down ».
+#
+# Le port n'est ouvert que sur l'ordinateur lui-même (127.0.0.1), jamais
+# sur le réseau.
+
+services:
+  listo:
+    build: .
+    container_name: listo-dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - TZ=Europe/Paris
+      - LISTO_PUBLIC_URL=http://localhost:3000
+      - LISTO_DB_PATH=/data/listo.db
+      - LISTO_KEY_PATH=/secrets/secret.key
+      - LISTO_SESSION_DAYS=30
+    volumes:
+      - ./data:/data
+      - ./secrets:/secrets
+    ports:
+      - "127.0.0.1:3000:3000"

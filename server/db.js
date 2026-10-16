@@ -168,6 +168,25 @@ export const MIGRATIONS = [
       'Épicerie sucrée', 'Fromages', 'Fruits et légumes', 'Hygiène', 'Poissonnerie', 'Surgelés',
     ]) aisle.run(name);
   },
+
+  // --- Migration 4 : listes et articles (étape 4) ---
+  `
+  -- Opérations déjà appliquées (file d'attente du téléphone). Chaque
+  -- opération porte un identifiant unique : si le téléphone la renvoie après
+  -- une coupure, on retrouve ici son résultat au lieu de l'appliquer deux fois.
+  -- « result » garde la réponse donnée la première fois (texte JSON).
+  CREATE TABLE applied_ops (
+    id         TEXT    PRIMARY KEY,           -- UUID créé par le téléphone
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    result     TEXT    NOT NULL,
+    applied_at TEXT    NOT NULL DEFAULT ${NOW}
+  );
+  CREATE INDEX applied_ops_date ON applied_ops(applied_at);
+
+  -- Accélère le nettoyage des lignes supprimées depuis plus de 30 jours
+  CREATE INDEX lists_deleted ON lists(deleted_at) WHERE deleted_at IS NOT NULL;
+  CREATE INDEX items_deleted ON items(deleted_at) WHERE deleted_at IS NOT NULL;
+  `,
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

@@ -1,0 +1,74 @@
+# Construit l'image Docker de Listo et la publie sur GitHub Container Registry
+# (ghcr.io/magicgg91/listo) à chaque fusion sur la branche main.
+#
+# Le compose de production n'a ensuite qu'à utiliser `image:` (pas `build:`) :
+#   docker compose pull && docker compose up -d
+#
+# Tant que le Dockerfile n'existe pas (étape 1 du plan), le workflow ne
+# construit rien et le signale sans échouer.
+
+name: Image Docker
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # permet aussi de le lancer à la main depuis l'onglet Actions
+
+permissions:
+  contents: read
+  packages: write # nécessaire pour publier l'image sur ghcr.io
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }} # magicgg91/listo
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Vérifier la présence du Dockerfile
+        id: dockerfile
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Pas de Dockerfile pour l'instant : aucune image construite."
+          fi
+
+      - name: Préparer Docker Buildx
+        if: steps.dockerfile.outputs.found == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Se connecter à ghcr.io
+        if: steps.dockerfile.outputs.found == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculer les étiquettes de l'image
+        if: steps.dockerfile.outputs.found == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Construire et publier l'image
+        if: steps.dockerfile.outputs.found == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

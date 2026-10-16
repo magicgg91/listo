@@ -23,6 +23,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 - Serveur : Node.js avec Express. Base : SQLite via better-sqlite3. Temps réel : Server-Sent Events. Hors ligne : service worker + IndexedDB.
 - Dépendances serveur autorisées : express, better-sqlite3, qrcode. Toute autre dépendance, tout autre langage ou framework : le signaler d'abord, argumenter (avantages, inconvénients, alternative) et attendre la décision du propriétaire.
 - Un seul conteneur Docker, derrière Nginx Proxy Manager. Aucun port publié sur l'hôte.
+- L'image est construite et publiée sur ghcr.io/magicgg91/listo par `.github/workflows/docker.yml` à chaque fusion sur `main` (le workflow attend le `Dockerfile` de l'étape 1). Le `docker-compose.yml` de production utilise `image:`, jamais `build:` ; le test local passe par `docker-compose.dev.yml`. Prévoir un `.dockerignore` (data/, secrets/, .git, design/maquettes, node_modules, .env) : l'image ne doit contenir ni base ni secret.
 
 ## Design
 

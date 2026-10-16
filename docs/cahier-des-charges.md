@@ -257,7 +257,7 @@ Listo tourne dans un seul conteneur Docker, avec un dossier de données monté e
 ```yaml
 services:
   listo:
-    build: .
+    image: ghcr.io/magicgg91/listo:latest   # construite par GitHub Actions
     container_name: listo
     restart: unless-stopped
     environment:
@@ -291,10 +291,18 @@ networks:
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
 - Si les messages arrivent quand même en retard, ajouter dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s;
 
+**Image Docker construite automatiquement**
+
+- Un workflow GitHub Actions (`.github/workflows/docker.yml`) construit l'image et la publie sur ghcr.io/magicgg91/listo à chaque fusion sur main. Étiquettes : `latest` et `sha-<commit>` (pour revenir à une version précise).
+- Sur le serveur, il suffit du docker-compose.yml : aucun code source à y copier. Le compose de production utilise `image:`, jamais `build:`.
+- Le dépôt étant privé, l'image l'est aussi : le serveur s'y connecte une fois avec `docker login ghcr.io` (jeton GitHub limité à la lecture des paquets). Rendre le paquet public est possible, l'image ne contient ni base ni secret.
+- Un fichier `.dockerignore` garde hors de l'image : data/, secrets/, .git, design/maquettes, node_modules, .env.
+- Pour tester en local, un fichier docker-compose.dev.yml (avec `build: .`) est fourni à côté.
+
 **Sauvegarde et mise à jour**
 
 - Chaque nuit, l'application copie la base dans data/backups (commande SQLite VACUUM INTO) et garde les 14 dernières copies. Le dossier data est à inclure dans la sauvegarde habituelle de l'hôte. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
-- Mise à jour : récupérer le code, puis docker compose up -d --build. La base est conservée dans le volume.
+- Mise à jour : docker compose pull && docker compose up -d. Aucun code à récupérer sur le serveur. La base est conservée dans le volume.
 
 ## Brief visuel pour Claude Design
 
@@ -353,7 +361,7 @@ Huit étapes, chacune livrable et testable seule. Les maquettes de Claude Design
 
 | # | Étape | Contenu | Critère d'acceptation |
 | --- | --- | --- | --- |
-| 1 | Socle | Projet Node et Express, SQLite et schéma, route /healthz, Dockerfile et docker-compose | docker compose up démarre, /healthz répond, la base apparaît dans ./data |
+| 1 | Socle | Projet Node et Express, SQLite et schéma, route /healthz, Dockerfile, .dockerignore, docker-compose.yml (production) et docker-compose.dev.yml (local) | docker compose up démarre, /healthz répond, la base apparaît dans ./data |
 | 2 | Comptes et sessions | Création du premier Admin à la première connexion, connexion, déconnexion, sessions, limitation des tentatives, changement de son propre mot de passe, double authentification TOTP facultative avec codes de secours | La 6e tentative ratée est bloquée. Un Utilisateur reçoit un refus sur les routes d'administration. Un compte avec 2FA exige son code après le mot de passe. L'écran de création du premier Admin disparaît dès qu'un compte existe |
 | 3 | Administration | Comptes (dont désactivation du 2FA d'un utilisateur), catégories, magasins, rayons, données de départ | Un élément déjà utilisé peut être désactivé mais pas supprimé |
 | 4 | Listes et articles | Création, partage, ajout, modification, cochage, vider les barrés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon |

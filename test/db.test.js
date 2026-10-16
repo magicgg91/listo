@@ -7,10 +7,11 @@ import Database from 'better-sqlite3';
 import { openDatabase, schemaVersion, MIGRATIONS } from '../server/db.js';
 import { tempDir } from './helpers.js';
 
-// Les dix tables du cahier des charges
+// Les dix tables du cahier des charges, plus applied_ops (étape 4 : opérations
+// déjà appliquées, pour qu'un renvoi ne soit jamais appliqué deux fois)
 const TABLES = [
   'users', 'recovery_codes', 'sessions', 'categories', 'stores',
-  'aisles', 'lists', 'list_members', 'items', 'item_history',
+  'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops',
 ];
 
 // Base en mémoire avec un compte, une catégorie et une liste, pour les tests
@@ -23,7 +24,7 @@ function sampleDb() {
   return db;
 }
 
-test('les dix tables sont créées', () => {
+test('les tables sont créées (10 du cahier des charges + applied_ops)', () => {
   const db = openDatabase(':memory:');
   const names = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
   for (const table of TABLES) assert.ok(names.includes(table), `table ${table} manquante`);

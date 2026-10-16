@@ -1,0 +1,34 @@
+# Listo en production, derrière Nginx Proxy Manager.
+#
+# À placer seul sur le serveur (aucun code source n'est nécessaire), puis :
+#   docker login ghcr.io                     (une seule fois, jeton en lecture des paquets)
+#   docker compose up -d                     (démarrer)
+#   docker logs listo                        (voir les journaux)
+#   docker compose pull && docker compose up -d   (mettre à jour)
+#
+# Aucun port n'est publié sur l'hôte : Nginx Proxy Manager joint Listo par son
+# nom (listo) sur le port 3000, via le réseau Docker partagé « proxy ».
+# Aucun mot de passe ni clé ici : la clé est générée au premier démarrage.
+
+services:
+  listo:
+    image: ghcr.io/magicgg91/listo:latest   # construite par GitHub Actions
+    container_name: listo
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - TZ=Europe/Paris
+      - LISTO_PUBLIC_URL=https://listo.exemple.fr   # à remplacer par votre sous-domaine
+      - LISTO_DB_PATH=/data/listo.db
+      - LISTO_KEY_PATH=/secrets/secret.key
+      - LISTO_SESSION_DAYS=30
+    volumes:
+      - ./data:/data         # base listo.db et sauvegardes
+      - ./secrets:/secrets   # clé de chiffrement, gardée à part de la base
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true   # réseau Docker partagé avec Nginx Proxy Manager (nom à adapter)

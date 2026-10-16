@@ -16,6 +16,7 @@ import {
 import { publicAuthRoutes, logoutRoute } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { adminRoutes } from './routes/admin.js';
+import { listRoutes } from './routes/lists.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -80,7 +81,10 @@ export function createApp({
     next();
   });
   api.use(requireSameOrigin(config.publicUrl));    // protection CSRF
-  api.use(express.json({ limit: '20kb' }));        // corps des requêtes en JSON
+  // Corps des requêtes en JSON : jusqu'à 200 ko pour un lot d'opérations
+  // (file d'attente du téléphone), 20 ko pour tout le reste
+  api.use('/ops', express.json({ limit: '200kb' }));
+  api.use(express.json({ limit: '20kb' }));
   api.use(loadSession(ctx));                       // qui est connecté ?
 
   // Routes ouvertes à tous : premier Admin et connexion
@@ -91,6 +95,7 @@ export function createApp({
   api.use(requirePasswordChanged);
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
+  api.use(listRoutes(ctx));
   api.use('/admin', adminRoutes(ctx));
 
   // Route inconnue
@@ -110,10 +115,12 @@ export function createApp({
   // Fichiers de l'interface
   app.use(express.static(PUBLIC_DIR));
 
-  // Ménage régulier : sessions expirées, compteurs de tentatives périmés.
+  // Ménage régulier : sessions expirées, compteurs de tentatives périmés,
+  // listes et articles supprimés depuis plus de 30 jours.
   // « unref » : ce minuteur n'empêche pas Listo de s'arrêter.
   const cleanup = () => {
     purgeExpiredSessions(ctx);
+    ctx.lists.purgeDeleted();
     ctx.limiter.prune();
     ctx.pending.prune();
   };

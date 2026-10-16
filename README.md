@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : étapes 1 (socle), 2 (comptes, sessions, double authentification) et 3 (administration) terminées côté serveur. L'interface arrive à l'étape 5.
+État : étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration) et 4 (listes et articles) terminées côté serveur. L'interface arrive à l'étape 5.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -25,7 +25,9 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/limiter.js` | Limitation des tentatives (5 échecs en 15 minutes) |
 | `server/audit.js` | Journal de sécurité (`docker logs listo` et `data/journal.log`, avec rotation) |
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
-| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
+| `server/lists.js` | Listes et articles : droits, opérations, historique, synchronisation, nettoyage |
+| `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé et autocomplétion, tri des articles |
+| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
 | `public/` | Fichiers de l'interface (page d'attente pour l'instant) |
 | `test/` | Tests automatisés (`npm test`) |
 | `Dockerfile`, `docker-entrypoint.sh` | Construction et démarrage de l'image Docker |
@@ -236,6 +238,105 @@ grep admin_ data/journal.log
 ```
 
 Les identifiants (`id`) de chaque élément sont donnés par les commandes du point 1. Supprimer un élément déjà utilisé par une liste répond « il peut être désactivé, pas supprimé ». Cela se vérifiera à l'étape 4, quand les listes existeront.
+
+## API des listes et des articles (étape 4)
+
+Réservées à un compte connecté. Chaque requête vérifie que le compte est membre de la liste concernée. Quelqu'un qui n'est pas membre reçoit la même réponse que si la liste n'existait pas (« Liste introuvable », code 404). Un Admin n'a aucun droit particulier sur les listes des autres.
+
+| Route | Rôle |
+| --- | --- |
+| `GET /api/lists` | Mes listes (celles dont je suis membre), la plus récemment active d'abord, avec le nombre d'articles restants et les membres |
+| `GET /api/lists/:id` | Une liste et ses articles, groupés par rayon et triés |
+| `PUT /api/lists/:id/members` | Changer le partage (propriétaire seulement) : `userIds`, la liste complète des invités |
+| `GET /api/users` | Comptes actifs, pour choisir avec qui partager |
+| `GET /api/suggestions?q=la` | Autocomplétion, dès 2 lettres |
+| `GET /api/sync?since=…` | Tout ce qui a changé depuis l'instant `since` (l'heure `serverTime` donnée par la synchro précédente) ; sans `since` : tout |
+| `POST /api/ops` | Lot d'opérations (1 à 100) : `{"ops": [{ "id": "<uuid>", "type": "…", … }]}` |
+
+Les opérations de `POST /api/ops` :
+
+| `type` | Champs | Qui |
+| --- | --- | --- |
+| `list.create` | `listId` (UUID), `name`, `categoryId`, `storeId` (facultatif, listes de courses seulement) | tout compte |
+| `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun) | propriétaire |
+| `list.delete` | `listId` | propriétaire |
+| `list.clearChecked` | `listId` (vider les barrés) | membres |
+| `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon) | membres |
+| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` | membres |
+| `item.check` | `itemId`, `checked` (`true` ou `false`) | membres |
+| `item.delete` | `itemId` | membres |
+
+Chaque opération reçoit sa propre réponse (`status` 200, ou 400, 403, 404, 409 avec `error`). Une opération renvoyée avec le même `id`, par exemple après une coupure réseau, n'est jamais appliquée deux fois : la réponse du premier envoi est redonnée, avec `"duplicate": true`.
+
+Règles :
+
+- **Limites** : nom de 1 à 100 caractères, quantité 30 au plus (texte libre : « 2 », « 500 g »), note 500 au plus. Les identifiants de listes et d'articles sont des UUID créés par le téléphone.
+- **Dates** : les dates (création, modification, suppression) sont toujours posées par le serveur. Celles qu'enverrait le téléphone sont ignorées.
+- **Suppressions logiques** : une suppression est d'abord une simple marque, pour que les autres téléphones l'apprennent. Elle est effacée pour de bon au bout de 30 jours (nettoyage au démarrage, puis toutes les heures).
+- **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon, les articles cochés en bas. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe.
+- **Historique** : il est commun à tous les comptes. « Lait », « lait », « LAIT » et « Lait  » ne font qu'une entrée, qui compte ses utilisations. La suggestion garde la première écriture du nom.
+  - Un article déjà connu reprend son rayon habituel. Modifier son rayon, ou le renommer, mémorise ce choix pour la fois suivante.
+  - Supprimer un article ou vider les barrés n'efface pas l'historique.
+- **Désactivations** : une catégorie, un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.
+- **Changement de catégorie** : une liste qui passe à une catégorie qui n'est pas « liste de courses » perd son magasin.
+- **Partage** :
+  - le propriétaire reste toujours membre ;
+  - un compte désactivé ne peut pas être ajouté ;
+  - un invité retiré perd l'accès tout de suite ;
+  - un invité dont le compte est désactivé reste membre, mais ne peut plus rien faire, et retrouve l'accès s'il est réactivé.
+- **Journal** : création, partage, retrait d'un invité et suppression d'une liste sont notés, avec l'identifiant de la liste, mais jamais son nom ni ses articles.
+
+### Vérifier les listes à la main avec curl
+
+Avec les raccourcis `U`, `O` et `J`, `cookies.txt` (Admin connecté) et `marie.txt` (Marie connectée, mot de passe déjà changé, id 2). Deux petites fonctions évitent de recopier le format des opérations :
+
+```sh
+# Nouvel identifiant unique (UUID)
+id() { uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid; }
+# Envoie une opération (avec cookies.txt, ou un autre fichier : COOKIES=marie.txt op ...)
+op() { curl -s -b "${COOKIES:-cookies.txt}" -H "$O" -H "$J" -d "{\"ops\":[{\"id\":\"$(id)\",$1}]}" $U/api/ops; echo; }
+
+# 1. Les catégories, magasins et rayons (avec leurs id) sont dans la synchronisation
+curl -b cookies.txt $U/api/sync
+
+# 2. Créer une liste de courses (catégorie 1 = Courses, magasin 3 = Lidl)
+L=$(id)
+op '"type":"list.create","listId":"'"$L"'","name":"Courses du samedi","categoryId":1,"storeId":3'
+
+# 3. Ajouter « Lait » au rayon 4 (Crèmerie), puis « LAIT » sans rayon : il retrouve la Crèmerie
+A=$(id)
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$A"'","name":"Lait","quantity":"2","aisleId":4'
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"LAIT  "'
+
+# 4. Autocomplétion
+curl -b cookies.txt "$U/api/suggestions?q=la"
+
+# 5. Cocher, voir la liste triée
+op '"type":"item.check","itemId":"'"$A"'","checked":true'
+curl -b cookies.txt $U/api/lists/$L
+
+# 6. Marie ne voit pas la liste… puis on la partage avec elle
+curl -b marie.txt $U/api/lists/$L
+curl -b cookies.txt -H "$O" -H "$J" -X PUT -d '{"userIds":[2]}' $U/api/lists/$L/members
+curl -b marie.txt $U/api/lists
+
+# 7. Marie ne peut pas renommer la liste, mais elle peut vider les barrés
+COOKIES=marie.txt op '"type":"list.update","listId":"'"$L"'","name":"Renommée"'
+COOKIES=marie.txt op '"type":"list.clearChecked","listId":"'"$L"'"'
+
+# 8. « Ce qui a changé depuis » : noter serverTime, faire un changement, redemander
+curl -b cookies.txt $U/api/sync | grep -o '"serverTime":"[^"]*"'
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Pain"'
+curl -b cookies.txt "$U/api/sync?since=2026-10-16T22:55:07.384Z"    # remplacer par le serverTime noté
+
+# 9. Retirer Marie : elle perd l'accès aussitôt
+curl -b cookies.txt -H "$O" -H "$J" -X PUT -d '{"userIds":[]}' $U/api/lists/$L/members
+curl -b marie.txt $U/api/lists/$L
+
+# 10. Supprimer la liste, puis lire le journal
+op '"type":"list.delete","listId":"'"$L"'"'
+grep liste_ data/journal.log
+```
 
 Pour repartir de zéro : `docker compose -f docker-compose.dev.yml down`, puis supprimer les dossiers `data` et `secrets`.
 

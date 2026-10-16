@@ -12,13 +12,12 @@ import {
   startSession, endSession, requireAuth, attemptKeys, publicUser, safeEqual, normalizeCode,
 } from '../auth.js';
 import { checkSecondFactor } from '../twofactor.js';
+import { isValidUsername, USERNAME_RULE, cleanName } from '../validate.js';
 
 // Réponses identiques que l'identifiant existe ou non
 const BAD_LOGIN = 'Identifiant ou mot de passe incorrect.';
 const BLOCKED = 'Trop de tentatives. Réessayez dans 15 minutes.';
 
-// Identifiant : 2 à 50 caractères parmi lettres sans accent, chiffres, . _ -
-const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,50}$/;
 
 const countUsers = (db) => db.prepare('SELECT COUNT(*) FROM users').pluck().get();
 
@@ -51,13 +50,11 @@ export function publicAuthRoutes(ctx) {
       audit('creation_admin_refusee', { raison: 'code de démarrage incorrect', ip: req.ip });
       return res.status(403).json({ error: 'Code de démarrage incorrect.' });
     }
-    if (typeof username !== 'string' || !USERNAME_PATTERN.test(username)) {
-      return res.status(400).json({ error: 'Identifiant invalide : 2 à 50 caractères (lettres sans accent, chiffres, . _ -).' });
-    }
+    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
     const problem = passwordProblem(password);
     if (problem) return res.status(400).json({ error: problem });
-    const name = typeof displayName === 'string' && displayName.trim() ? displayName.trim() : username;
-    if (name.length > 100) return res.status(400).json({ error: 'Nom affiché trop long (100 caractères au plus).' });
+    const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
+    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
 
     const hash = await hashPassword(password);
 

@@ -43,8 +43,13 @@ export function meRoutes(ctx) {
     }
     limiter.reset(keys);
 
+    // Mot de passe donné par un Admin : il faut vraiment en choisir un autre
+    if (req.user.must_change_password === 1 && newPassword === currentPassword) {
+      return res.status(400).json({ error: "Choisissez un mot de passe différent de celui donné par l'Admin." });
+    }
+
     const hash = await hashPassword(newPassword);
-    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, req.user.id);
+    db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
     revokeAllSessions(ctx, req.user.id);
     startSession(ctx, res, req.user.id);
     audit('mot_de_passe_change', { utilisateur: req.user.username, ip: req.ip });

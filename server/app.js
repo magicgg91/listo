@@ -10,7 +10,9 @@ import { loadConfig } from './config.js';
 import { deriveKeys } from './secrets.js';
 import { createLimiter } from './limiter.js';
 import { createAudit } from './audit.js';
-import { loadSession, requireAuth, requireSameOrigin, createPendingLogins, purgeExpiredSessions } from './auth.js';
+import {
+  loadSession, requireAuth, requirePasswordChanged, requireSameOrigin, createPendingLogins, purgeExpiredSessions,
+} from './auth.js';
 import { publicAuthRoutes, logoutRoute } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { adminRoutes } from './routes/admin.js';
@@ -84,8 +86,9 @@ export function createApp({
   // Routes ouvertes à tous : premier Admin et connexion
   api.use(publicAuthRoutes(ctx));
 
-  // Tout le reste exige d'être connecté
+  // Tout le reste exige d'être connecté, avec un mot de passe à jour
   api.use(requireAuth);
+  api.use(requirePasswordChanged);
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
   api.use('/admin', adminRoutes(ctx));

@@ -22,8 +22,8 @@ import Database from 'better-sqlite3';
 // Expression SQL qui donne l'heure actuelle au format ISO (UTC, millièmes)
 const NOW = "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))";
 
-// Liste des migrations. Ne jamais modifier une migration déjà publiée :
-// pour changer le schéma, ajouter une nouvelle migration à la fin.
+// Liste des migrations (texte SQL ou fonction). Ne jamais modifier une
+// migration déjà publiée : pour changer le schéma, en ajouter une à la fin.
 export const MIGRATIONS = [
   // --- Migration 1 : schéma initial (étape 1) ---
   `
@@ -143,6 +143,31 @@ export const MIGRATIONS = [
   -- accepté : un code déjà utilisé (ou plus ancien) est ensuite refusé.
   ALTER TABLE users ADD COLUMN totp_last_step INTEGER;
   `,
+
+  // --- Migration 3 : administration (étape 3) ---
+  // Une migration peut aussi être une fonction, quand il faut insérer des
+  // données : elle reçoit la base et utilise des requêtes paramétrées.
+  (db) => {
+    // Vaut 1 quand le mot de passe a été choisi par un Admin (création du
+    // compte ou réinitialisation) : l'utilisateur doit le changer à sa
+    // prochaine connexion avant de pouvoir faire autre chose.
+    db.exec('ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0 CHECK (must_change_password IN (0, 1))');
+
+    // Données de départ, créées une seule fois (une migration ne s'applique
+    // qu'une fois) : si l'Admin les supprime ensuite, elles ne reviennent pas.
+    const category = db.prepare('INSERT INTO categories (name, is_shopping) VALUES (?, ?)');
+    category.run('Courses', 1);
+    category.run('Tâches', 0);
+
+    const store = db.prepare('INSERT INTO stores (name) VALUES (?)');
+    for (const name of ['Carrefour', 'E.Leclerc', 'Lidl']) store.run(name);
+
+    const aisle = db.prepare('INSERT INTO aisles (name) VALUES (?)');
+    for (const name of [
+      'Boissons', 'Boucherie', 'Boulangerie', 'Crèmerie', 'Entretien', 'Épicerie salée',
+      'Épicerie sucrée', 'Fromages', 'Fruits et légumes', 'Hygiène', 'Poissonnerie', 'Surgelés',
+    ]) aisle.run(name);
+  },
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.
@@ -170,7 +195,9 @@ export function migrate(db) {
   const current = db.pragma('user_version', { simple: true });
   for (let version = current; version < MIGRATIONS.length; version++) {
     db.transaction(() => {
-      db.exec(MIGRATIONS[version]);
+      const migration = MIGRATIONS[version];
+      if (typeof migration === 'function') migration(db);
+      else db.exec(migration);
       db.pragma(`user_version = ${version + 1}`);
     })();
   }

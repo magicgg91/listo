@@ -68,6 +68,7 @@ export function publicUser(user) {
     displayName: user.display_name,
     role: user.role,
     totpEnabled: user.totp_enabled === 1,
+    mustChangePassword: user.must_change_password === 1,
   };
 }
 
@@ -139,6 +140,17 @@ export function loadSession(ctx) {
 // Refuse un visiteur non connecté (401)
 export function requireAuth(req, res, next) {
   if (!req.user) return res.status(401).json({ error: 'Connexion requise.' });
+  next();
+}
+
+// Mot de passe choisi par un Admin (création du compte ou réinitialisation) :
+// tant que l'utilisateur ne l'a pas changé, il ne peut que voir son compte,
+// changer son mot de passe ou se déconnecter (403 partout ailleurs).
+const ALLOWED_BEFORE_CHANGE = new Set(['GET /me', 'POST /me/password', 'POST /logout']);
+export function requirePasswordChanged(req, res, next) {
+  if (req.user.must_change_password === 1 && !ALLOWED_BEFORE_CHANGE.has(`${req.method} ${req.path}`)) {
+    return res.status(403).json({ error: 'Changez votre mot de passe avant de continuer.', mustChangePassword: true });
+  }
   next();
 }
 

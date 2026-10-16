@@ -17,8 +17,9 @@ const TABLES = [
 function sampleDb() {
   const db = openDatabase(':memory:');
   db.prepare("INSERT INTO users (id, username, display_name, password_hash) VALUES (1, 'guillaume', 'Guillaume', 'x')").run();
-  db.prepare("INSERT INTO categories (id, name, is_shopping) VALUES (1, 'Courses', 1)").run();
-  db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('liste-1', 'Courses', 1, 1)").run();
+  // La catégorie « Courses » fait partie des données de départ
+  const courses = db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
+  db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('liste-1', 'Courses', ?, 1)").run(courses);
   return db;
 }
 
@@ -42,7 +43,7 @@ test('les clés étrangères sont activées', () => {
 
 test('un élément utilisé ne peut pas être effacé (catégorie, compte)', () => {
   const db = sampleDb();
-  assert.throws(() => db.prepare('DELETE FROM categories WHERE id = 1').run(), /FOREIGN KEY/);
+  assert.throws(() => db.prepare("DELETE FROM categories WHERE name = 'Courses'").run(), /FOREIGN KEY/);
   assert.throws(() => db.prepare('DELETE FROM users WHERE id = 1').run(), /FOREIGN KEY/);
 });
 
@@ -95,7 +96,7 @@ test('rouvrir une base existante ne refait pas les migrations et garde les donn�
 
   const second = openDatabase(file);
   assert.equal(schemaVersion(second), MIGRATIONS.length);
-  assert.equal(second.prepare('SELECT name FROM stores').pluck().get(), 'Marché');
+  assert.equal(second.prepare("SELECT COUNT(*) FROM stores WHERE name = 'Marché'").pluck().get(), 1);
   second.close();
 });
 
@@ -111,5 +112,59 @@ test("une base de l'étape 1 est mise à jour sans perte (migration 2)", (t) => 
   const db = openDatabase(file);
   assert.equal(schemaVersion(db), MIGRATIONS.length);
   assert.deepEqual(db.prepare('SELECT username, totp_last_step FROM users').get(), { username: 'marie', totp_last_step: null });
+  db.close();
+});
+
+// --- Données de départ (migration 3) ---
+
+const seedCounts = (db) => ['categories', 'stores', 'aisles']
+  .map((table) => db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get());
+
+test('les données de départ sont créées au premier démarrage', () => {
+  const db = openDatabase(':memory:');
+  assert.deepEqual(db.prepare('SELECT name, is_shopping FROM categories ORDER BY name').all(), [
+    { name: 'Courses', is_shopping: 1 },
+    { name: 'Tâches', is_shopping: 0 },
+  ]);
+  assert.deepEqual(db.prepare('SELECT name FROM stores ORDER BY name').pluck().all(), ['Carrefour', 'E.Leclerc', 'Lidl']);
+  assert.deepEqual(db.prepare('SELECT name FROM aisles ORDER BY name').pluck().all(), [
+    'Boissons', 'Boucherie', 'Boulangerie', 'Crèmerie', 'Entretien', 'Fromages', 'Fruits et légumes',
+    'Hygiène', 'Poissonnerie', 'Surgelés', 'Épicerie salée', 'Épicerie sucrée',
+  ]);
+  assert.equal(db.prepare('SELECT COUNT(*) FROM categories WHERE active = 0').pluck().get(), 0);
+});
+
+test("les données de départ ne sont créées qu'une fois, même après un redémarrage", (t) => {
+  const file = path.join(tempDir(t), 'listo.db');
+  const first = openDatabase(file);
+  const counts = seedCounts(first);
+  assert.deepEqual(counts, [2, 3, 12]);
+  // L'Admin modifie les données de départ : il supprime un magasin et renomme un rayon
+  first.prepare("DELETE FROM stores WHERE name = 'Lidl'").run();
+  first.prepare("UPDATE aisles SET name = 'Hygiène et beauté' WHERE name = 'Hygiène'").run();
+  first.close();
+
+  // Deux redémarrages : rien n'est recréé, les modifications sont gardées
+  for (let i = 0; i < 2; i++) {
+    const again = openDatabase(file);
+    assert.deepEqual(seedCounts(again), [2, 2, 12]);
+    assert.equal(again.prepare("SELECT COUNT(*) FROM stores WHERE name = 'Lidl'").pluck().get(), 0);
+    assert.equal(again.prepare("SELECT COUNT(*) FROM aisles WHERE name = 'Hygiène'").pluck().get(), 0);
+    again.close();
+  }
+});
+
+test("une base de l'étape 2 reçoit les données de départ lors de sa mise à jour", (t) => {
+  const file = path.join(tempDir(t), 'listo.db');
+  const old = new Database(file);
+  old.exec(MIGRATIONS[0]);
+  old.exec(MIGRATIONS[1]);
+  old.pragma('user_version = 2');
+  old.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('guillaume', 'G', 'x', 'admin')").run();
+  old.close();
+
+  const db = openDatabase(file);
+  assert.deepEqual(seedCounts(db), [2, 3, 12]);
+  assert.deepEqual(db.prepare('SELECT username, must_change_password FROM users').get(), { username: 'guillaume', must_change_password: 0 });
   db.close();
 });

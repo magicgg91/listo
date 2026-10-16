@@ -23,7 +23,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/totp.js` | Codes à 6 chiffres de la double authentification |
 | `server/twofactor.js` | Secret 2FA chiffré et codes de secours |
 | `server/limiter.js` | Limitation des tentatives (5 échecs en 15 minutes) |
-| `server/audit.js` | Journal de sécurité (lignes `[journal]` dans `docker logs listo`) |
+| `server/audit.js` | Journal de sécurité (`docker logs listo` et `data/journal.log`, avec rotation) |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `admin.js` |
 | `public/` | Fichiers de l'interface (page d'attente pour l'instant) |
 | `test/` | Tests automatisés (`npm test`) |
@@ -126,7 +126,21 @@ curl -c cookies.txt -b cookies.txt -H "$O" -H "$J" \
 
 # 12. Le journal de sécurité (sans aucun mot de passe, jeton ni code)
 docker logs listo-dev | grep journal
+cat data/journal.log
 ```
+
+### Journal de sécurité
+
+Les connexions (réussies, échouées, bloquées), les changements de mot de passe, la double authentification et les actions d'administration sont notés, une ligne par événement :
+
+```text
+2026-10-16T22:17:03.952Z [journal] connexion_echouee utilisateur="guillaume" ip="203.0.113.7"
+```
+
+- **Où** : dans `docker logs listo` et dans le fichier `data/journal.log` (droits 600, lisible par Listo seul). Le fichier est dans le dossier `data`, donc conservé lors des mises à jour et sauvegardé avec la base.
+- **Taille limitée** : quand `journal.log` atteint 1 Mo, il est renommé `journal.log.1`, l'ancien `.1` devient `.2`, et ainsi de suite jusqu'à `.5`. Le plus ancien est supprimé. Le journal occupe donc au plus 6 Mo.
+- **Jamais de secret** : ni mot de passe, ni jeton, ni code. Un identifiant qui n'existe pas est noté `"(inconnu)"`, car ce peut être un mot de passe tapé dans le mauvais champ.
+- **En cas de problème d'écriture** (disque plein, droits) : Listo continue de fonctionner normalement, et un message d'erreur apparaît une fois dans `docker logs`.
 
 Pour repartir de zéro : `docker compose -f docker-compose.dev.yml down`, puis supprimer les dossiers `data` et `secrets`.
 

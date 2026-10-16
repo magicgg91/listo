@@ -24,7 +24,8 @@ const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
 // - masterKey : clé de secrets/secret.key
 // - setupCode : code de démarrage, si aucun compte n'existe encore
 // - now : horloge (les tests la remplacent pour « avancer le temps »)
-// - log : où écrire le journal de sécurité
+// - log : où écrire le journal de sécurité (par défaut : docker logs)
+// - journalFile : écriture du journal dans un fichier (voir audit.js)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -32,6 +33,7 @@ export function createApp({
   setupCode = null,
   now = Date.now,
   log,
+  journalFile = null,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -42,7 +44,7 @@ export function createApp({
     setup: { code: setupCode },
     limiter: createLimiter({ now }),
     pending: createPendingLogins(now),
-    audit: createAudit({ now, write: log }),
+    audit: createAudit({ now, write: log, file: journalFile }),
   };
 
   const app = express();

@@ -3,10 +3,12 @@
 //
 // Lancement : npm start (ou « node server/index.js »)
 
+import path from 'node:path';
 import { loadConfig } from './config.js';
 import { openDatabase, schemaVersion } from './db.js';
 import { loadOrCreateKey } from './secrets.js';
 import { createApp } from './app.js';
+import { createJournalFile } from './audit.js';
 import { generateSetupCode } from './auth.js';
 
 const config = loadConfig();
@@ -43,8 +45,13 @@ if (db.prepare('SELECT COUNT(*) FROM users').pluck().get() === 0) {
   console.log('');
 }
 
-// 4. Serveur web
-const app = createApp({ db, config, masterKey: key, setupCode });
+// 4. Journal de sécurité, aussi écrit dans data/journal.log (à côté de la base)
+const journalPath = path.join(path.dirname(config.dbPath), 'journal.log');
+const journalFile = createJournalFile({ path: journalPath });
+console.log(`Journal de sécurité : ${journalPath}`);
+
+// 5. Serveur web
+const app = createApp({ db, config, masterKey: key, setupCode, journalFile });
 const server = app.listen(config.port, () => {
   console.log(`Listo est démarré sur le port ${server.address().port}`);
 });

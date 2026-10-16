@@ -3,7 +3,10 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestApp, setupAdmin, addUser, login, SETUP_CODE, ORIGIN } from './helpers.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { startTestApp, setupAdmin, addUser, login, tempDir, SETUP_CODE, ORIGIN } from './helpers.js';
+import { createJournalFile } from '../server/audit.js';
 import { totpCode, totpStep } from '../server/totp.js';
 import { openTotpSecret } from '../server/twofactor.js';
 
@@ -196,6 +199,23 @@ test('un visiteur non connecté reçoit un refus partout', async (t) => {
   // Un faux cookie de session ne change rien
   visitor.jar.set('listo_session', 'faux-jeton');
   assert.equal((await visitor.get('/api/me')).status, 401);
+});
+
+test('un cookie malformé est ignoré : requête non connectée, connexion toujours possible', async (t) => {
+  const { app } = await withUser(t);
+  const visitor = app.client();
+  visitor.jar.set('listo_session', '%'); // encodage invalide
+  assert.equal((await visitor.get('/api/me')).status, 401);
+  assert.equal((await visitor.get('/api/setup')).status, 200);
+
+  // La connexion fonctionne malgré le cookie illisible…
+  const res = await login(visitor, 'marie', PASSWORD);
+  assert.equal(res.status, 200);
+  assert.equal((await visitor.get('/api/me')).status, 200);
+
+  // …et un autre cookie mal encodé n'empêche pas de lire la session
+  visitor.jar.set('autre', '%E0%A4%A');
+  assert.equal((await visitor.get('/api/me')).body.user.username, 'marie');
 });
 
 test('un Utilisateur reçoit un refus sur les routes d\'administration', async (t) => {
@@ -436,8 +456,9 @@ test('une requête de modification avec un mauvais en-tête Origin est refusée'
 
 // --- Journal ---
 
-test('le journal ne contient ni mot de passe, ni jeton, ni code', async (t) => {
-  const app = await startTestApp(t);
+test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton, ni code', async (t) => {
+  const journalPath = path.join(tempDir(t), 'journal.log');
+  const app = await startTestApp(t, { journalFile: createJournalFile({ path: journalPath }) });
   const secrets = [SETUP_CODE, SETUP_CODE.replaceAll('-', ''), 'MotDePasseAdmin!', PASSWORD, 'NouveauMotDePasse', 'MauvaisMotDePasse'];
 
   // Un parcours complet : création de l'Admin, connexions ratées et réussies,
@@ -475,6 +496,10 @@ test('le journal ne contient ni mot de passe, ni jeton, ni code', async (t) => {
   await admin.del(`/api/admin/users/${marieId}/2fa`);
   await phone.post('/api/logout');
 
+  // Le fichier contient exactement les mêmes lignes que docker logs
+  const fileContent = fs.readFileSync(journalPath, 'utf8');
+  assert.equal(fileContent, app.logs.map((line) => `${line}\n`).join(''));
+
   // Le journal a bien tout noté…
   const journal = app.logs.join('\n');
   for (const event of ['creation_admin', 'connexion_echouee', 'connexion_reussie', 'connexion_code_2fa_demande',
@@ -484,6 +509,7 @@ test('le journal ne contient ni mot de passe, ni jeton, ni code', async (t) => {
   // …sans jamais écrire un seul secret
   for (const secret of secrets) {
     assert.ok(secret && !journal.includes(secret), `secret trouvé dans le journal : ${secret}`);
+    assert.ok(!fileContent.includes(secret), `secret trouvé dans journal.log : ${secret}`);
   }
   // L'identifiant inconnu (ici un mot de passe tapé par erreur) n'est pas recopié
   assert.match(journal, /utilisateur="\(inconnu\)"/);

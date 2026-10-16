@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listo — composants (référence HTML/CSS)</title>
+<link rel="stylesheet" href="./listo.css">
+<style>body{margin:0}</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2h.01"/></symbol>
+<symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9" cy="19.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.3" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M3 3l18 18M7 18.5a4.5 4.5 0 01-.7-8.95 6 6 0 011.3-2.3M10.8 6.1A6 6 0 0117.9 11a3.8 3.8 0 011.4 6.6"/></symbol>
+<symbol id="i-cloud-ok" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 01-.7-8.95A6 6 0 0117.9 11a3.8 3.8 0 01-.4 7.5H7zM9.5 14l2 2 3.5-3.5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><path d="M9 9h11v11H9zM5 15V4h11"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 017 0v3"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M4 7l2 2 3.5-4M4 16l2 2 3.5-4M13.5 7.5H20M13.5 16.5H20"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.7" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5a2.1 2.1 0 013 3L8 19l-4 1zM14 7l3 3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1011.4 0"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.2M20 4v5h-5"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6zM9 12l2 2 4-4"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M9 14v6"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M10 20v-5h4v5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 00-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0014 4.5L20 15M20 20v-5h-5"/></symbol>
+<symbol id="i-tasks" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M3.5 6l1.5 1.5L7.5 4.5M3.5 12.5L5 14l2.5-2.5M3.5 18.5L5 20l2.5-2.5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></symbol>
+</defs></svg>
+
+
+<section class="stage__row" data-theme="light" style="padding:40px">
+<h2 class="stage__label">Thème clair</h2>
+<div class="specs" style="margin-top:16px">
+
+<!-- 1. Boutons -->
+<div class="spec"><h3 class="spec__title">Boutons</h3>
+<div class="app spec__body">
+<button class="btn btn--primary btn--block">Enregistrer</button>
+<button class="btn btn--secondary btn--block">Annuler</button>
+<button class="btn btn--danger btn--block">Supprimer</button>
+<button class="btn btn--danger-outline btn--block"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer la liste</button>
+<button class="btn btn--ghost btn--block">Utiliser un code de secours</button>
+<button class="btn btn--secondary btn--block" disabled>Vider les barrés</button>
+<div style="display:flex;gap:8px"><button class="btn btn--secondary btn--sm grow"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash"/></svg>Vider les barrés (2)</button><button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+</div></div>
+
+<!-- 2. Bouton flottant, boutons-icônes -->
+<div class="spec"><h3 class="spec__title">Bouton flottant et boutons-icônes</h3>
+<div class="app spec__body spec__body--stage" style="height:200px">
+<div style="display:flex;gap:4px;padding:16px"><button class="icon-btn" aria-label="Retour"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button><button class="icon-btn" aria-label="Menu"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><button class="icon-btn" aria-label="Renommer"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button></div>
+<button class="fab"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nouvelle liste</button>
+</div></div>
+
+<!-- 3. Carte de liste -->
+<div class="spec"><h3 class="spec__title">Carte de liste</h3>
+<div class="app spec__body">
+<a class="card list-card" href="#">
+<div class="list-card__head"><h4 class="list-card__name" style="margin:0">Courses de la semaine</h4><span class="list-card__time">il y a 2 min</span></div>
+<p class="list-card__meta"><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cart"/></svg>Courses</span><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Carrefour Market</span></p>
+<div class="list-card__foot"><p class="list-card__count">11 articles restants</p><div class="avatars" role="img" aria-label="Partagée avec Guillaume et Léa"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div></div>
+</a>
+<a class="card list-card is-selected" href="#" aria-current="page">
+<div class="list-card__head"><h4 class="list-card__name" style="margin:0">Marché du samedi</h4><span class="list-card__time">hier</span></div>
+<p class="list-card__meta"><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cart"/></svg>Courses</span><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Marché de Poissy</span></p>
+<div class="list-card__foot"><p class="list-card__count list-card__count--done"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Tout est coché</p><div class="avatars" role="img" aria-label="Partagée avec Guillaume et Léa"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div></div>
+</a>
+<p class="spec__note">En bas : carte sélectionnée (version ordinateur).</p>
+</div></div>
+
+<!-- 4. Ligne d'article -->
+<div class="spec"><h3 class="spec__title">Ligne d'article</h3>
+<div class="app spec__body spec__body--flush">
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâtes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâtes</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bananes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bananes</span></span><span class="item__qty">1 kg</span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Papier cadeau"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Papier cadeau</span><span class="item__note">Format A4, sans motif</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span><span class="item__note">Marque habituelle</span></span><span class="item__qty">6</span></button></li>
+<li class="item is-done"><button class="check" aria-pressed="true" aria-label="Décocher Tomates"><span class="check__box"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span></button><button class="item__body"><span class="item__text"><span class="item__name">Tomates</span></span><span class="item__qty">500 g</span></button></li>
+</ul>
+</div>
+<p class="spec__note">Normal, avec quantité, avec note, quantité et note, barré (case remplie, texte atténué et barré).</p></div>
+
+<!-- 5. En-tête de rayon -->
+<div class="spec"><h3 class="spec__title">En-tête de rayon collant</h3>
+<div class="app spec__body spec__body--flush">
+<h4 class="aisle" style="position:static;margin:0">Crèmerie <span class="aisle__count">2</span></h4>
+<ul><li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span><span class="item__qty">250 g</span></button></li></ul>
+<h4 class="aisle is-stuck" style="position:static;margin:0">Épicerie <span class="aisle__count">2</span></h4>
+<ul><li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâtes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâtes</span></span><span class="item__qty">500 g</span></button></li></ul>
+<h4 class="aisle" style="position:static;margin:0">Sans rayon <span class="aisle__count">2</span></h4>
+</div>
+<p class="spec__note">Le deuxième en-tête est affiché collé en haut de l'écran, avec une ombre légère.</p></div>
+
+<!-- 6. Champ d'ajout + suggestions -->
+<div class="spec"><h3 class="spec__title">Champ d'ajout avec suggestions</h3>
+<div class="app spec__body spec__body--stage" style="height:340px">
+<div class="addbar" style="position:absolute;left:0;right:0;bottom:0">
+<div class="suggest" role="listbox" aria-label="Suggestions">
+<button class="suggest__item" role="option"><span><strong>Pâ</strong>tes</span><span class="suggest__aisle">Épicerie</span></button>
+<button class="suggest__item" role="option"><span><strong>Pa</strong>in de mie</span><span class="suggest__aisle">Boulangerie</span></button>
+<button class="suggest__item" role="option"><span><strong>Pa</strong>pier toilette</span><span class="suggest__aisle">Hygiène</span></button>
+<button class="suggest__item suggest__item--new" role="option"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Ajouter « pa »</span><span class="suggest__aisle" style="color:inherit">Nouvel article</span></button>
+</div>
+<div class="addbar__row"><label class="addbar__field is-focus"><input class="addbar__input" type="text" value="pa" aria-label="Ajouter un article" autocomplete="off"></label><button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+</div>
+</div></div>
+
+<!-- 7. Indicateur de synchro -->
+<div class="spec"><h3 class="spec__title">Indicateur de synchronisation</h3>
+<div class="app spec__body" style="align-items:flex-start">
+<p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p>
+<p class="sync sync--busy" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-sync"/></svg>Synchronisation…</p>
+<p class="sync sync--off" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-off"/></svg>Hors ligne · 3 en attente</p>
+<p class="spec__note">Trois états, toujours une icône et un texte. L'icône tourne pendant la synchronisation (sauf si l'appareil demande moins d'animations).</p>
+</div></div>
+
+<!-- 8. Interrupteurs -->
+<div class="spec"><h3 class="spec__title">Interrupteur de thème et interrupteur</h3>
+<div class="app spec__body">
+<div class="segmented" role="radiogroup" aria-label="Thème">
+<button class="segmented__opt" role="radio" aria-checked="true"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-sun"/></svg>Clair</button>
+<button class="segmented__opt" role="radio" aria-checked="false"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-moon"/></svg>Sombre</button>
+<button class="segmented__opt" role="radio" aria-checked="false"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-auto"/></svg>Auto</button>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:48px"><span>Catégorie active</span><button class="switch" role="switch" aria-checked="true" aria-label="Catégorie active"></button></div>
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:48px"><span>Catégorie désactivée</span><button class="switch" role="switch" aria-checked="false" aria-label="Catégorie désactivée"></button></div>
+</div></div>
+
+<!-- 9. Toasts -->
+<div class="spec"><h3 class="spec__title">Messages (toasts)</h3>
+<div class="app spec__body spec__body--stage" style="height:160px">
+<div class="toast" style="bottom:84px" role="status"><span class="toast__text">3 articles retirés</span><button class="toast__action">Annuler</button></div>
+<div class="toast" style="bottom:16px" role="status"><span class="toast__text">Mot de passe modifié</span></div>
+</div></div>
+
+<!-- 10. États vides -->
+<div class="spec"><h3 class="spec__title">États vides</h3>
+<div class="app spec__body spec__body--flush" style="height:250px">
+<div class="empty" style="padding:24px"><div class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-cart"/></svg></div><h4 class="empty__title" style="margin:0">Cette liste est vide</h4><p class="empty__text">Ajoutez un premier article avec le champ ci-dessous.</p></div>
+</div>
+<div class="app spec__body spec__body--flush" style="height:250px">
+<div class="empty" style="padding:24px"><div class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-tasks"/></svg></div><h4 class="empty__title" style="margin:0">Aucune liste pour le moment</h4><p class="empty__text">Créez une première liste pour commencer.</p></div>
+</div></div>
+
+<!-- 11. Champs -->
+<div class="spec"><h3 class="spec__title">Champs de formulaire</h3>
+<div class="app spec__body" style="gap:16px">
+<label class="field"><span class="field__label">Nom</span><input class="input" type="text" placeholder="Ex. Courses de la semaine"></label>
+<label class="field"><span class="field__label">Quantité (focus)</span><input class="input is-focus" type="text" value="500 g"><span class="field__hint">Texte libre, par exemple 2 ou 500 g</span></label>
+<label class="field"><span class="field__label">Confirmation (erreur)</span><input class="input" type="password" aria-invalid="true" value="motdepasse"><span class="field__error"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-alert"/></svg>Les deux mots de passe ne correspondent pas</span></label>
+<div class="field"><span class="field__label">Magasin</span><button class="input input--select"><span>Carrefour Market</span><svg class="icon" aria-hidden="true"><use href="#i-chev-d"/></svg></button></div>
+<label class="field"><span class="field__label">Note (facultative)</span><textarea class="input input--area" rows="2">Pour la purée</textarea></label>
+<label class="field"><span class="field__label">Code à 6 chiffres</span><input class="input input--code" type="text" inputmode="numeric" value="482913"></label>
+</div></div>
+
+<!-- 12. Boîte de confirmation -->
+<div class="spec"><h3 class="spec__title">Boîte de confirmation</h3>
+<div class="app spec__body spec__body--stage" style="height:320px">
+<div class="scrim"></div>
+<div class="dialog" role="alertdialog" aria-labelledby="dlgc-light">
+<h4 class="dialog__title" id="dlgc-light">Vider les barrés ?</h4>
+<p class="dialog__text">Les 2 articles barrés seront retirés de la liste, pour tout le monde.</p>
+<div class="dialog__actions"><button class="btn btn--secondary">Annuler</button><button class="btn btn--danger">Vider</button></div>
+</div>
+</div></div>
+
+<!-- 13. Onglets d'administration -->
+<div class="spec"><h3 class="spec__title">Onglets et lignes d'administration</h3>
+<div class="app spec__body spec__body--flush">
+<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Comptes</button><button class="tab" role="tab" aria-selected="true">Catégories</button><button class="tab" role="tab" aria-selected="false">Magasins</button><button class="tab" role="tab" aria-selected="false">Rayons</button></div>
+<div class="add-inline"><label class="grow"><input class="input" type="text" placeholder="Nouvelle catégorie" aria-label="Nouvelle catégorie"></label><button class="btn btn--primary" style="min-height:52px">Ajouter</button></div>
+<div class="group">
+<div class="manage"><div class="grow"><p class="manage__name">Courses</p><p class="manage__sub">Active</p></div><button class="icon-btn" aria-label="Renommer Courses"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button><button class="switch" role="switch" aria-checked="true" aria-label="Courses active"></button></div>
+<div class="manage is-off"><div class="grow"><p class="manage__name">Projets</p><p class="manage__sub">Désactivée</p></div><button class="icon-btn" aria-label="Renommer Projets"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button><button class="switch" role="switch" aria-checked="false" aria-label="Projets désactivée"></button></div>
+</div>
+<div style="height:16px"></div>
+</div></div>
+
+<!-- 14. Feuille du bas -->
+<div class="spec"><h3 class="spec__title">Feuille du bas</h3>
+<div class="app spec__body spec__body--stage" style="height:440px">
+<div class="scrim"></div>
+<div class="sheet" role="dialog" aria-labelledby="shc-light">
+<div class="sheet__grab"></div>
+<div class="sheet__head"><h4 class="sheet__title" id="shc-light">Modifier l'article</h4><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+<label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label>
+<button class="btn btn--primary btn--block">Enregistrer</button>
+</div>
+</div></div>
+
+<!-- 15. Pastilles, cases, choix -->
+<div class="spec"><h3 class="spec__title">Pastilles, cases et choix</h3>
+<div class="app spec__body" style="gap:16px">
+<div style="display:flex;align-items:center;gap:12px"><div class="avatars"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div><span class="chip chip--strong"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-shield"/></svg>Admin</span><span class="chip">Utilisateur</span><span class="chip">Désactivé</span></div>
+<div class="card" style="overflow:hidden">
+<button class="tick-row" role="checkbox" aria-checked="true"><span class="tick is-on"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="avatar avatar--b">L</span><span class="grow">Léa</span></button>
+<button class="tick-row" role="checkbox" aria-checked="false"><span class="tick"></span><span class="avatar avatar--b">P</span><span class="grow">Paul</span></button>
+<button class="radio-row is-on" role="radio" aria-checked="true"><span class="radio is-on"></span>Épicerie<svg class="icon icon-end" aria-hidden="true"><use href="#i-check"/></svg></button>
+<button class="radio-row" role="radio" aria-checked="false"><span class="radio"></span>Hygiène</button>
+</div>
+<div class="choice" role="radiogroup" aria-label="Catégorie">
+<button class="choice__opt" role="radio" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg>Courses<svg class="icon icon-end" aria-hidden="true"><use href="#i-check"/></svg></button>
+<button class="choice__opt" role="radio" aria-checked="false"><svg class="icon" aria-hidden="true"><use href="#i-tasks"/></svg>Tâches</button>
+</div>
+<div class="note"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><p>Ces codes ne seront plus affichés.</p></div>
+</div></div>
+
+<!-- 16. Menu -->
+<div class="spec"><h3 class="spec__title">Menu contextuel</h3>
+<div class="app spec__body spec__body--stage" style="height:200px">
+<div class="menu" role="menu" style="top:12px;right:12px">
+<button class="menu__item" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg>Modifier la liste</button>
+<button class="menu__item" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Vider les barrés</button>
+<button class="menu__item menu__item--danger" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>Désactiver le compte</button>
+</div>
+</div></div>
+
+<!-- 17. Barre de titre -->
+<div class="spec"><h3 class="spec__title">Barres de titre</h3>
+<div class="app spec__body spec__body--flush">
+<header class="topbar"><button class="icon-btn" aria-label="Retour"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button><div class="topbar__main"><h4 class="topbar__title" style="margin:0">Courses de la semaine</h4><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Carrefour Market</p></div><button class="icon-btn" aria-label="Menu"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button></header>
+<header class="topbar topbar--plain" style="border-top:1px solid var(--color-border)"><div class="topbar__main"><h4 class="topbar__title" style="margin:0">Mes listes</h4></div><button class="icon-btn" aria-label="Réglages"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button></header>
+</div></div>
+
+</div>
+</section>
+
+
+<section class="stage__row" data-theme="dark" style="padding:40px">
+<h2 class="stage__label">Thème sombre</h2>
+<div class="specs" style="margin-top:16px">
+
+<!-- 1. Boutons -->
+<div class="spec"><h3 class="spec__title">Boutons</h3>
+<div class="app spec__body">
+<button class="btn btn--primary btn--block">Enregistrer</button>
+<button class="btn btn--secondary btn--block">Annuler</button>
+<button class="btn btn--danger btn--block">Supprimer</button>
+<button class="btn btn--danger-outline btn--block"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash"/></svg>Supprimer la liste</button>
+<button class="btn btn--ghost btn--block">Utiliser un code de secours</button>
+<button class="btn btn--secondary btn--block" disabled>Vider les barrés</button>
+<div style="display:flex;gap:8px"><button class="btn btn--secondary btn--sm grow"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-trash"/></svg>Vider les barrés (2)</button><button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+</div></div>
+
+<!-- 2. Bouton flottant, boutons-icônes -->
+<div class="spec"><h3 class="spec__title">Bouton flottant et boutons-icônes</h3>
+<div class="app spec__body spec__body--stage" style="height:200px">
+<div style="display:flex;gap:4px;padding:16px"><button class="icon-btn" aria-label="Retour"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button><button class="icon-btn" aria-label="Menu"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button><button class="icon-btn" aria-label="Renommer"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button></div>
+<button class="fab"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nouvelle liste</button>
+</div></div>
+
+<!-- 3. Carte de liste -->
+<div class="spec"><h3 class="spec__title">Carte de liste</h3>
+<div class="app spec__body">
+<a class="card list-card" href="#">
+<div class="list-card__head"><h4 class="list-card__name" style="margin:0">Courses de la semaine</h4><span class="list-card__time">il y a 2 min</span></div>
+<p class="list-card__meta"><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cart"/></svg>Courses</span><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Carrefour Market</span></p>
+<div class="list-card__foot"><p class="list-card__count">11 articles restants</p><div class="avatars" role="img" aria-label="Partagée avec Guillaume et Léa"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div></div>
+</a>
+<a class="card list-card is-selected" href="#" aria-current="page">
+<div class="list-card__head"><h4 class="list-card__name" style="margin:0">Marché du samedi</h4><span class="list-card__time">hier</span></div>
+<p class="list-card__meta"><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-cart"/></svg>Courses</span><span><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Marché de Poissy</span></p>
+<div class="list-card__foot"><p class="list-card__count list-card__count--done"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-check"/></svg>Tout est coché</p><div class="avatars" role="img" aria-label="Partagée avec Guillaume et Léa"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div></div>
+</a>
+<p class="spec__note">En bas : carte sélectionnée (version ordinateur).</p>
+</div></div>
+
+<!-- 4. Ligne d'article -->
+<div class="spec"><h3 class="spec__title">Ligne d'article</h3>
+<div class="app spec__body spec__body--flush">
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâtes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâtes</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bananes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bananes</span></span><span class="item__qty">1 kg</span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Papier cadeau"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Papier cadeau</span><span class="item__note">Format A4, sans motif</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span><span class="item__note">Marque habituelle</span></span><span class="item__qty">6</span></button></li>
+<li class="item is-done"><button class="check" aria-pressed="true" aria-label="Décocher Tomates"><span class="check__box"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span></button><button class="item__body"><span class="item__text"><span class="item__name">Tomates</span></span><span class="item__qty">500 g</span></button></li>
+</ul>
+</div>
+<p class="spec__note">Normal, avec quantité, avec note, quantité et note, barré (case remplie, texte atténué et barré).</p></div>
+
+<!-- 5. En-tête de rayon -->
+<div class="spec"><h3 class="spec__title">En-tête de rayon collant</h3>
+<div class="app spec__body spec__body--flush">
+<h4 class="aisle" style="position:static;margin:0">Crèmerie <span class="aisle__count">2</span></h4>
+<ul><li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span><span class="item__qty">250 g</span></button></li></ul>
+<h4 class="aisle is-stuck" style="position:static;margin:0">Épicerie <span class="aisle__count">2</span></h4>
+<ul><li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâtes"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâtes</span></span><span class="item__qty">500 g</span></button></li></ul>
+<h4 class="aisle" style="position:static;margin:0">Sans rayon <span class="aisle__count">2</span></h4>
+</div>
+<p class="spec__note">Le deuxième en-tête est affiché collé en haut de l'écran, avec une ombre légère.</p></div>
+
+<!-- 6. Champ d'ajout + suggestions -->
+<div class="spec"><h3 class="spec__title">Champ d'ajout avec suggestions</h3>
+<div class="app spec__body spec__body--stage" style="height:340px">
+<div class="addbar" style="position:absolute;left:0;right:0;bottom:0">
+<div class="suggest" role="listbox" aria-label="Suggestions">
+<button class="suggest__item" role="option"><span><strong>Pâ</strong>tes</span><span class="suggest__aisle">Épicerie</span></button>
+<button class="suggest__item" role="option"><span><strong>Pa</strong>in de mie</span><span class="suggest__aisle">Boulangerie</span></button>
+<button class="suggest__item" role="option"><span><strong>Pa</strong>pier toilette</span><span class="suggest__aisle">Hygiène</span></button>
+<button class="suggest__item suggest__item--new" role="option"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Ajouter « pa »</span><span class="suggest__aisle" style="color:inherit">Nouvel article</span></button>
+</div>
+<div class="addbar__row"><label class="addbar__field is-focus"><input class="addbar__input" type="text" value="pa" aria-label="Ajouter un article" autocomplete="off"></label><button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button></div>
+</div>
+</div></div>
+
+<!-- 7. Indicateur de synchro -->
+<div class="spec"><h3 class="spec__title">Indicateur de synchronisation</h3>
+<div class="app spec__body" style="align-items:flex-start">
+<p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p>
+<p class="sync sync--busy" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-sync"/></svg>Synchronisation…</p>
+<p class="sync sync--off" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-off"/></svg>Hors ligne · 3 en attente</p>
+<p class="spec__note">Trois états, toujours une icône et un texte. L'icône tourne pendant la synchronisation (sauf si l'appareil demande moins d'animations).</p>
+</div></div>
+
+<!-- 8. Interrupteurs -->
+<div class="spec"><h3 class="spec__title">Interrupteur de thème et interrupteur</h3>
+<div class="app spec__body">
+<div class="segmented" role="radiogroup" aria-label="Thème">
+<button class="segmented__opt" role="radio" aria-checked="true"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-sun"/></svg>Clair</button>
+<button class="segmented__opt" role="radio" aria-checked="false"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-moon"/></svg>Sombre</button>
+<button class="segmented__opt" role="radio" aria-checked="false"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-auto"/></svg>Auto</button>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:48px"><span>Catégorie active</span><button class="switch" role="switch" aria-checked="true" aria-label="Catégorie active"></button></div>
+<div style="display:flex;align-items:center;justify-content:space-between;min-height:48px"><span>Catégorie désactivée</span><button class="switch" role="switch" aria-checked="false" aria-label="Catégorie désactivée"></button></div>
+</div></div>
+
+<!-- 9. Toasts -->
+<div class="spec"><h3 class="spec__title">Messages (toasts)</h3>
+<div class="app spec__body spec__body--stage" style="height:160px">
+<div class="toast" style="bottom:84px" role="status"><span class="toast__text">3 articles retirés</span><button class="toast__action">Annuler</button></div>
+<div class="toast" style="bottom:16px" role="status"><span class="toast__text">Mot de passe modifié</span></div>
+</div></div>
+
+<!-- 10. États vides -->
+<div class="spec"><h3 class="spec__title">États vides</h3>
+<div class="app spec__body spec__body--flush" style="height:250px">
+<div class="empty" style="padding:24px"><div class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-cart"/></svg></div><h4 class="empty__title" style="margin:0">Cette liste est vide</h4><p class="empty__text">Ajoutez un premier article avec le champ ci-dessous.</p></div>
+</div>
+<div class="app spec__body spec__body--flush" style="height:250px">
+<div class="empty" style="padding:24px"><div class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-tasks"/></svg></div><h4 class="empty__title" style="margin:0">Aucune liste pour le moment</h4><p class="empty__text">Créez une première liste pour commencer.</p></div>
+</div></div>
+
+<!-- 11. Champs -->
+<div class="spec"><h3 class="spec__title">Champs de formulaire</h3>
+<div class="app spec__body" style="gap:16px">
+<label class="field"><span class="field__label">Nom</span><input class="input" type="text" placeholder="Ex. Courses de la semaine"></label>
+<label class="field"><span class="field__label">Quantité (focus)</span><input class="input is-focus" type="text" value="500 g"><span class="field__hint">Texte libre, par exemple 2 ou 500 g</span></label>
+<label class="field"><span class="field__label">Confirmation (erreur)</span><input class="input" type="password" aria-invalid="true" value="motdepasse"><span class="field__error"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-alert"/></svg>Les deux mots de passe ne correspondent pas</span></label>
+<div class="field"><span class="field__label">Magasin</span><button class="input input--select"><span>Carrefour Market</span><svg class="icon" aria-hidden="true"><use href="#i-chev-d"/></svg></button></div>
+<label class="field"><span class="field__label">Note (facultative)</span><textarea class="input input--area" rows="2">Pour la purée</textarea></label>
+<label class="field"><span class="field__label">Code à 6 chiffres</span><input class="input input--code" type="text" inputmode="numeric" value="482913"></label>
+</div></div>
+
+<!-- 12. Boîte de confirmation -->
+<div class="spec"><h3 class="spec__title">Boîte de confirmation</h3>
+<div class="app spec__body spec__body--stage" style="height:320px">
+<div class="scrim"></div>
+<div class="dialog" role="alertdialog" aria-labelledby="dlgc-dark">
+<h4 class="dialog__title" id="dlgc-dark">Vider les barrés ?</h4>
+<p class="dialog__text">Les 2 articles barrés seront retirés de la liste, pour tout le monde.</p>
+<div class="dialog__actions"><button class="btn btn--secondary">Annuler</button><button class="btn btn--danger">Vider</button></div>
+</div>
+</div></div>
+
+<!-- 13. Onglets d'administration -->
+<div class="spec"><h3 class="spec__title">Onglets et lignes d'administration</h3>
+<div class="app spec__body spec__body--flush">
+<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Comptes</button><button class="tab" role="tab" aria-selected="true">Catégories</button><button class="tab" role="tab" aria-selected="false">Magasins</button><button class="tab" role="tab" aria-selected="false">Rayons</button></div>
+<div class="add-inline"><label class="grow"><input class="input" type="text" placeholder="Nouvelle catégorie" aria-label="Nouvelle catégorie"></label><button class="btn btn--primary" style="min-height:52px">Ajouter</button></div>
+<div class="group">
+<div class="manage"><div class="grow"><p class="manage__name">Courses</p><p class="manage__sub">Active</p></div><button class="icon-btn" aria-label="Renommer Courses"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button><button class="switch" role="switch" aria-checked="true" aria-label="Courses active"></button></div>
+<div class="manage is-off"><div class="grow"><p class="manage__name">Projets</p><p class="manage__sub">Désactivée</p></div><button class="icon-btn" aria-label="Renommer Projets"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg></button><button class="switch" role="switch" aria-checked="false" aria-label="Projets désactivée"></button></div>
+</div>
+<div style="height:16px"></div>
+</div></div>
+
+<!-- 14. Feuille du bas -->
+<div class="spec"><h3 class="spec__title">Feuille du bas</h3>
+<div class="app spec__body spec__body--stage" style="height:440px">
+<div class="scrim"></div>
+<div class="sheet" role="dialog" aria-labelledby="shc-dark">
+<div class="sheet__grab"></div>
+<div class="sheet__head"><h4 class="sheet__title" id="shc-dark">Modifier l'article</h4><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+<label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label>
+<button class="btn btn--primary btn--block">Enregistrer</button>
+</div>
+</div></div>
+
+<!-- 15. Pastilles, cases, choix -->
+<div class="spec"><h3 class="spec__title">Pastilles, cases et choix</h3>
+<div class="app spec__body" style="gap:16px">
+<div style="display:flex;align-items:center;gap:12px"><div class="avatars"><span class="avatar">G</span><span class="avatar avatar--b">L</span></div><span class="chip chip--strong"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-shield"/></svg>Admin</span><span class="chip">Utilisateur</span><span class="chip">Désactivé</span></div>
+<div class="card" style="overflow:hidden">
+<button class="tick-row" role="checkbox" aria-checked="true"><span class="tick is-on"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><span class="avatar avatar--b">L</span><span class="grow">Léa</span></button>
+<button class="tick-row" role="checkbox" aria-checked="false"><span class="tick"></span><span class="avatar avatar--b">P</span><span class="grow">Paul</span></button>
+<button class="radio-row is-on" role="radio" aria-checked="true"><span class="radio is-on"></span>Épicerie<svg class="icon icon-end" aria-hidden="true"><use href="#i-check"/></svg></button>
+<button class="radio-row" role="radio" aria-checked="false"><span class="radio"></span>Hygiène</button>
+</div>
+<div class="choice" role="radiogroup" aria-label="Catégorie">
+<button class="choice__opt" role="radio" aria-checked="true"><svg class="icon" aria-hidden="true"><use href="#i-cart"/></svg>Courses<svg class="icon icon-end" aria-hidden="true"><use href="#i-check"/></svg></button>
+<button class="choice__opt" role="radio" aria-checked="false"><svg class="icon" aria-hidden="true"><use href="#i-tasks"/></svg>Tâches</button>
+</div>
+<div class="note"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><p>Ces codes ne seront plus affichés.</p></div>
+</div></div>
+
+<!-- 16. Menu -->
+<div class="spec"><h3 class="spec__title">Menu contextuel</h3>
+<div class="app spec__body spec__body--stage" style="height:200px">
+<div class="menu" role="menu" style="top:12px;right:12px">
+<button class="menu__item" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-pencil"/></svg>Modifier la liste</button>
+<button class="menu__item" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Vider les barrés</button>
+<button class="menu__item menu__item--danger" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>Désactiver le compte</button>
+</div>
+</div></div>
+
+<!-- 17. Barre de titre -->
+<div class="spec"><h3 class="spec__title">Barres de titre</h3>
+<div class="app spec__body spec__body--flush">
+<header class="topbar"><button class="icon-btn" aria-label="Retour"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button><div class="topbar__main"><h4 class="topbar__title" style="margin:0">Courses de la semaine</h4><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>Carrefour Market</p></div><button class="icon-btn" aria-label="Menu"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button></header>
+<header class="topbar topbar--plain" style="border-top:1px solid var(--color-border)"><div class="topbar__main"><h4 class="topbar__title" style="margin:0">Mes listes</h4></div><button class="icon-btn" aria-label="Réglages"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button></header>
+</div></div>
+
+</div>
+</section>
+
+</body>
+</html>

@@ -29,12 +29,19 @@ function newToken() {
   return crypto.randomBytes(32).toString('base64url');
 }
 
-// Lit les cookies envoyés par le navigateur (en-tête « Cookie »)
+// Lit les cookies envoyés par le navigateur (en-tête « Cookie »).
+// Un cookie mal encodé (ex. « listo_session=% ») est simplement ignoré :
+// la requête est alors traitée comme celle d'un visiteur non connecté.
 export function parseCookies(header = '') {
   const cookies = {};
   for (const part of header.split(';')) {
     const index = part.indexOf('=');
-    if (index > 0) cookies[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    if (index <= 0) continue;
+    try {
+      cookies[part.slice(0, index).trim()] = decodeURIComponent(part.slice(index + 1).trim());
+    } catch {
+      // cookie illisible : ignoré
+    }
   }
   return cookies;
 }

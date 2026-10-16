@@ -44,3 +44,38 @@ function readKey(keyPath) {
   }
   return key;
 }
+
+// --- Utilisation de la clé ---
+//
+// À partir de la clé principale, on dérive (HKDF) deux sous-clés distinctes,
+// chacune réservée à un usage : on n'emploie jamais la même clé pour deux
+// choses différentes.
+export function deriveKeys(masterKey) {
+  const derive = (usage) => Buffer.from(crypto.hkdfSync('sha256', masterKey, Buffer.alloc(0), usage, KEY_BYTES));
+  return {
+    totp: derive('listo:totp-secret'),    // chiffrement des secrets 2FA
+    codes: derive('listo:recovery-codes'), // empreinte des codes de secours
+  };
+}
+
+// Chiffre un secret 2FA avec AES-256-GCM. « context » (ici l'identifiant du
+// compte) est lié au chiffrement : un secret recopié sur un autre compte
+// devient illisible. Format : v1:iv:étiquette:texte chiffré (en base64).
+export function encryptSecret(key, plaintext, context) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  cipher.setAAD(Buffer.from(context));
+  const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  return ['v1', iv, cipher.getAuthTag(), encrypted].map((part) => (typeof part === 'string' ? part : part.toString('base64'))).join(':');
+}
+
+// Déchiffre un secret produit par encryptSecret. Échoue (exception) si la
+// clé n'est pas la bonne ou si la valeur a été modifiée.
+export function decryptSecret(key, stored, context) {
+  const [version, iv, tag, encrypted] = stored.split(':');
+  if (version !== 'v1') throw new Error('Format de secret inconnu');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64'));
+  decipher.setAAD(Buffer.from(context));
+  decipher.setAuthTag(Buffer.from(tag, 'base64'));
+  return Buffer.concat([decipher.update(Buffer.from(encrypted, 'base64')), decipher.final()]);
+}

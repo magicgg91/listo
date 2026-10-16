@@ -136,6 +136,13 @@ export const MIGRATIONS = [
     last_used_at    TEXT    NOT NULL DEFAULT ${NOW}
   );
   `,
+
+  // --- Migration 2 : double authentification (étape 2) ---
+  `
+  -- Numéro de la dernière période de 30 secondes dont le code 2FA a été
+  -- accepté : un code déjà utilisé (ou plus ancien) est ensuite refusé.
+  ALTER TABLE users ADD COLUMN totp_last_step INTEGER;
+  `,
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

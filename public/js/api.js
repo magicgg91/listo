@@ -1,7 +1,8 @@
 // Couche réseau : le SEUL module qui parle au serveur.
 //
-// Tous les écrans passent par ici. À l'étape 9, la file d'attente hors ligne
-// se branchera dans ce fichier (fonction ops), sans toucher aux écrans.
+// Tous les écrans passent par ici. Les modifications des listes et des
+// articles passent d'abord par la file d'attente hors ligne (queue.js,
+// actions.js), qui utilise ce module pour les envoyer.
 //
 // Erreurs renvoyées aux écrans :
 // - NetworkError : le serveur n'a pas pu être joint (pas de réseau…) ;
@@ -82,7 +83,7 @@ export const del = (url) => request('DELETE', url);
 
 // Photo d'un article : envoi (JPEG déjà réduit), retrait, adresse de l'image.
 // Ces envois ne passent pas par /api/ops (fichier trop gros pour un lot) ;
-// hors ligne, ils viendront dans la file d'attente à l'étape 9.
+// hors ligne, ils attendent dans la file d'attente (queue.js).
 export const putPhoto = (itemId, jpeg) => request('PUT', `/api/items/${encodeURIComponent(itemId)}/photo`, undefined, { raw: jpeg });
 export const deletePhoto = (itemId) => request('DELETE', `/api/items/${encodeURIComponent(itemId)}/photo`);
 // photoAt (date de la photo) dans l'adresse : une nouvelle photo a une
@@ -105,26 +106,6 @@ export function uuid() {
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // variante
   const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-// Envoie des opérations (créer, modifier, cocher, supprimer…) au serveur, par
-// la route POST /api/ops. Chaque opération reçoit un identifiant unique.
-// Renvoie le résultat de chaque opération ; lève ApiError si l'une est refusée.
-//
-// Étape 9 : c'est ici que les opérations seront d'abord rangées dans la file
-// d'attente du téléphone, puis envoyées dès que le réseau le permet.
-export async function ops(...operations) {
-  const sent = operations.map((op) => ({ id: uuid(), ...op }));
-  const { results } = await post('/api/ops', { ops: sent });
-  const failed = results.find((result) => result.status !== 200);
-  if (failed) throw new ApiError(failed.status, failed.error ?? 'La modification a été refusée.', failed);
-  return results;
-}
-
-// Une seule opération : renvoie directement son résultat
-export async function op(operation) {
-  const [result] = await ops(operation);
-  return result;
 }
 
 // Texte d'erreur à montrer à l'utilisateur, quelle que soit l'erreur

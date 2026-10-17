@@ -161,8 +161,8 @@ const SYNC = {
   },
 };
 let syncState = 'ok';
-// Modifications en attente d'envoi : la file d'attente hors ligne de
-// l'étape 9 donnera ce nombre (« Hors ligne · 3 en attente »)
+// Modifications en attente d'envoi, données par la file d'attente hors
+// ligne (« Hors ligne · 3 en attente »)
 let pendingCount = 0;
 export function setPendingCount(count) {
   pendingCount = count;

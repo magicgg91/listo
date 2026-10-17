@@ -24,7 +24,7 @@ function currentCode(app, userId) {
 async function enableTwoFactor(app, client, userId) {
   const enable = await client.post('/api/me/2fa/enable');
   assert.equal(enable.status, 200);
-  assert.match(enable.body.qrCode, /^data:image\/png;base64,/);
+  assert.equal('qrCode' in enable.body, false, "l'image du QR code est servie à part (qr.png)");
   assert.match(enable.body.uri, /^otpauth:\/\/totp\//);
   const verify = await client.post('/api/me/2fa/verify', { code: currentCode(app, userId) });
   assert.equal(verify.status, 200);

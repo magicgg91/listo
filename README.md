@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile), 6 (magasin « multi ») 7 (photos des articles) et 8 (temps réel) sont livrées ; l'étape 9 (hors ligne) est en cours de validation. Suivent : 10 lien public, 11 finitions et mise en production.
+État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile), 6 (magasin « multi »), 7 (photos des articles), 8 (temps réel) et 9 (hors ligne) sont livrées ; l'étape 10 (lien public) est en cours de validation. Reste : 11 finitions et mise en production.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -28,8 +28,10 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
 | `server/events.js` | Temps réel : flux SSE `/api/events`, connexions ouvertes, messages « la liste X a changé » |
 | `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
+| `server/shares.js` | Lien public d'une liste : jeton (jamais stocké en clair), mot de passe généré, contrôle de validité à chaque requête, cookies de consultation, nettoyage |
+| `server/pages/` | Les deux pages HTML du lien public : la page de la liste (sans aucune donnée) et la page unique « Lien expiré ou inexistant » |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
-| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
+| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
 | `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css`, sections 1 à 16, sans la section 17 qui ne sert qu'aux planches) et petits ajustements propres à l'application |
 | `public/manifest.webmanifest`, `public/icons/` | Installation sur l'écran d'accueil (PWA) |
@@ -42,10 +44,11 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `public/js/actions.js` | Actions de l'utilisateur (ajouter, cocher, modifier, supprimer, photo…) : mises en file, puis appliquées tout de suite à la copie locale |
 | `public/js/live.js` | Temps réel côté téléphone : écoute du flux, regroupement des messages, reconnexion, synchronisation toutes les 60 secondes |
 | `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
+| `public/js/public.js` | Page publique d'une liste (lien `/p/…`) : saisie du mot de passe, liste en lecture seule, photo agrandie. N'utilise ni service worker ni stockage |
 | `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, nombre d'articles restants…) |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
-| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
+| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `Dockerfile`, `docker-entrypoint.sh` | Construction et démarrage de l'image Docker |
 | `docker-compose.yml` | Production (image publiée sur ghcr.io) |
@@ -86,7 +89,7 @@ Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
 
 En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
 
-## Vérifier l'interface sur le téléphone (étapes 5 à 9)
+## Vérifier l'interface sur le téléphone (étapes 5 à 10)
 
 Ces points ne peuvent pas être testés automatiquement : à vérifier une fois à la main, de préférence sur le vrai sous-domaine en HTTPS.
 
@@ -109,6 +112,15 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     6. **Application installée sur l'écran d'accueil** : refaire les points 2 à 4 en ouvrant Listo depuis son icône (sur iPhone, l'application installée a sa propre copie, séparée de Safari).
     7. **Déconnexion avec des modifications en attente** (en mode avion) : Réglages → Se déconnecter avertit et propose « Rester connecté ».
     8. **Modification refusée** : sur le téléphone A en mode avion, modifier un article ; sur le téléphone B, supprimer cet article. Au retour du réseau de A : message « Une modification n'a pas pu être enregistrée : … » et l'article reste supprimé.
+12. **Lien public** (étape 10, sur le vrai sous-domaine en HTTPS) :
+    1. Ouvrir une liste dont vous êtes propriétaire → menu ⋮ → « Partager par lien ». « 24 heures » est coché. Cocher « Protéger par mot de passe », puis « Créer le lien ». Le lien et le mot de passe s'affichent ; « Copier le lien » et « Copier » fonctionnent (coller dans un message pour vérifier). Fermer puis rouvrir la feuille : le mot de passe est masqué (points).
+    2. Envoyer le lien et le mot de passe à un autre téléphone **sans compte Listo** (ou ouvrir le lien dans une fenêtre de navigation privée). La page demande le mot de passe, sans rien montrer de la liste. Un mauvais mot de passe affiche « Mot de passe incorrect » ; le bon affiche la liste avec le bandeau « Lecture seule », sans case cliquable ni champ d'ajout. Une vignette s'agrandit au toucher. « Actualiser » montre un article ajouté entre-temps.
+    3. Thème : mettre le téléphone du visiteur en mode sombre : la page suit.
+    4. « Nouveau mot de passe » : sur le téléphone du visiteur, « Actualiser » redemande le mot de passe ; l'ancien est refusé. « Retirer le mot de passe » : la liste s'ouvre directement.
+    5. « Changer la durée » → « 1 heure » : la date d'expiration change. Une heure plus tard, le lien affiche « Lien expiré ou inexistant ». « Arrêter le partage » (avec confirmation) : même message, tout de suite.
+    6. Mode avion sur le téléphone du propriétaire : la feuille affiche « Indisponible hors ligne » et ses boutons sont grisés.
+    7. Dans « Mes listes », la carte d'une liste partagée par lien porte une petite icône de lien (chez le propriétaire seulement).
+    8. Le lien envoyé par une messagerie (WhatsApp, Signal, SMS) n'affiche pas d'aperçu du contenu de la liste : l'aperçu montre au plus « Listo · Liste partagée ».
 
 ## API des comptes (étape 2)
 
@@ -533,6 +545,65 @@ Comment ça marche :
 **Si une nouvelle version de Listo semble cassée sur un téléphone** : fermer Listo et le rouvrir avec du réseau (il reprend alors la dernière version) ; si ça ne suffit pas, Réglages → « Réinitialiser les données de ce téléphone » ; en dernier recours, effacer les données du site dans les réglages du navigateur (Chrome : cadenas à gauche de l'adresse → Paramètres du site → Effacer les données ; iPhone : Réglages → Safari → Avancé → Données des sites web), puis se reconnecter.
 
 Pour publier une version qui change la liste des fichiers de l'application, ajouter le nouveau fichier dans `APP_FILES` de `public/sw.js` et changer `VERSION` (un test automatique signale un fichier oublié).
+
+## Lien public d'une liste (étape 10)
+
+Le propriétaire d'une liste peut la montrer à quelqu'un qui n'a pas de compte, par un lien en lecture seule. C'est la seule partie de Listo ouverte sans compte : tout y est refusé par défaut.
+
+**Côté propriétaire** (menu de la liste → « Partager par lien », avec du réseau) :
+
+| Route | Rôle |
+| --- | --- |
+| `GET /api/lists/:id/share` | État du lien : `{ share: null }` ou `{ share: { url, expiresAt, protected, createdAt } }` |
+| `PUT /api/lists/:id/share` | Crée le lien, ou le modifie s'il existe. Corps : `durationHours` (1 à 8760, ou `null` pour « illimitée » ; 24 par défaut à la création ; une nouvelle durée repart de maintenant), `protect: true` (mot de passe à la création), `password: "new"` (nouveau mot de passe) ou `"none"` (le retirer). Un mot de passe tout juste créé est renvoyé une seule fois (`share.password`) |
+| `DELETE /api/lists/:id/share` | Arrête le lien |
+
+Seul le propriétaire de la liste y a accès : un invité ou un autre compte reçoit 404, comme pour une liste inexistante.
+
+**Côté visiteur** (sans compte, lecture seule) :
+
+| Route | Rôle |
+| --- | --- |
+| `GET /p/:jeton` | La page (HTML sans aucune donnée de la liste) |
+| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, articles groupés (rayon ou magasin) avec quantité, note, état coché et adresse de la photo. Rien d'autre (liste blanche) |
+| `POST /api/public/:jeton/acces` | Saisie du mot de passe (`{ "password": "…" }`) ; donne le cookie de consultation |
+| `GET /api/public/:jeton/photos/:id` | Photo d'un article de cette liste seulement |
+
+Règles :
+
+- **Jeton** : 256 bits aléatoires dans l'adresse. La base ne garde que son empreinte (pour retrouver le lien) et sa version chiffrée avec la clé de `secrets/` (pour la réafficher au propriétaire). L'adresse est construite à partir de `LISTO_PUBLIC_URL`.
+- **Validité recontrôlée à chaque requête** (page, données, photos, mot de passe, cookie) : un lien inconnu, expiré, arrêté, dont la liste est supprimée ou dont le propriétaire est désactivé répond **exactement** pareil : 404 « Lien expiré ou inexistant », sans bouton de connexion. Supprimer la liste ou désactiver le compte du propriétaire arrête le lien pour de bon.
+- **Mot de passe** facultatif : 16 caractères tirés par Listo (au moins une minuscule, une majuscule, un chiffre et un caractère parmi `! ? @ # - + = *`, sans 0, O, 1, l ni I), haché avec scrypt, montré une seule fois. 5 mauvais mots de passe en 15 minutes bloquent la saisie 15 minutes (pour ce lien, et pour l'adresse IP) : « Trop d'essais, réessayez plus tard ». Une adresse IP qui essaie 20 liens invalides en 15 minutes est bloquée 15 minutes sur toutes ces routes.
+- **Cookie de consultation** (`listo_lien`, après un bon mot de passe) : HttpOnly, Secure, SameSite=Lax, limité au chemin `/api/public/<jeton>`, 12 heures au plus et jamais au-delà de l'expiration du lien. Il est effacé par « Nouveau mot de passe », « Retirer le mot de passe », l'arrêt du lien, et par un redémarrage de Listo (le visiteur ressaisit alors le mot de passe). Aucune autre route de Listo ne le reconnaît.
+- **En-têtes** sur toutes ces routes : `X-Robots-Tag: noindex`, `Cache-Control: no-store` (photos comprises), `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`. La Content-Security-Policy reste la même (la page a son propre fichier `js/public.js`).
+- **Service worker** : il ne garde et ne détourne jamais `/p/…`, `/api/public/…` ni `js/public.js` (vérifié par un test qui exécute `sw.js`).
+- **Page publique** : chargée à l'ouverture et au bouton « Actualiser », une requête à chaque fois, sans temps réel.
+- **Journal de sécurité** : création, changements, arrêt, mots de passe refusés et blocages, avec le numéro du partage (`partage=…`), jamais le jeton ni le mot de passe. À savoir : le journal d'accès de Nginx Proxy Manager (sur l'autre machine) note les adresses demandées, donc le jeton des liens ouverts ; un lien arrêté ou expiré ne sert plus à rien.
+- **Nettoyage** : les liens arrêtés ou expirés depuis plus de 30 jours sont supprimés de la base (ménage toutes les heures).
+- Dans « Mes listes », une petite icône de lien rappelle au propriétaire qu'une liste est partagée par lien.
+
+### Vérifier le lien public à la main avec curl
+
+```sh
+# Créer un lien de 2 heures, protégé (le mot de passe s'affiche une seule fois)
+curl -b cookies.txt -H "Origin: $U" -H 'Content-Type: application/json' \
+  -X PUT -d '{"durationHours":2,"protect":true}' $U/api/lists/$L/share
+# Noter le jeton (fin de "url") et le mot de passe
+J=…   ; MDP='…'
+
+# Sans mot de passe : 401 « Mot de passe requis »
+curl -i $U/api/public/$J
+
+# Avec le mot de passe : cookie de consultation, puis la liste
+curl -c visiteur.txt -H "Origin: $U" -H 'Content-Type: application/json' \
+  -d "{\"password\":\"$MDP\"}" $U/api/public/$J/acces
+curl -b visiteur.txt $U/api/public/$J
+
+# Un lien inconnu, puis le lien arrêté : exactement la même réponse
+curl -i $U/api/public/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+curl -b cookies.txt -H "Origin: $U" -X DELETE $U/api/lists/$L/share
+curl -i $U/api/public/$J
+```
 
 ## Production
 

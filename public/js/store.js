@@ -251,6 +251,14 @@ export function removeList(state, listId) {
   for (const [id, item] of state.items) if (item.listId === listId) state.items.delete(id);
 }
 
+// Vrai si cette liste mémorise les noms saisis et les suggère : les listes
+// de courses seulement (décision du 17 octobre 2026 ; même règle que le
+// serveur). Une liste de tâches n'écrit rien dans l'historique et n'affiche
+// pas de suggestions.
+export function remembersNames(list) {
+  return Boolean(list?.category?.isShopping);
+}
+
 // Met à jour l'historique local avec la même règle que le serveur
 // (public/js/history.js) : une utilisation de plus pour un ajout (count = 1,
 // 0 pour une modification), le rayon s'il est connu, et la ligne du magasin

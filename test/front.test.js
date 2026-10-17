@@ -25,6 +25,7 @@ test('routeur : chaque adresse mène au bon écran', () => {
     ['#/reglages/mot-de-passe', { name: 'password', params: {} }],
     ['#/reglages/double-authentification', { name: 'twoFactor', params: {} }],
     ['#/administration/rayons', { name: 'admin', params: { tab: 'rayons' } }],
+    ['#/administration/noms', { name: 'admin', params: { tab: 'noms' } }],
   ];
   for (const [hash, expected] of cases) assert.deepEqual(matchRoute(hash), expected, hash);
 });

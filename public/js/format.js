@@ -3,7 +3,7 @@
 // l'écran : elles sont testées automatiquement (test/front.test.js).
 
 import { normalizeItemName } from './history.js';
-import { countItems } from './words.js';
+import { countItems, itemWords } from './words.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -86,4 +86,39 @@ export function timeLeftLabel(iso, now = Date.now()) {
   const minutes = Math.ceil(left / MINUTE);
   if (minutes >= 2) return `Il reste ${minutes} minutes`;
   return "Il reste moins d'une minute";
+}
+
+// --- Administration, onglet « Noms enregistrés » ---
+// Seules les listes de courses mémorisent des noms (décision du 17 octobre
+// 2026) : ces textes parlent donc d'« articles », par le module de mots
+// (countItems(n, true) : « 1 article », « 3 articles »).
+
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+const listsOfShopping = (count) => `${count} ${count === 1 ? 'liste' : 'listes'} de courses`;
+
+// Sous-titre d'un nom : « Crèmerie · 12 utilisations · 3 articles en liste »
+// (le rayon habituel seulement s'il y en a un). Dans chaque morceau, les
+// espaces sont insécables : une coupure de ligne ne tombe qu'entre deux morceaux.
+export function savedNameSub({ aisle, uses, inLists }) {
+  return [
+    aisle,
+    plural(uses, 'utilisation', 'utilisations'),
+    inLists ? `${countItems(inLists, true)} en liste` : `aucun ${itemWords(true).one} en liste`,
+  ].filter(Boolean).map((part) => part.replaceAll(' ', '\u00a0')).join(' · ');
+}
+
+// Texte de la confirmation d'une correction (réponse de /api/admin/names/impact)
+export function renameImpactText({ oldName, newName, merge, items, lists }) {
+  const what = merge
+    ? `« ${oldName} » sera fusionné avec « ${newName} », déjà enregistré.`
+    : `« ${oldName} » deviendra « ${newName} ».`;
+  const where = items
+    ? `${countItems(items, true)} ${items === 1 ? 'sera corrigé' : 'seront corrigés'}, dans ${listsOfShopping(lists)}.`
+    : `Aucun ${itemWords(true).one} en liste ne porte ce nom : seules les suggestions changent.`;
+  return `${what} ${where}`;
+}
+
+// Message affiché après une correction (réponse de /api/admin/names/rename)
+export function renameDoneText({ items, lists }) {
+  return items ? `${countItems(items, true)} ${items === 1 ? 'corrigé' : 'corrigés'}, dans ${listsOfShopping(lists)}` : 'Nom corrigé dans les suggestions';
 }

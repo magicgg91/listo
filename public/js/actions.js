@@ -14,7 +14,7 @@
 
 import { app, dataChanged, queueEntry, flushSoon } from './app.js';
 import { uuid, photoUrl } from './api.js';
-import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor } from './store.js';
+import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames } from './store.js';
 import { isMultiList } from './sorting.js';
 
 const now = () => new Date().toISOString();
@@ -50,8 +50,9 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId }
   if (!multi && list.category.isShopping && aisleId === undefined) hint.aisleId = usualAisleFor(app.data, list, name);
   await perform({ type: 'item.create', ...fields }, { hint });
   const item = app.data.items.get(itemId);
-  // Historique local (même règle que le serveur) : autocomplétion hors ligne
-  rememberItem(app.data, name, { aisleId: multi ? null : item.aisleId, storeId: historyStoreFor(list, item) });
+  // Historique local (même règle que le serveur, listes de courses
+  // seulement) : autocomplétion hors ligne
+  if (remembersNames(list)) rememberItem(app.data, name, { aisleId: multi ? null : item.aisleId, storeId: historyStoreFor(list, item) });
   dataChanged();
   return item;
 }
@@ -64,16 +65,13 @@ export async function updateItem(item, changes) {
   await perform({ type: 'item.update', itemId: item.id, ...changes });
   const updated = app.data.items.get(item.id);
   if (!list || !updated) return;
-  // Historique local, même règle que le serveur
+  // Historique local, même règle que le serveur : listes de courses
+  // seulement (une liste « multi » en est toujours une)
   if (isMultiList(list)) {
     if (changes.name) rememberItem(app.data, updated.name, { storeId: updated.storeId, count: 0 });
     else if ('storeId' in changes) moveItemStore(app.data, item.name, item.storeId ?? null, updated.storeId);
-  } else if (changes.name || 'aisleId' in changes) {
-    rememberItem(app.data, updated.name, {
-      aisleId: list.category.isShopping ? updated.aisleId : null,
-      storeId: historyStoreFor(list, updated),
-      count: 0,
-    });
+  } else if (remembersNames(list) && (changes.name || 'aisleId' in changes)) {
+    rememberItem(app.data, updated.name, { aisleId: updated.aisleId, storeId: historyStoreFor(list, updated), count: 0 });
   }
   dataChanged();
 }

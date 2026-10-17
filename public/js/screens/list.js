@@ -22,7 +22,7 @@ import { shrinkPhoto, PhotoError } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor } from '../store.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
 import { openShareSheet } from './share.js';
@@ -178,8 +178,14 @@ export function renderList(listId, onLeave) {
     if (event.key === 'Escape') suggestBox.hidden = true;
   });
 
-  // Suggestions : les plus fréquentes d'abord, début tapé en gras
+  // Suggestions : les plus fréquentes d'abord, début tapé en gras. Listes de
+  // courses seulement : dans une liste de tâches, pas de menu (Entrée ou +
+  // ajoutent ce qui a été tapé).
   function drawSuggestions() {
+    if (!remembersNames(view?.list)) {
+      suggestBox.hidden = true;
+      return;
+    }
     const typed = input.value;
     const suggestions = typed.trim().length >= 2 ? computeSuggestions(app.data, typed) : [];
     if (!suggestions.length && typed.trim().length < 2) {

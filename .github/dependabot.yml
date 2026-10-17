@@ -5,8 +5,8 @@
 # - de l'image de base du Dockerfile (node:24-slim, épinglée par son empreinte) ;
 # - des actions du workflow qui construit l'image (.github/workflows/).
 # S'il y en a une, il ouvre une pull request vers main, avec les notes de
-# version. Rien n'est jamais fusionné automatiquement : Guillaume relit et
-# fusionne lui-même (voir le README, « Surveiller les mises à jour de
+# version. Rien n'est jamais fusionné automatiquement : le propriétaire relit
+# et fusionne lui-même (voir le README, « Surveiller les mises à jour de
 # sécurité »). Au plus 3 pull requests ouvertes à la fois par type.
 
 version: 2
@@ -22,6 +22,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    # Passer à une nouvelle version majeure de Node (la prochaine version LTS,
+    # paire : 26 à l'automne) se fait volontairement, à la main, après essai.
+    # Dependabot ne propose donc que les mises à jour mineures et les
+    # correctifs de node:24-slim.
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

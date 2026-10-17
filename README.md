@@ -197,6 +197,11 @@ npm audit --omit=dev
 
 Elle liste les failles connues des bibliothèques réellement utilisées par Listo (`found 0 vulnerabilities` : tout va bien).
 
+**Version de Node** :
+- Les montées de version majeure de Node (24 → 26…) sont ignorées par Dependabot ; il ne propose que les correctifs de `node:24-slim`.
+- Pour changer de version, à la main : modifier la ligne `FROM` du `Dockerfile` (nouvelle version et son empreinte `sha256`), relancer `npm test`, construire l'image (`docker compose -f docker-compose.dev.yml up --build`) et l'essayer avant de fusionner.
+- Ne choisir qu'une version **paire** (LTS, suivie à long terme : 24, 26…) ; les versions impaires (25, 27…) ne durent que quelques mois.
+
 ## 10. Journaux
 
 - `docker logs listo` : démarrage, erreurs, et le **journal de sécurité** (lignes `[journal]`).

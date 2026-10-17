@@ -132,6 +132,9 @@ export function loadSession(ctx) {
   const extend = ctx.db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?');
 
   return (req, res, next) => {
+    // Déjà lue pour cette requête (lot d'opérations) : une seule lecture
+    if (req.sessionLoaded) return next();
+    req.sessionLoaded = true;
     const token = parseCookies(req.headers.cookie)[cookieNames(ctx.config).session];
     if (!token) return next();
     const now = ctx.now();

@@ -161,12 +161,15 @@ export function createApp({
     res.set('Cache-Control', 'no-store');
     next();
   });
-  api.use(requireSameOrigin(config.publicUrl));    // protection CSRF
-  // Corps des requêtes en JSON : jusqu'à 200 ko pour un lot d'opérations
-  // (file d'attente du téléphone), 20 ko pour tout le reste
-  api.use('/ops', express.json({ limit: '200kb' }));
+  api.use(requireSameOrigin(config.publicUrl));    // protection CSRF, toujours en premier
+  // Lot d'opérations (file d'attente du téléphone, jusqu'à 200 ko) : la
+  // connexion est vérifiée AVANT de lire le corps. Un visiteur non connecté
+  // reçoit 401 sans que Listo lise ni analyse ce qu'il envoie.
+  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '200kb' }));
+  // Tout le reste : corps JSON de 20 ko au plus (la connexion et la création
+  // du premier Admin en ont besoin avant toute session)
   api.use(express.json({ limit: '20kb' }));
-  api.use(loadSession(ctx));                       // qui est connecté ?
+  api.use(loadSession(ctx));                       // qui est connecté ? (déjà fait pour /ops)
 
   // Routes ouvertes à tous : premier Admin et connexion
   api.use(publicAuthRoutes(ctx));

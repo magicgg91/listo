@@ -230,7 +230,9 @@ async function start() {
 
 start();
 
-// Application installable : service worker minimal (aucun cache, voir sw.js)
+// Service worker : application installable et ouverture sans réseau (voir
+// sw.js). « updateViaCache: none » : le navigateur vérifie toujours s'il
+// existe une nouvelle version de sw.js.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
 }

@@ -202,7 +202,7 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 
 - Identifiant + mot de passe, 10 caractères minimum. Pas d'inscription libre. Chaque utilisateur change lui-même son mot de passe depuis ses réglages, en saisissant l'ancien.
 - Mots de passe hachés avec scrypt, fourni par Node sans dépendance (argon2id reste acceptable si une bibliothèque est préférée). Jamais stockés ni journalisés en clair.
-- Session par cookie HttpOnly, Secure, SameSite=Lax. Jeton aléatoire de 256 bits, stocké haché en base, valable 30 jours glissants.
+- Session par cookie HttpOnly, Secure, SameSite=Lax. En production, les cookies de connexion portent le préfixe « __Host- » (__Host-listo_session, __Host-listo_2fa) : Secure, chemin /, sans domaine, impossibles à lire ou remplacer depuis un autre sous-domaine. Jeton aléatoire de 256 bits, stocké haché en base, valable 30 jours glissants.
 - Une session est révoquée à la déconnexion, au changement de mot de passe et à la désactivation du compte.
 - Limitation des tentatives : 5 échecs en 15 minutes pour un même identifiant ou une même adresse IP bloquent la connexion 15 minutes. Message d'erreur identique que l'identifiant existe ou non.
 - Un mot de passe choisi par un Admin (création du compte, réinitialisation) est provisoire : l'utilisateur doit le remplacer par le sien à sa connexion suivante, avant toute autre action.
@@ -225,13 +225,14 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 
 - Chaque requête vérifie côté serveur le compte connecté, son appartenance à la liste concernée (list_members) et, pour les routes d'administration, le rôle Admin. Le téléphone n'est jamais cru sur parole.
 - Les modifications exigent un en-tête Origin correspondant au domaine de l'application (protection CSRF en complément de SameSite).
+- Ordre des contrôles : origine (CSRF) d'abord, puis la session, avant de lire un gros corps de requête : le lot d'opérations (jusqu'à 200 ko) n'est lu qu'une fois la session et le mot de passe à jour vérifiés. Seules la connexion et la création du premier Admin lisent un petit corps (20 ko) sans session.
 
 **Entrées et affichage**
 
 - Longueurs maximales validées côté serveur (nom 100 caractères, quantité 30, note 500).
 - Requêtes SQL toujours paramétrées, jamais construites par concaténation.
 - Texte affiché via textContent, jamais innerHTML, pour éviter l'injection de scripts.
-- En-têtes : Content-Security-Policy stricte (ressources du même domaine uniquement, pas de script ni de style en ligne), X-Content-Type-Options, Referrer-Policy, X-Frame-Options. L'en-tête Strict-Transport-Security est ajouté par Nginx Proxy Manager.
+- En-têtes, sur toutes les réponses : Content-Security-Policy stricte (ressources du même domaine uniquement, pas de script ni de style en ligne), X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy (fonctions du navigateur inutilisées interdites), Cross-Origin-Opener-Policy et Cross-Origin-Resource-Policy (same-origin), X-Robots-Tag: noindex, nofollow (et balise meta robots dans la page ; pas de robots.txt, qui empêcherait les moteurs de lire cette consigne). L'en-tête Strict-Transport-Security est ajouté par Nginx Proxy Manager.
 
 **Exposition**
 

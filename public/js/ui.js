@@ -139,6 +139,34 @@ export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annule
   });
 }
 
+// Confirmation par une feuille du bas (zone des articles cochés) : titre,
+// texte, avertissement facultatif (encadré rouge) et deux boutons. Renvoie une
+// promesse : true si l'action est confirmée. La feuille prend le focus sur
+// elle-même (jamais sur le bouton qui détruit).
+export function confirmSheet({ title, text, warning, confirmLabel, danger = false }) {
+  return new Promise((resolve) => {
+    let answer = false;
+    const sheet = openSheet({
+      title,
+      content: [
+        h('p', { class: 'sheet__sub' }, text),
+        warning ? h('p', { class: 'note note--danger', role: 'alert' }, icon('alert', 'icon--sm'), h('span', {}, warning)) : null,
+        h('div', { class: 'dialog__actions' },
+          h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, 'Annuler'),
+          h('button', {
+            class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
+            type: 'button',
+            onClick: () => {
+              answer = true;
+              sheet.close();
+            },
+          }, confirmLabel)),
+      ],
+      onClose: () => resolve(answer),
+    });
+  });
+}
+
 // Menu « ⋮ » : items = [{ icon, label, danger, onSelect }]
 export function openMenu(items, { label = 'Menu' } = {}) {
   let closeMenu;

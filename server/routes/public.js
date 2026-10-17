@@ -26,7 +26,7 @@ import { verifyPassword, getDummyHash, PASSWORD_MAX } from '../passwords.js';
 import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
 import { ACCESS_COOKIE } from '../shares.js';
-import { groupItems } from '../../public/js/sorting.js';
+import { splitDone } from '../../public/js/sorting.js';
 
 const NOT_FOUND = 'Lien expiré ou inexistant.';
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
@@ -63,7 +63,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, photo_at
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -122,9 +122,21 @@ export function publicRoutes(ctx, { publicDir }) {
       aisleId: row.aisle_id,
       storeId: row.store_id,
       checked: row.checked === 1,
+      checkedAt: row.checked_at,
       photoAt: row.photo_at,
     }));
-    const groups = groupItems(items, q.allAisles.all(), isShopping, { byStore, stores: q.allStores.all() });
+    // Articles à acheter groupés par rayon (ou magasin) ; articles cochés à
+    // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
+    // « Terminés », même règle que l'application). La date du coché sert à
+    // l'ordre, elle n'est pas envoyée.
+    const { groups, done } = splitDone(items, q.allAisles.all(), isShopping, { byStore, stores: q.allStores.all() });
+    const describe = (item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      note: item.note,
+      checked: item.checked,
+      photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
+    });
     return {
       list: {
         name: list.name,
@@ -134,14 +146,9 @@ export function publicRoutes(ctx, { publicDir }) {
       },
       groups: groups.map((group) => ({
         name: (group.aisle ?? group.store)?.name ?? null,
-        items: group.items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          note: item.note,
-          checked: item.checked,
-          photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
-        })),
+        items: group.items.map(describe),
       })),
+      done: done.map(describe),
       expiresAt: share.expires_at,
     };
   }

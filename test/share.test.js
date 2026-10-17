@@ -23,7 +23,7 @@ const JPEG = Buffer.concat([
 
 // Champs autorisés dans la réponse publique (liste blanche)
 const ALLOWED = {
-  top: ['expiresAt', 'groups', 'list'],
+  top: ['done', 'expiresAt', 'groups', 'list'],
   list: ['category', 'grouping', 'name', 'store'],
   group: ['items', 'name'],
   item: ['checked', 'name', 'note', 'photo', 'quantity'],
@@ -172,10 +172,13 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
     assert.deepEqual(Object.keys(group).sort(), ALLOWED.group);
     for (const item of group.items) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);
   }
-  assert.deepEqual(data.groups.map((g) => g.name), ['Crèmerie', null]);
+  for (const item of data.done) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);
+  // Les articles à acheter dans leur rayon ; les cochés dans la zone « done »
+  // (le rayon « Sans rayon », dont tout est coché, disparaît)
+  assert.deepEqual(data.groups.map((g) => g.name), ['Crèmerie']);
   const [lait] = data.groups[0].items;
   assert.deepEqual(lait, { name: 'Lait', quantity: '2 L', note: 'demi-écrémé', checked: false, photo: `/api/public/${token}/photos/${h.items.lait}` });
-  assert.equal(data.groups[1].items[0].checked, true);
+  assert.deepEqual(data.done.map((i) => [i.name, i.checked]), [['Pain', true]]);
 
   // Rien sur les comptes, l'historique ou l'autre liste
   for (const forbidden of ['guillaume', 'Guillaume', 'lea', 'Cadeau', 'Autre liste', h.listId, h.otherListId, 'members', 'owner', 'createdBy', 'history']) {
@@ -186,6 +189,7 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
   await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'item.delete', itemId: h.items.pain }] });
   const after = await v.get(`/api/public/${token}`);
   assert.deepEqual(after.body.groups.flatMap((g) => g.items.map((i) => i.name)), ['Lait']);
+  assert.deepEqual(after.body.done, []);
 
   // Photo de cette liste : servie ; photo d'une autre liste : refusée
   const photo = await fetch(`${h.app.base}${lait.photo}`);

@@ -4,7 +4,7 @@
 
 ## Ce que fait Listo
 
-- **Listes partagées en direct** : un article coché sur un téléphone l'est sur l'autre en quelques secondes.
+- **Listes partagées en direct** : un article coché sur un téléphone l'est sur l'autre en quelques secondes ; les articles cochés se rangent « Dans le panier », en bas de la liste.
 - **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs magasins ; rayon habituel retenu, autocomplétion.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
@@ -19,9 +19,9 @@
 
 ## En images
 
-| ![Écran « Mes listes » : quatre listes avec le nombre d'articles restants](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photos](docs/images/liste-courses.png) | ![La même liste de courses avec des articles cochés et barrés](docs/images/liste-courses-cochee.png) |
+| ![Écran « Mes listes » : quatre listes avec le nombre d'articles restants](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photos](docs/images/liste-courses.png) | ![La même liste de courses : les articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) |
 | :---: | :---: | :---: |
-| Mes listes | Courses classées par rayon | Articles cochés : barrés, en bas de leur rayon |
+| Mes listes | Courses classées par rayon | Articles cochés : « Dans le panier » |
 | ![Liste de tâches avec le champ « Ajouter un élément »](docs/images/liste-taches.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran Réglages avec le bloc « À propos »](docs/images/reglages.png) |
 | Liste de tâches | Lien public, en lecture seule | Réglages et « À propos » |
 

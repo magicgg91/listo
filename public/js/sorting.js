@@ -61,3 +61,16 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
   if (byStore) return groupBy(items, stores, (item) => item.storeId, 'store');
   return groupBy(items, aisles, (item) => item.aisleId, 'aisle');
 }
+
+// Zone des articles cochés (« Dans le panier » / « Terminés ») : les cochés
+// quittent leur rayon (ou leur magasin) et vont dans une zone à part, du plus
+// récemment coché au plus ancien (checkedAt, posé par le serveur ; à égalité,
+// ordre alphabétique). Un rayon dont tous les articles sont cochés n'a plus
+// rien à acheter : il disparaît de la partie « à acheter ».
+// Renvoie { groups : rayons (ou magasins) des articles à acheter, comme
+// groupItems ; done : articles cochés, dans l'ordre de la zone }.
+export function splitDone(items, aisles, isShopping, options = {}) {
+  const done = items.filter((item) => item.checked)
+    .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
+  return { groups: groupItems(items.filter((item) => !item.checked), aisles, isShopping, options), done };
+}

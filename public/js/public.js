@@ -11,7 +11,7 @@
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { dateTimeLabel } from './format.js';
-import { itemWords } from './words.js';
+import { itemWords, countItems, doneZoneWords } from './words.js';
 
 const root = document.getElementById('app');
 const token = location.pathname.split('/')[2] ?? '';
@@ -114,7 +114,7 @@ function showGate() {
 
 // --- La liste en lecture seule (page-publique-1 et 2) ---
 function showList(data) {
-  const { list, groups, expiresAt } = data;
+  const { list, groups, done = [], expiresAt } = data;
   words = itemWords(list.grouping !== 'none');
   document.title = `${list.name} · Listo`;
   const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -132,8 +132,21 @@ function showList(data) {
     return null;
   };
 
-  const content = groups.length
-    ? groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.map(itemRow))))
+  // Zone des articles cochés (« Dans le panier » / « Terminés »), en lecture
+  // seule : un titre fixe (ni repli ni action), puis les lignes barrées, du
+  // plus récemment coché au plus ancien (ordre donné par le serveur)
+  const shopping = list.grouping !== 'none';
+  const zone = doneZoneWords(shopping);
+  const doneZone = done.length
+    ? h('section', { class: 'cart' },
+      h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' },
+        h('h2', { class: 'cart__toggle', 'aria-label': `${zone.title}, ${countItems(done.length, shopping)}` },
+          h('span', {}, `${zone.title} · `, h('span', { class: 'cart__count' }, String(done.length)))))),
+      h('ul', {}, done.map(itemRow)))
+    : null;
+
+  const content = groups.length || done.length
+    ? [...groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.map(itemRow)))), doneZone]
     : h('div', { class: 'empty' },
       h('span', { class: 'empty__icon' }, icon(list.grouping === 'none' ? 'tasks' : 'cart', 'icon--lg')),
       h('h2', { class: 'empty__title' }, 'Cette liste est vide'));
@@ -148,7 +161,7 @@ function showList(data) {
           : h('p', { class: 'public-head__sub' }, icon(list.grouping === 'none' ? 'tasks' : 'cart', 'icon--xs'), list.category),
         h('p', { class: 'public-head__sub' }, icon('sync', 'icon--xs'), `Mis à jour à ${time}`)),
       refresh),
-    h('div', { class: 'scroll' }, content),
+    h('div', { class: `scroll${shopping ? '' : ' scroll--flat'}` }, content),
     h('footer', { class: 'public-foot' }, icon('clock', 'icon--sm'),
       expiresAt ? `Ce lien expire le ${dateTimeLabel(expiresAt)}` : "Ce lien n'a pas de date d'expiration")));
 }

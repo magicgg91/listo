@@ -79,10 +79,24 @@ export async function updateItem(item, changes) {
 export const deleteItem = (item) => perform({ type: 'item.delete', itemId: item.id });
 export const restoreItem = (itemId) => perform({ type: 'item.restore', itemId });
 
-// Vide les barrés d'une liste ; renvoie le nombre d'articles retirés
-export async function clearChecked(listId) {
-  const count = [...app.data.items.values()].filter((item) => item.listId === listId && item.checked).length;
-  if (count) await perform({ type: 'list.clearChecked', listId });
+// Articles cochés d'une liste (copie locale)
+const checkedCount = (listId) => [...app.data.items.values()].filter((item) => item.listId === listId && item.checked).length;
+
+// Retire (supprime) les articles cochés d'une liste : « Retirer du panier » /
+// « Retirer les terminés ». Une seule opération, quel que soit leur nombre.
+// Renvoie le nombre d'articles retirés.
+export async function removeChecked(listId) {
+  const count = checkedCount(listId);
+  if (count) await perform({ type: 'list.removeChecked', listId });
+  return count;
+}
+
+// Décoche tous les articles cochés d'une liste : « Tout remettre à acheter » /
+// « Tout rouvrir ». Une seule opération, rejouée sans doublon hors ligne.
+// Renvoie le nombre d'articles décochés.
+export async function uncheckAll(listId) {
+  const count = checkedCount(listId);
+  if (count) await perform({ type: 'list.uncheckAll', listId });
   return count;
 }
 

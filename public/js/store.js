@@ -10,7 +10,7 @@
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
-import { groupItems, compareNames, isMultiList } from './sorting.js';
+import { splitDone, compareNames, isMultiList } from './sorting.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse } from './history.js';
 
 // --- État vide ---
@@ -180,8 +180,14 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'list.delete':
       removeList(state, op.listId);
       return;
-    case 'list.clearChecked':
+    case 'list.removeChecked':
+    case 'list.clearChecked': // ancien nom (opération restée en file d'attente)
       for (const [id, it] of [...state.items]) if (it.listId === op.listId && it.checked) state.items.delete(id);
+      return;
+    case 'list.uncheckAll':
+      for (const [id, it] of [...state.items]) {
+        if (it.listId === op.listId && it.checked) state.items.set(id, { ...it, checked: false, checkedAt: null, updatedAt: now });
+      }
       return;
     case 'item.create':
       if (!state.lists.has(op.listId)) return;
@@ -195,6 +201,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         storeId: op.storeId !== undefined ? op.storeId : hint.storeId ?? null,
         photoAt: null,
         checked: false,
+        checkedAt: null,
         createdBy: user.id,
         createdAt: now,
         updatedAt: now,
@@ -209,7 +216,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       return;
     }
     case 'item.check':
-      if (item) state.items.set(item.id, { ...item, checked: op.checked, updatedAt: now });
+      // Date du coché : celle du téléphone en attendant celle du serveur
+      if (item) state.items.set(item.id, { ...item, checked: op.checked, checkedAt: op.checked ? item.checkedAt ?? now : null, updatedAt: now });
       return;
     case 'item.delete':
       if (item) {
@@ -300,8 +308,10 @@ export function computeSummaries(state) {
     .sort((a, b) => b.lastActivity.localeCompare(a.lastActivity) || compareNames(a.name, b.name));
 }
 
-// Une liste prête à afficher : ses articles groupés par rayon et triés, et
-// le nombre d'articles cochés. null si la liste n'est pas (ou plus) accessible.
+// Une liste prête à afficher : ses articles à acheter groupés par rayon et
+// triés (groups), ses articles cochés dans l'ordre de la zone « Dans le
+// panier » / « Terminés » (done, du plus récemment coché au plus ancien), et
+// leur nombre. null si la liste n'est pas (ou plus) accessible.
 // Dans une liste « multi », les groupes sont des magasins (group.store) au
 // lieu des rayons (group.aisle).
 export function computeListView(state, listId) {
@@ -309,11 +319,13 @@ export function computeListView(state, listId) {
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
+  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores });
   return {
     list,
     multi,
-    groups: groupItems(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores }),
-    checked: items.filter((item) => item.checked).length,
+    groups,
+    done,
+    checked: done.length,
     total: items.length,
   };
 }

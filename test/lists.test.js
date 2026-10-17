@@ -87,7 +87,8 @@ test('un non-membre reçoit 404 sur la liste et sur tous ses articles, en lectur
   const results = await run(h.paul,
     { type: 'list.update', listId, name: 'Piratée' },
     { type: 'list.delete', listId },
-    { type: 'list.clearChecked', listId },
+    { type: 'list.removeChecked', listId },
+    { type: 'list.uncheckAll', listId },
     { type: 'item.create', listId, itemId: uuid(), name: 'Intrus' },
     { type: 'item.update', itemId, name: 'Modifié' },
     { type: 'item.check', itemId, checked: true },
@@ -141,7 +142,7 @@ test('un invité ne peut ni renommer, ni changer le partage, ni supprimer la lis
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM list_members WHERE list_id = ?').pluck().get(listId), 2);
 });
 
-test('un invité peut ajouter, modifier, cocher, supprimer des articles et vider les barrés', async (t) => {
+test('un invité peut ajouter, modifier, cocher, supprimer des articles, tout décocher et retirer les cochés', async (t) => {
   const h = await household(t);
   const listId = await createList(h, h.guillaume);
   await share(h.guillaume, listId, [h.ids.marie]);
@@ -151,7 +152,9 @@ test('un invité peut ajouter, modifier, cocher, supprimer des articles et vider
   assert.equal(created.item.createdBy, h.ids.marie);
   assert.equal((await ok(h.marie, { type: 'item.update', itemId, name: 'Pain complet', quantity: '1' })).item.name, 'Pain complet');
   assert.equal((await ok(h.marie, { type: 'item.check', itemId, checked: true })).item.checked, true);
-  assert.equal((await ok(h.marie, { type: 'list.clearChecked', listId })).removed, 1);
+  assert.equal((await ok(h.marie, { type: 'list.uncheckAll', listId })).reopened, 1);
+  assert.equal((await ok(h.marie, { type: 'item.check', itemId, checked: true })).item.checked, true);
+  assert.equal((await ok(h.marie, { type: 'list.removeChecked', listId })).removed, 1);
   await ok(h.marie, { type: 'item.delete', itemId: created.itemId });
 
   const { groups } = (await h.guillaume.get(`/api/lists/${listId}`)).body;
@@ -282,7 +285,7 @@ test('sur une liste qui n\'est pas de courses, les articles n\'ont pas de rayon'
   assert.equal(item.aisleId, null);
 });
 
-test('vider les barrés ne touche que les articles cochés de cette liste ; l\'historique reste', async (t) => {
+test('retirer les cochés ne touche que les articles cochés de cette liste ; l\'historique reste', async (t) => {
   const h = await household(t);
   const list1 = await createList(h, h.marie);
   const list2 = await createList(h, h.marie, { name: 'Autre liste' });
@@ -291,12 +294,12 @@ test('vider les barrés ne touche que les articles cochés de cette liste ; l\'h
   const c = await addItem(h.marie, list2, { name: 'Prunes' });
   for (const { itemId } of [a, c]) await ok(h.marie, { type: 'item.check', itemId, checked: true });
 
-  assert.equal((await ok(h.marie, { type: 'list.clearChecked', listId: list1 })).removed, 1);
+  assert.equal((await ok(h.marie, { type: 'list.removeChecked', listId: list1 })).removed, 1);
   const state = (id) => h.app.db.prepare('SELECT checked, deleted_at IS NOT NULL AS deleted FROM items WHERE id = ?').get(id);
   assert.deepEqual(state(a.itemId), { checked: 1, deleted: 1 });
   assert.deepEqual(state(b.itemId), { checked: 0, deleted: 0 }, 'non coché : gardé');
   assert.deepEqual(state(c.itemId), { checked: 1, deleted: 0 }, 'autre liste : gardé');
-  // Supprimer et vider n'effacent pas l'historique
+  // Supprimer et retirer les cochés n'effacent pas l'historique
   await ok(h.marie, { type: 'item.delete', itemId: b.itemId });
   const names = h.app.db.prepare('SELECT name_normalized FROM item_history ORDER BY 1').pluck().all();
   assert.deepEqual(names, ['poires', 'pommes', 'prunes']);

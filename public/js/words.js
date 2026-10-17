@@ -28,3 +28,12 @@ export function countItems(count, listOrFlag) {
   const words = itemWords(listOrFlag);
   return `${count} ${count === 1 ? words.one : words.many}`;
 }
+
+// Zone des articles cochés, en bas de la liste (design : section 16.5) :
+// textes selon la liste. title : titre de la zone ; reopen : action qui
+// décoche tout ; remove : action qui supprime les cochés.
+export function doneZoneWords(listOrFlag) {
+  return isShopping(listOrFlag)
+    ? { title: 'Dans le panier', reopen: 'Tout remettre à acheter', remove: 'Retirer du panier' }
+    : { title: 'Terminés', reopen: 'Tout rouvrir', remove: 'Retirer les terminés' };
+}

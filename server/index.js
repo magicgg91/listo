@@ -4,7 +4,7 @@
 // Lancement : npm start (ou « node server/index.js »)
 
 import path from 'node:path';
-import { loadConfig } from './config.js';
+import { loadConfig, configProblem } from './config.js';
 import { openDatabase, schemaVersion } from './db.js';
 import { loadOrCreateKey } from './secrets.js';
 import { createApp } from './app.js';
@@ -12,6 +12,14 @@ import { createJournalFile } from './audit.js';
 import { generateSetupCode } from './auth.js';
 
 const config = loadConfig();
+
+// 0. Configuration incorrecte (adresse sans https en production…) : Listo
+//    refuse de démarrer, avec un message clair dans docker logs
+const problem = configProblem(config);
+if (problem) {
+  console.error(`Listo ne démarre pas : ${problem}`);
+  process.exit(1);
+}
 
 // 1. Base de données (créée au premier démarrage, mise à jour ensuite)
 const db = openDatabase(config.dbPath);
@@ -52,21 +60,34 @@ console.log(`Journal de sécurité : ${journalPath}`);
 
 // 5. Serveur web
 const app = createApp({ db, config, masterKey: key, setupCode, journalFile });
+const { ctx } = app.locals;
 const server = app.listen(config.port, () => {
   console.log(`Listo est démarré sur le port ${server.address().port}`);
 });
 
-// Arrêt propre (docker stop, Ctrl+C) : on finit les requêtes en cours et on
-// ferme la base avant de quitter.
+// 6. Sauvegarde de la base chaque nuit vers 3 h (data/backups, voir backup.js)
+ctx.backups.start();
+console.log(`Sauvegardes nocturnes : ${ctx.backups.dir}`);
+
+// Arrêt propre (docker stop, mise à jour par « docker compose up -d »,
+// Ctrl+C) : plus de nouvelle connexion, flux temps réel fermés, requêtes en
+// cours terminées, puis la base est fermée avant de quitter. Rien n'est coupé
+// au milieu d'une écriture.
+let stopping = false;
 function shutdown(signal) {
+  if (stopping) return;
+  stopping = true;
   console.log(`Signal ${signal} reçu : arrêt de Listo.`);
+  ctx.stop();                    // ménage, sauvegarde programmée, flux temps réel
   server.close(() => {
     db.close();
+    console.log('Base fermée. Listo est arrêté.');
     process.exit(0);
   });
-  // Les connexions qui restent ouvertes (plus tard : flux temps réel) sont
-  // coupées pour ne pas bloquer l'arrêt.
-  server.closeAllConnections();
+  server.closeIdleConnections(); // connexions inactives fermées tout de suite
+  // Une requête bloquée ne retient pas l'arrêt plus de 5 secondes (Docker
+  // force l'arrêt au bout de 10)
+  setTimeout(() => server.closeAllConnections(), 5000).unref();
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));

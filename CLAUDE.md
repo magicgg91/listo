@@ -13,7 +13,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 ## Façon de travailler
 
 - Le propriétaire n'est pas développeur : écrire un code simple, lisible, commenté en français. Expliquer en langage simple ce qui a été fait.
-- Suivre le plan en 11 étapes du cahier des charges, une à la fois (les étapes 1 à 5 sont livrées). Au début de chaque étape : proposer un plan court, puis la construire. À la fin de chaque étape : tests automatisés sur les points sensibles (droits d'accès, synchronisation, file d'attente hors ligne), résumé, puis s'arrêter et attendre la validation avant l'étape suivante.
+- Suivre le plan en 11 étapes du cahier des charges, une à la fois (les étapes 1 à 10 sont livrées, l'étape 11 est en cours). Au début de chaque étape : proposer un plan court, puis la construire. À la fin de chaque étape : tests automatisés sur les points sensibles (droits d'accès, synchronisation, file d'attente hors ligne), résumé, puis s'arrêter et attendre la validation avant l'étape suivante.
 - Construire les écrans un par un en comparant le rendu à la capture correspondante dans `design/maquettes/`.
 - En cas d'ambiguïté : poser la question plutôt que deviner.
 

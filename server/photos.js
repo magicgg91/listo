@@ -186,7 +186,8 @@ export function createPhotoStore(dir) {
 }
 
 // Envoie une photo en réponse HTTP. Réutilisable par toute route qui a déjà
-// vérifié le droit de la voir (membre de la liste ; plus tard, lien public).
+// vérifié le droit de la voir (membre de la liste, ou visiteur d'un lien
+// public valable).
 // cache : en-tête Cache-Control à envoyer.
 export function sendPhoto(res, store, itemId, { cache = 'private, max-age=604800' } = {}) {
   const file = store.fileOf(itemId);

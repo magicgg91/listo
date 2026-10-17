@@ -27,3 +27,24 @@ export function loadConfig(env = process.env) {
     production: env.NODE_ENV === 'production',
   };
 }
+
+// Vérifie la configuration avant le démarrage. Renvoie un message clair si
+// quelque chose empêche Listo de démarrer, sinon null.
+// En production, l'adresse publique doit être en https:// : sans HTTPS, les
+// cookies « Secure » ne passent pas, le service worker (hors ligne) ne
+// marche pas, et les mots de passe circuleraient en clair.
+export function configProblem(config) {
+  let url;
+  try {
+    url = new URL(config.publicUrl);
+  } catch {
+    return `LISTO_PUBLIC_URL n'est pas une adresse valide (« ${config.publicUrl} »). Exemple : https://listo.exemple.fr`;
+  }
+  if (config.production && url.protocol !== 'https:') {
+    return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
+  }
+  if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535) {
+    return `PORT invalide (« ${config.port} ») : un nombre entre 1 et 65535 est attendu.`;
+  }
+  return null;
+}

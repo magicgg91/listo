@@ -93,6 +93,16 @@ export function createShareService(ctx) {
   // l'en-tête Host envoyé par le navigateur)
   const urlOf = (token) => new URL(`/p/${token}`, ctx.config.publicUrl).href;
   const tokenOf = (share) => decryptSecret(ctx.keys.share, share.token_sealed, `share:${share.list_id}`).toString();
+  // Adresse du lien, ou null si elle ne se déchiffre plus (clé de
+  // secrets/ changée) : le lien marche encore, mais il faut l'arrêter et en
+  // créer un nouveau pour retrouver son adresse
+  function readableUrl(share) {
+    try {
+      return urlOf(tokenOf(share));
+    } catch {
+      return null;
+    }
+  }
 
   // La liste a changé (pour l'icône « lien » de Mes listes) : les téléphones
   // l'apprennent à leur prochaine synchronisation
@@ -120,7 +130,7 @@ export function createShareService(ctx) {
     if (!share) return null;
     return {
       id: share.id,
-      url: urlOf(tokenOf(share)),
+      url: readableUrl(share),
       expiresAt: share.expires_at,
       protected: share.password_hash !== null,
       createdAt: share.created_at,

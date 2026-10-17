@@ -75,10 +75,21 @@ export function useTotpCode(ctx, userId, secret, lastStep, code) {
 
 // Vérifie le second facteur d'un compte qui a activé sa 2FA : un code à
 // 6 chiffres de l'application, ou bien un code de secours.
+// Si la clé secrets/secret.key a changé (perdue puis recréée), le secret ne
+// se déchiffre plus : le code est refusé (pas d'erreur interne) et le
+// journal le signale. Un Admin désactive alors la 2FA du compte (ou, pour le
+// dernier Admin : server/admin-secours.js, voir le README).
 export function checkSecondFactor(ctx, user, code) {
   if (typeof code !== 'string' || code.trim() === '') return false;
   if (/^\s*\d{3}\s?\d{3}\s*$/.test(code)) {
-    return useTotpCode(ctx, user.id, openTotpSecret(ctx, user), user.totp_last_step, code);
+    let secret;
+    try {
+      secret = openTotpSecret(ctx, user);
+    } catch {
+      ctx.audit?.('secret_2fa_illisible', { utilisateur: user.username });
+      return false;
+    }
+    return useTotpCode(ctx, user.id, secret, user.totp_last_step, code);
   }
   return useRecoveryCode(ctx, user.id, code);
 }

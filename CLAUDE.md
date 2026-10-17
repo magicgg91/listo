@@ -4,7 +4,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 
 ## Documents de référence (à lire avant de coder)
 
-1. `docs/cahier-des-charges.md` : le cahier des charges validé. C'est la source de vérité sur les fonctions, les droits, le modèle de données, la sécurité, le déploiement et le plan en 8 étapes.
+1. `docs/cahier-des-charges.md` : le cahier des charges validé. C'est la source de vérité sur les fonctions, les droits, le modèle de données, la sécurité, le déploiement et le plan en 11 étapes.
 2. `design/README.md` : le guide du kit de design (thèmes, variables, classes, composants, manifeste PWA).
 3. `design/listo.css`, `design/components.html`, `design/icons-sprite.html`, `design/icones/`, `design/maquettes/` : le design terminé. Les maquettes PNG sont la référence visuelle de chaque écran, en clair et en sombre.
 
@@ -13,7 +13,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 ## Façon de travailler
 
 - Le propriétaire n'est pas développeur : écrire un code simple, lisible, commenté en français. Expliquer en langage simple ce qui a été fait.
-- Suivre le plan en 8 étapes du cahier des charges, une à la fois. Au début : proposer un plan court pour l'étape 1, puis la construire. À la fin de chaque étape : tests automatisés sur les points sensibles (droits d'accès, synchronisation, file d'attente hors ligne), résumé, puis s'arrêter et attendre la validation avant l'étape suivante.
+- Suivre le plan en 11 étapes du cahier des charges, une à la fois (les étapes 1 à 5 sont livrées). Au début de chaque étape : proposer un plan court, puis la construire. À la fin de chaque étape : tests automatisés sur les points sensibles (droits d'accès, synchronisation, file d'attente hors ligne), résumé, puis s'arrêter et attendre la validation avant l'étape suivante.
 - Construire les écrans un par un en comparant le rendu à la capture correspondante dans `design/maquettes/`.
 - En cas d'ambiguïté : poser la question plutôt que deviner.
 
@@ -22,12 +22,13 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 - Interface : HTML, CSS et JavaScript natifs (modules ES). Pas de framework, pas d'étape de compilation, pas de bibliothèque d'icônes (icônes SVG du sprite fourni).
 - Serveur : Node.js avec Express. Base : SQLite via better-sqlite3. Temps réel : Server-Sent Events. Hors ligne : service worker + IndexedDB.
 - Dépendances serveur autorisées : express, better-sqlite3, qrcode. Toute autre dépendance, tout autre langage ou framework : le signaler d'abord, argumenter (avantages, inconvénients, alternative) et attendre la décision du propriétaire.
-- Un seul conteneur Docker, derrière Nginx Proxy Manager. Aucun port publié sur l'hôte.
+- Aucune bibliothèque d'image : les photos des articles sont réduites sur le téléphone puis contrôlées par du code simple côté serveur (signature et structure JPEG, retrait des métadonnées EXIF). Si un besoin le justifie, le signaler d'abord.
+- Un seul conteneur Docker, derrière Nginx Proxy Manager, installé sur une autre machine. Le port de Listo est publié uniquement sur l'adresse du réseau local (jamais sur toutes les interfaces), et il n'y a pas de réseau Docker partagé.
 - L'image est construite et publiée sur ghcr.io/magicgg91/listo par `.github/workflows/docker.yml` à chaque fusion sur `main` (le workflow attend le `Dockerfile` de l'étape 1). Le `docker-compose.yml` de production utilise `image:`, jamais `build:` ; le test local passe par `docker-compose.dev.yml`. Prévoir un `.dockerignore` (data/, secrets/, .git, design/maquettes, node_modules, .env) : l'image ne doit contenir ni base ni secret.
 
 ## Design
 
-- Utiliser `design/listo.css` tel quel, avec ses noms de classes et de variables CSS. Sa section 16 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée dans la copie utilisée par l'application.
+- Utiliser `design/listo.css` tel quel, avec ses noms de classes et de variables CSS. Sa section 16 (photo, magasin « multi », lien public) est à reprendre ; sa section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée dans la copie utilisée par l'application.
 - Thème : attribut `data-theme` sur `<html>` (`light`, `dark` ou `auto`). Le choix de l'utilisateur écrit simplement cette valeur.
 - Icônes : coller `design/icons-sprite.html` une fois au début du `<body>`, puis `<svg class="icon" aria-hidden="true"><use href="#i-nom"/></svg>`.
 - Le balisage de référence de chaque composant est dans `design/components.html`.
@@ -38,6 +39,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 - Aucun secret, mot de passe ni clé dans le code ou dans le dépôt. Les dossiers `data/` (base) et `secrets/` (clé de chiffrement 2FA) sont dans `.gitignore` et ne doivent jamais être commités.
 - Le premier Admin se crée depuis l'écran de première connexion, protégé par un code de démarrage affiché dans les journaux du conteneur. Aucune variable d'environnement ne contient de mot de passe.
 - Suivre la section Sécurité du cahier des charges : scrypt, cookie HttpOnly/Secure/SameSite, limitation des tentatives, vérification des droits côté serveur sur chaque requête, SQL paramétré, `textContent` et jamais `innerHTML`, Content-Security-Policy stricte.
+- Le lien public d'une liste (étape 10) est la seule partie accessible sans compte : réponses construites champ par champ (jamais à partir des objets internes), expiration contrôlée par le serveur à chaque requête, jeton jamais écrit en clair en base ni dans les journaux, lecture seule. Les photos ne sont servies qu'aux membres de la liste.
 
 ## Dépôt
 

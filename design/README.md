@@ -4,8 +4,8 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 
 | Fichier | Rôle |
 |---|---|
-| `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 15 sont à reprendre telles quelles ; la section 16 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 28 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
+| `icons-sprite.html` | Sprite SVG de 35 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
@@ -65,3 +65,48 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 ```
 
 Pour une version maskable en PNG, réutilisez `icones/icon-512.png` : le logo est déjà dans la zone de sécurité et le fond est plein cadre.
+
+## Ajout : photo d'un article, magasin « multi », lien public
+
+Tout est dans la section 16 de `listo.css` (mêmes variables, aucune couleur en dur) et dans la dernière partie de `components.html`. Rien d'existant n'a changé. Aucun style en ligne ni script en ligne dans le balisage fourni.
+
+Nouvelles icônes (sprite) : `i-camera`, `i-image`, `i-link`, `i-link-off`, `i-clock`, `i-layers` (magasin multi), `i-eye-off`. Réutilisées : `i-copy`, `i-lock`, `i-store`, `i-eye`.
+
+Photos de démonstration : `photos/*.svg` (4:3), uniquement pour les maquettes.
+
+### Composants nouveaux
+
+- Photo : `.item__photo` (miniature 48 px dans `.item`, bouton avec `aria-label="Agrandir la photo de …"`), `.photo` (image qui remplit son cadre), `.photo-actions` (Appareil photo / Galerie), `.photo-block` + `__thumb` + `__actions` (aperçu, Remplacer, Retirer), `.lightbox` + `__bar | __title | __stage | __img | __cap | __foot` (photo plein écran, fond sombre dans les deux thèmes), `.sheet--scroll`.
+- Multi : `.aisle__name` (icône + nom dans `.aisle`), `.badge-multi`, `.input__value`, `.add-block` (+ `__row`) avec `.segmented` Simple / Multi, `.manage-detail` (+ `__title | __note`) avec `.tick-row` pour les magasins regroupés, `.icon-btn[aria-expanded]`.
+- Lien : `.duration` + `__opt` (choix unique, coche quand actif, `disabled` hors ligne), `.duration-custom`, `.link-box` (+ `__url`), `.expiry` (+ `__title | __sub`), `.secret` (+ `__label | __row | __value | __value--masked`).
+- Page publique : `.readonly-banner`, `.public-head` (+ `__main | __title | __sub`), `.public-foot`, `.check--static` (case non interactive, `.is-on` quand cochée), `.gate` + `.gate__head` (mot de passe).
+- Utilitaires : `.stack--lg`, `.text-sm`, `.body--flush`, `.input[disabled]`.
+
+### Réutilisés tels quels
+
+`.sheet`, `.scrim`, `.dialog`, `.btn` (toutes variantes), `.icon-btn`, `.item`, `.check`, `.aisle` (en-tête collé = magasin), `.field`, `.input`, `.input--select`, `.input--mono`, `.input-wrap`, `.segmented`, `.switch`, `.card`, `.row` (+ `__icon | __body | __title | __sub`), `.radio-row`, `.tick-row`, `.tabs`, `.manage`, `.group`, `.note` (+ `--danger`), `.sync`, `.statusbar`, `.topbar`, `.empty`, `.avatar`, `.list-card`.
+
+### Correspondance des maquettes (`maquettes/`)
+
+| Écran | Fichiers |
+|---|---|
+| A · Liste avec photos | `liste-photos-1` |
+| B · Feuille article (sans photo, avec photo, multi, choix du magasin) | `article-photo-1` à `4` |
+| C · Photo plein écran | `photo-plein-ecran-1` |
+| D · Liste multi (haut, bas de liste) | `liste-multi-1`, `2` |
+| E · Administration, Magasins (ajout, magasin ouvert) | `administration-magasins-1`, `2` |
+| F · Liste avec magasin multi (formulaire, choix) | `formulaire-liste-multi-1`, `2` |
+| G · Partager par lien (aucun lien, personnalisée, mot de passe affiché, masqué, sans mot de passe, confirmation, hors ligne) | `partage-lien-1` à `7` |
+| H · Page publique (rayons, multi par magasin) | `page-publique-1`, `2` |
+| I · Mot de passe (saisie, incorrect, trop d'essais) | `page-publique-mot-de-passe-1` à `3` |
+| J · Lien expiré ou inexistant | `page-publique-expiree-1` |
+
+Chaque fichier existe en `-clair` et `-sombre`.
+
+### Comportement à respecter
+
+- Lien public : lecture seule, sans compte ; la page n'affiche ni menu ni navigation de l'application. Réponse neutre « Lien expiré ou inexistant » pour un lien expiré, arrêté ou inconnu (même message, sans bouton de connexion).
+- Mot de passe du lien : 16 caractères générés par l'application, montrés une seule fois à la création (`.secret`), puis masqués ; « Nouveau mot de passe » remplace l'ancien. Après trop d'essais : « Trop d'essais, réessayez plus tard ».
+- Magasin multi : le magasin joue le rôle du rayon (en-têtes `.aisle` collés, « Sans magasin » en dernier, pas de rayons) ; chaque article choisit son magasin parmi ceux regroupés.
+- Hors ligne : la gestion du lien est désactivée avec le message « Indisponible hors ligne ».
+- Un article avec photo : une seule photo, ouverte en plein écran depuis la miniature (liste et page publique).

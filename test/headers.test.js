@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, ORIGIN, SETUP_CODE } from './helpers.js';
-import { CONTENT_SECURITY_POLICY } from '../server/app.js';
+import { CONTENT_SECURITY_POLICY, PERMISSIONS_POLICY } from '../server/app.js';
 
 const uuid = () => crypto.randomUUID();
 
@@ -26,6 +26,7 @@ function checkHeaders(res, label) {
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff', `${label} : X-Content-Type-Options`);
   assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} : Referrer-Policy`);
   assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} : X-Frame-Options`);
+  assert.equal(res.headers.get('permissions-policy'), PERMISSIONS_POLICY, `${label} : Permissions-Policy`);
   // Rien qui révèle la technique ; HSTS est ajouté par Nginx Proxy Manager
   assert.equal(res.headers.get('x-powered-by'), null, `${label} : X-Powered-By`);
   assert.equal(res.headers.get('server'), null, `${label} : Server`);
@@ -47,6 +48,11 @@ test('la politique de sécurité du contenu est stricte', () => {
   assert.equal(rules['object-src'], "'none'");
   assert.equal(rules['base-uri'], "'none'");
   assert.doesNotMatch(CONTENT_SECURITY_POLICY, /unsafe-inline|unsafe-eval|blob:|data:|\*|https?:/);
+});
+
+test('Permissions-Policy : fonctions inutiles interdites, appareil photo laissé libre', () => {
+  for (const feature of ['geolocation', 'microphone', 'payment', 'usb']) assert.match(PERMISSIONS_POLICY, new RegExp(`(^|, )${feature}=\\(\\)`));
+  assert.doesNotMatch(PERMISSIONS_POLICY, /camera/, 'la prise de photo doit rester possible');
 });
 
 test('en-têtes de sécurité sur toutes les routes principales, y compris les erreurs', async (t) => {

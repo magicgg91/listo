@@ -160,3 +160,8 @@ button.sync { cursor: pointer; }
 
 /* Hors ligne : partage d'une liste grisé (il demande le serveur) */
 .share.is-off { opacity: 0.55; }
+
+/* Bandeau « Nouvelle version disponible » (voir freshness.js) : composant
+   .note du kit, posé en haut de l'écran, au-dessus de la barre de titre ; il
+   ne recouvre rien (la barre d'ajout reste visible en bas) */
+.update-banner { flex: none; align-items: center; margin: var(--space-1) var(--space-2) 0; padding-top: 6px; padding-bottom: 6px; }

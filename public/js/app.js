@@ -1,7 +1,7 @@
 // Point de départ de l'interface : thème, session, données, choix de l'écran
 // et mise en page (une colonne sur téléphone, deux sur ordinateur).
 
-import { h, replace } from './dom.js';
+import { h, icon, replace } from './dom.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
@@ -16,6 +16,8 @@ import { renderList } from './screens/list.js';
 import { renderListForm } from './screens/list-form.js';
 import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAdmin } from './screens/admin.js';
+import { BUILD } from './version.js';
+import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
 applyTheme(savedTheme());
 
@@ -253,10 +255,85 @@ window.addEventListener('offline', () => {
   if (app.user) setSyncState('off');
 });
 
-// Démarre le temps réel pour le compte connecté
+// Démarre le temps réel pour le compte connecté ; la version du code est
+// vérifiée au démarrage et à chaque reconnexion du flux
 function goLive() {
-  startLive(({ full }) => refreshData({ quiet: true, full }));
+  startLive(({ full }) => refreshData({ quiet: true, full }), { onReconnect: () => freshness.check() });
+  freshness.check();
 }
+
+// --- Nouvelle version de Listo (voir freshness.js) ---
+
+const WORKER_WAIT_MS = 10 * 1000;
+
+// Demande au navigateur la nouvelle version de sw.js et attend qu'elle soit
+// active : elle a alors copié les nouveaux fichiers (10 secondes au plus).
+// Une panne n'empêche rien : au rechargement, le réseau passe d'abord.
+async function updateWorker() {
+  try {
+    const registration = await navigator.serviceWorker?.getRegistration();
+    if (!registration) return;
+    await registration.update();
+    const worker = registration.installing ?? registration.waiting;
+    if (!worker) return;
+    await new Promise((resolve) => {
+      const done = () => {
+        if (worker.state === 'activated' || worker.state === 'redundant') resolve();
+      };
+      worker.addEventListener('statechange', done);
+      setTimeout(resolve, WORKER_WAIT_MS);
+      done();
+    });
+  } catch {
+    // pas de réseau, ou service worker indisponible : sans importance
+  }
+}
+
+// Bandeau « Nouvelle version disponible » (rechargement automatique
+// impossible pour l'instant) : en haut de l'écran, sans cacher la barre
+// d'ajout ; il reste d'un écran à l'autre jusqu'au rechargement
+let bannerWanted = false;
+let currentCol = null;
+function placeBanner() {
+  if (!bannerWanted || !currentCol || currentCol.querySelector('.update-banner')) return;
+  currentCol.prepend(h('div', { class: 'note update-banner', role: 'status' },
+    icon('sync'),
+    h('span', { class: 'grow' }, 'Nouvelle version disponible'),
+    h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => freshness.reloadNow() }, 'Recharger')));
+}
+
+// Mémoire de l'onglet (un seul rechargement automatique par version)
+function sessionStore() {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null; // indisponible : pas de rechargement automatique, le bandeau reste
+  }
+}
+
+const freshness = createFreshness({
+  localBuild: BUILD,
+  serverBuild: async () => (await get('/api/about', { auth: false })).build,
+  blocker: () => reloadBlocker(document, { busy: Boolean(queue?.busy()) }),
+  updateWorker,
+  reload: () => location.reload(),
+  notify: (text) => toast(text, { low: true }),
+  showBanner: () => {
+    bannerWanted = true;
+    placeBanner();
+  },
+  storage: sessionStore(),
+  isOnline: () => navigator.onLine,
+  log: (text) => console.info(text),
+});
+
+// Retour au premier plan, et toutes les heures au premier plan : vérification
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && app.user) freshness.check();
+});
+setInterval(() => {
+  if (document.visibilityState === 'visible' && app.user) freshness.check();
+}, CHECK_EVERY_MS);
 
 // --- Session ---
 
@@ -354,6 +431,8 @@ function mount(screen, { withSide = true, selectedListId = null } = {}) {
   setOverlayHost(col);
   const content = typeof screen === 'function' ? screen((fn) => cleanup.push(fn)) : screen;
   replace(col, content);
+  currentCol = col;
+  placeBanner();
 
   if (app.user && withSide && isDesktop()) {
     const side = h('aside', { class: 'shell__side', 'aria-label': 'Mes listes' });
@@ -406,6 +485,8 @@ function show(route) {
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
     default: navigate('lists', {}, { replace: true });
   }
+  // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran
+  freshness.retry();
 }
 
 // --- Démarrage ---

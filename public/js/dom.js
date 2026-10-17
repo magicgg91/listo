@@ -19,6 +19,9 @@ export function h(tag, attrs = {}, ...children) {
       el.addEventListener(name.slice(2).toLowerCase(), value);
     } else if (name === 'value') {
       el.value = value;
+      // Valeur de départ retenue aussi : un champ dont la valeur a changé
+      // contient un texte pas encore validé (voir freshness.js)
+      if ('defaultValue' in el) el.defaultValue = value;
     } else {
       el.setAttribute(name, value === true ? '' : String(value));
     }

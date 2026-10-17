@@ -56,12 +56,22 @@ export function deriveKeys(masterKey) {
     totp: derive('listo:totp-secret'),    // chiffrement des secrets 2FA
     codes: derive('listo:recovery-codes'), // empreinte des codes de secours
     share: derive('listo:public-share-token'), // jeton des liens publics (réaffichage au propriétaire)
+    build: derive('listo:build-id'),       // identifiant opaque de la version installée
   };
 }
 
 // Chiffre un secret 2FA avec AES-256-GCM. « context » (ici l'identifiant du
 // compte) est lié au chiffrement : un secret recopié sur un autre compte
 // devient illisible. Format : v1:iv:étiquette:texte chiffré (en base64).
+// Identifiant opaque de la version installée (16 caractères hexadécimaux),
+// calculé à partir du commit avec une clé propre à cette installation
+// (HMAC-SHA256). Il change à chaque mise à jour, mais ne permet pas de
+// retrouver le commit : il peut donc être servi sans compte (js/version.js,
+// sw.js), ce qui est nécessaire pour l'ouverture hors ligne.
+export function buildId(key, commit) {
+  return crypto.createHmac('sha256', key).update(`listo-build:${commit}`).digest('hex').slice(0, 16);
+}
+
 export function encryptSecret(key, plaintext, context) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);

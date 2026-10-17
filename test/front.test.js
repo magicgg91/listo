@@ -9,6 +9,7 @@ import { relativeTime, remainingLabel, splitPrefix, namesList, defaultDisplayNam
 import {
   emptyState, loadSync, putItem, removeItem, putList, removeList, rememberItem,
   computeSummaries, computeListView, computeSuggestions, isKnownItem, activeOnly,
+  storeChoices, usualStoreFor, usualAisleFor, historyStoreFor, moveItemStore,
 } from '../public/js/store.js';
 
 // --- Routeur ---
@@ -152,11 +153,60 @@ test('historique local : suggestions, article connu, rayon mémorisé', () => {
   assert.equal(computeSuggestions(state, 'l').length, 0);
   assert.equal(isKnownItem(state, '  LAIT '), true);
   assert.equal(isKnownItem(state, 'Café'), false);
-  rememberItem(state, 'Café', 11);
-  rememberItem(state, 'café', null);
+  rememberItem(state, 'Café', { aisleId: 11 });
+  rememberItem(state, 'café');
   const cafe = state.history.find((e) => e.nameNormalized === 'cafe');
   assert.deepEqual([cafe.useCount, cafe.aisleId], [2, 11], '« Sans rayon » ne remplace pas le rayon connu');
-  rememberItem(state, 'Café', 10, { count: 0 });
+  rememberItem(state, 'Café', { aisleId: 10, count: 0 });
   assert.deepEqual([cafe.useCount, cafe.aisleId], [2, 10], 'une modification ne compte pas comme une utilisation');
   assert.deepEqual(activeOnly(state.aisles).map((a) => a.name), ['Boulangerie', 'Crèmerie']);
+});
+
+// --- Liste « multi » (étape 6) ---
+
+function multiSample() {
+  const state = sample();
+  state.stores = [
+    { id: 1, name: 'Boucherie', active: true, isMulti: false, storeIds: [] },
+    { id: 2, name: 'Fromagerie', active: true, isMulti: false, storeIds: [] },
+    { id: 3, name: 'Biocoop', active: false, isMulti: false, storeIds: [] },
+    { id: 4, name: 'Lidl', active: true, isMulti: false, storeIds: [] },
+    { id: 9, name: 'Centre-ville', active: true, isMulti: true, storeIds: [2, 1, 3] },
+  ];
+  const multi = { ...state.lists.get('A'), id: 'M', name: 'Centre-ville', store: { id: 9, name: 'Centre-ville', active: true, isMulti: true } };
+  putList(state, multi);
+  putItem(state, { id: 'm1', listId: 'M', name: 'Comté', storeId: 2, aisleId: null, checked: false, updatedAt: '2026-10-16T10:00:00.000Z', deletedAt: null });
+  putItem(state, { id: 'm2', listId: 'M', name: 'Piles', storeId: null, aisleId: 10, checked: false, updatedAt: '2026-10-16T10:00:00.000Z', deletedAt: null });
+  return { state, multi };
+}
+
+test('liste « multi » : groupée par magasin, magasins proposés, magasin habituel', () => {
+  const { state, multi } = multiSample();
+  const view = computeListView(state, 'M');
+  assert.equal(view.multi, true);
+  assert.deepEqual(view.groups.map((g) => g.store?.name ?? 'Sans magasin'), ['Fromagerie', 'Sans magasin']);
+  assert.equal(computeListView(state, 'A').multi, false);
+  // Magasins regroupés et actifs, par ordre alphabétique (Biocoop est désactivé)
+  assert.deepEqual(storeChoices(state, multi).map((s) => s.name), ['Boucherie', 'Fromagerie']);
+
+  assert.equal(usualStoreFor(state, multi, 'Comté'), null);
+  rememberItem(state, 'Comté', { storeId: 2 });
+  assert.equal(usualStoreFor(state, multi, 'comte'), 2);
+  rememberItem(state, 'Comté', { storeId: 4 }); // acheté chez Lidl : pas un magasin de cette liste
+  rememberItem(state, 'Comté', { storeId: 4 });
+  assert.equal(usualStoreFor(state, multi, 'Comté'), 2);
+  moveItemStore(state, 'Comté', 2, 1);
+  assert.equal(usualStoreFor(state, multi, 'Comté'), 1);
+  assert.equal(historyStoreFor(multi, { storeId: 1 }), 1);
+});
+
+test('liste à magasin simple : rayon du magasin, sinon rayon général', () => {
+  const { state } = multiSample();
+  const lidl = { ...state.lists.get('A'), store: { id: 4, name: 'Lidl', active: true, isMulti: false } };
+  assert.equal(usualAisleFor(state, lidl, 'Lait'), 10);
+  rememberItem(state, 'Lait', { aisleId: 11, storeId: historyStoreFor(lidl, {}) });
+  assert.equal(usualAisleFor(state, lidl, 'Lait'), 11);
+  const other = { ...lidl, store: { id: 1, name: 'Boucherie', active: true, isMulti: false } };
+  assert.equal(usualAisleFor(state, other, 'Lait'), 11, 'le rayon général suit le dernier choisi');
+  assert.equal(historyStoreFor(state.lists.get('B'), {}), null, 'liste de tâches : pas de magasin');
 });

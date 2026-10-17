@@ -7,10 +7,12 @@ import Database from 'better-sqlite3';
 import { openDatabase, schemaVersion, MIGRATIONS } from '../server/db.js';
 import { tempDir } from './helpers.js';
 
-// Les dix tables du cahier des charges, plus applied_ops (étape 4 : opérations
-// déjà appliquées, pour qu'un renvoi ne soit jamais appliqué deux fois)
+// Les tables du cahier des charges déjà créées : applied_ops (étape 4 :
+// opérations déjà appliquées, pour qu'un renvoi ne soit jamais appliqué deux
+// fois) et store_members (étape 6 : magasins regroupés par un « multi »).
+// public_shares arrivera avec le lien public (étape 10).
 const TABLES = [
-  'users', 'recovery_codes', 'sessions', 'categories', 'stores',
+  'users', 'recovery_codes', 'sessions', 'categories', 'stores', 'store_members',
   'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops',
 ];
 
@@ -24,7 +26,7 @@ function sampleDb() {
   return db;
 }
 
-test('les tables sont créées (10 du cahier des charges + applied_ops)', () => {
+test('les tables sont créées (cahier des charges, sauf public_shares de l\'étape 10)', () => {
   const db = openDatabase(':memory:');
   const names = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
   for (const table of TABLES) assert.ok(names.includes(table), `table ${table} manquante`);

@@ -187,6 +187,50 @@ export const MIGRATIONS = [
   CREATE INDEX lists_deleted ON lists(deleted_at) WHERE deleted_at IS NOT NULL;
   CREATE INDEX items_deleted ON items(deleted_at) WHERE deleted_at IS NOT NULL;
   `,
+
+  // --- Migration 5 : magasin « multi » (étape 6) ---
+  (db) => {
+    db.exec(`
+    -- Un magasin « multi » (is_multi = 1) regroupe plusieurs magasins : dans
+    -- une liste qui l'utilise, chaque article a son propre magasin, sans rayon.
+    ALTER TABLE stores ADD COLUMN is_multi INTEGER NOT NULL DEFAULT 0 CHECK (is_multi IN (0, 1));
+
+    -- Magasins regroupés par un magasin « multi ». Effacer le « multi » efface
+    -- ses lignes ; un magasin regroupé, lui, ne peut pas être effacé.
+    CREATE TABLE store_members (
+      multi_store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+      store_id       INTEGER NOT NULL REFERENCES stores(id),
+      PRIMARY KEY (multi_store_id, store_id)
+    );
+    CREATE INDEX store_members_store ON store_members(store_id);
+
+    -- Magasin d'un article, pour les listes dont le magasin est « multi »
+    -- (vide sinon : « Sans magasin »).
+    ALTER TABLE items ADD COLUMN store_id INTEGER REFERENCES stores(id);
+
+    -- Historique : une ligne générale par article (store_id vide), comme
+    -- avant, plus une ligne par article et par magasin (rayon habituel dans ce
+    -- magasin, nombre d'achats dans ce magasin). SQLite ne sait pas retirer
+    -- une contrainte UNIQUE : la table est recréée, les lignes existantes
+    -- deviennent les lignes générales (rien ne change pour elles).
+    CREATE TABLE item_history_new (
+      id              INTEGER PRIMARY KEY,
+      name_normalized TEXT    NOT NULL,
+      store_id        INTEGER REFERENCES stores(id),
+      display_name    TEXT    NOT NULL CHECK (length(display_name) BETWEEN 1 AND 100),
+      aisle_id        INTEGER REFERENCES aisles(id),
+      use_count       INTEGER NOT NULL DEFAULT 0,
+      last_used_at    TEXT    NOT NULL DEFAULT ${NOW}
+    );
+    INSERT INTO item_history_new (id, name_normalized, store_id, display_name, aisle_id, use_count, last_used_at)
+      SELECT id, name_normalized, NULL, display_name, aisle_id, use_count, last_used_at FROM item_history;
+    DROP TABLE item_history;
+    ALTER TABLE item_history_new RENAME TO item_history;
+    -- Une seule ligne par article et par magasin (0 = ligne générale)
+    CREATE UNIQUE INDEX item_history_key ON item_history(name_normalized, IFNULL(store_id, 0));
+    CREATE INDEX item_history_used ON item_history(last_used_at);
+    `);
+  },
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

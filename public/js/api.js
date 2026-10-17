@@ -1,6 +1,6 @@
 // Couche réseau : le SEUL module qui parle au serveur.
 //
-// Tous les écrans passent par ici. À l'étape 7, la file d'attente hors ligne
+// Tous les écrans passent par ici. À l'étape 9, la file d'attente hors ligne
 // se branchera dans ce fichier (fonction ops), sans toucher aux écrans.
 //
 // Erreurs renvoyées aux écrans :
@@ -96,7 +96,7 @@ export function uuid() {
 // la route POST /api/ops. Chaque opération reçoit un identifiant unique.
 // Renvoie le résultat de chaque opération ; lève ApiError si l'une est refusée.
 //
-// Étape 7 : c'est ici que les opérations seront d'abord rangées dans la file
+// Étape 9 : c'est ici que les opérations seront d'abord rangées dans la file
 // d'attente du téléphone, puis envoyées dès que le réseau le permet.
 export async function ops(...operations) {
   const sent = operations.map((op) => ({ id: uuid(), ...op }));

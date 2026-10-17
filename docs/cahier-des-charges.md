@@ -2,6 +2,8 @@
 
 Version validée le 16 octobre 2026. Mise à jour du 17 octobre 2026 : photo par article, lien public en lecture seule et magasin « multi » (hypothèses à valider en fin de document), ainsi que les écarts constatés pendant les étapes 1 à 5 (tables et colonnes ajoutées, port publié, journal en fichier).
 
+Mise à jour après livraison (17 octobre 2026) : les onze étapes sont livrées et le dépôt est public. Ce document décrit maintenant l'application livrée. Les décisions d'origine sont gardées ; ce qui a changé est indiqué dans le texte par « **Écart :** » et résumé dans la section [Écarts et décisions depuis la version validée](#écarts-et-décisions-depuis-la-version-validée). Les écarts qui touchent aux droits ou à la sécurité et qui restent à confirmer sont marqués « **Écart à confirmer :** ».
+
 ## Présentation et objectifs
 
 Listo est une application web de listes partagées (courses, tâches…), pensée pour le téléphone, gratuite, sans publicité et hébergée sur le serveur de son propriétaire. Elle remplace les applications existantes, soit payantes, soit remplies de pubs.
@@ -116,7 +118,7 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 | Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin si le magasin de la liste est « multi », sans rayon). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. | Ajouter, cocher, vider les barrés, actualiser, partager par lien |
 | Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon (magasin simple) ou magasin (si le magasin de la liste est « multi »). | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
 | Créer / modifier une liste | Nom, catégorie, magasin (simple ou « multi », si courses), partage avec les autres utilisateurs. | Enregistrer, supprimer la liste |
-| Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. | Changer le mot de passe, activer le 2FA, choisir le thème |
+| Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. **Écart :** aussi « Réinitialiser les données de ce téléphone » et un bloc « À propos » (version installée, développeur, projet). | Changer le mot de passe, activer le 2FA, choisir le thème |
 | Administration | Quatre onglets : Comptes, Catégories, Magasins, Rayons. Chacun liste ses éléments avec ajout, renommage, désactivation. Un magasin est « simple » ou « multi » (avec les magasins qu'il regroupe). | Gérer les données de référence |
 | Partage par lien | Feuille ouverte depuis le menu de la liste (propriétaire) : état du lien (actif, expire le…, protégé ou non), mot de passe généré affiché une seule fois, durée en heures, en jours ou illimitée. | Créer, changer la durée, régénérer ou retirer le mot de passe, copier le lien, arrêter le partage |
 | Page publique | Page ouverte par le lien, sans compte : saisie du mot de passe si le lien est protégé, nom de la liste, articles en lecture seule avec photos. Lien expiré ou inconnu : message neutre. | Consulter, actualiser |
@@ -171,11 +173,12 @@ Le téléphone garde une copie locale des listes, modifie d'abord cette copie, p
 - À la réception, le téléphone demande au serveur les changements depuis sa dernière synchronisation et met l'écran à jour.
 - Filet de sécurité : rafraîchissement automatique toutes les 60 secondes quand l'application est au premier plan, à chaque retour au premier plan, et bouton de rafraîchissement manuel.
 - La connexion SSE se rétablit seule après une coupure.
+- **Écart :** le flux est ouvert dès que l'application est au premier plan (pas seulement quand une liste est ouverte) et fermé en arrière-plan, pour économiser la batterie. Reconnexion avec un délai croissant (de 1 à 30 secondes) ; 5 connexions au plus par compte.
 
 **Hors ligne**
 
 1. Un service worker met en cache l'application (pages, styles, scripts, icônes) : elle s'ouvre sans réseau.
-2. IndexedDB conserve une copie locale des listes, articles, rayons, magasins, catégories et de l'historique d'autocomplétion. Les photos déjà consultées sont gardées dans le cache du navigateur.
+2. IndexedDB conserve une copie locale des listes, articles, rayons, magasins, catégories et de l'historique d'autocomplétion. Les photos déjà consultées sont gardées dans le cache du navigateur (150 au plus, les plus anciennes partent d'abord).
 3. Chaque action (ajouter, cocher, modifier, supprimer) s'applique tout de suite à la copie locale, puis entre dans une file d'attente enregistrée sur le téléphone.
 4. Dès que le réseau revient, la file est envoyée dans l'ordre. Chaque opération porte un identifiant unique : un renvoi après une coupure n'est jamais appliqué deux fois.
 5. Le téléphone récupère ensuite les changements des autres et met sa copie à jour.
@@ -206,6 +209,7 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 - Une session est révoquée à la déconnexion, au changement de mot de passe et à la désactivation du compte.
 - Limitation des tentatives : 5 échecs en 15 minutes pour un même identifiant ou une même adresse IP bloquent la connexion 15 minutes. Message d'erreur identique que l'identifiant existe ou non.
 - Un mot de passe choisi par un Admin (création du compte, réinitialisation) est provisoire : l'utilisateur doit le remplacer par le sien à sa connexion suivante, avant toute autre action.
+- Au changement de mot de passe, toutes les sessions du compte sont fermées, puis une nouvelle est ouverte pour l'appareil qui a fait le changement.
 
 **Double authentification (2FA)**
 
@@ -219,13 +223,14 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 **Création du premier Admin**
 
 - Tant qu'aucun compte n'existe, l'écran de connexion propose de créer le compte Admin (identifiant et mot de passe choisis à ce moment). Dès qu'un compte existe, cette route est désactivée définitivement.
-- L'application étant exposée sur Internet, un code de démarrage à usage unique est affiché dans les journaux du conteneur au premier lancement et demandé à la création, pour que personne d'autre ne prenne le compte Admin de vitesse.
+- L'application étant exposée sur Internet, un code de démarrage à usage unique est affiché dans les journaux du conteneur au premier lancement et demandé à la création, pour que personne d'autre ne prenne le compte Admin de vitesse. Les essais de code sont soumis à la même limitation des tentatives que la connexion.
 
 **Autorisation**
 
 - Chaque requête vérifie côté serveur le compte connecté, son appartenance à la liste concernée (list_members) et, pour les routes d'administration, le rôle Admin. Le téléphone n'est jamais cru sur parole.
 - Les modifications exigent un en-tête Origin correspondant au domaine de l'application (protection CSRF en complément de SameSite).
 - Ordre des contrôles : origine (CSRF) d'abord, puis la session, avant de lire un gros corps de requête : le lot d'opérations (jusqu'à 200 ko) n'est lu qu'une fois la session et le mot de passe à jour vérifiés. Seules la connexion et la création du premier Admin lisent un petit corps (20 ko) sans session.
+  - **Écart à confirmer :** dans le code livré, le corps de 20 ko au plus est lu (analysé comme JSON) avant la vérification de la session pour toutes les routes de l'API sauf le lot d'opérations ; une requête sans session reçoit ensuite un refus. Seul le lot d'opérations attend la session avant de lire son corps.
 
 **Entrées et affichage**
 
@@ -240,14 +245,18 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 - L'application fait confiance à l'en-tête X-Forwarded-For du seul proxy, pour connaître l'adresse IP réelle.
 - Journal de sécurité (connexions réussies et échouées, blocages, actions d'administration, partages), sans mot de passe, jeton ni code. Il est écrit dans docker logs et dans data/journal.log (droits 600, rotation à 1 Mo, 5 anciens fichiers conservés).
 - Aucun secret dans le code ni dans le dépôt. Aucun mot de passe en configuration : la clé de chiffrement est générée au premier démarrage.
+- **Écart :** en production, Listo refuse de démarrer si LISTO_PUBLIC_URL n'est pas une adresse en https:// (le message est dans les journaux) : sans HTTPS, ni les cookies Secure, ni le mode hors ligne, ni l'installation sur le téléphone ne marchent.
+- Le dépôt étant public, les failles se signalent en privé, selon [SECURITY.md](../SECURITY.md).
 
 **Photos des articles**
 
 - Accès : une photo n'est servie qu'à un compte connecté, membre de la liste de l'article (même contrôle que pour l'article lui-même). Aucune adresse publique ni devinable.
+  - **Écart à confirmer :** la section « Lien public d'une liste » et le code livré servent aussi les photos au visiteur d'un lien public valide (/api/public/<jeton>/photos/<article>), avec les mêmes contrôles que le lien (expiration, mot de passe). La règle ci-dessus (et celle de CLAUDE.md, « les photos ne sont servies qu'aux membres de la liste ») ne mentionne pas cette exception.
 - Format : seulement du JPEG. Le serveur vérifie la signature du fichier et la structure de ses blocs, plafonne le poids (2 Mo) et les dimensions annoncées, et refuse tout le reste, quel que soit le type déclaré par le téléphone.
 - Vie privée : le serveur retire les métadonnées du fichier (position GPS, modèle de l'appareil, date de prise de vue) en supprimant les blocs EXIF, sans bibliothèque supplémentaire. La réduction faite sur le téléphone les retire déjà.
 - Stockage : fichiers dans data/photos, nommés d'après l'identifiant de l'article (jamais d'après un nom envoyé par le téléphone : aucun chemin choisi par l'utilisateur). Un fichier est effacé quand sa photo est remplacée ou retirée, ou quand son article est purgé.
 - Envoi par une route dédiée (le lot d'opérations JSON reste limité à quelques Ko), avec sa propre limite de taille et un plafond d'envois par compte et par heure.
+  - **Écart à confirmer :** le lot d'opérations accepte en réalité jusqu'à 200 ko et 100 opérations par envoi (lu seulement après la vérification de la session).
 - Service : Content-Type image/jpeg et X-Content-Type-Options: nosniff. La Content-Security-Policy n'a pas besoin d'être assouplie (images du même domaine). La photo se choisit par le sélecteur du téléphone : aucun accès continu à la caméra n'est demandé au navigateur.
 
 **Lien public d'une liste**
@@ -260,6 +269,9 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
 - Après un mot de passe correct, le visiteur reçoit un cookie de consultation (HttpOnly, Secure, SameSite=Lax) limité à ce lien, valable 12 heures au plus et jamais au-delà de l'expiration du lien. Ce cookie ne donne aucun accès au reste de l'application. Il est invalidé par un nouveau mot de passe, son retrait, l'arrêt du lien et un redémarrage de Listo (gardé en mémoire seulement).
 - Expiration : la date limite (expires_at) est fixée par le serveur à la création, avec son horloge. Elle est contrôlée à chaque requête (page, données, photos, saisie du mot de passe, cookie de consultation). Un lien expiré, arrêté, ou dont la liste est supprimée répond exactement comme un lien inconnu. Le nettoyage périodique supprime ces liens après 30 jours. Des tests avancent l'horloge pour le vérifier.
 - Lecture seule, par construction : le visiteur n'atteint que des routes de lecture. Les réponses sont construites champ par champ (liste blanche : nom de la liste, catégorie, magasin, articles avec quantité, note, état coché, photo), jamais à partir des objets internes : aucun identifiant de compte, nom d'utilisateur ni autre liste ne peut fuiter. Aucune route de modification n'accepte un cookie de consultation.
+  - **Écart à confirmer :** la réponse livrée contient aussi la date d'expiration du lien, le nom des groupes (rayons, ou magasins d'une liste « multi ») et le type de regroupement ; toujours construite champ par champ, sans identifiant de compte ni nom de personne.
+- Validité, précisée dans le code : un lien n'est valable que si la liste existe encore, si son propriétaire est toujours actif et s'il en est encore le créateur.
+- Clé perdue : si secrets/secret.key est perdue puis recréée, un lien existant marche encore, mais son adresse ne peut plus être réaffichée au propriétaire (version chiffrée illisible) : il faut l'arrêter et en créer un nouveau.
 - Navigation : X-Robots-Tag: noindex, Cache-Control: no-store et Referrer-Policy: no-referrer (le jeton ne part pas vers d'autres sites). Le service worker ne met jamais en cache les pages ni les données du lien public.
 
 ## Architecture technique
@@ -278,17 +290,20 @@ Tout tient en HTML, CSS et JavaScript, côté téléphone comme côté serveur. 
 
 Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode (dessin du QR code de la double authentification). Le calcul des codes TOTP utilise le module crypto intégré à Node. Aucune bibliothèque côté interface, aucune bibliothèque d'image (les photos sont réduites sur le téléphone, puis contrôlées par du code simple côté serveur). Si un besoin futur exigeait un autre langage ou un framework, Claude Code doit d'abord le signaler et argumenter avant de l'introduire.
 
+**Écart :** version de Node.js fixée à 24 (LTS, suivie à long terme). L'image de base node:24-slim est épinglée par son empreinte (sha256). Dependabot ne propose que ses correctifs ; le passage à une nouvelle version majeure se fait à la main, vers une version paire uniquement.
+
 **Routes de l'API**
 
 | Route | Rôle |
 | --- | --- |
-| POST /api/setup, POST /api/login, POST /api/login/2fa, POST /api/logout | Créer le premier Admin (tant qu'aucun compte n'existe), ouvrir la session, saisir le code 2FA, la fermer |
+| GET /api/setup, POST /api/setup, POST /api/login, POST /api/login/2fa, POST /api/logout | Savoir s'il faut créer le premier Admin, le créer (tant qu'aucun compte n'existe), ouvrir la session, saisir le code 2FA, la fermer |
 | GET /api/me, POST /api/me/password, /api/me/2fa (activer, vérifier, désactiver, image du QR code) | Compte connecté, changement de mot de passe |
 | GET /api/lists, GET /api/lists/:id, GET /api/users, GET /api/suggestions | Mes listes, une liste et ses articles, comptes actifs (choix des invités), autocomplétion |
 | GET /api/sync?since=… | Tout ce qui a changé depuis un instant donné, pour les listes de l'utilisateur et les données de référence |
 | POST /api/ops | Reçoit un lot d'opérations de la file d'attente (créer, modifier, cocher, supprimer un article ou une liste). Chaque opération a un identifiant unique |
 | PUT, GET, DELETE /api/items/:id/photo | Envoyer (JPEG, hors du lot d'opérations), lire, retirer la photo d'un article (membres de la liste) |
 | GET /api/events | Flux SSE de notification des changements |
+| GET /api/about | **Écart :** version installée (commit de l'image) pour le bloc « À propos », comptes connectés seulement, jamais publique |
 | PUT /api/lists/:id/members | Modifier le partage d'une liste (propriétaire, en ligne) |
 | GET, PUT, DELETE /api/lists/:id/share | Lire l'état, créer ou modifier (durée, mot de passe), arrêter le lien public (propriétaire, en ligne) |
 | /api/admin/users, /categories, /stores, /aisles | Gestion des données de référence (Admin, en ligne) |
@@ -300,31 +315,39 @@ L'autocomplétion est calculée sur le téléphone à partir de la copie locale 
 
 ```text
 listo/
-  Dockerfile
+  Dockerfile, docker-entrypoint.sh, .dockerignore
   docker-compose.yml, docker-compose.dev.yml
   package.json
+  LICENSE, NOTICE, README.md, CONTRIBUTING.md, SECURITY.md
   server/
-    index.js        démarrage, configuration, clé de chiffrement
+    index.js        démarrage, configuration, clé de chiffrement, arrêt propre
     app.js          assemblage : sécurité, API, fichiers statiques
     config.js, db.js, secrets.js    variables d'environnement, schéma SQLite et migrations, chiffrement
     auth.js, passwords.js, totp.js, twofactor.js, limiter.js, audit.js    connexion, sessions, 2FA, tentatives, journal
+    validate.js     vérification des données reçues
     lists.js        listes, articles, historique, synchronisation
     photos.js       photos des articles (contrôle JPEG, stockage)
     shares.js       lien public (jeton, mot de passe, expiration)
     events.js       diffusion SSE
-    routes/         auth, me, lists, admin, public
+    backup.js       sauvegarde nocturne
+    backup-now.js, admin-secours.js    commandes à lancer sur le serveur (sauvegarde à la demande, compte Admin perdu)
+    pages/          les deux pages HTML du lien public (liste, lien expiré ou inexistant)
+    routes/         auth, me, lists, photos, shares, public, admin (admin-users, admin-references)
   public/
     index.html      application
-    p/              page publique du lien (sans compte)
     manifest.webmanifest
     sw.js           service worker
     css/            variables de thème, styles
-    js/             app, api, stockage local, file d'attente, règles partagées, écrans
+    js/             app, api, stockage local, file d'attente, règles partagées, écrans ; public.js pour la page publique
     icons/
-  data/             volume Docker : base listo.db, sauvegardes, photos/, journal.log
-  secrets/          volume Docker séparé : secret.key
+  test/             tests automatisés (npm test)
+  docs/             ce cahier des charges, guide d'exploitation, détails techniques, captures
+  design/           kit de design et maquettes
+  data/             volume Docker : base listo.db, sauvegardes, photos/, journal.log (jamais dans le dépôt)
+  secrets/          volume Docker séparé : secret.key (jamais dans le dépôt)
 ```
 
+**Écart :** la page publique n'est pas un dossier public/p/ : ses deux pages HTML sont dans server/pages/ et son script dans public/js/public.js. S'y ajoutent les fichiers de la sauvegarde, des commandes de secours, de la licence et de la documentation.
 ## Déploiement
 
 Listo tourne dans un seul conteneur Docker, avec un dossier de données monté en volume. Nginx Proxy Manager, installé sur une autre machine, et le HTTPS restent gérés par l'administrateur : le sous-domaine est une simple variable.
@@ -358,25 +381,31 @@ services:
 - Au premier démarrage, aucun compte n'existe : le premier accès à l'adresse de l'application propose de créer le compte Admin, avec le code de démarrage visible dans les journaux (docker logs listo). Aucun mot de passe n'est stocké dans la configuration.
 - Le schéma de la base se crée et se met à jour automatiquement au démarrage (migrations numérotées).
 - Route GET /healthz pour la surveillance (réponse simple, sans donnée).
+- **Écart :** arrêt propre : à l'arrêt du conteneur (docker stop, mise à jour), Listo termine les requêtes en cours, ferme les flux temps réel et la base avant de s'arrêter.
 
 **Flux SSE derrière Nginx Proxy Manager**
 
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
 - Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : docs/exploitation.md, chapitre 3).
 - Pour le reconnaître : un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (synchronisation de secours) au lieu de quelques secondes.
+- **Écart (précision) :** le temps réel passe par une connexion HTTP ordinaire (SSE), pas par WebSocket : l'option « Websockets Support » de Nginx Proxy Manager n'est pas nécessaire. Ce qui compte, c'est de couper le cache et la mise en mémoire tampon pour /api/events (les lignes ci-dessus).
 
 **Image Docker construite automatiquement**
 
 - Un workflow GitHub Actions (`.github/workflows/docker.yml`) construit l'image et la publie sur ghcr.io/magicgg91/listo à chaque fusion sur main. Étiquettes : `latest` et `sha-<commit>` (pour revenir à une version précise).
 - Sur le serveur, il suffit du docker-compose.yml : aucun code source à y copier. Le compose de production utilise `image:`, jamais `build:`.
 - Le dépôt étant privé, l'image l'est aussi : le serveur s'y connecte une fois avec `docker login ghcr.io` (jeton GitHub limité à la lecture des paquets). Rendre le paquet public est possible, l'image ne contient ni base ni secret.
-- Un fichier `.dockerignore` garde hors de l'image : data/, secrets/, .git, design/maquettes, node_modules, .env.
+  - **Écart :** le dépôt et l'image ghcr.io/magicgg91/listo sont maintenant publics : plus besoin de `docker login` ni de jeton.
+- Les actions du workflow et l'image de base sont épinglées par leur empreinte. Dependabot vérifie chaque semaine les dépendances du serveur, l'image de base et les actions, et ouvre des pull requests ; rien n'est fusionné automatiquement.
+- Un fichier `.dockerignore` garde hors de l'image : data/, secrets/, .git, design/maquettes, node_modules, .env. **Écart :** aussi .github, design/photos, test/, docs/ et les fichiers *.log.
 - Pour tester en local, un fichier docker-compose.dev.yml (avec `build: .`) est fourni à côté.
 
 **Sauvegarde et mise à jour**
 
-- Chaque nuit, l'application copie la base dans data/backups (commande SQLite VACUUM INTO) et garde les 14 dernières copies. Le dossier data (base, sauvegardes, photos, journal) est à inclure dans la sauvegarde habituelle de l'hôte : les photos sont de simples fichiers, absents de la copie de la base. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
+- Chaque nuit, l'application copie la base dans data/backups (commande SQLite VACUUM INTO) et garde les 14 dernières copies. Précisions du code livré : vers 3 h (fuseau TZ), copie vérifiée (PRAGMA integrity_check), lisible par Listo seul (droits 600), réussite ou échec notés dans le journal ; un échec n'arrête pas Listo.
+- **Écart :** deux commandes à lancer sur le serveur, sous l'utilisateur node (elles refusent d'être lancées en root) : `server/backup-now.js` (sauvegarde à la demande, avant une mise à jour par exemple) et `server/admin-secours.js` (mot de passe provisoire, et retrait du 2FA si besoin, quand plus aucun Admin ne peut se connecter). Le dossier data (base, sauvegardes, photos, journal) est à inclure dans la sauvegarde habituelle de l'hôte : les photos sont de simples fichiers, absents de la copie de la base. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
 - Mise à jour : docker compose pull && docker compose up -d. Aucun code à récupérer sur le serveur. La base est conservée dans le volume.
+- Procédures détaillées (installation, Nginx Proxy Manager, restauration, dépannage) : [docs/exploitation.md](exploitation.md).
 
 ## Brief visuel pour Claude Design
 
@@ -433,21 +462,31 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 
 ## Plan de développement
 
-Onze étapes, chacune livrable et testable seule. Les étapes 1 à 10 sont livrées ; l'étape 11 est en cours de validation. Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
+Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livrées.** Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
 
-| # | Étape | Contenu | Critère d'acceptation |
-| --- | --- | --- | --- |
-| 1 | Socle | Projet Node et Express, SQLite et schéma, route /healthz, Dockerfile, .dockerignore, docker-compose.yml (production) et docker-compose.dev.yml (local) | docker compose up démarre, /healthz répond, la base apparaît dans ./data |
-| 2 | Comptes et sessions | Création du premier Admin à la première connexion, connexion, déconnexion, sessions, limitation des tentatives, changement de son propre mot de passe, double authentification TOTP facultative avec codes de secours | La 6e tentative ratée est bloquée. Un Utilisateur reçoit un refus sur les routes d'administration. Un compte avec 2FA exige son code après le mot de passe. L'écran de création du premier Admin disparaît dès qu'un compte existe |
-| 3 | Administration | Comptes (dont désactivation du 2FA d'un utilisateur), catégories, magasins, rayons, données de départ | Un élément déjà utilisé peut être désactivé mais pas supprimé |
-| 4 | Listes et articles | Création, partage, ajout, modification, cochage, vider les barrés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon |
-| 5 | Interface mobile | Intégration des maquettes, thèmes clair et sombre, version ordinateur, PWA installable | Installable sur l'écran d'accueil. Zones tactiles d'au moins 44 px. Thème suivant le téléphone |
-| 6 | Magasin « multi » | Type de magasin « multi » et magasins regroupés (administration), magasin par article, tri par magasin, magasin habituel par article dans l'historique | Dans une liste à magasin « multi », « œufs » ajouté deux fois retrouve son magasin. Une liste à magasin simple se comporte comme avant |
-| 7 | Photos des articles | Route d'envoi JPEG, contrôle du fichier et retrait des métadonnées, stockage dans data/photos, prise ou choix de la photo, vignette, agrandissement, nettoyage | Une photo ajoutée sur un téléphone apparaît sur l'autre après actualisation. Un fichier qui n'est pas un JPEG valide est refusé. Un non-membre ne peut pas la lire |
-| 8 | Temps réel | Flux SSE, rafraîchissement régulier et manuel, indicateur de synchro | Un article coché sur un téléphone apparaît sur l'autre en moins de 3 secondes |
-| 9 | Hors ligne | Service worker, IndexedDB, file d'attente (photos comprises), gestion des conflits | En mode avion : 3 ajouts, 2 cochages et 1 photo. Au retour du réseau, tout apparaît chez l'autre utilisateur, sans doublon |
-| 10 | Lien public | Création, durée, mot de passe généré, arrêt, page publique en lecture seule avec photos | Un lien expiré ne fonctionne plus (horloge avancée dans les tests). Un visiteur ne peut rien modifier ni voir une autre liste. Le mot de passe est refusé après 5 essais |
-| 11 | Finitions | Vérification des en-têtes de sécurité, sauvegarde nocturne de la base (les photos, simples fichiers de data/photos, sont couvertes par la sauvegarde du dossier data de l'hôte), README, passage en production derrière Nginx Proxy Manager | Accessible en HTTPS sur le sous-domaine. Une sauvegarde est créée. Le README permet une réinstallation |
+| # | Étape | Contenu | Critère d'acceptation | État |
+| --- | --- | --- | --- | --- |
+| 1 | Socle | Projet Node et Express, SQLite et schéma, route /healthz, Dockerfile, .dockerignore, docker-compose.yml (production) et docker-compose.dev.yml (local) | docker compose up démarre, /healthz répond, la base apparaît dans ./data | Livrée |
+| 2 | Comptes et sessions | Création du premier Admin à la première connexion, connexion, déconnexion, sessions, limitation des tentatives, changement de son propre mot de passe, double authentification TOTP facultative avec codes de secours | La 6e tentative ratée est bloquée. Un Utilisateur reçoit un refus sur les routes d'administration. Un compte avec 2FA exige son code après le mot de passe. L'écran de création du premier Admin disparaît dès qu'un compte existe | Livrée |
+| 3 | Administration | Comptes (dont désactivation du 2FA d'un utilisateur), catégories, magasins, rayons, données de départ | Un élément déjà utilisé peut être désactivé mais pas supprimé | Livrée |
+| 4 | Listes et articles | Création, partage, ajout, modification, cochage, vider les barrés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon | Livrée |
+| 5 | Interface mobile | Intégration des maquettes, thèmes clair et sombre, version ordinateur, PWA installable | Installable sur l'écran d'accueil. Zones tactiles d'au moins 44 px. Thème suivant le téléphone | Livrée |
+| 6 | Magasin « multi » | Type de magasin « multi » et magasins regroupés (administration), magasin par article, tri par magasin, magasin habituel par article dans l'historique | Dans une liste à magasin « multi », « œufs » ajouté deux fois retrouve son magasin. Une liste à magasin simple se comporte comme avant | Livrée |
+| 7 | Photos des articles | Route d'envoi JPEG, contrôle du fichier et retrait des métadonnées, stockage dans data/photos, prise ou choix de la photo, vignette, agrandissement, nettoyage | Une photo ajoutée sur un téléphone apparaît sur l'autre après actualisation. Un fichier qui n'est pas un JPEG valide est refusé. Un non-membre ne peut pas la lire | Livrée |
+| 8 | Temps réel | Flux SSE, rafraîchissement régulier et manuel, indicateur de synchro | Un article coché sur un téléphone apparaît sur l'autre en moins de 3 secondes | Livrée |
+| 9 | Hors ligne | Service worker, IndexedDB, file d'attente (photos comprises), gestion des conflits | En mode avion : 3 ajouts, 2 cochages et 1 photo. Au retour du réseau, tout apparaît chez l'autre utilisateur, sans doublon | Livrée |
+| 10 | Lien public | Création, durée, mot de passe généré, arrêt, page publique en lecture seule avec photos | Un lien expiré ne fonctionne plus (horloge avancée dans les tests). Un visiteur ne peut rien modifier ni voir une autre liste. Le mot de passe est refusé après 5 essais | Livrée |
+| 11 | Finitions | Vérification des en-têtes de sécurité, sauvegarde nocturne de la base (les photos, simples fichiers de data/photos, sont couvertes par la sauvegarde du dossier data de l'hôte), README, passage en production derrière Nginx Proxy Manager | Accessible en HTTPS sur le sous-domaine. Une sauvegarde est créée. Le README permet une réinstallation | Livrée |
+
+**Après l'étape 11**
+
+- Durcissement après un audit de sécurité : cookies de connexion préfixés __Host- en production, en-têtes Permissions-Policy, Cross-Origin-Opener-Policy, Cross-Origin-Resource-Policy et X-Robots-Tag (noindex), connexion vérifiée avant de lire le lot d'opérations, Dependabot et épinglage des versions.
+- Vocabulaire : « article » dans les listes de courses, « élément » dans les autres listes ; messages du serveur neutres.
+- Bloc « À propos » dans les Réglages (route GET /api/about) et retour à Node 24.
+- Licence Apache-2.0, fichiers NOTICE, CONTRIBUTING.md et SECURITY.md ; publication du dépôt et de l'image.
+- README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
+
+**Tests automatisés** : 226 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
 
 **Consignes pour Claude Code**
 
@@ -455,6 +494,37 @@ Onze étapes, chacune livrable et testable seule. Les étapes 1 à 10 sont livr�
 - Si un autre langage ou une autre bibliothèque paraît plus adapté, le dire, expliquer pourquoi avec les éléments de comparaison, et attendre la décision avant de l'utiliser.
 - Chaque étape se termine par des tests automatisés sur les points sensibles (droits d'accès, synchronisation, file d'attente hors ligne) et par un résumé en langage simple de ce qui a été fait.
 - En cas d'ambiguïté dans ce cahier des charges, poser la question plutôt que deviner.
+
+## Écarts et décisions depuis la version validée
+
+Une ligne par écart, avec sa raison. Le code livré fait foi.
+
+- **Node 24** (LTS), image node:24-slim épinglée par son empreinte ; Dependabot ignore les montées majeures de Node, faites à la main vers une version paire. Raison : version suivie longtemps, image reproductible.
+- **Cookies __Host-** en production (session et 2FA en attente). Raison : un autre sous-domaine ne peut ni les lire ni les remplacer.
+- **En-têtes de sécurité complétés** : CSP stricte, Permissions-Policy, COOP et CORP (same-origin), X-Robots-Tag noindex et balise meta robots, Referrer-Policy no-referrer partout. Raison : audit de sécurité avant publication.
+- **Ordre des contrôles** : origine, puis session, avant de lire le lot d'opérations. Raison : ne rien analyser pour un visiteur non connecté.
+- **Refus de démarrer sans https** en production. Raison : sans HTTPS, connexion, hors ligne et installation ne marchent pas.
+- **Arrêt propre** à l'arrêt du conteneur. Raison : une mise à jour n'abîme rien.
+- **Sauvegarde nocturne** vers 3 h (VACUUM INTO, copie vérifiée, 14 gardées, droits 600). Raison : précisions de l'étape 11.
+- **Commandes de secours** backup-now.js et admin-secours.js, refusées en root. Raison : sauvegarde à la demande et reprise en main si plus aucun Admin ne peut se connecter.
+- **Vocabulaire** : « article » seulement dans les listes de courses, « élément » ailleurs ; messages du serveur neutres. Raison : « article » sonnait faux dans une liste de tâches.
+- **Bloc « À propos »** dans les Réglages et route GET /api/about, réservée aux comptes connectés. Raison : savoir quelle version est installée, sans la rendre publique.
+- **« Réinitialiser les données de ce téléphone »** dans les Réglages. Raison : réparer une copie locale abîmée sans aide technique.
+- **Temps réel ouvert au premier plan**, fermé en arrière-plan, 5 connexions au plus par compte. Raison : batterie, et changements reçus aussi sur « Mes listes ».
+- **Pas de WebSocket** dans Nginx Proxy Manager ; cache et tampon coupés pour /api/events. Raison : le temps réel passe par SSE.
+- **Photos gardées hors ligne** : 150 au plus. Raison : ne pas remplir le téléphone.
+- **Page publique** dans server/pages/ et public/js/public.js (pas de dossier public/p/). Raison : deux pages servies par le serveur, sans donnée dedans.
+- **Validité du lien public** : liste existante, propriétaire actif et toujours créateur du lien ; après une perte de la clé, l'adresse ne peut plus être réaffichée. Raison : précisions du code.
+- **Publication** : licence Apache-2.0 (LICENSE, NOTICE), CONTRIBUTING.md, SECURITY.md (signalement privé des failles), dépôt public, image publique ghcr.io/magicgg91/listo sans `docker login`. Raison : rendre le projet réutilisable.
+- **Documentation** : README court ; guide d'exploitation dans docs/exploitation.md ; détails techniques dans docs/developpement.md. Raison : un README lisible.
+- **Image Docker** : .dockerignore étendu (.github, design/photos, test/, docs/, *.log). Raison : image plus petite, sans fichiers inutiles.
+
+**Écarts à confirmer** (droits ou sécurité : le code livré et ce document ne disent pas la même chose)
+
+1. **Photos et lien public** : la règle « une photo n'est servie qu'aux membres de la liste » (section Sécurité, Photos, et CLAUDE.md) ne cite pas l'exception du lien public, alors que le lien public et le code servent les photos au visiteur.
+2. **Taille du lot d'opérations** : « quelques Ko » dans la section Photos ; 200 ko et 100 opérations dans le code.
+3. **Réponse du lien public** : la liste blanche ne cite pas la date d'expiration, le nom des groupes (rayons ou magasins) et le type de regroupement, que le code envoie.
+4. **Corps lu avant la session** : le document dit que seules la connexion et la création du premier Admin lisent un corps (20 ko) sans session ; le code lit ce petit corps avant de vérifier la session pour toutes les routes de l'API sauf le lot d'opérations.
 
 ## Hypothèses validées et hors périmètre
 
@@ -475,31 +545,33 @@ Ces points ont été tranchés par défaut pendant la rédaction, puis validés 
 
 **Hypothèses à valider (mise à jour du 17 octobre 2026)**
 
+Ces hypothèses ont été appliquées telles quelles aux étapes 6, 7 et 10, livrées et validées : le code livré les respecte.
+
 Photo d'un article
 
-- [ ] Une seule photo par article, visible de tous les membres de la liste, supprimée avec l'article.
-- [ ] La photo est prise ou choisie depuis le téléphone, réduite sur le téléphone (1 280 px, JPEG) et stockée en fichier dans data/photos, pas dans la base, sans nouvelle dépendance.
-- [ ] La photo appartient à l'article, pas à l'historique d'autocomplétion : le même nom ajouté plus tard n'a pas de photo.
-- [ ] Hors ligne, on peut prendre une photo (elle part au retour du réseau) ; seules les photos déjà vues s'affichent sans réseau.
+- [x] Une seule photo par article, visible de tous les membres de la liste, supprimée avec l'article.
+- [x] La photo est prise ou choisie depuis le téléphone, réduite sur le téléphone (1 280 px, JPEG) et stockée en fichier dans data/photos, pas dans la base, sans nouvelle dépendance.
+- [x] La photo appartient à l'article, pas à l'historique d'autocomplétion : le même nom ajouté plus tard n'a pas de photo.
+- [x] Hors ligne, on peut prendre une photo (elle part au retour du réseau) ; seules les photos déjà vues s'affichent sans réseau.
 
 Lien public
 
-- [ ] Un seul lien actif par liste ; seul le propriétaire le crée, le modifie et l'arrête.
-- [ ] Le mot de passe est toujours généré par Listo (16 caractères), affiché une seule fois, régénérable ; le propriétaire ne choisit pas lui-même le mot de passe.
-- [ ] Durée de 1 heure à 365 jours, ou illimitée ; 24 heures proposées par défaut ; changer la durée fait repartir le délai de maintenant.
-- [ ] Le visiteur voit le nom de la liste, les articles, quantités, notes, photos et l'état coché, mais ni les noms des personnes, ni l'historique, ni les autres listes.
-- [ ] La page publique se rafraîchit à l'ouverture et à la demande, sans temps réel.
+- [x] Un seul lien actif par liste ; seul le propriétaire le crée, le modifie et l'arrête.
+- [x] Le mot de passe est toujours généré par Listo (16 caractères), affiché une seule fois, régénérable ; le propriétaire ne choisit pas lui-même le mot de passe.
+- [x] Durée de 1 heure à 365 jours, ou illimitée ; 24 heures proposées par défaut ; changer la durée fait repartir le délai de maintenant.
+- [x] Le visiteur voit le nom de la liste, les articles, quantités, notes, photos et l'état coché, mais ni les noms des personnes, ni l'historique, ni les autres listes.
+- [x] La page publique se rafraîchit à l'ouverture et à la demande, sans temps réel.
 
 Magasin « multi »
 
-- [ ] Un magasin « multi » est créé par l'Admin et regroupe d'autres magasins de la liste commune (par exemple Fromagerie, Boucherie, Leclerc) ; il n'en regroupe pas un autre « multi ».
-- [ ] Dans une liste à magasin « multi », chaque article a son magasin, sans rayon ; l'affichage groupe par magasin ; « Sans magasin » en dernier. Le magasin est celui de l'article (pains à burger chez le boucher possible).
-- [ ] L'application mémorise, pour chaque article, son magasin habituel.
-- [ ] Dans une liste « multi », pas de rayon : seul le magasin compte. Les rayons restent communs pour les listes à magasin simple.
+- [x] Un magasin « multi » est créé par l'Admin et regroupe d'autres magasins de la liste commune (par exemple Fromagerie, Boucherie, Leclerc) ; il n'en regroupe pas un autre « multi ».
+- [x] Dans une liste à magasin « multi », chaque article a son magasin, sans rayon ; l'affichage groupe par magasin ; « Sans magasin » en dernier. Le magasin est celui de l'article (pains à burger chez le boucher possible).
+- [x] L'application mémorise, pour chaque article, son magasin habituel.
+- [x] Dans une liste « multi », pas de rayon : seul le magasin compte. Les rayons restent communs pour les listes à magasin simple.
 
 Plan
 
-- [ ] Les nouvelles fonctions passent avant le temps réel et le hors ligne : magasin « multi » (étape 6), photos (7), temps réel (8), hors ligne (9), lien public (10), finitions (11).
+- [x] Les nouvelles fonctions passent avant le temps réel et le hors ligne : magasin « multi » (étape 6), photos (7), temps réel (8), hors ligne (9), lien public (10), finitions (11).
 
 **Hors périmètre de la v1**
 

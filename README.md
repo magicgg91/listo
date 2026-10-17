@@ -29,7 +29,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé et autocomplétion, tri des articles |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
-| `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css` sans sa section 16) et petits ajustements propres à l'application |
+| `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css` sans sa section 17 (la section 16, photo / « multi » / lien public, est à y ajouter aux étapes 6, 7 et 10)) et petits ajustements propres à l'application |
 | `public/manifest.webmanifest`, `public/sw.js`, `public/icons/` | Installation sur l'écran d'accueil (PWA). Le service worker ne met rien en cache |
 | `public/js/app.js` | Démarrage de l'interface, compte connecté, copie locale des données, choix de l'écran |
 | `public/js/router.js` | Adresses `#/listes/…`, bouton Retour du téléphone, fenêtres superposées |

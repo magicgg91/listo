@@ -21,6 +21,26 @@ import { listRoutes } from './routes/lists.js';
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
 
+// Politique de sécurité du contenu (CSP), envoyée avec chaque réponse : le
+// navigateur n'accepte que les fichiers venant de Listo lui-même. Aucun script
+// ni style écrit directement dans la page, aucune ressource d'un autre site,
+// aucune image « data: ». Une injection de code serait donc bloquée par le
+// navigateur, même si elle passait ailleurs.
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self'",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "worker-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 // Options :
 // - db : base ouverte (obligatoire)
 // - config : configuration (voir config.js)
@@ -55,6 +75,17 @@ export function createApp({
 
   // Ne pas annoncer « Express » dans les réponses
   app.disable('x-powered-by');
+
+  // En-têtes de sécurité sur toutes les réponses
+  app.use((req, res, next) => {
+    res.set({
+      'Content-Security-Policy': CONTENT_SECURITY_POLICY,
+      'X-Content-Type-Options': 'nosniff',     // pas de « devinette » du type de fichier
+      'Referrer-Policy': 'no-referrer',        // l'adresse de Listo n'est pas transmise ailleurs
+      'X-Frame-Options': 'DENY',               // Listo ne peut pas être affiché dans un cadre
+    });
+    next();
+  });
 
   // Listo est derrière un seul proxy (Nginx Proxy Manager) : on ne croit son
   // en-tête X-Forwarded-For que pour un seul intermédiaire, ce qui donne la
@@ -112,8 +143,10 @@ export function createApp({
 
   app.use('/api', api);
 
-  // Fichiers de l'interface
-  app.use(express.static(PUBLIC_DIR));
+  // Fichiers de l'interface. Ils sont revalidés à chaque chargement (le
+  // navigateur demande « ai-je la dernière version ? »), pour qu'une mise à
+  // jour de Listo soit vue tout de suite.
+  app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
 
   // Ménage régulier : sessions expirées, compteurs de tentatives périmés,
   // listes et articles supprimés depuis plus de 30 jours.

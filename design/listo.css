@@ -383,7 +383,98 @@
   .app *, .app *::before, .app *::after { animation: none !important; transition: none !important; }
 }
 
-/* ---------- 16. Présentation des maquettes (inutile en production) ---------- */
+/* ---------- 16. Photos, magasin « multi », lien public (ajout) ----------
+   N'utilise que les variables existantes. Aucune couleur en dur.
+   16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
+   16.4 Page publique en lecture seule */
+
+/* 16.1 Photo d'un article */
+.photo { display: block; width: 100%; height: 100%; object-fit: cover; }
+.item__photo { display: block; flex: none; align-self: center; width: 48px; height: 48px; margin: 4px 0 4px 12px; padding: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-neutral-soft); }
+.item.is-done .item__photo { opacity: 0.6; }
+
+.sheet--scroll { overflow-y: auto; overscroll-behavior: contain; }
+.photo-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1); }
+.photo-actions .btn { padding: 0 12px; }
+.photo-block { display: flex; align-items: center; gap: var(--space-2); }
+.photo-block__thumb { display: block; flex: none; width: 112px; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-neutral-soft); }
+.photo-block__actions { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: var(--space-1); }
+.photo-block__actions .btn { width: 100%; padding: 0 12px; }
+
+/* Photo plein écran : fond toujours sombre (couleurs inversées en thème clair, couleurs du thème en sombre) */
+.lightbox { --lb-bg: var(--color-inverse-bg); --lb-fg: var(--color-inverse-text); position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; background: var(--lb-bg); color: var(--lb-fg); animation: fade-in 160ms var(--ease); }
+[data-theme="dark"] .lightbox { --lb-bg: var(--color-bg); --lb-fg: var(--color-text); }
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] .lightbox { --lb-bg: var(--color-bg); --lb-fg: var(--color-text); }
+}
+.lightbox__bar { display: flex; align-items: center; gap: var(--space-1); min-height: 64px; padding: var(--space-0) var(--space-1) var(--space-0) var(--space-2); }
+.lightbox__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-lg); font-weight: 700; }
+.lightbox .icon-btn { color: var(--lb-fg); }
+.lightbox__stage { display: grid; flex: 1; min-height: 0; place-items: center; padding: var(--space-2); }
+.lightbox__img { display: block; width: 100%; height: auto; max-height: 100%; border-radius: var(--radius-sm); object-fit: contain; }
+.lightbox__cap { padding: var(--space-2) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); text-align: center; font-size: var(--text-sm); }
+
+/* 16.2 Magasin « multi » : le magasin joue le rôle du rayon */
+.aisle__name { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.badge-multi { display: inline-flex; align-items: center; gap: 4px; flex: none; height: 24px; padding: 0 8px; border: 1px solid var(--color-accent); border-radius: var(--radius-pill); background: var(--color-accent-soft); color: var(--color-accent-ink); font-size: var(--text-sm); font-weight: 700; line-height: 1; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.input__value { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.list-card__meta .badge-multi { height: 22px; }
+
+.add-block { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); }
+.add-block__row { display: flex; gap: var(--space-1); }
+.manage__name .badge-multi { margin-left: 6px; vertical-align: middle; }
+.icon-btn[aria-expanded="true"] .icon { transform: rotate(180deg); }
+.manage-detail { border-bottom: 1px solid var(--color-border); background: var(--color-bg); }
+.manage-detail:last-child { border-bottom: 0; }
+.manage-detail__title { padding: 12px var(--space-2) 4px; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
+.manage-detail .tick-row { min-height: 48px; }
+.manage-detail__note { padding: var(--space-1) var(--space-2) var(--space-2); font-size: var(--text-sm); color: var(--color-text-2); }
+
+/* 16.3 Partage par lien */
+.duration { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1); }
+.duration__opt { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--tap-min); padding: 0 12px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-surface); font-weight: 600; }
+.duration__opt[aria-checked="true"] { padding: 0 11px; border: 2px solid var(--color-accent); background: var(--color-accent-soft); }
+.duration__opt[aria-checked="true"] .icon { color: var(--color-accent-ink); }
+.duration__opt[disabled] { border-color: var(--color-border); color: var(--color-text-2); cursor: not-allowed; }
+.duration-custom { display: flex; gap: var(--space-1); }
+.duration-custom .input { flex: none; width: 96px; text-align: center; }
+.duration-custom .segmented { flex: 1; }
+.switch[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+.link-box { display: flex; align-items: center; gap: var(--space-1); min-height: 52px; padding: 0 14px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-bg); }
+.link-box .icon { color: var(--color-accent-ink); }
+.link-box__url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 var(--text-sm) var(--font-mono); letter-spacing: 0.02em; }
+.expiry { display: flex; align-items: flex-start; gap: 12px; }
+.expiry .icon { margin-top: 2px; color: var(--color-text-2); }
+.expiry__title { display: block; font-weight: 600; line-height: 1.3; }
+.expiry__sub { display: block; font-size: var(--text-sm); color: var(--color-text-2); }
+.secret { display: flex; flex-direction: column; gap: var(--space-1); padding: 12px 12px 12px 14px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-bg); }
+.secret__label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 700; }
+.secret__row { display: flex; align-items: center; gap: var(--space-1); }
+.secret__value { flex: 1; min-width: 0; font: 600 var(--text-lg) var(--font-mono); letter-spacing: 0.06em; overflow-wrap: anywhere; user-select: all; }
+.secret__value--masked { color: var(--color-text-2); user-select: none; }
+
+/* 16.4 Page publique en lecture seule */
+.readonly-banner { display: flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: 36px; padding: 0 var(--space-2); border-bottom: 1px solid var(--color-border); background: var(--color-neutral-soft); font-size: var(--text-sm); font-weight: 600; }
+.public-head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-1); }
+.public-head__main { flex: 1; min-width: 0; }
+.public-head__title { font-size: var(--text-title); font-weight: 700; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.public-head__sub { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--color-text-2); }
+.public-foot { display: flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: 52px; padding: 0 var(--space-2) env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--color-border); background: var(--color-surface); font-size: var(--text-sm); color: var(--color-text-2); }
+.check--static { cursor: default; pointer-events: none; }
+.check--static.is-on .check__box { background: var(--color-accent); border-color: var(--color-accent); }
+.gate { display: flex; flex-direction: column; flex: 1; justify-content: center; gap: var(--space-3); padding: var(--space-4) var(--space-3); }
+.gate__head { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+
+.lightbox .btn--secondary { border-color: var(--lb-fg); background: transparent; color: var(--lb-fg); }
+.lightbox__foot { padding: 0 var(--space-2) calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+.text-sm { font-size: var(--text-sm); }
+.stack--lg { gap: var(--space-3); }
+.body--flush { padding: 0 0 var(--space-3); }
+.add-block__row .btn { min-height: 52px; }
+.input[disabled] { border-color: var(--color-border); background: var(--color-neutral-soft); color: var(--color-text-2); cursor: not-allowed; }
+
+/* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }
 .stage__row { padding: 32px 40px; background: var(--stage); color: var(--color-text); font-family: var(--font); }

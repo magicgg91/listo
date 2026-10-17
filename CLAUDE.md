@@ -28,7 +28,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 
 ## Design
 
-- Utiliser `design/listo.css` tel quel, avec ses noms de classes et de variables CSS. Sa section 16 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée dans la copie utilisée par l'application.
+- Utiliser `design/listo.css` tel quel, avec ses noms de classes et de variables CSS. Sa section 16 (photo, magasin « multi », lien public) est à reprendre ; sa section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée dans la copie utilisée par l'application.
 - Thème : attribut `data-theme` sur `<html>` (`light`, `dark` ou `auto`). Le choix de l'utilisateur écrit simplement cette valeur.
 - Icônes : coller `design/icons-sprite.html` une fois au début du `<body>`, puis `<svg class="icon" aria-hidden="true"><use href="#i-nom"/></svg>`.
 - Le balisage de référence de chaque composant est dans `design/components.html`.

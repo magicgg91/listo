@@ -192,7 +192,7 @@ Le téléphone garde une copie locale des listes, modifie d'abord cette copie, p
 
 - Hors ligne, l'administration, le changement de partage d'une liste et la gestion du lien public sont indisponibles (boutons grisés avec une explication).
 - Si la session a expiré pendant la coupure, l'application demande de se reconnecter sans perdre la file d'attente.
-- L'indicateur d'état affiche : « À jour », « Synchronisation… » ou « Hors ligne, N modifications en attente ».
+- L'indicateur d'état affiche : « À jour », « Synchronisation… » ou « Hors ligne · N en attente » (libellé de la maquette).
 
 ## Sécurité
 

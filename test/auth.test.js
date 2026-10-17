@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login, tempDir, SETUP_CODE, ORIGIN } from './helpers.js';
 import { createJournalFile } from '../server/audit.js';
@@ -116,7 +117,7 @@ test('en production, le cookie de session est « Secure » (HTTPS seulement)', a
   const app = await startTestApp(t, { config: { production: true } });
   const admin = app.client();
   const res = await admin.post('/api/setup', { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!' });
-  assert.match(res.setCookies.find((c) => c.startsWith('listo_session=')), /Secure/);
+  assert.match(res.setCookies.find((c) => c.startsWith('__Host-listo_session=')), /Secure/);
 });
 
 test('le jeton de session est stocké haché en base (256 bits)', async (t) => {
@@ -552,4 +553,43 @@ test('la politique de sécurité (CSP) stricte est envoyée sur toutes les répo
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
   }
+});
+
+test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\'à 200 ko)', async (t) => {
+  const app = await startTestApp(t);
+  const post = (body, cookie) => fetch(`${app.base}/api/ops`, {
+    method: 'POST',
+    headers: { origin: ORIGIN, 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+    body,
+  });
+  const garbage = (kb) => `{"ops": [${'x'.repeat(kb * 1024)}`; // JSON invalide
+
+  // Sans connexion : 401, jamais 400 (JSON mal formé) ni 413 (trop gros)
+  for (const kb of [150, 300]) {
+    const res = await post(garbage(kb));
+    assert.equal(res.status, 401, `${kb} ko`);
+    assert.deepEqual(await res.json(), { error: 'Connexion requise.' });
+  }
+  // Cookie de session inventé : pareil
+  assert.equal((await post(garbage(150), 'listo_session=faux')).status, 401);
+  // Contrôle d'origine toujours en premier
+  const foreign = await fetch(`${app.base}/api/ops`, { method: 'POST', headers: { origin: 'https://ailleurs.example', 'content-type': 'application/json' }, body: garbage(150) });
+  assert.equal(foreign.status, 403);
+
+  // Connecté : comportement inchangé
+  const admin = await setupAdmin(app);
+  const cookie = [...admin.jar].map(([n, v]) => `${n}=${v}`).join('; ');
+  const ok = await post(JSON.stringify({ ops: [{ id: crypto.randomUUID(), type: 'list.create', listId: crypto.randomUUID(), name: 'Courses', categoryId: 1 }] }), cookie);
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).results[0].status, 200);
+  assert.equal((await post(garbage(150), cookie)).status, 400, 'connecté : JSON mal formé');
+  assert.equal((await post(garbage(300), cookie)).status, 413, 'connecté : lot trop gros');
+
+  // Mot de passe provisoire pas encore changé : refusé avant lecture aussi
+  await addUser(app.db, { username: 'paul', password: 'MotDePasse-paul' });
+  app.db.prepare("UPDATE users SET must_change_password = 1 WHERE username = 'paul'").run();
+  const paul = app.client();
+  await login(paul, 'paul', 'MotDePasse-paul');
+  const paulCookie = [...paul.jar].map(([n, v]) => `${n}=${v}`).join('; ');
+  assert.equal((await post(garbage(150), paulCookie)).status, 403);
 });

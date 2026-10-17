@@ -8,6 +8,8 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, ORIGIN, SETUP_CODE } from './helpers.js';
 import { CONTENT_SECURITY_POLICY, PERMISSIONS_POLICY } from '../server/app.js';
+import { totpCode, totpStep } from '../server/totp.js';
+import { openTotpSecret } from '../server/twofactor.js';
 
 const uuid = () => crypto.randomUUID();
 
@@ -27,6 +29,9 @@ function checkHeaders(res, label) {
   assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} : Referrer-Policy`);
   assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} : X-Frame-Options`);
   assert.equal(res.headers.get('permissions-policy'), PERMISSIONS_POLICY, `${label} : Permissions-Policy`);
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow', `${label} : X-Robots-Tag`);
+  assert.equal(res.headers.get('cross-origin-opener-policy'), 'same-origin', `${label} : Cross-Origin-Opener-Policy`);
+  assert.equal(res.headers.get('cross-origin-resource-policy'), 'same-origin', `${label} : Cross-Origin-Resource-Policy`);
   // Rien qui révèle la technique ; HSTS est ajouté par Nginx Proxy Manager
   assert.equal(res.headers.get('x-powered-by'), null, `${label} : X-Powered-By`);
   assert.equal(res.headers.get('server'), null, `${label} : Server`);
@@ -107,6 +112,11 @@ test('en-têtes de sécurité sur toutes les routes principales, y compris les e
     if (status >= 400) checkNoLeak(text, label);
   }
 
+  // Page d'accueil : consigne « noindex » aussi dans le HTML ; pas de
+  // robots.txt (il empêcherait les moteurs de lire cette consigne)
+  assert.match(await (await fetch(`${app.base}/`)).text(), /<meta name="robots" content="noindex, nofollow">/);
+  assert.equal((await fetch(`${app.base}/robots.txt`)).status, 404);
+
   // Pages d'erreur en français, sans détail
   assert.equal(await (await fetch(`${app.base}/nimporte/quoi`)).text(), 'Page introuvable.');
   assert.equal(await (await fetch(`${app.base}/p/%E0%A4%A`)).text(), 'Requête invalide.');
@@ -134,17 +144,78 @@ test('erreur inattendue (500) : message neutre, sans trace ni chemin, en-têtes 
   assert.ok(errors.some((line) => line.includes('panne simulée')), 'le détail va dans les journaux du serveur');
 });
 
-test('cookie de session en production : HttpOnly, Secure, SameSite=Lax', async (t) => {
+// Cookies de connexion en production : préfixe __Host- (Secure, Path=/, sans
+// domaine), HttpOnly, SameSite ; effacés à la déconnexion ; l'ancien nom
+// n'ouvre plus de session. En développement, noms inchangés.
+const setCookie = (res, name) => res.headers.getSetCookie().find((c) => c.startsWith(`${name}=`));
+const send = (app, method, url, cookie, body) => fetch(`${app.base}${url}`, {
+  method,
+  headers: { origin: ORIGIN, 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+  body: body && JSON.stringify(body),
+});
+
+test('production : cookie de session __Host-listo_session (HttpOnly, Secure, SameSite=Lax, Path=/), effacé à la déconnexion', async (t) => {
   const app = await startTestApp(t, { config: { production: true } });
-  const res = await fetch(`${app.base}/api/setup`, {
-    method: 'POST',
-    headers: { origin: ORIGIN, 'content-type': 'application/json' },
-    body: JSON.stringify({ code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!', displayName: 'Guillaume' }),
-  });
+  const res = await send(app, 'POST', '/api/setup', null, { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!', displayName: 'Guillaume' });
   assert.equal(res.status, 201);
-  const cookie = res.headers.getSetCookie().find((c) => c.startsWith('listo_session='));
+  assert.equal(setCookie(res, 'listo_session'), undefined, 'plus de cookie sans préfixe');
+  const cookie = setCookie(res, '__Host-listo_session');
   assert.match(cookie, /; HttpOnly/i);
   assert.match(cookie, /; Secure/i);
   assert.match(cookie, /; SameSite=Lax/i);
-  assert.match(cookie, /; Path=\//);
+  assert.match(cookie, /; Path=\/(;|$)/);
+  assert.doesNotMatch(cookie, /Domain=/i, '__Host- interdit Domain');
+  const session = cookie.split(';')[0];
+  const token = session.split('=')[1];
+  assert.equal((await send(app, 'GET', '/api/me', session)).status, 200);
+
+  // L'ancien nom n'ouvre plus de session
+  assert.equal((await send(app, 'GET', '/api/me', `listo_session=${token}`)).status, 401);
+
+  // Déconnexion : le cookie est effacé (même nom, même chemin)
+  const out = await send(app, 'POST', '/api/logout', session);
+  const cleared = setCookie(out, '__Host-listo_session');
+  assert.match(cleared, /Expires=Thu, 01 Jan 1970/);
+  assert.match(cleared, /; Path=\/(;|$)/);
+  assert.match(cleared, /; Secure/i);
+  assert.equal((await send(app, 'GET', '/api/me', session)).status, 401);
+});
+
+test('production : cookie 2FA en attente __Host-listo_2fa (HttpOnly, Secure, SameSite=Strict, Path=/), effacé après le code', async (t) => {
+  const app = await startTestApp(t, { config: { production: true } });
+  const setup = await send(app, 'POST', '/api/setup', null, { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!', displayName: 'Guillaume' });
+  const session = setCookie(setup, '__Host-listo_session').split(';')[0];
+  await send(app, 'POST', '/api/me/2fa/enable', session);
+  const user = app.db.prepare('SELECT * FROM users').get();
+  const code = () => totpCode(openTotpSecret(app.ctx, app.db.prepare('SELECT * FROM users').get()), totpStep(app.clock.now));
+  assert.equal((await send(app, 'POST', '/api/me/2fa/verify', session, { code: code() })).status, 200);
+  app.clock.now += 30 * 1000;
+
+  const step1 = await send(app, 'POST', '/api/login', null, { username: user.username, password: 'MotDePasseAdmin!' });
+  assert.equal(step1.status, 200);
+  const pending = setCookie(step1, '__Host-listo_2fa');
+  assert.ok(pending, 'cookie 2FA préfixé');
+  assert.equal(setCookie(step1, 'listo_2fa'), undefined);
+  assert.match(pending, /; HttpOnly/i);
+  assert.match(pending, /; Secure/i);
+  assert.match(pending, /; SameSite=Strict/i);
+  assert.match(pending, /; Path=\/(;|$)/);
+  assert.doesNotMatch(pending, /Domain=/i);
+
+  // Ancien nom : refusé
+  const token = pending.split(';')[0].split('=')[1];
+  assert.equal((await send(app, 'POST', '/api/login/2fa', `listo_2fa=${token}`, { code: code() })).status, 401);
+  // Bon nom : session ouverte, cookie 2FA effacé
+  const step2 = await send(app, 'POST', '/api/login/2fa', pending.split(';')[0], { code: code() });
+  assert.equal(step2.status, 200);
+  assert.ok(setCookie(step2, '__Host-listo_session'));
+  assert.match(setCookie(step2, '__Host-listo_2fa'), /Expires=Thu, 01 Jan 1970/);
+});
+
+test('développement (http) : noms de cookies inchangés, sans préfixe', async (t) => {
+  const app = await startTestApp(t);
+  const res = await send(app, 'POST', '/api/setup', null, { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!', displayName: 'Guillaume' });
+  assert.ok(setCookie(res, 'listo_session'));
+  assert.equal(setCookie(res, '__Host-listo_session'), undefined);
+  assert.doesNotMatch(setCookie(res, 'listo_session'), /; Secure/i, 'pas de Secure en http');
 });

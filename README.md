@@ -73,6 +73,11 @@ Dans Nginx Proxy Manager, **Hosts → Proxy Hosts → Add Proxy Host** :
 À savoir :
 
 - Nginx Proxy Manager transmet l'adresse IP réelle des téléphones (en-tête `X-Forwarded-For`) ; Listo s'en sert pour bloquer les essais de mots de passe répétés. Aucun réglage à faire.
+
+**Limiter l'accès au port de Listo.** Listo croit l'adresse IP que lui transmet Nginx Proxy Manager : quelqu'un qui joindrait directement le port 13300 pourrait en inventer une et contourner le blocage des essais de mots de passe. Le port 13300 ne doit donc être joignable que depuis la machine de Nginx Proxy Manager, par une règle de pare-feu sur le serveur ou sur le réseau (box, routeur).
+
+- *Exemple* avec ufw, si l'adresse de Nginx Proxy Manager est `192.168.1.10` : `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. **Attention** : Docker ouvre les ports qu'il publie en passant à côté de ufw, donc cette règle seule ne suffit pas. Il faut un réglage propre à Docker (chaîne `DOCKER-USER`) ou un pare-feu en amont : voir la documentation de votre pare-feu.
+- **Vérifier**, quel que soit le pare-feu : depuis un autre ordinateur du réseau (pas celui de Nginx Proxy Manager), `curl http://IP_LOCALE:13300/healthz` doit échouer. Depuis la machine de Nginx Proxy Manager, il doit répondre `{"status":"ok"}`.
 - Le **journal d'accès** de Nginx Proxy Manager enregistre les adresses demandées, donc celles des liens publics ouverts (`/p/…`). Un lien arrêté ou expiré ne sert plus à rien ; pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.
 
 ## 4. Première mise en route
@@ -157,6 +162,8 @@ docker logs listo                                     # vérifier le démarrage
 
 Listo s'arrête proprement (requêtes finies, base fermée) : une mise à jour n'abîme rien. La base est mise à jour toute seule au démarrage si besoin. Les téléphones prennent la nouvelle version à leur prochaine ouverture avec du réseau.
 
+**Une fois, à la mise à jour qui apporte les cookies « __Host- »** (durcissement après l'audit) : les cookies de connexion changent de nom pour être mieux protégés. **Tout le monde est déconnecté une fois** et doit se reconnecter (identifiant, mot de passe, code 2FA). Les listes et les modifications déjà envoyées ne sont pas touchées ; une modification faite hors ligne juste avant repart après la reconnexion.
+
 **Revenir à la version précédente** si la nouvelle pose problème :
 
 1. Trouver l'étiquette de la version voulue : sur GitHub, page du dépôt → **Packages** → `listo` : chaque version a une étiquette `sha-xxxxxxx` (les 7 premiers caractères du commit).
@@ -165,6 +172,30 @@ Listo s'arrête proprement (requêtes finies, base fermée) : une mise à jour n
 4. Si la nouvelle version avait changé la base, restaurer aussi la sauvegarde faite juste avant la mise à jour (chapitre 8).
 
 Pour revenir ensuite aux mises à jour normales, remettre `:latest`.
+
+### Surveiller les mises à jour de sécurité
+
+**Dependabot** (réglé dans `.github/dependabot.yml`) vérifie chaque semaine s'il existe une nouvelle version :
+- des bibliothèques du serveur (express, better-sqlite3, qrcode) ;
+- de l'image de base du Dockerfile (`node:24-slim`) ;
+- des actions qui construisent l'image.
+
+S'il en trouve une, il ouvre une pull request vers `main` (3 au plus par type).
+
+**Lire une de ses pull requests** :
+- le titre dit quoi passe de quelle version à quelle version ;
+- la description reprend les notes de version (une mention « security » ou un identifiant CVE signale une faille corrigée : à fusionner en priorité) ;
+- une montée de version majeure (par exemple 4.x vers 5.x) peut changer un comportement : en cas de doute, demandez une vérification avant de fusionner.
+
+Rien n'est fusionné tout seul : vous fusionnez vous-même, puis vous faites la mise à jour du serveur (ci-dessus).
+
+**De temps en temps**, sur votre ordinateur, dans une copie du dépôt :
+
+```sh
+npm audit --omit=dev
+```
+
+Elle liste les failles connues des bibliothèques réellement utilisées par Listo (`found 0 vulnerabilities` : tout va bien).
 
 ## 10. Journaux
 
@@ -220,12 +251,13 @@ Le journal de sécurité note les connexions réussies et ratées, les blocages 
 
 1. **HTTPS** : `https://listo.mondomaine.fr` s'ouvre avec le cadenas ; `http://listo.mondomaine.fr` redirige vers `https://`.
 2. **En-têtes de sécurité vus de l'extérieur** : passer l'adresse dans un outil en ligne comme <https://securityheaders.com>. On doit y voir :
-   - `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` (envoyés par Listo) ;
+   - `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) ;
    - `Strict-Transport-Security` (ajouté par Nginx Proxy Manager) ;
    - aucun `X-Powered-By`.
-3. **Une sauvegarde** : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
-4. **Une restauration d'essai** : suivre le chapitre 8 une fois, avec la copie de la nuit, pour s'assurer que tout est en place (clé gardée, procédure comprise).
-5. **Le téléphone** : installation sur l'écran d'accueil (chapitre 6), puis la liste de la Partie 2, « Vérifier l'interface sur le téléphone ».
+3. **Le « noindex »** : dans le navigateur d'un ordinateur, ouvrir Listo, outils de développement (F12) → onglet Réseau → recharger → cliquer sur la première ligne : dans les en-têtes de réponse, `X-Robots-Tag: noindex, nofollow`.
+4. **Une sauvegarde** : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
+5. **Une restauration d'essai** : suivre le chapitre 8 une fois, avec la copie de la nuit, pour s'assurer que tout est en place (clé gardée, procédure comprise).
+6. **Le téléphone** : installation sur l'écran d'accueil (chapitre 6), puis la liste de la Partie 2, « Vérifier l'interface sur le téléphone ».
 
 ---
 
@@ -840,9 +872,12 @@ curl -i $U/api/public/$J
 | `Referrer-Policy` | `no-referrer` |
 | `X-Frame-Options` | `DENY` |
 | `Permissions-Policy` | Interdit à la page les fonctions que Listo n'utilise jamais : position, micro, paiement, USB, capteurs de mouvement… (l'appareil photo reste libre pour la photo d'un article) |
+| `X-Robots-Tag` | `noindex, nofollow` (plus `<meta name="robots">` dans la page) : rien n'est indexé par les moteurs de recherche ; volontairement pas de `robots.txt` |
+| `Cross-Origin-Opener-Policy` | `same-origin` : une fenêtre ouverte depuis un autre site ne peut pas piloter Listo |
+| `Cross-Origin-Resource-Policy` | `same-origin` : aucun autre site ne peut charger les fichiers ou les photos de Listo |
 | `Strict-Transport-Security` | **ajouté par Nginx Proxy Manager** (case HSTS), pas par Listo |
 
-`X-Powered-By` est désactivé. Les erreurs répondent par un message court en français (« Page introuvable. », « Requête invalide. », « Erreur interne du serveur. »), sans trace ni chemin de fichier ; le détail d'une erreur inattendue va dans `docker logs`. Le cookie de session est `HttpOnly`, `Secure` (en production) et `SameSite=Lax`.
+`X-Powered-By` est désactivé. Les cookies de connexion s'appellent `__Host-listo_session` et `__Host-listo_2fa` en production (préfixe qui impose Secure, chemin / et aucun domaine), `listo_session` et `listo_2fa` en développement (http). Le lot d'opérations (`POST /api/ops`, 200 ko au plus) n'est lu qu'après la vérification de la session. Les erreurs répondent par un message court en français (« Page introuvable. », « Requête invalide. », « Erreur interne du serveur. »), sans trace ni chemin de fichier ; le détail d'une erreur inattendue va dans `docker logs`. Le cookie de session est `HttpOnly`, `Secure` (en production) et `SameSite=Lax`.
 
 **Démarrage et arrêt** (`server/index.js`, `test/process.test.js`) : en production, Listo refuse de démarrer si `LISTO_PUBLIC_URL` n'est pas en `https://`, avec un message clair. Sur `SIGTERM` (`docker stop`, mise à jour par `docker compose up -d`), il ferme les flux temps réel, n'accepte plus de connexion, termine les requêtes en cours (5 secondes au plus), ferme la base, puis s'arrête.
 

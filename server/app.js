@@ -91,7 +91,7 @@ export function createApp({
     keys: deriveKeys(masterKey),
     setup: { code: setupCode },
     limiter: createLimiter({ now }),
-    pending: createPendingLogins(now),
+    pending: createPendingLogins(now, config),
     audit: createAudit({ now, write: log, file: journalFile }),
     photos: createPhotoStore(photosDir),
     uploads: createUploadCounter({ now }),
@@ -118,6 +118,14 @@ export function createApp({
       'Referrer-Policy': 'no-referrer',        // l'adresse de Listo n'est pas transmise ailleurs
       'X-Frame-Options': 'DENY',               // Listo ne peut pas être affiché dans un cadre
       'Permissions-Policy': PERMISSIONS_POLICY, // ni position, ni micro, ni paiement…
+      // Listo n'a rien à faire dans un moteur de recherche : aucune page, aucun
+      // fichier ni réponse de l'API n'est indexé ni suivi
+      'X-Robots-Tag': 'noindex, nofollow',
+      // Isolement vis-à-vis des autres sites : une fenêtre ouverte depuis un
+      // autre site ne peut pas piloter Listo (COOP), et aucun autre site ne
+      // peut charger les fichiers ou les photos de Listo dans ses pages (CORP)
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Resource-Policy': 'same-origin',
     });
     next();
   });
@@ -153,12 +161,15 @@ export function createApp({
     res.set('Cache-Control', 'no-store');
     next();
   });
-  api.use(requireSameOrigin(config.publicUrl));    // protection CSRF
-  // Corps des requêtes en JSON : jusqu'à 200 ko pour un lot d'opérations
-  // (file d'attente du téléphone), 20 ko pour tout le reste
-  api.use('/ops', express.json({ limit: '200kb' }));
+  api.use(requireSameOrigin(config.publicUrl));    // protection CSRF, toujours en premier
+  // Lot d'opérations (file d'attente du téléphone, jusqu'à 200 ko) : la
+  // connexion est vérifiée AVANT de lire le corps. Un visiteur non connecté
+  // reçoit 401 sans que Listo lise ni analyse ce qu'il envoie.
+  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '200kb' }));
+  // Tout le reste : corps JSON de 20 ko au plus (la connexion et la création
+  // du premier Admin en ont besoin avant toute session)
   api.use(express.json({ limit: '20kb' }));
-  api.use(loadSession(ctx));                       // qui est connecté ?
+  api.use(loadSession(ctx));                       // qui est connecté ? (déjà fait pour /ops)
 
   // Routes ouvertes à tous : premier Admin et connexion
   api.use(publicAuthRoutes(ctx));

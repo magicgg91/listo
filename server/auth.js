@@ -12,8 +12,17 @@
 
 import crypto from 'node:crypto';
 
-export const SESSION_COOKIE = 'listo_session';
-export const PENDING_COOKIE = 'listo_2fa';   // connexion en attente du code 2FA
+// Noms des cookies de connexion : session, et connexion en attente du code
+// 2FA. En production (HTTPS), ils portent le préfixe « __Host- » : le
+// navigateur ne les accepte alors que Secure, sur le chemin / et sans
+// domaine, si bien qu'un autre sous-domaine ne peut ni les lire ni les
+// remplacer. En développement (http), ce préfixe est impossible : noms
+// simples. (Le cookie du lien public, listo_lien, a un chemin propre à
+// chaque lien : il ne peut pas porter ce préfixe.)
+export function cookieNames(config) {
+  const prefix = config.production ? '__Host-' : '';
+  return { session: `${prefix}listo_session`, pending: `${prefix}listo_2fa` };
+}
 const DAY = 24 * 60 * 60 * 1000;
 const PENDING_MS = 5 * 60 * 1000;            // 5 minutes pour saisir le code 2FA
 
@@ -86,7 +95,7 @@ export function startSession(ctx, res, userId) {
   const maxAge = ctx.config.sessionDays * DAY;
   ctx.db.prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
     .run(hashToken(token), userId, new Date(now + maxAge).toISOString(), new Date(now).toISOString());
-  res.cookie(SESSION_COOKIE, token, cookieOptions(ctx, maxAge));
+  res.cookie(cookieNames(ctx.config).session, token, cookieOptions(ctx, maxAge));
 }
 
 // Ferme la session de cette requête (déconnexion)
@@ -95,7 +104,7 @@ export function endSession(ctx, req, res) {
     ctx.db.prepare('DELETE FROM sessions WHERE id = ?').run(req.sessionId);
     ctx.events?.disconnectSession(req.sessionId); // flux temps réel coupé
   }
-  res.clearCookie(SESSION_COOKIE, cookieOptions(ctx));
+  res.clearCookie(cookieNames(ctx.config).session, cookieOptions(ctx));
 }
 
 // Ferme toutes les sessions d'un compte (changement de mot de passe…)
@@ -123,7 +132,10 @@ export function loadSession(ctx) {
   const extend = ctx.db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?');
 
   return (req, res, next) => {
-    const token = parseCookies(req.headers.cookie)[SESSION_COOKIE];
+    // Déjà lue pour cette requête (lot d'opérations) : une seule lecture
+    if (req.sessionLoaded) return next();
+    req.sessionLoaded = true;
+    const token = parseCookies(req.headers.cookie)[cookieNames(ctx.config).session];
     if (!token) return next();
     const now = ctx.now();
     const row = findSession.get(hashToken(token), new Date(now).toISOString());
@@ -132,7 +144,7 @@ export function loadSession(ctx) {
     const maxAge = ctx.config.sessionDays * DAY;
     if (Date.parse(row.expires_at) - now < maxAge - DAY) {
       extend.run(new Date(now + maxAge).toISOString(), row.session_id);
-      res.cookie(SESSION_COOKIE, token, cookieOptions(ctx, maxAge));
+      res.cookie(cookieNames(ctx.config).session, token, cookieOptions(ctx, maxAge));
     }
     req.sessionId = row.session_id;
     req.user = row;
@@ -184,24 +196,26 @@ export function requireSameOrigin(publicUrl) {
 //
 // Après un mot de passe correct sur un compte avec 2FA, aucune session n'est
 // ouverte : on donne seulement un jeton temporaire (5 minutes, cookie
-// listo_2fa) qui permet de saisir le code. Gardé en mémoire uniquement.
+// listo_2fa, ou __Host-listo_2fa en production) qui permet de saisir le code.
+// Gardé en mémoire uniquement. Le cookie est sur le chemin / (exigé par le
+// préfixe __Host-), mais seule la route du code 2FA le lit.
 
-export function createPendingLogins(now) {
+export function createPendingLogins(now, config) {
   const pending = new Map(); // empreinte du jeton -> { userId, expiresAt }
+  const name = cookieNames(config).pending;
+  const options = { httpOnly: true, secure: config.production, sameSite: 'strict', path: '/' };
 
   return {
     // Crée une connexion en attente et envoie son cookie
     start(ctx, res, userId) {
       const token = newToken();
       pending.set(hashToken(token), { userId, expiresAt: now() + PENDING_MS });
-      res.cookie(PENDING_COOKIE, token, {
-        httpOnly: true, secure: ctx.config.production, sameSite: 'strict', path: '/api/login', maxAge: PENDING_MS,
-      });
+      res.cookie(name, token, { ...options, maxAge: PENDING_MS });
     },
 
     // Renvoie { key, userId } pour la requête, ou null si absent ou expiré
     find(req) {
-      const token = parseCookies(req.headers.cookie)[PENDING_COOKIE];
+      const token = parseCookies(req.headers.cookie)[name];
       if (!token) return null;
       const key = hashToken(token);
       const entry = pending.get(key);
@@ -215,7 +229,7 @@ export function createPendingLogins(now) {
     // Termine une connexion en attente (code accepté)
     finish(ctx, res, key) {
       pending.delete(key);
-      res.clearCookie(PENDING_COOKIE, { httpOnly: true, secure: ctx.config.production, sameSite: 'strict', path: '/api/login' });
+      res.clearCookie(name, options);
     },
 
     // Supprime les connexions en attente expirées

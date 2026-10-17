@@ -8,8 +8,11 @@
 # .github/workflows/docker.yml à chaque fusion sur main.
 # L'image ne contient que le code : ni base de données, ni secret.
 
-# Node.js 24 (version suivie à long terme), variante « slim » plus légère
-FROM node:24-slim
+# Node.js 24 (version suivie à long terme), variante « slim » plus légère.
+# L'image est épinglée sur son empreinte (sha256) : chaque construction part
+# exactement de la même base, vérifiée. Dependabot propose chaque semaine une
+# pull request quand une nouvelle version de node:24-slim sort.
+FROM node:24-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
 
 ENV NODE_ENV=production
 WORKDIR /app

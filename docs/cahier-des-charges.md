@@ -6,7 +6,7 @@ Version validée le 16 octobre 2026. Mise à jour du 17 octobre 2026 : photo par
 
 Listo est une application web de listes partagées (courses, tâches…), pensée pour le téléphone, gratuite, sans publicité et hébergée sur le serveur de son propriétaire. Elle remplace les applications existantes, soit payantes, soit remplies de pubs.
 
-Usage visé : deux personnes au quotidien (l'administrateur et sa femme), avec la possibilité d'ajouter quelques comptes.
+Usage visé : deux personnes d'un même foyer au quotidien (l'administrateur et un proche), avec la possibilité d'ajouter quelques comptes.
 
 **Principes directeurs**
 

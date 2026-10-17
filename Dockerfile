@@ -33,6 +33,8 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force \
 # 2. Code de l'application (seulement ce qui sert à la faire tourner)
 COPY server ./server
 COPY public ./public
+# Licence et mentions obligatoires (Apache-2.0) : elles accompagnent le code
+COPY LICENSE NOTICE ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 

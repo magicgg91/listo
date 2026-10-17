@@ -1,8 +1,42 @@
 # Listo
 
-Application web de listes partagées (courses, tâches…), pensée pour le téléphone, gratuite, sans publicité et auto-hébergée.
+**Listo est une application web de listes partagées (courses, tâches…), pensée pour le téléphone, que l'on installe sur son propre serveur.**
 
-État : les 11 étapes du plan du cahier des charges sont construites. Les étapes 1 à 10 sont livrées ; l'étape 11 (finitions et mise en production) est en cours de validation.
+<p>
+  <img src="docs/images/liste-courses.png" alt="Liste de courses classée par rayon, avec photos" width="250">
+  <img src="docs/images/liste-taches.png" alt="Liste de tâches" width="250">
+  <img src="docs/images/page-publique.png" alt="Page publique d'une liste, en lecture seule" width="250">
+</p>
+
+*Captures d'une instance de démonstration, avec des données inventées : une liste de courses, une liste de tâches, et la page publique d'une liste.*
+
+## Ce que fait Listo
+
+- **Listes partagées en direct** : un élément coché sur un téléphone l'est sur l'autre en quelques secondes.
+- **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs magasins ; rayon et magasin habituels retenus pour chaque article, autocomplétion.
+- **Photos** des articles (prises ou choisies sur le téléphone, réduites avant l'envoi).
+- **Hors ligne** : l'application s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
+- **Lien public en lecture seule** pour montrer une liste à quelqu'un sans compte (durée limitée, mot de passe facultatif).
+- **Double authentification** (application d'authentification et codes de secours).
+- **Sauvegarde nocturne** de la base, avec procédure de restauration.
+- Thèmes clair et sombre, installation sur l'écran d'accueil (iPhone et Android).
+
+## Pour qui, et limites
+
+- Pour un foyer ou un petit groupe : **quelques comptes, créés par l'administrateur**. Pas d'inscription publique.
+- **Auto-hébergé** : un conteneur Docker sur votre serveur, derrière un proxy HTTPS (par exemple Nginx Proxy Manager). Image : `ghcr.io/magicgg91/listo`.
+- **Interface en français uniquement.**
+- **Aucun service hébergé** : il n'existe pas de version en ligne de Listo à laquelle s'inscrire. Aucune publicité, aucun suivi, aucune donnée envoyée ailleurs que sur votre serveur.
+
+## Licence et crédits
+
+- Licence **Apache-2.0**, © magicgg91 : voir [LICENSE](LICENSE) et [NOTICE](NOTICE). En cas de réutilisation ou de redistribution, conserver le fichier NOTICE et la mention de l'auteur.
+- Contribuer : [CONTRIBUTING.md](CONTRIBUTING.md). Signaler une faille de sécurité (en privé) : [SECURITY.md](SECURITY.md).
+- Développé avec l'aide de Claude (Anthropic).
+
+---
+
+État : les 11 étapes du plan du cahier des charges sont livrées.
 
 Ce README a deux parties :
 
@@ -313,6 +347,8 @@ Le journal de sécurité note les connexions réussies et ratées, les blocages 
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
 | `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
+| `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `SECURITY.md` | Licence Apache-2.0 (texte officiel), mentions à conserver, règles de contribution, signalement des failles |
+| `docs/images/` | Captures d'écran du README (instance de démonstration, données inventées) |
 | `Dockerfile`, `docker-entrypoint.sh` | Construction et démarrage de l'image Docker |
 | `docker-compose.yml` | Production (image publiée sur ghcr.io), toutes les variables commentées |
 | `docker-compose.dev.yml` | Test en local (image construite depuis le code) |

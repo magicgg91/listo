@@ -10,7 +10,7 @@
 // - propriétaire : tout (renommer, changer catégorie et magasin, partage,
 //   supprimer la liste) ;
 // - invité : articles seulement (ajouter, modifier, cocher, supprimer,
-//   vider les barrés) ;
+//   tout décocher, retirer les cochés) ;
 // - un Admin n'a aucun droit particulier sur les listes des autres.
 //
 // Magasin « multi » (étape 6) : une liste de courses dont le magasin est
@@ -303,6 +303,7 @@ export function createListService(ctx) {
     storeId: item.store_id,
     photoAt: item.photo_at,
     checked: item.checked === 1,
+    checkedAt: item.checked_at ?? null,
     createdBy: item.created_by,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
@@ -450,15 +451,36 @@ export function createListService(ctx) {
       return {};
     },
 
-    // Vider les barrés : supprime les articles cochés de cette liste
+    // Retirer les cochés (« Retirer du panier » / « Retirer les terminés ») :
+    // supprime les articles cochés de cette liste, au moment où le serveur
+    // reçoit l'opération. Tout membre de la liste peut le faire.
     // seulement. L'historique d'autocomplétion n'est pas touché.
-    'list.clearChecked'(user, op) {
+    'list.removeChecked'(user, op) {
       const list = listForMember(user, op.listId);
       const now = nowIso();
       const { changes } = db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(now, now, list.id);
       if (changes) changed(list.id);
       return { removed: changes };
+    },
+
+    // Ancien nom de « list.removeChecked » : une modification restée en file
+    // d'attente sur un téléphone pendant la mise à jour est encore acceptée
+    'list.clearChecked'(user, op) {
+      return handlers['list.removeChecked'](user, op);
+    },
+
+    // Tout décocher (« Tout remettre à acheter » / « Tout rouvrir ») : une
+    // seule opération, quel que soit le nombre de cochés. Chaque article
+    // décoché reçoit une nouvelle date de modification (synchronisation des
+    // autres téléphones). Porte sur les articles cochés au moment où le
+    // serveur reçoit l'opération. Tout membre de la liste peut le faire.
+    'list.uncheckAll'(user, op) {
+      const list = listForMember(user, op.listId);
+      const { changes } = db.prepare('UPDATE items SET checked = 0, checked_at = NULL, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
+        .run(nowIso(), list.id);
+      if (changes) changed(list.id);
+      return { reopened: changes };
     },
 
     // Ajouter un article.
@@ -535,7 +557,11 @@ export function createListService(ctx) {
     'item.check'(user, op) {
       const item = itemForMember(user, op.itemId);
       if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
-      db.prepare('UPDATE items SET checked = ?, updated_at = ? WHERE id = ?').run(op.checked ? 1 : 0, nowIso(), item.id);
+      // Date du coché : posée au premier coché (un second « cocher » la
+      // garde), effacée au décoché
+      const now = nowIso();
+      db.prepare('UPDATE items SET checked = ?, checked_at = CASE WHEN ? = 1 THEN COALESCE(checked_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?')
+        .run(op.checked ? 1 : 0, op.checked ? 1 : 0, now, now, item.id);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },

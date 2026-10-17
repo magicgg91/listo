@@ -127,10 +127,12 @@ test('mes listes : restants, total et tri par dernière activité (articles comp
   assert.equal(summaries[0].lastActivity, '2026-10-16T11:45:00.000Z', "l'article ajouté à 11 h 45 fait remonter la liste A");
 });
 
-test('une liste : groupée par rayon, cochés comptés ; liste inconnue → null', () => {
+test('une liste : à acheter groupés par rayon, cochés dans la zone ; liste inconnue → null', () => {
   const state = sample();
   const view = computeListView(state, 'A');
-  assert.deepEqual(view.groups.map((g) => g.aisle?.name ?? 'Sans rayon'), ['Boulangerie', 'Crèmerie', 'Sans rayon']);
+  // « Pain » est coché : il quitte la Boulangerie, qui n'a plus rien à acheter
+  assert.deepEqual(view.groups.map((g) => g.aisle?.name ?? 'Sans rayon'), ['Crèmerie', 'Sans rayon']);
+  assert.deepEqual(view.done.map((i) => i.name), ['Pain']);
   assert.equal(view.checked, 1);
   assert.equal(computeListView(state, 'B').groups.length, 1);
   assert.equal(computeListView(state, 'X'), null);
@@ -363,8 +365,12 @@ test('application locale des opérations : même effet que le serveur', async ()
   applyOp(state, { type: 'item.update', itemId: 'x1', quantity: '2' }, ctx);
   assert.deepEqual([state.items.get('x1').checked, state.items.get('x1').quantity], [true, '2']);
 
-  applyOp(state, { type: 'list.clearChecked', listId: 'N' }, ctx);
-  assert.equal(state.items.has('x1'), false, 'les barrés sont retirés');
+  assert.equal(state.items.get('x1').checkedAt, ctx.now, 'date du coché (téléphone, en attendant le serveur)');
+  applyOp(state, { type: 'list.uncheckAll', listId: 'N' }, ctx);
+  assert.deepEqual([state.items.get('x1').checked, state.items.get('x1').checkedAt], [false, null], 'tout décoché');
+  applyOp(state, { type: 'item.check', itemId: 'x1', checked: true }, ctx);
+  applyOp(state, { type: 'list.removeChecked', listId: 'N' }, ctx);
+  assert.equal(state.items.has('x1'), false, 'les cochés sont retirés');
   applyOp(state, { type: 'item.delete', itemId: 'x2' }, ctx);
   assert.equal(state.items.has('x2'), false);
   applyOp(state, { type: 'item.restore', itemId: 'x2' }, ctx);

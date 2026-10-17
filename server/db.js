@@ -268,6 +268,15 @@ export const MIGRATIONS = [
   (db) => {
     pruneHistory(db);
   },
+
+  // --- Migration 9 : date du coché (zone « Dans le panier » / « Terminés ») ---
+  // checked_at : quand l'article a été coché (vide s'il ne l'est pas), posée
+  // par le serveur. La zone des cochés va du plus récemment coché au plus
+  // ancien. Les articles déjà cochés reçoivent leur date de modification.
+  `
+  ALTER TABLE items ADD COLUMN checked_at TEXT;
+  UPDATE items SET checked_at = updated_at WHERE checked = 1;
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

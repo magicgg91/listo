@@ -2,7 +2,7 @@
 
 Version validée le 16 octobre 2026. Mise à jour du 17 octobre 2026 : photo par article, lien public en lecture seule et magasin « multi » (hypothèses à valider en fin de document), ainsi que les écarts constatés pendant les étapes 1 à 5 (tables et colonnes ajoutées, port publié, journal en fichier).
 
-Mise à jour après livraison (17 octobre 2026) : les onze étapes sont livrées et le dépôt est public. Ce document décrit maintenant l'application livrée. Les décisions d'origine sont gardées ; ce qui a changé est indiqué dans le texte par « **Écart :** » et résumé dans la section [Écarts et décisions depuis la version validée](#écarts-et-décisions-depuis-la-version-validée). Les écarts qui touchent aux droits ou à la sécurité et qui restent à confirmer sont marqués « **Écart à confirmer :** ».
+Mise à jour après livraison (17 octobre 2026) : les onze étapes sont livrées et le dépôt est public. Ce document décrit maintenant l'application livrée. Les décisions d'origine sont gardées ; ce qui a changé est indiqué dans le texte par « **Écart :** » et résumé dans la section [Écarts et décisions depuis la version validée](#écarts-et-décisions-depuis-la-version-validée). Quatre écarts touchant à la sécurité ont été tranchés le 17 octobre 2026 en faveur du code livré (texte mis d'accord avec le code, sans changement de code) ; ils sont marqués « **Décision du 17 octobre :** ».
 
 ## Présentation et objectifs
 
@@ -82,7 +82,7 @@ Pour les courses faites en ville dans plusieurs boutiques, l'Admin crée un maga
 - Chaque article peut avoir une seule photo, aussi bien dans une liste de courses que dans une autre liste (tâches…). Elle montre précisément le produit ou l'objet voulu (la bonne marque, la bonne référence).
 - Depuis la feuille Article : « Prendre une photo » (appareil photo du téléphone) ou « Choisir une photo » (galerie). Remplacer et retirer la photo sont possibles. Une vignette s'affiche sur la ligne de l'article ; un appui l'agrandit.
 - La photo est réduite sur le téléphone avant l'envoi (côté le plus long : 1 280 px, JPEG), pour peser quelques centaines de Ko et ne pas ralentir une connexion mobile.
-- Tous les membres de la liste voient la photo. Elle est supprimée avec l'article : le fichier est effacé définitivement lors du nettoyage des articles supprimés, après 30 jours.
+- Tous les membres de la liste voient la photo, ainsi que le visiteur d'un lien public valable de cette liste. Elle est supprimée avec l'article : le fichier est effacé définitivement lors du nettoyage des articles supprimés, après 30 jours.
 - La photo appartient à l'article, pas à l'historique : le même nom ajouté plus tard n'a pas de photo.
 - Hors ligne : on peut prendre une photo, elle part avec la file d'attente au retour du réseau ; seules les photos déjà vues s'affichent sans réseau.
 
@@ -229,8 +229,7 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 
 - Chaque requête vérifie côté serveur le compte connecté, son appartenance à la liste concernée (list_members) et, pour les routes d'administration, le rôle Admin. Le téléphone n'est jamais cru sur parole.
 - Les modifications exigent un en-tête Origin correspondant au domaine de l'application (protection CSRF en complément de SameSite).
-- Ordre des contrôles : origine (CSRF) d'abord, puis la session, avant de lire un gros corps de requête : le lot d'opérations (jusqu'à 200 ko) n'est lu qu'une fois la session et le mot de passe à jour vérifiés. Seules la connexion et la création du premier Admin lisent un petit corps (20 ko) sans session.
-  - **Écart à confirmer :** dans le code livré, le corps de 20 ko au plus est lu (analysé comme JSON) avant la vérification de la session pour toutes les routes de l'API sauf le lot d'opérations ; une requête sans session reçoit ensuite un refus. Seul le lot d'opérations attend la session avant de lire son corps.
+- Ordre des contrôles : origine (CSRF) d'abord, sur toutes les routes de l'API. Ensuite, un petit corps de requête (20 ko au plus) peut être lu avant la vérification du compte, sur toutes les routes sauf l'envoi des modifications (/api/ops) ; pour /api/ops, la session et le mot de passe à jour sont vérifiés d'abord, puis le corps (200 ko au plus) est lu. Une route qui exige un compte refuse ensuite une requête sans session. **Décision du 17 octobre :** règle écrite d'après le code livré (avant : « seules la connexion et la création du premier Admin lisent un petit corps sans session »).
 
 **Entrées et affichage**
 
@@ -250,13 +249,11 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 
 **Photos des articles**
 
-- Accès : une photo n'est servie qu'à un compte connecté, membre de la liste de l'article (même contrôle que pour l'article lui-même). Aucune adresse publique ni devinable.
-  - **Écart à confirmer :** la section « Lien public d'une liste » et le code livré servent aussi les photos au visiteur d'un lien public valide (/api/public/<jeton>/photos/<article>), avec les mêmes contrôles que le lien (expiration, mot de passe). La règle ci-dessus (et celle de CLAUDE.md, « les photos ne sont servies qu'aux membres de la liste ») ne mentionne pas cette exception.
+- Accès : photos servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées. Pour un membre, même contrôle que pour l'article lui-même (compte connecté, membre de la liste) ; pour un visiteur, mêmes contrôles que pour le lien (/api/public/<jeton>/photos/<article>). Aucune autre adresse publique ni devinable. **Décision du 17 octobre :** texte mis d'accord avec le code livré (avant : « servie qu'à un compte connecté, membre de la liste »).
 - Format : seulement du JPEG. Le serveur vérifie la signature du fichier et la structure de ses blocs, plafonne le poids (2 Mo) et les dimensions annoncées, et refuse tout le reste, quel que soit le type déclaré par le téléphone.
 - Vie privée : le serveur retire les métadonnées du fichier (position GPS, modèle de l'appareil, date de prise de vue) en supprimant les blocs EXIF, sans bibliothèque supplémentaire. La réduction faite sur le téléphone les retire déjà.
 - Stockage : fichiers dans data/photos, nommés d'après l'identifiant de l'article (jamais d'après un nom envoyé par le téléphone : aucun chemin choisi par l'utilisateur). Un fichier est effacé quand sa photo est remplacée ou retirée, ou quand son article est purgé.
-- Envoi par une route dédiée (le lot d'opérations JSON reste limité à quelques Ko), avec sa propre limite de taille et un plafond d'envois par compte et par heure.
-  - **Écart à confirmer :** le lot d'opérations accepte en réalité jusqu'à 200 ko et 100 opérations par envoi (lu seulement après la vérification de la session).
+- Envoi par une route dédiée, avec sa propre limite de taille (2 Mo) et un plafond d'envois par compte et par heure. Le lot d'opérations (/api/ops) accepte 200 ko et 100 opérations au plus par envoi, lus seulement après la vérification du compte. **Décision du 17 octobre :** valeurs réelles du code (avant : « quelques Ko »).
 - Service : Content-Type image/jpeg et X-Content-Type-Options: nosniff. La Content-Security-Policy n'a pas besoin d'être assouplie (images du même domaine). La photo se choisit par le sélecteur du téléphone : aucun accès continu à la caméra n'est demandé au navigateur.
 
 **Lien public d'une liste**
@@ -268,8 +265,13 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
 - Tentatives : même limitation que la connexion (5 échecs en 15 minutes, par lien et par adresse IP), plus un plafond de liens inexistants essayés par adresse IP (20 en 15 minutes). Message identique que le lien existe ou non.
 - Après un mot de passe correct, le visiteur reçoit un cookie de consultation (HttpOnly, Secure, SameSite=Lax) limité à ce lien, valable 12 heures au plus et jamais au-delà de l'expiration du lien. Ce cookie ne donne aucun accès au reste de l'application. Il est invalidé par un nouveau mot de passe, son retrait, l'arrêt du lien et un redémarrage de Listo (gardé en mémoire seulement).
 - Expiration : la date limite (expires_at) est fixée par le serveur à la création, avec son horloge. Elle est contrôlée à chaque requête (page, données, photos, saisie du mot de passe, cookie de consultation). Un lien expiré, arrêté, ou dont la liste est supprimée répond exactement comme un lien inconnu. Le nettoyage périodique supprime ces liens après 30 jours. Des tests avancent l'horloge pour le vérifier.
-- Lecture seule, par construction : le visiteur n'atteint que des routes de lecture. Les réponses sont construites champ par champ (liste blanche : nom de la liste, catégorie, magasin, articles avec quantité, note, état coché, photo), jamais à partir des objets internes : aucun identifiant de compte, nom d'utilisateur ni autre liste ne peut fuiter. Aucune route de modification n'accepte un cookie de consultation.
-  - **Écart à confirmer :** la réponse livrée contient aussi la date d'expiration du lien, le nom des groupes (rayons, ou magasins d'une liste « multi ») et le type de regroupement ; toujours construite champ par champ, sans identifiant de compte ni nom de personne.
+- Lecture seule, par construction : le visiteur n'atteint que des routes de lecture. Les réponses sont construites champ par champ, jamais à partir des objets internes. Aucune route de modification n'accepte un cookie de consultation. Champs envoyés, et rien d'autre :
+  - la liste : nom, catégorie, nom du magasin (ou rien), regroupement (par rayon, par magasin ou aucun) ;
+  - chaque groupe : nom du rayon ou du magasin (rien pour « Sans rayon » ou « Sans magasin »), puis ses articles ;
+  - chaque article : nom, quantité, note, état coché, adresse de sa photo par le lien (ou rien) ;
+  - la date d'expiration du lien (ou rien s'il est illimité).
+
+  Aucun nom de personne, aucun identifiant de compte ni de liste, aucune autre liste ni historique. Seule exception : l'adresse d'une photo contient l'identifiant (UUID) de son article, qui ne donne accès à rien en dehors du lien. **Décision du 17 octobre :** liste des champs écrite d'après le code livré (avant : liste blanche sans la date d'expiration, les noms des groupes ni le regroupement).
 - Validité, précisée dans le code : un lien n'est valable que si la liste existe encore, si son propriétaire est toujours actif et s'il en est encore le créateur.
 - Clé perdue : si secrets/secret.key est perdue puis recréée, un lien existant marche encore, mais son adresse ne peut plus être réaffichée au propriétaire (version chiffrée illisible) : il faut l'arrêter et en créer un nouveau.
 - Navigation : X-Robots-Tag: noindex, Cache-Control: no-store et Referrer-Policy: no-referrer (le jeton ne part pas vers d'autres sites). Le service worker ne met jamais en cache les pages ni les données du lien public.
@@ -519,12 +521,12 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Documentation** : README court ; guide d'exploitation dans docs/exploitation.md ; détails techniques dans docs/developpement.md. Raison : un README lisible.
 - **Image Docker** : .dockerignore étendu (.github, design/photos, test/, docs/, *.log). Raison : image plus petite, sans fichiers inutiles.
 
-**Écarts à confirmer** (droits ou sécurité : le code livré et ce document ne disent pas la même chose)
+**Décisions du 17 octobre 2026** (écarts de sécurité tranchés en faveur du code livré, sans changement de code)
 
-1. **Photos et lien public** : la règle « une photo n'est servie qu'aux membres de la liste » (section Sécurité, Photos, et CLAUDE.md) ne cite pas l'exception du lien public, alors que le lien public et le code servent les photos au visiteur.
-2. **Taille du lot d'opérations** : « quelques Ko » dans la section Photos ; 200 ko et 100 opérations dans le code.
-3. **Réponse du lien public** : la liste blanche ne cite pas la date d'expiration, le nom des groupes (rayons ou magasins) et le type de regroupement, que le code envoie.
-4. **Corps lu avant la session** : le document dit que seules la connexion et la création du premier Admin lisent un corps (20 ko) sans session ; le code lit ce petit corps avant de vérifier la session pour toutes les routes de l'API sauf le lot d'opérations.
+- **Photos et lien public** : photos servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées. Raison : le lien public montre les photos depuis l'étape 10 ; la règle d'origine ne citait pas cette exception.
+- **Taille du lot d'opérations** : 200 ko et 100 opérations au plus par envoi, lus après la vérification du compte. Raison : valeurs réelles, assez larges pour une file d'attente remplie hors ligne.
+- **Réponse du lien public** : champs listés exactement (dont date d'expiration, noms des rayons ou magasins, regroupement), sans nom de personne ni identifiant de compte ou de liste. Raison : la page publique en a besoin pour afficher la liste comme dans l'application.
+- **Lecture avant la vérification du compte** : après la vérification d'origine (CSRF), un corps de 20 ko au plus peut être lu avant la vérification du compte, sauf pour /api/ops, lu (200 ko) après. Raison : règle réelle du code ; seul le gros corps attend la vérification du compte.
 
 ## Hypothèses validées et hors périmètre
 

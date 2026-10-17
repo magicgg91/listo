@@ -39,7 +39,7 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 - Aucun secret, mot de passe ni clé dans le code ou dans le dépôt. Les dossiers `data/` (base) et `secrets/` (clé de chiffrement 2FA) sont dans `.gitignore` et ne doivent jamais être commités.
 - Le premier Admin se crée depuis l'écran de première connexion, protégé par un code de démarrage affiché dans les journaux du conteneur. Aucune variable d'environnement ne contient de mot de passe.
 - Suivre la section Sécurité du cahier des charges : scrypt, cookie HttpOnly/Secure/SameSite, limitation des tentatives, vérification des droits côté serveur sur chaque requête, SQL paramétré, `textContent` et jamais `innerHTML`, Content-Security-Policy stricte.
-- Le lien public d'une liste (étape 10) est la seule partie accessible sans compte : réponses construites champ par champ (jamais à partir des objets internes), expiration contrôlée par le serveur à chaque requête, jeton jamais écrit en clair en base ni dans les journaux, lecture seule. Les photos ne sont servies qu'aux membres de la liste.
+- Le lien public d'une liste (étape 10) est la seule partie accessible sans compte : réponses construites champ par champ (jamais à partir des objets internes), expiration contrôlée par le serveur à chaque requête, jeton jamais écrit en clair en base ni dans les journaux, lecture seule. Les photos sont servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées.
 
 ## Dépôt
 

@@ -1,0 +1,30 @@
+# Dependabot : veille sur les mises à jour (surtout de sécurité).
+#
+# Chaque semaine, GitHub vérifie s'il existe une nouvelle version :
+# - des bibliothèques du serveur (npm : express, better-sqlite3, qrcode) ;
+# - de l'image de base du Dockerfile (node:24-slim, épinglée par son empreinte) ;
+# - des actions du workflow qui construit l'image (.github/workflows/).
+# S'il y en a une, il ouvre une pull request vers main, avec les notes de
+# version. Rien n'est jamais fusionné automatiquement : Guillaume relit et
+# fusionne lui-même (voir le README, « Surveiller les mises à jour de
+# sécurité »). Au plus 3 pull requests ouvertes à la fois par type.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

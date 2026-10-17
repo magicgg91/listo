@@ -6,6 +6,10 @@
 #
 # S'il n'y a pas de Dockerfile, le workflow ne construit rien et le signale
 # sans échouer.
+#
+# Chaque action est épinglée sur l'empreinte de son commit (SHA complet), avec
+# sa version en commentaire : une étiquette déplacée chez l'éditeur ne peut
+# pas changer ce qui s'exécute ici. Dependabot propose les nouvelles versions.
 
 name: Image Docker
 
@@ -27,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Récupérer le code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Vérifier la présence du Dockerfile
         id: dockerfile
@@ -41,11 +45,11 @@ jobs:
 
       - name: Préparer Docker Buildx
         if: steps.dockerfile.outputs.found == 'true'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Se connecter à ghcr.io
         if: steps.dockerfile.outputs.found == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -54,7 +58,7 @@ jobs:
       - name: Calculer les étiquettes de l'image
         if: steps.dockerfile.outputs.found == 'true'
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -63,7 +67,7 @@ jobs:
 
       - name: Construire et publier l'image
         if: steps.dockerfile.outputs.found == 'true'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           platforms: linux/amd64

@@ -11,12 +11,17 @@
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { dateTimeLabel } from './format.js';
+import { itemWords } from './words.js';
 
 const root = document.getElementById('app');
 const token = location.pathname.split('/')[2] ?? '';
 const apiUrl = (path = '') => `/api/public/${encodeURIComponent(token)}${path}`;
 
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
+
+// « article » (liste de courses) ou « élément » (autre liste) : déduit du
+// regroupement envoyé par le serveur (« none » = pas une liste de courses)
+let words = itemWords(true);
 
 // Message plein écran (lien invalide, réseau…) : balisage .empty du kit
 function message(iconName, title, text) {
@@ -107,6 +112,7 @@ function showGate() {
 // --- La liste en lecture seule (page-publique-1 et 2) ---
 function showList(data) {
   const { list, groups, expiresAt } = data;
+  words = itemWords(list.grouping !== 'none');
   document.title = `${list.name} · Listo`;
   const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
@@ -116,7 +122,7 @@ function showList(data) {
     load();
   });
 
-  const count = (group) => h('span', { class: 'aisle__count', 'aria-label': 'articles restants' }, String(group.items.filter((i) => !i.checked).length));
+  const count = (group) => h('span', { class: 'aisle__count', 'aria-label': `${words.many} restants` }, String(group.items.filter((i) => !i.checked).length));
   const header = (group) => {
     if (list.grouping === 'store') return h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.name ?? 'Sans magasin'), count(group));
     if (list.grouping === 'aisle') return h('h2', { class: 'aisle' }, group.name ?? 'Sans rayon', count(group));
@@ -172,7 +178,7 @@ function showPhoto(item) {
   const closeButton = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer la photo', onClick: close }, icon('close'));
   const box = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'photo-titre' },
     h('div', { class: 'lightbox__bar' }, h('h2', { class: 'lightbox__title', id: 'photo-titre' }, item.name), closeButton),
-    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: `Photo de l'article ${item.name}` })),
+    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: `Photo de l'${words.one} ${item.name}` })),
     h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, 'Fermer')));
   root.append(box);
   document.addEventListener('keydown', onKey);

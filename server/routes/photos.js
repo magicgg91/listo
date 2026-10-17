@@ -11,7 +11,7 @@
 import express from 'express';
 import { cleanJpeg, sendPhoto, MAX_PHOTO_BYTES } from '../photos.js';
 
-const ITEM_NOT_FOUND = 'Article introuvable.';
+const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.'; // sans « article » (voir lists.js)
 
 export function photoRoutes(ctx) {
   const router = express.Router();

@@ -44,13 +44,17 @@ class OpError extends Error {
 }
 
 const LIST_NOT_FOUND = 'Liste introuvable.';
-const ITEM_NOT_FOUND = 'Article introuvable.';
+// Messages sans le mot « article » : selon la liste, on dit « article »
+// (courses) ou « élément » (autres listes), et ici la liste n'est pas connue
+// (l'élément n'existe plus, ou la requête est mal formée).
+const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 
 // --- Vérification des champs envoyés par le téléphone ---
 
+// what : « de liste », ou rien (élément d'une liste : mot neutre)
 function requireUuid(value, what) {
-  if (!isUuid(value)) throw new OpError(400, `Identifiant ${what} invalide.`);
+  if (!isUuid(value)) throw new OpError(400, what ? `Identifiant ${what} invalide.` : 'Identifiant invalide.');
   return value.toLowerCase();
 }
 
@@ -62,7 +66,7 @@ function listName(value) {
 
 function itemName(value) {
   const name = cleanName(value);
-  if (!name) throw new OpError(400, "Nom d'article invalide (1 à 100 caractères).");
+  if (!name) throw new OpError(400, 'Nom invalide (1 à 100 caractères).');
   return name;
 }
 
@@ -210,7 +214,7 @@ export function createListService(ctx) {
   }
 
   function itemForMember(user, itemId) {
-    const item = q.memberItem.get({ userId: user.id, itemId: requireUuid(itemId, "d'article") });
+    const item = q.memberItem.get({ userId: user.id, itemId: requireUuid(itemId) });
     if (!item) throw new OpError(404, ITEM_NOT_FOUND);
     return item;
   }
@@ -283,7 +287,7 @@ export function createListService(ctx) {
       throw new OpError(400, "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.");
     }
     if (!multi && op.storeId !== undefined && op.storeId !== null) {
-      throw new OpError(400, "Le magasin d'un article ne se choisit que dans une liste « multi ».");
+      throw new OpError(400, 'Le magasin ne se choisit que dans une liste « multi ».');
     }
   }
 
@@ -464,8 +468,8 @@ export function createListService(ctx) {
     //   déjà acheté dans un des magasins de la liste reprend son magasin habituel.
     'item.create'(user, op) {
       const list = listForMember(user, op.listId);
-      const id = requireUuid(op.itemId, "d'article");
-      if (q.anyItem.get(id)) throw new OpError(409, 'Cet article existe déjà.');
+      const id = requireUuid(op.itemId);
+      if (q.anyItem.get(id)) throw new OpError(409, 'Cet identifiant est déjà utilisé.');
       const name = itemName(op.name);
       checkFieldsForList(list.is_multi === 1, op);
       let aisleId = null;
@@ -549,7 +553,7 @@ export function createListService(ctx) {
     // Remettre un article supprimé (« Annuler »), avec sa photo, tant qu'il
     // n'a pas été effacé par le nettoyage. Membres de la liste seulement.
     'item.restore'(user, op) {
-      const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId, "d'article") });
+      const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId) });
       if (!item) throw new OpError(404, ITEM_NOT_FOUND);
       db.prepare('UPDATE items SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(nowIso(), item.id);
       changed(item.list_id);

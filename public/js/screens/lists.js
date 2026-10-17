@@ -26,7 +26,7 @@ export function listCard(list, { selected = false } = {}) {
   if (list.total > 0 && list.remaining === 0) {
     count = h('p', { class: 'list-card__count list-card__count--done' }, icon('check', 'icon--sm'), 'Tout est coché');
   } else {
-    count = h('p', { class: 'list-card__count' }, list.total === 0 ? 'Liste vide' : remainingLabel(list.remaining));
+    count = h('p', { class: 'list-card__count' }, list.total === 0 ? 'Liste vide' : remainingLabel(list.remaining, list));
   }
 
   return h('a', {
@@ -58,7 +58,7 @@ function emptyLists() {
   return h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('tasks', 'icon--lg')),
     h('h2', { class: 'empty__title' }, 'Aucune liste pour le moment'),
-    h('p', { class: 'empty__text' }, 'Créez une première liste pour commencer à y ajouter des articles.'));
+    h('p', { class: 'empty__text' }, 'Créez une première liste pour commencer à y ajouter des éléments.'));
 }
 
 const loading = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');

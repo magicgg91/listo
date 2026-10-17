@@ -22,7 +22,7 @@ export function tempDir(t) {
 
 // Démarre Listo sur un port libre, avec une base en mémoire, une horloge
 // réglable (clock.now) et un journal capturé (logs).
-export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {} } = {}) {
+export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {}, backupDir = tempDir(t) } = {}) {
   const clock = { now: Date.UTC(2026, 9, 16, 12, 0, 0) };
   const logs = [];
   const db = openDatabase(':memory:');
@@ -35,6 +35,7 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
     journalFile,
     photosDir,
     eventOptions,
+    backupDir,
   });
   const server = app.listen(0);
   await once(server, 'listening');
@@ -43,7 +44,7 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
     server.close();
   });
   const base = `http://127.0.0.1:${server.address().port}`;
-  return { db, clock, logs, base, photosDir, ctx: app.locals.ctx, client: (options) => createClient(base, options) };
+  return { db, clock, logs, base, photosDir, backupDir, ctx: app.locals.ctx, client: (options) => createClient(base, options) };
 }
 
 // Client HTTP qui garde ses cookies, comme un navigateur. Il envoie l'en-tête

@@ -38,6 +38,7 @@ const APP_FILES = [
   '/icons/icon-maskable.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
   '/js/actions.js',
   '/js/api.js',
   '/js/app.js',

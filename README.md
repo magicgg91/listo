@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration) et 4 (listes et articles) terminées côté serveur. L'interface arrive à l'étape 5.
+État : étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles) et 5 (interface mobile) terminées. Le temps réel arrive à l'étape 6, le hors ligne à l'étape 7.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -28,7 +28,16 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/lists.js` | Listes et articles : droits, opérations, historique, synchronisation, nettoyage |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé et autocomplétion, tri des articles |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
-| `public/` | Fichiers de l'interface (page d'attente pour l'instant) |
+| `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
+| `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css` sans sa section 16) et petits ajustements propres à l'application |
+| `public/manifest.webmanifest`, `public/sw.js`, `public/icons/` | Installation sur l'écran d'accueil (PWA). Le service worker ne met rien en cache |
+| `public/js/app.js` | Démarrage de l'interface, compte connecté, copie locale des données, choix de l'écran |
+| `public/js/router.js` | Adresses `#/listes/…`, bouton Retour du téléphone, fenêtres superposées |
+| `public/js/api.js` | Seul module qui parle au serveur (`/api/…`, `/api/ops` avec des identifiants UUID créés dans le téléphone) |
+| `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon, suggestions) |
+| `public/js/format.js` | Mise en forme des textes (dates relatives, nombre d'articles restants…) |
+| `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
+| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `Dockerfile`, `docker-entrypoint.sh` | Construction et démarrage de l'image Docker |
 | `docker-compose.yml` | Production (image publiée sur ghcr.io) |
@@ -52,6 +61,35 @@ npm test                  # lance les tests automatisés
 npm start                 # démarre Listo sur http://localhost:3000
 ```
 
+## Essayer sur son téléphone
+
+Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
+
+1. Trouver l'adresse de l'ordinateur sur le réseau local : par exemple `hostname -I` (Linux), `ipconfig getifaddr en0` (Mac) ou `ipconfig` (Windows). Elle ressemble à `192.168.1.20`.
+2. Démarrer Listo en ouvrant le port au réseau local, et en indiquant cette adresse (sinon les connexions sont refusées par la protection CSRF) :
+
+   ```sh
+   LISTO_DEV_BIND=0.0.0.0 LISTO_DEV_URL=http://192.168.1.20:3000 \
+     docker compose -f docker-compose.dev.yml up --build
+   ```
+
+3. Sur le téléphone, ouvrir `http://192.168.1.20:3000`. Au premier lancement, le code de démarrage s'affiche dans le terminal de l'ordinateur.
+4. Pour arrêter : Ctrl+C. Relancé sans ces deux réglages, Listo n'est de nouveau joignable que depuis l'ordinateur.
+
+En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
+
+## Vérifier l'interface sur le téléphone (étape 5)
+
+Ces points ne peuvent pas être testés automatiquement : à vérifier une fois à la main, de préférence sur le vrai sous-domaine en HTTPS.
+
+1. **Installation sur l'écran d'accueil** : dans le navigateur du téléphone, menu « Ajouter à l'écran d'accueil » (ou « Installer l'application »). L'icône Listo apparaît ; ouverte depuis l'écran d'accueil, l'application s'affiche sans barre d'adresse.
+2. **Thème** : Réglages → Apparence. « Clair » et « Sombre » changent l'affichage tout de suite ; « Auto » suit le réglage du téléphone. Fermer puis rouvrir Listo : le choix est conservé.
+3. **Clavier du téléphone** : dans une liste, taper un article puis la touche Entrée du clavier : l'article est ajouté et le champ reste prêt pour le suivant. Le clavier ne cache pas le champ d'ajout. Sur l'écran du code à 6 chiffres, le clavier numérique s'ouvre.
+4. **Pouce en bas de l'écran** : le champ d'ajout et les boutons principaux (Nouvelle liste, Enregistrer…) sont en bas, atteignables d'une main. Les cases à cocher se touchent facilement sans cocher la ligne voisine.
+5. **Bouton Retour du téléphone** : une feuille ouverte (article, choix du rayon) se ferme sans quitter la liste ; depuis une liste, Retour ramène à « Mes listes ».
+6. **Réseau coupé** (mode avion) : cocher un article affiche un message clair et la case revient à son état ; un article tapé reste dans le champ.
+7. **Ordinateur** (fenêtre d'au moins 1024 px de large) : « Mes listes » à gauche, la liste choisie au centre.
+
 ## API des comptes (étape 2)
 
 | Route | Rôle |
@@ -64,6 +102,7 @@ npm start                 # démarre Listo sur http://localhost:3000
 | `GET /api/me` | Compte connecté |
 | `POST /api/me/password` | Changer son mot de passe : `currentPassword`, `newPassword` |
 | `POST /api/me/2fa/enable` | Commencer l'activation de la 2FA : renvoie le QR code et le secret |
+| `GET /api/me/2fa/qr.png` | Image PNG du QR code de l'activation en cours (utilisée par l'interface, pour garder une CSP stricte sans image `data:`) |
 | `POST /api/me/2fa/verify` | Confirmer avec un premier code : `code`. Renvoie les 10 codes de secours |
 | `POST /api/me/2fa/disable` | Désactiver sa 2FA : `password`, `code` |
 

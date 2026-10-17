@@ -1,0 +1,161 @@
+/* ==========================================================================
+   LISTO — ajustements propres à l'application.
+   Le design (couleurs, composants) est dans listo.css, repris tel quel du kit.
+   Ce fichier ne contient que ce qui sert à « monter » les écrans dans la page :
+   hauteur plein écran, sprite caché, colonnes, quelques espacements.
+   ========================================================================== */
+
+html, body { height: 100%; margin: 0; }
+
+/* Un élément masqué (attribut hidden) reste masqué, même si sa classe du kit
+   lui donne un affichage (ex. .note { display: flex }) */
+[hidden] { display: none !important; }
+
+/* Correction du kit : dans listo.css, la règle « .app button { font: inherit;
+   color: inherit } » l'emporte sur les couleurs et graisses prévues pour les
+   boutons (texte bleu nuit sur bouton bleu : contraste insuffisant). On rétablit
+   ici les valeurs des variables du kit (texte blanc en gras sur l'accent en
+   clair, texte sombre sur l'accent clair en sombre, contraste AA). Décision
+   validée par le propriétaire. */
+.app .btn { font-size: var(--text-base); font-weight: 600; line-height: 1.2; }
+.app .btn--primary { color: var(--color-on-accent); }
+.app .btn--danger { color: var(--color-on-danger); }
+.app .btn--danger-outline { color: var(--color-danger-ink); }
+.app .btn[disabled] { color: var(--color-text-2); }
+.app .fab { color: var(--color-on-accent); font-size: var(--text-base); font-weight: 700; }
+.app .toast__action { color: var(--color-inverse-accent); font-weight: 700; }
+.app .suggest__item { font-size: var(--text-item); }
+.app .suggest__item--new { color: var(--color-accent-ink); font-weight: 600; }
+.app .menu__item { font-size: var(--text-base); }
+.app .menu__item--danger { color: var(--color-danger-ink); }
+.app .tab { color: var(--color-text-2); font-size: var(--text-base); font-weight: 600; }
+.app .tab[aria-selected="true"] { color: var(--color-text); }
+.app .segmented__opt { color: var(--color-text-2); font-weight: 600; }
+.app .segmented__opt[aria-checked="true"] { color: var(--color-text); }
+.app .choice__opt { font-weight: 600; }
+.app .radio-row.is-on { font-weight: 700; }
+.app .sync { font-size: var(--text-sm); font-weight: 600; }
+.app .sync--ok { color: var(--color-success-ink); }
+.app .sync--busy { color: var(--color-accent-ink); }
+.app .sync--off { color: var(--color-inverse-text); }
+body { background: var(--color-bg); }
+/* Hauteur réelle de l'écran sur téléphone (barre d'adresse comprise) */
+.app { height: 100dvh; overflow: hidden; }
+
+/* Sprite d'icônes : présent dans la page, mais invisible */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* Message de chargement au tout premier affichage */
+.boot { margin: auto; padding: var(--space-4); text-align: center; }
+
+/* Un écran occupe toute la hauteur de sa colonne */
+.screen { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
+.screen > form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* Écrans d'accueil (connexion…) : marges du kit */
+.welcome { display: flex; flex-direction: column; gap: var(--space-3); padding: 88px var(--space-1) var(--space-3); }
+.welcome--top { padding-top: var(--space-1); }
+.welcome__head { display: flex; flex-direction: column; gap: var(--space-1); }
+.welcome__fields { display: flex; flex-direction: column; gap: var(--space-2); }
+.welcome .display + .muted { font-size: var(--text-item); }
+.welcome .btn--ghost { align-self: flex-start; }
+
+/* Un texte d'étape (« Étape 1 sur 2 ») */
+.step { font-weight: 700; color: var(--color-text-2); }
+
+/* Contenu centré (QR code) */
+.center { display: flex; justify-content: center; }
+.qr img { width: 160px; height: 160px; image-rendering: pixelated; }
+
+/* Clé 2FA à recopier */
+.secret-key { display: flex; align-items: center; gap: var(--space-1); padding: 12px var(--space-2); }
+.secret-key__value { font: 700 var(--text-lg) var(--font-mono); letter-spacing: 0.08em; overflow-wrap: anywhere; }
+
+/* Rangée de boutons de la barre d'état (synchro + vider les barrés) */
+.statusbar .btn--sm { margin-left: auto; }
+.sync { border: 1px solid var(--color-border); }
+button.sync { cursor: pointer; }
+
+/* Listes de cartes (Mes listes) */
+.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) 112px; }
+.cards--side { padding-bottom: var(--space-2); }
+
+/* Formulaires en pleine page (nouvelle liste, mot de passe…) */
+.form-body { display: flex; flex-direction: column; gap: var(--space-3); }
+.choice__opt { color: inherit; }
+.share { overflow: hidden; }
+.share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
+
+/* Feuille du bas : défilement si le contenu est long */
+.sheet { overflow-y: auto; }
+.sheet .group { margin: 0; }
+.sheet__actions { display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* Administration */
+.admin-list { padding-top: var(--space-1); }
+.manage__actions { display: flex; align-items: center; gap: 2px; }
+.manage.is-editing { gap: var(--space-1); padding-right: var(--space-1); background: var(--color-accent-soft); }
+.manage.is-editing .input { height: 48px; }
+
+/* Message d'erreur général d'un formulaire */
+.form-error { margin: 0; }
+
+/* Barre du bas d'une liste : champ d'ajout. Les toasts s'affichent au-dessus. */
+.toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.toast--low { bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+
+/* Ordinateur : le bouton Retour vers « Mes listes » est inutile (colonne de gauche) */
+@media (min-width: 1024px) {
+  .mobile-only { display: none; }
+  .shell__side .fab { display: none; }
+}
+@media (max-width: 1023.98px) {
+  .desktop-only { display: none; }
+}
+
+/* Élément masqué visuellement mais lu par les lecteurs d'écran */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Catégories : plus de deux cartes passent à la ligne */
+.choice--wrap { flex-wrap: wrap; }
+.choice--wrap .choice__opt { flex: 1 1 140px; }
+
+/* Colonne de gauche (ordinateur) */
+.brand-mark--sm { width: 40px; height: 40px; border-radius: 12px; }
+.brand-mark--sm .icon { width: 24px; height: 24px; }
+.statusbar--side { padding-top: var(--space-1); }
+.side-title { font-size: var(--text-lg); font-weight: 700; }
+.side-empty { padding: var(--space-2); }
+
+/* Le champ d'ajout a déjà son propre cadre bleu quand il est actif : pas de
+   second contour autour du texte */
+.app .addbar__input:focus-visible { outline: none; }
+
+/* Zone qui défile : en colonne, pour qu'un message « vide » soit centré */
+.scroll { display: flex; flex-direction: column; }
+
+/* Choix dans une longue liste (rayons, magasins) : seule la liste défile,
+   le titre et le bouton restent visibles */
+.picker { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.sheet:has(.picker) { overflow: hidden; }
+
+/* Réglages : carte du compte, groupe avec marge intérieure */
+.account { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
+.group--pad { padding: 12px; }
+.body > .section-title:first-child { margin-top: var(--space-1); }
+.row__icon .icon, .row > .icon { flex: none; }
+.row > .icon:last-child { color: var(--color-text-2); }
+.body:has(> .group) { padding-left: 0; padding-right: 0; }
+
+/* Administration : ajout en tête de liste, renommage sur place */
+.add-inline--flush { padding: var(--space-1) var(--space-2) var(--space-2); }
+.btn--add { min-height: 52px; }
+.manage__edit { display: flex; align-items: center; gap: var(--space-1); }
+.manage__edit .input { flex: 1; min-width: 0; }
+.btn--edit { width: 48px; min-height: 48px; }
+.manage .switch { margin-right: var(--space-1); }
+.row .avatar { flex: none; }
+.row--menu .icon { flex: none; }
+.toggle-row { display: flex; align-items: center; gap: var(--space-2); padding: 12px var(--space-2); }
+.admin-list { padding-left: 0; padding-right: 0; }
+.admin-list > .empty__text { padding: 0 var(--space-2); }

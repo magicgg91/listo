@@ -2,6 +2,7 @@
 //   GET  /api/me              qui suis-je ?
 //   POST /api/me/password     changer son mot de passe (l'ancien est demandé)
 //   POST /api/me/2fa/enable   commencer l'activation de la 2FA (QR code)
+//   GET  /api/me/2fa/qr.png   image du QR code de l'activation en cours
 //   POST /api/me/2fa/verify   confirmer l'activation avec un premier code
 //   POST /api/me/2fa/disable  désactiver sa 2FA (mot de passe + code)
 
@@ -66,6 +67,19 @@ export function meRoutes(ctx) {
       .run(sealTotpSecret(ctx, req.user.id, secret), req.user.id);
     const uri = otpauthUri(secret, req.user.username);
     res.json({ secret: toBase32(secret), uri, qrCode: await QRCode.toDataURL(uri) });
+  });
+
+  // Image du QR code de l'activation en cours (PNG). Servie par Listo
+  // lui-même, pour que la politique de sécurité (CSP) reste stricte : aucune
+  // image « data: » n'est autorisée dans la page.
+  router.get('/me/2fa/qr.png', async (req, res) => {
+    const user = reloadUser(req.user.id);
+    if (user.totp_enabled === 1 || !user.totp_secret) {
+      return res.status(404).json({ error: "Aucune activation de la double authentification en cours." });
+    }
+    const uri = otpauthUri(openTotpSecret(ctx, user), user.username);
+    const png = await QRCode.toBuffer(uri, { type: 'png', margin: 1, width: 320 });
+    res.type('png').send(png);
   });
 
   // Étape 2 de l'activation : le premier code prouve que l'application

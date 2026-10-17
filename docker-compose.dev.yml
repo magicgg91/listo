@@ -8,8 +8,8 @@
 # Par défaut, le port n'est ouvert que sur l'ordinateur lui-même (127.0.0.1),
 # jamais sur le réseau.
 #
-# Pour essayer depuis un téléphone du même réseau Wi-Fi (voir le README,
-# « Essayer sur son téléphone »), deux réglages facultatifs :
+# Pour essayer depuis un téléphone du même réseau Wi-Fi (voir
+# docs/developpement.md, « Essayer sur son téléphone »), deux réglages facultatifs :
 #   LISTO_DEV_BIND=0.0.0.0                       ouvre le port au réseau local
 #   LISTO_DEV_URL=http://192.168.1.20:3000       adresse de l'ordinateur, telle
 #                                                que le téléphone la tape

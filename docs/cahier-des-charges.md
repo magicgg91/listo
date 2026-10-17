@@ -362,7 +362,7 @@ services:
 **Flux SSE derrière Nginx Proxy Manager**
 
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
-- Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : README, Partie 1, chapitre 3).
+- Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : docs/exploitation.md, chapitre 3).
 - Pour le reconnaître : un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (synchronisation de secours) au lieu de quelques secondes.
 
 **Image Docker construite automatiquement**

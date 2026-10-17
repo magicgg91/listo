@@ -1,13 +1,12 @@
 # Listo en production, derrière Nginx Proxy Manager (installé sur une autre machine).
 #
 # À placer seul sur le serveur (aucun code source n'est nécessaire), puis :
-#   docker login ghcr.io                     (une seule fois, jeton en lecture des paquets)
 #   docker compose up -d                     (démarrer)
 #   docker logs listo                        (voir les journaux)
 #   docker compose pull && docker compose up -d   (mettre à jour)
 #   docker exec -u node listo node server/backup-now.js   (sauvegarde à la demande)
 # Le guide complet (installation, sauvegarde, restauration, dépannage) est
-# dans le README du dépôt.
+# dans le dépôt : README, puis docs/exploitation.md.
 #
 # Nginx Proxy Manager n'étant pas sur la même machine, il n'y a pas de réseau
 # Docker partagé : Listo publie son port sur l'adresse du réseau local du

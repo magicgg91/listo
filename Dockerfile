@@ -8,11 +8,14 @@
 # .github/workflows/docker.yml à chaque fusion sur main.
 # L'image ne contient que le code : ni base de données, ni secret.
 
-# Node.js 24 (version suivie à long terme), variante « slim » plus légère.
+# Node.js 24 : version LTS (suivie à long terme, numéro pair), variante
+# « slim » plus légère. Les versions impaires (25, 27…) ne vivent que
+# quelques mois : on ne les utilise pas.
 # L'image est épinglée sur son empreinte (sha256) : chaque construction part
 # exactement de la même base, vérifiée. Dependabot propose chaque semaine une
-# pull request quand une nouvelle version de node:24-slim sort.
-FROM node:25-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370
+# pull request quand une nouvelle version de node:24-slim sort (correctifs) ;
+# le passage à une nouvelle version majeure se fait à la main (voir le README).
+FROM node:24-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
 
 ENV NODE_ENV=production
 WORKDIR /app
@@ -30,8 +33,17 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force \
 # 2. Code de l'application (seulement ce qui sert à la faire tourner)
 COPY server ./server
 COPY public ./public
+# Licence et mentions obligatoires (Apache-2.0) : elles accompagnent le code
+COPY LICENSE NOTICE ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
+
+# Commit Git de cette version, donné par le workflow de construction
+# (build-arg GIT_COMMIT) et affiché dans Réglages › À propos. Placé après
+# l'installation des dépendances, pour ne pas invalider le cache de cette
+# étape. Vide pour une image construite à la main : « développement ».
+ARG GIT_COMMIT=""
+ENV LISTO_COMMIT=$GIT_COMMIT
 
 # Valeurs par défaut (docker-compose.yml fixe celles de la production :
 # PORT=13300, LISTO_PUBLIC_URL…). Base et clé dans deux volumes séparés.

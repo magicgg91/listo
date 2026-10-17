@@ -182,6 +182,10 @@ export function createApp({
   api.use(listRoutes(ctx));
   api.use(photoRoutes(ctx));
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
+  // Version installée (Réglages › À propos) : comptes connectés seulement, et
+  // rien d'autre que le commit (jamais public : une version publique
+  // aiderait un attaquant)
+  api.get('/about', (req, res) => res.json({ commit: config.commit ?? 'non précisé' }));
   // Flux temps réel : « la liste X a changé » (voir events.js)
   api.get('/events', sameSiteOnly(config.publicUrl), (req, res) => ctx.events.connect(req, res));
   api.use('/admin', adminRoutes(ctx));

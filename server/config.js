@@ -25,7 +25,18 @@ export function loadConfig(env = process.env) {
 
     // Vrai en production (cookies « Secure », messages d'erreur réduits…)
     production: env.NODE_ENV === 'production',
+
+    // Commit Git de l'image installée (posé par la construction de l'image,
+    // voir le Dockerfile), ou null s'il n'est pas connu
+    commit: validCommit(env.LISTO_COMMIT),
   };
+}
+
+// Un commit Git est exactement 40 caractères hexadécimaux. Toute autre
+// valeur (vide, trop courte, caractères interdits, texte injecté…) est
+// ignorée : elle ne sera jamais affichée.
+export function validCommit(value) {
+  return typeof value === 'string' && /^[0-9a-f]{40}$/.test(value) ? value : null;
 }
 
 // Vérifie la configuration avant le démarrage. Renvoie un message clair si

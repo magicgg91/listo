@@ -7,7 +7,7 @@
 //   réactivation, suppression d'un élément jamais utilisé.
 // Aucune de ces vues ne montre le contenu des listes.
 
-import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace } from '../dom.js';
+import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge } from '../dom.js';
 import { get, post, patch, del, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
@@ -250,17 +250,31 @@ async function loadReferences(tab, panel, alive) {
   }
   if (!alive()) return;
 
-  // Ajout (add-inline)
+  const isStores = tab.api === 'stores';
+
+  // Ajout (add-inline ; pour un magasin, add-block avec le choix Simple / Multi)
   const input = h('input', { class: 'input', type: 'text', maxlength: '100', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
-  const addForm = h('form', { class: 'add-inline add-inline--flush', novalidate: true },
-    h('label', { class: 'grow' }, input),
-    h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, 'Ajouter'));
+  const addButton = h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, 'Ajouter');
+  let isMulti = false;
+  let addForm;
+  if (isStores) {
+    const hint = h('p', { class: 'field__hint', hidden: true }, 'Un magasin multi regroupe plusieurs magasins : les articles sont classés par magasin, sans rayons.');
+    const kinds = segmented('Type de magasin', [['simple', 'store', 'Simple'], ['multi', 'layers', 'Multi']], 'simple', (value) => {
+      isMulti = value === 'multi';
+      hint.hidden = !isMulti;
+    });
+    addForm = h('form', { class: 'add-block', novalidate: true },
+      h('div', { class: 'add-block__row' }, h('label', { class: 'grow' }, input), addButton),
+      kinds, hint);
+  } else {
+    addForm = h('form', { class: 'add-inline add-inline--flush', novalidate: true }, h('label', { class: 'grow' }, input), addButton);
+  }
   addForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const name = input.value.trim();
     if (!name) return;
     try {
-      await post(`/api/admin/${tab.api}`, { name });
+      await post(`/api/admin/${tab.api}`, isStores ? { name, isMulti } : { name });
       toast(`« ${name} » ajouté${tab.feminine ? 'e' : ''}`, { low: true });
       afterChange(reload);
     } catch (err) {
@@ -268,8 +282,86 @@ async function loadReferences(tab, panel, alive) {
     }
   });
 
-  const rows = items.map((item) => manageRow(tab, item, reload));
+  let rows;
+  if (isStores) {
+    // Magasins simples puis « multi » ; dans chaque groupe, les actifs d'abord
+    const sorted = [...items].sort((a, b) => Number(a.isMulti) - Number(b.isMulti) || Number(b.active) - Number(a.active) || compareNames(a.name, b.name));
+    const simples = items.filter((item) => !item.isMulti).sort((a, b) => compareNames(a.name, b.name));
+    rows = sorted.flatMap((item) => storeRows(tab, item, simples, reload));
+  } else {
+    rows = items.map((item) => manageRow(tab, item, reload));
+  }
   replace(panel, addForm, items.length ? h('div', { class: 'group' }, rows) : h('p', { class: 'muted empty__text' }, 'Aucun élément pour le moment.'));
+}
+
+// Segmenté à choix unique (icône + libellé), comme pour le thème
+function segmented(label, choices, current, onChange) {
+  const options = choices.map(([value, iconName, text]) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', 'aria-checked': String(value === current) },
+      icon(iconName, 'icon--sm'), text);
+    option.addEventListener('click', () => {
+      for (const o of options) o.setAttribute('aria-checked', String(o === option));
+      onChange(value);
+    });
+    return option;
+  });
+  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': label }, options);
+}
+
+// Magasins « multi » dont le détail est ouvert (gardés d'un rechargement à l'autre)
+const openedMulti = new Set();
+
+// Un magasin : sa ligne, et pour un « multi » le détail repliable des
+// magasins qu'il regroupe (administration-magasins-1 et 2)
+function storeRows(tab, store, simples, reload) {
+  if (!store.isMulti) return [manageRow(tab, store, reload)];
+
+  const detail = h('div', { class: 'manage-detail', id: `regroupes-${store.id}`, hidden: !openedMulti.has(store.id) });
+  const toggle = iconButton('chev-d', `Magasins regroupés de ${store.name}`, () => {
+    const open = detail.hidden;
+    detail.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) openedMulti.add(store.id);
+    else openedMulti.delete(store.id);
+  });
+  toggle.setAttribute('aria-expanded', String(!detail.hidden));
+  toggle.setAttribute('aria-controls', detail.id);
+
+  // Cases à cocher : chaque changement est enregistré tout de suite
+  const chosen = new Set(store.storeIds);
+  const ticks = simples.map((simple) => {
+    const tick = h('span', { class: `tick${chosen.has(simple.id) ? ' is-on' : ''}` }, chosen.has(simple.id) ? icon('check') : null);
+    const rowEl = h('button', { class: 'tick-row', type: 'button', role: 'checkbox', 'aria-checked': String(chosen.has(simple.id)) },
+      tick, h('span', { class: 'grow' }, simple.name, simple.active ? null : h('span', { class: 'muted' }, ' (désactivé)')));
+    rowEl.addEventListener('click', async () => {
+      const on = !chosen.has(simple.id);
+      if (on) chosen.add(simple.id);
+      else chosen.delete(simple.id);
+      rowEl.disabled = true;
+      try {
+        await patch(`/api/admin/stores/${store.id}`, { storeIds: [...chosen] });
+        afterChange(reload);
+      } catch (err) {
+        if (on) chosen.delete(simple.id);
+        else chosen.add(simple.id);
+        rowEl.disabled = false;
+        toast(errorMessage(err), { low: true });
+      }
+    });
+    return rowEl;
+  });
+  // Un « multi » jamais utilisé se supprime depuis son détail (la ligne n'a
+  // pas la place pour une corbeille en plus)
+  const removeButton = store.inUse ? null : h('div', { class: 'manage-detail__note' },
+    h('button', { class: 'btn btn--danger-outline btn--sm', type: 'button', onClick: () => removeReference(tab, store, reload) },
+      icon('trash', 'icon--sm'), 'Supprimer ce magasin'));
+  replace(detail,
+    h('p', { class: 'manage-detail__title' }, 'Magasins regroupés'),
+    ticks.length ? ticks : h('p', { class: 'manage-detail__note' }, 'Ajoutez d\'abord des magasins simples.'),
+    h('p', { class: 'manage-detail__note' }, 'Les articles sans magasin passent en dernier, sous « Sans magasin ».'),
+    removeButton);
+
+  return [manageRow(tab, store, reload, { extra: toggle, canDelete: false }), detail];
 }
 
 // Après une modification : liste rechargée, et données de l'appli à jour
@@ -281,28 +373,26 @@ function afterChange(reload) {
 
 const stateLabel = (tab, item) => {
   const word = item.active ? (tab.feminine ? 'Active' : 'Actif') : (tab.feminine ? 'Désactivée' : 'Désactivé');
-  return item.isShopping ? `${word} · avec magasins et rayons` : word;
+  if (item.isShopping) return `${word} · avec magasins et rayons`;
+  if (item.isMulti) return `${item.storeIds.length} magasin${item.storeIds.length > 1 ? 's' : ''} · ${word}`;
+  if (item.isMulti === false) return `Simple · ${word}`;
+  return word;
 };
 
-// Ligne d'un élément : nom, état, renommer, interrupteur, supprimer (si jamais utilisé)
-function manageRow(tab, item, reload) {
+
+// Ligne d'un élément : nom, état, renommer, interrupteur, supprimer (si jamais
+// utilisé). extra : bouton ajouté avant l'interrupteur (détail d'un « multi »).
+function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } = {}) {
   const rowEl = h('div', { class: `manage${item.active ? '' : ' is-off'}` });
   const showView = () => {
     rowEl.classList.remove('is-editing');
     replace(rowEl,
-      h('div', { class: 'grow' }, h('p', { class: 'manage__name' }, item.name), h('p', { class: 'manage__sub' }, stateLabel(tab, item))),
+      h('div', { class: 'grow' },
+        h('p', { class: 'manage__name' }, item.name, item.isMulti ? [' ', multiBadge()] : null),
+        h('p', { class: 'manage__sub' }, stateLabel(tab, item))),
       iconButton('pencil', `Modifier ${item.name}`, () => (tab.api === 'categories' ? openCategorySheet(item, reload) : showEdit())),
-      item.inUse ? null : iconButton('trash', `Supprimer ${item.name}`, async () => {
-        const ok = await confirmDialog({ title: `Supprimer « ${item.name} » ?`, text: "Cet élément n'a jamais servi : il sera supprimé définitivement.", confirmLabel: 'Supprimer' });
-        if (!ok) return;
-        try {
-          await del(`/api/admin/${tab.api}/${item.id}`);
-          toast(`« ${item.name} » supprimé${tab.feminine ? 'e' : ''}`, { low: true });
-          afterChange(reload);
-        } catch (err) {
-          toast(errorMessage(err), { low: true });
-        }
-      }),
+      canDelete ? iconButton('trash', `Supprimer ${item.name}`, () => removeReference(tab, item, reload)) : null,
+      extra,
       h('button', {
         class: 'switch',
         type: 'button',
@@ -349,6 +439,19 @@ function manageRow(tab, item, reload) {
 
   showView();
   return rowEl;
+}
+
+// Supprime un élément jamais utilisé, après confirmation
+async function removeReference(tab, item, reload) {
+  const ok = await confirmDialog({ title: `Supprimer « ${item.name} » ?`, text: "Cet élément n'a jamais servi : il sera supprimé définitivement.", confirmLabel: 'Supprimer' });
+  if (!ok) return;
+  try {
+    await del(`/api/admin/${tab.api}/${item.id}`);
+    toast(`« ${item.name} » supprimé${tab.feminine ? 'e' : ''}`, { low: true });
+    afterChange(reload);
+  } catch (err) {
+    toast(errorMessage(err), { low: true });
+  }
 }
 
 // Catégorie : nom et « liste de courses » (magasin et rayons)

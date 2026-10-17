@@ -255,11 +255,9 @@ function form(list, users) {
     event.preventDefault();
     error.show('');
     const cleanName = name.value.replace(/\s+/g, ' ').trim();
+    // Nom vide : le champ est signalé sous lui-même, sans y mettre le curseur
     nameField.setError(cleanName ? null : 'Le nom est obligatoire');
-    if (!cleanName) {
-      name.focus();
-      return;
-    }
+    if (!cleanName) return;
     const category = categories.find((c) => c.id === categoryId);
     if (!category) {
       error.show('Choisissez une catégorie.');

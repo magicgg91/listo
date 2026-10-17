@@ -68,9 +68,17 @@ function showGate() {
     for (const el of [input, submit, ...wrap.querySelectorAll('button')]) el.disabled = true;
   };
 
+  // Erreur sous le champ, reliée au champ, sans y mettre le curseur
+  const showError = (message) => {
+    replace(fieldError, icon('alert', 'icon--xs'), message);
+    fieldError.hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+    input.setAttribute('aria-describedby', 'mot-de-passe-erreur');
+  };
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!input.value) return input.focus();
+    if (!input.value) return showError('Saisir le mot de passe.');
     submit.disabled = true;
     let res;
     try {
@@ -82,19 +90,14 @@ function showGate() {
       });
     } catch {
       submit.disabled = false;
-      replace(fieldError, icon('alert', 'icon--xs'), 'Impossible de joindre Listo. Réessayez.');
-      fieldError.hidden = false;
+      showError('Impossible de joindre Listo. Réessayez.');
       return;
     }
     if (res.status === 200) return load();
     if (res.status === 429) return block();
     if (res.status === 401) {
       submit.disabled = false;
-      replace(fieldError, icon('alert', 'icon--xs'), 'Mot de passe incorrect');
-      fieldError.hidden = false;
-      input.setAttribute('aria-invalid', 'true');
-      input.setAttribute('aria-describedby', 'mot-de-passe-erreur');
-      input.select();
+      showError('Mot de passe incorrect');
       return;
     }
     showInvalid();
@@ -106,7 +109,7 @@ function showGate() {
       h('h1', { class: 'empty__title' }, 'Liste protégée'),
       h('p', { class: 'empty__text' }, 'Saisir le mot de passe reçu avec le lien.')),
     form));
-  input.focus();
+  // Pas de curseur automatique : le clavier s'ouvre quand on touche le champ
 }
 
 // --- La liste en lecture seule (page-publique-1 et 2) ---
@@ -170,7 +173,8 @@ function showPhoto(item) {
   const close = () => {
     box.remove();
     document.removeEventListener('keydown', onKey);
-    opener?.focus();
+    // Retour du focus à la vignette touchée (jamais à un champ de saisie)
+    if (opener && !opener.matches?.('input, textarea')) opener.focus();
   };
   const onKey = (event) => {
     if (event.key === 'Escape') close();

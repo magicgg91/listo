@@ -471,7 +471,7 @@ curl -b cookies.txt $U/api/lists/$L
 
 ## Photos des articles (étape 7)
 
-Chaque article peut avoir une photo (une seule), dans une liste de courses comme dans une liste de tâches. Tous les membres de la liste la voient.
+Chaque article peut avoir une photo (une seule), dans une liste de courses comme dans une liste de tâches. Les photos sont servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées (route `GET /api/public/:jeton/photos/:id`, voir « Lien public d'une liste »). Les routes ci-dessous sont celles des membres.
 
 | Route | Rôle |
 | --- | --- |
@@ -581,7 +581,7 @@ Seul le propriétaire de la liste y a accès : un invité ou un autre compte re�
 | Route | Rôle |
 | --- | --- |
 | `GET /p/:jeton` | La page (HTML sans aucune donnée de la liste) |
-| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, articles groupés (rayon ou magasin) avec quantité, note, état coché et adresse de la photo. Rien d'autre (liste blanche) |
+| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo, date d'expiration du lien. Rien d'autre (liste blanche) : aucun nom de personne ni identifiant de compte ou de liste |
 | `POST /api/public/:jeton/acces` | Saisie du mot de passe (`{ "password": "…" }`) ; donne le cookie de consultation |
 | `GET /api/public/:jeton/photos/:id` | Photo d'un article de cette liste seulement |
 

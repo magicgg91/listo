@@ -102,6 +102,7 @@ Le propriétaire d'une liste peut la montrer à une personne qui n'a pas de comp
 - Comptes : créer, désactiver, réinitialiser un mot de passe (l'utilisateur doit alors en choisir un nouveau à sa connexion suivante), désactiver le 2FA d'un utilisateur qui a perdu son téléphone, choisir le rôle. Un compte jamais utilisé peut être supprimé.
 - Catégories de liste, magasins, rayons : ajouter, renommer, désactiver. Un élément déjà utilisé ne peut pas être supprimé, seulement désactivé. Pour un magasin : choisir s'il est « simple » ou « multi » et, dans ce cas, les magasins qu'il regroupe.
 - Données de départ fournies : catégories Courses et Tâches, trois magasins (Carrefour, E.Leclerc, Lidl) et douze rayons classiques, tous modifiables.
+- **Écart (nouvelle fonction, 17 octobre 2026) :** noms enregistrés. L'Admin voit les noms de l'historique d'autocomplétion (une ligne par nom, avec rayon habituel, nombre d'utilisations et nombre de fois où il est présent dans les listes), les cherche (sans accents ni majuscules) et les trie (par nom, par utilisation), 50 à la fois. Il peut corriger un nom, avec confirmation chiffrée : l'historique et tous les éléments des listes portant ce nom (même nom une fois normalisé, sans correspondance approximative) prennent le nouveau nom ; s'il existe déjà, les deux entrées sont fusionnées. Il peut aussi retirer un nom des suggestions, sans toucher aux listes.
 
 **Compte**
 
@@ -119,7 +120,7 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 | Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon (magasin simple) ou magasin (si le magasin de la liste est « multi »). | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
 | Créer / modifier une liste | Nom, catégorie, magasin (simple ou « multi », si courses), partage avec les autres utilisateurs. | Enregistrer, supprimer la liste |
 | Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. **Écart :** aussi « Réinitialiser les données de ce téléphone » et un bloc « À propos » (version installée, développeur, projet). | Changer le mot de passe, activer le 2FA, choisir le thème |
-| Administration | Quatre onglets : Comptes, Catégories, Magasins, Rayons. Chacun liste ses éléments avec ajout, renommage, désactivation. Un magasin est « simple » ou « multi » (avec les magasins qu'il regroupe). | Gérer les données de référence |
+| Administration | Quatre onglets : Comptes, Catégories, Magasins, Rayons. Chacun liste ses éléments avec ajout, renommage, désactivation. Un magasin est « simple » ou « multi » (avec les magasins qu'il regroupe). **Écart :** un cinquième onglet « Noms » (noms enregistrés) : recherche, tri, corriger, retirer des suggestions. | Gérer les données de référence |
 | Partage par lien | Feuille ouverte depuis le menu de la liste (propriétaire) : état du lien (actif, expire le…, protégé ou non), mot de passe généré affiché une seule fois, durée en heures, en jours ou illimitée. | Créer, changer la durée, régénérer ou retirer le mot de passe, copier le lien, arrêter le partage |
 | Page publique | Page ouverte par le lien, sans compte : saisie du mot de passe si le lien est protégé, nom de la liste, articles en lecture seule avec photos. Lien expiré ou inconnu : message neutre. | Consulter, actualiser |
 
@@ -309,6 +310,7 @@ Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode 
 | PUT /api/lists/:id/members | Modifier le partage d'une liste (propriétaire, en ligne) |
 | GET, PUT, DELETE /api/lists/:id/share | Lire l'état, créer ou modifier (durée, mot de passe), arrêter le lien public (propriétaire, en ligne) |
 | /api/admin/users, /categories, /stores, /aisles | Gestion des données de référence (Admin, en ligne) |
+| GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, POST /api/admin/names/remove | **Écart :** noms enregistrés : liste par morceaux, effet d'une correction (nombres), corriger partout, retirer des suggestions (Admin, en ligne) |
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte |
 
 L'autocomplétion est calculée sur le téléphone à partir de la copie locale de item_history : elle marche donc hors ligne. La route GET /api/suggestions applique la même règle côté serveur (code partagé entre les deux).
@@ -487,8 +489,9 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 - Bloc « À propos » dans les Réglages (route GET /api/about) et retour à Node 24.
 - Licence Apache-2.0, fichiers NOTICE, CONTRIBUTING.md et SECURITY.md ; publication du dépôt et de l'image.
 - README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
+- Administration : onglet « Noms enregistrés », pour corriger une faute de frappe partout (historique et listes) ou retirer un nom des suggestions.
 
-**Tests automatisés** : 226 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
+**Tests automatisés** : 242 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
 
 **Consignes pour Claude Code**
 
@@ -519,6 +522,9 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Validité du lien public** : liste existante, propriétaire actif et toujours créateur du lien ; après une perte de la clé, l'adresse ne peut plus être réaffichée. Raison : précisions du code.
 - **Publication** : licence Apache-2.0 (LICENSE, NOTICE), CONTRIBUTING.md, SECURITY.md (signalement privé des failles), dépôt public, image publique ghcr.io/magicgg91/listo sans `docker login`. Raison : rendre le projet réutilisable.
 - **Documentation** : README court ; guide d'exploitation dans docs/exploitation.md ; détails techniques dans docs/developpement.md. Raison : un README lisible.
+- **Noms enregistrés** (Administration, onglet « Noms ») : corriger un nom partout ou le retirer des suggestions. Raison : une faute de frappe (« Tomatte ») restait dans les suggestions et dans les listes. Règles : une seule transaction ; seuls les noms identiques une fois normalisés ; éléments supprimés et listes supprimées non touchés ; nouvelle date de modification de chaque élément corrigé (la synchronisation le récupère ; ses listes remontent donc en tête de « Mes listes ») ; membres prévenus en temps réel ; journal. Pas de migration : le nom normalisé des éléments est calculé à la demande.
+- **Fusion de deux noms** : utilisations additionnées ; rayon de la ligne la plus utilisée, à égalité celui du nom corrigé, et si la ligne retenue n'a pas de rayon, celui de l'autre. Raison : garder le rayon le plus fiable sans rien perdre.
+- **Droits de l'Admin sur les noms** (décision du 17 octobre 2026) : l'Admin ne voit toujours pas les listes des autres (ni leur nom, ni leurs membres, ni leurs éléments). Il voit les noms de l'historique, déjà communs à tous les comptes par l'autocomplétion, avec de simples compteurs, et peut corriger un nom dans toutes les listes sans les voir. Raison : demande du propriétaire ; c'est une écriture ciblée sur un nom, pas un accès au contenu.
 - **Image Docker** : .dockerignore étendu (.github, design/photos, test/, docs/, *.log). Raison : image plus petite, sans fichiers inutiles.
 
 **Décisions du 17 octobre 2026** (écarts de sécurité tranchés en faveur du code livré, sans changement de code)

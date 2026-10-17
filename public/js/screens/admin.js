@@ -4,8 +4,12 @@
 //   désactivation de la 2FA, désactivation / réactivation, suppression d'un
 //   compte jamais utilisé ;
 // - Catégories, Magasins, Rayons : ajout, renommage, désactivation /
-//   réactivation, suppression d'un élément jamais utilisé.
-// Aucune de ces vues ne montre le contenu des listes.
+//   réactivation, suppression d'un élément jamais utilisé ;
+// - Noms enregistrés : l'historique commun des noms saisis dans les listes
+//   (autocomplétion, rayon habituel) ; corriger un nom partout, ou le retirer
+//   des suggestions.
+// Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
+// ses éléments) : les noms enregistrés viennent avec de simples compteurs.
 
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge } from '../dom.js';
 import { get, post, patch, del, errorMessage } from '../api.js';
@@ -13,13 +17,14 @@ import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
 import { app, refreshData } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
-import { defaultDisplayName } from '../format.js';
+import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 
 const TABS = [
   { key: 'comptes', label: 'Comptes' },
   { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
   { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
   { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
+  { key: 'noms', label: 'Noms', title: 'Noms enregistrés' },
 ];
 
 export function renderAdmin(tabKey, onLeave) {
@@ -35,6 +40,8 @@ export function renderAdmin(tabKey, onLeave) {
       type: 'button',
       role: 'tab',
       'aria-selected': String(t.key === tab.key),
+      // Libellé court à l'écran ; nom complet pour les lecteurs d'écran
+      'aria-label': t.title ?? null,
       onClick: () => navigate('admin', { tab: t.key }, { replace: true }),
     }, t.label)));
 
@@ -44,7 +51,11 @@ export function renderAdmin(tabKey, onLeave) {
   onLeave(() => {
     alive = false;
   });
-  const load = () => (tab.key === 'comptes' ? loadUsers(panel, footer, () => alive) : loadReferences(tab, panel, () => alive));
+  const load = () => {
+    if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive);
+    if (tab.key === 'noms') return loadNames(panel, () => alive);
+    return loadReferences(tab, panel, () => alive);
+  };
   // Hors ligne : l'administration demande le serveur, elle est indisponible
   // (elle se charge d'elle-même au retour du réseau)
   const reload = () => {
@@ -319,7 +330,7 @@ async function loadReferences(tab, panel, alive) {
 function segmented(label, choices, current, onChange) {
   const options = choices.map(([value, iconName, text]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', 'aria-checked': String(value === current) },
-      icon(iconName, 'icon--sm'), text);
+      iconName ? icon(iconName, 'icon--sm') : null, text);
     option.addEventListener('click', () => {
       for (const o of options) o.setAttribute('aria-checked', String(o === option));
       onChange(value);
@@ -514,4 +525,176 @@ function openCategorySheet(item, reload) {
       submit.disabled = false;
     }
   });
+}
+
+// ================= Noms enregistrés =================
+//
+// L'historique commun des noms saisis dans les listes, une ligne par nom (les
+// lignes par magasin sont regroupées par le serveur), 50 noms par morceau.
+// Seulement des noms et des compteurs : jamais une liste ni ses membres.
+
+// Recherche et tri gardés d'un rechargement à l'autre (après une correction)
+const namesView = { query: '', sort: 'name' };
+
+async function loadNames(panel, alive) {
+  const reload = () => loadNames(panel, alive);
+  const input = h('input', {
+    class: 'input', type: 'search', maxlength: '100', autocomplete: 'off', spellcheck: 'false',
+    placeholder: 'Rechercher un nom', 'aria-label': 'Rechercher un nom', value: namesView.query,
+  });
+  const sorting = segmented('Trier', [['name', null, 'Par nom'], ['uses', null, 'Par utilisation']], namesView.sort, (value) => {
+    namesView.sort = value;
+    showFirstPage();
+  });
+  const search = h('form', { class: 'add-block', role: 'search', novalidate: true },
+    h('div', { class: 'add-block__row' }, h('label', { class: 'grow' }, input)), sorting);
+  const results = h('div', { 'aria-live': 'polite' });
+  replace(panel, search, results);
+
+  // Une seule réponse compte : la plus récente (frappe rapide dans la recherche)
+  let request = 0;
+  async function fetchPage(offset) {
+    const params = new URLSearchParams({ q: namesView.query, sort: namesView.sort, offset: String(offset) });
+    return get(`/api/admin/names?${params}`);
+  }
+
+  async function showFirstPage() {
+    const mine = ++request;
+    replace(results, loadingText());
+    let page;
+    try {
+      page = await fetchPage(0);
+    } catch (err) {
+      if (alive() && mine === request) replace(results, errorBlock(err, showFirstPage));
+      return;
+    }
+    if (!alive() || mine !== request) return;
+    if (!page.total) {
+      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? 'Aucun nom ne correspond à cette recherche.' : 'Aucun nom enregistré pour le moment.'));
+      return;
+    }
+    const group = h('div', { class: 'group' });
+    const more = h('div', { class: 'add-inline' });
+    let shown = 0;
+    const addPage = (p) => {
+      group.append(...p.names.map((entry) => nameRow(entry, reload)));
+      shown += p.names.length;
+      if (shown >= p.total) {
+        replace(more);
+        return;
+      }
+      const button = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, `Afficher plus (${p.total - shown} restants)`);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const next = await fetchPage(shown);
+          if (alive() && mine === request) addPage(next);
+        } catch (err) {
+          button.disabled = false;
+          toast(errorMessage(err), { low: true });
+        }
+      });
+      replace(more, button);
+    };
+    replace(results, h('p', { class: 'section-title' }, `${page.total} nom${page.total > 1 ? 's' : ''}`), group, more);
+    addPage(page);
+  }
+
+  // Recherche : relancée 300 ms après la dernière frappe
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      namesView.query = input.value.trim();
+      showFirstPage();
+    }, 300);
+  });
+  search.addEventListener('submit', (event) => {
+    event.preventDefault();
+    clearTimeout(timer);
+    namesView.query = input.value.trim();
+    showFirstPage();
+  });
+
+  showFirstPage();
+}
+
+// Après une correction ou un retrait : liste rechargée, et copie de ce
+// téléphone rechargée en entier (suggestions et listes à jour)
+function afterNameChange(reload) {
+  reload();
+  refreshData({ quiet: true, full: true });
+}
+
+// Ligne d'un nom : nom affiché, rayon habituel et compteurs ; « Corriger »
+// (renommage sur place, puis confirmation chiffrée) et « Retirer des suggestions »
+function nameRow(entry, reload) {
+  const rowEl = h('div', { class: 'manage' });
+  const showView = () => {
+    rowEl.classList.remove('is-editing');
+    replace(rowEl,
+      h('div', { class: 'grow' },
+        h('p', { class: 'manage__name' }, entry.name),
+        h('p', { class: 'manage__sub' }, savedNameSub(entry))),
+      iconButton('pencil', `Corriger ${entry.name}`, showEdit),
+      iconButton('trash', `Retirer ${entry.name} des suggestions`, () => removeName(entry, reload)));
+  };
+
+  const showEdit = () => {
+    const input = h('input', { class: 'input', type: 'text', maxlength: '100', value: entry.name, 'aria-label': `Nom corrigé pour ${entry.name}` });
+    const form = h('form', { class: 'manage__edit grow', novalidate: true }, input,
+      h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': 'Corriger le nom' }, icon('check')),
+      iconButton('close', 'Annuler', showView));
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = input.value.trim();
+      if (!name || name === entry.name) {
+        showView();
+        return;
+      }
+      try {
+        // Ce qui va changer, pour la confirmation (nombres seulement)
+        const impact = await get(`/api/admin/names/impact?${new URLSearchParams({ from: entry.key, to: name })}`);
+        if (impact.unchanged) {
+          showView();
+          return;
+        }
+        const ok = await confirmDialog({ title: 'Corriger ce nom ?', text: renameImpactText(impact), confirmLabel: 'Corriger', danger: false });
+        if (!ok) {
+          input.focus();
+          return;
+        }
+        const done = await post('/api/admin/names/rename', { from: entry.key, to: name });
+        toast(renameDoneText(done), { low: true });
+        afterNameChange(reload);
+      } catch (err) {
+        toast(errorMessage(err), { low: true });
+        input.focus();
+      }
+    });
+    rowEl.classList.add('is-editing');
+    replace(rowEl, form);
+    input.focus();
+    input.select();
+  };
+
+  showView();
+  return rowEl;
+}
+
+// Retire un nom des suggestions (l'historique seulement), après confirmation
+async function removeName(entry, reload) {
+  const ok = await confirmDialog({
+    title: `Retirer « ${entry.name} » des suggestions ?`,
+    text: 'Il ne sera plus proposé pendant la saisie. Les listes ne changent pas. S\'il est saisi de nouveau, il sera de nouveau enregistré.',
+    confirmLabel: 'Retirer',
+  });
+  if (!ok) return;
+  try {
+    await post('/api/admin/names/remove', { from: entry.key });
+    toast(`« ${entry.name} » retiré des suggestions`, { low: true });
+    afterNameChange(reload);
+  } catch (err) {
+    toast(errorMessage(err), { low: true });
+  }
 }

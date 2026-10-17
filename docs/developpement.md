@@ -42,7 +42,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `server/shares.js` | Lien public d'une liste : jeton (jamais stocké en clair), mot de passe généré, contrôle de validité à chaque requête, cookies de consultation, nettoyage |
 | `server/pages/` | Les deux pages HTML du lien public : la page de la liste (sans aucune donnée) et la page unique « Lien expiré ou inexistant » |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
-| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
+| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons, `admin-names.js` pour les noms enregistrés) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
 | `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css`, sections 1 à 16, sans la section 17 qui ne sert qu'aux planches) et petits ajustements propres à l'application |
 | `public/manifest.webmanifest`, `public/icons/` | Installation sur l'écran d'accueil (PWA) |
@@ -249,6 +249,10 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `DELETE /api/admin/categories/:id` | Supprimer, seulement si jamais utilisée |
 | `GET`, `POST /api/admin/stores` ; `PATCH`, `DELETE /api/admin/stores/:id` | Pareil pour les magasins (`name`, `active`). À la création, `isMulti` (`true` pour un magasin « multi », étape 6). Pour un « multi », `PATCH` accepte `storeIds` : la liste complète des magasins qu'il regroupe |
 | `GET`, `POST /api/admin/aisles` ; `PATCH`, `DELETE /api/admin/aisles/:id` | Pareil pour les rayons (`name`, `active`) |
+| `GET /api/admin/names?q=&sort=&offset=` | Noms enregistrés (historique commun des noms saisis), 50 par morceau : `key` (nom normalisé), `name`, `aisle` (rayon habituel), `uses`, `inLists` (présents dans les listes) ; `total`. `q` cherche sans accents ni majuscules, `sort` vaut `name` ou `uses` |
+| `GET /api/admin/names/impact?from=&to=` | Ce que changerait une correction : `items` et `lists` (nombres), `merge` (le nouveau nom existe déjà), `unchanged` |
+| `POST /api/admin/names/rename` | Corriger un nom partout : `from` (nom normalisé), `to` (nouveau nom) |
+| `POST /api/admin/names/remove` | Retirer un nom des suggestions : `from`. Les listes ne changent pas |
 
 Règles :
 
@@ -262,6 +266,13 @@ Règles :
   - Un élément désactivé reste sur les listes qui l'utilisent déjà, mais ne sera plus proposé ensuite.
 - **Noms uniques** : deux noms qui ne diffèrent que par les majuscules ou les accents sont des doublons (« Épicerie salée » = « EPICERIE SALEE »). Les identifiants de compte sont uniques sans tenir compte des majuscules.
 - **Journal** : chaque action d'administration est notée (qui, quoi, sur quel compte ou élément), sans jamais de mot de passe.
+- **Noms enregistrés** (`server/routes/admin-names.js`) : l'Admin voit des noms et des compteurs, jamais une liste ni ses membres.
+  - Corriger : en une seule transaction, toutes les lignes d'historique de l'ancien nom (générale et par magasin) et tous les éléments non supprimés des listes non supprimées dont le nom normalisé est l'ancien prennent le nouveau nom, avec une nouvelle date de modification (la synchronisation le récupère). Rien d'autre ne change sur ces éléments. Les membres des listes touchées sont prévenus en temps réel. Journal : `admin_nom_corrige` ou `admin_nom_fusionne` (ancien, nouveau, nombre de corrections et de listes).
+  - Fusion, si le nouveau nom existe déjà : les lignes du même magasin sont réunies, utilisations additionnées, rayon de la ligne la plus utilisée (à égalité, celui du nom corrigé ; si elle n'a pas de rayon, celui de l'autre).
+  - Même nom une fois normalisé (« creme fraiche » → « Crème fraîche ») : seul le nom affiché change, partout. Nom identique : rien à faire.
+  - Retirer : seules les lignes d'historique sont effacées (`admin_nom_retire`).
+  - Sur les téléphones : les éléments corrigés arrivent par la synchronisation habituelle. Un ancien nom corrigé ou retiré disparaît des suggestions à la prochaine synchronisation complète (ouverture de Listo, retour au premier plan).
+  - Pas de nouvelle colonne en base : le nom normalisé des éléments est calculé à la demande (`normalizeItemName`, partagé avec le téléphone).
 
 ### Données de départ
 

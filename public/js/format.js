@@ -87,3 +87,36 @@ export function timeLeftLabel(iso, now = Date.now()) {
   if (minutes >= 2) return `Il reste ${minutes} minutes`;
   return "Il reste moins d'une minute";
 }
+
+// --- Administration, onglet « Noms enregistrés » ---
+// Textes neutres : un nom enregistré peut venir d'une liste de courses comme
+// d'une liste de tâches, donc ni « article » ni « élément ».
+
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
+
+// Sous-titre d'un nom : « Crèmerie · 12 utilisations · 3 dans les listes »
+// (le rayon habituel seulement s'il y en a un). Dans chaque morceau, les
+// espaces sont insécables : une coupure de ligne ne tombe qu'entre deux morceaux.
+export function savedNameSub({ aisle, uses, inLists }) {
+  return [
+    aisle,
+    plural(uses, 'utilisation', 'utilisations'),
+    inLists ? `${inLists} dans les listes` : 'dans aucune liste',
+  ].filter(Boolean).map((part) => part.replaceAll(' ', '\u00a0')).join(' · ');
+}
+
+// Texte de la confirmation d'une correction (réponse de /api/admin/names/impact)
+export function renameImpactText({ oldName, newName, merge, items, lists }) {
+  const what = merge
+    ? `« ${oldName} » sera fusionné avec « ${newName} », déjà enregistré.`
+    : `« ${oldName} » deviendra « ${newName} ».`;
+  const where = items
+    ? `Le nom sera corrigé ${items === 1 ? '1 fois' : `${items} fois`}, dans ${plural(lists, 'liste', 'listes')}.`
+    : 'Aucune liste ne contient ce nom : seules les suggestions changent.';
+  return `${what} ${where}`;
+}
+
+// Message affiché après une correction (réponse de /api/admin/names/rename)
+export function renameDoneText({ items, lists }) {
+  return items ? `Nom corrigé ${items === 1 ? '1 fois' : `${items} fois`}, dans ${plural(lists, 'liste', 'listes')}` : 'Nom corrigé dans les suggestions';
+}

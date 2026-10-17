@@ -22,7 +22,7 @@ export function tempDir(t) {
 
 // Démarre Listo sur un port libre, avec une base en mémoire, une horloge
 // réglable (clock.now) et un journal capturé (logs).
-export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t) } = {}) {
+export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {} } = {}) {
   const clock = { now: Date.UTC(2026, 9, 16, 12, 0, 0) };
   const logs = [];
   const db = openDatabase(':memory:');
@@ -34,10 +34,14 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
     log: (line) => logs.push(line),
     journalFile,
     photosDir,
+    eventOptions,
   });
   const server = app.listen(0);
   await once(server, 'listening');
-  t.after(() => server.close());
+  t.after(() => {
+    app.locals.ctx.events.closeAll(); // flux temps réel encore ouverts
+    server.close();
+  });
   const base = `http://127.0.0.1:${server.address().port}`;
   return { db, clock, logs, base, photosDir, ctx: app.locals.ctx, client: (options) => createClient(base, options) };
 }

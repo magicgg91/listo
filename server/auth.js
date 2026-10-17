@@ -91,13 +91,18 @@ export function startSession(ctx, res, userId) {
 
 // Ferme la session de cette requête (déconnexion)
 export function endSession(ctx, req, res) {
-  if (req.sessionId) ctx.db.prepare('DELETE FROM sessions WHERE id = ?').run(req.sessionId);
+  if (req.sessionId) {
+    ctx.db.prepare('DELETE FROM sessions WHERE id = ?').run(req.sessionId);
+    ctx.events?.disconnectSession(req.sessionId); // flux temps réel coupé
+  }
   res.clearCookie(SESSION_COOKIE, cookieOptions(ctx));
 }
 
 // Ferme toutes les sessions d'un compte (changement de mot de passe…)
+// Les flux temps réel du compte sont coupés aussi.
 export function revokeAllSessions(ctx, userId) {
   ctx.db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+  ctx.events?.disconnectUser(userId);
 }
 
 // Efface les sessions expirées (appelé au démarrage puis toutes les heures)

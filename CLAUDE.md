@@ -43,5 +43,6 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 
 ## Dépôt
 
-- Branche par défaut : `main`. Travailler sur des branches et ouvrir des pull requests ; le propriétaire fusionne lui-même.
+- Branche par défaut : `main`. Le propriétaire fusionne lui-même, toujours.
+- Flux de travail : au début de chaque étape, mettre `dev` à jour depuis `main` (merge commit, jamais de réécriture d'historique). Travailler directement sur `dev` : faire les commits et les pousser sur `origin/dev`. À la fin de l'étape, ouvrir directement une pull request `dev` → `main` (pas de branche intermédiaire, pas de PR vers `dev`), puis la surveiller. Ne jamais pousser sur `main`.
 - Messages de commit en français, courts et factuels.

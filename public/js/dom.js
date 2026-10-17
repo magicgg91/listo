@@ -77,7 +77,7 @@ export function field(label, control, { hint, id } = {}) {
   const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select, button');
   const inputId = id ?? `f-${Math.random().toString(36).slice(2, 9)}`;
   if (input && !input.id) input.id = inputId;
-  const error = h('span', { class: 'field__error', role: 'alert', hidden: true });
+  const error = h('span', { class: 'field__error', id: `${inputId}-erreur`, role: 'alert', hidden: true });
   const hintEl = hint ? h('span', { class: 'field__hint' }, hint) : null;
   const wrapper = h('div', { class: 'field' }, h('label', { class: 'field__label', for: input?.id }, label), control, hintEl, error);
   return {
@@ -86,24 +86,42 @@ export function field(label, control, { hint, id } = {}) {
       if (message) {
         replace(error, icon('alert', 'icon--xs'), message);
         error.hidden = false;
+        // Le champ fautif est signalé (et son message lui est relié pour les
+        // lecteurs d'écran), sans y mettre le curseur
         input?.setAttribute('aria-invalid', 'true');
+        input?.setAttribute('aria-describedby', error.id);
       } else {
         error.hidden = true;
         input?.removeAttribute('aria-invalid');
+        input?.removeAttribute('aria-describedby');
       }
     },
   };
 }
 
-// Message d'erreur général d'un formulaire (encadré rouge du kit)
+// Message d'erreur général d'un formulaire (encadré rouge du kit).
+// show(message, ...champs) : les champs donnés sont signalés comme fautifs
+// (aria-invalid) et reliés au message (aria-describedby), sans y mettre le
+// curseur ; show('') efface le message et ces signalements.
 export function errorNote() {
   const text = h('p');
-  const note = h('div', { class: 'note note--danger form-error', role: 'alert', hidden: true }, icon('alert'), text);
+  const id = `err-${Math.random().toString(36).slice(2, 9)}`;
+  const note = h('div', { class: 'note note--danger form-error', id, role: 'alert', hidden: true }, icon('alert'), text);
+  let flagged = [];
   return {
     note,
-    show(message) {
+    show(message, ...fields) {
       text.textContent = message;
       note.hidden = !message;
+      for (const input of flagged) {
+        input.removeAttribute('aria-invalid');
+        input.removeAttribute('aria-describedby');
+      }
+      flagged = message ? fields.filter(Boolean) : [];
+      for (const input of flagged) {
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', id);
+      }
     },
   };
 }

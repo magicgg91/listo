@@ -12,8 +12,21 @@ export function setOverlayHost(element) {
   host = element;
 }
 
+// Champ de saisie de texte (le clavier du téléphone s'ouvre s'il reçoit le
+// focus). Listo ne met jamais le curseur dans un tel champ de lui-même : le
+// clavier ne s'ouvre que quand on touche le champ.
+export function isTextField(element) {
+  if (!element?.matches) return false;
+  if (element.isContentEditable || element.matches('textarea')) return true;
+  return element.matches('input') && !['button', 'submit', 'reset', 'checkbox', 'radio', 'file', 'range', 'color', 'image', 'hidden'].includes(element.type);
+}
+
+// Éléments qu'on peut atteindre avec la touche Tab dans une fenêtre
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Ouvre une fenêtre superposée (fond grisé + contenu). Gère le bouton Retour
-// du téléphone, la touche Échap et le retour du focus clavier.
+// du téléphone, la touche Échap, la touche Tab (le focus reste dans la
+// fenêtre) et le retour du focus clavier à la fermeture.
 function overlay(build, { label, role = 'dialog', onClose } = {}) {
   const opener = document.activeElement;
   const scrim = h('div', { class: 'scrim' });
@@ -28,11 +41,32 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
     panel.remove();
     document.removeEventListener('keydown', onKey);
     onClose?.();
-    if (opener?.isConnected) opener.focus();
+    // Retour du focus à l'élément d'origine (bouton, ligne…), sauf si c'était
+    // un champ de saisie : le clavier se rouvrirait tout seul
+    if (opener?.isConnected && !isTextField(opener)) opener.focus();
   };
   const close = () => (closeViaRouter ? closeViaRouter() : remove());
   const onKey = (event) => {
     if (event.key === 'Escape') close();
+    if (event.key === 'Tab') keepFocusInside(event);
+  };
+  // Piège de focus : Tab et Maj+Tab tournent dans la fenêtre
+  const keepFocusInside = (event) => {
+    const items = [...panel.querySelectorAll(FOCUSABLE)].filter((el) => !el.closest('[hidden]'));
+    if (!items.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const inside = panel.contains(document.activeElement);
+    if (event.shiftKey && (!inside || document.activeElement === first || document.activeElement === panel)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (!inside || document.activeElement === last)) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 
   const panel = build(close);
@@ -44,13 +78,13 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
   document.addEventListener('keydown', onKey);
   closeViaRouter = openOverlay(remove);
 
-  // Focus sur le premier champ, sinon sur la fenêtre elle-même
-  const first = panel.querySelector('input, textarea, [autofocus]');
-  if (first) first.focus();
-  else {
-    panel.setAttribute('tabindex', '-1');
-    panel.focus();
-  }
+  // Focus sur le bouton de départ de la fenêtre (data-initial-focus, jamais
+  // un champ de saisie), sinon sur la fenêtre elle-même : les lecteurs
+  // d'écran annoncent son titre, et aucun clavier ne s'ouvre
+  panel.setAttribute('tabindex', '-1');
+  const start = panel.querySelector('[data-initial-focus]');
+  if (start && !isTextField(start)) start.focus();
+  else panel.focus();
   return { close, panel };
 }
 
@@ -94,7 +128,7 @@ export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annule
         h('button', {
           class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
           type: 'button',
-          autofocus: true,
+          'data-initial-focus': true, // bouton principal : focus à l'ouverture
           onClick: () => {
             answer = true;
             closeFn();

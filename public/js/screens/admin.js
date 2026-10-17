@@ -461,13 +461,12 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
         afterChange(reload);
       } catch (err) {
         toast(errorMessage(err), { low: true });
-        input.focus();
+        input.setAttribute('aria-invalid', 'true'); // signalé, sans curseur
       }
     });
+    // Le champ apparaît sans curseur : on le touche pour taper
     rowEl.classList.add('is-editing');
     replace(rowEl, form);
-    input.focus();
-    input.select();
   };
 
   showView();
@@ -662,22 +661,18 @@ function nameRow(entry, reload) {
           return;
         }
         const ok = await confirmDialog({ title: 'Corriger ce nom ?', text: renameImpactText(impact), confirmLabel: 'Corriger', danger: false });
-        if (!ok) {
-          input.focus();
-          return;
-        }
+        if (!ok) return;
         const done = await post('/api/admin/names/rename', { from: entry.key, to: name });
         toast(renameDoneText(done), { low: true });
         afterNameChange(reload);
       } catch (err) {
         toast(errorMessage(err), { low: true });
-        input.focus();
+        input.setAttribute('aria-invalid', 'true'); // signalé, sans curseur
       }
     });
+    // Le champ apparaît sans curseur : on le touche pour taper
     rowEl.classList.add('is-editing');
     replace(rowEl, form);
-    input.focus();
-    input.select();
   };
 
   showView();

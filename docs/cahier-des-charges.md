@@ -131,6 +131,7 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 - Le champ d'ajout reste visible pendant le défilement de la liste.
 - Aucun double-clic ni survol requis. Les actions secondaires passent par un menu, pas par des gestes cachés.
 - Retour d'état toujours visible : un petit indicateur dit si la liste est à jour, en cours de synchro ou hors ligne.
+- **Écart (17 octobre 2026) :** aucun curseur automatique. Listo ne met jamais le curseur dans un champ de saisie de lui-même (ouverture d'un écran, d'une fenêtre ou d'une feuille, mode d'édition, erreur, ajout) : le clavier ne s'ouvre que quand on touche un champ. Une fenêtre reçoit le focus sur elle-même ou sur son bouton principal ; Tab reste dans la fenêtre, Échap la ferme. Un champ fautif est signalé (aria-invalid, message relié par aria-describedby) sans recevoir le curseur.
 - Application installable sur l'écran d'accueil (PWA), affichée sans barre de navigateur.
 
 **Version ordinateur**
@@ -493,7 +494,7 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 - README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
 - Administration : onglet « Noms enregistrés », pour corriger une faute de frappe partout (historique et listes de courses) ou retirer un nom des suggestions ; mémoire des noms et suggestions réservées aux listes de courses (migration 8).
 
-**Tests automatisés** : 248 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
+**Tests automatisés** : 251 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
 
 **Consignes pour Claude Code**
 
@@ -529,6 +530,7 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Noms enregistrés** (Administration, onglet « Noms ») : corriger un nom partout dans les listes de courses ou le retirer des suggestions. Raison : une faute de frappe (« Tomatte ») restait dans les suggestions et dans les listes. Règles : une seule transaction ; seuls les noms identiques une fois normalisés ; seulement les articles des listes de courses (jamais les éléments des autres listes, même au même nom) ; articles supprimés et listes supprimées non touchés ; nouvelle date de modification de chaque article corrigé (la synchronisation le récupère ; ses listes remontent donc en tête de « Mes listes ») ; membres prévenus en temps réel ; journal. Pas de migration : le nom normalisé des éléments est calculé à la demande.
 - **Fusion de deux noms** : utilisations additionnées ; rayon de la ligne la plus utilisée, à égalité celui du nom corrigé, et si la ligne retenue n'a pas de rayon, celui de l'autre. Raison : garder le rayon le plus fiable sans rien perdre.
 - **Droits de l'Admin sur les noms** (décision du 17 octobre 2026) : l'Admin ne voit toujours pas les listes des autres (ni leur nom, ni leurs membres, ni leurs éléments). Il voit les noms de l'historique, déjà communs à tous les comptes par l'autocomplétion, avec de simples compteurs, et peut corriger un nom dans toutes les listes de courses sans les voir. Raison : demande du propriétaire ; c'est une écriture ciblée sur un nom, pas un accès au contenu.
+- **Aucun curseur automatique** : le clavier du téléphone ne s'ouvre que quand on touche un champ. Raison : un clavier qui s'ouvre tout seul cache la moitié de l'écran et surprend. Les fenêtres gardent un focus pour le clavier et les lecteurs d'écran (sur elles-mêmes ou leur bouton principal), avec un piège de focus ajouté (Tab reste dans la fenêtre). Test automatique : `test/focus.test.js`.
 - **Image Docker** : .dockerignore étendu (.github, design/photos, test/, docs/, *.log). Raison : image plus petite, sans fichiers inutiles.
 
 **Décisions du 17 octobre 2026** (écarts de sécurité tranchés en faveur du code livré, sans changement de code)

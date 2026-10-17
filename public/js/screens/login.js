@@ -91,8 +91,8 @@ function passwordStep(show, info = {}) {
         if (result.twoFactorRequired) show(codeStep, { username: username.value.trim() });
         else loggedIn(result.user);
       } catch (err) {
-        error.show(errorMessage(err));
-        password.input.select();
+        // Les deux champs sont signalés, sans y mettre le curseur
+        error.show(errorMessage(err), username, password.input);
       }
     },
   });
@@ -142,8 +142,7 @@ function codeStep(show, info) {
           show(passwordStep, { username: info.username, message: err.message });
           return;
         }
-        error.show(errorMessage(err));
-        code.select();
+        error.show(errorMessage(err), code);
       }
     },
   });

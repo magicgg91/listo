@@ -247,7 +247,8 @@ export function renderList(listId, onLeave) {
       input.value = '';
       await createItem(name);
     }
-    input.focus();
+    // Pas de focus forcé : si le champ avait été touché, il le garde (clavier
+    // ouvert) ; sinon le clavier reste fermé
   }
 
   // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)

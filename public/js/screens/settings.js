@@ -278,9 +278,8 @@ function enableForm(secret) {
       app.user.totpEnabled = true;
       replace(form.parentElement, recoveryScreen(recoveryCodes));
     } catch (err) {
-      error.show(errorMessage(err));
+      error.show(errorMessage(err), code);
       submit.disabled = false;
-      code.select();
     }
   });
   return form;

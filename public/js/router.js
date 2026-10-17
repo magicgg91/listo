@@ -107,7 +107,7 @@ export function goBack(fallback = 'lists', params = {}) {
 // Enregistre une fenêtre superposée. close() est appelé pour la fermer quand
 // on appuie sur Retour. Renvoie la fonction à appeler pour la fermer soi-même.
 export function openOverlay(close) {
-  const entry = { close, pushed: false };
+  const entry = { close, pushed: false, hash: location.hash };
   overlays.push(entry);
   whenHistoryReady(() => {
     if (!overlays.includes(entry)) return; // déjà refermée entre-temps
@@ -145,12 +145,16 @@ export function startRouter(onRoute) {
       }
       return;
     }
-    // Retour avec une fenêtre ouverte : on ferme seulement la fenêtre
-    const top = overlays.pop();
-    if (top) {
+    // Retour avec une fenêtre ouverte, sur le même écran : on ferme
+    // seulement la fenêtre
+    const top = overlays.at(-1);
+    if (top && top.hash === location.hash) {
+      overlays.pop();
       top.close();
       return;
     }
+    // Autre adresse (lien, adresse tapée…) : fenêtres fermées, nouvel écran
+    closeAllOverlays();
     renderRoute(matchRoute(location.hash));
   });
   renderRoute(matchRoute(location.hash));

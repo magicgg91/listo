@@ -1,13 +1,235 @@
 # Listo
 
-Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
+Application web de listes partagées (courses, tâches…), pensée pour le téléphone, gratuite, sans publicité et auto-hébergée.
 
-État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile), 6 (magasin « multi »), 7 (photos des articles), 8 (temps réel) et 9 (hors ligne) sont livrées ; l'étape 10 (lien public) est en cours de validation. Reste : 11 finitions et mise en production.
+État : les 11 étapes du plan du cahier des charges sont construites. Les étapes 1 à 10 sont livrées ; l'étape 11 (finitions et mise en production) est en cours de validation.
 
-- `docs/cahier-des-charges.md` : cahier des charges validé
-- `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
-- `CLAUDE.md` : consignes pour Claude Code
-- `docs/message-de-depart-claude-code.md` : message de départ fourni avec le kit de design
+Ce README a deux parties :
+
+- **Partie 1 — Installer et faire vivre Listo** : le guide pas à pas, sans connaissance technique, du serveur vide jusqu'à la restauration d'une sauvegarde.
+- **Partie 2 — Détails techniques** : organisation du code, tests, API et vérifications à la main.
+
+Autres documents : `docs/cahier-des-charges.md` (cahier des charges validé), `design/` (kit de design et maquettes), `CLAUDE.md` (consignes pour Claude Code).
+
+---
+
+# Partie 1 — Installer et faire vivre Listo
+
+## 1. Ce qu'il faut
+
+- Un **serveur** (ordinateur toujours allumé, sous Linux) avec **Docker** et **Docker Compose**. Repérez son adresse sur le réseau local (par exemple `192.168.1.20`) : c'est l'`IP_LOCALE` de la suite.
+- **Nginx Proxy Manager** (sur une autre machine) avec un **sous-domaine** qui pointe vers lui (par exemple `listo.mondomaine.fr`) et un certificat HTTPS (Let's Encrypt, depuis Nginx Proxy Manager).
+- Un **jeton GitHub** en lecture des paquets (`read:packages`) : l'image de Listo est privée, comme le dépôt. Sur GitHub : Settings → Developer settings → Personal access tokens.
+- Un **gestionnaire de mots de passe** pour y garder la clé de Listo (étape 4).
+
+Listo s'utilise en HTTPS. Sans HTTPS, Listo refuse de démarrer en production : la connexion, le mode hors ligne et l'installation sur le téléphone en ont besoin.
+
+## 2. Fichiers à créer sur le serveur
+
+Un seul fichier suffit, aucun code source :
+
+```sh
+mkdir -p /opt/listo && cd /opt/listo
+# copier ici le fichier docker-compose.yml du dépôt, puis l'ouvrir pour le modifier
+```
+
+Dans `docker-compose.yml`, remplacer deux valeurs :
+
+1. `LISTO_PUBLIC_URL=https://listo.exemple.fr` → **l'adresse exacte** que vous taperez dans le navigateur (`https://listo.mondomaine.fr`, sans `/` à la fin). Une adresse différente fait refuser toutes les connexions (« origine inconnue »).
+2. `IP_LOCALE` → l'adresse du serveur sur le réseau local (`192.168.1.20:13300:13300`). Ne jamais mettre `0.0.0.0` : le port ne doit être ouvert que sur le réseau local, et seul Nginx Proxy Manager doit l'utiliser. Un pare-feu qui n'autorise que l'adresse de Nginx Proxy Manager sur ce port est recommandé.
+
+Les dossiers `data/` et `secrets/` se créent tout seuls au premier démarrage, à côté du fichier.
+
+**Variables lues par Listo** (aucune ne contient de mot de passe ni de clé) :
+
+| Variable | Valeur de production | Rôle |
+| --- | --- | --- |
+| `NODE_ENV` | `production` | Mode production : cookies « Secure », HTTPS obligatoire |
+| `PORT` | `13300` | Port d'écoute dans le conteneur (le même que dans `ports:`) |
+| `TZ` | `Europe/Paris` | Fuseau horaire (heure de la sauvegarde de la nuit, dates du journal en clair) |
+| `LISTO_PUBLIC_URL` | `https://listo.mondomaine.fr` | Adresse publique exacte. **Obligatoirement en `https://`** en production : sinon Listo refuse de démarrer et l'explique dans `docker logs listo` |
+| `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dans le dossier `data/`) |
+| `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dans le dossier `secrets/`) |
+| `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours |
+
+## 3. Régler Nginx Proxy Manager
+
+Dans Nginx Proxy Manager, **Hosts → Proxy Hosts → Add Proxy Host** :
+
+- **Details** : *Domain Names* = votre sous-domaine ; *Scheme* = `http` ; *Forward Hostname / IP* = `IP_LOCALE` ; *Forward Port* = `13300`. *Websockets Support* : inutile (Listo n'en utilise pas), laisser décoché.
+- **SSL** : demander un certificat Let's Encrypt, cocher **Force SSL**, **HTTP/2 Support** et **HSTS Enabled**. C'est Nginx Proxy Manager qui ajoute l'en-tête de sécurité HSTS (`Strict-Transport-Security`) : Listo ne l'envoie pas lui-même, pour ne pas le doubler.
+- **Advanced** (*Custom Nginx Configuration*), coller ces quatre lignes :
+
+  ```nginx
+  client_max_body_size 5m;
+  proxy_buffering off;
+  proxy_cache off;
+  proxy_read_timeout 3600s;
+  ```
+
+  - `client_max_body_size 5m;` : sans elle, l'envoi des photos est refusé (Nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).
+  - Les trois autres : le temps réel (un article coché apparaît sur l'autre téléphone en quelques secondes). Sans elles, les changements n'arrivent qu'au bout d'environ une minute.
+
+À savoir :
+
+- Nginx Proxy Manager transmet l'adresse IP réelle des téléphones (en-tête `X-Forwarded-For`) ; Listo s'en sert pour bloquer les essais de mots de passe répétés. Aucun réglage à faire.
+- Le **journal d'accès** de Nginx Proxy Manager enregistre les adresses demandées, donc celles des liens publics ouverts (`/p/…`). Un lien arrêté ou expiré ne sert plus à rien ; pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.
+
+## 4. Première mise en route
+
+Sur le serveur, dans `/opt/listo` :
+
+```sh
+docker login ghcr.io          # une seule fois : identifiant GitHub, puis le jeton comme mot de passe
+docker compose up -d          # télécharge l'image et démarre Listo
+docker logs listo             # affiche le code de démarrage
+```
+
+1. Dans `docker logs listo`, repérer le **code de démarrage** (par exemple `K7RM-4XQP-9DHT`), encadré de `====`.
+2. Ouvrir `https://listo.mondomaine.fr` : l'écran propose de **créer le compte Admin**. Choisir un identifiant, un mot de passe d'au moins 10 caractères, et saisir le code de démarrage. Ce code ne sert qu'une fois ; l'écran disparaît dès qu'un compte existe.
+3. **Garder la clé à part, tout de suite** : afficher son contenu avec `cat /opt/listo/secrets/secret.key` et le copier dans votre gestionnaire de mots de passe (une ligne de texte). Sans elle, après une panne du serveur, les doubles authentifications ne marchent plus (voir 11).
+4. Créer les autres comptes : Réglages → Administration → Comptes → **Ajouter un compte**. Le mot de passe donné est provisoire : la personne le remplace à sa première connexion.
+
+## 5. Activer la double authentification (conseillé pour l'Admin)
+
+Il faut une application d'authentification sur le téléphone (Aegis, Google Authenticator, Microsoft Authenticator…).
+
+1. Réglages → **Double authentification**.
+2. Scanner le QR code avec l'application (ou recopier la clé affichée), puis saisir le code à 6 chiffres qu'elle montre.
+3. Listo affiche **10 codes de secours**, une seule fois : les copier dans le gestionnaire de mots de passe. Chacun remplace une fois le code du téléphone (téléphone perdu ou changé).
+
+Ensuite, chaque connexion demande le mot de passe puis le code. Si quelqu'un perd son téléphone et ses codes, un Admin désactive sa double authentification : Administration → Comptes → la personne → désactiver la 2FA.
+
+## 6. Installer Listo sur le téléphone
+
+Ouvrir `https://listo.mondomaine.fr` et se connecter, puis :
+
+- **iPhone** (Safari) : bouton **Partager** (carré avec une flèche) → **Sur l'écran d'accueil** → Ajouter.
+- **Android** (Chrome) : menu **⋮** → **Installer l'application** (ou **Ajouter à l'écran d'accueil**).
+
+L'icône Listo apparaît ; ouverte depuis l'écran d'accueil, Listo s'affiche en plein écran et marche aussi sans réseau. Sur iPhone, l'application installée a sa propre connexion, séparée de Safari : il faut s'y connecter une fois.
+
+## 7. Sauvegardes
+
+- **Chaque nuit vers 3 h** (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde **les 14 dernières**. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n'arrête pas Listo.
+- **Sauvegarde à la demande** (avant une mise à jour, par exemple) :
+
+  ```sh
+  docker exec -u node listo node server/backup-now.js
+  ```
+
+  (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit.)
+- **Ce que la copie de la nuit ne contient pas** :
+  - les **photos** (`data/photos/`) : de simples fichiers, qui ne changent pas une fois envoyés ;
+  - le **journal** (`data/journal.log`) ;
+  - la **clé** `secrets/secret.key` : jamais copiée dans `data/backups`, volontairement (une copie de la base seule ne permet pas de lire les secrets 2FA).
+
+  **Sauvegardez donc le dossier `/opt/listo/data` entier** avec la sauvegarde habituelle du serveur (base, copies de la nuit, photos, journal), et gardez la clé à part, une fois pour toutes (étape 4).
+
+## 8. Restaurer une sauvegarde
+
+Pour revenir à l'état d'une nuit précédente (erreur, base abîmée, nouveau serveur) :
+
+1. Aller dans le dossier de Listo : `cd /opt/listo`
+2. Arrêter Listo : `docker compose stop`
+3. Par précaution, mettre la base actuelle de côté : `mv data/listo.db data/listo-avant-restauration.db`
+4. Supprimer les deux petits fichiers de travail de l'ancienne base, s'ils existent : `rm -f data/listo.db-wal data/listo.db-shm`
+5. Choisir la copie (`ls data/backups`) et la mettre à la place de la base :
+   `cp data/backups/listo-2026-10-17-0300.db data/listo.db`
+6. **La clé** : `secrets/secret.key` doit être celle d'avant. Sur un serveur neuf, recréer le fichier avec la ligne gardée dans le gestionnaire de mots de passe : `mkdir -p secrets && nano secrets/secret.key` (coller la ligne, enregistrer).
+7. **Les photos** : sur un serveur neuf, remettre aussi le dossier `data/photos` depuis la sauvegarde du serveur.
+8. Redémarrer : `docker compose up -d` (Listo remet tout seul les bons droits sur les fichiers).
+9. Vérifier : `docker logs listo` (pas d'erreur, pas de code de démarrage : les comptes existent), puis se connecter. Les listes et les comptes sont ceux de la nuit choisie ; ce qui a été fait après est perdu.
+
+Quand tout va bien, `data/listo-avant-restauration.db` peut être supprimé.
+
+## 9. Mettre à jour Listo
+
+Chaque fusion sur `main` publie une nouvelle image. Pour la prendre :
+
+```sh
+cd /opt/listo
+docker exec -u node listo node server/backup-now.js   # sauvegarde juste avant (recommandé)
+docker compose pull                                   # télécharge la nouvelle version
+docker compose up -d                                  # redémarre Listo avec elle
+docker logs listo                                     # vérifier le démarrage
+```
+
+Listo s'arrête proprement (requêtes finies, base fermée) : une mise à jour n'abîme rien. La base est mise à jour toute seule au démarrage si besoin. Les téléphones prennent la nouvelle version à leur prochaine ouverture avec du réseau.
+
+**Revenir à la version précédente** si la nouvelle pose problème :
+
+1. Trouver l'étiquette de la version voulue : sur GitHub, page du dépôt → **Packages** → `listo` : chaque version a une étiquette `sha-xxxxxxx` (les 7 premiers caractères du commit).
+2. Dans `docker-compose.yml`, remplacer `ghcr.io/magicgg91/listo:latest` par `ghcr.io/magicgg91/listo:sha-xxxxxxx`.
+3. `docker compose up -d`.
+4. Si la nouvelle version avait changé la base, restaurer aussi la sauvegarde faite juste avant la mise à jour (chapitre 8).
+
+Pour revenir ensuite aux mises à jour normales, remettre `:latest`.
+
+## 10. Journaux
+
+- `docker logs listo` : démarrage, erreurs, et le **journal de sécurité** (lignes `[journal]`).
+- `data/journal.log` : le même journal de sécurité, gardé dans un fichier (1 Mo au plus, puis `journal.log.1` à `.5`).
+
+Le journal de sécurité note les connexions réussies et ratées, les blocages après trop d'essais, les actions d'administration, les liens publics (créés, modifiés, arrêtés, mots de passe refusés) et les sauvegardes. Il ne contient jamais de mot de passe, de jeton ni de code. Pour suivre en direct : `docker logs -f listo`.
+
+## 11. En cas de problème
+
+**Mot de passe Admin oublié**
+- S'il y a un autre Admin : Administration → Comptes → le compte → **Réinitialiser le mot de passe**.
+- Sinon, sur le serveur :
+
+  ```sh
+  docker exec -u node listo node server/admin-secours.js guillaume
+  ```
+
+  (remplacer `guillaume` par l'identifiant). Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande.
+
+**Clé `secrets/secret.key` perdue** (sans copie dans le gestionnaire de mots de passe)
+- Au démarrage, Listo crée une nouvelle clé. Les listes, articles, photos et mots de passe ne sont pas touchés.
+- Mais les **doubles authentifications** ne se lisent plus. Chacun doit la refaire :
+  - un Admin la désactive pour les autres comptes (Administration → Comptes) ;
+  - pour l'Admin lui-même : `docker exec -u node listo node server/admin-secours.js guillaume --retirer-2fa` ;
+  - puis chacun la réactive dans ses Réglages.
+- Les **liens publics** déjà créés marchent encore, mais leur adresse ne peut plus être réaffichée : les arrêter et en créer de nouveaux (la feuille « Partager par lien » le propose).
+- Gardez cette fois une copie de la nouvelle clé (étape 4).
+
+**Écran blanc ou application figée**
+- Fermer Listo et le rouvrir avec du réseau : il prend la dernière version.
+- Sinon : Réglages → **Réinitialiser les données de ce téléphone**.
+- En dernier recours, effacer les données du site dans le navigateur :
+  - Chrome : cadenas à gauche de l'adresse → Paramètres du site → Effacer les données ;
+  - iPhone : Réglages → Safari → Avancé → Données des sites web.
+  
+  Puis se reconnecter.
+- Si tous les téléphones sont touchés : `docker logs listo` (Listo a-t-il démarré ?). Ouvrir `https://listo.mondomaine.fr/healthz` doit répondre `{"status":"ok"}`.
+
+**« Requête refusée : origine inconnue » à la connexion** : l'adresse tapée n'est pas exactement `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`). Corriger `docker-compose.yml` puis `docker compose up -d`.
+
+**Listo ne démarre pas** : `docker logs listo` donne la raison en français (par exemple « En production, LISTO_PUBLIC_URL doit commencer par https:// »).
+
+**Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas** : Listo n'est pas ouvert en HTTPS. Il faut passer par `https://listo.mondomaine.fr` (avec le certificat de Nginx Proxy Manager), jamais par `http://IP:13300`.
+
+**Une photo est refusée à l'envoi** (« Photo trop lourde ») : il manque `client_max_body_size 5m;` dans l'onglet Advanced de Nginx Proxy Manager (chapitre 3).
+
+**Les changements arrivent sur l'autre téléphone au bout d'une minute seulement** : il manque les lignes `proxy_buffering off;`… dans l'onglet Advanced (chapitre 3).
+
+**« Trop d'essais »** : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendre, ou redémarrer Listo (`docker compose restart`) pour lever tout de suite le blocage.
+
+## 12. Vérifications à faire une fois en production
+
+1. **HTTPS** : `https://listo.mondomaine.fr` s'ouvre avec le cadenas ; `http://listo.mondomaine.fr` redirige vers `https://`.
+2. **En-têtes de sécurité vus de l'extérieur** : passer l'adresse dans un outil en ligne comme <https://securityheaders.com>. On doit y voir :
+   - `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` (envoyés par Listo) ;
+   - `Strict-Transport-Security` (ajouté par Nginx Proxy Manager) ;
+   - aucun `X-Powered-By`.
+3. **Une sauvegarde** : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
+4. **Une restauration d'essai** : suivre le chapitre 8 une fois, avec la copie de la nuit, pour s'assurer que tout est en place (clé gardée, procédure comprise).
+5. **Le téléphone** : installation sur l'écran d'accueil (chapitre 6), puis la liste de la Partie 2, « Vérifier l'interface sur le téléphone ».
+
+---
+
+# Partie 2 — Détails techniques
 
 ## Organisation du code
 
@@ -28,6 +250,8 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
 | `server/events.js` | Temps réel : flux SSE `/api/events`, connexions ouvertes, messages « la liste X a changé » |
 | `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
+| `server/backup.js` | Sauvegarde nocturne de la base (VACUUM INTO, contrôle, 14 copies, droits 600) |
+| `server/backup-now.js`, `server/admin-secours.js` | Commandes à lancer sur le serveur : sauvegarde à la demande ; mot de passe provisoire (et retrait de la 2FA) quand plus personne ne peut se connecter |
 | `server/shares.js` | Lien public d'une liste : jeton (jamais stocké en clair), mot de passe généré, contrôle de validité à chaque requête, cookies de consultation, nettoyage |
 | `server/pages/` | Les deux pages HTML du lien public : la page de la liste (sans aucune donnée) et la page unique « Lien expiré ou inexistant » |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
@@ -51,7 +275,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `Dockerfile`, `docker-entrypoint.sh` | Construction et démarrage de l'image Docker |
-| `docker-compose.yml` | Production (image publiée sur ghcr.io) |
+| `docker-compose.yml` | Production (image publiée sur ghcr.io), toutes les variables commentées |
 | `docker-compose.dev.yml` | Test en local (image construite depuis le code) |
 
 ## Tester en local
@@ -102,7 +326,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 7. **Ordinateur** (fenêtre d'au moins 1024 px de large) : « Mes listes » à gauche, la liste choisie au centre.
 8. **Magasin « multi »** (étape 6) : Administration → Magasins, créer un magasin « Multi » et cocher ses magasins ; créer une liste de courses avec ce magasin. Ajouter un article nouveau : son magasin est demandé ; l'ajouter une deuxième fois : il retrouve son magasin sans question. En faisant défiler, l'en-tête du magasin reste collé en haut.
 9. **Photo d'un article** (étape 7, en HTTPS) : dans la feuille d'un article, « Appareil photo » ouvre l'appareil du téléphone, « Galerie » ses photos. Une photo prise en portrait reste dans le bon sens. Elle apparaît en vignette sur la ligne ; un appui l'agrandit, le bouton Retour la referme. Sur l'autre téléphone, elle apparaît toute seule (temps réel).
-10. **Temps réel** (étape 8, deux téléphones sur la même liste) : un article coché sur l'un est coché sur l'autre en moins de 3 secondes, sans rien toucher. Mettre un téléphone en mode avion quelques secondes, puis le rallumer : les changements faits entre-temps arrivent tout seuls. Si les changements n'arrivent qu'au bout d'une minute environ, voir « Temps réel derrière Nginx Proxy Manager » plus bas.
+10. **Temps réel** (étape 8, deux téléphones sur la même liste) : un article coché sur l'un est coché sur l'autre en moins de 3 secondes, sans rien toucher. Mettre un téléphone en mode avion quelques secondes, puis le rallumer : les changements faits entre-temps arrivent tout seuls. Si les changements n'arrivent qu'au bout d'une minute environ, voir le chapitre 3 (réglages de Nginx Proxy Manager).
 11. **Hors ligne** (étape 9, sur le vrai sous-domaine en HTTPS : le service worker ne marche pas en simple `http://` sur l'adresse du réseau local) :
     1. Ouvrir Listo une fois avec du réseau, ouvrir une liste et une photo déjà prise.
     2. **Mode avion** : ajouter 3 articles, en cocher 2, prendre 1 photo. Tout s'affiche aussitôt ; la pastille indique « Hors ligne · N en attente ». Administration et partage de la liste sont grisés avec une explication. La photo vue au point 1 s'affiche encore.
@@ -133,7 +357,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 | `POST /api/logout` | Déconnexion |
 | `GET /api/me` | Compte connecté |
 | `POST /api/me/password` | Changer son mot de passe : `currentPassword`, `newPassword` |
-| `POST /api/me/2fa/enable` | Commencer l'activation de la 2FA : renvoie le QR code et le secret |
+| `POST /api/me/2fa/enable` | Commencer l'activation de la 2FA : renvoie le secret (à recopier) ; le QR code est l'image `qr.png` ci-dessous |
 | `GET /api/me/2fa/qr.png` | Image PNG du QR code de l'activation en cours (utilisée par l'interface, pour garder une CSP stricte sans image `data:`) |
 | `POST /api/me/2fa/verify` | Confirmer avec un premier code : `code`. Renvoie les 10 codes de secours |
 | `POST /api/me/2fa/disable` | Désactiver sa 2FA : `password`, `code` |
@@ -176,10 +400,10 @@ curl -c cookies.txt -b cookies.txt -H "$O" -H "$J" \
   -d '{"username":"guillaume","password":"un mot de passe long"}' $U/api/login
 
 # 8. Activer la 2FA : la réponse contient « secret » (à saisir à la main dans
-#    l'application d'authentification du téléphone, compte « Listo ») et
-#    « qrCode » (une image : copier tout le texte data:image/png;base64,…
-#    dans la barre d'adresse du navigateur pour l'afficher et la scanner)
+#    l'application d'authentification du téléphone, compte « Listo »). Le QR
+#    code à scanner est l'image PNG renvoyée par /api/me/2fa/qr.png
 curl -b cookies.txt -H "$O" -X POST $U/api/me/2fa/enable
+curl -b cookies.txt -o qr.png $U/api/me/2fa/qr.png
 
 # 9. Confirmer avec le code affiché par le téléphone : la réponse contient
 #    les 10 codes de secours (ils ne seront plus jamais affichés)
@@ -578,7 +802,7 @@ Règles :
 - **En-têtes** sur toutes ces routes : `X-Robots-Tag: noindex`, `Cache-Control: no-store` (photos comprises), `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`. La Content-Security-Policy reste la même (la page a son propre fichier `js/public.js`).
 - **Service worker** : il ne garde et ne détourne jamais `/p/…`, `/api/public/…` ni `js/public.js` (vérifié par un test qui exécute `sw.js`).
 - **Page publique** : chargée à l'ouverture et au bouton « Actualiser », une requête à chaque fois, sans temps réel.
-- **Journal de sécurité** : création, changements, arrêt, mots de passe refusés et blocages, avec le numéro du partage (`partage=…`), jamais le jeton ni le mot de passe. À savoir : le journal d'accès de Nginx Proxy Manager (sur l'autre machine) note les adresses demandées, donc le jeton des liens ouverts ; un lien arrêté ou expiré ne sert plus à rien.
+- **Journal de sécurité** : création, changements, arrêt, mots de passe refusés et blocages, avec le numéro du partage (`partage=…`), jamais le jeton ni le mot de passe. Le journal d'accès de Nginx Proxy Manager, lui, note les adresses des liens ouverts (voir le chapitre 3).
 - **Nettoyage** : les liens arrêtés ou expirés depuis plus de 30 jours sont supprimés de la base (ménage toutes les heures).
 - Dans « Mes listes », une petite icône de lien rappelle au propriétaire qu'une liste est partagée par lien.
 
@@ -605,29 +829,21 @@ curl -b cookies.txt -H "Origin: $U" -X DELETE $U/api/lists/$L/share
 curl -i $U/api/public/$J
 ```
 
-## Production
+## En-têtes, arrêt propre et sauvegarde (étape 11)
 
-Sur le serveur, seul `docker-compose.yml` est nécessaire (aucun code source). L'image est construite par GitHub Actions à chaque fusion sur `main`.
+**En-têtes de sécurité**, envoyés par Listo sur toutes les réponses (pages, API, fichiers, photos, lien public, erreurs 404 et 500) et vérifiés par `test/headers.test.js` :
 
-```sh
-docker login ghcr.io                          # une seule fois (jeton GitHub en lecture des paquets)
-docker compose up -d                          # démarrer
-docker logs listo                             # voir les journaux
-docker compose pull && docker compose up -d   # mettre à jour
-```
+| En-tête | Valeur |
+| --- | --- |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` (même domaine seulement, ni script ni style dans la page, pas de `blob:` ni `data:`) |
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `no-referrer` |
+| `X-Frame-Options` | `DENY` |
+| `Strict-Transport-Security` | **ajouté par Nginx Proxy Manager** (case HSTS), pas par Listo |
 
-Avant le premier lancement : remplacer `LISTO_PUBLIC_URL` par l'adresse exacte de Listo (par exemple `https://listo.mondomaine.fr` : même protocole et même sous-domaine que dans le navigateur, sinon toutes les connexions sont refusées par la protection CSRF), et remplacer `IP_LOCALE` par l'adresse du serveur sur le réseau local (le port 13300 n'est publié que sur cette adresse ; Nginx Proxy Manager, sur une autre machine, y envoie le trafic en http). Au premier démarrage, `docker logs listo` affiche le code de démarrage qui permet de créer le compte Admin. Le guide complet de mise en production arrive à l'étape 11.
+`X-Powered-By` est désactivé. Les erreurs répondent par un message court en français (« Page introuvable. », « Requête invalide. », « Erreur interne du serveur. »), sans trace ni chemin de fichier ; le détail d'une erreur inattendue va dans `docker logs`. Le cookie de session est `HttpOnly`, `Secure` (en production) et `SameSite=Lax`.
 
-**Nginx Proxy Manager et les photos** : par défaut, Nginx refuse les requêtes de plus de 1 Mo. Pour que l'envoi des photos fonctionne (2 Mo au plus), ajouter cette ligne dans l'onglet **Advanced** du proxy host de Listo :
+**Démarrage et arrêt** (`server/index.js`, `test/process.test.js`) : en production, Listo refuse de démarrer si `LISTO_PUBLIC_URL` n'est pas en `https://`, avec un message clair. Sur `SIGTERM` (`docker stop`, mise à jour par `docker compose up -d`), il ferme les flux temps réel, n'accepte plus de connexion, termine les requêtes en cours (5 secondes au plus), ferme la base, puis s'arrête.
 
-```nginx
-client_max_body_size 5m;
-```
+**Sauvegarde** (`server/backup.js`, `test/backup.test.js`) : chaque nuit à 3 h (heure locale, variable `TZ`), `VACUUM INTO data/backups/listo-AAAA-MM-JJ-HHMM.db`, puis la copie est rouverte en lecture seule et contrôlée (`PRAGMA integrity_check`), mise en droits 600, et seules les 14 plus récentes sont gardées. better-sqlite3 traite une seule requête à la fois : la copie ne tombe jamais au milieu d'une écriture. Les tests avancent l'horloge (rotation à la 15e copie), vérifient qu'aucune copie ne contient la clé, et font une vraie restauration (arrêt, remplacement de `listo.db`, redémarrage : comptes et listes retrouvés). Le même scénario a été vérifié dans le conteneur Docker.
 
-**Temps réel derrière Nginx Proxy Manager** : Listo demande déjà à Nginx de ne pas retenir les messages (`X-Accel-Buffering: no`) et envoie un signal toutes les 25 secondes. Si, malgré tout, un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (la synchronisation de secours) au lieu de quelques secondes, ajouter aussi ces lignes dans l'onglet **Advanced** du proxy host :
-
-```nginx
-proxy_buffering off;
-proxy_cache off;
-proxy_read_timeout 3600s;
-```

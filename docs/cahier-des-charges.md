@@ -361,7 +361,7 @@ services:
 **Flux SSE derrière Nginx Proxy Manager**
 
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
-- Si les messages arrivent quand même en retard, ajouter dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s;
+- Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : README, Partie 1, chapitre 3).
 - Pour le reconnaître : un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (synchronisation de secours) au lieu de quelques secondes.
 
 **Image Docker construite automatiquement**
@@ -431,7 +431,7 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 
 ## Plan de développement
 
-Onze étapes, chacune livrable et testable seule. Les étapes 1 à 5 sont livrées. Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
+Onze étapes, chacune livrable et testable seule. Les étapes 1 à 10 sont livrées ; l'étape 11 est en cours de validation. Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
 
 | # | Étape | Contenu | Critère d'acceptation |
 | --- | --- | --- | --- |
@@ -445,7 +445,7 @@ Onze étapes, chacune livrable et testable seule. Les étapes 1 à 5 sont livré
 | 8 | Temps réel | Flux SSE, rafraîchissement régulier et manuel, indicateur de synchro | Un article coché sur un téléphone apparaît sur l'autre en moins de 3 secondes |
 | 9 | Hors ligne | Service worker, IndexedDB, file d'attente (photos comprises), gestion des conflits | En mode avion : 3 ajouts, 2 cochages et 1 photo. Au retour du réseau, tout apparaît chez l'autre utilisateur, sans doublon |
 | 10 | Lien public | Création, durée, mot de passe généré, arrêt, page publique en lecture seule avec photos | Un lien expiré ne fonctionne plus (horloge avancée dans les tests). Un visiteur ne peut rien modifier ni voir une autre liste. Le mot de passe est refusé après 5 essais |
-| 11 | Finitions | Vérification des en-têtes de sécurité, sauvegarde nocturne (photos comprises), README, passage en production derrière Nginx Proxy Manager | Accessible en HTTPS sur le sous-domaine. Une sauvegarde est créée. Le README permet une réinstallation |
+| 11 | Finitions | Vérification des en-têtes de sécurité, sauvegarde nocturne de la base (les photos, simples fichiers de data/photos, sont couvertes par la sauvegarde du dossier data de l'hôte), README, passage en production derrière Nginx Proxy Manager | Accessible en HTTPS sur le sous-domaine. Une sauvegarde est créée. Le README permet une réinstallation |
 
 **Consignes pour Claude Code**
 

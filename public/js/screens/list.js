@@ -1,5 +1,6 @@
-// Écran « Liste » (maquettes liste-1 à 6, liste-multi-1 et 2) et feuille
-// « Article » (article-1 et 2, article-photo-3 et 4 sans la photo).
+// Écran « Liste » (maquettes liste-1 à 6, liste-multi-1 et 2, liste-photos-1)
+// et feuille « Article » (article-1 et 2, article-photo-1 à 4), avec la photo
+// en plein écran (photo-plein-ecran-1).
 //
 // - Le champ d'ajout reste en bas, à portée de pouce ; Entrée valide et le
 //   champ reste actif pour enchaîner les articles.
@@ -8,11 +9,15 @@
 // - Liste « multi » : pas de rayon, les articles sont groupés par magasin.
 //   Un article reprend son magasin habituel parmi ceux de la liste ; s'il n'y
 //   a jamais été acheté, son magasin est demandé une fois.
+// - Photo : une par article, prise ou choisie depuis la feuille Article,
+//   réduite sur le téléphone puis envoyée tout de suite (en ligne seulement).
+//   Une vignette s'affiche sur la ligne ; un appui l'agrandit.
 // - Cocher d'un appui : l'article est barré ET sa case est remplie (jamais
 //   la couleur seule) ; il descend en bas de son rayon.
 
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
-import { op, uuid, errorMessage } from '../api.js';
+import { op, uuid, errorMessage, putPhoto, deletePhoto, photoUrl } from '../api.js';
+import { shrinkPhoto, PhotoError } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix } from '../format.js';
 import { normalizeItemName } from '../history.js';
@@ -21,7 +26,7 @@ import {
   storeChoices, usualStoreFor, historyStoreFor, moveItemStore,
 } from '../store.js';
 import { app, onDataChange, dataChanged, refreshData } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, toast } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -89,7 +94,21 @@ export function renderList(listId, onLeave) {
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
         item.note ? h('span', { class: 'item__note' }, item.note) : null),
-      item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null));
+      item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
+    // Vignette de la photo : un appui l'agrandit
+    item.photoAt ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
+      h('img', { class: 'photo', src: photoUrl(item), alt: '', loading: 'lazy', decoding: 'async' })) : null);
+
+  // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
+  function showPhoto(item) {
+    const group = view?.multi ? storeName(item.storeId) : view?.list.category.isShopping ? app.data.aisles.find((a) => a.id === item.aisleId)?.name : null;
+    openLightbox({
+      title: item.name,
+      src: photoUrl(item),
+      alt: `Photo de l'article ${item.name}`,
+      caption: [view?.list.name, group].filter(Boolean).join(' · '),
+    });
+  }
 
   // --- Actions ---
 
@@ -292,19 +311,102 @@ export function renderList(listId, onLeave) {
     const nameField = field('Nom', name);
     const error = errorNote();
 
+    // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
+    // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
+    let current = item; // dernier état connu de l'article (photoAt)
+    let busy = false;
+    const photoArea = h('div');
+    const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
+    // Sélecteurs du téléphone (cachés) : appareil photo, ou galerie
+    const camera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
+    const gallery = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', tabindex: '-1', 'aria-hidden': 'true' });
+    camera.addEventListener('change', () => sendPhoto(camera));
+    gallery.addEventListener('change', () => sendPhoto(gallery));
+
+    const drawPhoto = () => {
+      const offline = !navigator.onLine;
+      const button = (classes, iconName, text, label, onClick) => h('button', {
+        class: `btn ${classes}`, type: 'button', 'aria-label': label, disabled: busy || offline, onClick,
+      }, icon(iconName, 'icon--sm'), text);
+      if (current.photoAt) {
+        replace(photoArea, h('div', { class: 'photo-block' },
+          h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${current.name}`, onClick: () => showPhoto(current) },
+            h('img', { class: 'photo', src: photoUrl(current), alt: '' })),
+          h('div', { class: 'photo-block__actions' },
+            button('btn--secondary btn--sm', 'camera', 'Remplacer', 'Remplacer la photo', () => gallery.click()),
+            button('btn--danger-outline btn--sm', 'trash', 'Retirer', 'Retirer la photo', removePhoto))));
+      } else {
+        replace(photoArea, h('div', { class: 'photo-actions' },
+          button('btn--secondary', 'camera', 'Appareil photo', 'Appareil photo : prendre une photo', () => camera.click()),
+          button('btn--secondary', 'image', 'Galerie', 'Galerie : choisir une photo', () => gallery.click())));
+      }
+      photoNote.textContent = busy ? 'Envoi de la photo…' : offline ? 'Photo indisponible hors ligne.' : '';
+      photoNote.hidden = !photoNote.textContent;
+    };
+
+    // Photo prise ou choisie : réduite ici, puis envoyée
+    async function sendPhoto(input) {
+      const file = input.files?.[0];
+      input.value = ''; // la même photo pourra être choisie de nouveau
+      if (!file) return;
+      error.show('');
+      busy = true;
+      drawPhoto();
+      try {
+        const jpeg = await shrinkPhoto(file);
+        const result = await putPhoto(current.id, jpeg);
+        current = result.item;
+        putItem(app.data, result.item);
+        dataChanged();
+      } catch (err) {
+        error.show(err instanceof PhotoError ? err.message : errorMessage(err));
+      }
+      busy = false;
+      drawPhoto();
+    }
+
+    async function removePhoto() {
+      const ok = await confirmDialog({ title: 'Retirer la photo ?', text: 'La photo sera supprimée pour toutes les personnes de la liste.', confirmLabel: 'Retirer' });
+      if (!ok) return;
+      busy = true;
+      drawPhoto();
+      try {
+        const result = await deletePhoto(current.id);
+        current = result.item;
+        putItem(app.data, result.item);
+        dataChanged();
+      } catch (err) {
+        error.show(errorMessage(err));
+      }
+      busy = false;
+      drawPhoto();
+    }
+    drawPhoto();
+    window.addEventListener('online', drawPhoto);
+    window.addEventListener('offline', drawPhoto);
+
     const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
     const remove = h('button', { class: 'btn btn--danger-outline btn--block', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer');
     const form = h('form', { class: 'stack', novalidate: true },
       nameField.field,
       field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, camera, gallery),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
       error.note,
       h('div', { class: 'sheet__actions' }, save, remove));
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
 
-    const sheet = openSheet({ title: "Modifier l'article", content: form });
+    const sheet = openSheet({
+      title: "Modifier l'article",
+      content: form,
+      scroll: true,
+      onClose: () => {
+        window.removeEventListener('online', drawPhoto);
+        window.removeEventListener('offline', drawPhoto);
+      },
+    });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -352,11 +454,18 @@ export function renderList(listId, onLeave) {
         removeItem(app.data, item.id);
         dataChanged();
         sheet.close();
+        // « Annuler » remet le même article, avec sa photo
         toast(`« ${item.name} » supprimé`, {
           action: 'Annuler',
-          onAction: () => createItem(item.name, multi
-            ? { quantity: item.quantity, note: item.note, storeId: item.storeId ?? null }
-            : { quantity: item.quantity, note: item.note, aisleId: item.aisleId }),
+          onAction: async () => {
+            try {
+              const result = await op({ type: 'item.restore', itemId: item.id });
+              putItem(app.data, result.item);
+              dataChanged();
+            } catch (err) {
+              toast(errorMessage(err));
+            }
+          },
         });
       } catch (err) {
         error.show(errorMessage(err));

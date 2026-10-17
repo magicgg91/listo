@@ -151,7 +151,7 @@ export function renderList(listId, onLeave) {
     const items = [];
     if (view.list.isOwner) items.push({ icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: listId }) });
     if (view.checked > 0) items.push({ icon: 'trash', label: 'Vider les barrés', onSelect: clearChecked });
-    items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData() });
+    items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData({ full: true }) });
     openMenu(items, { label: 'Menu de la liste' });
   }
 
@@ -385,9 +385,38 @@ export function renderList(listId, onLeave) {
     window.addEventListener('online', drawPhoto);
     window.addEventListener('offline', drawPhoto);
 
+    // Quelqu'un d'autre modifie ou supprime cet article pendant que la
+    // feuille est ouverte (temps réel) : ce qui a été tapé est gardé, un
+    // bandeau prévient. À l'enregistrement, seuls les champs changés ici sont
+    // envoyés. Article supprimé : on ne peut plus que fermer la feuille.
+    const conflictText = h('span');
+    const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
+    let mine = false; // vrai pendant mes propres enregistrements
+    let gone = false;
+    const stopWatching = onDataChange(() => {
+      if (mine) return;
+      const latest = app.data.items.get(item.id);
+      if (!latest) {
+        gone = true;
+        conflictText.textContent = 'Cet article a été supprimé par une autre personne.';
+      } else if (gone || latest.updatedAt !== current.updatedAt) {
+        gone = false;
+        conflictText.textContent = "Cet article vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.";
+        current = latest;
+        drawPhoto();
+      } else {
+        return;
+      }
+      conflict.hidden = false;
+      save.disabled = gone;
+      remove.disabled = gone;
+      for (const button of photoArea.querySelectorAll('button')) button.disabled = gone || button.disabled;
+    });
+
     const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
     const remove = h('button', { class: 'btn btn--danger-outline btn--block', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer');
     const form = h('form', { class: 'stack', novalidate: true },
+      conflict,
       nameField.field,
       field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
@@ -405,6 +434,7 @@ export function renderList(listId, onLeave) {
       onClose: () => {
         window.removeEventListener('online', drawPhoto);
         window.removeEventListener('offline', drawPhoto);
+        stopWatching();
       },
     });
 
@@ -426,6 +456,7 @@ export function renderList(listId, onLeave) {
       save.disabled = true;
       try {
         const result = await op({ type: 'item.update', itemId: item.id, ...changes });
+        mine = true; // ma propre modification : pas d'avertissement
         putItem(app.data, result.item);
         // Historique local, même règle que le serveur
         if (multi) {
@@ -451,6 +482,7 @@ export function renderList(listId, onLeave) {
       remove.disabled = true;
       try {
         await op({ type: 'item.delete', itemId: item.id });
+        mine = true;
         removeItem(app.data, item.id);
         dataChanged();
         sheet.close();
@@ -560,7 +592,7 @@ export function renderList(listId, onLeave) {
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
       h('div', { class: 'topbar__main' }, title, sub),
       menuButton),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData()), clearButton),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), clearButton),
     content,
     addbar);
 }

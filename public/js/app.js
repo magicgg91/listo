@@ -5,8 +5,9 @@ import { h, replace } from './dom.js';
 import { get, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { emptyState, loadSync } from './store.js';
+import { emptyState, loadSync, mergeSync } from './store.js';
 import { setOverlayHost, setSyncState, toast } from './ui.js';
+import { startLive, stopLive } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderLists, renderSidePanel } from './screens/lists.js';
 import { renderList } from './screens/list.js';
@@ -36,27 +37,54 @@ export function dataChanged() {
   for (const listener of [...listeners]) listener();
 }
 
-// Récupère tout depuis le serveur (GET /api/sync). Appelée à l'ouverture de
-// l'application, à l'ouverture d'une liste et par le bouton d'actualisation.
-// (Étape 8 : temps réel ; étape 9 : seulement ce qui a changé, hors ligne.)
+// Synchronisation avec le serveur (GET /api/sync). Appelée à l'ouverture de
+// l'application, à l'ouverture d'une liste, par le bouton d'actualisation, et
+// par le temps réel (live.js) : message du serveur, toutes les 60 secondes,
+// retour au premier plan.
+// - full : tout recharger ; sinon, seulement ce qui a changé depuis la
+//   dernière synchronisation (?since=…, heure donnée par le serveur).
+// - Une demande pendant une synchronisation en cours en relance une juste
+//   après : un changement arrivé entre-temps n'est jamais manqué.
+// (Étape 9 : copie gardée sur le téléphone, hors ligne.)
 let refreshing = null;
-export function refreshData({ quiet = false } = {}) {
-  if (refreshing) return refreshing;
-  setSyncState('busy');
-  refreshing = get('/api/sync')
+let again = null;
+export function refreshData({ quiet = false, full = false } = {}) {
+  if (refreshing) {
+    again = { full: Boolean(again?.full || full) };
+    return refreshing;
+  }
+  const since = !full && app.data.loaded && app.data.serverTime ? app.data.serverTime : null;
+  // « Synchronisation… » seulement si elle dure : pas de clignotement à
+  // chaque message du temps réel
+  const busy = setTimeout(() => setSyncState('busy'), 400);
+  refreshing = get(since ? `/api/sync?since=${encodeURIComponent(since)}` : '/api/sync')
     .then((data) => {
-      loadSync(app.data, data);
+      if (since) mergeSync(app.data, data);
+      else loadSync(app.data, data);
       setSyncState('ok');
       dataChanged();
     })
     .catch((error) => {
-      setSyncState(error instanceof NetworkError ? 'off' : 'ok');
-      if (!quiet && !(error instanceof ApiError && error.status === 401)) toast(errorMessage(error));
+      // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
+      const unauthorized = error instanceof ApiError && error.status === 401;
+      setSyncState(error instanceof NetworkError || (error instanceof ApiError && error.status >= 500) ? 'off' : 'ok');
+      if (!quiet && !unauthorized) toast(errorMessage(error));
     })
     .finally(() => {
+      clearTimeout(busy);
       refreshing = null;
+      if (again && app.user) {
+        const next = again;
+        again = null;
+        refreshData({ quiet: true, full: next.full });
+      }
     });
   return refreshing;
+}
+
+// Démarre le temps réel pour le compte connecté
+function goLive() {
+  startLive(({ full }) => refreshData({ quiet: true, full }));
 }
 
 // --- Session ---
@@ -69,7 +97,8 @@ export function loggedIn(user) {
     show(app.route);
     return;
   }
-  refreshData({ quiet: true });
+  refreshData({ quiet: true, full: true });
+  goLive();
   const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'lists', params: {} };
   app.afterLogin = null;
   navigate(next.name, next.params, { replace: true });
@@ -77,6 +106,7 @@ export function loggedIn(user) {
 
 // Déconnexion (ou session expirée) : on oublie tout ce qui est en mémoire
 export function loggedOut() {
+  stopLive();
   app.user = null;
   app.data = emptyState();
   dataChanged();
@@ -191,7 +221,10 @@ async function start() {
       return;
     }
   }
-  if (app.user && !app.user.mustChangePassword) refreshData({ quiet: true });
+  if (app.user && !app.user.mustChangePassword) {
+    refreshData({ quiet: true, full: true });
+    goLive();
+  }
   startRouter(show);
 }
 

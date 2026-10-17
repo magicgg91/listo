@@ -147,15 +147,27 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
 }
 
 // --- Indicateur de synchronisation ---
-// Trois états : à jour, synchronisation en cours, hors ligne. Toujours une
-// icône ET un texte (jamais la couleur seule).
+// Trois états : à jour, synchronisation en cours, hors ligne (pas de réseau,
+// ou serveur qui ne répond pas). Toujours une icône ET un texte (jamais la
+// couleur seule).
 
 const SYNC = {
-  ok: { className: 'sync--ok', icon: 'cloud-ok', text: 'À jour' },
-  busy: { className: 'sync--busy', icon: 'sync', text: 'Synchronisation…' },
-  off: { className: 'sync--off', icon: 'cloud-off', text: 'Hors ligne' },
+  ok: { className: 'sync--ok', icon: 'cloud-ok', text: () => 'À jour' },
+  busy: { className: 'sync--busy', icon: 'sync', text: () => 'Synchronisation…' },
+  off: {
+    className: 'sync--off',
+    icon: 'cloud-off',
+    text: () => (pendingCount ? `Hors ligne · ${pendingCount} en attente` : 'Hors ligne'),
+  },
 };
 let syncState = 'ok';
+// Modifications en attente d'envoi : la file d'attente hors ligne de
+// l'étape 9 donnera ce nombre (« Hors ligne · 3 en attente »)
+let pendingCount = 0;
+export function setPendingCount(count) {
+  pendingCount = count;
+  setSyncState(syncState);
+}
 const syncPills = new Set();
 
 export function setSyncState(state) {
@@ -169,7 +181,7 @@ export function setSyncState(state) {
 function paintPill(pill) {
   const info = SYNC[syncState];
   pill.className = `sync ${info.className}`;
-  replace(pill, icon(info.icon, 'icon--sm'), info.text);
+  replace(pill, icon(info.icon, 'icon--sm'), info.text());
 }
 
 // Pastille d'état. Si onRefresh est donné, un appui lance une actualisation.

@@ -228,3 +228,62 @@ test("photo : l'adresse de l'image change avec la date de la photo", async () =>
   assert.equal(a, '/api/items/abc/photo?v=2026-10-17T10%3A00%3A00.000Z');
   assert.notEqual(a, b);
 });
+
+// --- Temps réel (étape 8) ---
+
+test('synchro partielle : listes et articles changés, supprimés, liste retirée du partage', async () => {
+  const { mergeSync } = await import('../public/js/store.js');
+  const state = sample();
+  const listA = state.lists.get('A');
+  mergeSync(state, {
+    serverTime: '2026-10-16T13:00:00.000Z',
+    listIds: ['A', 'C', 'N'], // B n'est plus partagée avec moi ; N vient de l'être
+    lists: [
+      { ...listA, name: 'Courses renommées' },
+      { ...listA, id: 'N', name: 'Nouvelle partagée' },
+    ],
+    items: [
+      { id: '1', listId: 'A', name: 'Lait', checked: true, aisleId: 10, updatedAt: '2026-10-16T12:30:00.000Z', deletedAt: null },
+      { id: '2', listId: 'A', name: 'Pain', checked: true, aisleId: 11, updatedAt: '2026-10-16T12:31:00.000Z', deletedAt: '2026-10-16T12:31:00.000Z' },
+      { id: '7', listId: 'N', name: 'Œufs', checked: false, aisleId: null, updatedAt: '2026-10-16T12:32:00.000Z', deletedAt: null },
+    ],
+    categories: state.categories,
+    stores: state.stores,
+    aisles: state.aisles,
+    history: [{ name: 'Lait', nameNormalized: 'lait', storeId: null, aisleId: 10, useCount: 6, lastUsedAt: '2026-10-16T12:30:00.000Z' }],
+  });
+  assert.equal(state.serverTime, '2026-10-16T13:00:00.000Z');
+  assert.deepEqual([...state.lists.keys()].sort(), ['A', 'C', 'N']);
+  assert.equal(state.lists.get('A').name, 'Courses renommées');
+  assert.equal(state.items.get('1').checked, true);
+  assert.equal(state.items.has('2'), false, 'article supprimé ailleurs');
+  assert.equal(state.items.has('4'), false, 'articles de la liste B retirés avec elle');
+  assert.equal(state.items.has('3'), true, 'article inchangé gardé');
+  assert.equal(state.items.get('7').name, 'Œufs');
+  assert.equal(state.history.filter((e) => e.nameNormalized === 'lait').length, 1);
+  assert.equal(state.history.find((e) => e.nameNormalized === 'lait').useCount, 6);
+});
+
+test('reconnexion : délai croissant (1, 2, 4… jusqu\'à 30 s), un peu au hasard', async () => {
+  const { reconnectDelay } = await import('../public/js/live.js');
+  const middle = () => 0.5;
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 20].map((n) => reconnectDelay(n, middle)), [1000, 2000, 4000, 8000, 16000, 30000, 30000, 30000]);
+  assert.equal(reconnectDelay(0, () => 0), 800);
+  assert.equal(reconnectDelay(10, () => 1), 36000);
+});
+
+test('messages rapprochés : une seule synchronisation', async () => {
+  const { groupCalls } = await import('../public/js/live.js');
+  const timers = [];
+  const fake = { setTimeout: (fn) => timers.push(fn), clearTimeout: () => {} };
+  let syncs = 0;
+  const onMessage = groupCalls(() => { syncs += 1; }, 300, fake);
+  onMessage();
+  onMessage();
+  onMessage();
+  assert.equal(timers.length, 1, 'un seul minuteur pour trois messages');
+  timers[0]();
+  assert.equal(syncs, 1);
+  onMessage();
+  assert.equal(timers.length, 2, 'un nouveau groupe après la synchronisation');
+});

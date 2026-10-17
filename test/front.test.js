@@ -334,3 +334,45 @@ test('base locale en mémoire : même interface ; deux comptes ne partagent rien
   await a.queueDelete(s1);
   assert.deepEqual((await a.queueAll()).map((e) => e.seq), [s2]);
 });
+
+// --- Écriture d'abord locale (étape 9) ---
+
+test('application locale des opérations : même effet que le serveur', async () => {
+  const { applyOp } = await import('../public/js/store.js');
+  const state = sample();
+  state.stores = [{ id: 7, name: 'Lidl', active: true, isMulti: false, storeIds: [] }];
+  const ctx = { user: { id: 1, username: 'guillaume', displayName: 'Guillaume' }, now: '2026-10-17T10:00:00.000Z' };
+
+  applyOp(state, { type: 'list.create', listId: 'N', name: 'Nouvelle', categoryId: 1, storeId: 7 }, ctx);
+  const list = state.lists.get('N');
+  assert.equal(list.isOwner, true);
+  assert.equal(list.store.name, 'Lidl');
+  assert.ok(state.listIds.has('N'));
+
+  // Ajout : rayon prévu sur le téléphone quand le serveur le choisira lui-même
+  applyOp(state, { type: 'item.create', listId: 'N', itemId: 'x1', name: 'Lait' }, { ...ctx, hint: { aisleId: 10 } });
+  assert.equal(state.items.get('x1').aisleId, 10);
+  applyOp(state, { type: 'item.create', listId: 'N', itemId: 'x2', name: 'Pain', aisleId: null }, { ...ctx, hint: { aisleId: 11 } });
+  assert.equal(state.items.get('x2').aisleId, null, 'un choix explicite l\'emporte sur la prévision');
+  applyOp(state, { type: 'item.check', itemId: 'x1', checked: true }, ctx);
+  applyOp(state, { type: 'item.update', itemId: 'x1', quantity: '2' }, ctx);
+  assert.deepEqual([state.items.get('x1').checked, state.items.get('x1').quantity], [true, '2']);
+
+  applyOp(state, { type: 'list.clearChecked', listId: 'N' }, ctx);
+  assert.equal(state.items.has('x1'), false, 'les barrés sont retirés');
+  applyOp(state, { type: 'item.delete', itemId: 'x2' }, ctx);
+  assert.equal(state.items.has('x2'), false);
+  applyOp(state, { type: 'item.restore', itemId: 'x2' }, ctx);
+  assert.equal(state.items.get('x2').name, 'Pain', '« Annuler » remet l\'article');
+
+  applyOp(state, { type: 'list.update', listId: 'N', categoryId: 2 }, ctx);
+  assert.equal(state.lists.get('N').store, null, 'une liste de tâches perd son magasin');
+  applyOp(state, { type: 'list.delete', listId: 'N' }, ctx);
+  assert.equal(state.lists.has('N'), false);
+  assert.equal(state.items.has('x2'), false, 'ses articles partent avec elle');
+
+  // Opérations sur un article ou une liste inconnus : sans effet
+  applyOp(state, { type: 'item.check', itemId: 'inconnu', checked: true }, ctx);
+  applyOp(state, { type: 'item.create', listId: 'inconnue', itemId: 'y', name: 'X' }, ctx);
+  assert.equal(state.items.has('y'), false);
+});

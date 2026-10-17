@@ -4,11 +4,12 @@
 // et suppression de la liste (propriétaire).
 
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
-import { put, op, uuid, errorMessage } from '../api.js';
+import { put, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { activeOnly, putList, removeList } from '../store.js';
+import { activeOnly } from '../store.js';
+import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
-import { app, dataChanged, refreshData } from '../app.js';
+import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 
 export function renderListForm(listId, onLeave) {
@@ -178,6 +179,24 @@ function form(list, users) {
   const shareGroup = h('div', { class: 'card share' },
     tickRow({ id: me.id, displayName: me.displayName }, { locked: true }),
     people.map((person) => tickRow(person)));
+  // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
+  const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
+  let painted = false;
+  const paintShare = () => {
+    if (painted && !shareGroup.isConnected) { // formulaire quitté
+      window.removeEventListener('online', paintShare);
+      window.removeEventListener('offline', paintShare);
+      return;
+    }
+    painted = true;
+    const offline = !navigator.onLine;
+    shareNote.hidden = !offline;
+    shareGroup.inert = offline;
+    shareGroup.classList.toggle('is-off', offline);
+  };
+  paintShare();
+  window.addEventListener('online', paintShare);
+  window.addEventListener('offline', paintShare);
 
   const error = errorNote();
 
@@ -208,15 +227,9 @@ function form(list, users) {
         confirmLabel: 'Supprimer',
       });
       if (!ok) return;
-      try {
-        await op({ type: 'list.delete', listId: list.id });
-        removeList(app.data, list.id);
-        dataChanged();
-        toast('Liste supprimée', { low: true });
-        navigate('lists', {}, { replace: true });
-      } catch (err) {
-        error.show(errorMessage(err));
-      }
+      await actions.deleteList(list.id); // tout de suite ici, envoyé ensuite (file d'attente)
+      toast('Liste supprimée', { low: true });
+      navigate('lists', {}, { replace: true });
     },
   }, icon('trash', 'icon--sm'), 'Supprimer la liste') : null;
 
@@ -230,7 +243,7 @@ function form(list, users) {
       nameField.field,
       h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'category-label' }, 'Catégorie'), categoryGroup),
       storeField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup),
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
       error.note,
       deleteButton)),
     h('div', { class: 'footer' }, save));
@@ -251,42 +264,39 @@ function form(list, users) {
     }
     const chosenStore = category.isShopping ? storeId : null;
     save.disabled = true;
-    try {
-      let id = list?.id;
-      if (!list) {
-        id = uuid();
-        const result = await op({ type: 'list.create', listId: id, name: cleanName, categoryId, storeId: chosenStore });
-        putList(app.data, result.list);
-      } else {
-        await op({ type: 'list.update', listId: id, name: cleanName, categoryId, storeId: chosenStore });
+    // Liste : tout de suite dans la copie locale, envoyée ensuite (file
+    // d'attente) ; marche aussi sans réseau
+    let id = list?.id;
+    if (!list) {
+      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore });
+    } else if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null)) {
+      await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore });
+    }
+    // Partage : seulement s'il a changé, et seulement en ligne (route réservée
+    // au propriétaire ; la liste doit d'abord exister sur le serveur)
+    const before = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
+    const changed = before.size !== guests.size || [...guests].some((g) => !before.has(g));
+    if (changed) {
+      await refreshData({ quiet: true }); // envoie la file d'attente
+      try {
+        if (pendingCount()) throw new Error('hors ligne');
+        await put(`/api/lists/${id}/members`, { userIds: [...guests] });
+        await refreshData({ quiet: true });
+      } catch (err) {
+        toast(`Le partage n'a pas pu être enregistré : ${pendingCount() ? 'indisponible hors ligne' : errorMessage(err)}. La liste, elle, est enregistrée.`);
       }
-      // Partage : seulement s'il a changé (route réservée au propriétaire)
-      const before = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
-      const changed = before.size !== guests.size || [...guests].some((g) => !before.has(g));
-      if (changed) await put(`/api/lists/${id}/members`, { userIds: [...guests] });
-      await refreshData({ quiet: true });
-      if (!list) {
-        navigate('list', { id }, { replace: true });
-        toast('Liste créée', {
-          action: 'Annuler',
-          onAction: async () => {
-            try {
-              await op({ type: 'list.delete', listId: id });
-              removeList(app.data, id);
-              dataChanged();
-              navigate('lists', {}, { replace: true });
-            } catch (err) {
-              toast(errorMessage(err));
-            }
-          },
-        });
-      } else {
-        goBack('list', { id });
-      }
-    } catch (err) {
-      // Le formulaire reste rempli : rien n'est perdu
-      error.show(errorMessage(err));
-      save.disabled = false;
+    }
+    if (!list) {
+      navigate('list', { id }, { replace: true });
+      toast('Liste créée', {
+        action: 'Annuler',
+        onAction: async () => {
+          await actions.deleteList(id);
+          navigate('lists', {}, { replace: true });
+        },
+      });
+    } else {
+      goBack('list', { id });
     }
   });
 

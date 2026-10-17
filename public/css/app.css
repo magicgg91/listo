@@ -159,3 +159,6 @@ button.sync { cursor: pointer; }
 .toggle-row { display: flex; align-items: center; gap: var(--space-2); padding: 12px var(--space-2); }
 .admin-list { padding-left: 0; padding-right: 0; }
 .admin-list > .empty__text { padding: 0 var(--space-2); }
+
+/* Hors ligne : partage d'une liste grisé (il demande le serveur) */
+.share.is-off { opacity: 0.55; }

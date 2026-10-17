@@ -2,13 +2,14 @@
 // et mise en page (une colonne sur téléphone, deux sur ordinateur).
 
 import { h, replace } from './dom.js';
-import { get, post, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
+import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp } from './store.js';
+import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
-import { setOverlayHost, setSyncState, toast } from './ui.js';
-import { startLive, stopLive } from './live.js';
+import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog } from './ui.js';
+import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderLists, renderSidePanel } from './screens/lists.js';
 import { renderList } from './screens/list.js';
@@ -96,6 +97,15 @@ async function openAccount(user) {
     snapshot = null; // copie illisible : rechargée depuis le serveur
   }
   app.data = fromSnapshot(snapshot) ?? emptyState();
+  // File d'attente du compte : ce qui n'était pas encore envoyé repartira
+  queue?.stop();
+  queue = makeQueue();
+  try {
+    await queue.load();
+  } catch {
+    // file illisible : rien à renvoyer
+  }
+  replayQueue();
   for (const listener of [...listeners]) listener();
 }
 
@@ -113,9 +123,13 @@ function persistSoon() {
 export async function resetLocalCopy() {
   await local.clearSnapshot();
   app.data = emptyState();
+  replayQueue(); // les modifications en attente ne sont pas perdues
   dataChanged();
   await refreshData({ full: true });
 }
+
+// Nombre de modifications en attente d'envoi
+export const pendingCount = () => queue?.count() ?? 0;
 
 // Synchronisation avec le serveur (GET /api/sync). Appelée à l'ouverture de
 // l'application, à l'ouverture d'une liste, par le bouton d'actualisation, et
@@ -128,30 +142,51 @@ export async function resetLocalCopy() {
 // (Étape 9 : copie gardée sur le téléphone, hors ligne.)
 let refreshing = null;
 let again = null;
+let refusals = [];         // raisons des modifications refusées par le serveur
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
     return refreshing;
   }
-  // Copie trop ancienne (plus de 25 jours) : tout recharger
-  const since = !full && app.data.loaded && !isTooOld(app.data) ? app.data.serverTime : null;
   // « Synchronisation… » seulement si elle dure : pas de clignotement à
   // chaque message du temps réel
   const busy = setTimeout(() => setSyncState('busy'), 400);
-  refreshing = get(since ? `/api/sync?since=${encodeURIComponent(since)}` : '/api/sync')
-    .then((data) => {
+  refreshing = (async () => {
+    try {
+      // 1. D'abord, envoyer ce qui attend dans la file (dans l'ordre)
+      if (queue?.count()) {
+        const outcome = await queue.flush();
+        if (outcome === 'offline') {
+          setSyncState('off');
+          return;
+        }
+        if (outcome !== 'done') return; // session expirée, ou déconnexion
+      }
+      // 2. Une modification refusée : on prévient, et on reprend tout l'état
+      //    du serveur (son effet local est ainsi annulé)
+      if (refusals.length) {
+        const [first, ...others] = refusals;
+        refusals = [];
+        full = true;
+        toast(`Une modification n'a pas pu être enregistrée : ${first}${others.length ? ` (et ${others.length} autre${others.length > 1 ? 's' : ''})` : ''}`);
+      }
+      // 3. Puis récupérer les changements des autres. Copie trop ancienne
+      //    (plus de 25 jours) : tout recharger.
+      const since = !full && app.data.loaded && !isTooOld(app.data) ? app.data.serverTime : null;
+      const data = await get(since ? `/api/sync?since=${encodeURIComponent(since)}` : '/api/sync');
+      if (!app.user) return;
       if (since) mergeSync(app.data, data);
       else loadSync(app.data, data);
+      // 4. Les modifications encore en file sont rejouées par-dessus
+      replayQueue();
       setSyncState('ok');
       dataChanged();
-    })
-    .catch((error) => {
+    } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
       setSyncState(error instanceof NetworkError || (error instanceof ApiError && error.status >= 500) ? 'off' : 'ok');
       if (!quiet && !unauthorized) toast(errorMessage(error));
-    })
-    .finally(() => {
+    } finally {
       clearTimeout(busy);
       refreshing = null;
       if (again && app.user) {
@@ -159,9 +194,64 @@ export function refreshData({ quiet = false, full = false } = {}) {
         again = null;
         refreshData({ quiet: true, full: next.full });
       }
-    });
+    }
+  })();
   return refreshing;
 }
+
+// --- File d'attente (queue.js) ---
+
+let queue = null; // file du compte ouvert
+
+function makeQueue() {
+  return createQueue({
+    storage: local,
+    transport: {
+      sendOps: async (operations) => (await post('/api/ops', { ops: operations })).results,
+      putPhoto,
+      deletePhoto,
+    },
+    events: {
+      changed: () => setPendingCount(queue?.count() ?? 0),
+      refused: (entry, message) => refusals.push(message),
+      dropped: () => {},
+      offline: () => setSyncState('off'),
+    },
+  });
+}
+
+// Rejoue sur la copie locale ce qui attend encore dans la file
+function replayQueue() {
+  if (!queue || !app.user) return;
+  for (const entry of queue.entries()) {
+    const item = entry.itemId ? app.data.items.get(entry.itemId) : null;
+    if (entry.kind === 'op') applyOp(app.data, entry.op, { user: app.user, now: entry.at, hint: entry.hint });
+    else if (entry.kind === 'photo' && item) app.data.items.set(item.id, { ...item, localPhoto: entry.seq });
+    else if (entry.kind === 'photoDelete' && item) app.data.items.set(item.id, { ...item, photoAt: null, localPhoto: null });
+  }
+}
+
+// Ajoute un élément à la file (utilisé par actions.js). Pour une photo :
+// replacesPhotoOf retire les photos du même article pas encore envoyées
+// (seule la dernière compte) ; onlyIfSent : un retrait de photo n'est mis en
+// file que si le serveur a une photo à retirer.
+export async function queueEntry(entry, { replacesPhotoOf = null, onlyIfSent = true } = {}) {
+  if (replacesPhotoOf) {
+    for (const old of queue.entries()) {
+      if ((old.kind === 'photo' || old.kind === 'photoDelete') && old.itemId === replacesPhotoOf) await queue.remove(old.seq);
+    }
+    if (entry.kind === 'photoDelete' && !onlyIfSent) return null;
+  }
+  return queue.add(entry);
+}
+
+// Envoi rapide après une action (plusieurs actions rapprochées : un envoi)
+export const flushSoon = groupCalls(() => refreshData({ quiet: true }), 50);
+
+// Le téléphone perd le réseau : l'indicateur le dit tout de suite
+window.addEventListener('offline', () => {
+  if (app.user) setSyncState('off');
+});
 
 // Démarre le temps réel pour le compte connecté
 function goLive() {
@@ -193,6 +283,9 @@ export function loggedIn(user) {
 // modifications en attente : elles repartiront après la reconnexion.
 export function loggedOut({ forget = false } = {}) {
   stopLive();
+  queue?.stop();
+  queue = null;
+  setPendingCount(0);
   const user = app.user;
   app.user = null;
   app.data = emptyState();
@@ -208,8 +301,21 @@ export function loggedOut({ forget = false } = {}) {
   navigate('login', {}, { replace: true });
 }
 
-// Déconnexion volontaire (Réglages)
+// Déconnexion volontaire (Réglages). Des modifications en attente : on
+// essaie d'abord de les envoyer ; s'il en reste (pas de réseau), on prévient
+// qu'elles seront perdues et on laisse le choix.
 export async function logOut() {
+  if (pendingCount()) await refreshData({ quiet: true });
+  const left = pendingCount();
+  if (left) {
+    const ok = await confirmDialog({
+      title: 'Se déconnecter ?',
+      text: `${left === 1 ? '1 modification n\'est' : `${left} modifications ne sont`} pas encore envoyée${left === 1 ? '' : 's'}. Si vous vous déconnectez maintenant, ${left === 1 ? 'elle sera perdue' : 'elles seront perdues'}.`,
+      confirmLabel: 'Se déconnecter quand même',
+      cancelLabel: 'Rester connecté',
+    });
+    if (!ok) return;
+  }
   try {
     await post('/api/logout');
   } catch {

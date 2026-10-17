@@ -494,7 +494,7 @@ Magasin « multi »
 
 - [ ] Un magasin « multi » est créé par l'Admin et regroupe d'autres magasins de la liste commune (par exemple Fromagerie, Boucherie, Leclerc) ; il n'en regroupe pas un autre « multi ».
 - [ ] Dans une liste à magasin « multi », chaque article a son magasin ; l'affichage groupe par magasin, puis par rayon ; « Sans magasin » en dernier.
-- [ ] L'application mémorise, pour chaque article, son magasin habituel et son rayon habituel dans chaque magasin.
+- [ ] L'application mémorise, pour chaque article, son magasin habituel et son rayon habituel dans chaque magasin : dans une liste « multi », un article peut avoir un rayon différent de son rayon habituel quand il est acheté dans un magasin précis (les œufs : rayon « Crèmerie » à la fromagerie, un autre rayon chez Leclerc). Le rayon proposé suit le magasin choisi.
 - [ ] Les rayons restent communs à tous les magasins (pas de rayons propres à un magasin).
 
 Plan

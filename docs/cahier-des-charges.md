@@ -429,6 +429,7 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 - Contraste de texte conforme WCAG AA, cibles tactiles d'au moins 44 px.
 - L'information ne passe jamais par la couleur seule (un article coché est aussi barré).
 - Textes de l'interface en français, courts, à l'infinitif ou au nom (« Ajouter un article », « Vider les barrés »).
+- Vocabulaire : le mot « article » est réservé aux listes de courses ; dans toutes les autres listes (tâches…), on dit « élément », au masculin, avec les mêmes accords (« Ajouter un élément », « 3 éléments restants », « Nouvel élément »). Un seul module de l'interface (public/js/words.js) donne le bon mot selon la catégorie de la liste.
 
 ## Plan de développement
 

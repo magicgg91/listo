@@ -5,6 +5,9 @@
 #   docker compose up -d                     (démarrer)
 #   docker logs listo                        (voir les journaux)
 #   docker compose pull && docker compose up -d   (mettre à jour)
+#   docker exec -u node listo node server/backup-now.js   (sauvegarde à la demande)
+# Le guide complet (installation, sauvegarde, restauration, dépannage) est
+# dans le README du dépôt.
 #
 # Nginx Proxy Manager n'étant pas sur la même machine, il n'y a pas de réseau
 # Docker partagé : Listo publie son port sur l'adresse du réseau local du
@@ -21,16 +24,17 @@ services:
     image: ghcr.io/magicgg91/listo:latest   # construite par GitHub Actions
     container_name: listo
     restart: unless-stopped
+    # Toutes les variables lues par Listo (aucune ne contient de secret)
     environment:
-      - NODE_ENV=production
-      - PORT=13300
-      - TZ=Europe/Paris
-      - LISTO_PUBLIC_URL=https://listo.exemple.fr   # à remplacer par votre sous-domaine
-      - LISTO_DB_PATH=/data/listo.db
-      - LISTO_KEY_PATH=/secrets/secret.key
-      - LISTO_SESSION_DAYS=30
+      - NODE_ENV=production          # production : cookies « Secure », https obligatoire
+      - PORT=13300                   # port d'écoute dans le conteneur (le même que ci-dessous)
+      - TZ=Europe/Paris              # fuseau horaire : sauvegarde de la nuit vers 3 h, heure de Paris
+      - LISTO_PUBLIC_URL=https://listo.exemple.fr   # À REMPLACER : votre sous-domaine, en https (sinon Listo refuse de démarrer)
+      - LISTO_DB_PATH=/data/listo.db                # base (dans le volume data)
+      - LISTO_KEY_PATH=/secrets/secret.key          # clé de chiffrement 2FA, créée au 1er démarrage (volume secrets)
+      - LISTO_SESSION_DAYS=30        # durée d'une session sans se reconnecter, en jours
     ports:
       - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:
-      - ./data:/data         # base listo.db, sauvegardes, photos, journal
-      - ./secrets:/secrets   # clé de chiffrement, gardée à part de la base
+      - ./data:/data         # base listo.db, sauvegardes (backups/), photos, journal.log
+      - ./secrets:/secrets   # clé de chiffrement, gardée à part de la base (jamais dans data/backups)

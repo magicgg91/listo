@@ -1,6 +1,7 @@
 // Sauvegarde de la base à la demande, en plus de celle de chaque nuit.
 // Utile juste avant une mise à jour ou une restauration :
-//   docker exec listo node server/backup-now.js
+//   docker exec -u node listo node server/backup-now.js
+// (« -u node » : la copie appartient à Listo, comme celles de la nuit)
 // La copie est faite et contrôlée exactement comme la nuit (voir backup.js),
 // dans data/backups, sans arrêter Listo.
 
@@ -9,6 +10,14 @@ import Database from 'better-sqlite3';
 import { loadConfig } from './config.js';
 import { createBackups } from './backup.js';
 import { createAudit, createJournalFile } from './audit.js';
+
+// Lancée en administrateur (root), la copie et son dossier n'appartiendraient
+// plus à Listo, qui ne pourrait plus y écrire ses sauvegardes de la nuit
+if (process.getuid?.() === 0) {
+  console.error('Sauvegarde non faite : lancez cette commande avec « -u node » :');
+  console.error('  docker exec -u node listo node server/backup-now.js');
+  process.exit(1);
+}
 
 const config = loadConfig();
 const dataDir = path.dirname(config.dbPath);

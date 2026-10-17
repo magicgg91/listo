@@ -30,12 +30,14 @@ COPY public ./public
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 
-# Emplacements par défaut de la base et de la clé (volumes Docker)
+# Valeurs par défaut (docker-compose.yml fixe celles de la production :
+# PORT=13300, LISTO_PUBLIC_URL…). Base et clé dans deux volumes séparés.
 ENV PORT=3000 \
     LISTO_DB_PATH=/data/listo.db \
     LISTO_KEY_PATH=/secrets/secret.key
 
-# Port utilisé à l'intérieur du réseau Docker (aucun port publié sur l'hôte)
+# Port d'écoute dans le conteneur (simple indication : c'est
+# docker-compose.yml qui publie le port, sur l'adresse du réseau local)
 EXPOSE 3000
 
 # Docker vérifie toutes les 30 secondes que Listo répond sur /healthz

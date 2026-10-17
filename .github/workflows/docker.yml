@@ -4,8 +4,8 @@
 # Le compose de production n'a ensuite qu'à utiliser `image:` (pas `build:`) :
 #   docker compose pull && docker compose up -d
 #
-# Tant que le Dockerfile n'existe pas (étape 1 du plan), le workflow ne
-# construit rien et le signale sans échouer.
+# S'il n'y a pas de Dockerfile, le workflow ne construit rien et le signale
+# sans échouer.
 
 name: Image Docker
 

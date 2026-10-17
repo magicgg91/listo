@@ -27,4 +27,4 @@ Seule la **dernière version** est corrigée : l'image `ghcr.io/magicgg91/listo:
 
 ## Hors périmètre
 
-La sécurité du **serveur** de la personne qui installe Listo, de son **pare-feu**, de son **proxy HTTPS** (Nginx Proxy Manager ou autre) et de ses **sauvegardes** relève de cette personne. Le README donne des conseils (limiter l'accès au port de Listo, garder la clé `secrets/secret.key` à part), mais ces éléments ne font pas partie de Listo.
+La sécurité du **serveur** de la personne qui installe Listo, de son **pare-feu**, de son **proxy HTTPS** (Nginx Proxy Manager ou autre) et de ses **sauvegardes** relève de cette personne. Le README et `docs/exploitation.md` donnent des conseils (limiter l'accès au port de Listo, garder la clé `secrets/secret.key` à part), mais ces éléments ne font pas partie de Listo.

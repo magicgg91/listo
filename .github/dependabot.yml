@@ -6,8 +6,8 @@
 # - des actions du workflow qui construit l'image (.github/workflows/).
 # S'il y en a une, il ouvre une pull request vers main, avec les notes de
 # version. Rien n'est jamais fusionné automatiquement : le propriétaire relit
-# et fusionne lui-même (voir le README, « Surveiller les mises à jour de
-# sécurité »). Au plus 3 pull requests ouvertes à la fois par type.
+# et fusionne lui-même (voir docs/exploitation.md, « Surveiller les mises à
+# jour de sécurité »). Au plus 3 pull requests ouvertes à la fois par type.
 
 version: 2
 updates:

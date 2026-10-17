@@ -1,6 +1,6 @@
 // Tests de la logique de l'interface qui ne dépend pas de l'écran :
 // routeur (adresses), mise en forme des textes, copie locale des données.
-// (Les écrans eux-mêmes se vérifient à la main : voir le README.)
+// (Les écrans eux-mêmes se vérifient à la main : voir docs/developpement.md.)
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -1,4 +1,4 @@
-# Listo en production, derrière Nginx Proxy Manager.
+# Listo en production, derrière Nginx Proxy Manager (installé sur une autre machine).
 #
 # À placer seul sur le serveur (aucun code source n'est nécessaire), puis :
 #   docker login ghcr.io                     (une seule fois, jeton en lecture des paquets)
@@ -6,8 +6,14 @@
 #   docker logs listo                        (voir les journaux)
 #   docker compose pull && docker compose up -d   (mettre à jour)
 #
-# Aucun port n'est publié sur l'hôte : Nginx Proxy Manager joint Listo par son
-# nom (listo) sur le port 3000, via le réseau Docker partagé « proxy ».
+# Nginx Proxy Manager n'étant pas sur la même machine, il n'y a pas de réseau
+# Docker partagé : Listo publie son port sur l'adresse du réseau local du
+# serveur (IP_LOCALE), jamais sur toutes les interfaces. Dans Nginx Proxy
+# Manager : schéma http, cette adresse IP et le port 13300 ; le HTTPS s'arrête
+# chez lui. Ouvrir Listo directement par http://IP:13300 ne permet pas de se
+# connecter (origine et cookie Secure refusés) : c'est voulu.
+# Un pare-feu qui n'autorise que l'adresse de Nginx Proxy Manager à joindre ce
+# port est recommandé.
 # Aucun mot de passe ni clé ici : la clé est générée au premier démarrage.
 
 services:
@@ -17,18 +23,14 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=13300
       - TZ=Europe/Paris
       - LISTO_PUBLIC_URL=https://listo.exemple.fr   # à remplacer par votre sous-domaine
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+    ports:
+      - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:
-      - ./data:/data         # base listo.db et sauvegardes
+      - ./data:/data         # base listo.db, sauvegardes, photos, journal
       - ./secrets:/secrets   # clé de chiffrement, gardée à part de la base
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    external: true   # réseau Docker partagé avec Nginx Proxy Manager (nom à adapter)

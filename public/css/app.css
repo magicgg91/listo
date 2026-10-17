@@ -146,3 +146,16 @@ button.sync { cursor: pointer; }
 .row__icon .icon, .row > .icon { flex: none; }
 .row > .icon:last-child { color: var(--color-text-2); }
 .body:has(> .group) { padding-left: 0; padding-right: 0; }
+
+/* Administration : ajout en tête de liste, renommage sur place */
+.add-inline--flush { padding: var(--space-1) var(--space-2) var(--space-2); }
+.btn--add { min-height: 52px; }
+.manage__edit { display: flex; align-items: center; gap: var(--space-1); }
+.manage__edit .input { flex: 1; min-width: 0; }
+.btn--edit { width: 48px; min-height: 48px; }
+.manage .switch { margin-right: var(--space-1); }
+.row .avatar { flex: none; }
+.row--menu .icon { flex: none; }
+.toggle-row { display: flex; align-items: center; gap: var(--space-2); padding: 12px var(--space-2); }
+.admin-list { padding-left: 0; padding-right: 0; }
+.admin-list > .empty__text { padding: 0 var(--space-2); }

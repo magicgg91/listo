@@ -157,6 +157,8 @@ docker logs listo                                     # vérifier le démarrage
 
 Listo s'arrête proprement (requêtes finies, base fermée) : une mise à jour n'abîme rien. La base est mise à jour toute seule au démarrage si besoin. Les téléphones prennent la nouvelle version à leur prochaine ouverture avec du réseau.
 
+**Une fois, à la mise à jour qui apporte les cookies « __Host- »** (durcissement après l'audit) : les cookies de connexion changent de nom pour être mieux protégés. **Tout le monde est déconnecté une fois** et doit se reconnecter (identifiant, mot de passe, code 2FA). Les listes et les modifications déjà envoyées ne sont pas touchées ; une modification faite hors ligne juste avant repart après la reconnexion.
+
 **Revenir à la version précédente** si la nouvelle pose problème :
 
 1. Trouver l'étiquette de la version voulue : sur GitHub, page du dépôt → **Packages** → `listo` : chaque version a une étiquette `sha-xxxxxxx` (les 7 premiers caractères du commit).

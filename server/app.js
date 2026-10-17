@@ -91,7 +91,7 @@ export function createApp({
     keys: deriveKeys(masterKey),
     setup: { code: setupCode },
     limiter: createLimiter({ now }),
-    pending: createPendingLogins(now),
+    pending: createPendingLogins(now, config),
     audit: createAudit({ now, write: log, file: journalFile }),
     photos: createPhotoStore(photosDir),
     uploads: createUploadCounter({ now }),

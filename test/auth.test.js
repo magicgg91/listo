@@ -116,7 +116,7 @@ test('en production, le cookie de session est « Secure » (HTTPS seulement)', a
   const app = await startTestApp(t, { config: { production: true } });
   const admin = app.client();
   const res = await admin.post('/api/setup', { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!' });
-  assert.match(res.setCookies.find((c) => c.startsWith('listo_session=')), /Secure/);
+  assert.match(res.setCookies.find((c) => c.startsWith('__Host-listo_session=')), /Secure/);
 });
 
 test('le jeton de session est stocké haché en base (256 bits)', async (t) => {

@@ -2,7 +2,7 @@
 // la version ordinateur (bureau-1) : une carte par liste, la plus récemment
 // active en premier, et le bouton « Nouvelle liste ».
 
-import { h, icon, iconButton, avatar, replace } from '../dom.js';
+import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList } from '../format.js';
 import { computeSummaries } from '../store.js';
@@ -37,7 +37,7 @@ export function listCard(list, { selected = false } = {}) {
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
   h('p', { class: 'list-card__meta' },
     h('span', {}, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--xs'), list.category.name),
-    list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name) : null),
+    list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name, list.store.isMulti && list.category.isShopping ? [' ', multiBadge()] : null) : null),
   h('div', { class: 'list-card__foot' },
     count,
     h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },

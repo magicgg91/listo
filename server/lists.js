@@ -672,6 +672,9 @@ export function createListService(ctx) {
       stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ?').all(from).map(describeHistory),
+      // Comptes actifs (choix des invités), gardés sur le téléphone pour
+      // ouvrir le formulaire de liste sans réseau
+      users: activeUsers(),
     };
   }
 

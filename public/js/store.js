@@ -1,10 +1,11 @@
 // Copie locale des données (listes, articles, rayons, magasins, catégories,
-// historique), reçue du serveur par GET /api/sync, et calculs pour l'écran.
+// historique, comptes proposés au partage), reçue du serveur par GET
+// /api/sync, et calculs pour l'écran.
 //
-// Les écrans lisent cette copie ; chaque modification réussie y est
-// reportée tout de suite (sans attendre une nouvelle synchronisation).
-// À l'étape 9, cette copie sera aussi gardée sur le téléphone (IndexedDB)
-// pour fonctionner sans réseau.
+// Les écrans lisent cette copie ; chaque modification y est reportée tout de
+// suite (avant même d'être envoyée au serveur, voir actions.js). Elle est
+// gardée sur le téléphone (IndexedDB, voir localdb.js) pour fonctionner sans
+// réseau.
 //
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
@@ -24,7 +25,61 @@ export function emptyState() {
     stores: [],
     aisles: [],
     history: [],
+    users: [],              // comptes actifs, pour choisir avec qui partager
+    trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
   };
+}
+
+// --- Copie gardée sur le téléphone (IndexedDB) ---
+
+export const SNAPSHOT_VERSION = 1;
+
+// Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
+export function toSnapshot(state, savedAt = new Date().toISOString()) {
+  return {
+    version: SNAPSHOT_VERSION,
+    savedAt,
+    serverTime: state.serverTime,
+    lists: [...state.lists.values()],
+    items: [...state.items.values()],
+    listIds: [...state.listIds],
+    categories: state.categories,
+    stores: state.stores,
+    aisles: state.aisles,
+    history: state.history,
+    users: state.users,
+  };
+}
+
+// Copie relue depuis le téléphone ; null si elle est illisible ou d'une
+// autre version (elle sera alors rechargée entièrement depuis le serveur)
+export function fromSnapshot(snapshot) {
+  try {
+    if (!snapshot || snapshot.version !== SNAPSHOT_VERSION) return null;
+    const state = emptyState();
+    state.serverTime = snapshot.serverTime ?? null;
+    state.listIds = new Set(snapshot.listIds);
+    state.lists = new Map(snapshot.lists.map((list) => [list.id, list]));
+    state.items = new Map(snapshot.items.map((item) => [item.id, item]));
+    state.categories = [...snapshot.categories];
+    state.stores = [...snapshot.stores];
+    state.aisles = [...snapshot.aisles];
+    state.history = [...snapshot.history];
+    state.users = [...(snapshot.users ?? [])];
+    state.loaded = true;
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+// Copie trop ancienne : le serveur efface les suppressions au bout de 30
+// jours, une synchronisation « depuis » ne suffirait plus. Au-delà de 25 jours
+// sans synchronisation, tout est rechargé.
+export const SNAPSHOT_MAX_AGE_DAYS = 25;
+export function isTooOld(state, now = Date.now()) {
+  if (!state.serverTime) return true;
+  return now - Date.parse(state.serverTime) > SNAPSHOT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 // Remplace tout par une synchronisation complète (réponse de /api/sync)
@@ -37,6 +92,7 @@ export function loadSync(state, data) {
   state.stores = data.stores;
   state.aisles = data.aisles;
   state.history = data.history;
+  if (data.users) state.users = data.users;
   state.loaded = true;
   return state;
 }
@@ -61,6 +117,7 @@ export function mergeSync(state, data) {
   state.categories = data.categories;
   state.stores = data.stores;
   state.aisles = data.aisles;
+  if (data.users) state.users = data.users;
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
   for (const entry of data.history) {
@@ -69,6 +126,104 @@ export function mergeSync(state, data) {
     else state.history.push(entry);
   }
   return state;
+}
+
+// --- Écriture d'abord locale ---
+//
+// applyOp applique une opération (la même que celle envoyée à /api/ops) à la
+// copie locale, avec le même effet que le serveur. Elle sert deux fois :
+// - au moment de l'action, pour que l'écran change tout de suite ;
+// - après chaque synchronisation, pour rejouer les opérations encore en file
+//   d'attente par-dessus l'état du serveur (rien ne « revient en arrière »).
+// context : { user (compte connecté), now (date ISO), hint (rayon ou magasin
+// prévu sur le téléphone quand le serveur le choisira lui-même) }.
+// Fonction pure (testée automatiquement) : elle ne parle pas au réseau.
+export function applyOp(state, op, { user, now, hint = {} } = {}) {
+  const item = op.itemId ? state.items.get(op.itemId) : null;
+  switch (op.type) {
+    case 'list.create': {
+      const category = state.categories.find((c) => c.id === op.categoryId) ?? null;
+      const store = op.storeId == null ? null : state.stores.find((st) => st.id === op.storeId) ?? null;
+      state.lists.set(op.listId, {
+        id: op.listId,
+        name: op.name,
+        category: category && { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active },
+        store: store && { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) },
+        ownerId: user.id,
+        isOwner: true,
+        members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true }],
+        createdAt: now,
+        updatedAt: now,
+        lastActivity: now,
+        deletedAt: null,
+      });
+      state.listIds.add(op.listId);
+      return;
+    }
+    case 'list.update': {
+      const list = state.lists.get(op.listId);
+      if (!list) return;
+      const next = { ...list, updatedAt: now };
+      if (op.name !== undefined) next.name = op.name;
+      if (op.categoryId !== undefined) {
+        const category = state.categories.find((c) => c.id === op.categoryId);
+        if (category) next.category = { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active };
+      }
+      if (op.storeId !== undefined) {
+        const store = op.storeId == null ? null : state.stores.find((st) => st.id === op.storeId);
+        next.store = store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : null;
+      }
+      if (!next.category?.isShopping) next.store = null;
+      state.lists.set(list.id, next);
+      return;
+    }
+    case 'list.delete':
+      removeList(state, op.listId);
+      return;
+    case 'list.clearChecked':
+      for (const [id, it] of [...state.items]) if (it.listId === op.listId && it.checked) state.items.delete(id);
+      return;
+    case 'item.create':
+      if (!state.lists.has(op.listId)) return;
+      state.items.set(op.itemId, {
+        id: op.itemId,
+        listId: op.listId,
+        name: op.name,
+        quantity: op.quantity ?? '',
+        note: op.note ?? '',
+        aisleId: op.aisleId !== undefined ? op.aisleId : hint.aisleId ?? null,
+        storeId: op.storeId !== undefined ? op.storeId : hint.storeId ?? null,
+        photoAt: null,
+        checked: false,
+        createdBy: user.id,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      });
+      return;
+    case 'item.update': {
+      if (!item) return;
+      const next = { ...item, updatedAt: now };
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId']) if (op[field] !== undefined) next[field] = op[field];
+      state.items.set(item.id, next);
+      return;
+    }
+    case 'item.check':
+      if (item) state.items.set(item.id, { ...item, checked: op.checked, updatedAt: now });
+      return;
+    case 'item.delete':
+      if (item) {
+        state.trash.set(item.id, item); // pour « Annuler »
+        state.items.delete(item.id);
+      }
+      return;
+    case 'item.restore': {
+      const old = state.trash.get(op.itemId);
+      if (old && state.lists.has(old.listId)) state.items.set(old.id, { ...old, updatedAt: now });
+      return;
+    }
+    default:
+  }
 }
 
 // Reporte un article créé ou modifié (ou le retire s'il est supprimé)

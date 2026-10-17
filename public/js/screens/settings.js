@@ -10,8 +10,8 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace }
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, loggedOut } from '../app.js';
-import { toast } from '../ui.js';
+import { app, logOut, resetLocalCopy, pendingCount } from '../app.js';
+import { toast, confirmDialog } from '../ui.js';
 
 const MIN_PASSWORD = 10;
 
@@ -64,14 +64,7 @@ export function renderSettings() {
   const logout = h('button', {
     class: 'btn btn--secondary btn--block',
     type: 'button',
-    onClick: async () => {
-      try {
-        await post('/api/logout');
-      } catch {
-        // session déjà terminée : sans importance
-      }
-      loggedOut();
-    },
+    onClick: () => logOut(),
   }, icon('logout', 'icon--sm'), 'Se déconnecter');
 
   return h('div', { class: 'screen' },
@@ -87,12 +80,36 @@ export function renderSettings() {
         twoFactorRow),
       h('h2', { class: 'section-title' }, 'Apparence'),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
+      // Données gardées sur ce téléphone : remise à zéro si elles semblent
+      // abîmées (tout est rechargé depuis le serveur)
+      h('h2', { class: 'section-title' }, 'Ce téléphone'),
+      h('div', { class: 'group' },
+        row({ iconName: 'sync', title: 'Réinitialiser les données de ce téléphone', sub: 'Recharger les listes depuis le serveur', onClick: resetPhone })),
       isAdmin ? [
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
           row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, magasins, rayons', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null),
     h('div', { class: 'footer' }, logout));
+}
+
+// Remise à zéro de la copie locale (avec confirmation). Les modifications
+// pas encore envoyées sont gardées : elles repartiront ensuite.
+async function resetPhone() {
+  if (!navigator.onLine) {
+    toast('Indisponible hors ligne : il faut du réseau pour tout recharger.');
+    return;
+  }
+  const waiting = pendingCount();
+  const ok = await confirmDialog({
+    title: 'Réinitialiser les données de ce téléphone ?',
+    text: `Les listes gardées sur ce téléphone seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
+    confirmLabel: 'Réinitialiser',
+    danger: false,
+  });
+  if (!ok) return;
+  await resetLocalCopy();
+  toast('Données rechargées depuis le serveur', { low: true });
 }
 
 // --- Mot de passe (reglages-5) ---

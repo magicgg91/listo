@@ -162,7 +162,15 @@ export function createApp({
   // Fichiers de l'interface. Ils sont revalidés à chaque chargement (le
   // navigateur demande « ai-je la dernière version ? »), pour qu'une mise à
   // jour de Listo soit vue tout de suite.
-  app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
+  // Le service worker (sw.js) n'est jamais gardé en cache : le navigateur
+  // vérifie à chaque chargement s'il existe une nouvelle version.
+  app.use(express.static(PUBLIC_DIR, {
+    cacheControl: true,
+    maxAge: 0,
+    setHeaders: (res, filePath) => {
+      if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
+    },
+  }));
 
   // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois
   // périmés, listes et articles supprimés depuis plus de 30 jours (avec leurs

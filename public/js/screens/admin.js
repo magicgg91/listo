@@ -44,7 +44,28 @@ export function renderAdmin(tabKey, onLeave) {
   onLeave(() => {
     alive = false;
   });
-  const reload = () => (tab.key === 'comptes' ? loadUsers(panel, footer, () => alive) : loadReferences(tab, panel, () => alive));
+  const load = () => (tab.key === 'comptes' ? loadUsers(panel, footer, () => alive) : loadReferences(tab, panel, () => alive));
+  // Hors ligne : l'administration demande le serveur, elle est indisponible
+  // (elle se charge d'elle-même au retour du réseau)
+  const reload = () => {
+    if (navigator.onLine) {
+      load();
+      return;
+    }
+    footer.hidden = true;
+    replace(panel, h('div', { class: 'empty' },
+      h('div', { class: 'empty__icon' }, icon('cloud-off', 'icon--lg')),
+      h('h2', { class: 'empty__title' }, 'Indisponible hors ligne'),
+      h('p', { class: 'empty__text' }, "L'administration a besoin du réseau. Elle s'affichera dès son retour.")));
+  };
+  const onOnline = () => {
+    if (alive) {
+      footer.hidden = tab.key !== 'comptes';
+      load();
+    }
+  };
+  window.addEventListener('online', onOnline);
+  onLeave(() => window.removeEventListener('online', onOnline));
   reload();
 
   return h('div', { class: 'screen' },

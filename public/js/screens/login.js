@@ -7,7 +7,7 @@
 
 import { h, icon, iconButton, field, passwordInput, errorNote, replace } from '../dom.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
-import { app, loggedIn, loggedOut } from '../app.js';
+import { app, loggedIn, logOut } from '../app.js';
 import { defaultDisplayName } from '../format.js';
 
 const MIN_PASSWORD = 10;
@@ -210,14 +210,7 @@ export function renderForcedChange() {
   const logout = h('button', {
     class: 'btn btn--ghost',
     type: 'button',
-    onClick: async () => {
-      try {
-        await post('/api/logout');
-      } catch {
-        // déjà déconnecté : sans importance
-      }
-      loggedOut();
-    },
+    onClick: () => logOut(),
   }, 'Se déconnecter');
 
   return screen({

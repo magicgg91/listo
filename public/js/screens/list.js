@@ -16,16 +16,14 @@
 //   la couleur seule) ; il descend en bas de son rayon.
 
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
-import { op, uuid, errorMessage, putPhoto, deletePhoto, photoUrl } from '../api.js';
+import { errorMessage } from '../api.js';
+import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import {
-  computeListView, computeSuggestions, isKnownItem, putItem, removeItem, rememberItem, activeOnly,
-  storeChoices, usualStoreFor, historyStoreFor, moveItemStore,
-} from '../store.js';
-import { app, onDataChange, dataChanged, refreshData } from '../app.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor } from '../store.js';
+import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
 
 export function renderList(listId, onLeave) {
@@ -96,15 +94,15 @@ export function renderList(listId, onLeave) {
         item.note ? h('span', { class: 'item__note' }, item.note) : null),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
     // Vignette de la photo : un appui l'agrandit
-    item.photoAt ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
-      h('img', { class: 'photo', src: photoUrl(item), alt: '', loading: 'lazy', decoding: 'async' })) : null);
+    actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
+      h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null);
 
   // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
   function showPhoto(item) {
     const group = view?.multi ? storeName(item.storeId) : view?.list.category.isShopping ? app.data.aisles.find((a) => a.id === item.aisleId)?.name : null;
     openLightbox({
       title: item.name,
-      src: photoUrl(item),
+      src: actions.photoSrc(item),
       alt: `Photo de l'article ${item.name}`,
       caption: [view?.list.name, group].filter(Boolean).join(' · '),
     });
@@ -112,19 +110,10 @@ export function renderList(listId, onLeave) {
 
   // --- Actions ---
 
-  // Cocher / décocher : affiché tout de suite, annulé si le serveur refuse
-  async function toggle(item) {
-    const wanted = !item.checked;
-    putItem(app.data, { ...item, checked: wanted });
-    dataChanged();
-    try {
-      const result = await op({ type: 'item.check', itemId: item.id, checked: wanted });
-      putItem(app.data, result.item);
-    } catch (error) {
-      putItem(app.data, item);
-      toast(errorMessage(error));
-    }
-    dataChanged();
+  // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
+  // (file d'attente : avec ou sans réseau)
+  function toggle(item) {
+    actions.checkItem(item, !item.checked);
   }
 
   async function clearChecked() {
@@ -136,14 +125,8 @@ export function renderList(listId, onLeave) {
       confirmLabel: 'Vider',
     });
     if (!ok) return;
-    try {
-      const result = await op({ type: 'list.clearChecked', listId });
-      for (const item of [...app.data.items.values()]) if (item.listId === listId && item.checked) removeItem(app.data, item.id);
-      dataChanged();
-      toast(result.removed === 1 ? '1 article retiré' : `${result.removed} articles retirés`);
-    } catch (error) {
-      toast(errorMessage(error));
-    }
+    const removed = await actions.clearChecked(listId);
+    toast(removed === 1 ? '1 article retiré' : `${removed} articles retirés`);
   }
 
   function openListMenu() {
@@ -235,8 +218,9 @@ export function renderList(listId, onLeave) {
         input.value = '';
         await createItem(name, { storeId: chosen });
       } else {
+        // Magasin habituel : le serveur le choisira (le téléphone l'affiche déjà)
         input.value = '';
-        await createItem(name, { storeId });
+        await createItem(name);
       }
     } else if (view.list.category.isShopping && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
@@ -251,17 +235,9 @@ export function renderList(listId, onLeave) {
     input.focus();
   }
 
+  // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)
   async function createItem(name, fields = {}) {
-    try {
-      const result = await op({ type: 'item.create', listId, itemId: uuid(), name, ...fields });
-      putItem(app.data, result.item);
-      if (view) rememberItem(app.data, name, { aisleId: result.item.aisleId, storeId: historyStoreFor(view.list, result.item) });
-      dataChanged();
-    } catch (error) {
-      // Rien n'est perdu : le texte revient dans le champ
-      if (!input.value) input.value = name;
-      toast(errorMessage(error));
-    }
+    await actions.addItem({ listId, name, ...fields });
   }
 
   // --- Feuille « Article » : nom, quantité, note, rayon (ou magasin) ---
@@ -315,6 +291,7 @@ export function renderList(listId, onLeave) {
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
     let current = item; // dernier état connu de l'article (photoAt)
     let busy = false;
+    let gone = false; // article supprimé ailleurs pendant que la feuille est ouverte
     const photoArea = h('div');
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Sélecteurs du téléphone (cachés) : appareil photo, ou galerie
@@ -324,14 +301,13 @@ export function renderList(listId, onLeave) {
     gallery.addEventListener('change', () => sendPhoto(gallery));
 
     const drawPhoto = () => {
-      const offline = !navigator.onLine;
       const button = (classes, iconName, text, label, onClick) => h('button', {
-        class: `btn ${classes}`, type: 'button', 'aria-label': label, disabled: busy || offline, onClick,
+        class: `btn ${classes}`, type: 'button', 'aria-label': label, disabled: busy || gone, onClick,
       }, icon(iconName, 'icon--sm'), text);
-      if (current.photoAt) {
+      if (actions.hasPhoto(current)) {
         replace(photoArea, h('div', { class: 'photo-block' },
           h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${current.name}`, onClick: () => showPhoto(current) },
-            h('img', { class: 'photo', src: photoUrl(current), alt: '' })),
+            h('img', { class: 'photo', src: actions.photoSrc(current), alt: '' })),
           h('div', { class: 'photo-block__actions' },
             button('btn--secondary btn--sm', 'camera', 'Remplacer', 'Remplacer la photo', () => gallery.click()),
             button('btn--danger-outline btn--sm', 'trash', 'Retirer', 'Retirer la photo', removePhoto))));
@@ -340,11 +316,12 @@ export function renderList(listId, onLeave) {
           button('btn--secondary', 'camera', 'Appareil photo', 'Appareil photo : prendre une photo', () => camera.click()),
           button('btn--secondary', 'image', 'Galerie', 'Galerie : choisir une photo', () => gallery.click())));
       }
-      photoNote.textContent = busy ? 'Envoi de la photo…' : offline ? 'Photo indisponible hors ligne.' : '';
+      photoNote.textContent = busy ? 'Préparation de la photo…' : current.localPhoto ? 'Photo en attente d\'envoi : elle partira dès que possible.' : '';
       photoNote.hidden = !photoNote.textContent;
     };
 
-    // Photo prise ou choisie : réduite ici, puis envoyée
+    // Photo prise ou choisie : réduite ici, puis mise en file d'attente (elle
+    // part tout de suite avec du réseau, sinon dès son retour)
     async function sendPhoto(input) {
       const file = input.files?.[0];
       input.value = ''; // la même photo pourra être choisie de nouveau
@@ -353,11 +330,8 @@ export function renderList(listId, onLeave) {
       busy = true;
       drawPhoto();
       try {
-        const jpeg = await shrinkPhoto(file);
-        const result = await putPhoto(current.id, jpeg);
-        current = result.item;
-        putItem(app.data, result.item);
-        dataChanged();
+        await actions.setPhoto(current, await shrinkPhoto(file));
+        current = app.data.items.get(item.id) ?? current;
       } catch (err) {
         error.show(err instanceof PhotoError ? err.message : errorMessage(err));
       }
@@ -368,49 +342,44 @@ export function renderList(listId, onLeave) {
     async function removePhoto() {
       const ok = await confirmDialog({ title: 'Retirer la photo ?', text: 'La photo sera supprimée pour toutes les personnes de la liste.', confirmLabel: 'Retirer' });
       if (!ok) return;
-      busy = true;
-      drawPhoto();
-      try {
-        const result = await deletePhoto(current.id);
-        current = result.item;
-        putItem(app.data, result.item);
-        dataChanged();
-      } catch (err) {
-        error.show(errorMessage(err));
-      }
-      busy = false;
+      await actions.removePhoto(current);
+      current = app.data.items.get(item.id) ?? current;
       drawPhoto();
     }
     drawPhoto();
-    window.addEventListener('online', drawPhoto);
-    window.addEventListener('offline', drawPhoto);
 
     // Quelqu'un d'autre modifie ou supprime cet article pendant que la
     // feuille est ouverte (temps réel) : ce qui a été tapé est gardé, un
     // bandeau prévient. À l'enregistrement, seuls les champs changés ici sont
     // envoyés. Article supprimé : on ne peut plus que fermer la feuille.
+    // (Comparaison sur le contenu de l'article : nom, quantité, note, rayon,
+    // magasin. Ma propre photo, ou la version renvoyée par le serveur après
+    // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null]);
+    let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
-    let gone = false;
     const stopWatching = onDataChange(() => {
       if (mine) return;
       const latest = app.data.items.get(item.id);
       if (!latest) {
+        if (gone) return;
         gone = true;
         conflictText.textContent = 'Cet article a été supprimé par une autre personne.';
-      } else if (gone || latest.updatedAt !== current.updatedAt) {
-        gone = false;
-        conflictText.textContent = "Cet article vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.";
-        current = latest;
-        drawPhoto();
       } else {
-        return;
+        const changedElsewhere = gone || contentOf(latest) !== seen;
+        gone = false;
+        current = latest;
+        seen = contentOf(latest);
+        drawPhoto();
+        if (!changedElsewhere) return;
+        conflictText.textContent = "Cet article vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.";
       }
       conflict.hidden = false;
       save.disabled = gone;
       remove.disabled = gone;
-      for (const button of photoArea.querySelectorAll('button')) button.disabled = gone || button.disabled;
+      drawPhoto();
     });
 
     const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
@@ -431,11 +400,7 @@ export function renderList(listId, onLeave) {
       title: "Modifier l'article",
       content: form,
       scroll: true,
-      onClose: () => {
-        window.removeEventListener('online', drawPhoto);
-        window.removeEventListener('offline', drawPhoto);
-        stopWatching();
-      },
+      onClose: () => stopWatching(),
     });
 
     form.addEventListener('submit', async (event) => {
@@ -453,56 +418,19 @@ export function renderList(listId, onLeave) {
         sheet.close();
         return;
       }
-      save.disabled = true;
-      try {
-        const result = await op({ type: 'item.update', itemId: item.id, ...changes });
-        mine = true; // ma propre modification : pas d'avertissement
-        putItem(app.data, result.item);
-        // Historique local, même règle que le serveur
-        if (multi) {
-          if (changes.name) rememberItem(app.data, result.item.name, { storeId: result.item.storeId, count: 0 });
-          else if ('storeId' in changes) moveItemStore(app.data, item.name, item.storeId ?? null, result.item.storeId);
-        } else if (changes.name || 'aisleId' in changes) {
-          rememberItem(app.data, result.item.name, {
-            aisleId: isShopping ? result.item.aisleId : null,
-            storeId: historyStoreFor(view.list, result.item),
-            count: 0,
-          });
-        }
-        dataChanged();
-        sheet.close();
-      } catch (err) {
-        // La feuille reste ouverte avec ce qui a été saisi
-        error.show(errorMessage(err));
-        save.disabled = false;
-      }
+      // Ma propre modification (pas d'avertissement) : copie locale tout de
+      // suite, puis envoi (file d'attente). Historique mis à jour par actions.js.
+      mine = true;
+      await actions.updateItem(item, changes);
+      sheet.close();
     });
 
     remove.addEventListener('click', async () => {
-      remove.disabled = true;
-      try {
-        await op({ type: 'item.delete', itemId: item.id });
-        mine = true;
-        removeItem(app.data, item.id);
-        dataChanged();
-        sheet.close();
-        // « Annuler » remet le même article, avec sa photo
-        toast(`« ${item.name} » supprimé`, {
-          action: 'Annuler',
-          onAction: async () => {
-            try {
-              const result = await op({ type: 'item.restore', itemId: item.id });
-              putItem(app.data, result.item);
-              dataChanged();
-            } catch (err) {
-              toast(errorMessage(err));
-            }
-          },
-        });
-      } catch (err) {
-        error.show(errorMessage(err));
-        remove.disabled = false;
-      }
+      mine = true;
+      await actions.deleteItem(item);
+      sheet.close();
+      // « Annuler » remet le même article, avec sa photo
+      toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
     });
   }
 

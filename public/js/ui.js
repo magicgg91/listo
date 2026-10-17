@@ -82,7 +82,7 @@ export function openLightbox({ title, src, alt, caption }) {
 }
 
 // Boîte de confirmation. Renvoie une promesse : true si l'action est confirmée.
-export function confirmDialog({ title, text, confirmLabel, danger = true }) {
+export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annuler', danger = true }) {
   return new Promise((resolve) => {
     let answer = false;
     const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
@@ -90,7 +90,7 @@ export function confirmDialog({ title, text, confirmLabel, danger = true }) {
       h('h2', { class: 'dialog__title', id: titleId }, title),
       h('p', { class: 'dialog__text' }, text),
       h('div', { class: 'dialog__actions' },
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn }, 'Annuler'),
+        h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn }, cancelLabel),
         h('button', {
           class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
           type: 'button',

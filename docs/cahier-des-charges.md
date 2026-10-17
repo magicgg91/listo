@@ -55,11 +55,11 @@ Listo gère plusieurs listes nommées, chacune partagée avec les personnes de s
 
 **Articles**
 
-- Champs : nom (obligatoire), quantité (texte court libre, ex. « 2 » ou « 500 g »), note (facultative), photo (facultative, une seule), rayon (listes de courses), magasin (listes dont le magasin est « multi »).
+- Champs : nom (obligatoire), quantité (texte court libre, ex. « 2 » ou « 500 g »), note (facultative), photo (facultative, une seule), rayon (listes de courses à magasin simple), magasin (listes dont le magasin est « multi », à la place du rayon).
 - Ajout rapide : un champ de saisie toujours visible. La touche Entrée valide, le champ reste actif pour enchaîner plusieurs articles.
 - Autocomplétion dès deux lettres, à partir de l'historique des articles déjà ajoutés, les plus fréquents d'abord. L'historique est commun à tous les comptes.
 - Rayon automatique : un article déjà connu reprend son rayon habituel, celui du magasin de la liste (un même article peut avoir un rayon différent d'un magasin à l'autre). Un article nouveau demande son rayon une fois, puis l'application le mémorise. Le rayon reste modifiable.
-- Tri : par rayon (ordre alphabétique, « Sans rayon » en dernier), puis par ordre alphabétique dans chaque rayon. Un rayon vide n'est pas affiché. Dans une liste à magasin « multi », le tri se fait d'abord par magasin (voir plus bas).
+- Tri : par rayon (ordre alphabétique, « Sans rayon » en dernier), puis par ordre alphabétique dans chaque rayon. Un rayon vide n'est pas affiché. Dans une liste à magasin « multi », il n'y a pas de rayon : les articles sont groupés par magasin (voir plus bas).
 - Cocher d'un appui : l'article reste affiché, barré, en bas de son rayon. Un appui de plus le décoche.
 - Bouton « Vider les barrés » : supprime tous les articles barrés de la liste, après confirmation.
 - Modifier un article (nom, quantité, note, photo, rayon, magasin) et le supprimer : depuis un menu sur l'article.
@@ -70,9 +70,8 @@ Listo gère plusieurs listes nommées, chacune partagée avec les personnes de s
 Pour les courses faites en ville dans plusieurs boutiques, l'Admin crée un magasin de type « multi » (par exemple « Courses en ville ») et choisit les magasins qu'il regroupe (par exemple la fromagerie, la boucherie, Leclerc).
 
 - Dans une liste dont le magasin est « multi », chaque article a son propre magasin, choisi parmi ceux regroupés. Un article sans magasin est rangé dans « Sans magasin », en dernier.
-- Tri et affichage : par magasin (ordre alphabétique, « Sans magasin » en dernier), puis par rayon, puis par ordre alphabétique. Chaque magasin a son en-tête, avec ses rayons dessous.
-- Magasin automatique : un article déjà connu reprend le magasin où il est habituellement acheté, parmi ceux de la liste (les œufs reviennent à la fromagerie). Un article nouveau demande son magasin une fois, puis l'application le mémorise. Il reste modifiable.
-- Rayon dans le magasin : la mémoire du rayon est propre à chaque magasin (les œufs peuvent être au rayon « Crèmerie » chez Leclerc et dans un autre rayon à la fromagerie). Les rayons eux-mêmes restent communs à tous les magasins.
+- Pas de rayon dans une liste « multi » : le magasin joue ce rôle (boucherie, fromagerie, primeur, boulangerie…). Tri et affichage : par magasin (ordre alphabétique, « Sans magasin » en dernier), puis par ordre alphabétique. Chaque magasin a son en-tête.
+- Magasin automatique : un article déjà connu reprend le magasin où il est habituellement acheté, parmi ceux de la liste (les œufs reviennent à la fromagerie). Le magasin est celui de l'article, pas celui de sa famille de produits : des pains à burger peuvent être achetés chez le boucher. Un article nouveau demande son magasin une fois, puis l'application le mémorise. Il reste modifiable.
 - Un magasin « multi » ne peut pas en regrouper un autre « multi ». Désactiver un magasin regroupé le retire des choix, sans changer les articles qui l'utilisent déjà. Un magasin « multi » n'est proposé que pour les listes de courses.
 - Une liste à magasin simple ne change pas : pas de choix de magasin par article.
 
@@ -114,8 +113,8 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 | --- | --- | --- |
 | Connexion | Identifiant, mot de passe, puis code à 6 chiffres si le 2FA est activé. Session longue pour ne pas se reconnecter en magasin. Au tout premier lancement, l'écran propose de créer le compte Admin. | Se connecter |
 | Mes listes (accueil) | Une carte par liste : nom, catégorie, magasin, nombre d'articles restants, personnes partageant. Tri par dernière activité. | Ouvrir une liste, créer une liste |
-| Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin puis par rayon si le magasin est « multi »). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. | Ajouter, cocher, vider les barrés, actualiser, partager par lien |
-| Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon, magasin (si le magasin de la liste est « multi »). | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
+| Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin si le magasin de la liste est « multi », sans rayon). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. | Ajouter, cocher, vider les barrés, actualiser, partager par lien |
+| Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon (magasin simple) ou magasin (si le magasin de la liste est « multi »). | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
 | Créer / modifier une liste | Nom, catégorie, magasin (simple ou « multi », si courses), partage avec les autres utilisateurs. | Enregistrer, supprimer la liste |
 | Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. | Changer le mot de passe, activer le 2FA, choisir le thème |
 | Administration | Quatre onglets : Comptes, Catégories, Magasins, Rayons. Chacun liste ses éléments avec ajout, renommage, désactivation. Un magasin est « simple » ou « multi » (avec les magasins qu'il regroupe). | Gérer les données de référence |
@@ -148,8 +147,8 @@ Treize tables SQLite. Les listes et les articles ont un identifiant UUID créé 
 | aisles | id, name, active | Rayons communs à tous les magasins. |
 | lists | id (UUID), name, category_id, store_id (facultatif), owner_id, created_at, updated_at, deleted_at | Suppression logique via deleted_at. |
 | list_members | list_id, user_id | Clé composée. Le propriétaire y figure aussi. |
-| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), checked, created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi ». photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. |
-| item_history | id, name_normalized, store_id (facultatif), display_name, aisle_id, use_count, last_used_at ; unique par article et par magasin | Alimente l'autocomplétion, le rayon automatique et le magasin automatique. Une ligne par article et par magasin : rayon habituel dans ce magasin. Une ligne sans magasin sert de valeur générale. |
+| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), checked, created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi » (qui n'ont pas de rayon : aisle_id reste vide). photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. |
+| item_history | id, name_normalized, store_id (facultatif), display_name, aisle_id, use_count, last_used_at ; unique par article et par magasin | Alimente l'autocomplétion, le rayon automatique et le magasin automatique. Une ligne par article et par magasin : rayon habituel dans ce magasin (vide pour les listes « multi »). Une ligne sans magasin sert de valeur générale. |
 | applied_ops | id (UUID de l'opération), user_id, result, applied_at | Opérations déjà appliquées : un renvoi après une coupure retrouve son résultat au lieu d'être appliqué deux fois. Nettoyée après 30 jours. |
 | public_shares | id, list_id, token_hash, token_sealed (chiffré), password_hash (facultatif), expires_at (vide = illimité), created_by, created_at, revoked_at | Un seul lien actif par liste. Le jeton n'est jamais stocké en clair : son empreinte retrouve le lien, sa version chiffrée le réaffiche au propriétaire. Le mot de passe est haché (scrypt). |
 
@@ -261,7 +260,6 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
 - Expiration : la date limite (expires_at) est fixée par le serveur à la création, avec son horloge. Elle est contrôlée à chaque requête (page, données, photos, saisie du mot de passe, cookie de consultation). Un lien expiré, arrêté, ou dont la liste est supprimée répond exactement comme un lien inconnu. Le nettoyage périodique supprime ces liens après 30 jours. Des tests avancent l'horloge pour le vérifier.
 - Lecture seule, par construction : le visiteur n'atteint que des routes de lecture. Les réponses sont construites champ par champ (liste blanche : nom de la liste, catégorie, magasin, articles avec quantité, note, état coché, photo), jamais à partir des objets internes : aucun identifiant de compte, nom d'utilisateur ni autre liste ne peut fuiter. Aucune route de modification n'accepte un cookie de consultation.
 - Navigation : X-Robots-Tag: noindex, Cache-Control: no-store et Referrer-Policy: no-referrer (le jeton ne part pas vers d'autres sites). Le service worker ne met jamais en cache les pages ni les données du lien public.
-- Coupe-circuit : la variable LISTO_PUBLIC_SHARING=off désactive tous les liens publics du serveur (ils répondent comme des liens inconnus).
 
 ## Architecture technique
 
@@ -344,7 +342,6 @@ services:
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
-      - LISTO_PUBLIC_SHARING=on        # off coupe tous les liens publics
     ports:
       - "IP_LOCALE:13300:13300"        # adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:
@@ -422,7 +419,7 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 2. Les écrans « Mes listes » et « Liste » en version ordinateur (au-delà de 1024 px), sur deux colonnes.
 3. L'icône de l'application (carrée, 512 px, version adaptée aux icônes rondes) : un logo simple évoquant une coche ou une liste, sur fond accent.
 4. Les variables de thème et les composants sous une forme que Claude Code peut reprendre directement en CSS.
-5. Mise à jour du 17 octobre 2026, dans le même style : vignette de photo sur une ligne d'article ; feuille Article avec photo (prendre, choisir, retirer, agrandir) ; en-têtes de magasin d'une liste « multi » au-dessus des rayons ; onglet Magasins de l'administration avec le choix simple / multi ; feuille « Partager par lien » (état, mot de passe généré affiché une fois, durée, copier, arrêter) ; page publique en lecture seule ; saisie du mot de passe du lien ; page « lien expiré ou inexistant ».
+5. Mise à jour du 17 octobre 2026, dans le même style : vignette de photo sur une ligne d'article ; feuille Article avec photo (prendre, choisir, retirer, agrandir) ; liste « multi » groupée par magasin, sans rayon ; onglet Magasins de l'administration avec le choix simple / multi ; feuille « Partager par lien » (état, mot de passe généré affiché une fois, durée, copier, arrêter) ; page publique en lecture seule ; saisie du mot de passe du lien ; page « lien expiré ou inexistant ».
 
 **Contraintes**
 
@@ -441,7 +438,7 @@ Onze étapes, chacune livrable et testable seule. Les étapes 1 à 5 sont livré
 | 3 | Administration | Comptes (dont désactivation du 2FA d'un utilisateur), catégories, magasins, rayons, données de départ | Un élément déjà utilisé peut être désactivé mais pas supprimé |
 | 4 | Listes et articles | Création, partage, ajout, modification, cochage, vider les barrés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon |
 | 5 | Interface mobile | Intégration des maquettes, thèmes clair et sombre, version ordinateur, PWA installable | Installable sur l'écran d'accueil. Zones tactiles d'au moins 44 px. Thème suivant le téléphone |
-| 6 | Magasin « multi » | Type de magasin « multi » et magasins regroupés (administration), magasin par article, tri par magasin puis par rayon, magasin et rayon habituels par article et par magasin dans l'historique | Dans une liste à magasin « multi », « œufs » ajouté deux fois retrouve son magasin et son rayon. Une liste à magasin simple se comporte comme avant |
+| 6 | Magasin « multi » | Type de magasin « multi » et magasins regroupés (administration), magasin par article, tri par magasin, magasin habituel par article dans l'historique | Dans une liste à magasin « multi », « œufs » ajouté deux fois retrouve son magasin. Une liste à magasin simple se comporte comme avant |
 | 7 | Photos des articles | Route d'envoi JPEG, contrôle du fichier et retrait des métadonnées, stockage dans data/photos, prise ou choix de la photo, vignette, agrandissement, nettoyage | Une photo ajoutée sur un téléphone apparaît sur l'autre après actualisation. Un fichier qui n'est pas un JPEG valide est refusé. Un non-membre ne peut pas la lire |
 | 8 | Temps réel | Flux SSE, rafraîchissement régulier et manuel, indicateur de synchro | Un article coché sur un téléphone apparaît sur l'autre en moins de 3 secondes |
 | 9 | Hors ligne | Service worker, IndexedDB, file d'attente (photos comprises), gestion des conflits | En mode avion : 3 ajouts, 2 cochages et 1 photo. Au retour du réseau, tout apparaît chez l'autre utilisateur, sans doublon |
@@ -488,14 +485,13 @@ Lien public
 - [ ] Durée de 1 heure à 365 jours, ou illimitée ; 24 heures proposées par défaut ; changer la durée fait repartir le délai de maintenant.
 - [ ] Le visiteur voit le nom de la liste, les articles, quantités, notes, photos et l'état coché, mais ni les noms des personnes, ni l'historique, ni les autres listes.
 - [ ] La page publique se rafraîchit à l'ouverture et à la demande, sans temps réel.
-- [ ] Une variable du serveur (LISTO_PUBLIC_SHARING) permet de couper tous les liens publics.
 
 Magasin « multi »
 
 - [ ] Un magasin « multi » est créé par l'Admin et regroupe d'autres magasins de la liste commune (par exemple Fromagerie, Boucherie, Leclerc) ; il n'en regroupe pas un autre « multi ».
-- [ ] Dans une liste à magasin « multi », chaque article a son magasin ; l'affichage groupe par magasin, puis par rayon ; « Sans magasin » en dernier.
-- [ ] L'application mémorise, pour chaque article, son magasin habituel et son rayon habituel dans chaque magasin : dans une liste « multi », un article peut avoir un rayon différent de son rayon habituel quand il est acheté dans un magasin précis (les œufs : rayon « Crèmerie » à la fromagerie, un autre rayon chez Leclerc). Le rayon proposé suit le magasin choisi.
-- [ ] Les rayons restent communs à tous les magasins (pas de rayons propres à un magasin).
+- [ ] Dans une liste à magasin « multi », chaque article a son magasin, sans rayon ; l'affichage groupe par magasin ; « Sans magasin » en dernier. Le magasin est celui de l'article (pains à burger chez le boucher possible).
+- [ ] L'application mémorise, pour chaque article, son magasin habituel.
+- [ ] Dans une liste « multi », pas de rayon : seul le magasin compte. Les rayons restent communs pour les listes à magasin simple.
 
 Plan
 

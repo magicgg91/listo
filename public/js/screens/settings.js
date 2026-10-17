@@ -15,6 +15,19 @@ import { toast, confirmDialog } from '../ui.js';
 
 const MIN_PASSWORD = 10;
 
+// Adresses du projet sur GitHub (bloc « À propos ») : définies ici seulement
+export const GITHUB = {
+  owner: 'magicgg91',
+  ownerUrl: 'https://github.com/magicgg91',
+  repoUrl: 'https://github.com/magicgg91/listo',
+};
+const commitUrl = (commit) => `${GITHUB.repoUrl}/commit/${commit}`;
+
+// Dernière version connue, gardée sur ce téléphone pour l'afficher hors
+// ligne (ce n'est pas un secret : le commit du code installé)
+const VERSION_KEY = 'listo-version';
+const isCommit = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+
 // Barre de titre avec retour
 function topbar(title, onBack) {
   return h('header', { class: 'topbar' },
@@ -22,8 +35,16 @@ function topbar(title, onBack) {
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
-// Ligne de réglage (icône, titre, sous-titre, élément de fin)
-function row({ iconName, title, sub, end, onClick }) {
+// Ligne de réglage (icône, titre, sous-titre, élément de fin). Avec href :
+// lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
+// d'information à ce site (noopener, noreferrer).
+function row({ iconName, title, sub, end, onClick, href }) {
+  if (href) {
+    return h('a', { class: 'row', href, target: '_blank', rel: 'noopener noreferrer' },
+      h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
+      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), sub ? h('span', { class: 'row__sub' }, sub) : null),
+      icon('chev-r'));
+  }
   const tag = onClick ? 'button' : 'div';
   return h(tag, { class: 'row', type: onClick ? 'button' : null, onClick },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
@@ -89,8 +110,49 @@ export function renderSettings() {
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
           row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, magasins, rayons', onClick: () => navigate('admin', { tab: 'comptes' }) })),
-      ] : null),
+      ] : null,
+      h('h2', { class: 'section-title' }, 'À propos'),
+      aboutGroup()),
     h('div', { class: 'footer' }, logout));
+}
+
+// Bloc « À propos » : version installée, développeur, projet. La version
+// arrive du serveur (GET /api/about) sans bloquer l'écran ; hors ligne, la
+// dernière version connue sur ce téléphone, sinon « Indisponible hors ligne ».
+function aboutGroup() {
+  // commit : 40 caractères hexadécimaux, ou 'non précisé' (développement),
+  // ou null (inconnu : hors ligne, ou pas encore reçu)
+  const versionRow = (commit, waiting) => {
+    if (isCommit(commit)) return row({ iconName: 'logo', title: `Version : ${commit.slice(0, 7)}`, sub: 'Voir cette version sur GitHub', href: commitUrl(commit) });
+    if (commit === 'non précisé') return row({ iconName: 'logo', title: 'Version : développement' });
+    return row({ iconName: 'logo', title: waiting ? 'Version : …' : 'Version : indisponible hors ligne' });
+  };
+  let known = null;
+  try {
+    known = localStorage.getItem(VERSION_KEY);
+  } catch {
+    // stockage indisponible (navigation privée…) : sans importance
+  }
+  if (!isCommit(known)) known = null;
+  let current = versionRow(known, navigator.onLine);
+  const show = (commit, waiting = false) => {
+    const next = versionRow(commit, waiting);
+    current.replaceWith(next);
+    current = next;
+  };
+  get('/api/about').then(({ commit }) => {
+    show(commit);
+    try {
+      if (isCommit(commit)) localStorage.setItem(VERSION_KEY, commit);
+    } catch {
+      // sans importance
+    }
+  }, () => show(known)); // pas de réseau : dernière version connue, sinon « indisponible »
+
+  return h('div', { class: 'group' },
+    current,
+    row({ iconName: 'pencil', title: 'Développeur', sub: GITHUB.owner, href: GITHUB.ownerUrl }),
+    row({ iconName: 'link', title: 'Projet', sub: 'Listo sur GitHub', href: GITHUB.repoUrl }));
 }
 
 // Remise à zéro de la copie locale (avec confirmation). Les modifications

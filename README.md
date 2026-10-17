@@ -51,6 +51,7 @@ Les dossiers `data/` et `secrets/` se créent tout seuls au premier démarrage, 
 | `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dans le dossier `data/`) |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dans le dossier `secrets/`) |
 | `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours |
+| `LISTO_COMMIT` | *(posée par l'image, ne pas la remplir)* | Commit Git de la version installée, affiché dans Réglages › À propos |
 
 ## 3. Régler Nginx Proxy Manager
 
@@ -397,6 +398,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 | `POST /api/me/password` | Changer son mot de passe : `currentPassword`, `newPassword` |
 | `POST /api/me/2fa/enable` | Commencer l'activation de la 2FA : renvoie le secret (à recopier) ; le QR code est l'image `qr.png` ci-dessous |
 | `GET /api/me/2fa/qr.png` | Image PNG du QR code de l'activation en cours (utilisée par l'interface, pour garder une CSP stricte sans image `data:`) |
+| `GET /api/about` | Version installée, pour Réglages › À propos : `{ "commit": "<40 caractères>" }`, ou `"non précisé"` (image construite à la main, développement). Comptes connectés seulement, jamais public. Le commit vient de la construction de l'image (`build-arg GIT_COMMIT` → variable `LISTO_COMMIT`) |
 | `POST /api/me/2fa/verify` | Confirmer avec un premier code : `code`. Renvoie les 10 codes de secours |
 | `POST /api/me/2fa/disable` | Désactiver sa 2FA : `password`, `code` |
 

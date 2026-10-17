@@ -36,6 +36,13 @@ COPY public ./public
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 
+# Commit Git de cette version, donné par le workflow de construction
+# (build-arg GIT_COMMIT) et affiché dans Réglages › À propos. Placé après
+# l'installation des dépendances, pour ne pas invalider le cache de cette
+# étape. Vide pour une image construite à la main : « développement ».
+ARG GIT_COMMIT=""
+ENV LISTO_COMMIT=$GIT_COMMIT
+
 # Valeurs par défaut (docker-compose.yml fixe celles de la production :
 # PORT=13300, LISTO_PUBLIC_URL…). Base et clé dans deux volumes séparés.
 ENV PORT=3000 \

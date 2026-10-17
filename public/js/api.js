@@ -33,15 +33,20 @@ export function onSessionProblem({ unauthorized, mustChangePassword }) {
 // l'en-tête Origin (protection CSRF côté serveur).
 // auth = false : une réponse 401 est une simple erreur (ex. mauvais mot de
 // passe), pas une session expirée.
-export async function request(method, url, body, { auth = true } = {}) {
+// raw : corps envoyé tel quel (une photo JPEG), au lieu de JSON.
+export async function request(method, url, body, { auth = true, raw = null } = {}) {
   let response;
+  let headers = {};
+  let payload;
+  if (raw) {
+    headers = { 'Content-Type': 'image/jpeg' };
+    payload = raw;
+  } else if (body !== undefined) {
+    headers = { 'Content-Type': 'application/json' };
+    payload = JSON.stringify(body);
+  }
   try {
-    response = await fetch(url, {
-      method,
-      credentials: 'same-origin',
-      headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    response = await fetch(url, { method, credentials: 'same-origin', headers, body: payload });
   } catch {
     throw new NetworkError();
   }
@@ -63,6 +68,7 @@ export async function request(method, url, body, { auth = true } = {}) {
 
 // Message par défaut quand le serveur n'en donne pas (sans détail technique)
 function messageFor(status) {
+  if (status === 413) return 'Photo trop lourde.';
   if (status === 429) return 'Trop de tentatives. Réessayez dans 15 minutes.';
   if (status >= 500) return 'Listo a rencontré un problème. Réessayez dans un instant.';
   return 'La demande a été refusée.';
@@ -73,6 +79,15 @@ export const post = (url, body = {}, options) => request('POST', url, body, opti
 export const put = (url, body = {}) => request('PUT', url, body);
 export const patch = (url, body = {}) => request('PATCH', url, body);
 export const del = (url) => request('DELETE', url);
+
+// Photo d'un article : envoi (JPEG déjà réduit), retrait, adresse de l'image.
+// Ces envois ne passent pas par /api/ops (fichier trop gros pour un lot) ;
+// hors ligne, ils viendront dans la file d'attente à l'étape 9.
+export const putPhoto = (itemId, jpeg) => request('PUT', `/api/items/${encodeURIComponent(itemId)}/photo`, undefined, { raw: jpeg });
+export const deletePhoto = (itemId) => request('DELETE', `/api/items/${encodeURIComponent(itemId)}/photo`);
+// photoAt (date de la photo) dans l'adresse : une nouvelle photo a une
+// nouvelle adresse, le navigateur ne montre donc jamais l'ancienne.
+export const photoUrl = (item) => `/api/items/${encodeURIComponent(item.id)}/photo?v=${encodeURIComponent(item.photoAt)}`;
 
 // Identifiant unique (UUID), créé sur le téléphone. crypto.randomUUID n'existe
 // qu'en HTTPS : en test sur le réseau local (http://192.168…), on le fabrique

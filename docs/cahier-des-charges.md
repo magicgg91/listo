@@ -353,6 +353,7 @@ services:
 
 - Nginx Proxy Manager étant sur une autre machine, il n'y a pas de réseau Docker partagé : Listo publie son port sur l'adresse du réseau local seulement (IP_LOCALE:13300). Dans Nginx Proxy Manager : schéma http, cette adresse et ce port ; le HTTPS s'arrête à Nginx Proxy Manager. Ouvrir Listo directement par http://adresse:port ne permet pas de se connecter (origine et cookie Secure refusés) : c'est voulu, l'accès normal passe par l'adresse publique.
 - Le dossier data contient la base, les sauvegardes, les photos des articles (data/photos) et le journal de sécurité (data/journal.log).
+- Nginx Proxy Manager limite par défaut le corps des requêtes à 1 Mo : pour l'envoi des photos (2 Mo au plus), ajouter dans l'onglet Advanced du proxy host : client_max_body_size 5m;
 - Au premier démarrage, aucun compte n'existe : le premier accès à l'adresse de l'application propose de créer le compte Admin, avec le code de démarrage visible dans les journaux (docker logs listo). Aucun mot de passe n'est stocké dans la configuration.
 - Le schéma de la base se crée et se met à jour automatiquement au démarrage (migrations numérotées).
 - Route GET /healthz pour la surveillance (réponse simple, sans donnée).

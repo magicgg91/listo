@@ -12,7 +12,7 @@ import { tempDir } from './helpers.js';
 
 // Démarre l'application sur un port libre et renvoie son adresse
 async function listen(t, db) {
-  const server = createApp({ db }).listen(0);
+  const server = createApp({ db, photosDir: tempDir(t) }).listen(0);
   await once(server, 'listening');
   t.after(() => server.close());
   return `http://127.0.0.1:${server.address().port}`;

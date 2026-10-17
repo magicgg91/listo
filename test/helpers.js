@@ -69,7 +69,14 @@ export function createClient(base, { origin = ORIGIN, ip } = {}) {
       else jar.set(name, value);
     }
     const text = await res.text();
-    return { status: res.status, body: text ? JSON.parse(text) : null, text, headers: res.headers, setCookies };
+    // Réponse JSON lue ; autre chose (page HTML, photo) : body vaut null
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = null;
+    }
+    return { status: res.status, body: json, text, headers: res.headers, setCookies };
   }
 
   return {

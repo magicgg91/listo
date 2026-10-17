@@ -318,6 +318,8 @@ export function createListService(ctx) {
       store: store && { id: store.id, name: store.name, active: store.active === 1, isMulti: store.is_multi === 1 },
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
+      // Lien public en cours ({ expiresAt } ou null) : pour le propriétaire seulement
+      ...(list.owner_id === user.id && ctx.shares ? { publicLink: ctx.shares.badgeFor(list.id) } : {}),
       members,
       remaining: list.remaining,
       lastActivity: list.last_activity,
@@ -438,6 +440,9 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, list.id);
       changed(list.id);
       ctx.audit('liste_supprimee', { utilisateur: user.username, liste: list.id });
+      // Son lien public s'arrête avec elle
+      const share = ctx.shares?.stopForList(list.id);
+      if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste supprimée' });
       return {};
     },
 

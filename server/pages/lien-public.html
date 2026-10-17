@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- Listo : page publique d'une liste (lien /p/<jeton>, lecture seule, sans
+     compte). Tout l'affichage est construit par js/public.js ; aucun script
+     ni style écrit dans cette page. Elle ne contient rien de la liste : les
+     données arrivent par /api/public/<jeton>, qui contrôle le lien. -->
+<html lang="fr" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Listo · Liste partagée</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/listo.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/public.js"></script>
+</head>
+<body>
+<!-- sprite -->
+<div class="app" id="app">
+  <p class="boot muted" role="status">Chargement…</p>
+</div>
+<noscript><p>Cette page a besoin de JavaScript pour afficher la liste.</p></noscript>
+</body>
+</html>

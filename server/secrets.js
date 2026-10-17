@@ -47,7 +47,7 @@ function readKey(keyPath) {
 
 // --- Utilisation de la clé ---
 //
-// À partir de la clé principale, on dérive (HKDF) deux sous-clés distinctes,
+// À partir de la clé principale, on dérive (HKDF) des sous-clés distinctes,
 // chacune réservée à un usage : on n'emploie jamais la même clé pour deux
 // choses différentes.
 export function deriveKeys(masterKey) {
@@ -55,6 +55,7 @@ export function deriveKeys(masterKey) {
   return {
     totp: derive('listo:totp-secret'),    // chiffrement des secrets 2FA
     codes: derive('listo:recovery-codes'), // empreinte des codes de secours
+    share: derive('listo:public-share-token'), // jeton des liens publics (réaffichage au propriétaire)
   };
 }
 

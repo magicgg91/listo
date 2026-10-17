@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 import { startTestApp } from './helpers.js';
 
@@ -20,8 +21,12 @@ function filesIn(dir, base = '') {
   });
 }
 
+// Fichiers de la page publique (lien /p/…) : jamais gardés par le service
+// worker, qui ne s'occupe pas de cette page
+const PUBLIC_PAGE_FILES = ['/js/public.js'];
+
 test("service worker : chaque fichier de l'application est gardé pour l'ouverture sans réseau", () => {
-  const expected = filesIn(PUBLIC).filter((file) => file !== '/sw.js').sort();
+  const expected = filesIn(PUBLIC).filter((file) => file !== '/sw.js' && !PUBLIC_PAGE_FILES.includes(file)).sort();
   const files = listed.filter((url) => url !== '/').sort();
   assert.deepEqual(files, expected, 'APP_FILES (sw.js) doit lister exactement les fichiers de public/');
   assert.ok(listed.includes('/'));
@@ -42,4 +47,48 @@ test('sw.js est servi sans cache (une nouvelle version est vue tout de suite)', 
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('cache-control'), 'no-cache');
   assert.match(res.headers.get('content-type'), /javascript/);
+});
+
+// Fait tourner sw.js dans un faux navigateur et renvoie son gestionnaire
+// « fetch » : on peut alors lui présenter des requêtes et voir s'il les prend
+// en charge (respondWith) ou s'il les laisse passer vers le serveur.
+function workerFetchHandler() {
+  const listeners = {};
+  const fakeCache = { match: async () => undefined, put: async () => {}, keys: async () => [], delete: async () => true, addAll: async () => {} };
+  const context = {
+    self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: 'https://listo.test' } },
+    caches: { open: async () => fakeCache, keys: async () => [], delete: async () => true },
+    fetch: () => Promise.reject(new Error('pas de réseau')),
+    indexedDB: { open: () => ({}) },
+    URL, Request, Response, setTimeout, clearTimeout, Promise,
+  };
+  vm.runInNewContext(source, context);
+  return (url, { mode = 'no-cors', method = 'GET' } = {}) => {
+    let taken = false;
+    listeners.fetch({
+      request: { url: `https://listo.test${url}`, mode, method },
+      respondWith: (promise) => { taken = true; Promise.resolve(promise).catch(() => {}); },
+    });
+    return taken;
+  };
+}
+
+test('service worker (exécuté) : ne garde ni ne détourne jamais /p/ ni /api/public/', () => {
+  const takes = workerFetchHandler();
+  const token = 'A'.repeat(43);
+  const id = '0f8fad5b-d9cb-469f-a165-70867728950e';
+  // Lien public : page, données, photos, mot de passe, fichier de la page
+  assert.equal(takes(`/p/${token}`, { mode: 'navigate' }), false);
+  assert.equal(takes('/p/', { mode: 'navigate' }), false);
+  assert.equal(takes(`/api/public/${token}`, { mode: 'cors' }), false);
+  assert.equal(takes(`/api/public/${token}/photos/${id}`), false);
+  assert.equal(takes(`/api/public/${token}/acces`, { method: 'POST', mode: 'cors' }), false);
+  assert.equal(takes('/js/public.js', { mode: 'cors' }), false);
+  // Reste de l'API : jamais pris non plus (sauf les photos d'articles)
+  assert.equal(takes('/api/sync', { mode: 'cors' }), false);
+  assert.equal(takes('/api/events', { mode: 'cors' }), false);
+  assert.equal(takes(`/api/items/${id}/photo?v=1`), true);
+  // Contrôle : l'application elle-même est bien prise en charge
+  assert.equal(takes('/', { mode: 'navigate' }), true);
+  assert.equal(takes('/js/app.js', { mode: 'cors' }), true);
 });

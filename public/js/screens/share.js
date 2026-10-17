@@ -209,7 +209,7 @@ export function openShareSheet(list) {
   // --- Lien actif (partage-lien-3, 4 et 5) ---
   function activeView(offline) {
     const off = offline || busy;
-    const shown = share.url.replace(/^https?:\/\//, '');
+    const shown = share.url?.replace(/^https?:\/\//, '') ?? '';
     const button = (iconName, label, onClick, kind = 'btn--secondary') => {
       const el = h('button', { class: `btn ${kind} btn--block`, type: 'button', disabled: off }, icon(iconName, 'icon--sm'), label);
       el.addEventListener('click', onClick);
@@ -287,9 +287,13 @@ export function openShareSheet(list) {
 
     return [
       offline ? offlineNote() : null,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Lien'),
-        h('div', { class: 'link-box' }, icon('link', 'icon--sm'), h('span', { class: 'link-box__url', translate: 'no' }, shown))),
-      h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => copy(share.url, 'Lien copié') }, icon('copy', 'icon--sm'), 'Copier le lien'),
+      // Adresse illisible (clé de Listo changée) : il faut recréer le lien
+      share.url
+        ? [h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Lien'),
+          h('div', { class: 'link-box' }, icon('link', 'icon--sm'), h('span', { class: 'link-box__url', translate: 'no' }, shown))),
+        h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => copy(share.url, 'Lien copié') }, icon('copy', 'icon--sm'), 'Copier le lien')]
+        : h('p', { class: 'note note--danger', role: 'status' }, icon('alert', 'icon--sm'),
+          h('span', {}, "L'adresse de ce lien ne peut plus être affichée (la clé de Listo a changé). Arrêtez le partage, puis créez un nouveau lien.")),
       expiry,
       durationPart,
       passwordPart,

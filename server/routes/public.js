@@ -225,6 +225,7 @@ export function publicRoutes(ctx, { publicDir }) {
   apiRouter.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
     console.error('Erreur inattendue (lien public) :', err.message);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
   });

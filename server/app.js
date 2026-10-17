@@ -24,6 +24,7 @@ import { createEventHub, sameSiteOnly } from './events.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { publicRoutes } from './routes/public.js';
+import { createBackups } from './backup.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -59,6 +60,8 @@ export const CONTENT_SECURITY_POLICY = [
 // - photosDir : dossier des photos (par défaut data/photos, à côté de la base)
 // - eventOptions : réglages du temps réel (les tests raccourcissent le délai
 //   du signal de maintien)
+// - backupDir : dossier des sauvegardes nocturnes (par défaut data/backups,
+//   à côté de la base). La sauvegarde est programmée par index.js.
 export function createApp({
   db,
   config = loadConfig({}),
@@ -69,6 +72,7 @@ export function createApp({
   journalFile = null,
   photosDir = path.join(path.dirname(config.dbPath), 'photos'),
   eventOptions = {},
+  backupDir = path.join(path.dirname(config.dbPath), 'backups'),
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -88,6 +92,8 @@ export function createApp({
   // Liens publics (étape 10) et cookies de consultation des visiteurs
   ctx.publicAccess = createPublicAccess(now);
   ctx.shares = createShareService(ctx);
+  // Sauvegarde nocturne de la base (voir backup.js)
+  ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
 
   const app = express();
   app.locals.ctx = ctx;
@@ -167,6 +173,7 @@ export function createApp({
   api.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
     console.error('Erreur inattendue :', err.message);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
   });
@@ -186,6 +193,18 @@ export function createApp({
     },
   }));
 
+  // Adresse inconnue (hors API) : réponse courte en français
+  app.use((req, res) => res.status(404).type('text').send('Page introuvable.'));
+
+  // Erreur hors API (adresse mal formée, problème inattendu) : jamais de
+  // trace ni de chemin de fichier dans la réponse ; le détail d'une erreur
+  // inattendue va dans les journaux du serveur
+  app.use((err, req, res, next) => {
+    const status = err.status >= 400 && err.status < 500 ? err.status : 500;
+    if (status === 500) console.error('Erreur inattendue :', err.message);
+    res.status(status).type('text').send(status === 500 ? 'Erreur interne du serveur.' : 'Requête invalide.');
+  });
+
   // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois
   // périmés, listes et articles supprimés depuis plus de 30 jours (avec leurs
   // photos), liens publics arrêtés ou expirés depuis plus de 30 jours.
@@ -201,7 +220,16 @@ export function createApp({
     for (const limiter of ctx.publicLimiters) limiter.prune();
   };
   cleanup();
-  setInterval(cleanup, 60 * 60 * 1000).unref();
+  const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);
+  cleanupTimer.unref();
+
+  // Arrêt de Listo (index.js) : plus de ménage ni de sauvegarde, flux temps
+  // réel fermés
+  ctx.stop = () => {
+    clearInterval(cleanupTimer);
+    ctx.backups.stop();
+    ctx.events.closeAll();
+  };
 
   return app;
 }

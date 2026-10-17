@@ -53,3 +53,10 @@ export function namesList(names) {
   if (names.length <= 1) return names.join('');
   return `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
 }
+
+// Nom affiché proposé quand aucun n'est donné : l'identifiant avec une
+// majuscule au début (« guillaume » devient « Guillaume »).
+export function defaultDisplayName(username) {
+  const name = String(username ?? '').trim();
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}

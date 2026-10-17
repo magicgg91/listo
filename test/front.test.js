@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { matchRoute, pathFor } from '../public/js/router.js';
-import { relativeTime, remainingLabel, splitPrefix, namesList } from '../public/js/format.js';
+import { relativeTime, remainingLabel, splitPrefix, namesList, defaultDisplayName } from '../public/js/format.js';
 import {
   emptyState, loadSync, putItem, removeItem, putList, removeList, rememberItem,
   computeSummaries, computeListView, computeSuggestions, isKnownItem, activeOnly,
@@ -64,6 +64,12 @@ test('nombre d\'articles restants, liste de prénoms', () => {
   assert.equal(namesList(['Guillaume']), 'Guillaume');
   assert.equal(namesList(['Guillaume', 'Léa']), 'Guillaume et Léa');
   assert.equal(namesList(['A', 'B', 'C']), 'A, B et C');
+});
+
+test('nom affiché par défaut : identifiant avec une majuscule au début', () => {
+  assert.equal(defaultDisplayName('guillaume'), 'Guillaume');
+  assert.equal(defaultDisplayName(' lea.martin '), 'Lea.martin');
+  assert.equal(defaultDisplayName(''), '');
 });
 
 test('suggestion : début tapé mis en gras, accents et majuscules ignorés', () => {

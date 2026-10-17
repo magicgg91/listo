@@ -514,3 +514,42 @@ test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton,
   // L'identifiant inconnu (ici un mot de passe tapé par erreur) n'est pas recopié
   assert.match(journal, /utilisateur="\(inconnu\)"/);
 });
+
+// --- Image du QR code (étape 5) ---
+
+test("l'image du QR code n'existe que pendant l'activation, pour le compte connecté", async (t) => {
+  const { app, marieId } = await withUser(t);
+  const marie = app.client();
+  await login(marie, 'marie', PASSWORD);
+  const get = () => fetch(`${app.base}/api/me/2fa/qr.png`, { headers: { cookie: `listo_session=${marie.jar.get('listo_session')}` } });
+
+  assert.equal((await get()).status, 404, 'pas encore d\'activation');
+  await marie.post('/api/me/2fa/enable');
+  const res = await get();
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/png');
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  const bytes = Buffer.from(await res.arrayBuffer());
+  assert.deepEqual([...bytes.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47], 'vraie image PNG');
+
+  // Une fois la 2FA confirmée, l'image n'est plus disponible
+  await marie.post('/api/me/2fa/verify', { code: currentCode(app, marieId) });
+  assert.equal((await get()).status, 404);
+  // Un visiteur non connecté est refusé
+  assert.equal((await fetch(`${app.base}/api/me/2fa/qr.png`)).status, 401);
+});
+
+test('la politique de sécurité (CSP) stricte est envoyée sur toutes les réponses', async (t) => {
+  const app = await startTestApp(t);
+  for (const url of ['/', '/index.html', '/js/app.js', '/api/setup', '/healthz']) {
+    const res = await fetch(app.base + url);
+    const csp = res.headers.get('content-security-policy');
+    assert.match(csp, /default-src 'self'/, url);
+    assert.match(csp, /script-src 'self';/, url);
+    assert.match(csp, /style-src 'self';/, url);
+    assert.match(csp, /img-src 'self';/, url);
+    assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval|data:/, url);
+    assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
+    assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
+  }
+});

@@ -8,6 +8,7 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, replace } from '../dom.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
 import { app, loggedIn, loggedOut } from '../app.js';
+import { defaultDisplayName } from '../format.js';
 
 const MIN_PASSWORD = 10;
 
@@ -180,7 +181,7 @@ function setupStep(show) {
         return;
       }
       try {
-        const result = await post('/api/setup', { username: username.value.trim(), password: password.input.value, code: code.value }, { auth: false });
+        const result = await post('/api/setup', { username: username.value.trim(), displayName: defaultDisplayName(username.value), password: password.input.value, code: code.value }, { auth: false });
         loggedIn(result.user);
       } catch (err) {
         // Un compte existe déjà (créé entre-temps) : retour à la connexion

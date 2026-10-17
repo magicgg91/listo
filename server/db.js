@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
+import { normalizeItemName } from '../public/js/history.js';
 
 // Expression SQL qui donne l'heure actuelle au format ISO (UTC, millièmes)
 const NOW = "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))";
@@ -260,7 +261,51 @@ export const MIGRATIONS = [
   -- Un seul lien non arrêté par liste
   CREATE UNIQUE INDEX public_shares_one_per_list ON public_shares(list_id) WHERE revoked_at IS NULL;
   `,
+
+  // --- Migration 8 : mémoire des noms réservée aux listes de courses ---
+  // (décision du 17 octobre 2026 ; aucune table ne change, seules des lignes
+  // de l'historique sont effacées, voir pruneHistory)
+  (db) => {
+    pruneHistory(db);
+  },
 ];
+
+// Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent
+// que des listes autres que courses (tâches…), pour qu'ils ne soient plus
+// suggérés ni montrés dans l'onglet « Noms » de l'administration.
+//
+// Règle prudente : un nom (toutes ses lignes) est effacé seulement si
+// - aucun article d'une liste de courses ne porte ce nom (article actif, ou
+//   supprimé mais pas encore effacé par le nettoyage des 30 jours) ;
+// - ET aucune de ses lignes n'a jamais eu de rayon ni de magasin (un nom de
+//   tâche n'en a jamais : un nom qui en a vient forcément des courses).
+// Ainsi, un ancien article de courses acheté il y a longtemps garde sa
+// mémoire (son rayon), même si plus aucun article ne porte ce nom.
+//
+// Le nom normalisé des articles n'est pas en base : il est calculé ici, avec
+// la même règle que partout ailleurs (normalizeItemName). La fonction peut
+// être relancée sans risque : la seconde fois, elle n'efface plus rien.
+// Renvoie le nombre de noms effacés.
+export function pruneHistory(db) {
+  const shoppingNames = new Set(db.prepare(`
+    SELECT items.name FROM items
+    JOIN lists ON lists.id = items.list_id
+    JOIN categories ON categories.id = lists.category_id AND categories.is_shopping = 1
+  `).pluck().all().map(normalizeItemName));
+  const candidates = db.prepare(`
+    SELECT name_normalized FROM item_history
+    GROUP BY name_normalized
+    HAVING MAX(aisle_id IS NOT NULL OR store_id IS NOT NULL) = 0
+  `).pluck().all();
+  const remove = db.prepare('DELETE FROM item_history WHERE name_normalized = ?');
+  let removed = 0;
+  for (const key of candidates) {
+    if (shoppingNames.has(key)) continue;
+    remove.run(key);
+    removed += 1;
+  }
+  return removed;
+}
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.
 // dbPath peut valoir ':memory:' pour une base temporaire (tests).

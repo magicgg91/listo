@@ -483,9 +483,9 @@ export function createListService(ctx) {
       db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, created_by, created_at, updated_at)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, user.id, now, now);
-      // Historique : magasin de l'article (multi) ou magasin de la liste (simple)
-      const historyStore = list.is_multi === 1 ? storeId : list.is_shopping === 1 ? list.store_id : null;
-      remember(name, { storeId: historyStore, aisleId, count: 1 });
+      // Historique (listes de courses seulement) : magasin de l'article
+      // (« multi ») ou magasin de la liste (simple)
+      if (list.is_shopping === 1) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
       changed(list.id);
       return { item: describeItem(q.item.get(id)) };
     },
@@ -520,12 +520,12 @@ export function createListService(ctx) {
       db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
         .run(name, qty, text, aisleId, storeId, nowIso(), item.id);
 
+      // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {
         if (name !== item.name) remember(name, { storeId, count: 0 });
         else if (storeId !== item.store_id) saveHistory(moveUse(historyOf(name), { name, from: item.store_id, to: storeId, now: nowIso() }));
-      } else if (name !== item.name || aisleId !== item.aisle_id) {
-        const shopping = item.is_shopping === 1;
-        remember(name, { storeId: shopping ? item.list_store_id : null, aisleId: shopping ? aisleId : null, count: 0 });
+      } else if (item.is_shopping === 1 && (name !== item.name || aisleId !== item.aisle_id)) {
+        remember(name, { storeId: item.list_store_id, aisleId, count: 0 });
       }
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
@@ -631,8 +631,11 @@ export function createListService(ctx) {
   }
 
   // Suggestions d'autocomplétion (même règle que sur le téléphone). Le rayon
-  // proposé n'est donné que s'il est encore actif.
-  function suggestions(typed) {
+  // proposé n'est donné que s'il est encore actif. Avec une liste (listId) :
+  // aucune suggestion si ce n'est pas une liste de courses (la liste doit
+  // être une des miennes).
+  function suggestions(typed, { user, listId } = {}) {
+    if (listId !== undefined && listForMember(user, listId).is_shopping !== 1) return [];
     const activeAisles = new Set(q.allAisles.all().filter((a) => a.active === 1).map((a) => a.id));
     return suggest(q.allHistory.all().map(describeHistory), typed).map((entry) => ({
       name: entry.name,

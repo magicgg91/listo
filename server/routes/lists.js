@@ -3,7 +3,8 @@
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
 //   GET  /api/users                 comptes actifs, pour choisir les invités
-//   GET  /api/suggestions?q=la      autocomplétion (dès 2 lettres)
+//   GET  /api/suggestions?q=la      autocomplétion (dès 2 lettres) ; avec
+//                                    &listId=… : vide hors liste de courses
 //   GET  /api/sync?since=…          tout ce qui a changé depuis un instant
 //   POST /api/ops                   lot d'opérations (créer, modifier, cocher,
 //                                   supprimer une liste ou un article)
@@ -47,7 +48,13 @@ export function listRoutes(ctx) {
 
   router.get('/suggestions', (req, res) => {
     const typed = typeof req.query.q === 'string' ? req.query.q.slice(0, 100) : '';
-    res.json({ suggestions: service.suggestions(typed) });
+    const listId = typeof req.query.listId === 'string' ? req.query.listId : undefined;
+    try {
+      res.json({ suggestions: service.suggestions(typed, { user: req.user, listId }) });
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
   });
 
   router.get('/sync', (req, res) => {

@@ -52,6 +52,23 @@ npm test                  # lance les tests automatisés
 npm start                 # démarre Listo sur http://localhost:3000
 ```
 
+## Essayer sur son téléphone
+
+Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
+
+1. Trouver l'adresse de l'ordinateur sur le réseau local : par exemple `hostname -I` (Linux), `ipconfig getifaddr en0` (Mac) ou `ipconfig` (Windows). Elle ressemble à `192.168.1.20`.
+2. Démarrer Listo en ouvrant le port au réseau local, et en indiquant cette adresse (sinon les connexions sont refusées par la protection CSRF) :
+
+   ```sh
+   LISTO_DEV_BIND=0.0.0.0 LISTO_DEV_URL=http://192.168.1.20:3000 \
+     docker compose -f docker-compose.dev.yml up --build
+   ```
+
+3. Sur le téléphone, ouvrir `http://192.168.1.20:3000`. Au premier lancement, le code de démarrage s'affiche dans le terminal de l'ordinateur.
+4. Pour arrêter : Ctrl+C. Relancé sans ces deux réglages, Listo n'est de nouveau joignable que depuis l'ordinateur.
+
+En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
+
 ## API des comptes (étape 2)
 
 | Route | Rôle |

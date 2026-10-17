@@ -27,6 +27,9 @@ function checkHeaders(res, label) {
   assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} : Referrer-Policy`);
   assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} : X-Frame-Options`);
   assert.equal(res.headers.get('permissions-policy'), PERMISSIONS_POLICY, `${label} : Permissions-Policy`);
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex, nofollow', `${label} : X-Robots-Tag`);
+  assert.equal(res.headers.get('cross-origin-opener-policy'), 'same-origin', `${label} : Cross-Origin-Opener-Policy`);
+  assert.equal(res.headers.get('cross-origin-resource-policy'), 'same-origin', `${label} : Cross-Origin-Resource-Policy`);
   // Rien qui révèle la technique ; HSTS est ajouté par Nginx Proxy Manager
   assert.equal(res.headers.get('x-powered-by'), null, `${label} : X-Powered-By`);
   assert.equal(res.headers.get('server'), null, `${label} : Server`);
@@ -106,6 +109,11 @@ test('en-têtes de sécurité sur toutes les routes principales, y compris les e
     checkHeaders(res, label);
     if (status >= 400) checkNoLeak(text, label);
   }
+
+  // Page d'accueil : consigne « noindex » aussi dans le HTML ; pas de
+  // robots.txt (il empêcherait les moteurs de lire cette consigne)
+  assert.match(await (await fetch(`${app.base}/`)).text(), /<meta name="robots" content="noindex, nofollow">/);
+  assert.equal((await fetch(`${app.base}/robots.txt`)).status, 404);
 
   // Pages d'erreur en français, sans détail
   assert.equal(await (await fetch(`${app.base}/nimporte/quoi`)).text(), 'Page introuvable.');

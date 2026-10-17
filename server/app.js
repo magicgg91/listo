@@ -118,6 +118,14 @@ export function createApp({
       'Referrer-Policy': 'no-referrer',        // l'adresse de Listo n'est pas transmise ailleurs
       'X-Frame-Options': 'DENY',               // Listo ne peut pas être affiché dans un cadre
       'Permissions-Policy': PERMISSIONS_POLICY, // ni position, ni micro, ni paiement…
+      // Listo n'a rien à faire dans un moteur de recherche : aucune page, aucun
+      // fichier ni réponse de l'API n'est indexé ni suivi
+      'X-Robots-Tag': 'noindex, nofollow',
+      // Isolement vis-à-vis des autres sites : une fenêtre ouverte depuis un
+      // autre site ne peut pas piloter Listo (COOP), et aucun autre site ne
+      // peut charger les fichiers ou les photos de Listo dans ses pages (CORP)
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Resource-Policy': 'same-origin',
     });
     next();
   });

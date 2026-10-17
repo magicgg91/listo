@@ -12,7 +12,7 @@
 # L'image est épinglée sur son empreinte (sha256) : chaque construction part
 # exactement de la même base, vérifiée. Dependabot propose chaque semaine une
 # pull request quand une nouvelle version de node:24-slim sort.
-FROM node:24-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+FROM node:25-slim@sha256:81db02c4b671288a03915da9534dbd54f96d0e7c24d80ccc54f5b36b2e684370
 
 ENV NODE_ENV=production
 WORKDIR /app

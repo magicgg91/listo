@@ -2,10 +2,11 @@
 // et mise en page (une colonne sur téléphone, deux sur ordinateur).
 
 import { h, replace } from './dom.js';
-import { get, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
+import { get, post, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { emptyState, loadSync, mergeSync } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld } from './store.js';
+import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setSyncState, toast } from './ui.js';
 import { startLive, stopLive } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
@@ -35,6 +36,85 @@ export function onDataChange(listener) {
 }
 export function dataChanged() {
   for (const listener of [...listeners]) listener();
+  persistSoon();
+}
+
+// --- Copie gardée sur le téléphone (IndexedDB, voir localdb.js) ---
+
+// Base locale du compte ouvert (en mémoire tant qu'aucun compte n'est ouvert)
+let local = memoryLocal();
+
+// Dernier compte connecté sur ce téléphone (numéro, identifiant, nom, rôle :
+// rien de secret). Il permet d'ouvrir l'application sans réseau.
+const LAST_USER_KEY = 'listo-compte';
+function readLastUser() {
+  try {
+    const user = JSON.parse(localStorage.getItem(LAST_USER_KEY));
+    return user && Number.isInteger(user.id) ? user : null;
+  } catch {
+    return null;
+  }
+}
+function writeLastUser(user) {
+  try {
+    const { id, username, displayName, role, totpEnabled } = user;
+    localStorage.setItem(LAST_USER_KEY, JSON.stringify({ id, username, displayName, role, totpEnabled }));
+  } catch {
+    // stockage indisponible : l'application marche, mais pas sans réseau
+  }
+}
+function forgetLastUser() {
+  try {
+    localStorage.removeItem(LAST_USER_KEY);
+  } catch {
+    // rien à faire
+  }
+}
+
+// Photos déjà vues (cache du service worker) : vidées à la déconnexion et
+// au changement de compte
+async function clearPhotoCache() {
+  try {
+    await globalThis.caches?.delete('listo-photos');
+  } catch {
+    // rien à faire
+  }
+}
+
+// Ouvre la copie locale d'un compte et l'affiche tout de suite (avant même
+// la synchronisation avec le serveur)
+async function openAccount(user) {
+  const last = readLastUser();
+  if (last && last.id !== user.id) await clearPhotoCache();
+  writeLastUser(user);
+  local.close();
+  local = await openLocal(user.id);
+  let snapshot = null;
+  try {
+    snapshot = await local.loadSnapshot();
+  } catch {
+    snapshot = null; // copie illisible : rechargée depuis le serveur
+  }
+  app.data = fromSnapshot(snapshot) ?? emptyState();
+  for (const listener of [...listeners]) listener();
+}
+
+// Enregistre la copie peu après chaque changement (regroupé)
+let saveTimer = null;
+function persistSoon() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    if (app.user && app.data.loaded) local.saveSnapshot(toSnapshot(app.data)).catch(() => {});
+  }, 300);
+}
+
+// Remise à zéro de la copie de ce téléphone (Réglages) : tout est rechargé
+// depuis le serveur
+export async function resetLocalCopy() {
+  await local.clearSnapshot();
+  app.data = emptyState();
+  dataChanged();
+  await refreshData({ full: true });
 }
 
 // Synchronisation avec le serveur (GET /api/sync). Appelée à l'ouverture de
@@ -53,7 +133,8 @@ export function refreshData({ quiet = false, full = false } = {}) {
     again = { full: Boolean(again?.full || full) };
     return refreshing;
   }
-  const since = !full && app.data.loaded && app.data.serverTime ? app.data.serverTime : null;
+  // Copie trop ancienne (plus de 25 jours) : tout recharger
+  const since = !full && app.data.loaded && !isTooOld(app.data) ? app.data.serverTime : null;
   // « Synchronisation… » seulement si elle dure : pas de clignotement à
   // chaque message du temps réel
   const busy = setTimeout(() => setSyncState('busy'), 400);
@@ -97,20 +178,44 @@ export function loggedIn(user) {
     show(app.route);
     return;
   }
-  refreshData({ quiet: true, full: true });
-  goLive();
+  openAccount(user).then(() => {
+    refreshData({ quiet: true, full: true });
+    goLive();
+  });
   const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'lists', params: {} };
   app.afterLogin = null;
   navigate(next.name, next.params, { replace: true });
 }
 
-// Déconnexion (ou session expirée) : on oublie tout ce qui est en mémoire
-export function loggedOut() {
+// Fin de session : on oublie tout ce qui est en mémoire.
+// forget : déconnexion volontaire, la copie gardée sur le téléphone est
+// effacée aussi. Sinon (session expirée), elle est gardée, avec ses
+// modifications en attente : elles repartiront après la reconnexion.
+export function loggedOut({ forget = false } = {}) {
   stopLive();
+  const user = app.user;
   app.user = null;
   app.data = emptyState();
-  dataChanged();
+  clearTimeout(saveTimer);
+  for (const listener of [...listeners]) listener();
+  local.close();
+  local = memoryLocal();
+  if (forget) {
+    if (user?.id) deleteLocal(user.id);
+    forgetLastUser();
+    clearPhotoCache();
+  }
   navigate('login', {}, { replace: true });
+}
+
+// Déconnexion volontaire (Réglages)
+export async function logOut() {
+  try {
+    await post('/api/logout');
+  } catch {
+    // session déjà terminée, ou pas de réseau : sans importance
+  }
+  loggedOut({ forget: true });
 }
 
 onSessionProblem({
@@ -210,8 +315,12 @@ async function start() {
       }
     }
   } catch (error) {
+    const lastUser = readLastUser();
     if (error instanceof ApiError && error.status === 403 && error.data?.mustChangePassword) {
       app.user = { mustChangePassword: true };
+    } else if (error instanceof NetworkError && lastUser) {
+      // Pas de réseau : on ouvre la copie gardée du dernier compte connecté
+      app.user = lastUser;
     } else {
       // Serveur injoignable : message et bouton pour réessayer
       replace(root, h('div', { class: 'empty' },
@@ -222,6 +331,7 @@ async function start() {
     }
   }
   if (app.user && !app.user.mustChangePassword) {
+    await openAccount(app.user);
     refreshData({ quiet: true, full: true });
     goLive();
   }

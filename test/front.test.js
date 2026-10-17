@@ -287,3 +287,50 @@ test('messages rapprochés : une seule synchronisation', async () => {
   onMessage();
   assert.equal(timers.length, 2, 'un nouveau groupe après la synchronisation');
 });
+
+// --- Copie locale gardée sur le téléphone (étape 9) ---
+
+test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'une autre version → null', async () => {
+  const { toSnapshot, fromSnapshot } = await import('../public/js/store.js');
+  const state = sample();
+  state.users = [{ id: 2, username: 'lea', displayName: 'Léa' }];
+  const snapshot = JSON.parse(JSON.stringify(toSnapshot(state, '2026-10-17T10:00:00.000Z')));
+  const back = fromSnapshot(snapshot);
+  assert.deepEqual([...back.lists.keys()].sort(), [...state.lists.keys()].sort());
+  assert.deepEqual([...back.items.keys()].sort(), [...state.items.keys()].sort());
+  assert.deepEqual([...back.listIds].sort(), [...state.listIds].sort());
+  assert.deepEqual(back.history, state.history);
+  assert.deepEqual(back.users, state.users);
+  assert.equal(back.serverTime, state.serverTime);
+  assert.equal(back.loaded, true);
+  assert.equal(fromSnapshot(null), null);
+  assert.equal(fromSnapshot({ ...snapshot, version: 99 }), null);
+  assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
+  // Aucun secret dans la copie : seulement des données de listes
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'categories', 'history', 'items', 'listIds', 'lists', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+});
+
+test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {
+  const { isTooOld } = await import('../public/js/store.js');
+  const now = Date.parse('2026-10-17T12:00:00.000Z');
+  assert.equal(isTooOld({ serverTime: '2026-10-10T12:00:00.000Z' }, now), false);
+  assert.equal(isTooOld({ serverTime: '2026-09-20T12:00:00.000Z' }, now), true);
+  assert.equal(isTooOld({ serverTime: null }, now), true);
+});
+
+test('base locale en mémoire : même interface ; deux comptes ne partagent rien', async () => {
+  const { memoryLocal, dbName } = await import('../public/js/localdb.js');
+  assert.equal(dbName(3), 'listo-u3');
+  assert.notEqual(dbName(3), dbName(4));
+  const a = memoryLocal();
+  const b = memoryLocal();
+  await a.saveSnapshot({ version: 1, lists: [1] });
+  const s1 = await a.queueAdd({ kind: 'op', op: { type: 'item.check' } });
+  const s2 = await a.queueAdd({ kind: 'op', op: { type: 'item.delete' } });
+  assert.ok(s2 > s1);
+  assert.deepEqual((await a.queueAll()).map((e) => e.op.type), ['item.check', 'item.delete']);
+  assert.equal(await b.loadSnapshot(), undefined);
+  assert.deepEqual(await b.queueAll(), []);
+  await a.queueDelete(s1);
+  assert.deepEqual((await a.queueAll()).map((e) => e.seq), [s2]);
+});

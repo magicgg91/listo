@@ -10,7 +10,7 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace }
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, loggedOut } from '../app.js';
+import { app, logOut } from '../app.js';
 import { toast } from '../ui.js';
 
 const MIN_PASSWORD = 10;
@@ -64,14 +64,7 @@ export function renderSettings() {
   const logout = h('button', {
     class: 'btn btn--secondary btn--block',
     type: 'button',
-    onClick: async () => {
-      try {
-        await post('/api/logout');
-      } catch {
-        // session déjà terminée : sans importance
-      }
-      loggedOut();
-    },
+    onClick: () => logOut(),
   }, icon('logout', 'icon--sm'), 'Se déconnecter');
 
   return h('div', { class: 'screen' },

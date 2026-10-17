@@ -1,10 +1,11 @@
 // Copie locale des données (listes, articles, rayons, magasins, catégories,
-// historique), reçue du serveur par GET /api/sync, et calculs pour l'écran.
+// historique, comptes proposés au partage), reçue du serveur par GET
+// /api/sync, et calculs pour l'écran.
 //
-// Les écrans lisent cette copie ; chaque modification réussie y est
-// reportée tout de suite (sans attendre une nouvelle synchronisation).
-// À l'étape 9, cette copie sera aussi gardée sur le téléphone (IndexedDB)
-// pour fonctionner sans réseau.
+// Les écrans lisent cette copie ; chaque modification y est reportée tout de
+// suite (avant même d'être envoyée au serveur, voir actions.js). Elle est
+// gardée sur le téléphone (IndexedDB, voir localdb.js) pour fonctionner sans
+// réseau.
 //
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
@@ -24,7 +25,60 @@ export function emptyState() {
     stores: [],
     aisles: [],
     history: [],
+    users: [],              // comptes actifs, pour choisir avec qui partager
   };
+}
+
+// --- Copie gardée sur le téléphone (IndexedDB) ---
+
+export const SNAPSHOT_VERSION = 1;
+
+// Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
+export function toSnapshot(state, savedAt = new Date().toISOString()) {
+  return {
+    version: SNAPSHOT_VERSION,
+    savedAt,
+    serverTime: state.serverTime,
+    lists: [...state.lists.values()],
+    items: [...state.items.values()],
+    listIds: [...state.listIds],
+    categories: state.categories,
+    stores: state.stores,
+    aisles: state.aisles,
+    history: state.history,
+    users: state.users,
+  };
+}
+
+// Copie relue depuis le téléphone ; null si elle est illisible ou d'une
+// autre version (elle sera alors rechargée entièrement depuis le serveur)
+export function fromSnapshot(snapshot) {
+  try {
+    if (!snapshot || snapshot.version !== SNAPSHOT_VERSION) return null;
+    const state = emptyState();
+    state.serverTime = snapshot.serverTime ?? null;
+    state.listIds = new Set(snapshot.listIds);
+    state.lists = new Map(snapshot.lists.map((list) => [list.id, list]));
+    state.items = new Map(snapshot.items.map((item) => [item.id, item]));
+    state.categories = [...snapshot.categories];
+    state.stores = [...snapshot.stores];
+    state.aisles = [...snapshot.aisles];
+    state.history = [...snapshot.history];
+    state.users = [...(snapshot.users ?? [])];
+    state.loaded = true;
+    return state;
+  } catch {
+    return null;
+  }
+}
+
+// Copie trop ancienne : le serveur efface les suppressions au bout de 30
+// jours, une synchronisation « depuis » ne suffirait plus. Au-delà de 25 jours
+// sans synchronisation, tout est rechargé.
+export const SNAPSHOT_MAX_AGE_DAYS = 25;
+export function isTooOld(state, now = Date.now()) {
+  if (!state.serverTime) return true;
+  return now - Date.parse(state.serverTime) > SNAPSHOT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
 // Remplace tout par une synchronisation complète (réponse de /api/sync)
@@ -37,6 +91,7 @@ export function loadSync(state, data) {
   state.stores = data.stores;
   state.aisles = data.aisles;
   state.history = data.history;
+  if (data.users) state.users = data.users;
   state.loaded = true;
   return state;
 }
@@ -61,6 +116,7 @@ export function mergeSync(state, data) {
   state.categories = data.categories;
   state.stores = data.stores;
   state.aisles = data.aisles;
+  if (data.users) state.users = data.users;
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
   for (const entry of data.history) {

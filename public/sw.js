@@ -43,6 +43,7 @@ const APP_FILES = [
   '/js/format.js',
   '/js/history.js',
   '/js/live.js',
+  '/js/localdb.js',
   '/js/photo.js',
   '/js/router.js',
   '/js/sorting.js',

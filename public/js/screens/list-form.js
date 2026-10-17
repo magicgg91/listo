@@ -4,7 +4,7 @@
 // et suppression de la liste (propriétaire).
 
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
-import { get, put, op, uuid, errorMessage } from '../api.js';
+import { put, op, uuid, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { activeOnly, putList, removeList } from '../store.js';
 import { compareNames } from '../sorting.js';
@@ -15,15 +15,17 @@ export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
   const editing = listId !== null;
 
-  // Il faut les catégories, magasins (synchro, rafraîchie à l'ouverture pour
-  // proposer un magasin ajouté entre-temps) et les comptes (pour le partage)
+  // Il faut les catégories, magasins et comptes (copie locale, rafraîchie à
+  // l'ouverture pour proposer un magasin ajouté entre-temps)
   replace(container, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
   let cancelled = false;
   onLeave(() => {
     cancelled = true;
   });
-  Promise.all([refreshData({ quiet: true }), get('/api/users')])
-    .then(([, { users }]) => {
+  // Comptes proposés au partage : copie locale (disponible sans réseau)
+  refreshData({ quiet: true })
+    .then(() => {
+      const users = app.data.users;
       if (cancelled) return;
       const list = editing ? app.data.lists.get(listId) : null;
       if (editing && !list) {

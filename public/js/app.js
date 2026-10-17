@@ -38,7 +38,7 @@ export function dataChanged() {
 
 // Récupère tout depuis le serveur (GET /api/sync). Appelée à l'ouverture de
 // l'application, à l'ouverture d'une liste et par le bouton d'actualisation.
-// (Étape 6 : temps réel ; étape 7 : seulement ce qui a changé.)
+// (Étape 8 : temps réel ; étape 9 : seulement ce qui a changé, hors ligne.)
 let refreshing = null;
 export function refreshData({ quiet = false } = {}) {
   if (refreshing) return refreshing;

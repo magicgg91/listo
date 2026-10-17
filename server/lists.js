@@ -13,10 +13,17 @@
 //   vider les barrés) ;
 // - un Admin n'a aucun droit particulier sur les listes des autres.
 //
+// Magasin « multi » (étape 6) : une liste de courses dont le magasin est
+// « multi » n'a pas de rayon. Chaque article y a son propre magasin, choisi
+// parmi ceux que regroupe le magasin de la liste (et actifs). Une liste à
+// magasin simple garde ses rayons, sans magasin par article.
+//
 // Les dates (created_at, updated_at, deleted_at) sont toujours posées ici,
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
-import { normalizeItemName, suggest } from '../public/js/history.js';
+import {
+  normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
+} from '../public/js/history.js';
 import { groupItems } from '../public/js/sorting.js';
 import { cleanName, parseId } from './validate.js';
 
@@ -86,20 +93,25 @@ export function createListService(ctx) {
     allAisles: db.prepare('SELECT * FROM aisles'),
 
     // Une liste non supprimée dont le compte est membre
+    // (is_multi : 1 si c'est une liste de courses à magasin « multi »)
     memberList: db.prepare(`
-      SELECT lists.*, categories.is_shopping
+      SELECT lists.*, categories.is_shopping,
+        (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM lists
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       JOIN categories ON categories.id = lists.category_id
+      LEFT JOIN stores ON stores.id = lists.store_id
       WHERE lists.id = :listId AND lists.deleted_at IS NULL
     `),
     // Un article non supprimé d'une liste non supprimée dont le compte est membre
     memberItem: db.prepare(`
-      SELECT items.*, categories.is_shopping
+      SELECT items.*, categories.is_shopping, lists.store_id AS list_store_id,
+        (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       JOIN categories ON categories.id = lists.category_id
+      LEFT JOIN stores ON stores.id = lists.store_id
       WHERE items.id = :itemId AND items.deleted_at IS NULL
     `),
     anyList: db.prepare('SELECT id FROM lists WHERE id = ?'),
@@ -119,16 +131,19 @@ export function createListService(ctx) {
       WHERE lists.deleted_at IS NULL
     `),
     liveItems: db.prepare('SELECT * FROM items WHERE list_id = ? AND deleted_at IS NULL'),
+    // Magasins regroupés par un magasin « multi » (identifiants)
+    memberStores: db.prepare('SELECT store_id FROM store_members WHERE multi_store_id = ?').pluck(),
+    allStoreMembers: db.prepare('SELECT * FROM store_members'),
+    // Toutes les lignes d'historique d'un article (générale et par magasin)
     history: db.prepare('SELECT * FROM item_history WHERE name_normalized = ?'),
     allHistory: db.prepare('SELECT * FROM item_history'),
     insertHistory: db.prepare(`
-      INSERT INTO item_history (name_normalized, display_name, aisle_id, use_count, last_used_at)
-      VALUES (:key, :name, :aisleId, :count, :now)
+      INSERT INTO item_history (name_normalized, store_id, display_name, aisle_id, use_count, last_used_at)
+      VALUES (:nameNormalized, :storeId, :name, :aisleId, :useCount, :lastUsedAt)
     `),
     updateHistory: db.prepare(`
-      UPDATE item_history SET aisle_id = COALESCE(:aisleId, aisle_id),
-        use_count = use_count + :count, last_used_at = :now
-      WHERE name_normalized = :key
+      UPDATE item_history SET aisle_id = :aisleId, use_count = :useCount, last_used_at = :lastUsedAt
+      WHERE id = :id
     `),
   };
 
@@ -157,6 +172,23 @@ export function createListService(ctx) {
     return aisle;
   }
 
+  // Magasins proposés pour les articles d'une liste « multi » : ceux que
+  // regroupe son magasin, et qui sont actifs
+  function storeChoices(multiStoreId) {
+    return q.memberStores.all(multiStoreId).filter((id) => q.store.get(id)?.active === 1);
+  }
+
+  // Magasin choisi pour un article d'une liste « multi » : vide (« Sans
+  // magasin »), ou un des magasins regroupés par celui de la liste, actif.
+  function chosenStore(value, multiStoreId) {
+    if (value === null) return null;
+    const id = parseId(value);
+    if (!id || !storeChoices(multiStoreId).includes(id)) {
+      throw new OpError(400, "Ce magasin n'est pas proposé pour cette liste (inconnu, désactivé ou non regroupé).");
+    }
+    return id;
+  }
+
   // La liste, si le compte en est membre ; sinon 404 (comme si elle n'existait pas)
   function listForMember(user, listId) {
     const list = q.memberList.get({ userId: user.id, listId: requireUuid(listId, 'de liste') });
@@ -176,24 +208,76 @@ export function createListService(ctx) {
     return item;
   }
 
-  // Met à jour l'historique commun (autocomplétion et rayon habituel).
-  // count = 1 pour un ajout (compte une utilisation), 0 pour une modification.
-  // Le nom affiché dans les suggestions reste celui de la première saisie :
-  // taper « LAIT » ensuite ne change pas la suggestion « Lait ».
-  // Le rayon n'est mémorisé que s'il est connu (on n'efface pas un rayon
-  // habituel en ajoutant un article « Sans rayon »).
-  function remember(name, aisleId, count) {
-    const params = { key: normalizeItemName(name), name, aisleId, count, now: nowIso() };
-    if (q.history.get(params.key)) q.updateHistory.run(params);
-    else q.insertHistory.run({ ...params, count: Math.max(count, 1) });
+  // L'historique d'un article (toutes ses lignes), sous la forme utilisée par
+  // les règles partagées (public/js/history.js)
+  const historyOf = (name) => q.history.all(normalizeItemName(name)).map(describeHistory);
+
+  // Enregistre les lignes modifiées par une règle partagée
+  function saveHistory(entries) {
+    for (const entry of entries) {
+      if (entry.id) q.updateHistory.run(entry);
+      else q.insertHistory.run(entry);
+    }
   }
 
-  // Rayon habituel d'un article (seulement s'il est encore actif)
-  function usualAisle(name) {
-    const entry = q.history.get(normalizeItemName(name));
-    if (!entry || entry.aisle_id === null) return null;
-    const aisle = q.aisle.get(entry.aisle_id);
-    return aisle && aisle.active === 1 ? aisle.id : null;
+  // Met à jour l'historique commun, avec la règle partagée recordUse :
+  // ligne générale (autocomplétion, rayon habituel) et ligne du magasin
+  // (rayon habituel dans ce magasin, ou achat dans ce magasin pour une liste
+  // « multi »). count = 1 pour un ajout, 0 pour une modification. Le nom
+  // affiché reste celui de la première saisie (« LAIT » ne change pas « Lait »),
+  // et un article « Sans rayon » n'efface pas un rayon habituel.
+  function remember(name, { storeId = null, aisleId = null, count }) {
+    saveHistory(recordUse(historyOf(name), { name, storeId, aisleId, count, now: nowIso() }));
+  }
+
+  // Rayon habituel (règle partagée) : d'abord celui de l'article dans ce
+  // magasin, sinon son rayon général ; seulement s'il est encore actif
+  function usualAisle(name, storeId) {
+    return sharedUsualAisle(historyOf(name), name, storeId, (id) => q.aisle.get(id)?.active === 1);
+  }
+
+  // Magasin habituel (règle partagée) parmi les magasins proposés par la liste
+  function usualStore(name, multiStoreId) {
+    return sharedUsualStore(historyOf(name), name, storeChoices(multiStoreId));
+  }
+
+  // Changement de magasin d'une liste (ou passage en liste de courses) :
+  // chaque article garde son rayon et son magasin ; seuls les champs vides
+  // sont complétés par l'historique (règle choisie par le propriétaire) :
+  // - liste « multi » : un article sans magasin, ou dont le magasin n'est pas
+  //   regroupé par le nouveau, reçoit son magasin habituel s'il en a un ;
+  // - liste à magasin simple : un article sans rayon reçoit son rayon habituel.
+  function completeItems(listId) {
+    const list = db.prepare(`
+      SELECT lists.*, categories.is_shopping, COALESCE(stores.is_multi, 0) AS store_is_multi
+      FROM lists JOIN categories ON categories.id = lists.category_id
+      LEFT JOIN stores ON stores.id = lists.store_id WHERE lists.id = ?
+    `).get(listId);
+    if (list.is_shopping !== 1) return;
+    const now = nowIso();
+    const setStore = db.prepare('UPDATE items SET store_id = ?, updated_at = ? WHERE id = ?');
+    const setAisle = db.prepare('UPDATE items SET aisle_id = ?, updated_at = ? WHERE id = ?');
+    for (const item of q.liveItems.all(listId)) {
+      if (list.store_is_multi === 1) {
+        if (item.store_id !== null && q.memberStores.all(list.store_id).includes(item.store_id)) continue;
+        const storeId = usualStore(item.name, list.store_id);
+        if (storeId !== null) setStore.run(storeId, now, item.id);
+      } else if (item.aisle_id === null) {
+        const aisleId = usualAisle(item.name, list.store_id);
+        if (aisleId !== null) setAisle.run(aisleId, now, item.id);
+      }
+    }
+  }
+
+  // Une liste « multi » n'a pas de rayon ; une autre liste n'a pas de
+  // magasin par article. Le téléphone qui enverrait le mauvais champ est refusé.
+  function checkFieldsForList(multi, op) {
+    if (multi && op.aisleId !== undefined && op.aisleId !== null) {
+      throw new OpError(400, "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.");
+    }
+    if (!multi && op.storeId !== undefined && op.storeId !== null) {
+      throw new OpError(400, "Le magasin d'un article ne se choisit que dans une liste « multi ».");
+    }
   }
 
   // --- Mise en forme des réponses ---
@@ -205,6 +289,7 @@ export function createListService(ctx) {
     quantity: item.quantity,
     note: item.note,
     aisleId: item.aisle_id,
+    storeId: item.store_id,
     checked: item.checked === 1,
     createdBy: item.created_by,
     createdAt: item.created_at,
@@ -222,7 +307,7 @@ export function createListService(ctx) {
       id: list.id,
       name: list.name,
       category: { id: category.id, name: category.name, isShopping: category.is_shopping === 1, active: category.active === 1 },
-      store: store && { id: store.id, name: store.name, active: store.active === 1 },
+      store: store && { id: store.id, name: store.name, active: store.active === 1, isMulti: store.is_multi === 1 },
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
       members,
@@ -241,9 +326,25 @@ export function createListService(ctx) {
     ...(row.is_shopping !== undefined ? { isShopping: row.is_shopping === 1 } : {}),
   });
 
+  // Magasins : type (simple ou « multi ») et magasins regroupés
+  function describeStores() {
+    const members = new Map();
+    for (const row of q.allStoreMembers.all()) {
+      if (!members.has(row.multi_store_id)) members.set(row.multi_store_id, []);
+      members.get(row.multi_store_id).push(row.store_id);
+    }
+    return q.allStores.all().map((row) => ({
+      ...describeReference(row),
+      isMulti: row.is_multi === 1,
+      storeIds: row.is_multi === 1 ? members.get(row.id) ?? [] : [],
+    }));
+  }
+
   const describeHistory = (row) => ({
+    id: row.id,
     name: row.display_name,
     nameNormalized: row.name_normalized,
+    storeId: row.store_id,
     aisleId: row.aisle_id,
     useCount: row.use_count,
     lastUsedAt: row.last_used_at,
@@ -306,6 +407,7 @@ export function createListService(ctx) {
 
       db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
         .run(name, category.id, storeId, nowIso(), list.id);
+      if (storeId !== list.store_id || category.is_shopping !== list.is_shopping) completeItems(list.id);
       return {};
     },
 
@@ -329,46 +431,70 @@ export function createListService(ctx) {
       return { removed: changes };
     },
 
-    // Ajouter un article. Sans rayon précisé, un article déjà connu reprend
-    // son rayon habituel (liste de courses seulement).
+    // Ajouter un article.
+    // - liste à magasin simple : sans rayon précisé, un article déjà connu
+    //   reprend son rayon habituel (celui de ce magasin, sinon le général) ;
+    // - liste « multi » : pas de rayon ; sans magasin précisé, un article
+    //   déjà acheté dans un des magasins de la liste reprend son magasin habituel.
     'item.create'(user, op) {
       const list = listForMember(user, op.listId);
       const id = requireUuid(op.itemId, "d'article");
       if (q.anyItem.get(id)) throw new OpError(409, 'Cet article existe déjà.');
       const name = itemName(op.name);
+      checkFieldsForList(list.is_multi === 1, op);
       let aisleId = null;
-      if (list.is_shopping === 1) {
-        aisleId = op.aisleId === undefined ? usualAisle(name) : activeAisleOrNull(op.aisleId)?.id ?? null;
+      let storeId = null;
+      if (list.is_multi === 1) {
+        storeId = op.storeId === undefined ? usualStore(name, list.store_id) : chosenStore(op.storeId, list.store_id);
+      } else if (list.is_shopping === 1) {
+        aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, user.id, now, now);
-      remember(name, aisleId, 1);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, user.id, now, now);
+      // Historique : magasin de l'article (multi) ou magasin de la liste (simple)
+      const historyStore = list.is_multi === 1 ? storeId : list.is_shopping === 1 ? list.store_id : null;
+      remember(name, { storeId: historyStore, aisleId, count: 1 });
       return { item: describeItem(q.item.get(id)) };
     },
 
-    // Modifier un article (nom, quantité, note, rayon). Le nouveau rayon, ou
-    // le nouveau nom, est mémorisé pour les prochains ajouts.
+    // Modifier un article (nom, quantité, note, rayon ou magasin). Le nouveau
+    // rayon, ou le nouveau nom, est mémorisé pour les prochains ajouts ; dans
+    // une liste « multi », un changement de magasin reporte l'achat sur le
+    // nouveau magasin (il devient le magasin habituel s'il est le plus fréquent).
     'item.update'(user, op) {
       const item = itemForMember(user, op.itemId);
+      const multi = item.is_multi === 1;
+      checkFieldsForList(multi, op);
       const name = op.name === undefined ? item.name : itemName(op.name);
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
       let aisleId = item.aisle_id;
-      if (op.aisleId !== undefined && item.is_shopping === 1) {
+      if (op.aisleId !== undefined && item.is_shopping === 1 && !multi) {
         if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'Rayon inconnu ou désactivé.');
         // Un rayon désactivé peut être gardé, pas choisi
         const wanted = op.aisleId === null ? null : parseId(op.aisleId);
         if (wanted !== item.aisle_id) aisleId = activeAisleOrNull(wanted)?.id ?? null;
       }
-      if (op.name === undefined && op.quantity === undefined && op.note === undefined && op.aisleId === undefined) {
+      let storeId = item.store_id;
+      if (op.storeId !== undefined && multi) {
+        // Un magasin désactivé ou retiré du « multi » peut être gardé, pas choisi
+        const wanted = op.storeId === null ? null : parseId(op.storeId);
+        if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
+      }
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, nowIso(), item.id);
-      if (name !== item.name || aisleId !== item.aisle_id) {
-        remember(name, item.is_shopping === 1 ? aisleId : null, 0);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, nowIso(), item.id);
+
+      if (multi) {
+        if (name !== item.name) remember(name, { storeId, count: 0 });
+        else if (storeId !== item.store_id) saveHistory(moveUse(historyOf(name), { name, from: item.store_id, to: storeId, now: nowIso() }));
+      } else if (name !== item.name || aisleId !== item.aisle_id) {
+        const shopping = item.is_shopping === 1;
+        remember(name, { storeId: shopping ? item.list_store_id : null, aisleId: shopping ? aisleId : null, count: 0 });
       }
       return { item: describeItem(q.item.get(item.id)) };
     },
@@ -451,7 +577,8 @@ export function createListService(ctx) {
     const category = q.category.get(list.category_id);
     const aisles = q.allAisles.all();
     const items = q.liveItems.all(list.id).map(describeItem);
-    const groups = groupItems(items, aisles, category.is_shopping === 1);
+    const byStore = category.is_shopping === 1 && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
+    const groups = groupItems(items, aisles, category.is_shopping === 1, { byStore, stores: q.allStores.all() });
     return { list: describeList(list, user), groups };
   }
 
@@ -503,7 +630,7 @@ export function createListService(ctx) {
       listIds: [...summaries.keys()],
       items: items.map(describeItem),
       categories: q.allCategories.all().map(describeReference),
-      stores: q.allStores.all().map(describeReference),
+      stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ?').all(from).map(describeHistory),
     };

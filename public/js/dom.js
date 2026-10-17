@@ -117,3 +117,8 @@ export function avatar(name, { second = false, large = false } = {}) {
 export function initial(name) {
   return (String(name ?? '').trim()[0] ?? '?').toLocaleUpperCase('fr');
 }
+
+// Pastille « Multi » : magasin qui en regroupe plusieurs (kit, section 16.2)
+export function multiBadge() {
+  return h('span', { class: 'badge-multi' }, icon('layers', 'icon--xs'), 'Multi');
+}

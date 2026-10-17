@@ -1,8 +1,9 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
-// formulaire-liste-1 à 3) : nom, catégorie, magasin (seulement pour une
-// liste de courses), partage, et suppression de la liste (propriétaire).
+// formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, catégorie,
+// magasin simple ou « multi » (seulement pour une liste de courses), partage,
+// et suppression de la liste (propriétaire).
 
-import { h, icon, iconButton, field, errorNote, avatar, replace } from '../dom.js';
+import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
 import { get, put, op, uuid, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { activeOnly, putList, removeList } from '../store.js';
@@ -14,13 +15,14 @@ export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
   const editing = listId !== null;
 
-  // Il faut les catégories, magasins (synchro) et les comptes (pour le partage)
+  // Il faut les catégories, magasins (synchro, rafraîchie à l'ouverture pour
+  // proposer un magasin ajouté entre-temps) et les comptes (pour le partage)
   replace(container, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
   let cancelled = false;
   onLeave(() => {
     cancelled = true;
   });
-  Promise.all([app.data.loaded ? null : refreshData({ quiet: true }), get('/api/users')])
+  Promise.all([refreshData({ quiet: true }), get('/api/users')])
     .then(([, { users }]) => {
       if (cancelled) return;
       const list = editing ? app.data.lists.get(listId) : null;
@@ -73,30 +75,69 @@ function form(list, users) {
   const stores = activeOnly(app.data.stores);
   if (list?.store && !stores.some((s) => s.id === list.store.id)) stores.push(list.store);
   let storeId = list?.store?.id ?? null;
-  const storeLabel = h('span');
+  const storeLabel = h('span', { class: 'input__value' });
+  const storeHint = h('span', { class: 'field__hint' });
   const storeButton = h('button', { class: 'input input--select', type: 'button', 'aria-labelledby': 'store-label', onClick: () => chooseStore() }, storeLabel, icon('chev-d'));
   const storeField = h('div', { class: 'field' },
     h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'),
     storeButton,
-    h('span', { class: 'field__hint' }, 'Les articles seront classés par rayon.'));
+    storeHint);
 
+  // Nombre de magasins regroupés par un « multi », en toutes lettres
+  const membersLabel = (store) => {
+    const count = store.storeIds?.length ?? 0;
+    return `${count} magasin${count > 1 ? 's' : ''}`;
+  };
+
+  // Feuille de choix (formulaire-liste-multi-2) : magasins simples (classés
+  // par rayon), puis magasins « multi » ; on choisit, puis « Choisir ».
   function chooseStore() {
-    const choices = [{ id: null, name: 'Aucun magasin' }, ...stores];
-    const rows = choices.map((store) => {
-      const on = store.id === storeId;
-      return h('button', {
-        class: `radio-row${on ? ' is-on' : ''}`,
-        type: 'button',
-        role: 'radio',
-        'aria-checked': String(on),
-        onClick: () => {
-          storeId = store.id;
-          paint();
-          sheet.close();
-        },
-      }, h('span', { class: `radio${on ? ' is-on' : ''}` }), store.name, on ? icon('check', 'icon-end') : null);
+    let selected = storeId;
+    const rows = [];
+    const radio = (store, sub) => {
+      const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' },
+        h('span', { class: 'radio' }),
+        h('span', { class: 'grow' }, h('span', { class: 'row__title' }, store.name), sub ? h('span', { class: 'row__sub' }, sub) : null),
+        store.isMulti ? multiBadge() : null);
+      row.addEventListener('click', () => {
+        selected = store.id;
+        paintRows();
+      });
+      row.dataset.id = String(store.id);
+      rows.push(row);
+      return row;
+    };
+    const paintRows = () => {
+      for (const row of rows) {
+        const on = row.dataset.id === String(selected);
+        row.classList.toggle('is-on', on);
+        row.setAttribute('aria-checked', String(on));
+        row.querySelector('.radio').classList.toggle('is-on', on);
+        row.querySelector('.icon-end')?.remove();
+        if (on) row.append(icon('check', 'icon-end'));
+      }
+    };
+    const simples = stores.filter((store) => !store.isMulti);
+    const multis = stores.filter((store) => store.isMulti);
+    const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Choisir');
+    const content = h('div', { class: 'picker stack' },
+      h('span', { class: 'field__label', id: 'single-stores' }, 'Un seul magasin'),
+      h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'single-stores' },
+        radio({ id: null, name: 'Aucun magasin' }, 'Classé par rayon'),
+        simples.map((store) => radio(store, 'Classé par rayon'))),
+      multis.length ? [
+        h('span', { class: 'field__label', id: 'multi-stores' }, 'Plusieurs magasins'),
+        h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'multi-stores' }, multis.map((store) => radio(store, membersLabel(store)))),
+      ] : null);
+    paintRows();
+    const sheet = openSheet({ title: 'Magasin', content: [content, confirm] });
+    // Le magasin déjà choisi est visible même s'il est bas dans la liste
+    rows.find((row) => row.dataset.id === String(selected))?.scrollIntoView({ block: 'nearest' });
+    confirm.addEventListener('click', () => {
+      storeId = selected;
+      paint();
+      sheet.close();
     });
-    const sheet = openSheet({ title: 'Magasin', content: h('div', { class: 'card picker', role: 'radiogroup', 'aria-label': 'Magasin' }, rows) });
   }
 
   // --- Partage ---
@@ -148,7 +189,9 @@ function form(list, users) {
     }
     const category = categories.find((c) => c.id === categoryId);
     storeField.hidden = !category?.isShopping;
-    storeLabel.textContent = stores.find((s) => s.id === storeId)?.name ?? 'Aucun magasin';
+    const store = stores.find((s) => s.id === storeId);
+    replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? 'Aucun magasin', store?.isMulti ? multiBadge() : null);
+    storeHint.textContent = store?.isMulti ? 'Les articles seront classés par magasin, sans rayons.' : 'Les articles seront classés par rayon.';
   }
   paint();
 

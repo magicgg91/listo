@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles) et 5 (interface mobile) terminées. Le temps réel arrive à l'étape 6, le hors ligne à l'étape 7.
+État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles) et 5 (interface mobile) sont livrées ; l'étape 6 (magasin « multi ») est en cours de validation. Suivent : 7 photos des articles, 8 temps réel, 9 hors ligne, 10 lien public, 11 finitions et mise en production.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -25,16 +25,16 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/limiter.js` | Limitation des tentatives (5 échecs en 15 minutes) |
 | `server/audit.js` | Journal de sécurité (`docker logs listo` et `data/journal.log`, avec rotation) |
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
-| `server/lists.js` | Listes et articles : droits, opérations, historique, synchronisation, nettoyage |
-| `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé et autocomplétion, tri des articles |
+| `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
+| `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
-| `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css` sans sa section 17 (la section 16, photo / « multi » / lien public, est à y ajouter aux étapes 6, 7 et 10)) et petits ajustements propres à l'application |
+| `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css`, sections 1 à 16, sans la section 17 qui ne sert qu'aux planches) et petits ajustements propres à l'application |
 | `public/manifest.webmanifest`, `public/sw.js`, `public/icons/` | Installation sur l'écran d'accueil (PWA). Le service worker ne met rien en cache |
 | `public/js/app.js` | Démarrage de l'interface, compte connecté, copie locale des données, choix de l'écran |
 | `public/js/router.js` | Adresses `#/listes/…`, bouton Retour du téléphone, fenêtres superposées |
 | `public/js/api.js` | Seul module qui parle au serveur (`/api/…`, `/api/ops` avec des identifiants UUID créés dans le téléphone) |
-| `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon, suggestions) |
+| `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, nombre d'articles restants…) |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
 | `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `settings.js` (réglages, mot de passe, 2FA), `admin.js` (administration) |
@@ -78,7 +78,7 @@ Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
 
 En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
 
-## Vérifier l'interface sur le téléphone (étape 5)
+## Vérifier l'interface sur le téléphone (étapes 5 et 6)
 
 Ces points ne peuvent pas être testés automatiquement : à vérifier une fois à la main, de préférence sur le vrai sous-domaine en HTTPS.
 
@@ -89,6 +89,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 5. **Bouton Retour du téléphone** : une feuille ouverte (article, choix du rayon) se ferme sans quitter la liste ; depuis une liste, Retour ramène à « Mes listes ».
 6. **Réseau coupé** (mode avion) : cocher un article affiche un message clair et la case revient à son état ; un article tapé reste dans le champ.
 7. **Ordinateur** (fenêtre d'au moins 1024 px de large) : « Mes listes » à gauche, la liste choisie au centre.
+8. **Magasin « multi »** (étape 6) : Administration → Magasins, créer un magasin « Multi » et cocher ses magasins ; créer une liste de courses avec ce magasin. Ajouter un article nouveau : son magasin est demandé ; l'ajouter une deuxième fois : il retrouve son magasin sans question. En faisant défiler, l'en-tête du magasin reste collé en haut.
 
 ## API des comptes (étape 2)
 
@@ -199,7 +200,7 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `POST /api/admin/categories` | Ajouter : `name`, `isShopping` |
 | `PATCH /api/admin/categories/:id` | Modifier `name`, `active`, `isShopping` |
 | `DELETE /api/admin/categories/:id` | Supprimer, seulement si jamais utilisée |
-| `GET`, `POST /api/admin/stores` ; `PATCH`, `DELETE /api/admin/stores/:id` | Pareil pour les magasins (`name`, `active`) |
+| `GET`, `POST /api/admin/stores` ; `PATCH`, `DELETE /api/admin/stores/:id` | Pareil pour les magasins (`name`, `active`). À la création, `isMulti` (`true` pour un magasin « multi », étape 6). Pour un « multi », `PATCH` accepte `storeIds` : la liste complète des magasins qu'il regroupe |
 | `GET`, `POST /api/admin/aisles` ; `PATCH`, `DELETE /api/admin/aisles/:id` | Pareil pour les rayons (`name`, `active`) |
 
 Règles :
@@ -209,7 +210,7 @@ Règles :
 - **Mot de passe à changer** : un mot de passe choisi par un Admin (création du compte ou réinitialisation) doit être changé à la connexion suivante. La connexion répond `"mustChangePassword": true`. Tant que ce n'est pas fait, seuls `GET /api/me`, `POST /api/me/password` et `POST /api/logout` sont permis, et le nouveau mot de passe doit être différent.
 - **Supprimer ou désactiver** : un compte, une catégorie, un magasin ou un rayon déjà utilisé ne peut pas être supprimé, seulement désactivé.
   - Un compte est utilisé s'il possède une liste, a créé un article ou est membre d'une liste.
-  - Une catégorie ou un magasin est utilisé par une liste.
+  - Une catégorie ou un magasin est utilisé par une liste. Un magasin l'est aussi s'il est regroupé par un « multi », ou s'il est le magasin d'un article ou de l'historique.
   - Un rayon est utilisé par un article ou par l'historique d'autocomplétion.
   - Un élément désactivé reste sur les listes qui l'utilisent déjà, mais ne sera plus proposé ensuite.
 - **Noms uniques** : deux noms qui ne diffèrent que par les majuscules ou les accents sont des doublons (« Épicerie salée » = « EPICERIE SALEE »). Les identifiants de compte sont uniques sans tenir compte des majuscules.
@@ -300,8 +301,8 @@ Les opérations de `POST /api/ops` :
 | `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun) | propriétaire |
 | `list.delete` | `listId` | propriétaire |
 | `list.clearChecked` | `listId` (vider les barrés) | membres |
-| `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon) | membres |
-| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` | membres |
+| `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon). Liste « multi » : `storeId` au lieu de `aisleId` (facultatif : sinon le magasin habituel ; `null` = Sans magasin) | membres |
+| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi ») | membres |
 | `item.check` | `itemId`, `checked` (`true` ou `false`) | membres |
 | `item.delete` | `itemId` | membres |
 
@@ -318,6 +319,7 @@ Règles :
   - Supprimer un article ou vider les barrés n'efface pas l'historique.
 - **Désactivations** : une catégorie, un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.
 - **Changement de catégorie** : une liste qui passe à une catégorie qui n'est pas « liste de courses » perd son magasin.
+- **Magasin « multi »** (étape 6), voir la section suivante.
 - **Partage** :
   - le propriétaire reste toujours membre ;
   - un compte désactivé ne peut pas être ajouté ;
@@ -379,6 +381,46 @@ grep liste_ data/journal.log
 
 Pour repartir de zéro : `docker compose -f docker-compose.dev.yml down`, puis supprimer les dossiers `data` et `secrets`.
 
+## Magasin « multi » (étape 6)
+
+Pour les courses faites dans plusieurs boutiques, l'Admin crée un magasin « multi » (par exemple « Centre-ville ») et coche les magasins simples qu'il regroupe (Boucherie, Fromagerie, Leclerc…). Une liste de courses qui choisit ce magasin n'a plus de rayons : chaque article a son propre magasin, et la liste est groupée par magasin.
+
+Règles :
+
+- **Administration** : le type (simple ou « multi ») se choisit à la création et ne change plus. Un « multi » ne regroupe que des magasins simples, jamais un autre « multi ». Désactiver un magasin, ou le décocher d'un « multi », le retire des choix proposés aux articles, sans modifier les articles qui l'utilisent déjà.
+- **Droits, vérifiés par le serveur à chaque requête** : le magasin choisi pour un article doit être regroupé par le magasin de la liste, et actif. Un rayon est refusé dans une liste « multi », un magasin par article est refusé dans une autre liste. Un magasin « multi » n'est accepté que pour une liste de courses (une liste qui passe en « Tâches » perd son magasin).
+- **Tri** : par magasin, dans l'ordre alphabétique, « Sans magasin » en dernier ; puis par ordre alphabétique, les articles cochés en bas de leur magasin.
+- **Magasin automatique** : un article reprend le magasin où il a été acheté le plus souvent, parmi les magasins de la liste (le plus récent en cas d'égalité). S'il n'y a jamais été acheté, le téléphone demande son magasin une fois. Le magasin est celui de l'article, pas celui de sa famille de produits (des pains à burger peuvent venir de la boucherie). Changer le magasin d'un article reporte son achat sur le nouveau magasin.
+- **Historique** : une ligne générale par article (autocomplétion, rayon général) et une ligne par article et par magasin (rayon habituel dans ce magasin, nombre d'achats dans ce magasin). Dans une liste à magasin simple, un article reprend son rayon dans ce magasin, sinon son rayon général : pour les données existantes, rien ne change.
+- **Changer le magasin d'une liste** (simple ↔ « multi », ou d'un « multi » à un autre) : chaque article garde son rayon et son magasin, rien n'est effacé (revenir en arrière retrouve le classement). Seuls les champs vides sont complétés par l'historique : magasin habituel en passant en « multi » (aussi pour un article dont le magasin n'est pas regroupé par le nouveau), rayon habituel en passant à un magasin simple.
+
+### Vérifier le magasin « multi » à la main avec curl
+
+Avec les raccourcis et les fonctions `id` et `op` de la section précédente (Admin connecté dans `cookies.txt`) :
+
+```sh
+# 1. Deux magasins simples et un « multi » qui les regroupe (noter les id renvoyés)
+curl -b cookies.txt -H "$O" -H "$J" -d '{"name":"Boucherie"}' $U/api/admin/stores           # id 4 par exemple
+curl -b cookies.txt -H "$O" -H "$J" -d '{"name":"Fromagerie"}' $U/api/admin/stores          # id 5
+curl -b cookies.txt -H "$O" -H "$J" -d '{"name":"Centre-ville","isMulti":true}' $U/api/admin/stores   # id 6
+curl -b cookies.txt -H "$O" -H "$J" -X PATCH -d '{"storeIds":[4,5]}' $U/api/admin/stores/6
+
+# 2. Une liste « multi », « Œufs » acheté à la Fromagerie
+L=$(id)
+op '"type":"list.create","listId":"'"$L"'","name":"Courses du centre-ville","categoryId":1,"storeId":6'
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Œufs","storeId":5'
+
+# 3. « œufs » ajouté une deuxième fois, sans magasin : il retrouve la Fromagerie (storeId 5)
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"œufs"'
+
+# 4. Refusés (code 400) : un magasin non regroupé (3 = Lidl), un rayon
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Pain","storeId":3'
+op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Pain","aisleId":4'
+
+# 5. La liste groupée par magasin (« store » au lieu de « aisle » dans chaque groupe)
+curl -b cookies.txt $U/api/lists/$L
+```
+
 ## Production
 
 Sur le serveur, seul `docker-compose.yml` est nécessaire (aucun code source). L'image est construite par GitHub Actions à chaque fusion sur `main`.
@@ -390,4 +432,4 @@ docker logs listo                             # voir les journaux
 docker compose pull && docker compose up -d   # mettre à jour
 ```
 
-Avant le premier lancement : remplacer `LISTO_PUBLIC_URL` par l'adresse exacte de Listo (par exemple `https://listo.mondomaine.fr` : même protocole et même sous-domaine que dans le navigateur, sinon toutes les connexions sont refusées par la protection CSRF), et vérifier le nom du réseau Docker partagé avec Nginx Proxy Manager (`proxy` par défaut). Au premier démarrage, `docker logs listo` affiche le code de démarrage qui permet de créer le compte Admin. Le guide complet de mise en production arrive à l'étape 8.
+Avant le premier lancement : remplacer `LISTO_PUBLIC_URL` par l'adresse exacte de Listo (par exemple `https://listo.mondomaine.fr` : même protocole et même sous-domaine que dans le navigateur, sinon toutes les connexions sont refusées par la protection CSRF), et vérifier le nom du réseau Docker partagé avec Nginx Proxy Manager (`proxy` par défaut). Au premier démarrage, `docker logs listo` affiche le code de démarrage qui permet de créer le compte Admin. Le guide complet de mise en production arrive à l'étape 11.

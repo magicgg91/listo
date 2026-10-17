@@ -21,7 +21,7 @@
 // Nouvelle version de ce fichier : changer VERSION si la liste des fichiers
 // change. L'ancienne copie est effacée à l'activation.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -59,6 +59,7 @@ const APP_FILES = [
   '/js/screens/lists.js',
   '/js/screens/login.js',
   '/js/screens/settings.js',
+  '/js/screens/share.js',
 ];
 
 // Installation : copie de tous les fichiers de l'application

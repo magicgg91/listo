@@ -9,6 +9,13 @@ import { computeSummaries } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill } from '../ui.js';
 
+// Vrai si la liste a un lien public en cours (information donnée au
+// propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
+export function hasPublicLink(list, now = Date.now()) {
+  const link = list.publicLink;
+  return Boolean(link) && (link.expiresAt === null || Date.parse(link.expiresAt) > now);
+}
+
 // Carte d'une liste (balisage de components.html)
 export function listCard(list, { selected = false } = {}) {
   const members = list.members.filter((m) => m.active || m.isOwner);
@@ -37,7 +44,9 @@ export function listCard(list, { selected = false } = {}) {
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
   h('p', { class: 'list-card__meta' },
     h('span', {}, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--xs'), list.category.name),
-    list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name, list.store.isMulti && list.category.isShopping ? [' ', multiBadge()] : null) : null),
+    list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name, list.store.isMulti && list.category.isShopping ? [' ', multiBadge()] : null) : null,
+    // Lien public en cours (propriétaire seulement) : petit rappel
+    hasPublicLink(list) ? h('span', { role: 'img', 'aria-label': 'Partagée par lien public', title: 'Partagée par lien public' }, icon('link', 'icon--xs')) : null),
   h('div', { class: 'list-card__foot' },
     count,
     h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },

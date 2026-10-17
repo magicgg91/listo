@@ -60,3 +60,27 @@ export function defaultDisplayName(username) {
   const name = String(username ?? '').trim();
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
+
+// Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »
+export function dateTimeLabel(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const day = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return `${day} à ${time}`;
+}
+
+// Temps restant avant une date : « Il reste 7 jours », « Il reste 5 heures »,
+// « Il reste 20 minutes ». Arrondi au plus proche (une durée de 7 jours
+// tout juste créée affiche bien « 7 jours »).
+export function timeLeftLabel(iso, now = Date.now()) {
+  const left = new Date(iso).getTime() - now;
+  if (Number.isNaN(left)) return '';
+  if (left <= 0) return 'Expiré';
+  const hours = Math.round(left / HOUR);
+  if (hours >= 48) return `Il reste ${Math.round(left / DAY)} jours`;
+  if (hours >= 2) return `Il reste ${hours} heures`;
+  const minutes = Math.ceil(left / MINUTE);
+  if (minutes >= 2) return `Il reste ${minutes} minutes`;
+  return "Il reste moins d'une minute";
+}

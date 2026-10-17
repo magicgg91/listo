@@ -220,7 +220,7 @@ Le journal de sécurité note les connexions réussies et ratées, les blocages 
 
 1. **HTTPS** : `https://listo.mondomaine.fr` s'ouvre avec le cadenas ; `http://listo.mondomaine.fr` redirige vers `https://`.
 2. **En-têtes de sécurité vus de l'extérieur** : passer l'adresse dans un outil en ligne comme <https://securityheaders.com>. On doit y voir :
-   - `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options` (envoyés par Listo) ;
+   - `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` (envoyés par Listo) ;
    - `Strict-Transport-Security` (ajouté par Nginx Proxy Manager) ;
    - aucun `X-Powered-By`.
 3. **Une sauvegarde** : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
@@ -839,6 +839,7 @@ curl -i $U/api/public/$J
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `no-referrer` |
 | `X-Frame-Options` | `DENY` |
+| `Permissions-Policy` | Interdit à la page les fonctions que Listo n'utilise jamais : position, micro, paiement, USB, capteurs de mouvement… (l'appareil photo reste libre pour la photo d'un article) |
 | `Strict-Transport-Security` | **ajouté par Nginx Proxy Manager** (case HSTS), pas par Listo |
 
 `X-Powered-By` est désactivé. Les erreurs répondent par un message court en français (« Page introuvable. », « Requête invalide. », « Erreur interne du serveur. »), sans trace ni chemin de fichier ; le détail d'une erreur inattendue va dans `docker logs`. Le cookie de session est `HttpOnly`, `Secure` (en production) et `SameSite=Lax`.

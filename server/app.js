@@ -49,6 +49,15 @@ export const CONTENT_SECURITY_POLICY = [
   "frame-ancestors 'none'",
 ].join('; ');
 
+// Fonctions du navigateur que Listo n'utilise jamais : interdites à la page
+// (Permissions-Policy). L'appareil photo n'est pas listé : la prise de photo
+// passe par le sélecteur de fichier du téléphone, qui doit rester libre.
+export const PERMISSIONS_POLICY = [
+  'accelerometer=()', 'autoplay=()', 'display-capture=()', 'geolocation=()',
+  'gyroscope=()', 'hid=()', 'magnetometer=()', 'microphone=()', 'midi=()', 'payment=()',
+  'serial=()', 'usb=()', 'xr-spatial-tracking=()',
+].join(', ');
+
 // Options :
 // - db : base ouverte (obligatoire)
 // - config : configuration (voir config.js)
@@ -108,6 +117,7 @@ export function createApp({
       'X-Content-Type-Options': 'nosniff',     // pas de « devinette » du type de fichier
       'Referrer-Policy': 'no-referrer',        // l'adresse de Listo n'est pas transmise ailleurs
       'X-Frame-Options': 'DENY',               // Listo ne peut pas être affiché dans un cadre
+      'Permissions-Policy': PERMISSIONS_POLICY, // ni position, ni micro, ni paiement…
     });
     next();
   });

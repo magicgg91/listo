@@ -25,6 +25,7 @@ import { normalizeItemName } from '../history.js';
 import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
+import { openShareSheet } from './share.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -133,6 +134,7 @@ export function renderList(listId, onLeave) {
     if (!view) return;
     const items = [];
     if (view.list.isOwner) items.push({ icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: listId }) });
+    if (view.list.isOwner) items.push({ icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(view.list) });
     if (view.checked > 0) items.push({ icon: 'trash', label: 'Vider les barrés', onSelect: clearChecked });
     items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData({ full: true }) });
     openMenu(items, { label: 'Menu de la liste' });

@@ -14,13 +14,14 @@
 //    de Listo : la Content-Security-Policy n'a pas besoin d'être assouplie.
 //
 // Ce qu'il ne fait JAMAIS : garder les réponses de l'API (/api/…, sauf les
-// photos ci-dessus), le flux temps réel (/api/events), ni les pages du lien
-// public (/p/…). Ces requêtes passent directement vers le serveur.
+// photos ci-dessus), le flux temps réel (/api/events), ni le lien public
+// (page /p/…, données et photos /api/public/…, script js/public.js). Ces
+// requêtes passent directement vers le serveur.
 //
 // Nouvelle version de ce fichier : changer VERSION si la liste des fichiers
 // change. L'ancienne copie est effacée à l'activation.
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -37,6 +38,7 @@ const APP_FILES = [
   '/icons/icon-maskable.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png',
   '/js/actions.js',
   '/js/api.js',
   '/js/app.js',
@@ -58,6 +60,7 @@ const APP_FILES = [
   '/js/screens/lists.js',
   '/js/screens/login.js',
   '/js/screens/settings.js',
+  '/js/screens/share.js',
 ];
 
 // Installation : copie de tous les fichiers de l'application

@@ -129,6 +129,8 @@ export function adminUserRoutes(ctx) {
 
     // Un compte désactivé est déconnecté partout, tout de suite
     if (changes.active === 0) revokeAllSessions(ctx, user.id);
+    // … et les liens publics de ses listes sont arrêtés
+    const stoppedLinks = changes.active === 0 ? ctx.shares.stopForOwner(user.id) : 0;
 
     // Journal : une ligne par changement réel
     const who = { admin: req.user.username, utilisateur: user.username, ip: req.ip };
@@ -137,6 +139,7 @@ export function adminUserRoutes(ctx) {
     }
     if (changes.role !== undefined && changes.role !== user.role) audit('admin_role_change', { ...who, role: changes.role });
     if (changes.active === 0 && user.active === 1) audit('admin_compte_desactive', who);
+    if (stoppedLinks) audit('lien_public_arrete', { ...who, nombre: stoppedLinks, raison: 'compte désactivé' });
     if (changes.active === 1 && user.active === 0) audit('admin_compte_reactive', who);
 
     res.json({ user: describe(findUser.get(user.id)) });

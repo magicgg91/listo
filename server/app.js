@@ -21,6 +21,9 @@ import { listRoutes } from './routes/lists.js';
 import { photoRoutes } from './routes/photos.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
+import { createShareService, createPublicAccess } from './shares.js';
+import { shareRoutes } from './routes/shares.js';
+import { publicRoutes } from './routes/public.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -82,6 +85,9 @@ export function createApp({
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
+  // Liens publics (étape 10) et cookies de consultation des visiteurs
+  ctx.publicAccess = createPublicAccess(now);
+  ctx.shares = createShareService(ctx);
 
   const app = express();
   app.locals.ctx = ctx;
@@ -117,6 +123,13 @@ export function createApp({
     }
   });
 
+  // --- Lien public (sans compte, lecture seule) ---
+  // Monté AVANT l'API : ces routes ne lisent jamais la session d'un compte, et
+  // leur cookie de consultation n'est reconnu nulle part ailleurs.
+  const visitor = publicRoutes(ctx, { publicDir: PUBLIC_DIR });
+  app.use('/p', visitor.pageRouter);
+  app.use('/api/public', visitor.apiRouter);
+
   // --- API ---
   const api = express.Router();
   // Réponses de l'API jamais gardées en cache
@@ -141,6 +154,7 @@ export function createApp({
   api.use(meRoutes(ctx));
   api.use(listRoutes(ctx));
   api.use(photoRoutes(ctx));
+  api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   // Flux temps réel : « la liste X a changé » (voir events.js)
   api.get('/events', sameSiteOnly(config.publicUrl), (req, res) => ctx.events.connect(req, res));
   api.use('/admin', adminRoutes(ctx));
@@ -174,7 +188,7 @@ export function createApp({
 
   // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois
   // périmés, listes et articles supprimés depuis plus de 30 jours (avec leurs
-  // photos).
+  // photos), liens publics arrêtés ou expirés depuis plus de 30 jours.
   // « unref » : ce minuteur n'empêche pas Listo de s'arrêter.
   const cleanup = () => {
     purgeExpiredSessions(ctx);
@@ -182,6 +196,9 @@ export function createApp({
     ctx.limiter.prune();
     ctx.uploads.prune();
     ctx.pending.prune();
+    ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
+    ctx.publicAccess.prune();
+    for (const limiter of ctx.publicLimiters) limiter.prune();
   };
   cleanup();
   setInterval(cleanup, 60 * 60 * 1000).unref();

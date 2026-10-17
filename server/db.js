@@ -238,6 +238,28 @@ export const MIGRATIONS = [
   -- photo). L'image elle-même est un fichier data/photos/<id de l'article>.jpg.
   ALTER TABLE items ADD COLUMN photo_at TEXT;
   `,
+
+  // --- Migration 7 : lien public d'une liste (étape 10) ---
+  `
+  -- Lien public (lecture seule, sans compte). Le jeton de l'adresse n'est
+  -- jamais stocké en clair : token_hash (SHA-256) sert à retrouver le lien,
+  -- token_sealed (chiffré avec la clé de secrets/) à le réafficher au
+  -- propriétaire. password_hash : mot de passe facultatif, haché avec scrypt.
+  -- expires_at vide = illimité ; revoked_at rempli = lien arrêté.
+  CREATE TABLE public_shares (
+    id            INTEGER PRIMARY KEY,
+    list_id       TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    token_hash    TEXT    NOT NULL UNIQUE,
+    token_sealed  TEXT    NOT NULL,
+    password_hash TEXT,
+    expires_at    TEXT,
+    created_by    INTEGER NOT NULL REFERENCES users(id),
+    created_at    TEXT    NOT NULL,
+    revoked_at    TEXT
+  );
+  -- Un seul lien non arrêté par liste
+  CREATE UNIQUE INDEX public_shares_one_per_list ON public_shares(list_id) WHERE revoked_at IS NULL;
+  `,
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

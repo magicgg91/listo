@@ -13,7 +13,7 @@ import { tempDir } from './helpers.js';
 // public_shares arrivera avec le lien public (étape 10).
 const TABLES = [
   'users', 'recovery_codes', 'sessions', 'categories', 'stores', 'store_members',
-  'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops',
+  'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops', 'public_shares',
 ];
 
 // Base en mémoire avec un compte, une catégorie et une liste, pour les tests
@@ -26,7 +26,7 @@ function sampleDb() {
   return db;
 }
 
-test('les tables sont créées (cahier des charges, sauf public_shares de l\'étape 10)', () => {
+test('les treize tables du cahier des charges sont créées', () => {
   const db = openDatabase(':memory:');
   const names = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
   for (const table of TABLES) assert.ok(names.includes(table), `table ${table} manquante`);

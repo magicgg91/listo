@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { matchRoute, pathFor } from '../public/js/router.js';
-import { relativeTime, remainingLabel, splitPrefix, namesList, defaultDisplayName } from '../public/js/format.js';
+import { relativeTime, remainingLabel, splitPrefix, namesList, defaultDisplayName, dateTimeLabel, timeLeftLabel } from '../public/js/format.js';
 import {
   emptyState, loadSync, putItem, removeItem, putList, removeList, rememberItem,
   computeSummaries, computeListView, computeSuggestions, isKnownItem, activeOnly,
@@ -375,4 +375,21 @@ test('application locale des opérations : même effet que le serveur', async ()
   applyOp(state, { type: 'item.check', itemId: 'inconnu', checked: true }, ctx);
   applyOp(state, { type: 'item.create', listId: 'inconnue', itemId: 'y', name: 'X' }, ctx);
   assert.equal(state.items.has('y'), false);
+});
+
+test('lien public : date d\'expiration et temps restant (feuille et page publique)', () => {
+  const now = Date.UTC(2026, 9, 17, 16, 30);
+  const iso = (ms) => new Date(now + ms).toISOString();
+  const HOUR = 60 * 60 * 1000;
+  assert.match(dateTimeLabel('2026-10-24T16:30:00.000Z'), /^24 oct\. 2026 à \d{2}:30$/);
+  assert.equal(dateTimeLabel('pas une date'), '');
+  assert.equal(timeLeftLabel(iso(7 * 24 * HOUR - 5000), now), 'Il reste 7 jours', 'tout juste créé : 7 jours');
+  assert.equal(timeLeftLabel(iso(6.6 * 24 * HOUR), now), 'Il reste 7 jours');
+  assert.equal(timeLeftLabel(iso(48 * HOUR), now), 'Il reste 2 jours');
+  assert.equal(timeLeftLabel(iso(24 * HOUR), now), 'Il reste 24 heures');
+  assert.equal(timeLeftLabel(iso(2 * HOUR), now), 'Il reste 2 heures');
+  assert.equal(timeLeftLabel(iso(HOUR), now), 'Il reste 60 minutes');
+  assert.equal(timeLeftLabel(iso(90 * 1000), now), 'Il reste 2 minutes');
+  assert.equal(timeLeftLabel(iso(30 * 1000), now), "Il reste moins d'une minute");
+  assert.equal(timeLeftLabel(iso(-1), now), 'Expiré');
 });

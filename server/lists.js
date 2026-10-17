@@ -114,6 +114,13 @@ export function createListService(ctx) {
       LEFT JOIN stores ON stores.id = lists.store_id
       WHERE items.id = :itemId AND items.deleted_at IS NULL
     `),
+    // Un article supprimé (pas encore effacé) d'une liste dont le compte est membre
+    deletedItemForMember: db.prepare(`
+      SELECT items.* FROM items
+      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
+      JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
+      WHERE items.id = :itemId AND items.deleted_at IS NOT NULL
+    `),
     anyList: db.prepare('SELECT id FROM lists WHERE id = ?'),
     anyItem: db.prepare('SELECT id FROM items WHERE id = ?'),
     item: db.prepare('SELECT * FROM items WHERE id = ?'),
@@ -290,6 +297,7 @@ export function createListService(ctx) {
     note: item.note,
     aisleId: item.aisle_id,
     storeId: item.store_id,
+    photoAt: item.photo_at,
     checked: item.checked === 1,
     createdBy: item.created_by,
     createdAt: item.created_at,
@@ -507,12 +515,22 @@ export function createListService(ctx) {
       return { item: describeItem(q.item.get(item.id)) };
     },
 
-    // Supprimer un article (suppression logique ; l'historique reste)
+    // Supprimer un article (suppression logique ; l'historique reste). Sa
+    // photo est gardée jusqu'au nettoyage (30 jours) : « Annuler » la retrouve.
     'item.delete'(user, op) {
       const item = itemForMember(user, op.itemId);
       const now = nowIso();
       db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, item.id);
       return {};
+    },
+
+    // Remettre un article supprimé (« Annuler »), avec sa photo, tant qu'il
+    // n'a pas été effacé par le nettoyage. Membres de la liste seulement.
+    'item.restore'(user, op) {
+      const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId, "d'article") });
+      if (!item) throw new OpError(404, ITEM_NOT_FOUND);
+      db.prepare('UPDATE items SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(nowIso(), item.id);
+      return { item: describeItem(q.item.get(item.id)) };
     },
   };
 
@@ -674,13 +692,47 @@ export function createListService(ctx) {
   // Efface pour de bon ce qui est marqué supprimé depuis plus de 30 jours
   // (les articles d'une liste effacée partent avec elle), ainsi que la trace
   // des opérations de plus de 30 jours.
+  // Les fichiers photo des articles effacés le sont aussi (y compris ceux
+  // des articles d'une liste effacée), puis un ménage retire les fichiers dont
+  // l'article n'existe plus (coupure pendant un envoi, par exemple).
   function purgeDeleted() {
     const limit = new Date(ctx.now() - PURGE_AFTER_DAYS * DAY).toISOString();
-    return db.transaction(() => ({
-      items: db.prepare('DELETE FROM items WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
-      lists: db.prepare('DELETE FROM lists WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
-      ops: db.prepare('DELETE FROM applied_ops WHERE applied_at < ?').run(limit).changes,
-    }))();
+    const result = db.transaction(() => {
+      const photos = db.prepare(`
+        SELECT items.id FROM items JOIN lists ON lists.id = items.list_id
+        WHERE items.photo_at IS NOT NULL
+          AND ((items.deleted_at IS NOT NULL AND items.deleted_at < :limit)
+            OR (lists.deleted_at IS NOT NULL AND lists.deleted_at < :limit))
+      `).pluck().all({ limit });
+      return {
+        photoIds: photos,
+        items: db.prepare('DELETE FROM items WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
+        lists: db.prepare('DELETE FROM lists WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
+        ops: db.prepare('DELETE FROM applied_ops WHERE applied_at < ?').run(limit).changes,
+      };
+    })();
+    const { photoIds, ...counts } = result;
+    if (ctx.photos) {
+      for (const id of photoIds) ctx.photos.remove(id);
+      const known = db.prepare('SELECT 1 FROM items WHERE id = ?').pluck();
+      counts.photos = photoIds.length + ctx.photos.sweep((id) => known.get(id) === 1, ctx.now());
+    }
+    return counts;
+  }
+
+  // --- Photos (routes /api/items/:id/photo) ---
+
+  // L'article (non supprimé), si le compte est membre de sa liste ; sinon null
+  function photoItem(user, itemId) {
+    if (!isUuid(itemId)) return null;
+    return q.memberItem.get({ userId: user.id, itemId: itemId.toLowerCase() }) ?? null;
+  }
+
+  // Note la date de la photo (ou son retrait : null). updated_at change : les
+  // autres téléphones l'apprennent à leur synchronisation.
+  function setPhotoDate(itemId, photoAt) {
+    db.prepare('UPDATE items SET photo_at = ?, updated_at = ? WHERE id = ?').run(photoAt, nowIso(), itemId);
+    return describeItem(q.item.get(itemId));
   }
 
   // Comptes actifs, pour choisir avec qui partager une liste
@@ -690,7 +742,10 @@ export function createListService(ctx) {
       .sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'));
   }
 
-  return { applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers, OpError };
+  return {
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
+    photoItem, setPhotoDate, nowIso, OpError,
+  };
 }
 
 export { OpError };

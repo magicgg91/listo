@@ -231,6 +231,13 @@ export const MIGRATIONS = [
     CREATE INDEX item_history_used ON item_history(last_used_at);
     `);
   },
+
+  // --- Migration 6 : photo d'un article (étape 7) ---
+  `
+  -- Date de la photo de l'article, posée par le serveur (vide = pas de
+  -- photo). L'image elle-même est un fichier data/photos/<id de l'article>.jpg.
+  ALTER TABLE items ADD COLUMN photo_at TEXT;
+  `,
 ];
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

@@ -210,3 +210,21 @@ test('liste à magasin simple : rayon du magasin, sinon rayon général', () => 
   assert.equal(usualAisleFor(state, other, 'Lait'), 11, 'le rayon général suit le dernier choisi');
   assert.equal(historyStoreFor(state.lists.get('B'), {}), null, 'liste de tâches : pas de magasin');
 });
+
+// --- Photo (étape 7) ---
+
+test('photo : réduite à 1 280 px sur le grand côté, proportions gardées, jamais agrandie', async () => {
+  const { fitSize } = await import('../public/js/photo.js');
+  assert.deepEqual(fitSize(4032, 3024), { width: 1280, height: 960 });
+  assert.deepEqual(fitSize(3024, 4032), { width: 960, height: 1280 }, 'photo en hauteur');
+  assert.deepEqual(fitSize(800, 600), { width: 800, height: 600 }, 'petite photo inchangée');
+  assert.deepEqual(fitSize(10000, 10), { width: 1280, height: 1 });
+});
+
+test("photo : l'adresse de l'image change avec la date de la photo", async () => {
+  const { photoUrl } = await import('../public/js/api.js');
+  const a = photoUrl({ id: 'abc', photoAt: '2026-10-17T10:00:00.000Z' });
+  const b = photoUrl({ id: 'abc', photoAt: '2026-10-17T10:05:00.000Z' });
+  assert.equal(a, '/api/items/abc/photo?v=2026-10-17T10%3A00%3A00.000Z');
+  assert.notEqual(a, b);
+});

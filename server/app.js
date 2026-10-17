@@ -4,6 +4,7 @@
 // puissent l'utiliser directement. Le démarrage est dans index.js.
 
 import crypto from 'node:crypto';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { loadConfig } from './config.js';
@@ -17,6 +18,8 @@ import { publicAuthRoutes, logoutRoute } from './routes/auth.js';
 import { meRoutes } from './routes/me.js';
 import { adminRoutes } from './routes/admin.js';
 import { listRoutes } from './routes/lists.js';
+import { photoRoutes } from './routes/photos.js';
+import { createPhotoStore, createUploadCounter } from './photos.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -49,6 +52,7 @@ export const CONTENT_SECURITY_POLICY = [
 // - now : horloge (les tests la remplacent pour « avancer le temps »)
 // - log : où écrire le journal de sécurité (par défaut : docker logs)
 // - journalFile : écriture du journal dans un fichier (voir audit.js)
+// - photosDir : dossier des photos (par défaut data/photos, à côté de la base)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -57,6 +61,7 @@ export function createApp({
   now = Date.now,
   log,
   journalFile = null,
+  photosDir = path.join(path.dirname(config.dbPath), 'photos'),
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -68,6 +73,8 @@ export function createApp({
     limiter: createLimiter({ now }),
     pending: createPendingLogins(now),
     audit: createAudit({ now, write: log, file: journalFile }),
+    photos: createPhotoStore(photosDir),
+    uploads: createUploadCounter({ now }),
   };
 
   const app = express();
@@ -127,6 +134,7 @@ export function createApp({
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
   api.use(listRoutes(ctx));
+  api.use(photoRoutes(ctx));
   api.use('/admin', adminRoutes(ctx));
 
   // Route inconnue
@@ -148,13 +156,15 @@ export function createApp({
   // jour de Listo soit vue tout de suite.
   app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
 
-  // Ménage régulier : sessions expirées, compteurs de tentatives périmés,
-  // listes et articles supprimés depuis plus de 30 jours.
+  // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois
+  // périmés, listes et articles supprimés depuis plus de 30 jours (avec leurs
+  // photos).
   // « unref » : ce minuteur n'empêche pas Listo de s'arrêter.
   const cleanup = () => {
     purgeExpiredSessions(ctx);
     ctx.lists.purgeDeleted();
     ctx.limiter.prune();
+    ctx.uploads.prune();
     ctx.pending.prune();
   };
   cleanup();

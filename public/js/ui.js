@@ -56,15 +56,29 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
 
 // Feuille qui monte du bas (édition d'article, choix du rayon…).
 // content : éléments à afficher sous le titre.
-export function openSheet({ title, sub, content, onClose }) {
+// scroll : la feuille défile si son contenu est haut (feuille Article avec photo).
+export function openSheet({ title, sub, content, onClose, scroll = false }) {
   const titleId = `sheet-${Math.random().toString(36).slice(2, 8)}`;
-  return overlay((close) => h('div', { class: 'sheet', 'aria-labelledby': titleId },
+  return overlay((close) => h('div', { class: `sheet${scroll ? ' sheet--scroll' : ''}`, 'aria-labelledby': titleId },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: 'sheet__head' },
       h('div', {}, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
       iconButton('close', 'Fermer', close)),
     content,
   ), { onClose });
+}
+
+// Photo en plein écran (photo-plein-ecran-1) : titre, image, légende, Fermer.
+// Le bouton Retour du téléphone et la touche Échap la ferment aussi.
+export function openLightbox({ title, src, alt, caption }) {
+  const titleId = `lb-${Math.random().toString(36).slice(2, 8)}`;
+  return overlay((close) => h('div', { class: 'lightbox', 'aria-labelledby': titleId },
+    h('div', { class: 'lightbox__bar' },
+      h('h2', { class: 'lightbox__title', id: titleId }, title),
+      iconButton('close', 'Fermer la photo', close)),
+    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src, alt })),
+    caption ? h('p', { class: 'lightbox__cap' }, caption) : null,
+    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, 'Fermer'))));
 }
 
 // Boîte de confirmation. Renvoie une promesse : true si l'action est confirmée.

@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles) et 5 (interface mobile) sont livrées ; l'étape 6 (magasin « multi ») est en cours de validation. Suivent : 7 photos des articles, 8 temps réel, 9 hors ligne, 10 lien public, 11 finitions et mise en production.
+État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile) et 6 (magasin « multi ») sont livrées ; l'étape 7 (photos des articles) est en cours de validation. Suivent : 8 temps réel, 9 hors ligne, 10 lien public, 11 finitions et mise en production.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -26,6 +26,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/audit.js` | Journal de sécurité (`docker logs listo` et `data/journal.log`, avec rotation) |
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
+| `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
@@ -34,6 +35,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `public/js/app.js` | Démarrage de l'interface, compte connecté, copie locale des données, choix de l'écran |
 | `public/js/router.js` | Adresses `#/listes/…`, bouton Retour du téléphone, fenêtres superposées |
 | `public/js/api.js` | Seul module qui parle au serveur (`/api/…`, `/api/ops` avec des identifiants UUID créés dans le téléphone) |
+| `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
 | `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, nombre d'articles restants…) |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
@@ -78,7 +80,7 @@ Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
 
 En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
 
-## Vérifier l'interface sur le téléphone (étapes 5 et 6)
+## Vérifier l'interface sur le téléphone (étapes 5 à 7)
 
 Ces points ne peuvent pas être testés automatiquement : à vérifier une fois à la main, de préférence sur le vrai sous-domaine en HTTPS.
 
@@ -90,6 +92,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 6. **Réseau coupé** (mode avion) : cocher un article affiche un message clair et la case revient à son état ; un article tapé reste dans le champ.
 7. **Ordinateur** (fenêtre d'au moins 1024 px de large) : « Mes listes » à gauche, la liste choisie au centre.
 8. **Magasin « multi »** (étape 6) : Administration → Magasins, créer un magasin « Multi » et cocher ses magasins ; créer une liste de courses avec ce magasin. Ajouter un article nouveau : son magasin est demandé ; l'ajouter une deuxième fois : il retrouve son magasin sans question. En faisant défiler, l'en-tête du magasin reste collé en haut.
+9. **Photo d'un article** (étape 7, en HTTPS) : dans la feuille d'un article, « Appareil photo » ouvre l'appareil du téléphone, « Galerie » ses photos. Une photo prise en portrait reste dans le bon sens. Elle apparaît en vignette sur la ligne ; un appui l'agrandit, le bouton Retour la referme. Sur l'autre téléphone, elle apparaît après actualisation. En mode avion, les boutons photo sont grisés avec « Photo indisponible hors ligne ».
 
 ## API des comptes (étape 2)
 
@@ -305,6 +308,7 @@ Les opérations de `POST /api/ops` :
 | `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi ») | membres |
 | `item.check` | `itemId`, `checked` (`true` ou `false`) | membres |
 | `item.delete` | `itemId` | membres |
+| `item.restore` | `itemId` : remet un article supprimé, avec sa photo, tant qu'il n'a pas été effacé par le nettoyage (« Annuler », étape 7) | membres |
 
 Chaque opération reçoit sa propre réponse (`status` 200, ou 400, 403, 404, 409 avec `error`). Une opération renvoyée avec le même `id`, par exemple après une coupure réseau, n'est jamais appliquée deux fois : la réponse du premier envoi est redonnée, avec `"duplicate": true`.
 
@@ -421,6 +425,48 @@ op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Pain","a
 curl -b cookies.txt $U/api/lists/$L
 ```
 
+## Photos des articles (étape 7)
+
+Chaque article peut avoir une photo (une seule), dans une liste de courses comme dans une liste de tâches. Tous les membres de la liste la voient.
+
+| Route | Rôle |
+| --- | --- |
+| `PUT /api/items/:id/photo` | Envoyer ou remplacer la photo : le corps de la requête est le fichier JPEG lui-même (2 Mo au plus) |
+| `GET /api/items/:id/photo` | Lire la photo (`image/jpeg`) |
+| `DELETE /api/items/:id/photo` | Retirer la photo |
+
+Règles :
+
+- **Droits** : seulement un compte connecté, membre de la liste de l'article. Les autres reçoivent la même réponse que pour un article inconnu (404). L'en-tête `Origin` est exigé pour envoyer ou retirer, comme pour toute modification.
+- **Sur le téléphone** : la photo est prise ou choisie avec le sélecteur du navigateur, puis réduite avant l'envoi (1 280 px sur le grand côté, JPEG, dans le bon sens). Aucun accès continu à l'appareil photo. En ligne seulement pour l'instant : hors ligne, les boutons sont grisés (la file d'attente des photos arrive à l'étape 9).
+- **Contrôle par le serveur, sans bibliothèque d'image** : le fichier doit être un vrai JPEG (le type annoncé ne compte pas), avec des blocs bien formés, une image complète et rien après sa fin, et au plus 4 096 pixels de côté. Tout le reste est refusé (400 ; 413 au-delà de 2 Mo).
+- **Vie privée** : les métadonnées sont retirées avant l'écriture du fichier (EXIF avec la position GPS et le modèle de l'appareil, XMP, IPTC, commentaires, images supplémentaires). Seuls les blocs utiles à l'affichage sont gardés.
+- **Plafond** : 60 envois par compte et par heure (429 au-delà, noté dans le journal).
+- **Stockage** : `data/photos/<id de l'article>.jpg` (droits 600), jamais un nom envoyé par le téléphone. La base garde seulement la date de la photo (`photoAt` dans la synchronisation). L'adresse de l'image contient cette date : une nouvelle photo est rechargée tout de suite.
+- **Remplacer ou retirer** efface l'ancien fichier. **Supprimer l'article** cache la photo ; « Annuler » remet le même article avec sa photo ; le fichier est effacé par le nettoyage, 30 jours après la suppression (avec ceux d'une liste supprimée). Le nettoyage efface aussi les fichiers qui n'appartiennent à aucun article (envoi interrompu).
+- **Cache** : la photo est gardée par le navigateur du téléphone seulement (cache privé), jamais par un intermédiaire.
+
+### Vérifier les photos à la main avec curl
+
+Avec les raccourcis et les fonctions `id` et `op` de la section des listes, `$L` une liste et `$A` un de ses articles :
+
+```sh
+# 1. Envoyer une photo (fichier JPEG du téléphone ou de l'ordinateur)
+curl -b cookies.txt -H "$O" -H 'Content-Type: image/jpeg' -X PUT --data-binary @photo.jpg $U/api/items/$A/photo
+
+# 2. La relire et vérifier qu'elle n'a plus de métadonnées (exiftool, s'il est installé)
+curl -b cookies.txt -o lue.jpg $U/api/items/$A/photo && exiftool lue.jpg
+
+# 3. Un fichier qui n'est pas un JPEG est refusé (400), même annoncé comme tel
+curl -b cookies.txt -H "$O" -H 'Content-Type: image/jpeg' -X PUT --data-binary @README.md $U/api/items/$A/photo
+
+# 4. Marie, si elle n'est pas membre de la liste, reçoit 404
+curl -b marie.txt $U/api/items/$A/photo
+
+# 5. Retirer la photo
+curl -b cookies.txt -H "$O" -X DELETE $U/api/items/$A/photo
+```
+
 ## Production
 
 Sur le serveur, seul `docker-compose.yml` est nécessaire (aucun code source). L'image est construite par GitHub Actions à chaque fusion sur `main`.
@@ -433,3 +479,9 @@ docker compose pull && docker compose up -d   # mettre à jour
 ```
 
 Avant le premier lancement : remplacer `LISTO_PUBLIC_URL` par l'adresse exacte de Listo (par exemple `https://listo.mondomaine.fr` : même protocole et même sous-domaine que dans le navigateur, sinon toutes les connexions sont refusées par la protection CSRF), et remplacer `IP_LOCALE` par l'adresse du serveur sur le réseau local (le port 13300 n'est publié que sur cette adresse ; Nginx Proxy Manager, sur une autre machine, y envoie le trafic en http). Au premier démarrage, `docker logs listo` affiche le code de démarrage qui permet de créer le compte Admin. Le guide complet de mise en production arrive à l'étape 11.
+
+**Nginx Proxy Manager et les photos** : par défaut, Nginx refuse les requêtes de plus de 1 Mo. Pour que l'envoi des photos fonctionne (2 Mo au plus), ajouter cette ligne dans l'onglet **Advanced** du proxy host de Listo :
+
+```nginx
+client_max_body_size 5m;
+```

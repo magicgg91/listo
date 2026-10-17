@@ -4,7 +4,7 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 
 | Fichier | Rôle |
 |---|---|
-| `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
+| `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
 | `icons-sprite.html` | Sprite SVG de 35 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
@@ -110,3 +110,41 @@ Chaque fichier existe en `-clair` et `-sombre`.
 - Magasin multi : le magasin joue le rôle du rayon (en-têtes `.aisle` collés, « Sans magasin » en dernier, pas de rayons) ; chaque article choisit son magasin parmi ceux regroupés.
 - Hors ligne : la gestion du lien est désactivée avec le message « Indisponible hors ligne ».
 - Un article avec photo : une seule photo, ouverte en plein écran depuis la miniature (liste et page publique).
+
+## Ajout : zone des articles cochés (« Dans le panier » / « Terminés »)
+
+Choix validés : 1A (courses, zone ouverte), 4A (tâches), 5a (aucun coché : la zone n'existe pas). Styles : section 16.5 de `listo.css` (variables existantes uniquement). Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
+
+Ce qui change par rapport à la liste d'origine :
+
+- « Vider les barrés » disparaît de la barre d'état et du menu de la liste. La barre d'état ne garde que l'indicateur de synchro.
+- Les articles cochés quittent leur rayon et forment une zone en bas de la liste, sous le dernier rayon. Aucun coché : pas de zone (ni en-tête, ni ligne grisée).
+
+Composants nouveaux :
+
+- `.cart` : `<section class="cart">` placée directement dans `.scroll`. Sa `<ul>` reprend le style carte existant ; les lignes sont des `.item.is-done` avec `.check[aria-pressed="true"]`.
+- `.cart__head` > `.cart__bar` > `.cart__toggle` : bouton de repli pleine largeur (48 px) avec `aria-expanded`, `aria-controls` (id de la `<ul>`) et `aria-label` du type « Dans le panier, 12 articles ». Le chevron (`#i-chev-d`) pivote à −90° quand c'est replié. Le nombre est dans `.cart__count`.
+- `.cart__actions` > `.cart__action` (+ `.cart__action--danger`) : deux actions texte sur une ligne, 44 px de haut, absentes quand la zone est repliée. Chaque bouton a un `aria-label` avec le nombre (« Tout remettre à acheter, 12 articles »).
+- `.scroll--flat` : à ajouter sur `.scroll` quand la liste n'a pas d'en-tête de rayon (tâches).
+
+Réutilisés tels quels : `.item`, `.is-done`, `.check`, `.sheet`, `.sheet__head`, `.sheet__title`, `.sheet__sub`, `.dialog__actions`, `.btn--secondary`, `.btn--primary`, `.btn--danger`, `.note.note--danger`, `.scrim`, `.scroll`, `.statusbar`, `.sync`.
+
+| | Courses | Tâches et autres listes |
+|---|---|---|
+| Titre de la zone | Dans le panier · 12 | Terminés · 4 |
+| Action non destructive | Tout remettre à acheter | Tout rouvrir |
+| Action destructive | Retirer du panier | Retirer les terminés |
+| Unité (lecteurs d'écran) | articles | éléments |
+
+Comportement : zone ouverte par défaut, état ouvert/replié mémorisé par liste sur l'appareil ; du plus récemment coché au plus ancien ; chaque action est confirmée par une feuille du bas (« Remettre 12 articles à acheter ? » ; « Retirer 12 articles de la liste ? » avec la mention « C'est définitif : impossible de les récupérer. » et un bouton `.btn--danger`) ; aucun champ ne prend le focus tout seul.
+
+Maquettes (`maquettes/`, chacune en `-clair` et `-sombre`) :
+
+| Écran | Fichiers |
+|---|---|
+| 1A · Courses, zone ouverte (bas de liste) | `liste-panier-a-1` |
+| 2 · Zone repliée | `liste-panier-replie-1` |
+| 3 · Confirmer « Tout remettre à acheter » | `liste-panier-remettre-1` |
+| 3 · Confirmer « Retirer du panier » | `liste-panier-retirer-1` |
+| 4A · Tâches | `liste-taches-panier-a-1` |
+| 5a · Aucun coché, zone absente | `liste-panier-vide-absente-1` |

@@ -13,7 +13,12 @@
 //   réduite sur le téléphone puis envoyée tout de suite (en ligne seulement).
 //   Une vignette s'affiche sur la ligne ; un appui l'agrandit.
 // - Cocher d'un appui : l'article est barré ET sa case est remplie (jamais
-//   la couleur seule) ; il descend en bas de son rayon.
+//   la couleur seule) ; il quitte son rayon pour la zone « Dans le panier »
+//   (« Terminés » dans les autres listes), en bas de la liste, du plus
+//   récemment coché au plus ancien (maquettes liste-panier-*,
+//   liste-taches-panier-*). Zone absente quand rien n'est coché ; repliable,
+//   état mémorisé par liste sur l'appareil ; deux actions confirmées par une
+//   feuille : tout décocher, retirer les cochés.
 
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
 import { errorMessage } from '../api.js';
@@ -24,14 +29,33 @@ import { splitPrefix } from '../format.js';
 import { normalizeItemName } from '../history.js';
 import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox } from '../ui.js';
 import { openShareSheet } from './share.js';
-import { itemWords, countItems } from '../words.js';
+import { itemWords, countItems, doneZoneWords } from '../words.js';
+
+// Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
+// Ouverte par défaut. Le stockage du navigateur peut être indisponible
+// (navigation privée…) : rien d'essentiel n'en dépend.
+const zoneKey = (listId) => `listo-zone-repliee-${listId}`;
+function isZoneOpen(listId) {
+  try {
+    return localStorage.getItem(zoneKey(listId)) !== '1';
+  } catch {
+    return true;
+  }
+}
+function rememberZone(listId, open) {
+  try {
+    if (open) localStorage.removeItem(zoneKey(listId));
+    else localStorage.setItem(zoneKey(listId), '1');
+  } catch {
+    // stockage indisponible : l'état n'est pas retenu, sans conséquence
+  }
+}
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
   const sub = h('p', { class: 'topbar__sub' });
-  const clearButton = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', hidden: true, onClick: () => clearChecked() });
   const content = h('div', { class: 'scroll' });
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
@@ -47,7 +71,6 @@ export function renderList(listId, onLeave) {
     if (!view) {
       title.textContent = 'Liste introuvable';
       replace(sub);
-      clearButton.hidden = true;
       menuButton.hidden = true;
       replace(content, h('div', { class: 'empty' },
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
@@ -56,7 +79,7 @@ export function renderList(listId, onLeave) {
       addbar.hidden = true;
       return;
     }
-    const { list, groups, checked } = view;
+    const { list, groups, done } = view;
     // « article » pour une liste de courses, « élément » sinon (words.js)
     const words = itemWords(list);
     input.placeholder = `Ajouter un ${words.one}`;
@@ -66,10 +89,10 @@ export function renderList(listId, onLeave) {
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = false;
     addbar.hidden = false;
-    clearButton.hidden = checked === 0;
-    replace(clearButton, icon('trash', 'icon--sm'), `Vider les barrés (${checked})`);
+    // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
+    content.classList.toggle('scroll--flat', !list.category.isShopping);
 
-    if (groups.length === 0) {
+    if (groups.length === 0 && done.length === 0) {
       replace(content, h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
@@ -82,8 +105,43 @@ export function renderList(listId, onLeave) {
       view.multi
         ? h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.store?.name ?? 'Sans magasin'), count(group))
         : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group)) : null,
-      h('ul', {}, group.items.map(itemRow)))));
+      h('ul', {}, group.items.map(itemRow)))),
+    done.length ? doneZone(list, done) : null);
   };
+
+  // Zone des articles cochés, sous le dernier rayon (design/components.html,
+  // « Zone des articles cochés ») : en-tête repliable avec le nombre, deux
+  // actions (absentes quand la zone est repliée), puis les lignes cochées.
+  // Elle n'est dessinée que s'il y a au moins un article coché.
+  function doneZone(list, done) {
+    const zone = doneZoneWords(list);
+    const counted = countItems(done.length, list); // « 12 articles », « 4 éléments »
+    const listEl = h('ul', { id: `zone-${listId}` }, done.map(itemRow));
+    const actionsRow = h('div', { class: 'cart__actions' },
+      h('button', { class: 'cart__action', type: 'button', 'aria-label': `${zone.reopen}, ${counted}`, onClick: reopenAll }, zone.reopen),
+      h('button', { class: 'cart__action cart__action--danger', type: 'button', 'aria-label': `${zone.remove}, ${counted}`, onClick: removeAll }, zone.remove));
+    const toggle = h('button', {
+      class: 'cart__toggle',
+      type: 'button',
+      'aria-controls': listEl.id,
+      'aria-label': `${zone.title}, ${counted}`,
+    }, icon('chev-d'), h('span', {}, `${zone.title} · `, h('span', { class: 'cart__count' }, String(done.length))));
+    // Ouvrir / replier sur place (le bouton garde le focus)
+    const show = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      listEl.hidden = !open;
+      actionsRow.hidden = !open;
+    };
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      rememberZone(listId, open);
+      show(open);
+    });
+    show(isZoneOpen(listId));
+    return h('section', { class: 'cart' },
+      h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' }, toggle), actionsRow),
+      listEl);
+  }
 
   // Ligne d'un article : case à cocher + nom (ouvre la feuille « Article »)
   const itemRow = (item) => h('li', { class: `item${item.checked ? ' is-done' : ''}` },
@@ -122,18 +180,44 @@ export function renderList(listId, onLeave) {
     actions.checkItem(item, !item.checked);
   }
 
-  async function clearChecked() {
+  // « Tout remettre à acheter » / « Tout rouvrir » : décoche tous les cochés
+  // (après confirmation). Une seule opération, rejouée sans doublon hors ligne.
+  async function reopenAll() {
     const count = view?.checked ?? 0;
     if (!count) return;
     const list = view.list;
-    const words = itemWords(list);
-    const ok = await confirmDialog({
-      title: 'Vider les barrés ?',
-      text: `${count === 1 ? `L'${words.one} barré sera retiré` : `Les ${count} ${words.many} barrés seront retirés`} de la liste, pour tout le monde.`,
-      confirmLabel: 'Vider',
+    const one = count === 1;
+    const place = view.multi ? 'magasin' : 'rayon';
+    const ok = await confirmSheet({
+      title: list.category.isShopping ? `Remettre ${countItems(count, list)} à acheter ?` : `Rouvrir ${countItems(count, list)} ?`,
+      text: list.category.isShopping
+        ? (one ? `Il reviendra dans son ${place}, décoché.` : `Ils reviendront dans leur ${place}, décochés.`)
+        : (one ? 'Il reviendra dans la liste, décoché.' : 'Ils reviendront dans la liste, décochés.'),
+      confirmLabel: 'Confirmer',
     });
     if (!ok) return;
-    const removed = await actions.clearChecked(listId);
+    const reopened = await actions.uncheckAll(listId);
+    toast(list.category.isShopping
+      ? `${countItems(reopened, list)} remis à acheter`
+      : `${countItems(reopened, list)} ${reopened === 1 ? 'rouvert' : 'rouverts'}`);
+  }
+
+  // « Retirer du panier » / « Retirer les terminés » : supprime les cochés
+  // pour tout le monde (après confirmation)
+  async function removeAll() {
+    const count = view?.checked ?? 0;
+    if (!count) return;
+    const list = view.list;
+    const one = count === 1;
+    const ok = await confirmSheet({
+      title: `Retirer ${countItems(count, list)} de la liste ?`,
+      text: one ? 'Il sera supprimé pour tout le monde.' : 'Ils seront supprimés pour tout le monde.',
+      warning: one ? "C'est définitif : impossible de le récupérer." : "C'est définitif : impossible de les récupérer.",
+      confirmLabel: 'Retirer',
+      danger: true,
+    });
+    if (!ok) return;
+    const removed = await actions.removeChecked(listId);
     toast(`${countItems(removed, list)} ${removed === 1 ? 'retiré' : 'retirés'}`);
   }
 
@@ -142,7 +226,6 @@ export function renderList(listId, onLeave) {
     const items = [];
     if (view.list.isOwner) items.push({ icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: listId }) });
     if (view.list.isOwner) items.push({ icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(view.list) });
-    if (view.checked > 0) items.push({ icon: 'trash', label: 'Vider les barrés', onSelect: clearChecked });
     items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData({ full: true }) });
     openMenu(items, { label: 'Menu de la liste' });
   }
@@ -537,7 +620,7 @@ export function renderList(listId, onLeave) {
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
       h('div', { class: 'topbar__main' }, title, sub),
       menuButton),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), clearButton),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
     content,
     addbar);
 }

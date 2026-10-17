@@ -136,6 +136,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     6. Mode avion sur le téléphone du propriétaire : la feuille affiche « Indisponible hors ligne » et ses boutons sont grisés.
     7. Dans « Mes listes », la carte d'une liste partagée par lien porte une petite icône de lien (chez le propriétaire seulement).
     8. Le lien envoyé par une messagerie (WhatsApp, Signal, SMS) n'affiche pas d'aperçu du contenu de la liste : l'aperçu montre au plus « Listo · Liste partagée ».
+13. **Zone des articles cochés** : cocher un article : il quitte son rayon pour « Dans le panier · 1 » en bas (« Terminés » dans une liste de tâches) ; un rayon dont tout est coché disparaît. Replier la zone avec son en-tête, fermer et rouvrir Listo : elle est restée repliée (cette liste, cet appareil). « Tout remettre à acheter » et « Retirer du panier » demandent confirmation par une feuille ; sur l'autre téléphone, le changement arrive en quelques secondes. En mode avion, « Tout remettre à acheter » marche aussi et part au retour du réseau.
 
 ## API des comptes (étape 2)
 
@@ -358,10 +359,11 @@ Les opérations de `POST /api/ops` :
 | `list.create` | `listId` (UUID), `name`, `categoryId`, `storeId` (facultatif, listes de courses seulement) | tout compte |
 | `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun) | propriétaire |
 | `list.delete` | `listId` | propriétaire |
-| `list.clearChecked` | `listId` (vider les barrés) | membres |
+| `list.uncheckAll` | `listId` : décoche tous les articles cochés (« Tout remettre à acheter » / « Tout rouvrir »), une seule opération quel que soit leur nombre | membres |
+| `list.removeChecked` | `listId` : supprime les articles cochés (« Retirer du panier » / « Retirer les terminés »). L'ancien nom `list.clearChecked` reste accepté | membres |
 | `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon). Liste « multi » : `storeId` au lieu de `aisleId` (facultatif : sinon le magasin habituel ; `null` = Sans magasin) | membres |
 | `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi ») | membres |
-| `item.check` | `itemId`, `checked` (`true` ou `false`) | membres |
+| `item.check` | `itemId`, `checked` (`true` ou `false`). Le serveur pose la date du coché (`checkedAt`) au premier coché et l'efface au décoché | membres |
 | `item.delete` | `itemId` | membres |
 | `item.restore` | `itemId` : remet un article supprimé, avec sa photo, tant qu'il n'a pas été effacé par le nettoyage (« Annuler », étape 7) | membres |
 
@@ -372,12 +374,12 @@ Règles :
 - **Limites** : nom de 1 à 100 caractères, quantité 30 au plus (texte libre : « 2 », « 500 g »), note 500 au plus. Les identifiants de listes et d'articles sont des UUID créés par le téléphone.
 - **Dates** : les dates (création, modification, suppression) sont toujours posées par le serveur. Celles qu'enverrait le téléphone sont ignorées.
 - **Suppressions logiques** : une suppression est d'abord une simple marque, pour que les autres téléphones l'apprennent. Elle est effacée pour de bon au bout de 30 jours (nettoyage au démarrage, puis toutes les heures).
-- **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon, les articles cochés en bas. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe.
+- **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon. Les articles cochés quittent leur rayon pour la zone « Dans le panier » / « Terminés », en bas, du plus récemment coché au plus ancien (`splitDone` de `public/js/sorting.js`, partagé avec le serveur) ; un rayon dont tout est coché n'apparaît plus. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe.
 - **Historique** : il est commun à tous les comptes. « Lait », « lait », « LAIT » et « Lait  » ne font qu'une entrée, qui compte ses utilisations. La suggestion garde la première écriture du nom.
   - Listes de courses seulement (décision du 17 octobre 2026) : une liste d'une autre catégorie n'écrit rien dans l'historique et n'affiche pas de suggestions (règle `remembersNames` de `public/js/store.js` sur le téléphone, `is_shopping` sur le serveur). Changer la catégorie d'une liste n'écrit ni n'efface rien dans l'historique.
   - Migration 8 (`pruneHistory` de `server/db.js`) : retire les noms qu'aucun article de liste de courses ne porte (actif, ou supprimé et pas encore purgé) et qui n'ont jamais eu de rayon ni de magasin. Relancée, elle n'efface plus rien.
   - Un article déjà connu reprend son rayon habituel. Modifier son rayon, ou le renommer, mémorise ce choix pour la fois suivante.
-  - Supprimer un article ou vider les barrés n'efface pas l'historique.
+  - Supprimer un article ou retirer les cochés n'efface pas l'historique.
 - **Désactivations** : une catégorie, un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.
 - **Changement de catégorie** : une liste qui passe à une catégorie qui n'est pas « liste de courses » perd son magasin.
 - **Magasin « multi »** (étape 6), voir la section suivante.
@@ -422,9 +424,10 @@ curl -b marie.txt $U/api/lists/$L
 curl -b cookies.txt -H "$O" -H "$J" -X PUT -d '{"userIds":[2]}' $U/api/lists/$L/members
 curl -b marie.txt $U/api/lists
 
-# 7. Marie ne peut pas renommer la liste, mais elle peut vider les barrés
+# 7. Marie ne peut pas renommer la liste, mais elle peut tout décocher et retirer les cochés
 COOKIES=marie.txt op '"type":"list.update","listId":"'"$L"'","name":"Renommée"'
-COOKIES=marie.txt op '"type":"list.clearChecked","listId":"'"$L"'"'
+COOKIES=marie.txt op '"type":"list.uncheckAll","listId":"'"$L"'"'
+COOKIES=marie.txt op '"type":"list.removeChecked","listId":"'"$L"'"'
 
 # 8. « Ce qui a changé depuis » : noter serverTime, faire un changement, redemander
 curl -b cookies.txt $U/api/sync | grep -o '"serverTime":"[^"]*"'
@@ -450,7 +453,7 @@ Règles :
 
 - **Administration** : le type (simple ou « multi ») se choisit à la création et ne change plus. Un « multi » ne regroupe que des magasins simples, jamais un autre « multi ». Désactiver un magasin, ou le décocher d'un « multi », le retire des choix proposés aux articles, sans modifier les articles qui l'utilisent déjà.
 - **Droits, vérifiés par le serveur à chaque requête** : le magasin choisi pour un article doit être regroupé par le magasin de la liste, et actif. Un rayon est refusé dans une liste « multi », un magasin par article est refusé dans une autre liste. Un magasin « multi » n'est accepté que pour une liste de courses (une liste qui passe en « Tâches » perd son magasin).
-- **Tri** : par magasin, dans l'ordre alphabétique, « Sans magasin » en dernier ; puis par ordre alphabétique, les articles cochés en bas de leur magasin.
+- **Tri** : par magasin, dans l'ordre alphabétique, « Sans magasin » en dernier ; puis par ordre alphabétique. Les articles cochés vont dans la zone « Dans le panier », comme pour les rayons.
 - **Magasin automatique** : un article reprend le magasin où il a été acheté le plus souvent, parmi les magasins de la liste (le plus récent en cas d'égalité). S'il n'y a jamais été acheté, le téléphone demande son magasin une fois. Le magasin est celui de l'article, pas celui de sa famille de produits (des pains à burger peuvent venir de la boucherie). Changer le magasin d'un article reporte son achat sur le nouveau magasin.
 - **Historique** : une ligne générale par article (autocomplétion, rayon général) et une ligne par article et par magasin (rayon habituel dans ce magasin, nombre d'achats dans ce magasin). Dans une liste à magasin simple, un article reprend son rayon dans ce magasin, sinon son rayon général : pour les données existantes, rien ne change.
 - **Changer le magasin d'une liste** (simple ↔ « multi », ou d'un « multi » à un autre) : chaque article garde son rayon et son magasin, rien n'est effacé (revenir en arrière retrouve le classement). Seuls les champs vides sont complétés par l'historique : magasin habituel en passant en « multi » (aussi pour un article dont le magasin n'est pas regroupé par le nouveau), rayon habituel en passant à un magasin simple.
@@ -594,7 +597,7 @@ Seul le propriétaire de la liste y a accès : un invité ou un autre compte re�
 | Route | Rôle |
 | --- | --- |
 | `GET /p/:jeton` | La page (HTML sans aucune donnée de la liste) |
-| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo, date d'expiration du lien. Rien d'autre (liste blanche) : aucun nom de personne ni identifiant de compte ou de liste |
+| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo ; `done` : les articles cochés (mêmes champs), du plus récemment coché au plus ancien ; date d'expiration du lien. Rien d'autre (liste blanche) : aucun nom de personne ni identifiant de compte ou de liste |
 | `POST /api/public/:jeton/acces` | Saisie du mot de passe (`{ "password": "…" }`) ; donne le cookie de consultation |
 | `GET /api/public/:jeton/photos/:id` | Photo d'un article de cette liste seulement |
 

@@ -37,7 +37,7 @@ Deux rôles seulement : l'Admin gère la configuration, l'Utilisateur se sert de
 **Droits sur une liste partagée**
 
 - **Propriétaire** (le créateur) : tout, y compris renommer la liste, changer ses partages, créer et arrêter son lien public, et la supprimer.
-- **Invité** : ajouter, modifier, cocher et supprimer des articles, ajouter, remplacer ou retirer leur photo, vider les barrés. Il ne peut ni supprimer la liste, ni modifier ses partages, ni gérer son lien public.
+- **Invité** : ajouter, modifier, cocher et supprimer des articles, ajouter, remplacer ou retirer leur photo, tout décocher et retirer les articles cochés. Il ne peut ni supprimer la liste, ni modifier ses partages, ni gérer son lien public.
 - Un Admin ne voit pas les listes des autres : la configuration ne donne pas accès à leur contenu.
 - Un Admin ne peut ni se désactiver, ni se retirer le rôle Admin, ni se supprimer : il reste toujours au moins un Admin actif.
 - Le premier compte Admin est créé depuis l'écran de première connexion, avec le mot de passe choisi à ce moment. Aucun mot de passe n'est placé dans la configuration.
@@ -64,7 +64,8 @@ Listo gère plusieurs listes nommées, chacune partagée avec les personnes de s
 - Rayon automatique : un article déjà connu reprend son rayon habituel, celui du magasin de la liste (un même article peut avoir un rayon différent d'un magasin à l'autre). Un article nouveau demande son rayon une fois, puis l'application le mémorise. Le rayon reste modifiable.
 - Tri : par rayon (ordre alphabétique, « Sans rayon » en dernier), puis par ordre alphabétique dans chaque rayon. Un rayon vide n'est pas affiché. Dans une liste à magasin « multi », il n'y a pas de rayon : les articles sont groupés par magasin (voir plus bas).
 - Cocher d'un appui : l'article reste affiché, barré, en bas de son rayon. Un appui de plus le décoche.
-- Bouton « Vider les barrés » : supprime tous les articles barrés de la liste, après confirmation.
+  - **Écart (décision du 17 octobre 2026, maquettes 1A, 4A, 5a) :** zone des articles cochés. Un article coché quitte son rayon (ou son magasin) pour une zone en bas de la liste, sous le dernier groupe : « Dans le panier · N » (courses) ou « Terminés · N » (autres listes), du plus récemment coché au plus ancien. Zone absente quand rien n'est coché ; un rayon dont tout est coché disparaît de la partie à acheter. L'en-tête de la zone se replie (ouvert par défaut, état mémorisé par liste sur l'appareil) et porte deux actions, absentes quand elle est repliée, chacune confirmée par une feuille du bas : « Tout remettre à acheter » / « Tout rouvrir » (décoche tous les articles cochés) et « Retirer du panier » / « Retirer les terminés » (supprime les articles cochés pour tout le monde, définitivement). Les deux sont permises à tout membre de la liste.
+- Retirer les articles cochés : supprime tous les articles cochés de la liste, après confirmation (action « Retirer du panier » / « Retirer les terminés » de la zone des cochés).
 - Modifier un article (nom, quantité, note, photo, rayon, magasin) et le supprimer : depuis un menu sur l'article.
 - Vider ou supprimer un article n'efface pas l'historique d'autocomplétion.
 
@@ -117,7 +118,7 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 | --- | --- | --- |
 | Connexion | Identifiant, mot de passe, puis code à 6 chiffres si le 2FA est activé. Session longue pour ne pas se reconnecter en magasin. Au tout premier lancement, l'écran propose de créer le compte Admin. | Se connecter |
 | Mes listes (accueil) | Une carte par liste : nom, catégorie, magasin, nombre d'articles restants, personnes partageant. Tri par dernière activité. | Ouvrir une liste, créer une liste |
-| Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin si le magasin de la liste est « multi », sans rayon). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. | Ajouter, cocher, vider les barrés, actualiser, partager par lien |
+| Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin si le magasin de la liste est « multi », sans rayon). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. | Ajouter, cocher, tout décocher, retirer les cochés (zone « Dans le panier » / « Terminés »), actualiser, partager par lien |
 | Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon (magasin simple) ou magasin (si le magasin de la liste est « multi »). | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
 | Créer / modifier une liste | Nom, catégorie, magasin (simple ou « multi », si courses), partage avec les autres utilisateurs. | Enregistrer, supprimer la liste |
 | Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. **Écart :** aussi « Réinitialiser les données de ce téléphone » et un bloc « À propos » (version installée, développeur, projet). | Changer le mot de passe, activer le 2FA, choisir le thème |
@@ -152,7 +153,7 @@ Treize tables SQLite. Les listes et les articles ont un identifiant UUID créé 
 | aisles | id, name, active | Rayons communs à tous les magasins. |
 | lists | id (UUID), name, category_id, store_id (facultatif), owner_id, created_at, updated_at, deleted_at | Suppression logique via deleted_at. |
 | list_members | list_id, user_id | Clé composée. Le propriétaire y figure aussi. |
-| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), checked, created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi » (qui n'ont pas de rayon : aisle_id reste vide). photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. |
+| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), checked, checked_at (facultatif), created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi » (qui n'ont pas de rayon : aisle_id reste vide). photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. **Écart (migration 9) :** checked_at est la date du coché, posée par le serveur au premier coché et effacée au décoché ; elle ordonne la zone des cochés (les articles déjà cochés avant la migration ont reçu leur date de modification). |
 | item_history | id, name_normalized, store_id (facultatif), display_name, aisle_id, use_count, last_used_at ; unique par article et par magasin | Alimente l'autocomplétion, le rayon automatique et le magasin automatique. Une ligne par article et par magasin : rayon habituel dans ce magasin (vide pour les listes « multi »). Une ligne sans magasin sert de valeur générale. |
 | applied_ops | id (UUID de l'opération), user_id, result, applied_at | Opérations déjà appliquées : un renvoi après une coupure retrouve son résultat au lieu d'être appliqué deux fois. Nettoyée après 30 jours. |
 | public_shares | id, list_id, token_hash, token_sealed (chiffré), password_hash (facultatif), expires_at (vide = illimité), created_by, created_at, revoked_at | Un seul lien actif par liste. Le jeton n'est jamais stocké en clair : son empreinte retrouve le lien, sa version chiffrée le réaffiche au propriétaire. Le mot de passe est haché (scrypt). |
@@ -273,6 +274,7 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
   - la liste : nom, catégorie, nom du magasin (ou rien), regroupement (par rayon, par magasin ou aucun) ;
   - chaque groupe : nom du rayon ou du magasin (rien pour « Sans rayon » ou « Sans magasin »), puis ses articles ;
   - chaque article : nom, quantité, note, état coché, adresse de sa photo par le lien (ou rien) ;
+  - **écart (17 octobre 2026) :** les articles cochés ne sont plus dans les groupes mais dans une partie « done », mêmes champs, du plus récemment coché au plus ancien (la date du coché n'est pas envoyée) ; la page publique les montre dans une zone « Dans le panier » / « Terminés » en lecture seule, sans repli ni action ;
   - la date d'expiration du lien (ou rien s'il est illimité).
 
   Aucun nom de personne, aucun identifiant de compte ni de liste, aucune autre liste ni historique. Seule exception : l'adresse d'une photo contient l'identifiant (UUID) de son article, qui ne donne accès à rien en dehors du lien. **Décision du 17 octobre :** liste des champs écrite d'après le code livré (avant : liste blanche sans la date d'expiration, les noms des groupes ni le regroupement).
@@ -464,7 +466,7 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 
 - Contraste de texte conforme WCAG AA, cibles tactiles d'au moins 44 px.
 - L'information ne passe jamais par la couleur seule (un article coché est aussi barré).
-- Textes de l'interface en français, courts, à l'infinitif ou au nom (« Ajouter un article », « Vider les barrés »).
+- Textes de l'interface en français, courts, à l'infinitif ou au nom (« Ajouter un article », « Retirer du panier »).
 - Vocabulaire : le mot « article » est réservé aux listes de courses ; dans toutes les autres listes (tâches…), on dit « élément », au masculin, avec les mêmes accords (« Ajouter un élément », « 3 éléments restants », « Nouvel élément »). Un seul module de l'interface (public/js/words.js) donne le bon mot selon la catégorie de la liste.
 
 ## Plan de développement
@@ -476,7 +478,7 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 | 1 | Socle | Projet Node et Express, SQLite et schéma, route /healthz, Dockerfile, .dockerignore, docker-compose.yml (production) et docker-compose.dev.yml (local) | docker compose up démarre, /healthz répond, la base apparaît dans ./data | Livrée |
 | 2 | Comptes et sessions | Création du premier Admin à la première connexion, connexion, déconnexion, sessions, limitation des tentatives, changement de son propre mot de passe, double authentification TOTP facultative avec codes de secours | La 6e tentative ratée est bloquée. Un Utilisateur reçoit un refus sur les routes d'administration. Un compte avec 2FA exige son code après le mot de passe. L'écran de création du premier Admin disparaît dès qu'un compte existe | Livrée |
 | 3 | Administration | Comptes (dont désactivation du 2FA d'un utilisateur), catégories, magasins, rayons, données de départ | Un élément déjà utilisé peut être désactivé mais pas supprimé | Livrée |
-| 4 | Listes et articles | Création, partage, ajout, modification, cochage, vider les barrés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon | Livrée |
+| 4 | Listes et articles | Création, partage, ajout, modification, cochage, retrait des articles cochés, tri par rayon, autocomplétion, rayon automatique | Un invité voit uniquement les listes partagées avec lui. « Lait » ajouté deux fois retrouve son rayon | Livrée |
 | 5 | Interface mobile | Intégration des maquettes, thèmes clair et sombre, version ordinateur, PWA installable | Installable sur l'écran d'accueil. Zones tactiles d'au moins 44 px. Thème suivant le téléphone | Livrée |
 | 6 | Magasin « multi » | Type de magasin « multi » et magasins regroupés (administration), magasin par article, tri par magasin, magasin habituel par article dans l'historique | Dans une liste à magasin « multi », « œufs » ajouté deux fois retrouve son magasin. Une liste à magasin simple se comporte comme avant | Livrée |
 | 7 | Photos des articles | Route d'envoi JPEG, contrôle du fichier et retrait des métadonnées, stockage dans data/photos, prise ou choix de la photo, vignette, agrandissement, nettoyage | Une photo ajoutée sur un téléphone apparaît sur l'autre après actualisation. Un fichier qui n'est pas un JPEG valide est refusé. Un non-membre ne peut pas la lire | Livrée |
@@ -494,7 +496,7 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 - README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
 - Administration : onglet « Noms enregistrés », pour corriger une faute de frappe partout (historique et listes de courses) ou retirer un nom des suggestions ; mémoire des noms et suggestions réservées aux listes de courses (migration 8).
 
-**Tests automatisés** : 251 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
+**Tests automatisés** : 261 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
 
 **Consignes pour Claude Code**
 
@@ -530,6 +532,7 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Noms enregistrés** (Administration, onglet « Noms ») : corriger un nom partout dans les listes de courses ou le retirer des suggestions. Raison : une faute de frappe (« Tomatte ») restait dans les suggestions et dans les listes. Règles : une seule transaction ; seuls les noms identiques une fois normalisés ; seulement les articles des listes de courses (jamais les éléments des autres listes, même au même nom) ; articles supprimés et listes supprimées non touchés ; nouvelle date de modification de chaque article corrigé (la synchronisation le récupère ; ses listes remontent donc en tête de « Mes listes ») ; membres prévenus en temps réel ; journal. Pas de migration : le nom normalisé des éléments est calculé à la demande.
 - **Fusion de deux noms** : utilisations additionnées ; rayon de la ligne la plus utilisée, à égalité celui du nom corrigé, et si la ligne retenue n'a pas de rayon, celui de l'autre. Raison : garder le rayon le plus fiable sans rien perdre.
 - **Droits de l'Admin sur les noms** (décision du 17 octobre 2026) : l'Admin ne voit toujours pas les listes des autres (ni leur nom, ni leurs membres, ni leurs éléments). Il voit les noms de l'historique, déjà communs à tous les comptes par l'autocomplétion, avec de simples compteurs, et peut corriger un nom dans toutes les listes de courses sans les voir. Raison : demande du propriétaire ; c'est une écriture ciblée sur un nom, pas un accès au contenu.
+- **Zone des articles cochés** (maquettes 1A, 4A, 5a) : « Dans le panier » / « Terminés » en bas de la liste, repliable, avec « Tout remettre à acheter » / « Tout rouvrir » et « Retirer du panier » / « Retirer les terminés »  ; l'ancienne action de suppression des articles cochés, dans la barre d'état et le menu de la liste, disparaît : c'est désormais « Retirer ». Raison : en magasin, ce qui reste à acheter reste groupé en haut, ce qui est dans le panier ne gêne plus. Décisions : date du coché par la migration 9 (ordre exact, demandé par le propriétaire) ; « tout décocher » est une seule opération serveur (`list.uncheckAll`), comme « retirer » (`list.removeChecked`) : une ligne dans la file d'attente quel que soit le nombre de cochés, rejouée sans doublon, une seule écriture et un seul événement temps réel ; elle porte sur les articles cochés quand le serveur la reçoit (dernière modification reçue gagnante). Page publique : même zone en lecture seule.
 - **Aucun curseur automatique** : le clavier du téléphone ne s'ouvre que quand on touche un champ. Raison : un clavier qui s'ouvre tout seul cache la moitié de l'écran et surprend. Les fenêtres gardent un focus pour le clavier et les lecteurs d'écran (sur elles-mêmes ou leur bouton principal), avec un piège de focus ajouté (Tab reste dans la fenêtre). Test automatique : `test/focus.test.js`.
 - **Image Docker** : .dockerignore étendu (.github, design/photos, test/, docs/, *.log). Raison : image plus petite, sans fichiers inutiles.
 
@@ -549,7 +552,7 @@ Ces points ont été tranchés par défaut pendant la rédaction, puis validés 
 - [x] L'historique d'autocomplétion est commun à tous les comptes (nom de l'article et rayon habituel).
 - [x] Un Admin n'a pas accès au contenu des listes des autres utilisateurs.
 - [x] La quantité est un texte libre court (« 2 », « 500 g »), sans unité structurée.
-- [x] Un article barré descend en bas de son rayon, au lieu de rester à sa place.
+- [x] Un article barré descend en bas de son rayon, au lieu de rester à sa place. (Remplacé le 17 octobre 2026 par la zone des articles cochés : voir Fonctionnalités.)
 - [x] Une session dure 30 jours glissants.
 - [x] Hors ligne, l'administration et le changement de partage sont indisponibles.
 - [x] Une catégorie de liste porte un indicateur « courses » qui active magasin et rayons.

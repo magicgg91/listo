@@ -11,6 +11,7 @@ import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
 import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
+import { itemWords } from '../words.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -223,7 +224,9 @@ function form(list, users) {
     onClick: async () => {
       const ok = await confirmDialog({
         title: 'Supprimer la liste ?',
-        text: `« ${list.name} » et ses articles seront supprimés pour toutes les personnes. Cette action est définitive.`,
+        // « ses articles » (liste de courses) ou « ses éléments » : catégorie
+        // enregistrée de la liste
+        text: `« ${list.name} » et ses ${itemWords(list).many} seront supprimés pour toutes les personnes. Cette action est définitive.`,
         confirmLabel: 'Supprimer',
       });
       if (!ok) return;

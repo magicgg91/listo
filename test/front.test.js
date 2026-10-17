@@ -59,9 +59,13 @@ test('dates relatives comme dans les maquettes', () => {
 });
 
 test('nombre d\'articles restants, liste de prénoms', () => {
-  assert.equal(remainingLabel(1), '1 article restant');
-  assert.equal(remainingLabel(11), '11 articles restants');
-  assert.equal(remainingLabel(0), '0 articles restants');
+  // Liste de courses : « article » ; autre liste : « élément »
+  assert.equal(remainingLabel(1, true), '1 article restant');
+  assert.equal(remainingLabel(11, true), '11 articles restants');
+  assert.equal(remainingLabel(0, true), '0 articles restants');
+  assert.equal(remainingLabel(1, { category: { isShopping: false } }), '1 élément restant');
+  assert.equal(remainingLabel(2, { category: { isShopping: false } }), '2 éléments restants');
+  assert.equal(remainingLabel(3, { category: { isShopping: true } }), '3 articles restants');
   assert.equal(namesList(['Guillaume']), 'Guillaume');
   assert.equal(namesList(['Guillaume', 'Léa']), 'Guillaume et Léa');
   assert.equal(namesList(['A', 'B', 'C']), 'A, B et C');
@@ -392,4 +396,41 @@ test('lien public : date d\'expiration et temps restant (feuille et page publiqu
   assert.equal(timeLeftLabel(iso(90 * 1000), now), 'Il reste 2 minutes');
   assert.equal(timeLeftLabel(iso(30 * 1000), now), "Il reste moins d'une minute");
   assert.equal(timeLeftLabel(iso(-1), now), 'Expiré');
+});
+
+test('vocabulaire : « article » pour les courses, « élément » pour les autres listes', async () => {
+  const { isShopping, itemWords, countItems } = await import('../public/js/words.js');
+  const courses = { category: { isShopping: true } };
+  const taches = { category: { isShopping: false } };
+  assert.equal(isShopping(courses), true);
+  assert.equal(isShopping(taches), false);
+  assert.equal(isShopping(true), true);
+  assert.equal(isShopping(undefined), false, 'liste inconnue : pas des courses');
+  assert.deepEqual(itemWords(courses), { one: 'article', many: 'articles' });
+  assert.deepEqual(itemWords(taches), { one: 'élément', many: 'éléments' });
+  assert.equal(countItems(1, taches), '1 élément');
+  assert.equal(countItems(2, taches), '2 éléments');
+  assert.equal(countItems(1, courses), '1 article');
+  // Les phrases de l'application, avec chacun des deux mots
+  const { one } = itemWords(taches);
+  assert.equal(`L'${one} barré sera retiré`, "L'élément barré sera retiré");
+  assert.equal(`Nouvel ${one}`, 'Nouvel élément');
+  assert.equal(`Modifier l'${one}`, "Modifier l'élément");
+  assert.equal(`Cet ${one} a été supprimé par une autre personne.`, 'Cet élément a été supprimé par une autre personne.');
+});
+
+test('vocabulaire : aucun « article » écrit en dur dans les écrans (tout passe par words.js)', async () => {
+  const fs = await import('node:fs');
+  const dir = new URL('../public/js/', import.meta.url);
+  // Textes qui ne concernent que les listes de courses (magasins, rayons) :
+  // « article » y reste correct
+  const allowed = [/Les articles seront classés par/, /les articles sont classés par magasin/, /Les articles sans magasin passent en dernier/, /classent leurs articles par rayon/, /choisissez le magasin de l'article/];
+  const files = ['public.js', 'format.js', 'screens/list.js', 'screens/lists.js', 'screens/list-form.js', 'screens/admin.js', 'screens/settings.js', 'screens/share.js', 'screens/login.js', 'app.js', 'ui.js', 'actions.js'];
+  for (const file of files) {
+    const lines = fs.readFileSync(new URL(file, dir), 'utf8').split('\n');
+    for (const [i, line] of lines.entries()) {
+      const code = line.replace(/\/\/.*$/, ''); // commentaires ignorés
+      if (/[Aa]rticle/.test(code) && !allowed.some((re) => re.test(code))) assert.fail(`${file}:${i + 1} : « article » écrit en dur : ${line.trim()}`);
+    }
+  }
 });

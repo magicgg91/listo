@@ -21,7 +21,7 @@
 // Nouvelle version de ce fichier : changer VERSION si la liste des fichiers
 // change. L'ancienne copie est effacée à l'activation.
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -54,6 +54,7 @@ const APP_FILES = [
   '/js/store.js',
   '/js/theme.js',
   '/js/ui.js',
+  '/js/words.js',
   '/js/screens/admin.js',
   '/js/screens/list-form.js',
   '/js/screens/list.js',

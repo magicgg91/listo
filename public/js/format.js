@@ -3,6 +3,7 @@
 // l'écran : elles sont testées automatiquement (test/front.test.js).
 
 import { normalizeItemName } from './history.js';
+import { countItems } from './words.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -28,9 +29,11 @@ export function relativeTime(iso, now = Date.now()) {
   return date.toLocaleDateString('fr-FR', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// « 1 article restant », « 11 articles restants »
-export function remainingLabel(count) {
-  return count === 1 ? '1 article restant' : `${count} articles restants`;
+// « 1 article restant », « 11 articles restants » (liste de courses) ;
+// « 1 élément restant », « 11 éléments restants » (autre liste).
+// listOrFlag : la liste, ou vrai pour une liste de courses (voir words.js).
+export function remainingLabel(count, listOrFlag) {
+  return `${countItems(count, listOrFlag)} ${count === 1 ? 'restant' : 'restants'}`;
 }
 
 // Partie tapée d'une suggestion, à mettre en gras : renvoie [début, reste] si

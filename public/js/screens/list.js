@@ -26,6 +26,7 @@ import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoi
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, toast, openLightbox } from '../ui.js';
 import { openShareSheet } from './share.js';
+import { itemWords, countItems } from '../words.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -56,6 +57,10 @@ export function renderList(listId, onLeave) {
       return;
     }
     const { list, groups, checked } = view;
+    // « article » pour une liste de courses, « élément » sinon (words.js)
+    const words = itemWords(list);
+    input.placeholder = `Ajouter un ${words.one}`;
+    input.setAttribute('aria-label', `Ajouter un ${words.one}`);
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
@@ -68,10 +73,10 @@ export function renderList(listId, onLeave) {
       replace(content, h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, 'Ajoutez un premier article avec le champ ci-dessous.')));
+        h('p', { class: 'empty__text' }, `Ajoutez un premier ${words.one} avec le champ ci-dessous.`)));
       return;
     }
-    const count = (group) => h('span', { class: 'aisle__count', 'aria-label': 'articles restants' }, String(group.items.filter((i) => !i.checked).length));
+    const count = (group) => h('span', { class: 'aisle__count', 'aria-label': `${words.many} restants` }, String(group.items.filter((i) => !i.checked).length));
     replace(content, groups.map((group) => h('section', {},
       // En-tête collant : rayon, ou magasin (avec son icône) dans une liste « multi »
       view.multi
@@ -104,7 +109,7 @@ export function renderList(listId, onLeave) {
     openLightbox({
       title: item.name,
       src: actions.photoSrc(item),
-      alt: `Photo de l'article ${item.name}`,
+      alt: `Photo de l'${itemWords(view?.list).one} ${item.name}`,
       caption: [view?.list.name, group].filter(Boolean).join(' · '),
     });
   }
@@ -120,14 +125,16 @@ export function renderList(listId, onLeave) {
   async function clearChecked() {
     const count = view?.checked ?? 0;
     if (!count) return;
+    const list = view.list;
+    const words = itemWords(list);
     const ok = await confirmDialog({
       title: 'Vider les barrés ?',
-      text: `${count === 1 ? "L'article barré sera retiré" : `Les ${count} articles barrés seront retirés`} de la liste, pour tout le monde.`,
+      text: `${count === 1 ? `L'${words.one} barré sera retiré` : `Les ${count} ${words.many} barrés seront retirés`} de la liste, pour tout le monde.`,
       confirmLabel: 'Vider',
     });
     if (!ok) return;
     const removed = await actions.clearChecked(listId);
-    toast(removed === 1 ? '1 article retiré' : `${removed} articles retirés`);
+    toast(`${countItems(removed, list)} ${removed === 1 ? 'retiré' : 'retirés'}`);
   }
 
   function openListMenu() {
@@ -140,13 +147,13 @@ export function renderList(listId, onLeave) {
     openMenu(items, { label: 'Menu de la liste' });
   }
 
-  // --- Ajout d'un article ---
+  // --- Ajout d'un article (ou d'un élément) ---
+  // Le texte du champ (« Ajouter un article / un élément ») est posé par
+  // draw(), selon la catégorie de la liste.
 
   const input = h('input', {
     class: 'addbar__input',
     type: 'text',
-    placeholder: 'Ajouter un article',
-    'aria-label': 'Ajouter un article',
     autocomplete: 'off',
     autocapitalize: 'sentences',
     enterkeyhint: 'done',
@@ -199,7 +206,7 @@ export function renderList(listId, onLeave) {
         const [start, rest] = splitPrefix(s.name, typed);
         return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name));
       }),
-      exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], 'Nouvel article', () => addTyped(typed), 'suggest__item--new'));
+      exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], `Nouvel ${itemWords(view?.list).one}`, () => addTyped(typed), 'suggest__item--new'));
     suggestBox.hidden = false;
   }
 
@@ -214,7 +221,7 @@ export function renderList(listId, onLeave) {
       if (storeId === null) {
         const sub = isKnownItem(app.data, name)
           ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
-          : `« ${name} » est un nouvel article. Son magasin sera retenu pour la prochaine fois.`;
+          : `« ${name} » est un nouvel ${itemWords(view.list).one}. Son magasin sera retenu pour la prochaine fois.`;
         const chosen = await pickStore({ title: 'Dans quel magasin ?', sub, confirmLabel: 'Ajouter à la liste' });
         if (chosen === undefined) return; // fenêtre fermée sans choisir
         input.value = '';
@@ -226,7 +233,7 @@ export function renderList(listId, onLeave) {
       }
     } else if (view.list.category.isShopping && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
-      const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel article. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
+      const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel ${itemWords(view.list).one}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
       if (aisleId === undefined) return; // fenêtre fermée sans choisir
       input.value = '';
       await createItem(name, { aisleId });
@@ -247,6 +254,7 @@ export function renderList(listId, onLeave) {
   function openItemSheet(item) {
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
+    const words = itemWords(view?.list); // « article » ou « élément »
     const name = h('input', { class: 'input', type: 'text', value: item.name, maxlength: '100', autocapitalize: 'sentences' });
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500' });
@@ -368,7 +376,7 @@ export function renderList(listId, onLeave) {
       if (!latest) {
         if (gone) return;
         gone = true;
-        conflictText.textContent = 'Cet article a été supprimé par une autre personne.';
+        conflictText.textContent = `Cet ${words.one} a été supprimé par une autre personne.`;
       } else {
         const changedElsewhere = gone || contentOf(latest) !== seen;
         gone = false;
@@ -376,7 +384,7 @@ export function renderList(listId, onLeave) {
         seen = contentOf(latest);
         drawPhoto();
         if (!changedElsewhere) return;
-        conflictText.textContent = "Cet article vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.";
+        conflictText.textContent = `Cet ${words.one} vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.`;
       }
       conflict.hidden = false;
       save.disabled = gone;
@@ -399,7 +407,7 @@ export function renderList(listId, onLeave) {
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
 
     const sheet = openSheet({
-      title: "Modifier l'article",
+      title: `Modifier l'${words.one}`,
       content: form,
       scroll: true,
       onClose: () => stopWatching(),

@@ -5,6 +5,8 @@
 // - Comptes : voir admin-users.js
 // - Catégories, magasins, rayons : voir admin-references.js
 // - Noms enregistrés (historique des noms saisis) : voir admin-names.js
+// - Vérification de mise à jour (GET /api/admin/update-check, ?force=1 pour
+//   « Vérifier maintenant ») : voir update-check.js
 //
 // Ces routes ne donnent jamais accès au contenu d'une liste précise (son nom,
 // ses membres, ses éléments). Les noms enregistrés sont l'historique commun
@@ -22,5 +24,9 @@ export function adminRoutes(ctx) {
   router.use(adminUserRoutes(ctx));
   router.use(adminReferenceRoutes(ctx));
   router.use(adminNameRoutes(ctx));
+  // Jamais d'erreur : en cas de panne, l'état vaut « indisponible »
+  router.get('/update-check', async (req, res) => {
+    res.json(await ctx.updates.status({ force: req.query.force === '1' }));
+  });
   return router;
 }

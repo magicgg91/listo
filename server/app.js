@@ -25,6 +25,7 @@ import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
+import { createUpdateCheck, fetchGithub } from './update-check.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -71,6 +72,8 @@ export const PERMISSIONS_POLICY = [
 //   du signal de maintien)
 // - backupDir : dossier des sauvegardes nocturnes (par défaut data/backups,
 //   à côté de la base). La sauvegarde est programmée par index.js.
+// - githubRequest : demande à l'API de GitHub (vérification de mise à jour ;
+//   les tests la remplacent : aucun vrai réseau)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -82,6 +85,7 @@ export function createApp({
   photosDir = path.join(path.dirname(config.dbPath), 'photos'),
   eventOptions = {},
   backupDir = path.join(path.dirname(config.dbPath), 'backups'),
+  githubRequest = fetchGithub,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -103,6 +107,8 @@ export function createApp({
   ctx.shares = createShareService(ctx);
   // Sauvegarde nocturne de la base (voir backup.js)
   ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
+  // Vérification de mise à jour sur GitHub (Admin, voir update-check.js)
+  ctx.updates = createUpdateCheck({ config, now, request: githubRequest });
 
   const app = express();
   app.locals.ctx = ctx;

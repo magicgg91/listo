@@ -315,6 +315,7 @@ Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode 
 | PUT /api/lists/:id/members | Modifier le partage d'une liste (propriétaire, en ligne) |
 | GET, PUT, DELETE /api/lists/:id/share | Lire l'état, créer ou modifier (durée, mot de passe), arrêter le lien public (propriétaire, en ligne) |
 | /api/admin/users, /categories, /stores, /aisles | Gestion des données de référence (Admin, en ligne) |
+| GET /api/admin/update-check | **Écart :** une image plus récente existe-t-elle ? Le serveur demande à GitHub (Admin, en ligne) |
 | GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, POST /api/admin/names/remove | **Écart :** noms enregistrés : liste par morceaux, effet d'une correction (nombres), corriger partout, retirer des suggestions (Admin, en ligne) |
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte |
 
@@ -519,6 +520,7 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Commandes de secours** backup-now.js et admin-secours.js, refusées en root. Raison : sauvegarde à la demande et reprise en main si plus aucun Admin ne peut se connecter.
 - **Vocabulaire** : « article » seulement dans les listes de courses, « élément » ailleurs ; messages du serveur neutres. Raison : « article » sonnait faux dans une liste de tâches.
 - **Bloc « À propos »** dans les Réglages et route GET /api/about, réservée aux comptes connectés. Raison : savoir quelle version est installée, sans la rendre publique.
+- **Vérification de mise à jour** (Réglages › À propos, ligne « Mise à jour », Admin seulement) : le serveur, jamais le téléphone, demande à l'API publique de GitHub le commit du dernier passage réussi du workflow « Image Docker » sur main et le compare au commit installé. Raison : savoir qu'une nouvelle version existe sans aller sur GitHub. Règles : sans jeton ; délai de 5 s, réponse de 256 ko au plus, aucune redirection suivie ; commit accepté seulement s'il fait 40 caractères hexadécimaux ; au plus une demande par heure, « Vérifier maintenant » une fois par minute ; une panne affiche « Vérification impossible », sans erreur ni nouvelle tentative ; LISTO_UPDATE_CHECK=off coupe tout ; jamais de mise à jour automatique ni de bouton « Mettre à jour ». Source retenue : le workflow plutôt que les « releases » GitHub (le projet n'en publie pas) ou le registre ghcr.io (plus compliqué : jeton anonyme à demander, puis métadonnées de l'image à lire).
 - **« Réinitialiser les données de ce téléphone »** dans les Réglages. Raison : réparer une copie locale abîmée sans aide technique.
 - **Temps réel ouvert au premier plan**, fermé en arrière-plan, 5 connexions au plus par compte. Raison : batterie, et changements reçus aussi sur « Mes listes ».
 - **Pas de WebSocket** dans Nginx Proxy Manager ; cache et tampon coupés pour /api/events. Raison : le temps réel passe par SSE.

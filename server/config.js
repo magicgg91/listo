@@ -29,6 +29,11 @@ export function loadConfig(env = process.env) {
     // Commit Git de l'image installée (posé par la construction de l'image,
     // voir le Dockerfile), ou null s'il n'est pas connu
     commit: validCommit(env.LISTO_COMMIT),
+
+    // Vérification de mise à jour (Réglages › À propos, Admin) : le serveur
+    // demande à GitHub s'il existe une image plus récente. Activée par
+    // défaut ; LISTO_UPDATE_CHECK=off la coupe (aucune demande vers GitHub).
+    updateCheck: String(env.LISTO_UPDATE_CHECK ?? '').trim().toLowerCase() !== 'off',
   };
 }
 

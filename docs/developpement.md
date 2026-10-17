@@ -249,8 +249,8 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `DELETE /api/admin/categories/:id` | Supprimer, seulement si jamais utilisée |
 | `GET`, `POST /api/admin/stores` ; `PATCH`, `DELETE /api/admin/stores/:id` | Pareil pour les magasins (`name`, `active`). À la création, `isMulti` (`true` pour un magasin « multi », étape 6). Pour un « multi », `PATCH` accepte `storeIds` : la liste complète des magasins qu'il regroupe |
 | `GET`, `POST /api/admin/aisles` ; `PATCH`, `DELETE /api/admin/aisles/:id` | Pareil pour les rayons (`name`, `active`) |
-| `GET /api/admin/names?q=&sort=&offset=` | Noms enregistrés (historique commun des noms saisis), 50 par morceau : `key` (nom normalisé), `name`, `aisle` (rayon habituel), `uses`, `inLists` (présents dans les listes) ; `total`. `q` cherche sans accents ni majuscules, `sort` vaut `name` ou `uses` |
-| `GET /api/admin/names/impact?from=&to=` | Ce que changerait une correction : `items` et `lists` (nombres), `merge` (le nouveau nom existe déjà), `unchanged` |
+| `GET /api/admin/names?q=&sort=&offset=` | Noms enregistrés (historique commun des noms d'articles saisis dans les listes de courses), 50 par morceau : `key` (nom normalisé), `name`, `aisle` (rayon habituel), `uses`, `inLists` (articles présents dans les listes de courses) ; `total`. `q` cherche sans accents ni majuscules, `sort` vaut `name` ou `uses` |
+| `GET /api/admin/names/impact?from=&to=` | Ce que changerait une correction : `items` et `lists` (nombres d'articles et de listes de courses), `merge` (le nouveau nom existe déjà), `unchanged` |
 | `POST /api/admin/names/rename` | Corriger un nom partout : `from` (nom normalisé), `to` (nouveau nom) |
 | `POST /api/admin/names/remove` | Retirer un nom des suggestions : `from`. Les listes ne changent pas |
 
@@ -267,12 +267,12 @@ Règles :
 - **Noms uniques** : deux noms qui ne diffèrent que par les majuscules ou les accents sont des doublons (« Épicerie salée » = « EPICERIE SALEE »). Les identifiants de compte sont uniques sans tenir compte des majuscules.
 - **Journal** : chaque action d'administration est notée (qui, quoi, sur quel compte ou élément), sans jamais de mot de passe.
 - **Noms enregistrés** (`server/routes/admin-names.js`) : l'Admin voit des noms et des compteurs, jamais une liste ni ses membres.
-  - Corriger : en une seule transaction, toutes les lignes d'historique de l'ancien nom (générale et par magasin) et tous les éléments non supprimés des listes non supprimées dont le nom normalisé est l'ancien prennent le nouveau nom, avec une nouvelle date de modification (la synchronisation le récupère). Rien d'autre ne change sur ces éléments. Les membres des listes touchées sont prévenus en temps réel. Journal : `admin_nom_corrige` ou `admin_nom_fusionne` (ancien, nouveau, nombre de corrections et de listes).
+  - Corriger : en une seule transaction, toutes les lignes d'historique de l'ancien nom (générale et par magasin) et tous les articles non supprimés des listes de courses non supprimées dont le nom normalisé est l'ancien prennent le nouveau nom, avec une nouvelle date de modification (la synchronisation le récupère). Rien d'autre ne change sur ces articles. Les éléments des autres listes (tâches…) ne sont jamais comptés ni modifiés, même au même nom. Les membres des listes touchées sont prévenus en temps réel. Journal : `admin_nom_corrige` ou `admin_nom_fusionne` (ancien, nouveau, nombre de corrections et de listes).
   - Fusion, si le nouveau nom existe déjà : les lignes du même magasin sont réunies, utilisations additionnées, rayon de la ligne la plus utilisée (à égalité, celui du nom corrigé ; si elle n'a pas de rayon, celui de l'autre).
   - Même nom une fois normalisé (« creme fraiche » → « Crème fraîche ») : seul le nom affiché change, partout. Nom identique : rien à faire.
   - Retirer : seules les lignes d'historique sont effacées (`admin_nom_retire`).
-  - Sur les téléphones : les éléments corrigés arrivent par la synchronisation habituelle. Un ancien nom corrigé ou retiré disparaît des suggestions à la prochaine synchronisation complète (ouverture de Listo, retour au premier plan).
-  - Pas de nouvelle colonne en base : le nom normalisé des éléments est calculé à la demande (`normalizeItemName`, partagé avec le téléphone).
+  - Sur les téléphones : les articles corrigés arrivent par la synchronisation habituelle. Un ancien nom corrigé ou retiré disparaît des suggestions à la prochaine synchronisation complète (ouverture de Listo, retour au premier plan).
+  - Pas de nouvelle colonne en base : le nom normalisé des articles est calculé à la demande (`normalizeItemName`, partagé avec le téléphone).
 
 ### Données de départ
 
@@ -347,7 +347,7 @@ Réservées à un compte connecté. Chaque requête vérifie que le compte est m
 | `GET /api/lists/:id` | Une liste et ses articles, groupés par rayon et triés |
 | `PUT /api/lists/:id/members` | Changer le partage (propriétaire seulement) : `userIds`, la liste complète des invités |
 | `GET /api/users` | Comptes actifs, pour choisir avec qui partager |
-| `GET /api/suggestions?q=la` | Autocomplétion, dès 2 lettres |
+| `GET /api/suggestions?q=la` | Autocomplétion, dès 2 lettres. Avec `&listId=…` (une de mes listes) : vide si ce n'est pas une liste de courses |
 | `GET /api/sync?since=…` | Tout ce qui a changé depuis l'instant `since` (l'heure `serverTime` donnée par la synchro précédente) ; sans `since` : tout |
 | `POST /api/ops` | Lot d'opérations (1 à 100) : `{"ops": [{ "id": "<uuid>", "type": "…", … }]}` |
 
@@ -374,6 +374,8 @@ Règles :
 - **Suppressions logiques** : une suppression est d'abord une simple marque, pour que les autres téléphones l'apprennent. Elle est effacée pour de bon au bout de 30 jours (nettoyage au démarrage, puis toutes les heures).
 - **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon, les articles cochés en bas. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe.
 - **Historique** : il est commun à tous les comptes. « Lait », « lait », « LAIT » et « Lait  » ne font qu'une entrée, qui compte ses utilisations. La suggestion garde la première écriture du nom.
+  - Listes de courses seulement (décision du 17 octobre 2026) : une liste d'une autre catégorie n'écrit rien dans l'historique et n'affiche pas de suggestions (règle `remembersNames` de `public/js/store.js` sur le téléphone, `is_shopping` sur le serveur). Changer la catégorie d'une liste n'écrit ni n'efface rien dans l'historique.
+  - Migration 8 (`pruneHistory` de `server/db.js`) : retire les noms qu'aucun article de liste de courses ne porte (actif, ou supprimé et pas encore purgé) et qui n'ont jamais eu de rayon ni de magasin. Relancée, elle n'efface plus rien.
   - Un article déjà connu reprend son rayon habituel. Modifier son rayon, ou le renommer, mémorise ce choix pour la fois suivante.
   - Supprimer un article ou vider les barrés n'efface pas l'historique.
 - **Désactivations** : une catégorie, un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.

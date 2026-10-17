@@ -5,9 +5,9 @@
 //   compte jamais utilisé ;
 // - Catégories, Magasins, Rayons : ajout, renommage, désactivation /
 //   réactivation, suppression d'un élément jamais utilisé ;
-// - Noms enregistrés : l'historique commun des noms saisis dans les listes
-//   (autocomplétion, rayon habituel) ; corriger un nom partout, ou le retirer
-//   des suggestions.
+// - Noms enregistrés : l'historique commun des noms d'articles saisis dans
+//   les listes de courses (autocomplétion, rayon habituel) ; corriger un nom
+//   dans toutes les listes de courses, ou le retirer des suggestions.
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
 // ses éléments) : les noms enregistrés viennent avec de simples compteurs.
 
@@ -18,6 +18,7 @@ import { compareNames } from '../sorting.js';
 import { app, refreshData } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
+import { itemWords } from '../words.js';
 
 const TABS = [
   { key: 'comptes', label: 'Comptes' },
@@ -529,8 +530,9 @@ function openCategorySheet(item, reload) {
 
 // ================= Noms enregistrés =================
 //
-// L'historique commun des noms saisis dans les listes, une ligne par nom (les
-// lignes par magasin sont regroupées par le serveur), 50 noms par morceau.
+// L'historique commun des noms d'articles saisis dans les listes de courses
+// (les autres listes ne mémorisent rien), une ligne par nom (les lignes par
+// magasin sont regroupées par le serveur), 50 noms par morceau.
 // Seulement des noms et des compteurs : jamais une liste ni ses membres.
 
 // Recherche et tri gardés d'un rechargement à l'autre (après une correction)
@@ -686,7 +688,7 @@ function nameRow(entry, reload) {
 async function removeName(entry, reload) {
   const ok = await confirmDialog({
     title: `Retirer « ${entry.name} » des suggestions ?`,
-    text: 'Il ne sera plus proposé pendant la saisie. Les listes ne changent pas. S\'il est saisi de nouveau, il sera de nouveau enregistré.',
+    text: `Il ne sera plus proposé pendant la saisie d'un ${itemWords(true).one}. Les listes ne changent pas. S'il est saisi de nouveau dans une liste de courses, il sera de nouveau enregistré.`,
     confirmLabel: 'Retirer',
   });
   if (!ok) return;

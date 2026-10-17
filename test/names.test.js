@@ -118,7 +118,7 @@ test("la liste des noms ne montre ni les listes, ni leurs membres : des noms et 
 
 // --- Correction ---
 
-test('corriger un nom : historique et éléments de plusieurs listes de comptes différents', async (t) => {
+test('corriger un nom : historique et articles de plusieurs listes de courses de comptes différents ; les tâches jamais', async (t) => {
   const h = await household(t);
   const fruits = h.ref('aisles', 'Fruits et légumes');
   const marieList = await newList(h, h.marie, { name: 'Courses Marie', storeId: h.ref('stores', 'Lidl') });
@@ -133,18 +133,23 @@ test('corriger un nom : historique et éléments de plusieurs listes de comptes 
   await ok(h, h.marie, { type: 'item.delete', itemId: gone });
   const before = { a: item(h, a), other: item(h, other), gone: item(h, gone) };
 
-  // Confirmation : 3 éléments dans 3 listes (l'élément supprimé ne compte pas)
+  const beforeTask = item(h, c);
+
+  // Confirmation : 2 articles dans 2 listes de courses (l'article supprimé et
+  // l'élément de la liste de tâches ne comptent pas)
   const impact = await h.admin.get('/api/admin/names/impact?from=tomatte&to=%20Tomate%20');
   assert.equal(impact.status, 200);
-  assert.deepEqual(impact.body, { oldName: 'Tomatte', newName: 'Tomate', unchanged: false, merge: false, items: 3, lists: 3 });
+  assert.deepEqual(impact.body, { oldName: 'Tomatte', newName: 'Tomate', unchanged: false, merge: false, items: 2, lists: 2 });
+  assert.equal((await names(h.admin)).names.find((n) => n.key === 'tomatte').inLists, 2, 'le compteur ignore les tâches');
 
   h.tick();
   const res = await rename(h.admin, 'tomatte', '  Tomate ');
   assert.equal(res.status, 200, res.text);
-  assert.deepEqual(res.body, { changed: true, items: 3, lists: 3, merge: false });
+  assert.deepEqual(res.body, { changed: true, items: 2, lists: 2, merge: false });
 
-  // Les trois éléments ont le nouveau nom et une nouvelle date ; le reste est intact
-  for (const id of [a, b, c]) assert.equal(item(h, id).name, 'Tomate');
+  // Les deux articles ont le nouveau nom et une nouvelle date ; le reste est intact
+  for (const id of [a, b]) assert.equal(item(h, id).name, 'Tomate');
+  assert.deepEqual(item(h, c), beforeTask, "l'élément de la liste de tâches au même nom n'est jamais modifié");
   const after = item(h, a);
   assert.ok(after.updated_at > before.a.updated_at);
   for (const field of ['quantity', 'note', 'aisle_id', 'store_id', 'checked', 'photo_at', 'list_id', 'created_by']) {
@@ -158,7 +163,7 @@ test('corriger un nom : historique et éléments de plusieurs listes de comptes 
   const lines = historyOf(h, 'tomate');
   assert.equal(lines.length, 2);
   assert.ok(lines.every((line) => line.display_name === 'Tomate'));
-  assert.equal(lines[0].use_count, 4, 'utilisations conservées');
+  assert.equal(lines[0].use_count, 3, 'utilisations conservées (les tâches ne comptent pas)');
   assert.equal(lines[0].aisle_id, fruits, 'rayon habituel conservé');
   // Les suggestions proposent le nom corrigé
   const suggestions = (await h.marie.get('/api/suggestions?q=tom')).body.suggestions.map((s) => s.name);
@@ -384,17 +389,21 @@ test('le lien public affiche le nom corrigé', async (t) => {
 
 // --- Interface ---
 
-test('écran : textes neutres, et affichage par textContent (jamais innerHTML)', () => {
+test('écran : textes avec « article » (listes de courses seulement), et affichage par textContent (jamais innerHTML)', () => {
   const sub = (entry) => savedNameSub(entry).replaceAll('\u00a0', '_');
-  assert.equal(sub({ aisle: 'Crèmerie', uses: 12, inLists: 3 }), 'Crèmerie · 12_utilisations · 3_dans_les_listes');
-  assert.equal(sub({ aisle: 'Fruits et légumes', uses: 1, inLists: 0 }), 'Fruits_et_légumes · 1_utilisation · dans_aucune_liste');
+  assert.equal(sub({ aisle: 'Crèmerie', uses: 12, inLists: 3 }), 'Crèmerie · 12_utilisations · 3_articles_en_liste');
+  assert.equal(sub({ aisle: null, uses: 1, inLists: 1 }), '1_utilisation · 1_article_en_liste');
+  assert.equal(sub({ aisle: 'Fruits et légumes', uses: 1, inLists: 0 }), 'Fruits_et_légumes · 1_utilisation · aucun_article_en_liste');
   assert.equal(renameImpactText({ oldName: 'Tomatte', newName: 'Tomate', merge: false, items: 1, lists: 1 }),
-    '« Tomatte » deviendra « Tomate ». Le nom sera corrigé 1 fois, dans 1 liste.');
+    '« Tomatte » deviendra « Tomate ». 1 article sera corrigé, dans 1 liste de courses.');
+  assert.equal(renameImpactText({ oldName: 'Tomatte', newName: 'Tomate', merge: false, items: 3, lists: 2 }),
+    '« Tomatte » deviendra « Tomate ». 3 articles seront corrigés, dans 2 listes de courses.');
   assert.equal(renameImpactText({ oldName: 'Tomatte', newName: 'Tomate', merge: true, items: 0, lists: 0 }),
-    '« Tomatte » sera fusionné avec « Tomate », déjà enregistré. Aucune liste ne contient ce nom : seules les suggestions changent.');
-  assert.equal(renameDoneText({ items: 3, lists: 2 }), 'Nom corrigé 3 fois, dans 2 listes');
+    '« Tomatte » sera fusionné avec « Tomate », déjà enregistré. Aucun article en liste ne porte ce nom : seules les suggestions changent.');
+  assert.equal(renameDoneText({ items: 3, lists: 2 }), '3 articles corrigés, dans 2 listes de courses');
+  assert.equal(renameDoneText({ items: 1, lists: 1 }), '1 article corrigé, dans 1 liste de courses');
   for (const text of [savedNameSub({ aisle: 'x', uses: 2, inLists: 2 }), renameImpactText({ oldName: 'a', newName: 'b', items: 2, lists: 2 })]) {
-    assert.ok(!/article|élément/i.test(text), `texte non neutre : ${text}`);
+    assert.ok(!/élément/i.test(text), `« élément » dans un texte de courses : ${text}`);
   }
   // Le nom (texte saisi) est placé par h() de dom.js, qui crée des nœuds de texte
   for (const file of ['public/js/screens/admin.js', 'public/js/format.js', 'public/js/dom.js']) {

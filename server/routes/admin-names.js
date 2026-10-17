@@ -1,6 +1,9 @@
-// Administration des noms enregistrés : l'historique commun des noms saisis
-// dans les listes (table item_history), qui alimente l'autocomplétion, le
-// rayon habituel et le magasin habituel. Réservé aux Admin (voir admin.js).
+// Administration des noms enregistrés : l'historique commun des noms
+// d'articles saisis dans les listes de courses (table item_history), qui
+// alimente l'autocomplétion, le rayon habituel et le magasin habituel.
+// Réservé aux Admin (voir admin.js). Les autres listes (tâches…) ne mémorisent
+// rien (décision du 17 octobre 2026) : leurs éléments ne sont jamais comptés
+// ni modifiés ici, même s'ils portent le même nom qu'un article.
 //
 //   GET  /api/admin/names?q=&sort=name|uses&offset=   noms, 50 par morceau
 //   GET  /api/admin/names/impact?from=&to=            ce que changerait une correction
@@ -19,8 +22,8 @@
 //   (fusion), les lignes du même magasin sont réunies : utilisations
 //   additionnées, rayon de la ligne la plus utilisée (à égalité, celui du nom
 //   corrigé ; si la ligne retenue n'a pas de rayon, celui de l'autre) ;
-// - les listes : chaque élément non supprimé d'une liste non supprimée dont le
-//   nom normalisé est l'ancien prend le nouveau nom, avec une nouvelle date de
+// - les listes de courses : chaque article non supprimé d'une liste de
+//   courses non supprimée dont le nom normalisé est l'ancien prend le nouveau nom, avec une nouvelle date de
 //   modification (la synchronisation des téléphones le récupère). Quantité,
 //   note, photo, état coché, rayon et magasin ne changent pas ;
 // - après l'écriture, les membres de chaque liste touchée sont prévenus en
@@ -41,7 +44,7 @@ const KEY_MAX = 200;           // longueur maximale d'un nom normalisé reçu
 const NOT_FOUND = 'Ce nom n\'est plus enregistré (déjà corrigé ou retiré ?).';
 const BAD_NAME = 'Nom invalide (1 à 100 caractères, sans caractère de contrôle).';
 
-// Nom corrigé : mêmes règles que le nom d'un élément d'une liste (espaces
+// Nom corrigé : mêmes règles que le nom d'un article d'une liste (espaces
 // nettoyés, 1 à 100 caractères), et en plus aucun caractère de contrôle
 // (caractères invisibles, hors espaces déjà nettoyés). Renvoie null si invalide.
 export function correctedName(value) {
@@ -62,11 +65,13 @@ export function adminNameRoutes(ctx) {
 
   const q = {
     linesOf: db.prepare('SELECT * FROM item_history WHERE name_normalized = ?'),
-    // Éléments présents dans les listes : non supprimés, dans une liste non
-    // supprimée. Le nom normalisé n'est pas en base : il est calculé ici.
+    // Articles présents dans les listes de courses : non supprimés, dans une
+    // liste de courses non supprimée (jamais les éléments des autres listes).
+    // Le nom normalisé n'est pas en base : il est calculé ici.
     liveItems: db.prepare(`
       SELECT items.id, items.name, items.list_id FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
+      JOIN categories ON categories.id = lists.category_id AND categories.is_shopping = 1
       WHERE items.deleted_at IS NULL
     `),
     renameItem: db.prepare('UPDATE items SET name = ?, updated_at = ? WHERE id = ?'),
@@ -78,7 +83,7 @@ export function adminNameRoutes(ctx) {
     aisleName: db.prepare('SELECT name FROM aisles WHERE id = ?').pluck(),
   };
 
-  // Nombre d'éléments présents dans les listes, par nom normalisé
+  // Nombre d'articles présents dans les listes de courses, par nom normalisé
   function countsByKey() {
     const counts = new Map();
     for (const item of q.liveItems.all()) {
@@ -88,7 +93,7 @@ export function adminNameRoutes(ctx) {
     return counts;
   }
 
-  // Éléments à renommer pour passer de l'ancien nom au nouveau : même nom
+  // Articles à renommer pour passer de l'ancien nom au nouveau : même nom
   // normalisé que l'ancien, et un nom écrit autrement que le nouveau
   function itemsToRename(fromKey, newName) {
     return q.liveItems.all().filter((item) => normalizeItemName(item.name) === fromKey && item.name !== newName);
@@ -193,7 +198,7 @@ export function adminNameRoutes(ctx) {
       // Nom affiché et date (pour la synchronisation des téléphones) de toutes
       // les lignes du nom corrigé
       q.renameLines.run(p.newName, now, p.toKey);
-      // 2. Listes : chaque élément concerné prend le nouveau nom
+      // 2. Listes de courses : chaque article concerné prend le nouveau nom
       for (const item of p.items) q.renameItem.run(p.newName, now, item.id);
     })();
 

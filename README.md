@@ -2,7 +2,7 @@
 
 Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité et auto-hébergée.
 
-État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile) et 6 (magasin « multi ») sont livrées ; l'étape 7 (photos des articles) est en cours de validation. Suivent : 8 temps réel, 9 hors ligne, 10 lien public, 11 finitions et mise en production.
+État : le plan du cahier des charges compte 11 étapes. Les étapes 1 (socle), 2 (comptes, sessions, double authentification), 3 (administration), 4 (listes et articles), 5 (interface mobile), 6 (magasin « multi ») et 7 (photos des articles) sont livrées ; l'étape 8 (temps réel) est en cours de validation. Suivent : 9 hors ligne, 10 lien public, 11 finitions et mise en production.
 
 - `docs/cahier-des-charges.md` : cahier des charges validé
 - `design/` : kit de design (HTML/CSS natifs, maquettes, icônes) et son `README.md`
@@ -26,6 +26,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `server/audit.js` | Journal de sécurité (`docker logs listo` et `data/journal.log`, avec rotation) |
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
+| `server/events.js` | Temps réel : flux SSE `/api/events`, connexions ouvertes, messages « la liste X a changé » |
 | `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons) |
@@ -35,6 +36,7 @@ Application web de listes partagées (courses, tâches…), mobile-first, gratui
 | `public/js/app.js` | Démarrage de l'interface, compte connecté, copie locale des données, choix de l'écran |
 | `public/js/router.js` | Adresses `#/listes/…`, bouton Retour du téléphone, fenêtres superposées |
 | `public/js/api.js` | Seul module qui parle au serveur (`/api/…`, `/api/ops` avec des identifiants UUID créés dans le téléphone) |
+| `public/js/live.js` | Temps réel côté téléphone : écoute du flux, regroupement des messages, reconnexion, synchronisation toutes les 60 secondes |
 | `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
 | `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, nombre d'articles restants…) |
@@ -80,7 +82,7 @@ Le téléphone et l'ordinateur doivent être sur le même réseau Wi-Fi.
 
 En `http://` sur le réseau local, le navigateur n'autorise pas tout. L'installation sur l'écran d'accueil demande une adresse en HTTPS : elle se vérifie avec le vrai sous-domaine, derrière Nginx Proxy Manager. Tout le reste se teste normalement.
 
-## Vérifier l'interface sur le téléphone (étapes 5 à 7)
+## Vérifier l'interface sur le téléphone (étapes 5 à 8)
 
 Ces points ne peuvent pas être testés automatiquement : à vérifier une fois à la main, de préférence sur le vrai sous-domaine en HTTPS.
 
@@ -93,6 +95,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 7. **Ordinateur** (fenêtre d'au moins 1024 px de large) : « Mes listes » à gauche, la liste choisie au centre.
 8. **Magasin « multi »** (étape 6) : Administration → Magasins, créer un magasin « Multi » et cocher ses magasins ; créer une liste de courses avec ce magasin. Ajouter un article nouveau : son magasin est demandé ; l'ajouter une deuxième fois : il retrouve son magasin sans question. En faisant défiler, l'en-tête du magasin reste collé en haut.
 9. **Photo d'un article** (étape 7, en HTTPS) : dans la feuille d'un article, « Appareil photo » ouvre l'appareil du téléphone, « Galerie » ses photos. Une photo prise en portrait reste dans le bon sens. Elle apparaît en vignette sur la ligne ; un appui l'agrandit, le bouton Retour la referme. Sur l'autre téléphone, elle apparaît après actualisation. En mode avion, les boutons photo sont grisés avec « Photo indisponible hors ligne ».
+10. **Temps réel** (étape 8, deux téléphones sur la même liste) : un article coché sur l'un est coché sur l'autre en moins de 3 secondes, sans rien toucher. Mettre un téléphone en mode avion quelques secondes, puis le rallumer : les changements faits entre-temps arrivent tout seuls. Si les changements n'arrivent qu'au bout d'une minute environ, voir « Temps réel derrière Nginx Proxy Manager » plus bas.
 
 ## API des comptes (étape 2)
 
@@ -467,6 +470,37 @@ curl -b marie.txt $U/api/items/$A/photo
 curl -b cookies.txt -H "$O" -X DELETE $U/api/items/$A/photo
 ```
 
+## Temps réel (étape 8)
+
+Quand une liste change, les téléphones de ses membres sont prévenus aussitôt et se mettent à jour, sans qu'il faille actualiser.
+
+| Route | Rôle |
+| --- | --- |
+| `GET /api/events` | Flux « Server-Sent Events » ouvert par le téléphone connecté. Messages : `event: list` avec `data: {"listId":"…"}` |
+
+Règles :
+
+- **Aucune donnée dans les messages** : seulement l'identifiant de la liste qui a changé. Le téléphone demande ensuite les changements par `GET /api/sync?since=…`, avec les contrôles d'accès habituels.
+- **Destinataires** : les membres actifs de la liste, relus dans la base à chaque envoi. Un invité retiré reçoit un dernier message (son téléphone retire la liste), puis plus rien. Un compte désactivé, déconnecté ou dont les sessions sont fermées voit son flux coupé tout de suite ; une session expirée est coupée au signal de maintien suivant.
+- **Déclencheurs** : toute opération réussie de `/api/ops` (articles, listes, partage, magasin, catégorie, suppression), l'envoi ou le retrait d'une photo, le changement de partage. Le message part après l'écriture en base, jamais avant ; une opération refusée n'en envoie aucun.
+- **Connexions** : réservées aux comptes connectés, refusées depuis un autre site. En-tête `X-Accel-Buffering: no`, signal de maintien toutes les 25 secondes, au plus 5 connexions par compte (au-delà, la plus ancienne est fermée), connexion libérée dès que le téléphone la ferme.
+- **Sur le téléphone** : plusieurs messages rapprochés ne donnent qu'une synchronisation. Filets de sécurité : synchronisation toutes les 60 secondes au premier plan, à chaque retour au premier plan, bouton d'actualisation. Après une coupure, le flux se reconnecte seul, avec un délai croissant (1 s, 2 s, 4 s… jusqu'à 30 s).
+- **Indicateur** : « À jour », « Synchronisation… », « Hors ligne » (pas de réseau ou serveur qui ne répond pas). Le nombre de modifications en attente s'y ajoutera à l'étape 9.
+- **Feuille Article ouverte** pendant qu'une autre personne modifie l'article : ce qui a été tapé est gardé, un bandeau prévient, et seuls les champs changés sont enregistrés. Si l'article est supprimé ailleurs, on ne peut plus que fermer la feuille.
+
+### Vérifier le temps réel à la main avec curl
+
+```sh
+# Le flux reste ouvert et affiche les messages au fil de l'eau (Ctrl+C pour arrêter)
+curl -N -b cookies.txt $U/api/events
+
+# Dans un autre terminal, une modification : le premier affiche « event: list »
+op '"type":"list.update","listId":"'"$L"'","name":"Renommée"'
+
+# Sans connexion : refusé (401)
+curl -i $U/api/events
+```
+
 ## Production
 
 Sur le serveur, seul `docker-compose.yml` est nécessaire (aucun code source). L'image est construite par GitHub Actions à chaque fusion sur `main`.
@@ -484,4 +518,12 @@ Avant le premier lancement : remplacer `LISTO_PUBLIC_URL` par l'adresse exacte d
 
 ```nginx
 client_max_body_size 5m;
+```
+
+**Temps réel derrière Nginx Proxy Manager** : Listo demande déjà à Nginx de ne pas retenir les messages (`X-Accel-Buffering: no`) et envoie un signal toutes les 25 secondes. Si, malgré tout, un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (la synchronisation de secours) au lieu de quelques secondes, ajouter aussi ces lignes dans l'onglet **Advanced** du proxy host :
+
+```nginx
+proxy_buffering off;
+proxy_cache off;
+proxy_read_timeout 3600s;
 ```

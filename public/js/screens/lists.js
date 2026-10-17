@@ -81,7 +81,7 @@ export function renderLists(onLeave) {
     h('header', { class: 'topbar topbar--plain' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Mes listes')),
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData())),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
     content,
     h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste'));
 }
@@ -111,7 +111,7 @@ export function renderSidePanel(side, selectedListId) {
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
     h('div', { class: 'statusbar statusbar--side' },
       h('h2', { class: 'side-title' }, 'Mes listes'),
-      syncPill(() => refreshData())),
+      syncPill(() => refreshData({ full: true }))),
     cards,
     h('div', { class: 'side-foot' },
       h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste')));

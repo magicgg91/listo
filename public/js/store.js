@@ -41,6 +41,36 @@ export function loadSync(state, data) {
   return state;
 }
 
+// Ajoute « ce qui a changé depuis » (réponse de /api/sync?since=…) à la
+// copie locale : listes et articles modifiés ou supprimés, listes devenues
+// inaccessibles (retiré du partage), données de référence, historique.
+export function mergeSync(state, data) {
+  state.serverTime = data.serverTime;
+  state.listIds = new Set(data.listIds);
+  for (const list of data.lists) {
+    if (list.deletedAt || !state.listIds.has(list.id)) state.lists.delete(list.id);
+    else state.lists.set(list.id, list);
+  }
+  for (const item of data.items) {
+    if (item.deletedAt || !state.listIds.has(item.listId)) state.items.delete(item.id);
+    else state.items.set(item.id, item);
+  }
+  // Listes auxquelles je n'ai plus accès : elles disparaissent, avec leurs articles
+  for (const id of [...state.lists.keys()]) if (!state.listIds.has(id)) state.lists.delete(id);
+  for (const [id, item] of [...state.items]) if (!state.listIds.has(item.listId)) state.items.delete(id);
+  state.categories = data.categories;
+  state.stores = data.stores;
+  state.aisles = data.aisles;
+  // Historique : la ligne du serveur remplace la ligne locale du même article
+  // et du même magasin
+  for (const entry of data.history) {
+    const index = state.history.findIndex((e) => e.nameNormalized === entry.nameNormalized && (e.storeId ?? null) === (entry.storeId ?? null));
+    if (index >= 0) state.history[index] = entry;
+    else state.history.push(entry);
+  }
+  return state;
+}
+
 // Reporte un article créé ou modifié (ou le retire s'il est supprimé)
 export function putItem(state, item) {
   if (item.deletedAt) state.items.delete(item.id);

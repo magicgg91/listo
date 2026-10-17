@@ -20,6 +20,7 @@ import { adminRoutes } from './routes/admin.js';
 import { listRoutes } from './routes/lists.js';
 import { photoRoutes } from './routes/photos.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
+import { createEventHub, sameSiteOnly } from './events.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -53,6 +54,8 @@ export const CONTENT_SECURITY_POLICY = [
 // - log : où écrire le journal de sécurité (par défaut : docker logs)
 // - journalFile : écriture du journal dans un fichier (voir audit.js)
 // - photosDir : dossier des photos (par défaut data/photos, à côté de la base)
+// - eventOptions : réglages du temps réel (les tests raccourcissent le délai
+//   du signal de maintien)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -62,6 +65,7 @@ export function createApp({
   log,
   journalFile = null,
   photosDir = path.join(path.dirname(config.dbPath), 'photos'),
+  eventOptions = {},
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -76,6 +80,8 @@ export function createApp({
     photos: createPhotoStore(photosDir),
     uploads: createUploadCounter({ now }),
   };
+  // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
+  ctx.events = createEventHub(ctx, eventOptions);
 
   const app = express();
   app.locals.ctx = ctx;
@@ -135,6 +141,8 @@ export function createApp({
   api.use(meRoutes(ctx));
   api.use(listRoutes(ctx));
   api.use(photoRoutes(ctx));
+  // Flux temps réel : « la liste X a changé » (voir events.js)
+  api.get('/events', sameSiteOnly(config.publicUrl), (req, res) => ctx.events.connect(req, res));
   api.use('/admin', adminRoutes(ctx));
 
   // Route inconnue

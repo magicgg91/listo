@@ -358,6 +358,15 @@ export function createListService(ctx) {
     lastUsedAt: row.last_used_at,
   });
 
+  // Listes modifiées par l'opération en cours : leurs membres sont prévenus
+  // (temps réel) seulement après l'écriture réussie en base.
+  const touched = new Set();
+  const changed = (listId) => touched.add(listId);
+  function notifyTouched() {
+    for (const listId of touched) ctx.events?.notifyList(listId);
+    touched.clear();
+  }
+
   // --- Les opérations ---
   // Chacune reçoit le compte connecté et l'opération envoyée, vérifie les
   // droits et les champs, puis modifie la base. Elle renvoie ce qu'il faut
@@ -378,6 +387,7 @@ export function createListService(ctx) {
       db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
         .run(id, name, category.id, store?.id ?? null, user.id, now, now);
       db.prepare('INSERT INTO list_members (list_id, user_id) VALUES (?, ?)').run(id, user.id);
+      changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
@@ -416,6 +426,7 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
         .run(name, category.id, storeId, nowIso(), list.id);
       if (storeId !== list.store_id || category.is_shopping !== list.is_shopping) completeItems(list.id);
+      changed(list.id);
       return {};
     },
 
@@ -425,6 +436,7 @@ export function createListService(ctx) {
       const list = listForOwner(user, op.listId);
       const now = nowIso();
       db.prepare('UPDATE lists SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, list.id);
+      changed(list.id);
       ctx.audit('liste_supprimee', { utilisateur: user.username, liste: list.id });
       return {};
     },
@@ -436,6 +448,7 @@ export function createListService(ctx) {
       const now = nowIso();
       const { changes } = db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(now, now, list.id);
+      if (changes) changed(list.id);
       return { removed: changes };
     },
 
@@ -464,6 +477,7 @@ export function createListService(ctx) {
       // Historique : magasin de l'article (multi) ou magasin de la liste (simple)
       const historyStore = list.is_multi === 1 ? storeId : list.is_shopping === 1 ? list.store_id : null;
       remember(name, { storeId: historyStore, aisleId, count: 1 });
+      changed(list.id);
       return { item: describeItem(q.item.get(id)) };
     },
 
@@ -504,6 +518,7 @@ export function createListService(ctx) {
         const shopping = item.is_shopping === 1;
         remember(name, { storeId: shopping ? item.list_store_id : null, aisleId: shopping ? aisleId : null, count: 0 });
       }
+      changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
 
@@ -512,6 +527,7 @@ export function createListService(ctx) {
       const item = itemForMember(user, op.itemId);
       if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
       db.prepare('UPDATE items SET checked = ?, updated_at = ? WHERE id = ?').run(op.checked ? 1 : 0, nowIso(), item.id);
+      changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
 
@@ -521,6 +537,7 @@ export function createListService(ctx) {
       const item = itemForMember(user, op.itemId);
       const now = nowIso();
       db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, item.id);
+      changed(item.list_id);
       return {};
     },
 
@@ -530,6 +547,7 @@ export function createListService(ctx) {
       const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId, "d'article") });
       if (!item) throw new OpError(404, ITEM_NOT_FOUND);
       db.prepare('UPDATE items SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(nowIso(), item.id);
+      changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
   };
@@ -557,6 +575,7 @@ export function createListService(ctx) {
 
     const handler = Object.hasOwn(handlers, op.type) ? handlers[op.type] : null;
     let result;
+    touched.clear();
     try {
       result = db.transaction(() => {
         if (!handler) throw new OpError(400, "Type d'opération inconnu.");
@@ -564,7 +583,9 @@ export function createListService(ctx) {
         saveApplied.run(opId, user.id, JSON.stringify(value), nowIso());
         return value;
       })();
+      notifyTouched(); // écriture réussie : les membres sont prévenus
     } catch (err) {
+      touched.clear(); // refus ou panne : rien n'a changé, personne n'est prévenu
       if (!(err instanceof OpError)) throw err; // vraie panne : erreur 500
       // Un refus est lui aussi mémorisé : renvoyée, l'opération donnera le
       // même refus (sans rien modifier).
@@ -683,6 +704,9 @@ export function createListService(ctx) {
       // La liste « change » : les membres l'apprendront à leur synchronisation
       if (added.length || removed.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
+    // Temps réel : membres actuels, et invités retirés (leur téléphone
+    // apprend ainsi qu'il n'a plus accès à la liste)
+    if (added.length || removed.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
     for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, invite: nameOf(id) });
     for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, invite: nameOf(id) });
     return readList(user, list.id).list;
@@ -732,7 +756,9 @@ export function createListService(ctx) {
   // autres téléphones l'apprennent à leur synchronisation.
   function setPhotoDate(itemId, photoAt) {
     db.prepare('UPDATE items SET photo_at = ?, updated_at = ? WHERE id = ?').run(photoAt, nowIso(), itemId);
-    return describeItem(q.item.get(itemId));
+    const item = q.item.get(itemId);
+    ctx.events?.notifyList(item.list_id); // temps réel, après l'écriture
+    return describeItem(item);
   }
 
   // Comptes actifs, pour choisir avec qui partager une liste

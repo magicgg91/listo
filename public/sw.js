@@ -18,10 +18,16 @@
 // (page /p/…, données et photos /api/public/…, script js/public.js). Ces
 // requêtes passent directement vers le serveur.
 //
-// Nouvelle version de ce fichier : changer VERSION si la liste des fichiers
-// change. L'ancienne copie est effacée à l'activation.
+// Nouvelle version de Listo : le serveur écrit dans BUILD (ci-dessous)
+// l'identifiant opaque de la version installée en servant ce fichier (voir
+// server/app.js). Il change à chaque mise à jour du serveur : le navigateur
+// voit un nouveau sw.js, l'installe, copie les nouveaux fichiers dans un cache
+// neuf, et l'ancienne copie est effacée à l'activation. Jamais de mélange
+// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v5…)
+// si la liste des fichiers change.
 
-const VERSION = 'v3';
+const BUILD = null; // remplacé par le serveur (null : développement)
+const VERSION = `v5-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -44,6 +50,7 @@ const APP_FILES = [
   '/js/app.js',
   '/js/dom.js',
   '/js/format.js',
+  '/js/freshness.js',
   '/js/history.js',
   '/js/live.js',
   '/js/localdb.js',
@@ -54,6 +61,7 @@ const APP_FILES = [
   '/js/store.js',
   '/js/theme.js',
   '/js/ui.js',
+  '/js/version.js',
   '/js/words.js',
   '/js/screens/admin.js',
   '/js/screens/list-form.js',

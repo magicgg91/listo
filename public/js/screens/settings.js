@@ -11,6 +11,7 @@ import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
 import { app, logOut, resetLocalCopy, pendingCount } from '../app.js';
+import { updateCheckLine, relativeTime } from '../format.js';
 import { toast, confirmDialog } from '../ui.js';
 
 const MIN_PASSWORD = 10;
@@ -112,14 +113,15 @@ export function renderSettings() {
           row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, magasins, rayons', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null,
       h('h2', { class: 'section-title' }, 'À propos'),
-      aboutGroup()),
+      aboutGroup(isAdmin)),
     h('div', { class: 'footer' }, logout));
 }
 
-// Bloc « À propos » : version installée, développeur, projet. La version
-// arrive du serveur (GET /api/about) sans bloquer l'écran ; hors ligne, la
-// dernière version connue sur ce téléphone, sinon « Indisponible hors ligne ».
-function aboutGroup() {
+// Bloc « À propos » : version installée, mise à jour (Admin), développeur,
+// projet. La version arrive du serveur (GET /api/about) sans bloquer
+// l'écran ; hors ligne, la dernière version connue sur ce téléphone, sinon
+// « Indisponible hors ligne ».
+function aboutGroup(isAdmin) {
   // commit : 40 caractères hexadécimaux, ou 'non précisé' (développement),
   // ou null (inconnu : hors ligne, ou pas encore reçu)
   const versionRow = (commit, waiting) => {
@@ -151,8 +153,58 @@ function aboutGroup() {
 
   return h('div', { class: 'group' },
     current,
+    isAdmin ? updateRows() : null,
     row({ iconName: 'pencil', title: 'Développeur', sub: GITHUB.owner, href: GITHUB.ownerUrl }),
     row({ iconName: 'link', title: 'Projet', sub: 'Listo sur GitHub', href: GITHUB.repoUrl }));
+}
+
+// Lignes « Mise à jour » et « Vérifier maintenant » (Admin) : le serveur
+// demande à GitHub s'il existe une version plus récente (le téléphone ne
+// contacte jamais GitHub lui-même). Rien ne s'installe tout seul : la ligne
+// dit seulement quoi faire sur le serveur. Aucune ligne si la vérification
+// est désactivée (LISTO_UPDATE_CHECK=off) ou en développement.
+function updateRows() {
+  // Repère dans le bloc : les lignes sont remplacées juste après lui
+  const marker = document.createComment('mise à jour');
+  let shown = [];
+  let busy = false;
+
+  const render = (result, online = navigator.onLine) => {
+    const line = updateCheckLine(result, { online });
+    for (const node of shown) node.remove();
+    shown = [];
+    if (!line) return;
+    const status = line.commit
+      ? row({ iconName: line.icon, title: line.title, sub: line.sub, href: commitUrl(line.commit) })
+      : row({ iconName: line.icon, title: line.title, sub: line.sub });
+    const checked = result?.checkedAt ? `Dernière vérification : ${relativeTime(result.checkedAt)}` : null;
+    const button = row({ iconName: 'sync', title: 'Vérifier maintenant', sub: online ? checked : null, end: false, onClick: () => check(true) });
+    if (busy) button.disabled = true;
+    shown = [status, button];
+    marker.after(...shown);
+  };
+
+  // force : « Vérifier maintenant » (le serveur l'accepte une fois par minute)
+  const check = (force) => {
+    if (busy) return;
+    if (!navigator.onLine) {
+      render(null, false);
+      return;
+    }
+    busy = true;
+    render(null);
+    get(`/api/admin/update-check${force ? '?force=1' : ''}`).then((result) => {
+      busy = false;
+      render(result);
+    }, () => {
+      busy = false;
+      render(navigator.onLine ? { state: 'indisponible' } : null); // réseau perdu entre-temps
+    });
+  };
+
+  // Lignes posées une fois le bloc dans la page
+  queueMicrotask(() => check(false));
+  return marker;
 }
 
 // Remise à zéro de la copie locale (avec confirmation). Les modifications

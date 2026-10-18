@@ -4,11 +4,12 @@
 // puissent l'utiliser directement. Le démarrage est dans index.js.
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { loadConfig } from './config.js';
-import { deriveKeys } from './secrets.js';
+import { deriveKeys, buildId } from './secrets.js';
 import { createLimiter } from './limiter.js';
 import { createAudit } from './audit.js';
 import {
@@ -25,6 +26,7 @@ import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
+import { createUpdateCheck, fetchGithub } from './update-check.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -71,6 +73,8 @@ export const PERMISSIONS_POLICY = [
 //   du signal de maintien)
 // - backupDir : dossier des sauvegardes nocturnes (par défaut data/backups,
 //   à côté de la base). La sauvegarde est programmée par index.js.
+// - githubRequest : demande à l'API de GitHub (vérification de mise à jour ;
+//   les tests la remplacent : aucun vrai réseau)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -82,6 +86,7 @@ export function createApp({
   photosDir = path.join(path.dirname(config.dbPath), 'photos'),
   eventOptions = {},
   backupDir = path.join(path.dirname(config.dbPath), 'backups'),
+  githubRequest = fetchGithub,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -103,6 +108,12 @@ export function createApp({
   ctx.shares = createShareService(ctx);
   // Sauvegarde nocturne de la base (voir backup.js)
   ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
+  // Vérification de mise à jour sur GitHub (Admin, voir update-check.js)
+  ctx.updates = createUpdateCheck({ config, now, request: githubRequest });
+  // Identifiant opaque de la version installée (null en développement) : le
+  // téléphone le compare à celui de son code pour savoir s'il doit recharger
+  // la page (voir public/js/freshness.js). Jamais le commit lui-même.
+  const build = config.commit ? buildId(ctx.keys.build, config.commit) : null;
 
   const app = express();
   app.locals.ctx = ctx;
@@ -182,10 +193,10 @@ export function createApp({
   api.use(listRoutes(ctx));
   api.use(photoRoutes(ctx));
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
-  // Version installée (Réglages › À propos) : comptes connectés seulement, et
-  // rien d'autre que le commit (jamais public : une version publique
-  // aiderait un attaquant)
-  api.get('/about', (req, res) => res.json({ commit: config.commit ?? 'non précisé' }));
+  // Version installée (Réglages › À propos) : comptes connectés seulement
+  // (jamais public : une version publique aiderait un attaquant). build :
+  // identifiant opaque, pour que le téléphone sache si son code est périmé.
+  api.get('/about', (req, res) => res.json({ commit: config.commit ?? 'non précisé', build }));
   // Flux temps réel : « la liste X a changé » (voir events.js)
   api.get('/events', sameSiteOnly(config.publicUrl), (req, res) => ctx.events.connect(req, res));
   api.use('/admin', adminRoutes(ctx));
@@ -205,18 +216,27 @@ export function createApp({
 
   app.use('/api', api);
 
+  // sw.js et js/version.js portent l'identifiant de la version installée,
+  // écrit ici au démarrage (voir public/sw.js et public/js/version.js) :
+  // chaque mise à jour donne un nouveau sw.js, que le navigateur installe.
+  // Jamais gardés en cache sans revalidation.
+  const withBuild = (file, line) => {
+    const source = fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf8');
+    if (!source.includes(line)) throw new Error(`${file} : ligne « ${line} » introuvable`);
+    return source.replace(line, line.replace('null', JSON.stringify(build)));
+  };
+  const builtFiles = {
+    '/sw.js': withBuild('sw.js', 'const BUILD = null;'),
+    '/js/version.js': withBuild('js/version.js', 'export const BUILD = null;'),
+  };
+  for (const [url, source] of Object.entries(builtFiles)) {
+    app.get(url, (req, res) => res.type('js').set('Cache-Control', 'no-cache').send(source));
+  }
+
   // Fichiers de l'interface. Ils sont revalidés à chaque chargement (le
   // navigateur demande « ai-je la dernière version ? »), pour qu'une mise à
   // jour de Listo soit vue tout de suite.
-  // Le service worker (sw.js) n'est jamais gardé en cache : le navigateur
-  // vérifie à chaque chargement s'il existe une nouvelle version.
-  app.use(express.static(PUBLIC_DIR, {
-    cacheControl: true,
-    maxAge: 0,
-    setHeaders: (res, filePath) => {
-      if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
-    },
-  }));
+  app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
 
   // Adresse inconnue (hors API) : réponse courte en français
   app.use((req, res) => res.status(404).type('text').send('Page introuvable.'));

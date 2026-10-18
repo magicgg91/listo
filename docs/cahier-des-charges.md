@@ -311,10 +311,11 @@ Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode 
 | POST /api/ops | Reçoit un lot d'opérations de la file d'attente (créer, modifier, cocher, supprimer un article ou une liste). Chaque opération a un identifiant unique |
 | PUT, GET, DELETE /api/items/:id/photo | Envoyer (JPEG, hors du lot d'opérations), lire, retirer la photo d'un article (membres de la liste) |
 | GET /api/events | Flux SSE de notification des changements |
-| GET /api/about | **Écart :** version installée (commit de l'image) pour le bloc « À propos », comptes connectés seulement, jamais publique |
+| GET /api/about | **Écart :** version installée (commit de l'image) pour le bloc « À propos », et identifiant opaque de la version (rechargement des téléphones), comptes connectés seulement, jamais publique |
 | PUT /api/lists/:id/members | Modifier le partage d'une liste (propriétaire, en ligne) |
 | GET, PUT, DELETE /api/lists/:id/share | Lire l'état, créer ou modifier (durée, mot de passe), arrêter le lien public (propriétaire, en ligne) |
 | /api/admin/users, /categories, /stores, /aisles | Gestion des données de référence (Admin, en ligne) |
+| GET /api/admin/update-check | **Écart :** une image plus récente existe-t-elle ? Le serveur demande à GitHub (Admin, en ligne) |
 | GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, POST /api/admin/names/remove | **Écart :** noms enregistrés : liste par morceaux, effet d'une correction (nombres), corriger partout, retirer des suggestions (Admin, en ligne) |
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte |
 
@@ -494,9 +495,10 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 - Bloc « À propos » dans les Réglages (route GET /api/about) et retour à Node 24.
 - Licence Apache-2.0, fichiers NOTICE, CONTRIBUTING.md et SECURITY.md ; publication du dépôt et de l'image.
 - README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
+- Réglages › À propos : vérification de mise à jour sur GitHub (Admin) ; rechargement automatique des téléphones après une mise à jour du serveur.
 - Administration : onglet « Noms enregistrés », pour corriger une faute de frappe partout (historique et listes de courses) ou retirer un nom des suggestions ; mémoire des noms et suggestions réservées aux listes de courses (migration 8).
 
-**Tests automatisés** : 261 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde et les commandes de secours. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
+**Tests automatisés** : 291 tests (`npm test`), tous réussis, mesurés le 17 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé) et le rechargement après une mise à jour. Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
 
 **Consignes pour Claude Code**
 
@@ -519,6 +521,15 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Commandes de secours** backup-now.js et admin-secours.js, refusées en root. Raison : sauvegarde à la demande et reprise en main si plus aucun Admin ne peut se connecter.
 - **Vocabulaire** : « article » seulement dans les listes de courses, « élément » ailleurs ; messages du serveur neutres. Raison : « article » sonnait faux dans une liste de tâches.
 - **Bloc « À propos »** dans les Réglages et route GET /api/about, réservée aux comptes connectés. Raison : savoir quelle version est installée, sans la rendre publique.
+- **Vérification de mise à jour** (Réglages › À propos, ligne « Mise à jour », Admin seulement) : le serveur, jamais le téléphone, demande à l'API publique de GitHub le commit du dernier passage réussi du workflow « Image Docker » sur main et le compare au commit installé. Raison : savoir qu'une nouvelle version existe sans aller sur GitHub. Règles : sans jeton ; délai de 5 s, réponse de 256 ko au plus, aucune redirection suivie ; commit accepté seulement s'il fait 40 caractères hexadécimaux ; au plus une demande par heure, « Vérifier maintenant » une fois par minute ; une panne affiche « Vérification impossible », sans erreur ni nouvelle tentative ; LISTO_UPDATE_CHECK=off coupe tout ; jamais de mise à jour automatique ni de bouton « Mettre à jour ». Source retenue : le workflow plutôt que les « releases » GitHub (le projet n'en publie pas) ou le registre ghcr.io (plus compliqué : jeton anonyme à demander, puis métadonnées de l'image à lire).
+- **Rechargement des téléphones après une mise à jour du serveur.** Raison : une application installée sur l'écran d'accueil (iPhone) gardait l'ancien code en mémoire, et l'ancienne copie des fichiers, parfois jusqu'à la réinstallation. Décisions :
+  - identifiant opaque de la version (HMAC du commit avec une clé propre à l'installation), écrit dans sw.js et js/version.js (servis sans compte) et donné par GET /api/about ; le commit n'apparaît dans aucune ressource publique ;
+  - sw.js change à chaque version (VERSION v4-identifiant) : copie neuve des fichiers, ancienne copie effacée ;
+  - vérification au démarrage, au retour au premier plan, à la reconnexion du temps réel et toutes les heures ;
+  - rechargement seulement au premier moment sûr (aucune fenêtre ouverte, aucun champ avec le curseur ou un texte pas encore validé, aucun envoi en cours), après un bref message « Mise à jour de Listo… » ; sinon bandeau « Nouvelle version disponible » avec « Recharger », nouvel essai au changement d'écran ou au retour au premier plan ;
+  - un seul rechargement automatique par version (sessionStorage) : jamais de boucle ;
+  - file d'attente et copie locale (IndexedDB) intactes ;
+  - inactif en développement (commit non précisé) ; page publique non concernée.
 - **« Réinitialiser les données de ce téléphone »** dans les Réglages. Raison : réparer une copie locale abîmée sans aide technique.
 - **Temps réel ouvert au premier plan**, fermé en arrière-plan, 5 connexions au plus par compte. Raison : batterie, et changements reçus aussi sur « Mes listes ».
 - **Pas de WebSocket** dans Nginx Proxy Manager ; cache et tampon coupés pour /api/events. Raison : le temps réel passe par SSE.

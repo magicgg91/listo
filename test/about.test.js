@@ -27,7 +27,9 @@ test('GET /api/about : refusé sans connexion, jamais en cache, commit valide se
   const admin = await setupAdmin(app);
   const res = await admin.get('/api/about');
   assert.equal(res.status, 200);
-  assert.deepEqual(res.body, { commit: COMMIT }, 'le commit, et rien d\'autre');
+  assert.deepEqual(Object.keys(res.body), ['commit', 'build'], 'le commit et l\'identifiant opaque, rien d\'autre');
+  assert.equal(res.body.commit, COMMIT);
+  assert.match(res.body.build, /^[0-9a-f]{16}$/);
   assert.equal(res.headers.get('cache-control'), 'no-store');
   // Ni la surveillance ni le lien public ne donnent la version
   assert.doesNotMatch(await (await fetch(`${app.base}/healthz`)).text(), /3a1b2c4/);
@@ -37,6 +39,6 @@ test('GET /api/about : « non précisé » quand la variable est absente ou inva
   for (const env of [{}, { LISTO_COMMIT: 'abc123' }, { LISTO_COMMIT: `${COMMIT};rm -rf /` }]) {
     const app = await startTestApp(t, { config: { commit: loadConfig(env).commit } });
     const admin = await setupAdmin(app);
-    assert.deepEqual((await admin.get('/api/about')).body, { commit: 'non précisé' }, JSON.stringify(env));
+    assert.deepEqual((await admin.get('/api/about')).body, { commit: 'non précisé', build: null }, JSON.stringify(env));
   }
 });

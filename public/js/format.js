@@ -64,6 +64,28 @@ export function defaultDisplayName(username) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+// Ligne « Mise à jour » (Réglages › À propos, Admin seulement), d'après la
+// réponse de GET /api/admin/update-check. Renvoie { icon, title, sub,
+// commit? } (commit : la nouvelle version, pour le lien vers GitHub), ou null
+// quand la ligne ne s'affiche pas (vérification désactivée sur le serveur,
+// ou version de développement). result vaut null pendant la vérification.
+export function updateCheckLine(result, { online = true } = {}) {
+  const line = (icon, sub) => ({ icon, title: 'Mise à jour', sub });
+  if (!online) return line('cloud-off', 'Indisponible hors ligne');
+  if (!result) return line('sync', 'Vérification…');
+  if (result.state === 'desactive' || result.state === 'developpement') return null;
+  if (result.state === 'ok' && result.upToDate === true) return line('check', 'À jour');
+  if (result.state === 'ok' && typeof result.latest === 'string' && /^[0-9a-f]{40}$/.test(result.latest)) {
+    return {
+      icon: 'alert',
+      title: `Nouvelle version disponible : ${result.latest.slice(0, 7)}`,
+      sub: 'Sur le serveur : docker compose pull && docker compose up -d',
+      commit: result.latest,
+    };
+  }
+  return line('cloud-off', 'Vérification impossible');
+}
+
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »
 export function dateTimeLabel(iso) {
   const date = new Date(iso);

@@ -11,6 +11,8 @@
 //   30 s, un peu au hasard pour que deux téléphones ne reviennent pas en même
 //   temps), après une synchronisation qui rattrape ce qui a été manqué.
 // - Toutes les 60 secondes au premier plan : synchronisation de sécurité.
+// - Flux rouvert après une coupure (redémarrage du serveur après une mise à
+//   jour, par exemple) : onReconnect est appelée (voir freshness.js).
 
 export const GROUP_DELAY_MS = 300;
 export const POLL_MS = 60 * 1000;
@@ -46,12 +48,15 @@ let retryTimer = null;
 let pollTimer = null;
 let sync = () => {};       // synchronisation fournie par app.js
 let scheduleSync = () => {};
+let reconnected = () => {};
 
 // Démarre le temps réel (compte connecté). sync({ full }) : synchronisation.
-export function startLive(syncFn) {
+// onReconnect : appelée quand le flux revient après une coupure.
+export function startLive(syncFn, { onReconnect = () => {} } = {}) {
   stopLive();
   running = true;
   sync = syncFn;
+  reconnected = onReconnect;
   scheduleSync = groupCalls(() => sync({ full: false }), GROUP_DELAY_MS);
   document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('online', onOnline);
@@ -79,7 +84,10 @@ function open() {
   source = new EventSource('/api/events');
   source.addEventListener('ready', () => {
     // Flux ouvert. Après une coupure, on rattrape ce qui a été manqué.
-    if (attempt > 0) sync({ full: false });
+    if (attempt > 0) {
+      sync({ full: false });
+      reconnected();
+    }
     attempt = 0;
   });
   source.addEventListener('list', () => scheduleSync());

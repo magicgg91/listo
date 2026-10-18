@@ -216,7 +216,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau : composan
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune nouvelle icône (`i-barcode` existe).
 
-- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode`, lit le code sur une photo) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
+- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode` ; même feuille de choix « Prendre une photo » / « Choisir une photo » que le mode scan) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
 - Mode scan : « Déjà dans la liste : « Lait demi-écrémé » a ce code-barres. » (même `.note`, bouton « Ajouter quand même »).
 - La ligne de la liste ne change pas : le code n'y est pas affiché.
 

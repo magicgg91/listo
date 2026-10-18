@@ -41,3 +41,11 @@ test('fichier qui n\'est pas une image : refusé avant toute lecture', async () 
   // Refusé tout de suite : ni lecteur, ni dessin (aucun navigateur ici)
   await assert.rejects(readBarcode({ type: 'text/plain' }), ImageUnreadable);
 });
+
+test('feuille de l\'article (code-barres) : « Scanner » propose les deux mêmes choix, même lecture', () => {
+  const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
+  assert.match(list, /const eanInputs = photoInputs\(\(file\) => readEan\(file\)\);/);
+  assert.match(list, /onClick: \(\) => openPhotoChoice\(\{ title: 'Scanner le code-barres'/);
+  assert.match(list, /const code = await readBarcode\(file\);/);
+  assert.ok(!list.includes('eanCamera'), 'plus de sélecteur unique « appareil photo »');
+});

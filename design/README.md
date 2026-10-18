@@ -192,3 +192,11 @@ Balisage : dernière partie de `components.html` ; style : section 16.9 de `list
 - Choix dans le `.menu` existant : options `role="menuitemradio"` avec `aria-checked` ; l'option active a une coche `.icon--check` ET son texte. Choisir ferme le menu, trie et affiche un toast bref « Tri : par priorité ».
 - Tri par priorité : en-têtes `.aisle` « Priorité élevée », « Priorité normale », « Priorité basse » (groupe vide : pas d'en-tête). Par échéance : une seule liste, sans en-tête.
 
+## Ajout : pastille d'état dans la barre du haut de « Mes listes »
+
+Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
+
+- `.topbar.topbar--plain.topbar--status` : sur une ligne, le titre (`.topbar__main`, sa largeur naturelle), puis `.topbar__status` (prend la place restante) qui contient la pastille `.sync`, puis le bouton de tri et les Réglages. La ligne `.statusbar` disparaît de l'accueil (gardée sur l'écran d'une liste).
+- `.sync--compact` : quand le texte ne tient pas, il est masqué visuellement (toujours lu par les lecteurs d'écran) et seule l'icône reste, suivie de `.sync__count` (nombre en attente, masqué aux lecteurs d'écran qui lisent déjà « Hors ligne · 3 en attente »). Le choix est refait à chaque changement de largeur ou d'état.
+- La pastille reste un bouton « Actualiser » avec une zone tactile de 44 px de haut.
+

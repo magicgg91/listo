@@ -130,12 +130,14 @@ export function renderLists(onLeave) {
   refreshData({ quiet: true });
 
   return h('div', { class: 'screen' },
-    h('header', { class: 'topbar topbar--plain' },
+    // Barre du haut sur une ligne : titre, pastille d'état (réduite à
+    // l'icône si la place manque), tri des listes, réglages
+    h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Mes listes')),
+      syncPill(() => refreshData({ full: true }), { inBar: true }),
       sorter.button,
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
     sorter.status,
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
     content,
     h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste'));
 }

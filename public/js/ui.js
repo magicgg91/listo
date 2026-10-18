@@ -274,18 +274,49 @@ export function setSyncState(state) {
   }
 }
 
+// Dessine la pastille : icône + texte (+ le nombre en attente, montré
+// seulement quand la pastille est réduite)
 function paintPill(pill) {
   const info = SYNC[syncState];
   pill.className = `sync ${info.className}`;
-  replace(pill, icon(info.icon, 'icon--sm'), info.text());
+  replace(pill, icon(info.icon, 'icon--sm'), h('span', { class: 'sync__text' }, info.text()),
+    syncState === 'off' && pendingCount ? h('span', { class: 'sync__count', 'aria-hidden': 'true' }, String(pendingCount)) : null);
+  fitPill(pill);
+}
+
+// Pastille dans une barre du haut : si son texte ne tient pas dans la place
+// laissée par le titre et les boutons, elle se réduit à l'icône (et au
+// nombre en attente). Le texte reste lu par les lecteurs d'écran (masqué
+// visuellement seulement) : jamais un mot coupé, jamais de retour à la
+// ligne, jamais un bouton poussé hors de l'écran.
+function fitPill(pill) {
+  const slot = pill.parentElement;
+  if (!pill.dataset.fit || !slot || !pill.isConnected) return;
+  pill.classList.remove('sync--compact');
+  slot.style.minWidth = '';
+  if (pill.scrollWidth > slot.clientWidth + 0.5) {
+    pill.classList.add('sync--compact');
+    slot.style.minWidth = `${pill.offsetWidth}px`;
+  }
 }
 
 // Pastille d'état. Si onRefresh est donné, un appui lance une actualisation.
-export function syncPill(onRefresh) {
+// inBar : pastille posée dans une barre du haut (entre le titre et les
+// boutons) ; renvoie alors l'emplacement qui la contient, et la pastille se
+// réduit à l'icône quand la place manque (voir fitPill).
+export function syncPill(onRefresh, { inBar = false } = {}) {
   const pill = onRefresh
     ? h('button', { type: 'button', role: 'status', 'aria-live': 'polite', title: 'Actualiser', onClick: onRefresh })
     : h('p', { role: 'status', 'aria-live': 'polite' });
   syncPills.add(pill);
+  if (!inBar) {
+    paintPill(pill);
+    return pill;
+  }
+  pill.dataset.fit = '1';
+  const slot = h('div', { class: 'topbar__status' }, pill);
+  // La place change avec la largeur de l'écran ou la taille du texte
+  if (typeof ResizeObserver === 'function') new ResizeObserver(() => fitPill(pill)).observe(slot);
   paintPill(pill);
-  return pill;
+  return slot;
 }

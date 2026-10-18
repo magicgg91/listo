@@ -8,7 +8,7 @@ import { relativeTime, remainingLabel, namesList, listSortButton } from '../form
 import { computeSummaries, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
-import { deleteListWithConfirm } from './list-delete.js';
+import { listActions } from './list-actions.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -17,23 +17,14 @@ export function hasPublicLink(list, now = Date.now()) {
   return Boolean(link) && (link.expiresAt === null || Date.parse(link.expiresAt) > now);
 }
 
-// Actions du menu « ⋯ » d'une carte. Pour l'instant, seulement « Supprimer
-// la liste », proposée au seul propriétaire (le serveur le revérifie). Aucune
-// action : pas de bouton.
-function cardActions(list) {
-  const items = [];
-  if (list.isOwner) {
-    items.push({ icon: 'trash', label: 'Supprimer la liste', danger: true, onSelect: () => deleteListWithConfirm(list) });
-  }
-  return items;
-}
-
 // Carte d'une liste (balisage de components.html). Avec des actions, la carte
 // (un lien qui ouvre la liste) est accompagnée d'un bouton « ⋯ » posé dans son
-// coin : un appui sur ce bouton ouvre le menu sans ouvrir la liste.
+// coin : un appui sur ce bouton ouvre le menu sans ouvrir la liste. Les
+// actions sont les mêmes que dans le menu ⋮ de la liste (list-actions.js) ;
+// après « Modifier la liste » ou le partage, on revient ici.
 export function listCard(list, { selected = false } = {}) {
   const card = cardLink(list, { selected });
-  const actions = cardActions(list);
+  const actions = listActions(list);
   if (!actions.length) return card;
   const menuButton = iconButton('more', `Actions de la liste ${list.name}`, () => {
     menuButton.setAttribute('aria-expanded', 'true');

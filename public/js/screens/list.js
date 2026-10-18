@@ -34,12 +34,11 @@ import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoi
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
-import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
-import { deleteListWithConfirm } from './list-delete.js';
+import { listActions } from './list-actions.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -173,7 +172,7 @@ export function renderList(listId, onLeave) {
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
-    menuButton.hidden = false;
+    menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
     addbar.hidden = false;
     // Bouton « Scanner » : listes de courses seulement (recherche activée)
@@ -371,20 +370,12 @@ export function renderList(listId, onLeave) {
     toast(`${countItems(removed, list)} ${removed === 1 ? 'retiré' : 'retirés'}`);
   }
 
+  // Menu ⋮ : les mêmes actions que le menu « ⋯ » d'une carte de « Mes
+  // listes » (list-actions.js). Pour actualiser : la pastille d'état.
+  const menuActions = () => (view ? listActions(view.list, { onDeleted: () => navigate('lists', {}, { replace: true }) }) : []);
   function openListMenu() {
-    if (!view) return;
-    const items = [];
-    if (view.list.isOwner) items.push({ icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: listId }) });
-    if (view.list.isOwner) items.push({ icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(view.list) });
-    items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData({ full: true }) });
-    // En dernier, séparée et en rouge : même confirmation et même opération
-    // que le menu « ⋯ » de « Mes listes » (propriétaire seulement)
-    if (view.list.isOwner) {
-      items.push({ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
-        if (await deleteListWithConfirm(view.list)) navigate('lists', {}, { replace: true });
-      } });
-    }
-    openMenu(items, { label: 'Menu de la liste' });
+    const items = menuActions();
+    if (items.length) openMenu(items, { label: 'Menu de la liste' });
   }
 
   // --- Ajout d'un article (ou d'un élément) ---

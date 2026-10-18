@@ -80,7 +80,7 @@ const APP_FILES = [
   '/js/words.js',
   '/js/screens/account.js',
   '/js/screens/admin.js',
-  '/js/screens/list-delete.js',
+  '/js/screens/list-actions.js',
   '/js/screens/list-form.js',
   '/js/screens/list.js',
   '/js/screens/lists.js',

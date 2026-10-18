@@ -251,6 +251,6 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
 
 - `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (liste partagée dont on n'est pas propriétaire).
-- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran). « Supprimer la liste » : `.menu__item--danger` avec `#i-trash`.
-- Menu ⋮ de la liste ouverte : « Supprimer la liste » en dernier, après un trait `.menu__sep` (`role="separator"`).
+- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran) : « Modifier la liste » (`#i-pencil`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`).
+- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible.
 - Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.

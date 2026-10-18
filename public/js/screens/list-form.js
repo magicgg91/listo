@@ -11,7 +11,7 @@ import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
 import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, toast } from '../ui.js';
-import { deleteListWithConfirm } from './list-delete.js';
+import { deleteListWithConfirm } from './list-actions.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -218,7 +218,7 @@ function form(list, users) {
   paint();
 
   // --- Suppression (propriétaire, liste existante) ---
-  // Même confirmation et même opération que les menus (list-delete.js)
+  // Même confirmation et même opération que les menus (list-actions.js)
   const deleteButton = list ? h('button', {
     class: 'btn btn--danger-outline btn--block',
     type: 'button',

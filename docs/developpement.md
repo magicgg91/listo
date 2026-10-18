@@ -372,8 +372,8 @@ Les opérations de `POST /api/ops` :
 | `list.delete` | `listId` | propriétaire |
 | `list.uncheckAll` | `listId` : décoche tous les articles cochés (« Tout remettre à acheter » / « Tout rouvrir »), une seule opération quel que soit leur nombre | membres |
 | `list.removeChecked` | `listId` : supprime les articles cochés (« Retirer du panier » / « Retirer les terminés »). L'ancien nom `list.clearChecked` reste accepté | membres |
-| `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon). Liste « multi » : `storeId` au lieu de `aisleId` (facultatif : sinon le magasin habituel ; `null` = Sans magasin) | membres |
-| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi »), `priority` (`low`, `normal`, `high`) et `dueDate` (`AAAA-MM-JJ`, ou `null` pour l'effacer) hors listes de courses. Un champ absent ne change pas ; une chaîne vide pour `dueDate` est refusée | membres |
+| `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon). Liste « multi » : `storeId` au lieu de `aisleId` (facultatif : sinon le magasin habituel ; `null` = Sans magasin). Listes de courses : `ean` (facultatif, code-barres de 8, 12 ou 13 chiffres avec clé de contrôle, gardé normalisé) | membres |
+| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi »), `priority` (`low`, `normal`, `high`) et `dueDate` (`AAAA-MM-JJ`, ou `null` pour l'effacer) hors listes de courses ; `ean` (code-barres, ou `null` pour l'effacer) dans une liste de courses. Un champ absent ne change pas ; une chaîne vide pour `dueDate` ou `ean` est refusée | membres |
 | `item.check` | `itemId`, `checked` (`true` ou `false`). Le serveur pose la date du coché (`checkedAt`) au premier coché et l'efface au décoché | membres |
 | `item.delete` | `itemId` | membres |
 | `item.restore` | `itemId` : remet un article supprimé, avec sa photo, tant qu'il n'a pas été effacé par le nettoyage (« Annuler », étape 7) | membres |
@@ -612,7 +612,7 @@ Une application installée sur l'écran d'accueil (iPhone surtout) reste ouverte
 Ce qui se passe maintenant :
 
 1. **Identifiant opaque** : au démarrage, le serveur calcule un identifiant de 16 caractères à partir du commit installé et d'une clé propre à l'installation (HMAC-SHA256, clé dérivée de `secrets/secret.key`, voir `buildId` dans `server/secrets.js`). Il change à chaque mise à jour mais ne révèle pas le commit. Il est écrit dans `sw.js` et `js/version.js` quand le serveur les envoie (ligne `BUILD = null` remplacée ; fichiers revalidés à chaque chargement), et donné par `GET /api/about` (comptes connectés). Sans commit (développement) : `null`, et rien de ce qui suit ne se déclenche.
-2. **Nouveau service worker à chaque version** : `VERSION` de `sw.js` vaut `v13-<identifiant>`. Le navigateur voit un nouveau `sw.js`, l'installe (copie neuve de tous les fichiers, sans cache HTTP), puis efface l'ancienne copie : jamais de mélange d'anciens et de nouveaux fichiers.
+2. **Nouveau service worker à chaque version** : `VERSION` de `sw.js` vaut `v14-<identifiant>`. Le navigateur voit un nouveau `sw.js`, l'installe (copie neuve de tous les fichiers, sans cache HTTP), puis efface l'ancienne copie : jamais de mélange d'anciens et de nouveaux fichiers.
 3. **Code périmé** (`public/js/freshness.js`) : le téléphone compare l'identifiant de son code (`js/version.js`) à celui du serveur, au démarrage, au retour au premier plan, à la reconnexion du temps réel (le serveur vient souvent de redémarrer) et toutes les heures au premier plan. Hors ligne : rien, sans erreur.
 4. **Rechargement au premier moment sûr** : d'abord `registration.update()` et l'attente du nouveau service worker actif (10 s au plus) ; puis, si aucune fenêtre n'est ouverte (feuille, boîte de dialogue, menu), qu'aucun champ n'a le curseur ni un texte pas encore validé, et que la file d'attente n'envoie rien (un envoi en cours est attendu jusqu'à 10 s), le message « Mise à jour de Listo… » s'affiche un instant et la page se recharge. Sinon, bandeau « Nouvelle version disponible » avec « Recharger » (en haut de l'écran, il ne cache pas la barre d'ajout), et nouvel essai au changement d'écran et au retour au premier plan.
 5. **Pas de boucle** : un seul rechargement automatique par version et par onglet (repère dans `sessionStorage`). Toujours périmé après lui : bandeau et une ligne dans la console. Si `sessionStorage` est indisponible : jamais de rechargement automatique, seulement le bandeau.
@@ -622,7 +622,7 @@ La page publique (`/p/…`) n'est pas concernée : elle n'a ni service worker ni
 
 **Si une nouvelle version de Listo semble cassée sur un téléphone** : fermer Listo et le rouvrir avec du réseau (il reprend alors la dernière version) ; si ça ne suffit pas, Réglages → Mon compte → « Réinitialiser les données de ce téléphone » ; en dernier recours, effacer les données du site dans les réglages du navigateur (Chrome : cadenas à gauche de l'adresse → Paramètres du site → Effacer les données ; iPhone : Réglages → Safari → Avancé → Données des sites web), puis se reconnecter.
 
-Pour publier une version qui change la liste des fichiers de l'application, ajouter le nouveau fichier dans `APP_FILES` de `public/sw.js` et changer le début de `VERSION` (`v13`, `v14`…) ; un test automatique signale un fichier oublié. L'identifiant de la version installée, lui, change tout seul à chaque mise à jour.
+Pour publier une version qui change la liste des fichiers de l'application, ajouter le nouveau fichier dans `APP_FILES` de `public/sw.js` et changer le début de `VERSION` (`v14`, `v15`…) ; un test automatique signale un fichier oublié. L'identifiant de la version installée, lui, change tout seul à chaque mise à jour.
 
 ## Lien public d'une liste (étape 10)
 
@@ -715,7 +715,9 @@ Parcours (`public/js/screens/scan.js`) :
 3. feuille : nom (modifiable), note « marque · format », avertissement « Déjà dans la liste » (même nom, majuscules et accents ignorés ; « Ajouter quand même »), mention « Données : Open Food Facts » ; « Ajouter à la liste » passe par l'ajout normal (rayon ou magasin habituel, sinon demandé une fois) et la file d'attente habituelle (`item.create`) ;
 4. « Scanner un autre produit », compteur « N ajoutés », « Terminé ».
 
-Sans code lu (« Code non lu, réessayez plus près et bien à plat, ou saisissez-le »), sans nom (produit inconnu, panne, hors ligne) ou sans lecteur (pas encore téléchargé, WebAssembly refusé) : saisie à la main du code puis du nom ; les champs n'apparaissent que sur appui, jamais avec le curseur dedans. Le code-barres n'est jamais écrit dans la note. `LISTO_PRODUCT_LOOKUP=off` : bouton masqué (le compte connecté porte `productLookup: false`).
+Le code lu ou tapé est enregistré avec l'article (`ean`, migration 11), que le produit soit trouvé ou non. « Déjà dans la liste » (`duplicateOf` de `public/js/store.js`) se déclenche pour un article de la liste qui porte le même code, puis pour le même nom. La feuille d'un article de liste de courses a un champ « Code-barres » : saisie à la main, « Scanner » (même lecteur, `readBarcode`), « Effacer » ; un code invalide est signalé avant l'envoi, et le serveur le vérifie de nouveau (clé de contrôle, forme normalisée).
+
+Sans code lu (« Code non lu, réessayez plus près et bien à plat, ou saisissez-le »), sans nom (produit inconnu, panne, hors ligne) ou sans lecteur (pas encore téléchargé, WebAssembly refusé) : saisie à la main du code puis du nom ; les champs n'apparaissent que sur appui, jamais avec le curseur dedans. Le code-barres n'est jamais écrit dans la note : il a son propre champ (`ean`). `LISTO_PRODUCT_LOOKUP=off` : bouton masqué (le compte connecté porte `productLookup: false`).
 
 ### Route `POST /api/lists/:id/products`
 

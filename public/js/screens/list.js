@@ -33,6 +33,7 @@ import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, open
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
 import { createScanner, scanAvailable } from './scan.js';
+import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 
 // Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
 // Ouverte par défaut. Le stockage du navigateur peut être indisponible
@@ -304,7 +305,7 @@ export function renderList(listId, onLeave) {
   const scanner = createScanner({
     listId,
     getView: () => view,
-    add: (name, { note }) => addNamed(name, note ? { note } : {}),
+    add: (name, { note, ean }) => addNamed(name, { ...(note ? { note } : {}), ...(ean ? { ean } : {}) }),
   });
   scanner.button.hidden = true; // affiché par draw() pour une liste de courses
   const addForm = h('form', { class: 'addbar__row', novalidate: true },
@@ -530,6 +531,57 @@ export function renderList(listId, onLeave) {
         h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue)),
     ] : null;
 
+    // --- Code-barres (listes de courses) : saisi à la main, ou lu sur une
+    // photo par « Scanner » (même lecteur que le mode scan, sur le
+    // téléphone). Vérifié à l'enregistrement ; vide = pas de code.
+    const shopping = Boolean(view?.list.category.isShopping);
+    const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
+    const eanField = field('Code-barres', eanInput, { hint: 'Chiffres sous les barres (8, 12 ou 13)' });
+    const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
+    // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
+    const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
+    const eanCamera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
+    const eanScan = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Scanner le code-barres', onClick: () => eanCamera.click() }, icon('barcode', 'icon--sm'), 'Scanner');
+    const eanClear = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Effacer le code-barres', onClick: () => {
+      eanInput.value = '';
+      drawEan();
+    } }, 'Effacer');
+    const drawEan = () => {
+      eanField.setError(null);
+      eanClear.disabled = !eanInput.value.trim();
+      const code = normalizeBarcode(eanInput.value);
+      const twin = code ? [...app.data.items.values()].find((other) => other.listId === item.listId && other.id !== item.id && other.ean === code) : null;
+      eanTwin.hidden = !twin;
+      eanTwin.querySelector('p').textContent = twin ? `« ${twin.name} » a déjà ce code-barres dans la liste.` : '';
+    };
+    eanInput.addEventListener('input', drawEan);
+    eanCamera.addEventListener('change', async () => {
+      const file = eanCamera.files?.[0];
+      eanCamera.value = ''; // la même photo pourra être reprise
+      if (!file) return;
+      eanField.setError(null);
+      eanStatus.textContent = 'Lecture du code-barres…';
+      eanStatus.hidden = false;
+      eanScan.disabled = true;
+      let message = null;
+      try {
+        const code = await readBarcode(file);
+        if (code) eanInput.value = code;
+        else message = 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.';
+      } catch (err) {
+        message = err instanceof ImageUnreadable
+          ? 'Cette photo ne peut pas être lue. Reprenez une photo, ou saisissez le code.'
+          : "La lecture des codes-barres n'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.";
+      }
+      eanStatus.hidden = true;
+      eanScan.disabled = false;
+      drawEan();
+      if (message) eanField.setError(message);
+    });
+    drawEan();
+    const eanFields = shopping ? h('div', { class: 'stack stack--sm' },
+      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanCamera) : null;
+
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
     let current = item; // dernier état connu de l'article (photoAt)
@@ -600,7 +652,7 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
@@ -633,6 +685,7 @@ export function renderList(listId, onLeave) {
       field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
       classicFields,
+      eanFields,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, camera, gallery),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
@@ -651,7 +704,12 @@ export function renderList(listId, onLeave) {
       event.preventDefault();
       const newName = name.value.replace(/\s+/g, ' ').trim();
       nameField.setError(newName ? null : 'Le nom est obligatoire');
-      if (!newName) return;
+      // Code-barres : vide = pas de code ; sinon vérifié (clé de contrôle) et
+      // gardé sous sa forme normalisée (un UPC-A devient un EAN-13)
+      const typedEan = eanInput.value.trim();
+      const newEan = typedEan ? normalizeBarcode(typedEan) : null;
+      if (shopping) eanField.setError(typedEan && !newEan ? 'Code invalide : vérifiez les chiffres' : null);
+      if (!newName || (shopping && typedEan && !newEan)) return;
       const changes = {};
       if (newName !== item.name) changes.name = newName;
       if (quantity.value.trim() !== item.quantity) changes.quantity = quantity.value.trim();
@@ -660,6 +718,7 @@ export function renderList(listId, onLeave) {
       if (multi && storeId !== (item.storeId ?? null)) changes.storeId = storeId;
       if (classic && priority !== (item.priority ?? 'normal')) changes.priority = priority;
       if (classic && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
+      if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
         sheet.close();
         return;

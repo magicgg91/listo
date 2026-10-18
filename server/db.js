@@ -288,6 +288,16 @@ export const MIGRATIONS = [
   ALTER TABLE items ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high'));
   ALTER TABLE items ADD COLUMN due_date TEXT;
   `,
+
+  // --- Migration 11 : code-barres (EAN) des articles des listes de courses ---
+  // ean : code sous sa forme normalisée (8 ou 13 chiffres ; un UPC-A est
+  // ramené en EAN-13), ou vide. Le serveur vérifie aussi la clé de contrôle
+  // avant d'écrire ; la contrainte refuse tout le reste, même écrit
+  // directement. Les articles existants n'ont pas de code : aucune autre
+  // donnée ne change.
+  `
+  ALTER TABLE items ADD COLUMN ean TEXT CHECK (ean IS NULL OR (length(ean) IN (8, 13) AND ean NOT GLOB '*[^0-9]*'));
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

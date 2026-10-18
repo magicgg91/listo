@@ -58,6 +58,7 @@ const APP_FILES = [
   '/js/actions.js',
   '/js/api.js',
   '/js/app-height.js',
+  '/js/theme-boot.js',
   '/js/app.js',
   '/js/barcode-worker.js',
   '/js/barcode.js',

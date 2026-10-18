@@ -180,9 +180,12 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
   assert.deepEqual(lait, { name: 'Lait', quantity: '2 L', note: 'demi-écrémé', checked: false, photo: `/api/public/${token}/photos/${h.items.lait}` });
   assert.deepEqual(data.done.map((i) => [i.name, i.checked]), [['Pain', true]]);
 
-  // Rien sur les comptes, l'historique ou l'autre liste
+  // Rien sur les comptes, l'historique ou l'autre liste. Le jeton, aléatoire,
+  // figure dans l'adresse de la photo (vérifiée plus haut) et peut contenir
+  // par hasard « lea » ou « owner » : on le retire avant de chercher.
+  const text = res.text.replaceAll(token, '');
   for (const forbidden of ['guillaume', 'Guillaume', 'lea', 'Cadeau', 'Autre liste', h.listId, h.otherListId, 'members', 'owner', 'createdBy', 'history']) {
-    assert.equal(res.text.includes(forbidden), false, `« ${forbidden} » ne doit pas apparaître`);
+    assert.equal(text.includes(forbidden), false, `« ${forbidden} » ne doit pas apparaître`);
   }
 
   // Article supprimé : absent

@@ -79,6 +79,17 @@ export function passwordInput(attrs = {}) {
 // aside : aide courte, écrite à côté du titre entre parenthèses, en texte
 // discret (« Quantité (par exemple 2 ou 500 g) ») ; elle est dans le <label>,
 // donc lue avec le nom du champ. hint : explication plus longue, sous le champ.
+// Attributs d'un champ qui contient un nom de produit ou un libellé (article,
+// élément, liste, catégorie, magasin, rayon, nom enregistré). L'iPhone devine
+// qu'un champ est un « contact » d'après ses propres indices (libellé « Nom »,
+// attributs name, id, aria-label…) et propose alors « Préremplir le
+// contact » ; autocomplete="off" seul ne suffit pas toujours. Ces champs
+// n'ont donc ni name, ni id parlant (field() leur donne un id neutre), ni
+// libellé « Nom », et portent tous ces attributs. Jamais pour un identifiant,
+// un mot de passe ou un code (le gestionnaire de mots de passe doit les
+// reconnaître).
+export const LABEL_INPUT = { type: 'text', autocomplete: 'off', autocorrect: 'off', autocapitalize: 'sentences', spellcheck: 'false', enterkeyhint: 'done', inputmode: 'text' };
+
 export function field(label, control, { hint, aside, id } = {}) {
   const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select, button');
   const inputId = id ?? `f-${Math.random().toString(36).slice(2, 9)}`;

@@ -5,7 +5,7 @@
 // priorité et échéance activées ou non (listes autres que les courses), et
 // suppression de la liste (propriétaire).
 
-import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
+import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { put, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { activeOnly } from '../store.js';
@@ -116,8 +116,8 @@ function form(list, users) {
   const me = app.user;
 
   // --- Nom ---
-  const name = h('input', { class: 'input', type: 'text', maxlength: '100', placeholder: 'Ex. Courses de la semaine', autocomplete: 'off', autocapitalize: 'sentences', value: list?.name ?? '' });
-  const nameField = field('Nom', name);
+  const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
+  const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
   // --- Catégorie (choix en cartes) ---
   // Les catégories actives, plus la catégorie actuelle de la liste si elle a

@@ -34,7 +34,7 @@
 // Le code lu (ou tapé) est gardé dans le champ « Code-barres » de l'article
 // (ean), que le produit soit trouvé ou non ; jamais dans la note.
 
-import { h, icon, field, replace } from '../dom.js';
+import { h, icon, field, replace, LABEL_INPUT } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
 import { duplicateOf, duplicateText, listItemForEan, knownItemForEan } from '../store.js';
@@ -227,9 +227,9 @@ export function createScanner({ listId, getView, add, check }) {
     function productSheet({ name, note, source, code }) {
       const found = source === 'off';
       const step = ++current;
-      const nameInput = h('input', { class: 'input', type: 'text', value: name, maxlength: '100', autocapitalize: 'sentences', autocomplete: 'off' });
+      const nameInput = h('input', { class: 'input', ...LABEL_INPUT, value: name, maxlength: '100' });
       const noteInput = h('input', { class: 'input', type: 'text', value: note, maxlength: '500', autocomplete: 'off' });
-      const nameField = field('Nom', nameInput);
+      const nameField = field('Article', nameInput); // jamais « Nom » (voir LABEL_INPUT)
       const warning = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
       const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Ajouter à la liste');
       // Déjà dans la liste (même nom) : prévenir, et « Ajouter quand même »

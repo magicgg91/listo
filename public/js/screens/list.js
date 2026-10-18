@@ -30,7 +30,7 @@
 //   refuse de toute façon chaque écriture ; si le droit change, l'écran
 //   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
 
-import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
+import { h, icon, iconButton, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
@@ -42,6 +42,9 @@ import { computeListView, canEditList, listOptions, availableSorts, effectiveSor
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
+
+// « article » → « Article », « élément » → « Élément »
+const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
@@ -636,7 +639,7 @@ export function renderList(listId, onLeave) {
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
-    const name = h('input', { class: 'input', type: 'text', value: item.name, maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences' });
+    const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
     note.value = item.note;
@@ -675,7 +678,8 @@ export function renderList(listId, onLeave) {
       },
     }, storeLabel, icon('chev-d'));
 
-    const nameField = field('Nom', name);
+    // Libellé « Article » / « Élément », jamais « Nom » (voir LABEL_INPUT)
+    const nameField = field(capitalized(words.one), name);
     const error = errorNote();
 
     // --- Priorité et échéance (listes autres que les courses, chacune si
@@ -987,7 +991,7 @@ export function renderList(listId, onLeave) {
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
         h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
-        value('Nom', it.name),
+        value(capitalized(words.one), it.name),
         it.quantity ? value('Quantité', it.quantity) : null,
         it.note ? value('Note', it.note) : null,
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,

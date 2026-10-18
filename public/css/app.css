@@ -39,8 +39,10 @@ html, body { height: 100%; margin: 0; }
 .app .sync--busy { color: var(--color-accent-ink); }
 .app .sync--off { color: var(--color-inverse-text); }
 body { background: var(--color-bg); }
-/* Hauteur réelle de l'écran sur téléphone (barre d'adresse comprise) */
-.app { height: 100dvh; overflow: hidden; }
+/* Hauteur réelle de l'écran sur téléphone : hauteur visible mesurée par
+   js/app-height.js (remesurée au retour dans l'application) ; 100dvh si le
+   script n'a pas encore mesuré */
+.app { height: var(--app-h, 100dvh); overflow: hidden; }
 
 /* Zone de sécurité du bas : la page s'affiche aussi sous la barre système
    d'Android et sous l'indicateur d'accueil de l'iPhone (viewport-fit=cover).

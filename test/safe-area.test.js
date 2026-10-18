@@ -38,5 +38,6 @@ test('tout ce qui est collé en bas tient compte de la zone de sécurité', () =
 
 test('la page couvre tout l\'écran (zone de sécurité active) et prend la hauteur visible', () => {
   assert.match(read('public/index.html'), /<meta name="viewport" content="[^"]*viewport-fit=cover/);
-  assert.match(rule(app, '.app'), /height: 100dvh/);
+  // Hauteur visible mesurée par js/app-height.js, 100dvh en attendant
+  assert.match(rule(app, '.app'), /height: var\(--app-h, 100dvh\)/);
 });

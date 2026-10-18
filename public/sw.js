@@ -23,11 +23,11 @@
 // server/app.js). Il change à chaque mise à jour du serveur : le navigateur
 // voit un nouveau sw.js, l'installe, copie les nouveaux fichiers dans un cache
 // neuf, et l'ancienne copie est effacée à l'activation. Jamais de mélange
-// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v11…)
+// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v12…)
 // si la liste des fichiers change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v11-${BUILD ?? 'dev'}`;
+const VERSION = `v12-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -47,6 +47,7 @@ const APP_FILES = [
   '/icons/apple-touch-icon.png',
   '/js/actions.js',
   '/js/api.js',
+  '/js/app-height.js',
   '/js/app.js',
   '/js/dom.js',
   '/js/format.js',

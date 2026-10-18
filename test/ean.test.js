@@ -60,7 +60,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 10, sans la colonne, avec des données
   let db = openDatabase(file);
-  db.exec('ALTER TABLE items DROP COLUMN ean');
+  db.exec('ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled');
   db.pragma('user_version = 10');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Courses', 1, 1)").run();
@@ -71,7 +71,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   db.close();
   // Redémarrage : la migration 11 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
+  assert.equal(schemaVersion(db), 13); // toutes les migrations, jusqu'à la 13 (réglages des listes)
   assert.deepEqual(db.prepare(`SELECT ${columns} FROM items`).all(), before);
   assert.equal(db.prepare('SELECT ean FROM items').pluck().get(), null);
   // La contrainte : vide, ou exactement 8 ou 13 chiffres
@@ -80,7 +80,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
     assert.throws(() => db.prepare('UPDATE items SET ean = ?').run(bad), /CHECK/, JSON.stringify(bad));
   }
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
+  assert.equal(schemaVersion(db), 13); // toutes les migrations, jusqu'à la 13 (réglages des listes)
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

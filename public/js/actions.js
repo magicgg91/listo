@@ -103,9 +103,9 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, categoryId, storeId }) {
+export async function createList({ name, categoryId, storeId, priorityEnabled = false, dueEnabled = false }) {
   const listId = uuid();
-  await perform({ type: 'list.create', listId, name, categoryId, storeId });
+  await perform({ type: 'list.create', listId, name, categoryId, storeId, priorityEnabled, dueEnabled });
   return listId;
 }
 

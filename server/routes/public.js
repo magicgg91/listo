@@ -56,7 +56,7 @@ export function publicRoutes(ctx, { publicDir }) {
 
   const q = {
     list: db.prepare(`
-      SELECT lists.name, lists.store_id, categories.name AS category_name, categories.is_shopping
+      SELECT lists.name, lists.store_id, lists.priority_enabled, lists.due_enabled, categories.name AS category_name, categories.is_shopping
       FROM lists JOIN categories ON categories.id = lists.category_id WHERE lists.id = ?
     `),
     store: db.prepare('SELECT id, name, is_multi FROM stores WHERE id = ?'),
@@ -133,14 +133,18 @@ export function publicRoutes(ctx, { publicDir }) {
     // l'ordre, elle n'est pas envoyée.
     const { groups, done } = splitDone(items, q.allAisles.all(), isShopping, { byStore, stores: q.allStores.all() });
     // Liste autre que les courses : priorité et échéance en plus (lecture
-    // seule) ; jamais pour une liste de courses
+    // seule), chacune seulement si elle est activée pour cette liste ;
+    // jamais pour une liste de courses
+    const withPriority = !isShopping && list.priority_enabled === 1;
+    const withDue = !isShopping && list.due_enabled === 1;
     const describe = (item) => ({
       name: item.name,
       quantity: item.quantity,
       note: item.note,
       checked: item.checked,
       photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
-      ...(isShopping ? {} : { priority: item.priority, dueDate: item.dueDate }),
+      ...(withPriority ? { priority: item.priority } : {}),
+      ...(withDue ? { dueDate: item.dueDate } : {}),
     });
     return {
       list: {

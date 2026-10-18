@@ -70,6 +70,10 @@ const LIST_NOT_FOUND = 'Liste introuvable.';
 const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 export const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
+// Priorité ou échéance désactivée par le propriétaire pour cette liste
+// (migration 13) : refus avant toute écriture
+export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
+export const DUE_OFF = "L'échéance est désactivée pour cette liste.";
 export const ACCESS = ['modification', 'lecture'];
 
 // Droit d'écriture d'un compte sur une liste : LE seul contrôle, utilisé par
@@ -144,6 +148,7 @@ export function createListService(ctx) {
     memberItem: db.prepare(`
       SELECT items.*, categories.is_shopping, lists.store_id AS list_store_id,
         lists.owner_id AS list_owner_id, list_members.access AS member_access,
+        lists.priority_enabled AS list_priority_enabled, lists.due_enabled AS list_due_enabled,
         (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
@@ -326,6 +331,14 @@ export function createListService(ctx) {
   // Une liste « multi » n'a pas de rayon ; une autre liste n'a pas de
   // magasin par article. Le téléphone qui enverrait le mauvais champ est refusé.
   // Priorité : une des trois valeurs, rien d'autre
+  // Réglage « Priorité » ou « Échéance » d'une liste : vrai, faux, ou
+  // undefined s'il n'est pas envoyé (rien ne change)
+  function optionOf(value, label) {
+    if (value === undefined) return undefined;
+    if (typeof value !== 'boolean') throw new OpError(400, `Réglage « ${label} » invalide.`);
+    return value;
+  }
+
   function priorityOf(value) {
     if (!PRIORITIES.includes(value)) throw new OpError(400, 'Priorité inconnue (basse, normale ou élevée).');
     return value;
@@ -405,6 +418,10 @@ export function createListService(ctx) {
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
       canEdit: canEdit(user, { owner_id: list.owner_id, member_access: mine?.access }),
+      // Priorité et échéance activées pour cette liste (une liste de courses
+      // les ignore)
+      priorityEnabled: list.priority_enabled === 1,
+      dueEnabled: list.due_enabled === 1,
       // Lien public en cours ({ expiresAt } ou null) : pour le propriétaire seulement
       ...(list.owner_id === user.id && ctx.shares ? { publicLink: ctx.shares.badgeFor(list.id) } : {}),
       members,
@@ -472,23 +489,31 @@ export function createListService(ctx) {
       if (store && category.is_shopping !== 1) {
         throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
+      // Priorité et échéance : désactivées sauf demande explicite
+      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
+      const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, category.id, store?.id ?? null, user.id, now, now);
+      db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, category.id, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
 
-    // Renommer, changer de catégorie ou de magasin (propriétaire seulement).
-    // Une catégorie ou un magasin désactivé reste accepté s'il est déjà celui
-    // de la liste ; pour en changer, le nouveau doit être actif.
+    // Renommer, changer de catégorie ou de magasin, activer ou non la
+    // priorité et l'échéance (propriétaire seulement). Une catégorie ou un
+    // magasin désactivé reste accepté s'il est déjà celui de la liste ; pour
+    // en changer, le nouveau doit être actif. Les deux réglages sont gardés
+    // tels quels quand la liste devient une liste de courses (ignorés) ou en
+    // redevient une autre ; aucune valeur d'élément n'est jamais effacée.
     'list.update'(user, op) {
       const list = listForOwner(user, op.listId);
-      if (op.name === undefined && op.categoryId === undefined && op.storeId === undefined) {
+      if ([op.name, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
+      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
+      const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? list.due_enabled === 1;
       const name = op.name === undefined ? list.name : listName(op.name);
 
       let category = q.category.get(list.category_id);
@@ -512,8 +537,8 @@ export function createListService(ctx) {
         storeId = null;
       }
 
-      db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
-        .run(name, category.id, storeId, nowIso(), list.id);
+      db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, updated_at = ? WHERE id = ?')
+        .run(name, category.id, storeId, Number(priorityOn), Number(dueOn), nowIso(), list.id);
       if (storeId !== list.store_id || category.is_shopping !== list.is_shopping) completeItems(list.id);
       changed(list.id);
       return {};
@@ -613,6 +638,9 @@ export function createListService(ctx) {
       if (item.is_shopping === 1 && (op.priority !== undefined || op.dueDate !== undefined)) {
         throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste autre que les courses.');
       }
+      // Réglage de la liste désactivé (relu dans la base) : refus, rien n'est écrit
+      if (op.priority !== undefined && item.list_priority_enabled !== 1) throw new OpError(400, PRIORITY_OFF);
+      if (op.dueDate !== undefined && item.list_due_enabled !== 1) throw new OpError(400, DUE_OFF);
       checkEanForList(item.is_shopping === 1, op);
       const ean = op.ean === undefined ? item.ean : eanOf(op.ean);
       const priority = op.priority === undefined ? item.priority : priorityOf(op.priority);

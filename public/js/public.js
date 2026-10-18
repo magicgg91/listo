@@ -167,7 +167,8 @@ function showList(data) {
 }
 
 // Priorité et échéance (listes autres que les courses : le serveur ne les
-// envoie que pour elles), mêmes pastilles que l'application, en lecture
+// envoie que pour elles, et chacune seulement si elle est activée pour la
+// liste), mêmes pastilles que l'application, en lecture
 // seule. « Aujourd'hui » : date de l'appareil du visiteur.
 function metaRow(item) {
   const chips = [];

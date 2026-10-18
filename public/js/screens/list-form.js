@@ -2,7 +2,8 @@
 // formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, catégorie,
 // magasin simple ou « multi » (seulement pour une liste de courses), partage,
 // avec le droit de chaque personne (« Peut modifier » ou « Lecture seule »),
-// et suppression de la liste (propriétaire).
+// priorité et échéance activées ou non (listes autres que les courses), et
+// suppression de la liste (propriétaire).
 
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
 import { put, errorMessage } from '../api.js';
@@ -78,6 +79,38 @@ export function accessChoice(name, value, onChange) {
   return h('div', { class: 'share__access' },
     h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Droit de ${name} sur la liste` }, options));
 }
+
+// Priorité et échéance d'une liste autre que les courses : deux
+// interrupteurs (.switch, role="switch", 44 px), chacun avec son nom et son
+// état écrit (« Activée » / « Désactivée » : jamais la couleur seule). Le
+// même composant sert à la création et à « Modifier la liste ».
+// values : { priority, due } ; onChange(nouvelles valeurs).
+export function optionSwitches(values, onChange) {
+  const current = { ...values };
+  const rows = [
+    ['priority', 'Priorité', 'Basse, normale ou élevée ; tri par priorité.'],
+    ['due', 'Échéance', 'Une date limite ; tri par échéance, retards signalés.'],
+  ].map(([key, label, help]) => {
+    const state = h('span', { class: 'row__sub' });
+    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': label });
+    const paint = () => {
+      toggle.setAttribute('aria-checked', String(current[key]));
+      state.textContent = `${current[key] ? 'Activée' : 'Désactivée'} · ${help}`;
+    };
+    toggle.addEventListener('click', () => {
+      current[key] = !current[key];
+      paint();
+      onChange({ ...current });
+    });
+    paint();
+    return h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
+  });
+  return h('div', { class: 'card list-options' }, rows);
+}
+
+// Réglages enregistrés d'une liste (gardés même pour une liste de courses,
+// qui les ignore). Une copie d'avant ces réglages : activés, comme avant.
+const listOptionsOf = (list) => ({ priority: list.priorityEnabled !== false, due: list.dueEnabled !== false });
 
 function form(list, users) {
   const me = app.user;
@@ -174,6 +207,16 @@ function form(list, users) {
     });
   }
 
+  // --- Priorité et échéance (listes autres que les courses) ---
+  // Une nouvelle liste commence sans ; une liste existante garde ses réglages
+  // (même cachés tant qu'elle est une liste de courses)
+  let options = list ? listOptionsOf(list) : { priority: false, due: false };
+  const optionsField = h('div', { class: 'field' },
+    h('span', { class: 'field__label' }, 'Options des éléments'),
+    optionSwitches(options, (values) => {
+      options = values;
+    }));
+
   // --- Partage ---
   // Moi d'abord (toujours inclus, tous les droits), puis les autres comptes
   // actifs ; un invité déjà présent mais désactivé reste affiché (et peut
@@ -249,6 +292,7 @@ function form(list, users) {
     }
     const category = categories.find((c) => c.id === categoryId);
     storeField.hidden = !category?.isShopping;
+    optionsField.hidden = !category || category.isShopping; // courses : ni priorité ni échéance
     const store = stores.find((s) => s.id === storeId);
     replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? 'Aucun magasin', store?.isMulti ? multiBadge() : null);
     storeHint.textContent = store?.isMulti ? 'Les articles seront classés par magasin, sans rayons.' : 'Les articles seront classés par rayon.';
@@ -275,6 +319,7 @@ function form(list, users) {
       nameField.field,
       h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'category-label' }, 'Catégorie'), categoryGroup),
       storeField,
+      optionsField,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
       error.note,
       deleteButton)),
@@ -297,10 +342,19 @@ function form(list, users) {
     // Liste : tout de suite dans la copie locale, envoyée ensuite (file
     // d'attente) ; marche aussi sans réseau
     let id = list?.id;
+    // Priorité et échéance : envoyées pour une liste autre que les courses
+    // seulement (une liste de courses garde ses réglages, ignorés)
+    const classic = !category.isShopping;
+    const saved = list ? listOptionsOf(list) : null;
     if (!list) {
-      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore });
-    } else if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null)) {
-      await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore });
+      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due });
+    } else {
+      const switches = {};
+      if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
+      if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
+      if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null) || Object.keys(switches).length) {
+        await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore, ...switches });
+      }
     }
     // Partage : seulement s'il a changé, et seulement en ligne (route réservée
     // au propriétaire ; la liste doit d'abord exister sur le serveur)

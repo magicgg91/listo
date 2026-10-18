@@ -243,3 +243,8 @@ button.sync { cursor: pointer; }
    dans la fiche à consulter */
 .list-card__meta .chip--readonly { height: 22px; padding: 0 8px; }
 .field__value { margin: 0; font-size: var(--text-base); overflow-wrap: anywhere; white-space: pre-line; }
+
+/* Priorité et échéance d'une liste (formulaire de liste) : deux
+   .toggle-row dans une carte, séparées par un trait */
+.list-options { overflow: hidden; }
+.list-options .toggle-row + .toggle-row { border-top: 1px solid var(--color-border); }

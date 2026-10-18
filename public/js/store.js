@@ -177,6 +177,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         ownerId: user.id,
         isOwner: true,
         canEdit: true, // le propriétaire a tous les droits
+        priorityEnabled: op.priorityEnabled === true, // désactivées sauf demande
+        dueEnabled: op.dueEnabled === true,
         members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
         updatedAt: now,
@@ -200,6 +202,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         next.store = store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : null;
       }
       if (!next.category?.isShopping) next.store = null;
+      if (typeof op.priorityEnabled === 'boolean') next.priorityEnabled = op.priorityEnabled;
+      if (typeof op.dueEnabled === 'boolean') next.dueEnabled = op.dueEnabled;
       state.lists.set(list.id, next);
       return;
     }
@@ -494,6 +498,35 @@ export function canEditList(list) {
   return Boolean(list) && list.canEdit !== false;
 }
 
+// Priorité et échéance utilisées dans cette liste ? Jamais dans une liste de
+// courses ; ailleurs, selon les deux réglages de la liste (choisis par le
+// propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
+// montre, comme avant, jusqu'à la prochaine synchronisation. Les valeurs des
+// éléments ne sont jamais effacées : un réglage désactivé les cache.
+export function listOptions(list) {
+  const classic = Boolean(list?.category) && !list.category.isShopping;
+  return {
+    priority: classic && list.priorityEnabled !== false,
+    due: classic && list.dueEnabled !== false,
+  };
+}
+
+// Tris proposés pour une liste autre que les courses : l'ordre alphabétique
+// toujours, « par priorité » et « par échéance » seulement si le réglage est
+// activé
+export function availableSorts(list) {
+  const options = listOptions(list);
+  return ITEM_SORTS.filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due));
+}
+
+// Tri à appliquer : le choix gardé sur ce téléphone s'il est encore proposé,
+// sinon l'ordre alphabétique (le choix gardé n'est pas effacé : il revient
+// si le réglage est réactivé)
+export function effectiveSort(list, sort) {
+  const wanted = itemSortFrom(sort);
+  return availableSorts(list).includes(wanted) ? wanted : 'alpha';
+}
+
 // Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,
 // triées selon le choix (sort : 'recent' par défaut, ou 'alpha')
 export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
@@ -523,7 +556,7 @@ export function computeListView(state, listId, { sort = 'alpha' } = {}) {
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores, sort: itemSortFrom(sort) });
+  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort) });
   return {
     list,
     multi,

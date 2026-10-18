@@ -5,7 +5,7 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 35 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 36 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
@@ -168,4 +168,12 @@ Réglages devient court : carte du compte, Administration (Admin), À propos, Se
 - Écran « Mon compte » : `.card.account` (identité : avatar, nom, « Identifiant : … », pastille du rôle), puis `.section-title` + `.group` de `.row` : Sécurité (Mot de passe, Double authentification avec la pastille « Activée »), Apparence (`.segmented` Clair / Sombre / Auto), Ce téléphone (Réinitialiser les données de ce téléphone).
 
 Réutilisés tels quels : `.card`, `.avatar`, `.chip`, `.row`, `.group`, `.group--pad`, `.section-title`, `.segmented`, `.topbar`.
+
+## Ajout : tri de « Mes listes »
+
+Un seul bouton-icône `.icon-btn` dans la barre du haut de « Mes listes », à gauche des Réglages (et dans la colonne de gauche sur ordinateur). Chaque appui bascule entre « Plus récentes d'abord » (par défaut) et « Ordre alphabétique ». Balisage : dernière partie de `components.html`. Aucun style nouveau.
+
+- L'icône montre le tri actif : `#i-clock` (plus récentes) ou `#i-az` (ordre alphabétique, **nouvelle icône** du sprite : A au-dessus de Z et flèche vers le bas, même trait que les autres).
+- `aria-label` qui dit le tri actuel et l'effet d'un appui (« Tri : ordre alphabétique. Appuyer pour trier par plus récentes ») ; après un appui, annonce dans une zone `role="status"` masquée (`.visually-hidden`) et toast de 2 secondes « Tri : … », au-dessus du bouton « Nouvelle liste ».
+- Bouton masqué s'il y a moins de deux listes. À l'intérieur d'une liste : rien ne change.
 

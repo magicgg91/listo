@@ -109,6 +109,14 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
   return { version, checked, chip, button: true, busy };
 }
 
+// Bouton de tri de « Mes listes » : icône du tri ACTIF, libellé pour les
+// lecteurs d'écran (tri actuel et effet d'un appui), message après un appui
+export function listSortButton(sort) {
+  return sort === 'alpha'
+    ? { icon: 'az', label: 'Tri : ordre alphabétique. Appuyer pour trier par plus récentes', message: 'Tri : ordre alphabétique' }
+    : { icon: 'clock', label: 'Tri : plus récentes d\'abord. Appuyer pour trier par ordre alphabétique', message: 'Tri : plus récentes d\'abord' };
+}
+
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »
 export function dateTimeLabel(iso) {
   const date = new Date(iso);

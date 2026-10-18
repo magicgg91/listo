@@ -291,10 +291,58 @@ export function historyStoreFor(list, item) {
 
 const itemsOf = (state, listId) => [...state.items.values()].filter((item) => item.listId === listId);
 
-// Mes listes, de la plus récemment active à la plus ancienne, avec le nombre
-// d'articles restants et le nombre total d'articles.
-export function computeSummaries(state) {
-  return [...state.lists.values()]
+// --- Tri de « Mes listes » (choix gardé sur ce téléphone) ---
+// - 'recent' : plus récentes d'abord, par dernière activité (création ou
+//   renommage de la liste, ajout, modification, coche ou suppression d'un
+//   élément) ; à égalité, ordre alphabétique. C'est le tri d'origine : il
+//   reste le choix par défaut.
+// - 'alpha' : ordre alphabétique, sans tenir compte des majuscules ni des
+//   accents, nombres dans l'ordre naturel (« Liste 2 » avant « Liste 10 »).
+// À l'intérieur d'une liste, rien ne change (voir sorting.js).
+export const LIST_SORTS = ['recent', 'alpha'];
+export const DEFAULT_LIST_SORT = 'recent';
+export const LIST_SORT_KEY = 'listo-tri-listes';
+
+// Valeur lue sur le téléphone : toute autre valeur retombe sur le défaut
+export const listSortFrom = (value) => (LIST_SORTS.includes(value) ? value : DEFAULT_LIST_SORT);
+
+// Choix gardé sur le téléphone (localStorage). storage : fonction qui renvoie
+// le stockage (les tests en donnent un faux) ; stockage indisponible
+// (navigation privée…) : tri par défaut, sans erreur.
+export function loadListSort(storage = () => globalThis.localStorage) {
+  try {
+    return listSortFrom(storage().getItem(LIST_SORT_KEY));
+  } catch {
+    return DEFAULT_LIST_SORT;
+  }
+}
+export function saveListSort(sort, storage = () => globalThis.localStorage) {
+  try {
+    storage().setItem(LIST_SORT_KEY, listSortFrom(sort));
+  } catch {
+    // sans importance : le choix vaut pour cette visite
+  }
+}
+
+const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
+const byName = (a, b) => nameCollator.compare(a.name, b.name);
+const byRecent = (a, b) => b.lastActivity.localeCompare(a.lastActivity);
+// Dernier recours, pour un ordre toujours le même : majuscules, puis numéro
+const byExactName = (a, b) => compareNames(a.name, b.name) || String(a.id).localeCompare(String(b.id));
+
+// Trie les cartes de « Mes listes » (calcul pur). À égalité de nom : la plus
+// récente d'abord ; à égalité d'activité : ordre alphabétique.
+export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
+  const compare = listSortFrom(sort) === 'alpha'
+    ? (a, b) => byName(a, b) || byRecent(a, b) || byExactName(a, b)
+    : (a, b) => byRecent(a, b) || byName(a, b) || byExactName(a, b);
+  return [...lists].sort(compare);
+}
+
+// Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,
+// triées selon le choix (sort : 'recent' par défaut, ou 'alpha')
+export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
+  return sortSummaries([...state.lists.values()]
     .map((list) => {
       const items = itemsOf(state, list.id);
       const lastItem = items.reduce((max, item) => (item.updatedAt > max ? item.updatedAt : max), '');
@@ -304,8 +352,7 @@ export function computeSummaries(state) {
         remaining: items.filter((item) => !item.checked).length,
         lastActivity: [list.updatedAt, list.lastActivity ?? '', lastItem].sort().at(-1),
       };
-    })
-    .sort((a, b) => b.lastActivity.localeCompare(a.lastActivity) || compareNames(a.name, b.name));
+    }), sort);
 }
 
 // Une liste prête à afficher : ses articles à acheter groupés par rayon et

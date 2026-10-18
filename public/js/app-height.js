@@ -15,12 +15,27 @@
 // identique n'est pas réécrite. Aucune marque, aucun modèle, aucune hauteur
 // de barre écrite à l'avance : seulement ce que le navigateur mesure.
 //
-// Clavier ouvert (curseur dans un champ) : comme avant ce script. Le plus
-// souvent (Chrome, Brave, Samsung Internet…), le clavier recouvre la page
-// sans la rétrécir : la hauteur ne change pas. Dans un navigateur où le
-// clavier rétrécit la page elle-même (window.innerHeight plus petit, par
-// exemple Firefox), elle suit, comme 100dvh. Elle est relue quand le champ
-// est quitté, ou si la largeur change (rotation).
+// Clavier ouvert (curseur dans un champ), deux cas, mesurés (aucune marque
+// ni modèle) :
+// - la zone visible n'est PAS décalée (visualViewport.offsetTop = 0 et la
+//   page n'a pas défilé ; cas d'Android aujourd'hui) : comme avant ce script.
+//   Le plus souvent (Chrome, Brave, Samsung Internet…), le clavier recouvre
+//   la page sans la rétrécir : la hauteur ne change pas. Dans un navigateur
+//   où le clavier rétrécit la page elle-même (window.innerHeight plus petit,
+//   par exemple Firefox), elle suit, comme 100dvh ;
+// - la zone visible EST décalée (visualViewport.offsetTop > 0 ou
+//   window.scrollY > 0 ; cas de l'iPhone, qui fait remonter la zone visible
+//   pour garder le champ au-dessus du clavier) : l'application recouvre
+//   exactement la zone visible. --app-top = offsetTop (position verticale de
+//   .app), --app-h = visualViewport.height. La barre du haut reste donc
+//   visible, la liste se raccourcit, le champ reste juste au-dessus du
+//   clavier, sans bande vide.
+// Le décalage est relu pendant que le clavier s'anime (visualViewport
+// « scroll » et « resize »), à l'entrée et à la sortie d'un champ (focusin,
+// focusout), puis un peu plus tard (mêmes relectures décalées). Clavier
+// fermé : décalage à zéro, hauteur de base, et la page revient tout en haut
+// si elle avait défilé. La hauteur est aussi relue si la largeur change
+// (rotation).
 //
 // Script classique (pas un module), fichier à part, chargé tout en haut de
 // la page juste après viewport.js : la Content-Security-Policy reste stricte
@@ -48,25 +63,48 @@
   // win, doc : la fenêtre et la page (de faux objets dans les tests)
   function start(win, doc) {
     var root = doc.documentElement;
-    var last = null;      // dernière valeur écrite (« 803.5px »)
-    var lastHeight = 0;   // la même, en nombre
+    var last = null;      // dernière hauteur écrite (« 803.5px »)
+    var baseHeight = 0;   // hauteur hors décalage, en nombre (celle d'avant le clavier)
     var lastWidth = null; // largeur au moment de cette mesure
+    var lastTop = '0px';  // dernier décalage écrit (0 au départ, sans rien écrire)
+
+    var px = function (value) { return Math.round(value * 100) / 100 + 'px'; };
 
     function measure() {
       if (doc.visibilityState === 'hidden') return; // en arrière-plan : mesure peu fiable
-      var height = visibleHeight(win);
+      var vv = win.visualViewport;
+      var typing = isTextField(doc.activeElement);
+      var offsetTop = vv && vv.offsetTop > 0 ? vv.offsetTop : 0;
+      var scrolled = win.scrollY > 0;
       var width = win.innerWidth;
-      // Clavier ouvert (même largeur) : la hauteur reste, sauf si la page
-      // elle-même rétrécit
-      if (last !== null && isTextField(doc.activeElement) && width === lastWidth) {
-        height = Math.min(lastHeight, win.innerHeight);
+      var top = 0;
+      var height;
+      if (typing && vv && vv.height > 0 && (offsetTop > 0 || scrolled)) {
+        // Zone visible décalée (clavier de l'iPhone) : recouvrir exactement
+        // la zone visible
+        top = offsetTop;
+        height = vv.height;
+      } else {
+        height = visibleHeight(win);
+        // Clavier ouvert sans décalage (même largeur) : la hauteur reste,
+        // sauf si la page elle-même rétrécit
+        if (last !== null && typing && width === lastWidth) {
+          height = Math.min(baseHeight, win.innerHeight);
+        }
+        // Clavier fermé : la page revient tout en haut si elle avait défilé
+        if (!typing && scrolled && win.scrollTo) win.scrollTo(0, 0);
       }
       if (!(height > 0)) return;
       lastWidth = width;
-      var value = Math.round(height * 100) / 100 + 'px';
+      if (top === 0) baseHeight = height;
+      var topValue = px(top);
+      if (topValue !== lastTop) { // valeur identique : rien à réécrire
+        lastTop = topValue;
+        root.style.setProperty('--app-top', topValue);
+      }
+      var value = px(height);
       if (value === last) return; // valeur identique : rien à réécrire
       last = value;
-      lastHeight = height;
       root.style.setProperty('--app-h', value);
     }
 
@@ -78,14 +116,20 @@
     }
 
     win.addEventListener('resize', measure);
-    if (win.visualViewport) win.visualViewport.addEventListener('resize', measure);
+    // Le décalage change pendant que le clavier s'anime
+    if (win.visualViewport) {
+      win.visualViewport.addEventListener('resize', measure);
+      win.visualViewport.addEventListener('scroll', measure);
+    }
     doc.addEventListener('visibilitychange', function () {
       if (doc.visibilityState !== 'hidden') measureSoon();
     });
     win.addEventListener('pageshow', measureSoon);
     win.addEventListener('focus', measureSoon);
     win.addEventListener('orientationchange', measureSoon);
-    // Champ quitté : le clavier se ferme (en s'animant), on relit
+    // Champ touché ou quitté : le clavier s'ouvre ou se ferme (en s'animant),
+    // on relit tout de suite puis un peu plus tard
+    doc.addEventListener('focusin', measureSoon);
     doc.addEventListener('focusout', measureSoon);
     measureSoon();
     return { measure: measure, measureSoon: measureSoon };

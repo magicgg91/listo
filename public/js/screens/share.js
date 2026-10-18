@@ -32,7 +32,7 @@ const OFFLINE_TEXT = 'Indisponible hors ligne. Reconnectez-vous pour créer ou a
 function durationPicker({ disabled }) {
   let chosen = DEFAULT_HOURS;
   let unit = 'days';
-  const number = h('input', { class: 'input', type: 'number', inputmode: 'numeric', min: '1', step: '1', value: '3', 'aria-label': 'Nombre', disabled });
+  const number = h('input', { class: 'input', type: 'number', inputmode: 'numeric', autocomplete: 'off', min: '1', step: '1', value: '3', 'aria-label': 'Nombre', disabled });
   const units = [['hours', 'Heures'], ['days', 'Jours']].map(([value, label]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', disabled }, label);
     option.addEventListener('click', () => {

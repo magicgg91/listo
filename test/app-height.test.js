@@ -20,10 +20,16 @@ function browser({ height = 800, width = 390, visualViewport = true } = {}) {
   const writes = [];
   const timers = [];
   const frames = [];
-  const vv = visualViewport ? { height, scale: 1, addEventListener: on('vv') } : undefined;
+  const vv = visualViewport ? { height, scale: 1, offsetTop: 0, addEventListener: on('vv') } : undefined;
+  const scrolls = [];
   const win = {
     innerHeight: height,
     innerWidth: width,
+    scrollY: 0,
+    scrollTo(x, y) {
+      scrolls.push([x, y]);
+      win.scrollY = y;
+    },
     visualViewport: vv,
     addEventListener: on('window'),
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
@@ -41,6 +47,7 @@ function browser({ height = 800, width = 390, visualViewport = true } = {}) {
     doc,
     vv,
     writes,
+    scrolls,
     // Hauteur visible annoncée par le navigateur
     setHeight(h) {
       win.innerHeight = h;
@@ -105,7 +112,7 @@ test('retour dans l\'application : remesure, puis relectures décalées (hauteur
 
 test('événements écoutés : resize, visualViewport, visibilitychange, pageshow, focus, orientationchange', () => {
   const b = browser();
-  for (const [target, type] of [['window', 'resize'], ['vv', 'resize'], ['document', 'visibilitychange'], ['window', 'pageshow'], ['window', 'focus'], ['window', 'orientationchange'], ['document', 'focusout']]) {
+  for (const [target, type] of [['window', 'resize'], ['vv', 'resize'], ['vv', 'scroll'], ['document', 'visibilitychange'], ['window', 'pageshow'], ['window', 'focus'], ['window', 'orientationchange'], ['document', 'focusin'], ['document', 'focusout']]) {
     assert.ok(b.listens(target, type), `${target} ${type}`);
   }
   for (const type of ['pageshow', 'focus', 'orientationchange']) {
@@ -164,14 +171,104 @@ test('clavier ouvert (curseur dans un champ) : hauteur inchangée, relue en quit
   assert.deepEqual(b.writes.at(-1), ['--app-h', '380px']);
 });
 
+// Un champ de saisie qui a le curseur (le clavier est ouvert)
+const textInput = () => ({ matches: (selector) => selector === 'input', type: 'text', isContentEditable: false });
+
+test('iPhone : zone visible décalée avec un champ actif → l\'application recouvre exactement la zone visible', () => {
+  const b = browser({ height: 800 });
+  b.runLater();
+  // Le curseur entre dans le champ « Ajouter un élément » : relectures prévues
+  b.doc.activeElement = textInput();
+  b.fire('document', 'focusin');
+  assert.deepEqual(b.pendingDelays(), [100, 300, 1000]);
+  assert.deepEqual(b.writes, [['--app-h', '800px']], 'rien ne bouge encore');
+  // Le clavier s'anime : la zone visible rétrécit et remonte
+  b.vv.height = 600;
+  b.vv.offsetTop = 120.456;
+  b.fire('vv', 'resize');
+  assert.deepEqual(b.writes.slice(1), [['--app-top', '120.46px'], ['--app-h', '600px']]);
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.fire('vv', 'scroll');
+  assert.deepEqual(b.writes.slice(3), [['--app-top', '310px'], ['--app-h', '420px']]);
+  // Valeurs identiques : rien n'est réécrit
+  const count = b.writes.length;
+  b.fire('vv', 'scroll');
+  b.fire('vv', 'resize');
+  b.fire('window', 'resize');
+  b.runLater();
+  assert.equal(b.writes.length, count);
+  assert.deepEqual(b.scrolls, [], 'la page n\'est jamais ramenée en haut pendant la saisie');
+});
+
+test('page qui a défilé (window.scrollY > 0) avec un champ actif : même règle, position = offsetTop', () => {
+  const b = browser({ height: 800 });
+  b.doc.activeElement = textInput();
+  b.vv.height = 430;
+  b.win.scrollY = 250;
+  b.fire('vv', 'resize');
+  assert.deepEqual(b.writes.slice(1), [['--app-h', '430px']], '--app-top reste 0, la hauteur suit la zone visible');
+});
+
+test('clavier fermé : décalage à zéro, hauteur de base, page ramenée tout en haut, sans réécriture ensuite', () => {
+  const b = browser({ height: 800 });
+  b.doc.activeElement = textInput();
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.win.scrollY = 40;
+  b.fire('vv', 'scroll');
+  assert.deepEqual(b.writes.slice(1), [['--app-top', '310px'], ['--app-h', '420px']]);
+  // Champ quitté : le clavier se referme
+  b.doc.activeElement = null;
+  b.vv.height = 800;
+  b.vv.offsetTop = 0;
+  b.fire('document', 'focusout');
+  assert.deepEqual(b.writes.slice(3), [['--app-top', '0px'], ['--app-h', '800px']]);
+  assert.deepEqual(b.scrolls, [[0, 0]]);
+  const count = b.writes.length;
+  b.runLater();
+  b.fire('vv', 'scroll');
+  assert.equal(b.writes.length, count);
+  assert.deepEqual(b.scrolls, [[0, 0]], 'une seule fois');
+});
+
+test('sans décalage (Android aujourd\'hui) : comportement inchangé, --app-top jamais écrit', () => {
+  const b = browser({ height: 800 });
+  b.doc.activeElement = textInput();
+  b.vv.height = 480; // le clavier recouvre la page, la zone visible ne remonte pas
+  b.fire('vv', 'resize');
+  b.fire('vv', 'scroll');
+  b.fire('document', 'focusin');
+  b.runLater();
+  b.doc.activeElement = null;
+  b.vv.height = 800;
+  b.fire('document', 'focusout');
+  b.runLater();
+  assert.deepEqual(b.writes, [['--app-h', '800px']]);
+  assert.deepEqual(b.scrolls, []);
+});
+
+test('zone visible décalée sans champ actif (zoom à deux doigts) : rien ne bouge', () => {
+  const b = browser({ height: 800 });
+  b.vv.height = 400;
+  b.vv.scale = 2;
+  b.vv.offsetTop = 200;
+  b.fire('vv', 'scroll');
+  assert.deepEqual(b.writes, [['--app-h', '800px']]);
+});
+
 test('panne du script : rien ne casse (100dvh s\'applique)', () => {
   assert.doesNotThrow(() => vm.runInNewContext(script, { window: {}, document: {} }));
 });
 
-test('app.css : .app utilise var(--app-h, 100dvh)', () => {
+test('app.css : .app posée sur l\'écran, suit var(--app-top, 0px) et var(--app-h, 100dvh), marge de sécurité du haut', () => {
   const css = read('css/app.css');
-  assert.match(css, /^\.app \{ height: var\(--app-h, 100dvh\); overflow: hidden; \}$/m);
+  assert.match(css, /^\.app \{\n  position: fixed;\n  top: var\(--app-top, 0px\);\n  left: 0;\n  right: 0;\n  height: var\(--app-h, 100dvh\);\n  padding-top: env\(safe-area-inset-top, 0px\);\n  overflow: hidden;\n\}$/m);
   assert.doesNotMatch(css, /^\.app \{ height: 100dvh/m);
+  // Les fenêtres se placent par rapport à .app (aucune position fixe ailleurs)
+  for (const file of ['css/app.css', 'css/listo.css']) {
+    assert.equal((read(file).match(/position: fixed/g) ?? []).length, file === 'css/app.css' ? 1 : 0, file);
+  }
 });
 
 test('index.html : script externe, chargé tout en haut juste après viewport.js', () => {

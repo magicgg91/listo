@@ -286,7 +286,7 @@ async function loadReferences(tab, panel, alive) {
   const isStores = tab.api === 'stores';
 
   // Ajout (add-inline ; pour un magasin, add-block avec le choix Simple / Multi)
-  const input = h('input', { class: 'input', type: 'text', maxlength: '100', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
+  const input = h('input', { class: 'input', type: 'text', maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
   const addButton = h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, 'Ajouter');
   let isMulti = false;
   let addForm;
@@ -445,7 +445,7 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
 
   // Renommage sur place (administration-6)
   const showEdit = () => {
-    const input = h('input', { class: 'input', type: 'text', maxlength: '100', value: item.name, 'aria-label': `Nouveau nom pour ${item.name}` });
+    const input = h('input', { class: 'input', type: 'text', maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences', value: item.name, 'aria-label': `Nouveau nom pour ${item.name}` });
     const form = h('form', { class: 'manage__edit grow', novalidate: true }, input,
       h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': 'Enregistrer le nouveau nom' }, icon('check')),
       iconButton('close', 'Annuler', showView));
@@ -488,7 +488,7 @@ async function removeReference(tab, item, reload) {
 
 // Catégorie : nom et « liste de courses » (magasin et rayons)
 function openCategorySheet(item, reload) {
-  const name = h('input', { class: 'input', type: 'text', maxlength: '100', value: item.name });
+  const name = h('input', { class: 'input', type: 'text', maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences', value: item.name });
   let shopping = item.isShopping;
   const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(shopping), 'aria-labelledby': 'shopping-label' });
   toggle.addEventListener('click', () => {
@@ -642,7 +642,7 @@ function nameRow(entry, reload) {
   };
 
   const showEdit = () => {
-    const input = h('input', { class: 'input', type: 'text', maxlength: '100', value: entry.name, 'aria-label': `Nom corrigé pour ${entry.name}` });
+    const input = h('input', { class: 'input', type: 'text', maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences', value: entry.name, 'aria-label': `Nom corrigé pour ${entry.name}` });
     const form = h('form', { class: 'manage__edit grow', novalidate: true }, input,
       h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': 'Corriger le nom' }, icon('check')),
       iconButton('close', 'Annuler', showView));

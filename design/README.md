@@ -43,7 +43,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Contraste du texte AA dans les deux thèmes (rapports calculés dans la planche « Variables de thème »).
 - Zones tactiles d'au moins 44 px ; la case ronde mesure 30 px mais sa zone cliquable fait 52 × 56 px.
 - Un article coché est barré, atténué et porte une coche : jamais la couleur seule.
-- Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : `role="status"`.
+- Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : un vrai `<button>` (un appui relance la synchronisation) avec `aria-live="polite"` et un nom qui dit l'état et l'action (`aria-label="À jour, synchroniser maintenant"`) ; un simple texte `role="status"` seulement s'il n'est pas cliquable.
 - Pas de survol ni de geste caché : les actions secondaires passent par le menu « ⋮ ».
 
 ## Manifeste PWA (extrait)
@@ -198,7 +198,7 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 - `.topbar.topbar--plain.topbar--status` : sur une ligne, le titre (`.topbar__main`, sa largeur naturelle), puis `.topbar__status` (prend la place restante) qui contient la pastille `.sync`, puis le bouton de tri et les Réglages. La ligne `.statusbar` disparaît de l'accueil (gardée sur l'écran d'une liste).
 - `.sync--compact` : quand le texte ne tient pas, il est masqué visuellement (toujours lu par les lecteurs d'écran) et seule l'icône reste, suivie de `.sync__count` (nombre en attente, masqué aux lecteurs d'écran qui lisent déjà « Hors ligne · 3 en attente »). Le choix est refait à chaque changement de largeur ou d'état.
-- La pastille reste un bouton « Actualiser » avec une zone tactile de 44 px de haut.
+- La pastille reste un bouton (« À jour, synchroniser maintenant » pour les lecteurs d'écran) avec une zone tactile de 44 px de haut.
 
 ## Ajout : mode scan des listes de courses
 

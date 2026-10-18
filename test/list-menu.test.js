@@ -35,7 +35,7 @@ test('menu ⋮ de la liste : plus d\'« Actualiser » ; la pastille d\'état rel
   assert.match(list, /syncPill\(\(\) => refreshData\(\{ full: true \}\)\)/);
   // La pastille est un vrai bouton, toujours actif (en erreur, hors ligne, pendant une synchronisation)
   const ui = read('public/js/ui.js');
-  assert.match(ui, /\? h\('button', \{ type: 'button', role: 'status', 'aria-live': 'polite', title: 'Actualiser', onClick: onRefresh \}\)/);
+  assert.match(ui, /\? h\('button', \{ type: 'button', 'aria-live': 'polite', onClick: onRefresh \}\)/);
   assert.doesNotMatch(ui.slice(ui.indexOf('function paintPill'), ui.indexOf('function fitPill')), /disabled/);
   // Aucune action : pas de bouton de menu (carte comme liste)
   assert.match(list, /menuButton\.hidden = !menuActions\(\)\.length;/);

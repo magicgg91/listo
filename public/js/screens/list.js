@@ -293,6 +293,16 @@ export function renderList(listId, onLeave) {
 
   // --- Actions ---
 
+  // Supprimer un article (poubelle de la fiche, ou glissement vers la
+  // gauche) : supprimé tout de suite, sans confirmation (copie locale, puis
+  // file d'attente, avec ou sans réseau) ; un message en bas propose
+  // « Annuler » pendant quelques secondes, qui remet le même article avec sa
+  // photo (opération item.restore).
+  async function deleteWithUndo(item) {
+    await actions.deleteItem(item);
+    toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+  }
+
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
@@ -778,9 +788,14 @@ export function renderList(listId, onLeave) {
       drawPhoto();
     });
 
-    const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
-    const remove = h('button', { class: 'btn btn--danger-outline btn--block', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer');
-    const form = h('form', { class: 'stack', novalidate: true },
+    // En-tête de la fiche (à droite du titre) : poubelle, un espace, coche
+    // « Enregistrer » (bouton plein, action principale), puis la croix. La
+    // poubelle n'est jamais à côté de la croix. La coche est reliée au
+    // formulaire (attribut form) : Entrée dans un champ enregistre toujours.
+    const formId = `fiche-${item.id}`;
+    const remove = iconButton('trash', `Supprimer l'${words.one}`, null, 'icon-btn--danger sheet__delete');
+    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('check'));
+    const form = h('form', { class: 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,
       field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
@@ -790,13 +805,13 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
-      error.note,
-      h('div', { class: 'sheet__actions' }, save, remove));
+      error.note);
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
 
     const sheet = openSheet({
       title: `Modifier l'${words.one}`,
       content: form,
+      tools: [remove, save],
       scroll: true,
       onClose: () => stopWatching(),
     });
@@ -833,10 +848,8 @@ export function renderList(listId, onLeave) {
 
     remove.addEventListener('click', async () => {
       mine = true;
-      await actions.deleteItem(item);
       sheet.close();
-      // « Annuler » remet le même article, avec sa photo
-      toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+      await deleteWithUndo(item);
     });
   }
 

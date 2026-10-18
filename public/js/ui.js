@@ -103,13 +103,16 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
 // Feuille qui monte du bas (édition d'article, choix du rayon…).
 // content : éléments à afficher sous le titre.
 // scroll : la feuille défile si son contenu est haut (feuille Article avec photo).
-export function openSheet({ title, sub, content, onClose, scroll = false }) {
+// tools : boutons-icônes placés dans l'en-tête, avant la croix (fiche d'un
+// article : poubelle et coche « Enregistrer ») ; l'en-tête reste alors visible
+// quand la feuille défile, et le titre tient sur une ligne (tronqué si besoin).
+export function openSheet({ title, sub, content, onClose, scroll = false, tools = null }) {
   const titleId = `sheet-${Math.random().toString(36).slice(2, 8)}`;
   return overlay((close) => h('div', { class: `sheet${scroll ? ' sheet--scroll' : ''}`, 'aria-labelledby': titleId },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
-    h('div', { class: 'sheet__head' },
-      h('div', {}, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
-      iconButton('close', 'Fermer', close)),
+    h('div', { class: `sheet__head${tools ? ' sheet__head--tools' : ''}` },
+      h('div', { class: tools ? 'sheet__heading' : null }, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
+      tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', 'Fermer', close)) : iconButton('close', 'Fermer', close)),
     content,
   ), { onClose });
 }

@@ -9,7 +9,15 @@
 /* Copie des trois règles de public/css/app.css utilisées par la fiche article (aide à côté du titre, ligne champ + bouton) */
 .field__aside { font-size: 0.93em; font-weight: 400; color: var(--color-text-2); }
 .field__row { display: flex; align-items: center; gap: var(--space-1); }
-.field__row .input-wrap { flex: 1; min-width: 0; }</style>
+.field__row .input-wrap { flex: 1; min-width: 0; }
+/* Copie des règles de public/css/app.css : en-tête de la fiche d'un article (poubelle, espace, coche pleine, croix) */
+.sheet__head--tools { background: var(--color-surface); }
+.sheet__heading { flex: 1; min-width: 0; }
+.sheet__head--tools .sheet__title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sheet__tools { display: flex; flex: none; align-items: center; gap: var(--space-0); }
+.sheet__delete { margin-right: var(--space-2); }
+.icon-btn--danger { color: var(--color-danger-ink); }
+.icon-btn--primary { background: var(--color-accent); color: var(--color-on-accent); }</style>
 </head>
 <body>
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -205,14 +213,13 @@
 </div></div>
 
 <!-- 14. Feuille du bas -->
-<div class="spec"><h3 class="spec__title">Feuille du bas</h3>
+<div class="spec"><h3 class="spec__title">Feuille du bas (fiche d'un article)</h3>
 <div class="app spec__body spec__body--stage" style="height:440px">
 <div class="scrim"></div>
 <div class="sheet" role="dialog" aria-labelledby="shc-light">
 <div class="sheet__grab"></div>
-<div class="sheet__head"><h4 class="sheet__title" id="shc-light">Modifier l'article</h4><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
-<label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label>
-<button class="btn btn--primary btn--block">Enregistrer</button>
+<div class="sheet__head sheet__head--tools"><div class="sheet__heading"><h4 class="sheet__title" id="shc-light">Modifier l'article</h4></div><div class="sheet__tools"><button class="icon-btn icon-btn--danger sheet__delete" type="button" aria-label="Supprimer l'article"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button><button class="icon-btn icon-btn--primary" type="submit" form="fiche-demo-light" aria-label="Enregistrer"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button><button class="icon-btn" type="button" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div></div>
+<form id="fiche-demo-light"><label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label></form>
 </div>
 </div></div>
 
@@ -403,14 +410,13 @@
 </div></div>
 
 <!-- 14. Feuille du bas -->
-<div class="spec"><h3 class="spec__title">Feuille du bas</h3>
+<div class="spec"><h3 class="spec__title">Feuille du bas (fiche d'un article)</h3>
 <div class="app spec__body spec__body--stage" style="height:440px">
 <div class="scrim"></div>
 <div class="sheet" role="dialog" aria-labelledby="shc-dark">
 <div class="sheet__grab"></div>
-<div class="sheet__head"><h4 class="sheet__title" id="shc-dark">Modifier l'article</h4><button class="icon-btn" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
-<label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label>
-<button class="btn btn--primary btn--block">Enregistrer</button>
+<div class="sheet__head sheet__head--tools"><div class="sheet__heading"><h4 class="sheet__title" id="shc-dark">Modifier l'article</h4></div><div class="sheet__tools"><button class="icon-btn icon-btn--danger sheet__delete" type="button" aria-label="Supprimer l'article"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></button><button class="icon-btn icon-btn--primary" type="submit" form="fiche-demo-dark" aria-label="Enregistrer"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></button><button class="icon-btn" type="button" aria-label="Fermer"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div></div>
+<form id="fiche-demo-dark"><label class="field"><span class="field__label">Nom</span><input class="input" type="text" value="Pommes de terre"></label></form>
 </div>
 </div></div>
 

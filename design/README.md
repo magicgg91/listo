@@ -231,3 +231,10 @@ Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `component
 - La zone des cochés (`.cart__toggle`, section 16.5) se replie déjà de la même façon.
 - `.fold-all` « Tout replier » / « Tout déplier » : bouton texte compact (44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
 - Liste sans groupe (liste de tâches en ordre alphabétique ou par échéance) : aucun en-tête, aucun bouton. La page publique du lien n'est pas concernée (en-têtes simples, en lecture seule).
+
+## Ajout : fiche d'un article, boutons dans l'en-tête
+
+Styles : `public/css/app.css` (ajouts minimes, aucune nouvelle classe dans `listo.css`). Balisage : « Feuille du bas (fiche d'un article) » dans `components.html`. Aucune nouvelle icône (`i-trash`, `i-check`, `i-close`).
+
+- `.sheet__head.sheet__head--tools` : le titre dans `.sheet__heading` (une ligne, tronqué par `text-overflow: ellipsis`), puis `.sheet__tools` : `.icon-btn.icon-btn--danger.sheet__delete` (`#i-trash`, rouge `--color-danger-ink`, `aria-label="Supprimer l'article"`), un espace (`margin-right: var(--space-2)`), `.icon-btn.icon-btn--primary` (`#i-check` sur fond `--color-accent`, `type="submit"` relié au formulaire par `form`, `aria-label="Enregistrer"`), puis la croix `.icon-btn` « Fermer ». Tous de 44 px. L'en-tête reste collé en haut quand la feuille défile.
+- Plus de `.sheet__actions` « Enregistrer » / « Supprimer » en bas de la fiche.

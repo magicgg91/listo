@@ -238,3 +238,10 @@ Styles : `public/css/app.css` (ajouts minimes, aucune nouvelle classe dans `list
 
 - `.sheet__head.sheet__head--tools` : le titre dans `.sheet__heading` (une ligne, tronqué par `text-overflow: ellipsis`), puis `.sheet__tools` : `.icon-btn.icon-btn--danger.sheet__delete` (`#i-trash`, rouge `--color-danger-ink`, `aria-label="Supprimer l'article"`), un espace (`margin-right: var(--space-2)`), `.icon-btn.icon-btn--primary` (`#i-check` sur fond `--color-accent`, `type="submit"` relié au formulaire par `form`, `aria-label="Enregistrer"`), puis la croix `.icon-btn` « Fermer ». Tous de 44 px. L'en-tête reste collé en haut quand la feuille défile.
 - Plus de `.sheet__actions` « Enregistrer » / « Supprimer » en bas de la fiche.
+
+## Ajout : glissement d'une ligne vers la gauche (« Supprimer »)
+
+Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » dans `components.html`. Aucune nouvelle icône (`i-trash`). Gestes : `public/js/swipe.js` (événements tactiles natifs, aucune bibliothèque).
+
+- `li.item.swipe` (`touch-action: pan-y` : le défilement vertical reste au navigateur) : le contenu de la ligne est dans `.swipe__slide` (fond hérité de la ligne), qui suit le doigt (`transform`) ; derrière, `button.swipe__delete` (fond `--color-danger`, `#i-trash` ET « Supprimer », 104 px de large, `aria-label="Supprimer <nom>"`), visible seulement pendant le glissement (`.is-swiping`) ou ligne ouverte (`.is-open`).
+- Animation de retour coupée avec `prefers-reduced-motion`. Pas de glissement à la souris. La page publique n'a ni glissement ni suppression.

@@ -72,6 +72,7 @@ const APP_FILES = [
   '/js/router.js',
   '/js/sorting.js',
   '/js/store.js',
+  '/js/swipe.js',
   '/js/theme.js',
   '/js/ui.js',
   '/js/version.js',

@@ -824,6 +824,22 @@ export function createListService(ctx) {
   // Les fichiers photo des articles effacés le sont aussi (y compris ceux
   // des articles d'une liste effacée), puis un ménage retire les fichiers dont
   // l'article n'existe plus (coupure pendant un envoi, par exemple).
+  // Mode scan, « mes produits » : nom et note d'un article qui porte ce
+  // code-barres, parmi les listes dont le compte est membre (jamais celles
+  // des autres comptes), articles supprimés compris tant qu'ils ne sont pas
+  // effacés par le nettoyage (30 jours). Le plus récent d'abord. Seuls le
+  // nom et la note sortent : ni identifiant, ni nom de liste. null si aucun.
+  function knownProduct(user, ean) {
+    const row = db.prepare(`
+      SELECT items.name, items.note FROM items
+      JOIN list_members ON list_members.list_id = items.list_id AND list_members.user_id = ?
+      WHERE items.ean = ?
+      ORDER BY items.updated_at DESC, items.created_at DESC
+      LIMIT 1
+    `).get(user.id, ean);
+    return row ? { name: row.name, note: row.note ?? '' } : null;
+  }
+
   function purgeDeleted() {
     const limit = new Date(ctx.now() - PURGE_AFTER_DAYS * DAY).toISOString();
     const result = db.transaction(() => {
@@ -875,7 +891,7 @@ export function createListService(ctx) {
 
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
-    photoItem, setPhotoDate, nowIso, OpError, listForMember,
+    photoItem, setPhotoDate, nowIso, OpError, listForMember, knownProduct,
   };
 }
 

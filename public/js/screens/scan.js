@@ -2,16 +2,30 @@
 // champ d'ajout, puis feuille « Scanner un produit ».
 //
 // Parcours :
-// 1. le bouton ouvre l'appareil photo du téléphone (même mécanisme que la
-//    photo d'un article : <input type="file" capture>) ; on photographie le
-//    code-barres ;
+// 1. le bouton propose « Prendre une photo » (appareil photo) ou « Choisir
+//    une photo » (galerie) : même mécanisme que la photo d'un article (deux
+//    sélecteurs de fichier cachés, l'un avec capture, l'autre sans) ;
 // 2. la photo est lue sur le téléphone (barcode.js) : elle n'est ni gardée
 //    ni envoyée, seul le numéro du code part vers Listo ;
-// 3. Listo cherche le nom du produit (Open Food Facts) : fiche avec le nom
-//    (modifiable) et la note « marque · format » ; « Ajouter à la liste » ;
-//    le rayon (ou le magasin) est choisi comme pour un ajout normal ;
-// 4. « Scanner un autre produit » relance l'appareil photo ; compteur
-//    « N ajoutés » ; « Terminé ».
+// 3. Listo cherche le nom du produit, dans cet ordre : un article de la
+//    liste ouverte (scan pour cocher, ci-dessous) ; un article de mes autres
+//    listes (d'abord sur le téléphone, puis sur le serveur, qui connaît aussi
+//    les articles supprimés depuis moins de 30 jours) : mon nom et ma note,
+//    sans rien demander à Open Food Facts ; enfin Open Food Facts. Fiche avec
+//    le nom (modifiable) et la note ; « Ajouter à la liste » ; le rayon (ou
+//    le magasin) est choisi comme pour un ajout normal ;
+// 4. « Ajouter à la liste » : l'ajout se termine. La feuille se ferme, retour
+//    sur la liste, clavier replié, aucun champ actif, toast « Ajouté : … ».
+//    Pour un autre produit, on réappuie sur « Scanner ». « Annuler » ferme
+//    aussi la feuille.
+//
+// Scan pour cocher (en magasin) : si le code lu est celui d'un article de la
+// liste ouverte, la feuille propose « Cocher (je l'ai pris) », « Ajouter
+// quand même » ou « Annuler » (« Déjà coché » : « Le remettre dans la liste »).
+// La correspondance se fait sur les données du téléphone : cela marche hors
+// ligne (lecteur déjà téléchargé, file d'attente habituelle). Cette feuille,
+// plutôt qu'un cochage direct, évite de cocher par erreur un produit scanné
+// à la maison.
 //
 // Rien ne bloque : code non lu, produit inconnu, réponse lente ou hors
 // ligne : on peut toujours taper le code, puis le nom, à la main. Les champs
@@ -23,17 +37,14 @@
 import { h, icon, field, replace } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
-import { duplicateOf, duplicateText } from '../store.js';
-import { openSheet } from '../ui.js';
+import { duplicateOf, duplicateText, listItemForEan, knownItemForEan } from '../store.js';
+import { openSheet, toast, releaseFocus } from '../ui.js';
 import { app } from '../app.js';
 
 // Bouton visible : liste de courses, et recherche activée sur le serveur
 // (LISTO_PRODUCT_LOOKUP). Un ancien compte gardé hors ligne, sans
 // l'information, garde le bouton.
 export const scanAvailable = (list) => Boolean(list?.category.isShopping) && app.user?.productLookup !== false;
-
-// « 1 ajouté », « 3 ajoutés »
-export const addedCount = (n) => `${n} ajouté${n > 1 ? 's' : ''}`;
 
 // Note proposée pour l'article : « Lactel · 1 L » (marque · format)
 export const productNote = (product) => [product.brand, product.quantity].filter(Boolean).join(' · ');
@@ -48,31 +59,73 @@ const NO_NAME = {
 // Options :
 // - listId : la liste ouverte
 // - getView : vue actuelle de la liste (computeListView), pour les doublons
-// - add(name, { note }) : ajoute l'article comme un ajout normal (rayon ou
-//   magasin habituel, sinon demandé une fois) ; renvoie true si ajouté
-export function createScanner({ listId, getView, add }) {
-  // Sélecteur caché : l'appareil photo du téléphone
-  const camera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
+//   et le scan pour cocher
+// - check(item, checked) : coche ou décoche un article (opération habituelle)
+// Sélecteurs cachés du téléphone, comme pour la photo d'un article :
+// appareil photo (capture) et galerie. onFile(fichier) reçoit l'image choisie.
+export function photoInputs(onFile) {
+  const make = (capture) => {
+    const input = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture, tabindex: '-1', 'aria-hidden': 'true' });
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      input.value = ''; // la même photo pourra être reprise
+      if (file) onFile(file);
+    });
+    return input;
+  };
+  return { camera: make('environment'), gallery: make(null) };
+}
+
+// Les deux choix (44 px au moins), sur toute la largeur. Le sélecteur
+// s'ouvre directement dans l'appui (exigé par l'iPhone) ; after() est
+// appelé ensuite (fermer la fenêtre de choix…).
+export function photoChoiceButtons({ camera, gallery }, { primary = false, after = () => {} } = {}) {
+  const choice = (input, iconName, label, classes) => h('button', {
+    class: `btn ${classes} btn--block`,
+    type: 'button',
+    onClick: () => {
+      input.click();
+      after();
+    },
+  }, icon(iconName, 'icon--sm'), label);
+  return [
+    choice(camera, 'camera', 'Prendre une photo', primary ? 'btn--primary' : 'btn--secondary'),
+    choice(gallery, 'image', 'Choisir une photo', 'btn--secondary'),
+  ];
+}
+
+// Feuille de choix : « Prendre une photo » ou « Choisir une photo », avec la
+// fermeture habituelle (croix, Retour du téléphone, fond grisé)
+export function openPhotoChoice({ title, sub }, inputs) {
+  const sheet = openSheet({
+    title,
+    sub,
+    content: h('div', { class: 'sheet__actions' }, photoChoiceButtons(inputs, { after: () => sheet.close() })),
+  });
+  return sheet;
+}
+
+// - add(name, { note, ean }) : ajoute l'article comme un ajout normal (rayon
+//   ou magasin habituel, sinon demandé une fois) ; renvoie l'article ajouté,
+//   ou false si le choix du rayon a été abandonné
+export function createScanner({ listId, getView, add, check }) {
+  let session = null; // feuille ouverte (une seule)
+  // Appareil photo et galerie : la même lecture, le même parcours
+  const inputs = photoInputs((file) => {
+    session ??= openSession();
+    session.scan(file);
+  });
   const button = h('button', {
     class: 'btn btn--secondary btn--icon',
     type: 'button',
     'aria-label': 'Scanner un produit',
-    onClick: () => camera.click(),
+    'aria-haspopup': 'dialog',
+    onClick: () => openPhotoChoice({ title: 'Scanner un produit', sub: 'Photographiez le code-barres, ou choisissez une photo où il est net.' }, inputs),
   }, icon('barcode'));
-
-  let session = null; // feuille ouverte (une seule)
-  camera.addEventListener('change', () => {
-    const file = camera.files?.[0];
-    camera.value = ''; // la même photo pourra être reprise
-    if (!file) return;
-    session ??= openSession();
-    session.scan(file);
-  });
 
   // --- Feuille « Scanner un produit » ---
   function openSession() {
     const body = h('div', { class: 'stack' });
-    let added = 0;
     let current = 0; // numéro de l'étape en cours (une réponse en retard est ignorée)
 
     const sheet = openSheet({
@@ -94,22 +147,10 @@ export function createScanner({ listId, getView, add }) {
     const status = (text) => h('p', { class: 'sync sync--busy', role: 'status' }, icon('sync', 'icon--sm'), text);
     const message = (iconName, text, danger = false) => h('div', { class: `note${danger ? ' note--danger' : ''}`, role: 'status' }, icon(iconName), h('p', {}, text));
     const btn = (classes, content, onClick) => h('button', { class: `btn ${classes}`, type: 'button', onClick }, ...content);
-    const retake = (label = 'Reprendre une photo') => btn('btn--primary btn--block', [icon('camera', 'icon--sm'), label], () => camera.click());
-    const count = () => (added ? h('p', { class: 'sheet__sub', role: 'status' }, addedCount(added)) : null);
-
-    // Fin d'un produit (ajouté ou annulé) : compteur, scanner un autre, terminé
-    function showNext(doneText = null) {
-      if (!added && !doneText) {
-        sheet.close();
-        return;
-      }
-      show(
-        doneText ? message('check', doneText) : null,
-        count(),
-        h('div', { class: 'sheet__actions' },
-          retake('Scanner un autre produit'),
-          btn('btn--secondary btn--block', ['Terminé'], () => sheet.close())));
-    }
+    // Réessayer : les deux mêmes choix (appareil photo ou galerie)
+    const retake = () => photoChoiceButtons(inputs, { primary: true });
+    // « Annuler » : la feuille se ferme (un champ qui avait le curseur le perd)
+    const cancel = () => btn('btn--secondary btn--block', ['Annuler'], () => sheet.close());
 
     // Saisie du code à la main : le champ n'apparaît que sur appui
     function manualCode(intro) {
@@ -125,14 +166,15 @@ export function createScanner({ listId, getView, add }) {
       function submit() {
         const problem = barcodeProblem(input.value);
         codeField.setError(problem);
-        if (!problem && step === current) lookup(normalizeBarcode(input.value));
+        if (problem || step !== current) return;
+        releaseFocus(); // code validé : le clavier se replie
+        handleCode(normalizeBarcode(input.value));
       }
       const reveal = btn('btn--secondary btn--block', ['Saisir le code à la main'], () => {
         reveal.hidden = true;
         form.hidden = false;
       });
-      show(intro, count(), h('div', { class: 'sheet__actions' }, retake(), reveal), form,
-        h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => showNext() }, 'Annuler'));
+      show(intro, h('div', { class: 'sheet__actions' }, retake(), reveal), form, cancel());
     }
 
     // 1. Lecture du code sur la photo
@@ -145,7 +187,7 @@ export function createScanner({ listId, getView, add }) {
       } catch (err) {
         if (step !== current) return;
         if (err instanceof ImageUnreadable) {
-          manualCode(message('alert', 'Cette photo ne peut pas être lue. Reprenez une photo, ou saisissez le code.', true));
+          manualCode(message('alert', "Ce fichier n'est pas une image lisible. Prenez ou choisissez une photo, ou saisissez le code.", true));
         } else {
           // Lecteur indisponible (pas encore téléchargé et hors ligne, mode
           // Isolement de l'iPhone…) : saisie à la main
@@ -158,12 +200,51 @@ export function createScanner({ listId, getView, add }) {
         manualCode(message('alert', 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.', true));
         return;
       }
-      lookup(code);
+      handleCode(code);
     }
 
-    // 2. Recherche du nom du produit (serveur → Open Food Facts)
+    // Code lu ou tapé : d'abord un article de cette liste (scan pour
+    // cocher), sinon la recherche du nom
+    function handleCode(code) {
+      const item = listItemForEan(getView(), code);
+      if (item) inList(item, code);
+      else lookup(code);
+    }
+
+    // 1 bis. Article déjà dans la liste : le cocher (ou le décocher), ou en
+    // ajouter un autre quand même
+    function inList(item, code) {
+      ++current;
+      const done = (text) => {
+        sheet.close();
+        releaseFocus();
+        toast(text, { duration: 2500 });
+      };
+      const tick = item.checked
+        ? btn('btn--primary btn--block', ['Le remettre dans la liste'], () => {
+          check(item, false);
+          done(`Remis dans la liste : ${item.name}`);
+        })
+        : btn('btn--primary btn--block', [icon('check', 'icon--sm'), 'Cocher (je l\'ai pris)'], () => {
+          check(item, true);
+          done(`Coché : ${item.name}`);
+        });
+      const again = btn('btn--secondary btn--block', ['Ajouter quand même'], () => productSheet({ name: item.name, note: item.note ?? '', source: 'known', code }));
+      show(message(item.checked ? 'check' : 'alert', `${item.checked ? 'Déjà coché' : 'Déjà dans la liste'} : ${item.name}`),
+        h('div', { class: 'sheet__actions' }, tick, again, cancel()));
+    }
+
+    // 2. Recherche du nom du produit : mes autres listes (téléphone, puis
+    // serveur), puis Open Food Facts (par le serveur)
     async function lookup(code) {
       const step = ++current;
+      // Déjà dans une autre de mes listes, sur ce téléphone : tout de suite,
+      // même hors ligne
+      const mine = knownItemForEan(app.data, code, { exceptListId: listId });
+      if (mine) {
+        productSheet({ name: mine.name, note: mine.note ?? '', source: 'known', code });
+        return;
+      }
       show(status('Recherche du produit…'));
       let answer;
       try {
@@ -172,8 +253,10 @@ export function createScanner({ listId, getView, add }) {
         answer = { status: err instanceof NetworkError ? 'offline' : 'unavailable' };
       }
       if (step !== current) return;
-      if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
-        productSheet({ name: answer.name, note: productNote(answer), found: true, code });
+      if (answer?.status === 'known' && typeof answer.name === 'string' && answer.name) {
+        productSheet({ name: answer.name, note: typeof answer.note === 'string' ? answer.note : '', source: 'known', code });
+      } else if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
+        productSheet({ name: answer.name, note: productNote(answer), source: 'off', code });
       } else {
         typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable, code);
       }
@@ -182,14 +265,15 @@ export function createScanner({ listId, getView, add }) {
     // 3a. Nom inconnu : « Taper le nom » fait apparaître le champ
     function typeName(text, code) {
       ++current;
-      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', found: false, code }));
-      show(message('alert', text), count(), h('div', { class: 'sheet__actions' }, reveal,
-        btn('btn--secondary btn--block', ['Annuler'], () => showNext())));
+      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', source: 'typed', code }));
+      show(message('alert', text), h('div', { class: 'sheet__actions' }, reveal, cancel()));
     }
 
     // 3b. Fiche du produit : nom (modifiable), note, doublon, ajout
-    // code : code-barres lu ou tapé, gardé avec l'article
-    function productSheet({ name, note, found, code }) {
+    // source : 'off' (Open Food Facts), 'known' (déjà dans mes listes) ou
+    // 'typed' (nom tapé) ; code : code-barres lu ou tapé, gardé avec l'article
+    function productSheet({ name, note, source, code }) {
+      const found = source === 'off';
       const step = ++current;
       const nameInput = h('input', { class: 'input', type: 'text', value: name, maxlength: '100', autocapitalize: 'sentences', autocomplete: 'off' });
       const noteInput = h('input', { class: 'input', type: 'text', value: note, maxlength: '500', autocomplete: 'off' });
@@ -207,23 +291,26 @@ export function createScanner({ listId, getView, add }) {
       checkDuplicate();
       const form = h('form', { class: 'stack', novalidate: true },
         found ? message('check', 'Produit trouvé. Vous pouvez corriger le nom avant de l\'ajouter.') : null,
+        source === 'known' ? message('check', `Produit connu : ${name}. Vous pouvez corriger le nom avant de l'ajouter.`) : null,
         nameField.field,
         field('Note (facultative)', noteInput, { hint: found ? 'Marque et format' : undefined }).field,
         warning,
         found ? h('p', { class: 'field__hint' }, 'Données : Open Food Facts') : null,
-        h('div', { class: 'sheet__actions' }, save,
-          h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => showNext() }, 'Annuler')));
+        h('div', { class: 'sheet__actions' }, save, cancel()));
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const finalName = nameInput.value.replace(/\s+/g, ' ').trim();
         nameField.setError(finalName ? null : 'Le nom est obligatoire');
         if (!finalName || step !== current) return;
+        releaseFocus(); // nom validé : le clavier se replie
         save.disabled = true;
-        const ok = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim(), ean: code });
+        const item = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim(), ean: code });
         save.disabled = false;
-        if (!ok || step !== current) return; // choix du rayon abandonné : la fiche reste
-        added += 1;
-        showNext(`« ${finalName} » ajouté à la liste.`);
+        if (!item || step !== current) return; // choix du rayon abandonné : la fiche reste
+        // L'ajout se termine : retour sur la liste, aucun champ actif
+        sheet.close();
+        releaseFocus();
+        toast(`Ajouté : ${finalName}`, { duration: 2500 });
       });
       show(form);
     }
@@ -231,5 +318,5 @@ export function createScanner({ listId, getView, add }) {
     return { scan };
   }
 
-  return { button, camera };
+  return { button, inputs: [inputs.camera, inputs.gallery] };
 }

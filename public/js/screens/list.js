@@ -2,8 +2,11 @@
 // et feuille « Article » (article-1 et 2, article-photo-1 à 4), avec la photo
 // en plein écran (photo-plein-ecran-1).
 //
-// - Le champ d'ajout reste en bas, à portée de pouce ; Entrée valide et le
-//   champ reste actif pour enchaîner les articles.
+// - Le champ d'ajout reste en bas, à portée de pouce. Liste de courses :
+//   après un ajout (Entrée, bouton +, suggestion ou mode scan), l'ajout se
+//   termine : champ vidé, curseur retiré (clavier replié), article montré
+//   brièvement dans la liste. Autres listes : Entrée valide et le champ
+//   reste actif pour enchaîner les éléments.
 // - Suggestions dès deux lettres ; un article inconnu demande son rayon une
 //   fois (liste de courses).
 // - Liste « multi » : pas de rayon, les articles sont groupés par magasin.
@@ -29,10 +32,10 @@ import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } f
 import { normalizeItemName } from '../history.js';
 import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
-import { createScanner, scanAvailable } from './scan.js';
+import { createScanner, scanAvailable, photoInputs, openPhotoChoice } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 
 // Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
@@ -201,7 +204,7 @@ export function renderList(listId, onLeave) {
 
   // Ligne d'un article : case à cocher + nom (ouvre la feuille « Article »)
   const itemRow = (item) => itemRowWith(item, metaOf(item));
-  const itemRowWith = (item, meta) => h('li', { class: `item${item.checked ? ' is-done' : ''}` },
+  const itemRowWith = (item, meta) => h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id },
     h('button', {
       class: 'check',
       type: 'button',
@@ -305,14 +308,19 @@ export function renderList(listId, onLeave) {
   const scanner = createScanner({
     listId,
     getView: () => view,
-    add: (name, { note, ean }) => addNamed(name, { ...(note ? { note } : {}), ...(ean ? { ean } : {}) }),
+    check: (item, checked) => actions.checkItem(item, checked),
+    add: async (name, { note, ean }) => {
+      const item = await addNamed(name, { ...(note ? { note } : {}), ...(ean ? { ean } : {}) });
+      if (item) revealItem(item.id);
+      return item;
+    },
   });
   scanner.button.hidden = true; // affiché par draw() pour une liste de courses
   const addForm = h('form', { class: 'addbar__row', novalidate: true },
     h('label', { class: 'addbar__field' }, input),
     scanner.button,
     h('button', { class: 'btn btn--primary btn--icon', type: 'submit', 'aria-label': 'Ajouter' }, icon('plus')));
-  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.camera);
+  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.inputs);
 
   addForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -372,15 +380,35 @@ export function renderList(listId, onLeave) {
     suggestBox.hidden = true;
     // Le champ est vidé juste avant l'ajout (pas si la fenêtre de choix du
     // rayon ou du magasin est fermée sans choisir)
-    await addNamed(name, {}, () => {
+    const item = await addNamed(name, {}, () => {
       input.value = '';
     });
-    // Pas de focus forcé : si le champ avait été touché, il le garde (clavier
-    // ouvert) ; sinon le clavier reste fermé
+    // Liste de courses : l'ajout se termine (plus de curseur dans le champ,
+    // clavier replié) et l'article ajouté est montré dans la liste. Autres
+    // listes : inchangé, le champ garde le curseur pour enchaîner.
+    if (!item || !view?.list.category.isShopping) return;
+    suggestBox.hidden = true;
+    releaseFocus();
+    revealItem(item.id);
+  }
+
+  // Fait défiler la liste jusqu'à un article tout juste ajouté et le met
+  // brièvement en évidence. La liste peut être redessinée un peu plus tard
+  // (jamais pendant qu'un doigt est posé dessus) : on attend sa ligne, une
+  // seconde au plus.
+  function revealItem(itemId, tries = 30) {
+    const row = content.querySelector(`li[data-item-id="${CSS.escape(itemId)}"]`);
+    if (!row) {
+      if (tries > 0) setTimeout(() => revealItem(itemId, tries - 1), 40);
+      return;
+    }
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' }); // au milieu : jamais sous le toast
+    row.classList.add('item--added');
+    setTimeout(() => row.classList.remove('item--added'), 1600);
   }
 
   // Ajoute un article (champ d'ajout ou mode scan). extra : autres champs
-  // (note…). Renvoie true si l'article a été ajouté, false si la fenêtre de
+  // (note, code-barres…). Renvoie l'article ajouté, ou false si la fenêtre de
   // choix du rayon ou du magasin a été fermée sans choisir.
   async function addNamed(name, extra = {}, beforeCreate = () => {}) {
     if (!view) return false;
@@ -394,28 +422,27 @@ export function renderList(listId, onLeave) {
         const chosen = await pickStore({ title: 'Dans quel magasin ?', sub, confirmLabel: 'Ajouter à la liste' });
         if (chosen === undefined) return false; // fenêtre fermée sans choisir
         beforeCreate();
-        await createItem(name, { ...extra, storeId: chosen });
+        return createItem(name, { ...extra, storeId: chosen });
       } else {
         // Magasin habituel : le serveur le choisira (le téléphone l'affiche déjà)
         beforeCreate();
-        await createItem(name, extra);
+        return createItem(name, extra);
       }
     } else if (view.list.category.isShopping && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
       const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel ${itemWords(view.list).one}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
       if (aisleId === undefined) return false; // fenêtre fermée sans choisir
       beforeCreate();
-      await createItem(name, { ...extra, aisleId });
-    } else {
-      beforeCreate();
-      await createItem(name, extra);
+      return createItem(name, { ...extra, aisleId });
     }
-    return true;
+    beforeCreate();
+    return createItem(name, extra);
   }
 
   // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)
+  // Renvoie l'article ajouté
   async function createItem(name, fields = {}) {
-    await actions.addItem({ listId, name, ...fields });
+    return actions.addItem({ listId, name, ...fields });
   }
 
   // --- Feuille « Article » : nom, quantité, note, rayon (ou magasin) ---
@@ -532,16 +559,19 @@ export function renderList(listId, onLeave) {
     ] : null;
 
     // --- Code-barres (listes de courses) : saisi à la main, ou lu sur une
-    // photo par « Scanner » (même lecteur que le mode scan, sur le
-    // téléphone). Vérifié à l'enregistrement ; vide = pas de code.
+    // photo par « Scanner » (appareil photo ou galerie, même lecteur que le
+    // mode scan, sur le téléphone). Vérifié à l'enregistrement ; vide = pas
+    // de code.
     const shopping = Boolean(view?.list.category.isShopping);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
     const eanField = field('Code-barres', eanInput, { hint: 'Chiffres sous les barres (8, 12 ou 13)' });
     const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
     const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
-    const eanCamera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
-    const eanScan = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Scanner le code-barres', onClick: () => eanCamera.click() }, icon('barcode', 'icon--sm'), 'Scanner');
+    const eanInputs = photoInputs((file) => readEan(file));
+    const eanScan = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Scanner le code-barres', 'aria-haspopup': 'dialog',
+      onClick: () => openPhotoChoice({ title: 'Scanner le code-barres', sub: 'Photographiez le code-barres, ou choisissez une photo où il est net.' }, eanInputs) },
+    icon('barcode', 'icon--sm'), 'Scanner');
     const eanClear = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Effacer le code-barres', onClick: () => {
       eanInput.value = '';
       drawEan();
@@ -555,10 +585,8 @@ export function renderList(listId, onLeave) {
       eanTwin.querySelector('p').textContent = twin ? `« ${twin.name} » a déjà ce code-barres dans la liste.` : '';
     };
     eanInput.addEventListener('input', drawEan);
-    eanCamera.addEventListener('change', async () => {
-      const file = eanCamera.files?.[0];
-      eanCamera.value = ''; // la même photo pourra être reprise
-      if (!file) return;
+    // Photo prise ou choisie : le code lu remplit le champ
+    async function readEan(file) {
       eanField.setError(null);
       eanStatus.textContent = 'Lecture du code-barres…';
       eanStatus.hidden = false;
@@ -570,17 +598,17 @@ export function renderList(listId, onLeave) {
         else message = 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.';
       } catch (err) {
         message = err instanceof ImageUnreadable
-          ? 'Cette photo ne peut pas être lue. Reprenez une photo, ou saisissez le code.'
+          ? "Ce fichier n'est pas une image lisible. Prenez ou choisissez une photo, ou saisissez le code."
           : "La lecture des codes-barres n'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.";
       }
       eanStatus.hidden = true;
       eanScan.disabled = false;
       drawEan();
       if (message) eanField.setError(message);
-    });
+    }
     drawEan();
     const eanFields = shopping ? h('div', { class: 'stack stack--sm' },
-      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanCamera) : null;
+      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanInputs.camera, eanInputs.gallery) : null;
 
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.

@@ -204,19 +204,21 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
 
-- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre l'appareil photo du téléphone.
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre une petite `.sheet` « Scanner un produit » avec deux `.btn--block` : « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), les icônes de la photo d'un article.
 - Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
   - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
-  - code non lu, lecteur indisponible : `.note.note--danger`, « Reprendre une photo » (`#i-camera`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
+  - code non lu, lecteur indisponible : `.note.note--danger`, « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
   - nom introuvable : `.note`, « Taper le nom » ;
-  - après un ajout : `.note` « « … » ajouté à la liste. », compteur « 2 ajoutés » (`.sheet__sub`), « Scanner un autre produit » et « Terminé ».
+  - produit connu (déjà dans une de mes listes) : `.note` « Produit connu : <nom>. Vous pouvez corriger le nom avant de l'ajouter. » (`#i-check`), mêmes champs et boutons, sans la mention Open Food Facts ;
+  - scan pour cocher : `.note` « Déjà dans la liste : <nom> » (`#i-alert`) puis `.sheet__actions` « Cocher (je l'ai pris) » (`.btn--primary`, `#i-check`), « Ajouter quand même », « Annuler » ; article coché : `.note` « Déjà coché : <nom> » (`#i-check`) et « Le remettre dans la liste » ;
+  - après un ajout : la feuille se ferme, toast « Ajouté : … » ; l'article ajouté est brièvement mis en évidence dans la liste (`.item--added`, fond `--color-accent-soft` qui s'efface, dans `public/css/app.css`).
 
 ## Ajout : code-barres des articles (listes de courses)
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune nouvelle icône (`i-barcode` existe).
 
-- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode`, lit le code sur une photo) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
+- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode` ; même feuille de choix « Prendre une photo » / « Choisir une photo » que le mode scan) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
 - Mode scan : « Déjà dans la liste : « Lait demi-écrémé » a ce code-barres. » (même `.note`, bouton « Ajouter quand même »).
 - La ligne de la liste ne change pas : le code n'y est pas affiché.
 

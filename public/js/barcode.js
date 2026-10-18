@@ -1,15 +1,16 @@
 // Mode scan (listes de courses) : lecture du code-barres sur une photo.
 //
-// La photo, prise avec l'appareil photo du téléphone (même mécanisme que la
-// photo d'un article), est lue ICI, sur le téléphone : elle n'est ni gardée
-// ni envoyée. Seul le numéro du code part ensuite vers Listo, qui cherche le
+// La photo, prise avec l'appareil photo du téléphone ou choisie dans sa
+// galerie (même mécanisme que la photo d'un article), est lue ICI, sur le
+// téléphone : elle n'est ni gardée ni envoyée. Seul le numéro du code part ensuite vers Listo, qui cherche le
 // nom du produit (voir server/products.js).
 //
 // Étapes :
 // 1. createImageBitmap lit la photo en la redressant selon son orientation ;
 // 2. un canvas la redessine plus petite (1 600 pixels au plus sur le grand
 //    côté) ; plusieurs essais si besoin : image entière, centre de l'image,
-//    image plus réduite (800 pixels) ;
+//    puis, pour une grande photo, ses quatre coins (code en bas ou sur un
+//    côté), enfin l'image plus réduite (800 pixels) ;
 // 3. le lecteur (zxing-wasm, dans un worker : l'écran ne fige pas) cherche
 //    un code EAN-13, EAN-8 ou UPC-A ; la clé de contrôle est vérifiée.
 //
@@ -51,7 +52,7 @@ export function barcodeProblem(value) {
 
 // Essais de lecture pour une photo de largeur × hauteur : zone de la photo
 // (sx, sy, sw, sh) et taille du dessin (dw, dh). Jamais agrandie. Essais
-// en double (petite photo) retirés.
+// en double (petite photo) retirés. Le premier code lu arrête les essais.
 export const SCAN_MAX_SIDE = 1600;
 export function scanAttempts(width, height) {
   const fit = (w, h, max) => {
@@ -60,9 +61,18 @@ export function scanAttempts(width, height) {
   };
   const cw = Math.round(width * 0.6);
   const ch = Math.round(height * 0.6);
+  // Coins d'une grande photo (un peu plus de la moitié, pour ne pas couper
+  // un code posé au milieu d'un bord) : un petit code y garde assez de détail
+  const qw = Math.round(width * 0.55);
+  const qh = Math.round(height * 0.55);
+  const corners = Math.max(width, height) > SCAN_MAX_SIDE
+    ? [[0, 0], [width - qw, 0], [0, height - qh], [width - qw, height - qh]]
+      .map(([sx, sy]) => ({ sx, sy, sw: qw, sh: qh, ...fit(qw, qh, 1200) }))
+    : [];
   const attempts = [
     { sx: 0, sy: 0, sw: width, sh: height, ...fit(width, height, SCAN_MAX_SIDE) },          // image entière
     { sx: Math.round((width - cw) / 2), sy: Math.round((height - ch) / 2), sw: cw, sh: ch, ...fit(cw, ch, 1200) }, // centre
+    ...corners,                                                                            // coins
     { sx: 0, sy: 0, sw: width, sh: height, ...fit(width, height, 800) },                   // plus réduite
   ];
   return attempts.filter((a, i) => attempts.findIndex((b) => JSON.stringify(b) === JSON.stringify(a)) === i);
@@ -73,8 +83,12 @@ export function scanAttempts(width, height) {
 // Lecteur indisponible (pas téléchargé : hors ligne au premier scan ;
 // WebAssembly refusé : mode Isolement de l'iPhone…)
 export class ReaderUnavailable extends Error {}
-// Photo illisible (format inconnu)
+// Photo illisible (pas une image, format inconnu)
 export class ImageUnreadable extends Error {}
+
+// Fichier choisi qui n'est manifestement pas une image (la galerie peut
+// proposer d'autres fichiers). Type vide : on essaie quand même de le lire.
+export const isImageFile = (file) => Boolean(file) && (!file.type || file.type.startsWith('image/'));
 
 const PREPARE_TIMEOUT_MS = 30000; // premier téléchargement du lecteur (1 Mo)
 const READ_TIMEOUT_MS = 20000;
@@ -131,6 +145,7 @@ function ask(message, transfer, timeoutMs) {
 // Renvoie le code normalisé (8 ou 13 chiffres), ou null si aucun code n'a
 // été lu. Lève ReaderUnavailable ou ImageUnreadable.
 export async function readBarcode(file) {
+  if (!isImageFile(file)) throw new ImageUnreadable();
   const prepared = await ask({ type: 'prepare' }, [], PREPARE_TIMEOUT_MS);
   if (!prepared.ready) {
     if (prepared.timeout) stopWorker();

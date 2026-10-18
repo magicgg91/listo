@@ -42,6 +42,14 @@ body { background: var(--color-bg); }
 /* Hauteur réelle de l'écran sur téléphone (barre d'adresse comprise) */
 .app { height: 100dvh; overflow: hidden; }
 
+/* Zone de sécurité du bas : la page s'affiche aussi sous la barre système
+   d'Android et sous l'indicateur d'accueil de l'iPhone (viewport-fit=cover).
+   Une zone qui défile sans barre en dessous (Administration, onglets sans
+   bouton en bas) garde donc cette place libre, pour que sa dernière ligne ne
+   passe jamais sous la barre. Les barres du bas (.addbar, .footer, .sheet),
+   les messages et le bouton « Nouvelle liste » en tiennent déjà compte. */
+.body:last-child, .body:has(+ .footer[hidden]) { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+
 /* Sprite d'icônes : présent dans la page, mais invisible */
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -75,7 +83,10 @@ body { background: var(--color-bg); }
 button.sync { cursor: pointer; }
 
 /* Listes de cartes (Mes listes) */
-.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) 112px; }
+/* En bas : la place du bouton « Nouvelle liste » (56 px + sa marge + un peu
+   d'air), plus la zone de sécurité, pour que la dernière carte ne reste pas
+   cachée derrière le bouton */
+.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) calc(112px + env(safe-area-inset-bottom, 0px)); }
 .cards--side { padding-bottom: var(--space-2); }
 
 /* Formulaires en pleine page (nouvelle liste, mot de passe…) */

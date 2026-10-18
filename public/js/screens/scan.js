@@ -7,9 +7,13 @@
 //    sélecteurs de fichier cachés, l'un avec capture, l'autre sans) ;
 // 2. la photo est lue sur le téléphone (barcode.js) : elle n'est ni gardée
 //    ni envoyée, seul le numéro du code part vers Listo ;
-// 3. Listo cherche le nom du produit (Open Food Facts) : fiche avec le nom
-//    (modifiable) et la note « marque · format » ; « Ajouter à la liste » ;
-//    le rayon (ou le magasin) est choisi comme pour un ajout normal ;
+// 3. Listo cherche le nom du produit, dans cet ordre : un article de la
+//    liste ouverte (scan pour cocher, ci-dessous) ; un article de mes autres
+//    listes (d'abord sur le téléphone, puis sur le serveur, qui connaît aussi
+//    les articles supprimés depuis moins de 30 jours) : mon nom et ma note,
+//    sans rien demander à Open Food Facts ; enfin Open Food Facts. Fiche avec
+//    le nom (modifiable) et la note ; « Ajouter à la liste » ; le rayon (ou
+//    le magasin) est choisi comme pour un ajout normal ;
 // 4. « Ajouter à la liste » : l'ajout se termine. La feuille se ferme, retour
 //    sur la liste, clavier replié, aucun champ actif, toast « Ajouté : … ».
 //    Pour un autre produit, on réappuie sur « Scanner ». « Annuler » ferme
@@ -33,7 +37,7 @@
 import { h, icon, field, replace } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
-import { duplicateOf, duplicateText, listItemForEan } from '../store.js';
+import { duplicateOf, duplicateText, listItemForEan, knownItemForEan } from '../store.js';
 import { openSheet, toast, releaseFocus } from '../ui.js';
 import { app } from '../app.js';
 
@@ -230,9 +234,17 @@ export function createScanner({ listId, getView, add, check }) {
         h('div', { class: 'sheet__actions' }, tick, again, cancel()));
     }
 
-    // 2. Recherche du nom du produit (serveur → Open Food Facts)
+    // 2. Recherche du nom du produit : mes autres listes (téléphone, puis
+    // serveur), puis Open Food Facts (par le serveur)
     async function lookup(code) {
       const step = ++current;
+      // Déjà dans une autre de mes listes, sur ce téléphone : tout de suite,
+      // même hors ligne
+      const mine = knownItemForEan(app.data, code, { exceptListId: listId });
+      if (mine) {
+        productSheet({ name: mine.name, note: mine.note ?? '', source: 'known', code });
+        return;
+      }
       show(status('Recherche du produit…'));
       let answer;
       try {
@@ -241,7 +253,9 @@ export function createScanner({ listId, getView, add, check }) {
         answer = { status: err instanceof NetworkError ? 'offline' : 'unavailable' };
       }
       if (step !== current) return;
-      if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
+      if (answer?.status === 'known' && typeof answer.name === 'string' && answer.name) {
+        productSheet({ name: answer.name, note: typeof answer.note === 'string' ? answer.note : '', source: 'known', code });
+      } else if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
         productSheet({ name: answer.name, note: productNote(answer), source: 'off', code });
       } else {
         typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable, code);

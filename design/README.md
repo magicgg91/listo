@@ -210,6 +210,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau : composan
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
   - code non lu, lecteur indisponible : `.note.note--danger`, « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
   - nom introuvable : `.note`, « Taper le nom » ;
+  - produit connu (déjà dans une de mes listes) : `.note` « Produit connu : <nom>. Vous pouvez corriger le nom avant de l'ajouter. » (`#i-check`), mêmes champs et boutons, sans la mention Open Food Facts ;
   - scan pour cocher : `.note` « Déjà dans la liste : <nom> » (`#i-alert`) puis `.sheet__actions` « Cocher (je l'ai pris) » (`.btn--primary`, `#i-check`), « Ajouter quand même », « Annuler » ; article coché : `.note` « Déjà coché : <nom> » (`#i-check`) et « Le remettre dans la liste » ;
   - après un ajout : la feuille se ferme, toast « Ajouté : … » ; l'article ajouté est brièvement mis en évidence dans la liste (`.item--added`, fond `--color-accent-soft` qui s'efface, dans `public/css/app.css`).
 

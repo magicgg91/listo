@@ -497,3 +497,17 @@ export function listItemForEan(view, ean) {
   if (!done.length) return null;
   return done.reduce((last, item) => ((item.checkedAt ?? '') > (last.checkedAt ?? '') ? item : last));
 }
+
+// Mes produits (partie E) : article d'une autre de mes listes qui porte ce
+// code-barres, d'après les données du téléphone (marche hors ligne) ; le
+// plus récemment modifié. Les articles supprimés n'y sont plus : le serveur
+// les cherche ensuite. null si aucun.
+export function knownItemForEan(state, ean, { exceptListId = null } = {}) {
+  if (!state || !ean) return null;
+  let best = null;
+  for (const item of state.items.values()) {
+    if (item.ean !== ean || item.listId === exceptListId) continue;
+    if (!best || (item.updatedAt ?? '') > (best.updatedAt ?? '')) best = item;
+  }
+  return best;
+}

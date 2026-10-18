@@ -184,3 +184,11 @@ Styles : section 16.8 de `listo.css`. Balisage : dernière partie de `components
 - `.item__meta` : une ligne de pastilles `.chip` (24 px de haut) sous le nom. « ↑ Élevée » (`.chip--accent`), « ↓ Basse » (`.chip` neutre), normale : rien. Échéance : `#i-calendar` + date (« ven. 24 oct. »), « Aujourd'hui » (`.chip--accent`), « Demain » ; en retard : `.chip--late` (couleur danger) + `#i-alert` + « En retard · ven. 16 oct. ». Élément coché (`.item.is-done`) : pastilles en gris, jamais « En retard ». Toujours une icône ET un texte. Le libellé du bouton de la ligne reprend priorité et échéance pour les lecteurs d'écran.
 - Feuille de l'élément : « Priorité » en `.segmented` (Basse / Normale / Élevée, `role="radio"`, choix actif avec `.icon--check` ET texte) ; « Échéance » : `.due-picker` (bouton `.input--select` avec `#i-calendar` et la date, et par-dessus le vrai `<input type="date">` invisible `.due-picker__input`, date seule) ; raccourcis `.due-shortcuts` (Aujourd'hui, Demain, Dans 1 semaine, Effacer, `.btn--secondary.btn--sm`, 44 px).
 
+## Ajout : tri d'une liste (listes autres que les courses)
+
+Balisage : dernière partie de `components.html` ; style : section 16.9 de `listo.css`. Aucune nouvelle icône (`i-az`, `i-arrow-up`, `i-calendar`).
+
+- Bouton-icône `.icon-btn` « Trier la liste » (`aria-haspopup="menu"`) dans la barre du haut, entre le titre et le menu ⋮ ; son icône montre le tri actif. Absent des listes de courses.
+- Choix dans le `.menu` existant : options `role="menuitemradio"` avec `aria-checked` ; l'option active a une coche `.icon--check` ET son texte. Choisir ferme le menu, trie et affiche un toast bref « Tri : par priorité ».
+- Tri par priorité : en-têtes `.aisle` « Priorité élevée », « Priorité normale », « Priorité basse » (groupe vide : pas d'en-tête). Par échéance : une seule liste, sans en-tête.
+

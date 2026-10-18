@@ -27,9 +27,9 @@ import { shrinkPhoto, PhotoError } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames } from '../store.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle } from '../ui.js';
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
 
@@ -59,6 +59,33 @@ export function renderList(listId, onLeave) {
   const content = h('div', { class: 'scroll' });
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
+  // Tri de la liste (listes autres que les courses) : choix gardé sur ce
+  // téléphone pour cette liste ; l'icône du bouton montre le tri actif
+  const SORTS = [
+    ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
+    ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
+    ['due', 'calendar', 'Par échéance', 'Tri : par échéance'],
+  ];
+  let itemSort = loadItemSort(listId);
+  const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
+  sortButton.setAttribute('aria-haspopup', 'menu');
+  const showSort = () => replace(sortButton, icon(SORTS.find(([value]) => value === itemSort)[1]));
+  showSort();
+  function openSortMenu() {
+    openMenu(SORTS.map(([value, iconName, label, message]) => ({
+      icon: iconName,
+      label,
+      checked: value === itemSort,
+      onSelect: () => {
+        itemSort = value;
+        saveItemSort(listId, value);
+        showSort();
+        draw();
+        toast(message, { duration: 2000 });
+      },
+    })), { label: 'Trier la liste' });
+  }
+
   let view = null;
 
   // --- Dessin de la liste ---
@@ -67,11 +94,12 @@ export function renderList(listId, onLeave) {
       replace(content, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
       return;
     }
-    view = computeListView(app.data, listId);
+    view = computeListView(app.data, listId, { sort: itemSort });
     if (!view) {
       title.textContent = 'Liste introuvable';
       replace(sub);
       menuButton.hidden = true;
+      sortButton.hidden = true;
       replace(content, h('div', { class: 'empty' },
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
@@ -88,9 +116,10 @@ export function renderList(listId, onLeave) {
     title.textContent = list.name;
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = false;
+    sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
     addbar.hidden = false;
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
-    content.classList.toggle('scroll--flat', !list.category.isShopping);
+    content.classList.toggle('scroll--flat', !list.category.isShopping && itemSort !== 'priority');
 
     if (groups.length === 0 && done.length === 0) {
       replace(content, h('div', { class: 'empty' },
@@ -104,7 +133,9 @@ export function renderList(listId, onLeave) {
       // En-tête collant : rayon, ou magasin (avec son icône) dans une liste « multi »
       view.multi
         ? h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.store?.name ?? 'Sans magasin'), count(group))
-        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group)) : null,
+        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group))
+          // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
+          : group.label ? h('h2', { class: 'aisle' }, group.label, count(group)) : null,
       h('ul', {}, group.items.map(itemRow)))),
     done.length ? doneZone(list, done) : null);
   };
@@ -699,7 +730,11 @@ export function renderList(listId, onLeave) {
 
   // --- Montage de l'écran ---
 
-  onLeave(onDataChange(draw));
+  // Synchronisation, modification : la liste est redessinée (et retriée),
+  // jamais pendant qu'un doigt est posé dessus
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
   onLeave(() => {
     document.title = 'Listo';
   });
@@ -732,6 +767,7 @@ export function renderList(listId, onLeave) {
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
       h('div', { class: 'topbar__main' }, title, sub),
+      sortButton,
       menuButton),
     h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
     content,

@@ -5,9 +5,9 @@
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
-import { computeSummaries, loadListSort, saveListSort } from '../store.js';
+import { computeSummaries, loadListSort, saveListSort, pruneItemSorts } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast } from '../ui.js';
+import { syncPill, toast, drawWhenIdle } from '../ui.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -98,37 +98,6 @@ function sortControl(onChange) {
   return { button, status, setCount: (count) => { button.hidden = count < 2; } };
 }
 
-// Redessine à chaque changement de données, mais jamais pendant qu'un doigt
-// est posé sur les cartes : une liste ne change pas de place sous le doigt.
-// Le dessin attendu est fait juste après (le temps que l'appui ouvre la
-// liste touchée). Renvoie { request, stop }.
-function drawWhenIdle(container, draw) {
-  let touching = false;
-  let waiting = false;
-  let timer = null;
-  const start = () => { touching = true; };
-  const end = () => {
-    touching = false;
-    if (!waiting) return;
-    waiting = false;
-    timer = setTimeout(draw, 250);
-  };
-  container.addEventListener('pointerdown', start);
-  window.addEventListener('pointerup', end);
-  window.addEventListener('pointercancel', end);
-  return {
-    request: () => {
-      if (touching) waiting = true;
-      else draw();
-    },
-    stop: () => {
-      clearTimeout(timer);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('pointercancel', end);
-    },
-  };
-}
-
 // --- Écran « Mes listes » (téléphone) ---
 
 export function renderLists(onLeave) {
@@ -151,6 +120,7 @@ export function renderLists(onLeave) {
     }
     const lists = computeSummaries(app.data, { sort: currentSort() });
     sorter.setCount(lists.length);
+    pruneItemSorts(lists.map((list) => list.id)); // tri des listes disparues : oublié
     replace(content, lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : emptyLists());
   };
   const idle = drawWhenIdle(content, draw);

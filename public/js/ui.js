@@ -176,14 +176,16 @@ export function openMenu(items, { label = 'Menu' } = {}) {
       items.map((item) => h('button', {
         class: `menu__item${item.danger ? ' menu__item--danger' : ''}`,
         type: 'button',
-        role: 'menuitem',
+        // Choix exclusif (tri…) : l'option active a une coche ET son texte
+        role: item.checked === undefined ? 'menuitem' : 'menuitemradio',
+        'aria-checked': item.checked === undefined ? null : String(item.checked),
         onClick: () => {
           closeMenu();
           // L'action est lancée après la fermeture du menu (elle peut ouvrir
           // une autre fenêtre ou changer d'écran)
           setTimeout(() => item.onSelect(), 0);
         },
-      }, icon(item.icon), item.label)));
+      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)));
   }, { role: 'menu', label });
   return close;
 }
@@ -206,6 +208,38 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
   host.append(el);
   currentToast = el;
   setTimeout(() => el.remove(), duration ?? (action ? 6000 : 4000));
+}
+
+// Redessine à chaque changement de données, mais jamais pendant qu'un doigt
+// est posé sur l'écran (cartes de « Mes listes », éléments d'une liste) :
+// rien ne change de place sous le doigt. Le dessin attendu est fait juste
+// après (le temps que l'appui ouvre ce qui a été touché). Renvoie
+// { request, stop }.
+export function drawWhenIdle(container, draw) {
+  let touching = false;
+  let waiting = false;
+  let timer = null;
+  const start = () => { touching = true; };
+  const end = () => {
+    touching = false;
+    if (!waiting) return;
+    waiting = false;
+    timer = setTimeout(draw, 250);
+  };
+  container.addEventListener('pointerdown', start);
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+  return {
+    request: () => {
+      if (touching) waiting = true;
+      else draw();
+    },
+    stop: () => {
+      clearTimeout(timer);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+    },
+  };
 }
 
 // --- Indicateur de synchronisation ---

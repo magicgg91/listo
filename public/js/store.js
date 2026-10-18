@@ -10,7 +10,7 @@
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
-import { splitDone, compareNames, isMultiList } from './sorting.js';
+import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse } from './history.js';
 
 // --- État vide ---
@@ -325,6 +325,39 @@ export function saveListSort(sort, storage = () => globalThis.localStorage) {
   }
 }
 
+// --- Tri d'une liste autre que les courses (choix gardé sur ce téléphone,
+// pour chaque liste : clé listo-tri-liste-<identifiant>) ---
+export const ITEM_SORT_PREFIX = 'listo-tri-liste-';
+export const itemSortFrom = (value) => (ITEM_SORTS.includes(value) ? value : 'alpha');
+export function loadItemSort(listId, storage = () => globalThis.localStorage) {
+  try {
+    return itemSortFrom(storage().getItem(ITEM_SORT_PREFIX + listId));
+  } catch {
+    return 'alpha';
+  }
+}
+export function saveItemSort(listId, sort, storage = () => globalThis.localStorage) {
+  try {
+    storage().setItem(ITEM_SORT_PREFIX + listId, itemSortFrom(sort));
+  } catch {
+    // sans importance : le choix vaut pour cette visite
+  }
+}
+// Ménage : oublie le tri des listes qui ne sont plus sur ce téléphone
+export function pruneItemSorts(listIds, storage = () => globalThis.localStorage) {
+  try {
+    const store = storage();
+    const keep = new Set(listIds);
+    const keys = [];
+    for (let i = 0; i < store.length; i++) keys.push(store.key(i));
+    for (const key of keys) {
+      if (key?.startsWith(ITEM_SORT_PREFIX) && !keep.has(key.slice(ITEM_SORT_PREFIX.length))) store.removeItem(key);
+    }
+  } catch {
+    // sans importance
+  }
+}
+
 const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
 const byName = (a, b) => nameCollator.compare(a.name, b.name);
 const byRecent = (a, b) => b.lastActivity.localeCompare(a.lastActivity);
@@ -362,12 +395,14 @@ export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
 // leur nombre. null si la liste n'est pas (ou plus) accessible.
 // Dans une liste « multi », les groupes sont des magasins (group.store) au
 // lieu des rayons (group.aisle).
-export function computeListView(state, listId) {
+// sort : tri d'une liste autre que les courses ('alpha' par défaut,
+// 'priority' ou 'due', voir sorting.js) ; sans effet sur les courses.
+export function computeListView(state, listId, { sort = 'alpha' } = {}) {
   const list = state.lists.get(listId);
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores });
+  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores, sort: itemSortFrom(sort) });
   return {
     list,
     multi,

@@ -48,5 +48,5 @@ test('fiche : « Cocher (je l\'ai pris) », « Ajouter quand même », « Annule
   assert.match(scan, /\$\{item\.checked \? 'Déjà coché' : 'Déjà dans la liste'\} : \$\{item\.name\}/);
   // Cocher passe par l'opération habituelle (file d'attente, zone des cochés)
   const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
-  assert.match(list, /check: \(item, checked\) => actions\.checkItem\(item, checked\),/);
+  assert.match(list, /check: \(item, checked\) => editable\(\) && actions\.checkItem\(item, checked\),/); // jamais en lecture seule
 });

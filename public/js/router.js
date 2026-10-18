@@ -133,6 +133,18 @@ function closeAllOverlays() {
   while (overlays.length) overlays.pop().close();
 }
 
+// Ferme toutes les fenêtres de l'écran actuel en restant sur cet écran
+// (droit sur la liste changé pendant qu'une fiche est ouverte) : les entrées
+// qu'elles avaient ajoutées à l'historique sont retirées en un seul retour.
+export function closeOverlays() {
+  const pushed = overlays.filter((entry) => entry.pushed).length;
+  closeAllOverlays();
+  if (!pushed) return;
+  ignoredPops++;
+  if (!pendingBack) pendingBack = new Promise((resolve) => { backDone = resolve; });
+  history.go(-pushed);
+}
+
 // Démarre le routeur : onRoute(route) est appelé à chaque changement d'écran
 export function startRouter(onRoute) {
   renderRoute = onRoute;

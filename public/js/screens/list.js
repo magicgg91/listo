@@ -22,15 +22,22 @@
 //   liste-taches-panier-*). Zone absente quand rien n'est coché ; repliable,
 //   état mémorisé par liste sur l'appareil ; deux actions confirmées par une
 //   feuille : tout décocher, retirer les cochés.
+// - Lecture seule (droit « Lecture seule » donné par le propriétaire) : un
+//   bandeau « Lecture seule » ; ni champ d'ajout, ni Scanner, ni glissement,
+//   ni actions sur les cochés ; cases visibles mais inactives (cochés
+//   toujours barrés) ; un appui sur une ligne ouvre une fiche à consulter.
+//   Tri, groupes repliables et photo agrandie restent possibles. Le serveur
+//   refuse de toute façon chaque écriture ; si le droit change, l'écran
+//   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
 
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
-import { navigate, goBack } from '../router.js';
+import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { computeListView, canEditList, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
@@ -78,6 +85,10 @@ export function renderList(listId, onLeave) {
   }
 
   let view = null;
+  // La liste peut-elle être modifiée depuis ce téléphone (copie locale à jour) ?
+  const editable = () => canEditList(app.data.lists.get(listId));
+  // Bandeau discret sous la barre du haut (même composant que la page publique)
+  const readOnlyBanner = h('p', { class: 'readonly-banner', hidden: true }, icon('eye', 'icon--sm'), 'Lecture seule');
 
   // --- Groupes repliables (rayons, magasins, priorités, zone des cochés) ---
   // Repliés ou dépliés sur ce téléphone, pour cette liste (store.js) ; tout
@@ -162,9 +173,11 @@ export function renderList(listId, onLeave) {
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, 'Retour à mes listes')));
       addbar.hidden = true;
+      readOnlyBanner.hidden = true;
       return;
     }
     const { list, groups, done } = view;
+    const canEdit = canEditList(list);
     // « article » pour une liste de courses, « élément » sinon (words.js)
     const words = itemWords(list);
     input.placeholder = `Ajouter un ${words.one}`;
@@ -174,9 +187,10 @@ export function renderList(listId, onLeave) {
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
-    addbar.hidden = false;
+    readOnlyBanner.hidden = canEdit;
+    addbar.hidden = !canEdit; // lecture seule : aucun ajout
     // Bouton « Scanner » : listes de courses seulement (recherche activée)
-    scanner.button.hidden = !scanAvailable(list);
+    scanner.button.hidden = !canEdit || !scanAvailable(list);
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
     content.classList.toggle('scroll--flat', !list.category.isShopping && itemSort !== 'priority');
 
@@ -184,7 +198,7 @@ export function renderList(listId, onLeave) {
       replace(content, h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, `Ajoutez un premier ${words.one} avec le champ ci-dessous.`)));
+        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')));
       return;
     }
     // Groupes disparus (rayon ou magasin supprimé) : oubliés
@@ -210,6 +224,7 @@ export function renderList(listId, onLeave) {
     const zone = doneZoneWords(list);
     const counted = countItems(done.length, list); // « 12 articles », « 4 éléments »
     const listEl = h('ul', { id: `zone-${listId}` }, done.map(itemRow));
+    const canEdit = canEditList(list); // lecture seule : pas d'actions
     const actionsRow = h('div', { class: 'cart__actions' },
       h('button', { class: 'cart__action', type: 'button', 'aria-label': `${zone.reopen}, ${counted}`, onClick: reopenAll }, zone.reopen),
       h('button', { class: 'cart__action cart__action--danger', type: 'button', 'aria-label': `${zone.remove}, ${counted}`, onClick: removeAll }, zone.remove));
@@ -223,7 +238,7 @@ export function renderList(listId, onLeave) {
     const show = (open) => {
       toggle.setAttribute('aria-expanded', String(open));
       listEl.hidden = !open;
-      actionsRow.hidden = !open;
+      actionsRow.hidden = !open || !canEdit;
     };
     const foldable = {
       isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
@@ -270,8 +285,10 @@ export function renderList(listId, onLeave) {
   // révéler la zone rouge « Supprimer » (raccourci ; la poubelle de la fiche
   // reste la voie principale) : swipe.js. Le contenu de la ligne est dans
   // .swipe__slide, la zone rouge est un vrai bouton derrière.
+  // Lecture seule : ligne simple, sans glissement ni zone rouge.
   const itemRow = (item) => itemRowWith(item, metaOf(item));
   const itemRowWith = (item, meta) => {
+    if (!canEditList(view?.list)) return h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false));
     const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta));
     const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
       swipes.close();
@@ -281,15 +298,19 @@ export function renderList(listId, onLeave) {
     swipes.attach(row, slide, remove);
     return row;
   };
-  const itemContent = (item, meta) => [
-    h('button', {
+  // canEdit = false (lecture seule) : case non interactive, comme sur la page
+  // publique (cochée = remplie ET barrée), et la ligne ouvre la fiche à consulter
+  const itemContent = (item, meta, canEdit = true) => [
+    canEdit ? h('button', {
       class: 'check',
       type: 'button',
       'aria-pressed': String(item.checked),
       'aria-label': `${item.checked ? 'Décocher' : 'Cocher'} ${item.name}`,
       onClick: () => toggle(item),
-    }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
-    h('button', { class: 'item__body', type: 'button', 'aria-label': `Modifier ${item.name}${meta.spoken}`, onClick: () => openItemSheet(item) },
+    }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null))
+      : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': item.checked ? 'Coché' : 'Non coché' },
+        h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
+    h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? 'Modifier' : 'Voir'} ${item.name}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
@@ -319,6 +340,7 @@ export function renderList(listId, onLeave) {
   // « Annuler » pendant quelques secondes, qui remet le même article avec sa
   // photo (opération item.restore).
   async function deleteWithUndo(item) {
+    if (!editable()) return;
     await actions.deleteItem(item);
     toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
   }
@@ -326,6 +348,7 @@ export function renderList(listId, onLeave) {
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
+    if (!editable()) return;
     actions.checkItem(item, !item.checked);
   }
 
@@ -344,7 +367,7 @@ export function renderList(listId, onLeave) {
         : (one ? 'Il reviendra dans la liste, décoché.' : 'Ils reviendront dans la liste, décochés.'),
       confirmLabel: 'Confirmer',
     });
-    if (!ok) return;
+    if (!ok || !editable()) return;
     const reopened = await actions.uncheckAll(listId);
     toast(list.category.isShopping
       ? `${countItems(reopened, list)} remis à acheter`
@@ -365,7 +388,7 @@ export function renderList(listId, onLeave) {
       confirmLabel: 'Retirer',
       danger: true,
     });
-    if (!ok) return;
+    if (!ok || !editable()) return;
     const removed = await actions.removeChecked(listId);
     toast(`${countItems(removed, list)} ${removed === 1 ? 'retiré' : 'retirés'}`);
   }
@@ -395,7 +418,7 @@ export function renderList(listId, onLeave) {
   const scanner = createScanner({
     listId,
     getView: () => view,
-    check: (item, checked) => actions.checkItem(item, checked),
+    check: (item, checked) => editable() && actions.checkItem(item, checked),
     add: async (name, { note, ean }) => {
       const item = await addNamed(name, { ...(note ? { note } : {}), ...(ean ? { ean } : {}) });
       if (item) revealItem(item.id);
@@ -548,6 +571,7 @@ export function renderList(listId, onLeave) {
   // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)
   // Renvoie l'article ajouté
   async function createItem(name, fields = {}) {
+    if (!editable()) return false; // passée en lecture seule entre-temps
     return actions.addItem({ listId, name, ...fields });
   }
 
@@ -555,6 +579,7 @@ export function renderList(listId, onLeave) {
 
   function openItemSheet(item) {
     swipes.close(); // une ligne ouverte se referme
+    if (!editable()) return openItemView(item); // passée en lecture seule entre-temps
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
@@ -752,6 +777,7 @@ export function renderList(listId, onLeave) {
     // Photo prise ou choisie : réduite ici, puis mise en file d'attente (elle
     // part tout de suite avec du réseau, sinon dès son retour)
     async function sendPhoto(file) {
+      if (!editable()) return;
       error.show('');
       busy = true;
       drawPhoto();
@@ -767,7 +793,7 @@ export function renderList(listId, onLeave) {
 
     async function removePhoto() {
       const ok = await confirmDialog({ title: 'Retirer la photo ?', text: 'La photo sera supprimée pour toutes les personnes de la liste.', confirmLabel: 'Retirer' });
-      if (!ok) return;
+      if (!ok || !editable()) return;
       await actions.removePhoto(current);
       current = app.data.items.get(item.id) ?? current;
       drawPhoto();
@@ -838,6 +864,10 @@ export function renderList(listId, onLeave) {
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
+      if (!editable()) {
+        sheet.close();
+        return;
+      }
       const newName = name.value.replace(/\s+/g, ' ').trim();
       nameField.setError(newName ? null : 'Le nom est obligatoire');
       // Code-barres : vide = pas de code ; sinon vérifié (clé de contrôle) et
@@ -870,6 +900,49 @@ export function renderList(listId, onLeave) {
       mine = true;
       sheet.close();
       await deleteWithUndo(item);
+    });
+  }
+
+  // --- Fiche à consulter (liste en lecture seule) ---
+  // Les mêmes informations que la fiche « Modifier », en texte : aucun champ
+  // à remplir, aucun bouton qui écrit ; la photo s'agrandit d'un appui. Elle
+  // suit les changements faits par les autres et se ferme si l'article est
+  // supprimé.
+  const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevée' };
+  function openItemView(item) {
+    const words = itemWords(view?.list);
+    const body = h('div', { class: 'stack' });
+    const value = (label, text) => h('div', { class: 'field' }, h('span', { class: 'field__label' }, label), h('p', { class: 'field__value' }, text));
+    const paint = (it) => {
+      const multi = Boolean(view?.multi);
+      const shopping = Boolean(view?.list.category.isShopping);
+      replace(body,
+        h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
+        value('Nom', it.name),
+        it.quantity ? value('Quantité', it.quantity) : null,
+        it.note ? value('Note', it.note) : null,
+        shopping ? null : value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale'),
+        shopping ? null : value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance'),
+        shopping && it.ean ? value('Code-barres', it.ean) : null,
+        actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
+          h('div', { class: 'photo-block' },
+            h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${it.name}`, onClick: () => showPhoto(it) },
+              h('img', { class: 'photo', src: actions.photoSrc(it), alt: '' })))) : null,
+        shopping && !multi ? value('Rayon', app.data.aisles.find((a) => a.id === it.aisleId)?.name ?? 'Sans rayon') : null,
+        multi ? value('Magasin', storeName(it.storeId) ?? 'Sans magasin') : null);
+    };
+    paint(item);
+    let stopWatching = () => {};
+    const sheet = openSheet({
+      title: `Détail de l'${words.one}`,
+      content: body,
+      scroll: true,
+      onClose: () => stopWatching(),
+    });
+    stopWatching = onDataChange(() => {
+      const latest = app.data.items.get(item.id);
+      if (latest) paint(latest);
+      else sheet.close();
     });
   }
 
@@ -951,6 +1024,25 @@ export function renderList(listId, onLeave) {
   // jamais pendant qu'un doigt est posé dessus
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
+  // Le propriétaire change mon droit pendant que la liste est ouverte (temps
+  // réel ou synchronisation) : bascule tout de suite, sans recharger. Fiche,
+  // choix du rayon, scan ou confirmation ouverts : refermés (ce qui n'était
+  // pas enregistré ne l'est pas) ; clavier replié ; champ d'ajout masqué ou
+  // remontré tout de suite (la liste elle-même est redessinée juste après).
+  let couldEdit = editable();
+  onLeave(onDataChange(() => {
+    if (!app.data.lists.has(listId)) return; // liste retirée : draw() le dit
+    const now = editable();
+    if (now === couldEdit) return;
+    couldEdit = now;
+    releaseFocus();
+    suggestBox.hidden = true;
+    swipes.close();
+    closeOverlays();
+    addbar.hidden = !now;
+    readOnlyBanner.hidden = now;
+    toast(now ? 'Vous pouvez maintenant modifier cette liste.' : 'Cette liste est maintenant en lecture seule.');
+  }));
   onLeave(idle.stop);
   onLeave(() => {
     document.title = 'Listo';
@@ -986,6 +1078,7 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'topbar__main' }, title, sub),
       sortButton,
       menuButton),
+    readOnlyBanner,
     h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), foldAll),
     content,
     addbar);

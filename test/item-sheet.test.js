@@ -42,7 +42,7 @@ test('la coche enregistre (formulaire relié), Entrée aussi ; la poubelle suppr
   assert.match(list, /form\.addEventListener\('submit', async \(event\) => \{/);
   // Poubelle : la fiche se ferme, puis la même suppression que le glissement
   assert.match(list, /remove\.addEventListener\('click', async \(\) => \{\s*mine = true;\s*sheet\.close\(\);\s*await deleteWithUndo\(item\);\s*\}\);/);
-  assert.match(list, /async function deleteWithUndo\(item\) \{\s*await actions\.deleteItem\(item\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: 'Annuler', onAction: \(\) => actions\.restoreItem\(item\.id\) \}\);\s*\}/);
+  assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*await actions\.deleteItem\(item\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: 'Annuler', onAction: \(\) => actions\.restoreItem\(item\.id\) \}\);\s*\}/);
   // Enregistrement impossible pendant qu'un autre téléphone supprime l'article
   assert.match(list, /save\.disabled = gone;\s*remove\.disabled = gone;/);
 });

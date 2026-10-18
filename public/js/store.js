@@ -176,7 +176,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         store: store && { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) },
         ownerId: user.id,
         isOwner: true,
-        members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true }],
+        canEdit: true, // le propriétaire a tous les droits
+        members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
         updatedAt: now,
         lastActivity: now,
@@ -481,6 +482,16 @@ export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
     ? (a, b) => byName(a, b) || byRecent(a, b) || byExactName(a, b)
     : (a, b) => byRecent(a, b) || byName(a, b) || byExactName(a, b);
   return [...lists].sort(compare);
+}
+
+// Ce téléphone peut-il modifier la liste ? Le serveur l'indique dans chaque
+// liste (canEdit : propriétaire, ou invité « Peut modifier ») et refuse de
+// toute façon chaque écriture d'un invité en lecture seule ; l'écran s'en sert
+// seulement pour ne pas proposer ce qui serait refusé. Une copie gardée
+// d'avant cette information (aucun canEdit) reste modifiable jusqu'à la
+// prochaine synchronisation.
+export function canEditList(list) {
+  return Boolean(list) && list.canEdit !== false;
 }
 
 // Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,

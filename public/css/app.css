@@ -228,3 +228,18 @@ button.sync { cursor: pointer; }
 .list-card-wrap .list-card__head { padding-right: 36px; }
 .list-card__menu { position: absolute; top: 6px; right: 4px; color: var(--color-text-2); }
 .menu__sep { height: 1px; margin: var(--space-0) 12px; background: var(--color-border); }
+
+/* Droit de chaque personne sur une liste partagée (formulaire de liste) :
+   sous la ligne cochée, deux choix .segmented « Peut modifier / Lecture
+   seule » sur toute la largeur de la carte (la coche et le texte tiennent
+   sur une ligne) */
+.share__person { border-bottom: 1px solid var(--color-border); }
+.share__person:last-child { border-bottom: 0; }
+.share__person .tick-row { border-bottom: 0; }
+.share__access { padding: 0 var(--space-2) 12px; }
+
+/* Liste en lecture seule : bandeau sous la barre du haut (.readonly-banner,
+   section 16.4), pastille sur la carte de « Mes listes », valeurs en texte
+   dans la fiche à consulter */
+.list-card__meta .chip--readonly { height: 22px; padding: 0 8px; }
+.field__value { margin: 0; font-size: var(--text-base); overflow-wrap: anywhere; white-space: pre-line; }

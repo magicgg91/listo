@@ -146,6 +146,11 @@ export const pendingCount = () => queue?.count() ?? 0;
 let refreshing = null;
 let again = null;
 let refusals = [];         // raisons des modifications refusées par le serveur
+// Refus du serveur pour une personne en lecture seule (même texte que
+// server/lists.js), et le message montré quand des modifications faites hors
+// ligne ont été refusées pour cette raison
+const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
+const READ_ONLY_OFFLINE = "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.";
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -167,11 +172,17 @@ export function refreshData({ quiet = false, full = false } = {}) {
       }
       // 2. Une modification refusée : on prévient, et on reprend tout l'état
       //    du serveur (son effet local est ainsi annulé)
+      //    Refus « lecture seule » (le droit a changé pendant que ce
+      //    téléphone était hors ligne) : un seul message, plus clair, montré
+      //    après la synchronisation (l'écran est alors déjà repassé en
+      //    lecture seule).
+      let readOnlyRefused = false;
       if (refusals.length) {
-        const [first, ...others] = refusals;
+        readOnlyRefused = refusals.includes(READ_ONLY);
+        const [first, ...others] = refusals.filter((message) => message !== READ_ONLY);
         refusals = [];
         full = true;
-        toast(`Une modification n'a pas pu être enregistrée : ${first}${others.length ? ` (et ${others.length} autre${others.length > 1 ? 's' : ''})` : ''}`);
+        if (first) toast(`Une modification n'a pas pu être enregistrée : ${first}${others.length ? ` (et ${others.length} autre${others.length > 1 ? 's' : ''})` : ''}`);
       }
       // 3. Puis récupérer les changements des autres. Copie trop ancienne
       //    (plus de 25 jours) : tout recharger.
@@ -184,6 +195,7 @@ export function refreshData({ quiet = false, full = false } = {}) {
       replayQueue();
       setSyncState('ok');
       dataChanged();
+      if (readOnlyRefused) toast(READ_ONLY_OFFLINE);
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;

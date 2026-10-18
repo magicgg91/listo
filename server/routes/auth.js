@@ -71,7 +71,7 @@ export function publicAuthRoutes(ctx) {
     ctx.setup.code = null; // le code de démarrage ne servira plus jamais
     audit('creation_admin', { utilisateur: username, ip: req.ip });
     startSession(ctx, res, created);
-    res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created)) });
+    res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created), ctx.config) });
   });
 
   // Connexion avec identifiant et mot de passe
@@ -119,7 +119,7 @@ export function publicAuthRoutes(ctx) {
     limiter.reset(keys);
     startSession(ctx, res, user.id);
     audit('connexion_reussie', { ...who, ip: req.ip });
-    res.json({ user: publicUser(user) });
+    res.json({ user: publicUser(user, ctx.config) });
   });
 
   // Saisie du code 2FA (ou d'un code de secours) après le mot de passe
@@ -146,7 +146,7 @@ export function publicAuthRoutes(ctx) {
     limiter.reset(keys);
     startSession(ctx, res, user.id);
     audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-    res.json({ user: publicUser(user) });
+    res.json({ user: publicUser(user, ctx.config) });
   });
 
   return router;

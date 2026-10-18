@@ -12,6 +12,13 @@
 // 3. Photos prises hors ligne, pas encore envoyées (/photo-locale/…) : lues
 //    dans la file d'attente du téléphone (IndexedDB). L'adresse reste celle
 //    de Listo : la Content-Security-Policy n'a pas besoin d'être assouplie.
+// 4. Lecteur de codes-barres du mode scan (/vendor/zxing-wasm-…/, environ
+//    1 Mo) : jamais copié à l'installation ; téléchargé au premier scan, puis
+//    gardé dans un cache à part (« copie gardée d'abord » : son adresse
+//    contient sa version, son contenu ne change jamais). Ce cache survit aux
+//    mises à jour de Listo : le lecteur n'est pas retéléchargé à chaque
+//    version, seulement quand sa propre version change. Ensuite, le scan
+//    marche hors ligne.
 //
 // Ce qu'il ne fait JAMAIS : garder les réponses de l'API (/api/…, sauf les
 // photos ci-dessus), le flux temps réel (/api/events), ni le lien public
@@ -30,6 +37,9 @@ const BUILD = null; // remplacé par le serveur (null : développement)
 const VERSION = `v12-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
+// Lecteur de codes-barres : le nom du cache suit le dossier de sa version
+const VENDOR_PREFIX = '/vendor/zxing-wasm-3.1.4/';
+const VENDOR_CACHE = 'listo-vendor-zxing-wasm-3.1.4';
 const PHOTO_LIMIT = 150;
 const NETWORK_TIMEOUT_MS = 3000;
 
@@ -49,6 +59,8 @@ const APP_FILES = [
   '/js/api.js',
   '/js/app-height.js',
   '/js/app.js',
+  '/js/barcode-worker.js',
+  '/js/barcode.js',
   '/js/dom.js',
   '/js/format.js',
   '/js/freshness.js',
@@ -71,6 +83,7 @@ const APP_FILES = [
   '/js/screens/list.js',
   '/js/screens/lists.js',
   '/js/screens/login.js',
+  '/js/screens/scan.js',
   '/js/screens/settings.js',
   '/js/screens/share.js',
 ];
@@ -89,6 +102,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     for (const name of await caches.keys()) {
       if (name.startsWith('listo-app-') && name !== APP_CACHE) await caches.delete(name);
+      // Ancienne version du lecteur de codes-barres : effacée
+      if (name.startsWith('listo-vendor-') && name !== VENDOR_CACHE) await caches.delete(name);
     }
     await self.clients.claim();
   })());
@@ -116,6 +131,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (url.pathname.startsWith(VENDOR_PREFIX)) {
+    event.respondWith(vendorFile(request));
+    return;
+  }
+
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request, '/index.html'));
     return;
@@ -139,6 +159,18 @@ async function networkFirst(request, key) {
   } catch {
     return (await cache.match(key)) ?? Response.error();
   }
+}
+
+// Lecteur de codes-barres : copie gardée, sinon réseau (et copie gardée si
+// réussie). Clé : l'adresse sans paramètre.
+async function vendorFile(request) {
+  const cache = await caches.open(VENDOR_CACHE);
+  const key = new URL(request.url).pathname;
+  const cached = await cache.match(key);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.status === 200) await cache.put(key, response.clone());
+  return response;
 }
 
 // Photo déjà vue : copie gardée, sinon réseau (et copie gardée si réussie)

@@ -17,6 +17,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Hors ligne (étape 9)](#hors-ligne-étape-9)
 - [Lien public d'une liste (étape 10)](#lien-public-dune-liste-étape-10)
 - [En-têtes, arrêt propre et sauvegarde (étape 11)](#en-têtes-arrêt-propre-et-sauvegarde-étape-11)
+- [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
 ## Organisation du code
 
@@ -42,7 +43,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `server/shares.js` | Lien public d'une liste : jeton (jamais stocké en clair), mot de passe généré, contrôle de validité à chaque requête, cookies de consultation, nettoyage |
 | `server/pages/` | Les deux pages HTML du lien public : la page de la liste (sans aucune donnée) et la page unique « Lien expiré ou inexistant » |
 | `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin ; listes autres que les courses : alphabétique, par priorité avec groupes, par échéance) |
-| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons, `admin-names.js` pour les noms enregistrés) |
+| `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `products.js` (mode scan : nom d'un produit), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons, `admin-names.js` pour les noms enregistrés) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
 | `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css`, sections 1 à 16, sans la section 17 qui ne sert qu'aux planches) et petits ajustements propres à l'application |
 | `public/manifest.webmanifest`, `public/icons/` | Installation sur l'écran d'accueil (PWA) |
@@ -56,6 +57,9 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/js/live.js` | Temps réel côté téléphone : écoute du flux, regroupement des messages, reconnexion, synchronisation toutes les 60 secondes |
 | `public/js/freshness.js`, `public/js/version.js` | Rechargement après une mise à jour du serveur : identifiant de la version du code chargé, comparé à celui du serveur ; rechargement au premier moment sûr, sinon bandeau « Nouvelle version disponible » (voir « Nouvelle version de Listo » ci-dessous) |
 | `server/update-check.js` | Vérification de mise à jour sur GitHub (Réglages › À propos, Admin) |
+| `server/products.js`, `server/http-json.js` | Mode scan : validation du code-barres (clé EAN, UPC-A → EAN-13), demande à Open Food Facts (adresse fixe, délai, taille, aucune redirection), analyse tolérante de la réponse, cache en mémoire, limites de débit ; lecture limitée d'une réponse JSON (partagée avec la vérification de mise à jour) |
+| `public/js/barcode.js`, `public/js/barcode-worker.js` | Mode scan sur le téléphone : photo réduite (canvas, orientation respectée), essais de lecture, lecteur zxing-wasm dans un worker ; clé de contrôle EAN (mêmes règles que le serveur) |
+| `public/vendor/zxing-wasm-3.1.4/` | Lecteur de codes-barres copié tel quel (voir « Mode scan » ci-dessous : origine, version, empreintes). Téléchargé par le téléphone au premier scan seulement |
 | `public/js/viewport.js` | Android : retire `viewport-fit=cover` avant le premier affichage, pour garder la page au-dessus de la barre de navigation (voir « Android : barre de navigation ») |
 | `public/js/app-height.js` | Hauteur de l'application : mesure la hauteur visible, l'écrit dans `--app-h` et la remesure au retour dans l'application (voir « Hauteur remesurée au retour ») |
 | `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
@@ -64,7 +68,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/js/format.js` | Mise en forme des textes (dates relatives, « 3 articles restants » / « 3 éléments restants »…) |
 | `public/js/words.js` | Vocabulaire : « article » dans une liste de courses, « élément » dans les autres listes. Tous les textes qui nomment une ligne de la liste passent par lui |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
-| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur, avec le bouton de tri ; sur téléphone, pastille d'état dans la barre du haut), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
+| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur, avec le bouton de tri ; sur téléphone, pastille d'état dans la barre du haut), `list.js` (une liste et la feuille Article), `scan.js` (bouton « Scanner » et feuille « Scanner un produit », listes de courses), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `SECURITY.md` | Licence Apache-2.0 (texte officiel), mentions à conserver, règles de contribution, signalement des failles |
 | `docs/` | Cahier des charges, guide d'exploitation (`exploitation.md`) et ce document (`developpement.md`) |
@@ -141,6 +145,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     7. Dans « Mes listes », la carte d'une liste partagée par lien porte une petite icône de lien (chez le propriétaire seulement).
     8. Le lien envoyé par une messagerie (WhatsApp, Signal, SMS) n'affiche pas d'aperçu du contenu de la liste : l'aperçu montre au plus « Listo · Liste partagée ».
 13. **Zone des articles cochés** : cocher un article : il quitte son rayon pour « Dans le panier · 1 » en bas (« Terminés » dans une liste de tâches) ; un rayon dont tout est coché disparaît. Replier la zone avec son en-tête, fermer et rouvrir Listo : elle est restée repliée (cette liste, cet appareil). « Tout remettre à acheter » et « Retirer du panier » demandent confirmation par une feuille ; sur l'autre téléphone, le changement arrive en quelques secondes. En mode avion, « Tout remettre à acheter » marche aussi et part au retour du réseau.
+14. **Mode scan** (listes de courses, en HTTPS) : voir la liste « [À tester sur les téléphones](#à-tester-sur-les-téléphones) » de la section « Mode scan ».
 
 ## API des comptes (étape 2)
 
@@ -356,6 +361,7 @@ Réservées à un compte connecté. Chaque requête vérifie que le compte est m
 | `GET /api/suggestions?q=la` | Autocomplétion, dès 2 lettres. Avec `&listId=…` (une de mes listes) : vide si ce n'est pas une liste de courses |
 | `GET /api/sync?since=…` | Tout ce qui a changé depuis l'instant `since` (l'heure `serverTime` donnée par la synchro précédente) ; sans `since` : tout |
 | `POST /api/ops` | Lot d'opérations (1 à 100) : `{"ops": [{ "id": "<uuid>", "type": "…", … }]}` |
+| `POST /api/lists/:id/products` | Mode scan (listes de courses) : `{"code": "3017620422003"}` → nom du produit (voir « Mode scan des listes de courses ») |
 
 Les opérations de `POST /api/ops` :
 
@@ -698,3 +704,64 @@ curl -i $U/api/public/$J
 **Démarrage et arrêt** (`server/index.js`, `test/process.test.js`) : en production, Listo refuse de démarrer si `LISTO_PUBLIC_URL` n'est pas en `https://`, avec un message clair. Sur `SIGTERM` (`docker stop`, mise à jour par `docker compose up -d`), il ferme les flux temps réel, n'accepte plus de connexion, termine les requêtes en cours (5 secondes au plus), ferme la base, puis s'arrête.
 
 **Sauvegarde** (`server/backup.js`, `test/backup.test.js`) : chaque nuit à 3 h (heure locale, variable `TZ`), `VACUUM INTO data/backups/listo-AAAA-MM-JJ-HHMM.db`, puis la copie est rouverte en lecture seule et contrôlée (`PRAGMA integrity_check`), mise en droits 600, et seules les 14 plus récentes sont gardées. better-sqlite3 traite une seule requête à la fois : la copie ne tombe jamais au milieu d'une écriture. Les tests avancent l'horloge (rotation à la 15e copie), vérifient qu'aucune copie ne contient la clé, et font une vraie restauration (arrêt, remplacement de `listo.db`, redémarrage : comptes et listes retrouvés). Le même scénario a été vérifié dans le conteneur Docker.
+
+## Mode scan des listes de courses
+
+Dans une liste de courses, le bouton « Scanner » (icône `i-barcode`, à côté du champ d'ajout) ouvre l'appareil photo du téléphone par le même mécanisme que la photo d'un article (`<input type="file" accept="image/*" capture="environment">`) : ni `getUserMedia`, ni flux vidéo, ni changement de Permissions-Policy. La photo est lue **sur le téléphone** et n'est jamais envoyée ni gardée : seul le numéro du code part vers Listo.
+
+Parcours (`public/js/screens/scan.js`) :
+1. photo du code-barres → lecture (`public/js/barcode.js`) : image redressée (`createImageBitmap`, `imageOrientation: 'from-image'`), réduite à 1 600 px sur le grand côté, puis jusqu'à trois essais (image entière, centre de l'image, image réduite à 800 px), dans un worker (`barcode-worker.js`) : l'écran ne fige pas ;
+2. `POST /api/lists/:id/products` → nom du produit (Open Food Facts, côté serveur) ;
+3. feuille : nom (modifiable), note « marque · format », avertissement « Déjà dans la liste » (même nom, majuscules et accents ignorés ; « Ajouter quand même »), mention « Données : Open Food Facts » ; « Ajouter à la liste » passe par l'ajout normal (rayon ou magasin habituel, sinon demandé une fois) et la file d'attente habituelle (`item.create`) ;
+4. « Scanner un autre produit », compteur « N ajoutés », « Terminé ».
+
+Sans code lu (« Code non lu, réessayez plus près et bien à plat, ou saisissez-le »), sans nom (produit inconnu, panne, hors ligne) ou sans lecteur (pas encore téléchargé, WebAssembly refusé) : saisie à la main du code puis du nom ; les champs n'apparaissent que sur appui, jamais avec le curseur dedans. Le code-barres n'est jamais écrit dans la note. `LISTO_PRODUCT_LOOKUP=off` : bouton masqué (le compte connecté porte `productLookup: false`).
+
+### Route `POST /api/lists/:id/products`
+
+- Corps : `{"code": "…"}` (le code n'est jamais dans l'adresse : il n'apparaît pas dans les journaux du proxy). Compte connecté, membre de la liste, liste de courses ; sinon 401 ou 404.
+- Code accepté : 8, 12 ou 13 chiffres avec une clé de contrôle EAN valide (sinon 400, aucune demande sortante). Un UPC-A (12 chiffres) devient un EAN-13 (un 0 devant) avant la recherche et le cache.
+- Réponses (toujours `Cache-Control: no-store`) : `{"status": "found", "name", "brand", "quantity"}`, `{"status": "unknown"}` (inconnu, non alimentaire, code « en 2 » propre à un magasin), `{"status": "unavailable"}` (panne, délai, limite atteinte), `{"status": "disabled"}` (`LISTO_PRODUCT_LOOKUP=off`) ; 429 au-delà de 30 recherches par minute pour un compte.
+- Demande sortante (`server/products.js`) : `GET https://world.openfoodfacts.org/api/v3/product/<code>?fields=code,product_name,product_name_fr,generic_name,brands,quantity`, en-tête `User-Agent: Listo/<version de package.json> (+https://github.com/magicgg91/listo)` (avec `; <LISTO_PRODUCT_CONTACT>` si renseignée), `redirect: 'manual'` (une redirection, vers Open Beauty Facts par exemple, donne « inconnu »), délai 5 s, 32 ko au plus, aucun cookie ; 10 demandes par minute au plus pour tout le serveur.
+- Analyse tolérante (`productFrom`) : nom = `product_name_fr`, sinon `product_name`, sinon `generic_name` ; nettoyé (caractères invisibles et de contrôle retirés, espaces regroupés), 60 caractères au plus coupés entre deux mots ; marque = première de `brands` (40 caractères) ; format = `quantity` (30 caractères). `status: "failure"`, `result.id: "product_not_found"`, produit absent ou sans aucun nom : inconnu. Réponse qui n'est pas un objet : panne.
+- Cache en mémoire, sans migration : 500 produits, 7 jours (trouvé) ou 1 jour (inconnu) ; une panne n'est pas gardée.
+- Journaux : ni le code ni le nom ; une panne écrit seulement sa cause (« Recherche de produit impossible : délai dépassé »).
+
+### Lecteur de codes-barres copié (`public/vendor/zxing-wasm-3.1.4/`)
+
+Dépendance **côté navigateur seulement**, validée par le propriétaire (option « b » du plan) : elle n'est pas dans `package.json` et n'est jamais chargée par le serveur. Copie obtenue ainsi, le 18 octobre 2026 :
+
+1. `npm pack zxing-wasm@3.1.4` (paquet [zxing-wasm](https://github.com/Sec-ant/zxing-wasm), version 3.1.4 publiée le 10 septembre 2026) ;
+2. empreinte du paquet comparée à celle du registre npm (`npm view zxing-wasm@3.1.4 dist.integrity`) : `sha512-1+v8p7sauddySVNG+ye7GD/0TS95BG2ycdkrC+EnBrFBFkHeIghzUt2yVjtx3NucJeNrQnhT8yGAIz60Vx9o0w==`, identique ;
+3. quatre fichiers copiés **sans aucune modification** (lecteur seul : ni le générateur de codes, ni la version complète) :
+
+| Fichier copié | Origine dans le paquet | SHA-256 |
+| --- | --- | --- |
+| `es/reader/index.js` | `dist/es/reader/index.js` | `d90c69a827aff3b7c8c8ca310efebe91671ef076f7a0ec83722bfc542814f484` |
+| `es/share.js` | `dist/es/share.js` | `08868fb770b0a4e4b9eb3d717015cd5fbf3ceb06492d4cb2d2dd2739db11890f` |
+| `reader/zxing_reader.wasm` | `dist/reader/zxing_reader.wasm` | `e8af31edb56d0522f4de74495839385ef019ba8bc90d38e5ecb2f18795d86fb2` |
+| `LICENSE` | `LICENSE` | `fb506e4ade12d7a9efa67c9d76a9a28c8e15d347ca49a69e48e29b40b34ad2ab` |
+
+Taille : 1 Mo en tout (dont 953 ko pour le programme WebAssembly, environ 420 ko compressé). Licences : MIT (zxing-wasm) et Apache-2.0 (ZXing-C++, compilé dans le `.wasm`), mentionnées dans `NOTICE`. Le test `test/scan-reader.test.js` vérifie les empreintes ci-dessus (et leur présence dans ce document), la mention dans `NOTICE`, l'absence de `zxing` dans `package.json`, et lit des codes-barres générés (EAN-13, EAN-8, UPC-A, tournés, inclinés, flous) avec ce lecteur, sans réseau.
+
+**Jamais de CDN** : par défaut, la bibliothèque irait chercher son `.wasm` sur jsDelivr. `barcode-worker.js` remplace cette adresse (`locateFile`) par celle de Listo ; la CSP (`connect-src 'self'`) bloquerait de toute façon tout autre site.
+
+**Content-Security-Policy** : les pages de l'application reçoivent `script-src 'self' 'wasm-unsafe-eval'` (`APP_CONTENT_SECURITY_POLICY` de `server/app.js`), indispensable pour compiler un programme WebAssembly (vérifié dans Chromium : sans lui, la compilation est refusée). Il n'autorise que WebAssembly, jamais `eval` du JavaScript (`'unsafe-eval'` reste interdit). La page du lien public (`/p/…`) et son API (`/api/public/…`) gardent la politique stricte, sans exception. `worker-src 'self'` : le worker vient de Listo. Le `.wasm` est servi en `application/wasm`.
+
+**Service worker** : le lecteur n'est pas dans `APP_FILES` (rien n'est téléchargé à l'installation). Au premier scan, ses fichiers sont gardés dans un cache à part, `listo-vendor-zxing-wasm-3.1.4` (« copie gardée d'abord » : l'adresse contient la version), qui survit aux mises à jour de Listo ; il n'est effacé qu'au passage à une autre version du lecteur.
+
+**Mettre à jour le lecteur** (rare, et seulement avec l'accord du propriétaire) : refaire les étapes 1 à 3 avec la nouvelle version dans un nouveau dossier `public/vendor/zxing-wasm-<version>/`, supprimer l'ancien, mettre à jour le chemin dans `barcode-worker.js`, `VENDOR_PREFIX` et `VENDOR_CACHE` dans `sw.js`, les empreintes de ce document et de `test/scan-reader.test.js`, `NOTICE`, et changer le début de `VERSION` dans `sw.js`.
+
+### À tester sur les téléphones
+
+Ce qui ne peut pas être testé automatiquement (appareil photo réel, vraies photos, Safari) :
+
+1. **iPhone, application installée (PWA)** : ouvrir Listo depuis son icône, une liste de courses → « Scanner » ouvre l'appareil photo (pas la galerie). Photographier le code-barres d'un produit courant, à 10–15 cm, bien à plat : la fiche montre le nom, la marque et le format. Essayer une photo en portrait et une en paysage. Le premier scan peut prendre quelques secondes (téléchargement du lecteur, 1 Mo).
+2. **iPhone, hors ligne** : après un premier scan, mode avion, fermer et rouvrir Listo depuis son icône, scanner : le code est lu, « Hors ligne : le nom du produit est indisponible », « Taper le nom » ; l'article part au retour du réseau.
+3. **iPhone, mode Isolement** (si vous l'utilisez) : le scan affiche « La lecture des codes-barres n'est pas disponible… » et propose la saisie à la main.
+4. **Brave sous Android** (application installée) : mêmes points 1 et 2. Si l'appareil photo ne s'ouvre pas, vérifier les autorisations de Brave (Réglages Android → Applications → Brave → Autorisations → Appareil photo) ; si Brave bloque le lecteur, Listo le dit et propose la saisie à la main : me donner le message affiché.
+5. **Cas difficiles** : code-barres sur une boîte de conserve (courbe), sur un emballage brillant (reflet), photo un peu floue : noter ce qui est lu ou non. « Code non lu » doit toujours proposer de reprendre la photo ou de saisir le code.
+6. **Clavier** : aucun champ ne s'ouvre avec le clavier tout seul ; « Saisir le code à la main » ouvre un clavier numérique au toucher du champ.
+7. **Doublon** : scanner un produit déjà dans la liste : « Déjà dans la liste », « Ajouter quand même ».
+8. **Liste de tâches** : pas de bouton « Scanner ».
+

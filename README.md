@@ -7,6 +7,7 @@
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur l'autre en quelques secondes ; les articles cochés se rangent « Dans le panier », en bas de la liste.
 - **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs magasins ; rayon habituel retenu, autocomplétion.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
+- **Mode scan** des listes de courses : photographier le code-barres d'un produit, Listo propose son nom (données [Open Food Facts](https://world.openfoodfacts.org)) ; la photo reste sur le téléphone.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
 - **Lien public en lecture seule** pour montrer une liste à quelqu'un sans compte (durée limitée, mot de passe facultatif).
 - **Double authentification**, **sauvegarde chaque nuit**, thèmes clair et sombre, installation sur l'écran d'accueil.
@@ -15,7 +16,7 @@
 
 - Pour un foyer ou un petit groupe : quelques comptes, créés par l'administrateur. Pas d'inscription publique.
 - Auto-hébergé : un conteneur Docker sur votre serveur, derrière un proxy HTTPS. Il n'existe pas de version en ligne.
-- Interface en français uniquement. Aucune publicité, aucun suivi, aucune donnée envoyée ailleurs que sur votre serveur. Seule exception, que l'on peut couper : le serveur demande à GitHub, au plus une fois par heure, s'il existe une nouvelle version ([chapitre 9](docs/exploitation.md#savoir-quune-nouvelle-version-existe)).
+- Interface en français uniquement. Aucune publicité, aucun suivi, aucune donnée envoyée ailleurs que sur votre serveur. Deux exceptions, que l'on peut couper : le serveur demande à GitHub, au plus une fois par heure, s'il existe une nouvelle version ([chapitre 9](docs/exploitation.md#savoir-quune-nouvelle-version-existe)) ; en mode scan, il demande à Open Food Facts le nom d'un produit à partir de son code-barres, sans rien sur les personnes ([chapitre 13](docs/exploitation.md#13-mode-scan--open-food-facts)).
 
 ## En images
 

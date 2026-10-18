@@ -70,7 +70,9 @@ export function attemptKeys(req, username) {
 }
 
 // Données d'un compte renvoyées au téléphone (jamais l'empreinte ni le secret)
-export function publicUser(user) {
+// config : pour dire au téléphone si le mode scan (recherche du nom d'un
+// produit) est activé sur ce serveur (LISTO_PRODUCT_LOOKUP)
+export function publicUser(user, config) {
   return {
     id: user.id,
     username: user.username,
@@ -78,6 +80,7 @@ export function publicUser(user) {
     role: user.role,
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
+    productLookup: config?.productLookup !== false,
   };
 }
 

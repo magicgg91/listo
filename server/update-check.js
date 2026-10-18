@@ -21,6 +21,7 @@
 // - Listo ne se met jamais à jour tout seul : il affiche seulement l'info.
 
 import { validCommit } from './config.js';
+import { readJson } from './http-json.js';
 
 // Projet sur GitHub : défini ici seulement (côté serveur)
 export const GITHUB_OWNER = 'magicgg91';
@@ -57,22 +58,8 @@ async function download(url, { fetchImpl, signal, maxBytes }) {
   });
   if (res.status !== 200) throw new Error(`réponse HTTP ${res.status}`);
   if (res.url && new URL(res.url).origin !== API_ORIGIN) throw new Error('réponse venue d\'un autre site');
-  // Lecture limitée en taille (jamais tout un fichier énorme en mémoire)
-  if (Number(res.headers.get('content-length')) > maxBytes) throw new Error('réponse trop grande');
-  const chunks = [];
-  let size = 0;
-  const reader = res.body.getReader();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    size += value.length;
-    if (size > maxBytes) {
-      await reader.cancel().catch(() => {});
-      throw new Error('réponse trop grande');
-    }
-    chunks.push(value);
-  }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  // Lecture limitée en taille (voir http-json.js)
+  return readJson(res, maxBytes);
 }
 
 // Commit du dernier passage réussi, lu dans la réponse de GitHub, ou null si

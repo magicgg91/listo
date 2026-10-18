@@ -7,10 +7,14 @@
 // reçoit exactement la même réponse que si la liste n'existait pas (404).
 //
 // Droits :
-// - propriétaire : tout (renommer, changer catégorie et magasin, partage,
-//   supprimer la liste) ;
-// - invité : articles seulement (ajouter, modifier, cocher, supprimer,
-//   tout décocher, retirer les cochés) ;
+// - propriétaire : tout (renommer, changer catégorie et magasin, partage et
+//   droit de chaque personne, supprimer la liste) ;
+// - invité « Peut modifier » (list_members.access = 'modification') :
+//   articles seulement (ajouter, modifier, cocher, supprimer, tout décocher,
+//   retirer les cochés, photo, mode scan) ;
+// - invité « Lecture seule » ('lecture') : voit la liste, ses articles et
+//   leurs photos, reçoit le temps réel ; toute écriture est refusée (403,
+//   READ_ONLY). Une seule fonction décide : canEdit (plus bas) ;
 // - un Admin n'a aucun droit particulier sur les listes des autres.
 //
 // Magasin « multi » (étape 6) : une liste de courses dont le magasin est
@@ -65,6 +69,19 @@ const LIST_NOT_FOUND = 'Liste introuvable.';
 // (l'élément n'existe plus, ou la requête est mal formée).
 const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
+export const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
+export const ACCESS = ['modification', 'lecture'];
+
+// Droit d'écriture d'un compte sur une liste : LE seul contrôle, utilisé par
+// toutes les écritures (opérations, photos, mode scan) et par la description
+// de la liste envoyée au téléphone. row : ce que la base dit de la liste et
+// de l'appartenance du compte (owner_id ou list_owner_id, member_access).
+// Le propriétaire a toujours tous les droits ; un invité, seulement en
+// « modification ». Jamais d'après ce que dit le téléphone.
+export function canEdit(user, row) {
+  const ownerId = row.owner_id ?? row.list_owner_id;
+  return ownerId === user.id || row.member_access === 'modification';
+}
 
 // --- Vérification des champs envoyés par le téléphone ---
 
@@ -115,7 +132,7 @@ export function createListService(ctx) {
     // Une liste non supprimée dont le compte est membre
     // (is_multi : 1 si c'est une liste de courses à magasin « multi »)
     memberList: db.prepare(`
-      SELECT lists.*, categories.is_shopping,
+      SELECT lists.*, categories.is_shopping, list_members.access AS member_access,
         (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM lists
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
@@ -126,6 +143,7 @@ export function createListService(ctx) {
     // Un article non supprimé d'une liste non supprimée dont le compte est membre
     memberItem: db.prepare(`
       SELECT items.*, categories.is_shopping, lists.store_id AS list_store_id,
+        lists.owner_id AS list_owner_id, list_members.access AS member_access,
         (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
@@ -136,7 +154,7 @@ export function createListService(ctx) {
     `),
     // Un article supprimé (pas encore effacé) d'une liste dont le compte est membre
     deletedItemForMember: db.prepare(`
-      SELECT items.* FROM items
+      SELECT items.*, lists.owner_id AS list_owner_id, list_members.access AS member_access FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       WHERE items.id = :itemId AND items.deleted_at IS NOT NULL
@@ -145,7 +163,7 @@ export function createListService(ctx) {
     anyItem: db.prepare('SELECT id FROM items WHERE id = ?'),
     item: db.prepare('SELECT * FROM items WHERE id = ?'),
     members: db.prepare(`
-      SELECT users.id, users.username, users.display_name, users.active
+      SELECT users.id, users.username, users.display_name, users.active, list_members.access
       FROM list_members JOIN users ON users.id = list_members.user_id
       WHERE list_members.list_id = ?
     `),
@@ -234,6 +252,15 @@ export function createListService(ctx) {
     if (!item) throw new OpError(404, ITEM_NOT_FOUND);
     return item;
   }
+
+  // Écritures : membre ET droit de modification (canEdit), sinon 403. Un
+  // non-membre reçoit toujours le même 404 qu'avant (aucune fuite).
+  function requireEdit(user, row) {
+    if (!canEdit(user, row)) throw new OpError(403, READ_ONLY);
+    return row;
+  }
+  const listForEditor = (user, listId) => requireEdit(user, listForMember(user, listId));
+  const itemForEditor = (user, itemId) => requireEdit(user, itemForMember(user, itemId));
 
   // L'historique d'un article (toutes ses lignes), sous la forme utilisée par
   // les règles partagées (public/js/history.js)
@@ -362,9 +389,14 @@ export function createListService(ctx) {
   function describeList(list, user) {
     const category = q.category.get(list.category_id);
     const store = list.store_id === null ? null : q.store.get(list.store_id);
-    const members = q.members.all(list.id).map((m) => ({
+    const rows = q.members.all(list.id);
+    // access : le droit de chaque personne (le propriétaire : toujours
+    // « modification ») ; canEdit : le droit du compte connecté
+    const members = rows.map((m) => ({
       id: m.id, username: m.username, displayName: m.display_name, active: m.active === 1, isOwner: m.id === list.owner_id,
+      access: m.id === list.owner_id ? 'modification' : m.access,
     }));
+    const mine = rows.find((m) => m.id === user.id);
     return {
       id: list.id,
       name: list.name,
@@ -372,6 +404,7 @@ export function createListService(ctx) {
       store: store && { id: store.id, name: store.name, active: store.active === 1, isMulti: store.is_multi === 1 },
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
+      canEdit: canEdit(user, { owner_id: list.owner_id, member_access: mine?.access }),
       // Lien public en cours ({ expiresAt } ou null) : pour le propriétaire seulement
       ...(list.owner_id === user.id && ctx.shares ? { publicLink: ctx.shares.badgeFor(list.id) } : {}),
       members,
@@ -442,7 +475,7 @@ export function createListService(ctx) {
       const now = nowIso();
       db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
         .run(id, name, category.id, store?.id ?? null, user.id, now, now);
-      db.prepare('INSERT INTO list_members (list_id, user_id) VALUES (?, ?)').run(id, user.id);
+      db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
@@ -505,7 +538,7 @@ export function createListService(ctx) {
     // reçoit l'opération. Tout membre de la liste peut le faire.
     // seulement. L'historique d'autocomplétion n'est pas touché.
     'list.removeChecked'(user, op) {
-      const list = listForMember(user, op.listId);
+      const list = listForEditor(user, op.listId);
       const now = nowIso();
       const { changes } = db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(now, now, list.id);
@@ -525,7 +558,7 @@ export function createListService(ctx) {
     // autres téléphones). Porte sur les articles cochés au moment où le
     // serveur reçoit l'opération. Tout membre de la liste peut le faire.
     'list.uncheckAll'(user, op) {
-      const list = listForMember(user, op.listId);
+      const list = listForEditor(user, op.listId);
       const { changes } = db.prepare('UPDATE items SET checked = 0, checked_at = NULL, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(nowIso(), list.id);
       if (changes) changed(list.id);
@@ -538,7 +571,7 @@ export function createListService(ctx) {
     // - liste « multi » : pas de rayon ; sans magasin précisé, un article
     //   déjà acheté dans un des magasins de la liste reprend son magasin habituel.
     'item.create'(user, op) {
-      const list = listForMember(user, op.listId);
+      const list = listForEditor(user, op.listId);
       const id = requireUuid(op.itemId);
       if (q.anyItem.get(id)) throw new OpError(409, 'Cet identifiant est déjà utilisé.');
       const name = itemName(op.name);
@@ -572,7 +605,7 @@ export function createListService(ctx) {
     // une liste « multi », un changement de magasin reporte l'achat sur le
     // nouveau magasin (il devient le magasin habituel s'il est le plus fréquent).
     'item.update'(user, op) {
-      const item = itemForMember(user, op.itemId);
+      const item = itemForEditor(user, op.itemId);
       const multi = item.is_multi === 1;
       checkFieldsForList(multi, op);
       // Priorité et échéance : refusées sur une liste de courses (rien n'est
@@ -619,7 +652,7 @@ export function createListService(ctx) {
 
     // Cocher ou décocher un article
     'item.check'(user, op) {
-      const item = itemForMember(user, op.itemId);
+      const item = itemForEditor(user, op.itemId);
       if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
       // Date du coché : posée au premier coché (un second « cocher » la
       // garde), effacée au décoché
@@ -633,7 +666,7 @@ export function createListService(ctx) {
     // Supprimer un article (suppression logique ; l'historique reste). Sa
     // photo est gardée jusqu'au nettoyage (30 jours) : « Annuler » la retrouve.
     'item.delete'(user, op) {
-      const item = itemForMember(user, op.itemId);
+      const item = itemForEditor(user, op.itemId);
       const now = nowIso();
       db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, item.id);
       changed(item.list_id);
@@ -645,6 +678,7 @@ export function createListService(ctx) {
     'item.restore'(user, op) {
       const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId) });
       if (!item) throw new OpError(404, ITEM_NOT_FOUND);
+      requireEdit(user, item);
       db.prepare('UPDATE items SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(nowIso(), item.id);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
@@ -785,14 +819,28 @@ export function createListService(ctx) {
   // userIds : la liste complète des invités souhaitée. Le propriétaire reste
   // toujours membre. Un compte désactivé ne peut pas être ajouté (mais un
   // invité déjà présent et désactivé depuis peut rester).
-  function setMembers(user, listId, userIds) {
+  // access (facultatif) : { "<id d'un invité>": "modification" | "lecture" }.
+  // Un invité ajouté sans droit précisé est en lecture seule ; un invité déjà
+  // présent sans droit précisé garde le sien. Le propriétaire ne peut pas
+  // recevoir de droit (il les a tous).
+  function setMembers(user, listId, userIds, access = {}) {
     const list = listForOwner(user, listId);
     if (!Array.isArray(userIds) || userIds.length > 50 || !userIds.every((id) => parseId(id))) {
       throw new OpError(400, 'Liste des invités invalide.');
     }
+    if (access === null || typeof access !== 'object' || Array.isArray(access)) throw new OpError(400, 'Droits des invités invalides.');
     const wanted = new Set(userIds.map(Number));
     wanted.delete(list.owner_id);
-    const current = new Set(q.members.all(list.id).map((m) => m.id).filter((id) => id !== list.owner_id));
+    const rights = new Map();
+    for (const [key, value] of Object.entries(access)) {
+      const id = parseId(key);
+      if (!id || !ACCESS.includes(value)) throw new OpError(400, 'Droits des invités invalides.');
+      if (id === list.owner_id) throw new OpError(400, 'Le propriétaire a tous les droits sur sa liste.');
+      if (!wanted.has(id)) throw new OpError(400, 'Droit donné à une personne qui n\'est pas invitée.');
+      rights.set(id, value);
+    }
+    const before = new Map(q.members.all(list.id).filter((m) => m.id !== list.owner_id).map((m) => [m.id, m.access]));
+    const current = new Set(before.keys());
 
     for (const id of wanted) {
       if (current.has(id)) continue;
@@ -803,17 +851,23 @@ export function createListService(ctx) {
     const added = [...wanted].filter((id) => !current.has(id));
     const removed = [...current].filter((id) => !wanted.has(id));
     const nameOf = (id) => db.prepare('SELECT username FROM users WHERE id = ?').pluck().get(id);
+    // Droits qui changent pour des invités déjà présents
+    const changedRights = [...rights].filter(([id, value]) => current.has(id) && before.get(id) !== value);
     db.transaction(() => {
-      for (const id of added) db.prepare('INSERT INTO list_members (list_id, user_id) VALUES (?, ?)').run(list.id, id);
+      // Sans droit précisé : lecture seule (valeur par défaut de la base)
+      for (const id of added) db.prepare('INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, ?)').run(list.id, id, rights.get(id) ?? 'lecture');
       for (const id of removed) db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, id);
+      for (const [id, value] of changedRights) db.prepare('UPDATE list_members SET access = ? WHERE list_id = ? AND user_id = ?').run(value, list.id, id);
       // La liste « change » : les membres l'apprendront à leur synchronisation
-      if (added.length || removed.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
+      // (et chacun son droit, dans la description de la liste)
+      if (added.length || removed.length || changedRights.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     // Temps réel : membres actuels, et invités retirés (leur téléphone
     // apprend ainsi qu'il n'a plus accès à la liste)
-    if (added.length || removed.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
-    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, invite: nameOf(id) });
+    if (added.length || removed.length || changedRights.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
+    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, invite: nameOf(id), droit: rights.get(id) ?? 'lecture' });
     for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, invite: nameOf(id) });
+    for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, invite: nameOf(id), droit: value });
     return readList(user, list.id).list;
   }
 
@@ -891,7 +945,7 @@ export function createListService(ctx) {
 
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
-    photoItem, setPhotoDate, nowIso, OpError, listForMember, knownProduct,
+    photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }
 

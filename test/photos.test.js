@@ -104,7 +104,7 @@ async function household(t) {
   const itemId = uuid();
   await run(guillaume, { type: 'list.create', listId, name: 'Courses', categoryId: courses });
   await run(guillaume, { type: 'item.create', listId, itemId, name: 'Café en grains' });
-  await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie] });
+  await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie], access: { [ids.marie]: 'modification' } });
   const file = path.join(app.photosDir, `${itemId}.jpg`);
   return { app, ...clients, ids, listId, itemId, file };
 }

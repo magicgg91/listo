@@ -390,7 +390,7 @@ test('route : droits (401 sans compte, 404 non-membre, 404 liste autre que les c
   assert.deepEqual(asked, []);
   // Membre invité : peut scanner
   const marieId = app.db.prepare("SELECT id FROM users WHERE username = 'marie'").pluck().get();
-  await guillaume.request('PUT', `/api/lists/${shop}/members`, { userIds: [marieId] });
+  await guillaume.request('PUT', `/api/lists/${shop}/members`, { userIds: [marieId], access: { [marieId]: 'modification' } });
   assert.equal((await marie.post(`/api/lists/${shop}/products`, { code: '3017620422003' })).body.status, 'found');
   // Aucune route publique pour le scan
   assert.equal((await anonymous.post('/api/public/products', { code: '3017620422003' })).status, 404);

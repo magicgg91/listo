@@ -34,10 +34,11 @@ export function productRoutes(ctx) {
   const products = ctx.products;
 
   router.post('/lists/:id/products', async (req, res) => {
-    // Droits d'abord : membre de la liste, et liste de courses
+    // Droits d'abord : membre de la liste avec le droit de modification (le
+    // scan sert à ajouter ou cocher), et liste de courses
     let list;
     try {
-      list = ctx.lists.listForMember(req.user, req.params.id);
+      list = ctx.lists.listForEditor(req.user, req.params.id);
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;

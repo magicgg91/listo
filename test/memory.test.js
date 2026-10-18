@@ -186,16 +186,16 @@ test('migration 8 : retire les noms venus seulement des autres listes, garde les
 
 test('migration 8 : appliquée une seule fois par le mécanisme des migrations numérotées', () => {
   const db = oldData();
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   // Comme une base restée en version 7 (avant les migrations 8 à 11) :
   // la migration 8 s'applique au démarrage
   db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean');
   db.pragma('user_version = 7');
   migrate(db);
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   assert.deepEqual(keys(db), ['ampoules', 'chips', 'comte', 'lait', 'olives', 'pain']);
   // Un second démarrage ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   db.close();
 });

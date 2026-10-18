@@ -85,7 +85,7 @@ async function household(t, options) {
   const courses = app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
   const listId = uuid();
   await run(guillaume, { type: 'list.create', listId, name: 'Courses secrètes', categoryId: courses });
-  await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie] });
+  await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie], access: { [ids.marie]: 'modification' } });
   return { app, ...clients, ids, listId, courses };
 }
 
@@ -174,7 +174,7 @@ test('invitée retirée de la liste : un dernier message, puis plus rien', async
   await pause(300);
   assert.equal(marie.lists().length, after, 'plus aucun message après son retrait');
   // Ajoutée de nouveau : les messages reviennent
-  await h.guillaume.request('PUT', `/api/lists/${h.listId}/members`, { userIds: [h.ids.marie] });
+  await h.guillaume.request('PUT', `/api/lists/${h.listId}/members`, { userIds: [h.ids.marie], access: { [h.ids.marie]: 'modification' } });
   await marie.waitFor(() => marie.lists().length > after);
   marie.close();
 });

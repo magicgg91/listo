@@ -36,7 +36,7 @@ async function household(t) {
     { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
     { id: uuid(), type: 'item.create', listId: tasks, itemId: task, name: 'Ampoule' },
   ] });
-  for (const id of [shopping, tasks]) await guillaume.request('PUT', `/api/lists/${id}/members`, { userIds: [leaId] });
+  for (const id of [shopping, tasks]) await guillaume.request('PUT', `/api/lists/${id}/members`, { userIds: [leaId], access: { [leaId]: 'modification' } });
   const notified = [];
   const notify = app.ctx.events.notifyList.bind(app.ctx.events);
   app.ctx.events.notifyList = (listId) => {
@@ -71,7 +71,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   db.close();
   // Redémarrage : la migration 11 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   assert.deepEqual(db.prepare(`SELECT ${columns} FROM items`).all(), before);
   assert.equal(db.prepare('SELECT ean FROM items').pluck().get(), null);
   // La contrainte : vide, ou exactement 8 ou 13 chiffres
@@ -80,7 +80,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
     assert.throws(() => db.prepare('UPDATE items SET ean = ?').run(bad), /CHECK/, JSON.stringify(bad));
   }
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

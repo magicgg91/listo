@@ -37,7 +37,7 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, canEditList, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { computeListView, canEditList, listOptions, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
@@ -58,7 +58,10 @@ export function renderList(listId, onLeave) {
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
   // Tri de la liste (listes autres que les courses) : choix gardé sur ce
-  // téléphone pour cette liste ; l'icône du bouton montre le tri actif
+  // téléphone pour cette liste ; l'icône du bouton montre le tri actif.
+  // « Par priorité » et « Par échéance » ne sont proposés que si le réglage
+  // de la liste est activé ; un choix gardé devenu indisponible laisse place
+  // à l'ordre alphabétique (sans être effacé : il revient avec le réglage).
   const SORTS = [
     ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
     ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
@@ -67,13 +70,16 @@ export function renderList(listId, onLeave) {
   let itemSort = loadItemSort(listId);
   const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
   sortButton.setAttribute('aria-haspopup', 'menu');
-  const showSort = () => replace(sortButton, icon(SORTS.find(([value]) => value === itemSort)[1]));
+  const currentList = () => app.data.lists.get(listId);
+  const activeSort = () => effectiveSort(currentList(), itemSort);
+  const showSort = () => replace(sortButton, icon(SORTS.find(([value]) => value === activeSort())[1]));
   showSort();
   function openSortMenu() {
-    openMenu(SORTS.map(([value, iconName, label, message]) => ({
+    const offered = availableSorts(currentList());
+    openMenu(SORTS.filter(([value]) => offered.includes(value)).map(([value, iconName, label, message]) => ({
       icon: iconName,
       label,
-      checked: value === itemSort,
+      checked: value === activeSort(),
       onSelect: () => {
         itemSort = value;
         saveItemSort(listId, value);
@@ -186,13 +192,16 @@ export function renderList(listId, onLeave) {
     title.textContent = list.name;
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
-    sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
+    // Courses : tri par rayons, sans bouton ; ailleurs, bouton seulement s'il
+    // y a un choix (priorité ou échéance activée)
+    sortButton.hidden = list.category.isShopping || availableSorts(list).length < 2;
+    showSort();
     readOnlyBanner.hidden = canEdit;
     addbar.hidden = !canEdit; // lecture seule : aucun ajout
     // Bouton « Scanner » : listes de courses seulement (recherche activée)
     scanner.button.hidden = !canEdit || !scanAvailable(list);
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
-    content.classList.toggle('scroll--flat', !list.category.isShopping && itemSort !== 'priority');
+    content.classList.toggle('scroll--flat', !list.category.isShopping && activeSort() !== 'priority');
 
     if (groups.length === 0 && done.length === 0) {
       replace(content, h('div', { class: 'empty' },
@@ -262,16 +271,19 @@ export function renderList(listId, onLeave) {
   // Pastilles de priorité et d'échéance (listes autres que les courses) :
   // { chips, spoken } ; spoken complète le libellé du bouton de la ligne,
   // pour les lecteurs d'écran. « Aujourd'hui » : date du téléphone.
+  // Seulement ce qui est activé pour la liste (listOptions) : rien d'une
+  // priorité ou d'une échéance désactivée, ni pastille ni retard.
   const metaOf = (item) => {
-    if (!view || view.list.category.isShopping) return { chips: [], spoken: '' };
+    const options = listOptions(view?.list);
+    if (!options.priority && !options.due) return { chips: [], spoken: '' };
     const chips = [];
     const spoken = [];
-    const priority = priorityChip(item.priority);
+    const priority = options.priority ? priorityChip(item.priority) : null;
     if (priority) {
       chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
       spoken.push(priority.label.toLowerCase());
     }
-    const due = dueChip(item.dueDate, item.checked, todayKey());
+    const due = options.due ? dueChip(item.dueDate, item.checked, todayKey()) : null;
     if (due) {
       const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
       chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
@@ -625,8 +637,12 @@ export function renderList(listId, onLeave) {
     const nameField = field('Nom', name);
     const error = errorNote();
 
-    // --- Priorité et échéance (listes autres que les courses) ---
+    // --- Priorité et échéance (listes autres que les courses, chacune si
+    // elle est activée pour la liste). Les deux champs existent toujours dans
+    // une telle liste ; un réglage désactivé, même pendant que la fiche est
+    // ouverte, les cache, et ils ne sont alors jamais envoyés.
     const classic = !view?.list.category.isShopping;
+    const options = () => listOptions(app.data.lists.get(listId));
     let priority = item.priority ?? 'normal';
     let dueDate = item.dueDate ?? null;
     // Priorité : trois choix ; le choix actif a une coche ET son texte
@@ -680,15 +696,23 @@ export function renderList(listId, onLeave) {
       drawDue();
     } }, label);
     drawDue();
-    const classicFields = classic ? [
-      h('div', { class: 'field' },
-        h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
-        h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'priority-label' }, priorityOptions)),
-      h('div', { class: 'field' },
-        h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
-        h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
-        h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue)),
-    ] : null;
+    const priorityField = h('div', { class: 'field' },
+      h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
+      h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'priority-label' }, priorityOptions));
+    const dueField = h('div', { class: 'field' },
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
+      h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
+      h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue));
+    const showOptions = () => {
+      const { priority: withPriority, due: withDue } = options();
+      // Un champ qui disparaît perd le curseur (clavier ou calendrier refermé)
+      for (const [fieldEl, shown] of [[priorityField, withPriority], [dueField, withDue]]) {
+        if (!shown && fieldEl.contains(document.activeElement)) document.activeElement.blur();
+        fieldEl.hidden = !shown;
+      }
+    };
+    showOptions();
+    const classicFields = classic ? [priorityField, dueField] : null;
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
     // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
@@ -813,6 +837,7 @@ export function renderList(listId, onLeave) {
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
+      showOptions(); // réglage de la liste changé par le propriétaire
       if (mine) return;
       const latest = app.data.items.get(item.id);
       if (!latest) {
@@ -882,8 +907,10 @@ export function renderList(listId, onLeave) {
       if (note.value.trim() !== item.note) changes.note = note.value.trim();
       if (isShopping && aisleId !== item.aisleId) changes.aisleId = aisleId;
       if (multi && storeId !== (item.storeId ?? null)) changes.storeId = storeId;
-      if (classic && priority !== (item.priority ?? 'normal')) changes.priority = priority;
-      if (classic && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
+      // Priorité et échéance : seulement si elles sont activées à cet instant
+      const enabled = options();
+      if (enabled.priority && priority !== (item.priority ?? 'normal')) changes.priority = priority;
+      if (enabled.due && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
         sheet.close();
@@ -916,13 +943,14 @@ export function renderList(listId, onLeave) {
     const paint = (it) => {
       const multi = Boolean(view?.multi);
       const shopping = Boolean(view?.list.category.isShopping);
+      const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
         h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
         value('Nom', it.name),
         it.quantity ? value('Quantité', it.quantity) : null,
         it.note ? value('Note', it.note) : null,
-        shopping ? null : value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale'),
-        shopping ? null : value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance'),
+        options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
+        options.due ? value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance') : null,
         shopping && it.ean ? value('Code-barres', it.ean) : null,
         actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
           h('div', { class: 'photo-block' },

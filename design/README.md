@@ -263,3 +263,11 @@ Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage
 - Liste en lecture seule : `.readonly-banner` (le bandeau de la page publique, `#i-eye` + « Lecture seule ») juste sous la `.topbar` ; pas de `.addbar`, pas de bouton « Scanner », pas de `.swipe`, pas de `.cart__actions` ; cases `.check.check--static` (`role="img"`, `aria-label` « Coché » / « Non coché » ; cochée : `.is-on`, et la ligne `.is-done` reste barrée) ; la ligne reste un bouton `.item__body` (« Voir <nom> ») qui ouvre la fiche à consulter.
 - Fiche à consulter : `.sheet` « Détail de l'article » (« de l'élément » hors courses), sans outils dans l'en-tête (seulement la croix) ; un `.note` (`#i-eye`) rappelle la lecture seule ; chaque valeur est un `.field` avec `.field__label` et `.field__value` (texte, pas de champ) ; la photo est un `.photo-block__thumb` qui s'agrandit.
 - Carte de « Mes listes » : `.chip.chip--readonly` (`#i-eye` + « Lecture seule », 22 px de haut) dans `.list-card__meta`.
+
+## Ajout : priorité et échéance activées ou non, liste par liste
+
+Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage : « Nouvelle liste : options désactivées » et « Modifier la liste : le même composant » dans `components.html`. Aucune nouvelle icône.
+
+- Formulaire « Nouvelle liste » / « Modifier la liste », après le magasin : `.field` « Options des éléments » avec une `.card.list-options` de deux `.toggle-row` séparées par un trait. Chacune : `.row__title` (« Priorité », « Échéance »), `.row__sub` qui écrit l'état (« Activée · … » / « Désactivée · … ») et un `.switch` (`role="switch"`, `aria-checked`, `aria-label` = le nom, 44 px). Masqué pour une liste de courses.
+- Réglage désactivé : aucune trace dans la liste (pas de pastille de priorité ni d'échéance, pas de « En retard »), ni dans la fiche (champ absent), ni dans la fiche à consulter, ni sur la page publique ; le menu « Trier la liste » ne propose que les tris disponibles, et le bouton disparaît s'il ne reste que l'ordre alphabétique.
+

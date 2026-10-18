@@ -20,6 +20,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Groupes repliables (toutes les listes)](#groupes-repliables-toutes-les-listes)
 - [Glissement vers la gauche (« Supprimer »)](#glissement-vers-la-gauche--supprimer-)
 - [Droit par personne (« Peut modifier » ou « Lecture seule »)](#droit-par-personne--peut-modifier--ou--lecture-seule-)
+- [Priorité et échéance activées ou non (migration 13)](#priorité-et-échéance-activées-ou-non-migration-13)
 - [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
 ## Organisation du code
@@ -164,6 +165,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. B ouvert sur la liste, une fiche ouverte ou le clavier sorti : sur A, passer B en « Peut modifier » et enregistrer. Sur B, en quelques secondes et sans recharger : la fiche se ferme, le clavier se replie, le champ d'ajout apparaît, message « Vous pouvez maintenant modifier cette liste. ». Puis l'inverse : « Cette liste est maintenant en lecture seule. ».
     4. B en « Peut modifier » et en mode avion : cocher un article et en ajouter un. Sur A, passer B en « Lecture seule ». Couper le mode avion sur B : message « Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées. », l'article coché redevient décoché, l'article ajouté disparaît, la pastille repasse à « À jour » (rien ne reste en attente).
     5. Lecteur d'écran sur B : chaque case est annoncée « Coché » ou « Non coché » ; une ligne, « Voir <nom> ». Sur A : « Droit de <nom> sur la liste », puis le choix actif.
+24. **Priorité et échéance par liste** : « Nouvelle liste », catégorie Tâches : la section « Options des éléments » montre « Priorité » et « Échéance », désactivées (« Désactivée » écrit sous chaque nom) ; elle disparaît si l'on choisit Courses. Créer une liste avec la priorité seulement : la fiche d'un élément n'a pas d'« Échéance », le tri propose « Ordre alphabétique » et « Par priorité ». Sur l'autre téléphone, ouvrir la fiche d'un élément pendant que le propriétaire désactive la priorité : le champ disparaît, l'enregistrement marche. Réactiver : les priorités saisies reviennent. Une liste existante avant la mise à jour garde les deux.
 
 ## API des comptes (étape 2)
 
@@ -387,8 +389,8 @@ Les opérations de `POST /api/ops` :
 
 | `type` | Champs | Qui |
 | --- | --- | --- |
-| `list.create` | `listId` (UUID), `name`, `categoryId`, `storeId` (facultatif, listes de courses seulement) | tout compte |
-| `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun) | propriétaire |
+| `list.create` | `listId` (UUID), `name`, `categoryId`, `storeId` (facultatif, listes de courses seulement), `priorityEnabled` et `dueEnabled` (facultatifs, `true` ou `false`, `false` par défaut) | tout compte |
+| `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun), `priorityEnabled`, `dueEnabled` (`true` ou `false`) | propriétaire |
 | `list.delete` | `listId` | propriétaire |
 | `list.uncheckAll` | `listId` : décoche tous les articles cochés (« Tout remettre à acheter » / « Tout rouvrir »), une seule opération quel que soit leur nombre | membres |
 | `list.removeChecked` | `listId` : supprime les articles cochés (« Retirer du panier » / « Retirer les terminés »). L'ancien nom `list.clearChecked` reste accepté | membres |
@@ -759,6 +761,14 @@ Chaque invité d'une liste a un droit, colonne `list_members.access` (migration 
 - **Changer un droit** : `PUT /api/lists/:id/members` avec `access` ; la date de modification de la liste avance et ses membres sont prévenus en temps réel (le droit arrive donc aussi par la synchronisation « depuis »). Journal : `liste_droit_change` (noms de compte, identifiant de la liste, droit), jamais le nom ni le contenu de la liste.
 - **Téléphone** : `canEditList(list)` de `public/js/store.js` est la seule règle de l'interface (une copie gardée d'avant cette information reste modifiable jusqu'à la synchronisation ; le serveur refuse de toute façon). `public/js/screens/list.js` : bandeau `.readonly-banner`, champ d'ajout et « Scanner » masqués, lignes sans glissement, case `.check--static` (comme la page publique), fiche à consulter `openItemView`, actions des cochés masquées, et chaque action vérifie encore le droit. Si le droit change, la liste ouverte bascule tout de suite (`closeOverlays` de `router.js` ferme les fenêtres en un seul retour dans l'historique, clavier replié, message). `public/js/screens/list-form.js` : composant `accessChoice` sous chaque personne cochée. `public/js/app.js` : un refus « lecture seule » venu de la file d'attente donne le message « Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées. », après la synchronisation complète qui remet l'écran à l'état du serveur.
 - Tests : `test/read-only.test.js` (serveur, migration), `test/read-only-ui.test.js` (téléphone, file d'attente) ; vérifié dans Chromium (création, « Modifier la liste », liste et fiche en lecture seule, bascule en direct avec deux fenêtres et le clavier ouverts, file hors ligne, clair et sombre).
+
+## Priorité et échéance activées ou non (migration 13)
+
+Deux réglages par liste, `lists.priority_enabled` et `lists.due_enabled` (0 ou 1, contrainte CHECK), envoyés au téléphone dans chaque liste (`priorityEnabled`, `dueEnabled`). Une liste de courses les ignore. Listes existantes autres que les courses : 1 et 1 ; nouvelle liste : 0 et 0 (valeur par défaut de la base et de `list.create`).
+
+- **Serveur** (`server/lists.js`) : `list.create` et `list.update` (propriétaire) acceptent `priorityEnabled` et `dueEnabled` (vrai ou faux, sinon 400 « Réglage « Priorité » invalide. ») ; `item.update` refuse `priority` si la priorité est désactivée (400 `PRIORITY_OFF`, « La priorité est désactivée pour cette liste. ») et `dueDate`, même `null`, si l'échéance l'est (`DUE_OFF`), relus dans la base (`memberItem`) avant toute écriture. Les valeurs des éléments ne sont jamais effacées. Page publique (`server/routes/public.js`) : `priority` et `dueDate` seulement si le réglage est activé.
+- **Téléphone** : `listOptions(list)` de `public/js/store.js` est la seule règle (`{ priority, due }`, jamais pour une liste de courses ; copie d'avant les réglages : comme avant) ; `availableSorts` et `effectiveSort` : tris proposés, et tri appliqué (le choix gardé `listo-tri-liste-<id>` s'il est encore proposé, sinon alphabétique, sans l'effacer). `public/js/screens/list.js` : pastilles (`metaOf`), champs de la fiche (cachés et jamais envoyés quand désactivés, aussi si le réglage change pendant que la fiche est ouverte : `showOptions`), fiche à consulter, menu de tri (bouton masqué s'il ne reste que l'ordre alphabétique). `public/js/screens/list-form.js` : composant `optionSwitches` (deux `.switch` dans `.card.list-options`), visible seulement hors courses. `public/js/app.js` : refus hors ligne → « Cette option est désactivée pour cette liste. ».
+- Tests : `test/list-options.test.js` ; vérifié dans Chromium (création, « Modifier la liste », changement de catégorie, réglage changé pendant que la liste et la fiche sont ouvertes, tri gardé, clair et sombre).
 
 ## Mode scan des listes de courses
 

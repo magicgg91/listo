@@ -151,6 +151,10 @@ let refusals = [];         // raisons des modifications refusées par le serveur
 // ligne ont été refusées pour cette raison
 const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
 const READ_ONLY_OFFLINE = "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.";
+// Refus du serveur pour une priorité ou une échéance désactivée dans la liste
+// (mêmes textes que server/lists.js), et le message court montré alors
+const OPTION_OFF = ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."];
+const OPTION_OFF_MESSAGE = 'Cette option est désactivée pour cette liste.';
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -176,10 +180,13 @@ export function refreshData({ quiet = false, full = false } = {}) {
       //    téléphone était hors ligne) : un seul message, plus clair, montré
       //    après la synchronisation (l'écran est alors déjà repassé en
       //    lecture seule).
+      //    Même chose pour une option (priorité, échéance) désactivée entre-temps.
       let readOnlyRefused = false;
+      let optionRefused = false;
       if (refusals.length) {
         readOnlyRefused = refusals.includes(READ_ONLY);
-        const [first, ...others] = refusals.filter((message) => message !== READ_ONLY);
+        optionRefused = refusals.some((message) => OPTION_OFF.includes(message));
+        const [first, ...others] = refusals.filter((message) => message !== READ_ONLY && !OPTION_OFF.includes(message));
         refusals = [];
         full = true;
         if (first) toast(`Une modification n'a pas pu être enregistrée : ${first}${others.length ? ` (et ${others.length} autre${others.length > 1 ? 's' : ''})` : ''}`);
@@ -196,6 +203,7 @@ export function refreshData({ quiet = false, full = false } = {}) {
       setSyncState('ok');
       dataChanged();
       if (readOnlyRefused) toast(READ_ONLY_OFFLINE);
+      else if (optionRefused) toast(OPTION_OFF_MESSAGE);
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;

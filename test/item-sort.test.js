@@ -99,8 +99,9 @@ test('choix gardé par liste (listo-tri-liste-<id>) ; valeur invalide → alphab
 test('écran d\'une liste : bouton « Trier la liste » seulement hors courses, choix exclusif coché', () => {
   const source = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
   assert.match(source, /iconButton\('az', 'Trier la liste', \(\) => openSortMenu\(\)\)/);
-  assert.match(source, /sortButton\.hidden = list\.category\.isShopping;/);
-  assert.match(source, /checked: value === itemSort,/);
+  // Courses : jamais ; ailleurs : seulement s'il y a un choix (priorité ou échéance activée)
+  assert.match(source, /sortButton\.hidden = list\.category\.isShopping \|\| availableSorts\(list\)\.length < 2;/);
+  assert.match(source, /checked: value === activeSort\(\),/);
   assert.match(source, /toast\(message, \{ duration: 2000 \}\)/);
   const ui = fs.readFileSync(new URL('../public/js/ui.js', import.meta.url), 'utf8');
   assert.match(ui, /role: item\.checked === undefined \? 'menuitem' : 'menuitemradio'/);

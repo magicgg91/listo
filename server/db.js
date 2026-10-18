@@ -319,6 +319,19 @@ export const MIGRATIONS = [
   ALTER TABLE list_members_new RENAME TO list_members;
   CREATE INDEX list_members_user ON list_members(user_id);
   `,
+
+  // --- Migration 13 : priorité et échéance activées ou non, liste par liste ---
+  // Deux réglages (0 ou 1) pour une liste autre que les courses ; une liste
+  // de courses les ignore. Valeur par défaut 0 : une nouvelle liste ne les a
+  // pas. Les listes existantes autres que les courses les gardent activés
+  // (rien ne change, rien ne disparaît). Les valeurs des éléments ne sont
+  // jamais effacées : un réglage désactivé les cache seulement.
+  `
+  ALTER TABLE lists ADD COLUMN priority_enabled INTEGER NOT NULL DEFAULT 0 CHECK (priority_enabled IN (0, 1));
+  ALTER TABLE lists ADD COLUMN due_enabled INTEGER NOT NULL DEFAULT 0 CHECK (due_enabled IN (0, 1));
+  UPDATE lists SET priority_enabled = 1, due_enabled = 1
+    WHERE category_id IN (SELECT id FROM categories WHERE is_shopping = 0);
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

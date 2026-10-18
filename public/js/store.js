@@ -484,3 +484,16 @@ export function duplicateText(duplicate) {
   const place = duplicate.where === 'cart' ? 'Déjà dans le panier (coché)' : 'Déjà dans la liste';
   return duplicate.by === 'code' ? `${place} : « ${duplicate.name} » a ce code-barres.` : `${place}.`;
 }
+
+// Scan pour cocher : article de la liste ouverte qui porte ce code-barres,
+// d'après les données déjà sur le téléphone (aucun appel au serveur : marche
+// hors ligne). Plusieurs articles avec le même code : le premier non coché
+// (dans l'ordre de la liste), sinon le dernier coché. null si aucun.
+export function listItemForEan(view, ean) {
+  if (!view || !ean) return null;
+  const todo = view.groups.flatMap((group) => group.items).filter((item) => !item.checked && item.ean === ean);
+  if (todo.length) return todo[0];
+  const done = view.done.filter((item) => item.ean === ean);
+  if (!done.length) return null;
+  return done.reduce((last, item) => ((item.checkedAt ?? '') > (last.checkedAt ?? '') ? item : last));
+}

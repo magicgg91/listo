@@ -15,6 +15,14 @@
 //    Pour un autre produit, on réappuie sur « Scanner ». « Annuler » ferme
 //    aussi la feuille.
 //
+// Scan pour cocher (en magasin) : si le code lu est celui d'un article de la
+// liste ouverte, la feuille propose « Cocher (je l'ai pris) », « Ajouter
+// quand même » ou « Annuler » (« Déjà coché » : « Le remettre dans la liste »).
+// La correspondance se fait sur les données du téléphone : cela marche hors
+// ligne (lecteur déjà téléchargé, file d'attente habituelle). Cette feuille,
+// plutôt qu'un cochage direct, évite de cocher par erreur un produit scanné
+// à la maison.
+//
 // Rien ne bloque : code non lu, produit inconnu, réponse lente ou hors
 // ligne : on peut toujours taper le code, puis le nom, à la main. Les champs
 // n'apparaissent que sur appui, et le curseur n'y est jamais mis tout seul
@@ -25,7 +33,7 @@
 import { h, icon, field, replace } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
-import { duplicateOf, duplicateText } from '../store.js';
+import { duplicateOf, duplicateText, listItemForEan } from '../store.js';
 import { openSheet, toast, releaseFocus } from '../ui.js';
 import { app } from '../app.js';
 
@@ -47,6 +55,8 @@ const NO_NAME = {
 // Options :
 // - listId : la liste ouverte
 // - getView : vue actuelle de la liste (computeListView), pour les doublons
+//   et le scan pour cocher
+// - check(item, checked) : coche ou décoche un article (opération habituelle)
 // Sélecteurs cachés du téléphone, comme pour la photo d'un article :
 // appareil photo (capture) et galerie. onFile(fichier) reçoit l'image choisie.
 export function photoInputs(onFile) {
@@ -94,7 +104,7 @@ export function openPhotoChoice({ title, sub }, inputs) {
 // - add(name, { note, ean }) : ajoute l'article comme un ajout normal (rayon
 //   ou magasin habituel, sinon demandé une fois) ; renvoie l'article ajouté,
 //   ou false si le choix du rayon a été abandonné
-export function createScanner({ listId, getView, add }) {
+export function createScanner({ listId, getView, add, check }) {
   let session = null; // feuille ouverte (une seule)
   // Appareil photo et galerie : la même lecture, le même parcours
   const inputs = photoInputs((file) => {
@@ -154,7 +164,7 @@ export function createScanner({ listId, getView, add }) {
         codeField.setError(problem);
         if (problem || step !== current) return;
         releaseFocus(); // code validé : le clavier se replie
-        lookup(normalizeBarcode(input.value));
+        handleCode(normalizeBarcode(input.value));
       }
       const reveal = btn('btn--secondary btn--block', ['Saisir le code à la main'], () => {
         reveal.hidden = true;
@@ -186,7 +196,38 @@ export function createScanner({ listId, getView, add }) {
         manualCode(message('alert', 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.', true));
         return;
       }
-      lookup(code);
+      handleCode(code);
+    }
+
+    // Code lu ou tapé : d'abord un article de cette liste (scan pour
+    // cocher), sinon la recherche du nom
+    function handleCode(code) {
+      const item = listItemForEan(getView(), code);
+      if (item) inList(item, code);
+      else lookup(code);
+    }
+
+    // 1 bis. Article déjà dans la liste : le cocher (ou le décocher), ou en
+    // ajouter un autre quand même
+    function inList(item, code) {
+      ++current;
+      const done = (text) => {
+        sheet.close();
+        releaseFocus();
+        toast(text, { duration: 2500 });
+      };
+      const tick = item.checked
+        ? btn('btn--primary btn--block', ['Le remettre dans la liste'], () => {
+          check(item, false);
+          done(`Remis dans la liste : ${item.name}`);
+        })
+        : btn('btn--primary btn--block', [icon('check', 'icon--sm'), 'Cocher (je l\'ai pris)'], () => {
+          check(item, true);
+          done(`Coché : ${item.name}`);
+        });
+      const again = btn('btn--secondary btn--block', ['Ajouter quand même'], () => productSheet({ name: item.name, note: item.note ?? '', source: 'known', code }));
+      show(message(item.checked ? 'check' : 'alert', `${item.checked ? 'Déjà coché' : 'Déjà dans la liste'} : ${item.name}`),
+        h('div', { class: 'sheet__actions' }, tick, again, cancel()));
     }
 
     // 2. Recherche du nom du produit (serveur → Open Food Facts)
@@ -201,7 +242,7 @@ export function createScanner({ listId, getView, add }) {
       }
       if (step !== current) return;
       if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
-        productSheet({ name: answer.name, note: productNote(answer), found: true, code });
+        productSheet({ name: answer.name, note: productNote(answer), source: 'off', code });
       } else {
         typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable, code);
       }
@@ -210,13 +251,15 @@ export function createScanner({ listId, getView, add }) {
     // 3a. Nom inconnu : « Taper le nom » fait apparaître le champ
     function typeName(text, code) {
       ++current;
-      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', found: false, code }));
+      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', source: 'typed', code }));
       show(message('alert', text), h('div', { class: 'sheet__actions' }, reveal, cancel()));
     }
 
     // 3b. Fiche du produit : nom (modifiable), note, doublon, ajout
-    // code : code-barres lu ou tapé, gardé avec l'article
-    function productSheet({ name, note, found, code }) {
+    // source : 'off' (Open Food Facts), 'known' (déjà dans mes listes) ou
+    // 'typed' (nom tapé) ; code : code-barres lu ou tapé, gardé avec l'article
+    function productSheet({ name, note, source, code }) {
+      const found = source === 'off';
       const step = ++current;
       const nameInput = h('input', { class: 'input', type: 'text', value: name, maxlength: '100', autocapitalize: 'sentences', autocomplete: 'off' });
       const noteInput = h('input', { class: 'input', type: 'text', value: note, maxlength: '500', autocomplete: 'off' });
@@ -234,6 +277,7 @@ export function createScanner({ listId, getView, add }) {
       checkDuplicate();
       const form = h('form', { class: 'stack', novalidate: true },
         found ? message('check', 'Produit trouvé. Vous pouvez corriger le nom avant de l\'ajouter.') : null,
+        source === 'known' ? message('check', `Produit connu : ${name}. Vous pouvez corriger le nom avant de l'ajouter.`) : null,
         nameField.field,
         field('Note (facultative)', noteInput, { hint: found ? 'Marque et format' : undefined }).field,
         warning,

@@ -308,6 +308,7 @@ export function renderList(listId, onLeave) {
   const scanner = createScanner({
     listId,
     getView: () => view,
+    check: (item, checked) => actions.checkItem(item, checked),
     add: async (name, { note, ean }) => {
       const item = await addNamed(name, { ...(note ? { note } : {}), ...(ean ? { ean } : {}) });
       if (item) revealItem(item.id);

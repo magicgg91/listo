@@ -4,10 +4,10 @@
 
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
-import { relativeTime, remainingLabel, namesList } from '../format.js';
-import { computeSummaries } from '../store.js';
+import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
+import { computeSummaries, loadListSort, saveListSort, pruneItemSorts } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill } from '../ui.js';
+import { syncPill, toast, drawWhenIdle } from '../ui.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -63,34 +63,81 @@ function emptyLists() {
 
 const loading = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');
 
+// --- Tri des listes ---
+
+// Tri choisi (« recent » ou « alpha »), gardé sur ce téléphone (voir store.js)
+let listSort = null;
+const currentSort = () => {
+  listSort ??= loadListSort();
+  return listSort;
+};
+
+// Bouton de tri (barre du haut) : un appui bascule entre « Plus récentes
+// d'abord » et « Ordre alphabétique ». L'icône montre le tri actif ; le
+// libellé lu par les lecteurs d'écran dit le tri actuel et l'effet d'un
+// appui ; le nouveau tri est annoncé (zone masquée) et affiché 2 secondes.
+// Masqué s'il y a moins de deux listes (rien à trier).
+// onChange : redessine les listes. Renvoie { button, status, setCount }.
+function sortControl(onChange) {
+  const status = h('p', { class: 'visually-hidden', role: 'status' });
+  const button = h('button', { class: 'icon-btn', type: 'button', onClick: () => {
+    listSort = currentSort() === 'alpha' ? 'recent' : 'alpha';
+    saveListSort(listSort);
+    show();
+    const { message } = listSortButton(listSort);
+    status.textContent = message;
+    toast(message, { duration: 2000 }); // au-dessus du bouton « Nouvelle liste »
+    onChange();
+  } });
+  const show = () => {
+    const { icon: iconName, label } = listSortButton(currentSort());
+    button.setAttribute('aria-label', label);
+    replace(button, icon(iconName));
+  };
+  show();
+  return { button, status, setCount: (count) => { button.hidden = count < 2; } };
+}
+
 // --- Écran « Mes listes » (téléphone) ---
 
 export function renderLists(onLeave) {
   const content = h('div', { class: 'scroll' });
+  const sorter = sortControl(() => draw());
 
   const draw = () => {
     if (!app.data.loaded) {
       replace(content, loading());
       return;
     }
-    const lists = computeSummaries(app.data);
     // Sur ordinateur, la colonne de gauche montre déjà les listes : on ouvre
     // directement la plus récente
-    if (isDesktop() && lists.length) {
-      navigate('list', { id: lists[0].id }, { replace: true });
-      return;
+    if (isDesktop()) {
+      const recent = computeSummaries(app.data);
+      if (recent.length) {
+        navigate('list', { id: recent[0].id }, { replace: true });
+        return;
+      }
     }
+    const lists = computeSummaries(app.data, { sort: currentSort() });
+    sorter.setCount(lists.length);
+    pruneItemSorts(lists.map((list) => list.id)); // tri des listes disparues : oublié
     replace(content, lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : emptyLists());
   };
-  onLeave(onDataChange(draw));
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
   draw();
   refreshData({ quiet: true });
 
   return h('div', { class: 'screen' },
-    h('header', { class: 'topbar topbar--plain' },
+    // Barre du haut sur une ligne : titre, pastille d'état (réduite à
+    // l'icône si la place manque), tri des listes, réglages
+    h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Mes listes')),
+      syncPill(() => refreshData({ full: true }), { inBar: true }),
+      sorter.button,
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
+    sorter.status,
     content,
     h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste'));
 }
@@ -100,29 +147,37 @@ export function renderLists(onLeave) {
 
 export function renderSidePanel(side, selectedListId) {
   const cards = h('div', { class: 'scroll' });
+  const sorter = sortControl(() => draw());
   const draw = () => {
     if (!app.data.loaded) {
       replace(cards, loading());
       return;
     }
-    const lists = computeSummaries(app.data);
+    const lists = computeSummaries(app.data, { sort: currentSort() });
+    sorter.setCount(lists.length);
     replace(cards, lists.length
       ? h('div', { class: 'cards cards--side' }, lists.map((list) => listCard(list, { selected: list.id === selectedListId })))
       : h('p', { class: 'empty__text muted side-empty' }, 'Aucune liste pour le moment.'));
   };
-  const unsubscribe = onDataChange(draw);
+  const idle = drawWhenIdle(cards, draw);
+  const unsubscribe = onDataChange(idle.request);
   draw();
 
   replace(side,
     h('div', { class: 'side-head' },
       h('div', { class: 'brand-mark brand-mark--sm', 'aria-hidden': 'true' }, icon('logo')),
       h('p', { class: 'side-head__name' }, 'Listo'),
+      sorter.button,
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
+    sorter.status,
     h('div', { class: 'statusbar statusbar--side' },
       h('h2', { class: 'side-title' }, 'Mes listes'),
       syncPill(() => refreshData({ full: true }))),
     cards,
     h('div', { class: 'side-foot' },
       h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste')));
-  return unsubscribe;
+  return () => {
+    unsubscribe();
+    idle.stop();
+  };
 }

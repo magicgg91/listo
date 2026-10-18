@@ -62,6 +62,45 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
   return groupBy(items, aisles, (item) => item.aisleId, 'aisle');
 }
 
+// Tri d'une liste autre que les courses (choix de chaque téléphone, par
+// liste) : seulement les éléments NON cochés (les cochés restent dans leur
+// zone, voir splitDone).
+// - 'alpha' : ordre alphabétique, exactement l'ordre d'origine (groupItems) ;
+// - 'priority' : trois groupes avec un en-tête, « Priorité élevée »,
+//   « Priorité normale », « Priorité basse » (groupe vide : pas d'en-tête),
+//   ordre alphabétique dans chaque groupe ;
+// - 'due' : une seule liste, échéance la plus proche d'abord (les dates
+//   passées en tête), sans échéance à la fin ; à date égale, priorité
+//   élevée d'abord, puis ordre alphabétique.
+// Renvoie des groupes comme groupItems : [{ aisle: null, items }] ou, par
+// priorité, [{ aisle: null, priority, label, items }].
+export const ITEM_SORTS = ['alpha', 'priority', 'due'];
+const PRIORITY_GROUPS = [['high', 'Priorité élevée'], ['normal', 'Priorité normale'], ['low', 'Priorité basse']];
+const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
+const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
+
+export function sortTasks(items, sort = 'alpha') {
+  if (sort === 'priority') {
+    return PRIORITY_GROUPS
+      .map(([priority, label]) => ({
+        aisle: null,
+        priority,
+        label,
+        items: items.filter((item) => (PRIORITY_RANK[item.priority] === undefined ? 'normal' : item.priority) === priority)
+          .sort((a, b) => compareNames(a.name, b.name)),
+      }))
+      .filter((group) => group.items.length);
+  }
+  if (sort === 'due') {
+    const byDue = (a, b) => {
+      if (Boolean(a.dueDate) !== Boolean(b.dueDate)) return a.dueDate ? -1 : 1; // sans échéance à la fin
+      return String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')) || rankOf(a) - rankOf(b) || compareNames(a.name, b.name);
+    };
+    return items.length ? [{ aisle: null, items: [...items].sort(byDue) }] : [];
+  }
+  return groupItems(items, [], false);
+}
+
 // Zone des articles cochés (« Dans le panier » / « Terminés ») : les cochés
 // quittent leur rayon (ou leur magasin) et vont dans une zone à part, du plus
 // récemment coché au plus ancien (checkedAt, posé par le serveur ; à égalité,
@@ -69,8 +108,11 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
 // rien à acheter : il disparaît de la partie « à acheter ».
 // Renvoie { groups : rayons (ou magasins) des articles à acheter, comme
 // groupItems ; done : articles cochés, dans l'ordre de la zone }.
+// options.sort : tri d'une liste autre que les courses (sortTasks)
 export function splitDone(items, aisles, isShopping, options = {}) {
   const done = items.filter((item) => item.checked)
     .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
-  return { groups: groupItems(items.filter((item) => !item.checked), aisles, isShopping, options), done };
+  const toDo = items.filter((item) => !item.checked);
+  const groups = !isShopping && options.sort ? sortTasks(toDo, options.sort) : groupItems(toDo, aisles, isShopping, options);
+  return { groups, done };
 }

@@ -388,7 +388,9 @@
    N'utilise que les variables existantes. Aucune couleur en dur.
    16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
    16.4 Page publique en lecture seule · 16.5 Zone des cochés
-   16.6 Bloc « À propos » · 16.7 Carte du compte */
+   16.6 Bloc « À propos » · 16.7 Carte du compte
+   16.8 Priorité et échéance · 16.9 Tri d'une liste
+   16.10 Pastille d'état dans la barre du haut */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -525,6 +527,40 @@
 .account--link .row__title, .account--link .row__sub { display: block; }
 .account--link > .icon:last-child { flex: none; color: var(--color-text-2); }
 .account--link:active { background: var(--color-neutral-soft); }
+/* 16.8 Priorité et échéance d'un élément (listes autres que les courses).
+   Une ligne de pastilles .chip sous le nom (« ↑ Élevée », « ↓ Basse »,
+   échéance avec calendrier) ; toujours une icône ET un texte. En retard :
+   couleur danger + icône d'alerte ; élément coché : pastilles en gris. */
+.item__meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.item__meta .chip { height: 24px; padding: 0 8px; }
+.chip--late { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+.item.is-done .item__meta .chip { background: transparent; color: var(--color-text-2); padding-left: 0; }
+/* Feuille de l'élément : sélecteur de priorité (.segmented, coche sur le
+   choix actif) et échéance (bouton qui ouvre le calendrier du téléphone,
+   raccourcis dessous) */
+.segmented__opt .icon--check { color: var(--color-accent-ink); }
+.due-picker { position: relative; }
+.due-picker__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.due-picker:focus-within .input { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.due-shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }
+/* 16.9 Tri d'une liste autre que les courses : bouton-icône dans la barre
+   du haut, choix dans le menu (.menu__item, role="menuitemradio", coche ET
+   texte sur l'option active) ; tri par priorité : en-têtes .aisle. */
+.menu__item .icon--check { color: var(--color-accent-ink); }
+/* 16.10 Pastille d'état dans la barre du haut (« Mes listes ») : une seule
+   ligne de 64 px, titre, pastille .sync, boutons-icônes. Le titre garde sa
+   place ; la pastille prend ce qui reste et, si son texte ne tient pas, se
+   réduit à l'icône (+ le nombre en attente) : .sync--compact, texte masqué
+   visuellement mais toujours lu par les lecteurs d'écran. Zone tactile de
+   44 px de haut (la pastille fait 32 px). */
+.topbar--status .topbar__main { flex: 0 1 auto; }
+.topbar__status { display: flex; flex: 1 1 0; align-items: center; min-width: 40px; }
+.topbar__status .sync { flex: none; position: relative; }
+.topbar__status button.sync::after { content: ""; position: absolute; inset: -8px -2px; }
+.sync__count { display: none; font-variant-numeric: tabular-nums; }
+.sync--compact { gap: 4px; padding: 0 9px; }
+.sync--compact .sync__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sync--compact .sync__count { display: inline; }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

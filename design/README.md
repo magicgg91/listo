@@ -5,7 +5,7 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 35 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 39 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
@@ -168,4 +168,35 @@ Réglages devient court : carte du compte, Administration (Admin), À propos, Se
 - Écran « Mon compte » : `.card.account` (identité : avatar, nom, « Identifiant : … », pastille du rôle), puis `.section-title` + `.group` de `.row` : Sécurité (Mot de passe, Double authentification avec la pastille « Activée »), Apparence (`.segmented` Clair / Sombre / Auto), Ce téléphone (Réinitialiser les données de ce téléphone).
 
 Réutilisés tels quels : `.card`, `.avatar`, `.chip`, `.row`, `.group`, `.group--pad`, `.section-title`, `.segmented`, `.topbar`.
+
+## Ajout : tri de « Mes listes »
+
+Un seul bouton-icône `.icon-btn` dans la barre du haut de « Mes listes », à gauche des Réglages (et dans la colonne de gauche sur ordinateur). Chaque appui bascule entre « Plus récentes d'abord » (par défaut) et « Ordre alphabétique ». Balisage : dernière partie de `components.html`. Aucun style nouveau.
+
+- L'icône montre le tri actif : `#i-clock` (plus récentes) ou `#i-az` (ordre alphabétique, **nouvelle icône** du sprite : A au-dessus de Z et flèche vers le bas, même trait que les autres).
+- `aria-label` qui dit le tri actuel et l'effet d'un appui (« Tri : ordre alphabétique. Appuyer pour trier par plus récentes ») ; après un appui, annonce dans une zone `role="status"` masquée (`.visually-hidden`) et toast de 2 secondes « Tri : … », au-dessus du bouton « Nouvelle liste ».
+- Bouton masqué s'il y a moins de deux listes. À l'intérieur d'une liste : rien ne change.
+
+## Ajout : priorité et échéance des éléments (listes autres que les courses)
+
+Styles : section 16.8 de `listo.css`. Balisage : dernière partie de `components.html`. **Nouvelles icônes** du sprite : `i-calendar` (échéance), `i-arrow-up` (priorité élevée), `i-arrow-down` (priorité basse). Les listes de courses ne sont pas concernées.
+
+- `.item__meta` : une ligne de pastilles `.chip` (24 px de haut) sous le nom. « ↑ Élevée » (`.chip--accent`), « ↓ Basse » (`.chip` neutre), normale : rien. Échéance : `#i-calendar` + date (« ven. 24 oct. »), « Aujourd'hui » (`.chip--accent`), « Demain » ; en retard : `.chip--late` (couleur danger) + `#i-alert` + « En retard · ven. 16 oct. ». Élément coché (`.item.is-done`) : pastilles en gris, jamais « En retard ». Toujours une icône ET un texte. Le libellé du bouton de la ligne reprend priorité et échéance pour les lecteurs d'écran.
+- Feuille de l'élément : « Priorité » en `.segmented` (Basse / Normale / Élevée, `role="radio"`, choix actif avec `.icon--check` ET texte) ; « Échéance » : `.due-picker` (bouton `.input--select` avec `#i-calendar` et la date, et par-dessus le vrai `<input type="date">` invisible `.due-picker__input`, date seule) ; raccourcis `.due-shortcuts` (Aujourd'hui, Demain, Dans 1 semaine, Effacer, `.btn--secondary.btn--sm`, 44 px).
+
+## Ajout : tri d'une liste (listes autres que les courses)
+
+Balisage : dernière partie de `components.html` ; style : section 16.9 de `listo.css`. Aucune nouvelle icône (`i-az`, `i-arrow-up`, `i-calendar`).
+
+- Bouton-icône `.icon-btn` « Trier la liste » (`aria-haspopup="menu"`) dans la barre du haut, entre le titre et le menu ⋮ ; son icône montre le tri actif. Absent des listes de courses.
+- Choix dans le `.menu` existant : options `role="menuitemradio"` avec `aria-checked` ; l'option active a une coche `.icon--check` ET son texte. Choisir ferme le menu, trie et affiche un toast bref « Tri : par priorité ».
+- Tri par priorité : en-têtes `.aisle` « Priorité élevée », « Priorité normale », « Priorité basse » (groupe vide : pas d'en-tête). Par échéance : une seule liste, sans en-tête.
+
+## Ajout : pastille d'état dans la barre du haut de « Mes listes »
+
+Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
+
+- `.topbar.topbar--plain.topbar--status` : sur une ligne, le titre (`.topbar__main`, sa largeur naturelle), puis `.topbar__status` (prend la place restante) qui contient la pastille `.sync`, puis le bouton de tri et les Réglages. La ligne `.statusbar` disparaît de l'accueil (gardée sur l'écran d'une liste).
+- `.sync--compact` : quand le texte ne tient pas, il est masqué visuellement (toujours lu par les lecteurs d'écran) et seule l'icône reste, suivie de `.sync__count` (nombre en attente, masqué aux lecteurs d'écran qui lisent déjà « Hors ligne · 3 en attente »). Le choix est refait à chaque changement de largeur ou d'état.
+- La pastille reste un bouton « Actualiser » avec une zone tactile de 44 px de haut.
 

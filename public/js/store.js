@@ -10,7 +10,7 @@
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
-import { splitDone, compareNames, isMultiList } from './sorting.js';
+import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse } from './history.js';
 
 // --- État vide ---
@@ -211,7 +211,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'item.update': {
       if (!item) return;
       const next = { ...item, updatedAt: now };
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId']) if (op[field] !== undefined) next[field] = op[field];
+      // Seuls les champs présents changent (dueDate: null efface l'échéance)
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate']) if (op[field] !== undefined) next[field] = op[field];
       state.items.set(item.id, next);
       return;
     }
@@ -291,10 +292,91 @@ export function historyStoreFor(list, item) {
 
 const itemsOf = (state, listId) => [...state.items.values()].filter((item) => item.listId === listId);
 
-// Mes listes, de la plus récemment active à la plus ancienne, avec le nombre
-// d'articles restants et le nombre total d'articles.
-export function computeSummaries(state) {
-  return [...state.lists.values()]
+// --- Tri de « Mes listes » (choix gardé sur ce téléphone) ---
+// - 'recent' : plus récentes d'abord, par dernière activité (création ou
+//   renommage de la liste, ajout, modification, coche ou suppression d'un
+//   élément) ; à égalité, ordre alphabétique. C'est le tri d'origine : il
+//   reste le choix par défaut.
+// - 'alpha' : ordre alphabétique, sans tenir compte des majuscules ni des
+//   accents, nombres dans l'ordre naturel (« Liste 2 » avant « Liste 10 »).
+// À l'intérieur d'une liste, rien ne change (voir sorting.js).
+export const LIST_SORTS = ['recent', 'alpha'];
+export const DEFAULT_LIST_SORT = 'recent';
+export const LIST_SORT_KEY = 'listo-tri-listes';
+
+// Valeur lue sur le téléphone : toute autre valeur retombe sur le défaut
+export const listSortFrom = (value) => (LIST_SORTS.includes(value) ? value : DEFAULT_LIST_SORT);
+
+// Choix gardé sur le téléphone (localStorage). storage : fonction qui renvoie
+// le stockage (les tests en donnent un faux) ; stockage indisponible
+// (navigation privée…) : tri par défaut, sans erreur.
+export function loadListSort(storage = () => globalThis.localStorage) {
+  try {
+    return listSortFrom(storage().getItem(LIST_SORT_KEY));
+  } catch {
+    return DEFAULT_LIST_SORT;
+  }
+}
+export function saveListSort(sort, storage = () => globalThis.localStorage) {
+  try {
+    storage().setItem(LIST_SORT_KEY, listSortFrom(sort));
+  } catch {
+    // sans importance : le choix vaut pour cette visite
+  }
+}
+
+// --- Tri d'une liste autre que les courses (choix gardé sur ce téléphone,
+// pour chaque liste : clé listo-tri-liste-<identifiant>) ---
+export const ITEM_SORT_PREFIX = 'listo-tri-liste-';
+export const itemSortFrom = (value) => (ITEM_SORTS.includes(value) ? value : 'alpha');
+export function loadItemSort(listId, storage = () => globalThis.localStorage) {
+  try {
+    return itemSortFrom(storage().getItem(ITEM_SORT_PREFIX + listId));
+  } catch {
+    return 'alpha';
+  }
+}
+export function saveItemSort(listId, sort, storage = () => globalThis.localStorage) {
+  try {
+    storage().setItem(ITEM_SORT_PREFIX + listId, itemSortFrom(sort));
+  } catch {
+    // sans importance : le choix vaut pour cette visite
+  }
+}
+// Ménage : oublie le tri des listes qui ne sont plus sur ce téléphone
+export function pruneItemSorts(listIds, storage = () => globalThis.localStorage) {
+  try {
+    const store = storage();
+    const keep = new Set(listIds);
+    const keys = [];
+    for (let i = 0; i < store.length; i++) keys.push(store.key(i));
+    for (const key of keys) {
+      if (key?.startsWith(ITEM_SORT_PREFIX) && !keep.has(key.slice(ITEM_SORT_PREFIX.length))) store.removeItem(key);
+    }
+  } catch {
+    // sans importance
+  }
+}
+
+const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
+const byName = (a, b) => nameCollator.compare(a.name, b.name);
+const byRecent = (a, b) => b.lastActivity.localeCompare(a.lastActivity);
+// Dernier recours, pour un ordre toujours le même : majuscules, puis numéro
+const byExactName = (a, b) => compareNames(a.name, b.name) || String(a.id).localeCompare(String(b.id));
+
+// Trie les cartes de « Mes listes » (calcul pur). À égalité de nom : la plus
+// récente d'abord ; à égalité d'activité : ordre alphabétique.
+export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
+  const compare = listSortFrom(sort) === 'alpha'
+    ? (a, b) => byName(a, b) || byRecent(a, b) || byExactName(a, b)
+    : (a, b) => byRecent(a, b) || byName(a, b) || byExactName(a, b);
+  return [...lists].sort(compare);
+}
+
+// Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,
+// triées selon le choix (sort : 'recent' par défaut, ou 'alpha')
+export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
+  return sortSummaries([...state.lists.values()]
     .map((list) => {
       const items = itemsOf(state, list.id);
       const lastItem = items.reduce((max, item) => (item.updatedAt > max ? item.updatedAt : max), '');
@@ -304,8 +386,7 @@ export function computeSummaries(state) {
         remaining: items.filter((item) => !item.checked).length,
         lastActivity: [list.updatedAt, list.lastActivity ?? '', lastItem].sort().at(-1),
       };
-    })
-    .sort((a, b) => b.lastActivity.localeCompare(a.lastActivity) || compareNames(a.name, b.name));
+    }), sort);
 }
 
 // Une liste prête à afficher : ses articles à acheter groupés par rayon et
@@ -314,12 +395,14 @@ export function computeSummaries(state) {
 // leur nombre. null si la liste n'est pas (ou plus) accessible.
 // Dans une liste « multi », les groupes sont des magasins (group.store) au
 // lieu des rayons (group.aisle).
-export function computeListView(state, listId) {
+// sort : tri d'une liste autre que les courses ('alpha' par défaut,
+// 'priority' ou 'due', voir sorting.js) ; sans effet sur les courses.
+export function computeListView(state, listId, { sort = 'alpha' } = {}) {
   const list = state.lists.get(listId);
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores });
+  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores, sort: itemSortFrom(sort) });
   return {
     list,
     multi,

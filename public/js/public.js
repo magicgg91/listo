@@ -10,7 +10,7 @@
 //   téléphone.
 
 import { h, icon, replace, passwordInput } from './dom.js';
-import { dateTimeLabel } from './format.js';
+import { dateTimeLabel, dueChip, priorityChip, todayKey } from './format.js';
 import { itemWords, countItems, doneZoneWords } from './words.js';
 
 const root = document.getElementById('app');
@@ -166,6 +166,21 @@ function showList(data) {
       expiresAt ? `Ce lien expire le ${dateTimeLabel(expiresAt)}` : "Ce lien n'a pas de date d'expiration")));
 }
 
+// Priorité et échéance (listes autres que les courses : le serveur ne les
+// envoie que pour elles), mêmes pastilles que l'application, en lecture
+// seule. « Aujourd'hui » : date de l'appareil du visiteur.
+function metaRow(item) {
+  const chips = [];
+  const priority = priorityChip(item.priority);
+  if (priority) chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Priorité '), priority.text));
+  const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
+  if (due) {
+    const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
+    chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Échéance : '), due.text));
+  }
+  return chips.length ? h('span', { class: 'item__meta' }, chips) : null;
+}
+
 // Ligne d'un article : case non interactive (cochée = barrée aussi)
 function itemRow(item) {
   return h('li', { class: `item${item.checked ? ' is-done' : ''}` },
@@ -174,7 +189,8 @@ function itemRow(item) {
     h('div', { class: 'item__body' },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
-        item.note ? h('span', { class: 'item__note' }, item.note) : null),
+        item.note ? h('span', { class: 'item__note' }, item.note) : null,
+        metaRow(item)),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
     item.photo ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
       h('img', { class: 'photo', src: item.photo, alt: '', loading: 'lazy', decoding: 'async' })) : null);

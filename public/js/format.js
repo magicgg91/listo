@@ -109,6 +109,63 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
   return { version, checked, chip, button: true, busy };
 }
 
+// Bouton de tri de « Mes listes » : icône du tri ACTIF, libellé pour les
+// lecteurs d'écran (tri actuel et effet d'un appui), message après un appui
+export function listSortButton(sort) {
+  return sort === 'alpha'
+    ? { icon: 'az', label: 'Tri : ordre alphabétique. Appuyer pour trier par plus récentes', message: 'Tri : ordre alphabétique' }
+    : { icon: 'clock', label: 'Tri : plus récentes d\'abord. Appuyer pour trier par ordre alphabétique', message: 'Tri : plus récentes d\'abord' };
+}
+
+// --- Priorité et échéance d'un élément (listes autres que les courses) ---
+// L'échéance est une date seule « AAAA-MM-JJ », sans heure ni fuseau.
+// « Aujourd'hui » se calcule toujours sur le téléphone, dans son fuseau
+// (jamais avec la date du serveur) : une échéance aujourd'hui le reste toute
+// la journée, et n'est « en retard » qu'à partir du lendemain.
+
+const pad = (n) => String(n).padStart(2, '0');
+
+// Date du jour sur le téléphone, « AAAA-MM-JJ » (heure locale)
+export function todayKey(now = new Date()) {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+// « AAAA-MM-JJ » décalée de n jours (calcul sur la date seule, sans fuseau)
+export function addDays(key, n) {
+  const [y, m, d] = key.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + n));
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+// « ven. 24 oct. » (et l'année si ce n'est pas l'année en cours)
+export function dueDateLabel(key, today = todayKey()) {
+  const [y, m, d] = key.split('-').map(Number);
+  const sameYear = key.slice(0, 4) === today.slice(0, 4);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('fr-FR', {
+    weekday: 'short', day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'UTC',
+  });
+}
+
+// Pastille d'échéance d'un élément, ou null sans échéance.
+// state : 'late' (en retard), 'today', 'tomorrow', 'later', 'done' (coché :
+// sa date, en gris, jamais « en retard »)
+export function dueChip(dueDate, checked, today = todayKey()) {
+  if (!dueDate) return null;
+  const date = dueDateLabel(dueDate, today);
+  if (checked) return { state: 'done', text: date, label: `Échéance : ${date}` };
+  if (dueDate < today) return { state: 'late', text: `En retard · ${date}`, label: `Échéance : ${date}, en retard` };
+  if (dueDate === today) return { state: 'today', text: "Aujourd'hui", label: "Échéance : aujourd'hui" };
+  if (dueDate === addDays(today, 1)) return { state: 'tomorrow', text: 'Demain', label: 'Échéance : demain' };
+  return { state: 'later', text: date, label: `Échéance : ${date}` };
+}
+
+// Pastille de priorité : élevée et basse seulement (normale : rien)
+export function priorityChip(priority) {
+  if (priority === 'high') return { icon: 'arrow-up', text: 'Élevée', label: 'Priorité élevée' };
+  if (priority === 'low') return { icon: 'arrow-down', text: 'Basse', label: 'Priorité basse' };
+  return null;
+}
+
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »
 export function dateTimeLabel(iso) {
   const date = new Date(iso);

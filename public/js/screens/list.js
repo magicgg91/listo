@@ -25,11 +25,11 @@ import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError } from '../photo.js';
 import { navigate, goBack } from '../router.js';
-import { splitPrefix } from '../format.js';
+import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames } from '../store.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle } from '../ui.js';
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
 
@@ -59,6 +59,33 @@ export function renderList(listId, onLeave) {
   const content = h('div', { class: 'scroll' });
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
+  // Tri de la liste (listes autres que les courses) : choix gardé sur ce
+  // téléphone pour cette liste ; l'icône du bouton montre le tri actif
+  const SORTS = [
+    ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
+    ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
+    ['due', 'calendar', 'Par échéance', 'Tri : par échéance'],
+  ];
+  let itemSort = loadItemSort(listId);
+  const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
+  sortButton.setAttribute('aria-haspopup', 'menu');
+  const showSort = () => replace(sortButton, icon(SORTS.find(([value]) => value === itemSort)[1]));
+  showSort();
+  function openSortMenu() {
+    openMenu(SORTS.map(([value, iconName, label, message]) => ({
+      icon: iconName,
+      label,
+      checked: value === itemSort,
+      onSelect: () => {
+        itemSort = value;
+        saveItemSort(listId, value);
+        showSort();
+        draw();
+        toast(message, { duration: 2000 });
+      },
+    })), { label: 'Trier la liste' });
+  }
+
   let view = null;
 
   // --- Dessin de la liste ---
@@ -67,11 +94,12 @@ export function renderList(listId, onLeave) {
       replace(content, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
       return;
     }
-    view = computeListView(app.data, listId);
+    view = computeListView(app.data, listId, { sort: itemSort });
     if (!view) {
       title.textContent = 'Liste introuvable';
       replace(sub);
       menuButton.hidden = true;
+      sortButton.hidden = true;
       replace(content, h('div', { class: 'empty' },
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
@@ -88,9 +116,10 @@ export function renderList(listId, onLeave) {
     title.textContent = list.name;
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = false;
+    sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
     addbar.hidden = false;
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
-    content.classList.toggle('scroll--flat', !list.category.isShopping);
+    content.classList.toggle('scroll--flat', !list.category.isShopping && itemSort !== 'priority');
 
     if (groups.length === 0 && done.length === 0) {
       replace(content, h('div', { class: 'empty' },
@@ -104,7 +133,9 @@ export function renderList(listId, onLeave) {
       // En-tête collant : rayon, ou magasin (avec son icône) dans une liste « multi »
       view.multi
         ? h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.store?.name ?? 'Sans magasin'), count(group))
-        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group)) : null,
+        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group))
+          // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
+          : group.label ? h('h2', { class: 'aisle' }, group.label, count(group)) : null,
       h('ul', {}, group.items.map(itemRow)))),
     done.length ? doneZone(list, done) : null);
   };
@@ -143,8 +174,30 @@ export function renderList(listId, onLeave) {
       listEl);
   }
 
+  // Pastilles de priorité et d'échéance (listes autres que les courses) :
+  // { chips, spoken } ; spoken complète le libellé du bouton de la ligne,
+  // pour les lecteurs d'écran. « Aujourd'hui » : date du téléphone.
+  const metaOf = (item) => {
+    if (!view || view.list.category.isShopping) return { chips: [], spoken: '' };
+    const chips = [];
+    const spoken = [];
+    const priority = priorityChip(item.priority);
+    if (priority) {
+      chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
+      spoken.push(priority.label.toLowerCase());
+    }
+    const due = dueChip(item.dueDate, item.checked, todayKey());
+    if (due) {
+      const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
+      chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
+      spoken.push(due.label.toLowerCase());
+    }
+    return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
+  };
+
   // Ligne d'un article : case à cocher + nom (ouvre la feuille « Article »)
-  const itemRow = (item) => h('li', { class: `item${item.checked ? ' is-done' : ''}` },
+  const itemRow = (item) => itemRowWith(item, metaOf(item));
+  const itemRowWith = (item, meta) => h('li', { class: `item${item.checked ? ' is-done' : ''}` },
     h('button', {
       class: 'check',
       type: 'button',
@@ -152,10 +205,11 @@ export function renderList(listId, onLeave) {
       'aria-label': `${item.checked ? 'Décocher' : 'Cocher'} ${item.name}`,
       onClick: () => toggle(item),
     }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
-    h('button', { class: 'item__body', type: 'button', 'aria-label': `Modifier ${item.name}`, onClick: () => openItemSheet(item) },
+    h('button', { class: 'item__body', type: 'button', 'aria-label': `Modifier ${item.name}${meta.spoken}`, onClick: () => openItemSheet(item) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
-        item.note ? h('span', { class: 'item__note' }, item.note) : null),
+        item.note ? h('span', { class: 'item__note' }, item.note) : null,
+        meta.chips.length ? h('span', { class: 'item__meta' }, meta.chips) : null),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
     // Vignette de la photo : un appui l'agrandit
     actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
@@ -387,6 +441,71 @@ export function renderList(listId, onLeave) {
     const nameField = field('Nom', name);
     const error = errorNote();
 
+    // --- Priorité et échéance (listes autres que les courses) ---
+    const classic = !view?.list.category.isShopping;
+    let priority = item.priority ?? 'normal';
+    let dueDate = item.dueDate ?? null;
+    // Priorité : trois choix ; le choix actif a une coche ET son texte
+    const priorityOptions = [['low', 'Basse'], ['normal', 'Normale'], ['high', 'Élevée']].map(([value, label]) => {
+      const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
+        priority = value;
+        drawPriority();
+      } });
+      option.dataset.value = value;
+      option.dataset.label = label;
+      return option;
+    });
+    const drawPriority = () => {
+      for (const option of priorityOptions) {
+        const on = option.dataset.value === priority;
+        option.setAttribute('aria-checked', String(on));
+        replace(option, on ? icon('check', 'icon--sm icon--check') : null, option.dataset.label);
+      }
+    };
+    drawPriority();
+    // Échéance : le vrai sélecteur de date du téléphone (date seule, sans
+    // heure), posé, invisible, sur un bouton qui affiche la date en français ;
+    // raccourcis dessous. Aucune saisie au clavier.
+    const dueText = h('span', { class: 'input__value' });
+    const dateInput = h('input', { class: 'due-picker__input', type: 'date', min: '2000-01-01', max: '2100-12-31' });
+    // Sur ordinateur, un clic ouvre aussi le calendrier
+    dateInput.addEventListener('click', () => {
+      try {
+        dateInput.showPicker?.();
+      } catch {
+        // calendrier indisponible : le champ reste utilisable
+      }
+    });
+    dateInput.addEventListener('change', () => {
+      if (dateInput.value) dueDate = dateInput.value;
+      drawDue();
+    });
+    const clearDue = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
+      dueDate = null;
+      drawDue();
+    } }, 'Effacer');
+    const drawDue = () => {
+      const label = dueDate ? dueDateLabel(dueDate) : 'Aucune échéance';
+      replace(dueText, icon('calendar', 'icon--sm'), label);
+      dateInput.value = dueDate ?? '';
+      dateInput.setAttribute('aria-label', `Échéance : ${label}. Choisir une date`);
+      clearDue.disabled = !dueDate;
+    };
+    const shortcut = (label, days) => h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
+      dueDate = addDays(todayKey(), days);
+      drawDue();
+    } }, label);
+    drawDue();
+    const classicFields = classic ? [
+      h('div', { class: 'field' },
+        h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
+        h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'priority-label' }, priorityOptions)),
+      h('div', { class: 'field' },
+        h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
+        h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
+        h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue)),
+    ] : null;
+
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
     let current = item; // dernier état connu de l'article (photoAt)
@@ -457,7 +576,7 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
@@ -489,6 +608,7 @@ export function renderList(listId, onLeave) {
       nameField.field,
       field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
+      classicFields,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, camera, gallery),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
@@ -514,6 +634,8 @@ export function renderList(listId, onLeave) {
       if (note.value.trim() !== item.note) changes.note = note.value.trim();
       if (isShopping && aisleId !== item.aisleId) changes.aisleId = aisleId;
       if (multi && storeId !== (item.storeId ?? null)) changes.storeId = storeId;
+      if (classic && priority !== (item.priority ?? 'normal')) changes.priority = priority;
+      if (classic && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
       if (!Object.keys(changes).length) {
         sheet.close();
         return;
@@ -608,9 +730,35 @@ export function renderList(listId, onLeave) {
 
   // --- Montage de l'écran ---
 
-  onLeave(onDataChange(draw));
+  // Synchronisation, modification : la liste est redessinée (et retriée),
+  // jamais pendant qu'un doigt est posé dessus
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
   onLeave(() => {
     document.title = 'Listo';
+  });
+  // Changement de jour (minuit, ou retour au premier plan le lendemain) :
+  // « Aujourd'hui », « Demain » et « En retard » sont recalculés
+  let day = todayKey();
+  const newDay = () => {
+    if (todayKey() === day) return;
+    day = todayKey();
+    draw();
+  };
+  const atMidnight = () => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    return setTimeout(() => {
+      newDay();
+      midnight = atMidnight();
+    }, next - now);
+  };
+  let midnight = atMidnight();
+  document.addEventListener('visibilitychange', newDay);
+  onLeave(() => {
+    clearTimeout(midnight);
+    document.removeEventListener('visibilitychange', newDay);
   });
   draw();
   refreshData({ quiet: true }); // actualisation à l'ouverture
@@ -619,6 +767,7 @@ export function renderList(listId, onLeave) {
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
       h('div', { class: 'topbar__main' }, title, sub),
+      sortButton,
       menuButton),
     h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
     content,

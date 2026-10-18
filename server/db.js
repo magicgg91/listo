@@ -277,6 +277,17 @@ export const MIGRATIONS = [
   ALTER TABLE items ADD COLUMN checked_at TEXT;
   UPDATE items SET checked_at = updated_at WHERE checked = 1;
   `,
+
+  // --- Migration 10 : priorité et échéance des éléments (listes autres que
+  // les courses) ---
+  // priority : 'low' (basse), 'normal' (normale, par défaut) ou 'high'
+  // (élevée). due_date : date seule AAAA-MM-JJ, sans heure ni fuseau, ou vide.
+  // Les éléments existants deviennent « normale », sans échéance : aucune
+  // autre donnée ne change.
+  `
+  ALTER TABLE items ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high'));
+  ALTER TABLE items ADD COLUMN due_date TEXT;
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

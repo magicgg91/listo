@@ -41,7 +41,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `server/backup-now.js`, `server/admin-secours.js` | Commandes à lancer sur le serveur : sauvegarde à la demande ; mot de passe provisoire (et retrait de la 2FA) quand plus personne ne peut se connecter |
 | `server/shares.js` | Lien public d'une liste : jeton (jamais stocké en clair), mot de passe généré, contrôle de validité à chaque requête, cookies de consultation, nettoyage |
 | `server/pages/` | Les deux pages HTML du lien public : la page de la liste (sans aucune donnée) et la page unique « Lien expiré ou inexistant » |
-| `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin) |
+| `public/js/history.js`, `public/js/sorting.js` | Règles partagées entre le serveur et le téléphone : nom normalisé, autocomplétion, rayon et magasin habituels, mise à jour de l'historique, tri des articles (par rayon ou par magasin ; listes autres que les courses : alphabétique, par priorité avec groupes, par échéance) |
 | `server/routes/` | Routes de l'API : `auth.js` (connexion), `me.js` (mon compte), `lists.js` (listes et articles), `photos.js` (photos), `shares.js` (lien public, côté propriétaire), `public.js` (lien public, côté visiteur sans compte), `admin.js` (administration : `admin-users.js` pour les comptes, `admin-references.js` pour catégories, magasins et rayons, `admin-names.js` pour les noms enregistrés) |
 | `public/index.html` | Page unique de l'application (sprite d'icônes compris) |
 | `public/css/listo.css`, `public/css/app.css` | Kit de design (copie de `design/listo.css`, sections 1 à 16, sans la section 17 qui ne sert qu'aux planches) et petits ajustements propres à l'application |
@@ -59,11 +59,11 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/js/viewport.js` | Android : retire `viewport-fit=cover` avant le premier affichage, pour garder la page au-dessus de la barre de navigation (voir « Android : barre de navigation ») |
 | `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
 | `public/js/public.js` | Page publique d'une liste (lien `/p/…`) : saisie du mot de passe, liste en lecture seule, photo agrandie. N'utilise ni service worker ni stockage |
-| `public/js/store.js` | Copie locale des données et calculs (cartes de « Mes listes », liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
+| `public/js/store.js` | Copie locale des données et calculs (tri d'une liste autre que les courses, choix gardé par liste sous la clé `listo-tri-liste-<id>` ; cartes de « Mes listes » et leur tri : plus récentes d'abord ou ordre alphabétique, choix gardé sur le téléphone sous la clé `listo-tri-listes` ; liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, « 3 articles restants » / « 3 éléments restants »…) |
 | `public/js/words.js` | Vocabulaire : « article » dans une liste de courses, « élément » dans les autres listes. Tous les textes qui nomment une ligne de la liste passent par lui |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
-| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
+| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur, avec le bouton de tri ; sur téléphone, pastille d'état dans la barre du haut), `list.js` (une liste et la feuille Article), `list-form.js` (créer ou modifier une liste), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `SECURITY.md` | Licence Apache-2.0 (texte officiel), mentions à conserver, règles de contribution, signalement des failles |
 | `docs/` | Cahier des charges, guide d'exploitation (`exploitation.md`) et ce document (`developpement.md`) |
@@ -366,7 +366,7 @@ Les opérations de `POST /api/ops` :
 | `list.uncheckAll` | `listId` : décoche tous les articles cochés (« Tout remettre à acheter » / « Tout rouvrir »), une seule opération quel que soit leur nombre | membres |
 | `list.removeChecked` | `listId` : supprime les articles cochés (« Retirer du panier » / « Retirer les terminés »). L'ancien nom `list.clearChecked` reste accepté | membres |
 | `item.create` | `listId`, `itemId` (UUID), `name`, `quantity`, `note`, `aisleId` (facultatif : sinon le rayon habituel ; `null` = Sans rayon). Liste « multi » : `storeId` au lieu de `aisleId` (facultatif : sinon le magasin habituel ; `null` = Sans magasin) | membres |
-| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi ») | membres |
+| `item.update` | `itemId`, et au choix `name`, `quantity`, `note`, `aisleId` (ou `storeId` dans une liste « multi »), `priority` (`low`, `normal`, `high`) et `dueDate` (`AAAA-MM-JJ`, ou `null` pour l'effacer) hors listes de courses. Un champ absent ne change pas ; une chaîne vide pour `dueDate` est refusée | membres |
 | `item.check` | `itemId`, `checked` (`true` ou `false`). Le serveur pose la date du coché (`checkedAt`) au premier coché et l'efface au décoché | membres |
 | `item.delete` | `itemId` | membres |
 | `item.restore` | `itemId` : remet un article supprimé, avec sa photo, tant qu'il n'a pas été effacé par le nettoyage (« Annuler », étape 7) | membres |
@@ -595,7 +595,7 @@ Une application installée sur l'écran d'accueil (iPhone surtout) reste ouverte
 Ce qui se passe maintenant :
 
 1. **Identifiant opaque** : au démarrage, le serveur calcule un identifiant de 16 caractères à partir du commit installé et d'une clé propre à l'installation (HMAC-SHA256, clé dérivée de `secrets/secret.key`, voir `buildId` dans `server/secrets.js`). Il change à chaque mise à jour mais ne révèle pas le commit. Il est écrit dans `sw.js` et `js/version.js` quand le serveur les envoie (ligne `BUILD = null` remplacée ; fichiers revalidés à chaque chargement), et donné par `GET /api/about` (comptes connectés). Sans commit (développement) : `null`, et rien de ce qui suit ne se déclenche.
-2. **Nouveau service worker à chaque version** : `VERSION` de `sw.js` vaut `v9-<identifiant>`. Le navigateur voit un nouveau `sw.js`, l'installe (copie neuve de tous les fichiers, sans cache HTTP), puis efface l'ancienne copie : jamais de mélange d'anciens et de nouveaux fichiers.
+2. **Nouveau service worker à chaque version** : `VERSION` de `sw.js` vaut `v11-<identifiant>`. Le navigateur voit un nouveau `sw.js`, l'installe (copie neuve de tous les fichiers, sans cache HTTP), puis efface l'ancienne copie : jamais de mélange d'anciens et de nouveaux fichiers.
 3. **Code périmé** (`public/js/freshness.js`) : le téléphone compare l'identifiant de son code (`js/version.js`) à celui du serveur, au démarrage, au retour au premier plan, à la reconnexion du temps réel (le serveur vient souvent de redémarrer) et toutes les heures au premier plan. Hors ligne : rien, sans erreur.
 4. **Rechargement au premier moment sûr** : d'abord `registration.update()` et l'attente du nouveau service worker actif (10 s au plus) ; puis, si aucune fenêtre n'est ouverte (feuille, boîte de dialogue, menu), qu'aucun champ n'a le curseur ni un texte pas encore validé, et que la file d'attente n'envoie rien (un envoi en cours est attendu jusqu'à 10 s), le message « Mise à jour de Listo… » s'affiche un instant et la page se recharge. Sinon, bandeau « Nouvelle version disponible » avec « Recharger » (en haut de l'écran, il ne cache pas la barre d'ajout), et nouvel essai au changement d'écran et au retour au premier plan.
 5. **Pas de boucle** : un seul rechargement automatique par version et par onglet (repère dans `sessionStorage`). Toujours périmé après lui : bandeau et une ligne dans la console. Si `sessionStorage` est indisponible : jamais de rechargement automatique, seulement le bandeau.
@@ -605,7 +605,7 @@ La page publique (`/p/…`) n'est pas concernée : elle n'a ni service worker ni
 
 **Si une nouvelle version de Listo semble cassée sur un téléphone** : fermer Listo et le rouvrir avec du réseau (il reprend alors la dernière version) ; si ça ne suffit pas, Réglages → Mon compte → « Réinitialiser les données de ce téléphone » ; en dernier recours, effacer les données du site dans les réglages du navigateur (Chrome : cadenas à gauche de l'adresse → Paramètres du site → Effacer les données ; iPhone : Réglages → Safari → Avancé → Données des sites web), puis se reconnecter.
 
-Pour publier une version qui change la liste des fichiers de l'application, ajouter le nouveau fichier dans `APP_FILES` de `public/sw.js` et changer le début de `VERSION` (`v9`, `v10`…) ; un test automatique signale un fichier oublié. L'identifiant de la version installée, lui, change tout seul à chaque mise à jour.
+Pour publier une version qui change la liste des fichiers de l'application, ajouter le nouveau fichier dans `APP_FILES` de `public/sw.js` et changer le début de `VERSION` (`v11`, `v12`…) ; un test automatique signale un fichier oublié. L'identifiant de la version installée, lui, change tout seul à chaque mise à jour.
 
 ## Lien public d'une liste (étape 10)
 
@@ -626,7 +626,7 @@ Seul le propriétaire de la liste y a accès : un invité ou un autre compte re�
 | Route | Rôle |
 | --- | --- |
 | `GET /p/:jeton` | La page (HTML sans aucune donnée de la liste) |
-| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo ; `done` : les articles cochés (mêmes champs), du plus récemment coché au plus ancien ; date d'expiration du lien. Rien d'autre (liste blanche) : aucun nom de personne ni identifiant de compte ou de liste |
+| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo (et, pour une liste autre que les courses, priorité et échéance) ; `done` : les articles cochés (mêmes champs), du plus récemment coché au plus ancien ; date d'expiration du lien. Rien d'autre (liste blanche) : aucun nom de personne ni identifiant de compte ou de liste |
 | `POST /api/public/:jeton/acces` | Saisie du mot de passe (`{ "password": "…" }`) ; donne le cookie de consultation |
 | `GET /api/public/:jeton/photos/:id` | Photo d'un article de cette liste seulement |
 

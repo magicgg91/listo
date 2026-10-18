@@ -211,7 +211,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'item.update': {
       if (!item) return;
       const next = { ...item, updatedAt: now };
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId']) if (op[field] !== undefined) next[field] = op[field];
+      // Seuls les champs présents changent (dueDate: null efface l'échéance)
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate']) if (op[field] !== undefined) next[field] = op[field];
       state.items.set(item.id, next);
       return;
     }

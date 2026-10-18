@@ -28,6 +28,21 @@ import { groupItems } from '../public/js/sorting.js';
 import { cleanName, parseId } from './validate.js';
 
 const DAY = 24 * 60 * 60 * 1000;
+
+// Priorité et échéance d'un élément (listes autres que les courses)
+export const PRIORITIES = ['low', 'normal', 'high'];
+const FIRST_DAY = '2000-01-01';
+const LAST_DAY = '2100-12-31';
+
+// Vrai si value est une vraie date AAAA-MM-JJ (pas de 30 février, pas
+// d'heure ni de fuseau), entre le 1er janvier 2000 et le 31 décembre 2100
+export function isDueDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (value < FIRST_DAY || value > LAST_DAY) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
 export const PURGE_AFTER_DAYS = 30;
 export const MAX_OPS_PER_BATCH = 100;
 
@@ -282,6 +297,19 @@ export function createListService(ctx) {
 
   // Une liste « multi » n'a pas de rayon ; une autre liste n'a pas de
   // magasin par article. Le téléphone qui enverrait le mauvais champ est refusé.
+  // Priorité : une des trois valeurs, rien d'autre
+  function priorityOf(value) {
+    if (!PRIORITIES.includes(value)) throw new OpError(400, 'Priorité inconnue (basse, normale ou élevée).');
+    return value;
+  }
+  // Échéance : null efface ; sinon une vraie date AAAA-MM-JJ (une chaîne vide
+  // n'est pas null : elle est refusée)
+  function dueDateOf(value) {
+    if (value === null) return null;
+    if (!isDueDate(value)) throw new OpError(400, 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2100, sans heure).');
+    return value;
+  }
+
   function checkFieldsForList(multi, op) {
     if (multi && op.aisleId !== undefined && op.aisleId !== null) {
       throw new OpError(400, "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.");
@@ -302,6 +330,8 @@ export function createListService(ctx) {
     aisleId: item.aisle_id,
     storeId: item.store_id,
     photoAt: item.photo_at,
+    priority: item.priority ?? 'normal',
+    dueDate: item.due_date ?? null,
     checked: item.checked === 1,
     checkedAt: item.checked_at ?? null,
     createdBy: item.created_by,
@@ -512,7 +542,10 @@ export function createListService(ctx) {
       return { item: describeItem(q.item.get(id)) };
     },
 
-    // Modifier un article (nom, quantité, note, rayon ou magasin). Le nouveau
+    // Modifier un article (nom, quantité, note, rayon ou magasin ; priorité et
+    // échéance hors listes de courses). Un champ absent de l'opération ne
+    // change pas (un téléphone qui ne connaît pas encore la priorité ne la
+    // remet pas à zéro) ; dueDate: null efface l'échéance. Le nouveau
     // rayon, ou le nouveau nom, est mémorisé pour les prochains ajouts ; dans
     // une liste « multi », un changement de magasin reporte l'achat sur le
     // nouveau magasin (il devient le magasin habituel s'il est le plus fréquent).
@@ -520,6 +553,13 @@ export function createListService(ctx) {
       const item = itemForMember(user, op.itemId);
       const multi = item.is_multi === 1;
       checkFieldsForList(multi, op);
+      // Priorité et échéance : refusées sur une liste de courses (rien n'est
+      // écrit), vérifiées avant toute écriture
+      if (item.is_shopping === 1 && (op.priority !== undefined || op.dueDate !== undefined)) {
+        throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste autre que les courses.');
+      }
+      const priority = op.priority === undefined ? item.priority : priorityOf(op.priority);
+      const dueDate = op.dueDate === undefined ? item.due_date : dueDateOf(op.dueDate);
       const name = op.name === undefined ? item.name : itemName(op.name);
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
@@ -536,11 +576,11 @@ export function createListService(ctx) {
         const wanted = op.storeId === null ? null : parseId(op.storeId);
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
-      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId].every((value) => value === undefined)) {
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, nowIso(), item.id);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, nowIso(), item.id);
 
       // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {

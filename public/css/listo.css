@@ -388,7 +388,8 @@
    N'utilise que les variables existantes. Aucune couleur en dur.
    16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
    16.4 Page publique en lecture seule · 16.5 Zone des cochés
-   16.6 Bloc « À propos » · 16.7 Carte du compte */
+   16.6 Bloc « À propos » · 16.7 Carte du compte
+   16.8 Priorité et échéance */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -525,3 +526,19 @@
 .account--link .row__title, .account--link .row__sub { display: block; }
 .account--link > .icon:last-child { flex: none; color: var(--color-text-2); }
 .account--link:active { background: var(--color-neutral-soft); }
+/* 16.8 Priorité et échéance d'un élément (listes autres que les courses).
+   Une ligne de pastilles .chip sous le nom (« ↑ Élevée », « ↓ Basse »,
+   échéance avec calendrier) ; toujours une icône ET un texte. En retard :
+   couleur danger + icône d'alerte ; élément coché : pastilles en gris. */
+.item__meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.item__meta .chip { height: 24px; padding: 0 8px; }
+.chip--late { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+.item.is-done .item__meta .chip { background: transparent; color: var(--color-text-2); padding-left: 0; }
+/* Feuille de l'élément : sélecteur de priorité (.segmented, coche sur le
+   choix actif) et échéance (bouton qui ouvre le calendrier du téléphone,
+   raccourcis dessous) */
+.segmented__opt .icon--check { color: var(--color-accent-ink); }
+.due-picker { position: relative; }
+.due-picker__input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.due-picker:focus-within .input { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.due-shortcuts { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }

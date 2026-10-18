@@ -63,7 +63,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -124,18 +124,23 @@ export function publicRoutes(ctx, { publicDir }) {
       checked: row.checked === 1,
       checkedAt: row.checked_at,
       photoAt: row.photo_at,
+      priority: row.priority,
+      dueDate: row.due_date,
     }));
     // Articles à acheter groupés par rayon (ou magasin) ; articles cochés à
     // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
     // « Terminés », même règle que l'application). La date du coché sert à
     // l'ordre, elle n'est pas envoyée.
     const { groups, done } = splitDone(items, q.allAisles.all(), isShopping, { byStore, stores: q.allStores.all() });
+    // Liste autre que les courses : priorité et échéance en plus (lecture
+    // seule) ; jamais pour une liste de courses
     const describe = (item) => ({
       name: item.name,
       quantity: item.quantity,
       note: item.note,
       checked: item.checked,
       photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
+      ...(isShopping ? {} : { priority: item.priority, dueDate: item.dueDate }),
     });
     return {
       list: {

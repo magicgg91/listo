@@ -15,6 +15,7 @@ import { renderLists, renderSidePanel } from './screens/lists.js';
 import { renderList } from './screens/list.js';
 import { renderListForm } from './screens/list-form.js';
 import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
+import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { BUILD } from './version.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
@@ -120,7 +121,7 @@ function persistSoon() {
   }, 300);
 }
 
-// Remise à zéro de la copie de ce téléphone (Réglages) : tout est rechargé
+// Remise à zéro de la copie de ce téléphone (Mon compte) : tout est rechargé
 // depuis le serveur
 export async function resetLocalCopy() {
   await local.clearSnapshot();
@@ -480,6 +481,7 @@ function show(route) {
     case 'newList': mount((onLeave) => renderListForm(null, onLeave)); break;
     case 'editList': mount((onLeave) => renderListForm(params.id, onLeave), { selectedListId: params.id }); break;
     case 'settings': mount(() => renderSettings()); break;
+    case 'account': mount(() => renderAccount()); break;
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;

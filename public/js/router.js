@@ -13,6 +13,7 @@ export const ROUTES = [
   { name: 'editList', path: '/listes/:id/modifier' },
   { name: 'list', path: '/listes/:id' },
   { name: 'settings', path: '/reglages' },
+  { name: 'account', path: '/reglages/compte' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   { name: 'admin', path: '/administration/:tab' },

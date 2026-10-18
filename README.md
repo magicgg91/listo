@@ -66,7 +66,7 @@ Prérequis :
    ```sh
    docker compose up -d && docker compose logs listo
    ```
-5. **Double authentification** (conseillée pour l'Admin) : Réglages → Double authentification, scanner le QR code, puis garder les 10 codes de secours dans un gestionnaire de mots de passe.
+5. **Double authentification** (conseillée pour l'Admin) : Réglages → Mon compte (carte du compte, en haut) → Double authentification, scanner le QR code, puis garder les 10 codes de secours dans un gestionnaire de mots de passe.
 6. **Sur le téléphone** : iPhone (Safari) → Partager → *Sur l'écran d'accueil* ; Android (Chrome) → menu ⋮ → *Installer l'application*.
 
 Sécurité :

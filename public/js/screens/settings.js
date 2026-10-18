@@ -1,5 +1,6 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
-// - réglages : compte, sécurité, thème, administration (Admin), déconnexion ;
+// - réglages : carte du compte (ouvre « Mon compte », voir account.js),
+//   administration (Admin), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
 //   secours affichés une seule fois) ;
@@ -9,10 +10,9 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace } from '../dom.js';
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { applyTheme, savedTheme } from '../theme.js';
-import { app, logOut, resetLocalCopy, pendingCount } from '../app.js';
+import { app, logOut } from '../app.js';
 import { aboutVersion } from '../format.js';
-import { toast, confirmDialog } from '../ui.js';
+import { toast } from '../ui.js';
 
 const MIN_PASSWORD = 10;
 
@@ -29,15 +29,16 @@ const commitUrl = (commit) => `${GITHUB.repoUrl}/commit/${commit}`;
 const VERSION_KEY = 'listo-version';
 const isCommit = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
 
-// Barre de titre avec retour
-function topbar(title, onBack) {
+// Barre de titre avec retour (aussi utilisée par account.js)
+export function topbar(title, onBack) {
   return h('header', { class: 'topbar' },
     iconButton('chev-l', 'Retour', onBack),
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
-// Ligne de réglage (icône, titre, sous-titre, élément de fin)
-function row({ iconName, title, sub, end, onClick }) {
+// Ligne de réglage (icône, titre, sous-titre, élément de fin), aussi
+// utilisée par account.js
+export function row({ iconName, title, sub, end, onClick }) {
   const tag = onClick ? 'button' : 'div';
   return h(tag, { class: 'row', type: onClick ? 'button' : null, onClick },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
@@ -47,33 +48,16 @@ function row({ iconName, title, sub, end, onClick }) {
 
 // --- Réglages ---
 
+// Pastille du rôle : « Admin » ou « Utilisateur » (aussi utilisée par account.js)
+export function roleChip(user) {
+  return user.role === 'admin'
+    ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), 'Admin')
+    : h('span', { class: 'chip' }, 'Utilisateur');
+}
+
 export function renderSettings() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
-
-  // Interrupteur de thème : écrit simplement data-theme sur <html>
-  const themes = [['light', 'sun', 'Clair'], ['dark', 'moon', 'Sombre'], ['auto', 'auto', 'Auto']];
-  const options = themes.map(([value, iconName, label]) => h('button', {
-    class: 'segmented__opt',
-    type: 'button',
-    role: 'radio',
-    'aria-checked': String(savedTheme() === value),
-    onClick: () => {
-      applyTheme(value);
-      for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === value));
-    },
-  }, icon(iconName, 'icon--sm'), label));
-  themes.forEach(([value], i) => { options[i].dataset.value = value; });
-
-  const twoFactorRow = user.totpEnabled
-    ? row({
-      iconName: 'shield',
-      title: 'Double authentification',
-      sub: 'Code à 6 chiffres à chaque connexion',
-      end: h('span', { class: 'chip chip--strong' }, icon('check', 'icon--xs'), 'Activée'),
-      onClick: () => navigate('twoFactor'),
-    })
-    : row({ iconName: 'shield', title: 'Double authentification', sub: 'Désactivée', onClick: () => navigate('twoFactor') });
 
   const logout = h('button', {
     class: 'btn btn--secondary btn--block',
@@ -84,21 +68,18 @@ export function renderSettings() {
   return h('div', { class: 'screen' },
     topbar('Réglages', () => goBack('lists')),
     h('div', { class: 'body' },
-      h('div', { class: 'card account' },
-        avatar(user.displayName, { large: true }),
-        h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, 'Compte connecté')),
-        isAdmin ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), 'Admin') : h('span', { class: 'chip' }, 'Utilisateur')),
-      h('h2', { class: 'section-title' }, 'Sécurité'),
-      h('div', { class: 'group' },
-        row({ iconName: 'lock', title: 'Mot de passe', sub: 'Modifier mon mot de passe', onClick: () => navigate('password') }),
-        twoFactorRow),
-      h('h2', { class: 'section-title' }, 'Apparence'),
-      h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
-      // Données gardées sur ce téléphone : remise à zéro si elles semblent
-      // abîmées (tout est rechargé depuis le serveur)
-      h('h2', { class: 'section-title' }, 'Ce téléphone'),
-      h('div', { class: 'group' },
-        row({ iconName: 'sync', title: 'Réinitialiser les données de ce téléphone', sub: 'Recharger les listes depuis le serveur', onClick: resetPhone })),
+      // Carte du compte : un bouton sur toute sa surface, qui ouvre « Mon
+      // compte » (sécurité, apparence, ce téléphone)
+      h('button', {
+        class: 'card account account--link',
+        type: 'button',
+        'aria-label': `Mon compte : ${user.displayName}`,
+        onClick: () => navigate('account'),
+      },
+      avatar(user.displayName, { large: true }),
+      h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte')),
+      roleChip(user),
+      icon('chev-r')),
       isAdmin ? [
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
@@ -220,25 +201,6 @@ function projectRow() {
       icon('link', 'icon--sm'), 'Projet GitHub'));
 }
 
-// Remise à zéro de la copie locale (avec confirmation). Les modifications
-// pas encore envoyées sont gardées : elles repartiront ensuite.
-async function resetPhone() {
-  if (!navigator.onLine) {
-    toast('Indisponible hors ligne : il faut du réseau pour tout recharger.');
-    return;
-  }
-  const waiting = pendingCount();
-  const ok = await confirmDialog({
-    title: 'Réinitialiser les données de ce téléphone ?',
-    text: `Les listes gardées sur ce téléphone seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
-    confirmLabel: 'Réinitialiser',
-    danger: false,
-  });
-  if (!ok) return;
-  await resetLocalCopy();
-  toast('Données rechargées depuis le serveur', { low: true });
-}
-
 // --- Mot de passe (reglages-5) ---
 
 export function renderPassword() {
@@ -252,7 +214,7 @@ export function renderPassword() {
   const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
 
   const form = h('form', { novalidate: true },
-    topbar('Mot de passe', () => goBack('settings')),
+    topbar('Mot de passe', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' }, currentField.field, nextField.field, confirmField.field, error.note)),
     h('div', { class: 'footer' }, save));
 
@@ -267,7 +229,7 @@ export function renderPassword() {
     try {
       await post('/api/me/password', { currentPassword: current.input.value, newPassword: next.input.value });
       toast('Mot de passe modifié. Vos autres appareils sont déconnectés.', { low: true });
-      goBack('settings');
+      goBack('account');
     } catch (err) {
       error.show(errorMessage(err));
       save.disabled = false;
@@ -286,12 +248,12 @@ export function renderTwoFactor() {
 // Activation, étape 1 (reglages-3) : QR code, clé à recopier, premier code
 function enableScreen() {
   const container = h('div', { class: 'screen' });
-  replace(container, topbar('Double authentification', () => goBack('settings')),
+  replace(container, topbar('Double authentification', () => goBack('account')),
     h('p', { class: 'empty muted', role: 'status' }, 'Préparation…'));
 
   post('/api/me/2fa/enable')
     .then(({ secret }) => replace(container, enableForm(secret)))
-    .catch((err) => replace(container, topbar('Double authentification', () => goBack('settings')),
+    .catch((err) => replace(container, topbar('Double authentification', () => goBack('account')),
       h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, errorMessage(err)))));
   return container;
 }
@@ -314,7 +276,7 @@ function enableForm(secret) {
   });
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('settings')),
+    topbar('Double authentification', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       h('p', { class: 'step' }, 'Étape 1 sur 2'),
       h('p', {}, "Scannez ce QR code avec votre application d'authentification."),
@@ -352,7 +314,7 @@ function enableForm(secret) {
 
 // Activation, étape 2 (reglages-4) : codes de secours, affichés une seule fois
 function recoveryScreen(codes) {
-  const finish = () => navigate('settings', {}, { replace: true });
+  const finish = () => navigate('account', {}, { replace: true });
   const copy = h('button', {
     class: 'btn btn--secondary btn--block',
     type: 'button',
@@ -390,7 +352,7 @@ function disableScreen() {
   const submit = h('button', { class: 'btn btn--danger btn--block', type: 'submit' }, 'Désactiver la double authentification');
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('settings')),
+    topbar('Double authentification', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       h('div', { class: 'note' }, icon('shield'),
         h('p', {}, 'La double authentification est activée : un code à 6 chiffres est demandé à chaque connexion.')),
@@ -410,7 +372,7 @@ function disableScreen() {
       await post('/api/me/2fa/disable', { password: password.input.value, code: code.value.trim() });
       app.user = (await get('/api/me')).user;
       toast('Double authentification désactivée', { low: true });
-      navigate('settings', {}, { replace: true });
+      navigate('account', {}, { replace: true });
     } catch (err) {
       error.show(errorMessage(err));
       submit.disabled = false;

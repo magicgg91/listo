@@ -388,7 +388,7 @@
    N'utilise que les variables existantes. Aucune couleur en dur.
    16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
    16.4 Page publique en lecture seule · 16.5 Zone des cochés
-   16.6 Bloc « À propos » */
+   16.6 Bloc « À propos » · 16.7 Carte du compte */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -496,14 +496,15 @@
    d'actualisation (.icon-btn). Trop étroit (texte agrandi) : pastille et
    bouton passent sous la version, alignés à droite, sans déborder.
    .about-links : deux liens égaux séparés par un trait vertical fin. */
-.about { flex-wrap: wrap; row-gap: 0; }
+.about { flex-wrap: wrap; row-gap: 0; padding-top: 12px; padding-bottom: 12px; }
 .about .row__body { flex: 1 1 auto; }
 .about__actions { display: flex; flex: none; align-items: center; gap: var(--space-0); margin-left: auto; margin-right: -10px; }
 .about__state { display: flex; }
 .about__check.is-busy .icon { animation: spin 1s linear infinite; }
 /* Lien court dans le texte (7 caractères d'un commit) : zone tactile de
-   44 px sans agrandir la ligne (marges négatives) */
-.about__link { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); margin: -12px 0; color: var(--color-accent-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
+   44 px sans agrandir la ligne (marges négatives), au-dessus du texte qui
+   suit pour que toute la zone reste touchable */
+.about__link { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); margin: -12px 0; color: var(--color-accent-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
 /* Pastilles d'état : « À jour » (vert), nouvelle version (accentuée, lien) */
 .chip--ok { color: var(--color-success-ink); }
 .chip--accent { background: var(--color-accent-soft); color: var(--color-accent-ink); }
@@ -516,3 +517,11 @@
 .about-links__link .icon { color: var(--color-text-2); }
 .about-links__link:active { background: var(--color-neutral-soft); }
 .about-links__sep { flex: none; align-self: stretch; width: 1px; margin: 6px 0; background: var(--color-border); }
+/* 16.7 Carte du compte (Réglages et « Mon compte ») : avatar, nom, rôle.
+   Dans Réglages, .account--link en fait un bouton sur toute sa surface, qui
+   ouvre « Mon compte » (chevron à droite, fond grisé au toucher). */
+.account { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
+.account--link { width: calc(100% - 2 * var(--space-2)); min-height: var(--tap-min); text-align: left; color: inherit; }
+.account--link .row__title, .account--link .row__sub { display: block; }
+.account--link > .icon:last-child { flex: none; color: var(--color-text-2); }
+.account--link:active { background: var(--color-neutral-soft); }

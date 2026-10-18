@@ -23,11 +23,11 @@
 // server/app.js). Il change à chaque mise à jour du serveur : le navigateur
 // voit un nouveau sw.js, l'installe, copie les nouveaux fichiers dans un cache
 // neuf, et l'ancienne copie est effacée à l'activation. Jamais de mélange
-// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v8…)
+// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v9…)
 // si la liste des fichiers change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v8-${BUILD ?? 'dev'}`;
+const VERSION = `v9-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 const PHOTO_LIMIT = 150;
@@ -62,6 +62,7 @@ const APP_FILES = [
   '/js/theme.js',
   '/js/ui.js',
   '/js/version.js',
+  '/js/viewport.js',
   '/js/words.js',
   '/js/screens/account.js',
   '/js/screens/admin.js',

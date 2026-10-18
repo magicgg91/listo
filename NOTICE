@@ -8,3 +8,23 @@ Ce produit est distribué sous la licence Apache, version 2.0 (voir le
 fichier LICENSE). En cas de réutilisation ou de redistribution, ce fichier
 NOTICE et la mention de l'auteur doivent être conservés (article 4 de la
 licence).
+
+--------------------------------------------------------------------------
+Composants tiers inclus
+--------------------------------------------------------------------------
+
+Lecteur de codes-barres du mode scan (public/vendor/zxing-wasm-3.1.4/),
+copié tel quel depuis le paquet npm zxing-wasm@3.1.4 (lecteur seul) :
+
+- zxing-wasm — Copyright (c) 2023 Ze-Zheng Wu — licence MIT (texte complet
+  dans public/vendor/zxing-wasm-3.1.4/LICENSE).
+  https://github.com/Sec-ant/zxing-wasm
+- ZXing-C++, compilé en WebAssembly dans zxing_reader.wasm — Copyright les
+  auteurs de ZXing et de ZXing-C++ — licence Apache, version 2.0 (même
+  texte que le fichier LICENSE de Listo).
+  https://github.com/zxing-cpp/zxing-cpp
+
+Données des produits du mode scan : Open Food Facts
+(https://world.openfoodfacts.org), base de données sous licence Open
+Database License (ODbL) ; contenus sous licence Database Contents License
+(DbCL). Listo ne garde ces données qu'en mémoire, quelques jours au plus.

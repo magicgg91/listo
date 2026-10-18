@@ -23,7 +23,7 @@ export function meRoutes(ctx) {
   const reloadUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 
   router.get('/me', (req, res) => {
-    res.json({ user: publicUser(req.user) });
+    res.json({ user: publicUser(req.user, ctx.config) });
   });
 
   // Changement de mot de passe. Toutes les sessions du compte sont fermées

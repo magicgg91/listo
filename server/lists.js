@@ -851,7 +851,7 @@ export function createListService(ctx) {
 
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
-    photoItem, setPhotoDate, nowIso, OpError,
+    photoItem, setPhotoDate, nowIso, OpError, listForMember,
   };
 }
 

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, ORIGIN, SETUP_CODE } from './helpers.js';
-import { CONTENT_SECURITY_POLICY, PERMISSIONS_POLICY } from '../server/app.js';
+import { CONTENT_SECURITY_POLICY, APP_CONTENT_SECURITY_POLICY, PERMISSIONS_POLICY } from '../server/app.js';
 import { totpCode, totpStep } from '../server/totp.js';
 import { openTotpSecret } from '../server/twofactor.js';
 
@@ -21,10 +21,13 @@ const JPEG = Buffer.concat([
   block(0xda, Buffer.from([1, 1, 0, 0, 0x3f, 0])), Buffer.from([0x12, 0x34]), Buffer.from([0xff, 0xd9]),
 ]);
 
-// Les en-têtes exigés partout
-function checkHeaders(res, label) {
+// Les en-têtes exigés partout. CSP : politique stricte pour le lien public
+// (/p/…, /api/public/…), la même avec 'wasm-unsafe-eval' pour l'application
+// (lecteur de codes-barres du mode scan)
+function checkHeaders(res, label, url = '/') {
   const csp = res.headers.get('content-security-policy');
-  assert.equal(csp, CONTENT_SECURITY_POLICY, `${label} : Content-Security-Policy`);
+  const publicLink = /^\/(p|api\/public)(\/|$)/.test(url);
+  assert.equal(csp, publicLink ? CONTENT_SECURITY_POLICY : APP_CONTENT_SECURITY_POLICY, `${label} : Content-Security-Policy`);
   assert.equal(res.headers.get('x-content-type-options'), 'nosniff', `${label} : X-Content-Type-Options`);
   assert.equal(res.headers.get('referrer-policy'), 'no-referrer', `${label} : Referrer-Policy`);
   assert.equal(res.headers.get('x-frame-options'), 'DENY', `${label} : X-Frame-Options`);
@@ -53,6 +56,16 @@ test('la politique de sécurité du contenu est stricte', () => {
   assert.equal(rules['object-src'], "'none'");
   assert.equal(rules['base-uri'], "'none'");
   assert.doesNotMatch(CONTENT_SECURITY_POLICY, /unsafe-inline|unsafe-eval|blob:|data:|\*|https?:/);
+});
+
+test("la politique de l'application ajoute seulement 'wasm-unsafe-eval' (jamais 'unsafe-eval')", () => {
+  assert.equal(APP_CONTENT_SECURITY_POLICY, CONTENT_SECURITY_POLICY.replace("script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'"));
+  const rules = Object.fromEntries(APP_CONTENT_SECURITY_POLICY.split('; ').map((rule) => [rule.split(' ')[0], rule.split(' ').slice(1).join(' ')]));
+  assert.equal(rules['script-src'], "'self' 'wasm-unsafe-eval'");
+  // Le lecteur tourne dans un worker venu de Listo lui-même
+  assert.equal(rules['worker-src'], "'self'");
+  assert.equal(rules['connect-src'], "'self'");
+  assert.doesNotMatch(APP_CONTENT_SECURITY_POLICY, /'unsafe-eval'|unsafe-inline|blob:|data:|\*|https?:/);
 });
 
 test('Permissions-Policy : fonctions inutiles interdites, appareil photo laissé libre', () => {
@@ -108,7 +121,7 @@ test('en-têtes de sécurité sur toutes les routes principales, y compris les e
     const res = await fetch(`${app.base}${url}`, { method, headers, body });
     const text = await res.text();
     assert.equal(res.status, status, `${label} (${url})`);
-    checkHeaders(res, label);
+    checkHeaders(res, label, url);
     if (status >= 400) checkNoLeak(text, label);
   }
 

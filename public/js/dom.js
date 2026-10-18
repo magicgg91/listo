@@ -76,13 +76,18 @@ export function passwordInput(attrs = {}) {
 
 // Champ de formulaire du kit : libellé + contrôle + aide + erreur.
 // Renvoie { field, setError } pour afficher ou effacer une erreur.
-export function field(label, control, { hint, id } = {}) {
+// aside : aide courte, écrite à côté du titre entre parenthèses, en texte
+// discret (« Quantité (par exemple 2 ou 500 g) ») ; elle est dans le <label>,
+// donc lue avec le nom du champ. hint : explication plus longue, sous le champ.
+export function field(label, control, { hint, aside, id } = {}) {
   const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select, button');
   const inputId = id ?? `f-${Math.random().toString(36).slice(2, 9)}`;
   if (input && !input.id) input.id = inputId;
   const error = h('span', { class: 'field__error', id: `${inputId}-erreur`, role: 'alert', hidden: true });
   const hintEl = hint ? h('span', { class: 'field__hint' }, hint) : null;
-  const wrapper = h('div', { class: 'field' }, h('label', { class: 'field__label', for: input?.id }, label), control, hintEl, error);
+  const title = h('label', { class: 'field__label', for: input?.id }, label,
+    aside ? [' ', h('span', { class: 'field__aside' }, `(${aside})`)] : null);
+  const wrapper = h('div', { class: 'field' }, title, control, hintEl, error);
   return {
     field: wrapper,
     setError(message) {

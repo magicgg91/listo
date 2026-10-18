@@ -34,7 +34,7 @@
 // si la liste des fichiers change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v15-${BUILD ?? 'dev'}`;
+const VERSION = `v17-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version

@@ -347,16 +347,99 @@ export function saveItemSort(listId, sort, storage = () => globalThis.localStora
 }
 // Ménage : oublie le tri des listes qui ne sont plus sur ce téléphone
 export function pruneItemSorts(listIds, storage = () => globalThis.localStorage) {
+  pruneByPrefix([ITEM_SORT_PREFIX], listIds, storage);
+}
+// Ménage complet, à l'écran « Mes listes » : tri, groupes repliés et zone
+// des cochés des listes qui ne sont plus sur ce téléphone
+export function pruneListMemory(listIds, storage = () => globalThis.localStorage) {
+  pruneByPrefix([ITEM_SORT_PREFIX, FOLDED_PREFIX, ZONE_PREFIX], listIds, storage);
+}
+function pruneByPrefix(prefixes, listIds, storage) {
   try {
     const store = storage();
     const keep = new Set(listIds);
     const keys = [];
     for (let i = 0; i < store.length; i++) keys.push(store.key(i));
     for (const key of keys) {
-      if (key?.startsWith(ITEM_SORT_PREFIX) && !keep.has(key.slice(ITEM_SORT_PREFIX.length))) store.removeItem(key);
+      const prefix = prefixes.find((p) => key?.startsWith(p));
+      if (prefix && !keep.has(key.slice(prefix.length))) store.removeItem(key);
     }
   } catch {
     // sans importance
+  }
+}
+
+// --- Groupes repliés d'une liste (rayons, magasins, priorités) ---
+// Mémorisés sur ce téléphone seulement, pour chaque liste (clé
+// listo-groupes-replies-<identifiant>) : jamais envoyés au serveur. Tout est
+// déplié par défaut. Le stockage du navigateur peut être indisponible
+// (navigation privée…) : l'état vaut alors pour la visite, sans plus.
+export const FOLDED_PREFIX = 'listo-groupes-replies-';
+
+// Identifiant stable d'un groupe affiché, d'un dessin à l'autre :
+// « a:<rayon> », « s:<magasin> » (liste « multi »), « p:<priorité> » ;
+// « aucun » pour « Sans rayon » / « Sans magasin »
+export function groupKey(group) {
+  if (group.priority) return `p:${group.priority}`;
+  if ('store' in group) return `s:${group.store?.id ?? 'aucun'}`;
+  return `a:${group.aisle?.id ?? 'aucun'}`;
+}
+
+// Groupes qui peuvent exister : tous les rayons et magasins connus (actifs ou
+// non), « sans », et les trois priorités. Un groupe absent de cette liste
+// (rayon ou magasin supprimé) est oublié.
+export function possibleGroupKeys(state) {
+  return new Set([
+    ...state.aisles.map((aisle) => `a:${aisle.id}`), 'a:aucun',
+    ...state.stores.map((store) => `s:${store.id}`), 's:aucun',
+    'p:high', 'p:normal', 'p:low',
+  ]);
+}
+
+export function loadFoldedGroups(listId, storage = () => globalThis.localStorage) {
+  try {
+    const saved = JSON.parse(storage().getItem(FOLDED_PREFIX + listId) ?? '[]');
+    return new Set(Array.isArray(saved) ? saved.filter((key) => typeof key === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+export function saveFoldedGroups(listId, folded, storage = () => globalThis.localStorage) {
+  try {
+    if (folded.size) storage().setItem(FOLDED_PREFIX + listId, JSON.stringify([...folded]));
+    else storage().removeItem(FOLDED_PREFIX + listId);
+  } catch {
+    // stockage indisponible : l'état n'est pas retenu, sans conséquence
+  }
+}
+// Retire les groupes qui n'existent plus ; vrai si quelque chose a changé
+export function pruneFoldedGroups(folded, possible) {
+  let changed = false;
+  for (const key of [...folded]) {
+    if (!possible.has(key)) {
+      folded.delete(key);
+      changed = true;
+    }
+  }
+  return changed;
+}
+
+// --- Zone des cochés repliée ou ouverte (même principe, clé
+// listo-zone-repliee-<identifiant>). Ouverte par défaut. ---
+export const ZONE_PREFIX = 'listo-zone-repliee-';
+export function isZoneOpen(listId, storage = () => globalThis.localStorage) {
+  try {
+    return storage().getItem(ZONE_PREFIX + listId) !== '1';
+  } catch {
+    return true;
+  }
+}
+export function rememberZone(listId, open, storage = () => globalThis.localStorage) {
+  try {
+    if (open) storage().removeItem(ZONE_PREFIX + listId);
+    else storage().setItem(ZONE_PREFIX + listId, '1');
+  } catch {
+    // stockage indisponible : l'état n'est pas retenu, sans conséquence
   }
 }
 

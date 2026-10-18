@@ -189,3 +189,10 @@ button.sync { cursor: pointer; }
 .item.item--added { animation: item-added 1.6s ease-out; }
 @keyframes item-added { from { background: var(--color-accent-soft); } }
 @media (prefers-reduced-motion: reduce) { .item.item--added { animation: none; } }
+
+/* Fiche d'un article : aide courte à côté du titre d'un champ, en texte
+   discret ; champ et bouton sur une même ligne (Code-barres : champ avec sa
+   croix, puis le bouton de scan) */
+.field__aside { font-size: 0.93em; font-weight: 400; color: var(--color-text-2); }
+.field__row { display: flex; align-items: center; gap: var(--space-1); }
+.field__row .input-wrap { flex: 1; min-width: 0; }

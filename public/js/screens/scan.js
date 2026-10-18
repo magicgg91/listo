@@ -2,9 +2,9 @@
 // champ d'ajout, puis feuille « Scanner un produit ».
 //
 // Parcours :
-// 1. le bouton propose « Prendre une photo » (appareil photo) ou « Choisir
-//    une photo » (galerie) : même mécanisme que la photo d'un article (deux
-//    sélecteurs de fichier cachés, l'un avec capture, l'autre sans) ;
+// 1. le bouton ouvre directement le sélecteur d'images du téléphone (son
+//    propre menu propose l'appareil photo ou la photothèque) : même
+//    composant que la photo d'un article (createImagePicker de photo.js) ;
 // 2. la photo est lue sur le téléphone (barcode.js) : elle n'est ni gardée
 //    ni envoyée, seul le numéro du code part vers Listo ;
 // 3. Listo cherche le nom du produit, dans cet ordre : un article de la
@@ -39,6 +39,7 @@ import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
 import { duplicateOf, duplicateText, listItemForEan, knownItemForEan } from '../store.js';
 import { openSheet, toast, releaseFocus } from '../ui.js';
+import { createImagePicker } from '../photo.js';
 import { app } from '../app.js';
 
 // Bouton visible : liste de courses, et recherche activée sur le serveur
@@ -61,67 +62,18 @@ const NO_NAME = {
 // - getView : vue actuelle de la liste (computeListView), pour les doublons
 //   et le scan pour cocher
 // - check(item, checked) : coche ou décoche un article (opération habituelle)
-// Sélecteurs cachés du téléphone, comme pour la photo d'un article :
-// appareil photo (capture) et galerie. onFile(fichier) reçoit l'image choisie.
-export function photoInputs(onFile) {
-  const make = (capture) => {
-    const input = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture, tabindex: '-1', 'aria-hidden': 'true' });
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      input.value = ''; // la même photo pourra être reprise
-      if (file) onFile(file);
-    });
-    return input;
-  };
-  return { camera: make('environment'), gallery: make(null) };
-}
-
-// Les deux choix (44 px au moins), sur toute la largeur. Le sélecteur
-// s'ouvre directement dans l'appui (exigé par l'iPhone) ; after() est
-// appelé ensuite (fermer la fenêtre de choix…).
-export function photoChoiceButtons({ camera, gallery }, { primary = false, after = () => {} } = {}) {
-  const choice = (input, iconName, label, classes) => h('button', {
-    class: `btn ${classes} btn--block`,
-    type: 'button',
-    onClick: () => {
-      input.click();
-      after();
-    },
-  }, icon(iconName, 'icon--sm'), label);
-  return [
-    choice(camera, 'camera', 'Prendre une photo', primary ? 'btn--primary' : 'btn--secondary'),
-    choice(gallery, 'image', 'Choisir une photo', 'btn--secondary'),
-  ];
-}
-
-// Feuille de choix : « Prendre une photo » ou « Choisir une photo », avec la
-// fermeture habituelle (croix, Retour du téléphone, fond grisé)
-export function openPhotoChoice({ title, sub }, inputs) {
-  const sheet = openSheet({
-    title,
-    sub,
-    content: h('div', { class: 'sheet__actions' }, photoChoiceButtons(inputs, { after: () => sheet.close() })),
-  });
-  return sheet;
-}
-
 // - add(name, { note, ean }) : ajoute l'article comme un ajout normal (rayon
 //   ou magasin habituel, sinon demandé une fois) ; renvoie l'article ajouté,
 //   ou false si le choix du rayon a été abandonné
 export function createScanner({ listId, getView, add, check }) {
   let session = null; // feuille ouverte (une seule)
-  // Appareil photo et galerie : la même lecture, le même parcours
-  const inputs = photoInputs((file) => {
+  // Un seul bouton : le sélecteur d'images du téléphone (appareil photo ou
+  // photothèque, au choix du téléphone) ; la même lecture ensuite
+  const picker = createImagePicker((file) => {
     session ??= openSession();
     session.scan(file);
   });
-  const button = h('button', {
-    class: 'btn btn--secondary btn--icon',
-    type: 'button',
-    'aria-label': 'Scanner un produit',
-    'aria-haspopup': 'dialog',
-    onClick: () => openPhotoChoice({ title: 'Scanner un produit', sub: 'Photographiez le code-barres, ou choisissez une photo où il est net.' }, inputs),
-  }, icon('barcode'));
+  const button = picker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' }, icon('barcode'));
 
   // --- Feuille « Scanner un produit » ---
   function openSession() {
@@ -147,8 +99,8 @@ export function createScanner({ listId, getView, add, check }) {
     const status = (text) => h('p', { class: 'sync sync--busy', role: 'status' }, icon('sync', 'icon--sm'), text);
     const message = (iconName, text, danger = false) => h('div', { class: `note${danger ? ' note--danger' : ''}`, role: 'status' }, icon(iconName), h('p', {}, text));
     const btn = (classes, content, onClick) => h('button', { class: `btn ${classes}`, type: 'button', onClick }, ...content);
-    // Réessayer : les deux mêmes choix (appareil photo ou galerie)
-    const retake = () => photoChoiceButtons(inputs, { primary: true });
+    // Réessayer : un seul bouton, le même sélecteur
+    const retake = () => picker.button({ class: 'btn btn--primary btn--block' }, icon('camera', 'icon--sm'), 'Réessayer');
     // « Annuler » : la feuille se ferme (un champ qui avait le curseur le perd)
     const cancel = () => btn('btn--secondary btn--block', ['Annuler'], () => sheet.close());
 
@@ -187,7 +139,7 @@ export function createScanner({ listId, getView, add, check }) {
       } catch (err) {
         if (step !== current) return;
         if (err instanceof ImageUnreadable) {
-          manualCode(message('alert', "Ce fichier n'est pas une image lisible. Prenez ou choisissez une photo, ou saisissez le code.", true));
+          manualCode(message('alert', "Ce fichier n'est pas une image lisible. Réessayez avec une photo, ou saisissez le code.", true));
         } else {
           // Lecteur indisponible (pas encore téléchargé et hors ligne, mode
           // Isolement de l'iPhone…) : saisie à la main
@@ -293,7 +245,7 @@ export function createScanner({ listId, getView, add, check }) {
         found ? message('check', 'Produit trouvé. Vous pouvez corriger le nom avant de l\'ajouter.') : null,
         source === 'known' ? message('check', `Produit connu : ${name}. Vous pouvez corriger le nom avant de l'ajouter.`) : null,
         nameField.field,
-        field('Note (facultative)', noteInput, { hint: found ? 'Marque et format' : undefined }).field,
+        field(found ? 'Note' : 'Note (facultative)', noteInput, { aside: found ? 'facultative : marque et format' : undefined }).field,
         warning,
         found ? h('p', { class: 'field__hint' }, 'Données : Open Food Facts') : null,
         h('div', { class: 'sheet__actions' }, save, cancel()));
@@ -318,5 +270,5 @@ export function createScanner({ listId, getView, add, check }) {
     return { scan };
   }
 
-  return { button, inputs: [inputs.camera, inputs.gallery] };
+  return { button, inputs: [picker.input] };
 }

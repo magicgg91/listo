@@ -1,33 +1,81 @@
-// Mode scan, partie B : « Prendre une photo » (appareil photo) ou « Choisir
-// une photo » (galerie). Deux sélecteurs de fichier cachés, comme pour la
-// photo d'un article ; les deux chemins passent par la même lecture locale.
-// L'ouverture réelle de l'appareil photo et de la galerie se vérifie sur le
-// téléphone.
+// Photo et scan : UN seul bouton partout, le choix est celui du téléphone.
+// Un champ fichier caché accept="image/*" SANS l'attribut capture : le
+// téléphone propose lui-même l'appareil photo ou la photothèque. Listo
+// n'ajoute aucun menu. Un seul composant partagé (createImagePicker de
+// photo.js) pour tous les points d'entrée. L'ouverture réelle du sélecteur
+// se vérifie sur le téléphone.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import { isImageFile, readBarcode, ImageUnreadable } from '../public/js/barcode.js';
 
-const scan = fs.readFileSync(new URL('../public/js/screens/scan.js', import.meta.url), 'utf8');
+const ROOT = new URL('..', import.meta.url).pathname;
+const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
-test('deux sélecteurs cachés : un avec capture (appareil photo), un sans (galerie)', () => {
-  assert.match(scan, /return \{ camera: make\('environment'\), gallery: make\(null\) \};/);
-  assert.match(scan, /type: 'file', accept: 'image\/\*', capture, tabindex: '-1', 'aria-hidden': 'true'/);
+// Fichiers de l'interface (hors bibliothèque copiée dans public/vendor/)
+function interfaceFiles() {
+  const found = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+      const rel = path.join(dir, entry.name);
+      if (entry.isDirectory()) { if (entry.name !== 'vendor') walk(rel); } else if (/\.(js|html)$/.test(entry.name)) found.push(rel);
+    }
+  };
+  walk('public');
+  walk('server/pages');
+  return found;
+}
+// Code sans les commentaires de fin de ligne
+const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
+
+test('aucun champ fichier avec l\'attribut capture, nulle part', () => {
+  for (const file of interfaceFiles()) {
+    assert.doesNotMatch(code(file), /capture\s*[:=]/, `${file} : attribut capture`);
+  }
 });
 
-test('le choix s\'ouvre à l\'appui sur « Scanner », les deux chemins mènent à la même lecture', () => {
-  // Bouton « Scanner » : feuille de choix
-  assert.match(scan, /'aria-label': 'Scanner un produit',[\s\S]*?onClick: \(\) => openPhotoChoice\(/);
-  // Les deux choix, dans cet ordre, ouvrent leur sélecteur dans l'appui
-  assert.match(scan, /choice\(camera, 'camera', 'Prendre une photo'/);
-  assert.match(scan, /choice\(gallery, 'image', 'Choisir une photo'/);
-  assert.match(scan, /onClick: \(\) => \{\s*input\.click\(\);\s*after\(\);/);
-  // Un seul point d'arrivée pour les deux sélecteurs : session.scan(fichier)
-  assert.match(scan, /const inputs = photoInputs\(\(file\) => \{\s*session \?\?= openSession\(\);\s*session\.scan\(file\);/);
-  // Code non lu : les deux mêmes choix (plus de « Reprendre une photo » seul)
-  assert.match(scan, /const retake = \(\) => photoChoiceButtons\(inputs, \{ primary: true \}\);/);
-  assert.ok(!scan.includes('Reprendre une photo'));
+test('plus de bouton « Appareil photo » ni « Galerie », aucun menu propre à Listo pour ce choix', () => {
+  for (const file of interfaceFiles()) {
+    const text = code(file);
+    for (const gone of ["'Appareil photo'", "'Galerie'", 'Prendre une photo', 'Choisir une photo', 'openPhotoChoice', 'photoChoiceButtons', 'photoInputs']) {
+      assert.ok(!text.includes(gone), `${file} : « ${gone} » doit avoir disparu`);
+    }
+  }
+});
+
+test('un seul composant : champ caché accept="image/*" sans capture, ouvert dans l\'appui', () => {
+  const photo = read('public/js/photo.js');
+  assert.match(photo, /const input = h\('input', \{ class: 'visually-hidden', type: 'file', accept: 'image\/\*', tabindex: '-1', 'aria-hidden': 'true' \}\);/);
+  assert.match(photo, /const open = \(\) => input\.click\(\);/);
+  assert.match(photo, /h\('button', \{ type: 'button', \.\.\.attrs, onClick: open \}/);
+  // Seul ce composant crée un champ fichier dans l'application (la page
+  // publique n'en a pas)
+  for (const file of interfaceFiles()) {
+    const count = (code(file).match(/type: 'file'/g) ?? []).length;
+    assert.equal(count, file.endsWith('public/js/photo.js') ? 1 : 0, `${file} : champ fichier hors du composant partagé`);
+  }
+});
+
+test('tous les points d\'entrée utilisent le même composant', () => {
+  const list = read('public/js/screens/list.js');
+  const scan = read('public/js/screens/scan.js');
+  // Feuille de l'article : photo (« Ajouter une photo » / « Changer la photo ») et code-barres
+  assert.match(list, /const photoPicker = createImagePicker\(\(file\) => sendPhoto\(file\)\);/);
+  assert.match(list, /pick\('btn--secondary btn--block', 'Ajouter une photo'\)/);
+  assert.match(list, /pick\('btn--secondary btn--sm', 'Changer la photo'\)/);
+  assert.match(list, /const eanPicker = createImagePicker\(\(file\) => readEan\(file\)\);/);
+  assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' \}, icon\('barcode'\)\);/);
+  // Barre d'ajout et « Réessayer » du mode scan : le même sélecteur
+  assert.match(scan, /const picker = createImagePicker\(\(file\) => \{\s*session \?\?= openSession\(\);\s*session\.scan\(file\);/);
+  assert.match(scan, /const button = picker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' \}/);
+  assert.match(scan, /const retake = \(\) => picker\.button\(\{ class: 'btn btn--primary btn--block' \}, icon\('camera', 'icon--sm'\), 'Réessayer'\);/);
+  // Les champs cachés sont dans la page (exigé par l'iPhone)
+  assert.match(list, /photoArea, photoNote, photoPicker\.input\)/);
+  assert.match(list, /eanStatus, eanTwin, eanPicker\.input\)/);
+  assert.match(scan, /return \{ button, inputs: \[picker\.input\] \};/);
+  assert.match(list, /h\('div', \{ class: 'addbar' \}, suggestBox, addForm, scanner\.inputs\)/);
 });
 
 test('fichier qui n\'est pas une image : refusé avant toute lecture', async () => {
@@ -38,14 +86,5 @@ test('fichier qui n\'est pas une image : refusé avant toute lecture', async () 
   assert.equal(isImageFile({ type: 'text/plain' }), false);
   assert.equal(isImageFile({ type: 'application/pdf' }), false);
   assert.equal(isImageFile(null), false);
-  // Refusé tout de suite : ni lecteur, ni dessin (aucun navigateur ici)
   await assert.rejects(readBarcode({ type: 'text/plain' }), ImageUnreadable);
-});
-
-test('feuille de l\'article (code-barres) : « Scanner » propose les deux mêmes choix, même lecture', () => {
-  const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
-  assert.match(list, /const eanInputs = photoInputs\(\(file\) => readEan\(file\)\);/);
-  assert.match(list, /onClick: \(\) => openPhotoChoice\(\{ title: 'Scanner le code-barres'/);
-  assert.match(list, /const code = await readBarcode\(file\);/);
-  assert.ok(!list.includes('eanCamera'), 'plus de sélecteur unique « appareil photo »');
 });

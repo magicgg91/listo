@@ -493,15 +493,22 @@
 .scroll--flat { padding-top: var(--space-1); }
 
 /* 16.6 Bloc « À propos » (Réglages) : une carte .group en deux zones .row.
-   .about : « Version : 7025130 » (lien) et, pour l'Admin, « Vérifié il y a
-   15 min » dessous ; à droite, pastille d'état (.chip) et bouton-icône
-   d'actualisation (.icon-btn). Trop étroit (texte agrandi) : pastille et
-   bouton passent sous la version, alignés à droite, sans déborder.
+   .about, ligne du haut : « Version : 7025130 » (lien) à gauche ; pour
+   l'Admin, à droite : « Vérifié il y a 15 min » (à jour : « À jour · il y
+   a 15 min », .about__ok en vert ET écrit) et le bouton-icône
+   d'actualisation (.icon-btn), toujours groupés (.about__checked) ; devant,
+   un état éventuel (.chip « Hors ligne », « Vérification impossible »). Trop étroit (texte agrandi) : le groupe
+   passe dessous, aligné à droite, sans déborder. Nouvelle version : ligne à
+   part (.about__update) avec la seule pastille-lien « Nouvelle version :
+   9f8e7d6 » ; sans nouvelle version, cette ligne n'existe pas.
    .about-links : deux liens égaux séparés par un trait vertical fin. */
-.about { flex-wrap: wrap; row-gap: 0; padding-top: 12px; padding-bottom: 12px; }
-.about .row__body { flex: 1 1 auto; }
-.about__actions { display: flex; flex: none; align-items: center; gap: var(--space-0); margin-left: auto; margin-right: -10px; }
+.about { flex-wrap: wrap; column-gap: var(--space-1); row-gap: var(--space-0); padding-top: var(--space-1); padding-bottom: var(--space-1); }
+.about__version { flex: 0 1 auto; min-width: 0; }
+.about__actions { display: flex; flex-wrap: wrap; flex: 0 1 auto; align-items: center; justify-content: flex-end; column-gap: var(--space-1); min-width: 0; margin-left: auto; margin-right: -12px; }
 .about__state { display: flex; }
+.about__checked { display: flex; align-items: center; white-space: nowrap; }
+.about__ok { color: var(--color-success-ink); font-weight: 700; }
+.about__update { display: flex; flex: 1 0 100%; padding-bottom: var(--space-0); }
 .about__check.is-busy .icon { animation: spin 1s linear infinite; }
 /* Lien court dans le texte (7 caractères d'un commit) : zone tactile de
    44 px sans agrandir la ligne (marges négatives), au-dessus du texte qui
@@ -561,3 +568,22 @@
 .sync--compact { gap: 4px; padding: 0 9px; }
 .sync--compact .sync__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sync--compact .sync__count { display: inline; }
+/* 16.11 Groupes repliables (rayons, magasins « multi », priorités) : l'en-tête
+   .aisle.aisle--fold contient un vrai bouton .aisle__toggle (aria-expanded,
+   aria-controls vers la liste du groupe, 48 px de haut) : chevron, nom, nombre
+   à droite. Replié : chevron tourné vers la droite, liste masquée, et le
+   nombre laisse place à « · 2 à acheter » (« · 3 à faire ») après le nom :
+   jamais la couleur seule. La zone des cochés (16.5) se replie de la même
+   façon. « Tout replier / Tout déplier » : bouton texte compact .fold-all, à
+   droite de la barre d'état, seulement s'il y a au moins deux groupes. */
+.aisle--fold { padding: 0 var(--space-2); }
+.aisle__toggle { display: flex; align-items: center; gap: var(--space-1); flex: 1; min-width: 0; min-height: var(--tap); padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; color: inherit; }
+.aisle__toggle > .icon { flex: none; transition: transform var(--dur-fast) var(--ease); }
+.aisle__toggle[aria-expanded="false"] > .icon { transform: rotate(-90deg); }
+.aisle__toggle .aisle__name { overflow-wrap: anywhere; }
+.aisle__toggle .aisle__count { margin-left: auto; }
+.aisle__rest { flex: 1; min-width: 0; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.aisle__toggle:active, .fold-all:active { background: var(--color-neutral-soft); }
+.fold-all { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); margin-left: auto; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font-size: var(--text-sm); font-weight: 700; color: var(--color-accent-ink); }
+.fold-all .icon { transition: transform var(--dur-fast) var(--ease); }
+.fold-all--open .icon { transform: rotate(180deg); }

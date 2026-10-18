@@ -26,37 +26,18 @@
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
-import { shrinkPhoto, PhotoError } from '../photo.js';
+import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort } from '../store.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+  groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { openShareSheet } from './share.js';
-import { itemWords, countItems, doneZoneWords } from '../words.js';
-import { createScanner, scanAvailable, photoInputs, openPhotoChoice } from './scan.js';
+import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
+import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
-
-// Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
-// Ouverte par défaut. Le stockage du navigateur peut être indisponible
-// (navigation privée…) : rien d'essentiel n'en dépend.
-const zoneKey = (listId) => `listo-zone-repliee-${listId}`;
-function isZoneOpen(listId) {
-  try {
-    return localStorage.getItem(zoneKey(listId)) !== '1';
-  } catch {
-    return true;
-  }
-}
-function rememberZone(listId, open) {
-  try {
-    if (open) localStorage.removeItem(zoneKey(listId));
-    else localStorage.setItem(zoneKey(listId), '1');
-  } catch {
-    // stockage indisponible : l'état n'est pas retenu, sans conséquence
-  }
-}
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -93,8 +74,74 @@ export function renderList(listId, onLeave) {
 
   let view = null;
 
+  // --- Groupes repliables (rayons, magasins, priorités, zone des cochés) ---
+  // Repliés ou dépliés sur ce téléphone, pour cette liste (store.js) ; tout
+  // est déplié par défaut. L'état survit aux mises à jour en temps réel et
+  // aux changements de tri : chaque dessin le relit dans `folded`.
+  const folded = loadFoldedGroups(listId);
+  // Groupes repliables du dernier dessin : { isOpen(), setOpen(open), contains(node) }
+  let foldables = [];
+  // « Tout replier / Tout déplier » : dans la barre d'état, seulement s'il y
+  // a au moins deux groupes repliables
+  const foldAll = h('button', { class: 'fold-all', type: 'button', hidden: true, onClick: () => {
+    const open = !foldables.some((f) => f.isOpen());
+    for (const f of foldables) f.setOpen(open);
+    drawFoldAll();
+  } });
+  function drawFoldAll() {
+    const anyOpen = foldables.some((f) => f.isOpen());
+    foldAll.hidden = foldables.length < 2;
+    foldAll.classList.toggle('fold-all--open', anyOpen);
+    replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? 'Tout replier' : 'Tout déplier');
+  }
+
+  // En-tête de groupe repliable (design : section 16.11) : un vrai bouton
+  // (aria-expanded, aria-controls), chevron qui tourne, nombre à droite ;
+  // replié, « · 2 à acheter » s'affiche après le nom (jamais la couleur seule).
+  // name : nom du groupe ; lead : icône devant le nom (magasin), ou rien.
+  function foldableGroup(list, group, name, lead = null) {
+    const key = groupKey(group);
+    const remaining = group.items.length; // le groupe ne contient que des non cochés
+    const listEl = h('ul', { id: `groupe-${listId}-${key.replace(':', '-')}` }, group.items.map(itemRow));
+    const rest = h('span', { class: 'aisle__rest' }, `· ${remainingWords(remaining, list)}`);
+    const counter = h('span', { class: 'aisle__count', 'aria-hidden': 'true' }, String(remaining));
+    const toggle = h('button', {
+      class: 'aisle__toggle',
+      type: 'button',
+      'aria-controls': listEl.id,
+      'aria-label': `${name}, ${remainingWords(remaining, list)}`,
+    }, icon('chev-d', 'icon--sm'), h('span', { class: 'aisle__name' }, lead, name), rest, counter);
+    const show = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      listEl.hidden = !open;
+      rest.hidden = open;
+      counter.hidden = !open;
+    };
+    const foldable = {
+      isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
+      setOpen: (open) => {
+        if (open) folded.delete(key);
+        else folded.add(key);
+        saveFoldedGroups(listId, folded);
+        show(open);
+      },
+      contains: (node) => listEl.contains(node),
+    };
+    // Ouvrir / replier sur place : ni redessin, ni saut de défilement ; le
+    // bouton garde le focus
+    toggle.addEventListener('click', () => {
+      foldable.setOpen(!foldable.isOpen());
+      drawFoldAll();
+    });
+    show(!folded.has(key));
+    foldables.push(foldable);
+    return h('section', {}, h('h2', { class: 'aisle aisle--fold' }, toggle), listEl);
+  }
+
   // --- Dessin de la liste ---
   const draw = () => {
+    foldables = [];
+    drawFoldAll();
     if (!app.data.loaded) {
       replace(content, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
       return;
@@ -135,16 +182,19 @@ export function renderList(listId, onLeave) {
         h('p', { class: 'empty__text' }, `Ajoutez un premier ${words.one} avec le champ ci-dessous.`)));
       return;
     }
-    const count = (group) => h('span', { class: 'aisle__count', 'aria-label': `${words.many} restants` }, String(group.items.filter((i) => !i.checked).length));
-    replace(content, groups.map((group) => h('section', {},
-      // En-tête collant : rayon, ou magasin (avec son icône) dans une liste « multi »
-      view.multi
-        ? h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.store?.name ?? 'Sans magasin'), count(group))
-        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group))
+    // Groupes disparus (rayon ou magasin supprimé) : oubliés
+    if (pruneFoldedGroups(folded, possibleGroupKeys(app.data))) saveFoldedGroups(listId, folded);
+    replace(content, groups.map((group) => (
+      // En-tête collant et repliable : rayon, ou magasin (avec son icône)
+      // dans une liste « multi »
+      view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
+        : list.category.isShopping ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
-          : group.label ? h('h2', { class: 'aisle' }, group.label, count(group)) : null,
-      h('ul', {}, group.items.map(itemRow)))),
+          : group.label ? foldableGroup(list, group, group.label)
+            // Ordre alphabétique ou par échéance : liste simple, sans en-tête
+            : h('section', {}, h('ul', {}, group.items.map(itemRow))))),
     done.length ? doneZone(list, done) : null);
+    drawFoldAll();
   };
 
   // Zone des articles cochés, sous le dernier rayon (design/components.html,
@@ -170,12 +220,20 @@ export function renderList(listId, onLeave) {
       listEl.hidden = !open;
       actionsRow.hidden = !open;
     };
+    const foldable = {
+      isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
+      setOpen: (open) => {
+        rememberZone(listId, open);
+        show(open);
+      },
+      contains: (node) => listEl.contains(node),
+    };
     toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') !== 'true';
-      rememberZone(listId, open);
-      show(open);
+      foldable.setOpen(!foldable.isOpen());
+      drawFoldAll();
     });
     show(isZoneOpen(listId));
+    foldables.push(foldable); // « Tout replier » la replie aussi
     return h('section', { class: 'cart' },
       h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' }, toggle), actionsRow),
       listEl);
@@ -386,25 +444,44 @@ export function renderList(listId, onLeave) {
     // Liste de courses : l'ajout se termine (plus de curseur dans le champ,
     // clavier replié) et l'article ajouté est montré dans la liste. Autres
     // listes : inchangé, le champ garde le curseur pour enchaîner.
-    if (!item || !view?.list.category.isShopping) return;
+    if (!item) return;
+    if (!view?.list.category.isShopping) {
+      whenRow(item.id, unfoldRow); // groupe replié : déplié, sans autre changement
+      return;
+    }
     suggestBox.hidden = true;
     releaseFocus();
     revealItem(item.id);
   }
 
-  // Fait défiler la liste jusqu'à un article tout juste ajouté et le met
-  // brièvement en évidence. La liste peut être redessinée un peu plus tard
-  // (jamais pendant qu'un doigt est posé dessus) : on attend sa ligne, une
-  // seconde au plus.
-  function revealItem(itemId, tries = 30) {
+  // Attend la ligne d'un article tout juste ajouté : la liste peut être
+  // redessinée un peu plus tard (jamais pendant qu'un doigt est posé dessus),
+  // une seconde au plus.
+  function whenRow(itemId, then, tries = 30) {
     const row = content.querySelector(`li[data-item-id="${CSS.escape(itemId)}"]`);
-    if (!row) {
-      if (tries > 0) setTimeout(() => revealItem(itemId, tries - 1), 40);
-      return;
+    if (row) then(row);
+    else if (tries > 0) setTimeout(() => whenRow(itemId, then, tries - 1), 40);
+  }
+
+  // Un article ajouté depuis ce téléphone dans un groupe replié : le groupe
+  // se déplie (un ajout venu de l'autre téléphone ne change rien)
+  function unfoldRow(row) {
+    const group = foldables.find((f) => f.contains(row));
+    if (group && !group.isOpen()) {
+      group.setOpen(true);
+      drawFoldAll();
     }
-    row.scrollIntoView({ block: 'center', behavior: 'smooth' }); // au milieu : jamais sous le toast
-    row.classList.add('item--added');
-    setTimeout(() => row.classList.remove('item--added'), 1600);
+  }
+
+  // Fait défiler la liste jusqu'à un article tout juste ajouté (groupe
+  // déplié au besoin) et le met brièvement en évidence
+  function revealItem(itemId) {
+    whenRow(itemId, (row) => {
+      unfoldRow(row);
+      row.scrollIntoView({ block: 'center', behavior: 'smooth' }); // au milieu : jamais sous le toast
+      row.classList.add('item--added');
+      setTimeout(() => row.classList.remove('item--added'), 1600);
+    });
   }
 
   // Ajoute un article (champ d'ajout ou mode scan). extra : autres champs
@@ -558,27 +635,28 @@ export function renderList(listId, onLeave) {
         h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue)),
     ] : null;
 
-    // --- Code-barres (listes de courses) : saisi à la main, ou lu sur une
-    // photo par « Scanner » (appareil photo ou galerie, même lecteur que le
-    // mode scan, sur le téléphone). Vérifié à l'enregistrement ; vide = pas
-    // de code.
+    // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
+    // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
+    // d'images du téléphone, même lecteur que le mode scan). Une petite croix
+    // dans le champ le vide, sans y mettre le curseur. Vérifié à
+    // l'enregistrement ; vide = pas de code.
     const shopping = Boolean(view?.list.category.isShopping);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
-    const eanField = field('Code-barres', eanInput, { hint: 'Chiffres sous les barres (8, 12 ou 13)' });
+    // Croix « Effacer » dans le champ, visible seulement s'il contient quelque chose
+    const eanClear = iconButton('close', 'Effacer le code-barres', () => {
+      eanInput.value = '';
+      drawEan();
+    });
+    const eanPicker = createImagePicker((file) => readEan(file));
+    const eanScan = eanPicker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' }, icon('barcode'));
+    const eanField = field('Code-barres', h('div', { class: 'field__row' }, h('div', { class: 'input-wrap' }, eanInput, eanClear), eanScan),
+      { aside: '8, 12 ou 13 chiffres' });
     const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
     const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
-    const eanInputs = photoInputs((file) => readEan(file));
-    const eanScan = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Scanner le code-barres', 'aria-haspopup': 'dialog',
-      onClick: () => openPhotoChoice({ title: 'Scanner le code-barres', sub: 'Photographiez le code-barres, ou choisissez une photo où il est net.' }, eanInputs) },
-    icon('barcode', 'icon--sm'), 'Scanner');
-    const eanClear = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Effacer le code-barres', onClick: () => {
-      eanInput.value = '';
-      drawEan();
-    } }, 'Effacer');
     const drawEan = () => {
       eanField.setError(null);
-      eanClear.disabled = !eanInput.value.trim();
+      eanClear.hidden = !eanInput.value;
       const code = normalizeBarcode(eanInput.value);
       const twin = code ? [...app.data.items.values()].find((other) => other.listId === item.listId && other.id !== item.id && other.ean === code) : null;
       eanTwin.hidden = !twin;
@@ -598,7 +676,7 @@ export function renderList(listId, onLeave) {
         else message = 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.';
       } catch (err) {
         message = err instanceof ImageUnreadable
-          ? "Ce fichier n'est pas une image lisible. Prenez ou choisissez une photo, ou saisissez le code."
+          ? "Ce fichier n'est pas une image lisible. Réessayez avec une photo, ou saisissez le code."
           : "La lecture des codes-barres n'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.";
       }
       eanStatus.hidden = true;
@@ -608,7 +686,7 @@ export function renderList(listId, onLeave) {
     }
     drawEan();
     const eanFields = shopping ? h('div', { class: 'stack stack--sm' },
-      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanInputs.camera, eanInputs.gallery) : null;
+      eanField.field, eanStatus, eanTwin, eanPicker.input) : null;
 
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
@@ -617,27 +695,24 @@ export function renderList(listId, onLeave) {
     let gone = false; // article supprimé ailleurs pendant que la feuille est ouverte
     const photoArea = h('div');
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
-    // Sélecteurs du téléphone (cachés) : appareil photo, ou galerie
-    const camera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
-    const gallery = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', tabindex: '-1', 'aria-hidden': 'true' });
-    camera.addEventListener('change', () => sendPhoto(camera));
-    gallery.addEventListener('change', () => sendPhoto(gallery));
+    // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
+    // l'appareil photo ou la photothèque). La photo reste facultative.
+    const photoPicker = createImagePicker((file) => sendPhoto(file));
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {
         class: `btn ${classes}`, type: 'button', 'aria-label': label, disabled: busy || gone, onClick,
       }, icon(iconName, 'icon--sm'), text);
+      const pick = (classes, text) => photoPicker.button({ class: `btn ${classes}`, 'aria-label': text, disabled: busy || gone }, icon('camera', 'icon--sm'), text);
       if (actions.hasPhoto(current)) {
         replace(photoArea, h('div', { class: 'photo-block' },
           h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${current.name}`, onClick: () => showPhoto(current) },
             h('img', { class: 'photo', src: actions.photoSrc(current), alt: '' })),
           h('div', { class: 'photo-block__actions' },
-            button('btn--secondary btn--sm', 'camera', 'Remplacer', 'Remplacer la photo', () => gallery.click()),
+            pick('btn--secondary btn--sm', 'Changer la photo'),
             button('btn--danger-outline btn--sm', 'trash', 'Retirer', 'Retirer la photo', removePhoto))));
       } else {
-        replace(photoArea, h('div', { class: 'photo-actions' },
-          button('btn--secondary', 'camera', 'Appareil photo', 'Appareil photo : prendre une photo', () => camera.click()),
-          button('btn--secondary', 'image', 'Galerie', 'Galerie : choisir une photo', () => gallery.click())));
+        replace(photoArea, pick('btn--secondary btn--block', 'Ajouter une photo'));
       }
       photoNote.textContent = busy ? 'Préparation de la photo…' : current.localPhoto ? 'Photo en attente d\'envoi : elle partira dès que possible.' : '';
       photoNote.hidden = !photoNote.textContent;
@@ -645,10 +720,7 @@ export function renderList(listId, onLeave) {
 
     // Photo prise ou choisie : réduite ici, puis mise en file d'attente (elle
     // part tout de suite avec du réseau, sinon dès son retour)
-    async function sendPhoto(input) {
-      const file = input.files?.[0];
-      input.value = ''; // la même photo pourra être choisie de nouveau
-      if (!file) return;
+    async function sendPhoto(file) {
       error.show('');
       busy = true;
       drawPhoto();
@@ -710,11 +782,11 @@ export function renderList(listId, onLeave) {
     const form = h('form', { class: 'stack', novalidate: true },
       conflict,
       nameField.field,
-      field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
+      field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, camera, gallery),
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
       error.note,
@@ -880,7 +952,7 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'topbar__main' }, title, sub),
       sortButton,
       menuButton),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), foldAll),
     content,
     addbar);
 }

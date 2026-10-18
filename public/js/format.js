@@ -90,23 +90,29 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
   // désactivée sur le serveur (LISTO_UPDATE_CHECK=off)
   const hidden = !isAdmin || commit === 'non précisé'
     || result?.state === 'desactive' || result?.state === 'developpement';
-  if (hidden) return { version, checked: null, chip: null, button: false, busy: false };
+  if (hidden) return { version, upToDate: false, checked: null, chip: null, update: null, button: false, busy: false };
 
-  if (!online) return { version, checked: null, chip: { tone: 'neutral', text: 'Hors ligne' }, button: true, busy: false };
+  if (!online) return { version, upToDate: false, checked: null, chip: { tone: 'neutral', text: 'Hors ligne' }, update: null, button: true, busy: false };
 
-  // Pendant une vérification, la pastille précédente reste affichée
+  // Ligne du haut : « Vérifié il y a 15 min », ou, à jour, « À jour · il y a
+  // 15 min » (upToDate : la place manque sur un téléphone pour une pastille
+  // en plus) ; chip : « Vérification impossible ». update : nouvelle version,
+  // sur sa propre ligne (pastille-lien vers ce commit). Pendant une
+  // vérification, l'état précédent reste.
   let chip = null;
-  if (result?.state === 'ok' && result.upToDate === true) {
-    chip = { tone: 'ok', icon: 'check', text: 'À jour' };
+  let update = null;
+  const upToDate = result?.state === 'ok' && result.upToDate === true;
+  if (upToDate) {
+    // rien de plus : « À jour » est écrit dans la ligne du haut
   } else if (result?.state === 'ok' && isCommitSha(result.latest)) {
     const short = result.latest.slice(0, 7);
-    chip = { tone: 'accent', icon: 'alert', text: `Nouvelle : ${short}`, commit: result.latest, label: `Nouvelle version disponible : ${short}, ouvrir sur GitHub` };
+    update = { tone: 'accent', icon: 'alert', text: `Nouvelle version : ${short}`, commit: result.latest, label: `Nouvelle version disponible : ${short}, ouvrir sur GitHub` };
   } else if (result) {
     chip = { tone: 'neutral', text: 'Vérification impossible' };
   }
   const when = result?.checkedAt ? relativeTime(result.checkedAt, now) : '';
-  const checked = when ? `Vérifié ${when}` : null;
-  return { version, checked, chip, button: true, busy };
+  const checked = when ? (upToDate ? when : `Vérifié ${when}`) : null;
+  return { version, upToDate, checked, chip, update, button: true, busy };
 }
 
 // Bouton de tri de « Mes listes » : icône du tri ACTIF, libellé pour les

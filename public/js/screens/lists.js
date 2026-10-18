@@ -5,7 +5,7 @@
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
-import { computeSummaries, loadListSort, saveListSort, pruneItemSorts } from '../store.js';
+import { computeSummaries, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle } from '../ui.js';
 
@@ -120,7 +120,7 @@ export function renderLists(onLeave) {
     }
     const lists = computeSummaries(app.data, { sort: currentSort() });
     sorter.setCount(lists.length);
-    pruneItemSorts(lists.map((list) => list.id)); // tri des listes disparues : oublié
+    pruneListMemory(lists.map((list) => list.id)); // tri et groupes repliés des listes disparues : oubliés
     replace(content, lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : emptyLists());
   };
   const idle = drawWhenIdle(content, draw);

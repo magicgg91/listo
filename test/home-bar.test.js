@@ -44,5 +44,6 @@ test('pastille : rôle d\'état, texte toujours lu, réduite à l\'icône (et au
 
 test('écran d\'une liste : pastille laissée sous la barre (le titre y perdrait la moitié de sa place)', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\)\)/);
+  // (à droite, « Tout replier / Tout déplier » quand la liste a des groupes)
+  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\)/);
 });

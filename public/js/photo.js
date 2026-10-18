@@ -8,6 +8,32 @@
 // la réécrit en JPEG. Aucune adresse « blob: » n'est affichée dans la page :
 // la Content-Security-Policy reste stricte.
 
+import { h } from './dom.js';
+
+// --- Choisir une image : UN seul bouton, le choix est celui du téléphone ---
+// Un champ fichier caché, accept="image/*", SANS l'attribut capture : le
+// téléphone affiche lui-même son menu (iPhone : « Photothèque / Prendre une
+// photo / Choisir le fichier » ; Android : son sélecteur, qui propose aussi
+// l'appareil photo). Listo n'ajoute aucun menu par-dessus. Le champ est mis
+// dans la page (exigé par l'iPhone) et ouvert dans l'appui de la personne.
+// Utilisé partout : photo d'un article, code-barres de l'article, « Scanner »
+// de la barre d'ajout, « Réessayer » du mode scan.
+//
+// onFile(fichier) reçoit l'image choisie. Renvoie { input, button, open } :
+// input à placer dans la page ; button(attributs, ...contenu) fabrique un
+// bouton qui ouvre le sélecteur ; open() l'ouvre (dans un appui).
+export function createImagePicker(onFile) {
+  const input = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', tabindex: '-1', 'aria-hidden': 'true' });
+  input.addEventListener('change', () => {
+    const file = input.files?.[0];
+    input.value = ''; // la même image pourra être choisie de nouveau
+    if (file) onFile(file);
+  });
+  const open = () => input.click();
+  const button = (attrs, ...children) => h('button', { type: 'button', ...attrs, onClick: open }, ...children);
+  return { input, button, open };
+}
+
 export const PHOTO_MAX_SIDE = 1280;
 export const PHOTO_QUALITY = 0.85;
 

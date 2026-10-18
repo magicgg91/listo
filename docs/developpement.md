@@ -19,6 +19,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [En-têtes, arrêt propre et sauvegarde (étape 11)](#en-têtes-arrêt-propre-et-sauvegarde-étape-11)
 - [Groupes repliables (toutes les listes)](#groupes-repliables-toutes-les-listes)
 - [Glissement vers la gauche (« Supprimer »)](#glissement-vers-la-gauche--supprimer-)
+- [Droit par personne (« Peut modifier » ou « Lecture seule »)](#droit-par-personne--peut-modifier--ou--lecture-seule-)
 - [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
 ## Organisation du code
@@ -64,13 +65,14 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/vendor/zxing-wasm-3.1.4/` | Lecteur de codes-barres copié tel quel (voir « Mode scan » ci-dessous : origine, version, empreintes). Téléchargé par le téléphone au premier scan seulement |
 | `public/js/viewport.js` | Android : retire `viewport-fit=cover` avant le premier affichage, pour garder la page au-dessus de la barre de navigation (voir « Android : barre de navigation ») |
 | `public/js/app-height.js` | Hauteur de l'application : mesure la hauteur visible, l'écrit dans `--app-h` et la remesure au retour dans l'application (voir « Hauteur remesurée au retour ») |
-| `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) |
+| `public/js/photo.js` | Réduction d'une photo sur le téléphone avant l'envoi (1 280 px, JPEG) ; bouton qui ouvre le sélecteur d'images du téléphone |
+| `public/js/swipe.js` | Glissement d'une ligne vers la gauche (raccourci « Supprimer ») : décision du geste et contrôleur tactile (voir « Glissement vers la gauche » ci-dessous) |
 | `public/js/public.js` | Page publique d'une liste (lien `/p/…`) : saisie du mot de passe, liste en lecture seule, photo agrandie. N'utilise ni service worker ni stockage |
 | `public/js/store.js` | Copie locale des données et calculs (tri d'une liste autre que les courses, choix gardé par liste sous la clé `listo-tri-liste-<id>` ; cartes de « Mes listes » et leur tri : plus récentes d'abord ou ordre alphabétique, choix gardé sur le téléphone sous la clé `listo-tri-listes` ; liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, « 3 articles restants » / « 3 éléments restants »…) |
 | `public/js/words.js` | Vocabulaire : « article » dans une liste de courses, « élément » dans les autres listes. Tous les textes qui nomment une ligne de la liste passent par lui |
 | `public/js/dom.js`, `public/js/ui.js`, `public/js/theme.js` | Fabrication des éléments de la page (jamais `innerHTML`), feuilles, menus, messages, thème clair/sombre/auto |
-| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur, avec le bouton de tri ; sur téléphone, pastille d'état dans la barre du haut), `list.js` (une liste et la feuille Article), `scan.js` (bouton « Scanner » et feuille « Scanner un produit », listes de courses), `list-form.js` (créer ou modifier une liste), `list-actions.js` (actions d'une liste, les mêmes dans le menu « ⋯ » d'une carte et le menu ⋮ de la liste : « Modifier la liste », « Partager par lien », « Supprimer la liste » avec sa confirmation), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
+| `public/js/screens/` | Un fichier par écran : `login.js` (connexion), `lists.js` (Mes listes et colonne de gauche sur ordinateur, avec le bouton de tri ; sur téléphone, pastille d'état dans la barre du haut), `list.js` (une liste et la feuille Article), `scan.js` (bouton « Scanner » et feuille « Scanner un produit », listes de courses), `list-form.js` (créer ou modifier une liste, avec le droit de chaque personne : `accessChoice`), `list-actions.js` (actions d'une liste, les mêmes dans le menu « ⋯ » d'une carte et le menu ⋮ de la liste : « Modifier la liste », « Partager par lien », « Supprimer la liste » avec sa confirmation), `share.js` (feuille « Partager par lien »), `settings.js` (réglages, mot de passe, 2FA), `account.js` (Mon compte : sécurité, apparence, ce téléphone), `admin.js` (administration) |
 | `test/` | Tests automatisés (`npm test`) |
 | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `SECURITY.md` | Licence Apache-2.0 (texte officiel), mentions à conserver, règles de contribution, signalement des failles |
 | `docs/` | Cahier des charges, guide d'exploitation (`exploitation.md`) et ce document (`developpement.md`) |
@@ -156,6 +158,12 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 20. **Menu « ⋯ » d'une carte** (« Mes listes ») : sur une liste dont vous êtes propriétaire, le bouton « ⋯ » dans le coin de la carte ouvre un petit menu juste en dessous, sans ouvrir la liste : « Modifier la liste », « Partager par lien », puis, après un trait, « Supprimer la liste » (en rouge). Toucher ailleurs sur la carte ouvre la liste ; toucher à côté du menu le ferme. « Modifier la liste » puis la croix ou « Enregistrer » : retour à « Mes listes », carte à jour. « Partager par lien », créer un lien, fermer : retour à « Mes listes », la carte porte la petite icône de lien. « Supprimer la liste » demande « Supprimer la liste « Courses » ? » ; après « Supprimer », la carte disparaît (aussi sur l'autre téléphone). Dans une liste ouverte, le menu ⋮ propose exactement les mêmes trois actions (plus d'« Actualiser » : toucher la pastille « À jour »). Sur une liste partagée avec vous par quelqu'un d'autre : ni bouton « ⋯ » ni bouton ⋮.
 21. **Renommer une catégorie** (Administration → Catégories, sur un téléphone ; un deuxième téléphone reste ouvert sur « Mes listes ») : en quelques secondes, les cartes du deuxième téléphone montrent le nouveau nom, sans rien toucher ; dans une liste ouverte, le sous-titre aussi. Même chose pour un magasin. Un téléphone en mode avion pendant le renommage montre le nouveau nom dès son retour sur le réseau.
 22. **Lecteur d'écran** (VoiceOver sur iPhone, TalkBack sur Android) : la pastille d'état est annoncée comme un bouton, « À jour, synchroniser maintenant » (ou « Hors ligne, synchroniser maintenant ») ; un double appui relance la synchronisation ; quand l'état change, le nouvel état est annoncé une seule fois.
+23. **Droit par personne** (deux téléphones : A, propriétaire ; B, invité) :
+    1. Sur A, « Nouvelle liste » : cocher la personne B ; dessous apparaissent tout de suite « Peut modifier » et « Lecture seule », cette dernière déjà choisie (coche et texte). Votre propre ligne affiche « Tous les droits », sans choix. Enregistrer. « Modifier la liste » montre le même choix.
+    2. Sur B, la carte de cette liste porte la pastille « Lecture seule ». Dans la liste : bandeau « Lecture seule » sous le titre, pas de champ d'ajout ni de « Scanner » ; les cases sont visibles mais ne cochent rien (un article coché reste barré) ; glisser une ligne vers la gauche ne fait rien ; toucher une ligne ouvre « Détail de l'article » sans clavier ni bouton « Enregistrer » ou poubelle ; la photo s'agrandit. Le tri, le repli des groupes et « Tout replier » marchent.
+    3. B ouvert sur la liste, une fiche ouverte ou le clavier sorti : sur A, passer B en « Peut modifier » et enregistrer. Sur B, en quelques secondes et sans recharger : la fiche se ferme, le clavier se replie, le champ d'ajout apparaît, message « Vous pouvez maintenant modifier cette liste. ». Puis l'inverse : « Cette liste est maintenant en lecture seule. ».
+    4. B en « Peut modifier » et en mode avion : cocher un article et en ajouter un. Sur A, passer B en « Lecture seule ». Couper le mode avion sur B : message « Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées. », l'article coché redevient décoché, l'article ajouté disparaît, la pastille repasse à « À jour » (rien ne reste en attente).
+    5. Lecteur d'écran sur B : chaque case est annoncée « Coché » ou « Non coché » ; une ligne, « Voir <nom> ». Sur A : « Droit de <nom> sur la liste », puis le choix actif.
 
 ## API des comptes (étape 2)
 
@@ -362,11 +370,13 @@ Les identifiants (`id`) de chaque élément sont donnés par les commandes du po
 
 Réservées à un compte connecté. Chaque requête vérifie que le compte est membre de la liste concernée. Quelqu'un qui n'est pas membre reçoit la même réponse que si la liste n'existait pas (« Liste introuvable », code 404). Un Admin n'a aucun droit particulier sur les listes des autres.
 
+Chaque écriture vérifie aussi le droit du compte sur la liste (voir « Droit par personne » ci-dessous) : un invité en « Lecture seule » reçoit 403 « Vous avez un accès en lecture seule à cette liste. ».
+
 | Route | Rôle |
 | --- | --- |
 | `GET /api/lists` | Mes listes (celles dont je suis membre), la plus récemment active d'abord, avec le nombre d'articles restants et les membres |
 | `GET /api/lists/:id` | Une liste et ses articles, groupés par rayon et triés |
-| `PUT /api/lists/:id/members` | Changer le partage (propriétaire seulement) : `userIds`, la liste complète des invités |
+| `PUT /api/lists/:id/members` | Changer le partage (propriétaire seulement) : `userIds`, la liste complète des invités, et `access` (facultatif) : le droit de certains invités, `{"2": "modification"}` ou `{"2": "lecture"}`. Un invité ajouté sans droit précisé est en lecture seule ; un invité déjà présent garde le sien. Refus (400) : droit inconnu, droit donné au propriétaire ou à une personne absente de `userIds` |
 | `GET /api/users` | Comptes actifs, pour choisir avec qui partager |
 | `GET /api/suggestions?q=la` | Autocomplétion, dès 2 lettres. Avec `&listId=…` (une de mes listes) : vide si ce n'est pas une liste de courses |
 | `GET /api/sync?since=…` | Tout ce qui a changé depuis l'instant `since` (l'heure `serverTime` donnée par la synchro précédente) ; sans `since` : tout |
@@ -444,6 +454,10 @@ curl -b cookies.txt $U/api/lists/$L
 curl -b marie.txt $U/api/lists/$L
 curl -b cookies.txt -H "$O" -H "$J" -X PUT -d '{"userIds":[2]}' $U/api/lists/$L/members
 curl -b marie.txt $U/api/lists
+# Ajoutée sans droit précisé : Marie est en lecture seule (403 sur toute écriture)
+COOKIES=marie.txt op '"type":"list.uncheckAll","listId":"'"$L"'"'
+# Le propriétaire lui donne « Peut modifier »
+curl -b cookies.txt -H "$O" -H "$J" -X PUT -d '{"userIds":[2],"access":{"2":"modification"}}' $U/api/lists/$L/members
 
 # 7. Marie ne peut pas renommer la liste, mais elle peut tout décocher et retirer les cochés
 COOKIES=marie.txt op '"type":"list.update","listId":"'"$L"'","name":"Renommée"'
@@ -508,7 +522,7 @@ curl -b cookies.txt $U/api/lists/$L
 
 ## Photos des articles (étape 7)
 
-Chaque article peut avoir une photo (une seule), dans une liste de courses comme dans une liste de tâches. Les photos sont servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées (route `GET /api/public/:jeton/photos/:id`, voir « Lien public d'une liste »). Les routes ci-dessous sont celles des membres.
+Chaque article peut avoir une photo (une seule), dans une liste de courses comme dans une liste de tâches. Les photos sont servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées (route `GET /api/public/:jeton/photos/:id`, voir « Lien public d'une liste »). Les routes ci-dessous sont celles des membres (envoyer ou retirer une photo demande en plus le droit « Peut modifier », voir « Droit par personne »).
 
 | Route | Rôle |
 | --- | --- |
@@ -734,6 +748,17 @@ Raccourci pour supprimer un article ou un élément, dans toutes les listes (`pu
 - **Contrôleur** (`createSwipeController`) : événements tactiles natifs, passifs (le défilement n'attend jamais) ; `touch-action: pan-y` sur la ligne ; contact à moins de 24 px du bord gauche ignoré (geste « retour » de l'iPhone) ; une seule ligne ouverte ; un toucher ailleurs, le défilement de la liste, l'ouverture d'une fiche ou un glissement vers la droite la referment ; la fin d'un glissement et l'appui qui referme une ligne n'ouvrent pas la fiche (l'appui sur la zone rouge, lui, est toujours pris en compte).
 - **Suppression** : `deleteWithUndo` de `list.js`, la même que la poubelle de la fiche : `item.delete` par la file d'attente (hors ligne compris), puis le message « « Pain » supprimé · Annuler » (6 secondes, au-dessus de la barre d'ajout) ; « Annuler » envoie `item.restore` (article et photo remis tant que le nettoyage des 30 jours ne les a pas effacés). Aucune nouvelle route.
 - Vérifié dans Chromium avec de vrais événements tactiles (`Input.dispatchTouchEvent`) : ouverture, retour, diagonale, défilement vertical, bord gauche, une seule ligne ouverte, appuis inchangés, souris sans effet, suppression et « Annuler », hors ligne, clair et sombre. Le toucher réel (iPhone, Android) reste à vérifier sur les téléphones (point 19 ci-dessus).
+
+## Droit par personne (« Peut modifier » ou « Lecture seule »)
+
+Chaque invité d'une liste a un droit, colonne `list_members.access` (migration 12) : `modification` (« Peut modifier ») ou `lecture` (« Lecture seule », valeur par défaut). Les membres présents avant la migration ont reçu `modification`. Le propriétaire a toujours tous les droits : le serveur le reconnaît par `lists.owner_id`, et refuse de lui donner un droit.
+
+- **Une seule fonction décide** : `canEdit(user, ligne)` de `server/lists.js` (propriétaire, ou invité `modification`), relue dans la base à chaque requête. Elle sert à `requireEdit`, `listForEditor` et `itemForEditor` (opérations de `/api/ops`), au contrôle `mayEdit` des photos (`server/routes/photos.js`) et au mode scan (`server/routes/products.js`, par `listForEditor`). Les routes ne testent jamais elles-mêmes la valeur du droit (vérifié par `test/read-only.test.js`).
+- **Écritures protégées** (403 « Vous avez un accès en lecture seule à cette liste. », rien d'écrit, rien d'annoncé) : `item.create`, `item.update` (nom, quantité, note, rayon, magasin, priorité, échéance, code-barres), `item.check`, `item.delete`, `item.restore`, `list.uncheckAll`, `list.removeChecked` (et son ancien nom `list.clearChecked`), `PUT` et `DELETE /api/items/:id/photo`, `POST /api/lists/:id/products`. Réservées au propriétaire, comme avant : `list.update`, `list.delete`, `PUT /api/lists/:id/members`, `/api/lists/:id/share`. Un non-membre reçoit toujours 404, sans rien apprendre.
+- **Lecture** permise en lecture seule : `GET /api/lists`, `GET /api/lists/:id`, `GET /api/sync` (chaque liste porte `canEdit`, et chaque membre son `access`), `GET /api/items/:id/photo`, `GET /api/suggestions`, `GET /api/events`.
+- **Changer un droit** : `PUT /api/lists/:id/members` avec `access` ; la date de modification de la liste avance et ses membres sont prévenus en temps réel (le droit arrive donc aussi par la synchronisation « depuis »). Journal : `liste_droit_change` (noms de compte, identifiant de la liste, droit), jamais le nom ni le contenu de la liste.
+- **Téléphone** : `canEditList(list)` de `public/js/store.js` est la seule règle de l'interface (une copie gardée d'avant cette information reste modifiable jusqu'à la synchronisation ; le serveur refuse de toute façon). `public/js/screens/list.js` : bandeau `.readonly-banner`, champ d'ajout et « Scanner » masqués, lignes sans glissement, case `.check--static` (comme la page publique), fiche à consulter `openItemView`, actions des cochés masquées, et chaque action vérifie encore le droit. Si le droit change, la liste ouverte bascule tout de suite (`closeOverlays` de `router.js` ferme les fenêtres en un seul retour dans l'historique, clavier replié, message). `public/js/screens/list-form.js` : composant `accessChoice` sous chaque personne cochée. `public/js/app.js` : un refus « lecture seule » venu de la file d'attente donne le message « Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées. », après la synchronisation complète qui remet l'écran à l'état du serveur.
+- Tests : `test/read-only.test.js` (serveur, migration), `test/read-only-ui.test.js` (téléphone, file d'attente) ; vérifié dans Chromium (création, « Modifier la liste », liste et fiche en lecture seule, bascule en direct avec deux fenêtres et le clavier ouverts, file hors ligne, clair et sombre).
 
 ## Mode scan des listes de courses
 

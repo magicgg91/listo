@@ -5,6 +5,7 @@
 ## Ce que fait Listo
 
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur l'autre en quelques secondes ; les articles cochés se rangent « Dans le panier », en bas de la liste.
+- **Un droit par personne** sur chaque liste partagée : « Peut modifier » ou « Lecture seule ».
 - **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs magasins ; rayon habituel retenu, autocomplétion.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
 - **Mode scan** des listes de courses : photographier le code-barres d'un produit, Listo propose son nom (données [Open Food Facts](https://world.openfoodfacts.org)) ; la photo reste sur le téléphone.

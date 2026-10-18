@@ -319,7 +319,7 @@ export function renderList(listId, onLeave) {
     h('label', { class: 'addbar__field' }, input),
     scanner.button,
     h('button', { class: 'btn btn--primary btn--icon', type: 'submit', 'aria-label': 'Ajouter' }, icon('plus')));
-  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.camera);
+  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.inputs);
 
   addForm.addEventListener('submit', (event) => {
     event.preventDefault();

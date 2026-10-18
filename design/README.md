@@ -204,11 +204,11 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
 
-- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre l'appareil photo du téléphone.
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre une petite `.sheet` « Scanner un produit » avec deux `.btn--block` : « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), les icônes de la photo d'un article.
 - Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
   - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
-  - code non lu, lecteur indisponible : `.note.note--danger`, « Reprendre une photo » (`#i-camera`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
+  - code non lu, lecteur indisponible : `.note.note--danger`, « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
   - nom introuvable : `.note`, « Taper le nom » ;
   - après un ajout : la feuille se ferme, toast « Ajouté : … » ; l'article ajouté est brièvement mis en évidence dans la liste (`.item--added`, fond `--color-accent-soft` qui s'efface, dans `public/css/app.css`).
 

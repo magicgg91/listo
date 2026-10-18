@@ -73,8 +73,10 @@ test('code-barres : codes « en 2 » (propres à un magasin) repérés', () => {
 
 test('photo : essais de lecture (image entière, centre, réduite), jamais agrandie', () => {
   const big = client.scanAttempts(4000, 3000);
-  assert.deepEqual(big.map((a) => [a.dw, a.dh]), [[1600, 1200], [1200, 900], [800, 600]]);
+  // Image entière, centre, quatre coins (code en bas ou sur un côté), réduite
+  assert.deepEqual(big.map((a) => [a.dw, a.dh]), [[1600, 1200], [1200, 900], [1200, 900], [1200, 900], [1200, 900], [1200, 900], [800, 600]]);
   assert.deepEqual(big[1], { sx: 800, sy: 600, sw: 2400, sh: 1800, dw: 1200, dh: 900 });
+  assert.deepEqual(big.slice(2, 6).map((a) => [a.sx, a.sy, a.sw, a.sh]), [[0, 0, 2200, 1650], [1800, 0, 2200, 1650], [0, 1350, 2200, 1650], [1800, 1350, 2200, 1650]]);
   // Petite photo : pas d'agrandissement, essais en double retirés
   const small = client.scanAttempts(640, 480);
   assert.deepEqual(small.map((a) => [a.sw, a.dw, a.dh]), [[640, 640, 480], [384, 384, 288]]);

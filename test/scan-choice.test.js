@@ -66,7 +66,7 @@ test('tous les points d\'entrée utilisent le même composant', () => {
   assert.match(list, /pick\('btn--secondary btn--block', 'Ajouter une photo'\)/);
   assert.match(list, /pick\('btn--secondary btn--sm', 'Changer la photo'\)/);
   assert.match(list, /const eanPicker = createImagePicker\(\(file\) => readEan\(file\)\);/);
-  assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary', 'aria-label': 'Scanner le code-barres' \}/);
+  assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' \}, icon\('barcode'\)\);/);
   // Barre d'ajout et « Réessayer » du mode scan : le même sélecteur
   assert.match(scan, /const picker = createImagePicker\(\(file\) => \{\s*session \?\?= openSession\(\);\s*session\.scan\(file\);/);
   assert.match(scan, /const button = picker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' \}/);

@@ -245,7 +245,7 @@ export function createScanner({ listId, getView, add, check }) {
         found ? message('check', 'Produit trouvé. Vous pouvez corriger le nom avant de l\'ajouter.') : null,
         source === 'known' ? message('check', `Produit connu : ${name}. Vous pouvez corriger le nom avant de l'ajouter.`) : null,
         nameField.field,
-        field('Note (facultative)', noteInput, { hint: found ? 'Marque et format' : undefined }).field,
+        field(found ? 'Note' : 'Note (facultative)', noteInput, { aside: found ? 'facultative : marque et format' : undefined }).field,
         warning,
         found ? h('p', { class: 'field__hint' }, 'Données : Open Food Facts') : null,
         h('div', { class: 'sheet__actions' }, save, cancel()));

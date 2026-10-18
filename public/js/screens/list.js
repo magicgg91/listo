@@ -636,24 +636,27 @@ export function renderList(listId, onLeave) {
     ] : null;
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
-    // lu sur une photo par « Scanner » (sélecteur d'images du téléphone, même
-    // lecteur que le mode scan). Vérifié à l'enregistrement ; vide = pas de
-    // code.
+    // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
+    // d'images du téléphone, même lecteur que le mode scan). Une petite croix
+    // dans le champ le vide, sans y mettre le curseur. Vérifié à
+    // l'enregistrement ; vide = pas de code.
     const shopping = Boolean(view?.list.category.isShopping);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
-    const eanField = field('Code-barres', eanInput, { hint: 'Chiffres sous les barres (8, 12 ou 13)' });
+    // Croix « Effacer » dans le champ, visible seulement s'il contient quelque chose
+    const eanClear = iconButton('close', 'Effacer le code-barres', () => {
+      eanInput.value = '';
+      drawEan();
+    });
+    const eanPicker = createImagePicker((file) => readEan(file));
+    const eanScan = eanPicker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' }, icon('barcode'));
+    const eanField = field('Code-barres', h('div', { class: 'field__row' }, h('div', { class: 'input-wrap' }, eanInput, eanClear), eanScan),
+      { aside: '8, 12 ou 13 chiffres' });
     const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
     const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
-    const eanPicker = createImagePicker((file) => readEan(file));
-    const eanScan = eanPicker.button({ class: 'btn btn--secondary', 'aria-label': 'Scanner le code-barres' }, icon('barcode', 'icon--sm'), 'Scanner');
-    const eanClear = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Effacer le code-barres', onClick: () => {
-      eanInput.value = '';
-      drawEan();
-    } }, 'Effacer');
     const drawEan = () => {
       eanField.setError(null);
-      eanClear.disabled = !eanInput.value.trim();
+      eanClear.hidden = !eanInput.value;
       const code = normalizeBarcode(eanInput.value);
       const twin = code ? [...app.data.items.values()].find((other) => other.listId === item.listId && other.id !== item.id && other.ean === code) : null;
       eanTwin.hidden = !twin;
@@ -683,7 +686,7 @@ export function renderList(listId, onLeave) {
     }
     drawEan();
     const eanFields = shopping ? h('div', { class: 'stack stack--sm' },
-      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanPicker.input) : null;
+      eanField.field, eanStatus, eanTwin, eanPicker.input) : null;
 
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
@@ -779,7 +782,7 @@ export function renderList(listId, onLeave) {
     const form = h('form', { class: 'stack', novalidate: true },
       conflict,
       nameField.field,
-      field('Quantité', quantity, { hint: 'Texte libre, par exemple 2 ou 500 g' }).field,
+      field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,

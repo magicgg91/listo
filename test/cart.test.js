@@ -30,7 +30,7 @@ async function household(t) {
   const tick = () => { app.clock.now += 1000; };
   const h = { app, ...clients, ids, tick };
   h.listId = await newList(h, h.marie);
-  await h.marie.request('PUT', `/api/lists/${h.listId}/members`, { userIds: [ids.paul] });
+  await h.marie.request('PUT', `/api/lists/${h.listId}/members`, { userIds: [ids.paul], access: { [ids.paul]: 'modification' } });
   return h;
 }
 

@@ -35,7 +35,7 @@ export function listRoutes(ctx) {
 
   router.put('/lists/:id/members', (req, res) => {
     try {
-      res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds) });
+      res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds, req.body?.access ?? {}) });
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;

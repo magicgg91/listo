@@ -1,6 +1,7 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
 // formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, catégorie,
 // magasin simple ou « multi » (seulement pour une liste de courses), partage,
+// avec le droit de chaque personne (« Peut modifier » ou « Lecture seule »),
 // et suppression de la liste (propriétaire).
 
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge } from '../dom.js';
@@ -47,6 +48,35 @@ export function renderListForm(listId, onLeave) {
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => goBack('lists') }, 'Retour')));
     });
   return container;
+}
+
+// Droit d'une personne sur la liste : deux choix côte à côte (.segmented),
+// le choix actif a une coche ET son texte (jamais la couleur seule). Le même
+// composant sert à la création de la liste et à « Modifier la liste » (une
+// seule fonction form() pour les deux écrans). onChange(valeur) reçoit
+// 'modification' ou 'lecture'.
+export function accessChoice(name, value, onChange) {
+  let current = value;
+  const options = [['modification', 'Peut modifier'], ['lecture', 'Lecture seule']].map(([choice, label]) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
+      current = choice;
+      paint();
+      onChange(choice);
+    } });
+    option.dataset.value = choice;
+    option.dataset.label = label;
+    return option;
+  });
+  const paint = () => {
+    for (const option of options) {
+      const on = option.dataset.value === current;
+      option.setAttribute('aria-checked', String(on));
+      replace(option, on ? icon('check', 'icon--sm icon--check') : null, option.dataset.label);
+    }
+  };
+  paint();
+  return h('div', { class: 'share__access' },
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Droit de ${name} sur la liste` }, options));
 }
 
 function form(list, users) {
@@ -145,16 +175,22 @@ function form(list, users) {
   }
 
   // --- Partage ---
-  // Moi d'abord (toujours inclus), puis les autres comptes actifs ; un
-  // invité déjà présent mais désactivé reste affiché (et peut être retiré).
+  // Moi d'abord (toujours inclus, tous les droits), puis les autres comptes
+  // actifs ; un invité déjà présent mais désactivé reste affiché (et peut
+  // être retiré). Chaque personne cochée a son droit sur la liste, choisi
+  // juste sous son nom (accessChoice) : « Peut modifier » ou « Lecture
+  // seule ». Une personne ajoutée commence en « Lecture seule » ; une
+  // personne déjà invitée garde le sien.
   const guests = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
+  const rights = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
   const people = users.filter((u) => u.id !== me.id).map((u) => ({ ...u, active: true }));
   for (const member of list?.members ?? []) {
     if (!member.isOwner && !people.some((p) => p.id === member.id)) people.push({ ...member, active: false });
   }
   people.sort((a, b) => compareNames(a.displayName, b.displayName));
 
-  const tickRow = (person, { locked = false } = {}) => {
+  // Une personne : sa ligne à cocher, puis son droit si elle est cochée
+  const personRow = (person, { locked = false } = {}) => {
     const on = locked || guests.has(person.id);
     const row = h('button', {
       class: 'tick-row',
@@ -166,20 +202,22 @@ function form(list, users) {
     h('span', { class: `tick${on ? ' is-on' : ''}` }, on ? icon('check') : null),
     avatar(person.displayName, { second: !locked }),
     h('span', { class: 'grow' }, locked ? `${person.displayName} (vous)` : person.displayName),
-    locked ? h('span', { class: 'share__hint' }, 'Toujours inclus') : null,
+    locked ? h('span', { class: 'share__hint' }, 'Tous les droits') : null,
     !locked && !person.active ? h('span', { class: 'share__hint' }, 'Compte désactivé') : null);
+    const block = h('div', { class: 'share__person' }, row,
+      on && !locked ? accessChoice(person.displayName, rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value)) : null);
     if (!locked) {
       row.addEventListener('click', () => {
         if (guests.has(person.id)) guests.delete(person.id);
         else guests.add(person.id);
-        row.replaceWith(tickRow(person));
+        block.replaceWith(personRow(person));
       });
     }
-    return row;
+    return block;
   };
   const shareGroup = h('div', { class: 'card share' },
-    tickRow({ id: me.id, displayName: me.displayName }, { locked: true }),
-    people.map((person) => tickRow(person)));
+    personRow({ id: me.id, displayName: me.displayName }, { locked: true }),
+    people.map((person) => personRow(person)));
   // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
   const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
   let painted = false;
@@ -266,13 +304,14 @@ function form(list, users) {
     }
     // Partage : seulement s'il a changé, et seulement en ligne (route réservée
     // au propriétaire ; la liste doit d'abord exister sur le serveur)
-    const before = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
-    const changed = before.size !== guests.size || [...guests].some((g) => !before.has(g));
+    const before = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
+    const access = Object.fromEntries([...guests].map((id) => [id, rights.get(id) ?? 'lecture']));
+    const changed = before.size !== guests.size || [...guests].some((id) => before.get(id) !== access[id]);
     if (changed) {
       await refreshData({ quiet: true }); // envoie la file d'attente
       try {
         if (pendingCount()) throw new Error('hors ligne');
-        await put(`/api/lists/${id}/members`, { userIds: [...guests] });
+        await put(`/api/lists/${id}/members`, { userIds: [...guests], access });
         await refreshData({ quiet: true });
       } catch (err) {
         toast(`Le partage n'a pas pu être enregistré : ${pendingCount() ? 'indisponible hors ligne' : errorMessage(err)}. La liste, elle, est enregistrée.`);

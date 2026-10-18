@@ -298,6 +298,27 @@ export const MIGRATIONS = [
   `
   ALTER TABLE items ADD COLUMN ean TEXT CHECK (ean IS NULL OR (length(ean) IN (8, 13) AND ean NOT GLOB '*[^0-9]*'));
   `,
+
+  // --- Migration 12 : droit de chaque personne sur une liste partagée ---
+  // access : 'modification' (peut ajouter, modifier, cocher, supprimer les
+  // articles) ou 'lecture' (voit seulement). Les membres déjà présents gardent
+  // la modification : rien ne change pour eux. Une appartenance créée ensuite
+  // sans droit précisé est en lecture seule (valeur par défaut de la base).
+  // Le propriétaire a toujours tous les droits (vérifié dans lists.js).
+  // SQLite ne sait pas changer la valeur par défaut d'une colonne : la table
+  // est recopiée (aucune autre table ne pointe vers elle).
+  `
+  CREATE TABLE list_members_new (
+    list_id TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    access  TEXT    NOT NULL DEFAULT 'lecture' CHECK (access IN ('modification', 'lecture')),
+    PRIMARY KEY (list_id, user_id)
+  );
+  INSERT INTO list_members_new (list_id, user_id, access) SELECT list_id, user_id, 'modification' FROM list_members;
+  DROP TABLE list_members;
+  ALTER TABLE list_members_new RENAME TO list_members;
+  CREATE INDEX list_members_user ON list_members(user_id);
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

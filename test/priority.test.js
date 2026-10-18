@@ -36,7 +36,7 @@ async function household(t) {
     { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', categoryId: 1 },
     { id: uuid(), type: 'item.create', listId: shopping, itemId: milk, name: 'Lait', aisleId: 4 },
   ] });
-  for (const id of [tasks, shopping]) await guillaume.request('PUT', `/api/lists/${id}/members`, { userIds: [leaId] });
+  for (const id of [tasks, shopping]) await guillaume.request('PUT', `/api/lists/${id}/members`, { userIds: [leaId], access: { [leaId]: 'modification' } });
   // Compte les annonces temps réel (« la liste X a changé »)
   const notified = [];
   const notify = app.ctx.events.notifyList.bind(app.ctx.events);
@@ -58,7 +58,7 @@ const op = async (client, operation) => {
 
 test('migration 10 : base existante, éléments en priorité normale sans échéance, rien d\'autre ne change', () => {
   const db = openDatabase(':memory:');
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   // Base « d'avant » : version 9, sans les deux colonnes (ni le code-barres
   // de la migration 11), avec des données
   db.exec('ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean');
@@ -69,13 +69,13 @@ test('migration 10 : base existante, éléments en priorité normale sans éché
               VALUES ('i1', 'l1', 'Ampoule', '2', 'couloir', 1, '2026-10-01T10:00:00.000Z', 1, '2026-09-01T10:00:00.000Z', '2026-10-01T10:00:00.000Z')`).run();
   const before = db.prepare('SELECT id, name, quantity, note, checked, checked_at, created_at, updated_at FROM items').all();
   migrate(db);
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   assert.deepEqual(db.prepare('SELECT id, name, quantity, note, checked, checked_at, created_at, updated_at FROM items').all(), before);
   assert.deepEqual(db.prepare('SELECT priority, due_date FROM items').get(), { priority: 'normal', due_date: null });
   // La contrainte refuse toute autre priorité, même écrite directement
   assert.throws(() => db.prepare("UPDATE items SET priority = 'urgent'").run(), /CHECK/);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 11);
+  assert.equal(schemaVersion(db), 12); // toutes les migrations, jusqu'à la 12 (droits)
   db.close();
 });
 

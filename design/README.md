@@ -44,7 +44,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Zones tactiles d'au moins 44 px ; la case ronde mesure 30 px mais sa zone cliquable fait 52 × 56 px.
 - Un article coché est barré, atténué et porte une coche : jamais la couleur seule.
 - Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : un vrai `<button>` (un appui relance la synchronisation) avec `aria-live="polite"` et un nom qui dit l'état et l'action (`aria-label="À jour, synchroniser maintenant"`) ; un simple texte `role="status"` seulement s'il n'est pas cliquable.
-- Pas de survol ni de geste caché : les actions secondaires passent par le menu « ⋮ ».
+- Pas de survol. Les actions secondaires passent par le menu « ⋮ » (ou « ⋯ » d'une carte). Un seul geste : glisser une ligne vers la gauche révèle « Supprimer » ; c'est un raccourci, jamais le seul chemin : la poubelle de la fiche de l'article reste la voie complète (lecteurs d'écran, clavier, souris).
 
 ## Manifeste PWA (extrait)
 
@@ -254,3 +254,12 @@ Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `
 - Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran) : « Modifier la liste » (`#i-pencil`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`).
 - Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible.
 - Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.
+
+## Ajout : droit par personne et liste en lecture seule
+
+Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage : « Partage : droit par personne » et « Liste en lecture seule » dans `components.html`. Aucune nouvelle icône (`i-check`, `i-eye`).
+
+- Formulaire « Nouvelle liste » / « Modifier la liste », carte `.card.share` : chaque personne est un `.share__person` (la `.tick-row` habituelle, puis, si elle est cochée, `.share__access`). `.share__access` contient un `.segmented` (`role="radiogroup"`, `aria-label="Droit de <nom> sur la liste"`) avec deux `.segmented__opt` (`role="radio"`, 44 px) : « Peut modifier » et « Lecture seule » ; le choix actif porte `.icon--check` ET son texte (jamais la couleur seule). Une personne cochée commence sur « Lecture seule ». Le propriétaire (« (vous) ») n'a pas de choix : `.share__hint` « Tous les droits ».
+- Liste en lecture seule : `.readonly-banner` (le bandeau de la page publique, `#i-eye` + « Lecture seule ») juste sous la `.topbar` ; pas de `.addbar`, pas de bouton « Scanner », pas de `.swipe`, pas de `.cart__actions` ; cases `.check.check--static` (`role="img"`, `aria-label` « Coché » / « Non coché » ; cochée : `.is-on`, et la ligne `.is-done` reste barrée) ; la ligne reste un bouton `.item__body` (« Voir <nom> ») qui ouvre la fiche à consulter.
+- Fiche à consulter : `.sheet` « Détail de l'article » (« de l'élément » hors courses), sans outils dans l'en-tête (seulement la croix) ; un `.note` (`#i-eye`) rappelle la lecture seule ; chaque valeur est un `.field` avec `.field__label` et `.field__value` (texte, pas de champ) ; la photo est un `.photo-block__thumb` qui s'agrandit.
+- Carte de « Mes listes » : `.chip.chip--readonly` (`#i-eye` + « Lecture seule », 22 px de haut) dans `.list-card__meta`.

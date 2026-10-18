@@ -5,7 +5,7 @@
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
-import { computeSummaries, loadListSort, saveListSort, pruneListMemory } from '../store.js';
+import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
 import { listActions } from './list-actions.js';
@@ -64,7 +64,9 @@ function cardLink(list, { selected }) {
     h('span', {}, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--xs'), list.category.name),
     list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name, list.store.isMulti && list.category.isShopping ? [' ', multiBadge()] : null) : null,
     // Lien public en cours (propriétaire seulement) : petit rappel
-    hasPublicLink(list) ? h('span', { role: 'img', 'aria-label': 'Partagée par lien public', title: 'Partagée par lien public' }, icon('link', 'icon--xs')) : null),
+    hasPublicLink(list) ? h('span', { role: 'img', 'aria-label': 'Partagée par lien public', title: 'Partagée par lien public' }, icon('link', 'icon--xs')) : null,
+    // Liste partagée avec moi en lecture seule : pastille (icône ET texte)
+    canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), 'Lecture seule')),
   h('div', { class: 'list-card__foot' },
     count,
     h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },

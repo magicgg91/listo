@@ -188,7 +188,7 @@ test('liste « multi » : un non-membre ne peut rien faire, un invité peut choi
   assert.equal((await op(h.marie, { type: 'item.update', itemId: steak.id, storeId: h.s.primeur })).status, 404);
   assert.equal((await op(h.marie, { type: 'item.create', listId, itemId: uuid(), name: 'Pain', storeId: h.s.primeur })).status, 404);
 
-  await h.guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [h.marieId] });
+  await h.guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [h.marieId], access: { [h.marieId]: 'modification' } });
   assert.equal((await op(h.marie, { type: 'item.update', itemId: steak.id, storeId: h.s.primeur })).status, 200);
 });
 

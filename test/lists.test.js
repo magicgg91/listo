@@ -50,7 +50,9 @@ async function addItem(client, listId, fields = {}) {
   return { itemId, item: result.item };
 }
 
-const share = (client, listId, userIds) => client.request('PUT', `/api/lists/${listId}/members`, { userIds });
+// Partage avec le droit « Peut modifier » (sans droit précisé, un invité
+// est en lecture seule : voir read-only.test.js)
+const share = (client, listId, userIds) => client.request('PUT', `/api/lists/${listId}/members`, { userIds, ...(Array.isArray(userIds) ? { access: Object.fromEntries(userIds.filter(Number.isInteger).map((id) => [id, 'modification'])) } : {}) });
 const listNames = async (client) => (await client.get('/api/lists')).body.lists.map((l) => l.name).sort();
 
 // --- Droits d'accès ---

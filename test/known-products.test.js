@@ -75,7 +75,7 @@ test('jamais les articles des autres comptes', async (t) => {
 
 test('liste partagée : un membre retrouve le produit ; retiré de la liste, plus rien', async (t) => {
   const h = await household(t);
-  await h.guillaume.request('PUT', `/api/lists/${h.weekend}/members`, { userIds: [h.leaId] });
+  await h.guillaume.request('PUT', `/api/lists/${h.weekend}/members`, { userIds: [h.leaId], access: { [h.leaId]: 'modification' } });
   const leaList = uuid();
   await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: leaList, name: 'Courses de Léa', categoryId: 1 }] });
   assert.equal((await h.lookup(h.lea, leaList, NUTELLA)).body.status, 'known');

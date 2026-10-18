@@ -30,11 +30,11 @@
 // server/app.js). Il change à chaque mise à jour du serveur : le navigateur
 // voit un nouveau sw.js, l'installe, copie les nouveaux fichiers dans un cache
 // neuf, et l'ancienne copie est effacée à l'activation. Jamais de mélange
-// d'anciens et de nouveaux fichiers. Changer aussi le début de VERSION (v15…)
-// si la liste des fichiers change.
+// d'anciens et de nouveaux fichiers. Augmenter aussi de 1 le numéro au début de
+// VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v17-${BUILD ?? 'dev'}`;
+const VERSION = `v18-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version

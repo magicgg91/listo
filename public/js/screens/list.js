@@ -689,7 +689,8 @@ export function renderList(listId, onLeave) {
       eanField.field, eanStatus, eanTwin, eanPicker.input) : null;
 
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
-    // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
+    // attendre « Enregistrer ». Hors ligne, elle passe par la file d'attente
+    // (actions.js) et part au retour du réseau.
     let current = item; // dernier état connu de l'article (photoAt)
     let busy = false;
     let gone = false; // article supprimé ailleurs pendant que la feuille est ouverte

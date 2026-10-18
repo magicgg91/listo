@@ -108,7 +108,7 @@ export function createScanner({ listId, getView, add, check }) {
     function manualCode(intro) {
       const step = ++current;
       const input = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'search' });
-      const codeField = field('Code-barres (chiffres sous les barres)', input);
+      const codeField = field('Code-barres', input, { aside: '8, 12 ou 13 chiffres' });
       const search = btn('btn--primary btn--block', ['Rechercher'], submit);
       const form = h('form', { class: 'stack', novalidate: true, hidden: true }, codeField.field, search);
       form.addEventListener('submit', (event) => {

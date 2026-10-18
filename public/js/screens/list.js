@@ -595,9 +595,9 @@ export function renderList(listId, onLeave) {
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
-    const name = h('input', { class: 'input', type: 'text', value: item.name, maxlength: '100', autocapitalize: 'sentences' });
-    const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30' });
-    const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500' });
+    const name = h('input', { class: 'input', type: 'text', value: item.name, maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences' });
+    const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
+    const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
     note.value = item.note;
     let aisleId = item.aisleId;
     const aisleLabel = h('span');
@@ -1057,10 +1057,13 @@ export function renderList(listId, onLeave) {
   // choix du rayon, scan ou confirmation ouverts : refermés (ce qui n'était
   // pas enregistré ne l'est pas) ; clavier replié ; champ d'ajout masqué ou
   // remontré tout de suite (la liste elle-même est redessinée juste après).
-  let couldEdit = editable();
+  // Droit connu à l'ouverture ; null tant que la liste n'est pas encore
+  // chargée (son arrivée n'est pas un changement de droit)
+  let couldEdit = app.data.lists.has(listId) ? editable() : null;
   onLeave(onDataChange(() => {
     if (!app.data.lists.has(listId)) return; // liste retirée : draw() le dit
     const now = editable();
+    if (couldEdit === null) couldEdit = now;
     if (now === couldEdit) return;
     couldEdit = now;
     releaseFocus();

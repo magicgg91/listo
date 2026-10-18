@@ -41,8 +41,26 @@ html, body { height: 100%; margin: 0; }
 body { background: var(--color-bg); }
 /* Hauteur réelle de l'écran sur téléphone : hauteur visible mesurée par
    js/app-height.js (remesurée au retour dans l'application) ; 100dvh si le
-   script n'a pas encore mesuré */
-.app { height: var(--app-h, 100dvh); overflow: hidden; }
+   script n'a pas encore mesuré.
+   L'application est posée sur l'écran (position fixe) : la page elle-même ne
+   défile jamais, seules les zones prévues pour (liste, formulaire, feuille)
+   défilent ; la barre du haut, hors de ces zones, reste donc collée en haut,
+   y compris pendant le rebond de défilement de l'iPhone. Clavier ouvert sur
+   iPhone, quand la zone visible remonte, js/app-height.js pose --app-top (sa
+   position) et --app-h (sa hauteur) : l'application recouvre exactement la
+   zone visible. Ailleurs, --app-top reste 0. Les feuilles, menus et
+   messages se placent par rapport à .app : ils suivent.
+   Marge de sécurité du haut (encoche, îlot dynamique) : la zone de sécurité
+   donnée par le téléphone (0 quand il n'y en a pas besoin). */
+.app {
+  position: fixed;
+  top: var(--app-top, 0px);
+  left: 0;
+  right: 0;
+  height: var(--app-h, 100dvh);
+  padding-top: env(safe-area-inset-top, 0px);
+  overflow: hidden;
+}
 
 /* Zone de sécurité du bas : la page s'affiche aussi sous la barre système
    d'Android et sous l'indicateur d'accueil de l'iPhone (viewport-fit=cover).

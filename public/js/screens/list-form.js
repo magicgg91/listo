@@ -116,7 +116,7 @@ function form(list, users) {
   const me = app.user;
 
   // --- Nom ---
-  const name = h('input', { class: 'input', type: 'text', maxlength: '100', placeholder: 'Ex. Courses de la semaine', autocapitalize: 'sentences', value: list?.name ?? '' });
+  const name = h('input', { class: 'input', type: 'text', maxlength: '100', placeholder: 'Ex. Courses de la semaine', autocomplete: 'off', autocapitalize: 'sentences', value: list?.name ?? '' });
   const nameField = field('Nom', name);
 
   // --- Catégorie (choix en cartes) ---

@@ -99,7 +99,9 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
 
 test('le droit change pendant que la liste est ouverte : fenêtres fermées, clavier replié, bascule sans recharger', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /let couldEdit = editable\(\);\s*onLeave\(onDataChange\(\(\) => \{/);
+  assert.match(list, /let couldEdit = app\.data\.lists\.has\(listId\) \? editable\(\) : null;\s*onLeave\(onDataChange\(\(\) => \{/);
+  // Arrivée de la liste au premier chargement : pas un changement de droit (aucun message)
+  assert.match(list, /if \(couldEdit === null\) couldEdit = now;\s*if \(now === couldEdit\) return;/);
   const watcher = list.slice(list.indexOf('let couldEdit'), list.indexOf("toast(now ? 'Vous pouvez"));
   for (const step of ['releaseFocus();', 'suggestBox.hidden = true;', 'swipes.close();', 'closeOverlays();', 'addbar.hidden = !now;', 'readOnlyBanner.hidden = now;']) assert.ok(watcher.includes(step), step);
   assert.match(list, /toast\(now \? 'Vous pouvez maintenant modifier cette liste\.' : 'Cette liste est maintenant en lecture seule\.'\);/);

@@ -154,6 +154,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 18. **En-tête de la fiche d'un article** : à droite du titre, la poubelle (rouge), un espace, la coche bleue « Enregistrer », la croix. La coche enregistre et ferme (la touche Entrée d'un champ aussi), sans laisser le clavier ouvert. La poubelle supprime tout de suite ; en bas, « « Pain » supprimé · Annuler » quelques secondes : « Annuler » remet l'article. En faisant défiler une fiche longue (avec une photo), l'en-tête reste visible.
 19. **Glisser pour supprimer** (iPhone et Android, application installée et navigateur) : sur une ligne, glisser le doigt vers la gauche : la ligne suit le doigt et une zone rouge « Supprimer » apparaît. Lâcher après un petit glissement : la ligne revient ; après un grand glissement : elle reste ouverte. Toucher « Supprimer » : la ligne disparaît, « « Pain » supprimé · Annuler » en bas ; « Annuler » la remet. Vérifier aussi : faire défiler la liste normalement (rien ne s'ouvre, une ligne ouverte se referme), glisser en diagonale (la liste défile), toucher une autre ligne ou glisser vers la droite (la ligne ouverte se referme), toucher la case et la vignette (inchangé). Sur iPhone, dans Safari, le geste « retour » depuis le bord gauche de l'écran fonctionne toujours. En mode avion : la suppression attend le réseau, puis part.
 20. **Menu « ⋯ » d'une carte** (« Mes listes ») : sur une liste dont vous êtes propriétaire, le bouton « ⋯ » dans le coin de la carte ouvre un petit menu juste en dessous (« Supprimer la liste », en rouge), sans ouvrir la liste ; toucher ailleurs sur la carte ouvre la liste. Toucher à côté du menu le ferme. « Supprimer la liste » demande « Supprimer la liste « Courses » ? » ; après « Supprimer », la carte disparaît (aussi sur l'autre téléphone). Sur une liste partagée avec vous par quelqu'un d'autre : pas de bouton « ⋯ ». Dans une liste ouverte, le menu ⋮ propose aussi « Supprimer la liste », en dernier.
+21. **Renommer une catégorie** (Administration → Catégories, sur un téléphone ; un deuxième téléphone reste ouvert sur « Mes listes ») : en quelques secondes, les cartes du deuxième téléphone montrent le nouveau nom, sans rien toucher ; dans une liste ouverte, le sous-titre aussi. Même chose pour un magasin. Un téléphone en mode avion pendant le renommage montre le nouveau nom dès son retour sur le réseau.
 
 ## API des comptes (étape 2)
 
@@ -552,7 +553,7 @@ Quand une liste change, les téléphones de ses membres sont prévenus aussitôt
 
 | Route | Rôle |
 | --- | --- |
-| `GET /api/events` | Flux « Server-Sent Events » ouvert par le téléphone connecté. Messages : `event: list` avec `data: {"listId":"…"}` |
+| `GET /api/events` | Flux « Server-Sent Events » ouvert par le téléphone connecté. Messages : `event: list` avec `data: {"listId":"…"}` ; `event: refs` avec `data: {}` (à tous les téléphones connectés) après un changement de catégorie, de magasin ou de rayon dans l'Administration : chacun refait une synchronisation, et relit le nom de la catégorie et du magasin de chaque liste par leur identifiant (`refreshListReferences` de `public/js/store.js`, tests : `test/references-rename.test.js`) |
 
 Règles :
 

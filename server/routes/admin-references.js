@@ -140,6 +140,7 @@ function referenceRouter(ctx, type) {
       id = db.prepare(`INSERT INTO ${table} (name) VALUES (?)`).run(name).lastInsertRowid;
     }
     audit(`admin_${type.label}_ajoute`, { admin: req.user.username, nom: name, ...(type.hasMultiFlag && isMulti ? { multi: true } : {}), ip: req.ip });
+    ctx.events?.notifyReferences(); // les téléphones connectés se mettent à jour
     res.status(201).json({ item: describe(find.get(id)) });
   });
 
@@ -200,6 +201,11 @@ function referenceRouter(ctx, type) {
       audit(`admin_${type.label}_regroupement_change`, { ...who, magasins: members.length });
     }
 
+    // Renommage, (dés)activation… : les listes et les articles ne gardent que
+    // l'identifiant ; les téléphones connectés refont leur synchronisation,
+    // qui renvoie toutes les catégories, magasins et rayons (et ceux hors
+    // ligne le feront à leur retour)
+    ctx.events?.notifyReferences();
     res.json({ item: describe(find.get(row.id)) });
   });
 
@@ -219,6 +225,7 @@ function referenceRouter(ctx, type) {
       throw err;
     }
     audit(`admin_${type.label}_supprime`, { admin: req.user.username, nom: row.name, ip: req.ip });
+    ctx.events?.notifyReferences();
     res.status(204).end();
   });
 

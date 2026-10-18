@@ -11,7 +11,7 @@
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
-import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse } from './history.js';
+import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -199,6 +199,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         note: op.note ?? '',
         aisleId: op.aisleId !== undefined ? op.aisleId : hint.aisleId ?? null,
         storeId: op.storeId !== undefined ? op.storeId : hint.storeId ?? null,
+        ean: op.ean ?? null, // code-barres (listes de courses), déjà normalisé
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -211,8 +212,9 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'item.update': {
       if (!item) return;
       const next = { ...item, updatedAt: now };
-      // Seuls les champs présents changent (dueDate: null efface l'échéance)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate']) if (op[field] !== undefined) next[field] = op[field];
+      // Seuls les champs présents changent (dueDate: null efface l'échéance,
+      // ean: null le code-barres)
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'ean']) if (op[field] !== undefined) next[field] = op[field];
       state.items.set(item.id, next);
       return;
     }
@@ -452,4 +454,33 @@ export function isKnownItem(state, name) {
 // par ordre alphabétique français
 export function activeOnly(rows) {
   return rows.filter((row) => row.active).sort((a, b) => compareNames(a.name, b.name));
+}
+
+// --- Mode scan (listes de courses) ---
+
+// Article déjà dans la liste : même code-barres, ou même nom (majuscules et
+// accents ignorés). Renvoie null, ou { where, by, name } : where = 'list' (à
+// acheter) ou 'cart' (coché : dans le panier) ; by = 'code' ou 'name' (le
+// code passe avant le nom) ; name = nom de l'article trouvé.
+export function duplicateOf(view, name, ean = null) {
+  if (!view) return null;
+  const all = [...view.groups.flatMap((group) => group.items), ...view.done];
+  const wanted = normalizeItemName(name);
+  const tests = [
+    ['code', (item) => Boolean(ean) && item.ean === ean],
+    ['name', (item) => Boolean(wanted) && normalizeItemName(item.name) === wanted],
+  ];
+  for (const [by, same] of tests) {
+    const found = all.filter(same);
+    if (!found.length) continue;
+    const first = found.find((item) => !item.checked) ?? found[0];
+    return { where: first.checked ? 'cart' : 'list', by, name: first.name };
+  }
+  return null;
+}
+
+// Texte de l'avertissement « Déjà dans la liste »
+export function duplicateText(duplicate) {
+  const place = duplicate.where === 'cart' ? 'Déjà dans le panier (coché)' : 'Déjà dans la liste';
+  return duplicate.by === 'code' ? `${place} : « ${duplicate.name} » a ce code-barres.` : `${place}.`;
 }

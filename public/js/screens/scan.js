@@ -17,12 +17,13 @@
 // ligne : on peut toujours taper le code, puis le nom, à la main. Les champs
 // n'apparaissent que sur appui, et le curseur n'y est jamais mis tout seul
 // (aucun clavier qui s'ouvre de lui-même). Aucun message technique.
-// Le code-barres n'est jamais écrit dans la note de l'article.
+// Le code lu (ou tapé) est gardé dans le champ « Code-barres » de l'article
+// (ean), que le produit soit trouvé ou non ; jamais dans la note.
 
 import { h, icon, field, replace } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
-import { normalizeItemName } from '../history.js';
+import { duplicateOf, duplicateText } from '../store.js';
 import { openSheet } from '../ui.js';
 import { app } from '../app.js';
 
@@ -36,17 +37,6 @@ export const addedCount = (n) => `${n} ajouté${n > 1 ? 's' : ''}`;
 
 // Note proposée pour l'article : « Lactel · 1 L » (marque · format)
 export const productNote = (product) => [product.brand, product.quantity].filter(Boolean).join(' · ');
-
-// Article déjà dans la liste sous ce nom (majuscules et accents ignorés) :
-// 'list' (à acheter), 'cart' (coché : dans le panier) ou null
-export function duplicateOf(view, name) {
-  const wanted = normalizeItemName(name);
-  if (!view || !wanted) return null;
-  const all = [...view.groups.flatMap((group) => group.items), ...view.done];
-  const same = all.filter((item) => normalizeItemName(item.name) === wanted);
-  if (same.some((item) => !item.checked)) return 'list';
-  return same.length ? 'cart' : null;
-}
 
 // Messages quand le nom n'a pas été trouvé (jamais de détail technique)
 const NO_NAME = {
@@ -183,22 +173,23 @@ export function createScanner({ listId, getView, add }) {
       }
       if (step !== current) return;
       if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
-        productSheet({ name: answer.name, note: productNote(answer), found: true });
+        productSheet({ name: answer.name, note: productNote(answer), found: true, code });
       } else {
-        typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable);
+        typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable, code);
       }
     }
 
     // 3a. Nom inconnu : « Taper le nom » fait apparaître le champ
-    function typeName(text) {
+    function typeName(text, code) {
       ++current;
-      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', found: false }));
+      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', found: false, code }));
       show(message('alert', text), count(), h('div', { class: 'sheet__actions' }, reveal,
         btn('btn--secondary btn--block', ['Annuler'], () => showNext())));
     }
 
     // 3b. Fiche du produit : nom (modifiable), note, doublon, ajout
-    function productSheet({ name, note, found }) {
+    // code : code-barres lu ou tapé, gardé avec l'article
+    function productSheet({ name, note, found, code }) {
       const step = ++current;
       const nameInput = h('input', { class: 'input', type: 'text', value: name, maxlength: '100', autocapitalize: 'sentences', autocomplete: 'off' });
       const noteInput = h('input', { class: 'input', type: 'text', value: note, maxlength: '500', autocomplete: 'off' });
@@ -207,10 +198,10 @@ export function createScanner({ listId, getView, add }) {
       const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Ajouter à la liste');
       // Déjà dans la liste (même nom) : prévenir, et « Ajouter quand même »
       const checkDuplicate = () => {
-        const where = duplicateOf(getView(), nameInput.value);
-        warning.hidden = !where;
-        warning.querySelector('p').textContent = where === 'cart' ? 'Déjà dans le panier (coché).' : 'Déjà dans la liste.';
-        save.textContent = where ? 'Ajouter quand même' : 'Ajouter à la liste';
+        const duplicate = duplicateOf(getView(), nameInput.value, code);
+        warning.hidden = !duplicate;
+        warning.querySelector('p').textContent = duplicate ? duplicateText(duplicate) : '';
+        save.textContent = duplicate ? 'Ajouter quand même' : 'Ajouter à la liste';
       };
       nameInput.addEventListener('input', checkDuplicate);
       checkDuplicate();
@@ -228,7 +219,7 @@ export function createScanner({ listId, getView, add }) {
         nameField.setError(finalName ? null : 'Le nom est obligatoire');
         if (!finalName || step !== current) return;
         save.disabled = true;
-        const ok = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim() });
+        const ok = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim(), ean: code });
         save.disabled = false;
         if (!ok || step !== current) return; // choix du rayon abandonné : la fiche reste
         added += 1;

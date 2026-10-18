@@ -35,7 +35,7 @@ async function perform(operation, { hint } = {}) {
 // Ajoute un article. aisleId / storeId : choix explicite (y compris null,
 // « Sans rayon » / « Sans magasin ») ; absent, le serveur choisira le rayon ou
 // le magasin habituel, et le téléphone affiche en attendant sa prévision.
-export async function addItem({ listId, name, quantity, note, aisleId, storeId }) {
+export async function addItem({ listId, name, quantity, note, aisleId, storeId, ean }) {
   const list = app.data.lists.get(listId);
   if (!list) return null;
   const itemId = uuid();
@@ -44,6 +44,7 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId }
   if (note !== undefined) fields.note = note;
   if (aisleId !== undefined) fields.aisleId = aisleId;
   if (storeId !== undefined) fields.storeId = storeId;
+  if (ean !== undefined) fields.ean = ean; // code-barres normalisé (listes de courses)
   const multi = isMultiList(list);
   const hint = {};
   if (multi && storeId === undefined) hint.storeId = usualStoreFor(app.data, list, name);

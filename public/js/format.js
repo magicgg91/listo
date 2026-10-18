@@ -64,26 +64,49 @@ export function defaultDisplayName(username) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Ligne « Mise à jour » (Réglages › À propos, Admin seulement), d'après la
-// réponse de GET /api/admin/update-check. Renvoie { icon, title, sub,
-// commit? } (commit : la nouvelle version, pour le lien vers GitHub), ou null
-// quand la ligne ne s'affiche pas (vérification désactivée sur le serveur,
-// ou version de développement). result vaut null pendant la vérification.
-export function updateCheckLine(result, { online = true } = {}) {
-  const line = (icon, sub) => ({ icon, title: 'Mise à jour', sub });
-  if (!online) return line('cloud-off', 'Indisponible hors ligne');
-  if (!result) return line('sync', 'Vérification…');
-  if (result.state === 'desactive' || result.state === 'developpement') return null;
-  if (result.state === 'ok' && result.upToDate === true) return line('check', 'À jour');
-  if (result.state === 'ok' && typeof result.latest === 'string' && /^[0-9a-f]{40}$/.test(result.latest)) {
-    return {
-      icon: 'alert',
-      title: `Nouvelle version disponible : ${result.latest.slice(0, 7)}`,
-      sub: 'Sur le serveur : docker compose pull && docker compose up -d',
-      commit: result.latest,
-    };
+// Bloc « À propos » des Réglages, zone « Version et mise à jour » : ce
+// qu'elle affiche (calcul pur, testé automatiquement). Entrées :
+// - commit : 40 caractères hexadécimaux, 'non précisé' (développement) ou
+//   null (inconnu : hors ligne, ou pas encore reçu) ;
+// - isAdmin : seul l'Admin voit l'état de la mise à jour et le bouton ;
+// - result : réponse de GET /api/admin/update-check (null : pas encore reçue) ;
+// - busy : vérification en cours ; online : réseau disponible.
+// Renvoie :
+// - version : { text, commit? } (commit : lien vers ce commit sur GitHub) ;
+// - checked : « Vérifié il y a 15 min », ou null ;
+// - chip : pastille d'état { tone: 'ok' | 'accent' | 'neutral', text, icon?,
+//   commit?, label? } (commit : la pastille est un lien vers la nouvelle
+//   version ; label : son libellé pour les lecteurs d'écran), ou null ;
+// - button : bouton « Vérifier maintenant » affiché ; busy : il tourne.
+const isCommitSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+
+export function aboutVersion({ commit, isAdmin = false, result = null, busy = false, online = true, now = Date.now() }) {
+  let version;
+  if (isCommitSha(commit)) version = { text: commit.slice(0, 7), commit };
+  else if (commit === 'non précisé') version = { text: 'non précisée' };
+  else version = { text: online ? '…' : 'indisponible hors ligne' };
+
+  // Ni état ni bouton : autre compte, développement, vérification
+  // désactivée sur le serveur (LISTO_UPDATE_CHECK=off)
+  const hidden = !isAdmin || commit === 'non précisé'
+    || result?.state === 'desactive' || result?.state === 'developpement';
+  if (hidden) return { version, checked: null, chip: null, button: false, busy: false };
+
+  if (!online) return { version, checked: null, chip: { tone: 'neutral', text: 'Hors ligne' }, button: true, busy: false };
+
+  // Pendant une vérification, la pastille précédente reste affichée
+  let chip = null;
+  if (result?.state === 'ok' && result.upToDate === true) {
+    chip = { tone: 'ok', icon: 'check', text: 'À jour' };
+  } else if (result?.state === 'ok' && isCommitSha(result.latest)) {
+    const short = result.latest.slice(0, 7);
+    chip = { tone: 'accent', icon: 'alert', text: `Nouvelle : ${short}`, commit: result.latest, label: `Nouvelle version disponible : ${short}, ouvrir sur GitHub` };
+  } else if (result) {
+    chip = { tone: 'neutral', text: 'Vérification impossible' };
   }
-  return line('cloud-off', 'Vérification impossible');
+  const when = result?.checkedAt ? relativeTime(result.checkedAt, now) : '';
+  const checked = when ? `Vérifié ${when}` : null;
+  return { version, checked, chip, button: true, busy };
 }
 
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »

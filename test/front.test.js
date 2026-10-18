@@ -22,6 +22,7 @@ test('routeur : chaque adresse mène au bon écran', () => {
     ['#/listes/abc-123', { name: 'list', params: { id: 'abc-123' } }],
     ['#/listes/abc-123/modifier', { name: 'editList', params: { id: 'abc-123' } }],
     ['#/reglages', { name: 'settings', params: {} }],
+    ['#/reglages/compte', { name: 'account', params: {} }],
     ['#/reglages/mot-de-passe', { name: 'password', params: {} }],
     ['#/reglages/double-authentification', { name: 'twoFactor', params: {} }],
     ['#/administration/rayons', { name: 'admin', params: { tab: 'rayons' } }],

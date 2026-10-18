@@ -148,8 +148,7 @@ button.sync { cursor: pointer; }
 .picker { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 .sheet:has(.picker) { overflow: hidden; }
 
-/* Réglages : carte du compte, groupe avec marge intérieure */
-.account { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
+/* Réglages : groupe avec marge intérieure (carte du compte : section 16.7 de listo.css) */
 .group--pad { padding: 12px; }
 .body > .section-title:first-child { margin-top: var(--space-1); }
 .row__icon .icon, .row > .icon { flex: none; }
@@ -176,3 +175,8 @@ button.sync { cursor: pointer; }
    .note du kit, posé en haut de l'écran, au-dessus de la barre de titre ; il
    ne recouvre rien (la barre d'ajout reste visible en bas) */
 .update-banner { flex: none; align-items: center; margin: var(--space-1) var(--space-2) 0; padding-top: 6px; padding-bottom: 6px; }
+
+/* Sélecteur de thème (Mon compte) : avec un texte agrandi, la place manque
+   pour « Clair · Sombre · Auto » sur une ligne ; chaque choix peut alors
+   passer l'icône au-dessus du mot au lieu de déborder de l'écran */
+.segmented__opt { min-width: 0; flex-wrap: wrap; text-align: center; }

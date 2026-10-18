@@ -1,5 +1,6 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
-// - réglages : compte, sécurité, thème, administration (Admin), déconnexion ;
+// - réglages : carte du compte (ouvre « Mon compte », voir account.js),
+//   administration (Admin), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
 //   secours affichés une seule fois) ;
@@ -9,10 +10,9 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace } from '../dom.js';
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { applyTheme, savedTheme } from '../theme.js';
-import { app, logOut, resetLocalCopy, pendingCount } from '../app.js';
-import { updateCheckLine, relativeTime } from '../format.js';
-import { toast, confirmDialog } from '../ui.js';
+import { app, logOut } from '../app.js';
+import { aboutVersion } from '../format.js';
+import { toast } from '../ui.js';
 
 const MIN_PASSWORD = 10;
 
@@ -29,23 +29,16 @@ const commitUrl = (commit) => `${GITHUB.repoUrl}/commit/${commit}`;
 const VERSION_KEY = 'listo-version';
 const isCommit = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
 
-// Barre de titre avec retour
-function topbar(title, onBack) {
+// Barre de titre avec retour (aussi utilisée par account.js)
+export function topbar(title, onBack) {
   return h('header', { class: 'topbar' },
     iconButton('chev-l', 'Retour', onBack),
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
-// Ligne de réglage (icône, titre, sous-titre, élément de fin). Avec href :
-// lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
-// d'information à ce site (noopener, noreferrer).
-function row({ iconName, title, sub, end, onClick, href }) {
-  if (href) {
-    return h('a', { class: 'row', href, target: '_blank', rel: 'noopener noreferrer' },
-      h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), sub ? h('span', { class: 'row__sub' }, sub) : null),
-      icon('chev-r'));
-  }
+// Ligne de réglage (icône, titre, sous-titre, élément de fin), aussi
+// utilisée par account.js
+export function row({ iconName, title, sub, end, onClick }) {
   const tag = onClick ? 'button' : 'div';
   return h(tag, { class: 'row', type: onClick ? 'button' : null, onClick },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
@@ -55,33 +48,16 @@ function row({ iconName, title, sub, end, onClick, href }) {
 
 // --- Réglages ---
 
+// Pastille du rôle : « Admin » ou « Utilisateur » (aussi utilisée par account.js)
+export function roleChip(user) {
+  return user.role === 'admin'
+    ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), 'Admin')
+    : h('span', { class: 'chip' }, 'Utilisateur');
+}
+
 export function renderSettings() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
-
-  // Interrupteur de thème : écrit simplement data-theme sur <html>
-  const themes = [['light', 'sun', 'Clair'], ['dark', 'moon', 'Sombre'], ['auto', 'auto', 'Auto']];
-  const options = themes.map(([value, iconName, label]) => h('button', {
-    class: 'segmented__opt',
-    type: 'button',
-    role: 'radio',
-    'aria-checked': String(savedTheme() === value),
-    onClick: () => {
-      applyTheme(value);
-      for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === value));
-    },
-  }, icon(iconName, 'icon--sm'), label));
-  themes.forEach(([value], i) => { options[i].dataset.value = value; });
-
-  const twoFactorRow = user.totpEnabled
-    ? row({
-      iconName: 'shield',
-      title: 'Double authentification',
-      sub: 'Code à 6 chiffres à chaque connexion',
-      end: h('span', { class: 'chip chip--strong' }, icon('check', 'icon--xs'), 'Activée'),
-      onClick: () => navigate('twoFactor'),
-    })
-    : row({ iconName: 'shield', title: 'Double authentification', sub: 'Désactivée', onClick: () => navigate('twoFactor') });
 
   const logout = h('button', {
     class: 'btn btn--secondary btn--block',
@@ -92,21 +68,18 @@ export function renderSettings() {
   return h('div', { class: 'screen' },
     topbar('Réglages', () => goBack('lists')),
     h('div', { class: 'body' },
-      h('div', { class: 'card account' },
-        avatar(user.displayName, { large: true }),
-        h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, 'Compte connecté')),
-        isAdmin ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), 'Admin') : h('span', { class: 'chip' }, 'Utilisateur')),
-      h('h2', { class: 'section-title' }, 'Sécurité'),
-      h('div', { class: 'group' },
-        row({ iconName: 'lock', title: 'Mot de passe', sub: 'Modifier mon mot de passe', onClick: () => navigate('password') }),
-        twoFactorRow),
-      h('h2', { class: 'section-title' }, 'Apparence'),
-      h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
-      // Données gardées sur ce téléphone : remise à zéro si elles semblent
-      // abîmées (tout est rechargé depuis le serveur)
-      h('h2', { class: 'section-title' }, 'Ce téléphone'),
-      h('div', { class: 'group' },
-        row({ iconName: 'sync', title: 'Réinitialiser les données de ce téléphone', sub: 'Recharger les listes depuis le serveur', onClick: resetPhone })),
+      // Carte du compte : un bouton sur toute sa surface, qui ouvre « Mon
+      // compte » (sécurité, apparence, ce téléphone)
+      h('button', {
+        class: 'card account account--link',
+        type: 'button',
+        'aria-label': `Mon compte : ${user.displayName}`,
+        onClick: () => navigate('account'),
+      },
+      avatar(user.displayName, { large: true }),
+      h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte')),
+      roleChip(user),
+      icon('chev-r')),
       isAdmin ? [
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
@@ -117,113 +90,115 @@ export function renderSettings() {
     h('div', { class: 'footer' }, logout));
 }
 
-// Bloc « À propos » : version installée, mise à jour (Admin), développeur,
-// projet. La version arrive du serveur (GET /api/about) sans bloquer
-// l'écran ; hors ligne, la dernière version connue sur ce téléphone, sinon
-// « Indisponible hors ligne ».
+// Bloc « À propos » : une carte en deux zones séparées par un trait fin :
+// 1. « Version et mise à jour » : version installée (lien vers le commit sur
+//    GitHub) ; pour l'Admin, état de la mise à jour (pastille) et bouton.
+//    La version arrive du serveur (GET /api/about) sans bloquer l'écran ; hors
+//    ligne, la dernière version connue sur ce téléphone.
+// 2. « Développeur et projet » : deux liens côte à côte.
+// Ce qui s'affiche dans chaque cas est calculé par aboutVersion (format.js).
 function aboutGroup(isAdmin) {
-  // commit : 40 caractères hexadécimaux, ou 'non précisé' (développement),
-  // ou null (inconnu : hors ligne, ou pas encore reçu)
-  const versionRow = (commit, waiting) => {
-    if (isCommit(commit)) return row({ iconName: 'logo', title: `Version : ${commit.slice(0, 7)}`, sub: 'Voir cette version sur GitHub', href: commitUrl(commit) });
-    if (commit === 'non précisé') return row({ iconName: 'logo', title: 'Version : développement' });
-    return row({ iconName: 'logo', title: waiting ? 'Version : …' : 'Version : indisponible hors ligne' });
-  };
-  let known = null;
+  return h('div', { class: 'group' }, versionRow(isAdmin), projectRow());
+}
+
+// Lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
+// d'information à ce site (noopener, noreferrer). Zone tactile de 44 px.
+const outLink = (attrs, ...children) => h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }, ...children);
+
+// Zone 1 : « Version : 7025130 » et, pour l'Admin, « Vérifié il y a 15 min »,
+// pastille d'état et bouton d'actualisation. L'état vient du serveur, qui
+// demande à GitHub (le téléphone ne contacte jamais GitHub). Rien ne
+// s'installe tout seul.
+function versionRow(isAdmin) {
+  const title = h('span', { class: 'row__title' });
+  const checked = h('span', { class: 'row__sub', hidden: true });
+  // Pastille annoncée par les lecteurs d'écran quand elle change
+  const state = h('span', { class: 'about__state', role: 'status' });
+  const button = h('button', {
+    class: 'icon-btn about__check',
+    type: 'button',
+    'aria-label': 'Vérifier maintenant',
+    onClick: () => check(true),
+  }, icon('sync'));
+  const actions = h('span', { class: 'about__actions', hidden: true }, state, button);
+  const row = h('div', { class: 'row about' }, h('span', { class: 'row__body' }, title, checked), actions);
+
+  // État de la ligne
+  let commit = null;
   try {
-    known = localStorage.getItem(VERSION_KEY);
+    commit = localStorage.getItem(VERSION_KEY);
   } catch {
     // stockage indisponible (navigation privée…) : sans importance
   }
-  if (!isCommit(known)) known = null;
-  let current = versionRow(known, navigator.onLine);
-  const show = (commit, waiting = false) => {
-    const next = versionRow(commit, waiting);
-    current.replaceWith(next);
-    current = next;
+  if (!isCommit(commit)) commit = null;
+  let result = null;
+  let busy = false;
+
+  const render = () => {
+    const line = aboutVersion({ commit, isAdmin, result, busy, online: navigator.onLine });
+    replace(title, 'Version : ', line.version.commit
+      ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': `Version ${line.version.text} sur GitHub` }, line.version.text)
+      : line.version.text);
+    checked.textContent = line.checked ?? '';
+    checked.hidden = !line.checked;
+    replace(state, line.chip ? chipFor(line.chip) : null);
+    actions.hidden = !line.button;
+    button.disabled = line.busy;
+    button.classList.toggle('is-busy', line.busy);
   };
-  get('/api/about').then(({ commit }) => {
-    show(commit);
+
+  // Vérification de mise à jour (Admin). force : « Vérifier maintenant »
+  // (le serveur ne l'accepte qu'une fois par minute)
+  const check = (force) => {
+    if (busy || !isAdmin) return;
+    if (!navigator.onLine) {
+      render();
+      return;
+    }
+    busy = true;
+    render();
+    get(`/api/admin/update-check${force ? '?force=1' : ''}`).then((answer) => {
+      result = answer;
+    }, () => {
+      result = { state: 'indisponible' }; // réseau perdu entre-temps, ou refus
+    }).finally(() => {
+      busy = false;
+      render();
+    });
+  };
+
+  render();
+  get('/api/about').then((about) => {
+    commit = about.commit;
     try {
       if (isCommit(commit)) localStorage.setItem(VERSION_KEY, commit);
     } catch {
       // sans importance
     }
-  }, () => show(known)); // pas de réseau : dernière version connue, sinon « indisponible »
-
-  return h('div', { class: 'group' },
-    current,
-    isAdmin ? updateRows() : null,
-    row({ iconName: 'pencil', title: 'Développeur', sub: GITHUB.owner, href: GITHUB.ownerUrl }),
-    row({ iconName: 'link', title: 'Projet', sub: 'Listo sur GitHub', href: GITHUB.repoUrl }));
+    render();
+  }, () => render()); // pas de réseau : dernière version connue, sinon « indisponible »
+  check(false);
+  return row;
 }
 
-// Lignes « Mise à jour » et « Vérifier maintenant » (Admin) : le serveur
-// demande à GitHub s'il existe une version plus récente (le téléphone ne
-// contacte jamais GitHub lui-même). Rien ne s'installe tout seul : la ligne
-// dit seulement quoi faire sur le serveur. Aucune ligne si la vérification
-// est désactivée (LISTO_UPDATE_CHECK=off) ou en développement.
-function updateRows() {
-  // Repère dans le bloc : les lignes sont remplacées juste après lui
-  const marker = document.createComment('mise à jour');
-  let shown = [];
-  let busy = false;
-
-  const render = (result, online = navigator.onLine) => {
-    const line = updateCheckLine(result, { online });
-    for (const node of shown) node.remove();
-    shown = [];
-    if (!line) return;
-    const status = line.commit
-      ? row({ iconName: line.icon, title: line.title, sub: line.sub, href: commitUrl(line.commit) })
-      : row({ iconName: line.icon, title: line.title, sub: line.sub });
-    const checked = result?.checkedAt ? `Dernière vérification : ${relativeTime(result.checkedAt)}` : null;
-    const button = row({ iconName: 'sync', title: 'Vérifier maintenant', sub: online ? checked : null, end: false, onClick: () => check(true) });
-    if (busy) button.disabled = true;
-    shown = [status, button];
-    marker.after(...shown);
-  };
-
-  // force : « Vérifier maintenant » (le serveur l'accepte une fois par minute)
-  const check = (force) => {
-    if (busy) return;
-    if (!navigator.onLine) {
-      render(null, false);
-      return;
-    }
-    busy = true;
-    render(null);
-    get(`/api/admin/update-check${force ? '?force=1' : ''}`).then((result) => {
-      busy = false;
-      render(result);
-    }, () => {
-      busy = false;
-      render(navigator.onLine ? { state: 'indisponible' } : null); // réseau perdu entre-temps
-    });
-  };
-
-  // Lignes posées une fois le bloc dans la page
-  queueMicrotask(() => check(false));
-  return marker;
+// Pastille d'état (.chip du kit) ; nouvelle version : toute la pastille est
+// un lien vers ce commit sur GitHub
+function chipFor({ tone, text, icon: iconName, commit, label }) {
+  const content = [iconName ? icon(iconName, 'icon--xs') : null, text];
+  const className = `chip chip--${tone}`;
+  return commit
+    ? outLink({ class: `${className} about__chip-link`, href: commitUrl(commit), 'aria-label': label }, content)
+    : h('span', { class: className }, content);
 }
 
-// Remise à zéro de la copie locale (avec confirmation). Les modifications
-// pas encore envoyées sont gardées : elles repartiront ensuite.
-async function resetPhone() {
-  if (!navigator.onLine) {
-    toast('Indisponible hors ligne : il faut du réseau pour tout recharger.');
-    return;
-  }
-  const waiting = pendingCount();
-  const ok = await confirmDialog({
-    title: 'Réinitialiser les données de ce téléphone ?',
-    text: `Les listes gardées sur ce téléphone seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
-    confirmLabel: 'Réinitialiser',
-    danger: false,
-  });
-  if (!ok) return;
-  await resetLocalCopy();
-  toast('Données rechargées depuis le serveur', { low: true });
+// Zone 2 : développeur et projet, deux liens séparés par un trait fin
+function projectRow() {
+  return h('div', { class: 'row about-links' },
+    outLink({ class: 'about-links__link', href: GITHUB.ownerUrl, 'aria-label': `Développeur : ${GITHUB.owner} sur GitHub` },
+      icon('pencil', 'icon--sm'), GITHUB.owner),
+    h('span', { class: 'about-links__sep', 'aria-hidden': 'true' }),
+    outLink({ class: 'about-links__link', href: GITHUB.repoUrl, 'aria-label': 'Projet Listo sur GitHub' },
+      icon('link', 'icon--sm'), 'Projet GitHub'));
 }
 
 // --- Mot de passe (reglages-5) ---
@@ -239,7 +214,7 @@ export function renderPassword() {
   const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
 
   const form = h('form', { novalidate: true },
-    topbar('Mot de passe', () => goBack('settings')),
+    topbar('Mot de passe', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' }, currentField.field, nextField.field, confirmField.field, error.note)),
     h('div', { class: 'footer' }, save));
 
@@ -254,7 +229,7 @@ export function renderPassword() {
     try {
       await post('/api/me/password', { currentPassword: current.input.value, newPassword: next.input.value });
       toast('Mot de passe modifié. Vos autres appareils sont déconnectés.', { low: true });
-      goBack('settings');
+      goBack('account');
     } catch (err) {
       error.show(errorMessage(err));
       save.disabled = false;
@@ -273,12 +248,12 @@ export function renderTwoFactor() {
 // Activation, étape 1 (reglages-3) : QR code, clé à recopier, premier code
 function enableScreen() {
   const container = h('div', { class: 'screen' });
-  replace(container, topbar('Double authentification', () => goBack('settings')),
+  replace(container, topbar('Double authentification', () => goBack('account')),
     h('p', { class: 'empty muted', role: 'status' }, 'Préparation…'));
 
   post('/api/me/2fa/enable')
     .then(({ secret }) => replace(container, enableForm(secret)))
-    .catch((err) => replace(container, topbar('Double authentification', () => goBack('settings')),
+    .catch((err) => replace(container, topbar('Double authentification', () => goBack('account')),
       h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, errorMessage(err)))));
   return container;
 }
@@ -301,7 +276,7 @@ function enableForm(secret) {
   });
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('settings')),
+    topbar('Double authentification', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       h('p', { class: 'step' }, 'Étape 1 sur 2'),
       h('p', {}, "Scannez ce QR code avec votre application d'authentification."),
@@ -339,7 +314,7 @@ function enableForm(secret) {
 
 // Activation, étape 2 (reglages-4) : codes de secours, affichés une seule fois
 function recoveryScreen(codes) {
-  const finish = () => navigate('settings', {}, { replace: true });
+  const finish = () => navigate('account', {}, { replace: true });
   const copy = h('button', {
     class: 'btn btn--secondary btn--block',
     type: 'button',
@@ -377,7 +352,7 @@ function disableScreen() {
   const submit = h('button', { class: 'btn btn--danger btn--block', type: 'submit' }, 'Désactiver la double authentification');
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('settings')),
+    topbar('Double authentification', () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       h('div', { class: 'note' }, icon('shield'),
         h('p', {}, 'La double authentification est activée : un code à 6 chiffres est demandé à chaque connexion.')),
@@ -397,7 +372,7 @@ function disableScreen() {
       await post('/api/me/2fa/disable', { password: password.input.value, code: code.value.trim() });
       app.user = (await get('/api/me')).user;
       toast('Double authentification désactivée', { low: true });
-      navigate('settings', {}, { replace: true });
+      navigate('account', {}, { replace: true });
     } catch (err) {
       error.show(errorMessage(err));
       submit.disabled = false;

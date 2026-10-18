@@ -66,6 +66,6 @@ console.log(`Compte « ${user.username} » : mot de passe provisoire (à changer
 console.log('');
 console.log(`    ${password}`);
 console.log('');
-if (option === '--retirer-2fa') console.log('La double authentification de ce compte est désactivée : réactivez-la depuis les Réglages.');
+if (option === '--retirer-2fa') console.log('La double authentification de ce compte est désactivée : réactivez-la depuis Réglages → Mon compte.');
 if (user.active === 0) console.log("Attention : ce compte est désactivé. Un Admin doit le réactiver (Administration → Comptes).");
 console.log("Si la connexion est refusée pour « trop d'essais », redémarrez Listo : docker compose restart");

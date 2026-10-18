@@ -4,6 +4,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { loadConfig } from '../server/config.js';
 import { createUpdateCheck, fetchGithub, latestCommitFrom, RUNS_PATH, CACHE_MS, FORCE_MS } from '../server/update-check.js';
@@ -185,21 +186,67 @@ test('fetchGithub : redirection, code d\'erreur, réponse trop grande ou mal for
 });
 
 // --- Affichage dans Réglages › À propos (public/js/format.js) ---
+// Zone « Version et mise à jour » : version (lien), et pour l'Admin seulement
+// « Vérifié il y a… », pastille d'état et bouton d'actualisation.
 
-test('ligne « Mise à jour » : À jour, nouvelle version, impossible, hors ligne, rien si désactivée', async () => {
-  const { updateCheckLine } = await import('../public/js/format.js');
+test('À propos : Admin à jour, nouvelle version, vérification impossible, en cours, hors ligne', async () => {
+  const { aboutVersion } = await import('../public/js/format.js');
+  const now = Date.parse('2026-10-16T12:15:00.000Z');
   const ok = (latest) => ({ current: INSTALLED, latest, upToDate: latest === INSTALLED, checkedAt: '2026-10-16T12:00:00.000Z', state: 'ok' });
-  assert.deepEqual(updateCheckLine(ok(INSTALLED)), { icon: 'check', title: 'Mise à jour', sub: 'À jour' });
-  assert.deepEqual(updateCheckLine(ok(NEWER)), {
-    icon: 'alert',
-    title: 'Nouvelle version disponible : 9f8e7d6',
-    sub: 'Sur le serveur : docker compose pull && docker compose up -d',
-    commit: NEWER,
+  const admin = (options) => aboutVersion({ commit: INSTALLED, isAdmin: true, now, ...options });
+  const version = { text: '3a1b2c4', commit: INSTALLED };
+
+  assert.deepEqual(admin({ result: ok(INSTALLED) }), {
+    version, checked: 'Vérifié il y a 15 min', chip: { tone: 'ok', icon: 'check', text: 'À jour' }, button: true, busy: false,
   });
-  assert.equal(updateCheckLine({ state: 'indisponible' }).sub, 'Vérification impossible');
-  assert.equal(updateCheckLine({ ...ok(NEWER), latest: 'pas-un-commit' }).sub, 'Vérification impossible');
-  assert.equal(updateCheckLine(ok(NEWER), { online: false }).sub, 'Indisponible hors ligne');
-  assert.equal(updateCheckLine(null).sub, 'Vérification…');
-  assert.equal(updateCheckLine({ state: 'desactive' }), null);
-  assert.equal(updateCheckLine({ state: 'developpement' }), null);
+  // Nouvelle version : pastille-lien ; la version installée n'est pas répétée
+  assert.deepEqual(admin({ result: ok(NEWER) }).chip, {
+    tone: 'accent', icon: 'alert', text: 'Nouvelle : 9f8e7d6', commit: NEWER,
+    label: 'Nouvelle version disponible : 9f8e7d6, ouvrir sur GitHub',
+  });
+  assert.deepEqual(admin({ result: { state: 'indisponible', checkedAt: '2026-10-16T12:00:00.000Z' } }).chip, { tone: 'neutral', text: 'Vérification impossible' });
+  assert.deepEqual(admin({ result: { ...ok(NEWER), latest: 'pas-un-commit' } }).chip, { tone: 'neutral', text: 'Vérification impossible' });
+  // Vérification en cours : bouton qui tourne, pastille précédente gardée
+  const busy = admin({ result: ok(INSTALLED), busy: true });
+  assert.deepEqual([busy.chip.text, busy.button, busy.busy], ['À jour', true, true]);
+  const first = admin({ result: null, busy: true });
+  assert.deepEqual([first.chip, first.checked, first.button, first.busy], [null, null, true, true]);
+  // Hors ligne
+  const offline = admin({ result: ok(NEWER), online: false });
+  assert.deepEqual([offline.chip, offline.checked, offline.button], [{ tone: 'neutral', text: 'Hors ligne' }, null, true]);
+  assert.deepEqual(aboutVersion({ commit: null, isAdmin: true, online: false }).version, { text: 'indisponible hors ligne' });
+});
+
+test('À propos : autre compte, vérification désactivée, développement → la version seule, sans pastille ni bouton', async () => {
+  const { aboutVersion } = await import('../public/js/format.js');
+  const versionOnly = (version) => ({ version, checked: null, chip: null, button: false, busy: false });
+  const version = { text: '3a1b2c4', commit: INSTALLED };
+  // Compte non Admin : jamais d'état, même avec une réponse
+  assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: false }), versionOnly(version));
+  assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: false, online: false }), versionOnly(version));
+  // LISTO_UPDATE_CHECK=off
+  assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: true, result: { current: INSTALLED, latest: null, upToDate: null, checkedAt: null, state: 'desactive' } }), versionOnly(version));
+  // Développement : « non précisée », sans lien ni bouton
+  assert.deepEqual(aboutVersion({ commit: 'non précisé', isAdmin: true }), versionOnly({ text: 'non précisée' }));
+  assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: true, result: { state: 'developpement' } }).button, false);
+});
+
+test('À propos : liens vers GitHub ouverts à part (noopener noreferrer), libellés explicites, aucune commande', () => {
+  const source = fs.readFileSync(new URL('../public/js/screens/settings.js', import.meta.url), 'utf8');
+  assert.match(source, /const outLink = \(attrs, \.\.\.children\) => h\('a', \{ target: '_blank', rel: 'noopener noreferrer', \.\.\.attrs \}/);
+  assert.equal(/h\('a'/.test(source.replace("h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }", '')), false, 'tout lien passe par outLink');
+  assert.ok(source.includes("'aria-label': `Développeur : ${GITHUB.owner} sur GitHub`"));
+  assert.ok(source.includes("'aria-label': 'Projet Listo sur GitHub'"));
+  assert.ok(source.includes("'aria-label': 'Vérifier maintenant'"));
+  assert.ok(source.includes("class: 'icon-btn about__check'"));
+  // Aucune commande de serveur dans l'interface (elle reste dans docs/exploitation.md)
+  for (const file of ['public/js/format.js', 'public/js/screens/settings.js', 'public/js/app.js', 'design/components.html']) {
+    assert.equal(fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').includes('docker compose'), false, file);
+  }
+  // Styles du kit identiques dans l'application
+  const kit = fs.readFileSync(new URL('../design/listo.css', import.meta.url), 'utf8');
+  const appCss = fs.readFileSync(new URL('../public/css/listo.css', import.meta.url), 'utf8');
+  const section = (css) => css.slice(css.indexOf('/* 16.6 Bloc'), css.indexOf('.about-links__sep'));
+  assert.ok(section(appCss).length > 100);
+  assert.equal(section(kit), section(appCss));
 });

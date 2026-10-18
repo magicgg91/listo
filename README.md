@@ -66,7 +66,7 @@ Prérequis :
    ```sh
    docker compose up -d && docker compose logs listo
    ```
-5. **Double authentification** (conseillée pour l'Admin) : Réglages → Double authentification, scanner le QR code, puis garder les 10 codes de secours dans un gestionnaire de mots de passe.
+5. **Double authentification** (conseillée pour l'Admin) : Réglages → Mon compte (carte du compte, en haut) → Double authentification, scanner le QR code, puis garder les 10 codes de secours dans un gestionnaire de mots de passe.
 6. **Sur le téléphone** : iPhone (Safari) → Partager → *Sur l'écran d'accueil* ; Android (Chrome) → menu ⋮ → *Installer l'application*.
 
 Sécurité :
@@ -85,7 +85,7 @@ Le guide complet, pas à pas (pare-feu, variables, vérifications) : [docs/explo
 - **Journaux** : `docker compose logs -f listo` ; le journal de sécurité est aussi gardé dans `data/journal.log` ([chapitre 10](docs/exploitation.md#10-journaux)).
 - **Compte Admin perdu** : `docker exec -u node listo node server/admin-secours.js IDENTIFIANT` donne un mot de passe provisoire (ajouter `--retirer-2fa` si la double authentification est inutilisable).
 - **Santé** : `https://listo.mondomaine.fr/healthz` doit répondre `{"status":"ok"}`.
-- **Version installée** : Réglages › À propos ; l'Admin y voit aussi si une nouvelle version existe (« Mise à jour »).
+- **Version installée** : Réglages › À propos ; l'Admin y voit aussi si une nouvelle version existe (pastille « À jour » ou « Nouvelle »).
 - **Version de Node** : jamais changée automatiquement ; à la main, et seulement vers une version paire (24, 26…) ([chapitre 9](docs/exploitation.md#surveiller-les-mises-à-jour-de-sécurité)).
 - **Autres problèmes** (clé perdue, écran blanc, « origine inconnue »…) : [chapitre 11](docs/exploitation.md#11-en-cas-de-problème).
 

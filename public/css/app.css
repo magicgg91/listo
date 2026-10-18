@@ -182,3 +182,10 @@ button.sync { cursor: pointer; }
    pour « Clair · Sombre · Auto » sur une ligne ; chaque choix peut alors
    passer l'icône au-dessus du mot au lieu de déborder de l'écran */
 .segmented__opt { min-width: 0; flex-wrap: wrap; text-align: center; }
+
+/* Article tout juste ajouté (liste de courses) : brève mise en évidence, le
+   fond accentué du kit s'efface en 1,6 s. Sans animation si le téléphone
+   demande moins de mouvements. */
+.item.item--added { animation: item-added 1.6s ease-out; }
+@keyframes item-added { from { background: var(--color-accent-soft); } }
+@media (prefers-reduced-motion: reduce) { .item.item--added { animation: none; } }

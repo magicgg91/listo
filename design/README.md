@@ -210,7 +210,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau : composan
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
   - code non lu, lecteur indisponible : `.note.note--danger`, « Reprendre une photo » (`#i-camera`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
   - nom introuvable : `.note`, « Taper le nom » ;
-  - après un ajout : `.note` « « … » ajouté à la liste. », compteur « 2 ajoutés » (`.sheet__sub`), « Scanner un autre produit » et « Terminé ».
+  - après un ajout : la feuille se ferme, toast « Ajouté : … » ; l'article ajouté est brièvement mis en évidence dans la liste (`.item--added`, fond `--color-accent-soft` qui s'efface, dans `public/css/app.css`).
 
 ## Ajout : code-barres des articles (listes de courses)
 

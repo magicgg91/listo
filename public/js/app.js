@@ -8,7 +8,7 @@ import { applyTheme, savedTheme } from './theme.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
-import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog } from './ui.js';
+import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
 import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderLists, renderSidePanel } from './screens/lists.js';
@@ -426,6 +426,8 @@ let cleanup = [];   // fonctions à appeler en quittant l'écran (désabonnement
 
 // Affiche un écran. withSide : colonne « Mes listes » à gauche sur ordinateur.
 function mount(screen, { withSide = true, selectedListId = null } = {}) {
+  // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
+  releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const col = h('div', { class: 'shell__col' });

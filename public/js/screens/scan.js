@@ -10,8 +10,10 @@
 // 3. Listo cherche le nom du produit (Open Food Facts) : fiche avec le nom
 //    (modifiable) et la note « marque · format » ; « Ajouter à la liste » ;
 //    le rayon (ou le magasin) est choisi comme pour un ajout normal ;
-// 4. « Scanner un autre produit » relance l'appareil photo ; compteur
-//    « N ajoutés » ; « Terminé ».
+// 4. « Ajouter à la liste » : l'ajout se termine. La feuille se ferme, retour
+//    sur la liste, clavier replié, aucun champ actif, toast « Ajouté : … ».
+//    Pour un autre produit, on réappuie sur « Scanner ». « Annuler » ferme
+//    aussi la feuille.
 //
 // Rien ne bloque : code non lu, produit inconnu, réponse lente ou hors
 // ligne : on peut toujours taper le code, puis le nom, à la main. Les champs
@@ -24,16 +26,13 @@ import { h, icon, field, replace } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
 import { duplicateOf, duplicateText } from '../store.js';
-import { openSheet } from '../ui.js';
+import { openSheet, toast, releaseFocus } from '../ui.js';
 import { app } from '../app.js';
 
 // Bouton visible : liste de courses, et recherche activée sur le serveur
 // (LISTO_PRODUCT_LOOKUP). Un ancien compte gardé hors ligne, sans
 // l'information, garde le bouton.
 export const scanAvailable = (list) => Boolean(list?.category.isShopping) && app.user?.productLookup !== false;
-
-// « 1 ajouté », « 3 ajoutés »
-export const addedCount = (n) => `${n} ajouté${n > 1 ? 's' : ''}`;
 
 // Note proposée pour l'article : « Lactel · 1 L » (marque · format)
 export const productNote = (product) => [product.brand, product.quantity].filter(Boolean).join(' · ');
@@ -48,8 +47,9 @@ const NO_NAME = {
 // Options :
 // - listId : la liste ouverte
 // - getView : vue actuelle de la liste (computeListView), pour les doublons
-// - add(name, { note }) : ajoute l'article comme un ajout normal (rayon ou
-//   magasin habituel, sinon demandé une fois) ; renvoie true si ajouté
+// - add(name, { note, ean }) : ajoute l'article comme un ajout normal (rayon
+//   ou magasin habituel, sinon demandé une fois) ; renvoie l'article ajouté,
+//   ou false si le choix du rayon a été abandonné
 export function createScanner({ listId, getView, add }) {
   // Sélecteur caché : l'appareil photo du téléphone
   const camera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
@@ -72,7 +72,6 @@ export function createScanner({ listId, getView, add }) {
   // --- Feuille « Scanner un produit » ---
   function openSession() {
     const body = h('div', { class: 'stack' });
-    let added = 0;
     let current = 0; // numéro de l'étape en cours (une réponse en retard est ignorée)
 
     const sheet = openSheet({
@@ -95,21 +94,8 @@ export function createScanner({ listId, getView, add }) {
     const message = (iconName, text, danger = false) => h('div', { class: `note${danger ? ' note--danger' : ''}`, role: 'status' }, icon(iconName), h('p', {}, text));
     const btn = (classes, content, onClick) => h('button', { class: `btn ${classes}`, type: 'button', onClick }, ...content);
     const retake = (label = 'Reprendre une photo') => btn('btn--primary btn--block', [icon('camera', 'icon--sm'), label], () => camera.click());
-    const count = () => (added ? h('p', { class: 'sheet__sub', role: 'status' }, addedCount(added)) : null);
-
-    // Fin d'un produit (ajouté ou annulé) : compteur, scanner un autre, terminé
-    function showNext(doneText = null) {
-      if (!added && !doneText) {
-        sheet.close();
-        return;
-      }
-      show(
-        doneText ? message('check', doneText) : null,
-        count(),
-        h('div', { class: 'sheet__actions' },
-          retake('Scanner un autre produit'),
-          btn('btn--secondary btn--block', ['Terminé'], () => sheet.close())));
-    }
+    // « Annuler » : la feuille se ferme (un champ qui avait le curseur le perd)
+    const cancel = () => btn('btn--secondary btn--block', ['Annuler'], () => sheet.close());
 
     // Saisie du code à la main : le champ n'apparaît que sur appui
     function manualCode(intro) {
@@ -125,14 +111,15 @@ export function createScanner({ listId, getView, add }) {
       function submit() {
         const problem = barcodeProblem(input.value);
         codeField.setError(problem);
-        if (!problem && step === current) lookup(normalizeBarcode(input.value));
+        if (problem || step !== current) return;
+        releaseFocus(); // code validé : le clavier se replie
+        lookup(normalizeBarcode(input.value));
       }
       const reveal = btn('btn--secondary btn--block', ['Saisir le code à la main'], () => {
         reveal.hidden = true;
         form.hidden = false;
       });
-      show(intro, count(), h('div', { class: 'sheet__actions' }, retake(), reveal), form,
-        h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => showNext() }, 'Annuler'));
+      show(intro, h('div', { class: 'sheet__actions' }, retake(), reveal), form, cancel());
     }
 
     // 1. Lecture du code sur la photo
@@ -183,8 +170,7 @@ export function createScanner({ listId, getView, add }) {
     function typeName(text, code) {
       ++current;
       const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', found: false, code }));
-      show(message('alert', text), count(), h('div', { class: 'sheet__actions' }, reveal,
-        btn('btn--secondary btn--block', ['Annuler'], () => showNext())));
+      show(message('alert', text), h('div', { class: 'sheet__actions' }, reveal, cancel()));
     }
 
     // 3b. Fiche du produit : nom (modifiable), note, doublon, ajout
@@ -211,19 +197,21 @@ export function createScanner({ listId, getView, add }) {
         field('Note (facultative)', noteInput, { hint: found ? 'Marque et format' : undefined }).field,
         warning,
         found ? h('p', { class: 'field__hint' }, 'Données : Open Food Facts') : null,
-        h('div', { class: 'sheet__actions' }, save,
-          h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => showNext() }, 'Annuler')));
+        h('div', { class: 'sheet__actions' }, save, cancel()));
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const finalName = nameInput.value.replace(/\s+/g, ' ').trim();
         nameField.setError(finalName ? null : 'Le nom est obligatoire');
         if (!finalName || step !== current) return;
+        releaseFocus(); // nom validé : le clavier se replie
         save.disabled = true;
-        const ok = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim(), ean: code });
+        const item = await add(finalName, { note: noteInput.value.replace(/\s+/g, ' ').trim(), ean: code });
         save.disabled = false;
-        if (!ok || step !== current) return; // choix du rayon abandonné : la fiche reste
-        added += 1;
-        showNext(`« ${finalName} » ajouté à la liste.`);
+        if (!item || step !== current) return; // choix du rayon abandonné : la fiche reste
+        // L'ajout se termine : retour sur la liste, aucun champ actif
+        sheet.close();
+        releaseFocus();
+        toast(`Ajouté : ${finalName}`, { duration: 2500 });
       });
       show(form);
     }

@@ -21,6 +21,16 @@ export function isTextField(element) {
   return element.matches('input') && !['button', 'submit', 'reset', 'checkbox', 'radio', 'file', 'range', 'color', 'image', 'hidden'].includes(element.type);
 }
 
+// Retire le curseur d'un champ de saisie (le clavier du téléphone se
+// replie). blur() est nécessaire sur iPhone : un champ retiré de la page
+// sans blur() peut y laisser le clavier ouvert. Sans effet si aucun champ
+// n'a le curseur. Appelée après un ajout, à la fermeture d'une fenêtre et
+// au changement d'écran : jamais pendant la saisie.
+export function releaseFocus() {
+  const active = document.activeElement;
+  if (isTextField(active)) active.blur();
+}
+
 // Éléments qu'on peut atteindre avec la touche Tab dans une fenêtre
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -37,6 +47,8 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
   const remove = () => {
     if (closed) return;
     closed = true;
+    // Un champ de la fenêtre a encore le curseur : il le perd (clavier replié)
+    if (panel.contains(document.activeElement)) releaseFocus();
     scrim.remove();
     panel.remove();
     document.removeEventListener('keydown', onKey);

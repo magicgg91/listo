@@ -8,7 +8,9 @@
 //
 // Le message ne contient AUCUNE donnée de la liste (ni nom, ni article, ni
 // photo) : le téléphone demande ensuite lui-même les changements par
-// /api/sync, avec tous les contrôles d'accès habituels.
+// /api/sync, avec tous les contrôles d'accès habituels. Après un changement
+// de catégorie, de magasin ou de rayon par l'Admin, tous les téléphones
+// connectés reçoivent « event: refs » (sans données non plus).
 //
 // Règles :
 // - seulement les comptes connectés ; la session est revérifiée à chaque
@@ -101,6 +103,15 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     notifyUsers([...activeMembers.all(listId), ...alsoUsers], listId);
   }
 
+  // Prévient tous les téléphones connectés que les données de référence
+  // (catégories, magasins, rayons) ont changé : chacun refait une
+  // synchronisation, qui les renvoie en entier. Le message ne dit pas quoi
+  // (aucune donnée), comme pour une liste.
+  function notifyReferences() {
+    const message = 'event: refs\ndata: {}\n\n';
+    for (const connections of byUser.values()) for (const connection of connections) write(connection, message);
+  }
+
   // Coupe les flux d'un compte (désactivation, toutes ses sessions fermées)
   function disconnectUser(userId) {
     for (const connection of [...(byUser.get(userId) ?? [])]) close(connection);
@@ -125,7 +136,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const list of [...byUser.values()]) for (const connection of [...list]) close(connection);
   }
 
-  return { connect, notifyList, notifyUsers, disconnectUser, disconnectSession, count, closeAll };
+  return { connect, notifyList, notifyUsers, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
 }
 
 // Refuse un flux demandé depuis un autre site. Un navigateur n'envoie pas

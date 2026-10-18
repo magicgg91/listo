@@ -183,12 +183,17 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
 }
 
 // Menu « ⋮ » : items = [{ icon, label, danger, onSelect }]
-export function openMenu(items, { label = 'Menu' } = {}) {
+// item.danger : action destructrice (texte rouge) ; item.separated : séparée
+// des actions précédentes par un trait. onClose : appelé à la fermeture.
+// anchor : bouton qui ouvre le menu (carte de « Mes listes ») ; le menu
+// s'affiche alors juste sous lui, sans jamais sortir de l'écran.
+export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {}) {
   let closeMenu;
+  let panel;
   const { close } = overlay((close) => {
     closeMenu = close;
-    return h('div', { class: 'menu' },
-      items.map((item) => h('button', {
+    panel = h('div', { class: 'menu' },
+      items.map((item) => [item.separated ? h('div', { class: 'menu__sep', role: 'separator' }) : null, h('button', {
         class: `menu__item${item.danger ? ' menu__item--danger' : ''}`,
         type: 'button',
         // Choix exclusif (tri…) : l'option active a une coche ET son texte
@@ -200,8 +205,15 @@ export function openMenu(items, { label = 'Menu' } = {}) {
           // une autre fenêtre ou changer d'écran)
           setTimeout(() => item.onSelect(), 0);
         },
-      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)));
-  }, { role: 'menu', label });
+      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)]));
+    return panel;
+  }, { role: 'menu', label, onClose });
+  if (anchor) {
+    const box = host.getBoundingClientRect();
+    const below = anchor.getBoundingClientRect().bottom - box.top + 4;
+    const room = box.height - panel.offsetHeight - 8;
+    panel.style.top = `${Math.max(8, Math.min(below, room))}px`;
+  }
   return close;
 }
 
@@ -290,12 +302,21 @@ export function setSyncState(state) {
 }
 
 // Dessine la pastille : icône + texte (+ le nombre en attente, montré
-// seulement quand la pastille est réduite)
+// seulement quand la pastille est réduite). Rien n'est redessiné si l'état
+// affiché n'a pas changé : la zone aria-live n'annonce qu'un vrai changement,
+// une seule fois. Pastille-bouton : son nom dit l'état ET l'action
+// (« À jour, synchroniser maintenant »).
 function paintPill(pill) {
   const info = SYNC[syncState];
-  pill.className = `sync ${info.className}`;
-  replace(pill, icon(info.icon, 'icon--sm'), h('span', { class: 'sync__text' }, info.text()),
-    syncState === 'off' && pendingCount ? h('span', { class: 'sync__count', 'aria-hidden': 'true' }, String(pendingCount)) : null);
+  const text = info.text();
+  const painted = `${syncState}|${text}`;
+  if (pill.dataset.painted !== painted) {
+    pill.dataset.painted = painted;
+    pill.className = `sync ${info.className}`;
+    replace(pill, icon(info.icon, 'icon--sm'), h('span', { class: 'sync__text' }, text),
+      syncState === 'off' && pendingCount ? h('span', { class: 'sync__count', 'aria-hidden': 'true' }, String(pendingCount)) : null);
+    if (pill.tagName === 'BUTTON') pill.setAttribute('aria-label', `${text}, synchroniser maintenant`);
+  }
   fitPill(pill);
 }
 
@@ -315,13 +336,16 @@ function fitPill(pill) {
   }
 }
 
-// Pastille d'état. Si onRefresh est donné, un appui lance une actualisation.
+// Pastille d'état. Si onRefresh est donné, c'est un vrai bouton (annoncé
+// comme tel, « À jour, synchroniser maintenant ») : un appui relance une
+// synchronisation. Sinon, un simple texte d'état (role="status"). Dans les
+// deux cas, un changement d'état est annoncé (aria-live).
 // inBar : pastille posée dans une barre du haut (entre le titre et les
 // boutons) ; renvoie alors l'emplacement qui la contient, et la pastille se
 // réduit à l'icône quand la place manque (voir fitPill).
 export function syncPill(onRefresh, { inBar = false } = {}) {
   const pill = onRefresh
-    ? h('button', { type: 'button', role: 'status', 'aria-live': 'polite', title: 'Actualiser', onClick: onRefresh })
+    ? h('button', { type: 'button', 'aria-live': 'polite', onClick: onRefresh })
     : h('p', { role: 'status', 'aria-live': 'polite' });
   syncPills.add(pill);
   if (!inBar) {

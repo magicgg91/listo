@@ -67,6 +67,7 @@ export function fromSnapshot(snapshot) {
     state.history = [...snapshot.history];
     state.users = [...(snapshot.users ?? [])];
     state.loaded = true;
+    refreshListReferences(state);
     return state;
   } catch {
     return null;
@@ -82,6 +83,28 @@ export function isTooOld(state, now = Date.now()) {
   return now - Date.parse(state.serverTime) > SNAPSHOT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
+// Catégorie et magasin d'une liste : le serveur ne garde que leur
+// identifiant (lists.category_id, lists.store_id) et décrit la liste avec
+// leur nom du moment. Mais une synchronisation « depuis » ne renvoie que les
+// listes modifiées, alors que les catégories et les magasins arrivent en
+// entier à chaque fois : après un renommage par l'Admin (qui ne modifie
+// aucune liste), le nom copié dans chaque liste resterait l'ancien. On le
+// relit donc ici, par l'identifiant, dans les données de référence reçues.
+export function refreshListReferences(state) {
+  const categories = new Map(state.categories.map((c) => [c.id, c]));
+  const stores = new Map(state.stores.map((s) => [s.id, s]));
+  for (const [id, list] of state.lists) {
+    const category = list.category && categories.get(list.category.id);
+    const store = list.store && stores.get(list.store.id);
+    if (!category && !store) continue;
+    state.lists.set(id, {
+      ...list,
+      category: category ? { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active } : list.category,
+      store: store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : list.store,
+    });
+  }
+}
+
 // Remplace tout par une synchronisation complète (réponse de /api/sync)
 export function loadSync(state, data) {
   state.serverTime = data.serverTime;
@@ -94,6 +117,7 @@ export function loadSync(state, data) {
   state.history = data.history;
   if (data.users) state.users = data.users;
   state.loaded = true;
+  refreshListReferences(state);
   return state;
 }
 
@@ -118,6 +142,7 @@ export function mergeSync(state, data) {
   state.stores = data.stores;
   state.aisles = data.aisles;
   if (data.users) state.users = data.users;
+  refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
   for (const entry of data.history) {

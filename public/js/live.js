@@ -91,6 +91,8 @@ function open() {
     attempt = 0;
   });
   source.addEventListener('list', () => scheduleSync());
+  // Catégories, magasins ou rayons changés par l'Admin (renommage…)
+  source.addEventListener('refs', () => scheduleSync());
   source.addEventListener('error', () => {
     // Coupure (réseau, redémarrage du serveur, session expirée…) : le
     // navigateur réessaierait tout seul, sans délai croissant ; on reprend la main.

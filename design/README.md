@@ -43,7 +43,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Contraste du texte AA dans les deux thèmes (rapports calculés dans la planche « Variables de thème »).
 - Zones tactiles d'au moins 44 px ; la case ronde mesure 30 px mais sa zone cliquable fait 52 × 56 px.
 - Un article coché est barré, atténué et porte une coche : jamais la couleur seule.
-- Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : `role="status"`.
+- Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : un vrai `<button>` (un appui relance la synchronisation) avec `aria-live="polite"` et un nom qui dit l'état et l'action (`aria-label="À jour, synchroniser maintenant"`) ; un simple texte `role="status"` seulement s'il n'est pas cliquable.
 - Pas de survol ni de geste caché : les actions secondaires passent par le menu « ⋮ ».
 
 ## Manifeste PWA (extrait)
@@ -198,7 +198,7 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 - `.topbar.topbar--plain.topbar--status` : sur une ligne, le titre (`.topbar__main`, sa largeur naturelle), puis `.topbar__status` (prend la place restante) qui contient la pastille `.sync`, puis le bouton de tri et les Réglages. La ligne `.statusbar` disparaît de l'accueil (gardée sur l'écran d'une liste).
 - `.sync--compact` : quand le texte ne tient pas, il est masqué visuellement (toujours lu par les lecteurs d'écran) et seule l'icône reste, suivie de `.sync__count` (nombre en attente, masqué aux lecteurs d'écran qui lisent déjà « Hors ligne · 3 en attente »). Le choix est refait à chaque changement de largeur ou d'état.
-- La pastille reste un bouton « Actualiser » avec une zone tactile de 44 px de haut.
+- La pastille reste un bouton (« À jour, synchroniser maintenant » pour les lecteurs d'écran) avec une zone tactile de 44 px de haut.
 
 ## Ajout : mode scan des listes de courses
 
@@ -245,3 +245,12 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 
 - `li.item.swipe` (`touch-action: pan-y` : le défilement vertical reste au navigateur) : le contenu de la ligne est dans `.swipe__slide` (fond hérité de la ligne), qui suit le doigt (`transform`) ; derrière, `button.swipe__delete` (fond `--color-danger`, `#i-trash` ET « Supprimer », 104 px de large, `aria-label="Supprimer <nom>"`), visible seulement pendant le glissement (`.is-swiping`) ou ligne ouverte (`.is-open`).
 - Animation de retour coupée avec `prefers-reduced-motion`. Pas de glissement à la souris. La page publique n'a ni glissement ni suppression.
+
+## Ajout : menu « ⋯ » des cartes de « Mes listes »
+
+Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
+
+- `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (liste partagée dont on n'est pas propriétaire).
+- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran) : « Modifier la liste » (`#i-pencil`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`).
+- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible.
+- Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.

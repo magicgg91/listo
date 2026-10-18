@@ -21,11 +21,11 @@ test('barre de l\'accueil : titre, pastille, tri, réglages, sur une ligne ; plu
   assert.equal(screen.includes("class: 'statusbar'"), false, 'la ligne sous la barre a disparu');
 });
 
-test('pastille : rôle d\'état, texte toujours lu, réduite à l\'icône (et au nombre) seulement si la place manque', () => {
-  // Rôle et annonce polie, comme avant ; même action (actualiser)
-  assert.match(ui, /h\('button', \{ type: 'button', role: 'status', 'aria-live': 'polite', title: 'Actualiser', onClick: onRefresh \}\)/);
+test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seulement si la place manque', () => {
+  // Bouton (synchroniser maintenant) avec annonce polie des changements
+  assert.match(ui, /h\('button', \{ type: 'button', 'aria-live': 'polite', onClick: onRefresh \}\)/);
   // Texte dans .sync__text ; nombre en attente à part, caché aux lecteurs d'écran (déjà dans le texte)
-  assert.match(ui, /h\('span', \{ class: 'sync__text' \}, info\.text\(\)\)/);
+  assert.match(ui, /h\('span', \{ class: 'sync__text' \}, text\)/);
   assert.match(ui, /h\('span', \{ class: 'sync__count', 'aria-hidden': 'true' \}, String\(pendingCount\)\)/);
   // Réduite seulement si le texte dépasse la place laissée
   assert.match(ui, /if \(pill\.scrollWidth > slot\.clientWidth \+ 0\.5\) \{\s*pill\.classList\.add\('sync--compact'\);/);

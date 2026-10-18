@@ -561,3 +561,22 @@
 .sync--compact { gap: 4px; padding: 0 9px; }
 .sync--compact .sync__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sync--compact .sync__count { display: inline; }
+/* 16.11 Groupes repliables (rayons, magasins « multi », priorités) : l'en-tête
+   .aisle.aisle--fold contient un vrai bouton .aisle__toggle (aria-expanded,
+   aria-controls vers la liste du groupe, 48 px de haut) : chevron, nom, nombre
+   à droite. Replié : chevron tourné vers la droite, liste masquée, et le
+   nombre laisse place à « · 2 à acheter » (« · 3 à faire ») après le nom :
+   jamais la couleur seule. La zone des cochés (16.5) se replie de la même
+   façon. « Tout replier / Tout déplier » : bouton texte compact .fold-all, à
+   droite de la barre d'état, seulement s'il y a au moins deux groupes. */
+.aisle--fold { padding: 0 var(--space-2); }
+.aisle__toggle { display: flex; align-items: center; gap: var(--space-1); flex: 1; min-width: 0; min-height: var(--tap); padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; color: inherit; }
+.aisle__toggle > .icon { flex: none; transition: transform var(--dur-fast) var(--ease); }
+.aisle__toggle[aria-expanded="false"] > .icon { transform: rotate(-90deg); }
+.aisle__toggle .aisle__name { overflow-wrap: anywhere; }
+.aisle__toggle .aisle__count { margin-left: auto; }
+.aisle__rest { flex: 1; min-width: 0; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.aisle__toggle:active, .fold-all:active { background: var(--color-neutral-soft); }
+.fold-all { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); margin-left: auto; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font-size: var(--text-sm); font-weight: 700; color: var(--color-accent-ink); }
+.fold-all .icon { transition: transform var(--dur-fast) var(--ease); }
+.fold-all--open .icon { transform: rotate(180deg); }

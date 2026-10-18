@@ -30,33 +30,14 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort } from '../store.js';
+import { computeListView, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+  groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { openShareSheet } from './share.js';
-import { itemWords, countItems, doneZoneWords } from '../words.js';
+import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
-
-// Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
-// Ouverte par défaut. Le stockage du navigateur peut être indisponible
-// (navigation privée…) : rien d'essentiel n'en dépend.
-const zoneKey = (listId) => `listo-zone-repliee-${listId}`;
-function isZoneOpen(listId) {
-  try {
-    return localStorage.getItem(zoneKey(listId)) !== '1';
-  } catch {
-    return true;
-  }
-}
-function rememberZone(listId, open) {
-  try {
-    if (open) localStorage.removeItem(zoneKey(listId));
-    else localStorage.setItem(zoneKey(listId), '1');
-  } catch {
-    // stockage indisponible : l'état n'est pas retenu, sans conséquence
-  }
-}
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -93,8 +74,74 @@ export function renderList(listId, onLeave) {
 
   let view = null;
 
+  // --- Groupes repliables (rayons, magasins, priorités, zone des cochés) ---
+  // Repliés ou dépliés sur ce téléphone, pour cette liste (store.js) ; tout
+  // est déplié par défaut. L'état survit aux mises à jour en temps réel et
+  // aux changements de tri : chaque dessin le relit dans `folded`.
+  const folded = loadFoldedGroups(listId);
+  // Groupes repliables du dernier dessin : { isOpen(), setOpen(open), contains(node) }
+  let foldables = [];
+  // « Tout replier / Tout déplier » : dans la barre d'état, seulement s'il y
+  // a au moins deux groupes repliables
+  const foldAll = h('button', { class: 'fold-all', type: 'button', hidden: true, onClick: () => {
+    const open = !foldables.some((f) => f.isOpen());
+    for (const f of foldables) f.setOpen(open);
+    drawFoldAll();
+  } });
+  function drawFoldAll() {
+    const anyOpen = foldables.some((f) => f.isOpen());
+    foldAll.hidden = foldables.length < 2;
+    foldAll.classList.toggle('fold-all--open', anyOpen);
+    replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? 'Tout replier' : 'Tout déplier');
+  }
+
+  // En-tête de groupe repliable (design : section 16.11) : un vrai bouton
+  // (aria-expanded, aria-controls), chevron qui tourne, nombre à droite ;
+  // replié, « · 2 à acheter » s'affiche après le nom (jamais la couleur seule).
+  // name : nom du groupe ; lead : icône devant le nom (magasin), ou rien.
+  function foldableGroup(list, group, name, lead = null) {
+    const key = groupKey(group);
+    const remaining = group.items.length; // le groupe ne contient que des non cochés
+    const listEl = h('ul', { id: `groupe-${listId}-${key.replace(':', '-')}` }, group.items.map(itemRow));
+    const rest = h('span', { class: 'aisle__rest' }, `· ${remainingWords(remaining, list)}`);
+    const counter = h('span', { class: 'aisle__count', 'aria-hidden': 'true' }, String(remaining));
+    const toggle = h('button', {
+      class: 'aisle__toggle',
+      type: 'button',
+      'aria-controls': listEl.id,
+      'aria-label': `${name}, ${remainingWords(remaining, list)}`,
+    }, icon('chev-d', 'icon--sm'), h('span', { class: 'aisle__name' }, lead, name), rest, counter);
+    const show = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      listEl.hidden = !open;
+      rest.hidden = open;
+      counter.hidden = !open;
+    };
+    const foldable = {
+      isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
+      setOpen: (open) => {
+        if (open) folded.delete(key);
+        else folded.add(key);
+        saveFoldedGroups(listId, folded);
+        show(open);
+      },
+      contains: (node) => listEl.contains(node),
+    };
+    // Ouvrir / replier sur place : ni redessin, ni saut de défilement ; le
+    // bouton garde le focus
+    toggle.addEventListener('click', () => {
+      foldable.setOpen(!foldable.isOpen());
+      drawFoldAll();
+    });
+    show(!folded.has(key));
+    foldables.push(foldable);
+    return h('section', {}, h('h2', { class: 'aisle aisle--fold' }, toggle), listEl);
+  }
+
   // --- Dessin de la liste ---
   const draw = () => {
+    foldables = [];
+    drawFoldAll();
     if (!app.data.loaded) {
       replace(content, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
       return;
@@ -135,16 +182,19 @@ export function renderList(listId, onLeave) {
         h('p', { class: 'empty__text' }, `Ajoutez un premier ${words.one} avec le champ ci-dessous.`)));
       return;
     }
-    const count = (group) => h('span', { class: 'aisle__count', 'aria-label': `${words.many} restants` }, String(group.items.filter((i) => !i.checked).length));
-    replace(content, groups.map((group) => h('section', {},
-      // En-tête collant : rayon, ou magasin (avec son icône) dans une liste « multi »
-      view.multi
-        ? h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.store?.name ?? 'Sans magasin'), count(group))
-        : list.category.isShopping ? h('h2', { class: 'aisle' }, group.aisle?.name ?? 'Sans rayon', count(group))
+    // Groupes disparus (rayon ou magasin supprimé) : oubliés
+    if (pruneFoldedGroups(folded, possibleGroupKeys(app.data))) saveFoldedGroups(listId, folded);
+    replace(content, groups.map((group) => (
+      // En-tête collant et repliable : rayon, ou magasin (avec son icône)
+      // dans une liste « multi »
+      view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
+        : list.category.isShopping ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
-          : group.label ? h('h2', { class: 'aisle' }, group.label, count(group)) : null,
-      h('ul', {}, group.items.map(itemRow)))),
+          : group.label ? foldableGroup(list, group, group.label)
+            // Ordre alphabétique ou par échéance : liste simple, sans en-tête
+            : h('section', {}, h('ul', {}, group.items.map(itemRow))))),
     done.length ? doneZone(list, done) : null);
+    drawFoldAll();
   };
 
   // Zone des articles cochés, sous le dernier rayon (design/components.html,
@@ -170,12 +220,20 @@ export function renderList(listId, onLeave) {
       listEl.hidden = !open;
       actionsRow.hidden = !open;
     };
+    const foldable = {
+      isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
+      setOpen: (open) => {
+        rememberZone(listId, open);
+        show(open);
+      },
+      contains: (node) => listEl.contains(node),
+    };
     toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') !== 'true';
-      rememberZone(listId, open);
-      show(open);
+      foldable.setOpen(!foldable.isOpen());
+      drawFoldAll();
     });
     show(isZoneOpen(listId));
+    foldables.push(foldable); // « Tout replier » la replie aussi
     return h('section', { class: 'cart' },
       h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' }, toggle), actionsRow),
       listEl);
@@ -386,25 +444,44 @@ export function renderList(listId, onLeave) {
     // Liste de courses : l'ajout se termine (plus de curseur dans le champ,
     // clavier replié) et l'article ajouté est montré dans la liste. Autres
     // listes : inchangé, le champ garde le curseur pour enchaîner.
-    if (!item || !view?.list.category.isShopping) return;
+    if (!item) return;
+    if (!view?.list.category.isShopping) {
+      whenRow(item.id, unfoldRow); // groupe replié : déplié, sans autre changement
+      return;
+    }
     suggestBox.hidden = true;
     releaseFocus();
     revealItem(item.id);
   }
 
-  // Fait défiler la liste jusqu'à un article tout juste ajouté et le met
-  // brièvement en évidence. La liste peut être redessinée un peu plus tard
-  // (jamais pendant qu'un doigt est posé dessus) : on attend sa ligne, une
-  // seconde au plus.
-  function revealItem(itemId, tries = 30) {
+  // Attend la ligne d'un article tout juste ajouté : la liste peut être
+  // redessinée un peu plus tard (jamais pendant qu'un doigt est posé dessus),
+  // une seconde au plus.
+  function whenRow(itemId, then, tries = 30) {
     const row = content.querySelector(`li[data-item-id="${CSS.escape(itemId)}"]`);
-    if (!row) {
-      if (tries > 0) setTimeout(() => revealItem(itemId, tries - 1), 40);
-      return;
+    if (row) then(row);
+    else if (tries > 0) setTimeout(() => whenRow(itemId, then, tries - 1), 40);
+  }
+
+  // Un article ajouté depuis ce téléphone dans un groupe replié : le groupe
+  // se déplie (un ajout venu de l'autre téléphone ne change rien)
+  function unfoldRow(row) {
+    const group = foldables.find((f) => f.contains(row));
+    if (group && !group.isOpen()) {
+      group.setOpen(true);
+      drawFoldAll();
     }
-    row.scrollIntoView({ block: 'center', behavior: 'smooth' }); // au milieu : jamais sous le toast
-    row.classList.add('item--added');
-    setTimeout(() => row.classList.remove('item--added'), 1600);
+  }
+
+  // Fait défiler la liste jusqu'à un article tout juste ajouté (groupe
+  // déplié au besoin) et le met brièvement en évidence
+  function revealItem(itemId) {
+    whenRow(itemId, (row) => {
+      unfoldRow(row);
+      row.scrollIntoView({ block: 'center', behavior: 'smooth' }); // au milieu : jamais sous le toast
+      row.classList.add('item--added');
+      setTimeout(() => row.classList.remove('item--added'), 1600);
+    });
   }
 
   // Ajoute un article (champ d'ajout ou mode scan). extra : autres champs
@@ -872,7 +949,7 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'topbar__main' }, title, sub),
       sortButton,
       menuButton),
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true }))),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), foldAll),
     content,
     addbar);
 }

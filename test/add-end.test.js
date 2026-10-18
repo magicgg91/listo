@@ -24,7 +24,8 @@ test('fenêtre qui se ferme, changement d\'écran : curseur retiré', () => {
 });
 
 test('saisie à la main (liste de courses) : curseur retiré et article montré après l\'ajout', () => {
-  assert.match(list, /if \(!item \|\| !view\?\.list\.category\.isShopping\) return;\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);/);
+  // Autres listes : le champ garde le curseur (le groupe replié se déplie seulement)
+  assert.match(list, /if \(!item\) return;\s*if \(!view\?\.list\.category\.isShopping\) \{\s*whenRow\(item\.id, unfoldRow\);[^\n]*\n\s*return;\s*\}\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);/);
   assert.match(list, /'data-item-id': item\.id/);
 });
 

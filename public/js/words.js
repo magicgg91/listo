@@ -37,3 +37,8 @@ export function doneZoneWords(listOrFlag) {
     ? { title: 'Dans le panier', reopen: 'Tout remettre à acheter', remove: 'Retirer du panier' }
     : { title: 'Terminés', reopen: 'Tout rouvrir', remove: 'Retirer les terminés' };
 }
+
+// Ce qui reste dans un groupe replié : « 2 à acheter », « 3 à faire »
+export function remainingWords(count, listOrFlag) {
+  return `${count} ${isShopping(listOrFlag) ? 'à acheter' : 'à faire'}`;
+}

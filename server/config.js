@@ -34,7 +34,28 @@ export function loadConfig(env = process.env) {
     // demande à GitHub s'il existe une image plus récente. Activée par
     // défaut ; LISTO_UPDATE_CHECK=off la coupe (aucune demande vers GitHub).
     updateCheck: String(env.LISTO_UPDATE_CHECK ?? '').trim().toLowerCase() !== 'off',
+
+    // Mode scan des listes de courses : le serveur cherche le nom d'un
+    // produit dans Open Food Facts à partir de son code-barres. Activé par
+    // défaut ; LISTO_PRODUCT_LOOKUP=off le coupe (aucune demande vers Open
+    // Food Facts, bouton « Scanner » masqué).
+    productLookup: String(env.LISTO_PRODUCT_LOOKUP ?? '').trim().toLowerCase() !== 'off',
+
+    // Contact facultatif ajouté à l'en-tête User-Agent des demandes à Open
+    // Food Facts (adresse e-mail ou URL), ou null. Une valeur mal formée est
+    // ignorée (voir validContact).
+    productContact: validContact(env.LISTO_PRODUCT_CONTACT),
   };
+}
+
+// Contact pour Open Food Facts : 1 à 100 caractères imprimables simples
+// (lettres sans accent, chiffres, @ . : / - _ + ~ et espaces), sans
+// parenthèse ni point-virgule : la valeur va dans un en-tête HTTP, elle ne
+// doit rien pouvoir y casser. Toute autre valeur donne null (pas de contact).
+export function validContact(value) {
+  if (typeof value !== 'string') return null;
+  const contact = value.trim();
+  return /^[A-Za-z0-9@.:/\-_+~ ]{1,100}$/.test(contact) ? contact : null;
 }
 
 // Un commit Git est exactement 40 caractères hexadécimaux. Toute autre

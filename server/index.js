@@ -20,6 +20,10 @@ if (problem) {
   console.error(`Listo ne démarre pas : ${problem}`);
   process.exit(1);
 }
+// Contact pour Open Food Facts mal formé : ignoré (sans l'afficher), Listo démarre
+if (process.env.LISTO_PRODUCT_CONTACT?.trim() && !config.productContact) {
+  console.warn('LISTO_PRODUCT_CONTACT ignorée : caractères non permis (lettres sans accent, chiffres, @ . : / - _ + ~ seulement).');
+}
 
 // 1. Base de données (créée au premier démarrage, mise à jour ensuite)
 const db = openDatabase(config.dbPath);

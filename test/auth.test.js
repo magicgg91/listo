@@ -546,10 +546,11 @@ test('la politique de sécurité (CSP) stricte est envoyée sur toutes les répo
     const res = await fetch(app.base + url);
     const csp = res.headers.get('content-security-policy');
     assert.match(csp, /default-src 'self'/, url);
-    assert.match(csp, /script-src 'self';/, url);
+    // Application : 'wasm-unsafe-eval' en plus (lecteur de codes-barres)
+    assert.match(csp, /script-src 'self'( 'wasm-unsafe-eval')?;/, url);
     assert.match(csp, /style-src 'self';/, url);
     assert.match(csp, /img-src 'self';/, url);
-    assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval|data:/, url);
+    assert.doesNotMatch(csp, /unsafe-inline|'unsafe-eval'|data:/, url);
     assert.equal(res.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(res.headers.get('referrer-policy'), 'no-referrer');
   }

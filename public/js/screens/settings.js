@@ -96,9 +96,19 @@ export function renderSettings() {
 //    La version arrive du serveur (GET /api/about) sans bloquer l'écran ; hors
 //    ligne, la dernière version connue sur ce téléphone.
 // 2. « Développeur et projet » : deux liens côte à côte.
+// 3. Mode scan activé : mention de la source des noms de produits (licence
+//    ODbL d'Open Food Facts).
 // Ce qui s'affiche dans chaque cas est calculé par aboutVersion (format.js).
 function aboutGroup(isAdmin) {
-  return h('div', { class: 'group' }, versionRow(isAdmin), projectRow());
+  return h('div', { class: 'group' }, versionRow(isAdmin), projectRow(),
+    app.user?.productLookup !== false ? dataRow() : null);
+}
+
+// Zone 3 : « Données : Open Food Facts » (noms des produits scannés)
+function dataRow() {
+  return h('div', { class: 'row' }, h('span', { class: 'row__body' },
+    h('span', { class: 'row__title' }, 'Mode scan'),
+    h('span', { class: 'row__sub' }, 'Données : Open Food Facts (licence ODbL)')));
 }
 
 // Lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre

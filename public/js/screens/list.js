@@ -32,6 +32,7 @@ import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle } from '../ui.js';
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
+import { createScanner, scanAvailable } from './scan.js';
 
 // Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
 // Ouverte par défaut. Le stockage du navigateur peut être indisponible
@@ -118,6 +119,8 @@ export function renderList(listId, onLeave) {
     menuButton.hidden = false;
     sortButton.hidden = list.category.isShopping; // courses : tri par rayons, sans bouton
     addbar.hidden = false;
+    // Bouton « Scanner » : listes de courses seulement (recherche activée)
+    scanner.button.hidden = !scanAvailable(list);
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
     content.classList.toggle('scroll--flat', !list.category.isShopping && itemSort !== 'priority');
 
@@ -297,10 +300,18 @@ export function renderList(listId, onLeave) {
     maxlength: '100',
   });
   const suggestBox = h('div', { class: 'suggest', role: 'listbox', 'aria-label': 'Suggestions', hidden: true });
+  // Mode scan (listes de courses) : bouton « Scanner » entre le champ et +
+  const scanner = createScanner({
+    listId,
+    getView: () => view,
+    add: (name, { note }) => addNamed(name, note ? { note } : {}),
+  });
+  scanner.button.hidden = true; // affiché par draw() pour une liste de courses
   const addForm = h('form', { class: 'addbar__row', novalidate: true },
     h('label', { class: 'addbar__field' }, input),
+    scanner.button,
     h('button', { class: 'btn btn--primary btn--icon', type: 'submit', 'aria-label': 'Ajouter' }, icon('plus')));
-  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm);
+  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.camera);
 
   addForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -358,6 +369,20 @@ export function renderList(listId, onLeave) {
     const name = text.replace(/\s+/g, ' ').trim();
     if (!name || !view) return;
     suggestBox.hidden = true;
+    // Le champ est vidé juste avant l'ajout (pas si la fenêtre de choix du
+    // rayon ou du magasin est fermée sans choisir)
+    await addNamed(name, {}, () => {
+      input.value = '';
+    });
+    // Pas de focus forcé : si le champ avait été touché, il le garde (clavier
+    // ouvert) ; sinon le clavier reste fermé
+  }
+
+  // Ajoute un article (champ d'ajout ou mode scan). extra : autres champs
+  // (note…). Renvoie true si l'article a été ajouté, false si la fenêtre de
+  // choix du rayon ou du magasin a été fermée sans choisir.
+  async function addNamed(name, extra = {}, beforeCreate = () => {}) {
+    if (!view) return false;
     if (view.multi) {
       // Liste « multi » : magasin habituel, sinon on le demande une fois
       const storeId = usualStoreFor(app.data, view.list, name);
@@ -366,26 +391,25 @@ export function renderList(listId, onLeave) {
           ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
           : `« ${name} » est un nouvel ${itemWords(view.list).one}. Son magasin sera retenu pour la prochaine fois.`;
         const chosen = await pickStore({ title: 'Dans quel magasin ?', sub, confirmLabel: 'Ajouter à la liste' });
-        if (chosen === undefined) return; // fenêtre fermée sans choisir
-        input.value = '';
-        await createItem(name, { storeId: chosen });
+        if (chosen === undefined) return false; // fenêtre fermée sans choisir
+        beforeCreate();
+        await createItem(name, { ...extra, storeId: chosen });
       } else {
         // Magasin habituel : le serveur le choisira (le téléphone l'affiche déjà)
-        input.value = '';
-        await createItem(name);
+        beforeCreate();
+        await createItem(name, extra);
       }
     } else if (view.list.category.isShopping && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
       const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel ${itemWords(view.list).one}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
-      if (aisleId === undefined) return; // fenêtre fermée sans choisir
-      input.value = '';
-      await createItem(name, { aisleId });
+      if (aisleId === undefined) return false; // fenêtre fermée sans choisir
+      beforeCreate();
+      await createItem(name, { ...extra, aisleId });
     } else {
-      input.value = '';
-      await createItem(name);
+      beforeCreate();
+      await createItem(name, extra);
     }
-    // Pas de focus forcé : si le champ avait été touché, il le garde (clavier
-    // ouvert) ; sinon le clavier reste fermé
+    return true;
   }
 
   // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)

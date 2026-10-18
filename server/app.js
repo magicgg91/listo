@@ -27,6 +27,8 @@ import { shareRoutes } from './routes/shares.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
 import { createUpdateCheck, fetchGithub } from './update-check.js';
+import { createProductLookup, fetchProduct } from './products.js';
+import { productRoutes } from './routes/products.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -50,6 +52,18 @@ export const CONTENT_SECURITY_POLICY = [
   "form-action 'self'",
   "frame-ancestors 'none'",
 ].join('; ');
+
+// Même politique pour les pages de l'application, avec une seule différence :
+// 'wasm-unsafe-eval' permet de lancer le lecteur de codes-barres du mode scan
+// (zxing-wasm, un programme WebAssembly copié dans public/vendor/, chargé
+// depuis Listo seulement). Il autorise uniquement la compilation de
+// WebAssembly, jamais l'exécution de texte comme du JavaScript ('unsafe-eval'
+// reste interdit). La page du lien public (/p/…) et son API gardent la
+// politique stricte ci-dessus, sans cette exception.
+export const APP_CONTENT_SECURITY_POLICY = CONTENT_SECURITY_POLICY.replace("script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'");
+
+// Adresses du lien public (page et API du visiteur sans compte)
+const isPublicLinkPath = (pathname) => /^\/(p|api\/public)(\/|$)/.test(pathname);
 
 // Fonctions du navigateur que Listo n'utilise jamais : interdites à la page
 // (Permissions-Policy). L'appareil photo n'est pas listé : la prise de photo
@@ -75,6 +89,8 @@ export const PERMISSIONS_POLICY = [
 //   à côté de la base). La sauvegarde est programmée par index.js.
 // - githubRequest : demande à l'API de GitHub (vérification de mise à jour ;
 //   les tests la remplacent : aucun vrai réseau)
+// - productRequest : demande à Open Food Facts (mode scan ; les tests la
+//   remplacent : aucun vrai réseau)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -87,6 +103,7 @@ export function createApp({
   eventOptions = {},
   backupDir = path.join(path.dirname(config.dbPath), 'backups'),
   githubRequest = fetchGithub,
+  productRequest = fetchProduct,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -110,6 +127,8 @@ export function createApp({
   ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
   // Vérification de mise à jour sur GitHub (Admin, voir update-check.js)
   ctx.updates = createUpdateCheck({ config, now, request: githubRequest });
+  // Nom d'un produit à partir de son code-barres (mode scan, voir products.js)
+  ctx.products = createProductLookup({ config, now, request: productRequest });
   // Identifiant opaque de la version installée (null en développement) : le
   // téléphone le compare à celui de son code pour savoir s'il doit recharger
   // la page (voir public/js/freshness.js). Jamais le commit lui-même.
@@ -124,7 +143,7 @@ export function createApp({
   // En-têtes de sécurité sur toutes les réponses
   app.use((req, res, next) => {
     res.set({
-      'Content-Security-Policy': CONTENT_SECURITY_POLICY,
+      'Content-Security-Policy': isPublicLinkPath(req.path) ? CONTENT_SECURITY_POLICY : APP_CONTENT_SECURITY_POLICY,
       'X-Content-Type-Options': 'nosniff',     // pas de « devinette » du type de fichier
       'Referrer-Policy': 'no-referrer',        // l'adresse de Listo n'est pas transmise ailleurs
       'X-Frame-Options': 'DENY',               // Listo ne peut pas être affiché dans un cadre
@@ -191,6 +210,7 @@ export function createApp({
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
   api.use(listRoutes(ctx));
+  api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
   api.use(photoRoutes(ctx));
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   // Version installée (Réglages › À propos) : comptes connectés seulement
@@ -262,6 +282,7 @@ export function createApp({
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
     ctx.publicAccess.prune();
+    ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();
   };
   cleanup();

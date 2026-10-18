@@ -42,6 +42,8 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/ui.js: opener', "retour à l'élément d'origine à la fermeture, sauf champ de saisie (isTextField)"],
   ['public/js/ui.js: first', 'piège de focus : touche Tab (geste de la personne)'],
   ['public/js/ui.js: last', 'piège de focus : Maj+Tab (geste de la personne)'],
+  // Mode scan : la feuille elle-même quand une étape remplace le bouton touché
+  ['public/js/screens/scan.js: panel', 'la feuille « Scanner un produit » (tabindex="-1"), jamais un champ'],
   // Photo agrandie de la page publique
   ['public/js/public.js: closeButton', 'bouton « Fermer la photo »'],
   ['public/js/public.js: opener', 'retour à la vignette touchée, sauf champ de saisie'],

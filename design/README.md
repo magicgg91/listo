@@ -5,7 +5,7 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 39 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 40 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
@@ -199,4 +199,16 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 - `.topbar.topbar--plain.topbar--status` : sur une ligne, le titre (`.topbar__main`, sa largeur naturelle), puis `.topbar__status` (prend la place restante) qui contient la pastille `.sync`, puis le bouton de tri et les Réglages. La ligne `.statusbar` disparaît de l'accueil (gardée sur l'écran d'une liste).
 - `.sync--compact` : quand le texte ne tient pas, il est masqué visuellement (toujours lu par les lecteurs d'écran) et seule l'icône reste, suivie de `.sync__count` (nombre en attente, masqué aux lecteurs d'écran qui lisent déjà « Hors ligne · 3 en attente »). Le choix est refait à chaque changement de largeur ou d'état.
 - La pastille reste un bouton « Actualiser » avec une zone tactile de 44 px de haut.
+
+## Ajout : mode scan des listes de courses
+
+Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
+
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre l'appareil photo du téléphone.
+- Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
+  - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
+  - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
+  - code non lu, lecteur indisponible : `.note.note--danger`, « Reprendre une photo » (`#i-camera`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
+  - nom introuvable : `.note`, « Taper le nom » ;
+  - après un ajout : `.note` « « … » ajouté à la liste. », compteur « 2 ajoutés » (`.sheet__sub`), « Scanner un autre produit » et « Terminé ».
 

@@ -24,9 +24,12 @@ function filesIn(dir, base = '') {
 // Fichiers de la page publique (lien /p/…) : jamais gardés par le service
 // worker, qui ne s'occupe pas de cette page
 const PUBLIC_PAGE_FILES = ['/js/public.js'];
+// Lecteur de codes-barres (public/vendor/) : jamais copié à l'installation,
+// téléchargé au premier scan (cache à part)
+const isVendor = (file) => file.startsWith('/vendor/');
 
 test("service worker : chaque fichier de l'application est gardé pour l'ouverture sans réseau", () => {
-  const expected = filesIn(PUBLIC).filter((file) => file !== '/sw.js' && !PUBLIC_PAGE_FILES.includes(file)).sort();
+  const expected = filesIn(PUBLIC).filter((file) => file !== '/sw.js' && !PUBLIC_PAGE_FILES.includes(file) && !isVendor(file)).sort();
   const files = listed.filter((url) => url !== '/').sort();
   assert.deepEqual(files, expected, 'APP_FILES (sw.js) doit lister exactement les fichiers de public/');
   assert.ok(listed.includes('/'));
@@ -91,4 +94,21 @@ test('service worker (exécuté) : ne garde ni ne détourne jamais /p/ ni /api/p
   // Contrôle : l'application elle-même est bien prise en charge
   assert.equal(takes('/', { mode: 'navigate' }), true);
   assert.equal(takes('/js/app.js', { mode: 'cors' }), true);
+});
+
+test('service worker : lecteur de codes-barres téléchargé au premier scan, dans un cache à part', () => {
+  // Jamais dans la copie faite à l'installation
+  assert.equal(listed.some(isVendor), false);
+  // Le dossier du lecteur et le nom de son cache portent la même version
+  const versions = fs.readdirSync(path.join(PUBLIC, 'vendor'));
+  assert.deepEqual(versions, ['zxing-wasm-3.1.4']);
+  assert.match(source, /const VENDOR_PREFIX = '\/vendor\/zxing-wasm-3\.1\.4\/';/);
+  assert.match(source, /const VENDOR_CACHE = 'listo-vendor-zxing-wasm-3\.1\.4';/);
+  // Servi par vendorFile (copie gardée d'abord) ; ancienne version effacée
+  assert.match(source, /if \(url\.pathname\.startsWith\(VENDOR_PREFIX\)\) \{\s*event\.respondWith\(vendorFile\(request\)\);/);
+  assert.match(source, /name\.startsWith\('listo-vendor-'\) && name !== VENDOR_CACHE/);
+  // Le worker du lecteur pointe vers ce même dossier
+  const worker = fs.readFileSync(path.join(PUBLIC, 'js', 'barcode-worker.js'), 'utf8');
+  assert.match(worker, /\.\.\/vendor\/zxing-wasm-3\.1\.4\/es\/reader\/index\.js/);
+  assert.match(worker, /\.\.\/vendor\/zxing-wasm-3\.1\.4\/reader\/zxing_reader\.wasm/);
 });

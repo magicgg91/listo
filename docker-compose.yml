@@ -37,6 +37,15 @@ services:
       # jeton) s'il existe une image plus récente. Rien ne s'installe tout seul.
       # Décommenter la ligne ci-dessous pour la couper (aucune demande vers GitHub).
       # - LISTO_UPDATE_CHECK=off
+      # Mode scan des listes de courses : le conteneur demande le nom d'un
+      # produit à world.openfoodfacts.org à partir de son code-barres (la photo
+      # reste sur le téléphone ; seul le numéro part). Décommenter la ligne
+      # ci-dessous pour le couper (bouton « Scanner » masqué, aucune demande).
+      # - LISTO_PRODUCT_LOOKUP=off
+      # Facultatif : contact (adresse e-mail ou URL) ajouté à l'en-tête
+      # User-Agent envoyé à Open Food Facts, qui le demande pour joindre
+      # l'application en cas de souci. Sans lui : adresse du projet seulement.
+      # - LISTO_PRODUCT_CONTACT=https://exemple.fr/contact
     ports:
       - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:

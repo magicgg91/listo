@@ -45,6 +45,7 @@ import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.j
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
+import { createTapPicker } from '../tap.js';
 import { listActions } from './list-actions.js';
 
 export function renderList(listId, onLeave) {
@@ -450,9 +451,36 @@ export function renderList(listId, onLeave) {
   });
   input.addEventListener('input', drawSuggestions);
   input.addEventListener('focus', drawSuggestions);
+  // Champ quitté : la liste se ferme, mais jamais pendant qu'un doigt est
+  // posé dessus (elle se fermera au relâchement si le champ n'a plus le curseur)
   input.addEventListener('blur', () => setTimeout(() => {
-    if (document.activeElement !== input) suggestBox.hidden = true;
+    if (document.activeElement !== input && !taps.pressing) suggestBox.hidden = true;
   }, 150));
+
+  // --- Toucher d'une suggestion (tap.js) ---
+  // Une suggestion est choisie au relâchement du doigt (le click reste en
+  // secours, sans double ajout) ; pendant le toucher, la liste n'est ni
+  // redessinée ni fermée.
+  const taps = createTapPicker();
+  let redrawLater = false; // un redessin demandé pendant le toucher
+  // Relâchement sans choix (doigt glissé ailleurs, défilement) : redessin en
+  // attente, puis fermeture si le champ n'a plus le curseur
+  const releaseSuggestions = () => {
+    if (!taps.release()) return;
+    if (redrawLater) {
+      redrawLater = false;
+      drawSuggestions();
+    }
+    if (document.activeElement !== input) suggestBox.hidden = true;
+  };
+  for (const type of ['pointerup', 'pointercancel']) {
+    document.addEventListener(type, releaseSuggestions); // après le bouton lui-même
+    onLeave(() => document.removeEventListener(type, releaseSuggestions));
+  }
+  const ghostClick = (event) => taps.ghostClick(event);
+  document.addEventListener('click', ghostClick, true);
+  onLeave(() => document.removeEventListener('click', ghostClick, true));
+
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') suggestBox.hidden = true;
   });
@@ -461,6 +489,10 @@ export function renderList(listId, onLeave) {
   // courses seulement : dans une liste de tâches, pas de menu (Entrée ou +
   // ajoutent ce qui a été tapé).
   function drawSuggestions() {
+    if (taps.pressing) { // jamais sous le doigt : après le relâchement
+      redrawLater = true;
+      return;
+    }
     if (!remembersNames(view?.list)) {
       suggestBox.hidden = true;
       return;
@@ -472,14 +504,23 @@ export function renderList(listId, onLeave) {
       return;
     }
     const exact = suggestions.some((s) => normalizeItemName(s.name) === normalizeItemName(typed));
-    const option = (content, aisle, onPick, extraClass = '') => h('button', {
-      class: `suggest__item ${extraClass}`.trim(),
-      type: 'button',
-      role: 'option',
-      // Garde le clavier ouvert : le champ ne perd pas le focus
-      onPointerdown: (event) => event.preventDefault(),
-      onClick: onPick,
-    }, content, aisle ? h('span', { class: 'suggest__aisle' }, aisle) : null);
+    const option = (content, aisle, onPick, extraClass = '') => {
+      const on = taps.button(() => {
+        redrawLater = false;
+        onPick();
+      });
+      return h('button', {
+        class: `suggest__item ${extraClass}`.trim(),
+        type: 'button',
+        role: 'option',
+        // Garde le clavier ouvert : le champ ne perd pas le focus
+        onPointerdown: on.pointerdown,
+        onMousedown: on.mousedown,
+        onPointerup: on.pointerup,
+        onPointercancel: on.pointercancel,
+        onClick: on.click,
+      }, content, aisle ? h('span', { class: 'suggest__aisle' }, aisle) : null);
+    };
 
     // À droite de la suggestion : rayon habituel, ou magasin habituel (« multi »)
     const hintFor = (s) => {

@@ -196,30 +196,38 @@ test('À propos : Admin à jour, nouvelle version, vérification impossible, en 
   const admin = (options) => aboutVersion({ commit: INSTALLED, isAdmin: true, now, ...options });
   const version = { text: '3a1b2c4', commit: INSTALLED };
 
+  // À jour : « À jour · il y a 15 min » dans la ligne du haut, sans pastille
+  // ni ligne de nouvelle version
   assert.deepEqual(admin({ result: ok(INSTALLED) }), {
-    version, checked: 'Vérifié il y a 15 min', chip: { tone: 'ok', icon: 'check', text: 'À jour' }, button: true, busy: false,
+    version, upToDate: true, checked: 'il y a 15 min', chip: null, update: null, button: true, busy: false,
   });
-  // Nouvelle version : pastille-lien ; la version installée n'est pas répétée
-  assert.deepEqual(admin({ result: ok(NEWER) }).chip, {
-    tone: 'accent', icon: 'alert', text: 'Nouvelle : 9f8e7d6', commit: NEWER,
+  // Nouvelle version : « Vérifié il y a 15 min » en haut, et la pastille-lien
+  // « Nouvelle version : 9f8e7d6 » sur sa propre ligne (update)
+  const newer = admin({ result: ok(NEWER) });
+  assert.deepEqual([newer.upToDate, newer.checked, newer.chip], [false, 'Vérifié il y a 15 min', null]);
+  assert.deepEqual(newer.update, {
+    tone: 'accent', icon: 'alert', text: 'Nouvelle version : 9f8e7d6', commit: NEWER,
     label: 'Nouvelle version disponible : 9f8e7d6, ouvrir sur GitHub',
   });
   assert.deepEqual(admin({ result: { state: 'indisponible', checkedAt: '2026-10-16T12:00:00.000Z' } }).chip, { tone: 'neutral', text: 'Vérification impossible' });
   assert.deepEqual(admin({ result: { ...ok(NEWER), latest: 'pas-un-commit' } }).chip, { tone: 'neutral', text: 'Vérification impossible' });
   // Vérification en cours : bouton qui tourne, pastille précédente gardée
   const busy = admin({ result: ok(INSTALLED), busy: true });
-  assert.deepEqual([busy.chip.text, busy.button, busy.busy], ['À jour', true, true]);
+  assert.deepEqual([busy.upToDate, busy.checked, busy.button, busy.busy], [true, 'il y a 15 min', true, true]);
+  const busyNewer = admin({ result: ok(NEWER), busy: true });
+  assert.deepEqual([busyNewer.update.text, busyNewer.busy], ['Nouvelle version : 9f8e7d6', true]);
+  assert.equal(admin({ result: { state: 'indisponible' } }).update, null, 'pas de ligne de badge sans nouvelle version');
   const first = admin({ result: null, busy: true });
   assert.deepEqual([first.chip, first.checked, first.button, first.busy], [null, null, true, true]);
   // Hors ligne
   const offline = admin({ result: ok(NEWER), online: false });
-  assert.deepEqual([offline.chip, offline.checked, offline.button], [{ tone: 'neutral', text: 'Hors ligne' }, null, true]);
+  assert.deepEqual([offline.chip, offline.checked, offline.update, offline.button], [{ tone: 'neutral', text: 'Hors ligne' }, null, null, true]);
   assert.deepEqual(aboutVersion({ commit: null, isAdmin: true, online: false }).version, { text: 'indisponible hors ligne' });
 });
 
 test('À propos : autre compte, vérification désactivée, développement → la version seule, sans pastille ni bouton', async () => {
   const { aboutVersion } = await import('../public/js/format.js');
-  const versionOnly = (version) => ({ version, checked: null, chip: null, button: false, busy: false });
+  const versionOnly = (version) => ({ version, upToDate: false, checked: null, chip: null, update: null, button: false, busy: false });
   const version = { text: '3a1b2c4', commit: INSTALLED };
   // Compte non Admin : jamais d'état, même avec une réponse
   assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: false }), versionOnly(version));
@@ -229,6 +237,22 @@ test('À propos : autre compte, vérification désactivée, développement → l
   // Développement : « non précisée », sans lien ni bouton
   assert.deepEqual(aboutVersion({ commit: 'non précisé', isAdmin: true }), versionOnly({ text: 'non précisée' }));
   assert.deepEqual(aboutVersion({ commit: INSTALLED, isAdmin: true, result: { state: 'developpement' } }).button, false);
+});
+
+test('À propos : ligne du haut (version, « Vérifié… », bouton groupés), nouvelle version sur sa propre ligne', () => {
+  const source = fs.readFileSync(new URL('../public/js/screens/settings.js', import.meta.url), 'utf8');
+  // Ligne du haut : version, puis le groupe état + (texte et bouton)
+  assert.match(source, /const actions = h\('span', \{ class: 'about__actions', hidden: true \}, state, h\('span', \{ class: 'about__checked' \}, checked, button\)\);/);
+  assert.match(source, /const row = h\('div', \{ class: 'row about' \}, title, actions, update\);/);
+  // « À jour » écrit en texte ; ligne de la nouvelle version absente sinon
+  assert.match(source, /replace\(checked, line\.upToDate \? \[h\('span', \{ class: 'about__ok' \}, 'À jour'\), line\.checked \? ` · \$\{line\.checked\}` : null\] : line\.checked\);/);
+  assert.match(source, /replace\(update, line\.update \? chipFor\(line\.update\) : null\);\s*update\.hidden = !line\.update;/);
+  assert.doesNotMatch(source, /innerHTML/);
+  // Texte et bouton jamais séparés ; ligne de la nouvelle version : toute la largeur
+  const css = fs.readFileSync(new URL('../public/css/listo.css', import.meta.url), 'utf8');
+  assert.match(css, /\.about__checked \{ display: flex; align-items: center; white-space: nowrap; \}/);
+  assert.match(css, /\.about__update \{ display: flex; flex: 1 0 100%;/);
+  assert.match(css, /\.about \{ flex-wrap: wrap;/);
 });
 
 test('À propos : liens vers GitHub ouverts à part (noopener noreferrer), libellés explicites, aucune commande', () => {

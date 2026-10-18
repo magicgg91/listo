@@ -115,13 +115,17 @@ function dataRow() {
 // d'information à ce site (noopener, noreferrer). Zone tactile de 44 px.
 const outLink = (attrs, ...children) => h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }, ...children);
 
-// Zone 1 : « Version : 7025130 » et, pour l'Admin, « Vérifié il y a 15 min »,
-// pastille d'état et bouton d'actualisation. L'état vient du serveur, qui
-// demande à GitHub (le téléphone ne contacte jamais GitHub). Rien ne
-// s'installe tout seul.
+// Zone 1 : ligne du haut, « Version : 7025130 » à gauche et, pour l'Admin,
+// à droite : « Vérifié il y a 15 min » (à jour : « À jour · il y a 15 min »)
+// et bouton d'actualisation (texte et bouton toujours groupés) ; état
+// éventuel devant (« Hors ligne », « Vérification impossible »). Nouvelle version : une
+// seconde ligne avec la seule pastille « Nouvelle version : 9f8e7d6 » (lien
+// vers ce commit). L'état vient du serveur, qui demande à GitHub (le
+// téléphone ne contacte jamais GitHub). Rien ne s'installe tout seul.
 function versionRow(isAdmin) {
-  const title = h('span', { class: 'row__title' });
-  const checked = h('span', { class: 'row__sub', hidden: true });
+  const title = h('span', { class: 'row__title about__version' });
+  // Annoncé par les lecteurs d'écran quand il change (« À jour… »)
+  const checked = h('span', { class: 'row__sub', role: 'status', hidden: true });
   // Pastille annoncée par les lecteurs d'écran quand elle change
   const state = h('span', { class: 'about__state', role: 'status' });
   const button = h('button', {
@@ -130,8 +134,10 @@ function versionRow(isAdmin) {
     'aria-label': 'Vérifier maintenant',
     onClick: () => check(true),
   }, icon('sync'));
-  const actions = h('span', { class: 'about__actions', hidden: true }, state, button);
-  const row = h('div', { class: 'row about' }, h('span', { class: 'row__body' }, title, checked), actions);
+  const actions = h('span', { class: 'about__actions', hidden: true }, state, h('span', { class: 'about__checked' }, checked, button));
+  // Ligne de la nouvelle version (absente sinon), annoncée elle aussi
+  const update = h('span', { class: 'about__update', role: 'status' });
+  const row = h('div', { class: 'row about' }, title, actions, update);
 
   // État de la ligne
   let commit = null;
@@ -149,9 +155,13 @@ function versionRow(isAdmin) {
     replace(title, 'Version : ', line.version.commit
       ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': `Version ${line.version.text} sur GitHub` }, line.version.text)
       : line.version.text);
-    checked.textContent = line.checked ?? '';
-    checked.hidden = !line.checked;
+    // Textes posés comme texte (replace), jamais comme HTML
+    replace(checked, line.upToDate ? [h('span', { class: 'about__ok' }, 'À jour'), line.checked ? ` · ${line.checked}` : null] : line.checked);
+    checked.hidden = !line.upToDate && !line.checked;
     replace(state, line.chip ? chipFor(line.chip) : null);
+    state.hidden = !line.chip; // vide : ne prend aucune place sur la ligne
+    replace(update, line.update ? chipFor(line.update) : null);
+    update.hidden = !line.update;
     actions.hidden = !line.button;
     button.disabled = line.busy;
     button.classList.toggle('is-busy', line.busy);

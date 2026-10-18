@@ -493,15 +493,22 @@
 .scroll--flat { padding-top: var(--space-1); }
 
 /* 16.6 Bloc « À propos » (Réglages) : une carte .group en deux zones .row.
-   .about : « Version : 7025130 » (lien) et, pour l'Admin, « Vérifié il y a
-   15 min » dessous ; à droite, pastille d'état (.chip) et bouton-icône
-   d'actualisation (.icon-btn). Trop étroit (texte agrandi) : pastille et
-   bouton passent sous la version, alignés à droite, sans déborder.
+   .about, ligne du haut : « Version : 7025130 » (lien) à gauche ; pour
+   l'Admin, à droite : « Vérifié il y a 15 min » (à jour : « À jour · il y
+   a 15 min », .about__ok en vert ET écrit) et le bouton-icône
+   d'actualisation (.icon-btn), toujours groupés (.about__checked) ; devant,
+   un état éventuel (.chip « Hors ligne », « Vérification impossible »). Trop étroit (texte agrandi) : le groupe
+   passe dessous, aligné à droite, sans déborder. Nouvelle version : ligne à
+   part (.about__update) avec la seule pastille-lien « Nouvelle version :
+   9f8e7d6 » ; sans nouvelle version, cette ligne n'existe pas.
    .about-links : deux liens égaux séparés par un trait vertical fin. */
-.about { flex-wrap: wrap; row-gap: 0; padding-top: 12px; padding-bottom: 12px; }
-.about .row__body { flex: 1 1 auto; }
-.about__actions { display: flex; flex: none; align-items: center; gap: var(--space-0); margin-left: auto; margin-right: -10px; }
+.about { flex-wrap: wrap; column-gap: var(--space-1); row-gap: var(--space-0); padding-top: var(--space-1); padding-bottom: var(--space-1); }
+.about__version { flex: 0 1 auto; min-width: 0; }
+.about__actions { display: flex; flex-wrap: wrap; flex: 0 1 auto; align-items: center; justify-content: flex-end; column-gap: var(--space-1); min-width: 0; margin-left: auto; margin-right: -12px; }
 .about__state { display: flex; }
+.about__checked { display: flex; align-items: center; white-space: nowrap; }
+.about__ok { color: var(--color-success-ink); font-weight: 700; }
+.about__update { display: flex; flex: 1 0 100%; padding-bottom: var(--space-0); }
 .about__check.is-busy .icon { animation: spin 1s linear infinite; }
 /* Lien court dans le texte (7 caractères d'un commit) : zone tactile de
    44 px sans agrandir la ligne (marges négatives), au-dessus du texte qui

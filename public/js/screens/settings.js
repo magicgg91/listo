@@ -109,9 +109,9 @@ export function renderSettings() {
     h('div', { class: 'footer' }, logout));
 }
 
-// Bloc « À propos », en deux lignes :
+// Bloc « À propos » : une carte en deux zones séparées par un trait fin :
 // 1. « Version et mise à jour » : version installée (lien vers le commit sur
-//    GitHub) ; pour l'Admin, statut de la mise à jour et bouton « Vérifier ».
+//    GitHub) ; pour l'Admin, état de la mise à jour (pastille) et bouton.
 //    La version arrive du serveur (GET /api/about) sans bloquer l'écran ; hors
 //    ligne, la dernière version connue sur ce téléphone.
 // 2. « Développeur et projet » : deux liens côte à côte.
@@ -124,23 +124,23 @@ function aboutGroup(isAdmin) {
 // d'information à ce site (noopener, noreferrer). Zone tactile de 44 px.
 const outLink = (attrs, ...children) => h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }, ...children);
 
-// Ligne 1 : « Version : 7025130 », statut et bouton « Vérifier » (Admin).
-// Le statut de la mise à jour vient du serveur, qui demande à GitHub (le
-// téléphone ne contacte jamais GitHub). Rien ne s'installe tout seul.
+// Zone 1 : « Version : 7025130 » et, pour l'Admin, « Vérifié il y a 15 min »,
+// pastille d'état et bouton d'actualisation. L'état vient du serveur, qui
+// demande à GitHub (le téléphone ne contacte jamais GitHub). Rien ne
+// s'installe tout seul.
 function versionRow(isAdmin) {
   const title = h('span', { class: 'row__title' });
-  // Statut annoncé par les lecteurs d'écran quand il change
-  const status = h('span', { class: 'row__sub about__status', role: 'status' });
-  const help = h('span', { class: 'row__sub about__help', hidden: true });
-  const spinner = icon('sync', 'icon--sm');
+  const checked = h('span', { class: 'row__sub', hidden: true });
+  // Pastille annoncée par les lecteurs d'écran quand elle change
+  const state = h('span', { class: 'about__state', role: 'status' });
   const button = h('button', {
-    class: 'btn btn--secondary btn--sm about__check',
+    class: 'icon-btn about__check',
     type: 'button',
     'aria-label': 'Vérifier maintenant',
-    hidden: true,
     onClick: () => check(true),
-  }, spinner, 'Vérifier');
-  const row = h('div', { class: 'row about' }, h('span', { class: 'row__body' }, title, status, help), button);
+  }, icon('sync'));
+  const actions = h('span', { class: 'about__actions', hidden: true }, state, button);
+  const row = h('div', { class: 'row about' }, h('span', { class: 'row__body' }, title, checked), actions);
 
   // État de la ligne
   let commit = null;
@@ -158,14 +158,10 @@ function versionRow(isAdmin) {
     replace(title, 'Version : ', line.version.commit
       ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': `Version ${line.version.text} sur GitHub` }, line.version.text)
       : line.version.text);
-    replace(status, line.status ? [line.status.text, line.status.commit
-      ? outLink({ class: 'about__link', href: commitUrl(line.status.commit), 'aria-label': `Nouvelle version ${line.status.link} sur GitHub` }, line.status.link)
-      : null] : null);
-    status.hidden = !line.status;
-    status.classList.toggle('about__status--link', Boolean(line.status?.commit));
-    help.textContent = line.help ?? '';
-    help.hidden = !line.help;
-    button.hidden = !line.button;
+    checked.textContent = line.checked ?? '';
+    checked.hidden = !line.checked;
+    replace(state, line.chip ? chipFor(line.chip) : null);
+    actions.hidden = !line.button;
     button.disabled = line.busy;
     button.classList.toggle('is-busy', line.busy);
   };
@@ -204,7 +200,17 @@ function versionRow(isAdmin) {
   return row;
 }
 
-// Ligne 2 : développeur et projet, deux liens séparés par un trait fin
+// Pastille d'état (.chip du kit) ; nouvelle version : toute la pastille est
+// un lien vers ce commit sur GitHub
+function chipFor({ tone, text, icon: iconName, commit, label }) {
+  const content = [iconName ? icon(iconName, 'icon--xs') : null, text];
+  const className = `chip chip--${tone}`;
+  return commit
+    ? outLink({ class: `${className} about__chip-link`, href: commitUrl(commit), 'aria-label': label }, content)
+    : h('span', { class: className }, content);
+}
+
+// Zone 2 : développeur et projet, deux liens séparés par un trait fin
 function projectRow() {
   return h('div', { class: 'row about-links' },
     outLink({ class: 'about-links__link', href: GITHUB.ownerUrl, 'aria-label': `Développeur : ${GITHUB.owner} sur GitHub` },

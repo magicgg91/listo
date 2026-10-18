@@ -64,18 +64,20 @@ export function defaultDisplayName(username) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Bloc « À propos » des Réglages, première ligne « Version et mise à jour » :
-// ce qu'elle affiche (calcul pur, testé automatiquement). Entrées :
+// Bloc « À propos » des Réglages, zone « Version et mise à jour » : ce
+// qu'elle affiche (calcul pur, testé automatiquement). Entrées :
 // - commit : 40 caractères hexadécimaux, 'non précisé' (développement) ou
 //   null (inconnu : hors ligne, ou pas encore reçu) ;
-// - isAdmin : seul l'Admin voit le statut de la mise à jour et le bouton ;
+// - isAdmin : seul l'Admin voit l'état de la mise à jour et le bouton ;
 // - result : réponse de GET /api/admin/update-check (null : pas encore reçue) ;
 // - busy : vérification en cours ; online : réseau disponible.
 // Renvoie :
 // - version : { text, commit? } (commit : lien vers ce commit sur GitHub) ;
-// - status : { text, commit? } ou null (commit : lien vers la nouvelle version) ;
-// - help : message d'aide (seulement quand une nouvelle version existe) ;
-// - button : bouton « Vérifier » affiché ou non ; busy : icône qui tourne.
+// - checked : « Vérifié il y a 15 min », ou null ;
+// - chip : pastille d'état { tone: 'ok' | 'accent' | 'neutral', text, icon?,
+//   commit?, label? } (commit : la pastille est un lien vers la nouvelle
+//   version ; label : son libellé pour les lecteurs d'écran), ou null ;
+// - button : bouton « Vérifier maintenant » affiché ; busy : il tourne.
 const isCommitSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
 
 export function aboutVersion({ commit, isAdmin = false, result = null, busy = false, online = true, now = Date.now() }) {
@@ -84,26 +86,27 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
   else if (commit === 'non précisé') version = { text: 'non précisée' };
   else version = { text: online ? '…' : 'indisponible hors ligne' };
 
-  // Pas de statut ni de bouton : autre compte, développement, vérification
+  // Ni état ni bouton : autre compte, développement, vérification
   // désactivée sur le serveur (LISTO_UPDATE_CHECK=off)
   const hidden = !isAdmin || commit === 'non précisé'
     || result?.state === 'desactive' || result?.state === 'developpement';
-  if (hidden) return { version, status: null, help: null, button: false, busy: false };
+  if (hidden) return { version, checked: null, chip: null, button: false, busy: false };
 
-  const line = (text, extra = {}) => ({ version, status: { text, ...extra.status }, help: extra.help ?? null, button: true, busy });
-  if (!online) return line('Indisponible hors ligne');
-  if (busy || !result) return line('Vérification…');
-  if (result.state === 'ok' && result.upToDate === true) {
-    const when = relativeTime(result.checkedAt, now);
-    return line(when ? `À jour · vérifié ${when}` : 'À jour');
+  if (!online) return { version, checked: null, chip: { tone: 'neutral', text: 'Hors ligne' }, button: true, busy: false };
+
+  // Pendant une vérification, la pastille précédente reste affichée
+  let chip = null;
+  if (result?.state === 'ok' && result.upToDate === true) {
+    chip = { tone: 'ok', icon: 'check', text: 'À jour' };
+  } else if (result?.state === 'ok' && isCommitSha(result.latest)) {
+    const short = result.latest.slice(0, 7);
+    chip = { tone: 'accent', icon: 'alert', text: `Nouvelle : ${short}`, commit: result.latest, label: `Nouvelle version disponible : ${short}, ouvrir sur GitHub` };
+  } else if (result) {
+    chip = { tone: 'neutral', text: 'Vérification impossible' };
   }
-  if (result.state === 'ok' && isCommitSha(result.latest)) {
-    return line('Nouvelle version disponible : ', {
-      status: { commit: result.latest, link: result.latest.slice(0, 7) },
-      help: 'Sur le serveur : docker compose pull && docker compose up -d',
-    });
-  }
-  return line('Vérification impossible');
+  const when = result?.checkedAt ? relativeTime(result.checkedAt, now) : '';
+  const checked = when ? `Vérifié ${when}` : null;
+  return { version, checked, chip, button: true, busy };
 }
 
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »

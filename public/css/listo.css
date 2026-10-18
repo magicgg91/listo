@@ -388,7 +388,7 @@
    N'utilise que les variables existantes. Aucune couleur en dur.
    16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
    16.4 Page publique en lecture seule · 16.5 Zone des cochés
-   16.6 Bloc « À propos » compact */
+   16.6 Bloc « À propos » */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -490,22 +490,27 @@
 .cart__action:active { background: var(--color-neutral-soft); }
 .scroll--flat { padding-top: var(--space-1); }
 
-/* 16.6 Bloc « À propos » compact (Réglages) : deux lignes .row.
-   .about : « Version : 7025130 » (lien), statut de la mise à jour et bouton
-   « Vérifier » (Admin). Trop étroit (texte agrandi) : la ligne passe à la
-   ligne et le bouton se range sous le statut, sans déborder.
-   .about-links : deux liens côte à côte, séparés par un trait fin. */
-.about { flex-wrap: wrap; row-gap: var(--space-1); }
-.about .row__body { flex: 1 1 9em; }
-.about__check { flex: none; margin-left: auto; }
+/* 16.6 Bloc « À propos » (Réglages) : une carte .group en deux zones .row.
+   .about : « Version : 7025130 » (lien) et, pour l'Admin, « Vérifié il y a
+   15 min » dessous ; à droite, pastille d'état (.chip) et bouton-icône
+   d'actualisation (.icon-btn). Trop étroit (texte agrandi) : pastille et
+   bouton passent sous la version, alignés à droite, sans déborder.
+   .about-links : deux liens égaux séparés par un trait vertical fin. */
+.about { flex-wrap: wrap; row-gap: 0; }
+.about .row__body { flex: 1 1 auto; }
+.about__actions { display: flex; flex: none; align-items: center; gap: var(--space-0); margin-left: auto; margin-right: -10px; }
+.about__state { display: flex; }
 .about__check.is-busy .icon { animation: spin 1s linear infinite; }
 /* Lien court dans le texte (7 caractères d'un commit) : zone tactile de
    44 px sans agrandir la ligne (marges négatives) */
 .about__link { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); margin: -12px 0; color: var(--color-accent-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
-/* Statut avec un lien sous le titre avec un lien : écart pour que les deux
-   zones tactiles ne se chevauchent pas */
-.about__status--link { margin-top: 12px; }
-.about__help { margin-top: 2px; overflow-wrap: anywhere; }
+/* Pastilles d'état : « À jour » (vert), nouvelle version (accentuée, lien) */
+.chip--ok { color: var(--color-success-ink); }
+.chip--accent { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.chip--neutral { color: var(--color-text-2); }
+/* Pastille-lien : zone tactile étendue à 44 px de haut, même aspect */
+.about__chip-link { position: relative; text-decoration: none; }
+.about__chip-link::after { content: ""; position: absolute; inset: -8px 0; }
 .about-links { gap: 0; min-height: 0; padding-top: 6px; padding-bottom: 6px; }
 .about-links__link { display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; gap: var(--space-1); min-width: 0; min-height: var(--tap-min); padding: 0 var(--space-1); border-radius: var(--radius-sm); color: var(--color-text); font-weight: 600; text-align: center; text-decoration: none; }
 .about-links__link .icon { color: var(--color-text-2); }

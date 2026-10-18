@@ -10,8 +10,8 @@ import { activeOnly } from '../store.js';
 import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
 import { app, refreshData, pendingCount } from '../app.js';
-import { openSheet, confirmDialog, toast } from '../ui.js';
-import { itemWords } from '../words.js';
+import { openSheet, toast } from '../ui.js';
+import { deleteListWithConfirm } from './list-delete.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -218,21 +218,12 @@ function form(list, users) {
   paint();
 
   // --- Suppression (propriétaire, liste existante) ---
+  // Même confirmation et même opération que les menus (list-delete.js)
   const deleteButton = list ? h('button', {
     class: 'btn btn--danger-outline btn--block',
     type: 'button',
     onClick: async () => {
-      const ok = await confirmDialog({
-        title: 'Supprimer la liste ?',
-        // « ses articles » (liste de courses) ou « ses éléments » : catégorie
-        // enregistrée de la liste
-        text: `« ${list.name} » et ses ${itemWords(list).many} seront supprimés pour toutes les personnes. Cette action est définitive.`,
-        confirmLabel: 'Supprimer',
-      });
-      if (!ok) return;
-      await actions.deleteList(list.id); // tout de suite ici, envoyé ensuite (file d'attente)
-      toast('Liste supprimée', { low: true });
-      navigate('lists', {}, { replace: true });
+      if (await deleteListWithConfirm(list)) navigate('lists', {}, { replace: true });
     },
   }, icon('trash', 'icon--sm'), 'Supprimer la liste') : null;
 

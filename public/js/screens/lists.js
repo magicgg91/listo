@@ -7,7 +7,8 @@ import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
 import { computeSummaries, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
+import { deleteListWithConfirm } from './list-delete.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -16,8 +17,34 @@ export function hasPublicLink(list, now = Date.now()) {
   return Boolean(link) && (link.expiresAt === null || Date.parse(link.expiresAt) > now);
 }
 
-// Carte d'une liste (balisage de components.html)
+// Actions du menu « ⋯ » d'une carte. Pour l'instant, seulement « Supprimer
+// la liste », proposée au seul propriétaire (le serveur le revérifie). Aucune
+// action : pas de bouton.
+function cardActions(list) {
+  const items = [];
+  if (list.isOwner) {
+    items.push({ icon: 'trash', label: 'Supprimer la liste', danger: true, onSelect: () => deleteListWithConfirm(list) });
+  }
+  return items;
+}
+
+// Carte d'une liste (balisage de components.html). Avec des actions, la carte
+// (un lien qui ouvre la liste) est accompagnée d'un bouton « ⋯ » posé dans son
+// coin : un appui sur ce bouton ouvre le menu sans ouvrir la liste.
 export function listCard(list, { selected = false } = {}) {
+  const card = cardLink(list, { selected });
+  const actions = cardActions(list);
+  if (!actions.length) return card;
+  const menuButton = iconButton('more', `Actions de la liste ${list.name}`, () => {
+    menuButton.setAttribute('aria-expanded', 'true');
+    openMenu(actions, { label: `Actions de la liste ${list.name}`, anchor: menuButton, onClose: () => menuButton.setAttribute('aria-expanded', 'false') });
+  }, 'list-card__menu');
+  menuButton.setAttribute('aria-haspopup', 'menu');
+  menuButton.setAttribute('aria-expanded', 'false');
+  return h('div', { class: 'list-card-wrap' }, card, menuButton);
+}
+
+function cardLink(list, { selected }) {
   const members = list.members.filter((m) => m.active || m.isOwner);
   // Le propriétaire d'abord, puis les invités
   members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));

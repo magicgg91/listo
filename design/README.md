@@ -245,3 +245,12 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 
 - `li.item.swipe` (`touch-action: pan-y` : le défilement vertical reste au navigateur) : le contenu de la ligne est dans `.swipe__slide` (fond hérité de la ligne), qui suit le doigt (`transform`) ; derrière, `button.swipe__delete` (fond `--color-danger`, `#i-trash` ET « Supprimer », 104 px de large, `aria-label="Supprimer <nom>"`), visible seulement pendant le glissement (`.is-swiping`) ou ligne ouverte (`.is-open`).
 - Animation de retour coupée avec `prefers-reduced-motion`. Pas de glissement à la souris. La page publique n'a ni glissement ni suppression.
+
+## Ajout : menu « ⋯ » des cartes de « Mes listes »
+
+Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
+
+- `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (liste partagée dont on n'est pas propriétaire).
+- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran). « Supprimer la liste » : `.menu__item--danger` avec `#i-trash`.
+- Menu ⋮ de la liste ouverte : « Supprimer la liste » en dernier, après un trait `.menu__sep` (`role="separator"`).
+- Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.

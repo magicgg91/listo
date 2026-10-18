@@ -183,12 +183,17 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
 }
 
 // Menu « ⋮ » : items = [{ icon, label, danger, onSelect }]
-export function openMenu(items, { label = 'Menu' } = {}) {
+// item.danger : action destructrice (texte rouge) ; item.separated : séparée
+// des actions précédentes par un trait. onClose : appelé à la fermeture.
+// anchor : bouton qui ouvre le menu (carte de « Mes listes ») ; le menu
+// s'affiche alors juste sous lui, sans jamais sortir de l'écran.
+export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {}) {
   let closeMenu;
+  let panel;
   const { close } = overlay((close) => {
     closeMenu = close;
-    return h('div', { class: 'menu' },
-      items.map((item) => h('button', {
+    panel = h('div', { class: 'menu' },
+      items.map((item) => [item.separated ? h('div', { class: 'menu__sep', role: 'separator' }) : null, h('button', {
         class: `menu__item${item.danger ? ' menu__item--danger' : ''}`,
         type: 'button',
         // Choix exclusif (tri…) : l'option active a une coche ET son texte
@@ -200,8 +205,15 @@ export function openMenu(items, { label = 'Menu' } = {}) {
           // une autre fenêtre ou changer d'écran)
           setTimeout(() => item.onSelect(), 0);
         },
-      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)));
-  }, { role: 'menu', label });
+      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)]));
+    return panel;
+  }, { role: 'menu', label, onClose });
+  if (anchor) {
+    const box = host.getBoundingClientRect();
+    const below = anchor.getBoundingClientRect().bottom - box.top + 4;
+    const room = box.height - panel.offsetHeight - 8;
+    panel.style.top = `${Math.max(8, Math.min(below, room))}px`;
+  }
   return close;
 }
 

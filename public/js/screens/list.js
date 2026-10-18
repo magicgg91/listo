@@ -39,6 +39,7 @@ import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.j
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
+import { deleteListWithConfirm } from './list-delete.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -376,6 +377,13 @@ export function renderList(listId, onLeave) {
     if (view.list.isOwner) items.push({ icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: listId }) });
     if (view.list.isOwner) items.push({ icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(view.list) });
     items.push({ icon: 'sync', label: 'Actualiser', onSelect: () => refreshData({ full: true }) });
+    // En dernier, séparée et en rouge : même confirmation et même opération
+    // que le menu « ⋯ » de « Mes listes » (propriétaire seulement)
+    if (view.list.isOwner) {
+      items.push({ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
+        if (await deleteListWithConfirm(view.list)) navigate('lists', {}, { replace: true });
+      } });
+    }
     openMenu(items, { label: 'Menu de la liste' });
   }
 

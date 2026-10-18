@@ -26,7 +26,7 @@
 import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
-import { shrinkPhoto, PhotoError } from '../photo.js';
+import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
 import { normalizeItemName } from '../history.js';
@@ -35,7 +35,7 @@ import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords } from '../words.js';
-import { createScanner, scanAvailable, photoInputs, openPhotoChoice } from './scan.js';
+import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 
 // Zone des cochés repliée ou ouverte, mémorisée par liste sur cet appareil.
@@ -558,20 +558,18 @@ export function renderList(listId, onLeave) {
         h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue)),
     ] : null;
 
-    // --- Code-barres (listes de courses) : saisi à la main, ou lu sur une
-    // photo par « Scanner » (appareil photo ou galerie, même lecteur que le
-    // mode scan, sur le téléphone). Vérifié à l'enregistrement ; vide = pas
-    // de code.
+    // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
+    // lu sur une photo par « Scanner » (sélecteur d'images du téléphone, même
+    // lecteur que le mode scan). Vérifié à l'enregistrement ; vide = pas de
+    // code.
     const shopping = Boolean(view?.list.category.isShopping);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
     const eanField = field('Code-barres', eanInput, { hint: 'Chiffres sous les barres (8, 12 ou 13)' });
     const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
     const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
-    const eanInputs = photoInputs((file) => readEan(file));
-    const eanScan = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Scanner le code-barres', 'aria-haspopup': 'dialog',
-      onClick: () => openPhotoChoice({ title: 'Scanner le code-barres', sub: 'Photographiez le code-barres, ou choisissez une photo où il est net.' }, eanInputs) },
-    icon('barcode', 'icon--sm'), 'Scanner');
+    const eanPicker = createImagePicker((file) => readEan(file));
+    const eanScan = eanPicker.button({ class: 'btn btn--secondary', 'aria-label': 'Scanner le code-barres' }, icon('barcode', 'icon--sm'), 'Scanner');
     const eanClear = h('button', { class: 'btn btn--secondary', type: 'button', 'aria-label': 'Effacer le code-barres', onClick: () => {
       eanInput.value = '';
       drawEan();
@@ -598,7 +596,7 @@ export function renderList(listId, onLeave) {
         else message = 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.';
       } catch (err) {
         message = err instanceof ImageUnreadable
-          ? "Ce fichier n'est pas une image lisible. Prenez ou choisissez une photo, ou saisissez le code."
+          ? "Ce fichier n'est pas une image lisible. Réessayez avec une photo, ou saisissez le code."
           : "La lecture des codes-barres n'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.";
       }
       eanStatus.hidden = true;
@@ -608,7 +606,7 @@ export function renderList(listId, onLeave) {
     }
     drawEan();
     const eanFields = shopping ? h('div', { class: 'stack stack--sm' },
-      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanInputs.camera, eanInputs.gallery) : null;
+      eanField.field, h('div', { class: 'photo-actions' }, eanScan, eanClear), eanStatus, eanTwin, eanPicker.input) : null;
 
     // --- Photo (facultative) : envoyée ou retirée tout de suite, sans
     // attendre « Enregistrer ». Hors ligne, les boutons sont désactivés.
@@ -617,27 +615,24 @@ export function renderList(listId, onLeave) {
     let gone = false; // article supprimé ailleurs pendant que la feuille est ouverte
     const photoArea = h('div');
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
-    // Sélecteurs du téléphone (cachés) : appareil photo, ou galerie
-    const camera = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', capture: 'environment', tabindex: '-1', 'aria-hidden': 'true' });
-    const gallery = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', tabindex: '-1', 'aria-hidden': 'true' });
-    camera.addEventListener('change', () => sendPhoto(camera));
-    gallery.addEventListener('change', () => sendPhoto(gallery));
+    // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
+    // l'appareil photo ou la photothèque). La photo reste facultative.
+    const photoPicker = createImagePicker((file) => sendPhoto(file));
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {
         class: `btn ${classes}`, type: 'button', 'aria-label': label, disabled: busy || gone, onClick,
       }, icon(iconName, 'icon--sm'), text);
+      const pick = (classes, text) => photoPicker.button({ class: `btn ${classes}`, 'aria-label': text, disabled: busy || gone }, icon('camera', 'icon--sm'), text);
       if (actions.hasPhoto(current)) {
         replace(photoArea, h('div', { class: 'photo-block' },
           h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${current.name}`, onClick: () => showPhoto(current) },
             h('img', { class: 'photo', src: actions.photoSrc(current), alt: '' })),
           h('div', { class: 'photo-block__actions' },
-            button('btn--secondary btn--sm', 'camera', 'Remplacer', 'Remplacer la photo', () => gallery.click()),
+            pick('btn--secondary btn--sm', 'Changer la photo'),
             button('btn--danger-outline btn--sm', 'trash', 'Retirer', 'Retirer la photo', removePhoto))));
       } else {
-        replace(photoArea, h('div', { class: 'photo-actions' },
-          button('btn--secondary', 'camera', 'Appareil photo', 'Appareil photo : prendre une photo', () => camera.click()),
-          button('btn--secondary', 'image', 'Galerie', 'Galerie : choisir une photo', () => gallery.click())));
+        replace(photoArea, pick('btn--secondary btn--block', 'Ajouter une photo'));
       }
       photoNote.textContent = busy ? 'Préparation de la photo…' : current.localPhoto ? 'Photo en attente d\'envoi : elle partira dès que possible.' : '';
       photoNote.hidden = !photoNote.textContent;
@@ -645,10 +640,7 @@ export function renderList(listId, onLeave) {
 
     // Photo prise ou choisie : réduite ici, puis mise en file d'attente (elle
     // part tout de suite avec du réseau, sinon dès son retour)
-    async function sendPhoto(input) {
-      const file = input.files?.[0];
-      input.value = ''; // la même photo pourra être choisie de nouveau
-      if (!file) return;
+    async function sendPhoto(file) {
       error.show('');
       busy = true;
       drawPhoto();
@@ -714,7 +706,7 @@ export function renderList(listId, onLeave) {
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, camera, gallery),
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
       error.note,

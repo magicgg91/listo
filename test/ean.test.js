@@ -119,6 +119,32 @@ test('code-barres : normalisé, clé de contrôle vérifiée, null efface, chaî
   assert.equal((await op(h.guillaume, { type: 'item.create', listId: h.shopping, itemId: eggs, name: 'Œufs' })).item.ean, null);
 });
 
+test('photo et code-barres facultatifs : un article s\'enregistre sans l\'un ni l\'autre', async (t) => {
+  const h = await household(t);
+  // Création avec le nom seul, puis modification de la note et de la
+  // quantité : ni code-barres ni photo à aucun moment
+  const butter = uuid();
+  const created = await op(h.guillaume, { type: 'item.create', listId: h.shopping, itemId: butter, name: 'Beurre' });
+  assert.equal(created.status, 200);
+  assert.equal(created.item.ean, null);
+  assert.equal(created.item.photoAt, null);
+  const updated = await op(h.guillaume, { type: 'item.update', itemId: butter, note: 'doux', quantity: '2' });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.item.note, 'doux');
+  assert.equal(updated.item.ean, null);
+  assert.equal(updated.item.photoAt, null);
+  const stored = h.app.db.prepare('SELECT name, ean, photo_at FROM items WHERE id = ?').get(butter);
+  assert.deepEqual({ ...stored }, { name: 'Beurre', ean: null, photo_at: null });
+  // Liste de tâches : même chose
+  const task = uuid();
+  assert.equal((await op(h.guillaume, { type: 'item.create', listId: h.tasks, itemId: task, name: 'Appeler le plombier' })).status, 200);
+  // Feuille de l'article : champ Code-barres vide = pas de code (null), pas
+  // une erreur ; la photo n'est pas demandée à l'enregistrement
+  const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
+  assert.match(list, /const newEan = typedEan \? normalizeBarcode\(typedEan\) : null;/);
+  assert.match(list, /if \(!newName \|\| \(shopping && typedEan && !newEan\)\) return;/);
+});
+
 test('deux articles peuvent porter le même code (pas d\'interdiction)', async (t) => {
   const h = await household(t);
   const other = uuid();

@@ -76,7 +76,7 @@ Photos de démonstration : `photos/*.svg` (4:3), uniquement pour les maquettes.
 
 ### Composants nouveaux
 
-- Photo : `.item__photo` (miniature 48 px dans `.item`, bouton avec `aria-label="Agrandir la photo de …"`), `.photo` (image qui remplit son cadre), `.photo-actions` (Appareil photo / Galerie), `.photo-block` + `__thumb` + `__actions` (aperçu, Remplacer, Retirer), `.lightbox` + `__bar | __title | __stage | __img | __cap | __foot` (photo plein écran, fond sombre dans les deux thèmes), `.sheet--scroll`.
+- Photo : `.item__photo` (miniature 48 px dans `.item`, bouton avec `aria-label="Agrandir la photo de …"`), `.photo` (image qui remplit son cadre), `.photo-actions` (rangée de boutons : « Scanner » / « Effacer » du code-barres) ; sans photo, un seul `.btn.btn--secondary.btn--block` « Ajouter une photo » (`#i-camera`), qui ouvre le sélecteur d'images du téléphone, `.photo-block` + `__thumb` + `__actions` (aperçu, « Changer la photo », Retirer), `.lightbox` + `__bar | __title | __stage | __img | __cap | __foot` (photo plein écran, fond sombre dans les deux thèmes), `.sheet--scroll`.
 - Multi : `.aisle__name` (icône + nom dans `.aisle`), `.badge-multi`, `.input__value`, `.add-block` (+ `__row`) avec `.segmented` Simple / Multi, `.manage-detail` (+ `__title | __note`) avec `.tick-row` pour les magasins regroupés, `.icon-btn[aria-expanded]`.
 - Lien : `.duration` + `__opt` (choix unique, coche quand actif, `disabled` hors ligne), `.duration-custom`, `.link-box` (+ `__url`), `.expiry` (+ `__title | __sub`), `.secret` (+ `__label | __row | __value | __value--masked`).
 - Page publique : `.readonly-banner`, `.public-head` (+ `__main | __title | __sub`), `.public-foot`, `.check--static` (case non interactive, `.is-on` quand cochée), `.gate` + `.gate__head` (mot de passe).
@@ -204,11 +204,11 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
 
-- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre une petite `.sheet` « Scanner un produit » avec deux `.btn--block` : « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), les icônes de la photo d'un article.
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre directement le sélecteur d'images du téléphone (champ fichier caché `accept="image/*"`, sans `capture`) : aucune feuille de choix propre à Listo.
 - Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
   - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
-  - code non lu, lecteur indisponible : `.note.note--danger`, « Prendre une photo » (`#i-camera`) et « Choisir une photo » (`#i-image`), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
+  - code non lu, lecteur indisponible : `.note.note--danger`, « Réessayer » (`#i-camera`, le même sélecteur d'images), « Saisir le code à la main » qui fait apparaître un champ `inputmode="numeric"` ;
   - nom introuvable : `.note`, « Taper le nom » ;
   - produit connu (déjà dans une de mes listes) : `.note` « Produit connu : <nom>. Vous pouvez corriger le nom avant de l'ajouter. » (`#i-check`), mêmes champs et boutons, sans la mention Open Food Facts ;
   - scan pour cocher : `.note` « Déjà dans la liste : <nom> » (`#i-alert`) puis `.sheet__actions` « Cocher (je l'ai pris) » (`.btn--primary`, `#i-check`), « Ajouter quand même », « Annuler » ; article coché : `.note` « Déjà coché : <nom> » (`#i-check`) et « Le remettre dans la liste » ;
@@ -218,7 +218,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau : composan
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune nouvelle icône (`i-barcode` existe).
 
-- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode` ; même feuille de choix « Prendre une photo » / « Choisir une photo » que le mode scan) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
+- Feuille de l'article, sous la note : `.field` « Code-barres » (`inputmode="numeric"`, aide « Chiffres sous les barres (8, 12 ou 13) »), puis `.photo-actions` avec « Scanner » (`#i-barcode` ; ouvre directement le sélecteur d'images du téléphone, comme le mode scan) et « Effacer » (grisé quand le champ est vide). Code invalide : `.field__error` « Code invalide : vérifiez les chiffres ». Un autre article de la liste porte le même code : `.note` d'avertissement (on prévient, on n'interdit pas).
 - Mode scan : « Déjà dans la liste : « Lait demi-écrémé » a ce code-barres. » (même `.note`, bouton « Ajouter quand même »).
 - La ligne de la liste ne change pas : le code n'y est pas affiché.
 

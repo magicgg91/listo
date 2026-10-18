@@ -38,11 +38,16 @@ import { openShareSheet } from './share.js';
 import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
+import { createSwipeController } from '../swipe.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
   const sub = h('p', { class: 'topbar__sub' });
   const content = h('div', { class: 'scroll' });
+  // Glissement des lignes vers la gauche : une seule ouverte à la fois,
+  // refermée par un toucher ailleurs ou par le défilement
+  const swipes = createSwipeController(content);
+  onLeave(() => swipes.stop());
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
   // Tri de la liste (listes autres que les courses) : choix gardé sur ce
@@ -260,9 +265,23 @@ export function renderList(listId, onLeave) {
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
 
-  // Ligne d'un article : case à cocher + nom (ouvre la feuille « Article »)
+  // Ligne d'un article (ou d'un élément) : case à cocher, nom (ouvre la
+  // feuille « Article »), vignette de la photo. Elle glisse vers la gauche pour
+  // révéler la zone rouge « Supprimer » (raccourci ; la poubelle de la fiche
+  // reste la voie principale) : swipe.js. Le contenu de la ligne est dans
+  // .swipe__slide, la zone rouge est un vrai bouton derrière.
   const itemRow = (item) => itemRowWith(item, metaOf(item));
-  const itemRowWith = (item, meta) => h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id },
+  const itemRowWith = (item, meta) => {
+    const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta));
+    const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
+      swipes.close();
+      deleteWithUndo(item);
+    } }, icon('trash'), h('span', {}, 'Supprimer'));
+    const row = h('li', { class: `item swipe${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, slide, remove);
+    swipes.attach(row, slide, remove);
+    return row;
+  };
+  const itemContent = (item, meta) => [
     h('button', {
       class: 'check',
       type: 'button',
@@ -278,7 +297,8 @@ export function renderList(listId, onLeave) {
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
     // Vignette de la photo : un appui l'agrandit
     actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
-      h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null);
+      h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null,
+  ];
 
   // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
   function showPhoto(item) {
@@ -292,6 +312,16 @@ export function renderList(listId, onLeave) {
   }
 
   // --- Actions ---
+
+  // Supprimer un article (poubelle de la fiche, ou glissement vers la
+  // gauche) : supprimé tout de suite, sans confirmation (copie locale, puis
+  // file d'attente, avec ou sans réseau) ; un message en bas propose
+  // « Annuler » pendant quelques secondes, qui remet le même article avec sa
+  // photo (opération item.restore).
+  async function deleteWithUndo(item) {
+    await actions.deleteItem(item);
+    toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+  }
 
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
@@ -525,6 +555,7 @@ export function renderList(listId, onLeave) {
   // --- Feuille « Article » : nom, quantité, note, rayon (ou magasin) ---
 
   function openItemSheet(item) {
+    swipes.close(); // une ligne ouverte se referme
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
@@ -778,9 +809,14 @@ export function renderList(listId, onLeave) {
       drawPhoto();
     });
 
-    const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
-    const remove = h('button', { class: 'btn btn--danger-outline btn--block', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer');
-    const form = h('form', { class: 'stack', novalidate: true },
+    // En-tête de la fiche (à droite du titre) : poubelle, un espace, coche
+    // « Enregistrer » (bouton plein, action principale), puis la croix. La
+    // poubelle n'est jamais à côté de la croix. La coche est reliée au
+    // formulaire (attribut form) : Entrée dans un champ enregistre toujours.
+    const formId = `fiche-${item.id}`;
+    const remove = iconButton('trash', `Supprimer l'${words.one}`, null, 'icon-btn--danger sheet__delete');
+    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('check'));
+    const form = h('form', { class: 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,
       field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
@@ -790,13 +826,13 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
-      error.note,
-      h('div', { class: 'sheet__actions' }, save, remove));
+      error.note);
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
 
     const sheet = openSheet({
       title: `Modifier l'${words.one}`,
       content: form,
+      tools: [remove, save],
       scroll: true,
       onClose: () => stopWatching(),
     });
@@ -833,10 +869,8 @@ export function renderList(listId, onLeave) {
 
     remove.addEventListener('click', async () => {
       mine = true;
-      await actions.deleteItem(item);
       sheet.close();
-      // « Annuler » remet le même article, avec sa photo
-      toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+      await deleteWithUndo(item);
     });
   }
 

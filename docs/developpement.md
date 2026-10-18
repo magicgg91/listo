@@ -18,6 +18,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Lien public d'une liste (étape 10)](#lien-public-dune-liste-étape-10)
 - [En-têtes, arrêt propre et sauvegarde (étape 11)](#en-têtes-arrêt-propre-et-sauvegarde-étape-11)
 - [Groupes repliables (toutes les listes)](#groupes-repliables-toutes-les-listes)
+- [Glissement vers la gauche (« Supprimer »)](#glissement-vers-la-gauche--supprimer-)
 - [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
 ## Organisation du code
@@ -150,6 +151,8 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 15. **Groupes repliables** : dans une liste de courses, toucher l'en-tête « Fruits et légumes » : ses articles se cachent, le chevron se tourne vers la droite et « · 2 à acheter » apparaît. Fermer et rouvrir Listo : le rayon est toujours replié (sur ce téléphone seulement ; l'autre téléphone garde son propre choix). « Tout replier » (en haut à droite, à partir de deux groupes) replie aussi « Dans le panier » ; il devient « Tout déplier ». Ajouter un article dans un rayon replié : le rayon se déplie. Cocher, scanner, ou un ajout fait depuis l'autre téléphone : l'état et la position de défilement ne bougent pas. Liste de tâches : en ordre alphabétique ou par échéance, pas d'en-tête ; triée par priorité, les groupes se replient aussi (« · 1 à faire »).
 16. **Réglages › À propos** (Admin) : sur une ligne, « Version : 7025130 » à gauche, puis à droite « À jour · il y a 4 min » (ou « Vérifié il y a 4 min ») et le bouton d'actualisation, collé au texte. Quand une nouvelle version existe, une seconde ligne montre seulement « Nouvelle version : <commit> » (touchée, elle ouvre ce commit sur GitHub). Sur un petit téléphone (largeur 360, texte agrandi), le texte et le bouton passent ensemble sous la version, sans rien couper.
 17. **Fiche d'un article** (liste de courses) : « Quantité (par exemple 2 ou 500 g) » et « Code-barres (8, 12 ou 13 chiffres) », l'aide en petit et en gris à côté du titre, plus de ligne d'aide sous les champs. Le champ Code-barres a, à droite sur la même ligne, le bouton de scan (icône) ; une petite croix apparaît dans le champ dès qu'il contient quelque chose : la toucher le vide sans ouvrir le clavier. Un code long ne passe pas sous la croix.
+18. **En-tête de la fiche d'un article** : à droite du titre, la poubelle (rouge), un espace, la coche bleue « Enregistrer », la croix. La coche enregistre et ferme (la touche Entrée d'un champ aussi), sans laisser le clavier ouvert. La poubelle supprime tout de suite ; en bas, « « Pain » supprimé · Annuler » quelques secondes : « Annuler » remet l'article. En faisant défiler une fiche longue (avec une photo), l'en-tête reste visible.
+19. **Glisser pour supprimer** (iPhone et Android, application installée et navigateur) : sur une ligne, glisser le doigt vers la gauche : la ligne suit le doigt et une zone rouge « Supprimer » apparaît. Lâcher après un petit glissement : la ligne revient ; après un grand glissement : elle reste ouverte. Toucher « Supprimer » : la ligne disparaît, « « Pain » supprimé · Annuler » en bas ; « Annuler » la remet. Vérifier aussi : faire défiler la liste normalement (rien ne s'ouvre, une ligne ouverte se referme), glisser en diagonale (la liste défile), toucher une autre ligne ou glisser vers la droite (la ligne ouverte se referme), toucher la case et la vignette (inchangé). Sur iPhone, dans Safari, le geste « retour » depuis le bord gauche de l'écran fonctionne toujours. En mode avion : la suppression attend le réseau, puis part.
 
 ## API des comptes (étape 2)
 
@@ -719,6 +722,15 @@ Chaque en-tête de groupe de l'écran d'une liste (`public/js/screens/list.js`, 
 - **Ajout** : un article ajouté depuis ce téléphone (champ, suggestion, mode scan) dans un groupe replié le déplie (`unfoldRow`, appelé par `revealItem` ou, hors courses, juste après l'ajout). Un ajout venu de l'autre téléphone ne change rien.
 - **« Tout replier / Tout déplier »** (`.fold-all`, barre d'état) : visible à partir de deux groupes repliables (zone des cochés comprise) ; « Tout replier » tant qu'un groupe est ouvert.
 - Tests : `test/fold-groups.test.js` ; vérifié dans Chromium (390 et 320 px, texte à 130 %, clair et sombre, stockage bloqué, deux téléphones pour le temps réel).
+
+## Glissement vers la gauche (« Supprimer »)
+
+Raccourci pour supprimer un article ou un élément, dans toutes les listes (`public/js/swipe.js`, branché par `itemRowWith` dans `public/js/screens/list.js`). La poubelle de la fiche reste la voie principale (lecteurs d'écran, clavier, souris).
+
+- **Décision du geste** (fonctions simples, testées dans `test/swipe.test.js`) : `swipeIntent` (sens : rien avant 10 px ; horizontal seulement si |dx| > 1,5 × |dy|, sinon défilement), `swipeOffset` (position : jamais vers la droite ni au-delà de la ligne), `swipeRelease` (ouverte au-delà de 80 px, ou d'un tiers d'une ligne plus étroite).
+- **Contrôleur** (`createSwipeController`) : événements tactiles natifs, passifs (le défilement n'attend jamais) ; `touch-action: pan-y` sur la ligne ; contact à moins de 24 px du bord gauche ignoré (geste « retour » de l'iPhone) ; une seule ligne ouverte ; un toucher ailleurs, le défilement de la liste, l'ouverture d'une fiche ou un glissement vers la droite la referment ; la fin d'un glissement et l'appui qui referme une ligne n'ouvrent pas la fiche (l'appui sur la zone rouge, lui, est toujours pris en compte).
+- **Suppression** : `deleteWithUndo` de `list.js`, la même que la poubelle de la fiche : `item.delete` par la file d'attente (hors ligne compris), puis le message « « Pain » supprimé · Annuler » (6 secondes, au-dessus de la barre d'ajout) ; « Annuler » envoie `item.restore` (article et photo remis tant que le nettoyage des 30 jours ne les a pas effacés). Aucune nouvelle route.
+- Vérifié dans Chromium avec de vrais événements tactiles (`Input.dispatchTouchEvent`) : ouverture, retour, diagonale, défilement vertical, bord gauche, une seule ligne ouverte, appuis inchangés, souris sans effet, suppression et « Annuler », hors ligne, clair et sombre. Le toucher réel (iPhone, Android) reste à vérifier sur les téléphones (point 19 ci-dessus).
 
 ## Mode scan des listes de courses
 

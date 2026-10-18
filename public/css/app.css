@@ -196,3 +196,27 @@ button.sync { cursor: pointer; }
 .field__aside { font-size: 0.93em; font-weight: 400; color: var(--color-text-2); }
 .field__row { display: flex; align-items: center; gap: var(--space-1); }
 .field__row .input-wrap { flex: 1; min-width: 0; }
+
+/* Fiche d'un article : en-tête avec les boutons-icônes (poubelle, espace,
+   coche « Enregistrer » pleine, croix), toujours visible quand la feuille
+   défile ; le titre tient sur une ligne et se tronque si la place manque */
+.sheet__head--tools { position: sticky; top: calc(-1 * var(--space-1)); z-index: 2; margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) 0; padding: var(--space-1) var(--space-2); background: var(--color-surface); }
+.sheet__heading { flex: 1; min-width: 0; }
+.sheet__head--tools .sheet__title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sheet__tools { display: flex; flex: none; align-items: center; gap: var(--space-0); }
+.sheet__delete { margin-right: var(--space-2); }
+.icon-btn--danger { color: var(--color-danger-ink); }
+.icon-btn--primary { background: var(--color-accent); color: var(--color-on-accent); }
+.icon-btn--primary:active { background: var(--color-accent); opacity: 0.85; }
+.icon-btn:disabled { opacity: 0.45; }
+
+/* Glissement d'une ligne vers la gauche (raccourci « Supprimer ») : le
+   contenu (.swipe__slide) suit le doigt et révèle derrière lui la zone rouge
+   .swipe__delete (icône ET texte « Supprimer »), visible seulement pendant
+   le glissement ou quand la ligne est ouverte. Défilement vertical gardé. */
+.item.swipe { position: relative; padding-right: 0; touch-action: pan-y; }
+.swipe__slide { position: relative; z-index: 1; display: flex; flex: 1; align-items: stretch; min-width: 0; padding-right: var(--space-2); background: inherit; transition: transform var(--dur-fast) var(--ease); }
+.swipe__slide--moving { transition: none; }
+.swipe__delete { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 104px; min-height: var(--tap-min); padding: 0; border: 0; background: var(--color-danger); color: var(--color-on-danger); font-size: var(--text-sm); font-weight: 700; visibility: hidden; }
+.item.is-swiping .swipe__delete, .item.is-open .swipe__delete { visibility: visible; }
+@media (prefers-reduced-motion: reduce) { .swipe__slide { transition: none; } }

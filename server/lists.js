@@ -817,13 +817,6 @@ export function createListService(ctx) {
     return readList(user, list.id).list;
   }
 
-  // --- Nettoyage périodique ---
-  // Efface pour de bon ce qui est marqué supprimé depuis plus de 30 jours
-  // (les articles d'une liste effacée partent avec elle), ainsi que la trace
-  // des opérations de plus de 30 jours.
-  // Les fichiers photo des articles effacés le sont aussi (y compris ceux
-  // des articles d'une liste effacée), puis un ménage retire les fichiers dont
-  // l'article n'existe plus (coupure pendant un envoi, par exemple).
   // Mode scan, « mes produits » : nom et note d'un article qui porte ce
   // code-barres, parmi les listes dont le compte est membre (jamais celles
   // des autres comptes), articles supprimés compris tant qu'ils ne sont pas
@@ -840,6 +833,13 @@ export function createListService(ctx) {
     return row ? { name: row.name, note: row.note ?? '' } : null;
   }
 
+  // --- Nettoyage périodique ---
+  // Efface pour de bon ce qui est marqué supprimé depuis plus de 30 jours
+  // (les articles d'une liste effacée partent avec elle), ainsi que la trace
+  // des opérations de plus de 30 jours.
+  // Les fichiers photo des articles effacés le sont aussi (y compris ceux
+  // des articles d'une liste effacée), puis un ménage retire les fichiers dont
+  // l'article n'existe plus (coupure pendant un envoi, par exemple).
   function purgeDeleted() {
     const limit = new Date(ctx.now() - PURGE_AFTER_DAYS * DAY).toISOString();
     const result = db.transaction(() => {

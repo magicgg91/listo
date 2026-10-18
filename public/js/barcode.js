@@ -1,7 +1,8 @@
 // Mode scan (listes de courses) : lecture du code-barres sur une photo.
 //
-// La photo, prise avec l'appareil photo du téléphone ou choisie dans sa
-// galerie (même mécanisme que la photo d'un article), est lue ICI, sur le
+// La photo, donnée par le sélecteur d'images du téléphone (appareil photo
+// ou photothèque, au choix du téléphone ; même composant que la photo d'un
+// article, createImagePicker de photo.js), est lue ICI, sur le
 // téléphone : elle n'est ni gardée ni envoyée. Seul le numéro du code part ensuite vers Listo, qui cherche le
 // nom du produit (voir server/products.js).
 //
@@ -86,8 +87,8 @@ export class ReaderUnavailable extends Error {}
 // Photo illisible (pas une image, format inconnu)
 export class ImageUnreadable extends Error {}
 
-// Fichier choisi qui n'est manifestement pas une image (la galerie peut
-// proposer d'autres fichiers). Type vide : on essaie quand même de le lire.
+// Fichier choisi qui n'est manifestement pas une image (le sélecteur du
+// téléphone peut proposer d'autres fichiers). Type vide : on essaie quand même de le lire.
 export const isImageFile = (file) => Boolean(file) && (!file.type || file.type.startsWith('image/'));
 
 const PREPARE_TIMEOUT_MS = 30000; // premier téléchargement du lecteur (1 Mo)

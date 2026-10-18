@@ -30,7 +30,7 @@
 //   refuse de toute façon chaque écriture ; si le droit change, l'écran
 //   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
 
-import { h, icon, iconButton, field, replace, errorNote, multiBadge } from '../dom.js';
+import { h, icon, iconButton, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
@@ -42,9 +42,13 @@ import { computeListView, canEditList, listOptions, availableSorts, effectiveSor
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
+
+// « article » → « Article », « élément » → « Élément »
+const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
+import { createTapPicker } from '../tap.js';
 import { listActions } from './list-actions.js';
 
 export function renderList(listId, onLeave) {
@@ -450,9 +454,36 @@ export function renderList(listId, onLeave) {
   });
   input.addEventListener('input', drawSuggestions);
   input.addEventListener('focus', drawSuggestions);
+  // Champ quitté : la liste se ferme, mais jamais pendant qu'un doigt est
+  // posé dessus (elle se fermera au relâchement si le champ n'a plus le curseur)
   input.addEventListener('blur', () => setTimeout(() => {
-    if (document.activeElement !== input) suggestBox.hidden = true;
+    if (document.activeElement !== input && !taps.pressing) suggestBox.hidden = true;
   }, 150));
+
+  // --- Toucher d'une suggestion (tap.js) ---
+  // Une suggestion est choisie au relâchement du doigt (le click reste en
+  // secours, sans double ajout) ; pendant le toucher, la liste n'est ni
+  // redessinée ni fermée.
+  const taps = createTapPicker();
+  let redrawLater = false; // un redessin demandé pendant le toucher
+  // Relâchement sans choix (doigt glissé ailleurs, défilement) : redessin en
+  // attente, puis fermeture si le champ n'a plus le curseur
+  const releaseSuggestions = () => {
+    if (!taps.release()) return;
+    if (redrawLater) {
+      redrawLater = false;
+      drawSuggestions();
+    }
+    if (document.activeElement !== input) suggestBox.hidden = true;
+  };
+  for (const type of ['pointerup', 'pointercancel']) {
+    document.addEventListener(type, releaseSuggestions); // après le bouton lui-même
+    onLeave(() => document.removeEventListener(type, releaseSuggestions));
+  }
+  const ghostClick = (event) => taps.ghostClick(event);
+  document.addEventListener('click', ghostClick, true);
+  onLeave(() => document.removeEventListener('click', ghostClick, true));
+
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') suggestBox.hidden = true;
   });
@@ -461,6 +492,10 @@ export function renderList(listId, onLeave) {
   // courses seulement : dans une liste de tâches, pas de menu (Entrée ou +
   // ajoutent ce qui a été tapé).
   function drawSuggestions() {
+    if (taps.pressing) { // jamais sous le doigt : après le relâchement
+      redrawLater = true;
+      return;
+    }
     if (!remembersNames(view?.list)) {
       suggestBox.hidden = true;
       return;
@@ -472,14 +507,23 @@ export function renderList(listId, onLeave) {
       return;
     }
     const exact = suggestions.some((s) => normalizeItemName(s.name) === normalizeItemName(typed));
-    const option = (content, aisle, onPick, extraClass = '') => h('button', {
-      class: `suggest__item ${extraClass}`.trim(),
-      type: 'button',
-      role: 'option',
-      // Garde le clavier ouvert : le champ ne perd pas le focus
-      onPointerdown: (event) => event.preventDefault(),
-      onClick: onPick,
-    }, content, aisle ? h('span', { class: 'suggest__aisle' }, aisle) : null);
+    const option = (content, aisle, onPick, extraClass = '') => {
+      const on = taps.button(() => {
+        redrawLater = false;
+        onPick();
+      });
+      return h('button', {
+        class: `suggest__item ${extraClass}`.trim(),
+        type: 'button',
+        role: 'option',
+        // Garde le clavier ouvert : le champ ne perd pas le focus
+        onPointerdown: on.pointerdown,
+        onMousedown: on.mousedown,
+        onPointerup: on.pointerup,
+        onPointercancel: on.pointercancel,
+        onClick: on.click,
+      }, content, aisle ? h('span', { class: 'suggest__aisle' }, aisle) : null);
+    };
 
     // À droite de la suggestion : rayon habituel, ou magasin habituel (« multi »)
     const hintFor = (s) => {
@@ -595,7 +639,7 @@ export function renderList(listId, onLeave) {
     const multi = Boolean(view?.multi);
     const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
-    const name = h('input', { class: 'input', type: 'text', value: item.name, maxlength: '100', autocomplete: 'off', autocapitalize: 'sentences' });
+    const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
     note.value = item.note;
@@ -634,7 +678,8 @@ export function renderList(listId, onLeave) {
       },
     }, storeLabel, icon('chev-d'));
 
-    const nameField = field('Nom', name);
+    // Libellé « Article » / « Élément », jamais « Nom » (voir LABEL_INPUT)
+    const nameField = field(capitalized(words.one), name);
     const error = errorNote();
 
     // --- Priorité et échéance (listes autres que les courses, chacune si
@@ -946,7 +991,7 @@ export function renderList(listId, onLeave) {
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
         h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
-        value('Nom', it.name),
+        value(capitalized(words.one), it.name),
         it.quantity ? value('Quantité', it.quantity) : null,
         it.note ? value('Note', it.note) : null,
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,

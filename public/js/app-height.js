@@ -37,6 +37,10 @@
 // si elle avait défilé. La hauteur est aussi relue si la largeur change
 // (rotation).
 //
+// Doigt posé (ou bouton de la souris enfoncé) : la page ne bouge jamais
+// sous le doigt. Une nouvelle mesure demandée pendant ce temps attend le
+// relâchement (pointerup, pointercancel), puis s'applique aussitôt.
+//
 // Script classique (pas un module), fichier à part, chargé tout en haut de
 // la page juste après viewport.js : la Content-Security-Policy reste stricte
 // (une variable CSS posée par JavaScript n'est pas un style écrit dans la
@@ -60,6 +64,18 @@
     return win.innerHeight;
   }
 
+  // Compensation du clavier de l'iPhone, isolée ici : quand un champ a le
+  // curseur et que la zone visible est décalée, renvoie la zone visible
+  // { top, height } que l'application doit recouvrir ; sinon null (comportement
+  // d'avant). Pour la retirer, il suffit que cette fonction renvoie null.
+  function keyboardShift(win, typing) {
+    var vv = win.visualViewport;
+    if (!typing || !vv || !(vv.height > 0)) return null;
+    var offsetTop = vv.offsetTop > 0 ? vv.offsetTop : 0;
+    if (offsetTop > 0 || win.scrollY > 0) return { top: offsetTop, height: vv.height };
+    return null;
+  }
+
   // win, doc : la fenêtre et la page (de faux objets dans les tests)
   function start(win, doc) {
     var root = doc.documentElement;
@@ -68,22 +84,30 @@
     var lastWidth = null; // largeur au moment de cette mesure
     var lastTop = '0px';  // dernier décalage écrit (0 au départ, sans rien écrire)
 
+    var held = false;     // un doigt est posé : rien ne bouge
+    var heldAt = 0;       // depuis quand (un relâchement perdu ne bloque pas plus de 2 s)
+    var waiting = false;  // une mesure attend le relâchement
+    var HOLD_MAX_MS = 2000;
+
     var px = function (value) { return Math.round(value * 100) / 100 + 'px'; };
 
     function measure() {
       if (doc.visibilityState === 'hidden') return; // en arrière-plan : mesure peu fiable
-      var vv = win.visualViewport;
+      if (held && Date.now() - heldAt < HOLD_MAX_MS) { // jamais sous le doigt : après le relâchement
+        waiting = true;
+        return;
+      }
       var typing = isTextField(doc.activeElement);
-      var offsetTop = vv && vv.offsetTop > 0 ? vv.offsetTop : 0;
       var scrolled = win.scrollY > 0;
       var width = win.innerWidth;
       var top = 0;
       var height;
-      if (typing && vv && vv.height > 0 && (offsetTop > 0 || scrolled)) {
+      var shift = keyboardShift(win, typing);
+      if (shift) {
         // Zone visible décalée (clavier de l'iPhone) : recouvrir exactement
         // la zone visible
-        top = offsetTop;
-        height = vv.height;
+        top = shift.top;
+        height = shift.height;
       } else {
         height = visibleHeight(win);
         // Clavier ouvert sans décalage (même largeur) : la hauteur reste,
@@ -115,6 +139,21 @@
       for (var i = 0; i < LATER_MS.length; i += 1) win.setTimeout(measure, LATER_MS[i]);
     }
 
+    // Doigt posé puis relâché (avant tout autre écouteur : phase de capture)
+    doc.addEventListener('pointerdown', function () {
+      held = true;
+      heldAt = Date.now();
+    }, true);
+    var release = function () {
+      held = false;
+      if (waiting) {
+        waiting = false;
+        measure();
+      }
+    };
+    doc.addEventListener('pointerup', release, true);
+    doc.addEventListener('pointercancel', release, true);
+
     win.addEventListener('resize', measure);
     // Le décalage change pendant que le clavier s'anime
     if (win.visualViewport) {
@@ -122,6 +161,7 @@
       win.visualViewport.addEventListener('scroll', measure);
     }
     doc.addEventListener('visibilitychange', function () {
+      held = false; // l'application a été quittée : aucun doigt ne reste posé
       if (doc.visibilityState !== 'hidden') measureSoon();
     });
     win.addEventListener('pageshow', measureSoon);

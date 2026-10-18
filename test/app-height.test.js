@@ -41,8 +41,11 @@ function browser({ height = 800, width = 390, visualViewport = true } = {}) {
     documentElement: { style: { setProperty: (name, value) => writes.push([name, value]) } },
     addEventListener: on('document'),
   };
-  vm.runInNewContext(script, { window: win, document: doc });
+  // Horloge du script (Date.now), avancée à la main
+  const clock = { now: 1_000_000 };
+  vm.runInNewContext(script, { window: win, document: doc, Date: { now: () => clock.now } });
   return {
+    clock,
     win,
     doc,
     vv,
@@ -112,7 +115,7 @@ test('retour dans l\'application : remesure, puis relectures décalées (hauteur
 
 test('événements écoutés : resize, visualViewport, visibilitychange, pageshow, focus, orientationchange', () => {
   const b = browser();
-  for (const [target, type] of [['window', 'resize'], ['vv', 'resize'], ['vv', 'scroll'], ['document', 'visibilitychange'], ['window', 'pageshow'], ['window', 'focus'], ['window', 'orientationchange'], ['document', 'focusin'], ['document', 'focusout']]) {
+  for (const [target, type] of [['window', 'resize'], ['vv', 'resize'], ['vv', 'scroll'], ['document', 'visibilitychange'], ['window', 'pageshow'], ['window', 'focus'], ['window', 'orientationchange'], ['document', 'focusin'], ['document', 'focusout'], ['document', 'pointerdown'], ['document', 'pointerup'], ['document', 'pointercancel']]) {
     assert.ok(b.listens(target, type), `${target} ${type}`);
   }
   for (const type of ['pageshow', 'focus', 'orientationchange']) {
@@ -255,6 +258,54 @@ test('zone visible décalée sans champ actif (zoom à deux doigts) : rien ne bo
   b.vv.offsetTop = 200;
   b.fire('vv', 'scroll');
   assert.deepEqual(b.writes, [['--app-h', '800px']]);
+});
+
+test('doigt posé : un changement de --app-top / --app-h attend le relâchement, puis s\'applique', () => {
+  const b = browser({ height: 800 });
+  b.runLater();
+  b.doc.activeElement = textInput();
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.fire('vv', 'scroll');
+  const before = b.writes.length;
+  // Le doigt se pose sur une suggestion ; pendant ce temps, la zone visible bouge
+  b.fire('document', 'pointerdown');
+  b.vv.offsetTop = 290;
+  b.vv.height = 440;
+  b.fire('vv', 'scroll');
+  b.fire('vv', 'resize');
+  b.fire('document', 'focusout');
+  b.runLater();
+  assert.equal(b.writes.length, before, 'rien ne bouge sous le doigt');
+  // Relâchement : la dernière mesure s'applique aussitôt, une seule fois
+  b.fire('document', 'pointerup');
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '290px'], ['--app-h', '440px']]);
+  b.fire('document', 'pointerup');
+  assert.equal(b.writes.length, before + 2);
+  // pointercancel (le doigt a fait défiler) : pareil
+  b.fire('document', 'pointerdown');
+  b.vv.offsetTop = 300;
+  b.fire('vv', 'scroll');
+  assert.equal(b.writes.length, before + 2);
+  b.fire('document', 'pointercancel');
+  assert.deepEqual(b.writes.at(-1), ['--app-top', '300px']);
+});
+
+test('relâchement perdu : la mise en attente ne dure pas plus de 2 s', () => {
+  const b = browser({ height: 800 });
+  b.fire('document', 'pointerdown');
+  b.setHeight(700);
+  b.fire('window', 'resize');
+  assert.deepEqual(b.writes, [['--app-h', '800px']]);
+  b.clock.now += 2500;
+  b.fire('window', 'resize');
+  assert.deepEqual(b.writes.at(-1), ['--app-h', '700px']);
+});
+
+test('compensation du clavier isolée dans une seule fonction (keyboardShift)', () => {
+  assert.match(script, /function keyboardShift\(win, typing\) \{/);
+  assert.equal((script.match(/keyboardShift\(/g) ?? []).length, 2, 'définie une fois, utilisée une fois');
+  assert.match(script, /var shift = keyboardShift\(win, typing\);/);
 });
 
 test('panne du script : rien ne casse (100dvh s\'applique)', () => {

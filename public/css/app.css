@@ -38,7 +38,10 @@ html, body { height: 100%; margin: 0; }
 .app .sync--ok { color: var(--color-success-ink); }
 .app .sync--busy { color: var(--color-accent-ink); }
 .app .sync--off { color: var(--color-inverse-text); }
-body { background: var(--color-bg); }
+/* Fond du thème sur <html> et <body> aussi (pas seulement .app) : la zone
+   de sécurité du haut (encoche, îlot dynamique) ne montre jamais une autre
+   couleur, au démarrage, pendant un rebond de défilement ou clavier ouvert */
+html, body { background: var(--color-bg); }
 /* Hauteur réelle de l'écran sur téléphone : hauteur visible mesurée par
    js/app-height.js (remesurée au retour dans l'application) ; 100dvh si le
    script n'a pas encore mesuré.

@@ -6,6 +6,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Couleurs du bandeau du haut et des contrôles du téléphone : celles du
+       thème de Listo (fond de --color-bg), posées par js/theme-boot.js juste
+       en dessous, avant le premier affichage -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F4F7FB" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0C1422" media="(prefers-color-scheme: dark)">
+  <!-- Thème choisi dans Listo (clair, sombre, auto) posé avant le premier
+       affichage (voir js/theme-boot.js) -->
+  <script src="/js/theme-boot.js"></script>
   <!-- Android : retire viewport-fit=cover avant le premier affichage, pour que
        la page reste au-dessus de la barre de navigation (voir js/viewport.js) -->
   <script src="/js/viewport.js"></script>
@@ -18,7 +27,6 @@
   <!-- Ne pas apparaître dans les moteurs de recherche (pas de robots.txt qui
        interdirait tout : le moteur ne lirait alors jamais cette consigne) -->
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#2F6FED">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Listo">

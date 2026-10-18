@@ -11,7 +11,7 @@ import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
 import { app, logOut, resetLocalCopy, pendingCount } from '../app.js';
-import { updateCheckLine, relativeTime } from '../format.js';
+import { aboutVersion } from '../format.js';
 import { toast, confirmDialog } from '../ui.js';
 
 const MIN_PASSWORD = 10;
@@ -36,16 +36,8 @@ function topbar(title, onBack) {
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
-// Ligne de réglage (icône, titre, sous-titre, élément de fin). Avec href :
-// lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
-// d'information à ce site (noopener, noreferrer).
-function row({ iconName, title, sub, end, onClick, href }) {
-  if (href) {
-    return h('a', { class: 'row', href, target: '_blank', rel: 'noopener noreferrer' },
-      h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), sub ? h('span', { class: 'row__sub' }, sub) : null),
-      icon('chev-r'));
-  }
+// Ligne de réglage (icône, titre, sous-titre, élément de fin)
+function row({ iconName, title, sub, end, onClick }) {
   const tag = onClick ? 'button' : 'div';
   return h(tag, { class: 'row', type: onClick ? 'button' : null, onClick },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
@@ -117,94 +109,109 @@ export function renderSettings() {
     h('div', { class: 'footer' }, logout));
 }
 
-// Bloc « À propos » : version installée, mise à jour (Admin), développeur,
-// projet. La version arrive du serveur (GET /api/about) sans bloquer
-// l'écran ; hors ligne, la dernière version connue sur ce téléphone, sinon
-// « Indisponible hors ligne ».
+// Bloc « À propos », en deux lignes :
+// 1. « Version et mise à jour » : version installée (lien vers le commit sur
+//    GitHub) ; pour l'Admin, statut de la mise à jour et bouton « Vérifier ».
+//    La version arrive du serveur (GET /api/about) sans bloquer l'écran ; hors
+//    ligne, la dernière version connue sur ce téléphone.
+// 2. « Développeur et projet » : deux liens côte à côte.
+// Ce qui s'affiche dans chaque cas est calculé par aboutVersion (format.js).
 function aboutGroup(isAdmin) {
-  // commit : 40 caractères hexadécimaux, ou 'non précisé' (développement),
-  // ou null (inconnu : hors ligne, ou pas encore reçu)
-  const versionRow = (commit, waiting) => {
-    if (isCommit(commit)) return row({ iconName: 'logo', title: `Version : ${commit.slice(0, 7)}`, sub: 'Voir cette version sur GitHub', href: commitUrl(commit) });
-    if (commit === 'non précisé') return row({ iconName: 'logo', title: 'Version : développement' });
-    return row({ iconName: 'logo', title: waiting ? 'Version : …' : 'Version : indisponible hors ligne' });
-  };
-  let known = null;
+  return h('div', { class: 'group' }, versionRow(isAdmin), projectRow());
+}
+
+// Lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
+// d'information à ce site (noopener, noreferrer). Zone tactile de 44 px.
+const outLink = (attrs, ...children) => h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }, ...children);
+
+// Ligne 1 : « Version : 7025130 », statut et bouton « Vérifier » (Admin).
+// Le statut de la mise à jour vient du serveur, qui demande à GitHub (le
+// téléphone ne contacte jamais GitHub). Rien ne s'installe tout seul.
+function versionRow(isAdmin) {
+  const title = h('span', { class: 'row__title' });
+  // Statut annoncé par les lecteurs d'écran quand il change
+  const status = h('span', { class: 'row__sub about__status', role: 'status' });
+  const help = h('span', { class: 'row__sub about__help', hidden: true });
+  const spinner = icon('sync', 'icon--sm');
+  const button = h('button', {
+    class: 'btn btn--secondary btn--sm about__check',
+    type: 'button',
+    'aria-label': 'Vérifier maintenant',
+    hidden: true,
+    onClick: () => check(true),
+  }, spinner, 'Vérifier');
+  const row = h('div', { class: 'row about' }, h('span', { class: 'row__body' }, title, status, help), button);
+
+  // État de la ligne
+  let commit = null;
   try {
-    known = localStorage.getItem(VERSION_KEY);
+    commit = localStorage.getItem(VERSION_KEY);
   } catch {
     // stockage indisponible (navigation privée…) : sans importance
   }
-  if (!isCommit(known)) known = null;
-  let current = versionRow(known, navigator.onLine);
-  const show = (commit, waiting = false) => {
-    const next = versionRow(commit, waiting);
-    current.replaceWith(next);
-    current = next;
+  if (!isCommit(commit)) commit = null;
+  let result = null;
+  let busy = false;
+
+  const render = () => {
+    const line = aboutVersion({ commit, isAdmin, result, busy, online: navigator.onLine });
+    replace(title, 'Version : ', line.version.commit
+      ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': `Version ${line.version.text} sur GitHub` }, line.version.text)
+      : line.version.text);
+    replace(status, line.status ? [line.status.text, line.status.commit
+      ? outLink({ class: 'about__link', href: commitUrl(line.status.commit), 'aria-label': `Nouvelle version ${line.status.link} sur GitHub` }, line.status.link)
+      : null] : null);
+    status.hidden = !line.status;
+    status.classList.toggle('about__status--link', Boolean(line.status?.commit));
+    help.textContent = line.help ?? '';
+    help.hidden = !line.help;
+    button.hidden = !line.button;
+    button.disabled = line.busy;
+    button.classList.toggle('is-busy', line.busy);
   };
-  get('/api/about').then(({ commit }) => {
-    show(commit);
+
+  // Vérification de mise à jour (Admin). force : « Vérifier maintenant »
+  // (le serveur ne l'accepte qu'une fois par minute)
+  const check = (force) => {
+    if (busy || !isAdmin) return;
+    if (!navigator.onLine) {
+      render();
+      return;
+    }
+    busy = true;
+    render();
+    get(`/api/admin/update-check${force ? '?force=1' : ''}`).then((answer) => {
+      result = answer;
+    }, () => {
+      result = { state: 'indisponible' }; // réseau perdu entre-temps, ou refus
+    }).finally(() => {
+      busy = false;
+      render();
+    });
+  };
+
+  render();
+  get('/api/about').then((about) => {
+    commit = about.commit;
     try {
       if (isCommit(commit)) localStorage.setItem(VERSION_KEY, commit);
     } catch {
       // sans importance
     }
-  }, () => show(known)); // pas de réseau : dernière version connue, sinon « indisponible »
-
-  return h('div', { class: 'group' },
-    current,
-    isAdmin ? updateRows() : null,
-    row({ iconName: 'pencil', title: 'Développeur', sub: GITHUB.owner, href: GITHUB.ownerUrl }),
-    row({ iconName: 'link', title: 'Projet', sub: 'Listo sur GitHub', href: GITHUB.repoUrl }));
+    render();
+  }, () => render()); // pas de réseau : dernière version connue, sinon « indisponible »
+  check(false);
+  return row;
 }
 
-// Lignes « Mise à jour » et « Vérifier maintenant » (Admin) : le serveur
-// demande à GitHub s'il existe une version plus récente (le téléphone ne
-// contacte jamais GitHub lui-même). Rien ne s'installe tout seul : la ligne
-// dit seulement quoi faire sur le serveur. Aucune ligne si la vérification
-// est désactivée (LISTO_UPDATE_CHECK=off) ou en développement.
-function updateRows() {
-  // Repère dans le bloc : les lignes sont remplacées juste après lui
-  const marker = document.createComment('mise à jour');
-  let shown = [];
-  let busy = false;
-
-  const render = (result, online = navigator.onLine) => {
-    const line = updateCheckLine(result, { online });
-    for (const node of shown) node.remove();
-    shown = [];
-    if (!line) return;
-    const status = line.commit
-      ? row({ iconName: line.icon, title: line.title, sub: line.sub, href: commitUrl(line.commit) })
-      : row({ iconName: line.icon, title: line.title, sub: line.sub });
-    const checked = result?.checkedAt ? `Dernière vérification : ${relativeTime(result.checkedAt)}` : null;
-    const button = row({ iconName: 'sync', title: 'Vérifier maintenant', sub: online ? checked : null, end: false, onClick: () => check(true) });
-    if (busy) button.disabled = true;
-    shown = [status, button];
-    marker.after(...shown);
-  };
-
-  // force : « Vérifier maintenant » (le serveur l'accepte une fois par minute)
-  const check = (force) => {
-    if (busy) return;
-    if (!navigator.onLine) {
-      render(null, false);
-      return;
-    }
-    busy = true;
-    render(null);
-    get(`/api/admin/update-check${force ? '?force=1' : ''}`).then((result) => {
-      busy = false;
-      render(result);
-    }, () => {
-      busy = false;
-      render(navigator.onLine ? { state: 'indisponible' } : null); // réseau perdu entre-temps
-    });
-  };
-
-  // Lignes posées une fois le bloc dans la page
-  queueMicrotask(() => check(false));
-  return marker;
+// Ligne 2 : développeur et projet, deux liens séparés par un trait fin
+function projectRow() {
+  return h('div', { class: 'row about-links' },
+    outLink({ class: 'about-links__link', href: GITHUB.ownerUrl, 'aria-label': `Développeur : ${GITHUB.owner} sur GitHub` },
+      icon('pencil', 'icon--sm'), GITHUB.owner),
+    h('span', { class: 'about-links__sep', 'aria-hidden': 'true' }),
+    outLink({ class: 'about-links__link', href: GITHUB.repoUrl, 'aria-label': 'Projet Listo sur GitHub' },
+      icon('link', 'icon--sm'), 'Projet GitHub'));
 }
 
 // Remise à zéro de la copie locale (avec confirmation). Les modifications

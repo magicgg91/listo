@@ -148,3 +148,13 @@ Maquettes (`maquettes/`, chacune en `-clair` et `-sombre`) :
 | 3 · Confirmer « Retirer du panier » | `liste-panier-retirer-1` |
 | 4A · Tâches | `liste-taches-panier-a-1` |
 | 5a · Aucun coché, zone absente | `liste-panier-vide-absente-1` |
+
+## Ajout : bloc « À propos » compact (Réglages)
+
+Deux lignes au lieu de cinq. Styles : section 16.6 de `listo.css` (variables existantes uniquement). Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
+
+- `.row.about` : ligne « Version et mise à jour ». Titre `.row__title` « Version : » + lien `.about__link` sur les 7 caractères du commit (zone tactile de 44 px par marges négatives, sans agrandir la ligne). Dessous, pour l'Admin : statut `.row__sub.about__status` (`role="status"`) : « À jour · vérifié il y a 15 min », « Nouvelle version disponible : 3a1b2c4 » (lien, avec `.about__status--link` pour écarter les deux zones tactiles), « Vérification impossible » ou « Indisponible hors ligne » ; puis `.about__help` (« Sur le serveur : docker compose pull && docker compose up -d »), seulement quand une nouvelle version existe. À droite, pour l'Admin : `.btn.btn--secondary.btn--sm.about__check` « Vérifier » (`aria-label="Vérifier maintenant"`, icône `#i-sync`) ; pendant la vérification : `disabled` et `.is-busy` (l'icône tourne, sauf mouvement réduit). La ligne passe à la ligne si c'est trop étroit (texte agrandi) : le bouton se range sous le statut.
+- Autre compte, vérification désactivée (`LISTO_UPDATE_CHECK=off`) : « Version : 7025130 » seule. Développement : « Version : non précisée », sans lien.
+- `.row.about-links` : deux liens `.about-links__link` (44 px, `target="_blank"`, `rel="noopener noreferrer"`) séparés par `.about-links__sep` : « magicgg91 » (`#i-pencil`, `aria-label="Développeur : magicgg91 sur GitHub"`) et « Projet GitHub » (`#i-link`, `aria-label="Projet Listo sur GitHub"`).
+
+Réutilisés tels quels : `.group`, `.row`, `.row__body`, `.row__title`, `.row__sub`, `.btn--secondary`, `.btn--sm`, `@keyframes spin`.

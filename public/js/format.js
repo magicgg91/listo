@@ -64,26 +64,46 @@ export function defaultDisplayName(username) {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Ligne « Mise à jour » (Réglages › À propos, Admin seulement), d'après la
-// réponse de GET /api/admin/update-check. Renvoie { icon, title, sub,
-// commit? } (commit : la nouvelle version, pour le lien vers GitHub), ou null
-// quand la ligne ne s'affiche pas (vérification désactivée sur le serveur,
-// ou version de développement). result vaut null pendant la vérification.
-export function updateCheckLine(result, { online = true } = {}) {
-  const line = (icon, sub) => ({ icon, title: 'Mise à jour', sub });
-  if (!online) return line('cloud-off', 'Indisponible hors ligne');
-  if (!result) return line('sync', 'Vérification…');
-  if (result.state === 'desactive' || result.state === 'developpement') return null;
-  if (result.state === 'ok' && result.upToDate === true) return line('check', 'À jour');
-  if (result.state === 'ok' && typeof result.latest === 'string' && /^[0-9a-f]{40}$/.test(result.latest)) {
-    return {
-      icon: 'alert',
-      title: `Nouvelle version disponible : ${result.latest.slice(0, 7)}`,
-      sub: 'Sur le serveur : docker compose pull && docker compose up -d',
-      commit: result.latest,
-    };
+// Bloc « À propos » des Réglages, première ligne « Version et mise à jour » :
+// ce qu'elle affiche (calcul pur, testé automatiquement). Entrées :
+// - commit : 40 caractères hexadécimaux, 'non précisé' (développement) ou
+//   null (inconnu : hors ligne, ou pas encore reçu) ;
+// - isAdmin : seul l'Admin voit le statut de la mise à jour et le bouton ;
+// - result : réponse de GET /api/admin/update-check (null : pas encore reçue) ;
+// - busy : vérification en cours ; online : réseau disponible.
+// Renvoie :
+// - version : { text, commit? } (commit : lien vers ce commit sur GitHub) ;
+// - status : { text, commit? } ou null (commit : lien vers la nouvelle version) ;
+// - help : message d'aide (seulement quand une nouvelle version existe) ;
+// - button : bouton « Vérifier » affiché ou non ; busy : icône qui tourne.
+const isCommitSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+
+export function aboutVersion({ commit, isAdmin = false, result = null, busy = false, online = true, now = Date.now() }) {
+  let version;
+  if (isCommitSha(commit)) version = { text: commit.slice(0, 7), commit };
+  else if (commit === 'non précisé') version = { text: 'non précisée' };
+  else version = { text: online ? '…' : 'indisponible hors ligne' };
+
+  // Pas de statut ni de bouton : autre compte, développement, vérification
+  // désactivée sur le serveur (LISTO_UPDATE_CHECK=off)
+  const hidden = !isAdmin || commit === 'non précisé'
+    || result?.state === 'desactive' || result?.state === 'developpement';
+  if (hidden) return { version, status: null, help: null, button: false, busy: false };
+
+  const line = (text, extra = {}) => ({ version, status: { text, ...extra.status }, help: extra.help ?? null, button: true, busy });
+  if (!online) return line('Indisponible hors ligne');
+  if (busy || !result) return line('Vérification…');
+  if (result.state === 'ok' && result.upToDate === true) {
+    const when = relativeTime(result.checkedAt, now);
+    return line(when ? `À jour · vérifié ${when}` : 'À jour');
   }
-  return line('cloud-off', 'Vérification impossible');
+  if (result.state === 'ok' && isCommitSha(result.latest)) {
+    return line('Nouvelle version disponible : ', {
+      status: { commit: result.latest, link: result.latest.slice(0, 7) },
+      help: 'Sur le serveur : docker compose pull && docker compose up -d',
+    });
+  }
+  return line('Vérification impossible');
 }
 
 // Date d'expiration d'un lien public : « 24 oct. 2026 à 18:30 »

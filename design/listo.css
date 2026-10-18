@@ -387,7 +387,8 @@
 /* ---------- 16. Photos, magasin « multi », lien public (ajout) ----------
    N'utilise que les variables existantes. Aucune couleur en dur.
    16.1 Photo d'un article · 16.2 Magasin multi · 16.3 Partage par lien
-   16.4 Page publique en lecture seule */
+   16.4 Page publique en lecture seule · 16.5 Zone des cochés
+   16.6 Bloc « À propos » compact */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -488,6 +489,28 @@
 .cart__action--danger { color: var(--color-danger-ink); }
 .cart__action:active { background: var(--color-neutral-soft); }
 .scroll--flat { padding-top: var(--space-1); }
+
+/* 16.6 Bloc « À propos » compact (Réglages) : deux lignes .row.
+   .about : « Version : 7025130 » (lien), statut de la mise à jour et bouton
+   « Vérifier » (Admin). Trop étroit (texte agrandi) : la ligne passe à la
+   ligne et le bouton se range sous le statut, sans déborder.
+   .about-links : deux liens côte à côte, séparés par un trait fin. */
+.about { flex-wrap: wrap; row-gap: var(--space-1); }
+.about .row__body { flex: 1 1 9em; }
+.about__check { flex: none; margin-left: auto; }
+.about__check.is-busy .icon { animation: spin 1s linear infinite; }
+/* Lien court dans le texte (7 caractères d'un commit) : zone tactile de
+   44 px sans agrandir la ligne (marges négatives) */
+.about__link { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-min); min-height: var(--tap-min); margin: -12px 0; color: var(--color-accent-ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; font-variant-numeric: tabular-nums; }
+/* Statut avec un lien sous le titre avec un lien : écart pour que les deux
+   zones tactiles ne se chevauchent pas */
+.about__status--link { margin-top: 12px; }
+.about__help { margin-top: 2px; overflow-wrap: anywhere; }
+.about-links { gap: 0; min-height: 0; padding-top: 6px; padding-bottom: 6px; }
+.about-links__link { display: inline-flex; flex: 1 1 0; align-items: center; justify-content: center; gap: var(--space-1); min-width: 0; min-height: var(--tap-min); padding: 0 var(--space-1); border-radius: var(--radius-sm); color: var(--color-text); font-weight: 600; text-align: center; text-decoration: none; }
+.about-links__link .icon { color: var(--color-text-2); }
+.about-links__link:active { background: var(--color-neutral-soft); }
+.about-links__sep { flex: none; align-self: stretch; width: 1px; margin: 6px 0; background: var(--color-border); }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

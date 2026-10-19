@@ -12,7 +12,7 @@ import {
   emptyState, applyOp, computeListView, groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups,
   pruneFoldedGroups, pruneListMemory, isZoneOpen, rememberZone, FOLDED_PREFIX,
 } from '../public/js/store.js';
-import { remainingWords } from '../public/js/words.js';
+import { progressText, progressLabel } from '../public/js/words.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -150,11 +150,14 @@ test('jamais envoyé au serveur : l\'état ne vit que dans le stockage du télé
 test('en-tête de groupe : vrai bouton, aria-expanded, aria-controls, replié lisible sans la couleur', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /const toggle = h\('button', \{\s*class: 'aisle__toggle',\s*type: 'button',\s*'aria-controls': listEl\.id,/);
-  assert.match(list, /toggle\.setAttribute\('aria-expanded', String\(open\)\);\s*listEl\.hidden = !open;\s*rest\.hidden = open;/);
-  // Replié : « · 2 à acheter » / « · 3 à faire » après le nom, en texte
-  assert.match(list, /const rest = h\('span', \{ class: 'aisle__rest' \}, `· \$\{remainingWords\(remaining, list\)\}`\);/);
-  assert.equal(remainingWords(2, { category: { isShopping: true } }), '2 à acheter');
-  assert.equal(remainingWords(3, { category: { isShopping: false } }), '3 à faire');
+  assert.match(list, /toggle\.setAttribute\('aria-expanded', String\(open\)\);\s*listEl\.hidden = !open;/);
+  // Ouvert comme replié : compteur « X/Y » à droite, en texte ; lecteurs
+  // d'écran et infobulle : « 2 articles restants sur 5 »
+  assert.match(list, /const counter = h\('span', \{ class: 'aisle__count', 'aria-hidden': 'true' \}, progressText\(remaining, total\)\);/);
+  assert.match(list, /'aria-label': `\$\{name\}, \$\{progressLabel\(remaining, total, list\)\}`,/);
+  assert.equal(progressText(2, 5), '2/5');
+  assert.equal(progressLabel(2, 5, { category: { isShopping: true } }), '2 articles restants sur 5');
+  assert.equal(progressLabel(3, 3, { category: { isShopping: false } }), '3 éléments restants sur 3');
   // Les trois sortes de groupes passent par le même en-tête
   assert.match(list, /view\.multi \? foldableGroup\(list, group, group\.store\?\.name \?\? 'Sans magasin', icon\('store', 'icon--xs'\)\)/);
   assert.match(list, /: list\.category\.isShopping \? foldableGroup\(list, group, group\.aisle\?\.name \?\? 'Sans rayon'\)/);

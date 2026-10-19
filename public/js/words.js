@@ -38,7 +38,18 @@ export function doneZoneWords(listOrFlag) {
     : { title: 'Terminés', reopen: 'Tout rouvrir', remove: 'Retirer les terminés' };
 }
 
-// Ce qui reste dans un groupe replié : « 2 à acheter », « 3 à faire »
-export function remainingWords(count, listOrFlag) {
-  return `${count} ${isShopping(listOrFlag) ? 'à acheter' : 'à faire'}`;
+// Compteur « X/Y » (carte de « Mes listes », en-tête de groupe) : X restants
+// à faire, Y au total (cochés compris, supprimés exclus). Sans texte ni
+// espace : « 3/8 ».
+export function progressText(remaining, total) {
+  return `${remaining}/${total}`;
+}
+
+// Le même compteur pour les lecteurs d'écran et l'infobulle :
+// « 3 articles restants sur 8 », « 1 élément restant sur 4 »,
+// « 0 article restant sur 5 » (singulier pour 0 et 1)
+export function progressLabel(remaining, total, listOrFlag) {
+  const words = itemWords(listOrFlag);
+  const one = remaining <= 1;
+  return `${remaining} ${one ? words.one : words.many} ${one ? 'restant' : 'restants'} sur ${total}`;
 }

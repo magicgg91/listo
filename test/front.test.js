@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { matchRoute, pathFor } from '../public/js/router.js';
-import { relativeTime, remainingLabel, splitPrefix, namesList, defaultDisplayName, dateTimeLabel, timeLeftLabel } from '../public/js/format.js';
+import { relativeTime, splitPrefix, namesList, defaultDisplayName, dateTimeLabel, timeLeftLabel } from '../public/js/format.js';
 import {
   emptyState, loadSync, putItem, removeItem, putList, removeList, rememberItem,
   computeSummaries, computeListView, computeSuggestions, isKnownItem, activeOnly,
@@ -60,14 +60,7 @@ test('dates relatives comme dans les maquettes', () => {
   assert.equal(relativeTime('pas une date', now), '');
 });
 
-test('nombre d\'articles restants, liste de prénoms', () => {
-  // Liste de courses : « article » ; autre liste : « élément »
-  assert.equal(remainingLabel(1, true), '1 article restant');
-  assert.equal(remainingLabel(11, true), '11 articles restants');
-  assert.equal(remainingLabel(0, true), '0 articles restants');
-  assert.equal(remainingLabel(1, { category: { isShopping: false } }), '1 élément restant');
-  assert.equal(remainingLabel(2, { category: { isShopping: false } }), '2 éléments restants');
-  assert.equal(remainingLabel(3, { category: { isShopping: true } }), '3 articles restants');
+test('liste de prénoms', () => {
   assert.equal(namesList(['Guillaume']), 'Guillaume');
   assert.equal(namesList(['Guillaume', 'Léa']), 'Guillaume et Léa');
   assert.equal(namesList(['A', 'B', 'C']), 'A, B et C');

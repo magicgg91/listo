@@ -29,13 +29,6 @@ export function relativeTime(iso, now = Date.now()) {
   return date.toLocaleDateString('fr-FR', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-// « 1 article restant », « 11 articles restants » (liste de courses) ;
-// « 1 élément restant », « 11 éléments restants » (autre liste).
-// listOrFlag : la liste, ou vrai pour une liste de courses (voir words.js).
-export function remainingLabel(count, listOrFlag) {
-  return `${countItems(count, listOrFlag)} ${count === 1 ? 'restant' : 'restants'}`;
-}
-
 // Partie tapée d'une suggestion, à mettre en gras : renvoie [début, reste] si
 // le nom commence par ce qui a été tapé (accents et majuscules ignorés),
 // sinon [« », nom entier].

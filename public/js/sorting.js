@@ -107,12 +107,26 @@ export function sortTasks(items, sort = 'alpha') {
 // ordre alphabétique). Un rayon dont tous les articles sont cochés n'a plus
 // rien à acheter : il disparaît de la partie « à acheter ».
 // Renvoie { groups : rayons (ou magasins) des articles à acheter, comme
-// groupItems ; done : articles cochés, dans l'ordre de la zone }.
+// groupItems, chacun avec son total (Y du compteur « X/Y » : ses articles à
+// acheter ET ses articles cochés) ; done : articles cochés, dans l'ordre de
+// la zone }.
 // options.sort : tri d'une liste autre que les courses (sortTasks)
 export function splitDone(items, aisles, isShopping, options = {}) {
   const done = items.filter((item) => item.checked)
     .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
   const toDo = items.filter((item) => !item.checked);
-  const groups = !isShopping && options.sort ? sortTasks(toDo, options.sort) : groupItems(toDo, aisles, isShopping, options);
+  const arrange = (list) => (!isShopping && options.sort ? sortTasks(list, options.sort) : groupItems(list, aisles, isShopping, options));
+  const groups = arrange(toDo);
+  // Les mêmes groupes avec les cochés : un coché compte dans le groupe
+  // (rayon, magasin ou priorité) qu'il avait avant d'être coché
+  const totals = new Map(arrange(items).map((group) => [groupId(group), group.items.length]));
+  for (const group of groups) group.total = totals.get(groupId(group)) ?? group.items.length;
   return { groups, done };
+}
+
+// Identifiant d'un groupe : priorité, magasin ou rayon (« » : sans)
+function groupId(group) {
+  if (group.priority) return `p:${group.priority}`;
+  if ('store' in group) return `s:${group.store?.id ?? ''}`;
+  return `a:${group.aisle?.id ?? ''}`;
 }

@@ -5,11 +5,12 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 40 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 71 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
 | `icones/icon-512.png`, `icones/icon-192.png` | Exports PNG pour le manifeste PWA. |
+| `icones/listes/` | Les 31 icônes ajoutées pour l'icône d'une liste, une par fichier SVG (24 × 24, trait de 2, `currentColor`), identiques à celles du sprite. |
 
 ## Thèmes
 
@@ -227,7 +228,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune no
 Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône (`i-chev-d`).
 
 - Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) devient `.aisle.aisle--fold` et contient un vrai bouton `.aisle__toggle` pleine largeur (48 px) : `aria-expanded`, `aria-controls` (id de la `<ul>` du groupe), `aria-label` du type « Fruits et légumes, 2 à acheter » ; chevron `#i-chev-d`, `.aisle__name`, `.aisle__count` à droite.
-- Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule.
+- Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule. **Remplacé** par le compteur « X/Y », voir « Ajout : compteur X/Y » (`.aisle__rest` n'est plus utilisé).
 - La zone des cochés (`.cart__toggle`, section 16.5) se replie déjà de la même façon.
 - `.fold-all` « Tout replier » / « Tout déplier » : bouton texte compact (44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
 - Liste sans groupe (liste de tâches en ordre alphabétique ou par échéance) : aucun en-tête, aucun bouton. La page publique du lien n'est pas concernée (en-têtes simples, en lecture seule).
@@ -291,4 +292,30 @@ Styles : `public/css/app.css` (`.picker__new`) et composants existants. Balisage
 - Dernière ligne d'un choix de rayon ou de magasin : un `.radio-row.picker__new` (bouton, `#i-plus` + « Nouveau rayon… » / « Nouveau magasin… », texte en couleur d'accent, trait au-dessus), hors du `role="radiogroup"` des choix, 44 px.
 - Feuille de création, la même pour les deux (`public/js/create-reference.js`) : `.sheet` « Nouveau rayon » / « Nouveau magasin », un `.field` « Libellé du rayon » / « Libellé du magasin » (`.input`, attributs `LABEL_INPUT`, jamais « Nom », aucun curseur posé d'office), une `.note` d'erreur au besoin (doublon) avec un bouton `.btn--secondary.btn--block` « Choisir « … » », puis « Créer » (`.btn--primary.btn--block`).
 - Une fenêtre ouverte par-dessus une autre passe au-dessus de son fond grisé (`.scrim`) : la fenêtre du dessous est grisée.
+
+## Ajout : icône d'une liste
+
+Styles : `public/css/app.css` (`.icon-grid`, `.icon-grid__opt`, `.icon-grid__check`, `.topbar__head`, `.topbar__icon`, `.list-card__icon`). Balisage : « Formulaire de liste : « Icône » » et « En-tête d'une liste avec son icône » dans `components.html`. Liste blanche et noms : `public/js/list-icons.js`.
+
+- Grille sous « Catégorie » : boutons de 44 px au moins (`role="radio"`, `aria-label` et `title` en français) dans un `role="radiogroup"` relié au titre « Icône ». Sur un téléphone de 390 px : sept colonnes, cinq lignes.
+- Choix : bord de 2 px d'accent, fond d'accent doux, couleur d'accent, ET une petite coche ronde dans le coin (`.icon-grid__check`) : jamais la couleur seule.
+- Au départ, la case cochée est l'icône de la catégorie (`i-cart` pour les courses, `i-tasks` sinon).
+- Carte de « Mes listes » : l'icône (20 px, couleur d'accent) devant le titre. En-tête de la liste : la même, en couleur secondaire, juste avant le titre.
+- **Nouvelles icônes** du sprite (même trait que les autres, couleur héritée), soit 71 icônes : `i-balloon`, `i-bag`, `i-basket`, `i-bike`, `i-book`, `i-briefcase`, `i-bulb`, `i-cake`, `i-car`, `i-cup`, `i-dumbbell`, `i-euro`, `i-gamepad`, `i-gift`, `i-hammer`, `i-health`, `i-heart`, `i-home`, `i-meal`, `i-music`, `i-paw`, `i-plane`, `i-plant`, `i-school`, `i-shirt`, `i-spray`, `i-star`, `i-stroller`, `i-suitcase`, `i-tv`, `i-wrench`. Réutilisées : `i-cart`, `i-store`, `i-tasks`, `i-calendar`.
+
+## Ajout : carte compacte de « Mes listes »
+
+Styles : `public/css/app.css` (`.list-card__left`, `.list-card__people`, `.list-card__link`, règles de `.list-card__head`). Balisage : « Carte compacte de « Mes listes » » dans `components.html` ; il remplace, pour la carte, la ligne `.list-card__meta` (catégorie, magasin, lien) des exemples plus anciens.
+
+- Ligne 1 (`.list-card__head`) : `.list-card__icon`, `.list-card__name` (deux lignes au plus, puis « … »), `.list-card__time` ; le bouton ⋮ (`.list-card__menu`, 44 px) est posé à côté, hors du lien.
+- Ligne 2 (`.list-card__foot`) : à gauche `.list-card__left` (compteur `.list-card__count`, `.badge-multi`, `.chip--readonly`) ; à droite `.list-card__people` : le symbole du lien public (`.list-card__link`, `role="img"`, `aria-label="Lien public actif"`) juste avant `.avatars`, seulement si un lien est en cours.
+- Ni catégorie ni magasin sur la carte. Aucune nouvelle icône.
+
+## Ajout : compteur X/Y
+
+Styles : `public/css/app.css` (`.list-card__count--progress`) et composants existants (`.aisle__count`, déjà en chiffres alignés). Balisage : « Carte compacte de « Mes listes » » et « En-têtes de groupe avec « X/Y » » dans `components.html`.
+
+- Carte : `.list-card__count.list-card__count--progress` (`role="img"`, `aria-label` et `title` « 3 articles restants sur 8 ») contient « 3/8 » (`aria-hidden`). Tout coché : `+ .list-card__count--done`, « 0/8 » puis `#i-check` (vert ET coche). Liste vide : « Liste vide ».
+- En-tête de groupe : `.aisle__count` « X/Y » à droite, ouvert comme replié ; le bouton `.aisle__toggle` a pour nom « Crèmerie, 1 article restant sur 2 » et la même infobulle (sans le nom). `.aisle__rest` n'est plus utilisé.
+- Textes : `progressText` et `progressLabel` de `public/js/words.js`. Aucune nouvelle icône.
 

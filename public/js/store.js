@@ -11,6 +11,7 @@
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
+import { isListIcon } from './list-icons.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -172,6 +173,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       state.lists.set(op.listId, {
         id: op.listId,
         name: op.name,
+        icon: isListIcon(op.icon) ? op.icon : '', // rien de choisi : icône de la catégorie
         category: category && { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active },
         store: store && { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) },
         ownerId: user.id,
@@ -193,6 +195,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (!list) return;
       const next = { ...list, updatedAt: now };
       if (op.name !== undefined) next.name = op.name;
+      if (op.icon !== undefined) next.icon = isListIcon(op.icon) ? op.icon : '';
       if (op.categoryId !== undefined) {
         const category = state.categories.find((c) => c.id === op.categoryId);
         if (category) next.category = { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active };

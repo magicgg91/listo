@@ -360,20 +360,24 @@ export function saveListSort(sort, storage = () => globalThis.localStorage) {
   }
 }
 
-// --- Tri d'une liste autre que les courses (choix gardé sur ce téléphone,
-// pour chaque liste : clé listo-tri-liste-<identifiant>) ---
+// --- Tri d'une liste (choix gardé sur ce téléphone, pour chaque liste :
+// clé listo-tri-liste-<identifiant>). Sans choix gardé (null), la liste a
+// son tri par défaut (defaultSort) : par rayon pour une liste de courses,
+// ordre alphabétique sinon. ---
 export const ITEM_SORT_PREFIX = 'listo-tri-liste-';
-export const itemSortFrom = (value) => (ITEM_SORTS.includes(value) ? value : 'alpha');
+export const itemSortFrom = (value) => (ITEM_SORTS.includes(value) ? value : null);
 export function loadItemSort(listId, storage = () => globalThis.localStorage) {
   try {
     return itemSortFrom(storage().getItem(ITEM_SORT_PREFIX + listId));
   } catch {
-    return 'alpha';
+    return null;
   }
 }
 export function saveItemSort(listId, sort, storage = () => globalThis.localStorage) {
+  const value = itemSortFrom(sort);
+  if (!value) return;
   try {
-    storage().setItem(ITEM_SORT_PREFIX + listId, itemSortFrom(sort));
+    storage().setItem(ITEM_SORT_PREFIX + listId, value);
   } catch {
     // sans importance : le choix vaut pour cette visite
   }
@@ -413,6 +417,7 @@ export const FOLDED_PREFIX = 'listo-groupes-replies-';
 // « a:<rayon> », « s:<magasin> » (liste « multi »), « p:<priorité> » ;
 // « aucun » pour « Sans rayon » / « Sans magasin »
 export function groupKey(group) {
+  if (group.all) return 'tous';
   if (group.priority) return `p:${group.priority}`;
   if ('store' in group) return `s:${group.store?.id ?? 'aucun'}`;
   return `a:${group.aisle?.id ?? 'aucun'}`;
@@ -425,7 +430,7 @@ export function possibleGroupKeys(state) {
   return new Set([
     ...state.aisles.map((aisle) => `a:${aisle.id}`), 'a:aucun',
     ...state.stores.map((store) => `s:${store.id}`), 's:aucun',
-    'p:high', 'p:normal', 'p:low',
+    'p:high', 'p:normal', 'p:low', 'tous',
   ]);
 }
 
@@ -514,20 +519,23 @@ export function listOptions(list) {
   };
 }
 
-// Tris proposés pour une liste autre que les courses : l'ordre alphabétique
-// toujours, « par priorité » et « par échéance » seulement si le réglage est
-// activé
+// Tris proposés : liste de courses, « par rayon » (ou « par magasin » pour
+// une liste « multi ») puis l'ordre alphabétique ; autre liste, l'ordre
+// alphabétique toujours, « par priorité » et « par échéance » seulement si
+// le réglage est activé. Le premier est le tri par défaut.
 export function availableSorts(list) {
+  if (list?.category?.isShopping) return ['aisle', 'alpha'];
   const options = listOptions(list);
-  return ITEM_SORTS.filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due));
+  return ['alpha', 'priority', 'due'].filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due));
 }
+export const defaultSort = (list) => availableSorts(list)[0];
 
 // Tri à appliquer : le choix gardé sur ce téléphone s'il est encore proposé,
-// sinon l'ordre alphabétique (le choix gardé n'est pas effacé : il revient
-// si le réglage est réactivé)
+// sinon le tri par défaut de la liste (le choix gardé n'est pas effacé : il
+// revient si le réglage est réactivé)
 export function effectiveSort(list, sort) {
   const wanted = itemSortFrom(sort);
-  return availableSorts(list).includes(wanted) ? wanted : 'alpha';
+  return availableSorts(list).includes(wanted) ? wanted : defaultSort(list);
 }
 
 // Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,
@@ -552,9 +560,10 @@ export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
 // leur nombre. null si la liste n'est pas (ou plus) accessible.
 // Dans une liste « multi », les groupes sont des magasins (group.store) au
 // lieu des rayons (group.aisle).
-// sort : tri d'une liste autre que les courses ('alpha' par défaut,
-// 'priority' ou 'due', voir sorting.js) ; sans effet sur les courses.
-export function computeListView(state, listId, { sort = 'alpha' } = {}) {
+// sort : tri choisi sur ce téléphone (voir availableSorts ; sans choix, le
+// tri par défaut de la liste). Liste de courses en ordre alphabétique : un
+// seul groupe « À acheter » (group.all).
+export function computeListView(state, listId, { sort = null } = {}) {
   const list = state.lists.get(listId);
   if (!list) return null;
   const items = itemsOf(state, listId);

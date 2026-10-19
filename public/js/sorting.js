@@ -8,6 +8,8 @@
 // - liste « multi » : même chose, groupée par magasin au lieu du rayon,
 //   « Sans magasin » en dernier ;
 // - autre liste (tâches…) : un seul groupe, même ordre.
+// Chaque téléphone peut aussi choisir un autre tri, liste par liste (voir
+// ITEM_SORTS) : seul l'affichage change, jamais les articles.
 
 // Comparaison alphabétique française : « Épicerie » se range avec les « E »,
 // et les majuscules ne comptent pas.
@@ -62,9 +64,11 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
   return groupBy(items, aisles, (item) => item.aisleId, 'aisle');
 }
 
-// Tri d'une liste autre que les courses (choix de chaque téléphone, par
-// liste) : seulement les éléments NON cochés (les cochés restent dans leur
-// zone, voir splitDone).
+// Tri d'une liste (choix de chaque téléphone, par liste) : seulement les
+// éléments NON cochés (les cochés restent dans leur zone, voir splitDone).
+// Liste de courses : 'aisle' (par défaut : par rayon, ou par magasin dans
+// une liste « multi ») ou 'alpha' (à plat, un seul groupe « À acheter »,
+// voir sortShopping). Autre liste :
 // - 'alpha' : ordre alphabétique, exactement l'ordre d'origine (groupItems) ;
 // - 'priority' : trois groupes avec un en-tête, « Priorité élevée »,
 //   « Priorité normale », « Priorité basse » (groupe vide : pas d'en-tête),
@@ -74,7 +78,7 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
 //   élevée d'abord, puis ordre alphabétique.
 // Renvoie des groupes comme groupItems : [{ aisle: null, items }] ou, par
 // priorité, [{ aisle: null, priority, label, items }].
-export const ITEM_SORTS = ['alpha', 'priority', 'due'];
+export const ITEM_SORTS = ['alpha', 'priority', 'due', 'aisle'];
 const PRIORITY_GROUPS = [['high', 'Priorité élevée'], ['normal', 'Priorité normale'], ['low', 'Priorité basse']];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
@@ -101,6 +105,14 @@ export function sortTasks(items, sort = 'alpha') {
   return groupItems(items, [], false);
 }
 
+// Liste de courses en ordre alphabétique : tous les articles à plat, sans
+// rayon ni magasin, dans un seul groupe repliable « À acheter » (all: true).
+// Le rayon et le magasin de chaque article sont gardés : seul l'affichage
+// change. Ordre alphabétique français (majuscules et accents ignorés).
+export function sortShopping(items) {
+  return items.length ? [{ aisle: null, all: true, label: 'À acheter', items: [...items].sort((a, b) => compareNames(a.name, b.name)) }] : [];
+}
+
 // Zone des articles cochés (« Dans le panier » / « Terminés ») : les cochés
 // quittent leur rayon (ou leur magasin) et vont dans une zone à part, du plus
 // récemment coché au plus ancien (checkedAt, posé par le serveur ; à égalité,
@@ -110,12 +122,18 @@ export function sortTasks(items, sort = 'alpha') {
 // groupItems, chacun avec son total (Y du compteur « X/Y » : ses articles à
 // acheter ET ses articles cochés) ; done : articles cochés, dans l'ordre de
 // la zone }.
-// options.sort : tri d'une liste autre que les courses (sortTasks)
+// options.sort : tri choisi (sortTasks pour une liste autre que les courses ;
+// 'alpha' pour une liste de courses : sortShopping ; sinon par rayon ou par
+// magasin)
 export function splitDone(items, aisles, isShopping, options = {}) {
   const done = items.filter((item) => item.checked)
     .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
   const toDo = items.filter((item) => !item.checked);
-  const arrange = (list) => (!isShopping && options.sort ? sortTasks(list, options.sort) : groupItems(list, aisles, isShopping, options));
+  const arrange = (list) => {
+    if (!isShopping && options.sort) return sortTasks(list, options.sort);
+    if (isShopping && options.sort === 'alpha') return sortShopping(list);
+    return groupItems(list, aisles, isShopping, options);
+  };
   const groups = arrange(toDo);
   // Les mêmes groupes avec les cochés : un coché compte dans le groupe
   // (rayon, magasin ou priorité) qu'il avait avant d'être coché
@@ -124,8 +142,9 @@ export function splitDone(items, aisles, isShopping, options = {}) {
   return { groups, done };
 }
 
-// Identifiant d'un groupe : priorité, magasin ou rayon (« » : sans)
+// Identifiant d'un groupe : « À acheter », priorité, magasin ou rayon (« » : sans)
 function groupId(group) {
+  if (group.all) return 'tous';
   if (group.priority) return `p:${group.priority}`;
   if ('store' in group) return `s:${group.store?.id ?? ''}`;
   return `a:${group.aisle?.id ?? ''}`;

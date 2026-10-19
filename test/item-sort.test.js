@@ -58,7 +58,7 @@ test('éléments cochés : hors tri, dans leur zone ; décochés, ils reprennent
   assert.deepEqual(splitDone(back, [], false, { sort: 'priority' }).groups[0].items[0].name, 'Aaa coché');
 });
 
-test('liste de courses : tri par rayons, le choix n\'a aucun effet', () => {
+test('liste de courses : par rayons par défaut ; priorité et échéance n\'y sont pas proposées', () => {
   const state = emptyState();
   state.loaded = true;
   state.aisles = [{ id: 1, name: 'Crèmerie', active: true }, { id: 2, name: 'Boulangerie', active: true }];
@@ -66,11 +66,11 @@ test('liste de courses : tri par rayons, le choix n\'a aucun effet', () => {
   state.items.set('a', { id: 'a', listId: 'c', name: 'Lait', aisleId: 1, checked: false, priority: 'low' });
   state.items.set('b', { id: 'b', listId: 'c', name: 'Pain', aisleId: 2, checked: false, priority: 'high', dueDate: '2026-01-01' });
   const plain = computeListView(state, 'c');
-  for (const sort of ['priority', 'due', 'alpha']) assert.deepEqual(computeListView(state, 'c', { sort }), plain, sort);
+  for (const sort of ['priority', 'due', 'aisle', null, 'n\'importe quoi']) assert.deepEqual(computeListView(state, 'c', { sort }), plain, sort);
   assert.deepEqual(plain.groups.map((g) => g.aisle.name), ['Boulangerie', 'Crèmerie']);
 });
 
-test('choix gardé par liste (listo-tri-liste-<id>) ; valeur invalide → alphabétique ; ménage des listes disparues', () => {
+test('choix gardé par liste (listo-tri-liste-<id>) ; rien ou valeur invalide → tri par défaut de la liste ; ménage des listes disparues', () => {
   const memory = new Map();
   const storage = () => ({
     getItem: (k) => (memory.has(k) ? memory.get(k) : null),
@@ -79,28 +79,33 @@ test('choix gardé par liste (listo-tri-liste-<id>) ; valeur invalide → alphab
     key: (i) => [...memory.keys()][i] ?? null,
     get length() { return memory.size; },
   });
-  assert.equal(loadItemSort('l1', storage), 'alpha', 'par défaut');
+  assert.equal(loadItemSort('l1', storage), null, 'rien de gardé : tri par défaut de la liste');
   saveItemSort('l1', 'priority', storage);
   saveItemSort('l2', 'due', storage);
   assert.deepEqual([loadItemSort('l1', storage), loadItemSort('l2', storage)], ['priority', 'due'], 'chaque liste son tri');
   assert.equal(memory.get('listo-tri-liste-l1'), 'priority');
   memory.set('listo-tri-liste-l1', 'date');
-  assert.equal(loadItemSort('l1', storage), 'alpha');
-  for (const bad of [null, '', 'ALPHA', 'recent', 42]) assert.equal(itemSortFrom(bad), 'alpha');
+  assert.equal(loadItemSort('l1', storage), null);
+  for (const bad of [null, '', 'ALPHA', 'recent', 42]) assert.equal(itemSortFrom(bad), null);
+  saveItemSort('l3', 'bidon', storage);
+  assert.equal(memory.has('listo-tri-liste-l3'), false, 'une valeur invalide n\'est jamais écrite');
+  saveItemSort('l3', 'aisle', storage);
+  assert.equal(loadItemSort('l3', storage), 'aisle');
+  memory.delete('listo-tri-liste-l3');
   memory.set('listo-tri-listes', 'alpha'); // tri de « Mes listes » : jamais touché
   pruneItemSorts(['l2'], storage);
   assert.deepEqual([...memory.keys()].sort(), ['listo-tri-liste-l2', 'listo-tri-listes']);
   const broken = () => { throw new Error('refusé'); };
-  assert.equal(loadItemSort('l1', broken), 'alpha');
+  assert.equal(loadItemSort('l1', broken), null);
   assert.doesNotThrow(() => saveItemSort('l1', 'due', broken));
   assert.doesNotThrow(() => pruneItemSorts([], broken));
 });
 
-test('écran d\'une liste : bouton « Trier la liste » seulement hors courses, choix exclusif coché', () => {
+test('écran d\'une liste : bouton « Trier la liste » dès qu\'il y a un choix (toujours pour les courses), choix exclusif coché', () => {
   const source = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
   assert.match(source, /iconButton\('az', 'Trier la liste', \(\) => openSortMenu\(\)\)/);
-  // Courses : jamais ; ailleurs : seulement s'il y a un choix (priorité ou échéance activée)
-  assert.match(source, /sortButton\.hidden = list\.category\.isShopping \|\| availableSorts\(list\)\.length < 2;/);
+  // Courses : toujours (par rayon / alphabétique) ; ailleurs : seulement s'il y a un choix
+  assert.match(source, /sortButton\.hidden = availableSorts\(list\)\.length < 2;/);
   assert.match(source, /checked: value === activeSort\(\),/);
   assert.match(source, /toast\(message, \{ duration: 2000 \}\)/);
   const ui = fs.readFileSync(new URL('../public/js/ui.js', import.meta.url), 'utf8');

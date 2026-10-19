@@ -340,3 +340,10 @@ L'onglet « Noms » s'appelle « Articles ». Balisage : « Onglet « Articles �
 - Feuille : titre « Rayon de « … » », `.card.picker` avec un `role="radiogroup"` de `.radio-row` (rayons actifs, puis « Aucun rayon »), l'actuel avec `.radio.is-on` et `#i-check` (`.icon-end`), puis `.btn.btn--primary.btn--block` « Enregistrer ». Aucun champ de saisie.
 - Barre `.tabs` de l'Administration : elle défile de côté quand l'écran est trop étroit (`public/css/app.css`), sans barre de défilement visible ; l'onglet actif est ramené en vue.
 
+## Ajout : Administration en trois onglets (Comptes, Catégories, Courses)
+
+Styles : `public/css/app.css` (`.tabs--sub`). Balisage : « Administration : onglet « Courses » » dans `components.html`. Aucune nouvelle icône.
+
+- Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ».
+- Sous « Courses », une seconde barre `.tabs.tabs--sub` (`role="tablist"`, `aria-label="Courses"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-selected="true"` : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
+

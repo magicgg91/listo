@@ -33,7 +33,7 @@ test('libellé : onglet « Articles », plus aucun « Noms » à l\'écran', () 
   // Les routes ne changent pas
   assert.match(admin, /get\(`\/api\/admin\/names\?\$\{params\}`\)/);
   // Documentation : le nouveau libellé
-  assert.match(read('docs/exploitation.md'), /onglet \*\*Articles\*\*/);
+  assert.match(read('docs/exploitation.md'), /onglet \*\*Courses\*\* → \*\*Articles\*\*/);
   assert.doesNotMatch(read('docs/exploitation.md'), /onglet \*\*Noms\*\*/);
 });
 

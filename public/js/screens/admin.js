@@ -1,15 +1,17 @@
 // Écran « Administration » (maquettes administration-1 à 6), réservé aux Admin
-// (le serveur le vérifie à chaque requête). Quatre onglets :
+// (le serveur le vérifie à chaque requête). Trois onglets :
 // - Comptes : liste, création, rôle, réinitialisation du mot de passe,
 //   désactivation de la 2FA, désactivation / réactivation, suppression d'un
 //   compte jamais utilisé ;
-// - Catégories, Magasins, Rayons : ajout, renommage, désactivation /
-//   réactivation, suppression d'un élément jamais utilisé ;
-// - Articles : la mémoire commune des articles saisis dans les listes de
-//   courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
-//   les listes de courses, changer son rayon habituel, ou le retirer des
-//   suggestions. (Son identifiant
-//   interne reste « noms », comme les routes /api/admin/names.)
+// - Catégories : ajout, renommage, désactivation / réactivation, suppression
+//   d'un élément jamais utilisé ;
+// - Courses, avec trois choix :
+//   - Magasins, Rayons : comme les catégories ;
+//   - Articles : la mémoire commune des articles saisis dans les listes de
+//     courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
+//     les listes de courses, changer son rayon habituel, ou le retirer des
+//     suggestions. (Son identifiant interne reste « noms », comme les
+//     routes /api/admin/names.)
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
 // ses éléments) : les articles enregistrés viennent avec de simples compteurs.
 
@@ -26,31 +28,52 @@ import { itemWords, countItems } from '../words.js';
 // Mot des listes de courses (words.js) : « article », « articles »
 const ITEM = itemWords(true);
 
-const TABS = [
-  { key: 'comptes', label: 'Comptes' },
-  { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
+// Trois onglets : Comptes, Catégories, Courses. « Courses » regroupe trois
+// choix (magasins, rayons et articles ne concernent que les listes de
+// courses), chacun avec son adresse d'avant (#/administration/magasins,
+// /rayons, /noms) : un lien ou un rafraîchissement retombe sur le bon choix.
+const SHOPPING = [
   { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
   { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
   { key: 'noms', label: ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1) },
 ];
+const TABS = [
+  { key: 'comptes', label: 'Comptes' },
+  { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
+  { key: 'courses', label: 'Courses' },
+];
+
+// Dernier choix de « Courses », retrouvé en revenant sur l'onglet pendant la
+// session (oublié à la fermeture de l'application)
+let lastShopping = SHOPPING[0].key;
+
+// Barre d'onglets (même composant pour les onglets et les choix de
+// « Courses », ce dernier en plus petit) : choisi = souligné épais ET texte
+// plus foncé (jamais la couleur seule), aria-selected
+function tabBar(entries, current, label, extraClass = '') {
+  return h('div', { class: `tabs${extraClass}`, role: 'tablist', 'aria-label': label },
+    entries.map((t) => h('button', {
+      class: 'tab',
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(t.key === current),
+      onClick: () => navigate('admin', { tab: t.target ?? t.key }, { replace: true }),
+    }, t.label)));
+}
 
 export function renderAdmin(tabKey, onLeave) {
-  const tab = TABS.find((t) => t.key === tabKey);
+  // « courses » seul : le dernier choix ; un choix de « Courses » : retenu
+  if (tabKey === 'courses') tabKey = lastShopping;
+  const shopping = SHOPPING.find((t) => t.key === tabKey);
+  if (shopping) lastShopping = shopping.key;
+  const tab = shopping ?? TABS.find((t) => t.key === tabKey);
   if (!tab) {
     navigate('admin', { tab: 'comptes' }, { replace: true });
     return h('div', { class: 'screen' });
   }
 
-  const tabs = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Rubriques' },
-    TABS.map((t) => h('button', {
-      class: 'tab',
-      type: 'button',
-      role: 'tab',
-      'aria-selected': String(t.key === tab.key),
-      // Libellé court à l'écran ; nom complet pour les lecteurs d'écran
-      'aria-label': t.title ?? null,
-      onClick: () => navigate('admin', { tab: t.key }, { replace: true }),
-    }, t.label)));
+  const tabs = tabBar(TABS.map((t) => (t.key === 'courses' ? { ...t, target: lastShopping } : t)), shopping ? 'courses' : tab.key, 'Rubriques');
+  const choices = shopping ? tabBar(SHOPPING, shopping.key, 'Courses', ' tabs--sub') : null;
 
   // Barre trop large pour l'écran (elle défile de côté) : l'onglet actif est
   // ramené en vue une fois l'écran affiché
@@ -94,7 +117,7 @@ export function renderAdmin(tabKey, onLeave) {
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour aux réglages', () => goBack('settings')),
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Administration'))),
-    tabs, panel, footer);
+    tabs, choices, panel, footer);
 }
 
 const loadingText = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');

@@ -318,3 +318,9 @@ button.sync { cursor: pointer; }
 .tabs { overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: 1 0 auto; white-space: nowrap; }
+
+/* Administration, onglet « Courses » : choix Magasins / Rayons / Articles,
+   même composant que les onglets (.tabs, .tab), en plus petit ; 44 px de
+   haut, le choix actif souligné ET plus foncé (jamais la couleur seule) */
+.tabs--sub { padding: 0 var(--space-2); }
+.tabs--sub .tab { min-height: var(--tap-min); font-size: var(--text-sm); }

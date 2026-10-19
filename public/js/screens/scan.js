@@ -68,11 +68,12 @@ const NO_NAME = {
 export function createScanner({ listId, getView, add, check }) {
   let session = null; // feuille ouverte (une seule)
   // Un seul bouton : le sélecteur d'images du téléphone (appareil photo ou
-  // photothèque, au choix du téléphone) ; la même lecture ensuite
+  // photothèque, au choix du téléphone ; sur Android, une petite feuille
+  // propose d'abord les deux, voir photo.js) ; la même lecture ensuite
   const picker = createImagePicker((file) => {
     session ??= openSession();
     session.scan(file);
-  });
+  }, { title: 'Scanner un produit' });
   const button = picker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' }, icon('barcode'));
 
   // --- Feuille « Scanner un produit » ---

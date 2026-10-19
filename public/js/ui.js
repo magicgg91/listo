@@ -113,7 +113,7 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
 // content : éléments à afficher sous le titre.
 // scroll : la feuille défile si son contenu est haut (feuille Article avec photo).
 // tools : boutons-icônes placés dans l'en-tête, avant la croix (fiche d'un
-// article : poubelle et coche « Enregistrer ») ; l'en-tête reste alors visible
+// article : poubelle et disquette « Enregistrer ») ; l'en-tête reste alors visible
 // quand la feuille défile, et le titre tient sur une ligne (tronqué si besoin).
 export function openSheet({ title, sub, content, onClose, scroll = false, tools = null }) {
   const titleId = `sheet-${Math.random().toString(36).slice(2, 8)}`;

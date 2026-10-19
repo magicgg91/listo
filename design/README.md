@@ -5,11 +5,12 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 71 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 72 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
 | `icones/icon-512.png`, `icones/icon-192.png` | Exports PNG pour le manifeste PWA. |
+| `icones/i-disquette.svg` | L'icône « Enregistrer » de la fiche d'un article (disquette), en fichier SVG séparé, identique à celle du sprite. |
 | `icones/listes/` | Les 31 icônes ajoutées pour l'icône d'une liste, une par fichier SVG (24 × 24, trait de 2, `currentColor`), identiques à celles du sprite. |
 
 ## Thèmes
@@ -205,7 +206,7 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
 
-- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre directement le sélecteur d'images du téléphone (champ fichier caché `accept="image/*"`, sans `capture`) : aucune feuille de choix propre à Listo.
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre directement le sélecteur d'images du téléphone (champ fichier caché `accept="image/*"`, sans `capture`) : aucune feuille de choix propre à Listo. Exception, sur Android seulement : voir « Ajout : choix de la source sur Android ».
 - Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
   - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
@@ -237,7 +238,7 @@ Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `component
 
 Styles : `public/css/app.css` (ajouts minimes, aucune nouvelle classe dans `listo.css`). Balisage : « Feuille du bas (fiche d'un article) » dans `components.html`. Aucune nouvelle icône (`i-trash`, `i-check`, `i-close`).
 
-- `.sheet__head.sheet__head--tools` : le titre dans `.sheet__heading` (une ligne, tronqué par `text-overflow: ellipsis`), puis `.sheet__tools` : `.icon-btn.icon-btn--danger.sheet__delete` (`#i-trash`, rouge `--color-danger-ink`, `aria-label="Supprimer l'article"`), un espace (`margin-right: var(--space-2)`), `.icon-btn.icon-btn--primary` (`#i-check` sur fond `--color-accent`, `type="submit"` relié au formulaire par `form`, `aria-label="Enregistrer"`), puis la croix `.icon-btn` « Fermer ». Tous de 44 px. L'en-tête reste collé en haut quand la feuille défile.
+- `.sheet__head.sheet__head--tools` : le titre dans `.sheet__heading` (une ligne, tronqué par `text-overflow: ellipsis`), puis `.sheet__tools` : `.icon-btn.icon-btn--danger.sheet__delete` (`#i-trash`, rouge `--color-danger-ink`, `aria-label="Supprimer l'article"`), un espace (`margin-right: var(--space-2)`), `.icon-btn.icon-btn--primary` (`#i-disquette` sur fond `--color-accent`, la coche `#i-check` jusqu'au 19 octobre 2026, `type="submit"` relié au formulaire par `form`, `aria-label="Enregistrer"`), puis la croix `.icon-btn` « Fermer ». Tous de 44 px. L'en-tête reste collé en haut quand la feuille défile.
 - Plus de `.sheet__actions` « Enregistrer » / « Supprimer » en bas de la fiche.
 
 ## Ajout : glissement d'une ligne vers la gauche (« Supprimer »)
@@ -318,4 +319,16 @@ Styles : `public/css/app.css` (`.list-card__count--progress`) et composants exis
 - Carte : `.list-card__count.list-card__count--progress` (`role="img"`, `aria-label` et `title` « 3 articles restants sur 8 ») contient « 3/8 » (`aria-hidden`). Tout coché : `+ .list-card__count--done`, « 0/8 » puis `#i-check` (vert ET coche). Liste vide : « Liste vide ».
 - En-tête de groupe : `.aisle__count` « X/Y » à droite, ouvert comme replié ; le bouton `.aisle__toggle` a pour nom « Crèmerie, 1 article restant sur 2 » et la même infobulle (sans le nom). `.aisle__rest` n'est plus utilisé.
 - Textes : `progressText` et `progressLabel` de `public/js/words.js`. Aucune nouvelle icône.
+
+## Ajout : disquette « Enregistrer » de la fiche d'un article
+
+Le bouton plein « Enregistrer » de l'en-tête de la fiche (ajout ou modification d'un article ou d'un élément) porte une disquette (`#i-disquette`) au lieu de la coche : la coche reste réservée à « coché » (articles, choix). Même bouton `.icon-btn.icon-btn--primary`, `aria-label="Enregistrer"`, 44 px ; la poubelle et la croix ne changent pas, les grands boutons « Enregistrer » des formulaires non plus. Balisage : « Feuille article » dans `components.html` (clair et sombre). **Nouvelle icône** du sprite, soit 72 icônes : `i-disquette` (même trait que les autres, couleur héritée ; aucune icône équivalente n'existait), aussi dans `icones/i-disquette.svg`.
+
+## Ajout : choix de la source sur Android (photo et scan)
+
+Sur Android seulement, les boutons photo et scan (photo d'un article, scan du champ Code-barres, « Scanner », « Réessayer ») ouvrent d'abord une petite feuille `.sheet` (même composant que les autres, par-dessus la fiche, fond grisé). Balisage : « Feuille « Prendre une photo / Choisir dans la galerie » (Android) » dans `components.html`. Aucun style nouveau.
+
+- Titre : « Photo de l'article » (« de l'élément »), « Scanner un code-barres » ou « Scanner un produit ».
+- `.stack.stack--sm` : `.btn.btn--secondary.btn--block` « Prendre une photo » (`#i-camera`), `.btn.btn--secondary.btn--block` « Choisir dans la galerie » (`#i-image`), `.btn.btn--ghost.btn--block` « Annuler ». 48 px de haut chacun, `aria-label` sur les deux choix.
+- Aucun champ de saisie, aucun focus posé dans un champ. Ailleurs qu'Android : pas de feuille, un seul geste.
 

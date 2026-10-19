@@ -778,7 +778,7 @@ export function renderList(listId, onLeave) {
       eanInput.value = '';
       drawEan();
     });
-    const eanPicker = createImagePicker((file) => readEan(file));
+    const eanPicker = createImagePicker((file) => readEan(file), { title: 'Scanner un code-barres' });
     const eanScan = eanPicker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' }, icon('barcode'));
     const eanField = field('Code-barres', h('div', { class: 'field__row' }, h('div', { class: 'input-wrap' }, eanInput, eanClear), eanScan),
       { aside: '8, 12 ou 13 chiffres' });
@@ -829,7 +829,7 @@ export function renderList(listId, onLeave) {
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
     // l'appareil photo ou la photothèque). La photo reste facultative.
-    const photoPicker = createImagePicker((file) => sendPhoto(file));
+    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: `Photo de l'${words.one}` });
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {

@@ -206,7 +206,7 @@ Styles : section 16.10 de `listo.css`. Balisage : dernière partie de `component
 
 Balisage : dernière partie de `components.html`. Aucun style nouveau : composants existants. **Nouvelle icône** du sprite : `i-barcode` (code-barres dans un cadre de visée, même trait que les autres), soit 40 icônes.
 
-- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre directement le sélecteur d'images du téléphone (champ fichier caché `accept="image/*"`, sans `capture`) : aucune feuille de choix propre à Listo.
+- Bouton « Scanner » : `.btn.btn--secondary.btn--icon` (52 px), `aria-label="Scanner un produit"`, entre le champ d'ajout et le bouton `+` de `.addbar`, dans les listes de courses seulement. Il ouvre directement le sélecteur d'images du téléphone (champ fichier caché `accept="image/*"`, sans `capture`) : aucune feuille de choix propre à Listo. Exception, sur Android seulement : voir « Ajout : choix de la source sur Android ».
 - Feuille « Scanner un produit » (`.sheet`, qui défile si besoin) :
   - lecture et recherche : pastille `.sync.sync--busy` (« Lecture du code-barres… », « Recherche du produit… ») ;
   - produit trouvé : `.note` avec `#i-check`, champs `.field` « Nom » (modifiable) et « Note (facultative) » (« marque · format »), `.note` « Déjà dans la liste » (bouton « Ajouter quand même »), `.field__hint` « Données : Open Food Facts », `.sheet__actions` « Ajouter à la liste » / « Annuler » ;
@@ -323,3 +323,12 @@ Styles : `public/css/app.css` (`.list-card__count--progress`) et composants exis
 ## Ajout : disquette « Enregistrer » de la fiche d'un article
 
 Le bouton plein « Enregistrer » de l'en-tête de la fiche (ajout ou modification d'un article ou d'un élément) porte une disquette (`#i-disquette`) au lieu de la coche : la coche reste réservée à « coché » (articles, choix). Même bouton `.icon-btn.icon-btn--primary`, `aria-label="Enregistrer"`, 44 px ; la poubelle et la croix ne changent pas, les grands boutons « Enregistrer » des formulaires non plus. Balisage : « Feuille article » dans `components.html` (clair et sombre). **Nouvelle icône** du sprite, soit 72 icônes : `i-disquette` (même trait que les autres, couleur héritée ; aucune icône équivalente n'existait), aussi dans `icones/i-disquette.svg`.
+
+## Ajout : choix de la source sur Android (photo et scan)
+
+Sur Android seulement, les boutons photo et scan (photo d'un article, scan du champ Code-barres, « Scanner », « Réessayer ») ouvrent d'abord une petite feuille `.sheet` (même composant que les autres, par-dessus la fiche, fond grisé). Balisage : « Feuille « Prendre une photo / Choisir dans la galerie » (Android) » dans `components.html`. Aucun style nouveau.
+
+- Titre : « Photo de l'article » (« de l'élément »), « Scanner un code-barres » ou « Scanner un produit ».
+- `.stack.stack--sm` : `.btn.btn--secondary.btn--block` « Prendre une photo » (`#i-camera`), `.btn.btn--secondary.btn--block` « Choisir dans la galerie » (`#i-image`), `.btn.btn--ghost.btn--block` « Annuler ». 48 px de haut chacun, `aria-label` sur les deux choix.
+- Aucun champ de saisie, aucun focus posé dans un champ. Ailleurs qu'Android : pas de feuille, un seul geste.
+

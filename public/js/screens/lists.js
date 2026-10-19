@@ -9,6 +9,7 @@ import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMem
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
+import { listIcon } from '../list-icons.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -59,6 +60,8 @@ function cardLink(list, { selected }) {
     },
   },
   h('div', { class: 'list-card__head' },
+    // Icône de la liste (celle choisie, sinon celle de sa catégorie)
+    h('span', { class: 'list-card__icon' }, icon(listIcon(list), 'icon--sm')),
     h('h2', { class: 'list-card__name' }, list.name),
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
   h('p', { class: 'list-card__meta' },

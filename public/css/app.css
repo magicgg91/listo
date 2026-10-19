@@ -279,3 +279,25 @@ button.sync { cursor: pointer; }
    rayon ou de magasin (create-reference.js), séparée des choix par un trait */
 .picker__new { border-top: 1px solid var(--color-border); color: var(--color-accent-ink); font-weight: 600; }
 .picker__new .icon { color: var(--color-accent-ink); }
+
+/* Icône d'une liste (formulaire de liste) : grille de choix, cases de 44 px
+   au moins (rôle radio). L'icône choisie est entourée ET marquée d'une
+   petite coche dans son coin (jamais la couleur seule). */
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--tap-min), 1fr)); gap: 6px; }
+.icon-grid__opt { position: relative; display: grid; place-items: center; min-width: var(--tap-min); min-height: var(--tap-min); padding: 0; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); }
+.icon-grid__opt[aria-checked="true"] { border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.icon-grid__check { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--color-accent); color: var(--color-on-accent); }
+.icon-grid__check .icon { width: 14px; height: 14px; stroke-width: 3; }
+
+/* En-tête d'une liste : son icône juste avant le titre, discrète (couleur
+   secondaire, 20 px) ; le titre garde ses points de suspension */
+.topbar__head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.topbar__head .topbar__title { min-width: 0; }
+.topbar__icon { display: inline-flex; flex: none; color: var(--color-text-2); }
+.topbar__icon:empty { display: none; }
+
+/* Carte de « Mes listes » : icône de la liste devant le titre */
+.list-card__head { align-items: flex-start; }
+.list-card__icon { display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
+.list-card__head .list-card__name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.list-card__head .list-card__time { line-height: calc(var(--text-lg) * var(--lh-tight)); }

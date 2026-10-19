@@ -30,6 +30,7 @@ import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
 } from '../public/js/history.js';
 import { groupItems } from '../public/js/sorting.js';
+import { isListIcon } from '../public/js/list-icons.js';
 import { cleanName, parseId } from './validate.js';
 import { normalizeBarcode } from './products.js';
 
@@ -116,6 +117,15 @@ function optionalText(value, max, label) {
   const text = value.normalize('NFC').trim();
   if (text.length > max) throw new OpError(400, `${label} trop longue (${max} caractères au plus).`);
   return text;
+}
+
+// Icône choisie pour une liste : identifiant de la liste blanche
+// (public/js/list-icons.js), « » pour revenir à l'icône de la catégorie, ou
+// undefined si elle n'est pas envoyée (rien ne change)
+function listIconOf(value) {
+  if (value === undefined) return undefined;
+  if (value === '' || isListIcon(value)) return value;
+  throw new OpError(400, 'Icône inconnue.');
 }
 
 const quantity = (value) => optionalText(value, 30, 'Quantité');
@@ -415,6 +425,8 @@ export function createListService(ctx) {
     return {
       id: list.id,
       name: list.name,
+      // Icône choisie (« » : celle de la catégorie)
+      icon: isListIcon(list.icon) ? list.icon : '',
       category: { id: category.id, name: category.name, isShopping: category.is_shopping === 1, active: category.active === 1 },
       store: store && { id: store.id, name: store.name, active: store.active === 1, isMulti: store.is_multi === 1 },
       ownerId: list.owner_id,
@@ -494,29 +506,31 @@ export function createListService(ctx) {
       // Priorité et échéance : désactivées sauf demande explicite
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
+      const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône de la catégorie
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, category.id, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), now, now);
+      db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, category.id, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
 
-    // Renommer, changer de catégorie ou de magasin, activer ou non la
-    // priorité et l'échéance (propriétaire seulement). Une catégorie ou un
+    // Renommer, changer de catégorie, de magasin ou d'icône, activer ou non
+    // la priorité et l'échéance (propriétaire seulement). Une catégorie ou un
     // magasin désactivé reste accepté s'il est déjà celui de la liste ; pour
     // en changer, le nouveau doit être actif. Les deux réglages sont gardés
     // tels quels quand la liste devient une liste de courses (ignorés) ou en
     // redevient une autre ; aucune valeur d'élément n'est jamais effacée.
     'list.update'(user, op) {
       const list = listForOwner(user, op.listId);
-      if ([op.name, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled].every((value) => value === undefined)) {
+      if ([op.name, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.icon].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? list.due_enabled === 1;
       const name = op.name === undefined ? list.name : listName(op.name);
+      const icon = listIconOf(op.icon) ?? list.icon;
 
       let category = q.category.get(list.category_id);
       if (op.categoryId !== undefined && parseId(op.categoryId) !== list.category_id) {
@@ -539,8 +553,8 @@ export function createListService(ctx) {
         storeId = null;
       }
 
-      db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, updated_at = ? WHERE id = ?')
-        .run(name, category.id, storeId, Number(priorityOn), Number(dueOn), nowIso(), list.id);
+      db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, icon = ?, updated_at = ? WHERE id = ?')
+        .run(name, category.id, storeId, Number(priorityOn), Number(dueOn), icon, nowIso(), list.id);
       if (storeId !== list.store_id || category.is_shopping !== list.is_shopping) completeItems(list.id);
       changed(list.id);
       return {};
@@ -928,7 +942,7 @@ export function createListService(ctx) {
   // non-membre : 404, comme partout). En une seule transaction (tout ou
   // rien) : une nouvelle liste privée (la personne qui duplique en est la
   // propriétaire, sans invité ni lien public), même catégorie, même magasin,
-  // mêmes réglages de priorité et d'échéance ; avec withItems (vrai par
+  // même icône, mêmes réglages de priorité et d'échéance ; avec withItems (vrai par
   // défaut) : les éléments non supprimés, avec nom, quantité, note, rayon,
   // magasin, priorité, échéance et code-barres, tous décochés. Les photos ne
   // sont pas copiées (un fichier ne peut pas faire partie de la transaction,
@@ -943,9 +957,9 @@ export function createListService(ctx) {
     const now = nowIso();
     const items = withItems ? q.liveItems.all(source.id) : [];
     db.transaction(() => {
-      db.prepare(`INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, now, now);
+      db.prepare(`INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);

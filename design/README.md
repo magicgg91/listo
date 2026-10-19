@@ -5,11 +5,12 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 40 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 71 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
 | `icones/icon-512.png`, `icones/icon-192.png` | Exports PNG pour le manifeste PWA. |
+| `icones/listes/` | Les 31 icônes ajoutées pour l'icône d'une liste, une par fichier SVG (24 × 24, trait de 2, `currentColor`), identiques à celles du sprite. |
 
 ## Thèmes
 
@@ -292,3 +293,12 @@ Styles : `public/css/app.css` (`.picker__new`) et composants existants. Balisage
 - Feuille de création, la même pour les deux (`public/js/create-reference.js`) : `.sheet` « Nouveau rayon » / « Nouveau magasin », un `.field` « Libellé du rayon » / « Libellé du magasin » (`.input`, attributs `LABEL_INPUT`, jamais « Nom », aucun curseur posé d'office), une `.note` d'erreur au besoin (doublon) avec un bouton `.btn--secondary.btn--block` « Choisir « … » », puis « Créer » (`.btn--primary.btn--block`).
 - Une fenêtre ouverte par-dessus une autre passe au-dessus de son fond grisé (`.scrim`) : la fenêtre du dessous est grisée.
 
+## Ajout : icône d'une liste
+
+Styles : `public/css/app.css` (`.icon-grid`, `.icon-grid__opt`, `.icon-grid__check`, `.topbar__head`, `.topbar__icon`, `.list-card__icon`). Balisage : « Formulaire de liste : « Icône » » et « En-tête d'une liste avec son icône » dans `components.html`. Liste blanche et noms : `public/js/list-icons.js`.
+
+- Grille sous « Catégorie » : boutons de 44 px au moins (`role="radio"`, `aria-label` et `title` en français) dans un `role="radiogroup"` relié au titre « Icône ». Sur un téléphone de 390 px : sept colonnes, cinq lignes.
+- Choix : bord de 2 px d'accent, fond d'accent doux, couleur d'accent, ET une petite coche ronde dans le coin (`.icon-grid__check`) : jamais la couleur seule.
+- Au départ, la case cochée est l'icône de la catégorie (`i-cart` pour les courses, `i-tasks` sinon).
+- Carte de « Mes listes » : l'icône (20 px, couleur d'accent) devant le titre. En-tête de la liste : la même, en couleur secondaire, juste avant le titre.
+- **Nouvelles icônes** du sprite (même trait que les autres, couleur héritée), soit 71 icônes : `i-balloon`, `i-bag`, `i-basket`, `i-bike`, `i-book`, `i-briefcase`, `i-bulb`, `i-cake`, `i-car`, `i-cup`, `i-dumbbell`, `i-euro`, `i-gamepad`, `i-gift`, `i-hammer`, `i-health`, `i-heart`, `i-home`, `i-meal`, `i-music`, `i-paw`, `i-plane`, `i-plant`, `i-school`, `i-shirt`, `i-spray`, `i-star`, `i-stroller`, `i-suitcase`, `i-tv`, `i-wrench`. Réutilisées : `i-cart`, `i-store`, `i-tasks`, `i-calendar`.

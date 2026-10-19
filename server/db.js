@@ -332,6 +332,15 @@ export const MIGRATIONS = [
   UPDATE lists SET priority_enabled = 1, due_enabled = 1
     WHERE category_id IN (SELECT id FROM categories WHERE is_shopping = 0);
   `,
+
+  // --- Migration 14 : une icône au choix pour chaque liste ---
+  // Identifiant d'une icône de la liste blanche (public/js/list-icons.js),
+  // vérifié par le serveur à chaque écriture. Vide par défaut : la liste
+  // montre l'icône de sa catégorie, comme avant (rien ne change pour les
+  // listes existantes).
+  `
+  ALTER TABLE lists ADD COLUMN icon TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent

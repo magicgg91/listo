@@ -15,6 +15,7 @@ import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { deleteListWithConfirm } from './list-actions.js';
 import { openCreateReference } from '../create-reference.js';
+import { LIST_ICONS, categoryIcon } from '../list-icons.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -129,7 +130,7 @@ function form(list, users) {
 
   const categoryButtons = categories.map((category) => {
     const button = h('button', { class: 'choice__opt', type: 'button', role: 'radio' },
-      icon(category.isShopping ? 'cart' : 'tasks'), category.name);
+      icon(categoryIcon(category.isShopping)), category.name);
     button.addEventListener('click', () => {
       categoryId = category.id;
       paint();
@@ -138,6 +139,24 @@ function form(list, users) {
     return button;
   });
   const categoryGroup = h('div', { class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'category-label' }, categoryButtons);
+
+  // --- Icône (grille de choix) ---
+  // chosenIcon : icône choisie (« » : aucune, la liste montre celle de sa
+  // catégorie). Au départ, la case cochée est donc l'icône de la catégorie,
+  // et elle suit la catégorie tant que rien n'est choisi. Si on ne touche
+  // pas à la grille, rien n'est envoyé : rien ne change.
+  let chosenIcon = list?.icon ?? '';
+  const iconButtons = LIST_ICONS.map((choice) => {
+    const button = h('button', { class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice.label, title: choice.label },
+      icon(choice.id));
+    button.addEventListener('click', () => {
+      chosenIcon = choice.id;
+      paint();
+    });
+    button.dataset.icon = choice.id;
+    return button;
+  });
+  const iconGroup = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' }, iconButtons);
 
   // --- Magasin (listes de courses seulement) ---
   const stores = activeOnly(app.data.stores);
@@ -301,7 +320,7 @@ function form(list, users) {
 
   const error = errorNote();
 
-  // Met à jour l'affichage (catégorie choisie, magasin visible ou non)
+  // Met à jour l'affichage (catégorie et icône choisies, magasin visible ou non)
   function paint() {
     for (const button of categoryButtons) {
       const on = button.dataset.id === String(categoryId);
@@ -310,6 +329,14 @@ function form(list, users) {
       if (on) button.append(icon('check', 'icon-end'));
     }
     const category = categories.find((c) => c.id === categoryId);
+    // Icône cochée : entourée ET marquée d'une coche (jamais la couleur seule)
+    const shownIcon = chosenIcon || categoryIcon(Boolean(category?.isShopping));
+    for (const button of iconButtons) {
+      const on = button.dataset.icon === shownIcon;
+      button.setAttribute('aria-checked', String(on));
+      button.querySelector('.icon-grid__check')?.remove();
+      if (on) button.append(h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')));
+    }
     storeField.hidden = !category?.isShopping;
     optionsField.hidden = !category || category.isShopping; // courses : ni priorité ni échéance
     const store = stores.find((s) => s.id === storeId);
@@ -337,6 +364,7 @@ function form(list, users) {
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       nameField.field,
       h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'category-label' }, 'Catégorie'), categoryGroup),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), iconGroup),
       storeField,
       optionsField,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
@@ -366,11 +394,12 @@ function form(list, users) {
     const classic = !category.isShopping;
     const saved = list ? listOptionsOf(list) : null;
     if (!list) {
-      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due });
+      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, icon: chosenIcon });
     } else {
       const switches = {};
       if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
       if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
+      if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null) || Object.keys(switches).length) {
         await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore, ...switches });
       }

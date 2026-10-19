@@ -42,6 +42,7 @@ import { computeListView, canEditList, listOptions, availableSorts, effectiveSor
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
+import { listIcon } from '../list-icons.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -54,6 +55,8 @@ import { listActions } from './list-actions.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
+  // Icône de la liste, juste avant le titre (décorative : le titre suffit)
+  const titleIcon = h('span', { class: 'topbar__icon' });
   const sub = h('p', { class: 'topbar__sub' });
   const content = h('div', { class: 'scroll' });
   // Glissement des lignes vers la gauche : une seule ouverte à la fois,
@@ -176,6 +179,7 @@ export function renderList(listId, onLeave) {
     view = computeListView(app.data, listId, { sort: itemSort });
     if (!view) {
       title.textContent = 'Liste introuvable';
+      replace(titleIcon);
       replace(sub);
       menuButton.hidden = true;
       sortButton.hidden = true;
@@ -195,6 +199,7 @@ export function renderList(listId, onLeave) {
     input.setAttribute('aria-label', `Ajouter un ${words.one}`);
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
+    replace(titleIcon, icon(listIcon(list), 'icon--sm'));
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     // Courses : tri par rayons, sans bouton ; ailleurs, bouton seulement s'il
@@ -1172,7 +1177,7 @@ export function renderList(listId, onLeave) {
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
-      h('div', { class: 'topbar__main' }, title, sub),
+      h('div', { class: 'topbar__main' }, h('div', { class: 'topbar__head' }, titleIcon, title), sub),
       sortButton,
       menuButton),
     readOnlyBanner,

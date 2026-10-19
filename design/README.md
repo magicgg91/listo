@@ -347,3 +347,11 @@ Styles : `public/css/app.css` (`.tabs--sub`). Balisage : « Administration : ong
 - Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ».
 - Sous « Courses », une seconde barre `.tabs.tabs--sub` (`role="tablist"`, `aria-label="Courses"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-selected="true"` : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
 
+## Ajout : page « Aide »
+
+Styles : `public/css/app.css` (`.help`, `.help-who__*`, `.help__*`). Balisage : « Page « Aide » » dans `components.html`. Aucune nouvelle icône (`i-book` pour la ligne des Réglages, `i-check` / `i-close` dans les pastilles).
+
+- Réglages : une `.row` « Aide » (`#i-book`, sous-titre « Mode d'emploi de Listo »), sous un `.section-title` « Aide ».
+- « Qui peut quoi » : `.section-title`, puis un `.group` de `.help-who__row` (l'action en gras, puis `ul.help-who__roles` de `.chip.help-who__role`). Oui : fond d'accent doux, `#i-check` ; non : fond transparent, bord pointillé, `#i-close`, texte secondaire. Le « oui » / « non » est aussi écrit pour les lecteurs d'écran (`.visually-hidden`). Note `.help__note` en dessous.
+- Sections : `section.help__part` > `h2.aisle.aisle--fold` > `button.aisle__toggle` (`aria-expanded`, `aria-controls`, chevron qui tourne), puis `.help__section` (masqué replié) fait de `.card.help__topic` : `h3.help__title`, `p.help__text`, `ul.help__list` (puces).
+

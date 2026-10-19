@@ -17,6 +17,7 @@ import { renderListForm } from './screens/list-form.js';
 import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
+import { renderHelp } from './screens/help.js';
 import { BUILD } from './version.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
@@ -507,6 +508,7 @@ function show(route) {
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
+    case 'help': mount(() => renderHelp(app.user)); break;
     default: navigate('lists', {}, { replace: true });
   }
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran

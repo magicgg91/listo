@@ -14,6 +14,7 @@ import { compareNames } from '../sorting.js';
 import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { deleteListWithConfirm } from './list-actions.js';
+import { openCreateReference } from '../create-reference.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -187,15 +188,33 @@ function form(list, users) {
     const simples = stores.filter((store) => !store.isMulti);
     const multis = stores.filter((store) => store.isMulti);
     const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Choisir');
+    const singleCard = h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'single-stores' },
+      radio({ id: null, name: 'Aucun magasin' }, 'Classé par rayon'),
+      simples.map((store) => radio(store, 'Classé par rayon')));
+    // Dernière ligne : « Nouveau magasin… » (create-reference.js, en ligne) ;
+    // le magasin créé rejoint les choix et il est sélectionné. Pas de liste
+    // envoyée : c'est le magasin de la liste elle-même (jamais ajouté à un
+    // magasin « multi »)
+    const addRow = h('button', { class: 'radio-row picker__new', type: 'button', onClick: async () => {
+      const made = await openCreateReference('store');
+      if (!made) return;
+      if (!stores.some((store) => store.id === made.id)) {
+        const store = { id: made.id, name: made.name, active: true, isMulti: false, storeIds: [] };
+        stores.push(store);
+        singleCard.append(radio(store, 'Classé par rayon'));
+      }
+      selected = made.id;
+      paintRows();
+      rows.find((row) => row.dataset.id === String(selected))?.scrollIntoView({ block: 'nearest' });
+    } }, icon('plus'), 'Nouveau magasin…');
     const content = h('div', { class: 'picker stack' },
       h('span', { class: 'field__label', id: 'single-stores' }, 'Un seul magasin'),
-      h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'single-stores' },
-        radio({ id: null, name: 'Aucun magasin' }, 'Classé par rayon'),
-        simples.map((store) => radio(store, 'Classé par rayon'))),
+      singleCard,
       multis.length ? [
         h('span', { class: 'field__label', id: 'multi-stores' }, 'Plusieurs magasins'),
         h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'multi-stores' }, multis.map((store) => radio(store, membersLabel(store)))),
-      ] : null);
+      ] : null,
+      h('div', { class: 'card' }, addRow));
     paintRows();
     const sheet = openSheet({ title: 'Magasin', content: [content, confirm] });
     // Le magasin déjà choisi est visible même s'il est bas dans la liste

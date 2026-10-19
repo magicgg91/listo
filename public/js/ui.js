@@ -87,6 +87,15 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
   if (label) panel.setAttribute('aria-label', label);
   scrim.addEventListener('click', close);
   host.append(scrim, panel);
+  // Fenêtre ouverte par-dessus une autre (choix du rayon depuis une fiche,
+  // « Nouveau rayon… » depuis ce choix…) : elle passe au-dessus, fond grisé
+  // compris ; la fenêtre du dessous est grisée et ne réagit plus aux appuis
+  const below = host.querySelectorAll(':scope > .scrim').length - 1;
+  if (below > 0) {
+    const base = parseInt(getComputedStyle(panel).zIndex, 10) || 11;
+    scrim.style.zIndex = String(base + below * 2 - 1);
+    panel.style.zIndex = String(base + below * 2);
+  }
   document.addEventListener('keydown', onKey);
   closeViaRouter = openOverlay(remove);
 

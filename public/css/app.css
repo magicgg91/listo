@@ -274,3 +274,8 @@ button.sync { cursor: pointer; }
    listes » est brièvement mise en évidence (même effet qu'un article ajouté) */
 .list-card.list-card--fresh { animation: item-added 1.6s ease-out; }
 @media (prefers-reduced-motion: reduce) { .list-card.list-card--fresh { animation: none; } }
+
+/* « Nouveau rayon… » / « Nouveau magasin… » : dernière ligne d'un choix de
+   rayon ou de magasin (create-reference.js), séparée des choix par un trait */
+.picker__new { border-top: 1px solid var(--color-border); color: var(--color-accent-ink); font-weight: 600; }
+.picker__new .icon { color: var(--color-accent-ink); }

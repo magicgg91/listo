@@ -49,6 +49,7 @@ import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
 import { createTapPicker } from '../tap.js';
+import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 
 export function renderList(listId, onLeave) {
@@ -1029,7 +1030,7 @@ export function renderList(listId, onLeave) {
       if (old) aisles.unshift(old);
     }
     const choices = [...aisles.map((a) => ({ id: a.id, name: a.name })), { id: null, name: 'Sans rayon' }];
-    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Rayon' });
+    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Rayon', create: { kind: 'aisle', text: 'Nouveau rayon…' } });
   }
 
   // Feuille de choix du magasin d'un article dans une liste « multi »
@@ -1043,16 +1044,19 @@ export function renderList(listId, onLeave) {
       if (old) stores.unshift(old);
     }
     const choices = [...stores.map((s) => ({ id: s.id, name: s.name })), { id: null, name: 'Sans magasin' }];
-    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Magasin' });
+    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Magasin', create: { kind: 'store', text: 'Nouveau magasin…' } });
   }
 
   // Feuille de choix unique (lignes radio + bouton de confirmation)
-  function pickChoice({ title, sub, current, confirmLabel, choices, label }) {
+  // create : { kind: 'aisle' | 'store', text } ajoute une dernière ligne
+  // « Nouveau rayon… » / « Nouveau magasin… » (create-reference.js) : le nouvel
+  // élément est ajouté aux choix et sélectionné ; il reste à confirmer.
+  function pickChoice({ title, sub, current, confirmLabel, choices, label, create = null }) {
     return new Promise((resolve) => {
       let selected = current === undefined ? undefined : current;
       let result;
       const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button', disabled: selected === undefined }, confirmLabel);
-      const rows = choices.map((choice) => {
+      const makeRow = (choice) => {
         const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' }, h('span', { class: 'radio' }), choice.name);
         row.addEventListener('click', () => {
           selected = choice.id;
@@ -1060,7 +1064,8 @@ export function renderList(listId, onLeave) {
         });
         row.dataset.id = String(choice.id);
         return row;
-      });
+      };
+      const rows = choices.map(makeRow);
       const paint = () => {
         for (const row of rows) {
           const on = row.dataset.id === String(selected);
@@ -1073,10 +1078,26 @@ export function renderList(listId, onLeave) {
         confirm.disabled = selected === undefined;
       };
       paint();
+      const group = h('div', { role: 'radiogroup', 'aria-label': label }, rows);
+      // Dernière ligne : créer l'élément qui manque (en ligne), puis le choisir
+      const addRow = create ? h('button', { class: 'radio-row picker__new', type: 'button', onClick: async () => {
+        const made = await openCreateReference(create.kind, { listId });
+        if (!made) return;
+        let row = rows.find((r) => r.dataset.id === String(made.id));
+        if (!row) {
+          row = makeRow(made);
+          const none = rows.find((r) => r.dataset.id === 'null'); // « Sans rayon » reste en dernier
+          group.insertBefore(row, none ?? null);
+          rows.splice(none ? rows.indexOf(none) : rows.length, 0, row);
+        }
+        selected = made.id;
+        paint();
+        row.scrollIntoView({ block: 'nearest' });
+      } }, icon('plus'), create.text) : null;
       const sheet = openSheet({
         title,
         sub,
-        content: [h('div', { class: 'card picker', role: 'radiogroup', 'aria-label': label }, rows), confirm],
+        content: [h('div', { class: 'card picker' }, group, addRow), confirm],
         onClose: () => resolve(result),
       });
       confirm.addEventListener('click', () => {

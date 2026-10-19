@@ -18,13 +18,23 @@ test('plus de boutons « Enregistrer » / « Supprimer » en bas de la fiche', (
   assert.doesNotMatch(list, /h\('div', \{ class: 'sheet__actions' \}, save, remove\)/);
 });
 
-test('en-tête : poubelle, coche, croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
+test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
   assert.match(list, /const remove = iconButton\('trash', `Supprimer l'\$\{words\.one\}`, null, 'icon-btn--danger sheet__delete'\);/);
-  assert.match(list, /const save = h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('check'\)\);/);
+  assert.match(list, /const save = h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('disquette'\)\);/);
+  // Disquette : dans le sprite (kit, application, components.html), même
+  // style que les autres icônes, et en fichier séparé dans design/icones/
+  const symbol = (file) => read(file).match(/<symbol id="i-disquette"[^\n]*<\/symbol>/)?.[0];
+  assert.ok(symbol('design/icons-sprite.html'));
+  assert.doesNotMatch(symbol('design/icons-sprite.html'), /stroke="#|fill="#|style=|stroke-width/);
+  assert.equal(symbol('public/index.html'), symbol('design/icons-sprite.html'));
+  assert.equal(symbol('design/components.html'), symbol('design/icons-sprite.html'));
+  assert.match(read('design/icones/i-disquette.svg'), /stroke="currentColor" stroke-width="2"/);
+  // Plus aucune coche sur le bouton « Enregistrer » d'une fiche
+  assert.doesNotMatch(list, /'aria-label': 'Enregistrer' \}, icon\('check'\)/);
   assert.match(list, /tools: \[remove, save\],/);
   // La croix (« Fermer ») vient toujours après les boutons de la fiche
   assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', 'Fermer', close\)\)/);
-  // Un espace visible entre la poubelle et la coche ; couleurs du kit
+  // Un espace visible entre la poubelle et la disquette ; couleurs du kit
   const css = read('public/css/app.css');
   assert.match(css, /\.sheet__delete \{ margin-right: var\(--space-2\); \}/);
   assert.match(css, /\.icon-btn--danger \{ color: var\(--color-danger-ink\); \}/);

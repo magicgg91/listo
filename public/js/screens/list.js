@@ -911,13 +911,14 @@ export function renderList(listId, onLeave) {
       drawPhoto();
     });
 
-    // En-tête de la fiche (à droite du titre) : poubelle, un espace, coche
-    // « Enregistrer » (bouton plein, action principale), puis la croix. La
-    // poubelle n'est jamais à côté de la croix. La coche est reliée au
-    // formulaire (attribut form) : Entrée dans un champ enregistre toujours.
+    // En-tête de la fiche (à droite du titre) : poubelle, un espace,
+    // disquette « Enregistrer » (bouton plein, action principale), puis la
+    // croix. La poubelle n'est jamais à côté de la croix. La disquette est
+    // reliée au formulaire (attribut form) : Entrée dans un champ enregistre
+    // toujours.
     const formId = `fiche-${item.id}`;
     const remove = iconButton('trash', `Supprimer l'${words.one}`, null, 'icon-btn--danger sheet__delete');
-    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('check'));
+    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
     const form = h('form', { class: 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,

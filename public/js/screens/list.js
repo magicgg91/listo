@@ -2,11 +2,10 @@
 // et feuille « Article » (article-1 et 2, article-photo-1 à 4), avec la photo
 // en plein écran (photo-plein-ecran-1).
 //
-// - Le champ d'ajout reste en bas, à portée de pouce. Liste de courses :
-//   après un ajout (Entrée, bouton +, suggestion ou mode scan), l'ajout se
-//   termine : champ vidé, curseur retiré (clavier replié), article montré
-//   brièvement dans la liste. Autres listes : Entrée valide et le champ
-//   reste actif pour enchaîner les éléments.
+// - Le champ d'ajout reste en bas, à portée de pouce. Dans toutes les
+//   listes, après un ajout (Entrée, bouton +, suggestion ou mode scan),
+//   l'ajout se termine : champ vidé, curseur retiré (clavier replié),
+//   article ou élément montré brièvement dans la liste.
 // - Suggestions dès deux lettres ; un article inconnu demande son rayon une
 //   fois (liste de courses).
 // - Liste « multi » : pas de rayon, les articles sont groupés par magasin.
@@ -437,6 +436,8 @@ export function renderList(listId, onLeave) {
     maxlength: '100',
   });
   const suggestBox = h('div', { class: 'suggest', role: 'listbox', 'aria-label': 'Suggestions', hidden: true });
+  // Toucher d'une suggestion ou du bouton « + » (tap.js, voir plus bas)
+  const taps = createTapPicker();
   // Mode scan (listes de courses) : bouton « Scanner » entre le champ et +
   const scanner = createScanner({
     listId,
@@ -449,12 +450,29 @@ export function renderList(listId, onLeave) {
     },
   });
   scanner.button.hidden = true; // affiché par draw() pour une liste de courses
+  // Bouton « + » : ajout au relâchement du doigt, le champ gardant le curseur
+  // (tap.js, comme les suggestions). Sinon, clavier ouvert, le champ perdait
+  // le curseur dès l'appui, la barre d'ajout bougeait et il fallait toucher
+  // « + » deux fois. Le click reste en secours (souris, clavier, lecteur
+  // d'écran, touche Entrée) : un seul ajout par appui.
+  const plus = taps.button(() => addTyped(input.value), { persistent: true });
   const addForm = h('form', { class: 'addbar__row', novalidate: true },
     h('label', { class: 'addbar__field' }, input),
     scanner.button,
-    h('button', { class: 'btn btn--primary btn--icon', type: 'submit', 'aria-label': 'Ajouter' }, icon('plus')));
+    h('button', {
+      class: 'btn btn--primary btn--icon',
+      type: 'submit',
+      'aria-label': 'Ajouter',
+      onPointerdown: plus.pointerdown,
+      onMousedown: plus.mousedown,
+      onPointerup: plus.pointerup,
+      onPointercancel: plus.pointercancel,
+      onClick: plus.click,
+    }, icon('plus')));
   const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.inputs);
 
+  // Touche Entrée : le navigateur « clique » le bouton « + » (ajout ci-dessus,
+  // envoi du formulaire annulé) ; ceci n'est qu'un secours, sans doublon
   addForm.addEventListener('submit', (event) => {
     event.preventDefault();
     addTyped(input.value);
@@ -471,7 +489,6 @@ export function renderList(listId, onLeave) {
   // Une suggestion est choisie au relâchement du doigt (le click reste en
   // secours, sans double ajout) ; pendant le toucher, la liste n'est ni
   // redessinée ni fermée.
-  const taps = createTapPicker();
   let redrawLater = false; // un redessin demandé pendant le toucher
   // Relâchement sans choix (doigt glissé ailleurs, défilement) : redessin en
   // attente, puis fermeture si le champ n'a plus le curseur
@@ -556,14 +573,11 @@ export function renderList(listId, onLeave) {
     const item = await addNamed(name, {}, () => {
       input.value = '';
     });
-    // Liste de courses : l'ajout se termine (plus de curseur dans le champ,
-    // clavier replié) et l'article ajouté est montré dans la liste. Autres
-    // listes : inchangé, le champ garde le curseur pour enchaîner.
+    // Toutes les listes : l'ajout se termine (plus de curseur dans le champ,
+    // clavier replié) et l'article ou l'élément ajouté est montré dans la
+    // liste (groupe replié déplié, défilement, brève mise en évidence). Le
+    // champ ne reprend jamais le curseur tout seul.
     if (!item) return;
-    if (!view?.list.category.isShopping) {
-      whenRow(item.id, unfoldRow); // groupe replié : déplié, sans autre changement
-      return;
-    }
     suggestBox.hidden = true;
     releaseFocus();
     revealItem(item.id);

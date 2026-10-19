@@ -1,8 +1,9 @@
-// Fin d'ajout dans une liste de courses (partie A) : après un ajout, à la
-// main ou par le mode scan, plus aucun champ n'a le curseur (clavier
-// replié) ; le mode scan se ferme avec un toast ; toute fenêtre qui se ferme
-// et tout changement d'écran retirent le curseur d'un champ. Le rendu réel
-// (clavier de l'iPhone et d'Android) est vérifié à la main.
+// Fin d'ajout (d'abord les listes de courses, toutes les listes depuis le
+// 19 octobre 2026) : après un ajout, à la main ou par le mode scan, plus
+// aucun champ n'a le curseur (clavier replié) ; le mode scan se ferme avec
+// un toast ; toute fenêtre qui se ferme et tout changement d'écran retirent
+// le curseur d'un champ. Le rendu réel (clavier de l'iPhone et d'Android)
+// est vérifié à la main.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -23,9 +24,14 @@ test('fenêtre qui se ferme, changement d\'écran : curseur retiré', () => {
   assert.match(app, /function mount\([^)]*\) \{\s*\/\/[^\n]*\n\s*releaseFocus\(\);/);
 });
 
-test('saisie à la main (liste de courses) : curseur retiré et article montré après l\'ajout', () => {
-  // Autres listes : le champ garde le curseur (le groupe replié se déplie seulement)
-  assert.match(list, /if \(!item\) return;\s*if \(!view\?\.list\.category\.isShopping\) \{\s*whenRow\(item\.id, unfoldRow\);[^\n]*\n\s*return;\s*\}\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);/);
+test('saisie à la main (toutes les listes) : curseur retiré, élément montré après l\'ajout', () => {
+  // Liste de courses comme liste de tâches : une seule fin d'ajout, sans
+  // condition sur la catégorie ; le champ ne reprend jamais le curseur
+  const end = list.slice(list.indexOf('async function addTyped('), list.indexOf('function whenRow('));
+  assert.match(end, /if \(!item\) return;\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);\s*\}/);
+  assert.doesNotMatch(end, /isShopping|\.focus\(/);
+  // Le champ est vidé juste avant l'ajout
+  assert.match(end, /const item = await addNamed\(name, \{\}, \(\) => \{\s*input\.value = '';/);
   assert.match(list, /'data-item-id': item\.id/);
 });
 

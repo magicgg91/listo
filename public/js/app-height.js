@@ -37,9 +37,21 @@
 // si elle avait défilé. La hauteur est aussi relue si la largeur change
 // (rotation).
 //
-// Doigt posé (ou bouton de la souris enfoncé) : la page ne bouge jamais
-// sous le doigt. Une nouvelle mesure demandée pendant ce temps attend le
-// relâchement (pointerup, pointercancel), puis s'applique aussitôt.
+// Appui en cours (doigt posé, ou bouton de la souris enfoncé) : la page ne
+// bouge jamais pendant un appui. Une nouvelle mesure demandée pendant ce
+// temps attend la FIN de l'appui, puis s'applique une seule fois. La fin de
+// l'appui, c'est le click qui suit le relâchement (et pas le relâchement
+// lui-même) : au toucher d'un bouton, le navigateur envoie pointerup, puis
+// mousedown (c'est là que le champ perd le curseur et que le clavier se
+// replie), mouseup et click. Si la page bougeait au mousedown, le click
+// tombait à côté du bouton (deux appuis nécessaires : disquette, croix,
+// « Ajouter une photo » d'une fiche, avec un champ actif). Donc :
+// - pointerdown : appui en cours ;
+// - click (juste après qu'il a été traité) : fin de l'appui ;
+// - pointerup sans click (doigt glissé hors du bouton…) : fin de l'appui
+//   au bout de 400 ms ;
+// - pointercancel (le doigt fait défiler la page) : fin de l'appui aussitôt ;
+// - délai de sécurité : un appui ne bloque jamais plus de 2 s.
 //
 // Script classique (pas un module), fichier à part, chargé tout en haut de
 // la page juste après viewport.js : la Content-Security-Policy reste stricte
@@ -84,16 +96,18 @@
     var lastWidth = null; // largeur au moment de cette mesure
     var lastTop = '0px';  // dernier décalage écrit (0 au départ, sans rien écrire)
 
-    var held = false;     // un doigt est posé : rien ne bouge
-    var heldAt = 0;       // depuis quand (un relâchement perdu ne bloque pas plus de 2 s)
-    var waiting = false;  // une mesure attend le relâchement
+    var held = false;     // un appui est en cours : rien ne bouge
+    var heldAt = 0;       // depuis quand (un appui ne bloque pas plus de 2 s)
+    var waiting = false;  // une mesure attend la fin de l'appui
+    var tap = 0;          // numéro de l'appui (les fins prévues d'un ancien appui sont ignorées)
     var HOLD_MAX_MS = 2000;
+    var CLICK_WAIT_MS = 400; // après le relâchement, attente du click
 
     var px = function (value) { return Math.round(value * 100) / 100 + 'px'; };
 
     function measure() {
       if (doc.visibilityState === 'hidden') return; // en arrière-plan : mesure peu fiable
-      if (held && Date.now() - heldAt < HOLD_MAX_MS) { // jamais sous le doigt : après le relâchement
+      if (held && Date.now() - heldAt < HOLD_MAX_MS) { // jamais pendant un appui : à sa fin
         waiting = true;
         return;
       }
@@ -139,20 +153,40 @@
       for (var i = 0; i < LATER_MS.length; i += 1) win.setTimeout(measure, LATER_MS[i]);
     }
 
-    // Doigt posé puis relâché (avant tout autre écouteur : phase de capture)
-    doc.addEventListener('pointerdown', function () {
-      held = true;
-      heldAt = Date.now();
-    }, true);
-    var release = function () {
+    // Fin de l'appui : la mesure en attente s'applique, une seule fois
+    function release() {
       held = false;
+      tap += 1;
       if (waiting) {
         waiting = false;
         measure();
       }
-    };
-    doc.addEventListener('pointerup', release, true);
-    doc.addEventListener('pointercancel', release, true);
+    }
+    // Fin de l'appui en cours dans ms millisecondes (sauf si un autre appui
+    // a commencé entre-temps)
+    function releaseLater(ms) {
+      var id = tap;
+      win.setTimeout(function () {
+        if (id === tap && held) release();
+      }, ms);
+    }
+
+    // Début et fin d'un appui (avant tout autre écouteur : phase de capture)
+    doc.addEventListener('pointerdown', function () {
+      tap += 1;
+      held = true;
+      heldAt = Date.now();
+      releaseLater(HOLD_MAX_MS); // délai de sécurité
+    }, true);
+    doc.addEventListener('pointerup', function () {
+      if (held) releaseLater(CLICK_WAIT_MS); // si aucun click ne suit
+    }, true);
+    doc.addEventListener('click', function () {
+      if (held) releaseLater(0); // juste après le traitement du click
+    }, true);
+    doc.addEventListener('pointercancel', function () {
+      if (held) release();
+    }, true);
 
     win.addEventListener('resize', measure);
     // Le décalage change pendant que le clavier s'anime

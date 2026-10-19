@@ -40,6 +40,7 @@ import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, Image
 import { duplicateOf, duplicateText, listItemForEan, knownItemForEan } from '../store.js';
 import { openSheet, toast, releaseFocus } from '../ui.js';
 import { createImagePicker } from '../photo.js';
+import { keepFieldFocus } from '../tap.js';
 import { app } from '../app.js';
 
 // Bouton visible : liste de courses, et recherche activée sur le serveur
@@ -74,7 +75,17 @@ export function createScanner({ listId, getView, add, check }) {
     session ??= openSession();
     session.scan(file);
   }, { title: 'Scanner un produit' });
-  const button = picker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' }, icon('barcode'));
+  // Clavier ouvert : l'appui sur « Scanner » ne retire pas le curseur du
+  // champ d'ajout (keepFieldFocus de tap.js), sinon la barre d'ajout bougeait
+  // et le click tombait à côté (deux appuis nécessaires). Le click arrivé,
+  // le champ perd le curseur (clavier replié) puis le sélecteur s'ouvre.
+  const button = picker.button({
+    class: 'btn btn--secondary btn--icon',
+    'aria-label': 'Scanner un produit',
+    onPointerdown: keepFieldFocus.pointerdown,
+    onMousedown: keepFieldFocus.mousedown,
+  }, icon('barcode'));
+  button.addEventListener('click', releaseFocus, true); // avant l'ouverture
 
   // --- Feuille « Scanner un produit » ---
   function openSession() {

@@ -345,7 +345,7 @@ export const MIGRATIONS = [
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent
 // que des listes autres que courses (tâches…), pour qu'ils ne soient plus
-// suggérés ni montrés dans l'onglet « Noms » de l'administration.
+// suggérés ni montrés dans l'onglet « Articles » de l'administration.
 //
 // Règle prudente : un nom (toutes ses lignes) est effacé seulement si
 // - aucun article d'une liste de courses ne porte ce nom (article actif, ou

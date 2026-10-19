@@ -1,4 +1,4 @@
-// Tests de l'onglet « Noms enregistrés » de l'administration : corriger un
+// Tests de l'onglet « Articles » de l'administration (appelé « Noms » avant) : corriger un
 // nom partout (historique et listes), fusion, retrait des suggestions,
 // droits, synchronisation, temps réel, transaction tout ou rien, validation,
 // journal.
@@ -112,7 +112,7 @@ test("la liste des noms ne montre ni les listes, ni leurs membres : des noms et 
   await newItem(h, h.marie, listId, 'tomatte');
   const res = await h.admin.get('/api/admin/names');
   assert.equal(res.status, 200);
-  assert.deepEqual(res.body.names, [{ key: 'tomatte', name: 'Tomatte', aisle: 'Fruits et légumes', uses: 2, inLists: 2 }]);
+  assert.deepEqual(res.body.names, [{ key: 'tomatte', name: 'Tomatte', aisleId: h.app.db.prepare("SELECT id FROM aisles WHERE name = 'Fruits et légumes'").pluck().get(), aisle: 'Fruits et légumes', uses: 2, inLists: 2 }]);
   for (const secret of ['Liste secrète', listId, 'marie', 'Lidl']) assert.ok(!res.text.includes(secret), `la réponse montre « ${secret} »`);
 });
 

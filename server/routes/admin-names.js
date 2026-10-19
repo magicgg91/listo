@@ -1,4 +1,4 @@
-// Administration des noms enregistrés : l'historique commun des noms
+// Administration, onglet « Articles » : l'historique commun des noms
 // d'articles saisis dans les listes de courses (table item_history), qui
 // alimente l'autocomplétion, le rayon habituel et le magasin habituel.
 // Réservé aux Admin (voir admin.js). Les autres listes (tâches…) ne mémorisent
@@ -9,6 +9,7 @@
 //   GET  /api/admin/names/impact?from=&to=            ce que changerait une correction
 //   POST /api/admin/names/rename  { from, to }        corriger un nom partout
 //   POST /api/admin/names/remove  { from }            retirer des suggestions
+//   POST /api/admin/names/aisle   { from, aisleId }   changer le rayon habituel
 //
 // « from » est la forme normalisée d'un nom (name_normalized : minuscules,
 // sans accents ni espaces superflus), telle que renvoyée par la liste.
@@ -34,15 +35,24 @@
 // Retirer des suggestions : seules les lignes de l'historique sont effacées ;
 // les listes ne changent pas. Un téléphone qui ressaisit ce nom plus tard
 // l'enregistre de nouveau (c'est normal).
+//
+// Changer le rayon habituel : un seul rayon pour le nom, écrit sur TOUTES ses
+// lignes (générale et par magasin : sinon le rayon retenu pour un magasin
+// passerait avant le nouveau, voir usualAisle dans public/js/history.js).
+// aisleId null = aucun rayon. Les articles déjà dans les listes gardent leur
+// rayon (aucune liste ne change). La date des lignes (last_used_at, la même
+// que pour une correction) avance : c'est elle que la synchronisation des
+// téléphones suit ; « event: refs » les prévient tout de suite.
 
 import express from 'express';
-import { cleanName } from '../validate.js';
+import { cleanName, parseId } from '../validate.js';
 import { normalizeItemName } from '../../public/js/history.js';
 
 export const PAGE_SIZE = 50;
 const KEY_MAX = 200;           // longueur maximale d'un nom normalisé reçu
-const NOT_FOUND = 'Ce nom n\'est plus enregistré (déjà corrigé ou retiré ?).';
+const NOT_FOUND = 'Cet article n\'est plus enregistré (déjà corrigé ou retiré ?).';
 const BAD_NAME = 'Nom invalide (1 à 100 caractères, sans caractère de contrôle).';
+const BAD_AISLE = 'Rayon inconnu ou désactivé.';
 
 // Nom corrigé : mêmes règles que le nom d'un article d'une liste (espaces
 // nettoyés, 1 à 100 caractères), et en plus aucun caractère de contrôle
@@ -81,6 +91,8 @@ export function adminNameRoutes(ctx) {
     renameLines: db.prepare('UPDATE item_history SET display_name = ?, last_used_at = ? WHERE name_normalized = ?'),
     removeLines: db.prepare('DELETE FROM item_history WHERE name_normalized = ?'),
     aisleName: db.prepare('SELECT name FROM aisles WHERE id = ?').pluck(),
+    activeAisle: db.prepare('SELECT id, name FROM aisles WHERE id = ? AND active = 1'),
+    setAisle: db.prepare('UPDATE item_history SET aisle_id = ?, last_used_at = ? WHERE name_normalized = ?'),
   };
 
   // Nombre d'articles présents dans les listes de courses, par nom normalisé
@@ -129,6 +141,7 @@ export function adminNameRoutes(ctx) {
       names: rows.map((row) => ({
         key: row.name_normalized,
         name: row.name,
+        aisleId: row.aisle_id,
         aisle: row.aisle_id === null ? null : q.aisleName.get(row.aisle_id) ?? null,
         uses: row.uses,
         inLists: counts.get(row.name_normalized) ?? 0,
@@ -218,6 +231,27 @@ export function adminNameRoutes(ctx) {
     q.removeLines.run(fromKey);
     audit('admin_nom_retire', { admin: req.user.username, nom: displayNameOf(lines), ip: req.ip });
     res.status(204).end();
+  });
+
+  // Changer le rayon habituel d'un nom (toutes ses lignes), en une transaction
+  router.post('/names/aisle', (req, res) => {
+    const fromKey = keyFrom(req.body?.from);
+    const lines = fromKey ? q.linesOf.all(fromKey) : [];
+    if (!lines.length) return res.status(404).json({ error: NOT_FOUND });
+    const raw = req.body?.aisleId;
+    let aisle = null;
+    if (raw !== null) {
+      // Un identifiant de rayon existant ET actif (un nombre entier), sinon 400
+      aisle = Number.isInteger(raw) && parseId(raw) ? q.activeAisle.get(raw) : null;
+      if (!aisle) return res.status(400).json({ error: BAD_AISLE });
+    }
+    db.transaction(() => {
+      q.setAisle.run(aisle?.id ?? null, nowIso(), fromKey);
+    })();
+    // Après l'écriture : les téléphones connectés relisent la mémoire des noms
+    ctx.events?.notifyReferences();
+    audit('nom_rayon_modifie', { admin: req.user.username, nom: displayNameOf(lines), rayon: aisle?.name ?? 'aucun', ip: req.ip });
+    res.json({ aisleId: aisle?.id ?? null, aisle: aisle?.name ?? null });
   });
 
   return router;

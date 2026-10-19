@@ -189,7 +189,7 @@ export function timeLeftLabel(iso, now = Date.now()) {
   return "Il reste moins d'une minute";
 }
 
-// --- Administration, onglet « Noms enregistrés » ---
+// --- Administration, onglet « Articles » ---
 // Seules les listes de courses mémorisent des noms (décision du 17 octobre
 // 2026) : ces textes parlent donc d'« articles », par le module de mots
 // (countItems(n, true) : « 1 article », « 3 articles »).

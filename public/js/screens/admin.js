@@ -1,50 +1,83 @@
 // Écran « Administration » (maquettes administration-1 à 6), réservé aux Admin
-// (le serveur le vérifie à chaque requête). Quatre onglets :
+// (le serveur le vérifie à chaque requête). Trois onglets :
 // - Comptes : liste, création, rôle, réinitialisation du mot de passe,
 //   désactivation de la 2FA, désactivation / réactivation, suppression d'un
 //   compte jamais utilisé ;
-// - Catégories, Magasins, Rayons : ajout, renommage, désactivation /
-//   réactivation, suppression d'un élément jamais utilisé ;
-// - Noms enregistrés : l'historique commun des noms d'articles saisis dans
-//   les listes de courses (autocomplétion, rayon habituel) ; corriger un nom
-//   dans toutes les listes de courses, ou le retirer des suggestions.
+// - Catégories : ajout, renommage, désactivation / réactivation, suppression
+//   d'un élément jamais utilisé ;
+// - Courses, avec trois choix :
+//   - Magasins, Rayons : comme les catégories ;
+//   - Articles : la mémoire commune des articles saisis dans les listes de
+//     courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
+//     les listes de courses, changer son rayon habituel, ou le retirer des
+//     suggestions. (Son identifiant interne reste « noms », comme les
+//     routes /api/admin/names.)
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
-// ses éléments) : les noms enregistrés viennent avec de simples compteurs.
+// ses éléments) : les articles enregistrés viennent avec de simples compteurs.
 
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { get, post, patch, del, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
+import { activeOnly } from '../store.js';
 import { app, refreshData } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
-import { itemWords } from '../words.js';
+import { itemWords, countItems } from '../words.js';
 
+// Mot des listes de courses (words.js) : « article », « articles »
+const ITEM = itemWords(true);
+
+// Trois onglets : Comptes, Catégories, Courses. « Courses » regroupe trois
+// choix (magasins, rayons et articles ne concernent que les listes de
+// courses), chacun avec son adresse d'avant (#/administration/magasins,
+// /rayons, /noms) : un lien ou un rafraîchissement retombe sur le bon choix.
+const SHOPPING = [
+  { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
+  { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
+  { key: 'noms', label: ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1) },
+];
 const TABS = [
   { key: 'comptes', label: 'Comptes' },
   { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
-  { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
-  { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
-  { key: 'noms', label: 'Noms', title: 'Noms enregistrés' },
+  { key: 'courses', label: 'Courses' },
 ];
 
+// Dernier choix de « Courses », retrouvé en revenant sur l'onglet pendant la
+// session (oublié à la fermeture de l'application)
+let lastShopping = SHOPPING[0].key;
+
+// Barre d'onglets (même composant pour les onglets et les choix de
+// « Courses », ce dernier en plus petit) : choisi = souligné épais ET texte
+// plus foncé (jamais la couleur seule), aria-selected
+function tabBar(entries, current, label, extraClass = '') {
+  return h('div', { class: `tabs${extraClass}`, role: 'tablist', 'aria-label': label },
+    entries.map((t) => h('button', {
+      class: 'tab',
+      type: 'button',
+      role: 'tab',
+      'aria-selected': String(t.key === current),
+      onClick: () => navigate('admin', { tab: t.target ?? t.key }, { replace: true }),
+    }, t.label)));
+}
+
 export function renderAdmin(tabKey, onLeave) {
-  const tab = TABS.find((t) => t.key === tabKey);
+  // « courses » seul : le dernier choix ; un choix de « Courses » : retenu
+  if (tabKey === 'courses') tabKey = lastShopping;
+  const shopping = SHOPPING.find((t) => t.key === tabKey);
+  if (shopping) lastShopping = shopping.key;
+  const tab = shopping ?? TABS.find((t) => t.key === tabKey);
   if (!tab) {
     navigate('admin', { tab: 'comptes' }, { replace: true });
     return h('div', { class: 'screen' });
   }
 
-  const tabs = h('div', { class: 'tabs', role: 'tablist', 'aria-label': 'Rubriques' },
-    TABS.map((t) => h('button', {
-      class: 'tab',
-      type: 'button',
-      role: 'tab',
-      'aria-selected': String(t.key === tab.key),
-      // Libellé court à l'écran ; nom complet pour les lecteurs d'écran
-      'aria-label': t.title ?? null,
-      onClick: () => navigate('admin', { tab: t.key }, { replace: true }),
-    }, t.label)));
+  const tabs = tabBar(TABS.map((t) => (t.key === 'courses' ? { ...t, target: lastShopping } : t)), shopping ? 'courses' : tab.key, 'Rubriques');
+  const choices = shopping ? tabBar(SHOPPING, shopping.key, 'Courses', ' tabs--sub') : null;
+
+  // Barre trop large pour l'écran (elle défile de côté) : l'onglet actif est
+  // ramené en vue une fois l'écran affiché
+  requestAnimationFrame(() => tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
 
   const panel = h('div', { class: 'body admin-list', role: 'tabpanel' });
   const footer = h('div', { class: 'footer', hidden: tab.key !== 'comptes' });
@@ -84,7 +117,7 @@ export function renderAdmin(tabKey, onLeave) {
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour aux réglages', () => goBack('settings')),
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Administration'))),
-    tabs, panel, footer);
+    tabs, choices, panel, footer);
 }
 
 const loadingText = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');
@@ -527,11 +560,11 @@ function openCategorySheet(item, reload) {
   });
 }
 
-// ================= Noms enregistrés =================
+// ================= Articles (mémoire des noms) =================
 //
-// L'historique commun des noms d'articles saisis dans les listes de courses
-// (les autres listes ne mémorisent rien), une ligne par nom (les lignes par
-// magasin sont regroupées par le serveur), 50 noms par morceau.
+// L'historique commun des articles saisis dans les listes de courses (les
+// autres listes ne mémorisent rien), une ligne par article (les lignes par
+// magasin sont regroupées par le serveur), 50 articles par morceau.
 // Seulement des noms et des compteurs : jamais une liste ni ses membres.
 
 // Recherche et tri gardés d'un rechargement à l'autre (après une correction)
@@ -541,7 +574,7 @@ async function loadNames(panel, alive) {
   const reload = () => loadNames(panel, alive);
   const input = h('input', {
     class: 'input', type: 'search', maxlength: '100', autocomplete: 'off', spellcheck: 'false',
-    placeholder: 'Rechercher un nom', 'aria-label': 'Rechercher un nom', value: namesView.query,
+    placeholder: `Rechercher un ${ITEM.one}`, 'aria-label': `Rechercher un ${ITEM.one}`, value: namesView.query,
   });
   const sorting = segmented('Trier', [['name', null, 'Par nom'], ['uses', null, 'Par utilisation']], namesView.sort, (value) => {
     namesView.sort = value;
@@ -571,7 +604,7 @@ async function loadNames(panel, alive) {
     }
     if (!alive() || mine !== request) return;
     if (!page.total) {
-      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? 'Aucun nom ne correspond à cette recherche.' : 'Aucun nom enregistré pour le moment.'));
+      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? `Aucun ${ITEM.one} ne correspond à cette recherche.` : `Aucun ${ITEM.one} enregistré pour le moment.`));
       return;
     }
     const group = h('div', { class: 'group' });
@@ -597,7 +630,7 @@ async function loadNames(panel, alive) {
       });
       replace(more, button);
     };
-    replace(results, h('p', { class: 'section-title' }, `${page.total} nom${page.total > 1 ? 's' : ''}`), group, more);
+    replace(results, h('p', { class: 'section-title' }, countItems(page.total, true)), group, more);
     addPage(page);
   }
 
@@ -628,7 +661,8 @@ function afterNameChange(reload) {
 }
 
 // Ligne d'un nom : nom affiché, rayon habituel et compteurs ; « Corriger »
-// (renommage sur place, puis confirmation chiffrée) et « Retirer des suggestions »
+// (renommage sur place, puis confirmation chiffrée), « Modifier le rayon »
+// et « Retirer des suggestions »
 function nameRow(entry, reload) {
   const rowEl = h('div', { class: 'manage' });
   const showView = () => {
@@ -638,6 +672,7 @@ function nameRow(entry, reload) {
         h('p', { class: 'manage__name' }, entry.name),
         h('p', { class: 'manage__sub' }, savedNameSub(entry))),
       iconButton('pencil', `Corriger ${entry.name}`, showEdit),
+      iconButton('store', `Modifier le rayon de ${entry.name}`, () => chooseAisle(entry, reload)),
       iconButton('trash', `Retirer ${entry.name} des suggestions`, () => removeName(entry, reload)));
   };
 
@@ -677,6 +712,59 @@ function nameRow(entry, reload) {
 
   showView();
   return rowEl;
+}
+
+// « Modifier le rayon » : feuille de choix (rayons actifs par ordre
+// alphabétique, puis « Aucun rayon » ; l'actuel est coché), puis
+// « Enregistrer ». Le rayon habituel change pour ce nom (toutes ses lignes,
+// générale et par magasin) ; les articles déjà dans les listes gardent le
+// leur. Aucun champ de saisie, donc aucun clavier.
+function chooseAisle(entry, reload) {
+  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisle.name })), { id: null, name: 'Aucun rayon' }];
+  // Rayon actuel : coché seulement s'il est encore proposé
+  let selected = choices.some((c) => c.id === (entry.aisleId ?? null)) ? (entry.aisleId ?? null) : undefined;
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Enregistrer');
+  const rows = choices.map((choice) => {
+    const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' }, h('span', { class: 'radio' }), choice.name);
+    row.dataset.id = String(choice.id);
+    row.addEventListener('click', () => {
+      selected = choice.id;
+      paint();
+    });
+    return row;
+  });
+  const paint = () => {
+    for (const row of rows) {
+      const on = row.dataset.id === String(selected);
+      row.classList.toggle('is-on', on);
+      row.setAttribute('aria-checked', String(on));
+      row.querySelector('.radio').classList.toggle('is-on', on);
+      row.querySelector('.icon-end')?.remove();
+      if (on) row.append(icon('check', 'icon-end'));
+    }
+    save.disabled = selected === undefined;
+  };
+  paint();
+  const sheet = openSheet({
+    title: `Rayon de « ${entry.name} »`,
+    content: [h('div', { class: 'card picker' }, h('div', { role: 'radiogroup', 'aria-label': 'Rayon' }, rows)), save],
+  });
+  save.addEventListener('click', async () => {
+    if (selected === (entry.aisleId ?? null)) {
+      sheet.close();
+      return;
+    }
+    save.disabled = true;
+    try {
+      const done = await post('/api/admin/names/aisle', { from: entry.key, aisleId: selected });
+      sheet.close();
+      toast(done.aisle ? `Rayon de « ${entry.name} » : ${done.aisle}` : `« ${entry.name} » n'a plus de rayon habituel`, { low: true });
+      afterNameChange(reload);
+    } catch (err) {
+      save.disabled = false;
+      toast(errorMessage(err), { low: true });
+    }
+  });
 }
 
 // Retire un nom des suggestions (l'historique seulement), après confirmation

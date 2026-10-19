@@ -2,11 +2,11 @@
 //   GET  /api/lists                 mes listes (celles dont je suis membre)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
-//   POST /api/lists/:id/leave       quitter la liste (invité, pour lui-même ;
+//   POST /api/lists/:id/leave       quitter la liste (contributeur ou invité, pour lui-même ;
 //                                   en ligne seulement)
-//   POST /api/lists/:id/duplicate   dupliquer la liste (propriétaire ou invité
-//                                   « Peut modifier » ; en ligne seulement)
-//   GET  /api/users                 comptes actifs, pour choisir les invités
+//   POST /api/lists/:id/duplicate   dupliquer la liste (propriétaire ou
+//                                   contributeur ; en ligne seulement)
+//   GET  /api/users                 comptes actifs, pour choisir avec qui partager
 //   GET  /api/suggestions?q=la      autocomplétion (dès 2 lettres) ; avec
 //                                    &listId=… : vide hors liste de courses
 //   GET  /api/sync?since=…          tout ce qui a changé depuis un instant

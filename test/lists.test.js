@@ -636,8 +636,8 @@ test('le journal note création, partage, retrait et suppression de liste, sans 
   const journal = h.app.logs.join('\n');
   for (const event of [
     `liste_creee utilisateur="marie" liste="${listId}"`,
-    `liste_partage_ajoute utilisateur="marie" liste="${listId}" invite="paul"`,
-    `liste_partage_retire utilisateur="marie" liste="${listId}" invite="paul"`,
+    `liste_partage_ajoute utilisateur="marie" liste="${listId}" personne="paul"`,
+    `liste_partage_retire utilisateur="marie" liste="${listId}" personne="paul"`,
     `liste_supprimee utilisateur="marie" liste="${listId}"`,
   ]) assert.ok(journal.includes(event), `absent : ${event}`);
   assert.ok(!journal.includes('Surprise') && !journal.includes('Gâteau'), 'ni nom de liste ni article dans le journal');

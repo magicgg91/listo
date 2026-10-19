@@ -324,3 +324,26 @@ button.sync { cursor: pointer; }
    haut, le choix actif souligné ET plus foncé (jamais la couleur seule) */
 .tabs--sub { padding: 0 var(--space-2); }
 .tabs--sub .tab { min-height: var(--tap-min); font-size: var(--text-sm); }
+
+/* Page « Aide » (help.js) : « Qui peut quoi » en blocs empilés (une action,
+   puis les quatre rôles en pastilles : coche ou croix ET texte, jamais la
+   couleur seule ; lisible à 320 px), puis les sections repliables (même
+   composant que les groupes d'une liste), chacune faite de cartes. */
+.help-who__row { padding: 12px var(--space-2); border-bottom: 1px solid var(--color-border); }
+.help-who__row:last-child { border-bottom: 0; }
+.help-who__action { margin: 0 0 8px; font-weight: 600; }
+.help-who__roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.help-who__role { height: 26px; padding: 0 8px; }
+.help-who__role--yes { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.help-who__role--no { background: transparent; border: 1px dashed var(--color-control); color: var(--color-text-2); }
+.help__note { margin: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.help__part { margin-top: 4px; }
+.help-who + .help__part { margin-top: var(--space-2); }
+.help__section { display: flex; flex-direction: column; gap: var(--space-1); }
+.help__topic { padding: 12px var(--space-2); }
+.help__title { margin: 0 0 6px; font-size: var(--text-base); font-weight: 700; }
+.help__text { margin: 0 0 6px; }
+.help__text:last-child { margin-bottom: 0; }
+.help__list { margin: 0 0 6px; padding-left: 1.2em; list-style: disc; }
+.help__list:last-child { margin-bottom: 0; }
+.help__list li + li { margin-top: 4px; }

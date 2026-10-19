@@ -3,13 +3,13 @@
 // libellés, mêmes écrans :
 // 1. « Modifier la liste » (propriétaire) : l'écran « Modifier la liste »
 //    (nom, catégorie, magasin, personnes avec qui elle est partagée) ;
-// 2. « Dupliquer la liste » (propriétaire, invité « Peut modifier ») : la
+// 2. « Dupliquer la liste » (propriétaire, contributeur) : la
 //    feuille de duplication (en ligne seulement) ;
 // 3. « Partager par lien » (propriétaire) : la feuille du lien public ;
 // 4. « Supprimer la liste » (propriétaire) : en dernier, après un trait, en rouge ;
-//    « Quitter la liste » (invité, à la place) : pareil, avec sa confirmation
+//    « Quitter la liste » (contributeur ou invité, à la place) : pareil, avec sa confirmation
 //    (en ligne seulement).
-// Un invité « Peut modifier » voit donc « Dupliquer la liste » puis
+// Un contributeur voit donc « Dupliquer la liste » puis
 // « Quitter la liste » ; un invité en lecture seule, « Quitter la liste »
 // seulement.
 // Chaque action n'est proposée qu'à qui y a droit ; le serveur le revérifie
@@ -81,7 +81,7 @@ export async function deleteListWithConfirm(list) {
 // articles » / « Copier les éléments » (activé). La copie est faite par le
 // serveur (POST /api/lists/:id/duplicate), en ligne seulement : catégorie,
 // magasin, réglages, et les éléments non supprimés, tous décochés ; ni les
-// invités, ni le lien public, ni les photos. On reste où l'on est : un
+// personnes avec qui la liste est partagée, ni le lien public, ni les photos. On reste où l'on est : un
 // message propose « Ouvrir » ; sur « Mes listes », la nouvelle carte est
 // brièvement mise en évidence.
 const OFFLINE_DUPLICATE = 'Connexion nécessaire pour dupliquer une liste';
@@ -119,7 +119,7 @@ export function openDuplicateSheet(list) {
     nameField.field,
     h('div', { class: 'card list-options' },
       h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, `Copier les ${words.many}`), state), toggle)),
-    h('p', { class: 'field__hint' }, 'La copie est privée : ni les personnes invitées, ni le lien public, ni les photos ne sont copiés.'),
+    h('p', { class: 'field__hint' }, 'La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.'),
     error.note,
     h('div', { class: 'sheet__actions' }, submit, cancel));
   const sheet = openSheet({ title: 'Dupliquer la liste', content: form });
@@ -148,7 +148,7 @@ export function openDuplicateSheet(list) {
   });
 }
 
-// --- Quitter la liste (invité) ---
+// --- Quitter la liste (contributeur ou invité) ---
 // Confirmation, puis le serveur retire l'appartenance de ce compte, et
 // seulement la sienne (POST /api/lists/:id/leave), en ligne seulement. Ce qui
 // attendait dans la file est envoyé avant. La liste disparaît ensuite de ce
@@ -163,7 +163,7 @@ export async function leaveListWithConfirm(list) {
   }
   const ok = await confirmDialog({
     title: `Quitter la liste « ${list.name} » ?`,
-    text: 'Vous ne la verrez plus. Le propriétaire pourra vous inviter de nouveau.',
+    text: 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.',
     confirmLabel: 'Quitter',
   });
   if (!ok) return false;

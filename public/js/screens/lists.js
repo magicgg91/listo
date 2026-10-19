@@ -47,7 +47,7 @@ export function listCard(list, { selected = false } = {}) {
 // magasin) : ils restent dans l'en-tête de la liste.
 function cardLink(list, { selected }) {
   const members = list.members.filter((m) => m.active || m.isOwner);
-  // Le propriétaire d'abord, puis les invités
+  // Le propriétaire d'abord, puis les personnes avec qui la liste est partagée
   members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
 
   return h('a', {

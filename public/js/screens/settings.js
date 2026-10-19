@@ -1,6 +1,6 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
 // - réglages : carte du compte (ouvre « Mon compte », voir account.js),
-//   administration (Admin), à propos, déconnexion ;
+//   administration (Admin), aide (voir help.js), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
 //   secours affichés une seule fois) ;
@@ -83,8 +83,11 @@ export function renderSettings() {
       isAdmin ? [
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
-          row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, magasins, rayons', onClick: () => navigate('admin', { tab: 'comptes' }) })),
+          row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null,
+      // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
+      h('h2', { class: 'section-title' }, 'Aide'),
+      h('div', { class: 'group' }, row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') })),
       h('h2', { class: 'section-title' }, 'À propos'),
       aboutGroup(isAdmin)),
     h('div', { class: 'footer' }, logout));

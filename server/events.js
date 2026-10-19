@@ -98,7 +98,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   }
 
   // Prévient les membres actifs d'une liste (relus dans la base au moment de
-  // l'envoi : un invité retiré ou un compte désactivé ne reçoit plus rien)
+  // l'envoi : une personne retirée du partage ou un compte désactivé ne reçoit plus rien)
   function notifyList(listId, { alsoUsers = [] } = {}) {
     notifyUsers([...activeMembers.all(listId), ...alsoUsers], listId);
   }

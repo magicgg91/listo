@@ -16,6 +16,7 @@ export const ROUTES = [
   { name: 'account', path: '/reglages/compte' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
+  { name: 'help', path: '/aide' },
   { name: 'admin', path: '/administration/:tab' },
 ];
 

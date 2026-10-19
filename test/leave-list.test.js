@@ -155,7 +155,7 @@ test('menus : mêmes actions, même ordre, aux deux endroits, pour chaque profil
   assert.match(source, /onDeleted\(\);\s*setTimeout\(\(\) => toast\(message, \{ low: true \}\), 400\);/);
   assert.match(source, /return canEdit \? \[duplicate, leave\] : \[leave\];/);
   // Confirmation et hors ligne
-  assert.match(source, /title: `Quitter la liste « \$\{list\.name\} » \?`,\s*text: 'Vous ne la verrez plus\. Le propriétaire pourra vous inviter de nouveau\.',\s*confirmLabel: 'Quitter',/);
+  assert.match(source, /title: `Quitter la liste « \$\{list\.name\} » \?`,\s*text: 'Vous ne la verrez plus\. Le propriétaire pourra de nouveau la partager avec vous\.',\s*confirmLabel: 'Quitter',/);
   assert.match(source, /const OFFLINE_LEAVE = 'Connexion nécessaire pour quitter une liste';/);
   assert.match(source, /await refreshData\(\{ quiet: true \}\); \/\/ envoie d'abord ce qui attend\s*await post\(`\/api\/lists\/\$\{list\.id\}\/leave`\);/);
   // Les deux menus viennent de listActions ; liste ouverte : retour à l'accueil après départ

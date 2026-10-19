@@ -46,7 +46,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Zones tactiles d'au moins 44 px ; la case ronde mesure 30 px mais sa zone cliquable fait 52 × 56 px.
 - Un article coché est barré, atténué et porte une coche : jamais la couleur seule.
 - Boutons-icônes : `aria-label` obligatoire. Indicateur de synchro : un vrai `<button>` (un appui relance la synchronisation) avec `aria-live="polite"` et un nom qui dit l'état et l'action (`aria-label="À jour, synchroniser maintenant"`) ; un simple texte `role="status"` seulement s'il n'est pas cliquable.
-- Pas de survol. Les actions secondaires passent par le menu « ⋮ » (ou « ⋯ » d'une carte). Un seul geste : glisser une ligne vers la gauche révèle « Supprimer » ; c'est un raccourci, jamais le seul chemin : la poubelle de la fiche de l'article reste la voie complète (lecteurs d'écran, clavier, souris).
+- Pas de survol. Les actions secondaires passent par le menu ⋮ (le même bouton sur la liste ouverte et sur chaque carte de « Mes listes »). Un seul geste : glisser une ligne vers la gauche révèle « Supprimer » ; c'est un raccourci, jamais le seul chemin : la poubelle de la fiche de l'article reste la voie complète (lecteurs d'écran, clavier, souris).
 
 ## Manifeste PWA (extrait)
 
@@ -228,7 +228,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune no
 
 Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône (`i-chev-d`).
 
-- Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) devient `.aisle.aisle--fold` et contient un vrai bouton `.aisle__toggle` pleine largeur (48 px) : `aria-expanded`, `aria-controls` (id de la `<ul>` du groupe), `aria-label` du type « Fruits et légumes, 2 à acheter » ; chevron `#i-chev-d`, `.aisle__name`, `.aisle__count` à droite.
+- Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) devient `.aisle.aisle--fold` et contient un vrai bouton `.aisle__toggle` pleine largeur (48 px) : `aria-expanded`, `aria-controls` (id de la `<ul>` du groupe), `aria-label` du type « Fruits et légumes, 2 articles restants sur 3 » ; chevron `#i-chev-d`, `.aisle__name`, `.aisle__count` à droite.
 - Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule. **Remplacé** par le compteur « X/Y », voir « Ajout : compteur X/Y » (`.aisle__rest` n'est plus utilisé).
 - La zone des cochés (`.cart__toggle`, section 16.5) se replie déjà de la même façon.
 - `.fold-all` « Tout replier » / « Tout déplier » : bouton texte compact (44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
@@ -248,12 +248,12 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 - `li.item.swipe` (`touch-action: pan-y` : le défilement vertical reste au navigateur) : le contenu de la ligne est dans `.swipe__slide` (fond hérité de la ligne), qui suit le doigt (`transform`) ; derrière, `button.swipe__delete` (fond `--color-danger`, `#i-trash` ET « Supprimer », 104 px de large, `aria-label="Supprimer <nom>"`), visible seulement pendant le glissement (`.is-swiping`) ou ligne ouverte (`.is-open`).
 - Animation de retour coupée avec `prefers-reduced-motion`. Pas de glissement à la souris. La page publique n'a ni glissement ni suppression.
 
-## Ajout : menu « ⋯ » des cartes de « Mes listes »
+## Ajout : menu ⋮ des cartes de « Mes listes »
 
-Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
+Styles : `public/css/app.css`. Balisage : « Carte avec menu ⋮ » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
 
 - `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (depuis le 19 octobre 2026, tout membre en a au moins une : voir « Dupliquer la liste » et « Quitter la liste » plus bas).
-- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran) : « Modifier la liste » (`#i-pencil`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`).
+- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran). Propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`). Contributeur et invité : voir « Dupliquer la liste » et « Quitter la liste » plus bas.
 - Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible. Menu complet par profil (dont « Dupliquer la liste » et « Quitter la liste ») : voir plus bas.
 - Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.
 
@@ -277,11 +277,11 @@ Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage
 
 Styles : `public/css/app.css` (`.list-card--fresh`) et composants existants. Balisage : « Menu d'une liste, par profil », « Feuille « Dupliquer la liste » » et « Confirmation « Quitter la liste » » dans `components.html`. Aucune nouvelle icône (`i-copy`, `i-logout`, déjà dans le sprite).
 
-- Menu « ⋯ » d'une carte et menu ⋮ de la liste (le même `.menu`, mêmes actions dans le même ordre) :
+- Menu ⋮ d'une carte et menu ⋮ de la liste (le même `.menu`, mêmes actions dans le même ordre) :
   - propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait, « Supprimer la liste » (`.menu__item--danger`, `#i-trash`) ;
   - contributeur : « Dupliquer la liste », un trait, « Quitter la liste » (`.menu__item--danger`, `#i-logout`) ;
   - invité en lecture seule : « Quitter la liste » seulement (sans trait).
-  Le bouton « ⋯ » apparaît donc pour tout membre ; il n'apparaît jamais sans action.
+  Le bouton ⋮ d'une carte apparaît donc pour tout membre ; il n'apparaît jamais sans action.
 - Feuille « Dupliquer la liste » (`.sheet`) : `.field` « Titre de la liste » (`.input`, « <nom> (copie) », aucun curseur posé d'office), une `.card.list-options` avec une `.toggle-row` « Copier les articles » / « Copier les éléments » (`.switch`, `role="switch"`, état écrit « Activé · … » / « Désactivé · liste vide »), une aide (`.field__hint`) sur ce qui n'est pas copié, puis `.sheet__actions` : « Dupliquer » (`.btn--primary.btn--block`) et « Annuler » (`.btn--secondary.btn--block`).
 - Après : message (`.toast`) « Liste « <nom> » créée » avec « Ouvrir » (`.toast__action`) ; sur « Mes listes », la nouvelle carte porte `.list-card--fresh` (brève mise en évidence, coupée avec `prefers-reduced-motion`).
 - Confirmation « Quitter la liste « <nom> » ? » : le `.dialog` existant, texte « Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous. », boutons « Annuler » (`.btn--secondary`) et « Quitter » (`.btn--danger`).

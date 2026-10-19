@@ -1,8 +1,8 @@
 # Listo – Cahier des charges
 
-Version validée le 16 octobre 2026. Mise à jour du 17 octobre 2026 : photo par article, lien public en lecture seule et magasin « multi » (hypothèses à valider en fin de document), ainsi que les écarts constatés pendant les étapes 1 à 5 (tables et colonnes ajoutées, port publié, journal en fichier).
+Version validée le 16 octobre 2026, complétée le 17 octobre 2026 (photo par article, lien public en lecture seule, magasin « multi »). Les onze étapes du plan sont livrées ; d'autres évolutions ont suivi (voir [Évolutions après les 11 étapes](#évolutions-après-les-11-étapes)).
 
-Mise à jour après livraison (17 octobre 2026) : les onze étapes sont livrées et le dépôt est public. Ce document décrit maintenant l'application livrée. Les décisions d'origine sont gardées ; ce qui a changé est indiqué dans le texte par « **Écart :** » et résumé dans la section [Écarts et décisions depuis la version validée](#écarts-et-décisions-depuis-la-version-validée). Quatre écarts touchant à la sécurité ont été tranchés le 17 octobre 2026 en faveur du code livré (texte mis d'accord avec le code, sans changement de code) ; ils sont marqués « **Décision du 17 octobre :** ».
+Ce document décrit l'application telle qu'elle est aujourd'hui : le code fait foi. Chaque changement par rapport à la version validée est noté, avec sa date et sa raison, dans la section [Écarts et décisions depuis la version validée](#écarts-et-décisions-depuis-la-version-validée).
 
 ## Présentation et objectifs
 
@@ -13,7 +13,7 @@ Usage visé : deux personnes d'un même foyer au quotidien (l'administrateur et 
 **Principes directeurs**
 
 - **Mobile-first** : chaque écran est conçu d'abord pour un téléphone tenu à une main, dans un magasin. La version ordinateur est une adaptation du même écran.
-- **Gratuit et privé** : aucune pub, aucun service tiers, aucune donnée hors du serveur. Seule exception, voulue et contrôlée : le lien public en lecture seule qu'un propriétaire peut créer pour une de ses listes.
+- **Gratuit et privé** : aucune pub, aucun service tiers, aucune donnée hors du serveur. Exceptions voulues et contrôlées : le lien public en lecture seule qu'un propriétaire peut créer pour une de ses listes ; la vérification de mise à jour (le serveur interroge GitHub) et le mode scan (le serveur interroge Open Food Facts), toutes deux désactivables.
 - **Simple à comprendre** : HTML, CSS et JavaScript, sans framework. Tout choix plus complexe est justifié dans la section Architecture technique.
 - **Fiable en magasin** : la liste reste utilisable sans réseau et se resynchronise toute seule.
 - **Un seul conteneur Docker**, derrière Nginx Proxy Manager (HTTPS déjà géré par l'administrateur).
@@ -21,60 +21,77 @@ Usage visé : deux personnes d'un même foyer au quotidien (l'administrateur et 
 
 ## Utilisateurs et rôles
 
-Deux rôles seulement : l'Admin gère la configuration, l'Utilisateur se sert de l'application normalement. Les comptes sont créés par un Admin, il n'y a pas d'inscription libre.
+Deux rôles de compte : l'**Admin** gère la configuration, l'**Utilisateur** se sert de l'application normalement. Les comptes sont créés par un Admin, il n'y a pas d'inscription libre.
 
 | Action | Utilisateur | Admin |
 | --- | --- | --- |
-| Se connecter, changer son propre mot de passe, activer son 2FA | Oui | Oui |
-| Créer ses listes, les renommer, les partager | Oui | Oui |
-| Utiliser les listes partagées avec lui | Oui | Oui |
-| Accéder à l'écran de configuration | Non | Oui |
-| Créer, désactiver un compte, réinitialiser un mot de passe ou le 2FA | Non | Oui |
-| Créer un magasin ou un rayon manquant (**écart, décision du 19 octobre 2026**) | Oui | Oui |
-| Gérer catégories de liste, magasins et rayons (renommer, désactiver, supprimer, regrouper ; créer une catégorie) | Non | Oui |
-| Ajouter, remplacer ou retirer la photo d'un article | Oui, sur les listes dont il est membre avec le droit « Peut modifier » | Oui, sur les listes dont il est membre avec le droit « Peut modifier » |
-| Créer, modifier ou arrêter le lien public d'une liste | Oui, pour ses propres listes | Oui, pour ses propres listes |
+| Se connecter, changer son propre mot de passe, activer sa double authentification (2FA) | Oui | Oui |
+| Créer ses listes, les modifier, les partager, les dupliquer, les supprimer | Oui | Oui |
+| Utiliser les listes partagées avec lui, selon son droit sur chacune (voir ci-dessous) | Oui | Oui |
+| Créer un magasin ou un rayon manquant (pour une nouvelle liste, ou une liste qu'il peut modifier) | Oui | Oui |
+| Lire la page « Aide » | Oui | Oui, avec une section « Administrateur » en plus |
+| Accéder à l'Administration | Non | Oui |
+| Créer, désactiver ou réactiver un compte, choisir son rôle, réinitialiser son mot de passe ou désactiver sa 2FA ; supprimer un compte jamais utilisé | Non | Oui |
+| Gérer catégories, magasins, rayons et la mémoire des noms d'articles (ajouter, renommer, désactiver, supprimer si jamais utilisé, regrouper, corriger) | Non | Oui |
 
-**Droits sur une liste partagée**
+**Rôles sur une liste**
 
-- **Propriétaire** (le créateur) : tout, y compris renommer la liste, changer son icône (**écart, migration 14**), changer ses partages, créer et arrêter son lien public, et la supprimer.
-- **Vocabulaire (décision du 19 octobre 2026)** : le propriétaire donne à chaque personne avec qui il partage la liste l'un de deux droits (**écart, décision du 18 octobre 2026, migration 12**). Avec « Peut modifier », la personne est un **contributeur** ; avec « Lecture seule », c'est un **invité**. Une personne sans compte qui ouvre le lien public est aussi un invité (toujours en lecture seule). Les libellés « Peut modifier » et « Lecture seule » ne changent pas ; les identifiants internes non plus (list_members.access : 'modification' ou 'lecture'). Un texte qui vise les deux dit « personne » ou « membre ».
-- **Contributeur** (« Peut modifier ») : ajouter, modifier, cocher et supprimer des articles, ajouter, remplacer ou retirer leur photo, tout décocher et retirer les articles cochés, créer un magasin ou un rayon manquant, dupliquer la liste, quitter la liste.
-- **Invité** (« Lecture seule », ou lien public sans compte) : voir la liste, ses articles et leurs photos, et suivre les changements des autres en direct ; aucune écriture (le serveur refuse chaque modification). Avec un compte, il peut quitter la liste.
-  **Écart (décision du 19 octobre 2026) :** contributeurs et invités (avec un compte) peuvent quitter une liste ; le propriétaire ne le peut pas (il la supprime).
-  **Écart (décision du 19 octobre 2026) :** le propriétaire et un contributeur peuvent dupliquer la liste (la copie leur appartient, sans partage ni lien public) ; pas un invité.
-  Ni le contributeur ni l'invité ne peuvent renommer ou supprimer la liste, modifier ses partages ou gérer son lien public. Une personne ajoutée à une liste commence en « Lecture seule » ; les membres présents avant la migration 12 ont gardé « Peut modifier ». Le propriétaire a toujours tous les droits et ne peut jamais être mis en lecture seule.
-- Un Admin ne voit pas les listes des autres : la configuration ne donne pas accès à leur contenu.
+Le même vocabulaire sert dans l'application, la page « Aide » et les documents :
+
+- **Propriétaire** : la personne qui a créé la liste. Il a tous les droits : la modifier (titre, catégorie, magasin, icône, options des éléments), la partager et choisir le droit de chaque personne, créer, modifier et arrêter son lien public, la dupliquer, la supprimer. Il ne peut ni la quitter, ni la donner à quelqu'un d'autre, ni être mis en lecture seule.
+- **Contributeur** : une personne avec qui la liste est partagée avec le droit « Peut modifier ». Il ajoute, modifie, coche et supprime des articles, ajoute, remplace ou retire leur photo, tout décoche et retire les articles cochés, crée un magasin ou un rayon manquant, duplique la liste (la copie lui appartient) et peut la quitter.
+- **Invité** : une personne qui ne peut que lire. Soit un compte avec le droit « Lecture seule » : il voit la liste, ses articles et leurs photos, suit les changements en direct et peut quitter la liste. Soit une personne sans compte qui ouvre le lien public.
+- Une personne ajoutée à une liste commence en « Lecture seule ». Ni un contributeur ni un invité ne peuvent modifier la liste elle-même, ses partages ou son lien public, ni la supprimer.
+- Un texte qui vise à la fois contributeurs et invités dit « personne » ou « membre ». Les libellés de l'écran restent « Peut modifier » et « Lecture seule » ; dans la base, list_members.access vaut 'modification' ou 'lecture'.
+
+**Admin**
+
+- Un Admin ne voit pas les listes des autres : ni leur nom, ni leurs membres, ni leurs articles. Il voit une liste seulement si elle est partagée avec lui, comme tout le monde.
 - Un Admin ne peut ni se désactiver, ni se retirer le rôle Admin, ni se supprimer : il reste toujours au moins un Admin actif.
 - Le premier compte Admin est créé depuis l'écran de première connexion, avec le mot de passe choisi à ce moment. Aucun mot de passe n'est placé dans la configuration.
 
 ## Fonctionnalités
 
-Listo gère plusieurs listes nommées, chacune partagée avec les personnes de son choix, et des articles classés par rayon avec autocomplétion. Tout est utilisable hors ligne.
+Listo gère plusieurs listes, chacune partagée avec les personnes de son choix. Tout est utilisable hors ligne, sauf ce qui est indiqué.
+
+**Vocabulaire** : dans une liste de courses, une ligne est un « article » ; dans toutes les autres listes (tâches…), c'est un « élément », au masculin, avec les mêmes accords (« Ajouter un élément », « Nouvel élément »). Un seul module de l'interface (public/js/words.js) donne le bon mot selon la catégorie de la liste ; les messages du serveur restent neutres.
 
 **Listes**
 
-- Une liste a un nom, une catégorie (Courses, Tâches…) et une liste de personnes avec qui elle est partagée. **Écart (migration 13) :** une liste autre que les courses a aussi deux réglages, « Priorité » et « Échéance », activés ou non par son propriétaire (voir la décision « Priorité et échéance activées ou non, liste par liste »).
-- Les catégories sont éditables par l'Admin. Chacune porte un indicateur « liste de courses » : s'il est actif, la liste demande un magasin et classe ses articles par rayon.
-- Le magasin se choisit dans la liste gérée par l'Admin. Un magasin simple est purement informatif : les rayons restent communs.
-- Un magasin peut aussi être de type « multi » : il regroupe plusieurs magasins, pour les courses faites dans plusieurs boutiques (voir « Magasin multi » plus bas).
-- Le propriétaire partage la liste avec les autres utilisateurs, et peut modifier ce partage à tout moment. Il peut aussi créer un lien public en lecture seule (voir « Lien public d'une liste »).
-- Une liste dure : pas d'archivage en v1. Le propriétaire peut la supprimer, après confirmation.
+- Une liste a un titre, une catégorie (Courses, Tâches…), une icône, et des personnes avec qui elle est partagée, chacune avec son droit.
+- Icône : une parmi 35 (chariot, panier, maison, voyage, cadeau…), choisie dans une grille ; sans choix, c'est celle de la catégorie (chariot pour les courses, liste cochée sinon).
+- Les catégories sont gérées par l'Admin. Chacune porte un indicateur « liste de courses » : s'il est actif, la liste demande un magasin, classe ses articles par rayon, mémorise les noms et propose le mode scan.
+- Le magasin se choisit parmi ceux de la liste commune. Un magasin simple est purement informatif : les rayons restent communs. Un magasin de type « multi » regroupe plusieurs magasins, pour les courses faites dans plusieurs boutiques (voir « Magasin multi »).
+- Options des éléments (listes autres que les courses) : « Priorité » et « Échéance », activées ou non par le propriétaire, liste par liste ; désactivées pour une nouvelle liste. Une option désactivée disparaît de l'écran, de la fiche et de la page publique ; les valeurs déjà saisies sont gardées et réapparaissent si on la réactive.
+- Actions d'une liste, les mêmes dans le menu ⋮ de sa carte (« Mes listes ») et dans le menu ⋮ de la liste ouverte, chacune proposée seulement à qui y a droit :
+  - propriétaire : « Modifier la liste », « Dupliquer la liste », « Partager par lien », puis, après un trait, « Supprimer la liste » ;
+  - contributeur : « Dupliquer la liste », puis « Quitter la liste » ;
+  - invité avec un compte : « Quitter la liste ».
+- Dupliquer (en ligne seulement) : feuille avec le titre (« <nom> (copie) ») et l'interrupteur « Copier les articles » / « Copier les éléments ». Sont copiés : catégorie, magasin, icône, options, et, si demandé, les articles non supprimés, tous décochés (nom, quantité, note, rayon, magasin, priorité, échéance, code-barres). Ne sont pas copiés : les personnes avec qui la liste est partagée (la copie est privée), le lien public, les photos. 20 duplications par heure et par compte au plus.
+- Quitter (en ligne seulement, après confirmation) : la liste disparaît de « Mes listes » ; ses articles y restent ; le propriétaire pourra de nouveau la partager avec cette personne.
+- Supprimer : après confirmation, pour tout le monde, sans « Annuler » ; effacement complet au bout de 30 jours.
+- Pas d'archivage.
 
-**Articles**
+**Articles et éléments**
 
-- Champs : nom (obligatoire), quantité (texte court libre, ex. « 2 » ou « 500 g »), note (facultative), photo (facultative, une seule), rayon (listes de courses à magasin simple), magasin (listes dont le magasin est « multi », à la place du rayon).
-- Ajout rapide : un champ de saisie toujours visible. La touche Entrée valide, le champ reste actif pour enchaîner plusieurs articles. **Écart (liste de courses, puis toutes les listes) :** après un ajout, l'ajout se termine : champ vidé, clavier replié, article ou élément montré dans la liste (voir « Fin d'ajout »).
-- Autocomplétion dès deux lettres, à partir de l'historique des articles déjà ajoutés, les plus fréquents d'abord. L'historique est commun à tous les comptes.
-  - **Écart (décision du 17 octobre 2026) :** seules les listes de courses mémorisent des noms et en suggèrent. Une liste d'une autre catégorie (tâches…) n'écrit rien dans l'historique (ni ajout, ni renommage, ni rayon ou magasin) et n'affiche pas de suggestions ; la saisie y reste la même (Entrée ou + ajoute ce qui a été tapé). Raison : les éléments des autres listes sont très variés, plus simples à corriger un par un.
-- Rayon automatique : un article déjà connu reprend son rayon habituel, celui du magasin de la liste (un même article peut avoir un rayon différent d'un magasin à l'autre). Un article nouveau demande son rayon une fois, puis l'application le mémorise. Le rayon reste modifiable.
-- Tri : par rayon (ordre alphabétique, « Sans rayon » en dernier), puis par ordre alphabétique dans chaque rayon. Un rayon vide n'est pas affiché. Dans une liste à magasin « multi », il n'y a pas de rayon : les articles sont groupés par magasin (voir plus bas).
-- **Écart (décision du 18 octobre 2026) : groupes repliables.** Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité quand une liste autre que les courses est triée par priorité) est un bouton qui replie ou déplie ses lignes : chevron qui tourne, nombre à droite ; replié, « · 2 à acheter » (« · 3 à faire ») après le nom (**écart, décision du 19 octobre 2026 :** compteur « X/Y » à droite, ouvert comme replié ; voir « Compteur X/Y »). La zone des cochés se replie de la même façon. « Tout replier / Tout déplier » apparaît dans la barre d'état à partir de deux groupes. Aucune catégorie inventée : une liste en ordre alphabétique ou par échéance reste une liste simple, sans en-tête. L'état est mémorisé sur le téléphone, pour chaque liste (jamais envoyé au serveur), tout déplié par défaut ; un groupe qui n'existe plus est oublié. Ajouter un article depuis ce téléphone dans un groupe replié le déplie ; le temps réel, le scan, « Déjà dans la liste », cocher et le changement de tri gardent l'état et la position de défilement. La page publique du lien garde ses en-têtes simples.
-- Cocher d'un appui : l'article reste affiché, barré, en bas de son rayon. Un appui de plus le décoche.
-  - **Écart (décision du 17 octobre 2026, maquettes 1A, 4A, 5a) :** zone des articles cochés. Un article coché quitte son rayon (ou son magasin) pour une zone en bas de la liste, sous le dernier groupe : « Dans le panier · N » (courses) ou « Terminés · N » (autres listes), du plus récemment coché au plus ancien. Zone absente quand rien n'est coché ; un rayon dont tout est coché disparaît de la partie à acheter. L'en-tête de la zone se replie (ouvert par défaut, état mémorisé par liste sur l'appareil) et porte deux actions, absentes quand elle est repliée, chacune confirmée par une feuille du bas : « Tout remettre à acheter » / « Tout rouvrir » (décoche tous les articles cochés) et « Retirer du panier » / « Retirer les terminés » (supprime les articles cochés pour tout le monde, définitivement). Les deux sont permises à tout membre de la liste.
-- Retirer les articles cochés : supprime tous les articles cochés de la liste, après confirmation (action « Retirer du panier » / « Retirer les terminés » de la zone des cochés).
-- Modifier un article (nom, quantité, note, photo, rayon, magasin) et le supprimer : depuis un menu sur l'article.
-- Vider ou supprimer un article n'efface pas l'historique d'autocomplétion.
+- Champs : nom (obligatoire), quantité (texte court libre, ex. « 2 » ou « 500 g »), note (facultative), photo (facultative, une seule). Liste de courses : rayon (magasin simple) ou magasin (magasin « multi »), et code-barres (facultatif). Autres listes : priorité et échéance, si l'option est activée.
+- Ajout rapide : un champ toujours visible en bas de l'écran. La touche Entrée ou le bouton « + » ajoute (un seul appui suffit, même clavier ouvert). Après l'ajout, dans toutes les listes : le champ est vidé, il perd le curseur (le clavier se replie), et l'article ajouté est montré dans la liste (son groupe se déplie s'il était replié, brève mise en évidence).
+- Mémoire des noms (listes de courses seulement) : autocomplétion dès deux lettres, à partir des noms déjà ajoutés, les plus fréquents d'abord, commune à tous les comptes. Une liste d'une autre catégorie n'écrit rien dans cette mémoire et n'affiche pas de suggestions.
+- Rayon automatique : un article déjà connu reprend son rayon habituel, celui du magasin de la liste (un même article peut avoir un rayon différent d'un magasin à l'autre). Un article nouveau demande son rayon une fois (« Dans quel rayon ? »), puis l'application le mémorise. Le rayon reste modifiable. S'il manque, « Nouveau rayon… » le crée (en ligne).
+- Ordre, liste de courses : par rayon (ordre alphabétique, « Sans rayon » en dernier), puis alphabétique dans chaque rayon ; par magasin dans une liste « multi ». Autres listes : ordre alphabétique, ou, avec le bouton « Trier la liste », « Par priorité » (groupes « Priorité élevée », « Priorité normale », « Priorité basse ») ou « Par échéance » (seulement si l'option correspondante est activée). Le tri choisi est gardé sur le téléphone, pour chaque liste.
+- Groupes repliables : chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) est un bouton qui replie ou déplie ses lignes ; il montre à droite le compteur « X/Y » du groupe (restants sur total, cochés compris). « Tout replier / Tout déplier » apparaît à partir de deux groupes. L'état est gardé sur le téléphone, pour chaque liste, tout déplié par défaut ; il ne change pas pendant une synchronisation, un scan ou un changement de tri. Une liste sans groupe (ordre alphabétique ou par échéance) n'a pas d'en-tête.
+- Cocher d'un appui : un article coché est barré ET sa case est remplie (jamais la couleur seule). Il quitte son groupe pour une zone en bas de la liste, « Dans le panier · N » (courses) ou « Terminés · N » (autres listes), du plus récemment coché au plus ancien. Un appui de plus le décoche : il reprend sa place. Cette zone se replie et porte deux actions confirmées par une feuille : « Tout remettre à acheter » / « Tout rouvrir » (tout décocher) et « Retirer du panier » / « Retirer les terminés » (supprimer les articles cochés pour tout le monde).
+- Modifier : toucher la ligne ouvre la fiche de l'article. Dans son en-tête : la poubelle (« Supprimer »), la disquette (« Enregistrer ») et la croix.
+- Supprimer : depuis la fiche, ou en faisant glisser la ligne vers la gauche puis en touchant « Supprimer ». Un message « « Pain » supprimé · Annuler » permet de revenir en arrière quelques secondes.
+- Priorité (« basse », « normale » par défaut, « élevée », pastilles « ↑ Élevée » et « ↓ Basse ») et échéance (date seule, affichée « Aujourd'hui », « Demain » ou « En retard » quand c'est le cas) : listes autres que les courses, si l'option est activée.
+- Supprimer un article n'efface pas la mémoire des noms.
+
+**Mode scan (listes de courses)**
+
+- Le bouton « Scanner », à côté du champ d'ajout, ouvre le sélecteur d'images du téléphone (sur Android, une petite feuille propose d'abord « Prendre une photo » ou « Choisir dans la galerie »). Le code-barres (EAN-13, EAN-8, UPC-A) est lu sur le téléphone : la photo n'est ni gardée ni envoyée.
+- Recherche du nom, dans cet ordre : un article de la liste ouverte qui porte ce code (« Déjà dans la liste » propose de le cocher) ; un article de mes autres listes (« Produit connu » : mon nom et ma note) ; sinon Open Food Facts, interrogé par le serveur. Le nom proposé se corrige avant « Ajouter à la liste » ; un code non lu ou un produit inconnu se tapent à la main.
+- Le code lu est gardé avec l'article (champ « Code-barres » de la fiche, qui a aussi son bouton de scan).
+- L'Admin peut couper le mode scan (LISTO_PRODUCT_LOOKUP=off) : le bouton disparaît et plus aucune demande ne part.
 
 **Magasin « multi »**
 
@@ -83,65 +100,74 @@ Pour les courses faites en ville dans plusieurs boutiques, l'Admin crée un maga
 - Dans une liste dont le magasin est « multi », chaque article a son propre magasin, choisi parmi ceux regroupés. Un article sans magasin est rangé dans « Sans magasin », en dernier.
 - Pas de rayon dans une liste « multi » : le magasin joue ce rôle (boucherie, fromagerie, primeur, boulangerie…). Tri et affichage : par magasin (ordre alphabétique, « Sans magasin » en dernier), puis par ordre alphabétique. Chaque magasin a son en-tête.
 - Magasin automatique : un article déjà connu reprend le magasin où il est habituellement acheté, parmi ceux de la liste (les œufs reviennent à la fromagerie). Le magasin est celui de l'article, pas celui de sa famille de produits : des pains à burger peuvent être achetés chez le boucher. Un article nouveau demande son magasin une fois, puis l'application le mémorise. Il reste modifiable.
-- Un magasin « multi » ne peut pas en regrouper un autre « multi ». Désactiver un magasin regroupé le retire des choix, sans changer les articles qui l'utilisent déjà. Un magasin « multi » n'est proposé que pour les listes de courses.
+- Un magasin « multi » ne peut pas en regrouper un autre « multi ». Désactiver un magasin regroupé le retire des choix, sans changer les articles qui l'utilisent déjà. Un magasin « multi » n'est proposé que pour les listes de courses. Un magasin créé depuis l'article d'une liste « multi » rejoint les magasins regroupés de ce « multi ».
 - Une liste à magasin simple ne change pas : pas de choix de magasin par article.
 
 **Photo d'un article**
 
 - Chaque article peut avoir une seule photo, aussi bien dans une liste de courses que dans une autre liste (tâches…). Elle montre précisément le produit ou l'objet voulu (la bonne marque, la bonne référence).
-- Depuis la feuille Article : un seul bouton « Ajouter une photo » (« Changer la photo » quand il y en a une) ouvre le sélecteur d'images du téléphone, qui propose lui-même l'appareil photo ou la photothèque ; Listo n'ajoute aucun menu (champ fichier `accept="image/*"` sans attribut `capture`). **Écart (décision du 19 octobre 2026) :** sur Android, une petite feuille propose d'abord « Prendre une photo » ou « Choisir dans la galerie » (voir la décision « Photo et scan sur Android »). La photo est facultative. Remplacer et retirer la photo sont possibles. Une vignette s'affiche sur la ligne de l'article ; un appui l'agrandit.
+- Depuis la fiche : un seul bouton « Ajouter une photo » (« Changer la photo » quand il y en a une) ouvre le sélecteur d'images du téléphone, qui propose lui-même l'appareil photo ou la photothèque (champ fichier `accept="image/*"` sans attribut `capture`). Sur Android, une petite feuille propose d'abord « Prendre une photo » ou « Choisir dans la galerie ». Remplacer et retirer la photo sont possibles. Une vignette s'affiche sur la ligne de l'article ; un appui l'agrandit.
 - La photo est réduite sur le téléphone avant l'envoi (côté le plus long : 1 280 px, JPEG), pour peser quelques centaines de Ko et ne pas ralentir une connexion mobile.
 - Tous les membres de la liste voient la photo, ainsi que le visiteur d'un lien public valable de cette liste. Elle est supprimée avec l'article : le fichier est effacé définitivement lors du nettoyage des articles supprimés, après 30 jours.
-- La photo appartient à l'article, pas à l'historique : le même nom ajouté plus tard n'a pas de photo.
+- La photo appartient à l'article, pas à la mémoire des noms : le même nom ajouté plus tard n'a pas de photo.
 - Hors ligne : on peut prendre une photo, elle part avec la file d'attente au retour du réseau ; seules les photos déjà vues s'affichent sans réseau.
 
 **Lien public d'une liste**
 
 Le propriétaire d'une liste peut la montrer à une personne qui n'a pas de compte (un voisin, un proche) par un lien, en lecture seule.
 
-- Créer le lien : depuis le menu de la liste, « Partager par lien ». Le lien est une adresse du type https://listo.exemple.fr/p/… impossible à deviner. Un seul lien actif par liste.
-- Lecture seule, strictement : la personne voit le nom de la liste et les articles groupés comme dans l'application, avec quantité, note, photo et état coché. Elle ne peut rien modifier. Elle ne voit ni les noms des personnes, ni les autres listes, ni l'historique.
+- Créer le lien : depuis le menu ⋮ de la liste, « Partager par lien ». Le lien est une adresse du type https://listo.exemple.fr/p/… impossible à deviner. Un seul lien actif par liste.
+- Lecture seule, strictement : la personne voit le nom de la liste et les articles groupés comme dans l'application, avec quantité, note, photo, état coché (zone « Dans le panier » / « Terminés », sans action), et, pour une liste autre que les courses, la priorité et l'échéance si l'option est activée. Elle ne peut rien modifier. Elle ne voit ni les noms des personnes, ni les autres listes, ni la mémoire des noms.
 - Mot de passe facultatif : le propriétaire peut protéger le lien. Le mot de passe est généré par Listo (16 caractères avec minuscule, majuscule, chiffre et caractère spécial) et affiché une seule fois, avec un bouton Copier. Il peut être régénéré (l'ancien cesse de marcher) ou retiré.
-- Durée : le propriétaire choisit une durée en heures ou en jours, ou « illimité ». Passé ce délai, le lien cesse de fonctionner : le serveur le contrôle à chaque requête, sans dépendre du téléphone ni d'une page restée ouverte. Un lien expiré répond comme un lien qui n'a jamais existé.
-- Le propriétaire voit l'état du lien (actif, date d'expiration, protégé ou non), peut changer la durée (le délai repart de maintenant) et peut l'arrêter à tout moment. Supprimer la liste, ou désactiver le compte du propriétaire, arrête le lien.
+- Durée : le propriétaire choisit une durée en heures ou en jours (1 heure à 365 jours), ou « illimité ». Passé ce délai, le lien cesse de fonctionner : le serveur le contrôle à chaque requête, sans dépendre du téléphone ni d'une page restée ouverte. Un lien expiré répond comme un lien qui n'a jamais existé.
+- Le propriétaire voit l'état du lien (actif, date d'expiration, protégé ou non), peut changer la durée (le délai repart de maintenant) et peut l'arrêter à tout moment. Sur « Mes listes », un symbole de lien sur la carte signale un lien en cours. Supprimer la liste, ou désactiver le compte du propriétaire, arrête le lien.
 - La création et la gestion du lien demandent du réseau (indisponibles hors ligne).
 
-**Administration** (rôle Admin uniquement)
+**Administration** (rôle Admin uniquement, en ligne)
 
-- Comptes : créer, désactiver, réinitialiser un mot de passe (l'utilisateur doit alors en choisir un nouveau à sa connexion suivante), désactiver le 2FA d'un utilisateur qui a perdu son téléphone, choisir le rôle. Un compte jamais utilisé peut être supprimé.
-- Catégories de liste, magasins, rayons : ajouter, renommer, désactiver. Un élément déjà utilisé ne peut pas être supprimé, seulement désactivé. Pour un magasin : choisir s'il est « simple » ou « multi » et, dans ce cas, les magasins qu'il regroupe.
-- Données de départ fournies : catégories Courses et Tâches, trois magasins (Carrefour, E.Leclerc, Lidl) et douze rayons classiques, tous modifiables.
-- **Écart (nouvelle fonction, 17 octobre 2026) :** noms enregistrés. L'Admin voit les noms de l'historique d'autocomplétion (une ligne par nom, avec rayon habituel, nombre d'utilisations et nombre de fois où il est présent dans les listes), les cherche (sans accents ni majuscules) et les trie (par nom, par utilisation), 50 à la fois. Il peut corriger un nom, avec confirmation chiffrée : l'historique et tous les articles des listes de courses portant ce nom (même nom une fois normalisé, sans correspondance approximative) prennent le nouveau nom, jamais les éléments des autres listes ; s'il existe déjà, les deux entrées sont fusionnées. Il peut aussi retirer un nom des suggestions, sans toucher aux listes.
+Trois onglets :
 
-**Compte**
+- **Comptes** : ajouter un compte (avec un mot de passe provisoire, à changer à la première connexion), choisir son rôle (« Utilisateur » ou « Admin »), réinitialiser son mot de passe, désactiver sa double authentification (téléphone perdu), le désactiver ou le réactiver ; un compte jamais utilisé peut être supprimé.
+- **Catégories** : ajouter, renommer, indiquer s'il s'agit d'une liste de courses, désactiver ou réactiver ; une catégorie jamais utilisée peut être supprimée.
+- **Courses**, avec trois choix :
+  - « Magasins » : ajouter un magasin « Simple » ou « Multi » (et choisir les magasins qu'il regroupe), renommer, désactiver ; supprimer s'il n'a jamais été utilisé ;
+  - « Rayons » : ajouter, renommer, désactiver ; supprimer s'il n'a jamais été utilisé ;
+  - « Articles » : la mémoire des noms des listes de courses (une ligne par nom, avec son rayon habituel, son nombre d'utilisations et sa présence dans les listes), recherche (sans accents ni majuscules), tri, 50 à la fois. « Corriger » change un nom partout (mémoire et articles des listes de courses, jamais les éléments des autres listes), avec confirmation chiffrée ; s'il existe déjà, les deux sont réunis. « Modifier le rayon » change le rayon habituel (les articles déjà dans les listes ne changent pas). « Retirer » l'enlève des suggestions, sans toucher aux listes.
+- Un élément déjà utilisé ne peut pas être supprimé, seulement désactivé. Un nom changé (catégorie, magasin, rayon) apparaît sur tous les téléphones sans recharger.
+- Données de départ : catégories Courses et Tâches, trois magasins (Carrefour, E.Leclerc, Lidl) et douze rayons classiques, tous modifiables.
 
-- Changer son propre mot de passe, activer ou désactiver sa double authentification (2FA), choisir le thème (clair, sombre ou automatique selon le téléphone), se déconnecter.
+**Compte et Réglages**
+
+- Réglages : la carte du compte (elle ouvre « Mon compte »), Administration (Admin), Aide, « À propos » (version installée ; pour l'Admin, état de la vérification de mise à jour), Se déconnecter.
+- Mon compte : changer son mot de passe, activer ou désactiver sa double authentification, choisir le thème (clair, sombre ou automatique selon le téléphone), « Réinitialiser les données de ce téléphone » (recharge la copie locale depuis le serveur).
+- Aide : une page qui explique l'application selon le rôle (voir « Écrans »).
 
 ## Écrans et parcours
 
-Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage par lien et la page publique. Le plus important reste l'écran d'une liste : il doit permettre d'ajouter et de cocher sans quitter le pouce du bas de l'écran.
+Le plus important reste l'écran d'une liste : il doit permettre d'ajouter et de cocher sans quitter le pouce du bas de l'écran.
 
 | Écran | Contenu | Actions principales |
 | --- | --- | --- |
 | Connexion | Identifiant, mot de passe, puis code à 6 chiffres si le 2FA est activé. Session longue pour ne pas se reconnecter en magasin. Au tout premier lancement, l'écran propose de créer le compte Admin. | Se connecter |
-| Mes listes (accueil) | Une carte par liste : nom, catégorie, magasin, nombre d'articles restants, personnes partageant. Tri par dernière activité. **Écart (décision du 19 octobre 2026) :** carte compacte, sans catégorie ni magasin (voir la décision « Carte d'accueil plus compacte »). **Écart :** bouton « ⋯ » dans le coin de chaque carte qui a au moins une action pour ce compte : propriétaire « Modifier la liste », « Dupliquer la liste », « Partager par lien », « Supprimer la liste » ; contributeur « Dupliquer la liste », « Quitter la liste » ; invité « Quitter la liste » (mêmes actions que le menu ⋮ de la liste) ; pas de bouton sans action. **Écart :** bouton de tri (icône seule, à côté des Réglages) qui bascule entre « Plus récentes d'abord » (par défaut) et « Ordre alphabétique » ; choix gardé sur le téléphone. **Écart :** l'indicateur de synchro / hors ligne est dans la barre du haut, entre le titre et les boutons (réduit à son icône si la place manque). | Ouvrir une liste, créer une liste |
-| Liste | En-tête (nom, magasin, menu). Champ d'ajout. Articles groupés par rayon (par magasin si le magasin de la liste est « multi », sans rayon). Vignette de photo sur les articles qui en ont une. Indicateur de synchro / hors ligne. **Écart :** bouton « Scanner » (code-barres) à côté du champ d'ajout, listes de courses seulement. | Ajouter, cocher, tout décocher, retirer les cochés (zone « Dans le panier » / « Terminés »), actualiser, partager par lien |
-| Article | Feuille qui monte du bas : nom, quantité, note, photo, rayon (magasin simple) ou magasin (si le magasin de la liste est « multi »). **Écart :** champ « Code-barres » (listes de courses) : une petite croix dans le champ pour l'effacer, et le bouton de scan (icône) sur la même ligne. Aides courtes à côté du titre : « Quantité (par exemple 2 ou 500 g) », « Code-barres (8, 12 ou 13 chiffres) ». **Écart :** « Enregistrer » et « Supprimer » sont des icônes dans l'en-tête de la feuille (poubelle, un espace, coche, croix), plus de boutons en bas. | Enregistrer, supprimer, prendre, choisir ou retirer la photo |
-| Créer / modifier une liste | Nom, catégorie, magasin (simple ou « multi », si courses), partage avec les autres utilisateurs. **Écart :** sous chaque personne cochée, son droit (« Peut modifier » ou « Lecture seule », lecture seule par défaut) ; le propriétaire, sans choix, a « Tous les droits ». | Enregistrer, supprimer la liste |
-| Réglages | Mot de passe, double authentification (activation par QR code, codes de secours), thème clair / sombre / auto, déconnexion. Lien vers l'administration pour un Admin. **Écart :** organisation en deux écrans. Réglages : carte du compte (ouvre « Mon compte »), Administration (Admin), « À propos » (une carte : version installée et, pour l'Admin, pastille d'état de la mise à jour ; développeur et projet), Se déconnecter. Mon compte : identité, Sécurité (mot de passe, double authentification), Apparence (thème), Ce téléphone (« Réinitialiser les données de ce téléphone »). **Écart (décision du 19 octobre 2026) :** ligne « Aide » qui ouvre la page d'aide (#/aide). | Changer le mot de passe, activer le 2FA, choisir le thème |
-| Aide (**écart, décision du 19 octobre 2026**) | Barre du haut « Aide » avec retour vers les Réglages. « Qui peut quoi » (actions × Propriétaire, Contributeur, Invité, Admin), puis cinq sections repliables : Pour tout le monde, Propriétaire d'une liste, Contributeur, Invité, Administrateur (cette dernière seulement pour un Admin). Contenu dans public/js/help-content.js. Disponible hors ligne. | Lire, replier ou déplier une section, revenir aux Réglages |
-| Administration | Quatre onglets : Comptes, Catégories, Magasins, Rayons. Chacun liste ses éléments avec ajout, renommage, désactivation. Un magasin est « simple » ou « multi » (avec les magasins qu'il regroupe). **Écart :** un cinquième onglet « Articles » (la mémoire des noms d'articles de courses ; appelé « Noms » jusqu'au 19 octobre 2026) : recherche, tri, corriger, retirer des suggestions. **Écart (décision du 19 octobre 2026) :** trois onglets seulement, Comptes, Catégories et Courses ; « Courses » regroupe Magasins, Rayons et Articles (voir la décision « Administration en trois onglets »). | Gérer les données de référence |
-| Partage par lien | Feuille ouverte depuis le menu de la liste (propriétaire) : état du lien (actif, expire le…, protégé ou non), mot de passe généré affiché une seule fois, durée en heures, en jours ou illimitée. | Créer, changer la durée, régénérer ou retirer le mot de passe, copier le lien, arrêter le partage |
+| Mes listes (accueil) | Barre du haut : titre, pastille d'état (« À jour », « Synchronisation… », « Hors ligne · N en attente » ; un appui synchronise), bouton de tri (« Plus récentes d'abord » ou « Ordre alphabétique », choix gardé sur le téléphone), Réglages. Une carte compacte par liste : icône, titre, « il y a … », bouton ⋮ (actions de la liste) ; compteur « X/Y » (restants sur total ; « Liste vide », ou coche verte quand tout est coché), pastille « Lecture seule » s'il y a lieu, symbole du lien public en cours (propriétaire), pastilles des personnes. Bouton « Nouvelle liste » en bas. | Ouvrir, créer une liste, actions de la liste |
+| Liste | Barre du haut : retour, icône et titre de la liste, catégorie et magasin (avec « Multi » pour un magasin « multi »), « Trier la liste » (listes autres que les courses, si un tri est possible), menu ⋮. Barre d'état : pastille d'état, « Tout replier ». Bandeau « Lecture seule » pour un invité. Articles groupés par rayon (par magasin pour un « multi », par priorité si ce tri est choisi), en-têtes repliables avec « X/Y », vignettes des photos, zone des cochés. En bas : champ d'ajout, « Scanner » (listes de courses), « + » ; absent pour un invité. | Ajouter, scanner, cocher, ouvrir la fiche, glisser pour supprimer, tout décocher, retirer les cochés, actions de la liste |
+| Fiche d'un article | Feuille qui monte du bas. En-tête : titre, poubelle, disquette « Enregistrer », croix. Champs : nom, quantité (« Quantité (par exemple 2 ou 500 g) »), note, photo, rayon (magasin simple) ou magasin (« multi »), code-barres (« Code-barres (8, 12 ou 13 chiffres) », listes de courses : petite croix pour l'effacer, bouton de scan sur la même ligne), priorité et échéance (autres listes, si l'option est activée). Pour un invité, la même fiche en consultation seule. | Enregistrer, supprimer, ajouter, changer ou retirer la photo, scanner le code-barres |
+| Nouvelle liste / Modifier la liste | Un seul formulaire : titre, catégorie, icône (grille de 35), magasin (si courses, avec « Nouveau magasin… »), options des éléments (si ce n'est pas une liste de courses), personnes avec qui la liste est partagée et, sous chacune, son droit (« Peut modifier » ou « Lecture seule », lecture seule au départ ; le propriétaire, sans choix, a « Tous les droits »). « Enregistrer » en bas ; dans « Modifier la liste », « Supprimer la liste ». | Enregistrer, supprimer la liste |
+| Réglages, Mon compte | Réglages : carte du compte, Administration (Admin), Aide, « À propos » (version, et pour l'Admin l'état de la mise à jour avec son bouton d'actualisation), Se déconnecter. Mon compte : identité, Sécurité (mot de passe, double authentification par QR code et codes de secours), Apparence (Clair, Sombre, Auto), Ce téléphone (« Réinitialiser les données de ce téléphone »). | Changer le mot de passe, activer le 2FA, choisir le thème |
+| Aide | Barre du haut « Aide » avec retour vers les Réglages (adresse #/aide). « Qui peut quoi » (actions × Propriétaire, Contributeur, Invité, Admin, avec coche ou croix ET texte), puis cinq sections repliables : Pour tout le monde, Propriétaire d'une liste, Contributeur, Invité, Administrateur (cette dernière seulement pour un Admin). Tout le texte est dans public/js/help-content.js. Disponible hors ligne. | Lire, replier ou déplier une section |
+| Administration | Trois onglets : Comptes, Catégories, Courses ; « Courses » propose Magasins, Rayons et Articles (voir Fonctionnalités). Le dernier choix est retrouvé en revenant sur « Courses ». | Gérer les comptes et les données de référence |
+| Partage par lien | Feuille ouverte depuis le menu ⋮ de la liste (propriétaire) : état du lien (actif, expire le…, protégé ou non), mot de passe généré affiché une seule fois, durée en heures, en jours ou illimitée. | Créer, changer la durée, régénérer ou retirer le mot de passe, copier le lien, arrêter le partage |
 | Page publique | Page ouverte par le lien, sans compte : saisie du mot de passe si le lien est protégé, nom de la liste, articles en lecture seule avec photos. Lien expiré ou inconnu : message neutre. | Consulter, actualiser |
 
 **Règles mobile-first**
 
 - Zones tactiles d'au moins 44 px. Les actions fréquentes (ajouter, créer une liste) sont en bas de l'écran, à portée de pouce.
-- Le champ d'ajout reste visible pendant le défilement de la liste.
-- Aucun double-clic ni survol requis. Les actions secondaires passent par un menu, pas par des gestes cachés.
-- Retour d'état toujours visible : un petit indicateur dit si la liste est à jour, en cours de synchro ou hors ligne.
-- **Écart (17 octobre 2026) :** aucun curseur automatique. Listo ne met jamais le curseur dans un champ de saisie de lui-même (ouverture d'un écran, d'une fenêtre ou d'une feuille, mode d'édition, erreur, ajout) : le clavier ne s'ouvre que quand on touche un champ. Une fenêtre reçoit le focus sur elle-même ou sur son bouton principal ; Tab reste dans la fenêtre, Échap la ferme. Un champ fautif est signalé (aria-invalid, message relié par aria-describedby) sans recevoir le curseur.
-- Application installable sur l'écran d'accueil (PWA), affichée sans barre de navigateur.
+- Le champ d'ajout reste visible pendant le défilement de la liste. Sur chaque écran, la barre du haut reste en place : seule la zone en dessous défile.
+- Aucun double-clic ni survol requis. Le glissement vers la gauche n'est qu'un raccourci : la poubelle de la fiche fait la même chose.
+- Retour d'état toujours visible : la pastille dit si la liste est à jour, en cours de synchro ou hors ligne (avec le nombre de modifications en attente).
+- Aucun curseur automatique : Listo ne met jamais le curseur dans un champ de saisie de lui-même (ouverture d'un écran, d'une fenêtre ou d'une feuille, erreur, ajout) ; le clavier ne s'ouvre que quand on touche un champ. Une fenêtre reçoit le focus sur elle-même ou sur son bouton principal ; Tab reste dans la fenêtre, Échap la ferme. Un champ fautif est signalé (aria-invalid, message relié par aria-describedby) sans recevoir le curseur.
+- Clavier ouvert : sur l'iPhone, l'application recouvre exactement la zone visible au-dessus du clavier (barre du haut visible, champ juste au-dessus du clavier, sans bande vide) ; sur Android, rien ne change. Un appui sur un bouton alors qu'un champ a le curseur marche du premier coup : la page n'est jamais réajustée pendant un appui.
+- Application installable sur l'écran d'accueil (PWA), affichée sans barre de navigateur, aux couleurs du thème choisi.
 
 **Version ordinateur**
 
@@ -149,20 +175,20 @@ Neuf écrans suffisent : les sept des utilisateurs, plus la feuille de partage p
 
 ## Modèle de données
 
-Treize tables SQLite. Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant.
+Treize tables SQLite (avec recovery_codes, qui garde les codes de secours du 2FA). Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant. Le schéma évolue par migrations numérotées (14 aujourd'hui), appliquées seules au démarrage ; la liste de celles qui ont suivi les onze étapes est dans [docs/exploitation.md](exploitation.md#9-mettre-à-jour-listo).
 
 | Table | Champs principaux | Remarques |
 | --- | --- | --- |
 | users | id, username (unique), display_name, password_hash, role (admin / user), active, totp_secret (chiffré), totp_enabled, totp_last_step, must_change_password, created_at | Un compte désactivé ne peut plus se connecter. must_change_password vaut 1 quand le mot de passe a été choisi par un Admin. totp_last_step empêche de réutiliser un code. Les codes de secours du 2FA sont dans une table recovery_codes (id, user_id, code_hash, used_at). |
 | sessions | id (jeton aléatoire), user_id, expires_at, created_at | Le jeton est stocké haché. |
 | categories | id, name, is_shopping, active | is_shopping active magasin et rayons sur la liste. |
-| stores | id, name, active, is_multi | Liste commune gérée par l'Admin. is_multi = 1 pour un magasin « multi », qui regroupe d'autres magasins. |
+| stores | id, name, active, is_multi | Liste commune, gérée par l'Admin ; tout compte peut en créer un (voir Fonctionnalités). is_multi = 1 pour un magasin « multi », qui regroupe d'autres magasins. |
 | store_members | multi_store_id, store_id | Magasins regroupés par un magasin « multi ». Clé composée. Un magasin « multi » n'en regroupe pas un autre. |
-| aisles | id, name, active | Rayons communs à tous les magasins. |
-| lists | id (UUID), name, category_id, store_id (facultatif), owner_id, priority_enabled, due_enabled, created_at, updated_at, deleted_at | Suppression logique via deleted_at. **Écart (migration 13) :** priority_enabled et due_enabled (0 ou 1, contrainte CHECK) : priorité et échéance activées ou non pour une liste autre que les courses (une liste de courses les ignore) ; les listes existantes autres que les courses ont reçu 1 et 1 (rien ne change), les listes de courses 0 et 0 ; une nouvelle liste a 0 et 0 sauf choix contraire à sa création. **Écart (migration 14) :** icon, identifiant d'une icône de la liste blanche (public/js/list-icons.js), vide par défaut = icône de la catégorie ; les listes existantes ont reçu une valeur vide (elles gardent l'icône de leur catégorie). |
-| list_members | list_id, user_id, access | Clé composée. Le propriétaire y figure aussi. **Écart (migration 12) :** access, droit de la personne sur la liste : 'modification' (« Peut modifier ») ou 'lecture' (« Lecture seule », valeur par défaut) ; contrainte CHECK ; les membres présents avant la migration ont reçu 'modification' ; le propriétaire a toujours 'modification' (le serveur ne compte d'ailleurs que lists.owner_id pour lui). |
-| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), priority, due_date (facultatif), ean (facultatif), checked, checked_at (facultatif), created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi » (qui n'ont pas de rayon : aisle_id reste vide). photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. **Écart (migration 9) :** checked_at est la date du coché, posée par le serveur au premier coché et effacée au décoché ; elle ordonne la zone des cochés (les articles déjà cochés avant la migration ont reçu leur date de modification). **Écart (migration 10) :** priority ('low', 'normal' par défaut, 'high' ; contrainte CHECK) et due_date (date seule AAAA-MM-JJ, sans heure ni fuseau, ou vide) : priorité et échéance des éléments des listes autres que les courses ; les éléments existants sont en priorité normale, sans échéance. **Écart (migration 11) :** ean, code-barres d'un article de liste de courses, sous sa forme normalisée (8 ou 13 chiffres, UPC-A ramené en EAN-13 ; contrainte CHECK : vide, ou 8 ou 13 chiffres) ; les articles existants n'ont pas de code. |
-| item_history | id, name_normalized, store_id (facultatif), display_name, aisle_id, use_count, last_used_at ; unique par article et par magasin | Alimente l'autocomplétion, le rayon automatique et le magasin automatique. Une ligne par article et par magasin : rayon habituel dans ce magasin (vide pour les listes « multi »). Une ligne sans magasin sert de valeur générale. |
+| aisles | id, name, active | Rayons communs à tous les magasins, gérés par l'Admin ; tout compte peut en créer un. |
+| lists | id (UUID), name, category_id, store_id (facultatif), owner_id, priority_enabled, due_enabled, icon, created_at, updated_at, deleted_at | Suppression logique via deleted_at. priority_enabled et due_enabled (0 ou 1) : options « Priorité » et « Échéance » d'une liste autre que les courses (une liste de courses les ignore ; 0 pour une nouvelle liste). icon : identifiant d'une icône de la liste blanche (public/js/list-icons.js), vide = icône de la catégorie. |
+| list_members | list_id, user_id, access | Clé composée. Le propriétaire y figure aussi. access : 'modification' (« Peut modifier ») ou 'lecture' (« Lecture seule », valeur par défaut), contrainte CHECK ; le propriétaire a toujours 'modification' (le serveur ne compte d'ailleurs que lists.owner_id pour lui). |
+| items | id (UUID), list_id, name, quantity, note, aisle_id (facultatif), store_id (facultatif), photo_at (facultatif), priority, due_date (facultatif), ean (facultatif), checked, checked_at (facultatif), created_by, created_at, updated_at, deleted_at | Suppression logique, pour que les autres téléphones apprennent la suppression. store_id sert aux listes à magasin « multi » (qui n'ont pas de rayon : aisle_id reste vide). photo_at est la date de la photo (vide = pas de photo) ; l'image est un fichier data/photos/<id de l'article>.jpg, pas un champ de la base. checked_at : date du coché, posée par le serveur au premier coché et effacée au décoché ; elle ordonne la zone des cochés. priority ('low', 'normal' par défaut, 'high' ; contrainte CHECK) et due_date (date seule AAAA-MM-JJ, sans heure ni fuseau, ou vide) : listes autres que les courses. ean : code-barres d'un article de liste de courses, sous sa forme normalisée (vide, ou 8 ou 13 chiffres, UPC-A ramené en EAN-13 ; contrainte CHECK). |
+| item_history | id, name_normalized, store_id (facultatif), display_name, aisle_id, use_count, last_used_at ; unique par article et par magasin | La mémoire des noms (listes de courses seulement) : alimente l'autocomplétion, le rayon automatique et le magasin automatique. Une ligne par article et par magasin : rayon habituel dans ce magasin (vide pour les listes « multi »). Une ligne sans magasin sert de valeur générale. |
 | applied_ops | id (UUID de l'opération), user_id, result, applied_at | Opérations déjà appliquées : un renvoi après une coupure retrouve son résultat au lieu d'être appliqué deux fois. Nettoyée après 30 jours. |
 | public_shares | id, list_id, token_hash, token_sealed (chiffré), password_hash (facultatif), expires_at (vide = illimité), created_by, created_at, revoked_at | Un seul lien actif par liste. Le jeton n'est jamais stocké en clair : son empreinte retrouve le lien, sa version chiffrée le réaffiche au propriétaire. Le mot de passe est haché (scrypt). |
 
@@ -174,7 +200,7 @@ Treize tables SQLite. Les listes et les articles ont un identifiant UUID créé 
 - name_normalized = nom en minuscules, sans accents ni espaces superflus, pour que « Lait », « lait » et « Lait  » ne fassent qu'une entrée d'historique.
 - Historique par magasin : pour un article ajouté dans une liste à magasin simple, on cherche d'abord la ligne de ce magasin, sinon la ligne générale (sans magasin). Dans une liste à magasin « multi », le magasin habituel est celui, parmi les magasins regroupés, où l'article a été le plus utilisé (le plus récent en cas d'égalité).
 - Clés étrangères activées, index sur items(list_id, updated_at) et list_members(user_id).
-- **Écart (migration 8, 17 octobre 2026) :** seules les listes de courses écrivent dans item_history. La migration 8 retire de l'historique les noms venus seulement des autres listes : un nom est effacé (toutes ses lignes) si aucun article d'une liste de courses ne le porte (actif, ou supprimé et pas encore purgé) et si aucune de ses lignes n'a jamais eu de rayon ni de magasin. Aucune table ne change.
+- Seules les listes de courses écrivent dans item_history (ajout, renommage, rayon ou magasin) ; changer la catégorie d'une liste n'y écrit ni n'efface rien.
 
 ## Synchronisation et mode hors ligne
 
@@ -182,11 +208,10 @@ Le téléphone garde une copie locale des listes, modifie d'abord cette copie, p
 
 **Temps réel (Server-Sent Events)**
 
-- Quand une liste est ouverte, le téléphone ouvre une connexion SSE vers le serveur. Le serveur y envoie un message court à chaque modification d'une liste partagée (« la liste X a changé »).
+- Dès que l'application est au premier plan, le téléphone ouvre une connexion SSE vers le serveur (fermée en arrière-plan, pour la batterie ; 5 connexions au plus par compte). Le serveur y envoie un message court à chaque modification d'une liste (« event: list », « la liste X a changé »), et « event: refs » quand une catégorie, un magasin ou un rayon change (création, renommage, désactivation) : les noms se mettent à jour sur les téléphones sans recharger.
 - À la réception, le téléphone demande au serveur les changements depuis sa dernière synchronisation et met l'écran à jour.
-- Filet de sécurité : rafraîchissement automatique toutes les 60 secondes quand l'application est au premier plan, à chaque retour au premier plan, et bouton de rafraîchissement manuel.
-- La connexion SSE se rétablit seule après une coupure.
-- **Écart :** le flux est ouvert dès que l'application est au premier plan (pas seulement quand une liste est ouverte) et fermé en arrière-plan, pour économiser la batterie. Reconnexion avec un délai croissant (de 1 à 30 secondes) ; 5 connexions au plus par compte.
+- Filet de sécurité : rafraîchissement automatique toutes les 60 secondes quand l'application est au premier plan, à chaque retour au premier plan, et à la demande (un appui sur la pastille d'état).
+- La connexion SSE se rétablit seule après une coupure, avec un délai croissant (de 1 à 30 secondes).
 
 **Hors ligne**
 
@@ -206,9 +231,10 @@ Le téléphone garde une copie locale des listes, modifie d'abord cette copie, p
 
 **À savoir**
 
-- Hors ligne, l'administration, le changement de partage d'une liste et la gestion du lien public sont indisponibles (boutons grisés avec une explication).
+- Hors ligne, sont indisponibles (avec une explication) : l'Administration, le changement de partage d'une liste, la gestion du lien public, la duplication, « Quitter la liste », la création d'un magasin ou d'un rayon, et la recherche du nom d'un produit scanné (le code est lu quand même ; le nom se tape).
 - Si la session a expiré pendant la coupure, l'application demande de se reconnecter sans perdre la file d'attente.
-- L'indicateur d'état affiche : « À jour », « Synchronisation… » ou « Hors ligne · N en attente » (libellé de la maquette).
+- La pastille d'état affiche : « À jour », « Synchronisation… » ou « Hors ligne · N en attente ». Sur « Mes listes », elle est dans la barre du haut et se réduit à son icône si la place manque.
+- Un téléphone garde le code d'une ancienne version : il se recharge tout seul au premier moment sûr après une mise à jour du serveur (aucune fenêtre ouverte, aucun texte en cours de saisie, aucun envoi en cours), sinon un bandeau « Nouvelle version disponible » propose « Recharger » ; la file d'attente et la copie locale sont gardées.
 
 ## Sécurité
 
@@ -241,16 +267,16 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 **Autorisation**
 
 - Chaque requête vérifie côté serveur le compte connecté, son appartenance à la liste concernée (list_members) et, pour les routes d'administration, le rôle Admin. Le téléphone n'est jamais cru sur parole.
-- **Écart (migration 12) :** chaque écriture sur une liste ou ses articles vérifie aussi, dans la base et à chaque requête, le droit du compte : propriétaire, ou contributeur. Une seule fonction décide (canEdit, server/lists.js), utilisée par les opérations de /api/ops, l'envoi et le retrait des photos et le mode scan. Refus : 403 « Vous avez un accès en lecture seule à cette liste. », sans rien écrire ni annoncer. Un non-membre reçoit toujours la même réponse qu'avant (404), sans rien apprendre du droit des autres.
+- Chaque écriture sur une liste ou ses articles vérifie aussi, dans la base et à chaque requête, le droit du compte : propriétaire, ou contributeur. Une seule fonction décide (canEdit, server/lists.js), utilisée par les opérations de /api/ops, l'envoi et le retrait des photos le mode scan et la duplication ; les actions réservées au propriétaire (modifier la liste, ses partages, son lien public, la supprimer) le vérifient à part. Refus : 403 « Vous avez un accès en lecture seule à cette liste. », sans rien écrire ni annoncer. Un non-membre reçoit toujours la même réponse qu'avant (404), sans rien apprendre du droit des autres.
 - Les modifications exigent un en-tête Origin correspondant au domaine de l'application (protection CSRF en complément de SameSite).
-- Ordre des contrôles : origine (CSRF) d'abord, sur toutes les routes de l'API. Ensuite, un petit corps de requête (20 ko au plus) peut être lu avant la vérification du compte, sur toutes les routes sauf l'envoi des modifications (/api/ops) ; pour /api/ops, la session et le mot de passe à jour sont vérifiés d'abord, puis le corps (200 ko au plus) est lu. Une route qui exige un compte refuse ensuite une requête sans session. **Décision du 17 octobre :** règle écrite d'après le code livré (avant : « seules la connexion et la création du premier Admin lisent un petit corps sans session »).
+- Ordre des contrôles : origine (CSRF) d'abord, sur toutes les routes de l'API. Ensuite, un petit corps de requête (20 ko au plus) peut être lu avant la vérification du compte, sur toutes les routes sauf l'envoi des modifications (/api/ops) ; pour /api/ops, la session et le mot de passe à jour sont vérifiés d'abord, puis le corps (200 ko au plus) est lu. Une route qui exige un compte refuse ensuite une requête sans session.
 
 **Entrées et affichage**
 
 - Longueurs maximales validées côté serveur (nom 100 caractères, quantité 30, note 500).
 - Requêtes SQL toujours paramétrées, jamais construites par concaténation.
 - Texte affiché via textContent, jamais innerHTML, pour éviter l'injection de scripts.
-- En-têtes, sur toutes les réponses : Content-Security-Policy stricte (ressources du même domaine uniquement, pas de script ni de style en ligne), X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy (fonctions du navigateur inutilisées interdites), Cross-Origin-Opener-Policy et Cross-Origin-Resource-Policy (same-origin), X-Robots-Tag: noindex, nofollow (et balise meta robots dans la page ; pas de robots.txt, qui empêcherait les moteurs de lire cette consigne). L'en-tête Strict-Transport-Security est ajouté par Nginx Proxy Manager.
+- En-têtes, sur toutes les réponses : Content-Security-Policy stricte (ressources du même domaine uniquement, pas de script ni de style en ligne ; 'wasm-unsafe-eval' sur les pages de l'application seulement, pour le lecteur de codes-barres, jamais 'unsafe-eval'), X-Content-Type-Options, Referrer-Policy, X-Frame-Options, Permissions-Policy (fonctions du navigateur inutilisées interdites), Cross-Origin-Opener-Policy et Cross-Origin-Resource-Policy (same-origin), X-Robots-Tag: noindex, nofollow (et balise meta robots dans la page ; pas de robots.txt, qui empêcherait les moteurs de lire cette consigne). L'en-tête Strict-Transport-Security est ajouté par Nginx Proxy Manager.
 
 **Exposition**
 
@@ -258,16 +284,16 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 - L'application fait confiance à l'en-tête X-Forwarded-For du seul proxy, pour connaître l'adresse IP réelle.
 - Journal de sécurité (connexions réussies et échouées, blocages, actions d'administration, partages et changements de droit), sans mot de passe, jeton ni code. Il est écrit dans docker logs et dans data/journal.log (droits 600, rotation à 1 Mo, 5 anciens fichiers conservés).
 - Aucun secret dans le code ni dans le dépôt. Aucun mot de passe en configuration : la clé de chiffrement est générée au premier démarrage.
-- **Écart :** en production, Listo refuse de démarrer si LISTO_PUBLIC_URL n'est pas une adresse en https:// (le message est dans les journaux) : sans HTTPS, ni les cookies Secure, ni le mode hors ligne, ni l'installation sur le téléphone ne marchent.
+- En production, Listo refuse de démarrer si LISTO_PUBLIC_URL n'est pas une adresse en https:// (le message est dans les journaux) : sans HTTPS, ni les cookies Secure, ni le mode hors ligne, ni l'installation sur le téléphone ne marchent.
 - Le dépôt étant public, les failles se signalent en privé, selon [SECURITY.md](../SECURITY.md).
 
 **Photos des articles**
 
-- Accès : photos servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées. Pour un membre, même contrôle que pour l'article lui-même (compte connecté, membre de la liste) ; pour un visiteur, mêmes contrôles que pour le lien (/api/public/<jeton>/photos/<article>). Aucune autre adresse publique ni devinable. **Décision du 17 octobre :** texte mis d'accord avec le code livré (avant : « servie qu'à un compte connecté, membre de la liste »).
+- Accès : photos servies aux membres de la liste, et, pour une liste partagée par lien public, au visiteur qui présente un lien valable (jeton, mot de passe si demandé, lien non expiré), pour les seuls articles de cette liste ; métadonnées EXIF retirées. Pour un membre, même contrôle que pour l'article lui-même (compte connecté, membre de la liste) ; pour un visiteur, mêmes contrôles que pour le lien (/api/public/<jeton>/photos/<article>). Aucune autre adresse publique ni devinable.
 - Format : seulement du JPEG. Le serveur vérifie la signature du fichier et la structure de ses blocs, plafonne le poids (2 Mo) et les dimensions annoncées, et refuse tout le reste, quel que soit le type déclaré par le téléphone.
 - Vie privée : le serveur retire les métadonnées du fichier (position GPS, modèle de l'appareil, date de prise de vue) en supprimant les blocs EXIF, sans bibliothèque supplémentaire. La réduction faite sur le téléphone les retire déjà.
 - Stockage : fichiers dans data/photos, nommés d'après l'identifiant de l'article (jamais d'après un nom envoyé par le téléphone : aucun chemin choisi par l'utilisateur). Un fichier est effacé quand sa photo est remplacée ou retirée, ou quand son article est purgé.
-- Envoi par une route dédiée, avec sa propre limite de taille (2 Mo) et un plafond d'envois par compte et par heure. Le lot d'opérations (/api/ops) accepte 200 ko et 100 opérations au plus par envoi, lus seulement après la vérification du compte. **Décision du 17 octobre :** valeurs réelles du code (avant : « quelques Ko »).
+- Envoi par une route dédiée, avec sa propre limite de taille (2 Mo) et un plafond d'envois par compte et par heure. Le lot d'opérations (/api/ops) accepte 200 ko et 100 opérations au plus par envoi, lus seulement après la vérification du compte.
 - Service : Content-Type image/jpeg et X-Content-Type-Options: nosniff. La Content-Security-Policy n'a pas besoin d'être assouplie (images du même domaine). La photo se choisit par le sélecteur du téléphone : aucun accès continu à la caméra n'est demandé au navigateur.
 
 **Lien public d'une liste**
@@ -283,55 +309,60 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
   - la liste : nom, catégorie, nom du magasin (ou rien), regroupement (par rayon, par magasin ou aucun) ;
   - chaque groupe : nom du rayon ou du magasin (rien pour « Sans rayon » ou « Sans magasin »), puis ses articles ;
   - chaque article : nom, quantité, note, état coché, adresse de sa photo par le lien (ou rien) ;
-  - **écart (17 octobre 2026) :** les articles cochés ne sont plus dans les groupes mais dans une partie « done », mêmes champs, du plus récemment coché au plus ancien (la date du coché n'est pas envoyée) ; la page publique les montre dans une zone « Dans le panier » / « Terminés » en lecture seule, sans repli ni action ;
+  - pour une liste autre que les courses : la priorité et l'échéance de chaque élément, chacune seulement si l'option est activée pour la liste ;
+  - les articles cochés, dans une partie « done » à part des groupes, mêmes champs, du plus récemment coché au plus ancien (la date du coché n'est pas envoyée) ; la page publique les montre dans une zone « Dans le panier » / « Terminés » en lecture seule, sans repli ni action ;
   - la date d'expiration du lien (ou rien s'il est illimité).
 
-  Aucun nom de personne, aucun identifiant de compte ni de liste, aucune autre liste ni historique. Seule exception : l'adresse d'une photo contient l'identifiant (UUID) de son article, qui ne donne accès à rien en dehors du lien. **Décision du 17 octobre :** liste des champs écrite d'après le code livré (avant : liste blanche sans la date d'expiration, les noms des groupes ni le regroupement).
+  Aucun nom de personne, aucun identifiant de compte ni de liste, aucune autre liste ni historique. Seule exception : l'adresse d'une photo contient l'identifiant (UUID) de son article, qui ne donne accès à rien en dehors du lien.
 - Validité, précisée dans le code : un lien n'est valable que si la liste existe encore, si son propriétaire est toujours actif et s'il en est encore le créateur.
 - Clé perdue : si secrets/secret.key est perdue puis recréée, un lien existant marche encore, mais son adresse ne peut plus être réaffichée au propriétaire (version chiffrée illisible) : il faut l'arrêter et en créer un nouveau.
 - Navigation : X-Robots-Tag: noindex, Cache-Control: no-store et Referrer-Policy: no-referrer (le jeton ne part pas vers d'autres sites). Le service worker ne met jamais en cache les pages ni les données du lien public.
 
 ## Architecture technique
 
-Tout tient en HTML, CSS et JavaScript, côté téléphone comme côté serveur. La seule notion nouvelle est le SQL, un langage de requêtes très simple que Claude Code écrira et commentera.
+Tout tient en HTML, CSS et JavaScript, côté téléphone comme côté serveur. La seule notion nouvelle est le SQL, un langage de requêtes très simple que Claude Code écrit et commente.
 
 | Brique | Choix | Pourquoi |
 | --- | --- | --- |
 | Interface | HTML, CSS, JavaScript natif (modules ES), sans framework ni étape de compilation | Lisible, modifiable directement, aucun outil à installer |
 | Application installable | PWA : manifest + service worker | Icône sur l'écran d'accueil, ouverture sans réseau, sans passer par un store |
-| Serveur | Node.js avec Express | Même langage que l'interface. Express est minimal et gère les connexions SSE simplement |
+| Serveur | Node.js 24 (LTS) avec Express 5 | Même langage que l'interface. Express est minimal et gère les connexions SSE simplement |
 | Base de données | SQLite via better-sqlite3 | Un seul fichier, aucun serveur de base à administrer, largement assez pour quelques utilisateurs |
 | Temps réel | Server-Sent Events | Natif dans le navigateur, reconnexion automatique, plus simple que les WebSockets |
-| Stockage local | IndexedDB | Copie des listes pour le mode hors ligne |
+| Stockage local | IndexedDB | Copie des listes et file d'attente pour le mode hors ligne |
 | Photos | Fichiers JPEG dans data/photos, réduits sur le téléphone et contrôlés par le serveur | Base légère, aucune bibliothèque d'image à installer |
+| Codes-barres | zxing-wasm 3.1.4, copié dans public/vendor/ | Lecture sur le téléphone, sans envoyer la photo |
 
-Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode (dessin du QR code de la double authentification). Le calcul des codes TOTP utilise le module crypto intégré à Node. Aucune bibliothèque côté interface, aucune bibliothèque d'image (les photos sont réduites sur le téléphone, puis contrôlées par du code simple côté serveur). Si un besoin futur exigeait un autre langage ou un framework, Claude Code doit d'abord le signaler et argumenter avant de l'introduire.
+Trois dépendances côté serveur seulement : express, better-sqlite3 et qrcode (dessin du QR code de la double authentification). Le calcul des codes TOTP utilise le module crypto intégré à Node. Côté interface, une seule bibliothèque, le lecteur de codes-barres du mode scan (zxing-wasm, licences MIT et Apache-2.0, voir NOTICE) : copié tel quel dans le dépôt, empreintes vérifiées par un test, jamais chargé depuis un autre site, absent de package.json, téléchargé par le téléphone au premier scan seulement. Aucune bibliothèque d'image (les photos sont réduites sur le téléphone, puis contrôlées par du code simple côté serveur). Si un besoin futur exigeait un autre langage ou un framework, Claude Code doit d'abord le signaler et argumenter avant de l'introduire.
 
-**Écart :** version de Node.js fixée à 24 (LTS, suivie à long terme). L'image de base node:24-slim est épinglée par son empreinte (sha256). Dependabot ne propose que ses correctifs ; le passage à une nouvelle version majeure se fait à la main, vers une version paire uniquement.
+Version de Node.js : 24 (LTS, suivie à long terme). L'image de base node:24-slim est épinglée par son empreinte (sha256). Dependabot ne propose que ses correctifs ; le passage à une nouvelle version majeure se fait à la main, vers une version paire uniquement.
 
 **Routes de l'API**
 
 | Route | Rôle |
 | --- | --- |
 | GET /api/setup, POST /api/setup, POST /api/login, POST /api/login/2fa, POST /api/logout | Savoir s'il faut créer le premier Admin, le créer (tant qu'aucun compte n'existe), ouvrir la session, saisir le code 2FA, la fermer |
-| GET /api/me, POST /api/me/password, /api/me/2fa (activer, vérifier, désactiver, image du QR code) | Compte connecté, changement de mot de passe |
+| GET /api/me, POST /api/me/password, POST /api/me/2fa/enable, /verify, /disable, GET /api/me/2fa/qr.png | Compte connecté, changement de mot de passe, double authentification (activer, vérifier, désactiver, image du QR code) |
 | GET /api/lists, GET /api/lists/:id, GET /api/users, GET /api/suggestions | Mes listes, une liste et ses articles, comptes actifs (choix des personnes avec qui partager), autocomplétion |
 | GET /api/sync?since=… | Tout ce qui a changé depuis un instant donné, pour les listes de l'utilisateur et les données de référence |
-| POST /api/lists/:id/leave | **Écart :** quitter une liste (contributeur ou invité, pour lui-même ; en ligne) ; propriétaire : 403 ; non-membre : 404 |
-| POST /api/lists/:id/duplicate | **Écart :** dupliquer une liste (propriétaire ou contributeur, en ligne) : corps { name, withItems } ; réponse 201 { list, copied } |
-| POST /api/ops | Reçoit un lot d'opérations de la file d'attente (créer, modifier, cocher, supprimer un article ou une liste). Chaque opération a un identifiant unique |
+| POST /api/ops | Reçoit un lot d'opérations de la file d'attente (créer, modifier, supprimer une liste ; tout décocher, retirer les cochés ; créer, modifier, cocher, supprimer, remettre un article). Chaque opération a un identifiant unique |
+| PUT /api/lists/:id/members | Modifier le partage d'une liste et le droit de chaque personne (propriétaire, en ligne) : corps { userIds, access } ; access associe une personne à 'modification' ou 'lecture' ; une personne ajoutée sans droit précisé est en lecture seule, un membre déjà présent garde son droit |
+| POST /api/lists/:id/duplicate | Dupliquer une liste (propriétaire ou contributeur, en ligne) : corps { name, withItems } ; réponse 201 { list, copied } ; 20 par heure et par compte |
+| POST /api/lists/:id/leave | Quitter une liste (contributeur ou invité, pour lui-même, en ligne) ; propriétaire : 403 ; non-membre : 404 |
+| POST /api/lists/:id/products | Mode scan : nom d'un produit à partir de son code-barres (corps { code }), listes de courses, propriétaire et contributeurs |
 | PUT, GET, DELETE /api/items/:id/photo | Envoyer (JPEG, hors du lot d'opérations), lire, retirer la photo d'un article (lire : membres de la liste ; envoyer, retirer : propriétaire et contributeurs) |
-| GET /api/events | Flux SSE de notification des changements |
-| GET /api/about | **Écart :** version installée (commit de l'image) pour le bloc « À propos », et identifiant opaque de la version (rechargement des téléphones), comptes connectés seulement, jamais publique |
-| PUT /api/lists/:id/members | Modifier le partage d'une liste et le droit de chaque personne (propriétaire, en ligne). **Écart :** corps { userIds, access } ; access associe une personne à 'modification' (contributeur) ou 'lecture' (invité) ; une personne ajoutée sans droit précisé est en lecture seule, un membre déjà présent garde son droit |
 | GET, PUT, DELETE /api/lists/:id/share | Lire l'état, créer ou modifier (durée, mot de passe), arrêter le lien public (propriétaire, en ligne) |
-| POST /api/stores, POST /api/aisles | **Écart :** créer un magasin ou un rayon (tout compte connecté, en ligne) ; doublon : 409 ; 20 par heure et par compte |
-| /api/admin/users, /categories, /stores, /aisles | Gestion des données de référence (Admin, en ligne) |
-| GET /api/admin/update-check | **Écart :** une image plus récente existe-t-elle ? Le serveur demande à GitHub (Admin, en ligne) |
-| GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, POST /api/admin/names/remove | **Écart :** noms enregistrés : liste par morceaux, effet d'une correction (nombres), corriger partout, retirer des suggestions (Admin, en ligne) |
+| POST /api/stores, POST /api/aisles | Créer un magasin ou un rayon (tout compte connecté, en ligne) ; doublon : 409 ; 20 par heure et par compte |
+| GET /api/events | Flux SSE de notification des changements (« event: list », « event: refs ») |
+| GET /api/about | Version installée (commit de l'image) pour la carte « À propos », et identifiant opaque de la version (rechargement des téléphones) ; comptes connectés seulement |
+| /api/admin/users… | Comptes (Admin, en ligne) : liste, création, modification, mot de passe, retrait du 2FA, suppression |
+| /api/admin/categories, /api/admin/stores, /api/admin/aisles | Données de référence (Admin, en ligne) : liste, ajout, modification, suppression |
+| GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, /aisle, /remove | Mémoire des noms (Admin, en ligne) : liste par morceaux, effet d'une correction (nombres), corriger partout, changer le rayon habituel, retirer des suggestions |
+| GET /api/admin/update-check | Une image plus récente existe-t-elle ? Le serveur demande à GitHub (Admin, en ligne) |
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte |
+| GET /healthz | Surveillance (réponse simple, sans donnée) |
 
-L'autocomplétion est calculée sur le téléphone à partir de la copie locale de item_history : elle marche donc hors ligne. La route GET /api/suggestions applique la même règle côté serveur (code partagé entre les deux).
+L'autocomplétion est calculée sur le téléphone à partir de la copie locale de item_history : elle marche donc hors ligne. La route GET /api/suggestions applique la même règle côté serveur (code partagé entre les deux). Le détail de chaque route est dans [docs/developpement.md](developpement.md).
 
 **Structure du projet**
 
@@ -339,28 +370,32 @@ L'autocomplétion est calculée sur le téléphone à partir de la copie locale 
 listo/
   Dockerfile, docker-entrypoint.sh, .dockerignore
   docker-compose.yml, docker-compose.dev.yml
-  package.json
-  LICENSE, NOTICE, README.md, CONTRIBUTING.md, SECURITY.md
+  package.json, package-lock.json
+  LICENSE, NOTICE, README.md, CONTRIBUTING.md, SECURITY.md, CLAUDE.md
+  .github/        workflow de l'image Docker (workflows/docker.yml), Dependabot
   server/
     index.js        démarrage, configuration, clé de chiffrement, arrêt propre
     app.js          assemblage : sécurité, API, fichiers statiques
     config.js, db.js, secrets.js    variables d'environnement, schéma SQLite et migrations, chiffrement
     auth.js, passwords.js, totp.js, twofactor.js, limiter.js, audit.js    connexion, sessions, 2FA, tentatives, journal
     validate.js     vérification des données reçues
-    lists.js        listes, articles, historique, synchronisation
+    lists.js        listes, articles, droits, historique, synchronisation
     photos.js       photos des articles (contrôle JPEG, stockage)
     shares.js       lien public (jeton, mot de passe, expiration)
     events.js       diffusion SSE
+    products.js, http-json.js    mode scan (Open Food Facts), lecture limitée d'une réponse JSON
+    update-check.js vérification de mise à jour (GitHub)
     backup.js       sauvegarde nocturne
     backup-now.js, admin-secours.js    commandes à lancer sur le serveur (sauvegarde à la demande, compte Admin perdu)
     pages/          les deux pages HTML du lien public (liste, lien expiré ou inexistant)
-    routes/         auth, me, lists, photos, shares, public, admin (admin-users, admin-references)
+    routes/         auth, me, lists, photos, products, references, shares, public, admin (admin-users, admin-references, admin-names)
   public/
     index.html      application
     manifest.webmanifest
     sw.js           service worker
-    css/            variables de thème, styles
-    js/             app, api, stockage local, file d'attente, règles partagées, écrans ; public.js pour la page publique
+    css/            listo.css (kit de design), app.css (ajouts de l'application)
+    js/             app, api, stockage local, file d'attente, règles partagées, écrans (screens/) ; public.js pour la page publique ; help-content.js pour la page « Aide »
+    vendor/         lecteur de codes-barres (zxing-wasm 3.1.4)
     icons/
   test/             tests automatisés (npm test)
   docs/             ce cahier des charges, guide d'exploitation, détails techniques, captures
@@ -369,7 +404,8 @@ listo/
   secrets/          volume Docker séparé : secret.key (jamais dans le dépôt)
 ```
 
-**Écart :** la page publique n'est pas un dossier public/p/ : ses deux pages HTML sont dans server/pages/ et son script dans public/js/public.js. S'y ajoutent les fichiers de la sauvegarde, des commandes de secours, de la licence et de la documentation.
+La page publique n'est pas un dossier public/p/ : ses deux pages HTML sont dans server/pages/ et son script dans public/js/public.js.
+
 ## Déploiement
 
 Listo tourne dans un seul conteneur Docker, avec un dossier de données monté en volume. Nginx Proxy Manager, installé sur une autre machine, et le HTTPS restent gérés par l'administrateur : le sous-domaine est une simple variable.
@@ -388,12 +424,17 @@ services:
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+      # - LISTO_UPDATE_CHECK=off       # coupe la vérification de mise à jour
+      # - LISTO_PRODUCT_LOOKUP=off     # coupe le mode scan
+      # - LISTO_PRODUCT_CONTACT=…      # contact facultatif pour Open Food Facts
     ports:
       - "IP_LOCALE:13300:13300"        # adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:
       - ./data:/data
       - ./secrets:/secrets
 ```
+
+Le rôle de chaque variable est expliqué dans [docs/exploitation.md](exploitation.md#2-fichiers-à-créer-sur-le-serveur) ; LISTO_COMMIT est posée par l'image elle-même.
 
 **Points d'attention**
 
@@ -402,31 +443,31 @@ services:
 - Nginx Proxy Manager limite par défaut le corps des requêtes à 1 Mo : pour l'envoi des photos (2 Mo au plus), ajouter dans l'onglet Advanced du proxy host : client_max_body_size 5m;
 - Au premier démarrage, aucun compte n'existe : le premier accès à l'adresse de l'application propose de créer le compte Admin, avec le code de démarrage visible dans les journaux (docker logs listo). Aucun mot de passe n'est stocké dans la configuration.
 - Le schéma de la base se crée et se met à jour automatiquement au démarrage (migrations numérotées).
-- Route GET /healthz pour la surveillance (réponse simple, sans donnée).
-- **Écart :** arrêt propre : à l'arrêt du conteneur (docker stop, mise à jour), Listo termine les requêtes en cours, ferme les flux temps réel et la base avant de s'arrêter.
+- Route GET /healthz pour la surveillance (réponse simple, sans donnée) ; le conteneur l'interroge toutes les 30 secondes (HEALTHCHECK).
+- Arrêt propre : à l'arrêt du conteneur (docker stop, mise à jour), Listo termine les requêtes en cours, ferme les flux temps réel et la base avant de s'arrêter.
 
 **Flux SSE derrière Nginx Proxy Manager**
 
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
 - Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : docs/exploitation.md, chapitre 3).
 - Pour le reconnaître : un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (synchronisation de secours) au lieu de quelques secondes.
-- **Écart (précision) :** le temps réel passe par une connexion HTTP ordinaire (SSE), pas par WebSocket : l'option « Websockets Support » de Nginx Proxy Manager n'est pas nécessaire. Ce qui compte, c'est de couper le cache et la mise en mémoire tampon pour /api/events (les lignes ci-dessus).
+- Le temps réel passe par une connexion HTTP ordinaire (SSE), pas par WebSocket : l'option « Websockets Support » de Nginx Proxy Manager n'est pas nécessaire. Ce qui compte, c'est de couper le cache et la mise en mémoire tampon pour /api/events (les lignes ci-dessus).
 
 **Image Docker construite automatiquement**
 
-- Un workflow GitHub Actions (`.github/workflows/docker.yml`) construit l'image et la publie sur ghcr.io/magicgg91/listo à chaque fusion sur main. Étiquettes : `latest` et `sha-<commit>` (pour revenir à une version précise).
+- Un workflow GitHub Actions (`.github/workflows/docker.yml`, « Image Docker ») construit l'image et la publie sur ghcr.io/magicgg91/listo à chaque fusion sur main. Étiquettes : `latest` et `sha-<commit>` (pour revenir à une version précise).
 - Sur le serveur, il suffit du docker-compose.yml : aucun code source à y copier. Le compose de production utilise `image:`, jamais `build:`.
-- Le dépôt étant privé, l'image l'est aussi : le serveur s'y connecte une fois avec `docker login ghcr.io` (jeton GitHub limité à la lecture des paquets). Rendre le paquet public est possible, l'image ne contient ni base ni secret.
-  - **Écart :** le dépôt et l'image ghcr.io/magicgg91/listo sont maintenant publics : plus besoin de `docker login` ni de jeton.
+- Le dépôt et l'image sont publics : aucun `docker login` n'est nécessaire.
 - Les actions du workflow et l'image de base sont épinglées par leur empreinte. Dependabot vérifie chaque semaine les dépendances du serveur, l'image de base et les actions, et ouvre des pull requests ; rien n'est fusionné automatiquement.
-- Un fichier `.dockerignore` garde hors de l'image : data/, secrets/, .git, design/maquettes, node_modules, .env. **Écart :** aussi .github, design/photos, test/, docs/ et les fichiers *.log.
+- Un fichier `.dockerignore` garde hors de l'image : data/, secrets/, .git, .github, design/maquettes, design/photos, node_modules, test/, docs/, .env et les fichiers *.log.
 - Pour tester en local, un fichier docker-compose.dev.yml (avec `build: .`) est fourni à côté.
 
 **Sauvegarde et mise à jour**
 
-- Chaque nuit, l'application copie la base dans data/backups (commande SQLite VACUUM INTO) et garde les 14 dernières copies. Précisions du code livré : vers 3 h (fuseau TZ), copie vérifiée (PRAGMA integrity_check), lisible par Listo seul (droits 600), réussite ou échec notés dans le journal ; un échec n'arrête pas Listo.
-- **Écart :** deux commandes à lancer sur le serveur, sous l'utilisateur node (elles refusent d'être lancées en root) : `server/backup-now.js` (sauvegarde à la demande, avant une mise à jour par exemple) et `server/admin-secours.js` (mot de passe provisoire, et retrait du 2FA si besoin, quand plus aucun Admin ne peut se connecter). Le dossier data (base, sauvegardes, photos, journal) est à inclure dans la sauvegarde habituelle de l'hôte : les photos sont de simples fichiers, absents de la copie de la base. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
-- Mise à jour : docker compose pull && docker compose up -d. Aucun code à récupérer sur le serveur. La base est conservée dans le volume.
+- Chaque nuit vers 3 h (fuseau TZ), l'application copie la base dans data/backups (commande SQLite VACUUM INTO), vérifie la copie (PRAGMA integrity_check), la rend lisible par Listo seul (droits 600) et garde les 14 dernières copies ; réussite ou échec sont notés dans le journal, et un échec n'arrête pas Listo.
+- Deux commandes à lancer sur le serveur, sous l'utilisateur node (elles refusent d'être lancées en root) : `docker exec -u node listo node server/backup-now.js` (sauvegarde à la demande, avant une mise à jour par exemple) et `docker exec -u node listo node server/admin-secours.js IDENTIFIANT` (mot de passe provisoire, et retrait du 2FA avec `--retirer-2fa`, quand plus aucun Admin ne peut se connecter).
+- Le dossier data (base, sauvegardes, photos, journal) est à inclure dans la sauvegarde habituelle de l'hôte : les photos sont de simples fichiers, absents de la copie de la base. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
+- Mise à jour : `docker compose pull && docker compose up -d`, après une sauvegarde à la demande. Aucun code à récupérer sur le serveur. La base est conservée dans le volume et mise à jour seule au démarrage.
 - Procédures détaillées (installation, Nginx Proxy Manager, restauration, dépannage) : [docs/exploitation.md](exploitation.md).
 
 ## Brief visuel pour Claude Design
@@ -484,7 +525,7 @@ Listo doit paraître moderne, calme et bleuté, avec une lecture immédiate en m
 
 ## Plan de développement
 
-Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livrées.** Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
+Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livrées** (16 et 17 octobre 2026) ; les évolutions suivantes sont listées juste après le tableau. Le magasin « multi » et les photos (étapes 6 et 7) passent avant le temps réel et le hors ligne : elles changent les données échangées et la file d'attente, mieux vaut les avoir en place avant de construire celles-ci. Les maquettes des nouveautés (voir « À livrer » du brief visuel) sont à produire avant l'étape 6.
 
 | # | Étape | Contenu | Critère d'acceptation | État |
 | --- | --- | --- | --- | --- |
@@ -500,17 +541,34 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 | 10 | Lien public | Création, durée, mot de passe généré, arrêt, page publique en lecture seule avec photos | Un lien expiré ne fonctionne plus (horloge avancée dans les tests). Un visiteur ne peut rien modifier ni voir une autre liste. Le mot de passe est refusé après 5 essais | Livrée |
 | 11 | Finitions | Vérification des en-têtes de sécurité, sauvegarde nocturne de la base (les photos, simples fichiers de data/photos, sont couvertes par la sauvegarde du dossier data de l'hôte), README, passage en production derrière Nginx Proxy Manager | Accessible en HTTPS sur le sous-domaine. Une sauvegarde est créée. Le README permet une réinstallation | Livrée |
 
-**Après l'étape 11**
+### Évolutions après les 11 étapes
 
-- Durcissement après un audit de sécurité : cookies de connexion préfixés __Host- en production, en-têtes Permissions-Policy, Cross-Origin-Opener-Policy, Cross-Origin-Resource-Policy et X-Robots-Tag (noindex), connexion vérifiée avant de lire le lot d'opérations, Dependabot et épinglage des versions.
-- Vocabulaire : « article » dans les listes de courses, « élément » dans les autres listes ; messages du serveur neutres.
-- Bloc « À propos » dans les Réglages (route GET /api/about) et retour à Node 24.
-- Licence Apache-2.0, fichiers NOTICE, CONTRIBUTING.md et SECURITY.md ; publication du dépôt et de l'image.
-- README court, guide d'exploitation (docs/exploitation.md) et détails techniques (docs/developpement.md).
-- Réglages › À propos : vérification de mise à jour sur GitHub (Admin) ; rechargement automatique des téléphones après une mise à jour du serveur.
-- Administration : onglet « Articles » (anciennement « Noms enregistrés »), pour corriger une faute de frappe partout (historique et listes de courses) ou retirer un nom des suggestions ; mémoire des noms et suggestions réservées aux listes de courses (migration 8).
+Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa raison dans [Écarts et décisions](#écarts-et-décisions-depuis-la-version-validée).
 
-**Tests automatisés** : 567 tests (`npm test`), tous réussis, mesurés le 19 octobre 2026. Ils couvrent en priorité les droits d'accès, la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour et le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées). Les vérifications à faire à la main sur le téléphone sont listées dans [docs/developpement.md](developpement.md#vérifier-linterface-sur-le-téléphone-étapes-5-à-10).
+- **17 octobre 2026**
+  - Durcissement après un audit de sécurité : cookies __Host-, en-têtes complétés, connexion vérifiée avant de lire le lot d'opérations, Dependabot et épinglage des versions ; retour à Node 24.
+  - Vocabulaire « article » (courses) / « élément » (autres listes).
+  - Publication : licence Apache-2.0, NOTICE, CONTRIBUTING.md, SECURITY.md, dépôt et image publics ; README court, docs/exploitation.md, docs/developpement.md ; carte « À propos ».
+  - Mémoire des noms réservée aux listes de courses (migration 8) ; Administration de la mémoire des noms.
+  - Aucun curseur automatique.
+  - Zone des articles cochés « Dans le panier » / « Terminés » (migration 9).
+- **18 octobre 2026**
+  - Vérification de mise à jour sur GitHub ; rechargement des téléphones après une mise à jour du serveur.
+  - Écran « Mon compte » ; pastille d'état dans la barre du haut de « Mes listes » ; Android : page au-dessus de la barre de navigation, hauteur remesurée.
+  - Priorité et échéance des éléments (migration 10) ; tri d'une liste autre que les courses ; tri de « Mes listes ».
+  - Mode scan (Open Food Facts) ; code-barres des articles (migration 11) ; scan pour cocher ; produits déjà connus ; un seul bouton photo / scan.
+  - Groupes repliables ; fiche d'un article plus compacte (« Enregistrer » et « Supprimer » dans l'en-tête) ; glisser pour supprimer ; mêmes actions dans le menu des cartes et de la liste ; noms des catégories, magasins et rayons mis à jour sur les téléphones (« event: refs »).
+  - Droit par personne « Peut modifier » / « Lecture seule » (migration 12) ; priorité et échéance activées liste par liste (migration 13) ; iPhone : clavier ouvert et barre du haut fixe.
+- **19 octobre 2026**
+  - iPhone : appui sur une suggestion, bandeau du haut aux couleurs du thème, plus de « Préremplir le contact ».
+  - Dupliquer la liste, Quitter la liste ; créer un magasin ou un rayon manquant sans l'Admin.
+  - Icône par liste (migration 14) ; carte d'accueil compacte (sans catégorie, magasin ni badge « Multi ») ; compteur « X/Y ».
+  - Disquette pour « Enregistrer » ; sur Android, choix « Prendre une photo » / « Choisir dans la galerie ».
+  - Administration en trois onglets (Comptes, Catégories, Courses) ; onglet « Articles » et « Modifier le rayon ».
+  - Vocabulaire propriétaire / contributeur / invité ; page « Aide ».
+  - Clavier : « + » et tous les boutons en un seul appui (appui différé dans app-height.js), clavier replié après chaque ajout, plus de bande vide au-dessus du clavier de l'iPhone.
+
+**Tests automatisés** : 567 tests (`npm test`), tous réussis, mesurés le 19 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 
 **Consignes pour Claude Code**
 
@@ -521,7 +579,7 @@ Onze étapes, chacune livrable et testable seule. **Les onze étapes sont livré
 
 ## Écarts et décisions depuis la version validée
 
-Une ligne par écart, avec sa raison. Le code livré fait foi.
+Une entrée par écart ou par décision, avec sa date et sa raison ; le texte principal décrit la règle en vigueur. Le code livré fait foi.
 
 - **Node 24** (LTS), image node:24-slim épinglée par son empreinte ; Dependabot ignore les montées majeures de Node, faites à la main vers une version paire. Raison : version suivie longtemps, image reproductible.
 - **Cookies __Host-** en production (session et 2FA en attente). Raison : un autre sous-domaine ne peut ni les lire ni les remplacer.
@@ -556,17 +614,17 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
   - synchronisation : changer un réglage avance la date de modification de la liste et prévient ses membres en temps réel ; l'écran ouvert suit sans recharger, fiche comprise (le champ désactivé disparaît, il n'est pas envoyé à l'enregistrement, le curseur le quitte) ;
   - changement de catégorie : les réglages sont gardés tels quels dans la base. Une liste qui devient de courses les ignore (rien n'est affiché) ; si elle redevient une autre liste, elle retrouve ses réglages et ses valeurs. Une liste de courses qui devient une autre liste garde ses réglages enregistrés (désactivés pour une liste créée en courses) : le propriétaire les active dans le même écran s'il le souhaite. Aucune valeur n'est supprimée ;
   - mise à jour : la migration 13 se fait seule au démarrage ; faire une sauvegarde de la base avant de mettre à jour.
-- **Clavier de l'iPhone et barre du haut fixe** (correction du 18 octobre 2026). Cause : l'iPhone fait remonter la zone visible quand le clavier s'ouvre ; l'application gardait sa hauteur et sa place, l'en-tête sortait de l'écran et une bande vide apparaissait. Correction : quand un champ a le curseur et que la zone visible est décalée (mesure du navigateur, aucune marque ni modèle), l'application recouvre exactement la zone visible (js/app-height.js, variables CSS --app-top et --app-h) ; sans décalage (Android), rien ne change ; clavier fermé, tout revient. L'application est posée sur l'écran (la page ne défile jamais), avec la marge de sécurité du haut ; sur chaque écran, la barre du haut est hors de la zone qui défile. Les champs qui ne sont ni un identifiant, ni un mot de passe, ni un code ont autocomplete="off" (plus de « Préremplir le contact »). Aucune migration. Le vrai clavier de l'iPhone reste à essayer (docs/developpement.md, point 25).
-- **iPhone : suggestions, bandeau du haut, « Préremplir le contact »** (corrections du 19 octobre 2026). (A) Un appui sur une suggestion choisit la suggestion au relâchement du doigt (le click reste en secours, un seul ajout) ; la liste n'est ni redessinée ni fermée pendant le toucher ; la hauteur de l'application n'est jamais changée pendant qu'un doigt est posé. (B) Le thème choisi est posé avant le premier affichage (js/theme-boot.js) avec les balises color-scheme et theme-color, tenues à jour au changement de thème ; fond du thème sur <html> et <body> ; manifeste aux couleurs du thème clair (il ne peut pas suivre le thème choisi). (C) Les champs de nom de produit ou de libellé n'ont plus de libellé « Nom » et portent tous les mêmes attributs (dom.js, LABEL_INPUT). Le vrai iPhone reste à essayer (docs/developpement.md, points 26 à 28).
+- **Clavier de l'iPhone et barre du haut fixe** (correction du 18 octobre 2026). Cause : l'iPhone fait remonter la zone visible quand le clavier s'ouvre ; l'application gardait sa hauteur et sa place, l'en-tête sortait de l'écran et une bande vide apparaissait. Correction : quand un champ a le curseur et que la zone visible est décalée (mesure du navigateur, aucune marque ni modèle), l'application recouvre exactement la zone visible (js/app-height.js, variables CSS --app-top et --app-h) ; sans décalage (Android), rien ne change ; clavier fermé, tout revient. L'application est posée sur l'écran (la page ne défile jamais), avec la marge de sécurité du haut ; sur chaque écran, la barre du haut est hors de la zone qui défile. Les champs qui ne sont ni un identifiant, ni un mot de passe, ni un code ont autocomplete="off" (plus de « Préremplir le contact »). Aucune migration. Le vrai clavier de l'iPhone reste à essayer (docs/developpement.md, « Vérifier sur les téléphones », point 8).
+- **iPhone : suggestions, bandeau du haut, « Préremplir le contact »** (corrections du 19 octobre 2026). (A) Un appui sur une suggestion choisit la suggestion au relâchement du doigt (le click reste en secours, un seul ajout) ; la liste n'est ni redessinée ni fermée pendant le toucher ; la hauteur de l'application n'est jamais changée pendant qu'un doigt est posé. (B) Le thème choisi est posé avant le premier affichage (js/theme-boot.js) avec les balises color-scheme et theme-color, tenues à jour au changement de thème ; fond du thème sur <html> et <body> ; manifeste aux couleurs du thème clair (il ne peut pas suivre le thème choisi). (C) Les champs de nom de produit ou de libellé n'ont plus de libellé « Nom » et portent tous les mêmes attributs (dom.js, LABEL_INPUT). Le vrai iPhone reste à essayer (docs/developpement.md, « Vérifier sur les téléphones », points 2, 8 et 9).
 - **Dupliquer la liste** (décision du 19 octobre 2026). Raison : repartir d'une liste existante (courses de la semaine, liste de vacances). Règles :
-  - action « Dupliquer la liste » (icône i-copy, déjà dans le sprite) dans le menu « ⋯ » d'une carte et dans le menu ⋮ de la liste (même code, list-actions.js), après « Modifier la liste » ; proposée au propriétaire et à un contributeur, jamais à un invité en « Lecture seule » (le serveur refuse : 403 « Vous avez un accès en lecture seule à cette liste. » ; non-membre : « Liste introuvable », comme partout) ;
+  - action « Dupliquer la liste » (icône i-copy, déjà dans le sprite) dans le menu ⋮ d'une carte et dans le menu ⋮ de la liste (même code, list-actions.js), après « Modifier la liste » ; proposée au propriétaire et à un contributeur, jamais à un invité en « Lecture seule » (le serveur refuse : 403 « Vous avez un accès en lecture seule à cette liste. » ; non-membre : « Liste introuvable », comme partout) ;
   - feuille « Dupliquer la liste » : « Titre de la liste » pré-rempli avec « <nom> (copie) » (100 caractères au plus), interrupteur « Copier les articles » / « Copier les éléments » activé, boutons « Dupliquer » et « Annuler » ; aucun curseur posé d'office ;
   - copié : catégorie, magasin, réglages de priorité et d'échéance ; avec l'interrupteur : les éléments non supprimés, avec nom, quantité, note, rayon, magasin, priorité, échéance et code-barres, tous décochés. Non copiés : les personnes avec qui la liste est partagée (la copie est privée, la personne qui duplique en est propriétaire), le lien public, l'historique des opérations, les éléments supprimés, et les photos (décision : un fichier ne peut pas faire partie de la transaction de la base, tout ou rien, et la copie échapperait au plafond d'envoi des photos ; il n'existe pas de quota de stockage). La mémoire des noms suit l'ajout habituel (listes de courses) ;
   - serveur : route POST /api/lists/:id/duplicate, une seule transaction, requêtes paramétrées, droit relu dans la base, 20 duplications par heure et par compte au plus (429 au-delà), aucun plafond d'éléments (il n'en existe nulle part ailleurs) ; journal « liste_dupliquee » (nom de compte, identifiants de la copie et de l'original, nombre d'éléments), jamais le nom ni le contenu ;
   - en ligne seulement : hors ligne, « Connexion nécessaire pour dupliquer une liste » ;
   - après : on reste où l'on est ; message « Liste « <nom> » créée » avec « Ouvrir » ; sur « Mes listes », la nouvelle carte est brièvement mise en évidence. Aucune migration.
 - **Quitter la liste** (contributeur ou invité, décision du 19 octobre 2026). Raison : une personne avec qui la liste est partagée ne pouvait pas se retirer d'une liste qui ne le concerne plus. Règles :
-  - action « Quitter la liste » (icône i-logout, en rouge, en dernier) dans le menu « ⋯ » d'une carte et le menu ⋮ de la liste (même code) ; jamais pour le propriétaire, qui garde « Supprimer la liste » ; contributeur : « Dupliquer la liste », un trait, « Quitter la liste » ; invité en lecture seule : « Quitter la liste » seulement. Le bouton « ⋯ » d'une carte apparaît donc pour tout membre (jamais sans action) ;
+  - action « Quitter la liste » (icône i-logout, en rouge, en dernier) dans le menu ⋮ d'une carte et le menu ⋮ de la liste (même code) ; jamais pour le propriétaire, qui garde « Supprimer la liste » ; contributeur : « Dupliquer la liste », un trait, « Quitter la liste » ; invité en lecture seule : « Quitter la liste » seulement. Le bouton ⋮ d'une carte apparaît donc pour tout membre (jamais sans action) ;
   - confirmation « Quitter la liste « <nom> » ? », « Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous. » (avant le 19 octobre 2026 : « … pourra vous inviter de nouveau. »), boutons « Annuler » et « Quitter » (rouge) ; en ligne seulement (« Connexion nécessaire pour quitter une liste ») ; ce qui attend dans la file est envoyé d'abord ;
   - serveur : route POST /api/lists/:id/leave, sans identifiant de personne (on ne retire que sa propre appartenance, jamais celle d'un autre) ; propriétaire : 403 « Le propriétaire ne peut pas quitter sa liste. Supprimez-la à la place. » ; non-membre : « Liste introuvable » ; droit relu dans la base ; journal « liste_quittee » (nom de compte et identifiant de la liste) ;
   - effets : la liste disparaît de l'accueil et de la copie hors ligne de ses téléphones (temps réel, comme pour une personne retirée par le propriétaire) ; le propriétaire et les autres membres voient la liste de personnes à jour ; ses éléments restent dans la liste ; ses modifications encore en file pour cette liste sont refusées (« Liste introuvable ») et retirées, sans boucle ; si la liste est ouverte, retour à l'accueil, puis « Vous avez quitté la liste « <nom> » ». Aucune migration.
@@ -646,14 +704,14 @@ Une ligne par écart, avec sa raison. Le code livré fait foi.
 - **Fiche d'un article : champ Code-barres et aides** (décision du 18 octobre 2026). Raison : la feuille était longue (une ligne de boutons et une ligne d'aide par champ). Règles : le bouton « Effacer » devient une petite croix dans le champ (visible seulement s'il contient quelque chose ; elle vide le champ sans y mettre le curseur) ; le bouton de scan, icône seule, est sur la ligne du champ ; les aides courtes passent à côté du titre, entre parenthèses, en texte discret, dans le titre du champ (lues avec lui par les lecteurs d'écran) : « Code-barres (8, 12 ou 13 chiffres) », « Quantité (par exemple 2 ou 500 g) », et dans le mode scan « Note (facultative : marque et format) ». Les explications longues restent sous leur champ (comptes, mots de passe, code de démarrage, double authentification). Nouvelle version du service worker.
 - **Fiche d'un article : « Enregistrer » et « Supprimer » dans l'en-tête** (décision du 18 octobre 2026). Raison : les deux grands boutons du bas prenaient beaucoup de hauteur. Règles : sur la ligne du titre, à droite, la poubelle (« Supprimer l'article », rouge discret), un espace, la coche « Enregistrer » (bouton plein, action principale ; **écart, décision du 19 octobre 2026 :** une disquette, icône i-disquette, à la place de la coche), puis la croix ; la poubelle n'est jamais à côté de la croix ; zones tactiles de 44 px ; l'en-tête reste visible quand la feuille défile, le titre tient sur une ligne (tronqué si la place manque). Ce bouton soumet le formulaire, comme la touche Entrée dans un champ. La poubelle supprime sans confirmation, puis « « Pain » supprimé · Annuler » quelques secondes (opération item.restore, avec la photo), exactement comme le glissement vers la gauche. Autres feuilles avec un bouton principal en bas, laissées telles quelles : nouvelle liste et modification d'une liste, partage par lien, choix du rayon ou du magasin, mode scan, nouveau compte, réinitialisation d'un mot de passe, catégorie (Administration).
 - **Suppression par glissement vers la gauche** (décision du 18 octobre 2026), dans toutes les listes. Raison : supprimer vite un article ou un élément sans ouvrir sa fiche. Règles : la ligne suit le doigt et révèle une zone rouge « Supprimer » (icône et texte) ; au-delà de 80 px (ou d'un tiers d'une ligne étroite) elle reste ouverte, sinon elle revient ; rien n'est supprimé sans un appui sur la zone rouge. Une seule ligne ouverte à la fois : toucher ailleurs, faire défiler, ouvrir une fiche ou glisser vers la droite la referme. Le geste n'est pris en compte que s'il est nettement horizontal (diagonales : défilement) ; un contact au bord gauche de l'écran est laissé au geste « retour » de l'iPhone ; appuis sur la case, la vignette et la ligne inchangés ; pas de glissement à la souris. La suppression est la même que la poubelle de la fiche : opération item.delete par la file d'attente (hors ligne compris), puis « « Pain » supprimé · Annuler » (item.restore, avec la photo) ; aucune nouvelle route. Tout membre de la liste peut supprimer (le serveur le vérifie à chaque requête) ; la page publique n'a ni glissement ni suppression. C'est un raccourci : la poubelle de la fiche reste.
-- **Menu « ⋯ » sur les cartes de « Mes listes » et « Supprimer la liste »** (décision du 18 octobre 2026). Raison : supprimer une liste sans passer par « Modifier la liste ». Règles : un bouton « ⋯ » (même icône que le menu ⋮ d'une liste, 44 px, « Actions de la liste <nom> ») dans le coin haut droit de la carte, hors du lien : un appui ouvre le menu juste sous lui, sans ouvrir la liste ; ailleurs sur la carte, la liste s'ouvre. Le menu de la carte et le menu ⋮ de la liste ouverte sont identiques (mêmes actions, même ordre, mêmes écrans, list-actions.js) : « Modifier la liste » (l'écran « Modifier la liste » : nom, catégorie, magasin, personnes avec qui la liste est partagée), « Partager par lien » (la feuille du lien public), puis, après un trait et en rouge, « Supprimer la liste ». Ouverts depuis l'accueil, l'écran et la feuille ramènent à l'accueil, carte à jour. « Actualiser » a quitté le menu ⋮ : la pastille d'état (« À jour ») fait la même chose (synchronisation complète, aussi en erreur ou hors ligne). Les trois chemins (carte, menu de la liste, « Modifier la liste ») utilisent la même confirmation (« Supprimer la liste « <nom> » ? » ; la liste disparaît avec ses articles ou éléments pour toutes les personnes ; effacement complet au bout de 30 jours) et la même opération list.delete (file d'attente, hors ligne compris). Les trois actions sont réservées au propriétaire (le serveur refuse un contributeur ou un invité : 403 pour modifier ou supprimer, 404 pour le lien). Il n'existe pas d'« Annuler » (aucune opération pour remettre une liste). **Écart (décision du 19 octobre 2026) :** « Dupliquer la liste » s'ajoute après « Modifier la liste » ; un contributeur a désormais son menu : « Dupliquer la liste » puis « Quitter la liste » ; un invité, « Quitter la liste » seulement ; voir les décisions « Dupliquer la liste » et « Quitter la liste ».
+- **Menu ⋮ sur les cartes de « Mes listes » et « Supprimer la liste »** (décision du 18 octobre 2026). Raison : supprimer une liste sans passer par « Modifier la liste ». Règles : un bouton ⋮ (même icône que le menu ⋮ d'une liste, 44 px, « Actions de la liste <nom> ») dans le coin haut droit de la carte, hors du lien : un appui ouvre le menu juste sous lui, sans ouvrir la liste ; ailleurs sur la carte, la liste s'ouvre. Le menu de la carte et le menu ⋮ de la liste ouverte sont identiques (mêmes actions, même ordre, mêmes écrans, list-actions.js) : « Modifier la liste » (l'écran « Modifier la liste » : nom, catégorie, magasin, personnes avec qui la liste est partagée), « Partager par lien » (la feuille du lien public), puis, après un trait et en rouge, « Supprimer la liste ». Ouverts depuis l'accueil, l'écran et la feuille ramènent à l'accueil, carte à jour. « Actualiser » a quitté le menu ⋮ : la pastille d'état (« À jour ») fait la même chose (synchronisation complète, aussi en erreur ou hors ligne). Les trois chemins (carte, menu de la liste, « Modifier la liste ») utilisent la même confirmation (« Supprimer la liste « <nom> » ? » ; la liste disparaît avec ses articles ou éléments pour toutes les personnes ; effacement complet au bout de 30 jours) et la même opération list.delete (file d'attente, hors ligne compris). Les trois actions sont réservées au propriétaire (le serveur refuse un contributeur ou un invité : 403 pour modifier ou supprimer, 404 pour le lien). Il n'existe pas d'« Annuler » (aucune opération pour remettre une liste). **Écart (décision du 19 octobre 2026) :** « Dupliquer la liste » s'ajoute après « Modifier la liste » ; un contributeur a désormais son menu : « Dupliquer la liste » puis « Quitter la liste » ; un invité, « Quitter la liste » seulement ; voir les décisions « Dupliquer la liste » et « Quitter la liste ».
 - **Renommer une catégorie, un magasin ou un rayon met à jour les listes existantes** (correction du 18 octobre 2026). Cause : la base ne garde que l'identifiant (lists.category_id, lists.store_id, items.aisle_id) et le serveur était déjà à jour ; mais une synchronisation « depuis » ne renvoie que les listes modifiées (un renommage n'en modifie aucune) et le téléphone gardait dans chaque liste la copie du nom de sa catégorie et de son magasin reçue la dernière fois ; aucun message temps réel ne prévenait non plus les téléphones connectés. Correction : le téléphone relit la catégorie et le magasin de chaque liste par leur identifiant dans les données de référence, envoyées en entier à chaque synchronisation et gardées hors ligne ; chaque changement de l'Admin (ajout, renommage, désactivation, suppression d'une catégorie, d'un magasin ou d'un rayon) envoie « event: refs » (sans aucune donnée) à tous les téléphones connectés, qui se resynchronisent ; un téléphone hors ligne le fait à son retour. Les rayons étaient déjà relus par l'identifiant (seul le message temps réel manquait). Aucune migration ; page publique inchangée (elle lit le nom dans la base à chaque requête).
 - **Droit par personne sur une liste partagée : « Peut modifier » ou « Lecture seule »** (décision du 18 octobre 2026, migration 12). Raison : partager une liste à consulter sans risquer qu'elle soit modifiée. Règles :
   - base : colonne list_members.access ('modification' ou 'lecture', contrainte CHECK) ; les membres existants gardent « Peut modifier » ; une personne ajoutée sans droit précisé (écran ou API) est en « Lecture seule » ; le propriétaire a toujours tous les droits (le serveur refuse de lui donner un droit : 400) ;
   - qui change le droit : seulement le propriétaire de la liste, comme le partage (PUT /api/lists/:id/members, en ligne) ; l'Admin n'a toujours aucun droit sur les listes des autres (il ne les voit pas) ; un contributeur ne peut ni changer les droits, ni le partage, ni renommer ou supprimer la liste ;
   - écrans : le même composant (deux choix « Peut modifier / Lecture seule », coche ET texte sur le choix actif, 44 px) apparaît sous chaque personne cochée, à la création d'une liste et dans « Modifier la liste » (un seul formulaire pour les deux) ; une personne cochée commence en « Lecture seule », visible tout de suite ; le propriétaire est affiché sans choix (« Tous les droits ») ; c'est le seul endroit où l'on ajoute une personne à une liste ;
   - serveur : toute écriture d'un invité en lecture seule est refusée (403, voir « Autorisation »), sans rien écrire, ni annoncer en temps réel, ni demander à Open Food Facts : ajouter, modifier (nom, quantité, note, rayon, magasin, priorité, échéance, code-barres), cocher, décocher, supprimer (fiche ou glissement), remettre (« Annuler »), tout décocher, retirer les cochés, envoyer ou retirer une photo, mode scan ; renommer ou supprimer la liste, changer son partage ou son lien public restent réservés au propriétaire. Il n'existe pas d'opération « réordonner » (l'ordre est calculé) ;
-  - liste en lecture seule sur le téléphone : bandeau « Lecture seule » (le même que la page publique) sous la barre du haut ; ni champ d'ajout, ni Scanner, ni glissement, ni actions sur les cochés ; cases visibles mais inactives (un article coché reste rempli ET barré) ; un appui sur une ligne ouvre une fiche à consulter (« Détail de l'article », texte seul, aucun champ ni bouton qui écrit, photo qui s'agrandit) ; tri, groupes repliables, « Tout replier » et pastille d'état restent utilisables ; sur « Mes listes », pastille « Lecture seule » (icône et texte) ; menu « ⋯ » et ⋮ réduits à « Quitter la liste » (décision du 19 octobre 2026) ;
+  - liste en lecture seule sur le téléphone : bandeau « Lecture seule » (le même que la page publique) sous la barre du haut ; ni champ d'ajout, ni Scanner, ni glissement, ni actions sur les cochés ; cases visibles mais inactives (un article coché reste rempli ET barré) ; un appui sur une ligne ouvre une fiche à consulter (« Détail de l'article », texte seul, aucun champ ni bouton qui écrit, photo qui s'agrandit) ; tri, groupes repliables, « Tout replier » et pastille d'état restent utilisables ; sur « Mes listes », pastille « Lecture seule » (icône et texte) ; menus ⋮ de la carte et de la liste réduits à « Quitter la liste » (décision du 19 octobre 2026) ;
   - changement de droit en direct : la liste est annoncée comme modifiée (temps réel et synchronisation) ; l'écran bascule sans recharger : fenêtres ouvertes (fiche, choix du rayon, scan, confirmation) refermées sans rien enregistrer, clavier replié, message « Cette liste est maintenant en lecture seule. » ou « Vous pouvez maintenant modifier cette liste. » ;
   - hors ligne : une modification faite avant le passage en lecture seule est refusée au retour du réseau, retirée de la file (jamais renvoyée, pas de boucle), et l'écran reprend l'état du serveur ; message « Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées. » ; les opérations de la file sont envoyées dans l'ordre et chacune est jugée seule ;
   - inchangé : une personne retirée du partage ne voit plus la liste ; le propriétaire ne peut ni quitter sa liste ni la donner à quelqu'un d'autre (ces fonctions n'existent pas) ; page et lien publics (aucun compte, aucun droit) ; vocabulaire « article » / « élément » ;
@@ -749,12 +807,12 @@ Plan
 
 **Hors périmètre de la v1**
 
-- Archivage des listes et listes modèles (dupliquer une liste est l'évolution la plus probable).
+- Archivage des listes et listes modèles (dupliquer une liste existe depuis le 19 octobre 2026).
 - Prix, unités structurées, totaux.
 - Rayons propres à chaque magasin et ordre de parcours du magasin.
 - Notifications push, rappels.
 - Inscription libre, connexion par un service externe.
-- Scan de codes-barres, import et export.
+- Import et export (le scan de codes-barres existe depuis le 18 octobre 2026).
 - Plusieurs photos par article, retouche de photo.
 - Plusieurs liens publics par liste, accès en écriture par lien, statistiques de consultation.
 - Autres langues que le français.

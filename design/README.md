@@ -309,7 +309,7 @@ Styles : `public/css/app.css` (`.icon-grid`, `.icon-grid__opt`, `.icon-grid__che
 Styles : `public/css/app.css` (`.list-card__left`, `.list-card__people`, `.list-card__link`, règles de `.list-card__head`). Balisage : « Carte compacte de « Mes listes » » dans `components.html` ; il remplace, pour la carte, la ligne `.list-card__meta` (catégorie, magasin, lien) des exemples plus anciens.
 
 - Ligne 1 (`.list-card__head`) : `.list-card__icon`, `.list-card__name` (deux lignes au plus, puis « … »), `.list-card__time` ; le bouton ⋮ (`.list-card__menu`, 44 px) est posé à côté, hors du lien.
-- Ligne 2 (`.list-card__foot`) : à gauche `.list-card__left` (compteur `.list-card__count`, `.badge-multi`, `.chip--readonly`) ; à droite `.list-card__people` : le symbole du lien public (`.list-card__link`, `role="img"`, `aria-label="Lien public actif"`) juste avant `.avatars`, seulement si un lien est en cours.
+- Ligne 2 (`.list-card__foot`) : à gauche `.list-card__left` (compteur `.list-card__count`, `.chip--readonly` ; plus de `.badge-multi` sur la carte depuis le 19 octobre 2026 : il reste dans l'en-tête de la liste) ; à droite `.list-card__people` : le symbole du lien public (`.list-card__link`, `role="img"`, `aria-label="Lien public actif"`) juste avant `.avatars`, seulement si un lien est en cours.
 - Ni catégorie ni magasin sur la carte. Aucune nouvelle icône.
 
 ## Ajout : compteur X/Y

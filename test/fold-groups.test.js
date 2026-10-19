@@ -183,11 +183,10 @@ test('« Tout replier / Tout déplier » : au moins deux groupes, zone des coch�
 
 test('ajout dans un groupe replié : le groupe se déplie (toutes les listes)', () => {
   const list = read('public/js/screens/list.js');
-  // Courses (champ, suggestion, scan) : revealItem déplie avant de défiler
+  // Champ, suggestion, scan, dans toutes les listes : revealItem déplie avant de défiler
   assert.match(list, /function revealItem\(itemId\) \{\s*whenRow\(itemId, \(row\) => \{\s*unfoldRow\(row\);/);
   assert.match(list, /if \(item\) revealItem\(item\.id\);\s*return item;/);
-  // Autres listes : déplié, sans autre changement
-  assert.match(list, /if \(!view\?\.list\.category\.isShopping\) \{\s*whenRow\(item\.id, unfoldRow\);/);
+  assert.match(list, /releaseFocus\(\);\s*revealItem\(item\.id\);\s*\}\s*\/\/ Attend la ligne/);
   assert.match(list, /if \(group && !group\.isOpen\(\)\) \{\s*group\.setOpen\(true\);/);
 });
 

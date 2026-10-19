@@ -2,11 +2,10 @@
 // et feuille « Article » (article-1 et 2, article-photo-1 à 4), avec la photo
 // en plein écran (photo-plein-ecran-1).
 //
-// - Le champ d'ajout reste en bas, à portée de pouce. Liste de courses :
-//   après un ajout (Entrée, bouton +, suggestion ou mode scan), l'ajout se
-//   termine : champ vidé, curseur retiré (clavier replié), article montré
-//   brièvement dans la liste. Autres listes : Entrée valide et le champ
-//   reste actif pour enchaîner les éléments.
+// - Le champ d'ajout reste en bas, à portée de pouce. Dans toutes les
+//   listes, après un ajout (Entrée, bouton +, suggestion ou mode scan),
+//   l'ajout se termine : champ vidé, curseur retiré (clavier replié),
+//   article ou élément montré brièvement dans la liste.
 // - Suggestions dès deux lettres ; un article inconnu demande son rayon une
 //   fois (liste de courses).
 // - Liste « multi » : pas de rayon, les articles sont groupés par magasin.
@@ -574,14 +573,11 @@ export function renderList(listId, onLeave) {
     const item = await addNamed(name, {}, () => {
       input.value = '';
     });
-    // Liste de courses : l'ajout se termine (plus de curseur dans le champ,
-    // clavier replié) et l'article ajouté est montré dans la liste. Autres
-    // listes : inchangé, le champ garde le curseur pour enchaîner.
+    // Toutes les listes : l'ajout se termine (plus de curseur dans le champ,
+    // clavier replié) et l'article ou l'élément ajouté est montré dans la
+    // liste (groupe replié déplié, défilement, brève mise en évidence). Le
+    // champ ne reprend jamais le curseur tout seul.
     if (!item) return;
-    if (!view?.list.category.isShopping) {
-      whenRow(item.id, unfoldRow); // groupe replié : déplié, sans autre changement
-      return;
-    }
     suggestBox.hidden = true;
     releaseFocus();
     revealItem(item.id);

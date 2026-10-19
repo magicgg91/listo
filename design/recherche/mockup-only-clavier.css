@@ -1,0 +1,11 @@
+/* Faux clavier pour les maquettes uniquement. Déjà dans la section 17 du kit. Ne pas livrer en production. */
+.phone--kbd .app { height: calc(100% - 300px); }
+.kbd { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; flex-direction: column; gap: 12px; height: 300px; padding: 10px 3px 0; border-top: 1px solid var(--color-border); background: var(--color-neutral-soft); }
+[data-theme="dark"] .kbd { background: var(--color-bg); }
+.kbd__row { display: flex; justify-content: center; gap: 5px; }
+.kbd__key { display: grid; place-items: center; flex: 0 0 34px; height: 44px; border-radius: 6px; background: var(--color-surface); box-shadow: 0 1px 0 var(--color-control); color: var(--color-text); font: 400 22px var(--font); }
+[data-theme="dark"] .kbd__key { background: var(--color-neutral-soft); }
+.kbd__key--wide { flex-basis: 46px; background: var(--color-border); font-size: 18px; }
+.kbd__key--space { flex: 1; font-size: 16px; }
+.kbd__key--go { flex-basis: 104px; background: var(--color-accent); color: var(--color-on-accent); font-size: 16px; font-weight: 600; }
+[data-theme="dark"] .kbd__key--go { background: var(--color-accent); }

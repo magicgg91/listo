@@ -390,7 +390,8 @@
    16.4 Page publique en lecture seule · 16.5 Zone des cochés
    16.6 Bloc « À propos » · 16.7 Carte du compte
    16.8 Priorité et échéance · 16.9 Tri d'une liste
-   16.10 Pastille d'état dans la barre du haut */
+   16.10 Pastille d'état dans la barre du haut
+   16.11 Groupes repliables · 16.12 Recherche */
 
 /* 16.1 Photo d'un article */
 .photo { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -587,6 +588,21 @@
 .fold-all { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); margin-left: auto; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font-size: var(--text-sm); font-weight: 700; color: var(--color-accent-ink); }
 .fold-all .icon { transition: transform var(--dur-fast) var(--ease); }
 .fold-all--open .icon { transform: rotate(180deg); }
+/* 16.12 Recherche (design/recherche) : champ .searchfield (48 px de haut,
+   loupe décorative, saisie, croix « Effacer la saisie » quand il y a du
+   texte), dans .searchrow, premier enfant de .scroll : dans une liste et
+   sur « Mes listes ». Masqué au chargement (zone défilée de sa hauteur) ;
+   on tire vers le bas pour le faire apparaître. Aucun bouton loupe, la
+   barre du haut ne change pas. Résultats : le texte trouvé dans
+   <mark class="hit"> (gras ET souligné : jamais la couleur seule) ; nombre
+   de résultats .search-meta, role="status". */
+.searchfield { display: flex; align-items: center; flex: 1; min-width: 0; gap: var(--space-1); height: var(--tap); padding: 0 var(--space-0) 0 12px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-2); }
+.searchfield:focus-within, .searchfield.is-focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); color: var(--color-text); }
+.searchfield__input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: var(--text-item); }
+.searchfield__input::placeholder { color: var(--color-text-2); opacity: 1; }
+.searchrow { padding: 0 var(--space-2) var(--space-1); }
+.search-meta { font-size: var(--text-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+.hit { padding: 0 2px; margin: 0 -2px; border-radius: 4px; background: var(--color-accent-soft); color: inherit; font-weight: 700; text-decoration: underline; text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

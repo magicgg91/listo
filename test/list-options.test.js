@@ -304,7 +304,7 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
   assert.match(list, /options\.priority \? value\('Priorité', [^\n]*\) : null,\s*options\.due \? value\('Échéance', [^\n]*\) : null,/);
   // Tri : seulement les choix proposés ; pas de bouton sans choix
   assert.match(list, /const offered = availableSorts\(currentList\(\)\);\s*openMenu\(SORTS\.filter\(\(\[value\]\) => offered\.includes\(value\)\)/);
-  assert.match(list, /sortButton\.hidden = list\.category\.isShopping \|\| availableSorts\(list\)\.length < 2;/);
+  assert.match(list, /sortButton\.hidden = availableSorts\(list\)\.length < 2;/);
   assert.doesNotMatch(list, /innerHTML/);
 });
 

@@ -42,6 +42,7 @@ import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
+import { isMultiList } from '../sorting.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -64,26 +65,35 @@ export function renderList(listId, onLeave) {
   onLeave(() => swipes.stop());
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
-  // Tri de la liste (listes autres que les courses) : choix gardé sur ce
-  // téléphone pour cette liste ; l'icône du bouton montre le tri actif.
-  // « Par priorité » et « Par échéance » ne sont proposés que si le réglage
-  // de la liste est activé ; un choix gardé devenu indisponible laisse place
-  // à l'ordre alphabétique (sans être effacé : il revient avec le réglage).
+  // Tri de la liste : choix gardé sur ce téléphone pour cette liste (un
+  // réglage d'affichage propre à chaque personne, permis aussi en lecture
+  // seule) ; l'icône du bouton montre le tri actif.
+  // - Liste de courses : « Par rayon » (« Par magasin » pour une liste
+  //   « multi »), le tri par défaut, ou « Ordre alphabétique » (à plat, sous
+  //   un seul en-tête « À acheter ») ; le rayon des articles ne change pas.
+  // - Autre liste : « Ordre alphabétique » (par défaut) ; « Par priorité » et
+  //   « Par échéance » ne sont proposés que si le réglage de la liste est
+  //   activé ; un choix gardé devenu indisponible laisse place au tri par
+  //   défaut (sans être effacé : il revient avec le réglage).
   const SORTS = [
+    ['aisle', 'layers', 'Par rayon', 'Tri : par rayon'],
     ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
     ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
     ['due', 'calendar', 'Par échéance', 'Tri : par échéance'],
   ];
+  // Liste « multi » : le premier choix groupe par magasin, il le dit
+  const sortEntry = ([value, iconName, label, message]) => (value === 'aisle' && isMultiList(currentList())
+    ? [value, 'store', 'Par magasin', 'Tri : par magasin'] : [value, iconName, label, message]);
   let itemSort = loadItemSort(listId);
   const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
   sortButton.setAttribute('aria-haspopup', 'menu');
   const currentList = () => app.data.lists.get(listId);
   const activeSort = () => effectiveSort(currentList(), itemSort);
-  const showSort = () => replace(sortButton, icon(SORTS.find(([value]) => value === activeSort())[1]));
+  const showSort = () => replace(sortButton, icon(sortEntry(SORTS.find(([value]) => value === activeSort()))[1]));
   showSort();
   function openSortMenu() {
     const offered = availableSorts(currentList());
-    openMenu(SORTS.filter(([value]) => offered.includes(value)).map(([value, iconName, label, message]) => ({
+    openMenu(SORTS.filter(([value]) => offered.includes(value)).map(sortEntry).map(([value, iconName, label, message]) => ({
       icon: iconName,
       label,
       checked: value === activeSort(),
@@ -202,9 +212,10 @@ export function renderList(listId, onLeave) {
     replace(titleIcon, icon(listIcon(list), 'icon--sm'));
     replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
-    // Courses : tri par rayons, sans bouton ; ailleurs, bouton seulement s'il
-    // y a un choix (priorité ou échéance activée)
-    sortButton.hidden = list.category.isShopping || availableSorts(list).length < 2;
+    // Bouton seulement s'il y a un choix : toujours pour une liste de courses
+    // (par rayon ou alphabétique) ; ailleurs, si la priorité ou l'échéance
+    // est activée
+    sortButton.hidden = availableSorts(list).length < 2;
     showSort();
     readOnlyBanner.hidden = canEdit;
     addbar.hidden = !canEdit; // lecture seule : aucun ajout
@@ -225,7 +236,9 @@ export function renderList(listId, onLeave) {
     replace(content, groups.map((group) => (
       // En-tête collant et repliable : rayon, ou magasin (avec son icône)
       // dans une liste « multi »
-      view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
+      // Liste de courses en ordre alphabétique : un seul en-tête « À acheter »
+      group.all ? foldableGroup(list, group, group.label)
+      : view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
         : list.category.isShopping ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
           : group.label ? foldableGroup(list, group, group.label)

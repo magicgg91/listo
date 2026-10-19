@@ -355,3 +355,10 @@ Styles : `public/css/app.css` (`.help`, `.help-who__*`, `.help__*`). Balisage : 
 - « Qui peut quoi » : `.section-title`, puis un `.group` de `.help-who__row` (l'action en gras, puis `ul.help-who__roles` de `.chip.help-who__role`). Oui : fond d'accent doux, `#i-check` ; non : fond transparent, bord pointillé, `#i-close`, texte secondaire. Le « oui » / « non » est aussi écrit pour les lecteurs d'écran (`.visually-hidden`). Note `.help__note` en dessous.
 - Sections : `section.help__part` > `h2.aisle.aisle--fold` > `button.aisle__toggle` (`aria-expanded`, `aria-controls`, chevron qui tourne), puis `.help__section` (masqué replié) fait de `.card.help__topic` : `h3.help__title`, `p.help__text`, `ul.help__list` (puces).
 
+## Ajout : tri d'une liste de courses
+
+Styles : aucun nouveau (bouton « Trier la liste », `.menu`, `.aisle.aisle--fold` existants). Balisage : « Tri d'une liste de courses » et « Liste de courses en ordre alphabétique » dans `components.html`. Aucune nouvelle icône (`i-layers`, `i-store`, `i-az`).
+
+- Le bouton « Trier la liste » apparaît aussi sur les listes de courses : « Par rayon » (`#i-layers`, par défaut ; « Par magasin », `#i-store`, pour une liste « multi ») et « Ordre alphabétique » (`#i-az`) ; option active : coche ET texte (`menuitemradio`).
+- « Ordre alphabétique » : un seul en-tête repliable « À acheter » (même `.aisle__toggle`, compteur « X/Y »), les articles à plat, puis la zone « Dans le panier ». Le rayon de chaque article est gardé.
+- Choix propre à chaque téléphone ; la page publique reste par rayon.

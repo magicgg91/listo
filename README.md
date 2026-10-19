@@ -8,7 +8,7 @@ Gratuite, sans publicité, en français. Pensée pour un foyer : quelques compte
 
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur l'autre en quelques secondes. Les articles cochés se rangent en bas, dans « Dans le panier » (« Terminés » dans les autres listes).
 - **Un droit par personne** : le propriétaire d'une liste la partage avec d'autres comptes, chacun avec le droit « Peut modifier » (contributeur) ou « Lecture seule » (invité, le choix de départ). Un contributeur peut dupliquer la liste ; contributeurs et invités peuvent la quitter.
-- **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs boutiques (magasin « multi »). Le rayon ou le magasin habituel de chaque article est retenu, et les noms déjà saisis sont proposés. Chacun peut créer un magasin ou un rayon qui manque.
+- **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs boutiques (magasin « multi »), ou simplement par ordre alphabétique (chacun choisit son tri). Le rayon ou le magasin habituel de chaque article est retenu, et les noms déjà saisis sont proposés. Chacun peut créer un magasin ou un rayon qui manque.
 - **Listes de tâches** : priorité et échéance facultatives, activées liste par liste, avec tri par priorité ou par échéance.
 - **Lecture rapide** : une icône au choix pour chaque liste, un compteur « restants/total » (par exemple « 5/8 ») sur chaque carte et chaque groupe, des groupes qui se replient, la suppression d'une ligne en la faisant glisser.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.

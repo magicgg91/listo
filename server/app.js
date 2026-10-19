@@ -117,6 +117,8 @@ export function createApp({
     audit: createAudit({ now, write: log, file: journalFile }),
     photos: createPhotoStore(photosDir),
     uploads: createUploadCounter({ now }),
+    // Duplications de listes : 20 par heure et par compte au plus
+    duplicates: createUploadCounter({ limit: 20, now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -279,6 +281,7 @@ export function createApp({
     ctx.lists.purgeDeleted();
     ctx.limiter.prune();
     ctx.uploads.prune();
+    ctx.duplicates.prune();
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
     ctx.publicAccess.prune();

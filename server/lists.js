@@ -25,6 +25,7 @@
 // Les dates (created_at, updated_at, deleted_at) sont toujours posées ici,
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
+import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
 } from '../public/js/history.js';
@@ -899,6 +900,44 @@ export function createListService(ctx) {
     return readList(user, list.id).list;
   }
 
+  // --- Dupliquer une liste (POST /api/lists/:id/duplicate) ---
+  //
+  // Propriétaire ou invité « Peut modifier » (lecture seule : 403 ;
+  // non-membre : 404, comme partout). En une seule transaction (tout ou
+  // rien) : une nouvelle liste privée (la personne qui duplique en est la
+  // propriétaire, sans invité ni lien public), même catégorie, même magasin,
+  // mêmes réglages de priorité et d'échéance ; avec withItems (vrai par
+  // défaut) : les éléments non supprimés, avec nom, quantité, note, rayon,
+  // magasin, priorité, échéance et code-barres, tous décochés. Les photos ne
+  // sont pas copiées (un fichier ne peut pas faire partie de la transaction,
+  // et la copie échapperait au plafond d'envoi des photos). La mémoire des
+  // noms suit la création d'éléments habituelle (listes de courses).
+  // Journal : identifiants seulement, jamais de nom de liste ni de contenu.
+  function duplicateList(user, listId, { name, withItems = true } = {}) {
+    const source = listForEditor(user, listId);
+    const title = listName(name);
+    if (typeof withItems !== 'boolean') throw new OpError(400, 'Réglage « Copier les éléments » invalide.');
+    const id = crypto.randomUUID();
+    const now = nowIso();
+    const items = withItems ? q.liveItems.all(source.id) : [];
+    db.transaction(() => {
+      db.prepare(`INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, now, now);
+      db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
+      const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+      for (const item of items) {
+        insert.run(crypto.randomUUID(), id, item.name, item.quantity, item.note, item.aisle_id, item.store_id, item.priority, item.due_date, item.ean, user.id, now, now);
+        // Comme un ajout : la mémoire des noms (listes de courses seulement)
+        if (source.is_shopping === 1) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
+      }
+    })();
+    ctx.events?.notifyList(id);
+    ctx.audit('liste_dupliquee', { utilisateur: user.username, liste: id, source: source.id, elements: items.length });
+    return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user), copied: items.length };
+  }
+
   // Mode scan, « mes produits » : nom et note d'un article qui porte ce
   // code-barres, parmi les listes dont le compte est membre (jamais celles
   // des autres comptes), articles supprimés compris tant qu'ils ne sont pas
@@ -972,7 +1011,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, purgeDeleted, activeUsers,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

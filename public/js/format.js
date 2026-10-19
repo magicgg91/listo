@@ -230,3 +230,10 @@ export function renameImpactText({ oldName, newName, merge, items, lists }) {
 export function renameDoneText({ items, lists }) {
   return items ? `${countItems(items, true)} ${items === 1 ? 'corrigé' : 'corrigés'}, dans ${listsOfShopping(lists)}` : 'Nom corrigé dans les suggestions';
 }
+
+// « Dupliquer la liste » : nom proposé pour la copie, « <nom> (copie) », dans
+// la limite des noms de liste (100 caractères)
+export function copyName(name, max = 100) {
+  const suffix = ' (copie)';
+  return `${String(name).slice(0, max - suffix.length).trimEnd()}${suffix}`;
+}

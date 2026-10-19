@@ -78,7 +78,7 @@ test('tous les points d\'entrée utilisent le même composant', () => {
   assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' \}, icon\('barcode'\)\);/);
   // Barre d'ajout et « Réessayer » du mode scan : le même sélecteur
   assert.match(scan, /const picker = createImagePicker\(\(file\) => \{\s*session \?\?= openSession\(\);\s*session\.scan\(file\);/);
-  assert.match(scan, /const button = picker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un produit' \}/);
+  assert.match(scan, /const button = picker\.button\(\{\s*class: 'btn btn--secondary btn--icon',\s*'aria-label': 'Scanner un produit',/);
   assert.match(scan, /const retake = \(\) => picker\.button\(\{ class: 'btn btn--primary btn--block' \}, icon\('camera', 'icon--sm'\), 'Réessayer'\);/);
   // Les champs cachés sont dans la page (exigé par l'iPhone)
   assert.match(list, /photoArea, photoNote, photoPicker\.input\)/);

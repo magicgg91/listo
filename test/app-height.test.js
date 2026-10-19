@@ -38,7 +38,12 @@ function browser({ height = 800, width = 390, visualViewport = true } = {}) {
   const doc = {
     visibilityState: 'visible',
     activeElement: null,
-    documentElement: { style: { setProperty: (name, value) => writes.push([name, value]) } },
+    documentElement: {
+      style: { setProperty: (name, value) => writes.push([name, value]) },
+      attributes: {},
+      setAttribute(name, value) { this.attributes[name] = String(value); },
+      removeAttribute(name) { delete this.attributes[name]; },
+    },
     addEventListener: on('document'),
   };
   // Horloge du script (Date.now), avancée à la main
@@ -396,6 +401,84 @@ test('relâchement perdu : la mise en attente ne dure pas plus de 2 s', () => {
   b.clock.now += 2500;
   b.fire('window', 'resize');
   assert.deepEqual(b.writes.at(-1), ['--app-h', '700px']);
+});
+
+// Bande vide entre la barre d'ajout et le clavier de l'iPhone : la marge
+// de sécurité du bas (trait de l'iPhone) est retirée quand le clavier est
+// ouvert et que l'application touche le clavier
+const keyboardAttr = (b) => b.doc.documentElement.attributes['data-keyboard'];
+
+test('clavier ouvert (zone visible décalée et réduite) : data-keyboard="open" ; fermé : retiré ; suit chaque ouverture et fermeture', () => {
+  const b = browser({ height: 800 });
+  assert.equal(keyboardAttr(b), undefined, 'au départ : pas de clavier');
+  for (let round = 0; round < 2; round++) {
+    // Le champ prend le curseur, le clavier s'ouvre
+    b.doc.activeElement = textInput();
+    b.fire('document', 'focusin');
+    b.vv.height = 420;
+    b.vv.offsetTop = 310;
+    b.fire('vv', 'resize');
+    assert.equal(keyboardAttr(b), 'open');
+    // Le champ perd le curseur, le clavier se replie
+    b.doc.activeElement = null;
+    b.fire('document', 'focusout');
+    assert.equal(keyboardAttr(b), undefined, 'marge de sécurité revenue');
+    b.vv.height = 800;
+    b.vv.offsetTop = 0;
+    b.fire('vv', 'resize');
+    assert.equal(keyboardAttr(b), undefined);
+  }
+});
+
+test('sans décalage (Android, zoom à deux doigts sans champ) : data-keyboard jamais posé', () => {
+  const b = browser({ height: 800 });
+  // Android : clavier ouvert, zone visible non décalée
+  b.doc.activeElement = textInput();
+  b.vv.height = 500;
+  b.fire('vv', 'resize');
+  assert.equal(keyboardAttr(b), undefined);
+  // Zoom à deux doigts, aucun champ actif : zone visible décalée
+  b.doc.activeElement = null;
+  b.vv.height = 400;
+  b.vv.offsetTop = 200;
+  b.fire('vv', 'scroll');
+  assert.equal(keyboardAttr(b), undefined);
+});
+
+test('appui en cours : data-keyboard change à la fin de l\'appui, avec le reste', () => {
+  const b = browser({ height: 800 });
+  b.doc.activeElement = textInput();
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.fire('vv', 'resize');
+  b.fire('document', 'pointerdown');
+  b.fire('document', 'pointerup');
+  b.doc.activeElement = null;
+  b.fire('document', 'focusout');
+  assert.equal(keyboardAttr(b), 'open', 'rien ne bouge avant le click');
+  b.fire('document', 'click');
+  b.runLater({ upTo: 0 });
+  assert.equal(keyboardAttr(b), undefined);
+});
+
+test('app.css : clavier ouvert, plus de marge de sécurité en bas de la barre d\'ajout, des feuilles, des boutons du bas et des messages', () => {
+  const kit = read('css/listo.css');
+  const app = read('css/app.css');
+  // Sans clavier : la marge de sécurité du kit reste (le trait de l'iPhone ne recouvre pas le champ)
+  assert.match(kit, /\.addbar \{[^}]*padding: var\(--space-1\) 12px calc\(12px \+ env\(safe-area-inset-bottom, 0px\)\);/);
+  assert.match(kit, /\.sheet \{[^}]*calc\(var\(--space-3\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  assert.match(kit, /\.footer \{[^}]*calc\(var\(--space-3\) \+ env\(safe-area-inset-bottom, 0px\)\)/);
+  // Clavier ouvert : la même marge, sans la zone de sécurité (0 pour la barre d'ajout)
+  assert.match(app, /html\[data-keyboard\] \.addbar \{ padding-bottom: 12px; \}/);
+  assert.match(app, /html\[data-keyboard\] \.sheet,\nhtml\[data-keyboard\] \.footer \{ padding-bottom: var\(--space-3\); \}/);
+  assert.match(app, /html\[data-keyboard\] \.body:last-child,\nhtml\[data-keyboard\] \.body:has\(\+ \.footer\[hidden\]\) \{ padding-bottom: var\(--space-3\); \}/);
+  assert.match(app, /html\[data-keyboard\] \.toast \{ bottom: 96px; \}/);
+  assert.match(app, /html\[data-keyboard\] \.toast--low \{ bottom: var\(--space-3\); \}/);
+  assert.match(app, /html\[data-keyboard\] \.public-foot \{ padding-bottom: 0; \}/);
+  // Aucune règle data-keyboard ne touche à autre chose que ces marges
+  for (const rule of app.match(/html\[data-keyboard\][^{]*\{[^}]*\}/g)) {
+    assert.match(rule, /\{ (padding-bottom|bottom): [^;]+; \}$/, rule);
+  }
 });
 
 test('compensation du clavier isolée dans une seule fonction (keyboardShift)', () => {

@@ -73,6 +73,20 @@ html, body { background: var(--color-bg); }
    les messages et le bouton « Nouvelle liste » en tiennent déjà compte. */
 .body:last-child, .body:has(+ .footer[hidden]) { padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
 
+/* Clavier ouvert sur l'iPhone (data-keyboard="open" sur <html>, posé par
+   js/app-height.js quand l'application recouvre exactement la zone visible
+   au-dessus du clavier) : le trait de l'iPhone est caché derrière le
+   clavier, la marge de sécurité du bas n'a plus de raison d'être (sinon,
+   bande vide d'environ 34 px entre la barre d'ajout et le clavier). Mêmes
+   marges que sans zone de sécurité ; elles reviennent à la fermeture du
+   clavier. */
+html[data-keyboard] .addbar { padding-bottom: 12px; }
+html[data-keyboard] .sheet,
+html[data-keyboard] .footer { padding-bottom: var(--space-3); }
+html[data-keyboard] .body:last-child,
+html[data-keyboard] .body:has(+ .footer[hidden]) { padding-bottom: var(--space-3); }
+html[data-keyboard] .public-foot { padding-bottom: 0; }
+
 /* Sprite d'icônes : présent dans la page, mais invisible */
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 
@@ -135,6 +149,8 @@ button.sync { cursor: pointer; }
 /* Barre du bas d'une liste : champ d'ajout. Les toasts s'affichent au-dessus. */
 .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .toast--low { bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
+html[data-keyboard] .toast { bottom: 96px; }
+html[data-keyboard] .toast--low { bottom: var(--space-3); }
 
 /* Ordinateur : le bouton Retour vers « Mes listes » est inutile (colonne de gauche) */
 @media (min-width: 1024px) {

@@ -228,7 +228,7 @@ Balisage : dernière partie de `components.html`. Aucun style nouveau, aucune no
 Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône (`i-chev-d`).
 
 - Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) devient `.aisle.aisle--fold` et contient un vrai bouton `.aisle__toggle` pleine largeur (48 px) : `aria-expanded`, `aria-controls` (id de la `<ul>` du groupe), `aria-label` du type « Fruits et légumes, 2 à acheter » ; chevron `#i-chev-d`, `.aisle__name`, `.aisle__count` à droite.
-- Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule.
+- Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule. **Remplacé** par le compteur « X/Y », voir « Ajout : compteur X/Y » (`.aisle__rest` n'est plus utilisé).
 - La zone des cochés (`.cart__toggle`, section 16.5) se replie déjà de la même façon.
 - `.fold-all` « Tout replier » / « Tout déplier » : bouton texte compact (44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
 - Liste sans groupe (liste de tâches en ordre alphabétique ou par échéance) : aucun en-tête, aucun bouton. La page publique du lien n'est pas concernée (en-têtes simples, en lecture seule).
@@ -310,4 +310,12 @@ Styles : `public/css/app.css` (`.list-card__left`, `.list-card__people`, `.list-
 - Ligne 1 (`.list-card__head`) : `.list-card__icon`, `.list-card__name` (deux lignes au plus, puis « … »), `.list-card__time` ; le bouton ⋮ (`.list-card__menu`, 44 px) est posé à côté, hors du lien.
 - Ligne 2 (`.list-card__foot`) : à gauche `.list-card__left` (compteur `.list-card__count`, `.badge-multi`, `.chip--readonly`) ; à droite `.list-card__people` : le symbole du lien public (`.list-card__link`, `role="img"`, `aria-label="Lien public actif"`) juste avant `.avatars`, seulement si un lien est en cours.
 - Ni catégorie ni magasin sur la carte. Aucune nouvelle icône.
+
+## Ajout : compteur X/Y
+
+Styles : `public/css/app.css` (`.list-card__count--progress`) et composants existants (`.aisle__count`, déjà en chiffres alignés). Balisage : « Carte compacte de « Mes listes » » et « En-têtes de groupe avec « X/Y » » dans `components.html`.
+
+- Carte : `.list-card__count.list-card__count--progress` (`role="img"`, `aria-label` et `title` « 3 articles restants sur 8 ») contient « 3/8 » (`aria-hidden`). Tout coché : `+ .list-card__count--done`, « 0/8 » puis `#i-check` (vert ET coche). Liste vide : « Liste vide ».
+- En-tête de groupe : `.aisle__count` « X/Y » à droite, ouvert comme replié ; le bouton `.aisle__toggle` a pour nom « Crèmerie, 1 article restant sur 2 » et la même infobulle (sans le nom). `.aisle__rest` n'est plus utilisé.
+- Textes : `progressText` et `progressLabel` de `public/js/words.js`. Aucune nouvelle icône.
 

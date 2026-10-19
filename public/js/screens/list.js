@@ -41,7 +41,7 @@ import { computeListView, canEditList, listOptions, availableSorts, effectiveSor
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
-import { itemWords, countItems, doneZoneWords, remainingWords } from '../words.js';
+import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 
 // « article » → « Article », « élément » → « Élément »
@@ -126,26 +126,27 @@ export function renderList(listId, onLeave) {
   }
 
   // En-tête de groupe repliable (design : section 16.11) : un vrai bouton
-  // (aria-expanded, aria-controls), chevron qui tourne, nombre à droite ;
-  // replié, « · 2 à acheter » s'affiche après le nom (jamais la couleur seule).
+  // (aria-expanded, aria-controls), chevron qui tourne, compteur « X/Y » à
+  // droite, ouvert comme replié (X : restants du groupe ; Y : total du
+  // groupe, cochés compris). Lecteurs d'écran et infobulle : « 3 articles
+  // restants sur 8 ».
   // name : nom du groupe ; lead : icône devant le nom (magasin), ou rien.
   function foldableGroup(list, group, name, lead = null) {
     const key = groupKey(group);
     const remaining = group.items.length; // le groupe ne contient que des non cochés
+    const total = group.total ?? remaining;
     const listEl = h('ul', { id: `groupe-${listId}-${key.replace(':', '-')}` }, group.items.map(itemRow));
-    const rest = h('span', { class: 'aisle__rest' }, `· ${remainingWords(remaining, list)}`);
-    const counter = h('span', { class: 'aisle__count', 'aria-hidden': 'true' }, String(remaining));
+    const counter = h('span', { class: 'aisle__count', 'aria-hidden': 'true' }, progressText(remaining, total));
     const toggle = h('button', {
       class: 'aisle__toggle',
       type: 'button',
       'aria-controls': listEl.id,
-      'aria-label': `${name}, ${remainingWords(remaining, list)}`,
-    }, icon('chev-d', 'icon--sm'), h('span', { class: 'aisle__name' }, lead, name), rest, counter);
+      'aria-label': `${name}, ${progressLabel(remaining, total, list)}`,
+      title: progressLabel(remaining, total, list),
+    }, icon('chev-d', 'icon--sm'), h('span', { class: 'aisle__name' }, lead, name), counter);
     const show = (open) => {
       toggle.setAttribute('aria-expanded', String(open));
       listEl.hidden = !open;
-      rest.hidden = open;
-      counter.hidden = !open;
     };
     const foldable = {
       isOpen: () => toggle.getAttribute('aria-expanded') === 'true',

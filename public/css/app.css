@@ -299,7 +299,7 @@ button.sync { cursor: pointer; }
 /* Carte compacte de « Mes listes » (lists.js) : ligne 1, icône de la liste,
    titre (deux lignes au besoin) et heure, alignées sur la première ligne du
    titre (deux lignes au plus, puis « … » : le nom entier reste lu par les
-   lecteurs d'écran) ; ligne 2, compteur, badge « Multi » et
+   lecteurs d'écran) ; ligne 2, compteur « X/Y » (chiffres alignés), badge « Multi » et
    pastille « Lecture seule » à gauche, symbole du lien public collé aux
    pastilles des personnes à droite. */
 .list-card__head { align-items: flex-start; }
@@ -309,5 +309,6 @@ button.sync { cursor: pointer; }
 .list-card__foot { gap: var(--space-1); margin-top: 10px; }
 .list-card__left { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
 .list-card__left .badge-multi { height: 22px; }
+.list-card__count--progress { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .list-card__people { display: flex; flex: none; align-items: center; gap: 6px; }
 .list-card__link { display: inline-flex; color: var(--color-text-2); }

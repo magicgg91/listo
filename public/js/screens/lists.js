@@ -4,7 +4,8 @@
 
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
-import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
+import { relativeTime, namesList, listSortButton } from '../format.js';
+import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
@@ -39,7 +40,7 @@ export function listCard(list, { selected = false } = {}) {
 // Carte compacte, deux lignes (trois si le titre passe sur deux lignes) :
 // - ligne 1 : icône de la liste, titre, « il y a 3 h » (le bouton ⋮ est
 //   posé à côté, voir listCard) ;
-// - ligne 2, à gauche : compteur, puis le badge
+// - ligne 2, à gauche : compteur « X/Y » (restants / total), puis le badge
 //   « Multi » et la pastille « Lecture seule » s'il y a lieu ; à droite : le
 //   symbole du lien public s'il y en a un, collé aux pastilles des personnes.
 // Ni catégorie ni magasin sur la carte (ils restent dans la liste).
@@ -76,13 +77,20 @@ function cardLink(list, { selected }) {
         members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))))));
 }
 
-// Compteur de la carte : nombre restant, « Liste vide », ou « Tout est
-// coché » avec une coche (jamais la couleur seule)
+// Compteur de la carte : « X/Y » (X restants à faire, Y au total, cochés
+// compris), « Liste vide » sans rien, et une coche verte à côté de « 0/Y »
+// quand tout est coché (jamais la couleur seule). Lecteurs d'écran et
+// infobulle : « 3 articles restants sur 8 ».
 export function cardCount(list) {
-  if (list.total > 0 && list.remaining === 0) {
-    return h('p', { class: 'list-card__count list-card__count--done' }, icon('check', 'icon--sm'), 'Tout est coché');
-  }
-  return h('p', { class: 'list-card__count' }, list.total === 0 ? 'Liste vide' : remainingLabel(list.remaining, list));
+  if (list.total === 0) return h('p', { class: 'list-card__count' }, 'Liste vide');
+  const done = list.remaining === 0;
+  const label = `${progressLabel(list.remaining, list.total, list)}${done ? ', tout est coché' : ''}`;
+  return h('p', {
+    class: `list-card__count list-card__count--progress${done ? ' list-card__count--done' : ''}`,
+    role: 'img',
+    'aria-label': label,
+    title: label,
+  }, h('span', { 'aria-hidden': 'true' }, progressText(list.remaining, list.total)), done ? icon('check', 'icon--sm') : null);
 }
 
 // Message quand il n'y a encore aucune liste (mes-listes-2)

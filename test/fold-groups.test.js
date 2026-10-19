@@ -174,11 +174,11 @@ test('en-tête de groupe : vrai bouton, aria-expanded, aria-controls, replié li
 
 test('« Tout replier / Tout déplier » : au moins deux groupes, zone des cochés comprise', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /foldAll\.hidden = foldables\.length < 2;/);
+  assert.match(list, /foldAll\.hidden = foldables\.length < 2 \|\| search\.active;/);
   assert.match(list, /anyOpen \? 'Tout replier' : 'Tout déplier'/);
   assert.match(list, /const open = !foldables\.some\(\(f\) => f\.isOpen\(\)\);\s*for \(const f of foldables\) f\.setOpen\(open\);/);
-  assert.match(list, /foldables\.push\(foldable\); \/\/ « Tout replier » la replie aussi/);
-  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\)/);
+  assert.match(list, /if \(!inSearch\) foldables\.push\(foldable\); \/\/ « Tout replier » la replie aussi/);
+  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), searchMeta, foldAll\)/);
 });
 
 test('ajout dans un groupe replié : le groupe se déplie (toutes les listes)', () => {

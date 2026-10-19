@@ -52,6 +52,8 @@ import { createSwipeController } from '../swipe.js';
 import { createTapPicker } from '../tap.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
+import { createSearchRow } from '../search-row.js';
+import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
 export function renderList(listId, onLeave) {
   const title = h('h1', { class: 'topbar__title' });
@@ -63,6 +65,34 @@ export function renderList(listId, onLeave) {
   // refermée par un toucher ailleurs ou par le défilement
   const swipes = createSwipeController(content);
   onLeave(() => swipes.stop());
+
+  // --- Recherche dans la liste (design/recherche, variante B) ---
+  // Champ masqué au-dessus du premier groupe, révélé en tirant la liste vers
+  // le bas (search-row.js). Sur le nom des articles seulement, jamais la
+  // note ; une simple vue sur la copie locale : ni données, ni synchro, ni
+  // file d'attente touchées, hors ligne compris, lecture seule comprise. Le
+  // texte cherché n'appartient qu'à cet écran : changer de liste ou quitter
+  // l'écran le vide.
+  const search = createSearchRow(content, {
+    label: 'Rechercher dans la liste',
+    onChange: () => draw(),
+    // Champ utilisé : « Tout replier » masqué ; barre d'ajout masquée tant
+    // que le curseur est dans le champ (clavier ouvert)
+    onActive: () => {
+      drawFoldAll();
+      showAddbar();
+    },
+  });
+  // Nombre de résultats, à droite de l'indicateur de synchro (annoncé aux
+  // lecteurs d'écran) ; vide hors recherche
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const searching = () => isSearching(search.value);
+  // Nom d'un article, le texte trouvé dans <mark class="hit"> (texte simple,
+  // jamais de HTML)
+  const itemName = (name) => (searching()
+    ? highlightParts(name, search.value).map((part) => (part.hit ? h('mark', { class: 'hit' }, part.text) : part.text))
+    : name);
+
   const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
 
   // Tri de la liste : choix gardé sur ce téléphone pour cette liste (un
@@ -129,7 +159,7 @@ export function renderList(listId, onLeave) {
   } });
   function drawFoldAll() {
     const anyOpen = foldables.some((f) => f.isOpen());
-    foldAll.hidden = foldables.length < 2;
+    foldAll.hidden = foldables.length < 2 || search.active; // masqué pendant la recherche
     foldAll.classList.toggle('fold-all--open', anyOpen);
     replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? 'Tout replier' : 'Tout déplier');
   }
@@ -141,6 +171,7 @@ export function renderList(listId, onLeave) {
   // restants sur 8 ».
   // name : nom du groupe ; lead : icône devant le nom (magasin), ou rien.
   function foldableGroup(list, group, name, lead = null) {
+    if (searching()) return resultGroup(group, name, lead);
     const key = groupKey(group);
     const remaining = group.items.length; // le groupe ne contient que des non cochés
     const total = group.total ?? remaining;
@@ -178,12 +209,47 @@ export function renderList(listId, onLeave) {
     return h('section', {}, h('h2', { class: 'aisle aisle--fold' }, toggle), listEl);
   }
 
+  // Groupe pendant la recherche : seulement ses articles trouvés, toujours
+  // ouvert (même replié : l'état mémorisé n'est pas touché et revient après
+  // la recherche), en-tête sans bouton de repli, avec le nombre de résultats
+  // au lieu de « X/Y »
+  function resultGroup(group, name, lead) {
+    const count = group.items.length;
+    return h('section', {},
+      h('h2', { class: 'aisle' },
+        h('span', { class: 'aisle__name' }, lead, name),
+        h('span', { class: 'aisle__count', 'aria-label': resultsLabel(count) }, String(count))),
+      h('ul', {}, group.items.map(itemRow)));
+  }
+
+  // Aucun article trouvé : message, et « Effacer la recherche » (vide le
+  // champ sans lui retirer le curseur)
+  function noResults(words) {
+    return h('div', { class: 'empty' },
+      h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
+      h('h2', { class: 'empty__title' }, 'Aucun résultat'),
+      h('p', { class: 'empty__text' }, `Aucun ${words.one} ne correspond à « ${search.value.trim()} ».`),
+      h('button', {
+        class: 'btn btn--secondary',
+        type: 'button',
+        onPointerdown: search.keepFocus.pointerdown,
+        onMousedown: search.keepFocus.mousedown,
+        onClick: () => search.clear(),
+      }, 'Effacer la recherche'));
+  }
+
+  // Barre d'ajout : jamais en lecture seule ; masquée tant que le curseur
+  // est dans le champ de recherche (clavier ouvert pour chercher)
+  function showAddbar() {
+    addbar.hidden = !editable() || search.focused;
+  }
+
   // --- Dessin de la liste ---
   const draw = () => {
     foldables = [];
     drawFoldAll();
     if (!app.data.loaded) {
-      replace(content, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
+      search.show(h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'), { available: false });
       return;
     }
     view = computeListView(app.data, listId, { sort: itemSort });
@@ -193,10 +259,11 @@ export function renderList(listId, onLeave) {
       replace(sub);
       menuButton.hidden = true;
       sortButton.hidden = true;
-      replace(content, h('div', { class: 'empty' },
+      search.show(h('div', { class: 'empty' },
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, 'Retour à mes listes')));
+        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, 'Retour à mes listes')), { available: false });
+      searchMeta.textContent = '';
       addbar.hidden = true;
       readOnlyBanner.hidden = true;
       return;
@@ -218,22 +285,35 @@ export function renderList(listId, onLeave) {
     sortButton.hidden = availableSorts(list).length < 2;
     showSort();
     readOnlyBanner.hidden = canEdit;
-    addbar.hidden = !canEdit; // lecture seule : aucun ajout
+    showAddbar(); // lecture seule : aucun ajout
     // Bouton « Scanner » : listes de courses seulement (recherche activée)
     scanner.button.hidden = !canEdit || !scanAvailable(list);
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
     content.classList.toggle('scroll--flat', !list.category.isShopping && activeSort() !== 'priority');
 
     if (groups.length === 0 && done.length === 0) {
-      replace(content, h('div', { class: 'empty' },
+      // Rien à chercher : le champ de recherche est masqué
+      search.show(h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')));
+        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')), { available: false });
+      searchMeta.textContent = '';
       return;
     }
     // Groupes disparus (rayon ou magasin supprimé) : oubliés
     if (pruneFoldedGroups(folded, possibleGroupKeys(app.data))) saveFoldedGroups(listId, folded);
-    replace(content, groups.map((group) => (
+    // Recherche : seulement les articles trouvés (search.js) ; les groupes
+    // sans résultat disparaissent, les cochés trouvés restent dans « Dans le
+    // panier ». Les événements temps réel redessinent ici : la saisie et le
+    // curseur du champ restent.
+    const shown = searching() ? filterListView(view, search.value) : { groups, done };
+    searchMeta.textContent = searching() ? resultsLabel(shown.count) : '';
+    if (searching() && shown.count === 0) {
+      search.show(noResults(words));
+      drawFoldAll();
+      return;
+    }
+    search.show([shown.groups.map((group) => (
       // En-tête collant et repliable : rayon, ou magasin (avec son icône)
       // dans une liste « multi »
       // Liste de courses en ordre alphabétique : un seul en-tête « À acheter »
@@ -244,7 +324,7 @@ export function renderList(listId, onLeave) {
           : group.label ? foldableGroup(list, group, group.label)
             // Ordre alphabétique ou par échéance : liste simple, sans en-tête
             : h('section', {}, h('ul', {}, group.items.map(itemRow))))),
-    done.length ? doneZone(list, done) : null);
+    shown.done.length ? doneZone(list, shown.done) : null]);
     drawFoldAll();
   };
 
@@ -252,9 +332,13 @@ export function renderList(listId, onLeave) {
   // « Zone des articles cochés ») : en-tête repliable avec le nombre, deux
   // actions (absentes quand la zone est repliée), puis les lignes cochées.
   // Elle n'est dessinée que s'il y a au moins un article coché.
+  // Pendant la recherche : seulement les cochés trouvés, zone ouverte (son
+  // état mémorisé n'est pas touché), sans ses deux actions (elles agiraient
+  // aussi sur des articles non affichés), hors de « Tout replier ».
   function doneZone(list, done) {
+    const inSearch = searching();
     const zone = doneZoneWords(list);
-    const counted = countItems(done.length, list); // « 12 articles », « 4 éléments »
+    const counted = inSearch ? resultsLabel(done.length) : countItems(done.length, list); // « 12 articles », « 4 éléments »
     const listEl = h('ul', { id: `zone-${listId}` }, done.map(itemRow));
     const canEdit = canEditList(list); // lecture seule : pas d'actions
     const actionsRow = h('div', { class: 'cart__actions' },
@@ -270,12 +354,12 @@ export function renderList(listId, onLeave) {
     const show = (open) => {
       toggle.setAttribute('aria-expanded', String(open));
       listEl.hidden = !open;
-      actionsRow.hidden = !open || !canEdit;
+      actionsRow.hidden = !open || !canEdit || inSearch;
     };
     const foldable = {
       isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
       setOpen: (open) => {
-        rememberZone(listId, open);
+        if (!inSearch) rememberZone(listId, open); // recherche : rien de mémorisé
         show(open);
       },
       contains: (node) => listEl.contains(node),
@@ -284,8 +368,8 @@ export function renderList(listId, onLeave) {
       foldable.setOpen(!foldable.isOpen());
       drawFoldAll();
     });
-    show(isZoneOpen(listId));
-    foldables.push(foldable); // « Tout replier » la replie aussi
+    show(inSearch || isZoneOpen(listId));
+    if (!inSearch) foldables.push(foldable); // « Tout replier » la replie aussi
     return h('section', { class: 'cart' },
       h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' }, toggle), actionsRow),
       listEl);
@@ -347,7 +431,7 @@ export function renderList(listId, onLeave) {
         h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
     h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? 'Modifier' : 'Voir'} ${item.name}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
       h('span', { class: 'item__text' },
-        h('span', { class: 'item__name' }, item.name),
+        h('span', { class: 'item__name' }, itemName(item.name)),
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
         meta.chips.length ? h('span', { class: 'item__meta' }, meta.chips) : null),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
@@ -1170,7 +1254,7 @@ export function renderList(listId, onLeave) {
     suggestBox.hidden = true;
     swipes.close();
     closeOverlays();
-    addbar.hidden = !now;
+    showAddbar();
     readOnlyBanner.hidden = now;
     toast(now ? 'Vous pouvez maintenant modifier cette liste.' : 'Cette liste est maintenant en lecture seule.');
   }));
@@ -1210,7 +1294,7 @@ export function renderList(listId, onLeave) {
       sortButton,
       menuButton),
     readOnlyBanner,
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), foldAll),
+    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), searchMeta, foldAll),
     content,
     addbar);
 }

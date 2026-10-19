@@ -9,7 +9,7 @@
 // Droits :
 // - propriétaire : tout (renommer, changer catégorie et magasin, partage et
 //   droit de chaque personne, supprimer la liste) ;
-// - invité « Peut modifier » (list_members.access = 'modification') :
+// - contributeur (list_members.access = 'modification') :
 //   articles seulement (ajouter, modifier, cocher, supprimer, tout décocher,
 //   retirer les cochés, photo, mode scan) ;
 // - invité « Lecture seule » ('lecture') : voit la liste, ses articles et
@@ -83,8 +83,8 @@ export const ACCESS = ['modification', 'lecture'];
 // toutes les écritures (opérations, photos, mode scan) et par la description
 // de la liste envoyée au téléphone. row : ce que la base dit de la liste et
 // de l'appartenance du compte (owner_id ou list_owner_id, member_access).
-// Le propriétaire a toujours tous les droits ; un invité, seulement en
-// « modification ». Jamais d'après ce que dit le téléphone.
+// Le propriétaire a toujours tous les droits ; un membre, seulement en
+// « modification » (contributeur). Jamais d'après ce que dit le téléphone.
 export function canEdit(user, row) {
   const ownerId = row.owner_id ?? row.list_owner_id;
   return ownerId === user.id || row.member_access === 'modification';
@@ -852,7 +852,7 @@ export function createListService(ctx) {
       stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ?').all(from).map(describeHistory),
-      // Comptes actifs (choix des invités), gardés sur le téléphone pour
+      // Comptes actifs (choix des personnes avec qui partager), gardés sur le téléphone pour
       // ouvrir le formulaire de liste sans réseau
       users: activeUsers(),
     };
@@ -860,27 +860,27 @@ export function createListService(ctx) {
 
   // --- Partage (PUT /api/lists/:id/members, propriétaire seulement) ---
   //
-  // userIds : la liste complète des invités souhaitée. Le propriétaire reste
+  // userIds : la liste complète des personnes souhaitées. Le propriétaire reste
   // toujours membre. Un compte désactivé ne peut pas être ajouté (mais un
-  // invité déjà présent et désactivé depuis peut rester).
-  // access (facultatif) : { "<id d'un invité>": "modification" | "lecture" }.
-  // Un invité ajouté sans droit précisé est en lecture seule ; un invité déjà
+  // membre déjà présent et désactivé depuis peut rester).
+  // access (facultatif) : { "<id d'un membre>": "modification" | "lecture" }.
+  // Une personne ajoutée sans droit précisé est en lecture seule ; un membre déjà
   // présent sans droit précisé garde le sien. Le propriétaire ne peut pas
   // recevoir de droit (il les a tous).
   function setMembers(user, listId, userIds, access = {}) {
     const list = listForOwner(user, listId);
     if (!Array.isArray(userIds) || userIds.length > 50 || !userIds.every((id) => parseId(id))) {
-      throw new OpError(400, 'Liste des invités invalide.');
+      throw new OpError(400, 'Liste des personnes invalide.');
     }
-    if (access === null || typeof access !== 'object' || Array.isArray(access)) throw new OpError(400, 'Droits des invités invalides.');
+    if (access === null || typeof access !== 'object' || Array.isArray(access)) throw new OpError(400, 'Droits des personnes invalides.');
     const wanted = new Set(userIds.map(Number));
     wanted.delete(list.owner_id);
     const rights = new Map();
     for (const [key, value] of Object.entries(access)) {
       const id = parseId(key);
-      if (!id || !ACCESS.includes(value)) throw new OpError(400, 'Droits des invités invalides.');
+      if (!id || !ACCESS.includes(value)) throw new OpError(400, 'Droits des personnes invalides.');
       if (id === list.owner_id) throw new OpError(400, 'Le propriétaire a tous les droits sur sa liste.');
-      if (!wanted.has(id)) throw new OpError(400, 'Droit donné à une personne qui n\'est pas invitée.');
+      if (!wanted.has(id)) throw new OpError(400, 'Droit donné à une personne avec qui la liste n\'est pas partagée.');
       rights.set(id, value);
     }
     const before = new Map(q.members.all(list.id).filter((m) => m.id !== list.owner_id).map((m) => [m.id, m.access]));
@@ -895,7 +895,7 @@ export function createListService(ctx) {
     const added = [...wanted].filter((id) => !current.has(id));
     const removed = [...current].filter((id) => !wanted.has(id));
     const nameOf = (id) => db.prepare('SELECT username FROM users WHERE id = ?').pluck().get(id);
-    // Droits qui changent pour des invités déjà présents
+    // Droits qui changent pour des membres déjà présents
     const changedRights = [...rights].filter(([id, value]) => current.has(id) && before.get(id) !== value);
     db.transaction(() => {
       // Sans droit précisé : lecture seule (valeur par défaut de la base)
@@ -906,18 +906,18 @@ export function createListService(ctx) {
       // (et chacun son droit, dans la description de la liste)
       if (added.length || removed.length || changedRights.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
-    // Temps réel : membres actuels, et invités retirés (leur téléphone
+    // Temps réel : membres actuels, et personnes retirées (leur téléphone
     // apprend ainsi qu'il n'a plus accès à la liste)
     if (added.length || removed.length || changedRights.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
-    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, invite: nameOf(id), droit: rights.get(id) ?? 'lecture' });
-    for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, invite: nameOf(id) });
-    for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, invite: nameOf(id), droit: value });
+    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: rights.get(id) ?? 'lecture' });
+    for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, personne: nameOf(id) });
+    for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: value });
     return readList(user, list.id).list;
   }
 
   // --- Quitter une liste (POST /api/lists/:id/leave) ---
   //
-  // Un invité retire SA propre appartenance (jamais celle d'un autre : la
+  // Un membre (contributeur ou invité) retire SA propre appartenance (jamais celle d'un autre : la
   // route ne prend aucun identifiant de personne). Le propriétaire ne peut
   // pas quitter sa liste (403) ; un non-membre reçoit « Liste introuvable »
   // (404), comme partout. Un invité en lecture seule peut quitter. Ses
@@ -938,10 +938,10 @@ export function createListService(ctx) {
 
   // --- Dupliquer une liste (POST /api/lists/:id/duplicate) ---
   //
-  // Propriétaire ou invité « Peut modifier » (lecture seule : 403 ;
+  // Propriétaire ou contributeur (lecture seule : 403 ;
   // non-membre : 404, comme partout). En une seule transaction (tout ou
   // rien) : une nouvelle liste privée (la personne qui duplique en est la
-  // propriétaire, sans invité ni lien public), même catégorie, même magasin,
+  // propriétaire, sans partage ni lien public), même catégorie, même magasin,
   // même icône, mêmes réglages de priorité et d'échéance ; avec withItems (vrai par
   // défaut) : les éléments non supprimés, avec nom, quantité, note, rayon,
   // magasin, priorité, échéance et code-barres, tous décochés. Les photos ne

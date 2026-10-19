@@ -279,12 +279,12 @@ Styles : `public/css/app.css` (`.list-card--fresh`) et composants existants. Bal
 
 - Menu « ⋯ » d'une carte et menu ⋮ de la liste (le même `.menu`, mêmes actions dans le même ordre) :
   - propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait, « Supprimer la liste » (`.menu__item--danger`, `#i-trash`) ;
-  - invité « Peut modifier » : « Dupliquer la liste », un trait, « Quitter la liste » (`.menu__item--danger`, `#i-logout`) ;
+  - contributeur : « Dupliquer la liste », un trait, « Quitter la liste » (`.menu__item--danger`, `#i-logout`) ;
   - invité en lecture seule : « Quitter la liste » seulement (sans trait).
   Le bouton « ⋯ » apparaît donc pour tout membre ; il n'apparaît jamais sans action.
 - Feuille « Dupliquer la liste » (`.sheet`) : `.field` « Titre de la liste » (`.input`, « <nom> (copie) », aucun curseur posé d'office), une `.card.list-options` avec une `.toggle-row` « Copier les articles » / « Copier les éléments » (`.switch`, `role="switch"`, état écrit « Activé · … » / « Désactivé · liste vide »), une aide (`.field__hint`) sur ce qui n'est pas copié, puis `.sheet__actions` : « Dupliquer » (`.btn--primary.btn--block`) et « Annuler » (`.btn--secondary.btn--block`).
 - Après : message (`.toast`) « Liste « <nom> » créée » avec « Ouvrir » (`.toast__action`) ; sur « Mes listes », la nouvelle carte porte `.list-card--fresh` (brève mise en évidence, coupée avec `prefers-reduced-motion`).
-- Confirmation « Quitter la liste « <nom> » ? » : le `.dialog` existant, texte « Vous ne la verrez plus. Le propriétaire pourra vous inviter de nouveau. », boutons « Annuler » (`.btn--secondary`) et « Quitter » (`.btn--danger`).
+- Confirmation « Quitter la liste « <nom> » ? » : le `.dialog` existant, texte « Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous. », boutons « Annuler » (`.btn--secondary`) et « Quitter » (`.btn--danger`).
 
 ## Ajout : « Nouveau magasin… » / « Nouveau rayon… »
 

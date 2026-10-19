@@ -4,7 +4,7 @@
 //                                 mot de passe
 //   DELETE /api/lists/:id/share   arrêter le lien
 //
-// Seul le propriétaire de la liste y a accès : un invité ou un autre compte
+// Seul le propriétaire de la liste y a accès : un autre membre ou un autre compte
 // reçoit la même réponse que pour une liste qui n'existe pas (404).
 //
 // Corps du PUT (tout est facultatif) :

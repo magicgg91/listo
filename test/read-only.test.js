@@ -39,8 +39,9 @@ async function raw(client, method, url, body, type) {
   return { status: res.status, body: text && res.headers.get('content-type')?.includes('json') ? JSON.parse(text) : text };
 }
 
-// Guillaume (Admin, propriétaire) ; Léa invitée sans droit précisé (donc en
-// lecture seule) ; Marie invitée « Peut modifier » ; Paul, ni l'un ni l'autre.
+// Guillaume (Admin, propriétaire) ; Léa : partage sans droit précisé, donc
+// « Lecture seule » (invité) ; Marie : « Peut modifier » (contributeur) ;
+// Paul : aucun partage.
 // Une liste de courses (lait avec photo, pain coché, beurre supprimé) et une
 // liste de tâches (ampoule).
 async function household(t) {
@@ -202,9 +203,9 @@ test('partage : sans droit précisé, lecture seule ; le propriétaire garde tou
   const before = h.dump();
   for (const [body, message] of [
     [{ userIds: [h.ids.lea], access: { 1: 'lecture' } }, 'Le propriétaire a tous les droits sur sa liste.'],
-    [{ userIds: [h.ids.lea], access: { [h.ids.lea]: 'admin' } }, 'Droits des invités invalides.'],
-    [{ userIds: [h.ids.lea], access: { [h.ids.paul]: 'modification' } }, 'Droit donné à une personne qui n\'est pas invitée.'],
-    [{ userIds: [h.ids.lea], access: [] }, 'Droits des invités invalides.'],
+    [{ userIds: [h.ids.lea], access: { [h.ids.lea]: 'admin' } }, 'Droits des personnes invalides.'],
+    [{ userIds: [h.ids.lea], access: { [h.ids.paul]: 'modification' } }, 'Droit donné à une personne avec qui la liste n\'est pas partagée.'],
+    [{ userIds: [h.ids.lea], access: [] }, 'Droits des personnes invalides.'],
   ]) {
     const res = await h.guillaume.request('PUT', `/api/lists/${h.shop}/members`, body);
     assert.equal(res.status, 400, JSON.stringify(body));

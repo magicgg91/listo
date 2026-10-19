@@ -257,11 +257,11 @@ function form(list, users) {
 
   // --- Partage ---
   // Moi d'abord (toujours inclus, tous les droits), puis les autres comptes
-  // actifs ; un invité déjà présent mais désactivé reste affiché (et peut
+  // actifs ; une personne déjà présente mais désactivée reste affichée (et peut
   // être retiré). Chaque personne cochée a son droit sur la liste, choisi
   // juste sous son nom (accessChoice) : « Peut modifier » ou « Lecture
   // seule ». Une personne ajoutée commence en « Lecture seule » ; une
-  // personne déjà invitée garde le sien.
+  // personne déjà présente garde le sien.
   const guests = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
   const rights = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
   const people = users.filter((u) => u.id !== me.id).map((u) => ({ ...u, active: true }));

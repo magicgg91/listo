@@ -492,7 +492,7 @@ export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
 }
 
 // Ce téléphone peut-il modifier la liste ? Le serveur l'indique dans chaque
-// liste (canEdit : propriétaire, ou invité « Peut modifier ») et refuse de
+// liste (canEdit : propriétaire, ou contributeur) et refuse de
 // toute façon chaque écriture d'un invité en lecture seule ; l'écran s'en sert
 // seulement pour ne pas proposer ce qui serait refusé. Une copie gardée
 // d'avant cette information (aucun canEdit) reste modifiable jusqu'à la

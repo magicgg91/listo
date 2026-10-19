@@ -29,7 +29,12 @@
 //   exactement la zone visible. --app-top = offsetTop (position verticale de
 //   .app), --app-h = visualViewport.height. La barre du haut reste donc
 //   visible, la liste se raccourcit, le champ reste juste au-dessus du
-//   clavier, sans bande vide.
+//   clavier, sans bande vide. Dans ce cas seulement, l'attribut
+//   data-keyboard="open" est posé sur <html> : le bas de l'application
+//   touche alors le clavier, et le trait de l'iPhone (marge de sécurité du
+//   bas, env(safe-area-inset-bottom)) est caché derrière lui. app.css retire
+//   donc cette marge des barres du bas (barre d'ajout, feuilles, boutons
+//   « Enregistrer »…) ; elle revient quand le clavier se ferme.
 // Le décalage est relu pendant que le clavier s'anime (visualViewport
 // « scroll » et « resize »), à l'entrée et à la sortie d'un champ (focusin,
 // focusout), puis un peu plus tard (mêmes relectures décalées). Clavier
@@ -95,6 +100,7 @@
     var baseHeight = 0;   // hauteur hors décalage, en nombre (celle d'avant le clavier)
     var lastWidth = null; // largeur au moment de cette mesure
     var lastTop = '0px';  // dernier décalage écrit (0 au départ, sans rien écrire)
+    var keyboardOpen = false; // data-keyboard posé sur <html>
 
     var held = false;     // un appui est en cours : rien ne bouge
     var heldAt = 0;       // depuis quand (un appui ne bloque pas plus de 2 s)
@@ -139,6 +145,13 @@
       if (topValue !== lastTop) { // valeur identique : rien à réécrire
         lastTop = topValue;
         root.style.setProperty('--app-top', topValue);
+      }
+      // Clavier ouvert, bas de l'application contre le clavier : marge de
+      // sécurité du bas retirée (app.css)
+      if (Boolean(shift) !== keyboardOpen) {
+        keyboardOpen = Boolean(shift);
+        if (keyboardOpen) root.setAttribute('data-keyboard', 'open');
+        else root.removeAttribute('data-keyboard');
       }
       var value = px(height);
       if (value === last) return; // valeur identique : rien à réécrire

@@ -29,6 +29,7 @@ import { createBackups } from './backup.js';
 import { createUpdateCheck, fetchGithub } from './update-check.js';
 import { createProductLookup, fetchProduct } from './products.js';
 import { productRoutes } from './routes/products.js';
+import { referenceRoutes } from './routes/references.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -119,6 +120,8 @@ export function createApp({
     uploads: createUploadCounter({ now }),
     // Duplications de listes : 20 par heure et par compte au plus
     duplicates: createUploadCounter({ limit: 20, now }),
+    // Magasins et rayons créés par les comptes : 20 par heure et par compte au plus
+    referenceCreations: createUploadCounter({ limit: 20, now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -213,6 +216,7 @@ export function createApp({
   api.use(meRoutes(ctx));
   api.use(listRoutes(ctx));
   api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
+  api.use(referenceRoutes(ctx)); // nouveau magasin ou rayon (après listRoutes : utilise ctx.lists)
   api.use(photoRoutes(ctx));
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   // Version installée (Réglages › À propos) : comptes connectés seulement
@@ -282,6 +286,7 @@ export function createApp({
     ctx.limiter.prune();
     ctx.uploads.prune();
     ctx.duplicates.prune();
+    ctx.referenceCreations.prune();
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
     ctx.publicAccess.prune();

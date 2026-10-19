@@ -284,3 +284,11 @@ Styles : `public/css/app.css` (`.list-card--fresh`) et composants existants. Bal
 - Après : message (`.toast`) « Liste « <nom> » créée » avec « Ouvrir » (`.toast__action`) ; sur « Mes listes », la nouvelle carte porte `.list-card--fresh` (brève mise en évidence, coupée avec `prefers-reduced-motion`).
 - Confirmation « Quitter la liste « <nom> » ? » : le `.dialog` existant, texte « Vous ne la verrez plus. Le propriétaire pourra vous inviter de nouveau. », boutons « Annuler » (`.btn--secondary`) et « Quitter » (`.btn--danger`).
 
+## Ajout : « Nouveau magasin… » / « Nouveau rayon… »
+
+Styles : `public/css/app.css` (`.picker__new`) et composants existants. Balisage : « Choix du rayon avec « Nouveau rayon… » » et « Feuille « Nouveau rayon » / « Nouveau magasin » » dans `components.html`. Icône existante (`i-plus`).
+
+- Dernière ligne d'un choix de rayon ou de magasin : un `.radio-row.picker__new` (bouton, `#i-plus` + « Nouveau rayon… » / « Nouveau magasin… », texte en couleur d'accent, trait au-dessus), hors du `role="radiogroup"` des choix, 44 px.
+- Feuille de création, la même pour les deux (`public/js/create-reference.js`) : `.sheet` « Nouveau rayon » / « Nouveau magasin », un `.field` « Libellé du rayon » / « Libellé du magasin » (`.input`, attributs `LABEL_INPUT`, jamais « Nom », aucun curseur posé d'office), une `.note` d'erreur au besoin (doublon) avec un bouton `.btn--secondary.btn--block` « Choisir « … » », puis « Créer » (`.btn--primary.btn--block`).
+- Une fenêtre ouverte par-dessus une autre passe au-dessus de son fond grisé (`.scrim`) : la fenêtre du dessous est grisée.
+

@@ -275,12 +275,18 @@ test('doigt posé : un changement de --app-top / --app-h attend le relâchement,
   b.fire('vv', 'scroll');
   b.fire('vv', 'resize');
   b.fire('document', 'focusout');
-  b.runLater();
+  b.runLater({ upTo: 1000 }); // relectures décalées (pas le délai de sécurité de 2 s)
   assert.equal(b.writes.length, before, 'rien ne bouge sous le doigt');
-  // Relâchement : la dernière mesure s'applique aussitôt, une seule fois
+  // Relâchement : l'appui n'est fini qu'après le click qui suit ; la
+  // dernière mesure s'applique alors, une seule fois
   b.fire('document', 'pointerup');
+  assert.equal(b.writes.length, before, 'rien ne bouge entre le relâchement et le click');
+  b.fire('document', 'click');
+  b.runLater();
   assert.deepEqual(b.writes.slice(before), [['--app-top', '290px'], ['--app-h', '440px']]);
   b.fire('document', 'pointerup');
+  b.fire('document', 'click');
+  b.runLater();
   assert.equal(b.writes.length, before + 2);
   // pointercancel (le doigt a fait défiler) : pareil
   b.fire('document', 'pointerdown');
@@ -289,6 +295,96 @@ test('doigt posé : un changement de --app-top / --app-h attend le relâchement,
   assert.equal(b.writes.length, before + 2);
   b.fire('document', 'pointercancel');
   assert.deepEqual(b.writes.at(-1), ['--app-top', '300px']);
+});
+
+// Appui sur un bouton (disquette, croix, « Ajouter une photo »…) alors qu'un
+// champ a le curseur : le navigateur envoie pointerdown, pointerup, puis
+// mousedown (le champ perd le curseur : focusout), mouseup et click
+function typingWithKeyboard() {
+  const b = browser({ height: 800 });
+  b.runLater();
+  b.doc.activeElement = textInput();
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.fire('vv', 'scroll');
+  return b;
+}
+const leaveField = (b) => {
+  b.doc.activeElement = null;
+  b.fire('document', 'focusout');
+};
+
+test('appui sur un bouton avec un champ actif : aucun réajustement avant le click, puis un seul', () => {
+  const b = typingWithKeyboard();
+  const before = b.writes.length;
+  b.fire('document', 'pointerdown');
+  b.fire('document', 'pointerup');
+  leaveField(b); // mousedown : le champ perd le curseur, le clavier commence à se replier
+  b.runLater({ upTo: 0 }); // relectures immédiates (image suivante)
+  assert.equal(b.writes.length, before, 'la page ne bouge pas avant le click');
+  b.fire('document', 'click');
+  b.runLater({ upTo: 0 });
+  // Le clavier n'est pas encore replié : décalage à zéro (hauteur visible inchangée)
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '0px']]);
+  // Le clavier se replie ensuite : réajustements habituels
+  b.vv.height = 800;
+  b.vv.offsetTop = 0;
+  b.fire('vv', 'resize');
+  assert.deepEqual(b.writes.at(-1), ['--app-h', '800px']);
+});
+
+test('sans appui (touche Entrée, clavier physique) : réajustement aussitôt, comme avant', () => {
+  const b = typingWithKeyboard();
+  const before = b.writes.length;
+  leaveField(b);
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '0px']]);
+});
+
+test('relâchement sans click (doigt glissé hors du bouton) : réajustement au bout de 400 ms', () => {
+  const b = typingWithKeyboard();
+  const before = b.writes.length;
+  b.fire('document', 'pointerdown');
+  b.fire('document', 'pointerup');
+  leaveField(b);
+  b.runLater({ upTo: 300 });
+  assert.equal(b.writes.length, before);
+  b.runLater({ upTo: 400 });
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '0px']]);
+});
+
+test('pointercancel (le doigt fait défiler la page) : réajustement aussitôt', () => {
+  const b = typingWithKeyboard();
+  const before = b.writes.length;
+  b.fire('document', 'pointerdown');
+  leaveField(b);
+  assert.equal(b.writes.length, before);
+  b.fire('document', 'pointercancel');
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '0px']]);
+});
+
+test('délai de sécurité : sans relâchement, la mesure s\'applique au bout de 2 s ; une fin prévue d\'un ancien appui est ignorée', () => {
+  const b = typingWithKeyboard();
+  const before = b.writes.length;
+  b.fire('document', 'pointerdown');
+  leaveField(b);
+  b.runLater({ upTo: 1999 });
+  assert.equal(b.writes.length, before);
+  b.runLater({ upTo: 2000 });
+  assert.deepEqual(b.writes.slice(before), [['--app-top', '0px']]);
+  // Ancien appui relâché sans click, nouvel appui aussitôt : les 400 ms du
+  // premier ne terminent pas le second
+  const c = typingWithKeyboard();
+  const start = c.writes.length;
+  c.fire('document', 'pointerdown');
+  c.fire('document', 'pointerup');
+  c.fire('document', 'pointerdown');
+  leaveField(c);
+  c.runLater({ upTo: 400 });
+  assert.equal(c.writes.length, start, 'le second appui est toujours en cours');
+  c.fire('document', 'pointerup');
+  c.fire('document', 'click');
+  c.runLater({ upTo: 0 });
+  assert.equal(c.writes.length, start + 1);
 });
 
 test('relâchement perdu : la mise en attente ne dure pas plus de 2 s', () => {

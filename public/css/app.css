@@ -269,3 +269,8 @@ button.sync { cursor: pointer; }
    .toggle-row dans une carte, séparées par un trait */
 .list-options { overflow: hidden; }
 .list-options .toggle-row + .toggle-row { border-top: 1px solid var(--color-border); }
+
+/* Liste tout juste créée par « Dupliquer la liste » : sa carte de « Mes
+   listes » est brièvement mise en évidence (même effet qu'un article ajouté) */
+.list-card.list-card--fresh { animation: item-added 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) { .list-card.list-card--fresh { animation: none; } }

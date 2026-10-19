@@ -25,6 +25,7 @@
 // Les dates (created_at, updated_at, deleted_at) sont toujours posées ici,
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
+import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
 } from '../public/js/history.js';
@@ -70,6 +71,7 @@ const LIST_NOT_FOUND = 'Liste introuvable.';
 const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 export const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
+export const OWNER_CANNOT_LEAVE = 'Le propriétaire ne peut pas quitter sa liste. Supprimez-la à la place.';
 // Priorité ou échéance désactivée par le propriétaire pour cette liste
 // (migration 13) : refus avant toute écriture
 export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
@@ -899,6 +901,65 @@ export function createListService(ctx) {
     return readList(user, list.id).list;
   }
 
+  // --- Quitter une liste (POST /api/lists/:id/leave) ---
+  //
+  // Un invité retire SA propre appartenance (jamais celle d'un autre : la
+  // route ne prend aucun identifiant de personne). Le propriétaire ne peut
+  // pas quitter sa liste (403) ; un non-membre reçoit « Liste introuvable »
+  // (404), comme partout. Un invité en lecture seule peut quitter. Ses
+  // éléments restent dans la liste (ils appartiennent à la liste). Les
+  // membres restants et ses propres téléphones sont prévenus en temps réel ;
+  // la liste disparaît de ses téléphones à leur synchronisation.
+  function leaveList(user, listId) {
+    const list = listForMember(user, listId);
+    if (list.owner_id === user.id) throw new OpError(403, OWNER_CANNOT_LEAVE);
+    db.transaction(() => {
+      db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, user.id);
+      db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
+    })();
+    ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
+    ctx.audit('liste_quittee', { utilisateur: user.username, liste: list.id });
+    return {};
+  }
+
+  // --- Dupliquer une liste (POST /api/lists/:id/duplicate) ---
+  //
+  // Propriétaire ou invité « Peut modifier » (lecture seule : 403 ;
+  // non-membre : 404, comme partout). En une seule transaction (tout ou
+  // rien) : une nouvelle liste privée (la personne qui duplique en est la
+  // propriétaire, sans invité ni lien public), même catégorie, même magasin,
+  // mêmes réglages de priorité et d'échéance ; avec withItems (vrai par
+  // défaut) : les éléments non supprimés, avec nom, quantité, note, rayon,
+  // magasin, priorité, échéance et code-barres, tous décochés. Les photos ne
+  // sont pas copiées (un fichier ne peut pas faire partie de la transaction,
+  // et la copie échapperait au plafond d'envoi des photos). La mémoire des
+  // noms suit la création d'éléments habituelle (listes de courses).
+  // Journal : identifiants seulement, jamais de nom de liste ni de contenu.
+  function duplicateList(user, listId, { name, withItems = true } = {}) {
+    const source = listForEditor(user, listId);
+    const title = listName(name);
+    if (typeof withItems !== 'boolean') throw new OpError(400, 'Réglage « Copier les éléments » invalide.');
+    const id = crypto.randomUUID();
+    const now = nowIso();
+    const items = withItems ? q.liveItems.all(source.id) : [];
+    db.transaction(() => {
+      db.prepare(`INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, now, now);
+      db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
+      const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+      for (const item of items) {
+        insert.run(crypto.randomUUID(), id, item.name, item.quantity, item.note, item.aisle_id, item.store_id, item.priority, item.due_date, item.ean, user.id, now, now);
+        // Comme un ajout : la mémoire des noms (listes de courses seulement)
+        if (source.is_shopping === 1) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
+      }
+    })();
+    ctx.events?.notifyList(id);
+    ctx.audit('liste_dupliquee', { utilisateur: user.username, liste: id, source: source.id, elements: items.length });
+    return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user), copied: items.length };
+  }
+
   // Mode scan, « mes produits » : nom et note d'un article qui porte ce
   // code-barres, parmi les listes dont le compte est membre (jamais celles
   // des autres comptes), articles supprimés compris tant qu'ils ne sont pas
@@ -972,7 +1033,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, purgeDeleted, activeUsers,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, leaveList, purgeDeleted, activeUsers,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

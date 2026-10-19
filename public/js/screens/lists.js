@@ -8,7 +8,7 @@ import { relativeTime, remainingLabel, namesList, listSortButton } from '../form
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
-import { listActions } from './list-actions.js';
+import { listActions, isFreshList } from './list-actions.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -48,7 +48,8 @@ function cardLink(list, { selected }) {
   }
 
   return h('a', {
-    class: `card list-card${selected ? ' is-selected' : ''}`,
+    // Liste tout juste créée par « Dupliquer la liste » : brève mise en évidence
+    class: `card list-card${selected ? ' is-selected' : ''}${isFreshList(list.id) ? ' list-card--fresh' : ''}`,
     href: pathFor('list', { id: list.id }),
     'aria-current': selected ? 'page' : null,
     onClick: (event) => {

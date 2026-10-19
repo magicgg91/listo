@@ -250,9 +250,9 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 
 Styles : `public/css/app.css`. Balisage : « Carte avec menu « ⋯ » » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
 
-- `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (liste partagée dont on n'est pas propriétaire).
+- `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (depuis le 19 octobre 2026, tout membre en a au moins une : voir « Dupliquer la liste » et « Quitter la liste » plus bas).
 - Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran) : « Modifier la liste » (`#i-pencil`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`).
-- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible.
+- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible. Menu complet par profil (dont « Dupliquer la liste » et « Quitter la liste ») : voir plus bas.
 - Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.
 
 ## Ajout : droit par personne et liste en lecture seule
@@ -270,4 +270,17 @@ Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage
 
 - Formulaire « Nouvelle liste » / « Modifier la liste », après le magasin : `.field` « Options des éléments » avec une `.card.list-options` de deux `.toggle-row` séparées par un trait. Chacune : `.row__title` (« Priorité », « Échéance »), `.row__sub` qui écrit l'état (« Activée · … » / « Désactivée · … ») et un `.switch` (`role="switch"`, `aria-checked`, `aria-label` = le nom, 44 px). Masqué pour une liste de courses.
 - Réglage désactivé : aucune trace dans la liste (pas de pastille de priorité ni d'échéance, pas de « En retard »), ni dans la fiche (champ absent), ni dans la fiche à consulter, ni sur la page publique ; le menu « Trier la liste » ne propose que les tris disponibles, et le bouton disparaît s'il ne reste que l'ordre alphabétique.
+
+## Ajout : « Dupliquer la liste » et « Quitter la liste »
+
+Styles : `public/css/app.css` (`.list-card--fresh`) et composants existants. Balisage : « Menu d'une liste, par profil », « Feuille « Dupliquer la liste » » et « Confirmation « Quitter la liste » » dans `components.html`. Aucune nouvelle icône (`i-copy`, `i-logout`, déjà dans le sprite).
+
+- Menu « ⋯ » d'une carte et menu ⋮ de la liste (le même `.menu`, mêmes actions dans le même ordre) :
+  - propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait, « Supprimer la liste » (`.menu__item--danger`, `#i-trash`) ;
+  - invité « Peut modifier » : « Dupliquer la liste », un trait, « Quitter la liste » (`.menu__item--danger`, `#i-logout`) ;
+  - invité en lecture seule : « Quitter la liste » seulement (sans trait).
+  Le bouton « ⋯ » apparaît donc pour tout membre ; il n'apparaît jamais sans action.
+- Feuille « Dupliquer la liste » (`.sheet`) : `.field` « Titre de la liste » (`.input`, « <nom> (copie) », aucun curseur posé d'office), une `.card.list-options` avec une `.toggle-row` « Copier les articles » / « Copier les éléments » (`.switch`, `role="switch"`, état écrit « Activé · … » / « Désactivé · liste vide »), une aide (`.field__hint`) sur ce qui n'est pas copié, puis `.sheet__actions` : « Dupliquer » (`.btn--primary.btn--block`) et « Annuler » (`.btn--secondary.btn--block`).
+- Après : message (`.toast`) « Liste « <nom> » créée » avec « Ouvrir » (`.toast__action`) ; sur « Mes listes », la nouvelle carte porte `.list-card--fresh` (brève mise en évidence, coupée avec `prefers-reduced-motion`).
+- Confirmation « Quitter la liste « <nom> » ? » : le `.dialog` existant, texte « Vous ne la verrez plus. Le propriétaire pourra vous inviter de nouveau. », boutons « Annuler » (`.btn--secondary`) et « Quitter » (`.btn--danger`).
 

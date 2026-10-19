@@ -2,6 +2,10 @@
 //   GET  /api/lists                 mes listes (celles dont je suis membre)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
+//   POST /api/lists/:id/leave       quitter la liste (invité, pour lui-même ;
+//                                   en ligne seulement)
+//   POST /api/lists/:id/duplicate   dupliquer la liste (propriétaire ou invité
+//                                   « Peut modifier » ; en ligne seulement)
 //   GET  /api/users                 comptes actifs, pour choisir les invités
 //   GET  /api/suggestions?q=la      autocomplétion (dès 2 lettres) ; avec
 //                                    &listId=… : vide hors liste de courses
@@ -36,6 +40,30 @@ export function listRoutes(ctx) {
   router.put('/lists/:id/members', (req, res) => {
     try {
       res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds, req.body?.access ?? {}) });
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+  router.post('/lists/:id/leave', (req, res) => {
+    try {
+      res.json(service.leaveList(req.user, req.params.id));
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+  router.post('/lists/:id/duplicate', (req, res) => {
+    try {
+      // Droit vérifié d'abord (un non-membre reçoit « Liste introuvable »),
+      // puis le plafond de duplications du compte
+      service.listForEditor(req.user, req.params.id);
+      if (!ctx.duplicates.take(req.user.id)) {
+        return res.status(429).json({ error: 'Trop de duplications pour le moment. Réessayez dans un moment.' });
+      }
+      res.status(201).json(service.duplicateList(req.user, req.params.id, { name: req.body?.name, withItems: req.body?.withItems ?? true }));
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;

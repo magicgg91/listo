@@ -189,6 +189,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. Même chose avec le bouton de scan du champ « Code-barres » (feuille « Scanner un code-barres » : le code lu s'inscrit dans le champ) et avec « Scanner » de la barre d'ajout (feuille « Scanner un produit », puis la feuille du mode scan) ; « Réessayer » après « Code non lu » propose aussi les deux choix.
     6. Bouton « Retour » du téléphone pendant que la feuille est ouverte : seule la feuille se ferme.
     7. Sur iPhone et sur ordinateur, rien ne change : un seul geste ouvre directement le menu du téléphone (ou le sélecteur de fichier).
+36. **Administration › Articles** (compte Admin) : l'onglet s'appelle « Articles » (plus « Noms ») ; sur un petit téléphone, la barre d'onglets glisse de côté et « Articles » reste lisible quand il est choisi. Chaque article montre son rayon habituel s'il en a un, puis trois boutons : crayon (« Corriger »), magasin (« Modifier le rayon de … »), poubelle (« Retirer »). Toucher le magasin : la feuille « Rayon de « Lait » » liste les rayons actifs puis « Aucun rayon », le rayon actuel coché ; aucun clavier ne s'ouvre. Choisir « Fromages », « Enregistrer » : la ligne affiche « Fromages ». Dans une liste de courses, l'article « Lait » déjà présent garde son ancien rayon ; supprimer « Lait », puis l'ajouter de nouveau (sur l'autre téléphone aussi, sans recharger) : il est rangé en « Fromages », quel que soit le magasin de la liste. « Aucun rayon » : la ligne n'affiche plus de rayon, et un nouvel ajout demande « Dans quel rayon ? ».
 
 ## API des comptes (étape 2)
 
@@ -307,6 +308,7 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `GET /api/admin/names/impact?from=&to=` | Ce que changerait une correction : `items` et `lists` (nombres d'articles et de listes de courses), `merge` (le nouveau nom existe déjà), `unchanged` |
 | `POST /api/admin/names/rename` | Corriger un nom partout : `from` (nom normalisé), `to` (nouveau nom) |
 | `POST /api/admin/names/remove` | Retirer un nom des suggestions : `from`. Les listes ne changent pas |
+| `POST /api/admin/names/aisle` | Changer le rayon habituel d'un nom : `from`, `aisleId` (rayon existant et actif, ou `null` pour aucun ; sinon 400 « Rayon inconnu ou désactivé. »). Toutes les lignes du nom (générale et par magasin) ; les listes ne changent pas. Réponse : `{ aisleId, aisle }` |
 
 Règles :
 
@@ -325,6 +327,7 @@ Règles :
   - Fusion, si le nouveau nom existe déjà : les lignes du même magasin sont réunies, utilisations additionnées, rayon de la ligne la plus utilisée (à égalité, celui du nom corrigé ; si elle n'a pas de rayon, celui de l'autre).
   - Même nom une fois normalisé (« creme fraiche » → « Crème fraîche ») : seul le nom affiché change, partout. Nom identique : rien à faire.
   - Retirer : seules les lignes d'historique sont effacées (`admin_nom_retire`).
+  - Modifier le rayon : en une transaction, `aisle_id` de toutes les lignes du nom (générale et par magasin), et leur date `last_used_at` (c'est elle que suit la synchronisation des téléphones, comme pour une correction). Aucun article des listes ne change. Puis « event: refs » (les téléphones connectés relisent la mémoire tout de suite) et le journal `nom_rayon_modifie` (compte, nom de l'article, nom du rayon ou « aucun »). La liste de l'onglet renvoie aussi `aisleId`.
   - Sur les téléphones : les articles corrigés arrivent par la synchronisation habituelle. Un ancien nom corrigé ou retiré disparaît des suggestions à la prochaine synchronisation complète (ouverture de Listo, retour au premier plan).
   - Pas de nouvelle colonne en base : le nom normalisé des articles est calculé à la demande (`normalizeItemName`, partagé avec le téléphone).
 

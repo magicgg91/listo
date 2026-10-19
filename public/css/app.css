@@ -311,3 +311,10 @@ button.sync { cursor: pointer; }
 .list-card__count--progress { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .list-card__people { display: flex; flex: none; align-items: center; gap: 6px; }
 .list-card__link { display: inline-flex; color: var(--color-text-2); }
+
+/* Onglets de l'Administration : si la place manque (petit écran, texte
+   agrandi), la barre défile de côté au lieu de déborder de l'écran ; aucun
+   libellé n'est coupé. L'onglet actif est ramené en vue (admin.js). */
+.tabs { overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: 1 0 auto; white-space: nowrap; }

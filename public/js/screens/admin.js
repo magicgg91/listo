@@ -7,7 +7,8 @@
 //   réactivation, suppression d'un élément jamais utilisé ;
 // - Articles : la mémoire commune des articles saisis dans les listes de
 //   courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
-//   les listes de courses, ou le retirer des suggestions. (Son identifiant
+//   les listes de courses, changer son rayon habituel, ou le retirer des
+//   suggestions. (Son identifiant
 //   interne reste « noms », comme les routes /api/admin/names.)
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
 // ses éléments) : les articles enregistrés viennent avec de simples compteurs.
@@ -16,6 +17,7 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, 
 import { get, post, patch, del, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
+import { activeOnly } from '../store.js';
 import { app, refreshData } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
@@ -49,6 +51,10 @@ export function renderAdmin(tabKey, onLeave) {
       'aria-label': t.title ?? null,
       onClick: () => navigate('admin', { tab: t.key }, { replace: true }),
     }, t.label)));
+
+  // Barre trop large pour l'écran (elle défile de côté) : l'onglet actif est
+  // ramené en vue une fois l'écran affiché
+  requestAnimationFrame(() => tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
 
   const panel = h('div', { class: 'body admin-list', role: 'tabpanel' });
   const footer = h('div', { class: 'footer', hidden: tab.key !== 'comptes' });
@@ -632,7 +638,8 @@ function afterNameChange(reload) {
 }
 
 // Ligne d'un nom : nom affiché, rayon habituel et compteurs ; « Corriger »
-// (renommage sur place, puis confirmation chiffrée) et « Retirer des suggestions »
+// (renommage sur place, puis confirmation chiffrée), « Modifier le rayon »
+// et « Retirer des suggestions »
 function nameRow(entry, reload) {
   const rowEl = h('div', { class: 'manage' });
   const showView = () => {
@@ -642,6 +649,7 @@ function nameRow(entry, reload) {
         h('p', { class: 'manage__name' }, entry.name),
         h('p', { class: 'manage__sub' }, savedNameSub(entry))),
       iconButton('pencil', `Corriger ${entry.name}`, showEdit),
+      iconButton('store', `Modifier le rayon de ${entry.name}`, () => chooseAisle(entry, reload)),
       iconButton('trash', `Retirer ${entry.name} des suggestions`, () => removeName(entry, reload)));
   };
 
@@ -681,6 +689,59 @@ function nameRow(entry, reload) {
 
   showView();
   return rowEl;
+}
+
+// « Modifier le rayon » : feuille de choix (rayons actifs par ordre
+// alphabétique, puis « Aucun rayon » ; l'actuel est coché), puis
+// « Enregistrer ». Le rayon habituel change pour ce nom (toutes ses lignes,
+// générale et par magasin) ; les articles déjà dans les listes gardent le
+// leur. Aucun champ de saisie, donc aucun clavier.
+function chooseAisle(entry, reload) {
+  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisle.name })), { id: null, name: 'Aucun rayon' }];
+  // Rayon actuel : coché seulement s'il est encore proposé
+  let selected = choices.some((c) => c.id === (entry.aisleId ?? null)) ? (entry.aisleId ?? null) : undefined;
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Enregistrer');
+  const rows = choices.map((choice) => {
+    const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' }, h('span', { class: 'radio' }), choice.name);
+    row.dataset.id = String(choice.id);
+    row.addEventListener('click', () => {
+      selected = choice.id;
+      paint();
+    });
+    return row;
+  });
+  const paint = () => {
+    for (const row of rows) {
+      const on = row.dataset.id === String(selected);
+      row.classList.toggle('is-on', on);
+      row.setAttribute('aria-checked', String(on));
+      row.querySelector('.radio').classList.toggle('is-on', on);
+      row.querySelector('.icon-end')?.remove();
+      if (on) row.append(icon('check', 'icon-end'));
+    }
+    save.disabled = selected === undefined;
+  };
+  paint();
+  const sheet = openSheet({
+    title: `Rayon de « ${entry.name} »`,
+    content: [h('div', { class: 'card picker' }, h('div', { role: 'radiogroup', 'aria-label': 'Rayon' }, rows)), save],
+  });
+  save.addEventListener('click', async () => {
+    if (selected === (entry.aisleId ?? null)) {
+      sheet.close();
+      return;
+    }
+    save.disabled = true;
+    try {
+      const done = await post('/api/admin/names/aisle', { from: entry.key, aisleId: selected });
+      sheet.close();
+      toast(done.aisle ? `Rayon de « ${entry.name} » : ${done.aisle}` : `« ${entry.name} » n'a plus de rayon habituel`, { low: true });
+      afterNameChange(reload);
+    } catch (err) {
+      save.disabled = false;
+      toast(errorMessage(err), { low: true });
+    }
+  });
 }
 
 // Retire un nom des suggestions (l'historique seulement), après confirmation

@@ -118,15 +118,21 @@ test('en-tête de groupe : « X/Y » à la place de « · 3 à acheter », ancie
   }
 });
 
-test('carte compacte : ni catégorie ni magasin ; badge « Multi » ; lien public collé aux pastilles, absent sans lien', () => {
+test('carte compacte : ni catégorie, ni magasin, ni badge « Multi » ; lien public collé aux pastilles, absent sans lien', () => {
   const lists = read('public/js/screens/lists.js');
   const card = lists.slice(lists.indexOf('function cardLink('), lists.indexOf('export function cardCount('));
   // Ni catégorie ni magasin sur la carte
   assert.doesNotMatch(card, /category\.name|store\.name|list-card__meta|icon\('store'/);
   // Ligne 1 : icône, titre, heure (le bouton ⋮ est posé à côté, voir listCard)
   assert.match(card, /h\('div', \{ class: 'list-card__head' \},\s*h\('span', \{ class: 'list-card__icon' \}, icon\(listIcon\(list\), 'icon--sm'\)\),\s*h\('h2', \{ class: 'list-card__name' \}, list\.name\),\s*h\('span', \{ class: 'list-card__time' \}, relativeTime\(list\.lastActivity\)\)\),/);
-  // Ligne 2 à gauche : compteur, puis « Multi » quand il y a lieu
-  assert.match(card, /h\('div', \{ class: 'list-card__left' \},\s*cardCount\(list\),\s*list\.store\?\.isMulti && list\.category\.isShopping \? multiBadge\(\) : null,/);
+  // Ligne 2 à gauche : compteur, puis la pastille « Lecture seule » quand il y a lieu
+  assert.match(card, /h\('div', \{ class: 'list-card__left' \},\s*cardCount\(list\),\s*\/\/[^\n]*\n\s*canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}/);
+  // « Multi » est un type de magasin : ni badge ni texte sur la carte
+  assert.doesNotMatch(card, /multiBadge|isMulti|badge-multi|'Multi'/);
+  assert.doesNotMatch(read('public/js/screens/lists.js'), /multiBadge/);
+  assert.doesNotMatch(read('public/css/app.css'), /\.list-card__left \.badge-multi/);
+  // L'en-tête d'une liste garde le magasin, avec « Multi » pour un magasin multi
+  assert.match(read('public/js/screens/list.js'), /replace\(sub, list\.store \? \[icon\('store', 'icon--xs'\), list\.store\.name, view\.multi \? multiBadge\(\) : null\] : list\.category\.name\);/);
   // Ligne 2 à droite : le lien public juste avant les pastilles, seulement s'il y en a un
   assert.match(card, /h\('div', \{ class: 'list-card__people' \},\s*\/\/[^\n]*\n\s*hasPublicLink\(list\) \? h\('span', \{ class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' \}, icon\('link', 'icon--xs'\)\) : null,\s*h\('div', \{ class: 'avatars'/);
   assert.equal((card.match(/icon\('link'/g) ?? []).length, 1, 'le symbole du lien n\'apparaît qu\'une fois');

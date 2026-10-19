@@ -2,7 +2,7 @@
 // la version ordinateur (bureau-1) : une carte par liste, la plus récemment
 // active en premier, et le bouton « Nouvelle liste ».
 
-import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
+import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
@@ -40,10 +40,11 @@ export function listCard(list, { selected = false } = {}) {
 // Carte compacte, deux lignes (trois si le titre passe sur deux lignes) :
 // - ligne 1 : icône de la liste, titre, « il y a 3 h » (le bouton ⋮ est
 //   posé à côté, voir listCard) ;
-// - ligne 2, à gauche : compteur « X/Y » (restants / total), puis le badge
-//   « Multi » et la pastille « Lecture seule » s'il y a lieu ; à droite : le
-//   symbole du lien public s'il y en a un, collé aux pastilles des personnes.
-// Ni catégorie ni magasin sur la carte (ils restent dans la liste).
+// - ligne 2, à gauche : compteur « X/Y » (restants / total), puis la
+//   pastille « Lecture seule » s'il y a lieu ; à droite : le symbole du lien
+//   public s'il y en a un, collé aux pastilles des personnes.
+// Ni catégorie ni magasin sur la carte, ni le badge « Multi » (un type de
+// magasin) : ils restent dans l'en-tête de la liste.
 function cardLink(list, { selected }) {
   const members = list.members.filter((m) => m.active || m.isOwner);
   // Le propriétaire d'abord, puis les invités
@@ -67,7 +68,6 @@ function cardLink(list, { selected }) {
   h('div', { class: 'list-card__foot' },
     h('div', { class: 'list-card__left' },
       cardCount(list),
-      list.store?.isMulti && list.category.isShopping ? multiBadge() : null,
       // Liste partagée avec moi en lecture seule : pastille (icône ET texte)
       canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), 'Lecture seule')),
     h('div', { class: 'list-card__people' },

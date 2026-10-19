@@ -302,3 +302,12 @@ Styles : `public/css/app.css` (`.icon-grid`, `.icon-grid__opt`, `.icon-grid__che
 - Au départ, la case cochée est l'icône de la catégorie (`i-cart` pour les courses, `i-tasks` sinon).
 - Carte de « Mes listes » : l'icône (20 px, couleur d'accent) devant le titre. En-tête de la liste : la même, en couleur secondaire, juste avant le titre.
 - **Nouvelles icônes** du sprite (même trait que les autres, couleur héritée), soit 71 icônes : `i-balloon`, `i-bag`, `i-basket`, `i-bike`, `i-book`, `i-briefcase`, `i-bulb`, `i-cake`, `i-car`, `i-cup`, `i-dumbbell`, `i-euro`, `i-gamepad`, `i-gift`, `i-hammer`, `i-health`, `i-heart`, `i-home`, `i-meal`, `i-music`, `i-paw`, `i-plane`, `i-plant`, `i-school`, `i-shirt`, `i-spray`, `i-star`, `i-stroller`, `i-suitcase`, `i-tv`, `i-wrench`. Réutilisées : `i-cart`, `i-store`, `i-tasks`, `i-calendar`.
+
+## Ajout : carte compacte de « Mes listes »
+
+Styles : `public/css/app.css` (`.list-card__left`, `.list-card__people`, `.list-card__link`, règles de `.list-card__head`). Balisage : « Carte compacte de « Mes listes » » dans `components.html` ; il remplace, pour la carte, la ligne `.list-card__meta` (catégorie, magasin, lien) des exemples plus anciens.
+
+- Ligne 1 (`.list-card__head`) : `.list-card__icon`, `.list-card__name` (deux lignes au plus, puis « … »), `.list-card__time` ; le bouton ⋮ (`.list-card__menu`, 44 px) est posé à côté, hors du lien.
+- Ligne 2 (`.list-card__foot`) : à gauche `.list-card__left` (compteur `.list-card__count`, `.badge-multi`, `.chip--readonly`) ; à droite `.list-card__people` : le symbole du lien public (`.list-card__link`, `role="img"`, `aria-label="Lien public actif"`) juste avant `.avatars`, seulement si un lien est en cours.
+- Ni catégorie ni magasin sur la carte. Aucune nouvelle icône.
+

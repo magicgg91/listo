@@ -5,11 +5,11 @@
 import { h, icon, iconButton, avatar, replace, multiBadge } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, remainingLabel, namesList, listSortButton } from '../format.js';
+import { listIcon } from '../list-icons.js';
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
-import { listIcon } from '../list-icons.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -36,17 +36,17 @@ export function listCard(list, { selected = false } = {}) {
   return h('div', { class: 'list-card-wrap' }, card, menuButton);
 }
 
+// Carte compacte, deux lignes (trois si le titre passe sur deux lignes) :
+// - ligne 1 : icône de la liste, titre, « il y a 3 h » (le bouton ⋮ est
+//   posé à côté, voir listCard) ;
+// - ligne 2, à gauche : compteur, puis le badge
+//   « Multi » et la pastille « Lecture seule » s'il y a lieu ; à droite : le
+//   symbole du lien public s'il y en a un, collé aux pastilles des personnes.
+// Ni catégorie ni magasin sur la carte (ils restent dans la liste).
 function cardLink(list, { selected }) {
   const members = list.members.filter((m) => m.active || m.isOwner);
   // Le propriétaire d'abord, puis les invités
   members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
-
-  let count;
-  if (list.total > 0 && list.remaining === 0) {
-    count = h('p', { class: 'list-card__count list-card__count--done' }, icon('check', 'icon--sm'), 'Tout est coché');
-  } else {
-    count = h('p', { class: 'list-card__count' }, list.total === 0 ? 'Liste vide' : remainingLabel(list.remaining, list));
-  }
 
   return h('a', {
     // Liste tout juste créée par « Dupliquer la liste » : brève mise en évidence
@@ -60,21 +60,29 @@ function cardLink(list, { selected }) {
     },
   },
   h('div', { class: 'list-card__head' },
-    // Icône de la liste (celle choisie, sinon celle de sa catégorie)
     h('span', { class: 'list-card__icon' }, icon(listIcon(list), 'icon--sm')),
     h('h2', { class: 'list-card__name' }, list.name),
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
-  h('p', { class: 'list-card__meta' },
-    h('span', {}, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--xs'), list.category.name),
-    list.store ? h('span', {}, icon('store', 'icon--xs'), list.store.name, list.store.isMulti && list.category.isShopping ? [' ', multiBadge()] : null) : null,
-    // Lien public en cours (propriétaire seulement) : petit rappel
-    hasPublicLink(list) ? h('span', { role: 'img', 'aria-label': 'Partagée par lien public', title: 'Partagée par lien public' }, icon('link', 'icon--xs')) : null,
-    // Liste partagée avec moi en lecture seule : pastille (icône ET texte)
-    canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), 'Lecture seule')),
   h('div', { class: 'list-card__foot' },
-    count,
-    h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
-      members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })))));
+    h('div', { class: 'list-card__left' },
+      cardCount(list),
+      list.store?.isMulti && list.category.isShopping ? multiBadge() : null,
+      // Liste partagée avec moi en lecture seule : pastille (icône ET texte)
+      canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), 'Lecture seule')),
+    h('div', { class: 'list-card__people' },
+      // Lien public en cours (propriétaire seulement) : juste avant les pastilles
+      hasPublicLink(list) ? h('span', { class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' }, icon('link', 'icon--xs')) : null,
+      h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
+        members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))))));
+}
+
+// Compteur de la carte : nombre restant, « Liste vide », ou « Tout est
+// coché » avec une coche (jamais la couleur seule)
+export function cardCount(list) {
+  if (list.total > 0 && list.remaining === 0) {
+    return h('p', { class: 'list-card__count list-card__count--done' }, icon('check', 'icon--sm'), 'Tout est coché');
+  }
+  return h('p', { class: 'list-card__count' }, list.total === 0 ? 'Liste vide' : remainingLabel(list.remaining, list));
 }
 
 // Message quand il n'y a encore aucune liste (mes-listes-2)

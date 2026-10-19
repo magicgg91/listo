@@ -262,7 +262,7 @@ button.sync { cursor: pointer; }
 /* Liste en lecture seule : bandeau sous la barre du haut (.readonly-banner,
    section 16.4), pastille sur la carte de « Mes listes », valeurs en texte
    dans la fiche à consulter */
-.list-card__meta .chip--readonly { height: 22px; padding: 0 8px; }
+.list-card__left .chip--readonly { height: 22px; padding: 0 8px; }
 .field__value { margin: 0; font-size: var(--text-base); overflow-wrap: anywhere; white-space: pre-line; }
 
 /* Priorité et échéance d'une liste (formulaire de liste) : deux
@@ -296,8 +296,18 @@ button.sync { cursor: pointer; }
 .topbar__icon { display: inline-flex; flex: none; color: var(--color-text-2); }
 .topbar__icon:empty { display: none; }
 
-/* Carte de « Mes listes » : icône de la liste devant le titre */
+/* Carte compacte de « Mes listes » (lists.js) : ligne 1, icône de la liste,
+   titre (deux lignes au besoin) et heure, alignées sur la première ligne du
+   titre (deux lignes au plus, puis « … » : le nom entier reste lu par les
+   lecteurs d'écran) ; ligne 2, compteur, badge « Multi » et
+   pastille « Lecture seule » à gauche, symbole du lien public collé aux
+   pastilles des personnes à droite. */
 .list-card__head { align-items: flex-start; }
 .list-card__icon { display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
-.list-card__head .list-card__name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.list-card__head .list-card__name { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
 .list-card__head .list-card__time { line-height: calc(var(--text-lg) * var(--lh-tight)); }
+.list-card__foot { gap: var(--space-1); margin-top: 10px; }
+.list-card__left { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.list-card__left .badge-multi { height: 22px; }
+.list-card__people { display: flex; flex: none; align-items: center; gap: 6px; }
+.list-card__link { display: inline-flex; color: var(--color-text-2); }

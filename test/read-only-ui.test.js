@@ -93,8 +93,8 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   // Carte de « Mes listes » : pastille (icône ET texte) ; le menu « ⋯ » reste au propriétaire
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), 'Lecture seule'\)/);
-  // Invité en lecture seule : pas de « Dupliquer la liste » (réservé au propriétaire et à « Peut modifier »)
-  assert.match(read('public/js/screens/list-actions.js'), /if \(!list\.isOwner\) return canEditList\(list\) \? \[duplicate\] : \[\];/);
+  // Invité en lecture seule : seulement « Quitter la liste » (« Dupliquer la liste » est réservé au propriétaire et à « Peut modifier »)
+  assert.match(read('public/js/screens/list-actions.js'), /return canEdit \? \[duplicate, leave\] : \[leave\];/);
   assert.doesNotMatch(list, /innerHTML/);
 });
 

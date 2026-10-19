@@ -71,6 +71,7 @@ const LIST_NOT_FOUND = 'Liste introuvable.';
 const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 export const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
+export const OWNER_CANNOT_LEAVE = 'Le propriétaire ne peut pas quitter sa liste. Supprimez-la à la place.';
 // Priorité ou échéance désactivée par le propriétaire pour cette liste
 // (migration 13) : refus avant toute écriture
 export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
@@ -900,6 +901,27 @@ export function createListService(ctx) {
     return readList(user, list.id).list;
   }
 
+  // --- Quitter une liste (POST /api/lists/:id/leave) ---
+  //
+  // Un invité retire SA propre appartenance (jamais celle d'un autre : la
+  // route ne prend aucun identifiant de personne). Le propriétaire ne peut
+  // pas quitter sa liste (403) ; un non-membre reçoit « Liste introuvable »
+  // (404), comme partout. Un invité en lecture seule peut quitter. Ses
+  // éléments restent dans la liste (ils appartiennent à la liste). Les
+  // membres restants et ses propres téléphones sont prévenus en temps réel ;
+  // la liste disparaît de ses téléphones à leur synchronisation.
+  function leaveList(user, listId) {
+    const list = listForMember(user, listId);
+    if (list.owner_id === user.id) throw new OpError(403, OWNER_CANNOT_LEAVE);
+    db.transaction(() => {
+      db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, user.id);
+      db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
+    })();
+    ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
+    ctx.audit('liste_quittee', { utilisateur: user.username, liste: list.id });
+    return {};
+  }
+
   // --- Dupliquer une liste (POST /api/lists/:id/duplicate) ---
   //
   // Propriétaire ou invité « Peut modifier » (lecture seule : 403 ;
@@ -1011,7 +1033,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, purgeDeleted, activeUsers,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, leaveList, purgeDeleted, activeUsers,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

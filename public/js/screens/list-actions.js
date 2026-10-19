@@ -6,7 +6,12 @@
 // 2. « Dupliquer la liste » (propriétaire, invité « Peut modifier ») : la
 //    feuille de duplication (en ligne seulement) ;
 // 3. « Partager par lien » (propriétaire) : la feuille du lien public ;
-// 4. « Supprimer la liste » (propriétaire) : en dernier, après un trait, en rouge.
+// 4. « Supprimer la liste » (propriétaire) : en dernier, après un trait, en rouge ;
+//    « Quitter la liste » (invité, à la place) : pareil, avec sa confirmation
+//    (en ligne seulement).
+// Un invité « Peut modifier » voit donc « Dupliquer la liste » puis
+// « Quitter la liste » ; un invité en lecture seule, « Quitter la liste »
+// seulement.
 // Chaque action n'est proposée qu'à qui y a droit ; le serveur le revérifie
 // à chaque requête. Aucune action : pas de bouton de menu.
 //
@@ -28,10 +33,24 @@ import { copyName } from '../format.js';
 import { openShareSheet } from './share.js';
 
 // Éléments de menu (pour openMenu de ui.js). onDeleted : appelé après la
-// suppression (la liste ouverte retourne alors à « Mes listes »).
+// suppression ou le départ (la liste ouverte retourne alors à « Mes listes »).
 export function listActions(list, { onDeleted } = {}) {
   const duplicate = { icon: 'copy', label: 'Dupliquer la liste', onSelect: () => openDuplicateSheet(list) };
-  if (!list.isOwner) return canEditList(list) ? [duplicate] : [];
+  if (!list.isOwner) {
+    const canEdit = canEditList(list);
+    const leave = { icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async () => {
+      if (!(await leaveListWithConfirm(list))) return;
+      const message = `Vous avez quitté la liste « ${list.name} »`;
+      if (!onDeleted) {
+        toast(message, { low: true });
+        return;
+      }
+      // Liste ouverte : retour à l'accueil, puis le message (sur le nouvel écran)
+      onDeleted();
+      setTimeout(() => toast(message, { low: true }), 400);
+    } };
+    return canEdit ? [duplicate, leave] : [leave];
+  }
   return [
     { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
     duplicate,
@@ -127,4 +146,34 @@ export function openDuplicateSheet(list) {
       error.show(errorMessage(err));
     }
   });
+}
+
+// --- Quitter la liste (invité) ---
+// Confirmation, puis le serveur retire l'appartenance de ce compte, et
+// seulement la sienne (POST /api/lists/:id/leave), en ligne seulement. Ce qui
+// attendait dans la file est envoyé avant. La liste disparaît ensuite de ce
+// téléphone (et des autres, par le temps réel). Renvoie true si la liste a
+// été quittée.
+const OFFLINE_LEAVE = 'Connexion nécessaire pour quitter une liste';
+
+export async function leaveListWithConfirm(list) {
+  if (!navigator.onLine) {
+    toast(OFFLINE_LEAVE);
+    return false;
+  }
+  const ok = await confirmDialog({
+    title: `Quitter la liste « ${list.name} » ?`,
+    text: 'Vous ne la verrez plus. Le propriétaire pourra vous inviter de nouveau.',
+    confirmLabel: 'Quitter',
+  });
+  if (!ok) return false;
+  try {
+    await refreshData({ quiet: true }); // envoie d'abord ce qui attend
+    await post(`/api/lists/${list.id}/leave`);
+  } catch (err) {
+    toast(navigator.onLine ? errorMessage(err) : OFFLINE_LEAVE);
+    return false;
+  }
+  refreshData({ quiet: true, full: true }); // la liste disparaît de la copie locale
+  return true;
 }

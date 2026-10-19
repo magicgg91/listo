@@ -2,6 +2,8 @@
 //   GET  /api/lists                 mes listes (celles dont je suis membre)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
+//   POST /api/lists/:id/leave       quitter la liste (invité, pour lui-même ;
+//                                   en ligne seulement)
 //   POST /api/lists/:id/duplicate   dupliquer la liste (propriétaire ou invité
 //                                   « Peut modifier » ; en ligne seulement)
 //   GET  /api/users                 comptes actifs, pour choisir les invités
@@ -38,6 +40,15 @@ export function listRoutes(ctx) {
   router.put('/lists/:id/members', (req, res) => {
     try {
       res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds, req.body?.access ?? {}) });
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+  router.post('/lists/:id/leave', (req, res) => {
+    try {
+      res.json(service.leaveList(req.user, req.params.id));
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;

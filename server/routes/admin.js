@@ -4,7 +4,7 @@
 //
 // - Comptes : voir admin-users.js
 // - Catégories, magasins, rayons : voir admin-references.js
-// - Noms enregistrés (historique des noms saisis) : voir admin-names.js
+// - Articles (historique des noms saisis, onglet « Articles ») : voir admin-names.js
 // - Vérification de mise à jour (GET /api/admin/update-check, ?force=1 pour
 //   « Vérifier maintenant ») : voir update-check.js
 //

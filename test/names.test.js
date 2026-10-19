@@ -1,4 +1,4 @@
-// Tests de l'onglet « Noms enregistrés » de l'administration : corriger un
+// Tests de l'onglet « Articles » de l'administration (appelé « Noms » avant) : corriger un
 // nom partout (historique et listes), fusion, retrait des suggestions,
 // droits, synchronisation, temps réel, transaction tout ou rien, validation,
 // journal.

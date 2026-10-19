@@ -5,11 +5,12 @@
 //   compte jamais utilisé ;
 // - Catégories, Magasins, Rayons : ajout, renommage, désactivation /
 //   réactivation, suppression d'un élément jamais utilisé ;
-// - Noms enregistrés : l'historique commun des noms d'articles saisis dans
-//   les listes de courses (autocomplétion, rayon habituel) ; corriger un nom
-//   dans toutes les listes de courses, ou le retirer des suggestions.
+// - Articles : la mémoire commune des articles saisis dans les listes de
+//   courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
+//   les listes de courses, ou le retirer des suggestions. (Son identifiant
+//   interne reste « noms », comme les routes /api/admin/names.)
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
-// ses éléments) : les noms enregistrés viennent avec de simples compteurs.
+// ses éléments) : les articles enregistrés viennent avec de simples compteurs.
 
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { get, post, patch, del, errorMessage } from '../api.js';
@@ -18,14 +19,17 @@ import { compareNames } from '../sorting.js';
 import { app, refreshData } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
-import { itemWords } from '../words.js';
+import { itemWords, countItems } from '../words.js';
+
+// Mot des listes de courses (words.js) : « article », « articles »
+const ITEM = itemWords(true);
 
 const TABS = [
   { key: 'comptes', label: 'Comptes' },
   { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
   { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
   { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
-  { key: 'noms', label: 'Noms', title: 'Noms enregistrés' },
+  { key: 'noms', label: ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1) },
 ];
 
 export function renderAdmin(tabKey, onLeave) {
@@ -527,11 +531,11 @@ function openCategorySheet(item, reload) {
   });
 }
 
-// ================= Noms enregistrés =================
+// ================= Articles (mémoire des noms) =================
 //
-// L'historique commun des noms d'articles saisis dans les listes de courses
-// (les autres listes ne mémorisent rien), une ligne par nom (les lignes par
-// magasin sont regroupées par le serveur), 50 noms par morceau.
+// L'historique commun des articles saisis dans les listes de courses (les
+// autres listes ne mémorisent rien), une ligne par article (les lignes par
+// magasin sont regroupées par le serveur), 50 articles par morceau.
 // Seulement des noms et des compteurs : jamais une liste ni ses membres.
 
 // Recherche et tri gardés d'un rechargement à l'autre (après une correction)
@@ -541,7 +545,7 @@ async function loadNames(panel, alive) {
   const reload = () => loadNames(panel, alive);
   const input = h('input', {
     class: 'input', type: 'search', maxlength: '100', autocomplete: 'off', spellcheck: 'false',
-    placeholder: 'Rechercher un nom', 'aria-label': 'Rechercher un nom', value: namesView.query,
+    placeholder: `Rechercher un ${ITEM.one}`, 'aria-label': `Rechercher un ${ITEM.one}`, value: namesView.query,
   });
   const sorting = segmented('Trier', [['name', null, 'Par nom'], ['uses', null, 'Par utilisation']], namesView.sort, (value) => {
     namesView.sort = value;
@@ -571,7 +575,7 @@ async function loadNames(panel, alive) {
     }
     if (!alive() || mine !== request) return;
     if (!page.total) {
-      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? 'Aucun nom ne correspond à cette recherche.' : 'Aucun nom enregistré pour le moment.'));
+      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? `Aucun ${ITEM.one} ne correspond à cette recherche.` : `Aucun ${ITEM.one} enregistré pour le moment.`));
       return;
     }
     const group = h('div', { class: 'group' });
@@ -597,7 +601,7 @@ async function loadNames(panel, alive) {
       });
       replace(more, button);
     };
-    replace(results, h('p', { class: 'section-title' }, `${page.total} nom${page.total > 1 ? 's' : ''}`), group, more);
+    replace(results, h('p', { class: 'section-title' }, countItems(page.total, true)), group, more);
     addPage(page);
   }
 

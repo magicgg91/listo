@@ -1,4 +1,4 @@
-// Administration des noms enregistrés : l'historique commun des noms
+// Administration, onglet « Articles » : l'historique commun des noms
 // d'articles saisis dans les listes de courses (table item_history), qui
 // alimente l'autocomplétion, le rayon habituel et le magasin habituel.
 // Réservé aux Admin (voir admin.js). Les autres listes (tâches…) ne mémorisent
@@ -41,7 +41,7 @@ import { normalizeItemName } from '../../public/js/history.js';
 
 export const PAGE_SIZE = 50;
 const KEY_MAX = 200;           // longueur maximale d'un nom normalisé reçu
-const NOT_FOUND = 'Ce nom n\'est plus enregistré (déjà corrigé ou retiré ?).';
+const NOT_FOUND = 'Cet article n\'est plus enregistré (déjà corrigé ou retiré ?).';
 const BAD_NAME = 'Nom invalide (1 à 100 caractères, sans caractère de contrôle).';
 
 // Nom corrigé : mêmes règles que le nom d'un article d'une liste (espaces

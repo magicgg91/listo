@@ -8,6 +8,7 @@ secrets/
 node_modules
 design/maquettes
 design/photos
+design/recherche
 test/
 docs/
 *.log

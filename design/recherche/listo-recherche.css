@@ -1,0 +1,17 @@
+/* À coller dans design/listo.css, section 16, après 16.5 (nouvelle section 16.6 « Recherche ».)
+   Variables existantes uniquement. */
+.btn--link { background: transparent; color: var(--color-accent-ink); }
+.searchfield { display: flex; align-items: center; flex: 1; min-width: 0; gap: var(--space-1); height: var(--tap); padding: 0 var(--space-0) 0 12px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-2); }
+.searchfield:focus-within, .searchfield.is-focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); color: var(--color-text); }
+.searchfield__input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: var(--text-item); }
+.searchfield__input::placeholder { color: var(--color-text-2); opacity: 1; }
+.searchrow { padding: 0 var(--space-2) var(--space-1); }
+.topbar--search { padding-left: var(--space-2); }
+.search-meta { font-size: var(--text-sm); font-weight: 700; font-variant-numeric: tabular-nums; }
+.hit { padding: 0 2px; margin: 0 -2px; border-radius: 4px; background: var(--color-accent-soft); color: inherit; font-weight: 700; text-decoration: underline; text-decoration-color: var(--color-accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.search-suggest { padding: var(--space-2); }
+.search-suggest__title { margin-bottom: var(--space-1); font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
+.search-suggest__chips { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.search-suggest__hint { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-text-2); }
+.search-chip { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 14px; border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; }
+.search-chip .icon { color: var(--color-text-2); }

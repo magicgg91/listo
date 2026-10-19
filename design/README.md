@@ -5,8 +5,9 @@ Maquettes complètes : dans le canevas Design « Listo — maquettes ». Ce doss
 | Fichier | Rôle |
 |---|---|
 | `listo.css` | Variables de thème (clair, sombre, auto) et tous les composants. Les sections 1 à 16 (dont 16.5, zone des articles cochés) sont à reprendre telles quelles ; la section 17 (« Présentation des maquettes ») ne sert qu'aux planches et peut être supprimée. |
-| `icons-sprite.html` | Sprite SVG de 72 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
+| `icons-sprite.html` | Sprite SVG de 74 icônes à coller une fois au début du `<body>`. Utilisation : `<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>`. |
 | `maquettes/` | Captures PNG de tous les écrans et variantes, en clair et en sombre (`liste-1-clair.png`, `reglages-3-sombre.png`, etc.). Référence visuelle à comparer au rendu. |
+| `recherche/` | Maquettes de la recherche : `PROMPT.md` et `README.md` (écrans, états, comportements), `captures/` (20 PNG, clair et sombre), balisage de référence et règles d'origine. Gardé hors de l'image Docker, comme `maquettes/`. |
 | `components.html` | Référence : chaque composant en HTML, en thème clair puis sombre. Le balisage est celui des écrans. |
 | `icones/icon.svg`, `icones/icon-maskable.svg` | Icône 512 × 512, fond plein cadre, logo entièrement dans la zone de sécurité de 80 %. |
 | `icones/icon-512.png`, `icones/icon-192.png` | Exports PNG pour le manifeste PWA. |
@@ -362,3 +363,13 @@ Styles : aucun nouveau (bouton « Trier la liste », `.menu`, `.aisle.aisle--fol
 - Le bouton « Trier la liste » apparaît aussi sur les listes de courses : « Par rayon » (`#i-layers`, par défaut ; « Par magasin », `#i-store`, pour une liste « multi ») et « Ordre alphabétique » (`#i-az`) ; option active : coche ET texte (`menuitemradio`).
 - « Ordre alphabétique » : un seul en-tête repliable « À acheter » (même `.aisle__toggle`, compteur « X/Y »), les articles à plat, puis la zone « Dans le panier ». Le rayon de chaque article est gardé.
 - Choix propre à chaque téléphone ; la page publique reste par rayon.
+
+## Ajout : recherche (dans une liste et sur « Mes listes »)
+
+Maquettes : `recherche/` (`captures/recherche-liste-*` et `recherche-accueil-*`, en `-clair` et `-sombre`). Styles : section 16.12 « Recherche » de `listo.css` (16.6 était déjà prise), comportement dans `public/css/app.css`. Balisage : « Recherche dans une liste » et « Recherche sur « Mes listes » » dans `components.html`. **Nouvelles icônes** du sprite, soit 74 icônes : `i-search` (loupe décorative du champ, état « Aucun résultat ») et `i-x-circle` (croix « Effacer la saisie »).
+
+- Champ `.searchfield` (48 px de haut, cadre `--color-control`, anneau `--color-accent` quand il a le curseur) : `#i-search` décorative, `input.searchfield__input` (`type="search"`, `enterkeyhint="search"`, `aria-label` et texte d'exemple « Rechercher dans la liste » ou « Rechercher une liste »), puis, s'il y a du texte, `button.icon-btn` « Effacer la saisie » (`#i-x-circle`, 44 px).
+- `.searchrow` : premier enfant de `.scroll`, masqué à l'ouverture (zone défilée de sa hauteur), révélé en tirant la liste vers le bas. **Aucune loupe dans la barre du haut**, ni dans une liste (variante B) ni sur « Mes listes » (écart avec la variante A des maquettes, choix du propriétaire : ni `.topbar--search`, ni bouton « Fermer », ni « Recherches récentes »).
+- Résultats : texte trouvé dans `<mark class="hit">` (fond `--color-accent-soft`, gras ET souligné `--color-accent` : jamais la couleur seule), y compris sur un article coché (barré) ; nombre `.search-meta` (`role="status"`) : à droite de la pastille dans une liste (« 4 résultats », « 1 résultat », « 0 résultat »), sous le champ sur « Mes listes » (« 2 listes »).
+- Pendant la recherche dans une liste : en-têtes de groupe sans bouton de repli (`h2.aisle` > nom + `.aisle__count` avec le nombre de résultats), zone des cochés ouverte sans ses actions, « Tout replier » et barre d'ajout masqués (la barre seulement tant que le champ a le curseur).
+- Aucun résultat : `.empty` avec `.empty__icon` (`#i-search`), « Aucun résultat », « Aucun article ne correspond à « … ». » (« Aucune liste ne correspond… »), et `.btn.btn--secondary` « Effacer la recherche ».

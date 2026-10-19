@@ -363,3 +363,23 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .help__list { margin: 0 0 6px; padding-left: 1.2em; list-style: disc; }
 .help__list:last-child { margin-bottom: 0; }
 .help__list li + li { margin-top: 4px; }
+
+/* Recherche (search-row.js, section 16.12 de listo.css) */
+/* Champ de type « search » : ni la croix ni l'arrondi du navigateur (la
+   croix « Effacer la saisie » est un vrai bouton de 44 px) */
+.searchfield__input { -webkit-appearance: none; appearance: none; }
+/* Le champ a déjà son cadre bleu quand il est actif : pas de second contour */
+.app .searchfield__input:focus-visible { outline: none; }
+.searchfield__input::-webkit-search-cancel-button, .searchfield__input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.searchfield > .icon { flex: none; }
+.searchrow { flex: none; }
+/* Champ utilisé (curseur dedans ou texte tapé) : il reste en haut de la
+   zone pendant qu'on fait défiler les résultats ; les en-têtes collants des
+   groupes se posent juste dessous */
+.searchrow--pinned { position: sticky; top: 0; z-index: 3; background: var(--color-bg); }
+.scroll--searching .aisle { top: calc(var(--tap) + var(--space-1)); }
+/* Marge invisible du bas (liste courte) : de quoi masquer le champ */
+.searchroom { flex: none; }
+/* « Mes listes » : nombre de listes trouvées, sous le champ */
+.scroll > .search-meta { flex: none; padding: 0 var(--space-2) var(--space-1); }
+.scroll > .search-meta:empty { padding: 0; }

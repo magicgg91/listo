@@ -88,6 +88,17 @@ export const SECTIONS = [
         ],
       },
       {
+        title: 'Rechercher',
+        items: [
+          'Dans une liste, tirez la liste vers le bas (ou remontez tout en haut) : le champ « Rechercher dans la liste » apparaît au-dessus du premier groupe. Il cherche dans le nom des articles, pas dans les notes.',
+          'Sur « Mes listes », de la même façon, le champ « Rechercher une liste » cherche dans le titre des listes, celles partagées avec vous comprises.',
+          'Majuscules et accents ne comptent pas : « eclair » trouve « Éclair ». Le texte trouvé est surligné, et le nombre de résultats s\'affiche.',
+          'Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.',
+          'La touche « rechercher » du clavier ferme le clavier et garde la recherche ; la croix ou « Effacer la recherche » la vide. Changer de liste ou quitter l\'écran la vide aussi.',
+          'La recherche ne change rien à la liste ni pour les autres. Elle marche hors ligne, et aussi en lecture seule.',
+        ],
+      },
+      {
         title: 'Hors ligne et synchronisation',
         paragraphs: [
           'Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.',

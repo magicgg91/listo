@@ -11,6 +11,8 @@ import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMem
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
+import { createSearchRow } from '../search-row.js';
+import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -24,8 +26,10 @@ export function hasPublicLink(list, now = Date.now()) {
 // coin : un appui sur ce bouton ouvre le menu sans ouvrir la liste. Les
 // actions sont les mêmes que dans le menu ⋮ de la liste (list-actions.js) ;
 // après « Modifier la liste » ou le partage, on revient ici.
-export function listCard(list, { selected = false } = {}) {
-  const card = cardLink(list, { selected });
+// query : texte cherché (recherche de « Mes listes »), mis en évidence dans
+// le titre.
+export function listCard(list, { selected = false, query = '' } = {}) {
+  const card = cardLink(list, { selected, query });
   const actions = listActions(list);
   if (!actions.length) return card;
   const menuButton = iconButton('more', `Actions de la liste ${list.name}`, () => {
@@ -45,7 +49,7 @@ export function listCard(list, { selected = false } = {}) {
 //   public s'il y en a un, collé aux pastilles des personnes.
 // Ni catégorie ni magasin sur la carte, ni le badge « Multi » (un type de
 // magasin) : ils restent dans l'en-tête de la liste.
-function cardLink(list, { selected }) {
+function cardLink(list, { selected, query }) {
   const members = list.members.filter((m) => m.active || m.isOwner);
   // Le propriétaire d'abord, puis les personnes avec qui la liste est partagée
   members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
@@ -63,7 +67,7 @@ function cardLink(list, { selected }) {
   },
   h('div', { class: 'list-card__head' },
     h('span', { class: 'list-card__icon' }, icon(listIcon(list), 'icon--sm')),
-    h('h2', { class: 'list-card__name' }, list.name),
+    h('h2', { class: 'list-card__name' }, titleWithHits(list.name, query)),
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
   h('div', { class: 'list-card__foot' },
     h('div', { class: 'list-card__left' },
@@ -75,6 +79,13 @@ function cardLink(list, { selected }) {
       hasPublicLink(list) ? h('span', { class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' }, icon('link', 'icon--xs')) : null,
       h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
         members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))))));
+}
+
+// Titre d'une liste, le texte cherché dans <mark class="hit"> (texte simple,
+// jamais de HTML)
+function titleWithHits(name, query) {
+  if (!isSearching(query)) return name;
+  return highlightParts(name, query).map((part) => (part.hit ? h('mark', { class: 'hit' }, part.text) : part.text));
 }
 
 // Compteur de la carte : « X/Y » (X restants à faire, Y au total, cochés
@@ -143,10 +154,24 @@ function sortControl(onChange) {
 export function renderLists(onLeave) {
   const content = h('div', { class: 'scroll' });
   const sorter = sortControl(() => draw());
+  const fab = h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste');
+
+  // Recherche des listes (design/recherche) : champ masqué au-dessus des
+  // cartes, révélé en tirant vers le bas, comme dans une liste (aucune
+  // loupe, barre du haut inchangée). Sur le titre seulement, listes
+  // partagées avec moi comprises ; vue locale, vidée en quittant l'écran.
+  // Nombre de listes trouvées, sous le champ (annoncé) ; vide hors recherche
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const search = createSearchRow(content, {
+    label: 'Rechercher une liste',
+    onChange: () => draw(),
+    onActive: (active) => { fab.hidden = active; }, // « Nouvelle liste » masqué pendant la recherche
+    status: searchMeta,
+  });
 
   const draw = () => {
     if (!app.data.loaded) {
-      replace(content, loading());
+      search.show(loading(), { available: false });
       return;
     }
     // Sur ordinateur, la colonne de gauche montre déjà les listes : on ouvre
@@ -161,8 +186,36 @@ export function renderLists(onLeave) {
     const lists = computeSummaries(app.data, { sort: currentSort() });
     sorter.setCount(lists.length);
     pruneListMemory(lists.map((list) => list.id)); // tri et groupes repliés des listes disparues : oubliés
-    replace(content, lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : emptyLists());
+    if (!lists.length) {
+      searchMeta.textContent = '';
+      search.show(emptyLists(), { available: false }); // rien à chercher
+      return;
+    }
+    const query = search.value;
+    if (!isSearching(query)) {
+      searchMeta.textContent = '';
+      search.show(h('div', { class: 'cards' }, lists.map((list) => listCard(list))));
+      return;
+    }
+    const found = filterLists(lists, query);
+    searchMeta.textContent = listsLabel(found.length);
+    // Aucun résultat : le nombre n'est plus affiché, seulement annoncé
+    searchMeta.classList.toggle('visually-hidden', found.length === 0);
+    search.show(found.length ? h('div', { class: 'cards' }, found.map((list) => listCard(list, { query }))) : noLists(query));
   };
+  // Aucune liste trouvée : message, et « Effacer la recherche » (vide le
+  // champ sans lui retirer le curseur)
+  const noLists = (query) => h('div', { class: 'empty' },
+    h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
+    h('h2', { class: 'empty__title' }, 'Aucun résultat'),
+    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} ».`),
+    h('button', {
+      class: 'btn btn--secondary',
+      type: 'button',
+      onPointerdown: search.keepFocus.pointerdown,
+      onMousedown: search.keepFocus.mousedown,
+      onClick: () => search.clear(),
+    }, 'Effacer la recherche'));
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
@@ -179,7 +232,7 @@ export function renderLists(onLeave) {
       iconButton('sliders', 'Réglages', () => navigate('settings'))),
     sorter.status,
     content,
-    h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste'));
+    fab);
 }
 
 // --- Colonne de gauche (ordinateur) ---

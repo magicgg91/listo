@@ -61,7 +61,8 @@ test('copie locale : canEditList (une seule règle sur le téléphone), liste cr
 test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni glissement, cases inactives, fiche à consulter', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /const readOnlyBanner = h\('p', \{ class: 'readonly-banner', hidden: true \}, icon\('eye', 'icon--sm'\), 'Lecture seule'\);/);
-  assert.match(list, /readOnlyBanner\.hidden = canEdit;\s*addbar\.hidden = !canEdit;/);
+  assert.match(list, /readOnlyBanner\.hidden = canEdit;\s*showAddbar\(\); \/\/ lecture seule : aucun ajout/);
+  assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| search\.focused;/);
   assert.match(list, /scanner\.button\.hidden = !canEdit \|\| !scanAvailable\(list\);/);
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
   assert.match(list, /if \(!canEditList\(view\?\.list\)\) return h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\)\);\s*const slide/);
@@ -69,7 +70,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': item\.checked \? 'Coché' : 'Non coché' \}/);
   assert.match(list, /'aria-label': `\$\{canEdit \? 'Modifier' : 'Voir'\} \$\{item\.name\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);
   // Pas d'actions sur les cochés
-  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit;/);
+  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| inSearch;/);
   // Fiche à consulter : aucun champ, aucun bouton qui écrit, photo qui s'agrandit
   const view = list.slice(list.indexOf('function openItemView'), list.indexOf('// Feuille de choix du rayon'));
   assert.doesNotMatch(view, /h\('input'|h\('textarea'|type: 'submit'|tools:|actions\.(update|delete|check|set|remove)/);
@@ -104,7 +105,7 @@ test('le droit change pendant que la liste est ouverte : fenêtres fermées, cla
   // Arrivée de la liste au premier chargement : pas un changement de droit (aucun message)
   assert.match(list, /if \(couldEdit === null\) couldEdit = now;\s*if \(now === couldEdit\) return;/);
   const watcher = list.slice(list.indexOf('let couldEdit'), list.indexOf("toast(now ? 'Vous pouvez"));
-  for (const step of ['releaseFocus();', 'suggestBox.hidden = true;', 'swipes.close();', 'closeOverlays();', 'addbar.hidden = !now;', 'readOnlyBanner.hidden = now;']) assert.ok(watcher.includes(step), step);
+  for (const step of ['releaseFocus();', 'suggestBox.hidden = true;', 'swipes.close();', 'closeOverlays();', 'showAddbar();', 'readOnlyBanner.hidden = now;']) assert.ok(watcher.includes(step), step);
   assert.match(list, /toast\(now \? 'Vous pouvez maintenant modifier cette liste\.' : 'Cette liste est maintenant en lecture seule\.'\);/);
   // Fermer toutes les fenêtres en un seul retour dans l'historique
   const router = read('public/js/router.js');

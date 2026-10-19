@@ -1,0 +1,357 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><link rel="stylesheet" href="../design/listo.css"><style>body{margin:0}</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.2h.01"/></symbol>
+<symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 010 16z" fill="currentColor"/></symbol>
+<symbol id="i-barcode" viewBox="0 0 24 24"><path d="M4 8V5.5A1.5 1.5 0 015.5 4H8M16 4h2.5A1.5 1.5 0 0120 5.5V8M20 16v2.5a1.5 1.5 0 01-1.5 1.5H16M8 20H5.5A1.5 1.5 0 014 18.5V16M8 9v6M11 9v6M14 9v6M17 9v6"/></symbol>
+<symbol id="i-basket" viewBox="0 0 24 24"><path d="M3.5 10h17l-1.6 9a1.5 1.5 0 01-1.5 1.2H6.6a1.5 1.5 0 01-1.5-1.2zM8 10l3-5.5M16 10l-3-5.5M9.5 13.5v3.5M14.5 13.5v3.5"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.3" r="3.2"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2.5l2 11h10l2-8H7"/><circle cx="9" cy="19.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="17" cy="19.5" r="1.3" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+<symbol id="i-chev-u" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M3 3l18 18M7 18.5a4.5 4.5 0 01-.7-8.95 6 6 0 011.3-2.3M10.8 6.1A6 6 0 0117.9 11a3.8 3.8 0 011.4 6.6"/></symbol>
+<symbol id="i-cloud-ok" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 01-.7-8.95A6 6 0 0117.9 11a3.8 3.8 0 01-.4 7.5H7zM9.5 14l2 2 3.5-3.5"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><path d="M9 9h11v11H9zM5 15V4h11"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.2A9.5 9.5 0 0112 6c6.4 0 10 6 10 6a17 17 0 01-3.2 3.8M6.4 7.6A16.6 16.6 0 002 12s3.6 6 10 6a9.6 9.6 0 004-.9M9.9 9.9a3 3 0 004.2 4.2"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><path d="M4 11h16v9H4zM3 7.5h18V11H3zM12 7.5V20M12 7.5c-1.5-3.2-5-3.4-5-1.4s3.4 1.4 5 1.4zM12 7.5c1.5-3.2 5-3.4 5-1.4s-3.4 1.4-5 1.4z"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><circle cx="9" cy="10" r="1.6"/><path d="M4 16.5l5-4.5 4 3.5 3-2.5 4 3.5"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8z M3.5 12l8.5 4.5 8.5-4.5 M3.5 16l8.5 4.5 8.5-4.5"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M9.5 14.5a3.5 3.5 0 005 0l3.5-3.5a3.5 3.5 0 00-5-5l-.8.8M14.5 9.5a3.5 3.5 0 00-5 0L6 13a3.5 3.5 0 005 5l.8-.8"/></symbol>
+<symbol id="i-link-off" viewBox="0 0 24 24"><path d="M9.5 14.5a3.5 3.5 0 005 0l3.5-3.5a3.5 3.5 0 00-5-5l-.8.8M14.5 9.5a3.5 3.5 0 00-5 0L6 13a3.5 3.5 0 005 5l.8-.8M3.5 3.5l17 17"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 017 0v3"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M4 7l2 2 3.5-4M4 16l2 2 3.5-4M13.5 7.5H20M13.5 16.5H20"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="18.5" r="1.7" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5a2.1 2.1 0 013 3L8 19l-4 1zM14 7l3 3"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1011.4 0"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-3-6.2M20 4v5h-5"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6zM9 12l2 2 4-4"/></symbol>
+<symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 4v6M9 14v6"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9M4 9v11h16V9M4 9a2.5 2.5 0 005 0 2.5 2.5 0 006 0 2.5 2.5 0 005 0M10 20v-5h4v5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 00-14-4.5L4 9M4 4v5h5M4 13a8 8 0 0014 4.5L20 15M20 20v-5h-5"/></symbol>
+<symbol id="i-tasks" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M3.5 6l1.5 1.5L7.5 4.5M3.5 12.5L5 14l2.5-2.5M3.5 18.5L5 20l2.5-2.5"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></symbol>
+<symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+</defs></svg>
+<section class="stage__row" data-theme="light">
+<h2 class="stage__label">light</h2>
+<div class="stage__shots">
+
+<figure class="shot"><figcaption>1 · Repos : champ masqué au-dessus de la liste</figcaption>
+<div class="phone"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><button class="btn btn--link btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-u"/></svg>Tout replier</button></div><div class="scroll"><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div><div class="addbar"><div class="addbar__row">
+<label class="addbar__field"><input class="addbar__input" type="text" placeholder="Ajouter un article" aria-label="Ajouter un article" autocomplete="off"></label>
+<button class="btn btn--secondary btn--icon" aria-label="Scanner un code-barres"><svg class="icon" aria-hidden="true"><use href="#i-barcode"/></svg></button>
+<button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+</div></div>
+</div></div>
+<p class="shot__note">Identique à aujourd'hui : le champ attend au-dessus du premier rayon, hors écran.</p>
+</figure>
+
+<figure class="shot"><figcaption>2 · En tirant vers le bas : champ révélé, sans clavier</figcaption>
+<div class="phone"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><button class="btn btn--link btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-u"/></svg>Tout replier</button></div><div class="scroll"><div class="searchrow"><label class="searchfield"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" placeholder="Rechercher dans la liste"></label></div><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div><div class="addbar"><div class="addbar__row">
+<label class="addbar__field"><input class="addbar__input" type="text" placeholder="Ajouter un article" aria-label="Ajouter un article" autocomplete="off"></label>
+<button class="btn btn--secondary btn--icon" aria-label="Scanner un code-barres"><svg class="icon" aria-hidden="true"><use href="#i-barcode"/></svg></button>
+<button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+</div></div>
+</div></div>
+<p class="shot__note">Tirer la liste vers le bas révèle le champ. Le clavier ne s'ouvre qu'au toucher du champ.</p>
+</figure>
+
+<figure class="shot"><figcaption>3 · Champ actif, vide, clavier ouvert</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" placeholder="Rechercher dans la liste"></label></div><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Le toucher du champ ouvre le clavier ; la liste complète reste affichée.</p>
+</figure>
+
+<figure class="shot"><figcaption>4 · Saisie « lait »</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><p class="search-meta" role="status">4 résultats</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" value="lait"><button class="icon-btn" aria-label="Effacer la saisie"><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg></button></label></div><section><h2 class="aisle"><span>Épicerie sucrée</span><span class="aisle__count" aria-label="1 résultat">1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au <mark class="hit">lait</mark></span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><span>Produits laitiers</span><span class="aisle__count" aria-label="2 résultats">2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> ribot</span></span></button></li>
+</ul></section>
+<section class="cart"><div class="cart__head"><div class="cart__bar"><button class="cart__toggle" aria-expanded="true" aria-controls="cr-light" aria-label="Dans le panier, 1 résultat"><svg class="icon" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Dans le panier · <span class="cart__count">1</span></span></button></div></div>
+<ul id="cr-light">
+<li class="item is-done"><button class="check" aria-pressed="true" aria-label="Décocher Lait de coco"><span class="check__box"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> de coco</span></span></button></li>
+</ul></section></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Seuls les articles correspondants restent, texte trouvé en évidence, rayons sans résultat masqués, cochés inclus et barrés.</p>
+</figure>
+
+<figure class="shot"><figcaption>5 · Aucun résultat</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><p class="search-meta" role="status">0 résultat</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" value="sirop"><button class="icon-btn" aria-label="Effacer la saisie"><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg></button></label></div><div class="empty"><span class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span><h2 class="empty__title">Aucun résultat</h2><p class="empty__text">Aucun article ne correspond à « sirop ».</p><button class="btn btn--secondary">Effacer la recherche</button></div></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Message court et bouton « Effacer la recherche ».</p>
+</figure>
+
+</div>
+</section>
+
+<section class="stage__row" data-theme="dark">
+<h2 class="stage__label">dark</h2>
+<div class="stage__shots">
+
+<figure class="shot"><figcaption>1 · Repos : champ masqué au-dessus de la liste</figcaption>
+<div class="phone"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><button class="btn btn--link btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-u"/></svg>Tout replier</button></div><div class="scroll"><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div><div class="addbar"><div class="addbar__row">
+<label class="addbar__field"><input class="addbar__input" type="text" placeholder="Ajouter un article" aria-label="Ajouter un article" autocomplete="off"></label>
+<button class="btn btn--secondary btn--icon" aria-label="Scanner un code-barres"><svg class="icon" aria-hidden="true"><use href="#i-barcode"/></svg></button>
+<button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+</div></div>
+</div></div>
+<p class="shot__note">Identique à aujourd'hui : le champ attend au-dessus du premier rayon, hors écran.</p>
+</figure>
+
+<figure class="shot"><figcaption>2 · En tirant vers le bas : champ révélé, sans clavier</figcaption>
+<div class="phone"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><button class="btn btn--link btn--sm"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-u"/></svg>Tout replier</button></div><div class="scroll"><div class="searchrow"><label class="searchfield"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" placeholder="Rechercher dans la liste"></label></div><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div><div class="addbar"><div class="addbar__row">
+<label class="addbar__field"><input class="addbar__input" type="text" placeholder="Ajouter un article" aria-label="Ajouter un article" autocomplete="off"></label>
+<button class="btn btn--secondary btn--icon" aria-label="Scanner un code-barres"><svg class="icon" aria-hidden="true"><use href="#i-barcode"/></svg></button>
+<button class="btn btn--primary btn--icon" aria-label="Ajouter"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg></button>
+</div></div>
+</div></div>
+<p class="shot__note">Tirer la liste vers le bas révèle le champ. Le clavier ne s'ouvre qu'au toucher du champ.</p>
+</figure>
+
+<figure class="shot"><figcaption>3 · Champ actif, vide, clavier ouvert</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" placeholder="Rechercher dans la liste"></label></div><section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Boissons, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Boissons</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jus de fruit multivitamine"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jus de fruit multivitamine</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Charcuterie, 2/2"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Charcuterie</span></button><span class="aisle__count">2/2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Bacon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Bacon</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Jambon"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Jambon</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Entretien, 1/1"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Entretien</span></button><span class="aisle__count">1/1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lingettes decolorstop"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lingettes decolorstop</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Épicerie sucrée, 4/4"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Épicerie sucrée</span></button><span class="aisle__count">4/4</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Confiture"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Confiture</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Levure"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Levure</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Pâte à tartiner"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Pâte à tartiner</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au lait</span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><button class="aisle__toggle" aria-expanded="true" aria-label="Produits laitiers, 3/3"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Produits laitiers</span></button><span class="aisle__count">3/3</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Beurre doux"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Beurre doux</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Lait ribot</span></span></button></li>
+</ul></section></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Le toucher du champ ouvre le clavier ; la liste complète reste affichée.</p>
+</figure>
+
+<figure class="shot"><figcaption>4 · Saisie « lait »</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><p class="search-meta" role="status">4 résultats</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" value="lait"><button class="icon-btn" aria-label="Effacer la saisie"><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg></button></label></div><section><h2 class="aisle"><span>Épicerie sucrée</span><span class="aisle__count" aria-label="1 résultat">1</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Chocolat au lait"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name">Chocolat au <mark class="hit">lait</mark></span></span></button></li>
+</ul></section>
+<section><h2 class="aisle"><span>Produits laitiers</span><span class="aisle__count" aria-label="2 résultats">2</span></h2>
+<ul>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait demi-écrémé"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> demi-écrémé</span></span></button></li>
+<li class="item"><button class="check" aria-pressed="false" aria-label="Cocher Lait ribot"><span class="check__box"></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> ribot</span></span></button></li>
+</ul></section>
+<section class="cart"><div class="cart__head"><div class="cart__bar"><button class="cart__toggle" aria-expanded="true" aria-controls="cr-dark" aria-label="Dans le panier, 1 résultat"><svg class="icon" aria-hidden="true"><use href="#i-chev-d"/></svg><span>Dans le panier · <span class="cart__count">1</span></span></button></div></div>
+<ul id="cr-dark">
+<li class="item is-done"><button class="check" aria-pressed="true" aria-label="Décocher Lait de coco"><span class="check__box"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span></button><button class="item__body"><span class="item__text"><span class="item__name"><mark class="hit">Lait</mark> de coco</span></span></button></li>
+</ul></section></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Seuls les articles correspondants restent, texte trouvé en évidence, rayons sans résultat masqués, cochés inclus et barrés.</p>
+</figure>
+
+<figure class="shot"><figcaption>5 · Aucun résultat</figcaption>
+<div class="phone phone--kbd"><div class="app">
+<header class="topbar">
+<button class="icon-btn" aria-label="Retour aux listes"><svg class="icon" aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+<div class="topbar__main"><div class="topbar__line"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cart"/></svg><h1 class="topbar__title">Courses Leclerc</h1></div><p class="topbar__sub"><svg class="icon icon--xs" aria-hidden="true"><use href="#i-store"/></svg>E.Leclerc</p></div>
+<button class="icon-btn" aria-label="Menu de la liste"><svg class="icon" aria-hidden="true"><use href="#i-more"/></svg></button>
+</header><div class="statusbar"><p class="sync sync--ok" role="status"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-cloud-ok"/></svg>À jour</p><p class="search-meta" role="status">0 résultat</p></div><div class="scroll"><div class="searchrow"><label class="searchfield is-focus"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-search"/></svg><input class="searchfield__input" type="search" enterkeyhint="search" autocomplete="off" aria-label="Rechercher dans la liste" value="sirop"><button class="icon-btn" aria-label="Effacer la saisie"><svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg></button></label></div><div class="empty"><span class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-search"/></svg></span><h2 class="empty__title">Aucun résultat</h2><p class="empty__text">Aucun article ne correspond à « sirop ».</p><button class="btn btn--secondary">Effacer la recherche</button></div></div>
+</div><div class="kbd" aria-hidden="true"><div class="kbd__row"><span class="kbd__key">a</span><span class="kbd__key">z</span><span class="kbd__key">e</span><span class="kbd__key">r</span><span class="kbd__key">t</span><span class="kbd__key">y</span><span class="kbd__key">u</span><span class="kbd__key">i</span><span class="kbd__key">o</span><span class="kbd__key">p</span></div><div class="kbd__row"><span class="kbd__key">q</span><span class="kbd__key">s</span><span class="kbd__key">d</span><span class="kbd__key">f</span><span class="kbd__key">g</span><span class="kbd__key">h</span><span class="kbd__key">j</span><span class="kbd__key">k</span><span class="kbd__key">l</span><span class="kbd__key">m</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">⇧</span><span class="kbd__key">w</span><span class="kbd__key">x</span><span class="kbd__key">c</span><span class="kbd__key">v</span><span class="kbd__key">b</span><span class="kbd__key">n</span><span class="kbd__key kbd__key--wide">⌫</span></div><div class="kbd__row"><span class="kbd__key kbd__key--wide">123</span><span class="kbd__key kbd__key--space">espace</span><span class="kbd__key kbd__key--go">rechercher</span></div></div></div>
+<p class="shot__note">Message court et bouton « Effacer la recherche ».</p>
+</figure>
+
+</div>
+</section>
+</body></html>

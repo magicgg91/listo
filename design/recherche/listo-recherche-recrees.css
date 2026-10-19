@@ -1,0 +1,14 @@
+/* Éléments de l'app actuelle absents du kit, recréés d'après les captures d'écran.
+   À ignorer si l'app les a déjà ; sinon à coller après 16.6. */
+.topbar__line { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.topbar__line > .icon { color: var(--color-text-2); }
+.aisle__toggle { display: flex; align-items: center; flex: 1; min-width: 0; gap: var(--space-1); min-height: var(--tap-min); margin-block: calc(var(--space-1) * -1); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; }
+.aisle__toggle[aria-expanded="false"] .icon { transform: rotate(-90deg); }
+.list-card--compact .list-card__head { align-items: center; gap: 12px; }
+.list-card--compact .list-card__name { flex: 1; min-width: 0; }
+.list-card--compact .icon-btn { margin: -8px -8px -8px -4px; }
+.list-card__name a { color: inherit; text-decoration: none; }
+.topbar--tight { gap: 0; }
+.list-card__icon { display: inline-grid; place-items: center; flex: none; color: var(--color-accent-ink); }
+.list-card__stat { display: flex; align-items: center; gap: 12px; }
+.body--fab { padding-bottom: 112px; }

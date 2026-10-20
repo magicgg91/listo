@@ -63,7 +63,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, ean
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -126,17 +126,22 @@ export function publicRoutes(ctx, { publicDir }) {
       photoAt: row.photo_at,
       priority: row.priority,
       dueDate: row.due_date,
+      ean: row.ean,
     }));
     // Articles à acheter groupés par rayon (ou magasin) ; articles cochés à
     // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
     // « Terminés », même règle que l'application). La date du coché sert à
     // l'ordre, elle n'est pas envoyée.
-    const { groups, done } = splitDone(items, q.allAisles.all(), isShopping, { byStore, stores: q.allStores.all() });
+    const aisles = q.allAisles.all();
+    const stores = q.allStores.all();
+    const { groups, done } = splitDone(items, aisles, isShopping, { byStore, stores });
     // Liste autre que les courses : priorité et échéance en plus (lecture
     // seule), chacune seulement si elle est activée pour cette liste ;
     // jamais pour une liste de courses
     const withPriority = !isShopping && list.priority_enabled === 1;
     const withDue = !isShopping && list.due_enabled === 1;
+    // Nom d'un rayon ou d'un magasin, ou null (aucun, ou inconnu)
+    const nameOf = (rows, id) => (id === null ? null : rows.find((row) => row.id === id)?.name ?? null);
     const describe = (item) => ({
       name: item.name,
       quantity: item.quantity,
@@ -145,7 +150,18 @@ export function publicRoutes(ctx, { publicDir }) {
       photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
       ...(withPriority ? { priority: item.priority } : {}),
       ...(withDue ? { dueDate: item.dueDate } : {}),
+      // Liste de courses : le code-barres, seulement si l'article en a un
+      // (jamais pour une autre liste, comme dans l'application)
+      ...(isShopping && item.ean ? { ean: item.ean } : {}),
     });
+    // Article coché : il a quitté son groupe, son rayon (ou son magasin dans
+    // une liste « multi ») n'est donc plus donné par l'en-tête ; il est
+    // ajouté, seulement si l'article en a un. Un article à acheter le reçoit
+    // de son groupe (rien de plus n'est envoyé).
+    const describeDone = (item) => {
+      const place = byStore ? nameOf(stores, item.storeId) : isShopping ? nameOf(aisles, item.aisleId) : null;
+      return { ...describe(item), ...(place === null ? {} : byStore ? { store: place } : { aisle: place }) };
+    };
     return {
       list: {
         name: list.name,
@@ -157,7 +173,7 @@ export function publicRoutes(ctx, { publicDir }) {
         name: (group.aisle ?? group.store)?.name ?? null,
         items: group.items.map(describe),
       })),
-      done: done.map(describe),
+      done: done.map(describeDone),
       expiresAt: share.expires_at,
     };
   }

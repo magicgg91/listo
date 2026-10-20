@@ -230,16 +230,19 @@ test('synchronisation et temps réel : le code suit comme les autres champs', as
   assert.equal(state.items.get(plain).ean, null);
 });
 
-test('page publique : le code-barres n\'est jamais exposé', async (t) => {
+// Décision du 20 octobre 2026 : la fiche du lien public montre le
+// code-barres (avant : jamais sur la page publique). Détails et refus du
+// lien expiré ou protégé : test/public-sheet.test.js.
+test('page publique : le code-barres seulement pour l\'article qui en a un, dans une liste de courses', async (t) => {
   const h = await household(t);
   await op(h.guillaume, { type: 'item.update', itemId: h.milk, ean: '3428272950019' });
   const share = await h.guillaume.request('PUT', `/api/lists/${h.shopping}/share`, {});
   const token = share.body.share.url.split('/p/')[1];
   const res = await fetch(`${h.app.base}/api/public/${token}`);
-  const text = await res.text();
   assert.equal(res.status, 200);
-  assert.match(text, /Lait/);
-  assert.doesNotMatch(text, /ean|3428272950019/i);
+  const items = (await res.json()).groups.flatMap((g) => g.items);
+  assert.equal(items.find((i) => i.name === 'Lait').ean, '3428272950019');
+  for (const item of items.filter((i) => i.name !== 'Lait')) assert.equal('ean' in item, false, item.name);
 });
 
 test('journaux : le code-barres n\'y est jamais écrit', async (t) => {

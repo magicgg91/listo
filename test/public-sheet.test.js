@@ -248,3 +248,42 @@ test('page publique : fiche sans champ ni bouton qui écrit, aucune requête à 
   // La page publique ne passe toujours pas par le service worker
   assert.doesNotMatch(read('public/sw.js').match(/const APP_FILES = \[[\s\S]*?\];/)[0], /public\.js/);
 });
+
+// Correction du 20 octobre 2026 : sur Android (Chrome, barre de navigation à
+// trois boutons), la fiche passait sous la barre de navigation et ne
+// défilait pas. La page publique charge maintenant les mêmes scripts que
+// l'application (viewport.js, app-height.js), et la fiche a sa propre zone
+// qui défile sous un en-tête fixe. Le défilement au doigt et la hauteur sont
+// vérifiés dans Chromium (docs/developpement.md, point 29.7).
+test('page publique : au-dessus de la barre de navigation d\'Android, hauteur visible mesurée (comme l\'application)', () => {
+  const html = read('server/pages/lien-public.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  for (const script of ['/js/viewport.js', '/js/app-height.js']) {
+    const tag = `<script src="${script}"></script>`;
+    assert.ok(head.includes(tag), script);
+    assert.ok(head.indexOf(tag) < head.indexOf('<link rel="stylesheet"'), `${script} avant les styles (avant le premier affichage)`);
+  }
+  // Fichiers à part, aucun script écrit dans la page : CSP inchangée
+  assert.doesNotMatch(html.replace(/<script (type="module" )?src="\/js\/[\w-]+\.js"><\/script>/g, ''), /<script/);
+  assert.match(read('server/app.js'), /"script-src 'self'",/);
+  // Mêmes scripts que la page de l'application
+  const index = read('public/index.html');
+  for (const script of ['/js/viewport.js', '/js/app-height.js']) assert.ok(index.includes(`<script src="${script}"></script>`), script);
+  // Hauteur : mesurée par app-height.js, sinon 100dvh (suit la barre d'adresse), jamais 100vh
+  const css = read('public/css/app.css');
+  assert.match(css, /\.app \{[^}]*height: var\(--app-h, 100dvh\);/);
+  assert.doesNotMatch(css + read('public/css/listo.css'), /100vh/);
+});
+
+test('fiche publique : en-tête fixe, contenu qui défile à l\'intérieur, jamais plus haute que la zone visible', () => {
+  const page = read('public/js/public.js');
+  assert.match(page, /h\('div', \{ class: 'sheet sheet--fixed-head', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' \}/);
+  assert.match(page, /h\('div', \{ class: 'stack sheet__scroll' \},/);
+  const css = read('public/css/app.css');
+  assert.match(css, /\.sheet--fixed-head \{ overflow: hidden; \}/);
+  assert.match(css, /\.sheet--fixed-head > \.sheet__grab, \.sheet--fixed-head > \.sheet__head \{ flex: none; \}/);
+  assert.match(css, /\.sheet__scroll \{ flex: 1 1 auto; min-height: 0;[^}]*overflow-y: auto; overscroll-behavior: contain; \}/);
+  // La feuille du kit : 94 % de la zone visible au plus, marge du bas avec la zone de sécurité
+  const kit = read('public/css/listo.css');
+  assert.match(kit, /\.sheet \{[^}]*max-height: 94%;[^}]*padding: var\(--space-1\) var\(--space-2\) calc\(var\(--space-3\) \+ env\(safe-area-inset-bottom, 0px\)\);/);
+});

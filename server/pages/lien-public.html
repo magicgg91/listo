@@ -9,6 +9,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
+  <!-- Comme l'application (index.html) : sur Android, la page reste
+       au-dessus de la barre de navigation (js/viewport.js) ; hauteur
+       visible de l'écran mesurée et remesurée (js/app-height.js). Sans eux,
+       la fiche d'un article passait sous la barre de navigation. -->
+  <script src="/js/viewport.js"></script>
+  <script src="/js/app-height.js"></script>
   <title>Listo · Liste partagée</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/css/listo.css">

@@ -303,12 +303,15 @@ function showItem(item, place, thumb) {
   // La photo s'insère avant le rayon (ou le magasin), comme dans l'application
   const placeRows = grouping === 'none' ? 0 : 1;
   let close = () => {};
-  const panel = h('div', { class: 'sheet sheet--scroll', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' },
+  // En-tête (titre, croix) fixe en haut de la feuille ; seul le contenu
+  // défile, à l'intérieur de la feuille (.sheet__scroll), sans entraîner la
+  // page derrière
+  const panel = h('div', { class: 'sheet sheet--fixed-head', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: 'sheet__head' },
       h('h2', { class: 'sheet__title', id: 'fiche-titre' }, `Détail de l'${words.one}`),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => close() }, icon('close'))),
-    h('div', { class: 'stack' },
+    h('div', { class: 'stack sheet__scroll' },
       h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
       rows.slice(0, rows.length - placeRows),
       item.photo ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),

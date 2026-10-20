@@ -383,3 +383,14 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 /* « Mes listes » : nombre de listes trouvées, sous le champ */
 .scroll > .search-meta { flex: none; padding: 0 var(--space-2) var(--space-1); }
 .scroll > .search-meta:empty { padding: 0; }
+
+/* Fiche d'un article de la page du lien public (public.js) : la feuille ne
+   dépasse jamais la zone visible (94 % de .app, dont la hauteur suit la
+   barre d'adresse : --app-h mesurée, sinon 100dvh) ; l'en-tête (titre,
+   croix) reste en haut ; seul le contenu défile, à l'intérieur, sans faire
+   défiler la page derrière. La marge du bas de la feuille (zone de
+   sécurité comprise) reste sous le dernier champ. */
+.sheet--fixed-head { overflow: hidden; }
+.sheet--fixed-head > .sheet__grab, .sheet--fixed-head > .sheet__head { flex: none; }
+/* (petite marge intérieure : le contour du focus clavier n'est pas coupé) */
+.sheet__scroll { flex: 1 1 auto; min-height: 0; margin: 0 -4px; padding: 0 4px 4px; overflow-y: auto; overscroll-behavior: contain; }

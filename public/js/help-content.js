@@ -178,7 +178,10 @@ export const SECTIONS = [
       },
       {
         title: 'Sans compte',
-        paragraphs: ['Le lien public ouvre la liste en lecture seule, sans compte. Il peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage.'],
+        paragraphs: [
+          'Le lien public ouvre la liste en lecture seule, sans compte. Il peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage.',
+          'Toucher un article ouvre sa fiche, en lecture seule : quantité, note en entier, rayon (ou magasin), état coché, code-barres, photo à agrandir, et pour une autre liste la priorité et l\'échéance si elles sont activées. Le bouton Retour du téléphone ou la croix la referment.',
+        ],
       },
     ],
   },

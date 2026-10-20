@@ -44,9 +44,12 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/ui.js: last', 'piège de focus : Maj+Tab (geste de la personne)'],
   // Mode scan : la feuille elle-même quand une étape remplace le bouton touché
   ['public/js/screens/scan.js: panel', 'la feuille « Scanner un produit » (tabindex="-1"), jamais un champ'],
-  // Photo agrandie de la page publique
-  ['public/js/public.js: closeButton', 'bouton « Fermer la photo »'],
-  ['public/js/public.js: opener', 'retour à la vignette touchée, sauf champ de saisie'],
+  // Page publique : fiche d'un article et photo agrandie (openLayer)
+  ['public/js/public.js: panel', 'la fiche elle-même (tabindex="-1")'],
+  ['public/js/public.js: start', 'bouton « Fermer la photo » (data-initial-focus), jamais un champ'],
+  ['public/js/public.js: opener', "retour à la ligne ou à la vignette touchée, sauf champ de saisie"],
+  ['public/js/public.js: first', 'piège de focus : touche Tab (geste de la personne)'],
+  ['public/js/public.js: last', 'piège de focus : Maj+Tab (geste de la personne)'],
 ]);
 
 test('aucun .select(), autofocus ni setSelectionRange dans l\'interface', () => {

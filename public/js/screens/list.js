@@ -34,7 +34,7 @@ import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
-import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip } from '../format.js';
+import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS } from '../format.js';
 import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
@@ -1099,7 +1099,6 @@ export function renderList(listId, onLeave) {
   // à remplir, aucun bouton qui écrit ; la photo s'agrandit d'un appui. Elle
   // suit les changements faits par les autres et se ferme si l'article est
   // supprimé.
-  const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevée' };
   function openItemView(item) {
     const words = itemWords(view?.list);
     const body = h('div', { class: 'stack' });

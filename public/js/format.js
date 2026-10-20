@@ -159,6 +159,33 @@ export function dueChip(dueDate, checked, today = todayKey()) {
 }
 
 // Pastille de priorité : élevée et basse seulement (normale : rien)
+// Libellé d'une priorité, en toutes lettres (fiches à consulter)
+export const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevée' };
+
+// Fiche d'un article sur la page du lien public (lecture seule) : les
+// lignes de texte { label, text }, dans l'ordre de la fiche à consulter de
+// l'application, seulement pour ce que le serveur a envoyé (priorité et
+// échéance : si elles sont activées pour la liste ; code-barres : s'il
+// existe). La photo est montrée à part. grouping : « aisle », « store » ou
+// « none » (pas une liste de courses) ; place : nom du rayon (ou du magasin
+// d'une liste « multi »), null pour « Sans rayon » / « Sans magasin ».
+export function publicItemDetails(item, { grouping, place = null, today = todayKey() }) {
+  const shopping = grouping !== 'none';
+  const one = itemWords(shopping).one;
+  const rows = [
+    [one.charAt(0).toUpperCase() + one.slice(1), item.name], // « Article » ou « Élément »
+    ['État', item.checked ? (shopping ? 'Coché, dans le panier' : 'Coché, terminé') : (shopping ? 'À acheter' : 'À faire')],
+    item.quantity ? ['Quantité', item.quantity] : null,
+    item.note ? ['Note', item.note] : null,
+    'priority' in item ? ['Priorité', PRIORITY_LABELS[item.priority ?? 'normal'] ?? 'Normale'] : null,
+    'dueDate' in item ? ['Échéance', item.dueDate ? dueDateLabel(item.dueDate, today) : 'Aucune échéance'] : null,
+    item.ean ? ['Code-barres', item.ean] : null,
+    grouping === 'aisle' ? ['Rayon', place ?? 'Sans rayon'] : null,
+    grouping === 'store' ? ['Magasin', place ?? 'Sans magasin'] : null,
+  ];
+  return rows.filter(Boolean).map(([label, text]) => ({ label, text }));
+}
+
 export function priorityChip(priority) {
   if (priority === 'high') return { icon: 'arrow-up', text: 'Élevée', label: 'Priorité élevée' };
   if (priority === 'low') return { icon: 'arrow-down', text: 'Basse', label: 'Priorité basse' };

@@ -27,7 +27,16 @@ const ALLOWED = {
   list: ['category', 'grouping', 'name', 'store'],
   group: ['items', 'name'],
   item: ['checked', 'name', 'note', 'photo', 'quantity'],
+  // Seulement si l'article les a (décision du 20 octobre 2026, fiche du lien
+  // public) : code-barres (liste de courses) ; rayon ou magasin d'un article
+  // coché (celui d'un article à acheter est l'en-tête de son groupe).
+  // Priorité et échéance : test/list-options.test.js. Détails :
+  // test/public-sheet.test.js.
+  optional: ['aisle', 'ean', 'store'],
 };
+// Un article : tous les champs de base, et seulement des champs prévus
+const itemKeysOk = (item) => ALLOWED.item.every((key) => key in item)
+  && Object.keys(item).every((key) => ALLOWED.item.includes(key) || ALLOWED.optional.includes(key));
 
 // Guillaume (propriétaire) et Léa (invitée) ; une liste de courses partagée
 // avec 2 articles dont 1 avec photo, et une 2e liste avec sa propre photo.
@@ -172,6 +181,8 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
     assert.deepEqual(Object.keys(group).sort(), ALLOWED.group);
     for (const item of group.items) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);
   }
+  for (const item of data.done) assert.ok(itemKeysOk(item), Object.keys(item).join());
+  // Ici : ni code-barres, ni rayon pour le coché « Pain » (« Sans rayon »)
   for (const item of data.done) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);
   // Les articles à acheter dans leur rayon ; les cochés dans la zone « done »
   // (le rayon « Sans rayon », dont tout est coché, disparaît)

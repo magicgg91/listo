@@ -394,3 +394,7 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .sheet--fixed-head > .sheet__grab, .sheet--fixed-head > .sheet__head { flex: none; }
 /* (petite marge intérieure : le contour du focus clavier n'est pas coupé) */
 .sheet__scroll { flex: 1 1 auto; min-height: 0; margin: 0 -4px; padding: 0 4px 4px; overflow-y: auto; overscroll-behavior: contain; }
+
+/* « Après l'ajout » (formulaire d'une liste) : titre et explication, puis
+   les deux choix côte à côte (.segmented), dans la carte des options */
+.toggle-row--stack { flex-direction: column; align-items: stretch; gap: var(--space-1); }

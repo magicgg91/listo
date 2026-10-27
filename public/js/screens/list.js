@@ -36,7 +36,7 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, canEditList, listOptions, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { computeListView, canEditList, listOptions, addModeOf, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
@@ -678,6 +678,45 @@ export function renderList(listId, onLeave) {
     suggestBox.hidden = true;
     releaseFocus();
     revealItem(item.id);
+    // « Après l'ajout » = « Ouvrir la fiche » : la fiche de l'élément créé
+    // s'ouvre (la même qu'en touchant sa ligne), une fois le clavier replié ;
+    // aucun champ n'y prend le curseur. Le fermer ramène à la liste ;
+    // l'élément y reste, qu'on ait changé quelque chose ou non.
+    if (addModeOf(currentList()) === 'detail') {
+      whenKeyboardClosed(() => {
+        const created = app.data.items.get(item.id);
+        if (created && view && !created.deletedAt) openItemSheet(created);
+      });
+    }
+  }
+
+  // Clavier en train de se replier (le champ vient de perdre le curseur) :
+  // la fiche s'ouvre une fois la zone visible revenue à toute la hauteur de
+  // la fenêtre (mesure du navigateur, aucune marque ni modèle), pour qu'elle
+  // ne s'affiche pas d'abord au-dessus du clavier puis ne saute vers le bas.
+  // Clavier déjà fermé (ordinateur, navigateur qui rétrécit la page) : tout
+  // de suite. 700 ms au plus ; puis deux images, le temps qu'app-height.js
+  // ait remesuré l'application.
+  function whenKeyboardClosed(then) {
+    const viewport = window.visualViewport;
+    const closed = () => !viewport || viewport.height >= window.innerHeight - 1;
+    if (closed()) {
+      then();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      viewport.removeEventListener('resize', onResize);
+      clearTimeout(timer);
+      requestAnimationFrame(() => requestAnimationFrame(then));
+    };
+    const onResize = () => {
+      if (closed()) finish();
+    };
+    viewport.addEventListener('resize', onResize);
+    const timer = setTimeout(finish, 700);
   }
 
   // Attend la ligne d'un article tout juste ajouté : la liste peut être

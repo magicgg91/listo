@@ -103,10 +103,11 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, categoryId, storeId, priorityEnabled = false, dueEnabled = false, icon }) {
+export async function createList({ name, categoryId, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon }) {
   const listId = uuid();
-  // icon : envoyée seulement si une icône a été choisie
-  await perform({ type: 'list.create', listId, name, categoryId, storeId, priorityEnabled, dueEnabled, ...(icon ? { icon } : {}) });
+  // icon : envoyée seulement si une icône a été choisie ; addMode (« Après
+  // l'ajout ») : sans valeur, le serveur choisit selon la catégorie
+  await perform({ type: 'list.create', listId, name, categoryId, storeId, priorityEnabled, dueEnabled, ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}) });
   return listId;
 }
 

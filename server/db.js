@@ -341,7 +341,42 @@ export const MIGRATIONS = [
   `
   ALTER TABLE lists ADD COLUMN icon TEXT NOT NULL DEFAULT '';
   `,
+
+  // --- Migration 15 : « Après l'ajout », liste par liste ---
+  // 'quick' (« Rester sur la liste », comme avant) ou 'detail' (« Ouvrir la
+  // fiche » de l'élément ajouté). Voir addModeMigration.
+  (db) => addModeMigration(db),
 ];
+
+// Migration 15 : colonne add_mode ('quick' ou 'detail', rien d'autre).
+// Listes existantes :
+// - liste de courses : 'quick' (rien ne change) ;
+// - autre liste avec la priorité ou l'échéance activée : 'detail' (on veut
+//   le plus souvent régler ces options juste après l'ajout) ;
+// - autre liste sans ni l'une ni l'autre : 'quick'.
+// Les listes supprimées depuis moins de 30 jours sont traitées de la même
+// façon. Le nombre de listes de chaque sorte est écrit dans le journal du
+// conteneur (aucun nom de liste), et renvoyé (tests).
+export function addModeMigration(db) {
+  db.exec("ALTER TABLE lists ADD COLUMN add_mode TEXT NOT NULL DEFAULT 'quick' CHECK (add_mode IN ('quick', 'detail'))");
+  const counts = db.prepare(`
+    SELECT
+      COALESCE(SUM(categories.is_shopping = 1), 0) AS shopping,
+      COALESCE(SUM(categories.is_shopping = 0 AND (lists.priority_enabled = 1 OR lists.due_enabled = 1)), 0) AS detail,
+      COALESCE(SUM(categories.is_shopping = 0 AND lists.priority_enabled = 0 AND lists.due_enabled = 0), 0) AS quick
+    FROM lists JOIN categories ON categories.id = lists.category_id
+  `).get();
+  db.prepare(`
+    UPDATE lists SET add_mode = 'detail'
+    WHERE category_id IN (SELECT id FROM categories WHERE is_shopping = 0) AND (priority_enabled = 1 OR due_enabled = 1)
+  `).run();
+  if (counts.shopping + counts.detail + counts.quick > 0) {
+    console.log(`Migration 15 (« Après l'ajout ») : ${counts.shopping} liste(s) de courses → « Rester sur la liste » ; `
+      + `${counts.detail} autre(s) liste(s) avec priorité ou échéance → « Ouvrir la fiche » ; `
+      + `${counts.quick} autre(s) liste(s) sans priorité ni échéance → « Rester sur la liste ».`);
+  }
+  return counts;
+}
 
 // Nettoyage de l'historique (migration 8) : retire les noms qui ne viennent
 // que des listes autres que courses (tâches…), pour qu'ils ne soient plus

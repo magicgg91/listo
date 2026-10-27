@@ -28,7 +28,7 @@ test('saisie à la main (toutes les listes) : curseur retiré, élément montré
   // Liste de courses comme liste de tâches : une seule fin d'ajout, sans
   // condition sur la catégorie ; le champ ne reprend jamais le curseur
   const end = list.slice(list.indexOf('async function addTyped('), list.indexOf('function whenRow('));
-  assert.match(end, /if \(!item\) return;\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);\s*\}/);
+  assert.match(end, /if \(!item\) return;\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);\s*\/\/ « Après l'ajout » = « Ouvrir la fiche »/);
   assert.doesNotMatch(end, /isShopping|\.focus\(/);
   // Le champ est vidé juste avant l'ajout
   assert.match(end, /const item = await addNamed\(name, \{\}, \(\) => \{\s*input\.value = '';/);

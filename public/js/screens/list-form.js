@@ -8,7 +8,8 @@
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { put, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { activeOnly } from '../store.js';
+import { activeOnly, addModeOf, defaultAddMode } from '../store.js';
+import { itemWords } from '../words.js';
 import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
 import { app, refreshData, pendingCount } from '../app.js';
@@ -86,8 +87,11 @@ export function accessChoice(name, value, onChange) {
 // interrupteurs (.switch, role="switch", 44 px), chacun avec son nom et son
 // état écrit (« Activée » / « Désactivée » : jamais la couleur seule). Le
 // même composant sert à la création et à « Modifier la liste ».
-// values : { priority, due } ; onChange(nouvelles valeurs).
-export function optionSwitches(values, onChange) {
+// values : { priority, due } ; onChange(nouvelles valeurs) ; leading :
+// ligne placée avant les deux interrupteurs (« Après l'ajout »), ou rien.
+// Les deux lignes des interrupteurs portent data-switch (cachées pour une
+// liste de courses).
+export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
   const rows = [
     ['priority', 'Priorité', 'Basse, normale ou élevée ; tri par priorité.'],
@@ -105,9 +109,48 @@ export function optionSwitches(values, onChange) {
       onChange({ ...current });
     });
     paint();
-    return h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
+    return h('div', { class: 'toggle-row', 'data-switch': key }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
   });
-  return h('div', { class: 'card list-options' }, rows);
+  return h('div', { class: 'card list-options' }, leading, rows);
+}
+
+// « Après l'ajout » (toutes les listes, courses comprises) : deux choix côte
+// à côte (.segmented, le même composant que le droit d'une personne), le
+// choix actif a une coche ET son texte. 'quick' : « Rester sur la liste »
+// (rapide, comme avant) ; 'detail' : « Ouvrir la fiche » de l'élément
+// ajouté (détaillé). onChange(valeur). Renvoie { row, set(valeur) }.
+export function addModeChoice(value, onChange) {
+  let current = value;
+  const options = [['quick', 'Rester sur la liste'], ['detail', 'Ouvrir la fiche']].map(([choice, label]) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
+      current = choice;
+      paint();
+      onChange(choice);
+    } });
+    option.dataset.value = choice;
+    option.dataset.label = label;
+    return option;
+  });
+  const paint = () => {
+    for (const option of options) {
+      const on = option.dataset.value === current;
+      option.setAttribute('aria-checked', String(on));
+      replace(option, on ? icon('check', 'icon--sm icon--check') : null, option.dataset.label);
+    }
+  };
+  paint();
+  const row = h('div', { class: 'toggle-row toggle-row--stack' },
+    h('div', {},
+      h('span', { class: 'row__title', id: 'add-mode-label' }, "Après l'ajout"),
+      h('span', { class: 'row__sub' }, 'Rester sur la liste : on enchaîne les ajouts. Ouvrir la fiche : elle s\'ouvre aussitôt pour compléter ce qui vient d\'être ajouté.')),
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label' }, options));
+  return {
+    row,
+    set: (next) => {
+      current = next;
+      paint();
+    },
+  };
 }
 
 // Réglages enregistrés d'une liste (gardés même pour une liste de courses,
@@ -245,15 +288,25 @@ function form(list, users) {
     });
   }
 
-  // --- Priorité et échéance (listes autres que les courses) ---
-  // Une nouvelle liste commence sans ; une liste existante garde ses réglages
-  // (même cachés tant qu'elle est une liste de courses)
+  // --- Options : « Après l'ajout » (toutes les listes), priorité et
+  // échéance (listes autres que les courses) ---
+  // Une nouvelle liste commence sans priorité ni échéance ; une liste
+  // existante garde ses réglages (même cachés tant qu'elle est une liste de
+  // courses). « Après l'ajout » : une liste existante garde son choix ; une
+  // nouvelle liste suit sa catégorie (« Rester sur la liste » pour les
+  // courses, « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
   let options = list ? listOptionsOf(list) : { priority: false, due: false };
-  const optionsField = h('div', { class: 'field' },
-    h('span', { class: 'field__label' }, 'Options des éléments'),
-    optionSwitches(options, (values) => {
-      options = values;
-    }));
+  let addMode = list ? addModeOf(list) : defaultAddMode(true);
+  let addModeChosen = Boolean(list);
+  const addModeField = addModeChoice(addMode, (value) => {
+    addMode = value;
+    addModeChosen = true;
+  });
+  const optionsLabel = h('span', { class: 'field__label' }, 'Options des éléments');
+  const optionsCard = optionSwitches(options, (values) => {
+    options = values;
+  }, addModeField.row);
+  const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
   // --- Partage ---
   // Moi d'abord (toujours inclus, tous les droits), puis les autres comptes
@@ -338,7 +391,14 @@ function form(list, users) {
       if (on) button.append(h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')));
     }
     storeField.hidden = !category?.isShopping;
-    optionsField.hidden = !category || category.isShopping; // courses : ni priorité ni échéance
+    optionsField.hidden = !category;
+    // Courses : ni priorité ni échéance, seulement « Après l'ajout »
+    for (const row of optionsCard.querySelectorAll('[data-switch]')) row.hidden = Boolean(category?.isShopping);
+    optionsLabel.textContent = category?.isShopping ? `Options des ${itemWords(true).many}` : 'Options des éléments';
+    if (!addModeChosen && category) {
+      addMode = defaultAddMode(category.isShopping);
+      addModeField.set(addMode);
+    }
     const store = stores.find((s) => s.id === storeId);
     replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? 'Aucun magasin', store?.isMulti ? multiBadge() : null);
     storeHint.textContent = store?.isMulti ? 'Les articles seront classés par magasin, sans rayons.' : 'Les articles seront classés par rayon.';
@@ -394,12 +454,13 @@ function form(list, users) {
     const classic = !category.isShopping;
     const saved = list ? listOptionsOf(list) : null;
     if (!list) {
-      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, icon: chosenIcon });
+      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, addMode, icon: chosenIcon });
     } else {
       const switches = {};
       if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
       if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
+      if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
       if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null) || Object.keys(switches).length) {
         await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore, ...switches });
       }

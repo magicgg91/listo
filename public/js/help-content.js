@@ -56,6 +56,7 @@ export const SECTIONS = [
         items: [
           'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
           'Autre liste : « Options des éléments » active la priorité et l\'échéance.',
+          '« Après l\'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d\'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.',
           'Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).',
         ],
       },
@@ -63,6 +64,7 @@ export const SECTIONS = [
         title: 'Ajouter, modifier, cocher, supprimer',
         items: [
           'Ajouter : tapez le nom dans le champ en bas de la liste, puis touchez « + ». Des suggestions s\'affichent pendant la saisie. Dans une liste de courses, pour un nouvel article, Listo demande son rayon, puis s\'en souvient.',
+          'Après l\'ajout, le clavier se replie. Si la liste est réglée sur « Ouvrir la fiche », la fiche de ce qui vient d\'être ajouté s\'ouvre (sans clavier) : réglez quantité, note, priorité ou échéance, puis la disquette ; la croix la referme sans rien changer, la ligne reste ajoutée.',
           'Modifier : touchez la ligne. La fiche s\'ouvre ; la disquette enregistre.',
           'Cocher : touchez la case. Un article coché est barré et passe dans « Dans le panier » (« Terminés » dans les autres listes), en bas de la liste.',
           'Supprimer : faites glisser la ligne vers la gauche, puis touchez « Supprimer ». « Annuler » remet la ligne pendant quelques secondes.',
@@ -127,7 +129,7 @@ export const SECTIONS = [
       },
       {
         title: 'Modifier la liste',
-        paragraphs: ['« Modifier la liste » change le titre, la catégorie, le magasin et l\'icône. Pour une liste autre que les courses, « Options des éléments » active ou non la priorité et l\'échéance. Seul le propriétaire modifie la liste.'],
+        paragraphs: ['« Modifier la liste » change le titre, la catégorie, le magasin et l\'icône. Pour une liste autre que les courses, « Options des éléments » active ou non la priorité et l\'échéance. « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche », pour toutes les listes. Seul le propriétaire modifie la liste.'],
       },
       {
         title: 'Dupliquer la liste',

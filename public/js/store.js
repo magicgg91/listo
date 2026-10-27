@@ -181,6 +181,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         canEdit: true, // le propriétaire a tous les droits
         priorityEnabled: op.priorityEnabled === true, // désactivées sauf demande
         dueEnabled: op.dueEnabled === true,
+        addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(Boolean(category?.isShopping)),
         members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
         updatedAt: now,
@@ -207,6 +208,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (!next.category?.isShopping) next.store = null;
       if (typeof op.priorityEnabled === 'boolean') next.priorityEnabled = op.priorityEnabled;
       if (typeof op.dueEnabled === 'boolean') next.dueEnabled = op.dueEnabled;
+      if (ADD_MODES.includes(op.addMode)) next.addMode = op.addMode;
       state.lists.set(list.id, next);
       return;
     }
@@ -505,6 +507,14 @@ export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
 export function canEditList(list) {
   return Boolean(list) && list.canEdit !== false;
 }
+
+// « Après l'ajout » : 'quick' (rester sur la liste) ou 'detail' (ouvrir la
+// fiche de l'élément ajouté). Sans choix, une nouvelle liste de courses
+// reste sur la liste, une autre ouvre la fiche. Une copie d'avant ce
+// réglage (pas encore synchronisée) : rester sur la liste, comme avant.
+export const ADD_MODES = ['quick', 'detail'];
+export const defaultAddMode = (isShopping) => (isShopping ? 'quick' : 'detail');
+export const addModeOf = (list) => (list?.addMode === 'detail' ? 'detail' : 'quick');
 
 // Priorité et échéance utilisées dans cette liste ? Jamais dans une liste de
 // courses ; ailleurs, selon les deux réglages de la liste (choisis par le

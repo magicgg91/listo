@@ -246,6 +246,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
     CREATE INDEX list_members_user ON list_members(user_id);
     ALTER TABLE lists DROP COLUMN priority_enabled;\n    ALTER TABLE lists DROP COLUMN due_enabled;
     ALTER TABLE lists DROP COLUMN icon;
+    ALTER TABLE lists DROP COLUMN add_mode;
   `);
   db.pragma('user_version = 11');
   for (const name of ['a', 'b', 'c']) db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES (?, ?, 'x')").run(name, name);
@@ -254,7 +255,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.close();
   // Redémarrage : la migration 12 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 14);
+  assert.equal(schemaVersion(db), 15);
   assert.deepEqual(db.prepare('SELECT user_id, access FROM list_members ORDER BY user_id').all().map((r) => [r.user_id, r.access]), [[1, 'modification'], [2, 'modification'], [3, 'modification']]);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('d', 'd', 'x')").run();
   db.prepare("INSERT INTO list_members (list_id, user_id) VALUES ('l1', 4)").run();
@@ -265,7 +266,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.prepare('DELETE FROM users WHERE id = 3').run();
   assert.equal(db.prepare('SELECT COUNT(*) FROM list_members').pluck().get(), 3);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 14);
+  assert.equal(schemaVersion(db), 15);
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

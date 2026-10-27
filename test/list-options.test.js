@@ -69,7 +69,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 12, sans les deux colonnes, avec des listes
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon');
+  db.exec('ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode');
   db.pragma('user_version = 12');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('taches', 'Maison', 2, 1), ('courses', 'Courses', 1, 1)").run();
@@ -78,7 +78,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 14);
+  assert.equal(schemaVersion(db), 15);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
@@ -310,7 +310,7 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
 
 test('formulaire : le même composant à la création et dans « Modifier la liste », visible hors courses seulement', () => {
   const form = read('public/js/screens/list-form.js');
-  assert.match(form, /export function optionSwitches\(values, onChange\) \{/);
+  assert.match(form, /export function optionSwitches\(values, onChange, leading = null\) \{/);
   assert.equal((form.match(/optionSwitches\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois, dans le formulaire commun');
   assert.match(form, /\['priority', 'Priorité', /);
   assert.match(form, /\['due', 'Échéance', /);
@@ -319,7 +319,8 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   assert.match(form, /state\.textContent = `\$\{current\[key\] \? 'Activée' : 'Désactivée'\} · \$\{help\}`;/);
   // Nouvelle liste : désactivées ; visibles seulement hors courses, aussi quand on change la catégorie
   assert.match(form, /let options = list \? listOptionsOf\(list\) : \{ priority: false, due: false \};/);
-  assert.match(form, /optionsField\.hidden = !category \|\| category\.isShopping;/);
+  // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
+  assert.match(form, /for \(const row of optionsCard\.querySelectorAll\('\[data-switch\]'\)\) row\.hidden = Boolean\(category\?\.isShopping\);/);
   assert.match(form, /priorityEnabled: classic && options\.priority, dueEnabled: classic && options\.due/);
   assert.match(form, /if \(classic && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
   // Réservé au propriétaire : le formulaire de modification renvoie un invité vers la liste

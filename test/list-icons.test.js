@@ -102,7 +102,7 @@ test('icône hors liste blanche refusée (400) à la création comme à la modif
   assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'Icône inconnue\.'\);/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? '';/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? list\.icon;/);
-  assert.match(source, /UPDATE lists SET name = \?, category_id = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, icon = \?, updated_at = \? WHERE id = \?/);
+  assert.match(source, /UPDATE lists SET name = \?, category_id = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, icon = \?, add_mode = \?, updated_at = \? WHERE id = \?/);
 });
 
 test('seul le propriétaire change l\'icône : invités refusés (403), quel que soit leur droit ; un invité la voit', async (t) => {
@@ -207,16 +207,16 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 13, sans la colonne, avec des listes
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN icon');
+  db.exec('ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode');
   db.pragma('user_version = 13');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id, priority_enabled) VALUES ('taches', 'Maison', 2, 1, 1), ('courses', 'Courses', 1, 1, 0)").run();
   const before = db.prepare('SELECT * FROM lists ORDER BY id').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 14);
+  assert.equal(schemaVersion(db), 15);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ icon, ...rest }) => rest), before, 'rien d\'autre ne change');
+  assert.deepEqual(after.map(({ icon, add_mode: addMode, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');
   // À l'écran : chariot pour les courses, liste cochée pour les tâches
   assert.equal(listIcon({ icon: after[0].icon, category: { isShopping: true } }), 'cart');

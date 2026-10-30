@@ -65,7 +65,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| search\.focused;/);
   assert.match(list, /scanner\.button\.hidden = !canEdit \|\| !scanAvailable\(list\);/);
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
-  assert.match(list, /if \(!canEditList\(view\?\.list\)\) return h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\)\);\s*const slide/);
+  assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\)\), item, meta\);\s*const slide/);
   // Case visible mais inactive (comme la page publique) ; cochée = remplie ET barrée (.is-done)
   assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': item\.checked \? 'Coché' : 'Non coché' \}/);
   assert.match(list, /'aria-label': `\$\{canEdit \? 'Modifier' : 'Voir'\} \$\{item\.name\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);
@@ -95,7 +95,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), 'Lecture seule'\)/);
   // Invité en lecture seule : seulement « Quitter la liste » (« Dupliquer la liste » est réservé au propriétaire et à « Peut modifier »)
-  assert.match(read('public/js/screens/list-actions.js'), /return canEdit \? \[duplicate, leave\] : \[leave\];/);
+  assert.match(read('public/js/screens/list-actions.js'), /return canEdit \? \[duplicate, mute, leave\] : \[mute, leave\];/);
   assert.doesNotMatch(list, /innerHTML/);
 });
 

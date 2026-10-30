@@ -4,10 +4,10 @@
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
-import { relativeTime, namesList, listSortButton } from '../format.js';
+import { relativeTime, namesList, listSortButton, newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
-import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory } from '../store.js';
+import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
@@ -66,7 +66,7 @@ function cardLink(list, { selected, query }) {
     },
   },
   h('div', { class: 'list-card__head' },
-    h('span', { class: 'list-card__icon' }, icon(listIcon(list), 'icon--sm')),
+    h('span', { class: 'list-card__icon' }, icon(listIcon(list), 'icon--sm'), newsPill(list)),
     h('h2', { class: 'list-card__name' }, titleWithHits(list.name, query)),
     h('span', { class: 'list-card__time' }, relativeTime(list.lastActivity))),
   h('div', { class: 'list-card__foot' },
@@ -86,6 +86,18 @@ function cardLink(list, { selected, query }) {
 function titleWithHits(name, query) {
   if (!isSearching(query)) return name;
   return highlightParts(name, query).map((part) => (part.hit ? h('mark', { class: 'hit' }, part.text) : part.text));
+}
+
+// Nouveautés (ce que les autres ont ajouté ou modifié depuis ma dernière
+// visite) : pastille numérique posée sur le coin de l'icône de la liste
+// (« 3 », « 30+ ») ; elle ne grossit pas la carte et ne cache ni le compteur,
+// ni les pastilles des personnes, ni le symbole du lien public. Lue « 3
+// nouveautés ». Rien quand « Nouveautés » est désactivé ou la liste en sourdine.
+function newsPill(list) {
+  const text = newsBadge(app.data, list.id);
+  if (!text) return null;
+  const label = newsBadgeLabel(text);
+  return h('span', { class: 'news-badge', role: 'img', 'aria-label': label, title: label }, text);
 }
 
 // Compteur de la carte : « X/Y » (X restants à faire, Y au total, cochés

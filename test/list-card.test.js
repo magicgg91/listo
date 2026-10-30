@@ -124,7 +124,7 @@ test('carte compacte : ni catégorie, ni magasin, ni badge « Multi » ; lien pu
   // Ni catégorie ni magasin sur la carte
   assert.doesNotMatch(card, /category\.name|store\.name|list-card__meta|icon\('store'/);
   // Ligne 1 : icône, titre, heure (le bouton ⋮ est posé à côté, voir listCard)
-  assert.match(card, /h\('div', \{ class: 'list-card__head' \},\s*h\('span', \{ class: 'list-card__icon' \}, icon\(listIcon\(list\), 'icon--sm'\)\),\s*h\('h2', \{ class: 'list-card__name' \}, titleWithHits\(list\.name, query\)\),\s*h\('span', \{ class: 'list-card__time' \}, relativeTime\(list\.lastActivity\)\)\),/);
+  assert.match(card, /h\('div', \{ class: 'list-card__head' \},\s*h\('span', \{ class: 'list-card__icon' \}, icon\(listIcon\(list\), 'icon--sm'\), newsPill\(list\)\),\s*h\('h2', \{ class: 'list-card__name' \}, titleWithHits\(list\.name, query\)\),\s*h\('span', \{ class: 'list-card__time' \}, relativeTime\(list\.lastActivity\)\)\),/);
   // Ligne 2 à gauche : compteur, puis la pastille « Lecture seule » quand il y a lieu
   assert.match(card, /h\('div', \{ class: 'list-card__left' \},\s*cardCount\(list\),\s*\/\/[^\n]*\n\s*canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}/);
   // « Multi » est un type de magasin : ni badge ni texte sur la carte

@@ -22,7 +22,7 @@ const body = (source, name) => {
 test('« Mon compte » a sa propre adresse : un rechargement le rouvre', () => {
   assert.deepEqual(matchRoute('#/reglages/compte'), { name: 'account', params: {} });
   assert.equal(pathFor('account'), '#/reglages/compte');
-  assert.match(read('app.js'), /case 'account': mount\(\(\) => renderAccount\(\)\); break;/);
+  assert.match(read('app.js'), /case 'account': mount\(\(onLeave\) => renderAccount\(onLeave\)\); break;/);
 });
 
 test('Réglages : la carte du compte est un bouton qui ouvre « Mon compte »', () => {

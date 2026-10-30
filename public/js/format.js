@@ -159,6 +159,21 @@ export function dueChip(dueDate, checked, today = todayKey()) {
 }
 
 // Pastille de priorité : élevée et basse seulement (normale : rien)
+// Nouveautés : repère texte d'une ligne en halo (jamais la couleur seule) :
+// « Ajouté par Marie », « Modifié par Marie », « Coché par Marie »,
+// « Décoché par Marie ». kind : 'added', 'updated', 'checked', 'unchecked'.
+const NEWS_VERBS = { added: 'Ajouté', updated: 'Modifié', checked: 'Coché', unchecked: 'Décoché' };
+export function newsMark(kind, by) {
+  return `${NEWS_VERBS[kind] ?? 'Modifié'} par ${by}`;
+}
+
+// Pastille de « Mes listes » lue par un lecteur d'écran : « 1 nouveauté »,
+// « 3 nouveautés », « plus de 30 nouveautés »
+export function newsBadgeLabel(text) {
+  if (text === '30+') return 'plus de 30 nouveautés';
+  return `${text} ${text === '1' ? 'nouveauté' : 'nouveautés'}`;
+}
+
 // Libellé d'une priorité, en toutes lettres (fiches à consulter)
 export const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevée' };
 

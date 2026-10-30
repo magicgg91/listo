@@ -19,7 +19,7 @@ const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 test('actions d\'une liste : Modifier la liste, Dupliquer la liste, Partager par lien, Supprimer la liste, dans cet ordre, pour le propriétaire', () => {
   const source = read('public/js/screens/list-actions.js');
   assert.match(source, /const duplicate = \{ icon: 'copy', label: 'Dupliquer la liste', onSelect: \(\) => openDuplicateSheet\(list\) \};/);
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste', onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*duplicate,\s*\{ icon: 'link', label: 'Partager par lien', onSelect: \(\) => openShareSheet\(list\) \},\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste', onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*duplicate,\s*\{ icon: 'link', label: 'Partager par lien', onSelect: \(\) => openShareSheet\(list\) \},\s*mute,\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
   // Les deux menus utilisent cette même fonction (mêmes écrans, même ordre)
   const lists = read('public/js/screens/lists.js');
   const list = read('public/js/screens/list.js');

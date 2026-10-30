@@ -61,3 +61,18 @@ test('mot de passe et double authentification reviennent sur « Mon compte », j
   assert.equal(/goBack\('settings'\)|navigate\('settings'/.test(settings.replace(body(settings, 'renderSettings'), '')), false);
   assert.match(settings, /const finish = \(\) => navigate\('account', \{\}, \{ replace: true \}\);/);
 });
+
+test('« Nouveautés » : description seule sous le titre, état annoncé par l\'interrupteur', () => {
+  const start = account.indexOf('function newsSwitches(');
+  const block = account.slice(start, account.indexOf('\n}\n', start) + 2);
+  // Plus d'« Activé · » / « Désactivé · » : l'interrupteur montre déjà l'état
+  for (const gone of ['Activé', 'Désactivé', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
+  assert.ok(block.includes("'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'"));
+  assert.ok(block.includes("'Les articles ou éléments cochés ou décochés par les autres.'"));
+  // Vrai interrupteur : nom = titre de la ligne, description reliée, état dans aria-checked
+  assert.match(block, /h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId \}\)/);
+  assert.match(block, /h\('span', \{ class: 'row__title', id: titleId \}, label\), h\('span', \{ class: 'row__sub', id: helpId \}, help\)/);
+  assert.match(block, /toggle\.setAttribute\('aria-checked', String\(Boolean\(app\.data\.news\?\.\[key\]\)\)\);/);
+  // Le texte de la ligne ne change plus quand on bascule
+  assert.equal(block.includes('textContent'), false);
+});

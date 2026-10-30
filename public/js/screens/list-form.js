@@ -84,9 +84,11 @@ export function accessChoice(name, value, onChange) {
 }
 
 // Priorité et échéance d'une liste autre que les courses : deux
-// interrupteurs (.switch, role="switch", 44 px), chacun avec son nom et son
-// état écrit (« Activée » / « Désactivée » : jamais la couleur seule). Le
-// même composant sert à la création et à « Modifier la liste ».
+// interrupteurs (.switch, role="switch", 44 px). L'état se voit à la position
+// du bouton (jamais la couleur seule) et s'annonce par aria-checked ; le nom
+// est le titre de la ligne (aria-labelledby) ; sous le titre, seulement la
+// description, qui ne change pas (aria-describedby). Le même composant sert
+// à la création et à « Modifier la liste ».
 // values : { priority, due } ; onChange(nouvelles valeurs) ; leading :
 // ligne placée avant les deux interrupteurs (« Après l'ajout »), ou rien.
 // Les deux lignes des interrupteurs portent data-switch (cachées pour une
@@ -94,14 +96,14 @@ export function accessChoice(name, value, onChange) {
 export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
   const rows = [
-    ['priority', 'Priorité', 'Basse, normale ou élevée ; tri par priorité.'],
-    ['due', 'Échéance', 'Une date limite ; tri par échéance, retards signalés.'],
+    ['priority', 'Priorité', 'Basse, normale ou élevée.'],
+    ['due', 'Échéance', 'Une date limite ; retards signalés.'],
   ].map(([key, label, help]) => {
-    const state = h('span', { class: 'row__sub' });
-    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': label });
+    const titleId = `option-${key}-title`;
+    const helpId = `option-${key}-help`;
+    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
     const paint = () => {
       toggle.setAttribute('aria-checked', String(current[key]));
-      state.textContent = `${current[key] ? 'Activée' : 'Désactivée'} · ${help}`;
     };
     toggle.addEventListener('click', () => {
       current[key] = !current[key];
@@ -109,7 +111,9 @@ export function optionSwitches(values, onChange, leading = null) {
       onChange({ ...current });
     });
     paint();
-    return h('div', { class: 'toggle-row', 'data-switch': key }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
+    return h('div', { class: 'toggle-row', 'data-switch': key },
+      h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
+      toggle);
   });
   return h('div', { class: 'card list-options' }, leading, rows);
 }

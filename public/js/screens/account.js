@@ -87,26 +87,29 @@ async function resetPhone() {
 // « Nouveautés » (activé par défaut : pastilles sur « Mes listes » et halo
 // sur les éléments ajoutés ou modifiés par les autres) et « Signaler aussi
 // les cochés » (désactivé par défaut). Même interrupteur que les options
-// d'une liste (.switch, role="switch", état écrit : jamais la couleur seule).
-// Passent par la file d'attente : hors ligne compris.
+// d'une liste (.switch, role="switch") : l'état se voit à la position du
+// bouton (jamais la couleur seule) et s'annonce par aria-checked ; sous le
+// titre, seulement la description, qui ne change pas (reliée au bouton par
+// aria-describedby). Passent par la file d'attente : hors ligne compris.
 function newsSwitches(onLeave) {
   const rows = [
     ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
     ['checks', 'Signaler aussi les cochés', 'Les articles ou éléments cochés ou décochés par les autres.'],
   ].map(([key, label, help]) => {
-    const state = h('span', { class: 'row__sub' });
-    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': label });
+    const titleId = `news-${key}-title`;
+    const helpId = `news-${key}-help`;
+    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
     const paint = () => {
-      const on = Boolean(app.data.news?.[key]);
-      toggle.setAttribute('aria-checked', String(on));
-      state.textContent = `${on ? 'Activé' : 'Désactivé'} · ${help}`;
+      toggle.setAttribute('aria-checked', String(Boolean(app.data.news?.[key])));
       // « Signaler aussi les cochés » n'a d'effet que si « Nouveautés » est activé
       if (key === 'checks') row.classList.toggle('is-off', !app.data.news?.enabled);
     };
     toggle.addEventListener('click', () => {
       actions.setNewsSettings({ [key]: !app.data.news?.[key] });
     });
-    const row = h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
+    const row = h('div', { class: 'toggle-row' },
+      h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
+      toggle);
     return { row, paint };
   });
   const paintAll = () => rows.forEach((r) => r.paint());

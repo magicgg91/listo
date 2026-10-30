@@ -314,9 +314,17 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   assert.equal((form.match(/optionSwitches\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois, dans le formulaire commun');
   assert.match(form, /\['priority', 'Priorité', /);
   assert.match(form, /\['due', 'Échéance', /);
-  assert.match(form, /const toggle = h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-label': label \}\);/);
-  // État écrit (jamais la couleur seule)
-  assert.match(form, /state\.textContent = `\$\{current\[key\] \? 'Activée' : 'Désactivée'\} · \$\{help\}`;/);
+  // Vrai interrupteur : nom = titre de la ligne, description reliée, état dans aria-checked
+  assert.match(form, /const toggle = h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId \}\);/);
+  assert.match(form, /h\('span', \{ class: 'row__title', id: titleId \}, label\), h\('span', \{ class: 'row__sub', id: helpId \}, help\)/);
+  assert.match(form, /toggle\.setAttribute\('aria-checked', String\(current\[key\]\)\);/);
+  // Description seule, fixe : ni « Activée · » / « Désactivée · » (la position du
+  // bouton montre l'état), ni mention du tri (sous-entendue quand l'option est activée)
+  assert.match(form, /\['priority', 'Priorité', 'Basse, normale ou élevée\.'\],/);
+  assert.match(form, /\['due', 'Échéance', 'Une date limite ; retards signalés\.'\],/);
+  const block = form.slice(form.indexOf('export function optionSwitches('), form.indexOf('export function addModeChoice('));
+  for (const gone of ['Activée', 'Désactivée', 'textContent', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
+  assert.doesNotMatch(block, /\btri\b|par priorité|par échéance/);
   // Nouvelle liste : désactivées ; visibles seulement hors courses, aussi quand on change la catégorie
   assert.match(form, /let options = list \? listOptionsOf\(list\) : \{ priority: false, due: false \};/);
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)

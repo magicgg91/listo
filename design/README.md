@@ -373,3 +373,11 @@ Maquettes : `recherche/` (`captures/recherche-liste-*` et `recherche-accueil-*`,
 - Résultats : texte trouvé dans `<mark class="hit">` (fond `--color-accent-soft`, gras ET souligné `--color-accent` : jamais la couleur seule), y compris sur un article coché (barré) ; nombre `.search-meta` (`role="status"`) : à droite de la pastille dans une liste (« 4 résultats », « 1 résultat », « 0 résultat »), sous le champ sur « Mes listes » (« 2 listes »).
 - Pendant la recherche dans une liste : en-têtes de groupe sans bouton de repli (`h2.aisle` > nom + `.aisle__count` avec le nombre de résultats), zone des cochés ouverte sans ses actions, « Tout replier » et barre d'ajout masqués (la barre seulement tant que le champ a le curseur).
 - Aucun résultat : `.empty` avec `.empty__icon` (`#i-search`), « Aucun résultat », « Aucun article ne correspond à « … ». » (« Aucune liste ne correspond… »), et `.btn.btn--secondary` « Effacer la recherche ».
+
+## Ajout : nouveautés (pastille et halo)
+
+Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maquette : composé avec les variables du kit, **aucune couleur ni variable nouvelle**. Styles : section 16.13 « Nouveautés » de `listo.css`. Balisage : « Nouveautés sur « Mes listes » » et « Nouveautés dans une liste » dans `components.html` (clair et sombre).
+
+- Pastille `.news-badge` (`role="img"`, `aria-label` « 3 nouveautés », « plus de 30 nouveautés ») : posée sur le coin haut gauche de `.list-card__icon` (qui devient `position: relative`), forme `--radius-pill`, fond `--color-accent`, chiffres `--color-on-accent` en gras, entourée de `--color-surface` pour se détacher de l'icône. Texte « 3 », ou « 30+ » quand la dernière visite est plus ancienne que le journal gardé. La carte ne grandit pas ; compteur X/Y, symbole du lien public et pastilles des personnes restent visibles.
+- Halo `.item--news` sur la ligne `.item` : fond `--color-accent-soft`, statique (aucune animation), plus le repère texte `.item__news` sous le nom (`--text-sm`, gras, `--color-accent-ink`) : « Ajouté par Marie », « Modifié par Marie », « Coché par Marie », « Décoché par Marie » (jamais la couleur seule ; le repère est aussi lu avec le nom). Zones tactiles inchangées. Un article coché garde son nom barré.
+- Liste en sourdine ou « Nouveautés » désactivé : ni pastille, ni halo.

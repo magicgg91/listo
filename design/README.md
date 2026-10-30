@@ -271,7 +271,7 @@ Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage
 
 Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage : « Nouvelle liste : options désactivées » et « Modifier la liste : le même composant » dans `components.html`. Aucune nouvelle icône.
 
-- Formulaire « Nouvelle liste » / « Modifier la liste », après le magasin : `.field` « Options des éléments » avec une `.card.list-options` de deux `.toggle-row` séparées par un trait. Chacune : `.row__title` (« Priorité », « Échéance »), `.row__sub` qui écrit l'état (« Activée · … » / « Désactivée · … ») et un `.switch` (`role="switch"`, `aria-checked`, `aria-label` = le nom, 44 px). Masqué pour une liste de courses.
+- Formulaire « Nouvelle liste » / « Modifier la liste », après le magasin : `.field` « Options des éléments » avec une `.card.list-options` de deux `.toggle-row` séparées par un trait. Chacune : `.row__title` (« Priorité », « Échéance »), `.row__sub` avec la description seule, fixe (« Basse, normale ou élevée. », « Une date limite ; retards signalés. ») et un `.switch` (`role="switch"`, `aria-checked`, nom = le titre par `aria-labelledby`, description par `aria-describedby`, 44 px). L'état se voit à la position du bouton, sans texte d'état (retouche du 30 octobre 2026). Masqué pour une liste de courses.
 - Réglage désactivé : aucune trace dans la liste (pas de pastille de priorité ni d'échéance, pas de « En retard »), ni dans la fiche (champ absent), ni dans la fiche à consulter, ni sur la page publique ; le menu « Trier la liste » ne propose que les tris disponibles, et le bouton disparaît s'il ne reste que l'ordre alphabétique.
 
 ## Ajout : « Dupliquer la liste » et « Quitter la liste »

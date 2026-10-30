@@ -355,8 +355,8 @@ export const MIGRATIONS = [
   // (last_seen), « behind » quand des événements plus récents que ce repère
   // ont été effacés par le nettoyage (30 jours, 500 par liste), et « muted »
   // (« Ne plus me signaler cette liste »). Réglages du compte :
-  // news_enabled (« Nouveautés », activé) et news_checks (« Signaler aussi
-  // les cochés », désactivé). Le journal part vide : le repère de chaque
+  // news_enabled (« Nouveautés », activé) et news_checks (« Signaler les
+  // éléments cochés », désactivé). Le journal part vide : le repère de chaque
   // membre est posé sur son dernier événement (aucun), personne ne voit
   // l'historique comme nouveau.
   `

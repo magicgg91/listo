@@ -16,7 +16,7 @@
 // - Nouveautés d'une personne : les éléments (non supprimés) ajoutés ou
 //   modifiés par quelqu'un d'autre depuis son repère ; un élément compte une
 //   fois. Jamais ses propres actions ; ni les suppressions ; les cochés et
-//   décochés seulement avec « Signaler aussi les cochés ». Rien pour une
+//   décochés seulement avec « Signaler les éléments cochés ». Rien pour une
 //   liste en sourdine, ni quand « Nouveautés » est désactivé.
 // - Confidentialité : seuls les membres reçoivent les nouveautés d'une liste
 //   (et le nom des auteurs) ; le lien public n'en reçoit rien.
@@ -136,7 +136,7 @@ export function createNewsService(ctx) {
       .run(Number(muted), listId, userId, Number(muted)).changes > 0;
   }
 
-  // Réglages du compte : « Nouveautés », « Signaler aussi les cochés »
+  // Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
   function setSettings(userId, { enabled, checks }) {
     const current = q.settings.get(userId);
     const next = {

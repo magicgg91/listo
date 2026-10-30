@@ -77,7 +77,7 @@ test('calcul : jamais ses propres actions ; ajouté puis modifié = 1 ; ajouté 
   assert.equal((await h.listNewsOf(h.guillaume)).count, 0);
 });
 
-test('cochés : exclus par défaut, signalés avec « Signaler aussi les cochés » (« checked » / « unchecked »)', async (t) => {
+test('cochés : exclus par défaut, signalés avec « Signaler les éléments cochés » (« checked » / « unchecked »)', async (t) => {
   const h = await household(t);
   const lait = await h.add(h.guillaume, 'Lait');
   const end = async (client) => (await h.listNewsOf(client)).lastEventId;
@@ -241,7 +241,7 @@ test('sourdine et réglage « Nouveautés » : plus rien à signaler ; valeurs i
   assert.equal(news.enabled, false);
   assert.equal(news.lists[h.listId].count, 0);
   assert.deepEqual(await run(h.guillaume, { type: 'account.news', enabled: 'non' }), { status: 400, error: 'Réglage « Nouveautés » invalide.' });
-  assert.deepEqual(await run(h.guillaume, { type: 'account.news', checks: 1 }), { status: 400, error: 'Réglage « Signaler aussi les cochés » invalide.' });
+  assert.deepEqual(await run(h.guillaume, { type: 'account.news', checks: 1 }), { status: 400, error: 'Réglage « Signaler les éléments cochés » invalide.' });
   assert.deepEqual(await run(h.guillaume, { type: 'account.news' }), { status: 400, error: 'Rien à modifier.' });
   assert.deepEqual(await run(h.guillaume, { type: 'list.mute', listId: h.listId, muted: 'oui' }), { status: 400, error: 'Réglage « Ne plus me signaler cette liste » invalide.' });
 });

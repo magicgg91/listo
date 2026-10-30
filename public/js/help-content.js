@@ -107,7 +107,7 @@ export const SECTIONS = [
           'Sur « Mes listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (« 30+ » après plus d\'un mois d\'absence).',
           'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite : « Ajouté par Marie », « Modifié par Marie ». Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
           'Menu ⋮ de la liste : « Ne plus me signaler cette liste », puis « Signaler cette liste » pour revenir. Chacun choisit pour lui, invité en lecture seule compris.',
-          '« Mon compte » › « Nouveautés » : désactive tout signalement ; « Signaler aussi les cochés » ajoute les articles cochés ou décochés par les autres.',
+          '« Mon compte » › « Nouveautés » : désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
           'Il n\'y a pas de notification : les nouveautés se voient en ouvrant Listo. Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total.',
         ],
       },

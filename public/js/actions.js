@@ -120,7 +120,7 @@ export const updateList = (listId, fields) => perform({ type: 'list.update', lis
 export const markSeen = (listId, upTo) => perform({ type: 'list.seen', listId, upTo });
 // « Ne plus me signaler cette liste » / « Signaler cette liste »
 export const setListMuted = (listId, muted) => perform({ type: 'list.mute', listId, muted });
-// Réglages du compte : « Nouveautés », « Signaler aussi les cochés »
+// Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
 export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 

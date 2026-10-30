@@ -85,8 +85,13 @@ async function resetPhone() {
 
 // Nouveautés (réglages du compte, valables sur tous mes appareils) :
 // « Nouveautés » (activé par défaut : pastilles sur « Mes listes » et halo
-// sur les éléments ajoutés ou modifiés par les autres) et « Signaler aussi
-// les cochés » (désactivé par défaut). Même interrupteur que les options
+// sur les éléments ajoutés ou modifiés par les autres) et « Signaler les
+// éléments cochés » (désactivé par défaut ; libellé générique : il vaut pour
+// toutes les listes). Celui-ci n'a d'effet que si « Nouveautés » est
+// activé : sinon sa ligne est cachée (hidden : ni vue, ni Tab, ni lecteur
+// d'écran), et sa valeur gardée revient avec elle. On ne fait que montrer ou
+// cacher la ligne, sans redessiner la section : le focus reste sur
+// l'interrupteur touché. Même interrupteur que les options
 // d'une liste (.switch, role="switch") : l'état se voit à la position du
 // bouton (jamais la couleur seule) et s'annonce par aria-checked ; sous le
 // titre, seulement la description, qui ne change pas (reliée au bouton par
@@ -94,15 +99,14 @@ async function resetPhone() {
 function newsSwitches(onLeave) {
   const rows = [
     ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
-    ['checks', 'Signaler aussi les cochés', 'Les articles ou éléments cochés ou décochés par les autres.'],
+    ['checks', 'Signaler les éléments cochés', 'Ce que les autres cochent ou décochent.'],
   ].map(([key, label, help]) => {
     const titleId = `news-${key}-title`;
     const helpId = `news-${key}-help`;
     const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
     const paint = () => {
       toggle.setAttribute('aria-checked', String(Boolean(app.data.news?.[key])));
-      // « Signaler aussi les cochés » n'a d'effet que si « Nouveautés » est activé
-      if (key === 'checks') row.classList.toggle('is-off', !app.data.news?.enabled);
+      if (key === 'checks') row.hidden = !app.data.news?.enabled;
     };
     toggle.addEventListener('click', () => {
       actions.setNewsSettings({ [key]: !app.data.news?.[key] });

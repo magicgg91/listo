@@ -788,10 +788,10 @@ export function createListService(ctx) {
       return {};
     },
 
-    // Réglages du compte : « Nouveautés » (enabled), « Signaler aussi les
+    // Réglages du compte : « Nouveautés » (enabled), « Signaler les éléments
     // cochés » (checks)
     'account.news'(user, op) {
-      for (const [value, label] of [[op.enabled, 'Nouveautés'], [op.checks, 'Signaler aussi les cochés']]) {
+      for (const [value, label] of [[op.enabled, 'Nouveautés'], [op.checks, 'Signaler les éléments cochés']]) {
         if (value !== undefined && typeof value !== 'boolean') throw new OpError(400, `Réglage « ${label} » invalide.`);
       }
       if (op.enabled === undefined && op.checks === undefined) throw new OpError(400, 'Rien à modifier.');

@@ -68,7 +68,7 @@ test('« Nouveautés » : description seule sous le titre, état annoncé par l\
   // Plus d'« Activé · » / « Désactivé · » : l'interrupteur montre déjà l'état
   for (const gone of ['Activé', 'Désactivé', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
   assert.ok(block.includes("'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'"));
-  assert.ok(block.includes("'Les articles ou éléments cochés ou décochés par les autres.'"));
+  assert.ok(block.includes("['checks', 'Signaler les éléments cochés', 'Ce que les autres cochent ou décochent.'],"));
   // Vrai interrupteur : nom = titre de la ligne, description reliée, état dans aria-checked
   assert.match(block, /h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId \}\)/);
   assert.match(block, /h\('span', \{ class: 'row__title', id: titleId \}, label\), h\('span', \{ class: 'row__sub', id: helpId \}, help\)/);

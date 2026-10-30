@@ -5,7 +5,7 @@ import { h, icon, replace } from './dom.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
@@ -41,7 +41,25 @@ export function onDataChange(listener) {
 }
 export function dataChanged() {
   for (const listener of [...listeners]) listener();
+  showAppBadge();
   persistSoon();
+}
+
+// Badge de l'icône de l'application installée : total des nouveautés des
+// listes hors sourdine (« Nouveautés » activé), effacé à 0. Essai
+// facultatif : sans l'API (navigateur, iPhone sans application installée…),
+// rien ne se passe.
+let badgeShown = null;
+function showAppBadge() {
+  const total = app.user ? newsTotal(app.data) : 0;
+  if (total === badgeShown) return;
+  badgeShown = total;
+  try {
+    const done = total > 0 ? navigator.setAppBadge?.(total) : navigator.clearAppBadge?.();
+    done?.catch?.(() => {});
+  } catch {
+    // API absente ou refusée : rien
+  }
 }
 
 // --- Copie gardée sur le téléphone (IndexedDB, voir localdb.js) ---
@@ -504,7 +522,7 @@ function show(route) {
     case 'newList': mount((onLeave) => renderListForm(null, onLeave)); break;
     case 'editList': mount((onLeave) => renderListForm(params.id, onLeave), { selectedListId: params.id }); break;
     case 'settings': mount(() => renderSettings()); break;
-    case 'account': mount(() => renderAccount()); break;
+    case 'account': mount((onLeave) => renderAccount(onLeave)); break;
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;

@@ -58,7 +58,7 @@ export function photoRoutes(ctx) {
       photos.remove(req.item.id);
       return res.status(404).json({ error: ITEM_NOT_FOUND });
     }
-    res.json({ item: service.setPhotoDate(req.item.id, service.nowIso()) });
+    res.json({ item: service.setPhotoDate(req.item.id, service.nowIso(), req.user) });
   });
 
   router.get('/items/:id/photo', findItem, (req, res) => {
@@ -68,7 +68,7 @@ export function photoRoutes(ctx) {
 
   router.delete('/items/:id/photo', findItem, mayEdit, (req, res) => {
     photos.remove(req.item.id);
-    res.json({ item: service.setPhotoDate(req.item.id, null) });
+    res.json({ item: service.setPhotoDate(req.item.id, null, req.user) });
   });
 
   return router;

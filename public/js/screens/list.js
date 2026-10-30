@@ -34,9 +34,9 @@ import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
-import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS } from '../format.js';
+import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, canEditList, listOptions, addModeOf, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
@@ -65,6 +65,40 @@ export function renderList(listId, onLeave) {
   // refermée par un toucher ailleurs ou par le défilement
   const swipes = createSwipeController(content);
   onLeave(() => swipes.stop());
+
+  // --- Nouveautés de cette visite (server/news.js) ---
+  // Les éléments ajoutés ou modifiés par les autres depuis ma dernière visite
+  // (et, en direct, pendant que la liste est à l'écran) restent en halo
+  // pendant toute la visite, jusqu'à ce que je touche leur ligne ; en
+  // quittant la liste, tout est oublié (le halo ne revient pas). Le repère
+  // « vu » monte dès que la liste est à l'écran, application visible
+  // (jamais en arrière-plan ni écran verrouillé) : la pastille de l'accueil
+  // disparaît, sur tous mes appareils.
+  const visitNews = new Map(); // id de l'élément -> { kind, by }
+  function takeNews() {
+    if (document.visibilityState !== 'visible' || !app.data.loaded || !app.data.lists.has(listId)) return false;
+    let added = false;
+    for (const entry of listNews(app.data, listId)?.items ?? []) {
+      const known = visitNews.get(entry.itemId);
+      if (known?.kind === entry.kind && known?.by === entry.by) continue;
+      visitNews.set(entry.itemId, { kind: entry.kind, by: entry.by });
+      added = true;
+    }
+    const upTo = seenTarget(app.data, listId);
+    // (une seule fois par repère : l'effet local arrive un instant après)
+    if (upTo !== null && upTo > sentSeen) {
+      sentSeen = upTo;
+      actions.markSeen(listId, upTo); // passe par la file d'attente
+    }
+    return added;
+  }
+  let sentSeen = -1;
+  // Ligne touchée : son halo s'en va (pour cette visite)
+  function forgetNews(itemId, row) {
+    if (!visitNews.delete(itemId)) return;
+    row.classList.remove('item--news');
+    row.querySelector('.item__news')?.remove();
+  }
 
   // --- Recherche dans la liste (design/recherche, variante B) ---
   // Champ masqué au-dessus du premier groupe, révélé en tirant la liste vers
@@ -246,10 +280,14 @@ export function renderList(listId, onLeave) {
 
   // --- Dessin de la liste ---
   const draw = () => {
+    // Groupes repliables du nouveau dessin. « Tout replier » n'est recalculé
+    // qu'après le dessin : le cacher un instant au début changeait la hauteur
+    // de la zone qui défile pendant le dessin (12 px), et la liste pouvait
+    // redescendre et laisser voir le bas du champ de recherche masqué.
     foldables = [];
-    drawFoldAll();
     if (!app.data.loaded) {
       search.show(h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'), { available: false });
+      drawFoldAll();
       return;
     }
     view = computeListView(app.data, listId, { sort: itemSort });
@@ -263,6 +301,7 @@ export function renderList(listId, onLeave) {
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, 'Retour à mes listes')), { available: false });
+      drawFoldAll();
       searchMeta.textContent = '';
       addbar.hidden = true;
       readOnlyBanner.hidden = true;
@@ -297,6 +336,7 @@ export function renderList(listId, onLeave) {
         h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
         h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')), { available: false });
+      drawFoldAll();
       searchMeta.textContent = '';
       return;
     }
@@ -405,9 +445,24 @@ export function renderList(listId, onLeave) {
   // reste la voie principale) : swipe.js. Le contenu de la ligne est dans
   // .swipe__slide, la zone rouge est un vrai bouton derrière.
   // Lecture seule : ligne simple, sans glissement ni zone rouge.
-  const itemRow = (item) => itemRowWith(item, metaOf(item));
+  const itemRow = (item) => itemRowWith(item, withNews(item, metaOf(item)));
+  // Nouveauté de cette visite : repère texte « Ajouté par Marie » (lu aussi
+  // par les lecteurs d'écran) en plus du halo : jamais la couleur seule
+  const withNews = (item, meta) => {
+    const mark = visitNews.get(item.id);
+    if (!mark) return meta;
+    const news = newsMark(mark.kind, mark.by);
+    return { ...meta, news, spoken: `${meta.spoken}, ${news.charAt(0).toLowerCase()}${news.slice(1)}` };
+  };
+  // Halo : fond doux de la ligne, statique ; il s'en va au toucher de la ligne
+  const markNews = (row, item, meta) => {
+    if (!meta.news) return row;
+    row.classList.add('item--news');
+    for (const type of ['pointerdown', 'click']) row.addEventListener(type, () => forgetNews(item.id, row), true);
+    return row;
+  };
   const itemRowWith = (item, meta) => {
-    if (!canEditList(view?.list)) return h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false));
+    if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false)), item, meta);
     const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta));
     const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
       swipes.close();
@@ -415,7 +470,7 @@ export function renderList(listId, onLeave) {
     } }, icon('trash'), h('span', {}, 'Supprimer'));
     const row = h('li', { class: `item swipe${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, slide, remove);
     swipes.attach(row, slide, remove);
-    return row;
+    return markNews(row, item, meta);
   };
   // canEdit = false (lecture seule) : case non interactive, comme sur la page
   // publique (cochée = remplie ET barrée), et la ligne ouvre la fiche à consulter
@@ -432,6 +487,7 @@ export function renderList(listId, onLeave) {
     h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? 'Modifier' : 'Voir'} ${item.name}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, itemName(item.name)),
+        meta.news ? h('span', { class: 'item__news' }, meta.news) : null,
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
         meta.chips.length ? h('span', { class: 'item__meta' }, meta.chips) : null),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
@@ -1273,7 +1329,17 @@ export function renderList(listId, onLeave) {
   // Synchronisation, modification : la liste est redessinée (et retriée),
   // jamais pendant qu'un doigt est posé dessus
   const idle = drawWhenIdle(content, draw);
+  // Nouveautés reçues (synchronisation, temps réel) : ajoutées au halo avant
+  // le dessin, et le repère monte (liste à l'écran seulement)
+  onLeave(onDataChange(() => takeNews()));
   onLeave(onDataChange(idle.request));
+  // Retour au premier plan (application, écran déverrouillé) : les nouveautés
+  // arrivées entre-temps sont prises, puis la liste est redessinée
+  const onVisible = () => {
+    if (document.visibilityState === 'visible' && takeNews()) draw();
+  };
+  document.addEventListener('visibilitychange', onVisible);
+  onLeave(() => document.removeEventListener('visibilitychange', onVisible));
   // Le propriétaire change mon droit pendant que la liste est ouverte (temps
   // réel ou synchronisation) : bascule tout de suite, sans recharger. Fiche,
   // choix du rayon, scan ou confirmation ouverts : refermés (ce qui n'était
@@ -1322,6 +1388,7 @@ export function renderList(listId, onLeave) {
     clearTimeout(midnight);
     document.removeEventListener('visibilitychange', newDay);
   });
+  takeNews(); // nouveautés depuis ma dernière visite (avant le premier dessin)
   draw();
   refreshData({ quiet: true }); // actualisation à l'ouverture
 

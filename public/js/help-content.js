@@ -101,6 +101,17 @@ export const SECTIONS = [
         ],
       },
       {
+        title: 'Nouveautés',
+        items: [
+          'Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.',
+          'Sur « Mes listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (« 30+ » après plus d\'un mois d\'absence).',
+          'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite : « Ajouté par Marie », « Modifié par Marie ». Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
+          'Menu ⋮ de la liste : « Ne plus me signaler cette liste », puis « Signaler cette liste » pour revenir. Chacun choisit pour lui, invité en lecture seule compris.',
+          '« Mon compte » › « Nouveautés » : désactive tout signalement ; « Signaler aussi les cochés » ajoute les articles cochés ou décochés par les autres.',
+          'Il n\'y a pas de notification : les nouveautés se voient en ouvrant Listo. Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total.',
+        ],
+      },
+      {
         title: 'Hors ligne et synchronisation',
         paragraphs: [
           'Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.',

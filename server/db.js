@@ -346,6 +346,46 @@ export const MIGRATIONS = [
   // 'quick' (« Rester sur la liste », comme avant) ou 'detail' (« Ouvrir la
   // fiche » de l'élément ajouté). Voir addModeMigration.
   (db) => addModeMigration(db),
+
+  // --- Migration 16 : nouveautés (journal d'activité et repères de lecture) ---
+  // list_events : ce qui s'est passé dans une liste (qui, quoi, sur quel
+  // élément, quand) ; jamais de texte d'élément, seulement des identifiants.
+  // Numéros croissants jamais réutilisés (AUTOINCREMENT) : un repère ne peut
+  // que monter. list_reads : pour chaque membre, le dernier événement vu
+  // (last_seen), « behind » quand des événements plus récents que ce repère
+  // ont été effacés par le nettoyage (30 jours, 500 par liste), et « muted »
+  // (« Ne plus me signaler cette liste »). Réglages du compte :
+  // news_enabled (« Nouveautés », activé) et news_checks (« Signaler aussi
+  // les cochés », désactivé). Le journal part vide : le repère de chaque
+  // membre est posé sur son dernier événement (aucun), personne ne voit
+  // l'historique comme nouveau.
+  `
+  CREATE TABLE list_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    list_id    TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    type       TEXT    NOT NULL CHECK (type IN ('add', 'update', 'check', 'uncheck', 'delete')),
+    item_id    TEXT    NOT NULL,
+    created_at TEXT    NOT NULL
+  );
+  CREATE INDEX list_events_list ON list_events(list_id, id);
+  CREATE INDEX list_events_date ON list_events(created_at);
+  CREATE TABLE list_reads (
+    list_id   TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_seen INTEGER NOT NULL DEFAULT 0,
+    behind    INTEGER NOT NULL DEFAULT 0 CHECK (behind IN (0, 1)),
+    muted     INTEGER NOT NULL DEFAULT 0 CHECK (muted IN (0, 1)),
+    PRIMARY KEY (list_id, user_id)
+  );
+  CREATE INDEX list_reads_user ON list_reads(user_id);
+  ALTER TABLE users ADD COLUMN news_enabled INTEGER NOT NULL DEFAULT 1 CHECK (news_enabled IN (0, 1));
+  ALTER TABLE users ADD COLUMN news_checks INTEGER NOT NULL DEFAULT 0 CHECK (news_checks IN (0, 1));
+  INSERT INTO list_reads (list_id, user_id, last_seen)
+    SELECT list_members.list_id, list_members.user_id,
+           COALESCE((SELECT MAX(id) FROM list_events WHERE list_events.list_id = list_members.list_id), 0)
+    FROM list_members;
+  `,
 ];
 
 // Migration 15 : colonne add_mode ('quick' ou 'detail', rien d'autre).

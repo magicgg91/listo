@@ -1,18 +1,20 @@
 // Écran « Mon compte » (ouvert depuis la carte du compte, en haut des
 // Réglages) : identité, puis les blocs Sécurité (mot de passe, double
-// authentification), Apparence (thème) et Ce téléphone (réinitialisation).
+// authentification), Apparence (thème), Nouveautés (deux interrupteurs du
+// compte) et Ce téléphone (réinitialisation).
 // Ces blocs étaient auparavant dans les Réglages : mêmes écrans, mêmes
 // confirmations, mêmes actions, simplement déplacés. Ouvert à tous les
 // comptes connectés ; chaque action reste vérifiée par le serveur.
 
 import { h, icon, avatar } from '../dom.js';
+import * as actions from '../actions.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount } from '../app.js';
+import { app, resetLocalCopy, pendingCount, onDataChange } from '../app.js';
 import { toast, confirmDialog } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
-export function renderAccount() {
+export function renderAccount(onLeave = () => {}) {
   const user = app.user;
 
   // Interrupteur de thème : écrit simplement data-theme sur <html> (effet
@@ -53,6 +55,8 @@ export function renderAccount() {
         twoFactorRow),
       h('h2', { class: 'section-title' }, 'Apparence'),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
+      h('h2', { class: 'section-title' }, 'Nouveautés'),
+      newsSwitches(onLeave),
       // Données gardées sur ce téléphone : remise à zéro si elles semblent
       // abîmées (tout est rechargé depuis le serveur)
       h('h2', { class: 'section-title' }, 'Ce téléphone'),
@@ -77,4 +81,36 @@ async function resetPhone() {
   if (!ok) return;
   await resetLocalCopy();
   toast('Données rechargées depuis le serveur', { low: true });
+}
+
+// Nouveautés (réglages du compte, valables sur tous mes appareils) :
+// « Nouveautés » (activé par défaut : pastilles sur « Mes listes » et halo
+// sur les éléments ajoutés ou modifiés par les autres) et « Signaler aussi
+// les cochés » (désactivé par défaut). Même interrupteur que les options
+// d'une liste (.switch, role="switch", état écrit : jamais la couleur seule).
+// Passent par la file d'attente : hors ligne compris.
+function newsSwitches(onLeave) {
+  const rows = [
+    ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
+    ['checks', 'Signaler aussi les cochés', 'Les articles ou éléments cochés ou décochés par les autres.'],
+  ].map(([key, label, help]) => {
+    const state = h('span', { class: 'row__sub' });
+    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': label });
+    const paint = () => {
+      const on = Boolean(app.data.news?.[key]);
+      toggle.setAttribute('aria-checked', String(on));
+      state.textContent = `${on ? 'Activé' : 'Désactivé'} · ${help}`;
+      // « Signaler aussi les cochés » n'a d'effet que si « Nouveautés » est activé
+      if (key === 'checks') row.classList.toggle('is-off', !app.data.news?.enabled);
+    };
+    toggle.addEventListener('click', () => {
+      actions.setNewsSettings({ [key]: !app.data.news?.[key] });
+    });
+    const row = h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, label), state), toggle);
+    return { row, paint };
+  });
+  const paintAll = () => rows.forEach((r) => r.paint());
+  paintAll();
+  onLeave(onDataChange(paintAll)); // changé sur un autre appareil : suit
+  return h('div', { class: 'group list-options' }, rows.map((r) => r.row));
 }

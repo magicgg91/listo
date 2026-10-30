@@ -27,9 +27,14 @@ export function emptyState() {
     aisles: [],
     history: [],
     users: [],              // comptes actifs, pour choisir avec qui partager
+    news: emptyNews(),      // mes nouveautés (voir « Nouveautés » plus bas)
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
   };
 }
+
+// Nouveautés avant la première synchronisation : rien à signaler (réglages
+// par défaut du compte : « Nouveautés » activé, cochés non signalés)
+const emptyNews = () => ({ enabled: true, checks: false, lists: {} });
 
 // --- Copie gardée sur le téléphone (IndexedDB) ---
 
@@ -49,6 +54,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     aisles: state.aisles,
     history: state.history,
     users: state.users,
+    news: state.news,
   };
 }
 
@@ -67,6 +73,7 @@ export function fromSnapshot(snapshot) {
     state.aisles = [...snapshot.aisles];
     state.history = [...snapshot.history];
     state.users = [...(snapshot.users ?? [])];
+    state.news = snapshot.news ?? emptyNews();
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -117,6 +124,7 @@ export function loadSync(state, data) {
   state.aisles = data.aisles;
   state.history = data.history;
   if (data.users) state.users = data.users;
+  if (data.news) state.news = data.news;
   state.loaded = true;
   refreshListReferences(state);
   return state;
@@ -143,6 +151,8 @@ export function mergeSync(state, data) {
   state.stores = data.stores;
   state.aisles = data.aisles;
   if (data.users) state.users = data.users;
+  // Nouveautés : envoyées en entier à chaque synchronisation
+  if (data.news) state.news = data.news;
   refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
@@ -214,6 +224,25 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     }
     case 'list.delete':
       removeList(state, op.listId);
+      return;
+    // Nouveautés (propres à chaque personne) : effet local tout de suite,
+    // hors ligne compris ; le serveur fait de même à l'envoi
+    case 'list.seen': {
+      const news = state.news.lists[op.listId];
+      if (!news || !Number.isSafeInteger(op.upTo)) return;
+      news.seen = Math.max(news.seen ?? 0, Math.min(op.upTo, news.lastEventId ?? op.upTo));
+      if (op.upTo >= (news.lastEventId ?? 0)) state.news.lists[op.listId] = { ...news, count: 0, behind: false, items: [] };
+      return;
+    }
+    case 'list.mute': {
+      const news = state.news.lists[op.listId];
+      if (!news || typeof op.muted !== 'boolean') return;
+      state.news.lists[op.listId] = op.muted ? { ...news, muted: true, count: 0, behind: false, items: [] } : { ...news, muted: false };
+      return;
+    }
+    case 'account.news':
+      if (typeof op.enabled === 'boolean') state.news.enabled = op.enabled;
+      if (typeof op.checks === 'boolean') state.news.checks = op.checks;
       return;
     case 'list.removeChecked':
     case 'list.clearChecked': // ancien nom (opération restée en file d'attente)
@@ -507,6 +536,47 @@ export function sortSummaries(lists, sort = DEFAULT_LIST_SORT) {
 export function canEditList(list) {
   return Boolean(list) && list.canEdit !== false;
 }
+
+// --- Nouveautés (server/news.js) ---
+// Ce que les autres membres ont ajouté ou modifié depuis ma dernière visite,
+// calculé par le serveur et gardé tel quel dans la copie locale.
+
+// Nouveautés d'une liste à montrer, ou null : « Nouveautés » désactivé,
+// liste en sourdine, ou rien de neuf
+export function listNews(state, listId) {
+  const news = state.news?.lists?.[listId];
+  if (!state.news?.enabled || !news || news.muted) return null;
+  if (!news.count && !news.behind) return null;
+  return news;
+}
+
+// Texte de la pastille de « Mes listes » : « 3 », « 30+ » (repère plus ancien
+// que le journal gardé, 30 jours), ou « » (rien)
+export function newsBadge(state, listId) {
+  const news = listNews(state, listId);
+  if (!news) return '';
+  return news.behind ? '30+' : String(news.count);
+}
+
+// Total pour le badge de l'icône de l'application (listes hors sourdine)
+export function newsTotal(state) {
+  let total = 0;
+  for (const listId of state.listIds) {
+    const news = listNews(state, listId);
+    if (news) total += news.behind ? Math.max(30, news.count) : news.count;
+  }
+  return total;
+}
+
+// Repère à envoyer (« vu ») : le dernier événement de la liste, s'il est
+// plus récent que mon repère ; sinon null (rien à envoyer)
+export function seenTarget(state, listId) {
+  const news = state.news?.lists?.[listId];
+  if (!news) return null;
+  return (news.lastEventId ?? 0) > (news.seen ?? 0) || news.count > 0 || news.behind ? news.lastEventId ?? 0 : null;
+}
+
+export const isListMuted = (state, listId) => Boolean(state.news?.lists?.[listId]?.muted);
 
 // « Après l'ajout » : 'quick' (rester sur la liste) ou 'detail' (ouvrir la
 // fiche de l'élément ajouté). Sans choix, une nouvelle liste de courses

@@ -23,10 +23,10 @@
 
 import * as actions from '../actions.js';
 import { post, errorMessage } from '../api.js';
-import { refreshData } from '../app.js';
+import { app, refreshData } from '../app.js';
 import { h, field, errorNote, LABEL_INPUT } from '../dom.js';
 import { navigate } from '../router.js';
-import { canEditList } from '../store.js';
+import { canEditList, isListMuted } from '../store.js';
 import { confirmDialog, openSheet, toast } from '../ui.js';
 import { itemWords } from '../words.js';
 import { copyName } from '../format.js';
@@ -36,6 +36,10 @@ import { openShareSheet } from './share.js';
 // suppression ou le départ (la liste ouverte retourne alors à « Mes listes »).
 export function listActions(list, { onDeleted } = {}) {
   const duplicate = { icon: 'copy', label: 'Dupliquer la liste', onSelect: () => openDuplicateSheet(list) };
+  // Nouveautés : « Ne plus me signaler cette liste » / « Signaler cette
+  // liste », pour chaque membre, invité en lecture seule compris (ce n'est
+  // pas une modification de la liste)
+  const mute = newsMuteAction(list);
   if (!list.isOwner) {
     const canEdit = canEditList(list);
     const leave = { icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async () => {
@@ -49,16 +53,31 @@ export function listActions(list, { onDeleted } = {}) {
       onDeleted();
       setTimeout(() => toast(message, { low: true }), 400);
     } };
-    return canEdit ? [duplicate, leave] : [leave];
+    return canEdit ? [duplicate, mute, leave] : [mute, leave];
   }
   return [
     { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
     duplicate,
     { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
+    mute,
     { icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
       if (await deleteListWithConfirm(list)) onDeleted?.();
     } },
   ];
+}
+
+// Sourdine des nouveautés d'une liste, pour moi seulement (sur tous mes
+// appareils) : ni pastille, ni halo, ni compte dans le badge de l'icône
+function newsMuteAction(list) {
+  return isListMuted(app.data, list.id)
+    ? { icon: 'eye', label: 'Signaler cette liste', onSelect: () => {
+      actions.setListMuted(list.id, false);
+      toast('Les nouveautés de cette liste vous sont de nouveau signalées', { low: true });
+    } }
+    : { icon: 'eye-off', label: 'Ne plus me signaler cette liste', onSelect: () => {
+      actions.setListMuted(list.id, true);
+      toast('Les nouveautés de cette liste ne vous seront plus signalées', { low: true });
+    } };
 }
 
 // Renvoie true si la liste a été supprimée, false si la confirmation a été

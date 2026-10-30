@@ -112,6 +112,16 @@ export async function createList({ name, categoryId, storeId, priorityEnabled = 
 }
 
 export const updateList = (listId, fields) => perform({ type: 'list.update', listId, ...fields });
+
+// --- Nouveautés (propres à chaque personne, tout membre de la liste) ---
+// Passent par la file d'attente comme le reste : hors ligne compris
+
+// « Vu » : mon repère monte jusqu'au dernier événement connu de la liste
+export const markSeen = (listId, upTo) => perform({ type: 'list.seen', listId, upTo });
+// « Ne plus me signaler cette liste » / « Signaler cette liste »
+export const setListMuted = (listId, muted) => perform({ type: 'list.mute', listId, muted });
+// Réglages du compte : « Nouveautés », « Signaler aussi les cochés »
+export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 
 // --- Photos ---

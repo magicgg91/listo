@@ -25,6 +25,7 @@
 // Les dates (created_at, updated_at, deleted_at) sont toujours posées ici,
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
+import { createNewsService } from './news.js';
 import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
@@ -144,6 +145,8 @@ const note = (value) => optionalText(value, 500, 'Note');
 
 export function createListService(ctx) {
   const { db } = ctx;
+  // Nouveautés : journal d'activité et repères de lecture (server/news.js)
+  const news = ctx.news ?? (ctx.news = createNewsService(ctx));
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -493,9 +496,16 @@ export function createListService(ctx) {
   // (temps réel) seulement après l'écriture réussie en base.
   const touched = new Set();
   const changed = (listId) => touched.add(listId);
-  function notifyTouched() {
+  // Changements qui ne regardent que la personne connectée (repère de
+  // lecture, sourdine, réglages des nouveautés) : seuls ses propres appareils
+  // sont prévenus (listId null : aucun en particulier)
+  const touchedMine = new Set();
+  const changedForMe = (listId) => touchedMine.add(listId);
+  function notifyTouched(user) {
     for (const listId of touched) ctx.events?.notifyList(listId);
+    for (const listId of touchedMine) ctx.events?.notifyUsers([user.id], listId);
     touched.clear();
+    touchedMine.clear();
   }
 
   // --- Les opérations ---
@@ -525,6 +535,7 @@ export function createListService(ctx) {
       db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         .run(id, name, category.id, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
+      news.startReading(id, user.id);
       changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
@@ -582,6 +593,7 @@ export function createListService(ctx) {
       const list = listForOwner(user, op.listId);
       const now = nowIso();
       db.prepare('UPDATE lists SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, list.id);
+      news.dropList(list.id); // son journal disparaît avec elle
       changed(list.id);
       ctx.audit('liste_supprimee', { utilisateur: user.username, liste: list.id });
       // Son lien public s'arrête avec elle
@@ -597,8 +609,10 @@ export function createListService(ctx) {
     'list.removeChecked'(user, op) {
       const list = listForEditor(user, op.listId);
       const now = nowIso();
+      const ids = db.prepare('SELECT id FROM items WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL').pluck().all(list.id);
       const { changes } = db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(now, now, list.id);
+      news.log(list.id, user.id, 'delete', ids);
       if (changes) changed(list.id);
       return { removed: changes };
     },
@@ -616,8 +630,10 @@ export function createListService(ctx) {
     // serveur reçoit l'opération. Tout membre de la liste peut le faire.
     'list.uncheckAll'(user, op) {
       const list = listForEditor(user, op.listId);
+      const ids = db.prepare('SELECT id FROM items WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL').pluck().all(list.id);
       const { changes } = db.prepare('UPDATE items SET checked = 0, checked_at = NULL, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(nowIso(), list.id);
+      news.log(list.id, user.id, 'uncheck', ids);
       if (changes) changed(list.id);
       return { reopened: changes };
     },
@@ -649,6 +665,7 @@ export function createListService(ctx) {
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (list.is_shopping === 1) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
+      news.log(list.id, user.id, 'add', [id]);
       changed(list.id);
       return { item: describeItem(q.item.get(id)) };
     },
@@ -706,6 +723,7 @@ export function createListService(ctx) {
       } else if (item.is_shopping === 1 && (name !== item.name || aisleId !== item.aisle_id)) {
         remember(name, { storeId: item.list_store_id, aisleId, count: 0 });
       }
+      news.log(item.list_id, user.id, 'update', [item.id]);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
@@ -719,6 +737,7 @@ export function createListService(ctx) {
       const now = nowIso();
       db.prepare('UPDATE items SET checked = ?, checked_at = CASE WHEN ? = 1 THEN COALESCE(checked_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?')
         .run(op.checked ? 1 : 0, op.checked ? 1 : 0, now, now, item.id);
+      news.log(item.list_id, user.id, op.checked ? 'check' : 'uncheck', [item.id]);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
@@ -729,6 +748,7 @@ export function createListService(ctx) {
       const item = itemForEditor(user, op.itemId);
       const now = nowIso();
       db.prepare('UPDATE items SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, item.id);
+      news.log(item.list_id, user.id, 'delete', [item.id]);
       changed(item.list_id);
       return {};
     },
@@ -739,9 +759,44 @@ export function createListService(ctx) {
       const item = q.deletedItemForMember.get({ userId: user.id, itemId: requireUuid(op.itemId) });
       if (!item) throw new OpError(404, ITEM_NOT_FOUND);
       requireEdit(user, item);
+      // « Annuler » une suppression : rien dans le journal (ni nouveauté, ni
+      // suppression ; décision du 30 octobre 2026)
       db.prepare('UPDATE items SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(nowIso(), item.id);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
+    },
+
+    // --- Nouveautés (server/news.js) : propres à chaque personne ---
+    // Tout membre de la liste, invité en lecture seule compris (ce n'est pas
+    // une modification de la liste) ; non-membre : « Liste introuvable ».
+
+    // « Vu » : mon repère de lecture monte jusqu'à upTo (numéro du dernier
+    // événement connu du téléphone) ; jamais vers le bas, rejouable sans
+    // effet (file d'attente hors ligne)
+    'list.seen'(user, op) {
+      const list = listForMember(user, op.listId);
+      if (!Number.isSafeInteger(op.upTo) || op.upTo < 0) throw new OpError(400, 'Repère de lecture invalide.');
+      if (news.markSeen(list.id, user.id, op.upTo)) changedForMe(list.id);
+      return {};
+    },
+
+    // « Ne plus me signaler cette liste » (muted: true) / « Signaler cette liste »
+    'list.mute'(user, op) {
+      const list = listForMember(user, op.listId);
+      if (typeof op.muted !== 'boolean') throw new OpError(400, 'Réglage « Ne plus me signaler cette liste » invalide.');
+      if (news.setMuted(list.id, user.id, op.muted)) changedForMe(list.id);
+      return {};
+    },
+
+    // Réglages du compte : « Nouveautés » (enabled), « Signaler aussi les
+    // cochés » (checks)
+    'account.news'(user, op) {
+      for (const [value, label] of [[op.enabled, 'Nouveautés'], [op.checks, 'Signaler aussi les cochés']]) {
+        if (value !== undefined && typeof value !== 'boolean') throw new OpError(400, `Réglage « ${label} » invalide.`);
+      }
+      if (op.enabled === undefined && op.checks === undefined) throw new OpError(400, 'Rien à modifier.');
+      if (news.setSettings(user.id, { enabled: op.enabled, checks: op.checks })) changedForMe(null);
+      return {};
     },
   };
 
@@ -769,6 +824,7 @@ export function createListService(ctx) {
     const handler = Object.hasOwn(handlers, op.type) ? handlers[op.type] : null;
     let result;
     touched.clear();
+    touchedMine.clear();
     try {
       result = db.transaction(() => {
         if (!handler) throw new OpError(400, "Type d'opération inconnu.");
@@ -776,9 +832,10 @@ export function createListService(ctx) {
         saveApplied.run(opId, user.id, JSON.stringify(value), nowIso());
         return value;
       })();
-      notifyTouched(); // écriture réussie : les membres sont prévenus
+      notifyTouched(user); // écriture réussie : les membres sont prévenus
     } catch (err) {
       touched.clear(); // refus ou panne : rien n'a changé, personne n'est prévenu
+      touchedMine.clear();
       if (!(err instanceof OpError)) throw err; // vraie panne : erreur 500
       // Un refus est lui aussi mémorisé : renvoyée, l'opération donnera le
       // même refus (sans rien modifier).
@@ -871,6 +928,8 @@ export function createListService(ctx) {
       // Comptes actifs (choix des personnes avec qui partager), gardés sur le téléphone pour
       // ouvrir le formulaire de liste sans réseau
       users: activeUsers(),
+      // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
+      news: news.newsFor(user),
     };
   }
 
@@ -915,8 +974,14 @@ export function createListService(ctx) {
     const changedRights = [...rights].filter(([id, value]) => current.has(id) && before.get(id) !== value);
     db.transaction(() => {
       // Sans droit précisé : lecture seule (valeur par défaut de la base)
-      for (const id of added) db.prepare('INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, ?)').run(list.id, id, rights.get(id) ?? 'lecture');
-      for (const id of removed) db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, id);
+      for (const id of added) {
+        db.prepare('INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, ?)').run(list.id, id, rights.get(id) ?? 'lecture');
+        news.startReading(list.id, id); // son repère démarre à son arrivée
+      }
+      for (const id of removed) {
+        db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, id);
+        news.stopReading(list.id, id);
+      }
       for (const [id, value] of changedRights) db.prepare('UPDATE list_members SET access = ? WHERE list_id = ? AND user_id = ?').run(value, list.id, id);
       // La liste « change » : les membres l'apprendront à leur synchronisation
       // (et chacun son droit, dans la description de la liste)
@@ -945,6 +1010,7 @@ export function createListService(ctx) {
     if (list.owner_id === user.id) throw new OpError(403, OWNER_CANNOT_LEAVE);
     db.transaction(() => {
       db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, user.id);
+      news.stopReading(list.id, user.id);
       db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
@@ -978,6 +1044,7 @@ export function createListService(ctx) {
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, source.add_mode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
+      news.startReading(id, user.id);
       const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
       for (const item of items) {
@@ -1049,9 +1116,12 @@ export function createListService(ctx) {
 
   // Note la date de la photo (ou son retrait : null). updated_at change : les
   // autres téléphones l'apprennent à leur synchronisation.
-  function setPhotoDate(itemId, photoAt) {
+  // user : la personne qui ajoute, change ou retire la photo (journal des
+  // nouveautés : une modification)
+  function setPhotoDate(itemId, photoAt, user) {
     db.prepare('UPDATE items SET photo_at = ?, updated_at = ? WHERE id = ?').run(photoAt, nowIso(), itemId);
     const item = q.item.get(itemId);
+    if (user) news.log(item.list_id, user.id, 'update', [item.id]);
     ctx.events?.notifyList(item.list_id); // temps réel, après l'écriture
     return describeItem(item);
   }
@@ -1064,7 +1134,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, leaveList, purgeDeleted, activeUsers,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, leaveList, purgeDeleted, activeUsers, news,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

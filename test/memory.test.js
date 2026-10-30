@@ -186,16 +186,16 @@ test('migration 8 : retire les noms venus seulement des autres listes, garde les
 
 test('migration 8 : appliquée une seule fois par le mécanisme des migrations numérotées', () => {
   const db = oldData();
-  assert.equal(schemaVersion(db), 15); // toutes les migrations, jusqu'à la 15 (« Après l'ajout »)
+  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
   // Comme une base restée en version 7 (avant les migrations 8 à 11) :
   // la migration 8 s'applique au démarrage
-  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode');
+  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 7');
   migrate(db);
-  assert.equal(schemaVersion(db), 15); // toutes les migrations, jusqu'à la 15 (« Après l'ajout »)
+  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
   assert.deepEqual(keys(db), ['ampoules', 'chips', 'comte', 'lait', 'olives', 'pain']);
   // Un second démarrage ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 15); // toutes les migrations, jusqu'à la 15 (« Après l'ajout »)
+  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
   db.close();
 });

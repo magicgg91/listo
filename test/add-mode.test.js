@@ -61,7 +61,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 14, sans la colonne
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN add_mode');
+  db.exec('ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 14');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   const add = db.prepare('INSERT INTO lists (id, name, category_id, owner_id, priority_enabled, due_enabled, deleted_at) VALUES (?, ?, ?, 1, ?, ?, ?)');
@@ -82,7 +82,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 15);
+  assert.equal(schemaVersion(db), 16);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
   assert.deepEqual(after.map(({ add_mode: mode, ...rest }) => rest), before, 'rien d\'autre ne change');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
@@ -100,7 +100,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 15);
+  assert.equal(schemaVersion(db), 16);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();

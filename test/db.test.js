@@ -14,6 +14,7 @@ import { tempDir } from './helpers.js';
 const TABLES = [
   'users', 'recovery_codes', 'sessions', 'categories', 'stores', 'store_members',
   'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops', 'public_shares',
+  'list_events', 'list_reads', // nouveautés (migration 16)
 ];
 
 // Base en mémoire avec un compte, une catégorie et une liste, pour les tests
@@ -26,9 +27,11 @@ function sampleDb() {
   return db;
 }
 
-test('les treize tables du cahier des charges sont créées', () => {
+test('les quinze tables du cahier des charges sont créées', () => {
   const db = openDatabase(':memory:');
-  const names = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").pluck().all();
+  // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
+  // du journal des nouveautés, AUTOINCREMENT)
+  const names = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").pluck().all();
   for (const table of TABLES) assert.ok(names.includes(table), `table ${table} manquante`);
   assert.equal(names.length, TABLES.length);
   assert.equal(schemaVersion(db), MIGRATIONS.length);

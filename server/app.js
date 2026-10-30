@@ -283,6 +283,7 @@ export function createApp({
   const cleanup = () => {
     purgeExpiredSessions(ctx);
     ctx.lists.purgeDeleted();
+    ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();
     ctx.duplicates.prune();

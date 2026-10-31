@@ -18,6 +18,8 @@ export const ROUTES = [
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   { name: 'help', path: '/aide' },
   { name: 'admin', path: '/administration/:tab' },
+  // Écran « Autoriser Claude » (autorisation OAuth, voir claude-consent.js)
+  { name: 'authorize', path: '/autoriser/:id' },
 ];
 
 // Écran affiché quand l'adresse est vide ou inconnue

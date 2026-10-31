@@ -394,3 +394,12 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 - Mot de passe (`passwordInput`, avec l'œil) et, si la 2FA est activée, le champ « Code » ; erreurs en `.form-error`.
 - `.footer` : la phrase « Vous venez de lancer cette connexion depuis Claude ? Si ce n'est pas le cas, refusez. » (texte simple, sans icône), puis `.btn--primary` « Autoriser » et `.btn--secondary` « Refuser » (44 px et plus).
 - Seul ajout dans `public/css/app.css` : `.card--clip { overflow: hidden; }`, pour que le fond du choix actif ne dépasse pas des coins arrondis de la carte.
+
+## Ajout : écran « Connexions Claude »
+
+Écran de Mon compte (`#/reglages/claude`) où chaque personne voit et déconnecte ses connexions Claude. Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**.
+
+- Texte d'introduction, puis section « Adresse à saisir dans Claude » : une `.group` avec l'adresse sur sa propre ligne (elle peut passer à la ligne) et `.btn--secondary.btn--block` « Copier l'adresse », puis une `.row` vers l'aide « Utiliser Listo avec Claude ».
+- Section « Connexions (N) » : une `.row` par connexion (`#i-shield`) ; dans `.row__body` : l'hôte de l'application, le nom (« nom donné par l'application, non vérifié » ou « nom fourni par l'application »), « Réponse envoyée à : … », le droit en `.chip` (`.chip--accent` pour « Lecture et ajout »), les listes, la date de connexion, la dernière utilisation (« jamais »), puis `.btn--danger-outline.btn--sm` « Déconnecter » (44 px, `aria-label` « Déconnecter <hôte> »).
+- En bas, `.btn--danger.btn--block` « Tout déconnecter ». Confirmations : la fenêtre `.dialog` habituelle (`confirmDialog`). Aucune connexion, hors ligne : `.empty`.
+- Ajouts dans `public/css/app.css`, mise en place seulement : `.claude-connections__intro`, `.claude-connections__address`, `.claude-connections__url`, `.claude-connections__chips`, `.claude-connections__button`, `.claude-connections__all`, et `.claude-connections .row { align-items: flex-start; }`.

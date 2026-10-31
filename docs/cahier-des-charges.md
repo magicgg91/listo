@@ -13,7 +13,7 @@ Usage visé : deux personnes d'un même foyer au quotidien (l'administrateur et 
 **Principes directeurs**
 
 - **Mobile-first** : chaque écran est conçu d'abord pour un téléphone tenu à une main, dans un magasin. La version ordinateur est une adaptation du même écran.
-- **Gratuit et privé** : aucune pub, aucun service tiers, aucune donnée hors du serveur. Exceptions voulues et contrôlées : le lien public en lecture seule qu'un propriétaire peut créer pour une de ses listes ; la vérification de mise à jour (le serveur interroge GitHub) et le mode scan (le serveur interroge Open Food Facts), toutes deux désactivables.
+- **Gratuit et privé** : aucune pub, aucun service tiers, aucune donnée hors du serveur. Exceptions voulues et contrôlées : le lien public en lecture seule qu'un propriétaire peut créer pour une de ses listes ; la vérification de mise à jour (le serveur interroge GitHub) et le mode scan (le serveur interroge Open Food Facts), toutes deux désactivables ; l'accès depuis Claude (décision du 31 octobre 2026), désactivé par défaut (LISTO_MCP), réservé au compte qui l'autorise et limité aux listes qu'il choisit : le contenu de ces listes part alors chez Anthropic quand on interroge Claude, et le serveur lit le document d'identification de Claude sur claude.ai.
 - **Simple à comprendre** : HTML, CSS et JavaScript, sans framework. Tout choix plus complexe est justifié dans la section Architecture technique.
 - **Fiable en magasin** : la liste reste utilisable sans réseau et se resynchronise toute seule.
 - **Un seul conteneur Docker**, derrière Nginx Proxy Manager (HTTPS déjà géré par l'administrateur).
@@ -177,6 +177,7 @@ Le plus important reste l'écran d'une liste : il doit permettre d'ajouter et de
 | Aide | Barre du haut « Aide » avec retour vers les Réglages (adresse #/aide). « Qui peut quoi » (actions × Propriétaire, Contributeur, Invité, Admin, avec coche ou croix ET texte), puis cinq sections repliables : Pour tout le monde, Propriétaire d'une liste, Contributeur, Invité, Administrateur (cette dernière seulement pour un Admin). Tout le texte est dans public/js/help-content.js. Disponible hors ligne. | Lire, replier ou déplier une section |
 | Administration | Trois onglets : Comptes, Catégories, Courses ; « Courses » propose Magasins, Rayons et Articles (voir Fonctionnalités). Le dernier choix est retrouvé en revenant sur « Courses ». | Gérer les comptes et les données de référence |
 | Partage par lien | Feuille ouverte depuis le menu ⋮ de la liste (propriétaire) : état du lien (actif, expire le…, protégé ou non), mot de passe généré affiché une seule fois, durée en heures, en jours ou illimitée. | Créer, changer la durée, régénérer ou retirer le mot de passe, copier le lien, arrêter le partage |
+| Autoriser Claude | Écran de l'application (#/autoriser/<id>), ouvert par Claude via /oauth/authorize, sans panneau latéral, LISTO_MCP=on seulement. Connexion d'abord si besoin (avec la 2FA). « Ne continuez que si vous venez de lancer la connexion depuis Claude » ; application (hôte, nom « fourni par l'application » s'il y en a un), hôte de retour bien visible (« claude.ai », ou « une application sur cet ordinateur (localhost) » avec un avertissement rouge), compte ; accès « Lecture seule » (présélectionnée) ou « Lecture et ajout » (si l'application l'a demandé) ; « Toutes mes listes » (par défaut) ou « Certaines listes » (cases à cocher) ; mot de passe (et code 2FA) redemandés. Demande valable 10 minutes. | Autoriser, refuser |
 | Page publique | Page ouverte par le lien, sans compte : saisie du mot de passe si le lien est protégé, nom de la liste, articles en lecture seule avec photos ; toucher un article ouvre sa fiche en lecture seule (tous ses détails, sans champ ni bouton qui écrit). Lien expiré ou inconnu : message neutre. | Consulter, ouvrir la fiche d'un article, agrandir une photo, actualiser |
 
 **Règles mobile-first**
@@ -195,7 +196,7 @@ Le plus important reste l'écran d'une liste : il doit permettre d'ajouter et de
 
 ## Modèle de données
 
-Quinze tables SQLite (avec recovery_codes, qui garde les codes de secours du 2FA, et les deux tables des nouveautés). Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant. Le schéma évolue par migrations numérotées (16 aujourd'hui), appliquées seules au démarrage ; la liste de celles qui ont suivi les onze étapes est dans [docs/exploitation.md](exploitation.md#9-mettre-à-jour-listo).
+Vingt et une tables SQLite (avec recovery_codes, qui garde les codes de secours du 2FA, les deux tables des nouveautés et les six de l'autorisation pour Claude). Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant. Le schéma évolue par migrations numérotées (17 aujourd'hui), appliquées seules au démarrage ; la liste de celles qui ont suivi les onze étapes est dans [docs/exploitation.md](exploitation.md#9-mettre-à-jour-listo).
 
 | Table | Champs principaux | Remarques |
 | --- | --- | --- |
@@ -212,13 +213,19 @@ Quinze tables SQLite (avec recovery_codes, qui garde les codes de secours du 2FA
 | applied_ops | id (UUID de l'opération), user_id, result, applied_at | Opérations déjà appliquées : un renvoi après une coupure retrouve son résultat au lieu d'être appliqué deux fois. Nettoyée après 30 jours. |
 | list_events | id (croissant), list_id, user_id (vide si le compte a disparu), type ('add', 'update', 'check', 'uncheck', 'delete', contrainte CHECK), item_id, created_at | Journal des nouveautés (migration 16) : identifiants seulement, jamais le texte d'un élément. Effacé avec la liste ; nettoyé après 30 jours, 500 événements au plus par liste. |
 | list_reads | list_id, user_id, last_seen, behind, muted | Repère de lecture de chaque membre (dernier événement vu, qui ne fait que monter) ; behind = 1 quand le journal gardé ne remonte plus jusqu'au repère (« 30+ ») ; muted = 1 pour « Ne plus me signaler cette liste ». Clé composée ; posé à l'arrivée d'un membre (création, partage, copie) sur la fin du journal ; retiré avec le membre. |
+| oauth_clients | client_id, kind ('cimd' ou 'dcr'), client_name, redirect_uris (JSON), created_ip, created_at, fetched_at, last_used_at | Applications qui demandent l'accès pour Claude (migration 17). CIMD : document lu sur claude.ai ou claude.com seulement (1 fois par heure au plus) ; DCR : enregistrement automatique, 50 au plus. Adresses de retour : celles de Claude seulement. Les applications inutilisées sont effacées par le nettoyage. |
+| oauth_requests | id (128 bits), client_id, redirect_uri, state, code_challenge, resource, scope, created_at, expires_at | Demande d'autorisation en attente de l'accord de la personne : 10 minutes, effacée à l'accord ou au refus. |
+| oauth_grants | id, user_id, client_id, app_key, client_host, redirect_host, scope ('lists:read' ou 'lists:read lists:write'), all_lists, created_at, last_used_at, revoked_at | « Connexion » accordée par un compte à une application ; 5 actives au plus par compte ; libérée après 30 jours sans usage ; effacée 30 jours après sa révocation. |
+| oauth_grant_lists | grant_id, list_id | Listes choisies quand la connexion n'ouvre pas « Toutes mes listes ». Effacées avec la liste ou la connexion. |
+| oauth_codes | code_hash, grant_id, client_id, redirect_uri, code_challenge, resource, scope, expires_at, used_at | Code d'autorisation : empreinte SHA-256 seulement, 60 s, usage unique. |
+| oauth_tokens | token_hash, grant_id, kind ('access' ou 'refresh'), resource, scope, created_at, expires_at, used_at, revoked_at | Jetons : empreinte SHA-256 seulement (256 bits aléatoires, jamais en clair ni au journal). Accès : 1 heure ; renouvellement : 30 jours glissants, remplacé à chaque usage. |
 | public_shares | id, list_id, token_hash, token_sealed (chiffré), password_hash (facultatif), expires_at (vide = illimité), created_by, created_at, revoked_at | Un seul lien actif par liste. Le jeton n'est jamais stocké en clair : son empreinte retrouve le lien, sa version chiffrée le réaffiche au propriétaire. Le mot de passe est haché (scrypt). |
 
 **Règles**
 
 - Les horodatages updated_at et deleted_at sont posés par le serveur, jamais par le téléphone, pour ne pas dépendre de l'heure du téléphone.
 - Un téléphone demande « tout ce qui a changé depuis tel instant » : le serveur renvoie les lignes de ses listes dont updated_at est plus récent, suppressions comprises.
-- Un nettoyage périodique supprime définitivement les lignes marquées supprimées depuis plus de 30 jours (avec les fichiers photo des articles concernés), les opérations appliquées de plus de 30 jours, les liens publics expirés ou arrêtés depuis plus de 30 jours et les événements du journal des nouveautés de plus de 30 jours (500 au plus par liste).
+- Un nettoyage périodique supprime définitivement les lignes marquées supprimées depuis plus de 30 jours (avec les fichiers photo des articles concernés), les opérations appliquées de plus de 30 jours, les liens publics expirés ou arrêtés depuis plus de 30 jours, les événements du journal des nouveautés de plus de 30 jours (500 au plus par liste), et, pour l'autorisation de Claude, les demandes, codes et jetons expirés, les connexions inutilisées depuis 30 jours (libérées) et les applications sans connexion.
 - name_normalized = nom en minuscules, sans accents ni espaces superflus, pour que « Lait », « lait » et « Lait  » ne fassent qu'une entrée d'historique.
 - Historique par magasin : pour un article ajouté dans une liste à magasin simple, on cherche d'abord la ligne de ce magasin, sinon la ligne générale (sans magasin). Dans une liste à magasin « multi », le magasin habituel est celui, parmi les magasins regroupés, où l'article a été le plus utilisé (le plus récent en cas d'égalité).
 - Clés étrangères activées, index sur items(list_id, updated_at) et list_members(user_id).
@@ -320,7 +327,7 @@ Listo sera exposé sur Internet derrière Nginx Proxy Manager (HTTPS déjà en p
 
 **Lien public d'une liste**
 
-C'est la seule partie de Listo accessible sans compte : elle est donc traitée comme la plus exposée.
+C'est la partie de Listo accessible sans compte qui montre des données : elle est donc traitée comme la plus exposée. (Les adresses de l'autorisation pour Claude, plus bas, sont aussi ouvertes sans session, mais ne renvoient aucune donnée de liste.)
 
 - Jeton : 256 bits aléatoires dans l'adresse (/p/<jeton>), impossible à deviner. Il n'est jamais écrit en clair en base ni dans les journaux (le journal cite l'identifiant du partage, pas le jeton).
 - Mot de passe facultatif, généré par Listo : 16 caractères tirés avec le générateur aléatoire sécurisé de Node, avec au moins une minuscule, une majuscule, un chiffre et un caractère spécial (choisi parmi ceux faciles à saisir sur un téléphone). Haché avec scrypt, affiché une seule fois au propriétaire.
@@ -340,6 +347,19 @@ C'est la seule partie de Listo accessible sans compte : elle est donc traitée c
 - Validité, précisée dans le code : un lien n'est valable que si la liste existe encore, si son propriétaire est toujours actif et s'il en est encore le créateur.
 - Clé perdue : si secrets/secret.key est perdue puis recréée, un lien existant marche encore, mais son adresse ne peut plus être réaffichée au propriétaire (version chiffrée illisible) : il faut l'arrêter et en créer un nouveau.
 - Navigation : X-Robots-Tag: noindex, Cache-Control: no-store et Referrer-Policy: no-referrer (le jeton ne part pas vers d'autres sites). Le service worker ne met jamais en cache les pages ni les données du lien public.
+
+**Autorisation pour Claude (OAuth)**
+
+Exception encadrée (décision du 31 octobre 2026), traitée comme le lien public ; LISTO_MCP=on seulement, sinon toutes ces adresses répondent 404. Détails dans [docs/mcp-cadrage.md](mcp-cadrage.md).
+
+- Listo est son propre serveur d'autorisation : aucune clé de signature, aucun secret dans les variables d'environnement. Codes et jetons : 256 bits aléatoires, empreinte SHA-256 seule en base, jamais au journal.
+- Adresses de retour : https://claude.ai/api/mcp/auth_callback exactement, ou le bouclage de l'ordinateur (http://localhost, http://127.0.0.1, port quelconque, chemin exact). Application ou adresse de retour non vérifiable : page d'erreur, aucune redirection. Les autres erreurs repartent vers Claude avec state et iss (RFC 9207).
+- Documents d'identification (CIMD) lus sur claude.ai et claude.com seulement, en https, sans suivre de redirection, 16 ko et 5 s au plus, gardés une heure ; tout autre client_id est refusé sans appel réseau. Enregistrement automatique (DCR) : redirections de Claude seulement, 5 par heure et par adresse IP, 50 applications au plus.
+- PKCE S256 obligatoire ; code à usage unique, 60 s, lié à l'application, à l'adresse de retour, au défi PKCE, à la ressource et aux portées ; un code rejoué révoque toute la connexion. Ressource unique : LISTO_PUBLIC_URL + /mcp, vérifiée à l'émission et à chaque usage.
+- Accord seulement sur l'écran « Autoriser Claude », par POST à l'API (contrôle d'origine, session, mot de passe et code 2FA redemandés, limitation des tentatives de la connexion), jamais par GET ; écran soumis à la CSP stricte de l'application (frame-ancestors 'none', X-Frame-Options: DENY, aucun script ni style en ligne, textContent). Compte qui doit changer son mot de passe : aucun accord avant.
+- Jeton de renouvellement remplacé à chaque usage ; rejoué dans les 60 s, la même réponse est renvoyée (copie gardée en mémoire seulement) ; au-delà, toute la connexion est révoquée et journalisée.
+- Le cookie de session n'est jamais lu sur /oauth/token ni /mcp ; un jeton n'ouvre que /mcp (ni l'application, ni l'API). Mot de passe changé, compte désactivé, mot de passe réinitialisé par l'Admin ou par la commande de secours : toutes les connexions du compte sont révoquées.
+- Journal de sécurité : claude.connexion, claude.refus, claude.revocation, claude.renouvellement (réutilisation), claude.enregistrement, claude.client_refuse ; avec l'hôte de l'application et les portées, jamais un jeton ni un code.
 
 ## Architecture technique
 
@@ -382,7 +402,10 @@ Version de Node.js : 24 (LTS, suivie à long terme). L'image de base node:24-sli
 | /api/admin/categories, /api/admin/stores, /api/admin/aisles | Données de référence (Admin, en ligne) : liste, ajout, modification, suppression |
 | GET /api/admin/names, GET /api/admin/names/impact, POST /api/admin/names/rename, /aisle, /remove | Mémoire des noms (Admin, en ligne) : liste par morceaux, effet d'une correction (nombres), corriger partout, changer le rayon habituel, retirer des suggestions |
 | GET /api/admin/update-check | Une image plus récente existe-t-elle ? Le serveur demande à GitHub (Admin, en ligne) |
-| GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte |
+| GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte qui renvoient des données |
+| GET /.well-known/oauth-protected-resource/mcp (et /.well-known/oauth-protected-resource), GET /.well-known/oauth-authorization-server | Descriptions OAuth pour Claude (RFC 9728, RFC 8414), sans compte, LISTO_MCP=on seulement |
+| GET /oauth/authorize, POST /oauth/token, POST /oauth/revoke, POST /oauth/register | Autorisation pour Claude, sans session : vérifier la demande et ouvrir l'écran « Autoriser Claude » ; échanger le code ou renouveler (formulaire application/x-www-form-urlencoded, erreurs RFC 6749) ; révoquer (RFC 7009, toujours 200) ; enregistrement automatique (RFC 7591). LISTO_MCP=on seulement |
+| GET /api/oauth/demandes/:id, POST /api/oauth/demandes/:id/accord, POST /api/oauth/demandes/:id/refus | Écran « Autoriser Claude » (session, même origine) : ce qu'il faut afficher ; accord (portée, listes, mot de passe, code 2FA) ; refus. Réponse : l'adresse de retour vers Claude |
 | GET /healthz | Surveillance (réponse simple, sans donnée) |
 
 L'autocomplétion est calculée sur le téléphone à partir de la copie locale de item_history : elle marche donc hors ligne. La route GET /api/suggestions applique la même règle côté serveur (code partagé entre les deux). Le détail de chaque route est dans [docs/developpement.md](developpement.md).
@@ -405,13 +428,14 @@ listo/
     lists.js        listes, articles, droits, historique, synchronisation
     photos.js       photos des articles (contrôle JPEG, stockage)
     shares.js       lien public (jeton, mot de passe, expiration)
+    oauth.js, oauth-clients.js    autorisation pour Claude (codes, jetons, connexions ; applications CIMD et DCR)
     events.js       diffusion SSE
     products.js, http-json.js    mode scan (Open Food Facts), lecture limitée d'une réponse JSON
     update-check.js vérification de mise à jour (GitHub)
     backup.js       sauvegarde nocturne
     backup-now.js, admin-secours.js    commandes à lancer sur le serveur (sauvegarde à la demande, compte Admin perdu)
-    pages/          les deux pages HTML du lien public (liste, lien expiré ou inexistant)
-    routes/         auth, me, lists, photos, products, references, shares, public, admin (admin-users, admin-references, admin-names)
+    pages/          pages HTML servies par le serveur : lien public (liste, lien expiré ou inexistant), demande d'autorisation invalide
+    routes/         auth, me, lists, photos, products, references, shares, public, oauth, admin (admin-users, admin-references, admin-names)
   public/
     index.html      application
     manifest.webmanifest
@@ -600,8 +624,9 @@ Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa r
   - Nouveautés : pastilles sur « Mes listes », halo dans la liste, sourdine par liste, réglages du compte (migration 16).
 - **31 octobre 2026**
   - Cadrage, sans code, d'un serveur MCP intégré à Listo pour l'utiliser depuis Claude : voir [docs/mcp-cadrage.md](mcp-cadrage.md).
+  - Étape A : autorisation OAuth pour Claude (descriptions, /oauth/…, écran « Autoriser Claude »), désactivée par défaut (LISTO_MCP), migration 17.
 
-**Tests automatisés** : 619 tests (`npm test`), tous réussis, mesurés le 30 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
+**Tests automatisés** : 646 tests (`npm test`), tous réussis, mesurés le 31 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 
 **Consignes pour Claude Code**
 
@@ -643,6 +668,17 @@ Une entrée par écart ou par décision, avec sa date et sa raison ; le texte pr
   - réglage d'affichage propre à chaque personne et à chaque téléphone : rien n'est envoyé au serveur, aucun droit en jeu (permis en lecture seule), aucune migration ; sans choix gardé (ou choix invalide), le tri par défaut de la liste ;
   - le champ « Rayon » de la fiche, le choix du rayon à l'ajout, le scan et les suggestions ne changent pas : le rayon reste enregistré sur l'article ;
   - page du lien public : toujours par rayon (aucun tri choisi par le visiteur) ; duplication : rien à copier (le tri n'appartient pas à la liste) ; ordre des rayons inchangé (alphabétique, « Sans rayon » en dernier).
+- **Accès depuis Claude, étape A : autorisation OAuth** (décisions du 31 octobre 2026, migration 17 ; conception dans [docs/mcp-cadrage.md](mcp-cadrage.md), validée). Raison : utiliser Listo depuis Claude sans lui donner son mot de passe ni créer de jeton personnel. Règles :
+  - quatrième exception au principe « aucune donnée hors du serveur » et exception encadrée à « seul le lien public est accessible sans compte » (voir Principes directeurs et Sécurité) ; LISTO_MCP désactivé par défaut, jamais activé dans docker-compose.yml ;
+  - écrit à la main (node:crypto, express, better-sqlite3), sans bibliothèque OAuth ni MCP ;
+  - applications : CIMD (liste blanche claude.ai, claude.com) et DCR de secours à /oauth/register (choix du propriétaire, plutôt que /register), toutes deux limitées aux adresses de retour de Claude ;
+  - demandes d'autorisation gardées en base (table oauth_requests, 10 minutes), plutôt qu'en mémoire comme le prévoyait le cadrage (choix du propriétaire) ;
+  - jeton d'accès 1 heure ; renouvellement 30 jours glissants avec rotation ; **écart avec le cadrage** (choix du propriétaire) : rejoué dans les 60 s, le même jeton redonne les MÊMES nouveaux jetons (copie gardée 60 s en mémoire seulement, jamais en base ; si Listo redémarre dans ces 60 s, le rejeu reçoit invalid_grant sans révocation), au lieu d'une nouvelle paire ; au-delà de 60 s, réutilisation : toute la connexion est révoquée ;
+  - portées « Lecture seule » (lists:read, **présélectionnée** : ajouter demande un choix volontaire, écart avec le cadrage qui proposait « Lecture et ajout ») ou « Lecture et ajout » (lists:read et lists:write) ; « Toutes mes listes » par défaut, ou une sélection ;
+  - 5 connexions actives par compte ; réautoriser la même application (même client CIMD, ou même hôte de retour en DCR) remplace son ancienne connexion ; au-delà de 5 applications différentes, refus avec un message (choix du propriétaire, en attendant l'écran « Connexions Claude » de l'étape D) ;
+  - mot de passe (et code 2FA) redemandés à chaque nouvelle connexion ; mot de passe changé ou compte désactivé : connexions révoquées ; droits sur les listes vérifiés à chaque appel (étape B), jamais copiés dans le jeton ;
+  - aucune restriction réseau dans Nginx Proxy Manager ;
+  - sources : les RFC (rfc-editor.org, datatracker.ietf.org) restent inaccessibles depuis l'environnement de développement ; les exigences suivies sont celles que citent la spécification MCP 2026-07-28 et la documentation de Claude.
 - **Nouveautés** (décision du 30 octobre 2026, migration 16). Raison : à deux sur les mêmes listes, savoir sans chercher ce que l'autre a ajouté ou changé. Règles :
   - ce qui est signalé : les ajouts et les modifications des autres ; les cochés et décochés seulement avec « Signaler les éléments cochés » (« Coché par Marie ») ; jamais ses propres actions ni les suppressions ; « Annuler » une suppression n'est pas signalé (l'élément revient tel qu'il était) ; les corrections de noms faites par l'Admin (Administration › Articles) ne sont pas inscrites au journal ;
   - journal list_events (identifiants seulement), repère list_reads par membre : à la migration, chaque membre est posé sur la fin du journal (vide) ; un nouveau membre démarre à son arrivée ; un membre retiré, ou qui quitte, perd son repère ; supprimer une liste efface son journal ; nettoyage : 30 jours, 500 événements au plus par liste ; repère plus ancien que le journal gardé : « 30+ » ;

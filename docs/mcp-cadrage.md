@@ -167,7 +167,7 @@ Le code reprend la structure actuelle (un fichier par service, routes dans `serv
 
 ### 2.1 Versions et méthodes
 
-> **Décision du 31 octobre 2026 (étape C)** : `add_items` et `set_checked` livrés ; `set_checked` accepte 20 identifiants (et non 50) ; une connexion « Lecture seule » reçoit une erreur d'outil « Cette connexion est en lecture seule. » (et non un 403 `insufficient_scope`) ; un élément de même nom déjà présent non coché n'est pas recréé. Détail dans le cahier des charges.
+> **Décision du 31 octobre 2026 (étape C)** : `add_items` et `set_checked` livrés ; `set_checked` accepte 20 identifiants (et non 50) ; une connexion « Lecture seule » reçoit une erreur d'outil « Cette connexion est en lecture seule. » (et non un 403 `insufficient_scope`) ; un élément de même nom déjà présent non coché n'est pas recréé. Ajouté après l'étape D : 300 cochages ou décochages par heure et par connexion pour `set_checked`. Détail dans le cahier des charges.
 >
 > **Décision du 31 octobre 2026 (étape B)** : seule l'ancienne famille (2025-03-26, 2025-06-18, 2025-11-25) est acceptée pour l'instant ; la nouvelle (2026-07-28) sera ajoutée quand Claude l'utilisera. L'outil de lecture s'appelle `read_list` (et non `get_list`). Le détail livré est dans le cahier des charges.
 
@@ -471,7 +471,7 @@ Accès : Réglages › Mon compte › section « Claude » › « Connexions Cla
 | Page de consentement : CSRF, clic piégé | Accord donné à l'insu | Accord par `POST` à l'API, avec contrôle d'origine (`requireSameOrigin`) et mot de passe ; `frame-ancestors 'none'` et `X-Frame-Options: DENY` ; aucun accord par GET |
 | Force brute (mot de passe au consentement, codes, jetons) | Prise de compte, devinette de jeton | Limitation existante (5 échecs en 15 min) pour le mot de passe ; jetons et codes de 256 bits ; échecs de jeton comptés par IP (journal et 429) |
 | Injection dans les réponses : une note ou un nom écrits par un autre membre, lus par Claude (« ignore tes consignes et… ») | Claude détourné vers une action non voulue | Contenu renvoyé en données structurées, et `instructions` qui le présentent comme tel ; longueurs bornées ; **aucun outil destructeur ni de partage** ; écriture limitée en nombre (§12, décision 5) ; les clients Claude demandent en général confirmation avant un outil d'écriture (à vérifier, §11) |
-| Ajouts en masse (boucle, injection, erreur) | Liste noyée | 20 éléments par appel ; 100 par heure et par connexion ; pas de doublon dans les 2 minutes ; journal `claude.ajout` |
+| Ajouts en masse (boucle, injection, erreur) | Liste noyée | 20 éléments par appel ; 100 par heure et par connexion (et 300 cochages par heure, ajouté après l'étape D) ; pas de doublon dans les 2 minutes ; journal `claude.ajout` |
 | Fuite des noms des autres membres | Données personnelles chez Anthropic | Aucun nom de personne dans les sorties d'outil (§3) |
 | Déni de service | Listo ralenti pour le foyer | Corps de 64 ko au plus, lu après le jeton ; 60 requêtes par minute et par connexion ; réponses JSON courtes, sans flux ouvert ; aucun appel sortant pendant `/mcp` |
 | Rebinding DNS | Un site malveillant parle à `/mcp` via le navigateur | `Origin` validé (absent, Listo ou Claude) ; jeton Bearer exigé (un navigateur piégé n'en a pas) ; aucun cookie accepté sur `/mcp` |

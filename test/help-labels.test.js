@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SECTIONS, PERMISSIONS, PERMISSIONS_NOTE } from '../public/js/help-content.js';
+import { SECTIONS, PERMISSIONS, PERMISSIONS_NOTE, CLAUDE_TOPIC } from '../public/js/help-content.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -21,7 +21,7 @@ test('libellés cités dans l\'aide : tous présents dans l\'interface', () => {
   };
   walk('public/js');
   const interfaceText = ui.join('\n');
-  const helpText = JSON.stringify([PERMISSIONS, PERMISSIONS_NOTE, SECTIONS]);
+  const helpText = JSON.stringify([PERMISSIONS, PERMISSIONS_NOTE, SECTIONS, CLAUDE_TOPIC]);
   for (const label of ['Dupliquer la liste', 'Quitter la liste', 'Partager par lien', 'Modifier la liste', 'Lecture seule', 'Peut modifier']) {
     assert.ok(helpText.includes(`« ${label} »`), `aide : « ${label} »`);
     assert.ok(interfaceText.includes(`'${label}'`) || interfaceText.includes(`${label}`), `interface : « ${label} »`);

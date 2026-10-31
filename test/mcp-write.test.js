@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { login } from './helpers.js';
 import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, household, connect, claude, data } from './mcp-helpers.js';
-import { ADD_MAX, ADDS_PER_HOUR, READ_ONLY_GRANT, DATA_NOTICE } from '../server/mcp-tools.js';
+import { ADD_MAX, ADDS_PER_HOUR, CHECK_MAX, CHECKS_PER_HOUR, READ_ONLY_GRANT, DATA_NOTICE } from '../server/mcp-tools.js';
 
 const MINUTE = 60 * SECOND;
 const toolError = (res) => (res.body.result?.isError ? res.body.result.content[0].text : null);
@@ -115,6 +115,53 @@ test(`add_items : plafond de ${ADDS_PER_HOUR} ajouts par heure et par connexion`
   await login(h.guillaume, 'guillaume', PASSWORD);
   const fresh = claude(h, (await connect(h, h.guillaume, PASSWORD, write())).access_token);
   assert.equal(data(await fresh.tool('add_items', { list_id: h.ids.secret, items: [{ name: 'Une de plus' }] })).created, 1, 'une heure plus tard');
+});
+
+test(`set_checked : plafond de ${CHECKS_PER_HOUR} cochages par heure et par connexion, sur une heure glissante`, async (t) => {
+  const h = await household(t);
+  const tokens = await connect(h, h.guillaume, PASSWORD, write());
+  let c = claude(h, tokens.access_token);
+  // 20 éléments dans « Secret », que l'on coche puis décoche tour à tour
+  const ids = data(await c.tool('add_items', { list_id: h.ids.secret, items: Array.from({ length: CHECK_MAX }, (_, i) => ({ name: `Case ${i}` })) })).results.map((r) => r.id);
+  const checkedCount = () => h.app.db.prepare('SELECT COUNT(*) FROM items WHERE list_id = ? AND checked = 1').pluck().get(h.ids.secret);
+  const toggle = async (checked, items = ids) => c.tool('set_checked', { list_id: h.ids.secret, item_ids: items, checked });
+  let state = false;
+  const rounds = async (n) => {
+    for (let i = 0; i < n; i++) {
+      state = !state;
+      assert.equal(data(await toggle(state)).changed, CHECK_MAX);
+    }
+  };
+
+  // 100 changements maintenant, 200 trente minutes plus tard : 300, le plafond
+  await rounds(5);
+  h.app.clock.now += 30 * MINUTE;
+  await rounds(10);
+  // Un élément déjà dans l'état demandé ne compte pas : appel accepté, rien ne change
+  assert.deepEqual([data(await toggle(state)).changed, data(await toggle(state)).unchanged], [0, CHECK_MAX]);
+  // Au-delà : erreur d'outil claire, rien n'est écrit (même pour un seul élément)
+  const before = checkedCount();
+  const over = toolError(await toggle(!state, [ids[0]]));
+  assert.match(over, /^Plafond atteint : 300 cochages par heure et par connexion \(encore 0 possibles\)/);
+  assert.equal(checkedCount(), before, 'rien n\'est écrit');
+  // Le plafond est propre à chaque connexion ; les ajouts n'y comptent pas
+  assert.equal(data(await c.tool('add_items', { list_id: h.ids.secret, items: [{ name: 'Encore une' }] })).created, 1);
+  h.app.db.prepare("UPDATE oauth_grants SET app_key = 'autre'").run(); // sinon la nouvelle remplacerait celle-ci
+  const other = claude(h, (await connect(h, h.guillaume, PASSWORD, write())).access_token);
+  assert.equal(data(await other.tool('set_checked', { list_id: h.ids.secret, item_ids: [ids[0]], checked: !state })).changed, 1);
+  assert.equal(data(await other.tool('set_checked', { list_id: h.ids.secret, item_ids: [ids[0]], checked: state })).changed, 1);
+
+  // Heure glissante : 61 minutes après les 100 premiers, ils ne comptent plus
+  // (même connexion : jeton renouvelé, l'accès ne vit qu'une heure)
+  h.app.clock.now += 31 * MINUTE;
+  const renewed = await fetch(`${h.app.base}/oauth/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: tokens.clientId }) });
+  c = claude(h, (await renewed.json()).access_token);
+  await rounds(5);
+  assert.match(toolError(await toggle(!state)), /\(encore 0 possibles\)/, '100 places libérées, pas plus');
+  // 30 minutes plus tard, les 200 suivants ne comptent plus non plus
+  h.app.clock.now += 30 * MINUTE;
+  await rounds(10);
+  assert.match(toolError(await toggle(!state)), /\(encore 0 possibles\)/);
 });
 
 test('add_items : anti-doublon de 2 minutes (même connexion, même liste), déjà là non coché, doublon dans la demande', async (t) => {

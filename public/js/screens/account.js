@@ -57,6 +57,12 @@ export function renderAccount(onLeave = () => {}) {
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
       h('h2', { class: 'section-title' }, 'Nouveautés'),
       newsSwitches(onLeave),
+      // Accès depuis Claude : seulement s'il est activé sur le serveur
+      user.claudeUrl ? [
+        h('h2', { class: 'section-title' }, 'Claude'),
+        h('div', { class: 'group' },
+          row({ iconName: 'link', title: 'Connexions Claude', sub: 'Voir et déconnecter Claude', onClick: () => navigate('claudeConnections') })),
+      ] : null,
       // Données gardées sur ce téléphone : remise à zéro si elles semblent
       // abîmées (tout est rechargé depuis le serveur)
       h('h2', { class: 'section-title' }, 'Ce téléphone'),

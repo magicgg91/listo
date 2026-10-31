@@ -81,6 +81,9 @@ export function publicUser(user, config) {
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
     productLookup: config?.productLookup !== false,
+    // Accès depuis Claude (LISTO_MCP=on) : l'adresse à saisir dans Claude,
+    // pour afficher l'écran « Connexions Claude » et l'aide ; null sinon
+    claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
   };
 }
 

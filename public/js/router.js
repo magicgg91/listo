@@ -20,6 +20,8 @@ export const ROUTES = [
   { name: 'admin', path: '/administration/:tab' },
   // Écran « Autoriser Claude » (autorisation OAuth, voir claude-consent.js)
   { name: 'authorize', path: '/autoriser/:id' },
+  // Connexions Claude (Mon compte), seulement si l'accès est activé
+  { name: 'claudeConnections', path: '/reglages/claude' },
 ];
 
 // Écran affiché quand l'adresse est vide ou inconnue

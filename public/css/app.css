@@ -403,3 +403,15 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
    lignes .radio-row ou .tick-row les garde dans ses coins arrondis (le fond
    accent-soft du choix actif ne dépasse pas) */
 .card--clip { overflow: hidden; }
+
+/* Écran « Connexions Claude » : seulement la mise en place des composants
+   du kit (texte d'introduction aligné sur les cartes, pastille du droit,
+   bouton « Déconnecter » sous chaque connexion, « Tout déconnecter » en
+   bas) ; aucune couleur nouvelle */
+.claude-connections__intro { margin: var(--space-1) var(--space-2) 0; }
+.claude-connections__address { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2); border-bottom: 1px solid var(--color-border); }
+.claude-connections__url { font-weight: 600; overflow-wrap: anywhere; }
+.claude-connections .row { align-items: flex-start; }
+.claude-connections__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.claude-connections__button { margin-top: var(--space-1); }
+.claude-connections__all { margin: var(--space-3) var(--space-2) 0; }

@@ -4,8 +4,8 @@
 // - list_lists : les listes que la connexion peut voir ;
 // - read_list : les éléments d'une de ces listes.
 // Écriture (connexion « Lecture et ajout » seulement, portée lists:write) :
-// - add_items : ajouter 1 à 20 éléments ;
-// - set_checked : cocher ou décocher 1 à 20 éléments.
+// - add_items : ajouter 1 à 20 éléments (100 par heure et par connexion) ;
+// - set_checked : cocher ou décocher 1 à 20 éléments (300 par heure et par connexion).
 // Rien d'autre : ni suppression, ni modification d'un élément existant, ni
 // liste, partage, lien public, compte ou administration.
 //
@@ -39,6 +39,7 @@ export const READ_ONLY_GRANT = 'Cette connexion est en lecture seule.';
 export const ADD_MAX = 20;            // éléments par add_items
 export const CHECK_MAX = 20;          // éléments par set_checked
 export const ADDS_PER_HOUR = 100;     // éléments ajoutés par heure et par connexion
+export const CHECKS_PER_HOUR = 300;   // éléments cochés ou décochés par heure et par connexion
 export const DUPLICATE_MS = 2 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
 const ALREADY_ADDED = 'déjà ajouté il y a moins de 2 minutes';
@@ -115,7 +116,7 @@ export const TOOLS = [
   {
     name: 'set_checked',
     title: 'Cocher ou décocher',
-    description: `Coche (checked: true) ou décoche (checked: false) 1 à ${CHECK_MAX} éléments d'une liste Listo, désignés par leur identifiant (donné par read_list). Un élément déjà dans l'état demandé est laissé tel quel ; un identifiant qui n'est pas dans cette liste est ignoré. Exige une connexion « Lecture et ajout » et le droit de modifier la liste.`,
+    description: `Coche (checked: true) ou décoche (checked: false) 1 à ${CHECK_MAX} éléments d'une liste Listo, désignés par leur identifiant (donné par read_list). Un élément déjà dans l'état demandé est laissé tel quel ; un identifiant qui n'est pas dans cette liste est ignoré. ${CHECKS_PER_HOUR} éléments cochés ou décochés par heure au plus (ceux déjà dans l'état demandé ne comptent pas). Exige une connexion « Lecture et ajout » et le droit de modifier la liste.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -170,11 +171,15 @@ export function createMcpTools(ctx) {
   const itemsOf = (read) => read.groups.flatMap((group) => group.items);
   const newId = () => crypto.randomUUID();
 
-  // Anti-doublon (connexion + liste + nom sans accent ni casse -> heure) et
-  // ajouts de l'heure écoulée (connexion -> heures des ajouts), en mémoire
+  // En mémoire (remis à zéro si le serveur redémarre) :
+  // - anti-doublon : connexion + liste + nom sans accent ni casse -> heure ;
+  // - plafonds horaires : connexion -> heures des ajouts (addTimes) ou des
+  //   cochages et décochages (checkTimes) de l'heure écoulée.
   const recentAdds = new Map();
   const addTimes = new Map();
-  const addsInLastHour = (grantId, time) => (addTimes.get(grantId) ?? []).filter((at) => time - at < HOUR);
+  const checkTimes = new Map();
+  const inLastHour = (times, grantId, time) => (times.get(grantId) ?? []).filter((at) => time - at < HOUR);
+  const addsInLastHour = (grantId, time) => inLastHour(addTimes, grantId, time);
 
   function listLists({ user, grant }) {
     const totals = new Map(counts.all().map((row) => [row.list_id, row]));
@@ -326,6 +331,8 @@ export function createMcpTools(ctx) {
     if (typeof checked !== 'boolean') throw new ParamsError('checked : vrai ou faux attendu.');
     const target = writable(access, listId);
     if (target.error) return { error: target.error };
+    const { grant } = access;
+    const time = ctx.now();
 
     // Seuls les éléments de CETTE liste comptent ; tout autre identifiant
     // (inconnu, ou d'une autre liste) est ignoré avec la même raison
@@ -342,11 +349,25 @@ export function createMcpTools(ctx) {
         ops.push({ slot, op: { id: newId(), type: 'item.check', itemId: item.id, checked } });
       }
     }
+
+    // Plafond : 300 cochages ou décochages par heure et par connexion. Seuls
+    // comptent les éléments qui changent vraiment (pas ceux déjà dans l'état
+    // demandé) ; au-delà, rien n'est écrit.
+    const recent = inLastHour(checkTimes, grant.id, time);
+    if (recent.length + ops.length > CHECKS_PER_HOUR) {
+      return { error: `Plafond atteint : ${CHECKS_PER_HOUR} cochages par heure et par connexion (encore ${Math.max(0, CHECKS_PER_HOUR - recent.length)} possibles). Réessayez plus tard.` };
+    }
+
     const outcomes = ops.length ? ctx.lists.applyOps(access.user, ops.map((o) => o.op)) : [];
     ops.forEach(({ slot }, i) => {
-      if (outcomes[i].status === 200) slot.status = checked ? 'checked' : 'unchecked';
-      else Object.assign(slot, { status: 'ignored', reason: outcomes[i].error });
+      if (outcomes[i].status === 200) {
+        slot.status = checked ? 'checked' : 'unchecked';
+        recent.push(time);
+      } else {
+        Object.assign(slot, { status: 'ignored', reason: outcomes[i].error });
+      }
     });
+    if (recent.length) checkTimes.set(grant.id, recent);
     const changed = results.filter((r) => r.status === 'checked' || r.status === 'unchecked').length;
     const unchanged = results.filter((r) => r.status === 'unchanged').length;
     const ignored = results.length - changed - unchanged;
@@ -373,14 +394,16 @@ export function createMcpTools(ctx) {
     return { result: result(out.data), count: out.count, log: out.log ?? {} };
   }
 
-  // Ménage des mémoires de l'anti-doublon et du plafond horaire
+  // Ménage des mémoires de l'anti-doublon et des plafonds horaires
   function prune() {
     const time = ctx.now();
     for (const [key, at] of recentAdds) if (time - at >= DUPLICATE_MS) recentAdds.delete(key);
-    for (const [grantId] of addTimes) {
-      const recent = addsInLastHour(grantId, time);
-      if (recent.length) addTimes.set(grantId, recent);
-      else addTimes.delete(grantId);
+    for (const times of [addTimes, checkTimes]) {
+      for (const [grantId] of times) {
+        const recent = inLastHour(times, grantId, time);
+        if (recent.length) times.set(grantId, recent);
+        else times.delete(grantId);
+      }
     }
   }
 

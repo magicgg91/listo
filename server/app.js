@@ -33,6 +33,7 @@ import { referenceRoutes } from './routes/references.js';
 import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
+import { mcpRoutes } from './mcp.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -205,6 +206,9 @@ export function createApp({
   // /.well-known/… et /oauth/… : appelées par Claude ou par le navigateur,
   // sans session (le cookie n'y est jamais lu). Désactivées : 404.
   if (config.mcp) app.use(oauthRoutes(ctx, { publicDir: PUBLIC_DIR }));
+  // /mcp : serveur MCP en lecture seule (jeton Bearer seulement, voir mcp.js)
+  const mcp = config.mcp ? mcpRoutes(ctx) : null;
+  if (mcp) app.use(mcp.router);
 
   // --- API ---
   const api = express.Router();
@@ -313,6 +317,7 @@ export function createApp({
     ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();
     ctx.oauth.purge();           // autorisations Claude : demandes, codes, jetons expirés
+    mcp?.prune();                // compteurs d'appels de /mcp
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);

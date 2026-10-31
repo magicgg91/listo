@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Listo : réponse unique pour une demande d'autorisation (connexion de
+     Claude) qui ne peut pas être vérifiée : application inconnue, adresse de
+     retour qui n'est pas celle de Claude, paramètres manquants. Toujours la
+     même page : AUCUNE redirection n'est faite dans ce cas, et rien de la
+     demande n'est recopié dans la page. -->
+<html lang="fr" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Listo · Demande d'autorisation invalide</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/listo.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<!-- sprite -->
+<div class="app">
+  <div class="empty">
+    <span class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-alert"/></svg></span>
+    <h1 class="empty__title">Demande d'autorisation invalide</h1>
+    <p class="empty__text">Cette demande de connexion n'a pas pu être vérifiée. Relancez la connexion depuis Claude.</p>
+  </div>
+</div>
+</body>
+</html>

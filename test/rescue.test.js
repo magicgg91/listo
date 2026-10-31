@@ -111,3 +111,21 @@ test('commande de secours : identifiant inconnu ou mauvaise option refusés', as
   await assert.rejects(run(process.execPath, ['server/admin-secours.js', 'personne'], { cwd: ROOT, env }), /Aucun compte/);
   await assert.rejects(run(process.execPath, ['server/admin-secours.js', 'x', '--autre'], { cwd: ROOT, env }), /Utilisation/);
 });
+
+test('commande de secours : les connexions Claude du compte sont révoquées (migration 17)', async (t) => {
+  const dbPath = path.join(tempDir(t), 'data', 'listo.db');
+  const db = openDatabase(dbPath);
+  const now = new Date().toISOString();
+  const later = new Date(Date.now() + 3600 * 1000).toISOString();
+  db.prepare("INSERT INTO users (id, username, display_name, password_hash) VALUES (1, 'guillaume', 'Guillaume', 'x')").run();
+  db.prepare("INSERT INTO oauth_clients (client_id, kind, redirect_uris, created_at) VALUES ('dcr_x', 'dcr', '[]', ?)").run(now);
+  db.prepare(`INSERT INTO oauth_grants (id, user_id, client_id, app_key, client_host, redirect_host, scope, all_lists, created_at)
+    VALUES (1, 1, 'dcr_x', 'dcr:claude.ai', 'claude.ai', 'claude.ai', 'lists:read', 1, ?)`).run(now);
+  db.prepare("INSERT INTO oauth_tokens (token_hash, grant_id, kind, resource, scope, created_at, expires_at) VALUES ('h', 1, 'access', 'r', 'lists:read', ?, ?)").run(now, later);
+  db.close();
+  await run(process.execPath, ['server/admin-secours.js', 'guillaume'], { cwd: ROOT, env: { PATH: process.env.PATH, LISTO_DB_PATH: dbPath } });
+  const after = openDatabase(dbPath);
+  assert.ok(after.prepare('SELECT revoked_at FROM oauth_grants WHERE id = 1').pluck().get(), 'connexion révoquée');
+  assert.ok(after.prepare("SELECT revoked_at FROM oauth_tokens WHERE token_hash = 'h'").pluck().get(), 'jeton révoqué');
+  after.close();
+});

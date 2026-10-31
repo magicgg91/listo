@@ -51,7 +51,7 @@ export function meRoutes(ctx) {
 
     const hash = await hashPassword(newPassword);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
-    revokeAllSessions(ctx, req.user.id);
+    revokeAllSessions(ctx, req.user.id, 'mot de passe changé');
     startSession(ctx, res, req.user.id);
     audit('mot_de_passe_change', { utilisateur: req.user.username, ip: req.ip });
     res.json({ ok: true });

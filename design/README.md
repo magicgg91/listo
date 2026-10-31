@@ -388,9 +388,9 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 
 - Barre du haut sans bouton Retour (on sort par « Autoriser » ou « Refuser ») ; pas de panneau latéral sur ordinateur.
 - Avertissement permanent `.note` (`#i-alert`) : « Ne continuez que si vous venez de lancer la connexion depuis Claude. »
-- Carte de trois `.row` : l'application (hôte ; un nom déclaré est suivi de « (nom fourni par l'application) »), **l'hôte de retour** (« claude.ai », ou « une application sur cet ordinateur (localhost) »), le compte connecté. Retour local : `.note--danger` en plus.
+- Carte de trois `.row` : l'application (hôte ; un nom déclaré par l'application elle-même est suivi de « (nom donné par l'application, non vérifié) », celui du document d'identification publié sur claude.ai de « (nom fourni par l'application) »), **l'hôte de retour** (« claude.ai », ou « une application sur cet ordinateur (localhost) »), le compte connecté. Retour local : `.note--danger` en plus.
 - Choix exclusifs « Lecture seule » / « Lecture et ajout » et « Toutes mes listes » / « Certaines listes » : `.radio-row` dans une `.card` (rond plein ET texte en gras sur le choix actif ; une ligne par choix, lisible sur un téléphone de 320 px, là où `.segmented` coupait « Toutes mes listes » en deux). « Lecture seule » et « Toutes mes listes » sont présélectionnés. Sous « Accès », `.field__hint` dit ce que Claude pourra faire.
 - « Certaines listes » : listes à cocher en `.tick-row` (icône de la liste, nom), comme le partage d'une liste.
 - Mot de passe (`passwordInput`, avec l'œil) et, si la 2FA est activée, le champ « Code » ; erreurs en `.form-error`.
-- `.footer` : `.btn--primary` « Autoriser », puis `.btn--secondary` « Refuser » (44 px et plus).
+- `.footer` : la phrase « Vous venez de lancer cette connexion depuis Claude ? Si ce n'est pas le cas, refusez. » (texte simple, sans icône), puis `.btn--primary` « Autoriser » et `.btn--secondary` « Refuser » (44 px et plus).
 - Seul ajout dans `public/css/app.css` : `.card--clip { overflow: hidden; }`, pour que le fond du choix actif ne dépasse pas des coins arrondis de la carte.

@@ -99,7 +99,11 @@ function consentForm(id, { request, account, twoFactor, lists }) {
 
   // Qui demande, et où va la réponse
   const local = request.redirect.local;
-  const appSub = request.app.name ? `« ${request.app.name} » (nom fourni par l'application)` : 'Application qui demande l\'accès';
+  // Nom de l'application : déclaré par l'application elle-même
+  // (enregistrement automatique) → signalé comme non vérifié ; lu dans le
+  // document d'identification publié sur claude.ai → nom fourni par l'application
+  const named = request.app.nameFromApp ? 'nom donné par l\'application, non vérifié' : 'nom fourni par l\'application';
+  const appSub = request.app.name ? `« ${request.app.name} » (${named})` : 'Application qui demande l\'accès';
   const who = h('div', { class: 'card card--clip' },
     row({ iconName: 'shield', title: request.app.host, sub: appSub }),
     row({ iconName: 'link', title: local ? 'une application sur cet ordinateur (localhost)' : request.redirect.host, sub: 'La réponse sera envoyée ici' }),
@@ -162,7 +166,10 @@ function consentForm(id, { request, account, twoFactor, lists }) {
       passwordField.field,
       codeField?.field ?? null,
       error.note)),
-    h('div', { class: 'footer' }, allow, deny));
+    // Juste au-dessus d'« Autoriser », toujours visible (barre du bas)
+    h('div', { class: 'footer' },
+      h('p', {}, 'Vous venez de lancer cette connexion depuis Claude ? Si ce n\'est pas le cas, refusez.'),
+      allow, deny));
 
   // Autoriser : vérifications sur le téléphone, puis le serveur décide
   form.addEventListener('submit', async (event) => {

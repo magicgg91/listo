@@ -623,7 +623,11 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   assert.match(screen, /let allLists = true;\s+\/\/ « Toutes mes listes » par défaut/);
   assert.match(screen, /'Ne continuez que si vous venez de lancer la connexion depuis Claude\.'/);
   assert.match(screen, /'une application sur cet ordinateur \(localhost\)'/);
-  assert.match(screen, /nom fourni par l'application/);
+  // Nom déclaré par l'application elle-même (DCR) : « non vérifié »
+  assert.match(screen, /const named = request\.app\.nameFromApp \? 'nom donné par l\\'application, non vérifié' : 'nom fourni par l\\'application';/);
+  assert.match(screen, /const appSub = request\.app\.name \? `« \$\{request\.app\.name\} » \(\$\{named\}\)`/);
+  // Phrase de confirmation juste au-dessus d'« Autoriser », dans la barre du bas
+  assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, 'Vous venez de lancer cette connexion depuis Claude \? Si ce n\\'est pas le cas, refusez\.'\),\s*allow, deny\)/);
   assert.match(screen, /post\(`\/api\/oauth\/demandes\/\$\{enc\(id\)\}\/accord`/);
   assert.match(screen, /location\.assign\(redirect\)/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|style=|<script/);

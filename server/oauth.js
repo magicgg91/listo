@@ -128,8 +128,19 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     deleteRequest: db.prepare('DELETE FROM oauth_requests WHERE id = ?'),
     activeGrants: db.prepare(`SELECT * FROM oauth_grants
       WHERE user_id = ? AND revoked_at IS NULL AND COALESCE(last_used_at, created_at) > ?`),
-    insertGrant: db.prepare(`INSERT INTO oauth_grants (user_id, client_id, app_key, client_host, redirect_host, scope, all_lists, created_at, last_used_at)
-      VALUES (@userId, @clientId, @appKey, @clientHost, @redirectHost, @scope, @allLists, @now, @now)`),
+    // Connexions actives d'un compte, pour l'écran « Connexions Claude »
+    myGrants: db.prepare(`SELECT oauth_grants.*, oauth_clients.kind, oauth_clients.client_name
+      FROM oauth_grants JOIN oauth_clients ON oauth_clients.client_id = oauth_grants.client_id
+      WHERE oauth_grants.user_id = ? AND oauth_grants.revoked_at IS NULL AND COALESCE(oauth_grants.last_used_at, oauth_grants.created_at) > ?
+      ORDER BY oauth_grants.created_at DESC, oauth_grants.id DESC`),
+    // Noms des listes choisies encore existantes dont le compte est membre
+    grantListNames: db.prepare(`SELECT lists.name FROM oauth_grant_lists
+      JOIN lists ON lists.id = oauth_grant_lists.list_id AND lists.deleted_at IS NULL
+      JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = ?
+      WHERE oauth_grant_lists.grant_id = ? ORDER BY lists.name COLLATE NOCASE`).pluck(),
+    // last_used_at : dernier appel de /mcp (vide tant que Claude n'a rien demandé)
+    insertGrant: db.prepare(`INSERT INTO oauth_grants (user_id, client_id, app_key, client_host, redirect_host, scope, all_lists, created_at)
+      VALUES (@userId, @clientId, @appKey, @clientHost, @redirectHost, @scope, @allLists, @now)`),
     insertGrantList: db.prepare('INSERT INTO oauth_grant_lists (grant_id, list_id) VALUES (?, ?)'),
     grant: db.prepare('SELECT * FROM oauth_grants WHERE id = ?'),
     grantLists: db.prepare('SELECT list_id FROM oauth_grant_lists WHERE grant_id = ? ORDER BY list_id').pluck(),
@@ -301,7 +312,6 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     const base = { grantId: grant.id, resource, scope: grant.scope, now: iso(time) };
     q.insertToken.run({ ...base, tokenHash: hashToken(access), kind: 'access', expiresAt: iso(time + ACCESS_TTL) });
     q.insertToken.run({ ...base, tokenHash: hashToken(refresh), kind: 'refresh', expiresAt: iso(time + REFRESH_TTL) });
-    q.useGrant.run(iso(time), grant.id);
     return { access_token: access, token_type: 'Bearer', expires_in: ACCESS_TTL / SECOND, refresh_token: refresh, scope: grant.scope };
   }
 
@@ -414,6 +424,42 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     return changed;
   }
 
+  // Connexions actives d'un compte, construites champ par champ (jamais de
+  // jeton, d'empreinte ni d'identifiant d'application)
+  function listGrants(user) {
+    return q.myGrants.all(user.id, iso(ctx.now() - REFRESH_TTL)).map((grant) => ({
+      id: grant.id,
+      app: {
+        host: grant.client_host,
+        name: grant.client_name || null,
+        nameFromApp: grant.kind === 'dcr',
+      },
+      redirect: { host: grant.redirect_host, local: grant.redirect_host === 'localhost' || grant.redirect_host === '127.0.0.1' },
+      access: grant.scope.split(' ').includes(SCOPE_WRITE) ? 'write' : 'read',
+      allLists: grant.all_lists === 1,
+      lists: grant.all_lists === 1 ? [] : q.grantListNames.all(user.id, grant.id),
+      createdAt: grant.created_at,
+      lastUsedAt: grant.last_used_at,
+    }));
+  }
+
+  // Déconnexion depuis l'écran « Connexions Claude » : seulement une
+  // connexion active du compte (sinon false, comme une connexion inconnue)
+  function revokeOwnGrant(user, grantId) {
+    const grant = Number.isSafeInteger(grantId) ? q.grant.get(grantId) : null;
+    if (!grant || grant.user_id !== user.id || grant.revoked_at) return false;
+    return revokeGrant(grant.id, { reason: 'déconnectée depuis « Connexions Claude »', user, by: 'le compte' });
+  }
+
+  // « Tout déconnecter » : renvoie le nombre de connexions révoquées
+  function revokeAllOwn(user) {
+    let count = 0;
+    for (const grantId of q.userGrants.all(user.id)) {
+      if (revokeGrant(grantId, { reason: 'déconnectée depuis « Connexions Claude » (tout déconnecter)', user, by: 'le compte' })) count += 1;
+    }
+    return count;
+  }
+
   // Toutes les connexions d'un compte (mot de passe changé, compte désactivé…)
   function revokeAllForUser(userId, reason) {
     let count = 0;
@@ -492,5 +538,6 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     issuer, resource,
     resolveClient, register, clientRedirect, createRequest, findRequest, describeRequest,
     approve, refuse, exchangeCode, refresh, revokeGrant, revokeAllForUser, revokeToken, verifyAccess, useGrant, purge,
+    listGrants, revokeOwnGrant, revokeAllOwn,
   };
 }

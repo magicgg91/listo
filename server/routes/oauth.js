@@ -13,10 +13,14 @@
 // Aucune de ces routes ne lit le cookie de session : un navigateur connecté
 // n'y obtient rien de plus.
 //
-// Avec la session (écran « Autoriser Claude », même origine exigée) :
-//   GET  /api/oauth/demandes/:id         ce qu'il faut afficher
-//   POST /api/oauth/demandes/:id/accord  accord (mot de passe, et code 2FA)
-//   POST /api/oauth/demandes/:id/refus   refus
+// Avec la session (écrans « Autoriser Claude » et « Connexions Claude »,
+// même origine exigée) :
+//   GET    /api/oauth/demandes/:id         ce qu'il faut afficher
+//   POST   /api/oauth/demandes/:id/accord  accord (mot de passe, et code 2FA)
+//   POST   /api/oauth/demandes/:id/refus   refus
+//   GET    /api/me/claude                  mes connexions Claude actives
+//   DELETE /api/me/claude/:id              déconnecter une connexion
+//   DELETE /api/me/claude                  tout déconnecter
 
 import fs from 'node:fs';
 import express from 'express';
@@ -259,6 +263,24 @@ export function oauthConsentRoutes(ctx) {
     const request = findRequest(req, res);
     if (!request) return;
     res.json({ redirect: oauth.refuse(request, req.user, req.ip) });
+  });
+
+  // --- Écran « Connexions Claude » : mes connexions, et les déconnecter ---
+  // Aucun mot de passe demandé : déconnecter est une mesure de sécurité,
+  // toujours permise. Une connexion d'un autre compte répond comme une
+  // connexion inconnue (404).
+  router.get('/me/claude', (req, res) => {
+    res.json({ url: oauth.resource, connections: oauth.listGrants(req.user) });
+  });
+
+  router.delete('/me/claude/:id', (req, res) => {
+    const id = /^\d{1,15}$/.test(req.params.id) ? Number(req.params.id) : null;
+    if (id === null || !oauth.revokeOwnGrant(req.user, id)) return res.status(404).json({ error: 'Connexion introuvable.' });
+    return res.json({ ok: true });
+  });
+
+  router.delete('/me/claude', (req, res) => {
+    res.json({ count: oauth.revokeAllOwn(req.user) });
   });
 
   return router;

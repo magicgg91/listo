@@ -598,6 +598,8 @@ Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa r
   - « Après l'ajout » : rester sur la liste ou ouvrir la fiche, liste par liste (migration 15).
 - **30 octobre 2026**
   - Nouveautés : pastilles sur « Mes listes », halo dans la liste, sourdine par liste, réglages du compte (migration 16).
+- **31 octobre 2026**
+  - Cadrage, sans code, d'un serveur MCP intégré à Listo pour l'utiliser depuis Claude : voir [docs/mcp-cadrage.md](mcp-cadrage.md).
 
 **Tests automatisés** : 619 tests (`npm test`), tous réussis, mesurés le 30 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 

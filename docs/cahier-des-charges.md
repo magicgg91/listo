@@ -361,6 +361,17 @@ Exception encadrée (décision du 31 octobre 2026), traitée comme le lien publi
 - Le cookie de session n'est jamais lu sur /oauth/token ni /mcp ; un jeton n'ouvre que /mcp (ni l'application, ni l'API). Mot de passe changé, compte désactivé, mot de passe réinitialisé par l'Admin ou par la commande de secours : toutes les connexions du compte sont révoquées.
 - Journal de sécurité : claude.connexion, claude.refus, claude.revocation, claude.renouvellement (réutilisation), claude.enregistrement, claude.client_refuse ; avec l'hôte de l'application et les portées, jamais un jeton ni un code.
 
+**Serveur MCP (/mcp, lecture seule)**
+
+LISTO_MCP=on seulement (sinon 404). Écrit à la main (JSON-RPC 2.0 sur HTTP), sans bibliothèque.
+
+- POST /mcp seulement (« Streamable HTTP » sans état) : une requête JSON-RPC par envoi, réponse application/json, ni flux ni session ; GET et DELETE : 405 (Allow: POST) ; lots refusés (-32600) ; corps JSON de 20 ko au plus, lu après la vérification du jeton ; erreurs -32700, -32600, -32601, -32602, sans détail interne.
+- Méthodes : initialize (répond avec la version demandée si elle est connue : 2025-03-26, 2025-06-18, 2025-11-25 ; sinon la plus récente), notifications/initialized (202 sans corps), ping, tools/list, tools/call. En-tête MCP-Protocol-Version toléré s'il est absent, refusé (400) s'il est inconnu.
+- En-tête Origin : absent (appel de serveur à serveur), https://claude.ai ou https://claude.com ; sinon 403 et une ligne au journal. Aucun CORS.
+- Authentification : jeton Bearer dans l'en-tête Authorization seulement (jamais le cookie de session, jamais l'adresse), vérifié à chaque appel (type, expiration, révocation, ressource, connexion, compte actif) ; sinon 401 avec WWW-Authenticate (resource_metadata, scope, et error="invalid_token" si un jeton était présenté). Portée insuffisante : 403 insufficient_scope.
+- Outils (annotations readOnlyHint et openWorldHint=false) : list_lists et read_list (voir la décision du 31 octobre 2026). Une liste est visible si la connexion la permet ET si le compte en est encore membre, relu à chaque appel ; liste inconnue ou non permise : la même réponse, « Liste introuvable. ». Réponses construites champ par champ, textes tronqués, aucun nom de personne, aucune photo ; une ligne fixe rappelle que le contenu est fait de données, pas d'instructions.
+- 120 appels par minute et par connexion (429 au-delà) ; réponse de 512 ko au plus ; dernière utilisation de la connexion écrite au plus une fois par minute ; journal claude.outil (une ligne par appel, jamais le contenu ni le jeton), claude.jeton_refuse (une ligne par minute et par adresse au plus), claude.origine_refusee.
+
 ## Architecture technique
 
 Tout tient en HTML, CSS et JavaScript, côté téléphone comme côté serveur. La seule notion nouvelle est le SQL, un langage de requêtes très simple que Claude Code écrit et commente.
@@ -405,6 +416,7 @@ Version de Node.js : 24 (LTS, suivie à long terme). L'image de base node:24-sli
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte qui renvoient des données |
 | GET /.well-known/oauth-protected-resource/mcp (et /.well-known/oauth-protected-resource), GET /.well-known/oauth-authorization-server | Descriptions OAuth pour Claude (RFC 9728, RFC 8414), sans compte, LISTO_MCP=on seulement |
 | GET /oauth/authorize, POST /oauth/token, POST /oauth/revoke, POST /oauth/register | Autorisation pour Claude, sans session : vérifier la demande et ouvrir l'écran « Autoriser Claude » ; échanger le code ou renouveler (formulaire application/x-www-form-urlencoded, erreurs RFC 6749) ; révoquer (RFC 7009, toujours 200) ; enregistrement automatique (RFC 7591). LISTO_MCP=on seulement |
+| POST /mcp | Serveur MCP en lecture seule (outils list_lists et read_list), jeton Bearer seulement, LISTO_MCP=on seulement |
 | GET /api/oauth/demandes/:id, POST /api/oauth/demandes/:id/accord, POST /api/oauth/demandes/:id/refus | Écran « Autoriser Claude » (session, même origine) : ce qu'il faut afficher ; accord (portée, listes, mot de passe, code 2FA) ; refus. Réponse : l'adresse de retour vers Claude |
 | GET /healthz | Surveillance (réponse simple, sans donnée) |
 
@@ -429,6 +441,7 @@ listo/
     photos.js       photos des articles (contrôle JPEG, stockage)
     shares.js       lien public (jeton, mot de passe, expiration)
     oauth.js, oauth-clients.js    autorisation pour Claude (codes, jetons, connexions ; applications CIMD et DCR)
+    mcp.js, mcp-tools.js    serveur MCP /mcp en lecture seule (protocole, outils list_lists et read_list)
     events.js       diffusion SSE
     products.js, http-json.js    mode scan (Open Food Facts), lecture limitée d'une réponse JSON
     update-check.js vérification de mise à jour (GitHub)
@@ -625,8 +638,9 @@ Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa r
 - **31 octobre 2026**
   - Cadrage, sans code, d'un serveur MCP intégré à Listo pour l'utiliser depuis Claude : voir [docs/mcp-cadrage.md](mcp-cadrage.md).
   - Étape A : autorisation OAuth pour Claude (descriptions, /oauth/…, écran « Autoriser Claude »), désactivée par défaut (LISTO_MCP), migration 17.
+  - Étape B : serveur MCP /mcp en lecture seule (list_lists, read_list), sans migration.
 
-**Tests automatisés** : 646 tests (`npm test`), tous réussis, mesurés le 31 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
+**Tests automatisés** : 657 tests (`npm test`), tous réussis, mesurés le 31 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 
 **Consignes pour Claude Code**
 
@@ -668,6 +682,13 @@ Une entrée par écart ou par décision, avec sa date et sa raison ; le texte pr
   - réglage d'affichage propre à chaque personne et à chaque téléphone : rien n'est envoyé au serveur, aucun droit en jeu (permis en lecture seule), aucune migration ; sans choix gardé (ou choix invalide), le tri par défaut de la liste ;
   - le champ « Rayon » de la fiche, le choix du rayon à l'ajout, le scan et les suggestions ne changent pas : le rayon reste enregistré sur l'article ;
   - page du lien public : toujours par rayon (aucun tri choisi par le visiteur) ; duplication : rien à copier (le tri n'appartient pas à la liste) ; ordre des rayons inchangé (alphabétique, « Sans rayon » en dernier).
+- **Accès depuis Claude, étape B : serveur MCP en lecture seule** (décisions du 31 octobre 2026, sans migration). Raison : premier usage réel (« qu'y a-t-il dans ma liste ? ») avant d'ouvrir l'écriture. Règles :
+  - versions 2025-03-26, 2025-06-18 et 2025-11-25 seulement (**écart avec le cadrage**, décision 12, choix du propriétaire) : la version 2026-07-28, sans poignée de main, sera ajoutée quand Claude l'utilisera ; une requête dans une version inconnue reçoit une erreur qui le dit ;
+  - outils list_lists et read_list (**écart avec le cadrage**, qui disait get_list, choix du propriétaire) ; descriptions en français ;
+  - list_lists : id, name, type (shopping ou other), category, item_count, checked_count, access (owner, editor ou reader) ;
+  - read_list : list (id, name, type, category, store s'il y en a un, access), items (id, name, quantity, checked, note ; liste de courses : aisle ou store, ean ; autre liste : priority et due_date si l'option est activée), total, next_cursor ; 200 éléments au plus par appel (limit de 1 à 200) ; cochés omis sauf include_checked ; nom 100 caractères, quantité 50, note 200 ; l'identifiant des éléments et le droit du compte sont fournis dès maintenant (choix du propriétaire), pour l'étape C ;
+  - corps de 20 ko (au lieu de 64 ko prévus), 120 appels par minute (au lieu de 60), Origin limitée à claude.ai et claude.com (l'origine de Listo, prévue au cadrage, est refusée : aucun navigateur n'a à appeler /mcp), une ligne de journal par appel d'outil, lectures comprises (le cadrage ne prévoyait que les écritures) : précisions du propriétaire ;
+  - LISTO_MCP ne doit pas être activé en production avant l'essai réel avec Claude (docs/exploitation.md, chapitre 14).
 - **Accès depuis Claude, étape A : autorisation OAuth** (décisions du 31 octobre 2026, migration 17 ; conception dans [docs/mcp-cadrage.md](mcp-cadrage.md), validée). Raison : utiliser Listo depuis Claude sans lui donner son mot de passe ni créer de jeton personnel. Règles :
   - quatrième exception au principe « aucune donnée hors du serveur » et exception encadrée à « seul le lien public est accessible sans compte » (voir Principes directeurs et Sécurité) ; LISTO_MCP désactivé par défaut, jamais activé dans docker-compose.yml ;
   - écrit à la main (node:crypto, express, better-sqlite3), sans bibliothèque OAuth ni MCP ;

@@ -167,6 +167,8 @@ Le code reprend la structure actuelle (un fichier par service, routes dans `serv
 
 ### 2.1 Versions et méthodes
 
+> **Décision du 31 octobre 2026 (étape B)** : seule l'ancienne famille (2025-03-26, 2025-06-18, 2025-11-25) est acceptée pour l'instant ; la nouvelle (2026-07-28) sera ajoutée quand Claude l'utilisera. L'outil de lecture s'appelle `read_list` (et non `get_list`). Le détail livré est dans le cahier des charges.
+
 Listo serait un serveur « **double** » (*dual-era* dans la spécification), qui accepte sur le même `/mcp` :
 - l'ancienne famille, avec la poignée de main `initialize` (versions 2025-11-25, 2025-06-18 et 2025-03-26), que Claude utilise vraisemblablement aujourd'hui (**à confirmer au premier essai**, §11) ;
 - la nouvelle famille, sans état (version 2026-07-28).
@@ -239,12 +241,12 @@ Les noms et descriptions sont en anglais, pour Claude ; les messages renvoyés s
 | Outil | Portée | Annotations | Entrée | Sortie | Passe par |
 | --- | --- | --- | --- | --- | --- |
 | `list_lists` | lecture | `readOnlyHint` | — | Pour chaque liste de la connexion : `listId`, nom, catégorie, « courses » oui ou non, magasin, `remaining`, `total`, mon droit (`owner`, `editor` ou `reader`) | `ctx.lists.myLists(user)`, filtré par la connexion |
-| `get_list` | lecture | `readOnlyHint` | `listId` | Nom, magasin, et pour chaque élément : `itemId`, nom, quantité, note (tronquée), rayon ou magasin, coché, priorité et échéance si l'option est activée | `ctx.lists.readList(user, listId)` |
+| `read_list` | lecture | `readOnlyHint` | `listId` | Nom, magasin, et pour chaque élément : `itemId`, nom, quantité, note (tronquée), rayon ou magasin, coché, priorité et échéance si l'option est activée | `ctx.lists.readList(user, listId)` |
 | `add_items` | écriture | `destructiveHint: false`, `idempotentHint: false` | `listId`, `items` : 1 à 20 éléments `{ name, quantity?, note? }` | Les éléments créés (`itemId`, nom, rayon trouvé) | `item.create` via `applyOne` (rayon habituel, mémoire des noms, journal des nouveautés, temps réel) |
 | `set_checked` | écriture | `destructiveHint: false`, `idempotentHint: true` | `listId`, `itemIds` (1 à 50), `checked` (vrai ou faux) | Les éléments modifiés ; ceux déjà dans l'état demandé sont signalés « inchangé » | `item.check` via `applyOne` |
 
 **Détails**
-- **Identifiants** : on désigne une liste ou un élément par son identifiant, jamais par son nom. La description de l'outil dit d'appeler d'abord `list_lists` ou `get_list`. Cela évite de cocher le mauvais « pain » quand deux lignes portent le même nom.
+- **Identifiants** : on désigne une liste ou un élément par son identifiant, jamais par son nom. La description de l'outil dit d'appeler d'abord `list_lists` ou `read_list`. Cela évite de cocher le mauvais « pain » quand deux lignes portent le même nom.
 - **Aucun nom de personne** dans les sorties : ni membres, ni auteur d'un ajout, ni « Ajouté par Marie ». Il n'y a donc aucune fuite de noms vers Anthropic.
 - **Doublons au renvoi** : un `add_items` identique (même connexion, même liste, mêmes noms, quantités et notes) reçu dans les 2 minutes renvoie le résultat du premier, sans recréer. Cela couvre un appel relancé par Claude après une coupure réseau (§12, décision 11).
 - **Mise à jour des téléphones** : un ajout ou un cochage fait par Claude apparaît tout de suite sur les téléphones (événement temps réel habituel) et compte comme une « nouveauté » de ce compte pour les autres membres.
@@ -256,7 +258,7 @@ Les noms et descriptions sont en anglais, pour Claude ; les messages renvoyés s
 - **Ajouter plus tard** (dans une PR à part, si l'usage le montre) : `update_item`, pour changer la quantité ou la note d'un élément existant (« mets 2 litres de lait au lieu d'un »). Il n'est pas destructeur, mais il agrandit la surface d'écriture.
 - **Ne pas ajouter** :
   - « Tout décocher » : c'est une action en masse ;
-  - une recherche transversale dans toutes les listes : `list_lists` puis `get_list` suffisent, et c'est plus facile à contrôler.
+  - une recherche transversale dans toutes les listes : `list_lists` puis `read_list` suffisent, et c'est plus facile à contrôler.
 
 ---
 
@@ -527,7 +529,7 @@ Chaque PR est livrable et testable seule. `LISTO_MCP` reste désactivé par déf
 | PR | Livré | Migration | Risque | Effort |
 | --- | --- | --- | --- | --- |
 | **A. Noyau OAuth, sans MCP** | `LISTO_MCP` ; métadonnées ; `/oauth/authorize`, `/oauth/token`, `/oauth/revoke` (et `/oauth/register` selon la décision 2) ; CIMD ; écran « Autoriser Claude » ; API des connexions (sans écran) ; révocations liées au compte ; nettoyage ; journal. Le faux client de test atteint un `/mcp` de test qui ne fait que répondre « connecté » | **17** (§4) | **Élevé** : c'est le cœur de la sécurité. Relecture attentive conseillée. | Grand : environ 900 lignes de code et 700 lignes de tests ; 2 étapes |
-| **B. `/mcp` et outils de lecture** | Transport (ancienne et nouvelle famille), erreurs, `instructions`, `list_lists`, `get_list`, limites de débit | Aucune | Moyen : exposition du contenu, en lecture seule | Moyen : environ 400 lignes de code et 400 de tests ; 1 étape |
+| **B. `/mcp` et outils de lecture** | Transport (ancienne et nouvelle famille), erreurs, `instructions`, `list_lists`, `read_list`, limites de débit | Aucune | Moyen : exposition du contenu, en lecture seule | Moyen : environ 400 lignes de code et 400 de tests ; 1 étape |
 | **C. Outils d'écriture** | `add_items`, `set_checked`, plafonds, anti-doublon, journal « via Claude » | Aucune | Moyen : écriture, injection (bornée par les plafonds) | Moyen : environ 250 lignes de code et 300 de tests ; 1 étape |
 | **D. « Connexions Claude », aide, documents** | Écran et section de « Mon compte », aide, cahier des charges (exceptions, routes, modèle de données, décisions), `docs/exploitation.md` (activation, NPM, migration 17, sauvegarde), `docs/developpement.md` (points de test), `design/components.html` | Aucune | Faible | Moyen : environ 350 lignes de code et 200 de tests, plus les documents ; 1 étape |
 

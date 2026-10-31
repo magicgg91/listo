@@ -26,6 +26,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Icône d'une liste (migration 14)](#icône-dune-liste-migration-14)
 - [Nouveautés (migration 16)](#nouveautés-migration-16)
 - [Autorisation pour Claude (migration 17)](#autorisation-pour-claude-migration-17)
+- [Serveur MCP en lecture seule (étape B)](#serveur-mcp-en-lecture-seule-étape-b)
 - [Photo et scan sur Android (choix de la source)](#photo-et-scan-sur-android-choix-de-la-source)
 - [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
@@ -47,6 +48,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
 | `server/oauth.js`, `server/oauth-clients.js`, `server/routes/oauth.js` | Autorisation OAuth pour Claude (LISTO_MCP=on) : applications (CIMD, DCR), demandes, connexions, codes et jetons (empreintes), rotation, révocations, nettoyage ; routes `/.well-known/…`, `/oauth/…`, `/api/oauth/demandes/…` |
+| `server/mcp.js`, `server/mcp-tools.js` | Serveur MCP `/mcp` (LISTO_MCP=on) : protocole JSON-RPC écrit à la main, jeton Bearer, débit, journal ; outils en lecture seule `list_lists` et `read_list` |
 | `server/news.js` | Nouveautés : journal des événements de chaque liste, repère de lecture de chaque membre, calcul de ce qui est nouveau pour une personne, nettoyage (30 jours, 500 par liste) |
 | `server/events.js` | Temps réel : flux SSE `/api/events`, connexions ouvertes, messages « la liste X a changé » |
 | `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
@@ -254,6 +256,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. **Mot de passe redemandé** : un mot de passe faux affiche « Mot de passe incorrect. » ; cinq essais faux bloquent 15 minutes (« Trop de tentatives »). Avec la 2FA, le code est aussi demandé. Le bon mot de passe ramène vers Claude.
     5. **Refus** : « Refuser » ramène vers Claude, qui affiche que l'accès a été refusé ; dans `docker logs listo`, une ligne `claude.refus` (sans jeton ni code).
     6. **Révocation** : changer son mot de passe dans Listo ; Claude doit redemander l'autorisation (ligne `claude.revocation`).
+    7. **Lecture par Claude** (étape B ; claude.ai, application mobile, Claude Desktop, Claude Code) : « Quelles sont mes listes Listo ? » donne les listes autorisées, et elles seules ; « Qu'y a-t-il dans les courses ? » donne les articles non cochés, avec quantité et rayon, sans nom de personne. Retirer une personne d'une liste partagée : sa liste disparaît aussitôt de ce que voit son Claude. Une liste réglée en « Certaines listes » à l'autorisation : les autres n'apparaissent jamais. `docker logs listo` : une ligne `claude.outil` par question, sans contenu.
 
 **Réglages et Administration**
 
@@ -978,6 +981,15 @@ Colonne `lists.icon` (texte, vide par défaut = icône de la catégorie), envoy�
 - **Téléphone** : `public/js/screens/claude-consent.js`, adresse `#/autoriser/:id` (`router.js`), sans panneau latéral ; après la connexion (ou un mot de passe imposé à changer), retour à la demande (`app.afterLogin`). Accord et refus : `POST`, puis `location.assign()` vers l'adresse renvoyée (un formulaire posté puis redirigé vers claude.ai serait bloqué par `form-action 'self'` : la CSP reste inchangée). Classes du kit (`.card`, `.row`, `.radio-row`, `.tick-row`, `.note`, `.note--danger`) ; un seul ajout dans `app.css` : `.card--clip`.
 - Commande de secours (`server/admin-secours.js`) : révoque aussi les connexions du compte, en SQL direct.
 - Tests : `test/oauth.test.js` (faux client qui rejoue tout le flux, CIMD simulé, aucun vrai réseau), `test/rescue.test.js` (commande de secours). Vérifié dans Chromium (écran en clair et en sombre, retour local de Claude Code, refus, connexion puis retour). **À vérifier avec un vrai Claude** : point 33 ci-dessus.
+
+## Serveur MCP en lecture seule (étape B)
+
+`server/mcp.js` (transport et protocole) et `server/mcp-tools.js` (outils), montés seulement si `LISTO_MCP=on`. Aucune bibliothèque : JSON-RPC 2.0 écrit à la main, sans état (aucune session), réponses `application/json` seulement.
+
+- **Ordre des contrôles** (une suite de `router.post('/mcp', …)`) : `Origin` (absent, `https://claude.ai`, `https://claude.com`, sinon 403 et `claude.origine_refusee`) ; jeton `Bearer` lu dans l'en-tête seulement et vérifié par `oauth.verifyAccess` (401 avec `WWW-Authenticate: Bearer resource_metadata=…, scope=…[, error="invalid_token"]`, `claude.jeton_refuse` une fois par minute et par IP) ; portée `lists:read` (403 `insufficient_scope`) ; débit, 120 appels par minute et par connexion (429, `Retry-After`) ; seulement alors le corps (`express.json`, 20 ko) ; lot, forme JSON-RPC, en-tête `MCP-Protocol-Version` (`PROTOCOL_VERSIONS`) ; méthode. GET et DELETE : 405 avec `Allow: POST`. Erreur inattendue : -32603 « Erreur interne. », le détail dans `docker logs` seulement.
+- **Outils** (`TOOLS`, ordre fixe, descriptions sans donnée d'un compte) : `list_lists` (`ctx.lists.myLists` filtré par la connexion, comptes d'éléments par une requête paramétrée) et `read_list` (`ctx.lists.readList`, qui ne renvoie une liste que si le compte en est membre). Sortie construite champ par champ, textes coupés par `clip` ; `content` = `DATA_NOTICE` + le même JSON que `structuredContent`. Arguments vérifiés à la main (`ParamsError` → -32602), y compris un argument inconnu.
+- **Dernière utilisation** : `oauth.useGrant(grantId)`, écrite au plus une fois par minute (mémoire `lastWrites`). `verifyAccess` donne aussi `grant.clientHost` (pour le journal `claude.outil`).
+- Tests : `test/mcp.test.js` (jetons obtenus par le vrai flux OAuth : 401 dans tous les cas prévus, cookie seul refusé, versions, erreurs de protocole, 405, Origin, droits et sélection de listes, membre retiré, sorties champ par champ, pagination, débit, journal). **À vérifier avec un vrai Claude** : point 33.7 ci-dessus et `docs/exploitation.md`, chapitre 14, « Premier essai ».
 
 ## Nouveautés (migration 16)
 

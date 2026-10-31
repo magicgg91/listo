@@ -235,7 +235,26 @@ export const SECTIONS = [
 
 // Sections montrées à ce compte : la section Administrateur seulement à un
 // Admin (pour les autres, elle n'est même pas passée à l'écran)
+// « Utiliser Listo avec Claude » : seulement si l'accès depuis Claude est
+// activé sur le serveur (user.claudeUrl). {adresse} est remplacé par
+// l'adresse du serveur (jamais écrite ici en dur).
+export const CLAUDE_TOPIC = {
+  title: 'Utiliser Listo avec Claude',
+  items: [
+    'Adresse à saisir dans Claude : {adresse}',
+    'Sur claude.ai, l\'application mobile ou Claude Desktop : dans les réglages de Claude, ajoutez un connecteur personnalisé avec cette adresse, puis suivez l\'écran « Autoriser Claude » de Listo (votre mot de passe est redemandé).',
+    'Avec Claude Code : claude mcp add --transport http listo {adresse}, puis /mcp pour autoriser.',
+    'À l\'autorisation, « Lecture seule » est proposé par défaut. Avec « Lecture et ajout », Claude peut aussi ajouter des éléments et en cocher ou décocher. Il ne peut jamais supprimer, renommer ni modifier un élément, ni partager une liste.',
+    'Ce que Claude ajoute apparaît à votre nom, comme si vous l\'aviez fait vous-même. Le contenu des listes autorisées est envoyé à Claude quand vous l\'interrogez.',
+    'Pour arrêter : Réglages, « Mon compte », « Connexions Claude », puis « Déconnecter » (ou « Tout déconnecter »).',
+  ],
+};
+
 export function helpSections(user) {
   const admin = user?.role === 'admin';
-  return SECTIONS.filter((section) => !section.adminOnly || admin);
+  const sections = SECTIONS.filter((section) => !section.adminOnly || admin);
+  if (!user?.claudeUrl) return sections;
+  // Accès depuis Claude activé : la rubrique s'ajoute à « Pour tout le monde »
+  const claude = { ...CLAUDE_TOPIC, items: CLAUDE_TOPIC.items.map((line) => line.replaceAll('{adresse}', user.claudeUrl)) };
+  return sections.map((section) => (section.id === 'tous' ? { ...section, topics: [...section.topics, claude] } : section));
 }

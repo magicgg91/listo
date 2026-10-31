@@ -548,7 +548,8 @@ test('point d\'échange : formulaire seulement, paramètre répété refusé, ty
   // Et un jeton Claude n'ouvre pas l'API de l'application
   const bearer = await raw(h.app, 'GET', '/api/me', { headers: { authorization: `Bearer ${tokens.access_token}` } });
   assert.equal(bearer.status, 401, 'jeton refusé sur /api');
-  assert.equal((await raw(h.app, 'POST', '/mcp', { headers: { authorization: `Bearer ${tokens.access_token}` } })).status, 404, '/mcp n\'existe pas encore');
+  // Sur /mcp (étape B), le jeton est accepté : une requête vide y est refusée par le protocole, pas par l'authentification
+  assert.equal((await raw(h.app, 'POST', '/mcp', { headers: { authorization: `Bearer ${tokens.access_token}` } })).status, 400, 'jeton accepté sur /mcp');
 });
 
 test('codes et jetons : empreintes seulement en base, jamais dans les journaux', async (t) => {

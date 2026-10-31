@@ -445,8 +445,22 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     const { grant, user } = live;
     return {
       user,
-      grant: { id: grant.id, scope: grant.scope.split(' '), allLists: grant.all_lists === 1, listIds: grant.all_lists ? null : q.grantLists.all(grant.id) },
+      grant: {
+        id: grant.id, clientHost: grant.client_host, scope: grant.scope.split(' '),
+        allLists: grant.all_lists === 1, listIds: grant.all_lists ? null : q.grantLists.all(grant.id),
+      },
     };
+  }
+
+  // Dernière utilisation d'une connexion (appel de /mcp) : écrite en base
+  // au plus une fois par minute et par connexion, pas à chaque appel
+  const lastWrites = new Map(); // connexion -> heure de la dernière écriture
+  function useGrant(grantId) {
+    const time = ctx.now();
+    if (time - (lastWrites.get(grantId) ?? -Infinity) < MINUTE) return false;
+    lastWrites.set(grantId, time);
+    q.useGrant.run(iso(time), grantId);
+    return true;
   }
 
   // --- Ménage (tâche périodique) ---
@@ -455,6 +469,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     const now = iso(time);
     for (const [key, entry] of recentRefresh) if (entry.expiresAt <= time) recentRefresh.delete(key);
     for (const [ip, entry] of dcrByIp) if (time - entry.start >= HOUR) dcrByIp.delete(ip);
+    for (const [grantId, at] of lastWrites) if (time - at >= MINUTE) lastWrites.delete(grantId);
     db.transaction(() => {
       db.prepare('DELETE FROM oauth_requests WHERE expires_at <= ?').run(now);
       db.prepare('DELETE FROM oauth_codes WHERE expires_at <= ?').run(iso(time - HOUR));
@@ -476,6 +491,6 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   return {
     issuer, resource,
     resolveClient, register, clientRedirect, createRequest, findRequest, describeRequest,
-    approve, refuse, exchangeCode, refresh, revokeGrant, revokeAllForUser, revokeToken, verifyAccess, purge,
+    approve, refuse, exchangeCode, refresh, revokeGrant, revokeAllForUser, revokeToken, verifyAccess, useGrant, purge,
   };
 }

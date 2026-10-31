@@ -361,7 +361,7 @@ Exception encadrée (décision du 31 octobre 2026), traitée comme le lien publi
 - Le cookie de session n'est jamais lu sur /oauth/token ni /mcp ; un jeton n'ouvre que /mcp (ni l'application, ni l'API). Mot de passe changé, compte désactivé, mot de passe réinitialisé par l'Admin ou par la commande de secours : toutes les connexions du compte sont révoquées.
 - Journal de sécurité : claude.connexion, claude.refus, claude.revocation, claude.renouvellement (réutilisation), claude.enregistrement, claude.client_refuse ; avec l'hôte de l'application et les portées, jamais un jeton ni un code.
 
-**Serveur MCP (/mcp, lecture seule)**
+**Serveur MCP (/mcp)**
 
 LISTO_MCP=on seulement (sinon 404). Écrit à la main (JSON-RPC 2.0 sur HTTP), sans bibliothèque.
 
@@ -369,7 +369,7 @@ LISTO_MCP=on seulement (sinon 404). Écrit à la main (JSON-RPC 2.0 sur HTTP), s
 - Méthodes : initialize (répond avec la version demandée si elle est connue : 2025-03-26, 2025-06-18, 2025-11-25 ; sinon la plus récente), notifications/initialized (202 sans corps), ping, tools/list, tools/call. En-tête MCP-Protocol-Version toléré s'il est absent, refusé (400) s'il est inconnu.
 - En-tête Origin : absent (appel de serveur à serveur), https://claude.ai ou https://claude.com ; sinon 403 et une ligne au journal. Aucun CORS.
 - Authentification : jeton Bearer dans l'en-tête Authorization seulement (jamais le cookie de session, jamais l'adresse), vérifié à chaque appel (type, expiration, révocation, ressource, connexion, compte actif) ; sinon 401 avec WWW-Authenticate (resource_metadata, scope, et error="invalid_token" si un jeton était présenté). Portée insuffisante : 403 insufficient_scope.
-- Outils (annotations readOnlyHint et openWorldHint=false) : list_lists et read_list (voir la décision du 31 octobre 2026). Une liste est visible si la connexion la permet ET si le compte en est encore membre, relu à chaque appel ; liste inconnue ou non permise : la même réponse, « Liste introuvable. ». Réponses construites champ par champ, textes tronqués, aucun nom de personne, aucune photo ; une ligne fixe rappelle que le contenu est fait de données, pas d'instructions.
+- Outils de lecture (annotations readOnlyHint et openWorldHint=false) : list_lists et read_list. Outils d'écriture (readOnlyHint=false, destructiveHint=false ; idempotentHint pour set_checked seulement), réservés à une connexion « Lecture et ajout » (portée lists:write ; sinon erreur d'outil « Cette connexion est en lecture seule. », rien d'écrit) : add_items (1 à 20 éléments) et set_checked (1 à 20 éléments). Écriture par le même chemin que l'application (applyOps : droits du compte, Nouveautés, mémoire des noms, rayon habituel, temps réel, synchronisation), au nom du compte qui a autorisé la connexion ; un invité en lecture seule est refusé. Aucun outil de suppression, de modification d'un élément existant, de liste, de partage, de lien public, de compte ni d'administration. Voir les décisions du 31 octobre 2026. Une liste est visible si la connexion la permet ET si le compte en est encore membre, relu à chaque appel ; liste inconnue ou non permise : la même réponse, « Liste introuvable. ». Réponses construites champ par champ, textes tronqués, aucun nom de personne, aucune photo ; une ligne fixe rappelle que le contenu est fait de données, pas d'instructions.
 - 120 appels par minute et par connexion (429 au-delà) ; réponse de 512 ko au plus ; dernière utilisation de la connexion écrite au plus une fois par minute ; journal claude.outil (une ligne par appel, jamais le contenu ni le jeton), claude.jeton_refuse (une ligne par minute et par adresse au plus), claude.origine_refusee.
 
 ## Architecture technique
@@ -416,7 +416,7 @@ Version de Node.js : 24 (LTS, suivie à long terme). L'image de base node:24-sli
 | GET /p/:jeton, GET /api/public/:jeton, POST /api/public/:jeton/acces, GET /api/public/:jeton/photos/:id | Page publique, données en lecture seule, saisie du mot de passe, photos : seules routes sans compte qui renvoient des données |
 | GET /.well-known/oauth-protected-resource/mcp (et /.well-known/oauth-protected-resource), GET /.well-known/oauth-authorization-server | Descriptions OAuth pour Claude (RFC 9728, RFC 8414), sans compte, LISTO_MCP=on seulement |
 | GET /oauth/authorize, POST /oauth/token, POST /oauth/revoke, POST /oauth/register | Autorisation pour Claude, sans session : vérifier la demande et ouvrir l'écran « Autoriser Claude » ; échanger le code ou renouveler (formulaire application/x-www-form-urlencoded, erreurs RFC 6749) ; révoquer (RFC 7009, toujours 200) ; enregistrement automatique (RFC 7591). LISTO_MCP=on seulement |
-| POST /mcp | Serveur MCP en lecture seule (outils list_lists et read_list), jeton Bearer seulement, LISTO_MCP=on seulement |
+| POST /mcp | Serveur MCP : lecture (list_lists, read_list) et, pour une connexion « Lecture et ajout », ajout et cochage (add_items, set_checked) ; jeton Bearer seulement, LISTO_MCP=on seulement |
 | GET /api/oauth/demandes/:id, POST /api/oauth/demandes/:id/accord, POST /api/oauth/demandes/:id/refus | Écran « Autoriser Claude » (session, même origine) : ce qu'il faut afficher ; accord (portée, listes, mot de passe, code 2FA) ; refus. Réponse : l'adresse de retour vers Claude |
 | GET /healthz | Surveillance (réponse simple, sans donnée) |
 
@@ -441,7 +441,7 @@ listo/
     photos.js       photos des articles (contrôle JPEG, stockage)
     shares.js       lien public (jeton, mot de passe, expiration)
     oauth.js, oauth-clients.js    autorisation pour Claude (codes, jetons, connexions ; applications CIMD et DCR)
-    mcp.js, mcp-tools.js    serveur MCP /mcp en lecture seule (protocole, outils list_lists et read_list)
+    mcp.js, mcp-tools.js    serveur MCP /mcp (protocole ; outils list_lists, read_list, add_items, set_checked)
     events.js       diffusion SSE
     products.js, http-json.js    mode scan (Open Food Facts), lecture limitée d'une réponse JSON
     update-check.js vérification de mise à jour (GitHub)
@@ -639,8 +639,9 @@ Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa r
   - Cadrage, sans code, d'un serveur MCP intégré à Listo pour l'utiliser depuis Claude : voir [docs/mcp-cadrage.md](mcp-cadrage.md).
   - Étape A : autorisation OAuth pour Claude (descriptions, /oauth/…, écran « Autoriser Claude »), désactivée par défaut (LISTO_MCP), migration 17.
   - Étape B : serveur MCP /mcp en lecture seule (list_lists, read_list), sans migration.
+  - Étape C : outils d'écriture add_items et set_checked (connexion « Lecture et ajout »), sans migration.
 
-**Tests automatisés** : 657 tests (`npm test`), tous réussis, mesurés le 31 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
+**Tests automatisés** : 665 tests (`npm test`), tous réussis, mesurés le 31 octobre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 
 **Consignes pour Claude Code**
 
@@ -682,6 +683,15 @@ Une entrée par écart ou par décision, avec sa date et sa raison ; le texte pr
   - réglage d'affichage propre à chaque personne et à chaque téléphone : rien n'est envoyé au serveur, aucun droit en jeu (permis en lecture seule), aucune migration ; sans choix gardé (ou choix invalide), le tri par défaut de la liste ;
   - le champ « Rayon » de la fiche, le choix du rayon à l'ajout, le scan et les suggestions ne changent pas : le rayon reste enregistré sur l'article ;
   - page du lien public : toujours par rayon (aucun tri choisi par le visiteur) ; duplication : rien à copier (le tri n'appartient pas à la liste) ; ordre des rayons inchangé (alphabétique, « Sans rayon » en dernier).
+- **Accès depuis Claude, étape C : ajout et cochage** (décisions du 31 octobre 2026, sans migration). Raison : « ajoute du lait aux courses », « coche le pain ». Règles :
+  - add_items(list_id, items) : 1 à 20 éléments { name, quantity?, note? } (types vérifiés, sinon -32602) ; validation et longueurs de l'application (nom 100, quantité 30, note 500), appliquées élément par élément : un élément refusé est « ignoré » avec le message de l'application ; réponse : pour chaque élément, created (avec son id) ou ignored (avec la raison) ;
+  - un élément de même nom (sans accent ni casse) déjà dans la liste **sans être coché** n'est pas recréé : « déjà dans la liste, non coché », avec l'id de l'existant (**écart avec l'application**, qui crée toujours une deuxième ligne : choix du propriétaire, pour éviter les doublons demandés par Claude) ; un élément de même nom coché n'empêche pas l'ajout ;
+  - anti-doublon : un nom déjà ajouté par la même connexion dans la même liste depuis moins de 2 minutes est ignoré (« déjà ajouté il y a moins de 2 minutes »), de même qu'un nom répété dans une seule demande ;
+  - plafond : 100 éléments ajoutés par heure et par connexion ; une demande qui le dépasserait est refusée entière (erreur d'outil, rien d'écrit) ;
+  - set_checked(list_id, item_ids, checked) : 1 à 20 identifiants (et non 50 comme au cadrage) ; déjà dans l'état demandé : unchanged ; identifiant inconnu ou d'une autre liste : ignored avec la même raison, « élément introuvable dans cette liste » ;
+  - connexion « Lecture seule » : erreur d'outil « Cette connexion est en lecture seule. » (et non un 403 insufficient_scope comme au cadrage : précision du propriétaire), rien d'écrit ; liste hors connexion ou inconnue : « Liste introuvable. » ; invité en lecture seule : « Vous avez un accès en lecture seule à cette liste. » ;
+  - attribution : au nom du compte qui a autorisé la connexion (« Ajouté par » son prénom) ; une mention « via Claude » dans la fiche demanderait une migration, un champ de synchronisation et l'écran : non faite, en attente d'une décision ;
+  - journal claude.outil : nombres créés, ignorés, cochés, jamais un nom saisi ; mémoire de la ligne « jeton refusé » plafonnée à 1 000 adresses entre deux ménages.
 - **Accès depuis Claude, étape B : serveur MCP en lecture seule** (décisions du 31 octobre 2026, sans migration). Raison : premier usage réel (« qu'y a-t-il dans ma liste ? ») avant d'ouvrir l'écriture. Règles :
   - versions 2025-03-26, 2025-06-18 et 2025-11-25 seulement (**écart avec le cadrage**, décision 12, choix du propriétaire) : la version 2026-07-28, sans poignée de main, sera ajoutée quand Claude l'utilisera ; une requête dans une version inconnue reçoit une erreur qui le dit ;
   - outils list_lists et read_list (**écart avec le cadrage**, qui disait get_list, choix du propriétaire) ; descriptions en français ;

@@ -167,6 +167,8 @@ Le code reprend la structure actuelle (un fichier par service, routes dans `serv
 
 ### 2.1 Versions et méthodes
 
+> **Décision du 31 octobre 2026 (étape C)** : `add_items` et `set_checked` livrés ; `set_checked` accepte 20 identifiants (et non 50) ; une connexion « Lecture seule » reçoit une erreur d'outil « Cette connexion est en lecture seule. » (et non un 403 `insufficient_scope`) ; un élément de même nom déjà présent non coché n'est pas recréé. Détail dans le cahier des charges.
+>
 > **Décision du 31 octobre 2026 (étape B)** : seule l'ancienne famille (2025-03-26, 2025-06-18, 2025-11-25) est acceptée pour l'instant ; la nouvelle (2026-07-28) sera ajoutée quand Claude l'utilisera. L'outil de lecture s'appelle `read_list` (et non `get_list`). Le détail livré est dans le cahier des charges.
 
 Listo serait un serveur « **double** » (*dual-era* dans la spécification), qui accepte sur le même `/mcp` :

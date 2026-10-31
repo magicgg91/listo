@@ -86,7 +86,7 @@ Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot d
 | `LISTO_UPDATE_CHECK` | *(absente)* | `off` coupe la vérification de mise à jour sur GitHub |
 | `LISTO_PRODUCT_LOOKUP` | *(absente)* | `off` coupe le mode scan (bouton « Scanner » masqué, aucune demande à Open Food Facts) |
 | `LISTO_PRODUCT_CONTACT` | *(absente)* | Facultative : contact (adresse e-mail ou URL) envoyé à Open Food Facts |
-| `LISTO_MCP` | *(absente : désactivé)* | `on` active l'accès depuis Claude : autorisation OAuth et serveur MCP `/mcp` en lecture seule (outils `list_lists`, `read_list`). **À ne pas activer en production avant l'essai réel avec Claude.** Désactivé, toutes ses adresses répondent 404. Voir le [chapitre 14](docs/exploitation.md#14-accès-depuis-claude-listo_mcp) |
+| `LISTO_MCP` | *(absente : désactivé)* | `on` active l'accès depuis Claude : autorisation OAuth et serveur MCP `/mcp` (lecture : `list_lists`, `read_list` ; avec une connexion « Lecture et ajout » : `add_items`, `set_checked`). **À ne pas activer en production avant l'essai réel avec Claude.** Désactivé, toutes ses adresses répondent 404. Voir le [chapitre 14](docs/exploitation.md#14-accès-depuis-claude-listo_mcp) |
 
 `LISTO_COMMIT` est posée par l'image elle-même (version affichée dans Réglages › À propos) : ne pas la remplir. Détails : [chapitre 2](docs/exploitation.md#2-fichiers-à-créer-sur-le-serveur).
 

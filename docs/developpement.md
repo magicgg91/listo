@@ -27,6 +27,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Nouveautés (migration 16)](#nouveautés-migration-16)
 - [Autorisation pour Claude (migration 17)](#autorisation-pour-claude-migration-17)
 - [Serveur MCP en lecture seule (étape B)](#serveur-mcp-en-lecture-seule-étape-b)
+- [Ajout et cochage par Claude (étape C)](#ajout-et-cochage-par-claude-étape-c)
 - [Photo et scan sur Android (choix de la source)](#photo-et-scan-sur-android-choix-de-la-source)
 - [Mode scan des listes de courses](#mode-scan-des-listes-de-courses)
 
@@ -48,7 +49,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `server/validate.js` | Vérification des données reçues (identifiants, noms, doublons) |
 | `server/lists.js` | Listes et articles : droits, opérations, historique, magasin « multi », synchronisation, nettoyage |
 | `server/oauth.js`, `server/oauth-clients.js`, `server/routes/oauth.js` | Autorisation OAuth pour Claude (LISTO_MCP=on) : applications (CIMD, DCR), demandes, connexions, codes et jetons (empreintes), rotation, révocations, nettoyage ; routes `/.well-known/…`, `/oauth/…`, `/api/oauth/demandes/…` |
-| `server/mcp.js`, `server/mcp-tools.js` | Serveur MCP `/mcp` (LISTO_MCP=on) : protocole JSON-RPC écrit à la main, jeton Bearer, débit, journal ; outils en lecture seule `list_lists` et `read_list` |
+| `server/mcp.js`, `server/mcp-tools.js` | Serveur MCP `/mcp` (LISTO_MCP=on) : protocole JSON-RPC écrit à la main, jeton Bearer, débit, journal ; outils `list_lists`, `read_list` (lecture), `add_items`, `set_checked` (connexion « Lecture et ajout ») |
 | `server/news.js` | Nouveautés : journal des événements de chaque liste, repère de lecture de chaque membre, calcul de ce qui est nouveau pour une personne, nettoyage (30 jours, 500 par liste) |
 | `server/events.js` | Temps réel : flux SSE `/api/events`, connexions ouvertes, messages « la liste X a changé » |
 | `server/photos.js` | Photos des articles : contrôle du fichier JPEG (sans bibliothèque), retrait des métadonnées, stockage dans `data/photos`, plafond d'envois |
@@ -257,6 +258,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. **Refus** : « Refuser » ramène vers Claude, qui affiche que l'accès a été refusé ; dans `docker logs listo`, une ligne `claude.refus` (sans jeton ni code).
     6. **Révocation** : changer son mot de passe dans Listo ; Claude doit redemander l'autorisation (ligne `claude.revocation`).
     7. **Lecture par Claude** (étape B ; claude.ai, application mobile, Claude Desktop, Claude Code) : « Quelles sont mes listes Listo ? » donne les listes autorisées, et elles seules ; « Qu'y a-t-il dans les courses ? » donne les articles non cochés, avec quantité et rayon, sans nom de personne. Retirer une personne d'une liste partagée : sa liste disparaît aussitôt de ce que voit son Claude. Une liste réglée en « Certaines listes » à l'autorisation : les autres n'apparaissent jamais. `docker logs listo` : une ligne `claude.outil` par question, sans contenu.
+    8. **Ajout et cochage par Claude** (étape C ; connexion « Lecture et ajout ») : « Ajoute du lait et des œufs aux courses » : sur un autre téléphone ouvert sur la liste, les deux articles arrivent en direct, dans leur rayon habituel, avec « Ajouté par » le prénom du compte, et la pastille des Nouveautés pour les autres membres. Redemander aussitôt : Claude répond qu'ils y sont déjà. « Coche le pain » : la ligne passe dans « Dans le panier ». Avec une connexion « Lecture seule », ou un compte invité en lecture seule : Claude répond qu'il ne peut pas écrire, rien ne change.
 
 **Réglages et Administration**
 
@@ -990,6 +992,16 @@ Colonne `lists.icon` (texte, vide par défaut = icône de la catégorie), envoy�
 - **Outils** (`TOOLS`, ordre fixe, descriptions sans donnée d'un compte) : `list_lists` (`ctx.lists.myLists` filtré par la connexion, comptes d'éléments par une requête paramétrée) et `read_list` (`ctx.lists.readList`, qui ne renvoie une liste que si le compte en est membre). Sortie construite champ par champ, textes coupés par `clip` ; `content` = `DATA_NOTICE` + le même JSON que `structuredContent`. Arguments vérifiés à la main (`ParamsError` → -32602), y compris un argument inconnu.
 - **Dernière utilisation** : `oauth.useGrant(grantId)`, écrite au plus une fois par minute (mémoire `lastWrites`). `verifyAccess` donne aussi `grant.clientHost` (pour le journal `claude.outil`).
 - Tests : `test/mcp.test.js` (jetons obtenus par le vrai flux OAuth : 401 dans tous les cas prévus, cookie seul refusé, versions, erreurs de protocole, 405, Origin, droits et sélection de listes, membre retiré, sorties champ par champ, pagination, débit, journal). **À vérifier avec un vrai Claude** : point 33.7 ci-dessus et `docs/exploitation.md`, chapitre 14, « Premier essai ».
+
+## Ajout et cochage par Claude (étape C)
+
+Deux outils de plus dans `server/mcp-tools.js`, réservés à une connexion « Lecture et ajout » (`grant.scope` contient `lists:write`).
+
+- **`writable(access, listId)`** : portée d'écriture (sinon « Cette connexion est en lecture seule. »), liste de la connexion dont le compte est membre (`inGrant` puis `ctx.lists.readList`, sinon « Liste introuvable. »), droit de modifier (`list.canEdit`, sinon le message `READ_ONLY` de `server/lists.js`).
+- **`add_items`** : types vérifiés à la main (`ParamsError`) ; tri en mémoire : nom répété dans la demande ou ajouté par la même connexion il y a moins de 2 minutes (`recentAdds`, clé connexion + liste + `normalizeItemName`), puis élément de même nom non coché déjà dans la liste ; plafond de 100 ajouts par heure et par connexion (`addTimes`) vérifié **avant** toute écriture ; puis une opération `item.create` par élément, identifiants tirés par le serveur, envoyées à `ctx.lists.applyOps(user, ops)` : exactement le chemin de `/api/ops` (validation, droits, rayon habituel, mémoire des noms, `news.log`, `notifyList`, `applied_ops`). Un refus de l'application devient « ignoré » avec son message.
+- **`set_checked`** : seuls les éléments de la liste lue comptent (un identifiant inconnu ou d'une autre liste a la même raison) ; déjà dans l'état demandé : `unchanged` ; sinon `item.check` par `applyOps`.
+- `tools.call` renvoie aussi `log` (nombres créés, ignorés, cochés) pour la ligne `claude.outil` de `server/mcp.js` ; `tools.prune()` vide les mémoires dans le ménage horaire. `refusedLogged` (ligne « jeton refusé ») est plafonnée à `MAX_REFUSED_IPS` adresses.
+- Tests : `test/mcp-write.test.js` (droits, lecture seule, invitée, « Peut modifier », membre retirée, 20 au plus, validation, plafond horaire, anti-doublon avec l'horloge du test, identifiants mélangés, Nouveautés, synchronisation, temps réel, jeton révoqué ou expiré, journal) ; outils partagés avec `test/mcp.test.js` dans `test/mcp-helpers.js`. **À vérifier avec un vrai Claude** : point 33.8 ci-dessus.
 
 ## Nouveautés (migration 16)
 

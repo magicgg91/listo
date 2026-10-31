@@ -381,3 +381,16 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 - Pastille `.news-badge` (`role="img"`, `aria-label` « 3 nouveautés », « plus de 30 nouveautés ») : posée sur le coin haut gauche de `.list-card__icon` (qui devient `position: relative`), forme `--radius-pill`, fond `--color-accent`, chiffres `--color-on-accent` en gras, entourée de `--color-surface` pour se détacher de l'icône. Texte « 3 », ou « 30+ » quand la dernière visite est plus ancienne que le journal gardé. La carte ne grandit pas ; compteur X/Y, symbole du lien public et pastilles des personnes restent visibles.
 - Halo `.item--news` sur la ligne `.item` : fond `--color-accent-soft`, statique (aucune animation), plus le repère texte `.item__news` sous le nom (`--text-sm`, gras, `--color-accent-ink`) : « Ajouté par Marie », « Modifié par Marie », « Coché par Marie », « Décoché par Marie » (jamais la couleur seule ; le repère est aussi lu avec le nom). Zones tactiles inchangées. Un article coché garde son nom barré.
 - Liste en sourdine ou « Nouveautés » désactivé : ni pastille, ni halo.
+
+## Ajout : écran « Autoriser Claude »
+
+Écran de l'application (`#/autoriser/<id>`) où une personne accepte, ou refuse, que Claude accède à ses listes (autorisation OAuth, `docs/mcp-cadrage.md`). Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**. Balisage : « Autoriser Claude (claude.ai) » et « Autoriser Claude : Claude Code (retour local) » dans `components.html` (clair et sombre).
+
+- Barre du haut sans bouton Retour (on sort par « Autoriser » ou « Refuser ») ; pas de panneau latéral sur ordinateur.
+- Avertissement permanent `.note` (`#i-alert`) : « Ne continuez que si vous venez de lancer la connexion depuis Claude. »
+- Carte de trois `.row` : l'application (hôte ; un nom déclaré par l'application elle-même est suivi de « (nom donné par l'application, non vérifié) », celui du document d'identification publié sur claude.ai de « (nom fourni par l'application) »), **l'hôte de retour** (« claude.ai », ou « une application sur cet ordinateur (localhost) »), le compte connecté. Retour local : `.note--danger` en plus.
+- Choix exclusifs « Lecture seule » / « Lecture et ajout » et « Toutes mes listes » / « Certaines listes » : `.radio-row` dans une `.card` (rond plein ET texte en gras sur le choix actif ; une ligne par choix, lisible sur un téléphone de 320 px, là où `.segmented` coupait « Toutes mes listes » en deux). « Lecture seule » et « Toutes mes listes » sont présélectionnés. Sous « Accès », `.field__hint` dit ce que Claude pourra faire.
+- « Certaines listes » : listes à cocher en `.tick-row` (icône de la liste, nom), comme le partage d'une liste.
+- Mot de passe (`passwordInput`, avec l'œil) et, si la 2FA est activée, le champ « Code » ; erreurs en `.form-error`.
+- `.footer` : la phrase « Vous venez de lancer cette connexion depuis Claude ? Si ce n'est pas le cas, refusez. » (texte simple, sans icône), puis `.btn--primary` « Autoriser » et `.btn--secondary` « Refuser » (44 px et plus).
+- Seul ajout dans `public/css/app.css` : `.card--clip { overflow: hidden; }`, pour que le fond du choix actif ne dépasse pas des coins arrondis de la carte.

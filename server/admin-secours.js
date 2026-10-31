@@ -6,7 +6,8 @@
 //   docker exec -u node listo node server/admin-secours.js <identifiant> --retirer-2fa
 //
 // Un mot de passe provisoire est tiré au hasard et affiché UNE fois : il faut
-// le changer à la connexion suivante. Les sessions du compte sont fermées.
+// le changer à la connexion suivante. Les sessions du compte sont fermées et
+// ses connexions Claude révoquées.
 // Avec --retirer-2fa, la double authentification du compte est aussi
 // désactivée. Chaque action est écrite dans le journal de sécurité.
 // Seul quelqu'un qui a déjà la main sur le serveur peut lancer cette commande.
@@ -53,6 +54,10 @@ const hash = await hashPassword(password);
 db.transaction(() => {
   db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, user.id);
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  // Connexions Claude du compte révoquées, avec leurs jetons (migration 17)
+  const now = new Date().toISOString();
+  db.prepare('UPDATE oauth_tokens SET revoked_at = ? WHERE revoked_at IS NULL AND grant_id IN (SELECT id FROM oauth_grants WHERE user_id = ?)').run(now, user.id);
+  db.prepare('UPDATE oauth_grants SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL').run(now, user.id);
   if (option === '--retirer-2fa') {
     db.prepare('UPDATE users SET totp_secret = NULL, totp_enabled = 0, totp_last_step = NULL WHERE id = ?').run(user.id);
     db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(user.id);

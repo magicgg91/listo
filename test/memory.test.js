@@ -186,16 +186,16 @@ test('migration 8 : retire les noms venus seulement des autres listes, garde les
 
 test('migration 8 : appliquée une seule fois par le mécanisme des migrations numérotées', () => {
   const db = oldData();
-  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
+  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   // Comme une base restée en version 7 (avant les migrations 8 à 11) :
   // la migration 8 s'applique au démarrage
-  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 7');
   migrate(db);
-  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
+  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(keys(db), ['ampoules', 'chips', 'comte', 'lait', 'olives', 'pain']);
   // Un second démarrage ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
+  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
 });

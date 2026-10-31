@@ -60,7 +60,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 10, sans la colonne, avec des données
   let db = openDatabase(file);
-  db.exec('ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 10');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Courses', 1, 1)").run();
@@ -71,7 +71,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   db.close();
   // Redémarrage : la migration 11 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
+  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(db.prepare(`SELECT ${columns} FROM items`).all(), before);
   assert.equal(db.prepare('SELECT ean FROM items').pluck().get(), null);
   // La contrainte : vide, ou exactement 8 ou 13 chiffres
@@ -80,7 +80,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
     assert.throws(() => db.prepare('UPDATE items SET ean = ?').run(bad), /CHECK/, JSON.stringify(bad));
   }
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 16); // toutes les migrations, jusqu'à la 16 (nouveautés)
+  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

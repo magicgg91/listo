@@ -386,6 +386,83 @@ export const MIGRATIONS = [
            COALESCE((SELECT MAX(id) FROM list_events WHERE list_events.list_id = list_members.list_id), 0)
     FROM list_members;
   `,
+
+  // --- Migration 17 : autorisation OAuth pour Claude (docs/mcp-cadrage.md) ---
+  // oauth_clients : applications connues (document d'identification CIMD lu
+  // sur claude.ai ou claude.com, ou enregistrement automatique DCR), avec
+  // leurs adresses de retour (JSON). oauth_requests : demandes d'autorisation
+  // en attente (10 minutes), en attendant l'accord de la personne.
+  // oauth_grants : « connexions » accordées (compte, application, portées,
+  // toutes les listes ou une sélection dans oauth_grant_lists). oauth_codes
+  // (60 s, usage unique) et oauth_tokens : la base ne garde que l'EMPREINTE
+  // SHA-256 des codes et des jetons, jamais leur valeur.
+  `
+  CREATE TABLE oauth_clients (
+    client_id     TEXT PRIMARY KEY,
+    kind          TEXT NOT NULL CHECK (kind IN ('cimd', 'dcr')),
+    client_name   TEXT NOT NULL DEFAULT '',
+    redirect_uris TEXT NOT NULL,
+    created_ip    TEXT,
+    created_at    TEXT NOT NULL,
+    fetched_at    TEXT,
+    last_used_at  TEXT
+  );
+  CREATE INDEX oauth_clients_kind ON oauth_clients(kind, created_at);
+  CREATE TABLE oauth_requests (
+    id             TEXT PRIMARY KEY,
+    client_id      TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+    redirect_uri   TEXT NOT NULL,
+    state          TEXT,
+    code_challenge TEXT NOT NULL,
+    resource       TEXT NOT NULL,
+    scope          TEXT NOT NULL,
+    created_at     TEXT NOT NULL,
+    expires_at     TEXT NOT NULL
+  );
+  CREATE TABLE oauth_grants (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    client_id     TEXT    NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+    app_key       TEXT    NOT NULL,
+    client_host   TEXT    NOT NULL,
+    redirect_host TEXT    NOT NULL,
+    scope         TEXT    NOT NULL CHECK (scope IN ('lists:read', 'lists:read lists:write')),
+    all_lists     INTEGER NOT NULL CHECK (all_lists IN (0, 1)),
+    created_at    TEXT    NOT NULL,
+    last_used_at  TEXT,
+    revoked_at    TEXT
+  );
+  CREATE INDEX oauth_grants_user ON oauth_grants(user_id, revoked_at);
+  CREATE TABLE oauth_grant_lists (
+    grant_id INTEGER NOT NULL REFERENCES oauth_grants(id) ON DELETE CASCADE,
+    list_id  TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    PRIMARY KEY (grant_id, list_id)
+  );
+  CREATE TABLE oauth_codes (
+    code_hash      TEXT    PRIMARY KEY,
+    grant_id       INTEGER NOT NULL REFERENCES oauth_grants(id) ON DELETE CASCADE,
+    client_id      TEXT    NOT NULL,
+    redirect_uri   TEXT    NOT NULL,
+    code_challenge TEXT    NOT NULL,
+    resource       TEXT    NOT NULL,
+    scope          TEXT    NOT NULL,
+    expires_at     TEXT    NOT NULL,
+    used_at        TEXT
+  );
+  CREATE TABLE oauth_tokens (
+    token_hash TEXT    PRIMARY KEY,
+    grant_id   INTEGER NOT NULL REFERENCES oauth_grants(id) ON DELETE CASCADE,
+    kind       TEXT    NOT NULL CHECK (kind IN ('access', 'refresh')),
+    resource   TEXT    NOT NULL,
+    scope      TEXT    NOT NULL,
+    created_at TEXT    NOT NULL,
+    expires_at TEXT    NOT NULL,
+    used_at    TEXT,
+    revoked_at TEXT
+  );
+  CREATE INDEX oauth_tokens_grant ON oauth_tokens(grant_id);
+  CREATE INDEX oauth_tokens_expiry ON oauth_tokens(expires_at);
+  `,
 ];
 
 // Migration 15 : colonne add_mode ('quick' ou 'detail', rien d'autre).

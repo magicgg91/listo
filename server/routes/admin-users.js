@@ -128,7 +128,7 @@ export function adminUserRoutes(ctx) {
       WHERE id = :id`).run({ display_name: null, role: null, active: null, ...changes, id: user.id });
 
     // Un compte désactivé est déconnecté partout, tout de suite
-    if (changes.active === 0) revokeAllSessions(ctx, user.id);
+    if (changes.active === 0) revokeAllSessions(ctx, user.id, 'compte désactivé');
     // … et les liens publics de ses listes sont arrêtés
     const stoppedLinks = changes.active === 0 ? ctx.shares.stopForOwner(user.id) : 0;
 
@@ -158,7 +158,7 @@ export function adminUserRoutes(ctx) {
 
     const hash = await hashPassword(req.body.password);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, user.id);
-    revokeAllSessions(ctx, user.id);
+    revokeAllSessions(ctx, user.id, "mot de passe réinitialisé par l'Admin");
     audit('admin_mot_de_passe_reinitialise', { admin: req.user.username, utilisateur: user.username, ip: req.ip });
     res.json({ user: describe(findUser.get(user.id)) });
   });

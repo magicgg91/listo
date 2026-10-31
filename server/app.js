@@ -30,6 +30,9 @@ import { createUpdateCheck, fetchGithub } from './update-check.js';
 import { createProductLookup, fetchProduct } from './products.js';
 import { productRoutes } from './routes/products.js';
 import { referenceRoutes } from './routes/references.js';
+import { createOAuthService } from './oauth.js';
+import { fetchClientMetadata } from './oauth-clients.js';
+import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -92,6 +95,9 @@ export const PERMISSIONS_POLICY = [
 //   les tests la remplacent : aucun vrai réseau)
 // - productRequest : demande à Open Food Facts (mode scan ; les tests la
 //   remplacent : aucun vrai réseau)
+// - clientMetadataRequest : lecture du document d'identification (CIMD)
+//   d'une application, sur claude.ai ou claude.com seulement (autorisation
+//   pour Claude ; les tests la remplacent : aucun vrai réseau)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -105,6 +111,7 @@ export function createApp({
   backupDir = path.join(path.dirname(config.dbPath), 'backups'),
   githubRequest = fetchGithub,
   productRequest = fetchProduct,
+  clientMetadataRequest = fetchClientMetadata,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -134,6 +141,11 @@ export function createApp({
   ctx.updates = createUpdateCheck({ config, now, request: githubRequest });
   // Nom d'un produit à partir de son code-barres (mode scan, voir products.js)
   ctx.products = createProductLookup({ config, now, request: productRequest });
+  // Autorisation OAuth pour Claude (voir oauth.js). Le service existe
+  // toujours, même si LISTO_MCP est désactivé : un mot de passe changé ou un
+  // compte désactivé doit révoquer ses connexions dans tous les cas. Seules
+  // les ROUTES dépendent de LISTO_MCP (plus bas).
+  ctx.oauth = createOAuthService(ctx, { fetchMetadata: clientMetadataRequest });
   // Identifiant opaque de la version installée (null en développement) : le
   // téléphone le compare à celui de son code pour savoir s'il doit recharger
   // la page (voir public/js/freshness.js). Jamais le commit lui-même.
@@ -189,6 +201,11 @@ export function createApp({
   app.use('/p', visitor.pageRouter);
   app.use('/api/public', visitor.apiRouter);
 
+  // --- Autorisation OAuth pour Claude (seulement avec LISTO_MCP=on) ---
+  // /.well-known/… et /oauth/… : appelées par Claude ou par le navigateur,
+  // sans session (le cookie n'y est jamais lu). Désactivées : 404.
+  if (config.mcp) app.use(oauthRoutes(ctx, { publicDir: PUBLIC_DIR }));
+
   // --- API ---
   const api = express.Router();
   // Réponses de l'API jamais gardées en cache
@@ -217,6 +234,8 @@ export function createApp({
   api.use(listRoutes(ctx));
   api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
   api.use(referenceRoutes(ctx)); // nouveau magasin ou rayon (après listRoutes : utilise ctx.lists)
+  // Écran « Autoriser Claude » (LISTO_MCP=on seulement ; sinon « Route inconnue »)
+  if (config.mcp) api.use(oauthConsentRoutes(ctx));
   api.use(photoRoutes(ctx));
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   // Version installée (Réglages › À propos) : comptes connectés seulement
@@ -293,6 +312,7 @@ export function createApp({
     ctx.publicAccess.prune();
     ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();
+    ctx.oauth.purge();           // autorisations Claude : demandes, codes, jetons expirés
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);

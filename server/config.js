@@ -41,6 +41,12 @@ export function loadConfig(env = process.env) {
     // Food Facts, bouton « Scanner » masqué).
     productLookup: String(env.LISTO_PRODUCT_LOOKUP ?? '').trim().toLowerCase() !== 'off',
 
+    // Accès depuis Claude (serveur MCP et autorisation OAuth, voir
+    // docs/mcp-cadrage.md). DÉSACTIVÉ par défaut : seul LISTO_MCP=on
+    // l'active. Désactivé, toutes ses adresses (/.well-known/…, /oauth/…,
+    // /api/oauth/…) répondent comme une adresse inexistante (404).
+    mcp: String(env.LISTO_MCP ?? '').trim().toLowerCase() === 'on',
+
     // Contact facultatif ajouté à l'en-tête User-Agent des demandes à Open
     // Food Facts (adresse e-mail ou URL), ou null. Une valeur mal formée est
     // ignorée (voir validContact).

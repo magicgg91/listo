@@ -11,6 +11,7 @@ import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
 import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
+import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderLists, renderSidePanel } from './screens/lists.js';
 import { renderList } from './screens/list.js';
 import { renderListForm } from './screens/list-form.js';
@@ -500,8 +501,10 @@ function show(route) {
     mount(renderLogin({ setupNeeded: app.setupNeeded }), { withSide: false });
     return;
   }
-  // Mot de passe imposé par l'Admin : à changer avant tout le reste
+  // Mot de passe imposé par l'Admin : à changer avant tout le reste (une
+  // autorisation de Claude en attente reprend ensuite)
   if (app.user.mustChangePassword) {
+    if (route.name === 'authorize') app.afterLogin = route;
     mount(renderForcedChange(), { withSide: false });
     return;
   }
@@ -527,6 +530,7 @@ function show(route) {
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
     case 'help': mount(() => renderHelp(app.user)); break;
+    case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     default: navigate('lists', {}, { replace: true });
   }
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran

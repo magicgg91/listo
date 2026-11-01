@@ -71,7 +71,7 @@ async function household(t) {
   const lea = app.client();
   await login(lea, 'lea', 'MotDePasse-lea');
   const listId = uuid();
-  await guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 }] });
+  await guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' }] });
   await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId], access: { [leaId]: 'modification' } });
   return { app, guillaume, lea, listId };
 }

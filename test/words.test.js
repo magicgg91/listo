@@ -15,7 +15,7 @@ test('messages du serveur : neutres, sans le mot « article »', async (t) => {
   const listId = uuid();
   const itemId = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Tâches', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId, name: 'Tâches', listType: 'tasks' },
     { id: uuid(), type: 'item.create', listId, itemId, name: 'Arroser' },
     { id: uuid(), type: 'item.delete', itemId },
   ] });

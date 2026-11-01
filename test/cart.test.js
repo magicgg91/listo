@@ -49,7 +49,7 @@ async function ok(h, client, operation, id) {
 async function newList(h, client, fields = {}) {
   const listId = uuid();
   const COURSES = h.app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
-  await ok(h, client, { type: 'list.create', listId, name: 'Courses', categoryId: COURSES, ...fields });
+  await ok(h, client, { type: 'list.create', listId, name: 'Courses', listType: 'shopping', ...fields });
   return listId;
 }
 async function newItem(h, client, listId, name, { checked = false } = {}) {

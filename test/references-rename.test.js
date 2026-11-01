@@ -35,7 +35,7 @@ async function household(t) {
   const aisleId = app.db.prepare("SELECT id FROM aisles WHERE name = 'Crèmerie'").pluck().get();
   const listId = uuid();
   await admin.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1, storeId },
+    { id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping', storeId },
     { id: uuid(), type: 'item.create', listId, itemId: uuid(), name: 'Beurre', aisleId },
   ] });
   await admin.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId] });

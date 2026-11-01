@@ -40,7 +40,7 @@ const suggestions = async (client, typed, listId) => {
 test("une liste de tâches n'écrit rien dans l'historique (ajout, renommage) et ne reçoit pas de suggestions", async (t) => {
   const h = await household(t);
   const tasks = uuid();
-  await ok(h.marie, { type: 'list.create', listId: tasks, name: 'Maison', categoryId: h.TACHES });
+  await ok(h.marie, { type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' });
   const itemId = uuid();
   await ok(h.marie, { type: 'item.create', listId: tasks, itemId, name: 'Arroser les plantes' });
   await ok(h.marie, { type: 'item.update', itemId, name: 'Arroser le jardin' });
@@ -54,14 +54,14 @@ test("une liste de tâches n'écrit rien dans l'historique (ajout, renommage) et
   // Un article de courses est mémorisé, et suggéré dans une liste de courses
   // seulement
   const courses = uuid();
-  await ok(h.marie, { type: 'list.create', listId: courses, name: 'Courses', categoryId: h.COURSES });
+  await ok(h.marie, { type: 'list.create', listId: courses, name: 'Courses', listType: 'shopping' });
   await ok(h.marie, { type: 'item.create', listId: courses, itemId: uuid(), name: 'Arrosoir' });
   assert.deepEqual(await suggestions(h.marie, 'arro', courses), ['Arrosoir']);
   assert.deepEqual(await suggestions(h.marie, 'arro', tasks), [], 'pas de suggestions dans une liste de tâches');
   assert.deepEqual(await suggestions(h.marie, 'arro'), ['Arrosoir'], 'sans liste : les noms de courses');
   // Liste inconnue ou d'un autre compte : refusée comme partout
   const adminList = uuid();
-  await ok(h.admin, { type: 'list.create', listId: adminList, name: 'Liste admin', categoryId: h.COURSES });
+  await ok(h.admin, { type: 'list.create', listId: adminList, name: 'Liste admin', listType: 'shopping' });
   assert.equal(await suggestions(h.marie, 'arro', adminList), 404);
   assert.equal(await suggestions(h.marie, 'arro', 'pas-un-uuid'), 400);
 });
@@ -71,7 +71,7 @@ test("une liste de courses continue d'écrire dans l'historique (ajout, renommag
   const lidl = h.ref('stores', 'Lidl');
   const fruits = h.ref('aisles', 'Fruits et légumes');
   const courses = uuid();
-  await ok(h.marie, { type: 'list.create', listId: courses, name: 'Courses', categoryId: h.COURSES, storeId: lidl });
+  await ok(h.marie, { type: 'list.create', listId: courses, name: 'Courses', listType: 'shopping', storeId: lidl });
   const itemId = uuid();
   await ok(h.marie, { type: 'item.create', listId: courses, itemId, name: 'Tomates' });
   await ok(h.marie, { type: 'item.update', itemId, aisleId: fruits });
@@ -88,14 +88,14 @@ test("changement de catégorie : rien n'est écrit ni effacé dans l'historique 
   const h = await household(t);
   const fruits = h.ref('aisles', 'Fruits et légumes');
   const listId = uuid();
-  await ok(h.marie, { type: 'list.create', listId, name: 'Marché', categoryId: h.COURSES });
+  await ok(h.marie, { type: 'list.create', listId, name: 'Marché', listType: 'shopping' });
   const pommes = uuid();
   await ok(h.marie, { type: 'item.create', listId, itemId: pommes, name: 'Pommes', aisleId: fruits });
   const before = history(h);
 
   // Courses → Tâches : l'historique ne bouge pas ; les nouveaux éléments ne
   // sont plus mémorisés
-  await ok(h.marie, { type: 'list.update', listId, categoryId: h.TACHES });
+  await ok(h.marie, { type: 'list.update', listId, listType: 'tasks' });
   assert.deepEqual(history(h), before);
   await ok(h.marie, { type: 'item.create', listId, itemId: uuid(), name: 'Poires' });
   await ok(h.marie, { type: 'item.update', itemId: pommes, name: 'Pommes golden' });
@@ -106,7 +106,7 @@ test("changement de catégorie : rien n'est écrit ni effacé dans l'historique 
   // (lecture seule de l'historique), rien n'est écrit ; les ajouts suivants
   // sont mémorisés
   await ok(h.marie, { type: 'item.create', listId, itemId: uuid(), name: 'Pommes' });
-  await ok(h.marie, { type: 'list.update', listId, categoryId: h.COURSES });
+  await ok(h.marie, { type: 'list.update', listId, listType: 'shopping' });
   assert.deepEqual(history(h), before);
   const items = h.app.db.prepare('SELECT name, aisle_id FROM items WHERE list_id = ? ORDER BY name').all(listId);
   assert.deepEqual(items, [
@@ -186,16 +186,16 @@ test('migration 8 : retire les noms venus seulement des autres listes, garde les
 
 test('migration 8 : appliquée une seule fois par le mécanisme des migrations numérotées', () => {
   const db = oldData();
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   // Comme une base restée en version 7 (avant les migrations 8 à 11) :
   // la migration 8 s'applique au démarrage
-  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE items DROP COLUMN checked_at; ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 7');
   migrate(db);
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(keys(db), ['ampoules', 'chips', 'comte', 'lait', 'olives', 'pain']);
   // Un second démarrage ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
 });

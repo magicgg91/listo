@@ -63,7 +63,7 @@ test('clé perdue puis recréée : 2FA refusée sans erreur interne, lien public
   const code = totpCode(openTotpSecret(listo.ctx, user), totpStep(Date.now()));
   assert.equal((await admin.post('/api/me/2fa/verify', { code })).status, 200);
   const listId = crypto.randomUUID();
-  await admin.post('/api/ops', { ops: [{ id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', categoryId: 1 }] });
+  await admin.post('/api/ops', { ops: [{ id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' }] });
   const share = await admin.request('PUT', `/api/lists/${listId}/share`, {});
   const token = share.body.share.url.split('/p/')[1];
   listo.stop();

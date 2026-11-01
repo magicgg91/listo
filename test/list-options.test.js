@@ -40,9 +40,9 @@ async function household(t) {
   const bulb = uuid();
   const milk = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' },
     { id: uuid(), type: 'item.create', listId: tasks, itemId: bulb, name: 'Ampoule' },
-    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId: shopping, itemId: milk, name: 'Lait', aisleId: 4 },
   ] });
   for (const listId of [tasks, shopping]) {
@@ -69,7 +69,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 12, sans les deux colonnes, avec des listes
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 12');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('taches', 'Maison', 2, 1), ('courses', 'Courses', 1, 1)").run();
@@ -78,7 +78,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
@@ -97,10 +97,10 @@ test('création : désactivées par défaut (serveur), activées si demandé ; r
   const h = await household(t);
   assert.deepEqual(h.settings(h.tasks), { priority_enabled: 0, due_enabled: 0 });
   const other = uuid();
-  assert.equal((await run(h.guillaume, { type: 'list.create', listId: other, name: 'Travaux', categoryId: 2, priorityEnabled: true, dueEnabled: false })).status, 200);
+  assert.equal((await run(h.guillaume, { type: 'list.create', listId: other, name: 'Travaux', listType: 'tasks', priorityEnabled: true, dueEnabled: false })).status, 200);
   assert.deepEqual(h.settings(other), { priority_enabled: 1, due_enabled: 0 });
   for (const bad of ['oui', 1, null]) {
-    const result = await run(h.guillaume, { type: 'list.create', listId: uuid(), name: 'X', categoryId: 2, priorityEnabled: bad });
+    const result = await run(h.guillaume, { type: 'list.create', listId: uuid(), name: 'X', listType: 'tasks', priorityEnabled: bad });
     assert.deepEqual(result, { status: 400, error: 'Réglage « Priorité » invalide.' }, JSON.stringify(bad));
   }
   const sync = (await h.guillaume.get('/api/sync')).body;
@@ -166,16 +166,16 @@ test('valeurs conservées : désactiver puis réactiver les fait revenir ; chang
   const item = (await h.lea.get('/api/sync')).body.items.find((i) => i.id === h.bulb);
   assert.deepEqual([item.priority, item.dueDate], ['high', '2026-10-30'], 'réapparaissent');
   // Liste de tâches → courses → tâches : réglages et valeurs gardés
-  await run(h.guillaume, { type: 'list.update', listId: h.tasks, categoryId: 1 });
+  await run(h.guillaume, { type: 'list.update', listId: h.tasks, listType: 'shopping' });
   assert.deepEqual(h.settings(h.tasks), { priority_enabled: 1, due_enabled: 1 });
   assert.deepEqual(h.values(h.bulb), { priority: 'high', due_date: '2026-10-30' });
   const asShopping = loadSync(emptyState(), (await h.lea.get('/api/sync')).body);
   assert.deepEqual(listOptions(asShopping.lists.get(h.tasks)), { priority: false, due: false }, 'courses : ignorés');
-  await run(h.guillaume, { type: 'list.update', listId: h.tasks, categoryId: 2 });
+  await run(h.guillaume, { type: 'list.update', listId: h.tasks, listType: 'tasks' });
   assert.deepEqual(h.settings(h.tasks), { priority_enabled: 1, due_enabled: 1 });
   assert.deepEqual(h.values(h.bulb), { priority: 'high', due_date: '2026-10-30' });
   // Courses → tâches : les réglages enregistrés de la liste de courses (désactivés)
-  await run(h.guillaume, { type: 'list.update', listId: h.shopping, categoryId: 2 });
+  await run(h.guillaume, { type: 'list.update', listId: h.shopping, listType: 'tasks' });
   assert.deepEqual(h.settings(h.shopping), { priority_enabled: 0, due_enabled: 0 });
 });
 
@@ -270,7 +270,7 @@ test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponi
   const state = emptyState();
   state.categories = [{ id: 2, name: 'Tâches', isShopping: false, active: true }];
   const user = { id: 1, username: 'g', displayName: 'G' };
-  applyOp(state, { type: 'list.create', listId: 'l', name: 'Maison', categoryId: 2 }, { user, now: '2026-10-18T10:00:00.000Z' });
+  applyOp(state, { type: 'list.create', listId: 'l', name: 'Maison', listType: 'tasks' }, { user, now: '2026-10-18T10:00:00.000Z' });
   assert.deepEqual(listOptions(state.lists.get('l')), { priority: false, due: false }, 'créée sur le téléphone : désactivées');
   for (const [name, priority] of [['b', 'high'], ['a', 'low']]) {
     applyOp(state, { type: 'item.create', listId: 'l', itemId: name, name }, { user, now: '2026-10-18T10:00:00.000Z' });

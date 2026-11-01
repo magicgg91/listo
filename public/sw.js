@@ -69,6 +69,7 @@ const APP_FILES = [
   '/js/help-content.js',
   '/js/history.js',
   '/js/list-icons.js',
+  '/js/list-types.js',
   '/js/live.js',
   '/js/localdb.js',
   '/js/photo.js',

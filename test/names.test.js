@@ -41,7 +41,7 @@ async function ok(h, client, op) {
 
 async function newList(h, client, fields = {}) {
   const listId = uuid();
-  await ok(h, client, { type: 'list.create', listId, name: 'Courses', categoryId: h.COURSES, ...fields });
+  await ok(h, client, { type: 'list.create', listId, name: 'Courses', listType: 'shopping', ...fields });
   return listId;
 }
 
@@ -123,7 +123,7 @@ test('corriger un nom : historique et articles de plusieurs listes de courses de
   const fruits = h.ref('aisles', 'Fruits et légumes');
   const marieList = await newList(h, h.marie, { name: 'Courses Marie', storeId: h.ref('stores', 'Lidl') });
   const paulList = await newList(h, h.paul, { name: 'Courses Paul' });
-  const paulTasks = await newList(h, h.paul, { name: 'Maison', categoryId: h.TACHES });
+  const paulTasks = await newList(h, h.paul, { name: 'Maison', listType: 'tasks' });
   const a = await newItem(h, h.marie, marieList, 'Tomatte', { aisleId: fruits, quantity: '500 g', note: 'bien mûres' });
   const b = await newItem(h, h.paul, paulList, 'TOMATTE');
   const c = await newItem(h, h.paul, paulTasks, 'tomatte');

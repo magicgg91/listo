@@ -41,17 +41,17 @@ async function household(t) {
   const I = { lait: uuid(), pain: uuid(), sel: uuid(), comte: uuid(), steak: uuid(), vis: uuid(), ampoule: uuid() };
   const longNote = 'Bio, en bouteille de verre si possible. '.repeat(8).trim();
   const ops = [
-    { type: 'list.create', listId: L.shop, name: 'Courses', categoryId: 1, storeId: 1 },
+    { type: 'list.create', listId: L.shop, name: 'Courses', listType: 'shopping', storeId: 1 },
     { type: 'item.create', listId: L.shop, itemId: I.lait, name: 'Lait', quantity: '2 L', note: longNote, aisleId: 4, ean: '3428272950019' },
     { type: 'item.create', listId: L.shop, itemId: I.pain, name: 'Pain', aisleId: 3, ean: '96385074' },
     { type: 'item.check', itemId: I.pain, checked: true },
     { type: 'item.create', listId: L.shop, itemId: I.sel, name: 'Sel', aisleId: null },
     { type: 'item.check', itemId: I.sel, checked: true },
-    { type: 'list.create', listId: L.multi, name: 'En ville', categoryId: 1, storeId: centre },
+    { type: 'list.create', listId: L.multi, name: 'En ville', listType: 'shopping', storeId: centre },
     { type: 'item.create', listId: L.multi, itemId: I.comte, name: 'Comté', storeId: fromagerie },
     { type: 'item.check', itemId: I.comte, checked: true },
     { type: 'item.create', listId: L.multi, itemId: I.steak, name: 'Steak', storeId: boucherie },
-    { type: 'list.create', listId: L.tasks, name: 'Maison', categoryId: 2 },
+    { type: 'list.create', listId: L.tasks, name: 'Maison', listType: 'tasks' },
     { type: 'list.update', listId: L.tasks, priorityEnabled: true, dueEnabled: true },
     { type: 'item.create', listId: L.tasks, itemId: I.vis, name: 'Vis' },
     { type: 'item.update', itemId: I.vis, priority: 'high', dueDate: '2026-10-30' },

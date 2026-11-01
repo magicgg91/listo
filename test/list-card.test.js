@@ -25,7 +25,7 @@ async function shoppingList(t) {
   const id = {};
   for (const name of ['lait', 'beurre', 'yaourt', 'creme', 'vieux', 'sel', 'pain']) id[name] = uuid();
   const res = await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' },
     // Rayon A : trois à acheter, un coché, un supprimé
     { id: uuid(), type: 'item.create', listId, itemId: id.lait, name: 'Lait', aisleId: a.id },
     { id: uuid(), type: 'item.create', listId, itemId: id.beurre, name: 'Beurre', aisleId: a.id },
@@ -54,7 +54,7 @@ test('carte : X = restants, Y = non supprimés cochés compris ; liste vide ; to
   // Tout coché : « 0/Y »
   const empty = uuid();
   await h.guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: empty, name: 'Vide', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: empty, name: 'Vide', listType: 'tasks' },
   ] });
   await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.uncheckAll', listId: h.listId }] });
   const all = h.app.db.prepare('SELECT id FROM items WHERE list_id = ? AND deleted_at IS NULL').pluck().all(h.listId);

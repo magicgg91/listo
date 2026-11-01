@@ -80,7 +80,7 @@ test('arrêt propre sur SIGTERM : flux temps réel fermés, base fermée intacte
   await fetch(`${base}/api/ops`, {
     method: 'POST',
     headers: { origin, cookie, 'content-type': 'application/json' },
-    body: JSON.stringify({ ops: [{ id: crypto.randomUUID(), type: 'list.create', listId: crypto.randomUUID(), name: 'Avant arrêt', categoryId: 1 }] }),
+    body: JSON.stringify({ ops: [{ id: crypto.randomUUID(), type: 'list.create', listId: crypto.randomUUID(), name: 'Avant arrêt', listType: 'shopping' }] }),
   });
   const events = await fetch(`${base}/api/events`, { headers: { cookie, origin } });
   assert.equal(events.status, 200);

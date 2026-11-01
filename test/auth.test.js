@@ -580,7 +580,7 @@ test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\
   // Connecté : comportement inchangé
   const admin = await setupAdmin(app);
   const cookie = [...admin.jar].map(([n, v]) => `${n}=${v}`).join('; ');
-  const ok = await post(JSON.stringify({ ops: [{ id: crypto.randomUUID(), type: 'list.create', listId: crypto.randomUUID(), name: 'Courses', categoryId: 1 }] }), cookie);
+  const ok = await post(JSON.stringify({ ops: [{ id: crypto.randomUUID(), type: 'list.create', listId: crypto.randomUUID(), name: 'Courses', listType: 'shopping' }] }), cookie);
   assert.equal(ok.status, 200);
   assert.equal((await ok.json()).results[0].status, 200);
   assert.equal((await post(garbage(150), cookie)).status, 400, 'connecté : JSON mal formé');

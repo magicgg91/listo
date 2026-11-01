@@ -31,8 +31,8 @@ async function household(t) {
   }
   const [shop, tasks, milk] = [uuid(), uuid(), uuid()];
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', categoryId: 1 },
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', listType: 'shopping' },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' },
   ] });
   for (const listId of [shop, tasks]) {
     await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.lea, ids.paul], access: { [ids.lea]: 'modification', [ids.paul]: 'lecture' } });

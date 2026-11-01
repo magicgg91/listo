@@ -344,7 +344,7 @@ test('application locale des opérations : même effet que le serveur', async ()
   state.stores = [{ id: 7, name: 'Lidl', active: true, isMulti: false, storeIds: [] }];
   const ctx = { user: { id: 1, username: 'guillaume', displayName: 'Guillaume' }, now: '2026-10-17T10:00:00.000Z' };
 
-  applyOp(state, { type: 'list.create', listId: 'N', name: 'Nouvelle', categoryId: 1, storeId: 7 }, ctx);
+  applyOp(state, { type: 'list.create', listId: 'N', name: 'Nouvelle', listType: 'shopping', storeId: 7 }, ctx);
   const list = state.lists.get('N');
   assert.equal(list.isOwner, true);
   assert.equal(list.store.name, 'Lidl');
@@ -370,7 +370,7 @@ test('application locale des opérations : même effet que le serveur', async ()
   applyOp(state, { type: 'item.restore', itemId: 'x2' }, ctx);
   assert.equal(state.items.get('x2').name, 'Pain', '« Annuler » remet l\'article');
 
-  applyOp(state, { type: 'list.update', listId: 'N', categoryId: 2 }, ctx);
+  applyOp(state, { type: 'list.update', listId: 'N', listType: 'tasks' }, ctx);
   assert.equal(state.lists.get('N').store, null, 'une liste de tâches perd son magasin');
   applyOp(state, { type: 'list.delete', listId: 'N' }, ctx);
   assert.equal(state.lists.has('N'), false);

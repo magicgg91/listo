@@ -31,9 +31,9 @@ async function household(t) {
   const task = uuid();
   const milk = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2, priorityEnabled: true, dueEnabled: true },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks', priorityEnabled: true, dueEnabled: true },
     { id: uuid(), type: 'item.create', listId: tasks, itemId: task, name: 'Changer l\'ampoule', note: 'couloir' },
-    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId: shopping, itemId: milk, name: 'Lait', aisleId: 4 },
   ] });
   for (const id of [tasks, shopping]) await guillaume.request('PUT', `/api/lists/${id}/members`, { userIds: [leaId], access: { [leaId]: 'modification' } });
@@ -58,10 +58,10 @@ const op = async (client, operation) => {
 
 test('migration 10 : base existante, éléments en priorité normale sans échéance, rien d\'autre ne change', () => {
   const db = openDatabase(':memory:');
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   // Base « d'avant » : version 9, sans les deux colonnes (ni le code-barres
   // de la migration 11), avec des données
-  db.exec('ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE items DROP COLUMN priority; ALTER TABLE items DROP COLUMN due_date; ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 9');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Maison', 2, 1)").run();
@@ -69,13 +69,13 @@ test('migration 10 : base existante, éléments en priorité normale sans éché
               VALUES ('i1', 'l1', 'Ampoule', '2', 'couloir', 1, '2026-10-01T10:00:00.000Z', 1, '2026-09-01T10:00:00.000Z', '2026-10-01T10:00:00.000Z')`).run();
   const before = db.prepare('SELECT id, name, quantity, note, checked, checked_at, created_at, updated_at FROM items').all();
   migrate(db);
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(db.prepare('SELECT id, name, quantity, note, checked, checked_at, created_at, updated_at FROM items').all(), before);
   assert.deepEqual(db.prepare('SELECT priority, due_date FROM items').get(), { priority: 'normal', due_date: null });
   // La contrainte refuse toute autre priorité, même écrite directement
   assert.throws(() => db.prepare("UPDATE items SET priority = 'urgent'").run(), /CHECK/);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 17); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
 });
 

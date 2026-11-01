@@ -57,7 +57,7 @@ async function ok(client, operation) {
 
 async function createList(h, client, fields = {}) {
   const listId = uuid();
-  await ok(client, { type: 'list.create', listId, name: 'Courses du centre-ville', categoryId: h.COURSES, storeId: h.s.centre, ...fields });
+  await ok(client, { type: 'list.create', listId, name: 'Courses du centre-ville', listType: 'shopping', storeId: h.s.centre, ...fields });
   return listId;
 }
 
@@ -115,11 +115,11 @@ test('admin : un magasin regroupé ne peut pas être supprimé, seulement désac
 
 test('liste : un magasin « multi » ne se choisit que pour une liste de courses', async (t) => {
   const h = await town(t);
-  const refused = await op(h.guillaume, { type: 'list.create', listId: uuid(), name: 'Tâches', categoryId: h.TACHES, storeId: h.s.centre });
+  const refused = await op(h.guillaume, { type: 'list.create', listId: uuid(), name: 'Tâches', listType: 'tasks', storeId: h.s.centre });
   assert.equal(refused.status, 400);
   // Passée en catégorie Tâches, une liste « multi » perd son magasin
   const listId = await createList(h, h.guillaume);
-  await ok(h.guillaume, { type: 'list.update', listId, categoryId: h.TACHES });
+  await ok(h.guillaume, { type: 'list.update', listId, listType: 'tasks' });
   const list = (await h.guillaume.get(`/api/lists/${listId}`)).body.list;
   assert.equal(list.store, null);
 });
@@ -177,7 +177,7 @@ test('liste à magasin simple : pas de magasin par article', async (t) => {
   assert.equal((await op(h.guillaume, { type: 'item.update', itemId: lait.id, storeId: h.s.boucherie })).status, 400);
   // Une liste de tâches non plus
   const tasks = uuid();
-  await ok(h.guillaume, { type: 'list.create', listId: tasks, name: 'Tâches', categoryId: h.TACHES });
+  await ok(h.guillaume, { type: 'list.create', listId: tasks, name: 'Tâches', listType: 'tasks' });
   assert.equal((await op(h.guillaume, { type: 'item.create', listId: tasks, itemId: uuid(), name: 'Vélo', storeId: h.s.leclerc })).status, 400);
 });
 

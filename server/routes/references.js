@@ -32,6 +32,7 @@
 import express from 'express';
 import { cleanName, comparableName } from '../validate.js';
 import { OpError } from '../lists.js';
+import { isShoppingList } from '../../public/js/list-types.js';
 
 const KINDS = {
   stores: {
@@ -68,7 +69,7 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
   // Droit d'abord (non-membre : « Liste introuvable » ; lecture seule : 403)
   let list = null;
   if (path === 'aisles' || listId !== undefined) list = ctx.lists.listForEditor(user, listId);
-  if (path === 'aisles' && (list.is_shopping !== 1 || list.is_multi === 1)) {
+  if (path === 'aisles' && (!isShoppingList(list) || list.is_multi === 1)) {
     throw new OpError(400, 'Un rayon ne se choisit que dans une liste de courses sans magasin « multi ».');
   }
   const name = cleanName(rawName);

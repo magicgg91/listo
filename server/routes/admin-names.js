@@ -80,8 +80,7 @@ export function adminNameRoutes(ctx) {
     // Le nom normalisé n'est pas en base : il est calculé ici.
     liveItems: db.prepare(`
       SELECT items.id, items.name, items.list_id FROM items
-      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
-      JOIN categories ON categories.id = lists.category_id AND categories.is_shopping = 1
+      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'shopping'
       WHERE items.deleted_at IS NULL
     `),
     renameItem: db.prepare('UPDATE items SET name = ?, updated_at = ? WHERE id = ?'),

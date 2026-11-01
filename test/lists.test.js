@@ -40,7 +40,7 @@ async function ok(client, op) {
 
 async function createList(h, client, fields = {}) {
   const listId = uuid();
-  await ok(client, { type: 'list.create', listId, name: 'Courses de la semaine', categoryId: h.COURSES, ...fields });
+  await ok(client, { type: 'list.create', listId, name: 'Courses de la semaine', listType: 'shopping', ...fields });
   return listId;
 }
 
@@ -133,7 +133,7 @@ test('un invité ne peut ni renommer, ni changer le partage, ni supprimer la lis
 
   const results = await run(h.marie,
     { type: 'list.update', listId, name: 'Renommée par Marie' },
-    { type: 'list.update', listId, categoryId: h.TACHES },
+    { type: 'list.update', listId, listType: 'tasks' },
     { type: 'list.delete', listId });
   assert.deepEqual(results.map((r) => r.status), [403, 403, 403]);
   assert.match(results[0].error, /propriétaire/);
@@ -282,7 +282,7 @@ test("un rayon désactivé n'est plus proposé, mais reste sur les articles qui 
 
 test('sur une liste qui n\'est pas de courses, les articles n\'ont pas de rayon', async (t) => {
   const h = await household(t);
-  const listId = await createList(h, h.marie, { name: 'Bricolage', categoryId: h.TACHES });
+  const listId = await createList(h, h.marie, { name: 'Bricolage', listType: 'tasks' });
   const { item } = await addItem(h.marie, listId, { name: 'Ampoule', aisleId: h.ref('aisles', 'Entretien') });
   assert.equal(item.aisleId, null);
 });
@@ -339,7 +339,7 @@ test('tri : rayons par ordre alphabétique français, « Sans rayon » en dernie
 
 test('tri : une liste qui n\'est pas de courses forme un seul groupe', async (t) => {
   const h = await household(t);
-  const listId = await createList(h, h.marie, { name: 'Ménage', categoryId: h.TACHES });
+  const listId = await createList(h, h.marie, { name: 'Ménage', listType: 'tasks' });
   for (const name of ['Vitres', 'aspirateur', 'Évier']) await addItem(h.marie, listId, { name });
   const { groups } = (await h.marie.get(`/api/lists/${listId}`)).body;
   assert.equal(groups.length, 1);
@@ -377,20 +377,19 @@ test('entrées invalides refusées', async (t) => {
   const lidl = h.ref('stores', 'Lidl');
   const carrefour = h.ref('stores', 'Carrefour');
   await h.guillaume.request('PATCH', `/api/admin/stores/${carrefour}`, { active: false });
-  const inactiveCategory = (await h.guillaume.post('/api/admin/categories', { name: 'Ancienne' })).body.item.id;
-  await h.guillaume.request('PATCH', `/api/admin/categories/${inactiveCategory}`, { active: false });
 
   const cases = [
-    [{ type: 'list.create', listId: 'pas-un-uuid', name: 'X', categoryId: h.COURSES }, 400],
-    [{ type: 'list.create', listId, name: 'Déjà prise', categoryId: h.COURSES }, 409],
-    [{ type: 'list.create', listId: uuid(), name: '', categoryId: h.COURSES }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'x'.repeat(101), categoryId: h.COURSES }, 400],
+    [{ type: 'list.create', listId: 'pas-un-uuid', name: 'X', listType: 'shopping' }, 400],
+    [{ type: 'list.create', listId, name: 'Déjà prise', listType: 'shopping' }, 409],
+    [{ type: 'list.create', listId: uuid(), name: '', listType: 'shopping' }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'x'.repeat(101), listType: 'shopping' }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X' }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: 999 }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: inactiveCategory }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: h.COURSES, storeId: 999 }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: h.COURSES, storeId: carrefour }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: h.TACHES, storeId: lidl }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'autre' }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'wishes' }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'shopping', storeId: 999 }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'shopping', storeId: carrefour }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'tasks', storeId: lidl }, 400],
     [{ type: 'list.update', listId, storeId: 'abc' }, 400],
     [{ type: 'list.update', listId }, 400],
     [{ type: 'item.create', listId, itemId: 'abc', name: 'X' }, 400],
@@ -436,16 +435,16 @@ test('catégorie, magasin et changement de catégorie d\'une liste', async (t) =
   await ok(h.marie, { type: 'list.update', listId, name: 'Courses du samedi', storeId: lidl });
   assert.deepEqual([(await get()).name, (await get()).store.name], ['Courses du samedi', 'Lidl']);
   // …mais on ne peut pas le choisir pour une autre liste
-  const [refused] = await run(h.marie, { type: 'list.create', listId: uuid(), name: 'X', categoryId: h.COURSES, storeId: lidl });
+  const [refused] = await run(h.marie, { type: 'list.create', listId: uuid(), name: 'X', listType: 'shopping', storeId: lidl });
   assert.equal(refused.status, 400);
 
   // Passer à « Tâches » retire le magasin ; y ajouter un magasin est refusé
-  await ok(h.marie, { type: 'list.update', listId, categoryId: h.TACHES });
+  await ok(h.marie, { type: 'list.update', listId, listType: 'tasks' });
   assert.deepEqual([(await get()).category.name, (await get()).store], ['Tâches', null]);
   const [noStore] = await run(h.marie, { type: 'list.update', listId, storeId: h.ref('stores', 'E.Leclerc') });
   assert.equal(noStore.status, 400);
   // Retour en liste de courses avec un magasin actif
-  await ok(h.marie, { type: 'list.update', listId, categoryId: h.COURSES, storeId: h.ref('stores', 'E.Leclerc') });
+  await ok(h.marie, { type: 'list.update', listId, listType: 'shopping', storeId: h.ref('stores', 'E.Leclerc') });
   assert.equal((await get()).store.name, 'E.Leclerc');
   await ok(h.marie, { type: 'list.update', listId, storeId: null });
   assert.equal((await get()).store, null);

@@ -76,6 +76,7 @@ export function createShareService(ctx) {
     validByHash: db.prepare(`
       SELECT public_shares.* FROM public_shares
       JOIN lists ON lists.id = public_shares.list_id AND lists.deleted_at IS NULL
+        AND lists.type != 'wishes' -- jamais de lien public pour une liste d'envies (même réponse qu'un lien inconnu)
       JOIN users ON users.id = lists.owner_id AND users.active = 1
       WHERE public_shares.token_hash = :hash
         AND public_shares.revoked_at IS NULL

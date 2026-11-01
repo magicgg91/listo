@@ -386,7 +386,7 @@ test('entrées invalides refusées', async (t) => {
     [{ type: 'list.create', listId: uuid(), name: 'X' }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', categoryId: 999 }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'autre' }, 400],
-    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'wishes' }, 400],
+    [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'tasks', forName: 'Léa' }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'shopping', storeId: 999 }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'shopping', storeId: carrefour }, 400],
     [{ type: 'list.create', listId: uuid(), name: 'X', listType: 'tasks', storeId: lidl }, 400],

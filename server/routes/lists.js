@@ -59,7 +59,8 @@ export function listRoutes(ctx) {
     try {
       // Droit vérifié d'abord (un non-membre reçoit « Liste introuvable »),
       // puis le plafond de duplications du compte
-      service.listForEditor(req.user, req.params.id);
+      const source = service.listForEditor(req.user, req.params.id);
+      if (source.type === 'wishes') return res.status(400).json({ error: 'Une liste d\'envies ne se duplique pas.' });
       if (!ctx.duplicates.take(req.user.id)) {
         return res.status(429).json({ error: 'Trop de duplications pour le moment. Réessayez dans un moment.' });
       }

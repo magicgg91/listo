@@ -10,7 +10,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { once } from 'node:events';
 import Database from 'better-sqlite3';
-import { startTestApp, setupAdmin, addUser, login, tempDir, createClient, ORIGIN } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, tempDir, createClient, ORIGIN, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion, fillListTypes } from '../server/db.js';
 import { loadConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
@@ -23,9 +23,7 @@ const PASSWORD = 'MotDePasseAdmin!';
 // Base « d'avant » (version 17, sans la colonne type), écrite dans un fichier
 // comme une sauvegarde nocturne prise avant la mise à jour
 function oldDatabase(file, fill) {
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN type');
-  db.pragma('user_version = 17');
+  let db = databaseAt(file, 17);
   fill(db);
   db.close();
 }
@@ -59,12 +57,12 @@ test('migration 18 : courses → shopping, autres → tasks, rien de perdu, idem
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   const types = Object.fromEntries(db.prepare('SELECT id, type FROM lists').all().map((l) => [l.id, l.type]));
   assert.deepEqual(types, { 'l-courses': 'shopping', 'l-taches': 'tasks', 'l-bricolage': 'tasks', 'l-marche': 'shopping', 'l-supprimee': 'shopping' });
   // Rien d'autre ne change : listes (catégorie, magasin, options, icône), articles, catégories
-  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ type, ...rest }) => rest), before.lists);
-  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all(), before.items);
+  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ type, for_user_id: forUser, for_name: forName, ...rest }) => rest), before.lists);
+  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, ...rest }) => rest), before.items);
   assert.deepEqual(db.prepare('SELECT * FROM categories ORDER BY id').all(), before.categories, 'table des catégories gardée telle quelle');
   assert.deepEqual(lines, ['Migration 18 (types de liste) : 3 liste(s) de courses, 2 liste(s) de tâches.']);
   db.close();
@@ -105,9 +103,7 @@ test('restauration d\'une ancienne sauvegarde (avant les types) : migrée au dé
   // Sauvegarde prise avant la mise à jour : un compte (mot de passe connu du
   // test) et ses listes
   {
-    const db = openDatabase(backup);
-    db.exec('ALTER TABLE lists DROP COLUMN type');
-    db.pragma('user_version = 17');
+    const db = databaseAt(backup, 17);
     await addUser(db, { username: 'guillaume', password: PASSWORD, role: 'admin' });
     oldContent(db);
     db.prepare("INSERT INTO list_members (list_id, user_id, access) SELECT id, 1, 'modification' FROM lists").run();
@@ -133,7 +129,7 @@ test('restauration d\'une ancienne sauvegarde (avant les types) : migrée au dé
   });
   const client = createClient(`http://127.0.0.1:${server.address().port}`);
   assert.equal((await login(client, 'guillaume', PASSWORD)).status, 200);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   const lists = Object.fromEntries((await client.get('/api/lists')).body.lists.map((l) => [l.name, l]));
   assert.deepEqual(Object.keys(lists).sort(), ['Courses', 'Maison', 'Marché du samedi', 'Travaux']);
   assert.equal(lists.Courses.type, 'shopping');
@@ -191,18 +187,16 @@ test('droits : seul le propriétaire change le type ; contributeur et lecture se
   assert.ok(h.app.logs.some((l) => /liste_type_change/.test(l) && /avant="shopping"/.test(l) && /apres="tasks"/.test(l)));
 });
 
-test('envies : création refusée (nouveau champ comme valeur inconnue), changement vers envies refusé ; aucune liste d\'envies', async (t) => {
+test('types : une liste existante ne devient pas une liste d\'envies ; type inconnu refusé', async (t) => {
   const h = await household(t);
-  const create = await h.one(h.guillaume, { type: 'list.create', listId: uuid(), name: 'Noël', listType: 'wishes' });
-  assert.deepEqual([create.status, create.error], [400, 'Les listes d\'envies ne sont pas encore disponibles.']);
   const update = await h.one(h.guillaume, { type: 'list.update', listId: h.courses, listType: 'wishes' });
-  assert.deepEqual([update.status, update.error], [400, 'Les listes d\'envies ne sont pas encore disponibles.']);
+  assert.deepEqual([update.status, update.error], [400, 'Une liste existante ne devient pas une liste d\'envies : créez une nouvelle liste.']);
   for (const listType of ['autre', 'Shopping', 1, null, '']) {
     assert.equal((await h.one(h.guillaume, { type: 'list.create', listId: uuid(), name: 'X', listType })).status, 400, String(listType));
   }
   assert.equal((await h.one(h.guillaume, { type: 'list.create', listId: uuid(), name: 'Sans type' })).error, 'Type de liste inconnu.');
   assert.equal(h.app.db.prepare("SELECT COUNT(*) FROM lists WHERE type = 'wishes' OR type IS NULL").pluck().get(), 0);
-  assert.deepEqual(CREATABLE_TYPES, ['shopping', 'tasks']);
+  assert.deepEqual(CREATABLE_TYPES, ['shopping', 'tasks', 'wishes']);
 });
 
 test('aller-retour courses → tâches → courses : magasin, rayons, codes-barres, priorité et échéance conservés', async (t) => {

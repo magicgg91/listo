@@ -17,6 +17,7 @@ const TABLES = [
   'list_events', 'list_reads', // nouveautés (migration 16)
   // autorisation OAuth pour Claude (migration 17)
   'oauth_clients', 'oauth_requests', 'oauth_grants', 'oauth_grant_lists', 'oauth_codes', 'oauth_tokens',
+  'reservations', // listes d'envies (migration 19)
 ];
 
 // Base en mémoire avec un compte, une catégorie et une liste, pour les tests
@@ -29,7 +30,7 @@ function sampleDb() {
   return db;
 }
 
-test('les vingt et une tables du cahier des charges sont créées', () => {
+test('les vingt-deux tables du cahier des charges sont créées', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)

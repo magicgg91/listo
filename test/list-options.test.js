@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login, createClient, ORIGIN } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, createClient, ORIGIN, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { PRIORITY_OFF, DUE_OFF } from '../server/lists.js';
 import { createQueue } from '../public/js/queue.js';
@@ -68,9 +68,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-options-'));
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 12, sans les deux colonnes, avec des listes
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
-  db.pragma('user_version = 12');
+  let db = databaseAt(file, 12);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('taches', 'Maison', 2, 1), ('courses', 'Courses', 1, 1)").run();
   db.prepare(`INSERT INTO items (id, list_id, name, priority, due_date, created_by, created_at, updated_at)
@@ -78,11 +76,11 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
-  assert.deepEqual(db.prepare('SELECT * FROM items').all(), before, 'aucune valeur touchée');
+  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19)');
   // Nouvelle liste : désactivées (valeur par défaut de la base)
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
   assert.deepEqual(row('neuve'), { priority_enabled: 0, due_enabled: 0 });
@@ -150,7 +148,7 @@ test('écriture refusée quand le réglage est désactivé (rien d\'écrit), acc
   // Invité en lecture seule : toujours refusé (droit vérifié d'abord)
   assert.equal((await run(h.paul, { type: 'item.update', itemId: h.bulb, priority: 'low' })).status, 403);
   // Liste de courses : refus habituel, inchangé
-  assert.equal((await run(h.lea, { type: 'item.update', itemId: h.milk, priority: 'high' })).error, 'La priorité et l\'échéance ne se choisissent que dans une liste autre que les courses.');
+  assert.equal((await run(h.lea, { type: 'item.update', itemId: h.milk, priority: 'high' })).error, 'La priorité et l\'échéance ne se choisissent que dans une liste de tâches.');
 });
 
 test('valeurs conservées : désactiver puis réactiver les fait revenir ; changer de catégorie ne perd rien', async (t) => {

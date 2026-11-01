@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { LIST_ICONS, isListIcon, listIcon } from '../public/js/list-icons.js';
 import { emptyState, applyOp } from '../public/js/store.js';
@@ -205,17 +205,15 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-icon-'));
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 13, sans la colonne, avec des listes
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
-  db.pragma('user_version = 13');
+  let db = databaseAt(file, 13);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id, priority_enabled) VALUES ('taches', 'Maison', 2, 1, 1), ('courses', 'Courses', 1, 1, 0)").run();
   const before = db.prepare('SELECT * FROM lists ORDER BY id').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ icon, add_mode: addMode, type, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
+  assert.deepEqual(after.map(({ icon, add_mode: addMode, type, for_user_id: forUser, for_name: forName, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');
   // À l'écran : chariot pour les courses, liste cochée pour les tâches
   assert.equal(listIcon({ icon: after[0].icon, type: 'shopping' }), 'cart');

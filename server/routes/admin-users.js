@@ -34,6 +34,8 @@ export function adminUserRoutes(ctx) {
     SELECT EXISTS (SELECT 1 FROM lists WHERE owner_id = :id)
         OR EXISTS (SELECT 1 FROM items WHERE created_by = :id)
         OR EXISTS (SELECT 1 FROM list_members WHERE user_id = :id)
+        OR EXISTS (SELECT 1 FROM lists WHERE for_user_id = :id)
+        OR EXISTS (SELECT 1 FROM reservations WHERE user_id = :id)
   `).pluck();
 
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste

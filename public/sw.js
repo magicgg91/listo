@@ -70,6 +70,7 @@ const APP_FILES = [
   '/js/history.js',
   '/js/list-icons.js',
   '/js/list-types.js',
+  '/js/wishes.js',
   '/js/live.js',
   '/js/localdb.js',
   '/js/photo.js',

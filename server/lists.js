@@ -33,8 +33,12 @@ import {
 import { groupItems } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
 import {
-  isListType, isShoppingList, typeOf, CREATABLE_TYPES, TYPE_LABELS, WISHES_NOT_YET,
+  isListType, isShoppingList, isWishList, usesTaskOptions, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
 } from '../public/js/list-types.js';
+import {
+  wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
+} from '../public/js/wishes.js';
+import { createReservationService } from './reservations.js';
 import { cleanName, parseId } from './validate.js';
 import { normalizeBarcode } from './products.js';
 
@@ -135,6 +139,34 @@ function addModeOf(value) {
   return value;
 }
 
+// Lien d'un souhait : http ou https seulement (public/js/wishes.js) ; null
+// ou « » l'efface ; undefined : pas fourni
+function linkOf(value) {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const link = cleanLink(value);
+  if (!link) throw new OpError(400, 'Lien invalide : une adresse web en http ou https, 500 caractères au plus.');
+  return link;
+}
+
+// Prix indicatif d'un souhait, en centimes (entier de 0 à 100 000 €) ; null
+// l'efface ; undefined : pas fourni
+function priceOf(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (!Number.isInteger(value) || value < 0 || value > PRICE_MAX_CENTS) throw new OpError(400, 'Prix invalide (de 0 à 100 000 €).');
+  return value;
+}
+
+// Prénom d'une personne sans compte (liste d'envies) : texte simple, 80 caractères au plus
+function forNameOf(value) {
+  const name = typeof value === 'string' ? value.normalize('NFC').replace(/\s+/g, ' ').trim() : '';
+  if (!name || [...name].length > FOR_NAME_MAX || /[\u0000-\u001f\u007f]/.test(name)) {
+    throw new OpError(400, `Prénom invalide (1 à ${FOR_NAME_MAX} caractères).`);
+  }
+  return name;
+}
+
 function listIconOf(value) {
   if (value === undefined) return undefined;
   if (value === '' || isListIcon(value)) return value;
@@ -150,6 +182,9 @@ export function createListService(ctx) {
   const { db } = ctx;
   // Nouveautés : journal d'activité et repères de lecture (server/news.js)
   const news = ctx.news ?? (ctx.news = createNewsService(ctx));
+  // Réservations des listes d'envies (server/reservations.js) : seul module
+  // qui lit la table reservations, et qui filtre ce qu'en voit chaque compte
+  const reservations = ctx.reservations ?? (ctx.reservations = createReservationService(ctx));
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -158,6 +193,8 @@ export function createListService(ctx) {
     category: db.prepare('SELECT * FROM categories WHERE id = ?'),
     legacyCategory: db.prepare('SELECT id FROM categories WHERE is_shopping = ? ORDER BY id LIMIT 1').pluck(),
     store: db.prepare('SELECT * FROM stores WHERE id = ?'),
+    userName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
+    activeUser: db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').pluck(),
     aisle: db.prepare('SELECT * FROM aisles WHERE id = ?'),
     allCategories: db.prepare('SELECT * FROM categories'),
     allStores: db.prepare('SELECT * FROM stores'),
@@ -177,6 +214,7 @@ export function createListService(ctx) {
     memberItem: db.prepare(`
       SELECT items.*, lists.type AS list_type, lists.store_id AS list_store_id,
         lists.owner_id AS list_owner_id, list_members.access AS member_access,
+        lists.for_user_id AS list_for_user_id, lists.for_name AS list_for_name,
         lists.priority_enabled AS list_priority_enabled, lists.due_enabled AS list_due_enabled,
         (lists.type = 'shopping' AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
@@ -231,8 +269,7 @@ export function createListService(ctx) {
   // téléphone ; « type » est déjà le nom de l'opération), sinon l'identifiant de catégorie d'une ancienne opération
   // (file d'attente hors ligne, téléphone qui n'a pas rechargé), traduit en
   // type : catégorie « courses » -> shopping, autre -> tasks. undefined si
-  // l'opération ne demande rien. Les envies ne sont pas encore proposées :
-  // refusées (création comme changement de type).
+  // l'opération ne demande rien.
   function requestedType(op) {
     let type;
     if (op.listType !== undefined) {
@@ -245,7 +282,6 @@ export function createListService(ctx) {
     } else {
       return undefined;
     }
-    if (!CREATABLE_TYPES.includes(type)) throw new OpError(400, WISHES_NOT_YET);
     return type;
   }
 
@@ -418,6 +454,27 @@ export function createListService(ctx) {
     }
   }
 
+  // Lien et prix : listes d'envies seulement ; une liste d'envies n'a pas
+  // de quantité. Vérifié avant toute écriture.
+  function checkWishFields(wishes, op) {
+    if (!wishes && (op.link !== undefined || op.priceCents !== undefined)) {
+      throw new OpError(400, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
+    }
+    if (wishes && typeof op.quantity === 'string' && op.quantity.trim() !== '') {
+      throw new OpError(400, 'Pas de quantité dans une liste d\'envies.');
+    }
+  }
+
+  // « Reçu » (le coché) d'une liste d'envies : le bénéficiaire (compte) ou
+  // le propriétaire seulement ; un proche ne peut pas le marquer
+  function checkReceived(user, row, ownerId) {
+    if (!isWishList(row.type ?? row.list_type)) return;
+    const list = { ownerId, forUserId: row.for_user_id ?? row.list_for_user_id ?? null, forName: row.for_name ?? row.list_for_name ?? null };
+    if (!mayMarkReceived(user.id, list)) {
+      throw new OpError(403, 'Seul le bénéficiaire ou le propriétaire de la liste marque un souhait comme reçu.');
+    }
+  }
+
   function checkFieldsForList(multi, op) {
     if (multi && op.aisleId !== undefined && op.aisleId !== null) {
       throw new OpError(400, "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.");
@@ -441,6 +498,9 @@ export function createListService(ctx) {
     priority: item.priority ?? 'normal',
     dueDate: item.due_date ?? null,
     ean: item.ean ?? null,
+    // Liste d'envies : lien web et prix indicatif (centimes)
+    link: item.link ?? null,
+    priceCents: item.price_cents ?? null,
     checked: item.checked === 1,
     checkedAt: item.checked_at ?? null,
     createdBy: item.created_by,
@@ -463,9 +523,18 @@ export function createListService(ctx) {
       access: m.id === list.owner_id ? 'modification' : m.access,
     }));
     const mine = rows.find((m) => m.id === user.id);
+    // Liste d'envies : à qui elle est destinée (rien de secret ; les
+    // réservations, elles, ne sont jamais ici : voir server/reservations.js)
+    const wishes = isWishList(type) ? {
+      forUserId: list.for_user_id ?? null,
+      forName: list.for_name ?? null,
+      forDisplayName: list.for_user_id ? q.userName.get(list.for_user_id) ?? null : null,
+      isBeneficiary: beneficiaryId(wishListOf(list)) === user.id,
+    } : {};
     return {
       id: list.id,
       name: list.name,
+      ...wishes,
       // Icône choisie (« » : celle du type)
       icon: isListIcon(list.icon) ? list.icon : '',
       type,
@@ -569,6 +638,22 @@ export function createListService(ctx) {
       if (store && !isShoppingList(type)) {
         throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
+      // Liste d'envies : « Pour qui ? », fixé ici pour toujours. Un autre
+      // compte actif (forUserId), une personne sans compte (forName), ou ni
+      // l'un ni l'autre : « Moi » (le propriétaire est le bénéficiaire).
+      let forUserId = null;
+      let forName = null;
+      if (op.forUserId !== undefined && op.forUserId !== null) {
+        if (!isWishList(type)) throw new OpError(400, '« Pour qui ? » ne se choisit que pour une liste d\'envies.');
+        forUserId = parseId(op.forUserId);
+        if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'Utilisateur inconnu ou désactivé.');
+        if (forUserId === user.id) forUserId = null; // « Moi »
+      }
+      if (op.forName !== undefined && op.forName !== null) {
+        if (!isWishList(type)) throw new OpError(400, '« Pour qui ? » ne se choisit que pour une liste d\'envies.');
+        if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
+        forName = forNameOf(op.forName);
+      }
       // Priorité et échéance : désactivées sauf demande explicite
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
@@ -577,10 +662,16 @@ export function createListService(ctx) {
       // de courses, « Ouvrir la fiche » pour les autres
       const addMode = addModeOf(op.addMode) ?? (isShoppingList(type) ? 'quick' : 'detail');
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, now, now);
+      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, for_user_id, for_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, forUserId, forName, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
+      // Le compte bénéficiaire est membre d'office, en « Peut modifier » : il
+      // ouvre sa liste et y ajoute ses souhaits (il ne verra jamais les réservations)
+      if (forUserId) {
+        db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, forUserId);
+        news.startReading(id, forUserId);
+      }
       changed(id);
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
@@ -597,8 +688,14 @@ export function createListService(ctx) {
     // rayons et ses codes-barres ; une liste de tâches qui devient une liste
     // de courses garde ses réglages et ses valeurs de priorité et d'échéance
     // (ignorés). Tout réapparaît au retour au type d'origine.
+    // Listes d'envies : ni changement de type (dans un sens ou dans l'autre),
+    // ni changement de bénéficiaire (l'ancien bénéficiaire verrait d'un coup
+    // toutes les réservations).
     'list.update'(user, op) {
       const list = listForOwner(user, op.listId);
+      if (op.forUserId !== undefined || op.forName !== undefined) {
+        throw new OpError(400, 'La personne à qui la liste est destinée ne change pas.');
+      }
       if ([op.name, op.listType, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
@@ -609,7 +706,17 @@ export function createListService(ctx) {
       const addMode = addModeOf(op.addMode) ?? list.add_mode;
 
       const before = typeOf(list);
-      const type = requestedType(op) ?? before;
+      let type;
+      if (isWishList(before)) {
+        // Un ancien téléphone envoie toujours un identifiant de catégorie
+        // (traduit en « tâches ») : il est ignoré ; seul un listType
+        // différent est refusé
+        if (op.listType !== undefined && op.listType !== 'wishes') throw new OpError(400, WISHES_FIXED);
+        type = before;
+      } else {
+        type = requestedType(op) ?? before;
+        if (isWishList(type)) throw new OpError(400, NOT_TO_WISHES);
+      }
       const categoryId = type === before ? list.category_id : legacyCategoryId(type);
 
       let storeId = list.store_id;
@@ -677,6 +784,7 @@ export function createListService(ctx) {
     // serveur reçoit l'opération. Tout membre de la liste peut le faire.
     'list.uncheckAll'(user, op) {
       const list = listForEditor(user, op.listId);
+      checkReceived(user, list, list.owner_id);
       const ids = db.prepare('SELECT id FROM items WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL').pluck().all(list.id);
       const { changes } = db.prepare('UPDATE items SET checked = 0, checked_at = NULL, updated_at = ? WHERE list_id = ? AND checked = 1 AND deleted_at IS NULL')
         .run(nowIso(), list.id);
@@ -697,7 +805,10 @@ export function createListService(ctx) {
       const name = itemName(op.name);
       checkFieldsForList(list.is_multi === 1, op);
       checkEanForList(isShoppingList(list), op);
+      checkWishFields(isWishList(list), op);
       const ean = op.ean === undefined ? null : eanOf(op.ean);
+      const link = linkOf(op.link) ?? null;
+      const priceCents = priceOf(op.priceCents) ?? null;
       let aisleId = null;
       let storeId = null;
       if (list.is_multi === 1) {
@@ -706,9 +817,9 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, user.id, now, now);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
@@ -729,11 +840,12 @@ export function createListService(ctx) {
       const item = itemForEditor(user, op.itemId);
       const multi = item.is_multi === 1;
       checkFieldsForList(multi, op);
-      // Priorité et échéance : refusées sur une liste de courses (rien n'est
-      // écrit), vérifiées avant toute écriture
-      if (isShoppingList(item.list_type) && (op.priority !== undefined || op.dueDate !== undefined)) {
-        throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste autre que les courses.');
+      // Priorité et échéance : listes de tâches seulement (rien n'est écrit),
+      // vérifiées avant toute écriture
+      if (!usesTaskOptions(item.list_type) && (op.priority !== undefined || op.dueDate !== undefined)) {
+        throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste de tâches.');
       }
+      checkWishFields(isWishList(item.list_type), op);
       // Réglage de la liste désactivé (relu dans la base) : refus, rien n'est écrit
       if (op.priority !== undefined && item.list_priority_enabled !== 1) throw new OpError(400, PRIORITY_OFF);
       if (op.dueDate !== undefined && item.list_due_enabled !== 1) throw new OpError(400, DUE_OFF);
@@ -744,6 +856,8 @@ export function createListService(ctx) {
       const name = op.name === undefined ? item.name : itemName(op.name);
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
+      const link = op.link === undefined ? item.link : linkOf(op.link);
+      const priceCents = op.priceCents === undefined ? item.price_cents : priceOf(op.priceCents);
       let aisleId = item.aisle_id;
       if (op.aisleId !== undefined && isShoppingList(item.list_type) && !multi) {
         if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'Rayon inconnu ou désactivé.');
@@ -757,11 +871,11 @@ export function createListService(ctx) {
         const wanted = op.storeId === null ? null : parseId(op.storeId);
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
-      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.ean].every((value) => value === undefined)) {
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, ean = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, priority, dueDate, ean, nowIso(), item.id);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, ean, link, priceCents, nowIso(), item.id);
 
       // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {
@@ -779,6 +893,7 @@ export function createListService(ctx) {
     'item.check'(user, op) {
       const item = itemForEditor(user, op.itemId);
       if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
+      checkReceived(user, item, item.list_owner_id);
       // Date du coché : posée au premier coché (un second « cocher » la
       // garde), effacée au décoché
       const now = nowIso();
@@ -915,7 +1030,10 @@ export function createListService(ctx) {
     const items = q.liveItems.all(list.id).map(describeItem);
     const byStore = shopping && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
     const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all() });
-    return { list: describeList(list, user), groups };
+    // Réservations : seulement pour ceux qui ont le droit de les voir ; pour
+    // le bénéficiaire, le champ n'existe pas
+    const booked = reservations.forList(user, list);
+    return { list: describeList(list, user), groups, ...(booked ? { reservations: booked } : {}) };
   }
 
   // Suggestions d'autocomplétion (même règle que sur le téléphone). Le rayon
@@ -979,6 +1097,10 @@ export function createListService(ctx) {
       users: activeUsers(),
       // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
       news: news.newsFor(user),
+      // Réservations des listes d'envies où ce compte a le droit de les voir,
+      // en entier à chaque synchronisation (une libération disparaît donc
+      // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire
+      reservations: reservations.forUser(user),
     };
   }
 
@@ -1009,6 +1131,16 @@ export function createListService(ctx) {
     }
     const before = new Map(q.members.all(list.id).filter((m) => m.id !== list.owner_id).map((m) => [m.id, m.access]));
     const current = new Set(before.keys());
+    // Liste d'envies pour un autre compte : le bénéficiaire reste membre, en
+    // « Peut modifier » ; le propriétaire ne peut ni le retirer, ni le mettre
+    // en lecture seule. Il peut quitter la liste lui-même ; s'il est rajouté,
+    // c'est toujours en « Peut modifier ».
+    const beneficiary = list.for_user_id ?? null;
+    if (beneficiary) {
+      if (current.has(beneficiary) && !wanted.has(beneficiary)) throw new OpError(400, 'La personne à qui la liste est destinée ne peut pas en être retirée.');
+      if (rights.has(beneficiary) && rights.get(beneficiary) !== 'modification') throw new OpError(400, 'La personne à qui la liste est destinée garde le droit « Peut modifier ».');
+      if (wanted.has(beneficiary)) rights.set(beneficiary, 'modification');
+    }
 
     for (const id of wanted) {
       if (current.has(id)) continue;
@@ -1083,6 +1215,7 @@ export function createListService(ctx) {
   // Journal : identifiants seulement, jamais de nom de liste ni de contenu.
   function duplicateList(user, listId, { name, withItems = true } = {}) {
     const source = listForEditor(user, listId);
+    if (isWishList(source)) throw new OpError(400, 'Une liste d\'envies ne se duplique pas.');
     const title = listName(name);
     if (typeof withItems !== 'boolean') throw new OpError(400, 'Réglage « Copier les éléments » invalide.');
     const id = crypto.randomUUID();

@@ -168,6 +168,8 @@ Le code reprend la structure actuelle (un fichier par service, routes dans `serv
 ### 2.1 Versions et méthodes
 
 > **Décision du 31 octobre 2026 (étape C)** : `add_items` et `set_checked` livrés ; `set_checked` accepte 20 identifiants (et non 50) ; une connexion « Lecture seule » reçoit une erreur d'outil « Cette connexion est en lecture seule. » (et non un 403 `insufficient_scope`) ; un élément de même nom déjà présent non coché n'est pas recréé. Ajouté après l'étape D : 300 cochages ou décochages par heure et par connexion pour `set_checked`. Détail dans le cahier des charges.
+
+> **Décision du 1er novembre 2026 (types de liste)** : `list_lists` et `read_list` donnent `type` (`shopping`, `tasks`, `wishes`) au lieu de « courses » oui ou non (`other`) et ne donnent plus de catégorie ; le magasin n'est donné que pour une liste de courses. Détail dans le cahier des charges.
 >
 > **Décision du 31 octobre 2026 (étape B)** : seule l'ancienne famille (2025-03-26, 2025-06-18, 2025-11-25) est acceptée pour l'instant ; la nouvelle (2026-07-28) sera ajoutée quand Claude l'utilisera. L'outil de lecture s'appelle `read_list` (et non `get_list`). Le détail livré est dans le cahier des charges.
 

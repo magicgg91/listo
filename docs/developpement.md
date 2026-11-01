@@ -25,6 +25,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [« Après l'ajout » (migration 15)](#-après-lajout--migration-15)
 - [Icône d'une liste (migration 14)](#icône-dune-liste-migration-14)
 - [Nouveautés (migration 16)](#nouveautés-migration-16)
+- [Types de liste (migration 18)](#types-de-liste-migration-18)
 - [Autorisation pour Claude (migration 17)](#autorisation-pour-claude-migration-17)
 - [Serveur MCP en lecture seule (étape B)](#serveur-mcp-en-lecture-seule-étape-b)
 - [Ajout et cochage par Claude (étape C)](#ajout-et-cochage-par-claude-étape-c)
@@ -86,7 +87,8 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/js/store.js` | Copie locale des données et calculs (tri d'une liste : `availableSorts`, `defaultSort`, `effectiveSort`, choix gardé par liste sous la clé `listo-tri-liste-<id>` ; cartes de « Mes listes » et leur tri : plus récentes d'abord ou ordre alphabétique, choix gardé sur le téléphone sous la clé `listo-tri-listes` ; liste groupée par rayon ou par magasin, suggestions, magasins proposés) |
 | `public/js/format.js` | Mise en forme des textes (dates relatives, noms, version…) |
 | `public/js/help-content.js` | Contenu de la page « Aide » : tableau « Qui peut quoi », sections et sujets. Tout le texte d'aide est là, et seulement là ; la section Administrateur n'est passée à l'écran que pour un Admin |
-| `public/js/list-icons.js` | Les 35 icônes possibles d'une liste (liste blanche, partagée avec le serveur) et l'icône par défaut de chaque catégorie |
+| `public/js/list-icons.js` | Les 35 icônes possibles d'une liste (liste blanche, partagée avec le serveur) ; sans choix, l'icône du type |
+| `public/js/list-types.js` | Types de liste (courses, tâches, envies), partagés avec le serveur : le seul endroit qui dit ce qu'une liste sait faire (`typeOf`, `isShoppingList`, `usesTaskOptions`), types qu'on peut choisir, noms, icônes par défaut, avertissement du formulaire |
 | `public/js/create-reference.js` | Feuille « Nouveau magasin » / « Nouveau rayon » (même composant pour les deux) |
 | `public/js/theme-boot.js` | Thème posé avant le premier affichage (balises `color-scheme` et `theme-color`), pour que le bandeau du haut de l'iPhone suive le thème de Listo |
 | `public/js/words.js` | Vocabulaire : « article » dans une liste de courses, « élément » dans les autres listes. Tous les textes qui nomment une ligne de la liste passent par lui |
@@ -159,7 +161,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Fiche d'un élément : toucher Nom, Quantité, Note, puis Code-barres : à chaque fois, le titre de la feuille reste visible, le champ aussi, au-dessus du clavier ; la feuille défile.
     4. Administration › Courses › Articles : toucher la recherche, puis un crayon pour corriger un nom : la barre du haut reste visible, le champ aussi.
     5. Sur « Mes listes » et dans une liste, tirer la liste au-delà du bout (rebond) : seule la liste bouge, la barre du haut reste collée en haut, sous l'encoche ou l'îlot dynamique.
-    6. Champs de nom (élément, liste, catégorie, magasin, rayon, correction d'un nom dans l'Administration) : le clavier ne propose pas « Préremplir le contact ». À la connexion, le gestionnaire de mots de passe propose toujours l'identifiant et le mot de passe.
+    6. Champs de nom (élément, liste, magasin, rayon, correction d'un nom dans l'Administration) : le clavier ne propose pas « Préremplir le contact ». À la connexion, le gestionnaire de mots de passe propose toujours l'identifiant et le mot de passe.
     7. Sur Android : rien de tout cela ne change.
 9. **Un seul appui suffit, clavier ouvert** (iPhone et Android) : à chaque fois, toucher d'abord un champ (le clavier s'ouvre), puis le bouton, une seule fois.
     1. Champ d'ajout : « + » ajoute une seule fois. Un article nouveau ouvre « Dans quel rayon ? », qui reste ouverte, entièrement visible, sans clavier ; choisir un rayon : un seul ajout. La touche Entrée (ou « OK ») ajoute aussi, une seule fois.
@@ -183,7 +185,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 13. **Menu ⋮ d'une carte** : le bouton ⋮ dans le coin de la carte ouvre un petit menu juste en dessous, sans ouvrir la liste. Propriétaire : « Modifier la liste », « Dupliquer la liste », « Partager par lien », puis, après un trait, « Supprimer la liste » (en rouge). Contributeur : « Dupliquer la liste », un trait, « Quitter la liste » ; invité : « Quitter la liste » seulement. Toucher ailleurs sur la carte ouvre la liste ; toucher à côté du menu le ferme. Dans une liste ouverte, le menu ⋮ propose exactement les mêmes actions. « Modifier la liste » puis la croix ou « Enregistrer » : retour à « Mes listes », carte à jour. « Supprimer la liste » demande « Supprimer la liste « Courses » ? » ; après « Supprimer », la carte disparaît (aussi sur l'autre téléphone).
 14. **Dupliquer la liste** : la feuille propose « Courses (copie) » et « Copier les articles » activé, sans clavier ouvert. « Dupliquer » : on reste où l'on est, « Liste « Courses (copie) » créée · Ouvrir », la nouvelle carte s'éclaire brièvement ; la copie a les mêmes articles, tous décochés, sans photo, la même icône, et n'est partagée avec personne. En mode avion : « Connexion nécessaire pour dupliquer une liste ».
 15. **Quitter la liste** (deux téléphones : A, propriétaire ; B, contributeur ou invité) : sur B, « Quitter la liste » : « Quitter la liste « Courses » ? Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous. » ; « Quitter » : la carte disparaît. Depuis l'intérieur de la liste (menu ⋮) : retour à l'accueil, puis « Vous avez quitté la liste « Courses » ». Sur A, la liste des personnes se met à jour seule ; les articles ajoutés par B restent. En mode avion sur B : « Connexion nécessaire pour quitter une liste ». Le propriétaire n'a jamais « Quitter la liste ».
-16. **Icône d'une liste** (A, propriétaire ; B, membre) : sur A, « Nouvelle liste » : sous « Catégorie », la grille (sept colonnes sur un téléphone de 390 px), la case du chariot entourée et cochée, aucun clavier ; toucher « Tâches » : la case cochée devient la liste cochée ; toucher le cadeau, « Enregistrer » : la carte et l'en-tête de la liste montrent le cadeau. « Modifier la liste » sans toucher la grille : l'icône ne change pas. Sur B, l'icône change sans recharger ; B n'a pas « Modifier la liste ». En mode avion sur A, changer l'icône : elle change tout de suite, puis passe au serveur au retour du réseau. Lecteur d'écran : chaque case dit son nom (« Cadeau, bouton radio, sélectionné »).
+16. **Icône d'une liste** (A, propriétaire ; B, membre) : sur A, « Nouvelle liste » : sous « Type de liste », la grille (sept colonnes sur un téléphone de 390 px), la case du chariot entourée et cochée, aucun clavier ; toucher « Tâches » : la case cochée devient la liste cochée ; toucher le cadeau, « Enregistrer » : la carte et l'en-tête de la liste montrent le cadeau. « Modifier la liste » sans toucher la grille : l'icône ne change pas. Sur B, l'icône change sans recharger ; B n'a pas « Modifier la liste ». En mode avion sur A, changer l'icône : elle change tout de suite, puis passe au serveur au retour du réseau. Lecteur d'écran : chaque case dit son nom (« Cadeau, bouton radio, sélectionné »).
 
 **Dans une liste**
 
@@ -200,7 +202,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 20. **Zone des articles cochés** : cocher un article : il quitte son rayon pour « Dans le panier · 1 » en bas (« Terminés » dans une liste de tâches) ; un rayon dont tout est coché disparaît. Replier la zone, fermer et rouvrir Listo : elle est restée repliée. « Tout remettre à acheter » et « Retirer du panier » demandent confirmation par une feuille ; sur l'autre téléphone, le changement arrive en quelques secondes. En mode avion, « Tout remettre à acheter » marche aussi et part au retour du réseau.
 21. **Fiche d'un article** : en-tête : la poubelle (rouge), un espace, la disquette bleue « Enregistrer », la croix ; la disquette enregistre et ferme (la touche Entrée d'un champ aussi), sans laisser le clavier ouvert ; la poubelle supprime tout de suite, avec « « Pain » supprimé · Annuler » quelques secondes. En faisant défiler une fiche longue (avec une photo), l'en-tête reste visible. Liste de courses : « Quantité (par exemple 2 ou 500 g) » et « Code-barres (8, 12 ou 13 chiffres) », l'aide en petit à côté du titre ; le champ Code-barres a son bouton de scan sur la même ligne, et une petite croix qui le vide sans ouvrir le clavier.
 22. **Glisser pour supprimer** : sur une ligne, glisser le doigt vers la gauche : la ligne suit le doigt et une zone rouge « Supprimer » apparaît. Lâcher après un petit glissement : la ligne revient ; après un grand glissement : elle reste ouverte. Toucher « Supprimer » : la ligne disparaît, « « Pain » supprimé · Annuler » ; « Annuler » la remet. Faire défiler la liste normalement (rien ne s'ouvre, une ligne ouverte se referme), glisser en diagonale (la liste défile), toucher une autre ligne ou glisser vers la droite (la ligne ouverte se referme), toucher la case et la vignette (inchangé). Sur iPhone, dans Safari, le geste « retour » depuis le bord gauche fonctionne toujours. En mode avion : la suppression attend le réseau.
-23. **Priorité et échéance** : « Nouvelle liste », catégorie Tâches : « Options des éléments » montre « Priorité » et « Échéance », désactivées ; sous chaque titre, seulement sa description (« Basse, normale ou élevée. », « Une date limite ; retards signalés. »), qui ne change pas quand on touche l'interrupteur ; avec VoiceOver ou TalkBack, chaque interrupteur est annoncé avec son titre, son état et sa description. Les deux options disparaissent si l'on choisit Courses (« Après l'ajout » reste). Créer une liste avec la priorité seulement : la fiche n'a pas d'« Échéance », « Trier la liste » propose « Ordre alphabétique » et « Par priorité ». Sur l'autre téléphone, fiche ouverte pendant que le propriétaire désactive la priorité : le champ disparaît, l'enregistrement marche. Réactiver : les priorités saisies reviennent. « Aujourd'hui », « Demain » et « En retard » changent à minuit.
+23. **Priorité et échéance** : « Nouvelle liste », type Tâches : « Options des éléments » montre « Priorité » et « Échéance », désactivées ; sous chaque titre, seulement sa description (« Basse, normale ou élevée. », « Une date limite ; retards signalés. »), qui ne change pas quand on touche l'interrupteur ; avec VoiceOver ou TalkBack, chaque interrupteur est annoncé avec son titre, son état et sa description. Les deux options disparaissent si l'on choisit Courses (« Après l'ajout » reste). Créer une liste avec la priorité seulement : la fiche n'a pas d'« Échéance », « Trier la liste » propose « Ordre alphabétique » et « Par priorité ». Sur l'autre téléphone, fiche ouverte pendant que le propriétaire désactive la priorité : le champ disparaît, l'enregistrement marche. Réactiver : les priorités saisies reviennent. « Aujourd'hui », « Demain » et « En retard » changent à minuit.
 24. **Magasin « multi »** : Administration → Courses → Magasins, créer un magasin « Multi » et cocher ses magasins ; créer une liste de courses avec ce magasin. Ajouter un article nouveau : son magasin est demandé ; l'ajouter une deuxième fois : il retrouve son magasin sans question. En faisant défiler, l'en-tête du magasin reste collé en haut.
 25. **Nouveau magasin, nouveau rayon** (compte qui n'est pas Admin) : un article inconnu : « Dans quel rayon ? » finit par « Nouveau rayon… » ; le toucher ouvre « Nouveau rayon », sans clavier ; taper « Surgelés », « Créer » : le choix revient avec « Surgelés » sélectionné. Dans la fiche d'un article, changer la quantité, puis « Rayon » → « Nouveau rayon… » : la fiche garde la quantité tapée. Taper « crèmerie » : « Le rayon « Crèmerie » existe déjà… » et « Choisir « Crèmerie » ». « Nouvelle liste » → Magasin → « Nouveau magasin… » : le titre tapé reste. Sur l'autre téléphone, le nouveau rayon est proposé sans recharger. En mode avion : « Connexion nécessaire pour créer un rayon », l'article s'ajoute quand même.
 26. **Photo d'un article** (en HTTPS) : dans la fiche, « Ajouter une photo » (« Changer la photo » quand il y en a une). Sur iPhone et sur ordinateur, il ouvre directement le sélecteur d'images du téléphone. Sur Android (Chrome, Brave, Samsung Internet ; si possible Android 14 ou plus), une petite feuille « Photo de l'article » monte par-dessus la fiche, avec « Prendre une photo » (l'application appareil photo s'ouvre), « Choisir dans la galerie » et « Annuler » (la fiche garde ce qui y était tapé) ; Retour ne ferme que la feuille. La photo reste facultative ; une photo prise en portrait reste dans le bon sens ; elle apparaît en vignette, un appui l'agrandit, Retour la referme ; sur l'autre téléphone, elle apparaît toute seule.
@@ -225,7 +227,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 
 **Synchronisation**
 
-30. **Temps réel** (deux téléphones sur la même liste) : un article coché sur l'un est coché sur l'autre en moins de 3 secondes, sans rien toucher. Renommer une catégorie ou un magasin dans l'Administration : les cartes et le sous-titre d'une liste ouverte changent sur l'autre téléphone en quelques secondes. Mettre un téléphone en mode avion quelques secondes, puis le rallumer : les changements faits entre-temps arrivent tout seuls. Si les changements n'arrivent qu'au bout d'une minute environ, voir le [chapitre 3 du guide d'exploitation](exploitation.md#3-régler-nginx-proxy-manager).
+30. **Temps réel** (deux téléphones sur la même liste) : un article coché sur l'un est coché sur l'autre en moins de 3 secondes, sans rien toucher. Renommer un magasin dans l'Administration : le sous-titre d'une liste ouverte changent sur l'autre téléphone en quelques secondes. Mettre un téléphone en mode avion quelques secondes, puis le rallumer : les changements faits entre-temps arrivent tout seuls. Si les changements n'arrivent qu'au bout d'une minute environ, voir le [chapitre 3 du guide d'exploitation](exploitation.md#3-régler-nginx-proxy-manager).
 31. **Hors ligne** (sur le vrai sous-domaine en HTTPS : le service worker ne marche pas en simple `http://` sur l'adresse du réseau local) :
     1. Ouvrir Listo une fois avec du réseau, ouvrir une liste et une photo déjà prise.
     2. **Mode avion** : ajouter 3 articles, en cocher 2, prendre 1 photo. Tout s'affiche aussitôt ; la pastille indique « Hors ligne · N en attente ». Administration, partage, duplication et « Quitter la liste » expliquent qu'il faut une connexion. La photo vue au point 1 s'affiche encore. La page « Aide » s'ouvre.
@@ -265,8 +267,14 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 **Réglages et Administration**
 
 34. **Réglages › À propos** (Admin) : sur une ligne, « Version : 7025130 » à gauche, puis à droite « À jour · il y a 4 min » (ou « Vérifié il y a 4 min ») et le bouton d'actualisation. Quand une nouvelle version existe, une seconde ligne montre seulement « Nouvelle version : <commit> » (touchée, elle ouvre ce commit sur GitHub). Sur un petit téléphone (largeur 360, texte agrandi), le texte et le bouton passent ensemble sous la version, sans rien couper.
-35. **Administration** (compte Admin, sur un téléphone) : trois onglets, « Comptes », « Catégories », « Courses », sans barre qui glisse. « Courses » affiche en dessous « Magasins » (choisi), « Rayons », « Articles » ; le choix actif est souligné et plus foncé. Choisir « Articles », aller sur « Comptes », revenir sur « Courses » : « Articles » est retrouvé. Rafraîchir la page sur « Rayons » : on y reste. « Articles » : chaque article montre son rayon habituel, puis le crayon (« Corriger »), le magasin (« Modifier le rayon de … ») et la poubelle (« Retirer ») ; le magasin ouvre « Rayon de « Lait » » (rayons actifs puis « Aucun rayon », le rayon actuel coché, aucun clavier) ; choisir « Fromages », « Enregistrer » : la ligne affiche « Fromages » ; un « Lait » déjà dans une liste garde son rayon, un nouvel ajout va en « Fromages ». Vérifier en clair et en sombre ; un compte qui n'est pas Admin ne voit pas l'Administration.
+35. **Administration** (compte Admin, sur un téléphone) : deux onglets, « Comptes » et « Courses » (plus de « Catégories »), sans barre qui glisse. « Courses » affiche en dessous « Magasins » (choisi), « Rayons », « Articles » ; le choix actif est souligné et plus foncé. Choisir « Articles », aller sur « Comptes », revenir sur « Courses » : « Articles » est retrouvé. Rafraîchir la page sur « Rayons » : on y reste. « Articles » : chaque article montre son rayon habituel, puis le crayon (« Corriger »), le magasin (« Modifier le rayon de … ») et la poubelle (« Retirer ») ; le magasin ouvre « Rayon de « Lait » » (rayons actifs puis « Aucun rayon », le rayon actuel coché, aucun clavier) ; choisir « Fromages », « Enregistrer » : la ligne affiche « Fromages » ; un « Lait » déjà dans une liste garde son rayon, un nouvel ajout va en « Fromages ». Vérifier en clair et en sombre ; un compte qui n'est pas Admin ne voit pas l'Administration.
 36. **Relire l'aide** (Réglages › Aide) : la page s'ouvre, « Retour » ramène aux Réglages ; rafraîchir sur `#/aide` : on y reste ; en mode avion (après un premier chargement), elle s'affiche. Seule « Pour tout le monde » est dépliée ; chaque en-tête replie ou déplie sa section. Un compte Utilisateur voit quatre sections, un Admin cinq (« Administrateur » en plus). Relire le texte en se plaçant tour à tour en propriétaire, contributeur, invité (compte « Lecture seule », puis lien public) et Admin : chaque phrase doit correspondre à ce que l'application fait vraiment (boutons, menus, droits). Vérifier en clair et en sombre, et à 320 px de large.
+37. **Types de liste** (iPhone et Android ; A propriétaire d'une liste de courses avec un magasin, partagée avec B ; clair et sombre) :
+    1. « Nouvelle liste » : « Type de liste » propose « Courses » (choisi) et « Tâches », jamais « Envies » ; toucher « Tâches » : le magasin disparaît, « Priorité » et « Échéance » apparaissent, l'icône cochée devient la liste cochée ; aucun clavier.
+    2. Sur A, « Modifier la liste » de la liste de courses, toucher « Tâches » : sous le choix, « Les rayons, magasins et codes-barres ne s'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses. » (lu par VoiceOver et TalkBack quand il apparaît) ; retoucher « Courses » : la ligne disparaît. Choisir « Tâches », « Enregistrer » : l'en-tête montre « Tâches » au lieu du magasin, plus aucun rayon ; sur B, pareil sans recharger ; le lien public aussi.
+    3. Sur A, revenir à « Courses » : la ligne inverse (priorité et échéance) apparaît, le magasin d'avant est déjà choisi ; « Enregistrer » : magasin, rayons et codes-barres reviennent, sur A, sur B et sur le lien public.
+    4. Sur B (contributeur ou lecture seule) : pas de « Modifier la liste ».
+    5. Avant la mise à jour, ouvrir Listo sur un téléphone, couper le réseau, ajouter une liste ; mettre à jour le serveur ; rallumer le réseau sans recharger : la liste est envoyée et apparaît avec le bon type ; puis recharger : tout est là.
 
 **Maintien à jour de l'aide** : une évolution qui change un droit, un écran ou le libellé d'un bouton cité met à jour l'aide, dans `public/js/help-content.js`, puis refait le point 36. Les tests `test/help.test.js` et `test/help-labels.test.js` vérifient la structure et que chaque libellé cité entre « » existe dans l'interface, mais pas que chaque phrase est juste.
 
@@ -377,10 +385,6 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `POST /api/admin/users/:id/password` | Réinitialiser le mot de passe : `password` |
 | `DELETE /api/admin/users/:id/2fa` | Désactiver la 2FA d'un compte (téléphone et codes de secours perdus) |
 | `DELETE /api/admin/users/:id` | Supprimer un compte qui n'a jamais servi |
-| `GET /api/admin/categories` | Lister les catégories de liste (`isShopping` : liste de courses, avec magasin et rayons) |
-| `POST /api/admin/categories` | Ajouter : `name`, `isShopping` |
-| `PATCH /api/admin/categories/:id` | Modifier `name`, `active`, `isShopping` |
-| `DELETE /api/admin/categories/:id` | Supprimer, seulement si jamais utilisée |
 | `GET`, `POST /api/admin/stores` ; `PATCH`, `DELETE /api/admin/stores/:id` | Pareil pour les magasins (`name`, `active`). À la création, `isMulti` (`true` pour un magasin « multi », étape 6). Pour un « multi », `PATCH` accepte `storeIds` : la liste complète des magasins qu'il regroupe |
 | `GET`, `POST /api/admin/aisles` ; `PATCH`, `DELETE /api/admin/aisles/:id` | Pareil pour les rayons (`name`, `active`) |
 | `GET /api/admin/names?q=&sort=&offset=` | Onglet « Articles » (historique commun des noms d'articles saisis dans les listes de courses), 50 par morceau : `key` (nom normalisé), `name`, `aisle` (rayon habituel), `uses`, `inLists` (articles présents dans les listes de courses) ; `total`. `q` cherche sans accents ni majuscules, `sort` vaut `name` ou `uses` |
@@ -389,14 +393,16 @@ Toutes ces routes sont réservées aux Admin (refus 403 pour un Utilisateur, 401
 | `POST /api/admin/names/remove` | Retirer un nom des suggestions : `from`. Les listes ne changent pas |
 | `POST /api/admin/names/aisle` | Changer le rayon habituel d'un nom : `from`, `aisleId` (rayon existant et actif, ou `null` pour aucun ; sinon 400 « Rayon inconnu ou désactivé. »). Toutes les lignes du nom (générale et par magasin) ; les listes ne changent pas. Réponse : `{ aisleId, aisle }` |
 
+Les routes `/api/admin/categories` n'existent plus depuis les types de liste (1er novembre 2026) : elles répondent « Route inconnue » (404).
+
 Règles :
 
 - **Garde-fous des Admin** : un Admin ne peut ni se désactiver, ni se retirer le rôle Admin, ni supprimer son propre compte. Il reste toujours au moins un Admin actif. Son propre mot de passe et sa propre 2FA se changent depuis ses réglages (`/api/me/...`), où l'ancien mot de passe est demandé.
 - **Fin des sessions** : désactiver un compte le déconnecte tout de suite de tous ses appareils, et il ne peut plus se connecter (même réponse qu'un mauvais mot de passe). Réinitialiser un mot de passe ferme aussi toutes ses sessions.
 - **Mot de passe à changer** : un mot de passe choisi par un Admin (création du compte ou réinitialisation) doit être changé à la connexion suivante. La connexion répond `"mustChangePassword": true`. Tant que ce n'est pas fait, seuls `GET /api/me`, `POST /api/me/password` et `POST /api/logout` sont permis, et le nouveau mot de passe doit être différent.
-- **Supprimer ou désactiver** : un compte, une catégorie, un magasin ou un rayon déjà utilisé ne peut pas être supprimé, seulement désactivé.
+- **Supprimer ou désactiver** : un compte, un magasin ou un rayon déjà utilisé ne peut pas être supprimé, seulement désactivé.
   - Un compte est utilisé s'il possède une liste, a créé un article ou est membre d'une liste.
-  - Une catégorie ou un magasin est utilisé par une liste. Un magasin l'est aussi s'il est regroupé par un « multi », ou s'il est le magasin d'un article ou de l'historique.
+  - Un magasin est utilisé par une liste. Il l'est aussi s'il est regroupé par un « multi », ou s'il est le magasin d'un article ou de l'historique.
   - Un rayon est utilisé par un article ou par l'historique d'autocomplétion.
   - Un élément désactivé reste sur les listes qui l'utilisent déjà, mais ne sera plus proposé ensuite.
 - **Noms uniques** : deux noms qui ne diffèrent que par les majuscules ou les accents sont des doublons (« Épicerie salée » = « EPICERIE SALEE »). Les identifiants de compte sont uniques sans tenir compte des majuscules.
@@ -414,7 +420,7 @@ Règles :
 
 Créées une seule fois, au premier démarrage. Elles se modifient ensuite librement, et un élément supprimé ne revient pas au redémarrage suivant.
 
-- **Catégories** : Courses (liste de courses), Tâches
+- **Catégories** : Courses, Tâches (gardées en base, inutilisées depuis les types de liste ; plus visibles ni gérables)
 - **Magasins** : Carrefour, E.Leclerc, Lidl
 - **Rayons** : Boissons, Boucherie, Boulangerie, Crèmerie, Entretien, Épicerie salée, Épicerie sucrée, Fromages, Fruits et légumes, Hygiène, Poissonnerie, Surgelés
 
@@ -423,9 +429,8 @@ Créées une seule fois, au premier démarrage. Elles se modifient ensuite libre
 Avec les mêmes raccourcis `U`, `O` et `J` que plus haut, et `cookies.txt` connecté en tant qu'Admin :
 
 ```sh
-# 1. Lister les comptes, les catégories, les magasins, les rayons
+# 1. Lister les comptes, les magasins, les rayons
 curl -b cookies.txt $U/api/admin/users
-curl -b cookies.txt $U/api/admin/categories
 curl -b cookies.txt $U/api/admin/stores
 curl -b cookies.txt $U/api/admin/aisles
 
@@ -464,10 +469,7 @@ curl -b cookies.txt -H "$O" -H "$J" -X PATCH -d '{"name":"Jardinage"}' $U/api/ad
 curl -b cookies.txt -H "$O" -H "$J" -X PATCH -d '{"active":false}' $U/api/admin/aisles/13
 curl -b cookies.txt -H "$O" -X DELETE $U/api/admin/aisles/13
 
-# 9. Une catégorie de courses en plus
-curl -b cookies.txt -H "$O" -H "$J" -d '{"name":"Pharmacie","isShopping":true}' $U/api/admin/categories
-
-# 10. Le journal des actions d'administration
+# 9. Le journal des actions d'administration
 grep admin_ data/journal.log
 ```
 
@@ -497,8 +499,8 @@ Les opérations de `POST /api/ops` :
 
 | `type` | Champs | Qui |
 | --- | --- | --- |
-| `list.create` | `listId` (UUID), `name`, `categoryId`, `storeId` (facultatif, listes de courses seulement), `priorityEnabled` et `dueEnabled` (facultatifs, `true` ou `false`, `false` par défaut), `icon` (facultatif, identifiant de `public/js/list-icons.js`) | tout compte |
-| `list.update` | `listId`, et au choix `name`, `categoryId`, `storeId` (`null` pour aucun), `priorityEnabled`, `dueEnabled` (`true` ou `false`), `icon` (identifiant de la liste blanche, ou `""` pour l'icône de la catégorie ; autre valeur : 400) | propriétaire |
+| `list.create` | `listId` (UUID), `name`, `listType` (`shopping` ou `tasks` ; `wishes` refusé pour l'instant ; ancien téléphone : `categoryId`, traduit), `storeId` (facultatif, listes de courses seulement), `priorityEnabled` et `dueEnabled` (facultatifs, `true` ou `false`, `false` par défaut), `icon` (facultatif, identifiant de `public/js/list-icons.js`) | tout compte |
+| `list.update` | `listId`, et au choix `name`, `listType` (ou, ancien téléphone, `categoryId`), `storeId` (liste de courses ; `null` pour aucun ; ignoré s'il vaut `null` pour une liste d'un autre type), `priorityEnabled`, `dueEnabled` (`true` ou `false`), `icon` (identifiant de la liste blanche, ou `""` pour l'icône du type ; autre valeur : 400) | propriétaire |
 | `list.delete` | `listId` | propriétaire |
 | `list.uncheckAll` | `listId` : décoche tous les articles cochés (« Tout remettre à acheter » / « Tout rouvrir »), une seule opération quel que soit leur nombre | propriétaire et contributeurs |
 | `list.removeChecked` | `listId` : supprime les articles cochés (« Retirer du panier » / « Retirer les terminés »). L'ancien nom `list.clearChecked` reste accepté | propriétaire et contributeurs |
@@ -515,14 +517,14 @@ Règles :
 - **Limites** : nom de 1 à 100 caractères, quantité 30 au plus (texte libre : « 2 », « 500 g »), note 500 au plus. Les identifiants de listes et d'articles sont des UUID créés par le téléphone.
 - **Dates** : les dates (création, modification, suppression) sont toujours posées par le serveur. Celles qu'enverrait le téléphone sont ignorées.
 - **Suppressions logiques** : une suppression est d'abord une simple marque, pour que les autres téléphones l'apprennent. Elle est effacée pour de bon au bout de 30 jours (nettoyage au démarrage, puis toutes les heures).
-- **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon. Les articles cochés quittent leur rayon pour la zone « Dans le panier » / « Terminés », en bas, du plus récemment coché au plus ancien (`splitDone` de `public/js/sorting.js`, partagé avec le serveur) ; un rayon dont tout est coché n'apparaît plus. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe.
+- **Tri** : par rayon, dans l'ordre alphabétique français, avec « Sans rayon » en dernier. Puis par ordre alphabétique dans chaque rayon. Les articles cochés quittent leur rayon pour la zone « Dans le panier » / « Terminés », en bas, du plus récemment coché au plus ancien (`splitDone` de `public/js/sorting.js`, partagé avec le serveur) ; un rayon dont tout est coché n'apparaît plus. Un rayon vide n'apparaît pas. Une liste qui n'est pas de courses forme un seul groupe, sans rayon ni magasin.
 - **Historique** : il est commun à tous les comptes. « Lait », « lait », « LAIT » et « Lait  » ne font qu'une entrée, qui compte ses utilisations. La suggestion garde la première écriture du nom.
-  - Listes de courses seulement (décision du 17 octobre 2026) : une liste d'une autre catégorie n'écrit rien dans l'historique et n'affiche pas de suggestions (règle `remembersNames` de `public/js/store.js` sur le téléphone, `is_shopping` sur le serveur). Changer la catégorie d'une liste n'écrit ni n'efface rien dans l'historique.
+  - Listes de courses seulement (décision du 17 octobre 2026) : une liste d'un autre type n'écrit rien dans l'historique et n'affiche pas de suggestions (`isShoppingList` de `public/js/list-types.js`, sur le téléphone comme sur le serveur). Changer le type d'une liste n'écrit ni n'efface rien dans l'historique.
   - Migration 8 (`pruneHistory` de `server/db.js`) : retire les noms qu'aucun article de liste de courses ne porte (actif, ou supprimé et pas encore purgé) et qui n'ont jamais eu de rayon ni de magasin. Relancée, elle n'efface plus rien.
   - Un article déjà connu reprend son rayon habituel. Modifier son rayon, ou le renommer, mémorise ce choix pour la fois suivante.
   - Supprimer un article ou retirer les cochés n'efface pas l'historique.
-- **Désactivations** : une catégorie, un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.
-- **Changement de catégorie** : une liste qui passe à une catégorie qui n'est pas « liste de courses » perd son magasin.
+- **Désactivations** : un magasin ou un rayon désactivé n'est plus proposé, mais reste sur les listes et les articles qui l'utilisent déjà.
+- **Changement de type** (propriétaire seulement) : rien n'est effacé. Une liste de courses qui devient une liste de tâches garde son magasin, ses rayons et ses codes-barres en base, cachés (`store` vaut `null` ; le propriétaire seul reçoit `keptStore`) ; une liste de tâches qui devient une liste de courses garde ses réglages et ses valeurs de priorité et d'échéance, ignorés. Tout revient au retour au type d'origine. Voir « Types de liste (migration 18) ».
 - **Magasin « multi »** (étape 6), voir la section suivante.
 - **Partage** :
   - le propriétaire reste toujours membre ;
@@ -541,12 +543,12 @@ id() { uuidgen 2>/dev/null || cat /proc/sys/kernel/random/uuid; }
 # Envoie une opération (avec cookies.txt, ou un autre fichier : COOKIES=marie.txt op ...)
 op() { curl -s -b "${COOKIES:-cookies.txt}" -H "$O" -H "$J" -d "{\"ops\":[{\"id\":\"$(id)\",$1}]}" $U/api/ops; echo; }
 
-# 1. Les catégories, magasins et rayons (avec leurs id) sont dans la synchronisation
+# 1. Les magasins et rayons (avec leurs id) sont dans la synchronisation
 curl -b cookies.txt $U/api/sync
 
-# 2. Créer une liste de courses (catégorie 1 = Courses, magasin 3 = Lidl)
+# 2. Créer une liste de courses (magasin 3 = Lidl)
 L=$(id)
-op '"type":"list.create","listId":"'"$L"'","name":"Courses du samedi","categoryId":1,"storeId":3'
+op '"type":"list.create","listId":"'"$L"'","name":"Courses du samedi","listType":"shopping","storeId":3'
 
 # 3. Ajouter « Lait » au rayon 4 (Crèmerie), puis « LAIT » sans rayon : il retrouve la Crèmerie
 A=$(id)
@@ -616,7 +618,7 @@ curl -b cookies.txt -H "$O" -H "$J" -X PATCH -d '{"storeIds":[4,5]}' $U/api/admi
 
 # 2. Une liste « multi », « Œufs » acheté à la Fromagerie
 L=$(id)
-op '"type":"list.create","listId":"'"$L"'","name":"Courses du centre-ville","categoryId":1,"storeId":6'
+op '"type":"list.create","listId":"'"$L"'","name":"Courses du centre-ville","listType":"shopping","storeId":6'
 op '"type":"item.create","listId":"'"$L"'","itemId":"'"$(id)"'","name":"Œufs","storeId":5'
 
 # 3. « œufs » ajouté une deuxième fois, sans magasin : il retrouve la Fromagerie (storeId 5)
@@ -684,7 +686,7 @@ Règles :
 
 - **Aucune donnée dans les messages** : seulement l'identifiant de la liste qui a changé. Le téléphone demande ensuite les changements par `GET /api/sync?since=…`, avec les contrôles d'accès habituels.
 - **Destinataires** : les membres actifs de la liste, relus dans la base à chaque envoi. Une personne retirée du partage reçoit un dernier message (son téléphone retire la liste), puis plus rien. Un compte désactivé, déconnecté ou dont les sessions sont fermées voit son flux coupé tout de suite ; une session expirée est coupée au signal de maintien suivant.
-- **Déclencheurs** : toute opération réussie de `/api/ops` (articles, listes, partage, magasin, catégorie, suppression), l'envoi ou le retrait d'une photo, le changement de partage. Le message part après l'écriture en base, jamais avant ; une opération refusée n'en envoie aucun.
+- **Déclencheurs** : toute opération réussie de `/api/ops` (articles, listes, partage, magasin, type, suppression), l'envoi ou le retrait d'une photo, le changement de partage. Le message part après l'écriture en base, jamais avant ; une opération refusée n'en envoie aucun.
 - **Connexions** : réservées aux comptes connectés, refusées depuis un autre site. En-tête `X-Accel-Buffering: no`, signal de maintien toutes les 25 secondes, au plus 5 connexions par compte (au-delà, la plus ancienne est fermée), connexion libérée dès que le téléphone la ferme.
 - **Sur le téléphone** : plusieurs messages rapprochés ne donnent qu'une synchronisation. Filets de sécurité : synchronisation toutes les 60 secondes au premier plan, à chaque retour au premier plan, bouton d'actualisation. Après une coupure, le flux se reconnecte seul, avec un délai croissant (1 s, 2 s, 4 s… jusqu'à 30 s).
 - **Indicateur** : « À jour », « Synchronisation… », « Hors ligne » (pas de réseau ou serveur qui ne répond pas), avec le nombre de modifications en attente depuis l'étape 9.
@@ -710,7 +712,7 @@ Listo marche sans réseau : l'application s'ouvre, on lit ses listes, on ajoute,
 Comment ça marche :
 
 - **Service worker** (`public/sw.js`) : il garde une copie des fichiers de l'application. Avec du réseau, il prend toujours la dernière version (et met sa copie à jour) ; sans réseau, ou si le réseau met plus de 3 secondes à répondre, il sert sa copie. Il ne garde **jamais** les réponses de l'API (`/api/…`), le flux temps réel ni le lien public. Seule exception : les photos déjà vues (150 au plus, effacées à la déconnexion). `sw.js` lui-même est servi avec `Cache-Control: no-cache`, pour qu'une nouvelle version soit vue tout de suite ; il porte l'identifiant de la version installée, donc il change à chaque mise à jour (voir ci-dessous).
-- **Copie locale** (IndexedDB, une base par compte : `listo-u<numéro>`) : listes, articles, catégories, magasins, rayons, historique d'autocomplétion, comptes proposés au partage et repère de synchronisation, c'est-à-dire exactement ce que `/api/sync` a renvoyé. Aucun mot de passe, jeton ni secret. Elle est effacée à la déconnexion. Deux comptes sur le même téléphone ont chacun leur copie et ne voient jamais celle de l'autre.
+- **Copie locale** (IndexedDB, une base par compte : `listo-u<numéro>`) : listes, articles, magasins, rayons, historique d'autocomplétion, comptes proposés au partage et repère de synchronisation, c'est-à-dire exactement ce que `/api/sync` a renvoyé. Aucun mot de passe, jeton ni secret. Elle est effacée à la déconnexion. Deux comptes sur le même téléphone ont chacun leur copie et ne voient jamais celle de l'autre.
 - **Écriture d'abord locale** : chaque action est enregistrée dans la file d'attente du téléphone, puis appliquée tout de suite à l'écran. La file part dans l'ordre au démarrage, au retour du réseau et à chaque synchronisation. Chaque opération a un identifiant unique : renvoyée après une coupure, elle n'est jamais appliquée deux fois.
 - **Photos** prises hors ligne : gardées dans la file, envoyées après la création de leur article, affichées depuis le téléphone en attendant. Abandonnées si l'article est supprimé entre-temps.
 - **Refus** (droits retirés, liste supprimée ailleurs…) : la modification sort de la file et n'est jamais renvoyée ; l'écran revient à l'état du serveur et un message prévient : « Une modification n'a pas pu être enregistrée : … ». **Pas de réseau**, serveur indisponible ou trop sollicité : la modification reste, nouvel essai avec un délai croissant (1 s, 2 s, 4 s… jusqu'à 30 s).
@@ -846,7 +848,7 @@ Seul le propriétaire de la liste y a accès : un contributeur, un invité ou un
 | Route | Rôle |
 | --- | --- |
 | `GET /p/:jeton` | La page (HTML sans aucune donnée de la liste) |
-| `GET /api/public/:jeton` | La liste : nom, catégorie, magasin, regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo (et, pour une liste autre que les courses, priorité et échéance ; pour une liste de courses, `ean` si l'article a un code-barres) ; `done` : les articles cochés (mêmes champs, plus `aisle` ou `store` s'ils ont un rayon ou un magasin), du plus récemment coché au plus ancien ; date d'expiration du lien. Rien d'autre (liste blanche, `test/share.test.js` et `test/public-sheet.test.js`) : aucun nom de personne ni identifiant de compte ou de liste |
+| `GET /api/public/:jeton` | La liste : nom, type (`shopping` ou `tasks`), magasin (liste de courses seulement), regroupement (rayon, magasin ou aucun), groupes avec le nom du rayon ou du magasin, articles avec nom, quantité, note, état coché et adresse de la photo (et, pour une liste autre que les courses, priorité et échéance ; pour une liste de courses, `ean` si l'article a un code-barres) ; `done` : les articles cochés (mêmes champs, plus `aisle` ou `store` s'ils ont un rayon ou un magasin), du plus récemment coché au plus ancien ; date d'expiration du lien. Rien d'autre (liste blanche, `test/share.test.js` et `test/public-sheet.test.js`) : aucun nom de personne ni identifiant de compte ou de liste |
 | `POST /api/public/:jeton/acces` | Saisie du mot de passe (`{ "password": "…" }`) ; donne le cookie de consultation |
 | `GET /api/public/:jeton/photos/:id` | Photo d'un article de cette liste seulement |
 
@@ -968,11 +970,22 @@ Colonne `lists.add_mode` (`'quick'` ou `'detail'`, contrainte CHECK), envoyée a
 
 ## Icône d'une liste (migration 14)
 
-Colonne `lists.icon` (texte, vide par défaut = icône de la catégorie), envoyée au téléphone dans chaque liste (`icon`). La liste blanche est dans `public/js/list-icons.js` (`LIST_ICONS` : identifiant et nom en français, dans l'ordre de la grille), partagée par le serveur et le téléphone ; chaque identifiant est une icône du sprite (`#i-<identifiant>`).
+Colonne `lists.icon` (texte, vide par défaut = icône du type), envoyée au téléphone dans chaque liste (`icon`). La liste blanche est dans `public/js/list-icons.js` (`LIST_ICONS` : identifiant et nom en français, dans l'ordre de la grille), partagée par le serveur et le téléphone ; chaque identifiant est une icône du sprite (`#i-<identifiant>`).
 
 - **Serveur** (`server/lists.js`) : `listIconOf` accepte un identifiant de la liste blanche ou `""`, sinon 400 « Icône inconnue. » ; contrôlé dans `list.create` et `list.update` (propriétaire seulement), copié par `duplicateList` ; `describeList` ne renvoie jamais une valeur inconnue. La page publique ne l'envoie pas.
 - **Téléphone** : `listIcon(list)` donne l'icône à afficher (celle choisie, sinon `categoryIcon`). `public/js/screens/list-form.js` : grille `.icon-grid` (boutons `.icon-grid__opt`, `role="radio"`, coche `.icon-grid__check`), `icon` envoyé seulement s'il a changé ; `public/js/store.js` (`applyOp`) : copie locale tout de suite, hors ligne compris ; carte (`public/js/screens/lists.js`) et en-tête (`public/js/screens/list.js`, `.topbar__icon`).
 - Tests : `test/list-icons.test.js` ; vérifié dans Chromium (grille, choix, enregistrement, temps réel sur un second téléphone, nouvelle liste sans choix, clair et sombre).
+
+## Types de liste (migration 18)
+
+- **Point unique** : `public/js/list-types.js`, partagé par le serveur et le téléphone. `LIST_TYPES` (`shopping`, `tasks`, `wishes`), `CREATABLE_TYPES` (`shopping`, `tasks` : les envies viendront à l'étape suivante), `TYPE_LABELS`, `TYPE_ICONS` (`cart`, `tasks`, `gift`), `typeOf(list)` (valeur absente ou inconnue : `tasks`), `isShoppingList` (magasin, rayons, scan, codes-barres, mémoire des noms), `usesTaskOptions` (priorité, échéance), `typeChangeWarning(avant, après)`. Il ne lit jamais l'ancienne catégorie.
+- **Base** (`server/db.js`) : `listTypesMigration` ajoute `lists.type` (texte, `CHECK` sur les trois valeurs ou vide), `ensureLegacyCategories` garde une catégorie « courses » et une « non courses » (colonne `category_id` obligatoire), `fillListTypes` complète les listes sans type (catégorie `is_shopping` → `shopping`, sinon `tasks`) ; `migrate` relance `fillListTypes` à chaque démarrage (listes écrites par l'image précédente après un retour en arrière). Une ligne dans le journal du conteneur (nombres seulement). Ni la table `categories` ni `category_id` ne sont supprimées.
+- **Serveur** (`server/lists.js`) : plus aucune jointure sur `categories` ; `lists.type` décide de tout (`is_multi` = `type = 'shopping'` et magasin « multi »). `requestedType(op)` lit `op.listType` (le champ `type` d'une opération est déjà son nom), sinon traduit `op.categoryId` (ancienne opération) ; refuse un type inconnu (« Type de liste inconnu. ») et les envies (`WISHES_NOT_YET`), à la création comme au changement. `legacyCategoryId(type)` donne la catégorie écrite dans `category_id`. `list.update` (propriétaire) : changer de type ne touche ni `store_id`, ni les rayons, codes-barres, priorités et échéances ; `storeId: null` est ignoré pour une liste qui n'est pas de courses ; un passage à Courses complète seulement les rayons vides (`completeItems`, comme avant) ; journal `liste_type_change`. `describeList` : `type`, `store` seulement pour une liste de courses, `keptStore` pour le seul propriétaire d'une liste d'un autre type qui a gardé un magasin.
+- **Champs provisoires** : `describeList` envoie encore `category` (`id`, `name`, `isShopping` tiré du type, `active`) et la synchronisation `categories`, pour les téléphones qui n'ont pas rechargé. Le nouveau code (téléphone et serveur) ne les lit pas : `test/list-types-phone.test.js` vérifie qu'aucun fichier de `public/js` ne contient « categor », `test/list-types-outputs.test.js` que le serveur ne lit `is_shopping` qu'à trois endroits nommés. **À retirer** (avec la table `categories` et `category_id`) quand plus aucun téléphone n'a l'ancien code.
+- **Téléphone** : `store.js` en `SNAPSHOT_VERSION` 2 (une copie hors ligne d'avant les types est écartée et rechargée ; la file d'attente, à part, reste) ; `applyOp` suit la même règle que le serveur (`keptStore` quand une liste quitte les courses, rendu au retour) ; une ancienne opération avec `categoryId` restée en file compte comme une liste de tâches jusqu'à la réponse du serveur. Formulaire (`list-form.js`) : `CREATABLE_TYPES` en `.choice` du kit, `#type-warning` (`.field__hint`, `aria-live="polite"`, relié par `aria-describedby`), envoi de `listType` et de `storeId` seulement s'ils changent. Service worker v50, `/js/list-types.js` dans `APP_FILES`.
+- **Administration** : `TYPES.categories` retiré de `server/routes/admin-references.js` ; onglet retiré de `admin.js` (une adresse inconnue renvoie vers « Comptes » juste après le dessin, `queueMicrotask` : sinon l'écran restait vide).
+- **Claude et lien public** : `list_lists`/`read_list` donnent `type`, plus de `category` ; `store` seulement pour une liste de courses. Lien public : `type` au lieu de `category`, magasin seulement pour une liste de courses. Écran « Autoriser Claude » : `type` au lieu de `isShopping`.
+- Tests : `test/list-types.test.js` (migration, idempotence, catégorie recréée, retour en arrière, restauration d'une sauvegarde d'avant les types, droits, envies refusées, aller-retour sans perte, `category_id` suivi, anciennes opérations, champs provisoires), `test/list-types-phone.test.js` (magasin caché sur le téléphone, copie locale, formulaire, aucune lecture de la catégorie), `test/list-types-outputs.test.js` (Claude et lien public, magasin caché puis rendu) ; `test/admin.test.js` (routes des catégories en 404). Vérifié dans Chromium (formulaire en clair, sombre et à 320 px, avertissement, aller-retour, en-tête, lien public, administration). **À vérifier sur les téléphones** : point 37 ci-dessus.
 
 ## Autorisation pour Claude (migration 17)
 

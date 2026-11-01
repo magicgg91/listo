@@ -76,7 +76,7 @@ test('écran : réservation montrée seulement si la copie en contient ; lien s�
   // Formulaire : « Pour qui ? » seulement pour les envies, fixé ensuite
   const form = code('public/js/screens/list-form.js');
   assert.match(form, /forField\.hidden = !isWishList\(listType\);/);
-  assert.match(form, /h\('span', \{ class: 'share__hint' \}, 'Destinataire · Peut modifier'\)/);
+  assert.match(form, /if \(isLockedBeneficiary\(person\)\) return lockedRow\(person, person\.displayName, 'Destinataire · Peut modifier'\);/);
   assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus\.';/);
   assert.doesNotMatch(read('public/js/list-types.js').match(/WISHES_LOCKED_HINT = '[^']*'/)[0], /réserv/i, 'la phrase ne parle pas des réservations');
   // Service worker : nouveau fichier gardé hors ligne

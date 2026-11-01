@@ -275,7 +275,18 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .share__person { border-bottom: 1px solid var(--color-border); }
 .share__person:last-child { border-bottom: 0; }
 .share__person .tick-row { border-bottom: 0; }
-.share__access { padding: 0 var(--space-2) 12px; }
+/* Fenêtre « Partager avec » : une ligne par personne (case, pastille,
+   prénom, puis son droit « Modifier / Lire » au bout de la ligne ; place
+   réservée quand la personne n'est pas cochée). Le prénom passe à la ligne
+   plutôt que d'être coupé. */
+.share__person { display: flex; align-items: center; gap: var(--space-1); }
+.share__person .tick-row { flex: 1; min-width: 0; padding: 0; gap: var(--space-1); }
+.share__name { overflow-wrap: break-word; hyphens: auto; }
+.share__access { flex: none; gap: 2px; padding: 2px; }
+.share__access .segmented__opt { flex: none; min-width: var(--tap-min); padding: 0 6px; }
+.share__access.is-off { visibility: hidden; }
+/* Résumé du partage dans le formulaire : pastilles, prénoms sur une ligne, chevron */
+.share__summary-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* Liste en lecture seule : bandeau sous la barre du haut (.readonly-banner,
    section 16.4), pastille sur la carte de « Mes listes », valeurs en texte

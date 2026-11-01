@@ -32,8 +32,8 @@ test('interface : « invité » ne désigne jamais une personne qui peut modifie
   const actions = code('public/js/screens/list-actions.js');
   assert.match(actions, /'La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés\.'/);
   assert.match(actions, /text: 'Vous ne la verrez plus\. Le propriétaire pourra de nouveau la partager avec vous\.'/);
-  // Les deux libellés du droit restent ceux-là
-  assert.match(code('public/js/screens/list-form.js'), /\[\['modification', 'Peut modifier'\], \['lecture', 'Lecture seule'\]\]/);
+  // Les deux libellés courts du droit dans la fenêtre « Partager avec »
+  assert.match(code('public/js/screens/list-form.js'), /\[\['modification', 'Modifier'\], \['lecture', 'Lire'\]\]/);
 });
 
 test('serveur : messages et journal neutres, identifiants internes inchangés', () => {

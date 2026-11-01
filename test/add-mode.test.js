@@ -234,8 +234,12 @@ test('écran : ajout détaillé = fiche de l\'élément créé, une fois le clav
 
 test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.segmented), défaut selon le type tant qu\'on n\'y touche pas', () => {
   const form = read('public/js/screens/list-form.js');
-  assert.match(form, /\[\['quick', 'Rester sur la liste'\], \['detail', 'Ouvrir la fiche'\]\]/);
-  assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label' \}, options\)/);
+  // Compact : une ligne de deux choix au libellé court (nom complet pour les
+  // lecteurs d'écran), et une ligne d'aide sur le choix actif, reliée au groupe
+  assert.match(form, /\['quick', 'Rester', 'Rester sur la liste', 'On enchaîne les ajouts sur la liste\.'\],\s*\['detail', 'Ouvrir', 'Ouvrir la fiche', 'La fiche s\\'ouvre pour compléter\.'\],/);
+  assert.match(form, /role: 'radio', 'aria-label': name,/);
+  assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label', 'aria-describedby': 'add-mode-help' \}, options\),\s*help\);/);
+  assert.match(form, /help\.textContent = ADD_MODES\.find\(\(\[choice\]\) => choice === current\)\?\.\[3\] \?\? '';/);
   assert.match(form, /option\.setAttribute\('aria-checked', String\(on\)\);\s*replace\(option, on \? icon\('check', 'icon--sm icon--check'\) : null, option\.dataset\.label\);/);
   assert.match(form, /let addMode = list \? addModeOf\(list\) : defaultAddMode\(true\);\s*let addModeChosen = Boolean\(list\);/);
   assert.match(form, /if \(!addModeChosen\) \{\s*addMode = defaultAddMode\(shopping\);/);

@@ -234,14 +234,14 @@ test('écran : ajout détaillé = fiche de l\'élément créé, une fois le clav
   assert.doesNotMatch(scan, /addModeOf|openItemSheet/);
 });
 
-test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.segmented), défaut selon la catégorie tant qu\'on n\'y touche pas', () => {
+test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.segmented), défaut selon le type tant qu\'on n\'y touche pas', () => {
   const form = read('public/js/screens/list-form.js');
   assert.match(form, /\[\['quick', 'Rester sur la liste'\], \['detail', 'Ouvrir la fiche'\]\]/);
   assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label' \}, options\)/);
   assert.match(form, /option\.setAttribute\('aria-checked', String\(on\)\);\s*replace\(option, on \? icon\('check', 'icon--sm icon--check'\) : null, option\.dataset\.label\);/);
   assert.match(form, /let addMode = list \? addModeOf\(list\) : defaultAddMode\(true\);\s*let addModeChosen = Boolean\(list\);/);
-  assert.match(form, /if \(!addModeChosen && category\) \{\s*addMode = defaultAddMode\(category\.isShopping\);/);
-  assert.match(form, /optionsField\.hidden = !category;/, 'visible pour toutes les catégories');
+  assert.match(form, /if \(!addModeChosen\) \{\s*addMode = defaultAddMode\(shopping\);/);
+  assert.doesNotMatch(form, /optionsField\.hidden/, 'visible pour tous les types');
   assert.match(form, /addMode, icon: chosenIcon \}\);/);
   assert.match(form, /if \(addMode !== addModeOf\(list\)\) switches\.addMode = addMode;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);

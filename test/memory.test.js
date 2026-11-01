@@ -120,8 +120,8 @@ test("changement de catégorie : rien n'est écrit ni effacé dans l'historique 
 });
 
 test('téléphone : seules les listes de courses mémorisent et suggèrent', () => {
-  assert.equal(remembersNames({ category: { isShopping: true } }), true);
-  assert.equal(remembersNames({ category: { isShopping: false } }), false);
+  assert.equal(remembersNames({ type: 'shopping' }), true);
+  assert.equal(remembersNames({ type: 'tasks' }), false);
   assert.equal(remembersNames(null), false);
 });
 

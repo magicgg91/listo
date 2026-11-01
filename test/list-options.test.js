@@ -255,11 +255,11 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
 });
 
 test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponible → alphabétique', () => {
-  const tasks = (priorityEnabled, dueEnabled) => ({ id: 'l', category: { id: 2, isShopping: false }, priorityEnabled, dueEnabled });
+  const tasks = (priorityEnabled, dueEnabled) => ({ id: 'l', type: 'tasks', priorityEnabled, dueEnabled });
   assert.deepEqual(listOptions(tasks(false, false)), { priority: false, due: false });
   assert.deepEqual(listOptions(tasks(true, false)), { priority: true, due: false });
-  assert.deepEqual(listOptions({ category: { isShopping: true }, priorityEnabled: true, dueEnabled: true }), { priority: false, due: false }, 'courses : jamais');
-  assert.deepEqual(listOptions({ category: { isShopping: false } }), { priority: true, due: true }, 'copie d\'avant les réglages : comme avant');
+  assert.deepEqual(listOptions({ type: 'shopping', priorityEnabled: true, dueEnabled: true }), { priority: false, due: false }, 'courses : jamais');
+  assert.deepEqual(listOptions({ type: 'tasks' }), { priority: true, due: true }, 'copie d\'avant les réglages : comme avant');
   assert.deepEqual(listOptions(null), { priority: false, due: false });
   assert.deepEqual(availableSorts(tasks(false, false)), ['alpha']);
   assert.deepEqual(availableSorts(tasks(true, true)), ['alpha', 'priority', 'due']);
@@ -328,7 +328,7 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   // Nouvelle liste : désactivées ; visibles seulement hors courses, aussi quand on change la catégorie
   assert.match(form, /let options = list \? listOptionsOf\(list\) : \{ priority: false, due: false \};/);
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
-  assert.match(form, /for \(const row of optionsCard\.querySelectorAll\('\[data-switch\]'\)\) row\.hidden = Boolean\(category\?\.isShopping\);/);
+  assert.match(form, /for \(const row of optionsCard\.querySelectorAll\('\[data-switch\]'\)\) row\.hidden = !usesTaskOptions\(listType\);/);
   assert.match(form, /priorityEnabled: classic && options\.priority, dueEnabled: classic && options\.due/);
   assert.match(form, /if \(classic && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
   // Réservé au propriétaire : le formulaire de modification renvoie un invité vers la liste

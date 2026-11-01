@@ -294,11 +294,11 @@ test('ancien téléphone : opérations avec un identifiant de catégorie accept�
   }
 });
 
-test('point unique : typeOf, ancienne copie (catégorie seule), icônes par défaut, avertissement', () => {
-  assert.equal(typeOf({ type: 'tasks', category: { isShopping: true } }), 'tasks', 'le type l\'emporte');
-  assert.equal(typeOf({ category: { isShopping: true } }), 'shopping', 'copie d\'un ancien téléphone');
-  assert.equal(typeOf({ category: { isShopping: false } }), 'tasks');
+test('point unique : typeOf (jamais la catégorie), icônes par défaut, avertissement', () => {
+  assert.equal(typeOf({ type: 'tasks', category: { isShopping: true } }), 'tasks', 'le type seul compte');
+  assert.equal(typeOf({ category: { isShopping: true } }), 'tasks', 'la catégorie provisoire n\'est jamais lue');
   assert.equal(typeOf({}), 'tasks');
+  assert.equal(typeOf({ type: 'autre' }), 'tasks');
   assert.equal(typeOf('wishes'), 'wishes');
   assert.equal(isShoppingList({ type: 'shopping' }), true);
   assert.equal(usesTaskOptions({ type: 'shopping' }), false);

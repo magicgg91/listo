@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
-import { LIST_ICONS, isListIcon, listIcon, categoryIcon } from '../public/js/list-icons.js';
+import { LIST_ICONS, isListIcon, listIcon } from '../public/js/list-icons.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
@@ -63,13 +63,12 @@ test('liste blanche : une quarantaine d\'icônes au plus, toutes dans le sprite 
     assert.ok(isListIcon(file.slice(2, -4)), file);
     assert.match(read(`design/icones/listes/${file}`), /stroke="currentColor" stroke-width="2"/);
   }
-  // Icône de la catégorie (comportement d'avant), et icône choisie
-  assert.equal(categoryIcon(true), 'cart');
-  assert.equal(categoryIcon(false), 'tasks');
-  assert.equal(listIcon({ icon: '', category: { isShopping: true } }), 'cart');
-  assert.equal(listIcon({ category: { isShopping: false } }), 'tasks');
-  assert.equal(listIcon({ icon: 'gift', category: { isShopping: false } }), 'gift');
-  assert.equal(listIcon({ icon: 'x" onload="', category: { isShopping: false } }), 'tasks', 'inconnue : icône de la catégorie');
+  // Icône du type (sans choix), et icône choisie
+  assert.equal(listIcon({ icon: '', type: 'wishes' }), 'gift');
+  assert.equal(listIcon({ icon: '', type: 'shopping' }), 'cart');
+  assert.equal(listIcon({ type: 'tasks' }), 'tasks');
+  assert.equal(listIcon({ icon: 'gift', type: 'tasks' }), 'gift');
+  assert.equal(listIcon({ icon: 'x" onload="', type: 'tasks' }), 'tasks', 'inconnue : icône du type');
   for (const bad of ['', 'inconnue', 'CART', 'cart ', '../cart', null, 3, {}]) assert.equal(isListIcon(bad), false, String(bad));
 });
 
@@ -187,11 +186,11 @@ test('grille « Icône » : radiogroup, cases de 44 px, aria-label en français,
   assert.match(form, /h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' \}, iconButtons\)/);
   assert.match(form, /h\('button', \{ class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice\.label, title: choice\.label \}/);
   assert.match(form, /button\.setAttribute\('aria-checked', String\(on\)\);\s*button\.querySelector\('\.icon-grid__check'\)\?\.remove\(\);\s*if \(on\) button\.append\(h\('span', \{ class: 'icon-grid__check' \}, icon\('check', 'icon--xs'\)\)\);/);
-  // Au départ : l'icône de la catégorie (rien de choisi)
+  // Au départ : l'icône du type (rien de choisi)
   assert.match(form, /let chosenIcon = list\?\.icon \?\? '';/);
-  assert.match(form, /const shownIcon = chosenIcon \|\| categoryIcon\(Boolean\(category\?\.isShopping\)\);/);
+  assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];/);
   // Sous « Catégorie »
-  assert.match(form, /'Catégorie'\), categoryGroup\),\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
+  assert.match(form, /'Type de liste'\), typeGroup, typeWarning\),\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);
@@ -219,8 +218,8 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   assert.deepEqual(after.map(({ icon, add_mode: addMode, type, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');
   // À l'écran : chariot pour les courses, liste cochée pour les tâches
-  assert.equal(listIcon({ icon: after[0].icon, category: { isShopping: true } }), 'cart');
-  assert.equal(listIcon({ icon: after[1].icon, category: { isShopping: false } }), 'tasks');
+  assert.equal(listIcon({ icon: after[0].icon, type: 'shopping' }), 'cart');
+  assert.equal(listIcon({ icon: after[1].icon, type: 'tasks' }), 'tasks');
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

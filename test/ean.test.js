@@ -216,7 +216,7 @@ test('synchronisation et temps réel : le code suit comme les autres champs', as
 
   // Copie locale du téléphone (file d'attente hors ligne) : mêmes règles
   const state = emptyState();
-  state.lists.set(h.shopping, { id: h.shopping, name: 'Courses', category: { isShopping: true } });
+  state.lists.set(h.shopping, { id: h.shopping, name: 'Courses', type: 'shopping' });
   const user = { id: 1 };
   const id = uuid();
   applyOp(state, { type: 'item.create', listId: h.shopping, itemId: id, name: 'Nutella', ean: '3017620422003' }, { user });

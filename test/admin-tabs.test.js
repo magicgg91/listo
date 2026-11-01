@@ -49,7 +49,7 @@ test('adresses : les anciennes (magasins, rayons, noms) mènent au bon choix de 
   // L'onglet « Courses » mène au dernier choix ; il est actif pour chacun des trois
   assert.match(admin, /TABS\.map\(\(t\) => \(t\.key === 'courses' \? \{ \.\.\.t, target: lastShopping \} : t\)\), shopping \? 'courses' : tab\.key, 'Rubriques'\)/);
   // Adresse inconnue : « Comptes », sans écran d'erreur
-  assert.match(admin, /if \(!tab\) \{\s*navigate\('admin', \{ tab: 'comptes' \}, \{ replace: true \}\);/);
+  assert.match(admin, /if \(!tab\) \{\s*queueMicrotask\(\(\) => navigate\('admin', \{ tab: 'comptes' \}, \{ replace: true \}\)\);/);
   // Rien gardé après la fermeture (pas de stockage)
   assert.doesNotMatch(admin, /localStorage|sessionStorage/);
 });

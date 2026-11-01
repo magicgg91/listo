@@ -132,7 +132,7 @@ test('carte compacte : ni catégorie, ni magasin, ni badge « Multi » ; lien pu
   assert.doesNotMatch(read('public/js/screens/lists.js'), /multiBadge/);
   assert.doesNotMatch(read('public/css/app.css'), /\.list-card__left \.badge-multi/);
   // L'en-tête d'une liste garde le magasin, avec « Multi » pour un magasin multi
-  assert.match(read('public/js/screens/list.js'), /replace\(sub, list\.store \? \[icon\('store', 'icon--xs'\), list\.store\.name, view\.multi \? multiBadge\(\) : null\] : list\.category\.name\);/);
+  assert.match(read('public/js/screens/list.js'), /replace\(sub, list\.store \? \[icon\('store', 'icon--xs'\), list\.store\.name, view\.multi \? multiBadge\(\) : null\] : typeLabel\(list\)\);/);
   // Ligne 2 à droite : le lien public juste avant les pastilles, seulement s'il y en a un
   assert.match(card, /h\('div', \{ class: 'list-card__people' \},\s*\/\/[^\n]*\n\s*hasPublicLink\(list\) \? h\('span', \{ class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' \}, icon\('link', 'icon--xs'\)\) : null,\s*h\('div', \{ class: 'avatars'/);
   assert.equal((card.match(/icon\('link'/g) ?? []).length, 1, 'le symbole du lien n\'apparaît qu\'une fois');

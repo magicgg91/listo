@@ -68,7 +68,10 @@ export function renderAdmin(tabKey, onLeave) {
   if (shopping) lastShopping = shopping.key;
   const tab = shopping ?? TABS.find((t) => t.key === tabKey);
   if (!tab) {
-    navigate('admin', { tab: 'comptes' }, { replace: true });
+    // Adresse inconnue (dont l'ancienne #/administration/categories) :
+    // « Comptes ». Renvoi fait juste après ce dessin, sinon l'écran vide
+    // rendu ici remplacerait celui de « Comptes ».
+    queueMicrotask(() => navigate('admin', { tab: 'comptes' }, { replace: true }));
     return h('div', { class: 'screen' });
   }
 

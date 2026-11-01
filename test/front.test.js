@@ -84,7 +84,7 @@ test('suggestion : début tapé mis en gras, accents et majuscules ignorés', ()
 function sample() {
   const list = (id, name, updatedAt, isShopping = true) => ({
     id, name, updatedAt, lastActivity: updatedAt, deletedAt: null,
-    category: { id: isShopping ? 1 : 2, name: isShopping ? 'Courses' : 'Tâches', isShopping, active: true },
+    type: isShopping ? 'shopping' : 'tasks',
     store: null, members: [], isOwner: true,
   });
   const item = (id, listId, name, extra = {}) => ({ id, listId, name, quantity: '', note: '', aisleId: null, checked: false, updatedAt: '2026-10-16T10:00:00.000Z', deletedAt: null, ...extra });
@@ -306,9 +306,12 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   assert.equal(back.loaded, true);
   assert.equal(fromSnapshot(null), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 99 }), null);
+  // Copie d'avant les types de liste (version 1, avec les catégories) : écartée, tout est rechargé
+  assert.equal(snapshot.version, 2);
+  assert.equal(fromSnapshot({ ...snapshot, version: 1, categories: [] }), null);
   assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
   // Aucun secret dans la copie : seulement des données de listes
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'categories', 'history', 'items', 'listIds', 'lists', 'news', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {
@@ -401,8 +404,8 @@ test('lien public : date d\'expiration et temps restant (feuille et page publiqu
 
 test('vocabulaire : « article » pour les courses, « élément » pour les autres listes', async () => {
   const { isShopping, itemWords, countItems } = await import('../public/js/words.js');
-  const courses = { category: { isShopping: true } };
-  const taches = { category: { isShopping: false } };
+  const courses = { type: 'shopping' };
+  const taches = { type: 'tasks' };
   assert.equal(isShopping(courses), true);
   assert.equal(isShopping(taches), false);
   assert.equal(isShopping(true), true);

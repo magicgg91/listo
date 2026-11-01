@@ -13,9 +13,12 @@
 // (rayons, magasin, codes-barres ; priorité, échéance) restent en base,
 // cachées tant que le type ne s'en sert pas.
 //
-// Les listes enregistrées avant les types (copie hors ligne d'un téléphone
-// qui n'a pas encore rechargé) n'ont qu'une catégorie : typeOf() en déduit
-// le type (catégorie « courses » -> shopping, sinon tasks).
+// Les anciens champs « catégorie » (list.category, categories, categoryId)
+// ne sont PAS lus ici ni ailleurs dans le nouveau code : le serveur les
+// envoie encore, provisoirement, pour les téléphones qui n'ont pas rechargé
+// (voir describeList dans server/lists.js), et traduit lui-même une ancienne
+// opération qui porte un identifiant de catégorie. Une copie hors ligne
+// d'avant les types est écartée et rechargée (SNAPSHOT_VERSION, store.js).
 
 export const LIST_TYPES = ['shopping', 'tasks', 'wishes'];
 
@@ -33,13 +36,12 @@ export function isListType(value) {
   return typeof value === 'string' && LIST_TYPES.includes(value);
 }
 
-// Type d'une liste : { type } (serveur, nouveau téléphone), sinon déduit de
-// l'ancienne catégorie ({ category: { isShopping } }), sinon tâches.
-// Accepte aussi directement une valeur de type.
+// Type d'une liste ({ type }, ou directement une valeur de type) ; une
+// valeur absente ou inconnue compte comme une liste de tâches (le cas le
+// plus simple : ni rayon, ni magasin, ni code-barres).
 export function typeOf(list) {
   if (isListType(list)) return list;
   if (isListType(list?.type)) return list.type;
-  if (list?.category) return list.category.isShopping ? 'shopping' : 'tasks';
   return 'tasks';
 }
 

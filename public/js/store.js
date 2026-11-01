@@ -1,5 +1,5 @@
-// Copie locale des données (listes, articles, rayons, magasins, catégories,
-// historique, comptes proposés au partage), reçue du serveur par GET
+// Copie locale des données (listes, articles, rayons, magasins, historique,
+// comptes proposés au partage), reçue du serveur par GET
 // /api/sync, et calculs pour l'écran.
 //
 // Les écrans lisent cette copie ; chaque modification y est reportée tout de
@@ -12,6 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
+import { isListType, isShoppingList, usesTaskOptions } from './list-types.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -22,7 +23,6 @@ export function emptyState() {
     lists: new Map(),       // id -> liste (telle que décrite par le serveur)
     items: new Map(),       // id -> article (non supprimé)
     listIds: new Set(),     // listes auxquelles j'ai accès
-    categories: [],
     stores: [],
     aisles: [],
     history: [],
@@ -38,7 +38,11 @@ const emptyNews = () => ({ enabled: true, checks: false, lists: {} });
 
 // --- Copie gardée sur le téléphone (IndexedDB) ---
 
-export const SNAPSHOT_VERSION = 1;
+// Version 2 : types de liste (list.type). Une copie de la version 1 (avec
+// les anciennes catégories) est écartée : tout est rechargé du serveur à
+// l'ouverture suivante (le nouveau code ne lit jamais les catégories). La
+// file d'attente, gardée à part, n'est pas touchée.
+export const SNAPSHOT_VERSION = 2;
 
 // Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
 export function toSnapshot(state, savedAt = new Date().toISOString()) {
@@ -49,7 +53,6 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     lists: [...state.lists.values()],
     items: [...state.items.values()],
     listIds: [...state.listIds],
-    categories: state.categories,
     stores: state.stores,
     aisles: state.aisles,
     history: state.history,
@@ -68,7 +71,6 @@ export function fromSnapshot(snapshot) {
     state.listIds = new Set(snapshot.listIds);
     state.lists = new Map(snapshot.lists.map((list) => [list.id, list]));
     state.items = new Map(snapshot.items.map((item) => [item.id, item]));
-    state.categories = [...snapshot.categories];
     state.stores = [...snapshot.stores];
     state.aisles = [...snapshot.aisles];
     state.history = [...snapshot.history];
@@ -91,25 +93,21 @@ export function isTooOld(state, now = Date.now()) {
   return now - Date.parse(state.serverTime) > SNAPSHOT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 }
 
-// Catégorie et magasin d'une liste : le serveur ne garde que leur
-// identifiant (lists.category_id, lists.store_id) et décrit la liste avec
-// leur nom du moment. Mais une synchronisation « depuis » ne renvoie que les
-// listes modifiées, alors que les catégories et les magasins arrivent en
-// entier à chaque fois : après un renommage par l'Admin (qui ne modifie
+// Magasin d'une liste : le serveur ne garde que son identifiant
+// (lists.store_id) et décrit la liste avec son nom du moment. Mais une
+// synchronisation « depuis » ne renvoie que les listes modifiées, alors que
+// les magasins arrivent en entier à chaque fois : après un renommage par l'Admin (qui ne modifie
 // aucune liste), le nom copié dans chaque liste resterait l'ancien. On le
 // relit donc ici, par l'identifiant, dans les données de référence reçues.
 export function refreshListReferences(state) {
-  const categories = new Map(state.categories.map((c) => [c.id, c]));
   const stores = new Map(state.stores.map((s) => [s.id, s]));
+  const fresh = (store) => {
+    const found = store && stores.get(store.id);
+    return found ? { id: found.id, name: found.name, active: found.active, isMulti: Boolean(found.isMulti) } : store;
+  };
   for (const [id, list] of state.lists) {
-    const category = list.category && categories.get(list.category.id);
-    const store = list.store && stores.get(list.store.id);
-    if (!category && !store) continue;
-    state.lists.set(id, {
-      ...list,
-      category: category ? { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active } : list.category,
-      store: store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : list.store,
-    });
+    if (!list.store && !list.keptStore) continue;
+    state.lists.set(id, { ...list, store: fresh(list.store), ...(list.keptStore ? { keptStore: fresh(list.keptStore) } : {}) });
   }
 }
 
@@ -119,7 +117,6 @@ export function loadSync(state, data) {
   state.listIds = new Set(data.listIds);
   state.lists = new Map(data.lists.filter((l) => !l.deletedAt && state.listIds.has(l.id)).map((l) => [l.id, l]));
   state.items = new Map(data.items.filter((i) => !i.deletedAt && state.listIds.has(i.listId)).map((i) => [i.id, i]));
-  state.categories = data.categories;
   state.stores = data.stores;
   state.aisles = data.aisles;
   state.history = data.history;
@@ -147,7 +144,6 @@ export function mergeSync(state, data) {
   // Listes auxquelles je n'ai plus accès : elles disparaissent, avec leurs articles
   for (const id of [...state.lists.keys()]) if (!state.listIds.has(id)) state.lists.delete(id);
   for (const [id, item] of [...state.items]) if (!state.listIds.has(item.listId)) state.items.delete(id);
-  state.categories = data.categories;
   state.stores = data.stores;
   state.aisles = data.aisles;
   if (data.users) state.users = data.users;
@@ -178,20 +174,23 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
   const item = op.itemId ? state.items.get(op.itemId) : null;
   switch (op.type) {
     case 'list.create': {
-      const category = state.categories.find((c) => c.id === op.categoryId) ?? null;
-      const store = op.storeId == null ? null : state.stores.find((st) => st.id === op.storeId) ?? null;
+      // Type : celui demandé (listType) ; une ancienne opération (identifiant
+      // de catégorie, jamais lu ici) compte comme une liste de tâches jusqu'à
+      // la réponse du serveur, qui la traduit
+      const type = isListType(op.listType) ? op.listType : 'tasks';
+      const store = op.storeId == null || !isShoppingList(type) ? null : state.stores.find((st) => st.id === op.storeId) ?? null;
       state.lists.set(op.listId, {
         id: op.listId,
         name: op.name,
-        icon: isListIcon(op.icon) ? op.icon : '', // rien de choisi : icône de la catégorie
-        category: category && { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active },
+        icon: isListIcon(op.icon) ? op.icon : '', // rien de choisi : icône du type
+        type,
         store: store && { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) },
         ownerId: user.id,
         isOwner: true,
         canEdit: true, // le propriétaire a tous les droits
         priorityEnabled: op.priorityEnabled === true, // désactivées sauf demande
         dueEnabled: op.dueEnabled === true,
-        addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(Boolean(category?.isShopping)),
+        addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(isShoppingList(type)),
         members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
         updatedAt: now,
@@ -207,15 +206,21 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...list, updatedAt: now };
       if (op.name !== undefined) next.name = op.name;
       if (op.icon !== undefined) next.icon = isListIcon(op.icon) ? op.icon : '';
-      if (op.categoryId !== undefined) {
-        const category = state.categories.find((c) => c.id === op.categoryId);
-        if (category) next.category = { id: category.id, name: category.name, isShopping: category.isShopping, active: category.active };
+      // Changement de type (même règle que le serveur : rien n'est effacé).
+      // Le magasin d'une liste qui n'est plus de courses est caché (keptStore),
+      // et revient si elle redevient une liste de courses.
+      if (isListType(op.listType)) next.type = op.listType;
+      if (isShoppingList(next)) {
+        if (!next.store && next.keptStore) next.store = next.keptStore;
+        delete next.keptStore;
+        if (op.storeId !== undefined) {
+          const store = op.storeId == null ? null : state.stores.find((st) => st.id === op.storeId);
+          next.store = store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : null;
+        }
+      } else if (next.store) {
+        next.keptStore = next.store;
+        next.store = null;
       }
-      if (op.storeId !== undefined) {
-        const store = op.storeId == null ? null : state.stores.find((st) => st.id === op.storeId);
-        next.store = store ? { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) } : null;
-      }
-      if (!next.category?.isShopping) next.store = null;
       if (typeof op.priorityEnabled === 'boolean') next.priorityEnabled = op.priorityEnabled;
       if (typeof op.dueEnabled === 'boolean') next.dueEnabled = op.dueEnabled;
       if (ADD_MODES.includes(op.addMode)) next.addMode = op.addMode;
@@ -331,7 +336,7 @@ export function removeList(state, listId) {
 // serveur). Une liste de tâches n'écrit rien dans l'historique et n'affiche
 // pas de suggestions.
 export function remembersNames(list) {
-  return Boolean(list?.category?.isShopping);
+  return isShoppingList(list);
 }
 
 // Met à jour l'historique local avec la même règle que le serveur
@@ -351,7 +356,7 @@ export function moveItemStore(state, name, from, to, now = new Date().toISOStrin
 // Magasin à mémoriser dans l'historique pour un article de cette liste
 export function historyStoreFor(list, item) {
   if (isMultiList(list)) return item.storeId ?? null;
-  return list.category.isShopping ? list.store?.id ?? null : null;
+  return isShoppingList(list) ? list.store?.id ?? null : null;
 }
 
 // --- Calculs pour l'écran ---
@@ -586,13 +591,13 @@ export const ADD_MODES = ['quick', 'detail'];
 export const defaultAddMode = (isShopping) => (isShopping ? 'quick' : 'detail');
 export const addModeOf = (list) => (list?.addMode === 'detail' ? 'detail' : 'quick');
 
-// Priorité et échéance utilisées dans cette liste ? Jamais dans une liste de
-// courses ; ailleurs, selon les deux réglages de la liste (choisis par le
+// Priorité et échéance utilisées dans cette liste ? Seulement dans une liste
+// de tâches, selon les deux réglages de la liste (choisis par le
 // propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
 // montre, comme avant, jusqu'à la prochaine synchronisation. Les valeurs des
 // éléments ne sont jamais effacées : un réglage désactivé les cache.
 export function listOptions(list) {
-  const classic = Boolean(list?.category) && !list.category.isShopping;
+  const classic = Boolean(list) && usesTaskOptions(list);
   return {
     priority: classic && list.priorityEnabled !== false,
     due: classic && list.dueEnabled !== false,
@@ -604,7 +609,7 @@ export function listOptions(list) {
 // alphabétique toujours, « par priorité » et « par échéance » seulement si
 // le réglage est activé. Le premier est le tri par défaut.
 export function availableSorts(list) {
-  if (list?.category?.isShopping) return ['aisle', 'alpha'];
+  if (isShoppingList(list)) return ['aisle', 'alpha'];
   const options = listOptions(list);
   return ['alpha', 'priority', 'due'].filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due));
 }
@@ -648,7 +653,7 @@ export function computeListView(state, listId, { sort = null } = {}) {
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, list.category.isShopping, { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort) });
+  const { groups, done } = splitDone(items, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort) });
   return {
     list,
     multi,

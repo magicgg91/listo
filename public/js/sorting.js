@@ -11,6 +11,8 @@
 // Chaque téléphone peut aussi choisir un autre tri, liste par liste (voir
 // ITEM_SORTS) : seul l'affichage change, jamais les articles.
 
+import { isShoppingList } from './list-types.js';
+
 // Comparaison alphabétique française : « Épicerie » se range avec les « E »,
 // et les majuscules ne comptent pas.
 export function compareNames(a, b) {
@@ -19,9 +21,9 @@ export function compareNames(a, b) {
 
 // Vrai si la liste est « multi » : liste de courses dont le magasin est de
 // type « multi ». Ses articles sont alors groupés par magasin, sans rayon.
-// list : liste telle que décrite par le serveur ({ category, store }).
+// list : liste telle que décrite par le serveur ({ type, store }).
 export function isMultiList(list) {
-  return Boolean(list?.category?.isShopping && list?.store?.isMulti);
+  return Boolean(isShoppingList(list) && list?.store?.isMulti);
 }
 
 // Range des articles par groupe (rayon ou magasin), « sans » en dernier.

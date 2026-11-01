@@ -36,7 +36,7 @@ test('bouton de scan sur la ligne du champ : icône seule, aria-label, même com
   assert.match(list, /field\('Code-barres', h\('div', \{ class: 'field__row' \}, h\('div', \{ class: 'input-wrap' \}, eanInput, eanClear\), eanScan\),\s*\{ aside: '8, 12 ou 13 chiffres' \}\)/);
   const css = read('public/css/app.css');
   assert.match(css, /\.field__row \{ display: flex; align-items: center; gap: var\(--space-1\); \}/);
-  assert.match(css, /\.field__row \.input-wrap \{ flex: 1; min-width: 0; \}/, 'le champ prend la largeur restante');
+  assert.match(css, /\.field__row \.input-wrap, \.field__row > \.input \{ flex: 1; min-width: 0; \}/, 'le champ prend la largeur restante');
 });
 
 test('aides courtes dans la ligne du titre, reliées au champ ; plus de ligne d\'aide dessous', () => {

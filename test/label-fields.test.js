@@ -36,7 +36,9 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
   }
   assert.match(read('screens/list.js'), /const nameField = field\(capitalized\(words\.one\), name\);/);
   assert.match(read('screens/list.js'), /value\(capitalized\(words\.one\), it\.name\),/);
-  assert.match(read('screens/list-form.js'), /field\('Titre de la liste', name\)/);
+  assert.match(read('screens/list-form.js'), /field\('Titre de la liste', h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\)/);
+  // Le libellé désigne le champ, même avec un bouton avant lui sur la ligne
+  assert.match(read('dom.js'), /control\.querySelector\('input, textarea, select'\) \?\? control\.querySelector\('button'\)/);
   assert.match(read('screens/scan.js'), /field\('Article', nameInput\)/);
   const admin = read('screens/admin.js');
   assert.match(admin, /'aria-label': `Renommer « \$\{item\.name\} »`/);

@@ -28,6 +28,7 @@
 import express from 'express';
 import { OpError } from '../lists.js';
 import { normalizeBarcode } from '../products.js';
+import { isShoppingList } from '../../public/js/list-types.js';
 
 export function productRoutes(ctx) {
   const router = express.Router();
@@ -43,7 +44,7 @@ export function productRoutes(ctx) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;
     }
-    if (list.is_shopping !== 1) return res.status(404).json({ error: 'Le scan existe seulement dans les listes de courses.' });
+    if (!isShoppingList(list)) return res.status(404).json({ error: 'Le scan existe seulement dans les listes de courses.' });
     if (!products.enabled()) return res.json({ status: 'disabled' });
     if (!products.allow(req.user.id)) return res.status(429).json({ error: 'Trop de recherches. Réessayez dans une minute.' });
     const code = normalizeBarcode(req.body?.code);

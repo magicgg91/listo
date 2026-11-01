@@ -64,13 +64,13 @@ async function household(t) {
   const butter = uuid();
   const bulb = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId: shop, itemId: milk, name: 'Lait', aisleId: 4 },
     { id: uuid(), type: 'item.create', listId: shop, itemId: bread, name: 'Pain' },
     { id: uuid(), type: 'item.check', itemId: bread, checked: true },
     { id: uuid(), type: 'item.create', listId: shop, itemId: butter, name: 'Beurre' },
     { id: uuid(), type: 'item.delete', itemId: butter },
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2, priorityEnabled: true, dueEnabled: true },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks', priorityEnabled: true, dueEnabled: true },
     { id: uuid(), type: 'item.create', listId: tasks, itemId: bulb, name: 'Ampoule' },
   ] });
   assert.equal((await raw(guillaume, 'PUT', `/api/items/${milk}/photo`, JPEG, 'image/jpeg')).status, 200);
@@ -189,7 +189,7 @@ test('partage : sans droit précisé, lecture seule ; le propriétaire garde tou
   assert.equal(access(h.shop, 1), 'modification', 'propriétaire');
   // Liste créée puis partagée par l'ancienne forme de l'API (userIds seuls)
   const other = uuid();
-  await run(h.guillaume, { type: 'list.create', listId: other, name: 'Brico', categoryId: 2 });
+  await run(h.guillaume, { type: 'list.create', listId: other, name: 'Brico', listType: 'tasks' });
   await h.guillaume.request('PUT', `/api/lists/${other}/members`, { userIds: [h.ids.paul] });
   assert.equal(access(other, h.ids.paul), 'lecture');
   // Une appartenance écrite sans droit, directement dans la base : lecture seule
@@ -247,7 +247,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
     ALTER TABLE lists DROP COLUMN priority_enabled;\n    ALTER TABLE lists DROP COLUMN due_enabled;
     ALTER TABLE lists DROP COLUMN icon;
     ALTER TABLE lists DROP COLUMN add_mode;
-    DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists;
+    ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists;
     DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients;
     DROP TABLE list_events;
     DROP TABLE list_reads;
@@ -261,7 +261,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.close();
   // Redémarrage : la migration 12 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   assert.deepEqual(db.prepare('SELECT user_id, access FROM list_members ORDER BY user_id').all().map((r) => [r.user_id, r.access]), [[1, 'modification'], [2, 'modification'], [3, 'modification']]);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('d', 'd', 'x')").run();
   db.prepare("INSERT INTO list_members (list_id, user_id) VALUES ('l1', 4)").run();
@@ -272,7 +272,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.prepare('DELETE FROM users WHERE id = 3').run();
   assert.equal(db.prepare('SELECT COUNT(*) FROM list_members').pluck().get(), 3);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

@@ -35,8 +35,8 @@ async function household(t) {
   const tasks = uuid();
   const shopping = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
-    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' },
+    { id: uuid(), type: 'list.create', listId: shopping, name: 'Courses', listType: 'shopping' },
   ] });
   for (const listId of [tasks, shopping]) {
     await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.lea, ids.paul], access: { [ids.lea]: 'modification', [ids.paul]: 'lecture' } });
@@ -61,7 +61,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 14, sans la colonne
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 14');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   const add = db.prepare('INSERT INTO lists (id, name, category_id, owner_id, priority_enabled, due_enabled, deleted_at) VALUES (?, ?, ?, 1, ?, ?, ?)');
@@ -82,9 +82,9 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ add_mode: mode, ...rest }) => rest), before, 'rien d\'autre ne change');
+  assert.deepEqual(after.map(({ add_mode: mode, type, ...rest }) => rest), before, 'rien d\'autre ne change (type : migration 18)');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
     courses: 'quick',
     'courses-reglee': 'quick',
@@ -95,12 +95,12 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
     'taches-supprimee': 'detail',
   });
   // Le journal du conteneur donne le nombre de chaque sorte (aucun nom de liste)
-  assert.deepEqual(lines, ['Migration 15 (« Après l\'ajout ») : 2 liste(s) de courses → « Rester sur la liste » ; 4 autre(s) liste(s) avec priorité ou échéance → « Ouvrir la fiche » ; 1 autre(s) liste(s) sans priorité ni échéance → « Rester sur la liste ».']);
+  assert.deepEqual(lines.filter((l) => l.startsWith('Migration 15')), ['Migration 15 (« Après l\'ajout ») : 2 liste(s) de courses → « Rester sur la liste » ; 4 autre(s) liste(s) avec priorité ou échéance → « Ouvrir la fiche » ; 1 autre(s) liste(s) sans priorité ni échéance → « Rester sur la liste ».']);
   assert.doesNotMatch(lines.join(), /Maison|Travaux|Idées/);
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
@@ -133,14 +133,14 @@ test('création : « Rester sur la liste » pour une liste de courses, « Ouvrir
   assert.equal(sync.find((l) => l.id === h.tasks).addMode, 'detail');
   const quickTasks = uuid();
   const detailShop = uuid();
-  assert.equal((await run(h.guillaume, { type: 'list.create', listId: quickTasks, name: 'Idées', categoryId: 2, addMode: 'quick' })).status, 200);
-  assert.equal((await run(h.guillaume, { type: 'list.create', listId: detailShop, name: 'Bricolage', categoryId: 1, addMode: 'detail' })).status, 200);
+  assert.equal((await run(h.guillaume, { type: 'list.create', listId: quickTasks, name: 'Idées', listType: 'tasks', addMode: 'quick' })).status, 200);
+  assert.equal((await run(h.guillaume, { type: 'list.create', listId: detailShop, name: 'Bricolage', listType: 'shopping', addMode: 'detail' })).status, 200);
   assert.equal(h.modeOf(quickTasks), 'quick');
   assert.equal(h.modeOf(detailShop), 'detail');
   // Valeur inconnue : refusée, rien n'est écrit
   for (const bad of ['rapide', 'QUICK', '', null, true, 1, ['quick'], { mode: 'quick' }]) {
     const listId = uuid();
-    assert.deepEqual(await run(h.guillaume, { type: 'list.create', listId, name: 'X', categoryId: 2, addMode: bad }), { status: 400, error: INVALID }, JSON.stringify(bad));
+    assert.deepEqual(await run(h.guillaume, { type: 'list.create', listId, name: 'X', listType: 'tasks', addMode: bad }), { status: 400, error: INVALID }, JSON.stringify(bad));
     assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM lists WHERE id = ?').pluck().get(listId), 0);
   }
   assert.deepEqual(ADD_MODES, ['quick', 'detail']);
@@ -160,7 +160,7 @@ test('modification : propriétaire seulement ; contributeur et invité 403, non-
   assert.equal(h.modeOf(h.tasks), 'quick', 'aucun refus n\'a rien écrit');
   // Autre modification sans le réglage : il ne change pas ; changer de catégorie non plus
   assert.equal((await run(h.guillaume, { type: 'list.update', listId: h.tasks, name: 'Maison 2' })).status, 200);
-  assert.equal((await run(h.guillaume, { type: 'list.update', listId: h.tasks, categoryId: 1 })).status, 200);
+  assert.equal((await run(h.guillaume, { type: 'list.update', listId: h.tasks, listType: 'shopping' })).status, 200);
   assert.equal(h.modeOf(h.tasks), 'quick');
   // Courses comprises
   assert.equal((await run(h.guillaume, { type: 'list.update', listId: h.shopping, addMode: 'detail' })).status, 200);
@@ -194,9 +194,9 @@ test('copie locale (hors ligne) : création selon le type, modification, valeur 
   const state = emptyState();
   state.categories = [{ id: 1, name: 'Courses', isShopping: true, active: true }, { id: 2, name: 'Tâches', isShopping: false, active: true }];
   const user = { id: 1, username: 'g', displayName: 'G' };
-  applyOp(state, { type: 'list.create', listId: 'c', name: 'Courses', categoryId: 1 }, { user });
-  applyOp(state, { type: 'list.create', listId: 't', name: 'Maison', categoryId: 2 }, { user });
-  applyOp(state, { type: 'list.create', listId: 'x', name: 'Bricolage', categoryId: 1, addMode: 'detail' }, { user });
+  applyOp(state, { type: 'list.create', listId: 'c', name: 'Courses', listType: 'shopping' }, { user });
+  applyOp(state, { type: 'list.create', listId: 't', name: 'Maison', listType: 'tasks' }, { user });
+  applyOp(state, { type: 'list.create', listId: 'x', name: 'Bricolage', listType: 'shopping', addMode: 'detail' }, { user });
   assert.deepEqual(['c', 't', 'x'].map((id) => addModeOf(state.lists.get(id))), ['quick', 'detail', 'detail']);
   applyOp(state, { type: 'list.update', listId: 't', addMode: 'quick' }, { user });
   assert.equal(addModeOf(state.lists.get('t')), 'quick');
@@ -234,14 +234,14 @@ test('écran : ajout détaillé = fiche de l\'élément créé, une fois le clav
   assert.doesNotMatch(scan, /addModeOf|openItemSheet/);
 });
 
-test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.segmented), défaut selon la catégorie tant qu\'on n\'y touche pas', () => {
+test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.segmented), défaut selon le type tant qu\'on n\'y touche pas', () => {
   const form = read('public/js/screens/list-form.js');
   assert.match(form, /\[\['quick', 'Rester sur la liste'\], \['detail', 'Ouvrir la fiche'\]\]/);
   assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label' \}, options\)/);
   assert.match(form, /option\.setAttribute\('aria-checked', String\(on\)\);\s*replace\(option, on \? icon\('check', 'icon--sm icon--check'\) : null, option\.dataset\.label\);/);
   assert.match(form, /let addMode = list \? addModeOf\(list\) : defaultAddMode\(true\);\s*let addModeChosen = Boolean\(list\);/);
-  assert.match(form, /if \(!addModeChosen && category\) \{\s*addMode = defaultAddMode\(category\.isShopping\);/);
-  assert.match(form, /optionsField\.hidden = !category;/, 'visible pour toutes les catégories');
+  assert.match(form, /if \(!addModeChosen\) \{\s*addMode = defaultAddMode\(shopping\);/);
+  assert.doesNotMatch(form, /optionsField\.hidden/, 'visible pour tous les types');
   assert.match(form, /addMode, icon: chosenIcon \}\);/);
   assert.match(form, /if \(addMode !== addModeOf\(list\)\) switches\.addMode = addMode;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);

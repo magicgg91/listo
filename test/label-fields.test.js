@@ -22,7 +22,7 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
     'screens/list.js': 1,       // fiche d'un élément : nom
     'screens/list-form.js': 1,  // nom de la liste
     'screens/scan.js': 1,       // mode scan : nom du produit
-    'screens/admin.js': 4,      // ajout, renommage sur place, feuille « Modifier la catégorie », nom enregistré
+    'screens/admin.js': 3,      // ajout, renommage sur place, nom enregistré
   };
   for (const [file, count] of Object.entries(uses)) {
     const source = read(file);
@@ -39,7 +39,6 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
   assert.match(read('screens/list-form.js'), /field\('Titre de la liste', name\)/);
   assert.match(read('screens/scan.js'), /field\('Article', nameInput\)/);
   const admin = read('screens/admin.js');
-  assert.match(admin, /field\('Libellé', name\)\.field/);
   assert.match(admin, /'aria-label': `Renommer « \$\{item\.name\} »`/);
   assert.match(admin, /'aria-label': `Orthographe corrigée de « \$\{entry\.name\} »`/);
 });

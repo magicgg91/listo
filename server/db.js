@@ -463,7 +463,58 @@ export const MIGRATIONS = [
   CREATE INDEX oauth_tokens_grant ON oauth_tokens(grant_id);
   CREATE INDEX oauth_tokens_expiry ON oauth_tokens(expires_at);
   `,
+
+  // --- Migration 18 : types de liste (courses, tâches, envies) ---
+  // Remplace la catégorie. Voir listTypesMigration.
+  (db) => listTypesMigration(db),
 ];
+
+// Migration 18 : colonne lists.type ('shopping', 'tasks' ou 'wishes').
+// Toute liste dont la catégorie est « courses » (is_shopping) devient
+// shopping, toutes les autres deviennent tasks (listes supprimées depuis
+// moins de 30 jours comprises). Non destructive : la table categories et la
+// colonne lists.category_id restent en place, inutilisées par le code (sauf
+// la traduction des anciennes opérations et les champs provisoires envoyés
+// aux téléphones qui n'ont pas rechargé), pour pouvoir revenir à l'image
+// précédente ; un nettoyage viendra plus tard.
+// La colonne accepte « vide » : une liste créée par l'image précédente après
+// un retour en arrière n'a pas de type ; fillListTypes la complète au
+// démarrage suivant (appelée par migrate, à chaque démarrage).
+// Le nombre de listes de chaque type est écrit dans le journal du conteneur
+// (aucun nom de liste), et renvoyé (tests).
+export function listTypesMigration(db) {
+  db.exec("ALTER TABLE lists ADD COLUMN type TEXT CHECK (type IS NULL OR type IN ('shopping', 'tasks', 'wishes'))");
+  ensureLegacyCategories(db);
+  const counts = fillListTypes(db);
+  console.log(`Migration 18 (types de liste) : ${counts.shopping} liste(s) de courses, ${counts.tasks} liste(s) de tâches.`);
+  return counts;
+}
+
+// Donne un type aux listes qui n'en ont pas (catégorie « courses » ->
+// shopping, sinon tasks). Sans effet sur une liste qui a déjà un type :
+// peut être relancée sans risque. Renvoie le nombre de listes complétées.
+export function fillListTypes(db) {
+  const shopping = db.prepare(`
+    UPDATE lists SET type = 'shopping'
+    WHERE type IS NULL AND category_id IN (SELECT id FROM categories WHERE is_shopping = 1)
+  `).run().changes;
+  const tasks = db.prepare("UPDATE lists SET type = 'tasks' WHERE type IS NULL").run().changes;
+  return { shopping, tasks };
+}
+
+// lists.category_id reste obligatoire en base : chaque type courses et
+// tâches doit garder au moins une catégorie qui lui correspond (celle
+// qu'on écrit dans category_id, voir legacyCategoryId dans server/lists.js).
+// Si l'une des deux sortes manque (supprimée par l'Admin quand elle était
+// encore permise), on la recrée ; un nom déjà pris reçoit un suffixe.
+export function ensureLegacyCategories(db) {
+  for (const [isShopping, name] of [[1, 'Courses'], [0, 'Tâches']]) {
+    if (db.prepare('SELECT 1 FROM categories WHERE is_shopping = ?').get(isShopping)) continue;
+    let candidate = name;
+    for (let n = 2; db.prepare('SELECT 1 FROM categories WHERE name = ?').get(candidate); n++) candidate = `${name} ${n}`;
+    db.prepare('INSERT INTO categories (name, is_shopping) VALUES (?, ?)').run(candidate, isShopping);
+  }
+}
 
 // Migration 15 : colonne add_mode ('quick' ou 'detail', rien d'autre).
 // Listes existantes :
@@ -563,6 +614,9 @@ export function migrate(db) {
       db.pragma(`user_version = ${version + 1}`);
     })();
   }
+  // Types de liste : une liste créée par l'image précédente (après un retour
+  // en arrière) n'en a pas encore ; on les complète à chaque démarrage
+  if (schemaVersion(db) >= 18) fillListTypes(db);
 }
 
 // Numéro de version actuel du schéma

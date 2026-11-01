@@ -80,7 +80,7 @@ test('en-têtes de sécurité sur toutes les routes principales, y compris les e
   const listId = uuid();
   const itemId = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId, itemId, name: 'Lait' },
   ] });
   await fetch(`${app.base}/api/items/${itemId}/photo`, { method: 'PUT', body: JPEG, headers: { origin: ORIGIN, cookie, 'content-type': 'image/jpeg' } });

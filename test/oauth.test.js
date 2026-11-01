@@ -48,8 +48,8 @@ async function setup(t, { mcp = true } = {}) {
   const guillaume = await setupAdmin(app);
   const lists = { courses: uuid(), maison: uuid() };
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: lists.courses, name: 'Courses', categoryId: 1 },
-    { id: uuid(), type: 'list.create', listId: lists.maison, name: 'Maison', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: lists.courses, name: 'Courses', listType: 'shopping' },
+    { id: uuid(), type: 'list.create', listId: lists.maison, name: 'Maison', listType: 'tasks' },
   ] });
   return { app, guillaume, lists, metadata };
 }
@@ -158,7 +158,7 @@ test('flux complet (DCR) : autorisation, écran, accord avec mot de passe, code,
   assert.deepEqual(shown.body.account, { username: 'guillaume', displayName: 'Guillaume' });
   assert.equal(shown.body.twoFactor, false);
   assert.deepEqual(shown.body.lists.map((l) => l.name).sort(), ['Courses', 'Maison']);
-  assert.deepEqual(Object.keys(shown.body.lists[0]).sort(), ['icon', 'id', 'isShopping', 'name'], 'listes : identifiant et nom seulement');
+  assert.deepEqual(Object.keys(shown.body.lists[0]).sort(), ['icon', 'id', 'name', 'type'], 'listes : identifiant, nom, icône et type seulement');
 
   const ok = await claude.consent(h.guillaume, start.requestId, { scope: 'write' });
   assert.equal(ok.status, 200);
@@ -332,7 +332,7 @@ test('portée accordée respectée : lecture seule par défaut, écriture seulem
   const marie = h.app.client();
   await login(marie, 'marie', 'MotDePasse-marie');
   const theirs = uuid();
-  await marie.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: theirs, name: 'Secret', categoryId: 2 }] });
+  await marie.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: theirs, name: 'Secret', listType: 'tasks' }] });
   assert.ok(marieId);
   assert.equal((await claude.consent(h.guillaume, again.requestId, { lists: [theirs] })).body.error, 'Liste introuvable.');
 });

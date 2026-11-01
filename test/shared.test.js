@@ -106,7 +106,7 @@ test('tri « multi » : par magasin A→Z, « Sans magasin » en dernier, coché
   // Sans l'option, rien ne change : groupes par rayon
   assert.ok(groupItems(items, [], true).every((g) => 'aisle' in g));
 
-  const list = (isShopping, isMulti) => ({ category: { isShopping }, store: isMulti === undefined ? null : { isMulti } });
+  const list = (isShopping, isMulti) => ({ type: isShopping ? 'shopping' : 'tasks', store: isMulti === undefined ? null : { isMulti } });
   assert.equal(isMultiList(list(true, true)), true);
   assert.equal(isMultiList(list(true, false)), false);
   assert.equal(isMultiList(list(false, true)), false, 'une liste « multi » est une liste de courses');

@@ -202,7 +202,7 @@ test('fichiers du lecteur : type application/wasm, CSP de l\'application, page p
   // Page du lien public : politique stricte, sans 'wasm-unsafe-eval'
   const guillaume = await setupAdmin(app);
   const listId = crypto.randomUUID();
-  await guillaume.post('/api/ops', { ops: [{ id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', categoryId: 1 }] });
+  await guillaume.post('/api/ops', { ops: [{ id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' }] });
   const share = await guillaume.request('PUT', `/api/lists/${listId}/share`, {});
   const token = share.body.share.url.split('/p/')[1];
   for (const url of [`/p/${token}`, `/api/public/${token}`, `/p/${'A'.repeat(43)}`]) {

@@ -7,7 +7,7 @@
 // reçoit exactement la même réponse que si la liste n'existait pas (404).
 //
 // Droits :
-// - propriétaire : tout (renommer, changer catégorie et magasin, partage et
+// - propriétaire : tout (renommer, changer le type et le magasin, partage et
 //   droit de chaque personne, supprimer la liste) ;
 // - contributeur (list_members.access = 'modification') :
 //   articles seulement (ajouter, modifier, cocher, supprimer, tout décocher,
@@ -32,6 +32,9 @@ import {
 } from '../public/js/history.js';
 import { groupItems } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
+import {
+  isListType, isShoppingList, typeOf, CREATABLE_TYPES, TYPE_LABELS, WISHES_NOT_YET,
+} from '../public/js/list-types.js';
 import { cleanName, parseId } from './validate.js';
 import { normalizeBarcode } from './products.js';
 
@@ -150,7 +153,10 @@ export function createListService(ctx) {
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
+    // Catégories : plus utilisées que pour traduire une ancienne opération et
+    // remplir les champs provisoires (voir describeList)
     category: db.prepare('SELECT * FROM categories WHERE id = ?'),
+    legacyCategory: db.prepare('SELECT id FROM categories WHERE is_shopping = ? ORDER BY id LIMIT 1').pluck(),
     store: db.prepare('SELECT * FROM stores WHERE id = ?'),
     aisle: db.prepare('SELECT * FROM aisles WHERE id = ?'),
     allCategories: db.prepare('SELECT * FROM categories'),
@@ -160,24 +166,22 @@ export function createListService(ctx) {
     // Une liste non supprimée dont le compte est membre
     // (is_multi : 1 si c'est une liste de courses à magasin « multi »)
     memberList: db.prepare(`
-      SELECT lists.*, categories.is_shopping, list_members.access AS member_access,
-        (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
+      SELECT lists.*, list_members.access AS member_access,
+        (lists.type = 'shopping' AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM lists
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
-      JOIN categories ON categories.id = lists.category_id
       LEFT JOIN stores ON stores.id = lists.store_id
       WHERE lists.id = :listId AND lists.deleted_at IS NULL
     `),
     // Un article non supprimé d'une liste non supprimée dont le compte est membre
     memberItem: db.prepare(`
-      SELECT items.*, categories.is_shopping, lists.store_id AS list_store_id,
+      SELECT items.*, lists.type AS list_type, lists.store_id AS list_store_id,
         lists.owner_id AS list_owner_id, list_members.access AS member_access,
         lists.priority_enabled AS list_priority_enabled, lists.due_enabled AS list_due_enabled,
-        (categories.is_shopping = 1 AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
+        (lists.type = 'shopping' AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
-      JOIN categories ON categories.id = lists.category_id
       LEFT JOIN stores ON stores.id = lists.store_id
       WHERE items.id = :itemId AND items.deleted_at IS NULL
     `),
@@ -223,11 +227,34 @@ export function createListService(ctx) {
 
   // --- Petits outils ---
 
-  // Catégorie active (obligatoire), sinon erreur
-  function activeCategory(id) {
-    const category = parseId(id) && q.category.get(parseId(id));
-    if (!category || category.active !== 1) throw new OpError(400, 'Catégorie inconnue ou désactivée.');
-    return category;
+  // Type demandé par une opération de liste : le champ listType (nouveau
+  // téléphone ; « type » est déjà le nom de l'opération), sinon l'identifiant de catégorie d'une ancienne opération
+  // (file d'attente hors ligne, téléphone qui n'a pas rechargé), traduit en
+  // type : catégorie « courses » -> shopping, autre -> tasks. undefined si
+  // l'opération ne demande rien. Les envies ne sont pas encore proposées :
+  // refusées (création comme changement de type).
+  function requestedType(op) {
+    let type;
+    if (op.listType !== undefined) {
+      if (!isListType(op.listType)) throw new OpError(400, 'Type de liste inconnu.');
+      type = op.listType;
+    } else if (op.categoryId !== undefined) {
+      const category = parseId(op.categoryId) && q.category.get(parseId(op.categoryId));
+      if (!category) throw new OpError(400, 'Type de liste inconnu.');
+      type = category.is_shopping === 1 ? 'shopping' : 'tasks';
+    } else {
+      return undefined;
+    }
+    if (!CREATABLE_TYPES.includes(type)) throw new OpError(400, WISHES_NOT_YET);
+    return type;
+  }
+
+  // lists.category_id reste obligatoire en base (colonne gardée pour pouvoir
+  // revenir à l'image précédente) : on y écrit la première catégorie qui
+  // correspond au type (courses ou non). La migration 18 garantit qu'il en
+  // existe une de chaque sorte.
+  function legacyCategoryId(type) {
+    return q.legacyCategory.get(type === 'shopping' ? 1 : 0);
   }
 
   // Magasin actif, ou null si aucun n'est demandé
@@ -332,11 +359,10 @@ export function createListService(ctx) {
   // - liste à magasin simple : un article sans rayon reçoit son rayon habituel.
   function completeItems(listId) {
     const list = db.prepare(`
-      SELECT lists.*, categories.is_shopping, COALESCE(stores.is_multi, 0) AS store_is_multi
-      FROM lists JOIN categories ON categories.id = lists.category_id
-      LEFT JOIN stores ON stores.id = lists.store_id WHERE lists.id = ?
+      SELECT lists.*, COALESCE(stores.is_multi, 0) AS store_is_multi
+      FROM lists LEFT JOIN stores ON stores.id = lists.store_id WHERE lists.id = ?
     `).get(listId);
-    if (list.is_shopping !== 1) return;
+    if (!isShoppingList(list)) return;
     const now = nowIso();
     const setStore = db.prepare('UPDATE items SET store_id = ?, updated_at = ? WHERE id = ?');
     const setAisle = db.prepare('UPDATE items SET aisle_id = ?, updated_at = ? WHERE id = ?');
@@ -424,8 +450,11 @@ export function createListService(ctx) {
   });
 
   function describeList(list, user) {
+    const type = typeOf(list);
+    const shopping = isShoppingList(type);
+    const storeRow = list.store_id === null ? null : q.store.get(list.store_id);
+    const store = storeRow && { id: storeRow.id, name: storeRow.name, active: storeRow.active === 1, isMulti: storeRow.is_multi === 1 };
     const category = q.category.get(list.category_id);
-    const store = list.store_id === null ? null : q.store.get(list.store_id);
     const rows = q.members.all(list.id);
     // access : le droit de chaque personne (le propriétaire : toujours
     // « modification ») ; canEdit : le droit du compte connecté
@@ -437,15 +466,30 @@ export function createListService(ctx) {
     return {
       id: list.id,
       name: list.name,
-      // Icône choisie (« » : celle de la catégorie)
+      // Icône choisie (« » : celle du type)
       icon: isListIcon(list.icon) ? list.icon : '',
-      category: { id: category.id, name: category.name, isShopping: category.is_shopping === 1, active: category.active === 1 },
-      store: store && { id: store.id, name: store.name, active: store.active === 1, isMulti: store.is_multi === 1 },
+      type,
+      // Magasin : seulement si le type s'en sert. Une liste de tâches qui a
+      // été une liste de courses garde son magasin en base, caché ici ;
+      // keptStore le donne au seul propriétaire, pour que « Modifier la
+      // liste » le remette s'il revient à Courses (rien d'autre ne le lit).
+      store: shopping ? store : null,
+      ...(!shopping && store && list.owner_id === user.id ? { keptStore: store } : {}),
+      // PROVISOIRE : catégorie, pour les téléphones qui n'ont pas encore
+      // rechargé (l'ancien code lit list.category.isShopping). Le nouveau
+      // code ne la lit pas. À retirer avec le nettoyage, quand plus aucun
+      // téléphone n'a l'ancien code.
+      category: {
+        id: category?.id ?? null,
+        name: category?.name ?? TYPE_LABELS[type],
+        isShopping: shopping,
+        active: category ? category.active === 1 : true,
+      },
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
       canEdit: canEdit(user, { owner_id: list.owner_id, member_access: mine?.access }),
-      // Priorité et échéance activées pour cette liste (une liste de courses
-      // les ignore)
+      // Priorité et échéance activées pour cette liste (seule une liste de
+      // tâches s'en sert ; les autres types les gardent, ignorées)
       priorityEnabled: list.priority_enabled === 1,
       dueEnabled: list.due_enabled === 1,
       // « Après l'ajout » : 'quick' (rester sur la liste) ou 'detail' (ouvrir la fiche)
@@ -519,21 +563,22 @@ export function createListService(ctx) {
       const id = requireUuid(op.listId, 'de liste');
       if (q.anyList.get(id)) throw new OpError(409, 'Cette liste existe déjà.');
       const name = listName(op.name);
-      const category = activeCategory(op.categoryId);
+      const type = requestedType(op);
+      if (type === undefined) throw new OpError(400, 'Type de liste inconnu.');
       const store = activeStoreOrNull(op.storeId);
-      if (store && category.is_shopping !== 1) {
+      if (store && !isShoppingList(type)) {
         throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
       // Priorité et échéance : désactivées sauf demande explicite
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
-      const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône de la catégorie
+      const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône du type
       // « Après l'ajout » : sans choix, « Rester sur la liste » pour une liste
       // de courses, « Ouvrir la fiche » pour les autres
-      const addMode = addModeOf(op.addMode) ?? (category.is_shopping === 1 ? 'quick' : 'detail');
+      const addMode = addModeOf(op.addMode) ?? (isShoppingList(type) ? 'quick' : 'detail');
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, category.id, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, now, now);
+      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       changed(id);
@@ -541,16 +586,20 @@ export function createListService(ctx) {
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
 
-    // Renommer, changer de catégorie, de magasin ou d'icône, activer ou non
-    // la priorité et l'échéance, choisir « Après l'ajout » (propriétaire
-    // seulement ; changer de catégorie ne change pas ce dernier choix). Une catégorie ou un
-    // magasin désactivé reste accepté s'il est déjà celui de la liste ; pour
-    // en changer, le nouveau doit être actif. Les deux réglages sont gardés
-    // tels quels quand la liste devient une liste de courses (ignorés) ou en
-    // redevient une autre ; aucune valeur d'élément n'est jamais effacée.
+    // Renommer, changer de type, de magasin ou d'icône, activer ou non la
+    // priorité et l'échéance, choisir « Après l'ajout » (propriétaire
+    // seulement : contributeur et invité 403, non-membre 404 ; changer de
+    // type ne change pas ce dernier choix). Un magasin désactivé reste
+    // accepté s'il est déjà celui de la liste ; pour en changer, le nouveau
+    // doit être actif.
+    // Changer de type n'efface RIEN : une liste de courses qui devient une
+    // liste de tâches garde son magasin (caché, voir describeList), ses
+    // rayons et ses codes-barres ; une liste de tâches qui devient une liste
+    // de courses garde ses réglages et ses valeurs de priorité et d'échéance
+    // (ignorés). Tout réapparaît au retour au type d'origine.
     'list.update'(user, op) {
       const list = listForOwner(user, op.listId);
-      if ([op.name, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
+      if ([op.name, op.listType, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
@@ -559,30 +608,28 @@ export function createListService(ctx) {
       const icon = listIconOf(op.icon) ?? list.icon;
       const addMode = addModeOf(op.addMode) ?? list.add_mode;
 
-      let category = q.category.get(list.category_id);
-      if (op.categoryId !== undefined && parseId(op.categoryId) !== list.category_id) {
-        category = activeCategory(op.categoryId);
-      }
+      const before = typeOf(list);
+      const type = requestedType(op) ?? before;
+      const categoryId = type === before ? list.category_id : legacyCategoryId(type);
 
       let storeId = list.store_id;
-      if (op.storeId !== undefined) {
-        if (op.storeId !== null && !parseId(op.storeId)) throw new OpError(400, 'Magasin inconnu ou désactivé.');
-        const wanted = op.storeId === null ? null : parseId(op.storeId);
-        if (wanted !== list.store_id) storeId = activeStoreOrNull(wanted)?.id ?? null;
-      }
-
-      // Pas de magasin pour une liste qui n'est pas de courses : si la liste
-      // passe à une telle catégorie, son magasin est retiré
-      if (category.is_shopping !== 1) {
-        if (op.storeId !== undefined && op.storeId !== null) {
-          throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
+      if (isShoppingList(type)) {
+        if (op.storeId !== undefined) {
+          if (op.storeId !== null && !parseId(op.storeId)) throw new OpError(400, 'Magasin inconnu ou désactivé.');
+          const wanted = op.storeId === null ? null : parseId(op.storeId);
+          if (wanted !== list.store_id) storeId = activeStoreOrNull(wanted)?.id ?? null;
         }
-        storeId = null;
+      } else if (op.storeId !== undefined && op.storeId !== null) {
+        // Pas de magasin à choisir pour une liste qui n'est pas de courses ;
+        // « aucun magasin » (envoyé par un ancien téléphone) est ignoré : le
+        // magasin conservé n'est pas effacé
+        throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
 
-      db.prepare('UPDATE lists SET name = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
-        .run(name, category.id, storeId, Number(priorityOn), Number(dueOn), icon, addMode, nowIso(), list.id);
-      if (storeId !== list.store_id || category.is_shopping !== list.is_shopping) completeItems(list.id);
+      db.prepare('UPDATE lists SET name = ?, type = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
+        .run(name, type, categoryId, storeId, Number(priorityOn), Number(dueOn), icon, addMode, nowIso(), list.id);
+      if (isShoppingList(type) && (storeId !== list.store_id || type !== before)) completeItems(list.id);
+      if (type !== before) ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: type });
       changed(list.id);
       return {};
     },
@@ -649,13 +696,13 @@ export function createListService(ctx) {
       if (q.anyItem.get(id)) throw new OpError(409, 'Cet identifiant est déjà utilisé.');
       const name = itemName(op.name);
       checkFieldsForList(list.is_multi === 1, op);
-      checkEanForList(list.is_shopping === 1, op);
+      checkEanForList(isShoppingList(list), op);
       const ean = op.ean === undefined ? null : eanOf(op.ean);
       let aisleId = null;
       let storeId = null;
       if (list.is_multi === 1) {
         storeId = op.storeId === undefined ? usualStore(name, list.store_id) : chosenStore(op.storeId, list.store_id);
-      } else if (list.is_shopping === 1) {
+      } else if (isShoppingList(list)) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
@@ -664,7 +711,7 @@ export function createListService(ctx) {
         .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
-      if (list.is_shopping === 1) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
+      if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
       news.log(list.id, user.id, 'add', [id]);
       changed(list.id);
       return { item: describeItem(q.item.get(id)) };
@@ -684,13 +731,13 @@ export function createListService(ctx) {
       checkFieldsForList(multi, op);
       // Priorité et échéance : refusées sur une liste de courses (rien n'est
       // écrit), vérifiées avant toute écriture
-      if (item.is_shopping === 1 && (op.priority !== undefined || op.dueDate !== undefined)) {
+      if (isShoppingList(item.list_type) && (op.priority !== undefined || op.dueDate !== undefined)) {
         throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste autre que les courses.');
       }
       // Réglage de la liste désactivé (relu dans la base) : refus, rien n'est écrit
       if (op.priority !== undefined && item.list_priority_enabled !== 1) throw new OpError(400, PRIORITY_OFF);
       if (op.dueDate !== undefined && item.list_due_enabled !== 1) throw new OpError(400, DUE_OFF);
-      checkEanForList(item.is_shopping === 1, op);
+      checkEanForList(isShoppingList(item.list_type), op);
       const ean = op.ean === undefined ? item.ean : eanOf(op.ean);
       const priority = op.priority === undefined ? item.priority : priorityOf(op.priority);
       const dueDate = op.dueDate === undefined ? item.due_date : dueDateOf(op.dueDate);
@@ -698,7 +745,7 @@ export function createListService(ctx) {
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
       let aisleId = item.aisle_id;
-      if (op.aisleId !== undefined && item.is_shopping === 1 && !multi) {
+      if (op.aisleId !== undefined && isShoppingList(item.list_type) && !multi) {
         if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'Rayon inconnu ou désactivé.');
         // Un rayon désactivé peut être gardé, pas choisi
         const wanted = op.aisleId === null ? null : parseId(op.aisleId);
@@ -720,7 +767,7 @@ export function createListService(ctx) {
       if (multi) {
         if (name !== item.name) remember(name, { storeId, count: 0 });
         else if (storeId !== item.store_id) saveHistory(moveUse(historyOf(name), { name, from: item.store_id, to: storeId, now: nowIso() }));
-      } else if (item.is_shopping === 1 && (name !== item.name || aisleId !== item.aisle_id)) {
+      } else if (isShoppingList(item.list_type) && (name !== item.name || aisleId !== item.aisle_id)) {
         remember(name, { storeId: item.list_store_id, aisleId, count: 0 });
       }
       news.log(item.list_id, user.id, 'update', [item.id]);
@@ -863,11 +910,11 @@ export function createListService(ctx) {
     if (!isUuid(listId)) return null;
     const list = q.myLists.all(user.id).find((l) => l.id === listId.toLowerCase());
     if (!list) return null;
-    const category = q.category.get(list.category_id);
+    const shopping = isShoppingList(list);
     const aisles = q.allAisles.all();
     const items = q.liveItems.all(list.id).map(describeItem);
-    const byStore = category.is_shopping === 1 && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
-    const groups = groupItems(items, aisles, category.is_shopping === 1, { byStore, stores: q.allStores.all() });
+    const byStore = shopping && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
+    const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all() });
     return { list: describeList(list, user), groups };
   }
 
@@ -876,7 +923,7 @@ export function createListService(ctx) {
   // aucune suggestion si ce n'est pas une liste de courses (la liste doit
   // être une des miennes).
   function suggestions(typed, { user, listId } = {}) {
-    if (listId !== undefined && listForMember(user, listId).is_shopping !== 1) return [];
+    if (listId !== undefined && !isShoppingList(listForMember(user, listId))) return [];
     const activeAisles = new Set(q.allAisles.all().filter((a) => a.active === 1).map((a) => a.id));
     return suggest(q.allHistory.all().map(describeHistory), typed).map((entry) => ({
       name: entry.name,
@@ -921,6 +968,8 @@ export function createListService(ctx) {
       lists: lists.map((list) => describeList({ remaining: 0, last_activity: list.updated_at, ...list, ...summaries.get(list.id) }, user)),
       listIds: [...summaries.keys()],
       items: items.map(describeItem),
+      // PROVISOIRE (voir describeList) : catégories, pour les téléphones qui
+      // n'ont pas encore rechargé ; le nouveau code ne les lit pas
       categories: q.allCategories.all().map(describeReference),
       stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
@@ -1023,7 +1072,7 @@ export function createListService(ctx) {
   // Propriétaire ou contributeur (lecture seule : 403 ;
   // non-membre : 404, comme partout). En une seule transaction (tout ou
   // rien) : une nouvelle liste privée (la personne qui duplique en est la
-  // propriétaire, sans partage ni lien public), même catégorie, même magasin,
+  // propriétaire, sans partage ni lien public), même type, même magasin,
   // même icône, mêmes réglages de priorité, d'échéance et « Après l'ajout » ;
   // avec withItems (vrai par défaut) : les éléments non supprimés, avec nom,
   // quantité, note, rayon, magasin, priorité, échéance et code-barres, tous
@@ -1040,9 +1089,9 @@ export function createListService(ctx) {
     const now = nowIso();
     const items = withItems ? q.liveItems.all(source.id) : [];
     db.transaction(() => {
-      db.prepare(`INSERT INTO lists (id, name, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, title, source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, source.add_mode, now, now);
+      db.prepare(`INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, typeOf(source), source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, source.add_mode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
@@ -1050,7 +1099,7 @@ export function createListService(ctx) {
       for (const item of items) {
         insert.run(crypto.randomUUID(), id, item.name, item.quantity, item.note, item.aisle_id, item.store_id, item.priority, item.due_date, item.ean, user.id, now, now);
         // Comme un ajout : la mémoire des noms (listes de courses seulement)
-        if (source.is_shopping === 1) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
+        if (isShoppingList(source)) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
       }
     })();
     ctx.events?.notifyList(id);

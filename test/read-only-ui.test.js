@@ -47,7 +47,7 @@ test('copie locale : canEditList (une seule règle sur le téléphone), liste cr
   assert.equal(canEditList(null), false);
   const state = emptyState();
   state.categories = [{ id: 1, name: 'Courses', isShopping: true, active: true }];
-  applyOp(state, { type: 'list.create', listId: 'l1', name: 'Courses', categoryId: 1 }, { user: { id: 7, username: 'g', displayName: 'G' }, now: '2026-10-18T10:00:00.000Z' });
+  applyOp(state, { type: 'list.create', listId: 'l1', name: 'Courses', listType: 'shopping' }, { user: { id: 7, username: 'g', displayName: 'G' }, now: '2026-10-18T10:00:00.000Z' });
   const list = state.lists.get('l1');
   assert.equal(list.canEdit, true);
   assert.equal(list.members[0].access, 'modification');
@@ -120,7 +120,7 @@ test('un changement de droit arrive par la synchronisation : la copie du télép
   const lea = app.client();
   await login(lea, 'lea', 'MotDePasse-lea');
   const listId = uuid();
-  await owner.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 }] });
+  await owner.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' }] });
   await owner.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId] });
   const first = (await lea.get('/api/sync')).body;
   const phone = loadSync(emptyState(), first);
@@ -141,7 +141,7 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
   const listId = uuid();
   const milk = uuid();
   await owner.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId, itemId: milk, name: 'Lait' },
   ] });
   await owner.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId], access: { [leaId]: 'modification' } });

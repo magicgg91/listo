@@ -28,8 +28,8 @@ async function household(t) {
   }
   const [shop, tasks] = [uuid(), uuid()];
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', categoryId: 1 },
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', listType: 'shopping' },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' },
   ] });
   for (const listId of [shop, tasks]) {
     await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.lea, ids.paul], access: { [ids.lea]: 'modification', [ids.paul]: 'lecture' } });
@@ -65,7 +65,7 @@ test('un compte qui n\'est pas Admin crée un magasin et un rayon ; ils sont com
   assert.ok(lines.every((l) => l.includes('lea') && !l.includes('Courses')));
   // Le magasin créé sert tout de suite à une nouvelle liste
   const listId = uuid();
-  assert.equal((await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Samedi', categoryId: 1, storeId: store.body.item.id }] })).body.results[0].status, 200);
+  assert.equal((await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Samedi', listType: 'shopping', storeId: store.body.item.id }] })).body.results[0].status, 200);
   // … et le rayon à un article
   assert.equal((await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'item.create', listId: h.shop, itemId: uuid(), name: 'Sauce soja', aisleId: aisle.body.item.id }] })).body.results[0].status, 200);
 });
@@ -105,7 +105,6 @@ test('renommer, désactiver, supprimer, regrouper et les catégories restent à 
     ['DELETE', `/api/admin/stores/${store.id}`],
     ['PATCH', `/api/admin/aisles/${aisle.id}`, { name: 'Épicerie vrac' }],
     ['DELETE', `/api/admin/aisles/${aisle.id}`],
-    ['POST', '/api/admin/categories', { name: 'Bricolage' }],
     ['POST', '/api/admin/stores', { name: 'Multi', isMulti: true }],
   ]) {
     assert.equal((await h.lea.request(method, url, body)).status, 403, `${method} ${url}`);
@@ -139,7 +138,7 @@ test('article d\'une liste « multi » : le nouveau magasin rejoint ses magasins
   const multi = (await h.guillaume.post('/api/admin/stores', { name: 'Tournée', isMulti: true })).body.item;
   await h.guillaume.request('PATCH', `/api/admin/stores/${multi.id}`, { storeIds: [leclerc.id] });
   const listId = uuid();
-  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Tournée', categoryId: 1, storeId: multi.id }] });
+  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Tournée', listType: 'shopping', storeId: multi.id }] });
   await h.guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [h.ids.lea], access: { [h.ids.lea]: 'modification' } });
   const made = (await h.lea.post('/api/stores', { name: 'Boulangerie Martin', listId })).body.item;
   const members = h.app.db.prepare('SELECT store_id FROM store_members WHERE multi_store_id = ? ORDER BY store_id').pluck().all(multi.id);

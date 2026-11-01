@@ -82,7 +82,7 @@ test('serveur : un invité ne peut ni modifier, ni partager par lien, ni supprim
   const lea = app.client();
   await login(lea, 'lea', 'MotDePasse-lea');
   const listId = uuid();
-  await owner.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1 }] });
+  await owner.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' }] });
   await owner.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId] });
   assert.equal((await lea.get('/api/sync')).body.lists.find((l) => l.id === listId).isOwner, false, 'le téléphone de Léa ne lui propose aucune action');
   // « Modifier la liste »

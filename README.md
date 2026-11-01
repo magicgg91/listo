@@ -2,7 +2,7 @@
 
 **Listo est une application web de listes partagées (courses, tâches…), pensée pour le téléphone, que l'on installe sur son propre serveur.**
 
-Gratuite, sans publicité, en français. Pensée pour un foyer : quelques comptes, créés par l'administrateur, sans inscription publique.
+Gratuite, sans publicité, en français. Pensée pour une famille : quelques comptes, créés par l'administrateur, sans inscription publique.
 
 ## Ce que fait Listo
 
@@ -10,6 +10,7 @@ Gratuite, sans publicité, en français. Pensée pour un foyer : quelques compte
 - **Un droit par personne** : le propriétaire d'une liste la partage avec d'autres comptes, chacun avec le droit « Peut modifier » (contributeur) ou « Lecture seule » (invité, le choix de départ). Un contributeur peut dupliquer la liste ; contributeurs et invités peuvent la quitter.
 - **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs boutiques (magasin « multi »), ou simplement par ordre alphabétique (chacun choisit son tri). Le rayon ou le magasin habituel de chaque article est retenu, et les noms déjà saisis sont proposés. Chacun peut créer un magasin ou un rayon qui manque.
 - **Listes de tâches** : priorité et échéance facultatives, activées liste par liste, avec tri par priorité ou par échéance.
+- **Deux types de liste**, « Courses » et « Tâches », choisis à la création ; le propriétaire peut changer le type d'une liste sans rien perdre (ce qui ne sert plus est caché, et revient au retour au type d'origine).
 - **Lecture rapide** : une icône au choix pour chaque liste, un compteur « restants/total » (par exemple « 5/8 ») sur chaque carte et chaque groupe, des groupes qui se replient, la suppression d'une ligne en la faisant glisser.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
 - **Mode scan** des listes de courses : photographier le code-barres d'un produit ; Listo le lit sur le téléphone, retrouve un produit déjà connu ou propose son nom grâce à [Open Food Facts](https://world.openfoodfacts.org). La photo reste sur le téléphone.

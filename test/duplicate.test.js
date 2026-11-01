@@ -45,7 +45,7 @@ async function household(t) {
   const listId = uuid();
   const [bulb, paint, old] = [uuid(), uuid(), uuid()];
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Maison', categoryId: 2, priorityEnabled: true, dueEnabled: true },
+    { id: uuid(), type: 'list.create', listId, name: 'Maison', listType: 'tasks', priorityEnabled: true, dueEnabled: true },
     { id: uuid(), type: 'item.create', listId, itemId: bulb, name: 'Ampoule', quantity: '2', note: 'couloir' },
     { id: uuid(), type: 'item.update', itemId: bulb, priority: 'high', dueDate: '2026-10-30' },
     { id: uuid(), type: 'item.create', listId, itemId: paint, name: 'Peinture' },
@@ -108,7 +108,7 @@ test('copie de liste de courses : magasin, rayons, code-barres ; la mémoire des
   const milk = uuid();
   const storeId = (await h.guillaume.post('/api/admin/stores', { name: 'Leclerc' })).body.item.id;
   await h.guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', categoryId: 1, storeId },
+    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', listType: 'shopping', storeId },
     { id: uuid(), type: 'item.create', listId: shop, itemId: milk, name: 'Lait', aisleId: 4, ean: '3428272950019' },
   ] });
   const before = h.app.db.prepare("SELECT SUM(use_count) FROM item_history WHERE name_normalized = 'lait'").pluck().get();

@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
-import { LIST_ICONS, isListIcon, listIcon, categoryIcon } from '../public/js/list-icons.js';
+import { LIST_ICONS, isListIcon, listIcon } from '../public/js/list-icons.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
@@ -37,7 +37,7 @@ async function household(t) {
     await login(clients[name], name, `MotDePasse-${name}`);
   }
   const listId = uuid();
-  assert.equal((await run(guillaume, { type: 'list.create', listId, name: 'Maison', categoryId: 2 })).status, 200);
+  assert.equal((await run(guillaume, { type: 'list.create', listId, name: 'Maison', listType: 'tasks' })).status, 200);
   await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.lea, ids.paul], access: { [ids.lea]: 'modification', [ids.paul]: 'lecture' } });
   const iconOf = (id = listId) => app.db.prepare('SELECT icon FROM lists WHERE id = ?').pluck().get(id);
   return { app, ...clients, ids, listId, iconOf };
@@ -63,13 +63,12 @@ test('liste blanche : une quarantaine d\'icônes au plus, toutes dans le sprite 
     assert.ok(isListIcon(file.slice(2, -4)), file);
     assert.match(read(`design/icones/listes/${file}`), /stroke="currentColor" stroke-width="2"/);
   }
-  // Icône de la catégorie (comportement d'avant), et icône choisie
-  assert.equal(categoryIcon(true), 'cart');
-  assert.equal(categoryIcon(false), 'tasks');
-  assert.equal(listIcon({ icon: '', category: { isShopping: true } }), 'cart');
-  assert.equal(listIcon({ category: { isShopping: false } }), 'tasks');
-  assert.equal(listIcon({ icon: 'gift', category: { isShopping: false } }), 'gift');
-  assert.equal(listIcon({ icon: 'x" onload="', category: { isShopping: false } }), 'tasks', 'inconnue : icône de la catégorie');
+  // Icône du type (sans choix), et icône choisie
+  assert.equal(listIcon({ icon: '', type: 'wishes' }), 'gift');
+  assert.equal(listIcon({ icon: '', type: 'shopping' }), 'cart');
+  assert.equal(listIcon({ type: 'tasks' }), 'tasks');
+  assert.equal(listIcon({ icon: 'gift', type: 'tasks' }), 'gift');
+  assert.equal(listIcon({ icon: 'x" onload="', type: 'tasks' }), 'tasks', 'inconnue : icône du type');
   for (const bad of ['', 'inconnue', 'CART', 'cart ', '../cart', null, 3, {}]) assert.equal(isListIcon(bad), false, String(bad));
 });
 
@@ -77,7 +76,7 @@ test('icône hors liste blanche refusée (400) à la création comme à la modif
   const h = await household(t);
   for (const bad of ['inconnue', 'CART', 'i-cart', 'cart"><script>', '../../etc', 42, true, null, ['cart'], { id: 'cart' }]) {
     const listId = uuid();
-    assert.deepEqual(await run(h.guillaume, { type: 'list.create', listId, name: 'X', categoryId: 2, icon: bad }), { status: 400, error: 'Icône inconnue.' }, JSON.stringify(bad));
+    assert.deepEqual(await run(h.guillaume, { type: 'list.create', listId, name: 'X', listType: 'tasks', icon: bad }), { status: 400, error: 'Icône inconnue.' }, JSON.stringify(bad));
     assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM lists WHERE id = ?').pluck().get(listId), 0);
     assert.deepEqual(await run(h.guillaume, { type: 'list.update', listId: h.listId, icon: bad }), { status: 400, error: 'Icône inconnue.' }, JSON.stringify(bad));
     assert.equal(h.iconOf(), '');
@@ -90,19 +89,19 @@ test('icône hors liste blanche refusée (400) à la création comme à la modif
   assert.deepEqual(await run(h.guillaume, { type: 'list.update', listId: h.listId, icon: '' }), { status: 200 });
   assert.equal(h.iconOf(), '');
   const created = uuid();
-  const res = await run(h.guillaume, { type: 'list.create', listId: created, name: 'Voyage', categoryId: 2, icon: 'plane' });
+  const res = await run(h.guillaume, { type: 'list.create', listId: created, name: 'Voyage', listType: 'tasks', icon: 'plane' });
   assert.equal(res.status, 200);
   assert.equal(res.list.icon, 'plane');
   assert.equal(h.iconOf(created), 'plane');
   // Sans icône : vide (icône de la catégorie)
   const plain = uuid();
-  assert.equal((await run(h.guillaume, { type: 'list.create', listId: plain, name: 'Simple', categoryId: 1 })).list.icon, '');
+  assert.equal((await run(h.guillaume, { type: 'list.create', listId: plain, name: 'Simple', listType: 'shopping' })).list.icon, '');
   // Requête paramétrée, et contrôle à chaque écriture
   const source = read('server/lists.js');
   assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'Icône inconnue\.'\);/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? '';/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? list\.icon;/);
-  assert.match(source, /UPDATE lists SET name = \?, category_id = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, icon = \?, add_mode = \?, updated_at = \? WHERE id = \?/);
+  assert.match(source, /UPDATE lists SET name = \?, type = \?, category_id = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, icon = \?, add_mode = \?, updated_at = \? WHERE id = \?/);
 });
 
 test('seul le propriétaire change l\'icône : invités refusés (403), quel que soit leur droit ; un invité la voit', async (t) => {
@@ -165,7 +164,7 @@ test('hors ligne : l\'icône passe par la file d\'attente, comme le titre (copie
   const state = emptyState();
   state.categories = [{ id: 2, name: 'Tâches', isShopping: false, active: true }];
   const user = { id: 1, username: 'g', displayName: 'G' };
-  applyOp(state, { type: 'list.create', listId: 'l1', name: 'Fête', categoryId: 2, icon: 'balloon' }, { user, now: 'x' });
+  applyOp(state, { type: 'list.create', listId: 'l1', name: 'Fête', listType: 'tasks', icon: 'balloon' }, { user, now: 'x' });
   assert.equal(state.lists.get('l1').icon, 'balloon');
   applyOp(state, { type: 'list.update', listId: 'l1', name: 'Fête 2' }, { user, now: 'y' });
   assert.equal(state.lists.get('l1').icon, 'balloon', 'non envoyée : gardée');
@@ -173,7 +172,7 @@ test('hors ligne : l\'icône passe par la file d\'attente, comme le titre (copie
   assert.equal(state.lists.get('l1').icon, 'cake');
   applyOp(state, { type: 'list.update', listId: 'l1', icon: 'pas-une-icone' }, { user, now: 'z' });
   assert.equal(state.lists.get('l1').icon, '', 'inconnue : icône de la catégorie');
-  applyOp(state, { type: 'list.create', listId: 'l2', name: 'Simple', categoryId: 2 }, { user, now: 'x' });
+  applyOp(state, { type: 'list.create', listId: 'l2', name: 'Simple', listType: 'tasks' }, { user, now: 'x' });
   assert.equal(state.lists.get('l2').icon, '');
   // Formulaire : envoyée seulement si elle a changé ; jamais de focus automatique
   const form = read('public/js/screens/list-form.js');
@@ -187,11 +186,11 @@ test('grille « Icône » : radiogroup, cases de 44 px, aria-label en français,
   assert.match(form, /h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' \}, iconButtons\)/);
   assert.match(form, /h\('button', \{ class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice\.label, title: choice\.label \}/);
   assert.match(form, /button\.setAttribute\('aria-checked', String\(on\)\);\s*button\.querySelector\('\.icon-grid__check'\)\?\.remove\(\);\s*if \(on\) button\.append\(h\('span', \{ class: 'icon-grid__check' \}, icon\('check', 'icon--xs'\)\)\);/);
-  // Au départ : l'icône de la catégorie (rien de choisi)
+  // Au départ : l'icône du type (rien de choisi)
   assert.match(form, /let chosenIcon = list\?\.icon \?\? '';/);
-  assert.match(form, /const shownIcon = chosenIcon \|\| categoryIcon\(Boolean\(category\?\.isShopping\)\);/);
+  assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];/);
   // Sous « Catégorie »
-  assert.match(form, /'Catégorie'\), categoryGroup\),\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
+  assert.match(form, /'Type de liste'\), typeGroup, typeWarning\),\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);
@@ -207,20 +206,20 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 13, sans la colonne, avec des listes
   let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
+  db.exec('ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
   db.pragma('user_version = 13');
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id, priority_enabled) VALUES ('taches', 'Maison', 2, 1, 1), ('courses', 'Courses', 1, 1, 0)").run();
   const before = db.prepare('SELECT * FROM lists ORDER BY id').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 17);
+  assert.equal(schemaVersion(db), 18);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ icon, add_mode: addMode, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15)');
+  assert.deepEqual(after.map(({ icon, add_mode: addMode, type, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');
   // À l'écran : chariot pour les courses, liste cochée pour les tâches
-  assert.equal(listIcon({ icon: after[0].icon, category: { isShopping: true } }), 'cart');
-  assert.equal(listIcon({ icon: after[1].icon, category: { isShopping: false } }), 'tasks');
+  assert.equal(listIcon({ icon: after[0].icon, type: 'shopping' }), 'cart');
+  assert.equal(listIcon({ icon: after[1].icon, type: 'tasks' }), 'tasks');
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

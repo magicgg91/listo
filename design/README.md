@@ -299,9 +299,9 @@ Styles : `public/css/app.css` (`.picker__new`) et composants existants. Balisage
 
 Styles : `public/css/app.css` (`.icon-grid`, `.icon-grid__opt`, `.icon-grid__check`, `.topbar__head`, `.topbar__icon`, `.list-card__icon`). Balisage : « Formulaire de liste : « Icône » » et « En-tête d'une liste avec son icône » dans `components.html`. Liste blanche et noms : `public/js/list-icons.js`.
 
-- Grille sous « Catégorie » : boutons de 44 px au moins (`role="radio"`, `aria-label` et `title` en français) dans un `role="radiogroup"` relié au titre « Icône ». Sur un téléphone de 390 px : sept colonnes, cinq lignes.
+- Grille sous « Type de liste » : boutons de 44 px au moins (`role="radio"`, `aria-label` et `title` en français) dans un `role="radiogroup"` relié au titre « Icône ». Sur un téléphone de 390 px : sept colonnes, cinq lignes.
 - Choix : bord de 2 px d'accent, fond d'accent doux, couleur d'accent, ET une petite coche ronde dans le coin (`.icon-grid__check`) : jamais la couleur seule.
-- Au départ, la case cochée est l'icône de la catégorie (`i-cart` pour les courses, `i-tasks` sinon).
+- Au départ, la case cochée est l'icône du type de la liste (`i-cart` pour les courses, `i-tasks` pour les tâches, `i-gift` pour les envies, prévues plus tard).
 - Carte de « Mes listes » : l'icône (20 px, couleur d'accent) devant le titre. En-tête de la liste : la même, en couleur secondaire, juste avant le titre.
 - **Nouvelles icônes** du sprite (même trait que les autres, couleur héritée), soit 71 icônes : `i-balloon`, `i-bag`, `i-basket`, `i-bike`, `i-book`, `i-briefcase`, `i-bulb`, `i-cake`, `i-car`, `i-cup`, `i-dumbbell`, `i-euro`, `i-gamepad`, `i-gift`, `i-hammer`, `i-health`, `i-heart`, `i-home`, `i-meal`, `i-music`, `i-paw`, `i-plane`, `i-plant`, `i-school`, `i-shirt`, `i-spray`, `i-star`, `i-stroller`, `i-suitcase`, `i-tv`, `i-wrench`. Réutilisées : `i-cart`, `i-store`, `i-tasks`, `i-calendar`.
 
@@ -345,7 +345,7 @@ L'onglet « Noms » s'appelle « Articles ». Balisage : « Onglet « Articles �
 
 Styles : `public/css/app.css` (`.tabs--sub`). Balisage : « Administration : onglet « Courses » » dans `components.html`. Aucune nouvelle icône.
 
-- Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ».
+- Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ». **Depuis le 1er novembre 2026** : « Comptes » et « Courses » seulement (les catégories sont remplacées par les types de liste).
 - Sous « Courses », une seconde barre `.tabs.tabs--sub` (`role="tablist"`, `aria-label="Courses"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-selected="true"` : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
 
 ## Ajout : page « Aide »
@@ -403,3 +403,11 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 - Section « Connexions (N) » : une `.row` par connexion (`#i-shield`) ; dans `.row__body` : l'hôte de l'application, le nom (« nom donné par l'application, non vérifié » ou « nom fourni par l'application »), « Réponse envoyée à : … », le droit en `.chip` (`.chip--accent` pour « Lecture et ajout »), les listes, la date de connexion, la dernière utilisation (« jamais »), puis `.btn--danger-outline.btn--sm` « Déconnecter » (44 px, `aria-label` « Déconnecter <hôte> »).
 - En bas, `.btn--danger.btn--block` « Tout déconnecter ». Confirmations : la fenêtre `.dialog` habituelle (`confirmDialog`). Aucune connexion, hors ligne : `.empty`.
 - Ajouts dans `public/css/app.css`, mise en place seulement : `.claude-connections__intro`, `.claude-connections__address`, `.claude-connections__url`, `.claude-connections__chips`, `.claude-connections__button`, `.claude-connections__all`, et `.claude-connections .row { align-items: flex-start; }`.
+
+## Ajout : « Type de liste » dans le formulaire de liste
+
+Aucune nouvelle classe, aucune nouvelle icône, aucune couleur nouvelle (1er novembre 2026). Le champ « Catégorie » du formulaire devient « Type de liste », avec le même composant de choix en cartes (`.choice.choice--wrap`, `.choice__opt`, `role="radio"`, coche `.icon-end` ET bord d'accent : jamais la couleur seule), et deux cartes seulement : « Courses » (`i-cart`) et « Tâches » (`i-tasks`). L'icône des envies (`i-gift`, déjà dans le sprite) servira à l'étape suivante.
+
+- Pour une liste existante, quand le choix diffère du type enregistré, une ligne de texte d'aide du kit (`.field__hint`, `id="type-warning"`, `aria-live="polite"`, reliée au groupe par `aria-describedby`) s'affiche juste sous les cartes, avant l'enregistrement : « Les rayons, magasins et codes-barres ne s'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses. » ou « La priorité et l'échéance ne s'affichent plus pour ce type ; elles sont conservées si vous revenez à Tâches. ».
+- Sous-titre d'une liste sans magasin, et page du lien public : le nom du type (« Courses », « Tâches ») à la place du nom de la catégorie.
+- Le balisage de référence reste celui de « Choix en cartes » dans `components.html` (l'exemple y garde son ancien libellé « Catégorie »).

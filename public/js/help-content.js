@@ -28,12 +28,12 @@ export const PERMISSIONS = [
   { action: 'Cocher, ajouter, modifier ou supprimer des articles, ajouter une photo', roles: ['owner', 'contributor'] },
   { action: 'Créer un magasin ou un rayon manquant', roles: ['owner', 'contributor', 'admin'] },
   { action: 'Dupliquer la liste', roles: ['owner', 'contributor'] },
-  { action: 'Modifier la liste (titre, catégorie, magasin, icône, options)', roles: ['owner'] },
+  { action: 'Modifier la liste (titre, type, magasin, icône, options)', roles: ['owner'] },
   { action: 'Partager la liste et choisir le droit de chaque personne', roles: ['owner'] },
   { action: 'Créer un lien public', roles: ['owner'] },
   { action: 'Supprimer la liste', roles: ['owner'] },
   { action: 'Quitter la liste', roles: ['contributor', 'guest'] },
-  { action: 'Gérer les comptes, les catégories, les magasins, les rayons et les articles', roles: ['admin'] },
+  { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
 
 export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres.';
@@ -48,14 +48,14 @@ export const SECTIONS = [
     topics: [
       {
         title: 'Articles et éléments',
-        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans les autres listes (tâches…), c\'est un « élément ». Le fonctionnement est le même.'],
+        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans une liste de tâches, c\'est un « élément ». Le fonctionnement est le même.'],
       },
       {
         title: 'Créer une liste',
-        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez la catégorie et une icône.'],
+        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses » ou « Tâches ») et une icône.'],
         items: [
           'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
-          'Autre liste : « Options des éléments » active la priorité et l\'échéance.',
+          'Liste de tâches : « Options des éléments » active la priorité et l\'échéance.',
           '« Après l\'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d\'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.',
           'Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).',
         ],
@@ -66,7 +66,7 @@ export const SECTIONS = [
           'Ajouter : tapez le nom dans le champ en bas de la liste, puis touchez « + ». Des suggestions s\'affichent pendant la saisie. Dans une liste de courses, pour un nouvel article, Listo demande son rayon, puis s\'en souvient.',
           'Après l\'ajout, le clavier se replie. Si la liste est réglée sur « Ouvrir la fiche », la fiche de ce qui vient d\'être ajouté s\'ouvre (sans clavier) : réglez quantité, note, priorité ou échéance, puis la disquette ; la croix la referme sans rien changer, la ligne reste ajoutée.',
           'Modifier : touchez la ligne. La fiche s\'ouvre ; la disquette enregistre.',
-          'Cocher : touchez la case. Un article coché est barré et passe dans « Dans le panier » (« Terminés » dans les autres listes), en bas de la liste.',
+          'Cocher : touchez la case. Un article coché est barré et passe dans « Dans le panier » (« Terminés » dans une liste de tâches), en bas de la liste.',
           'Supprimer : faites glisser la ligne vers la gauche, puis touchez « Supprimer ». « Annuler » remet la ligne pendant quelques secondes.',
         ],
       },
@@ -84,7 +84,7 @@ export const SECTIONS = [
           'Touchez l\'en-tête d\'un rayon (ou d\'un magasin, ou d\'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.',
           '« Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).',
           'Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.',
-          'Dans une autre liste, « Trier la liste » propose « Ordre alphabétique », « Par priorité » et « Par échéance », selon les options de la liste.',
+          'Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité » et « Par échéance », selon les options de la liste.',
           'Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.',
           '« X/Y » donne le nombre d\'articles restants sur le total, sur chaque carte et en tête de chaque groupe.',
         ],
@@ -140,7 +140,10 @@ export const SECTIONS = [
       },
       {
         title: 'Modifier la liste',
-        paragraphs: ['« Modifier la liste » change le titre, la catégorie, le magasin et l\'icône. Pour une liste autre que les courses, « Options des éléments » active ou non la priorité et l\'échéance. « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche », pour toutes les listes. Seul le propriétaire modifie la liste.'],
+        paragraphs: ['« Modifier la liste » change le titre, le type, le magasin et l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité et l\'échéance. « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche », pour toutes les listes. Seul le propriétaire modifie la liste.'],
+        items: [
+          'Changer le type n\'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l\'échéance. Tout revient si la liste reprend son type d\'origine. Le formulaire le rappelle avant l\'enregistrement.',
+        ],
       },
       {
         title: 'Dupliquer la liste',
@@ -193,7 +196,7 @@ export const SECTIONS = [
         title: 'Sans compte',
         paragraphs: [
           'Le lien public ouvre la liste en lecture seule, sans compte. Il peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage.',
-          'Toucher un article ouvre sa fiche, en lecture seule : quantité, note en entier, rayon (ou magasin), état coché, code-barres, photo à agrandir, et pour une autre liste la priorité et l\'échéance si elles sont activées. Le bouton Retour du téléphone ou la croix la referment.',
+          'Toucher un article ouvre sa fiche, en lecture seule : quantité, note en entier, rayon (ou magasin), état coché, code-barres, photo à agrandir, et pour une liste de tâches la priorité et l\'échéance si elles sont activées. Le bouton Retour du téléphone ou la croix la referment.',
         ],
       },
     ],
@@ -212,10 +215,6 @@ export const SECTIONS = [
           '« Désactiver le compte » ou « Réactiver le compte » ; « Supprimer le compte » s\'il n\'a jamais été utilisé.',
           'Il reste toujours au moins un Admin actif.',
         ],
-      },
-      {
-        title: 'Catégories',
-        paragraphs: ['Onglet « Catégories » : ajouter, renommer, indiquer s\'il s\'agit d\'une liste de courses, désactiver ou réactiver. Une catégorie jamais utilisée peut être supprimée.'],
       },
       {
         title: 'Courses : magasins, rayons, articles',

@@ -32,7 +32,7 @@ test('sauvegarde : copie créée, contrôlée, droits 600, données présentes, 
   const app = await startTestApp(t);
   const guillaume = await setupAdmin(app);
   const listId = uuid();
-  await guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses sauvegardées', categoryId: 1 }] });
+  await guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Courses sauvegardées', listType: 'shopping' }] });
 
   const result = app.ctx.backups.run();
   assert.equal(result.ok, true, result.error);
@@ -124,7 +124,7 @@ test('restauration réelle : arrêter, remplacer listo.db, remettre la clé, red
   const admin = createClient(listo.base);
   await admin.post('/api/setup', { code: SETUP_CODE, username: 'guillaume', password: 'MotDePasseAdmin!', displayName: 'Guillaume' });
   const listId = uuid();
-  await admin.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Liste à retrouver', categoryId: 1 }] });
+  await admin.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId, name: 'Liste à retrouver', listType: 'shopping' }] });
   const enable = await admin.post('/api/me/2fa/enable', { password: 'MotDePasseAdmin!' });
   assert.equal(enable.status, 200);
   const backup = listo.ctx.backups.run();

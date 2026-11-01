@@ -98,7 +98,7 @@ function shopping() {
   const state = emptyState();
   state.loaded = true;
   state.aisles = [{ id: 1, name: 'Crèmerie', active: true }, { id: 2, name: 'Épicerie sucrée', active: true }, { id: 3, name: 'Boulangerie', active: true }];
-  state.lists.set('c', { id: 'c', name: 'Courses', category: { isShopping: true }, store: null, members: [], canEdit: true, access: 'edit' });
+  state.lists.set('c', { id: 'c', name: 'Courses', type: 'shopping', store: null, members: [], canEdit: true, access: 'edit' });
   const item = (id, name, aisleId, checked = false) => state.items.set(id, { id, listId: 'c', name, aisleId, checked, note: '', quantity: '', ...(checked ? { checkedAt: '2026-10-19T10:00:00Z' } : {}) });
   item('a', 'Lait demi-écrémé', 1);
   item('b', 'Lait ribot', 1);
@@ -134,7 +134,7 @@ test('liste : tous les tris (par rayon, « multi », alphabétique « À acheter
   assert.equal(alpha.groups[0].all, true);
   assert.deepEqual(alpha.groups[0].items.map((i) => i.name), ['Chocolat au lait', 'Lait demi-écrémé', 'Lait ribot']);
   // Liste de tâches par priorité, puis alphabétique (sans en-tête)
-  state.lists.set('t', { id: 't', name: 'Maison', category: { isShopping: false }, priorityEnabled: true, members: [], canEdit: true });
+  state.lists.set('t', { id: 't', name: 'Maison', type: 'tasks', priorityEnabled: true, members: [], canEdit: true });
   state.items.set('t1', { id: 't1', listId: 't', name: 'Réparer la porte', checked: false, priority: 'high' });
   state.items.set('t2', { id: 't2', listId: 't', name: 'Peindre le volet', checked: false, priority: 'normal' });
   const byPriority = filterListView(computeListView(state, 't', { sort: 'priority' }), 'REPARER');

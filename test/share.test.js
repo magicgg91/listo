@@ -24,7 +24,7 @@ const JPEG = Buffer.concat([
 // Champs autorisés dans la réponse publique (liste blanche)
 const ALLOWED = {
   top: ['done', 'expiresAt', 'groups', 'list'],
-  list: ['category', 'grouping', 'name', 'store'],
+  list: ['grouping', 'name', 'store', 'type'],
   group: ['items', 'name'],
   item: ['checked', 'name', 'note', 'photo', 'quantity'],
   // Seulement si l'article les a (décision du 20 octobre 2026, fiche du lien
@@ -50,11 +50,11 @@ async function household(t) {
   const otherListId = uuid();
   const items = { lait: uuid(), pain: uuid(), secret: uuid() };
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Courses', categoryId: 1, storeId: 1 },
+    { id: uuid(), type: 'list.create', listId, name: 'Courses', listType: 'shopping', storeId: 1 },
     { id: uuid(), type: 'item.create', listId, itemId: items.lait, name: 'Lait', quantity: '2 L', note: 'demi-écrémé', aisleId: 4 },
     { id: uuid(), type: 'item.create', listId, itemId: items.pain, name: 'Pain', aisleId: null },
     { id: uuid(), type: 'item.check', itemId: items.pain, checked: true },
-    { id: uuid(), type: 'list.create', listId: otherListId, name: 'Autre liste', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: otherListId, name: 'Autre liste', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId: otherListId, itemId: items.secret, name: 'Cadeau secret' },
   ] });
   await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [leaId] });
@@ -176,7 +176,7 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
   const data = res.body;
   assert.deepEqual(Object.keys(data).sort(), ALLOWED.top);
   assert.deepEqual(Object.keys(data.list).sort(), ALLOWED.list);
-  assert.deepEqual(data.list, { name: 'Courses', category: 'Courses', store: 'Carrefour', grouping: 'aisle' });
+  assert.deepEqual(data.list, { name: 'Courses', type: 'shopping', store: 'Carrefour', grouping: 'aisle' });
   for (const group of data.groups) {
     assert.deepEqual(Object.keys(group).sort(), ALLOWED.group);
     for (const item of group.items) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);
@@ -221,7 +221,7 @@ test('liste « multi » : regroupement par magasin', async (t) => {
   await h.guillaume.request('PATCH', `/api/admin/stores/${multi.body.item.id}`, { storeIds: [1, 2] });
   const listId = uuid();
   await h.guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId, name: 'Centre', categoryId: 1, storeId: multi.body.item.id },
+    { id: uuid(), type: 'list.create', listId, name: 'Centre', listType: 'shopping', storeId: multi.body.item.id },
     { id: uuid(), type: 'item.create', listId, itemId: uuid(), name: 'Comté', storeId: 2 },
     { id: uuid(), type: 'item.create', listId, itemId: uuid(), name: 'Piles', storeId: null },
   ] });
@@ -284,7 +284,7 @@ test('inconnu, expiré, arrêté, liste supprimée, propriétaire désactivé : 
   // Propriétaire désactivé (Léa propriétaire de sa propre liste ; Guillaume
   // admin la désactive)
   const herList = uuid();
-  await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: herList, name: 'Liste de Léa', categoryId: 2 }] });
+  await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: herList, name: 'Liste de Léa', listType: 'tasks' }] });
   const hers = await h.lea.request('PUT', `/api/lists/${herList}/share`, {});
   const herToken = hers.body.share.url.split('/p/')[1];
   assert.equal((await visitor(h).get(`/api/public/${herToken}`)).status, 200);
@@ -517,7 +517,7 @@ test('nettoyage : liens arrêtés ou expirés depuis plus de 30 jours supprimés
   await createLink(h, {}, h.otherListId);
   await h.guillaume.del(`/api/lists/${h.otherListId}/share`);     // arrêté
   const thirdList = uuid();
-  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: thirdList, name: 'Durable', categoryId: 2 }] });
+  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: thirdList, name: 'Durable', listType: 'tasks' }] });
   await createLink(h, { durationHours: null }, thirdList);        // illimité : gardé
   h.app.clock.now += 29 * 24 * HOUR;
   assert.equal(h.app.ctx.shares.purgeOld(), 0);

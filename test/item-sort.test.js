@@ -62,7 +62,7 @@ test('liste de courses : par rayons par défaut ; priorité et échéance n\'y s
   const state = emptyState();
   state.loaded = true;
   state.aisles = [{ id: 1, name: 'Crèmerie', active: true }, { id: 2, name: 'Boulangerie', active: true }];
-  state.lists.set('c', { id: 'c', name: 'Courses', category: { isShopping: true }, store: null, members: [] });
+  state.lists.set('c', { id: 'c', name: 'Courses', type: 'shopping', store: null, members: [] });
   state.items.set('a', { id: 'a', listId: 'c', name: 'Lait', aisleId: 1, checked: false, priority: 'low' });
   state.items.set('b', { id: 'b', listId: 'c', name: 'Pain', aisleId: 2, checked: false, priority: 'high', dueDate: '2026-01-01' });
   const plain = computeListView(state, 'c');

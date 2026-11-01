@@ -36,7 +36,7 @@ function household() {
   state.loaded = true;
   state.aisles = [{ id: 1, name: 'Fruits et légumes' }, { id: 2, name: 'Crèmerie' }];
   state.stores = [{ id: 7, name: 'Marché', isMulti: false }, { id: 9, name: 'Multi', isMulti: true }];
-  const list = (id, isShopping, store = null) => state.lists.set(id, { id, name: id, category: { isShopping }, store });
+  const list = (id, isShopping, store = null) => state.lists.set(id, { id, name: id, type: isShopping ? 'shopping' : 'tasks', store });
   list('courses', true);
   list('multi', true, { id: 9, name: 'Multi', isMulti: true });
   list('maison', false);
@@ -156,11 +156,11 @@ test('en-tête de groupe : vrai bouton, aria-expanded, aria-controls, replié li
   assert.match(list, /const counter = h\('span', \{ class: 'aisle__count', 'aria-hidden': 'true' \}, progressText\(remaining, total\)\);/);
   assert.match(list, /'aria-label': `\$\{name\}, \$\{progressLabel\(remaining, total, list\)\}`,/);
   assert.equal(progressText(2, 5), '2/5');
-  assert.equal(progressLabel(2, 5, { category: { isShopping: true } }), '2 articles restants sur 5');
-  assert.equal(progressLabel(3, 3, { category: { isShopping: false } }), '3 éléments restants sur 3');
+  assert.equal(progressLabel(2, 5, { type: 'shopping' }), '2 articles restants sur 5');
+  assert.equal(progressLabel(3, 3, { type: 'tasks' }), '3 éléments restants sur 3');
   // Les trois sortes de groupes passent par le même en-tête
   assert.match(list, /view\.multi \? foldableGroup\(list, group, group\.store\?\.name \?\? 'Sans magasin', icon\('store', 'icon--xs'\)\)/);
-  assert.match(list, /: list\.category\.isShopping \? foldableGroup\(list, group, group\.aisle\?\.name \?\? 'Sans rayon'\)/);
+  assert.match(list, /: isShoppingList\(list\) \? foldableGroup\(list, group, group\.aisle\?\.name \?\? 'Sans rayon'\)/);
   // Textes posés en texte, jamais en HTML
   assert.doesNotMatch(list, /innerHTML|insertAdjacentHTML|outerHTML/);
   // 48 px de haut, chevron qui tourne, kit et application identiques

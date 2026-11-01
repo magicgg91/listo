@@ -29,6 +29,7 @@
 //   refuse de toute façon chaque écriture ; si le droit change, l'écran
 //   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
 
+import { isShoppingList, typeLabel, typeIcon } from '../list-types.js';
 import { h, icon, iconButton, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
@@ -316,7 +317,7 @@ export function renderList(listId, onLeave) {
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(titleIcon, icon(listIcon(list), 'icon--sm'));
-    replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : list.category.name);
+    replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : typeLabel(list));
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     // Bouton seulement s'il y a un choix : toujours pour une liste de courses
     // (par rayon ou alphabétique) ; ailleurs, si la priorité ou l'échéance
@@ -328,12 +329,12 @@ export function renderList(listId, onLeave) {
     // Bouton « Scanner » : listes de courses seulement (recherche activée)
     scanner.button.hidden = !canEdit || !scanAvailable(list);
     // Liste sans en-tête de rayon (tâches…) : la liste commence plus haut
-    content.classList.toggle('scroll--flat', !list.category.isShopping && activeSort() !== 'priority');
+    content.classList.toggle('scroll--flat', !isShoppingList(list) && activeSort() !== 'priority');
 
     if (groups.length === 0 && done.length === 0) {
       // Rien à chercher : le champ de recherche est masqué
       search.show(h('div', { class: 'empty' },
-        h('div', { class: 'empty__icon' }, icon(list.category.isShopping ? 'cart' : 'tasks', 'icon--lg')),
+        h('div', { class: 'empty__icon' }, icon(typeIcon(list), 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
         h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')), { available: false });
       drawFoldAll();
@@ -359,7 +360,7 @@ export function renderList(listId, onLeave) {
       // Liste de courses en ordre alphabétique : un seul en-tête « À acheter »
       group.all ? foldableGroup(list, group, group.label)
       : view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
-        : list.category.isShopping ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
+        : isShoppingList(list) ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
           : group.label ? foldableGroup(list, group, group.label)
             // Ordre alphabétique ou par échéance : liste simple, sans en-tête
@@ -498,7 +499,7 @@ export function renderList(listId, onLeave) {
 
   // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
   function showPhoto(item) {
-    const group = view?.multi ? storeName(item.storeId) : view?.list.category.isShopping ? app.data.aisles.find((a) => a.id === item.aisleId)?.name : null;
+    const group = view?.multi ? storeName(item.storeId) : isShoppingList(view?.list) ? app.data.aisles.find((a) => a.id === item.aisleId)?.name : null;
     openLightbox({
       title: item.name,
       src: actions.photoSrc(item),
@@ -536,15 +537,15 @@ export function renderList(listId, onLeave) {
     const one = count === 1;
     const place = view.multi ? 'magasin' : 'rayon';
     const ok = await confirmSheet({
-      title: list.category.isShopping ? `Remettre ${countItems(count, list)} à acheter ?` : `Rouvrir ${countItems(count, list)} ?`,
-      text: list.category.isShopping
+      title: isShoppingList(list) ? `Remettre ${countItems(count, list)} à acheter ?` : `Rouvrir ${countItems(count, list)} ?`,
+      text: isShoppingList(list)
         ? (one ? `Il reviendra dans son ${place}, décoché.` : `Ils reviendront dans leur ${place}, décochés.`)
         : (one ? 'Il reviendra dans la liste, décoché.' : 'Ils reviendront dans la liste, décochés.'),
       confirmLabel: 'Confirmer',
     });
     if (!ok || !editable()) return;
     const reopened = await actions.uncheckAll(listId);
-    toast(list.category.isShopping
+    toast(isShoppingList(list)
       ? `${countItems(reopened, list)} remis à acheter`
       : `${countItems(reopened, list)} ${reopened === 1 ? 'rouvert' : 'rouverts'}`);
   }
@@ -705,7 +706,7 @@ export function renderList(listId, onLeave) {
     // À droite de la suggestion : rayon habituel, ou magasin habituel (« multi »)
     const hintFor = (s) => {
       if (view?.multi) return storeName(usualStoreFor(app.data, view.list, s.name));
-      return view?.list.category.isShopping ? s.aisleName : null;
+      return isShoppingList(view?.list) ? s.aisleName : null;
     };
     replace(suggestBox,
       suggestions.map((s) => {
@@ -826,7 +827,7 @@ export function renderList(listId, onLeave) {
         beforeCreate();
         return createItem(name, extra);
       }
-    } else if (view.list.category.isShopping && !isKnownItem(app.data, name)) {
+    } else if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
       const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel ${itemWords(view.list).one}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
       if (aisleId === undefined) return false; // fenêtre fermée sans choisir
@@ -850,7 +851,7 @@ export function renderList(listId, onLeave) {
     swipes.close(); // une ligne ouverte se referme
     if (!editable()) return openItemView(item); // passée en lecture seule entre-temps
     const multi = Boolean(view?.multi);
-    const isShopping = view?.list.category.isShopping && !multi; // rayon seulement hors « multi »
+    const isShopping = isShoppingList(view?.list) && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article » ou « élément »
     const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
@@ -899,7 +900,7 @@ export function renderList(listId, onLeave) {
     // elle est activée pour la liste). Les deux champs existent toujours dans
     // une telle liste ; un réglage désactivé, même pendant que la fiche est
     // ouverte, les cache, et ils ne sont alors jamais envoyés.
-    const classic = !view?.list.category.isShopping;
+    const classic = !isShoppingList(view?.list);
     const options = () => listOptions(app.data.lists.get(listId));
     let priority = item.priority ?? 'normal';
     let dueDate = item.dueDate ?? null;
@@ -977,7 +978,7 @@ export function renderList(listId, onLeave) {
     // d'images du téléphone, même lecteur que le mode scan). Une petite croix
     // dans le champ le vide, sans y mettre le curseur. Vérifié à
     // l'enregistrement ; vide = pas de code.
-    const shopping = Boolean(view?.list.category.isShopping);
+    const shopping = isShoppingList(view?.list);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
     // Croix « Effacer » dans le champ, visible seulement s'il contient quelque chose
     const eanClear = iconButton('close', 'Effacer le code-barres', () => {
@@ -1200,7 +1201,7 @@ export function renderList(listId, onLeave) {
     const value = (label, text) => h('div', { class: 'field' }, h('span', { class: 'field__label' }, label), h('p', { class: 'field__value' }, text));
     const paint = (it) => {
       const multi = Boolean(view?.multi);
-      const shopping = Boolean(view?.list.category.isShopping);
+      const shopping = isShoppingList(view?.list);
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
         h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),

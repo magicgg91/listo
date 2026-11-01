@@ -34,6 +34,7 @@
 // Le code lu (ou tapé) est gardé dans le champ « Code-barres » de l'article
 // (ean), que le produit soit trouvé ou non ; jamais dans la note.
 
+import { isShoppingList } from '../list-types.js';
 import { h, icon, field, replace, LABEL_INPUT } from '../dom.js';
 import { post, NetworkError } from '../api.js';
 import { readBarcode, barcodeProblem, normalizeBarcode, ReaderUnavailable, ImageUnreadable } from '../barcode.js';
@@ -46,7 +47,7 @@ import { app } from '../app.js';
 // Bouton visible : liste de courses, et recherche activée sur le serveur
 // (LISTO_PRODUCT_LOOKUP). Un ancien compte gardé hors ligne, sans
 // l'information, garde le bouton.
-export const scanAvailable = (list) => Boolean(list?.category.isShopping) && app.user?.productLookup !== false;
+export const scanAvailable = (list) => isShoppingList(list) && app.user?.productLookup !== false;
 
 // Note proposée pour l'article : « Lactel · 1 L » (marque · format)
 export const productNote = (product) => [product.brand, product.quantity].filter(Boolean).join(' · ');

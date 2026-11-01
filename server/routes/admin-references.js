@@ -1,13 +1,15 @@
-// Administration des données de référence : catégories de liste, magasins et
-// rayons (réservée aux Admin, voir admin.js). Les trois fonctionnent de la
-// même façon :
+// Administration des données de référence : magasins et rayons (réservée
+// aux Admin, voir admin.js). Les deux fonctionnent de la même façon :
 //   GET    /api/admin/<type>        lister
-//   POST   /api/admin/<type>        ajouter (name ; isShopping pour une catégorie,
-//                                    isMulti pour un magasin)
+//   POST   /api/admin/<type>        ajouter (name ; isMulti pour un magasin)
 //   PATCH  /api/admin/<type>/:id    renommer, désactiver / réactiver ; pour un
 //                                    magasin « multi » : storeIds, les magasins
 //                                    qu'il regroupe
 //   DELETE /api/admin/<type>/:id    supprimer, seulement si jamais utilisé
+//
+// Les catégories de liste n'existent plus (remplacées par les trois types
+// fixes, public/js/list-types.js) : /api/admin/categories répond « Route
+// inconnue » (404), comme toute adresse inconnue.
 //
 // Un élément déjà utilisé (par une liste, un article, l'historique) ne peut
 // pas être supprimé : il peut seulement être désactivé. Désactivé, il n'est
@@ -24,18 +26,10 @@
 import express from 'express';
 import { cleanName, comparableName, parseId } from '../validate.js';
 
-// Les trois types de données de référence. Les noms de tables et de colonnes
+// Les deux sortes de données de référence. Les noms de tables et de colonnes
 // sont fixés ici, dans le code : ils ne viennent jamais de la requête.
+// usedBy : où cet élément peut être utilisé.
 const TYPES = {
-  categories: {
-    table: 'categories',
-    label: 'categorie',                 // pour le journal
-    notFound: 'Catégorie introuvable.',
-    duplicate: 'Une catégorie porte déjà ce nom.',
-    hasShoppingFlag: true,
-    // Où cet élément peut être utilisé
-    usedBy: 'SELECT EXISTS (SELECT 1 FROM lists WHERE category_id = :id)',
-  },
   stores: {
     table: 'stores',
     label: 'magasin',
@@ -80,7 +74,6 @@ function referenceRouter(ctx, type) {
     id: row.id,
     name: row.name,
     active: row.active === 1,
-    ...(type.hasShoppingFlag ? { isShopping: row.is_shopping === 1 } : {}),
     ...(type.hasMultiFlag ? { isMulti: row.is_multi === 1, storeIds: row.is_multi === 1 ? membersOf.all(row.id) : [] } : {}),
     inUse: used.get({ id: row.id }) === 1,
   });
@@ -121,10 +114,6 @@ function referenceRouter(ctx, type) {
   router.post('/', (req, res) => {
     const name = cleanName(req.body?.name);
     if (!name) return res.status(400).json({ error: 'Nom invalide (1 à 100 caractères).' });
-    const isShopping = req.body?.isShopping ?? false;
-    if (type.hasShoppingFlag && typeof isShopping !== 'boolean') {
-      return res.status(400).json({ error: 'Valeur « isShopping » invalide (true ou false).' });
-    }
     const isMulti = req.body?.isMulti ?? false;
     if (type.hasMultiFlag && typeof isMulti !== 'boolean') {
       return res.status(400).json({ error: 'Valeur « isMulti » invalide (true ou false).' });
@@ -132,9 +121,7 @@ function referenceRouter(ctx, type) {
     if (nameTaken(name)) return res.status(409).json({ error: type.duplicate });
 
     let id;
-    if (type.hasShoppingFlag) {
-      id = db.prepare(`INSERT INTO ${table} (name, is_shopping) VALUES (?, ?)`).run(name, isShopping ? 1 : 0).lastInsertRowid;
-    } else if (type.hasMultiFlag) {
+    if (type.hasMultiFlag) {
       id = db.prepare(`INSERT INTO ${table} (name, is_multi) VALUES (?, ?)`).run(name, isMulti ? 1 : 0).lastInsertRowid;
     } else {
       id = db.prepare(`INSERT INTO ${table} (name) VALUES (?)`).run(name).lastInsertRowid;
@@ -147,9 +134,8 @@ function referenceRouter(ctx, type) {
   router.patch('/:id', (req, res) => {
     const row = target(req, res);
     if (!row) return;
-    const { name: rawName, active, isShopping, isMulti, storeIds } = req.body ?? {};
-    if (rawName === undefined && active === undefined && (isShopping === undefined || !type.hasShoppingFlag)
-        && (storeIds === undefined || !type.hasMultiFlag)) {
+    const { name: rawName, active, isMulti, storeIds } = req.body ?? {};
+    if (rawName === undefined && active === undefined && (storeIds === undefined || !type.hasMultiFlag)) {
       return res.status(400).json({ error: 'Rien à modifier.' });
     }
     if (type.hasMultiFlag && isMulti !== undefined && isMulti !== (row.is_multi === 1)) {
@@ -171,15 +157,9 @@ function referenceRouter(ctx, type) {
     if (active !== undefined && typeof active !== 'boolean') {
       return res.status(400).json({ error: 'Valeur « active » invalide (true ou false).' });
     }
-    if (type.hasShoppingFlag && isShopping !== undefined && typeof isShopping !== 'boolean') {
-      return res.status(400).json({ error: 'Valeur « isShopping » invalide (true ou false).' });
-    }
 
     const newActive = active === undefined ? row.active : active ? 1 : 0;
     db.prepare(`UPDATE ${table} SET name = ?, active = ? WHERE id = ?`).run(name, newActive, row.id);
-    if (type.hasShoppingFlag && isShopping !== undefined) {
-      db.prepare(`UPDATE ${table} SET is_shopping = ? WHERE id = ?`).run(isShopping ? 1 : 0, row.id);
-    }
     const previousMembers = members ? membersOf.all(row.id) : null;
     if (members) {
       db.transaction(() => {
@@ -194,9 +174,6 @@ function referenceRouter(ctx, type) {
     if (name !== row.name) audit(`admin_${type.label}_renomme`, { ...who, ancien: row.name });
     if (newActive === 0 && row.active === 1) audit(`admin_${type.label}_desactive`, who);
     if (newActive === 1 && row.active === 0) audit(`admin_${type.label}_reactive`, who);
-    if (type.hasShoppingFlag && isShopping !== undefined && (isShopping ? 1 : 0) !== row.is_shopping) {
-      audit(`admin_${type.label}_courses_change`, { ...who, courses: isShopping });
-    }
     if (members && [...members].sort().join() !== [...previousMembers].sort().join()) {
       audit(`admin_${type.label}_regroupement_change`, { ...who, magasins: members.length });
     }

@@ -49,7 +49,7 @@ async function ok(h, client, operation, id) {
 async function newList(h, client, fields = {}) {
   const listId = uuid();
   const COURSES = h.app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
-  await ok(h, client, { type: 'list.create', listId, name: 'Courses', categoryId: COURSES, ...fields });
+  await ok(h, client, { type: 'list.create', listId, name: 'Courses', listType: 'shopping', ...fields });
   return listId;
 }
 async function newItem(h, client, listId, name, { checked = false } = {}) {
@@ -191,7 +191,7 @@ test('téléphone : zone absente sans coché, liste entièrement cochée, tout d
   const state = loadSync(emptyState(), {
     serverTime: '2026-10-16T12:00:00.000Z',
     listIds: ['L'],
-    lists: [{ id: 'L', name: 'Courses', category: { id: 1, isShopping: true }, store: null, members: [], updatedAt: '2026-10-16T09:00:00.000Z', deletedAt: null }],
+    lists: [{ id: 'L', name: 'Courses', type: 'shopping', store: null, members: [], updatedAt: '2026-10-16T09:00:00.000Z', deletedAt: null }],
     items: [
       { id: '1', listId: 'L', name: 'Lait', aisleId: null, checked: false, checkedAt: null, deletedAt: null },
       { id: '2', listId: 'L', name: 'Pain', aisleId: null, checked: false, checkedAt: null, deletedAt: null },
@@ -228,7 +228,7 @@ test('page publique : cochés dans la zone, dans l\'ordre, sans date ni action',
 
 test('vocabulaire de la zone : courses et autres listes', () => {
   assert.deepEqual(doneZoneWords(true), { title: 'Dans le panier', reopen: 'Tout remettre à acheter', remove: 'Retirer du panier' });
-  assert.deepEqual(doneZoneWords({ category: { isShopping: false } }), { title: 'Terminés', reopen: 'Tout rouvrir', remove: 'Retirer les terminés' });
+  assert.deepEqual(doneZoneWords({ type: 'tasks' }), { title: 'Terminés', reopen: 'Tout rouvrir', remove: 'Retirer les terminés' });
   assert.equal(countItems(12, true), '12 articles');
   assert.equal(countItems(4, false), '4 éléments');
 });

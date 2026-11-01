@@ -12,6 +12,7 @@
 // Les règles partagées (rayon et magasin automatiques, historique) sont
 // appliquées ici aussi : elles marchent hors ligne.
 
+import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon } from './app.js';
 import { uuid, photoUrl } from './api.js';
 import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames } from './store.js';
@@ -48,7 +49,7 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId, 
   const multi = isMultiList(list);
   const hint = {};
   if (multi && storeId === undefined) hint.storeId = usualStoreFor(app.data, list, name);
-  if (!multi && list.category.isShopping && aisleId === undefined) hint.aisleId = usualAisleFor(app.data, list, name);
+  if (!multi && isShoppingList(list) && aisleId === undefined) hint.aisleId = usualAisleFor(app.data, list, name);
   await perform({ type: 'item.create', ...fields }, { hint });
   const item = app.data.items.get(itemId);
   // Historique local (même règle que le serveur, listes de courses
@@ -103,11 +104,12 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, categoryId, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon }) {
+export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon }) {
   const listId = uuid();
+  // listType : 'shopping' ou 'tasks' (« type » est le nom de l'opération) ;
   // icon : envoyée seulement si une icône a été choisie ; addMode (« Après
-  // l'ajout ») : sans valeur, le serveur choisit selon la catégorie
-  await perform({ type: 'list.create', listId, name, categoryId, storeId, priorityEnabled, dueEnabled, ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}) });
+  // l'ajout ») : sans valeur, le serveur choisit selon le type
+  await perform({ type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled, ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}) });
   return listId;
 }
 

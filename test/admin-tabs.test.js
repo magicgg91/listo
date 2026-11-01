@@ -1,4 +1,5 @@
-// Administration : trois onglets (Comptes, Catégories, Courses) ; « Courses »
+// Administration : deux onglets (Comptes, Courses ; les catégories ont
+// disparu avec les types de liste) ; « Courses »
 // regroupe Magasins, Rayons et Articles, dont le contenu ne change pas.
 // Changement d'affichage seulement : les routes du serveur sont les mêmes.
 // Rendu et parcours vérifiés aussi dans Chromium (docs/developpement.md).
@@ -13,11 +14,13 @@ import { matchRoute } from '../public/js/router.js';
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
 
-test('trois onglets ; « Courses » propose Magasins, Rayons, Articles, chacun avec son contenu d\'avant', () => {
+test('deux onglets, plus de « Catégories » ; « Courses » propose Magasins, Rayons, Articles, chacun avec son contenu d\'avant', () => {
   const admin = code('public/js/screens/admin.js');
   const block = (name) => admin.slice(admin.indexOf(`const ${name} = [`), admin.indexOf('];', admin.indexOf(`const ${name} = [`)));
   const keys = (text) => [...text.matchAll(/\{ key: '([a-z]+)', label: ([^,}]+)/g)].map((m) => [m[1], m[2].trim()]);
-  assert.deepEqual(keys(block('TABS')), [['comptes', "'Comptes'"], ['categories', "'Catégories'"], ['courses', "'Courses'"]]);
+  assert.deepEqual(keys(block('TABS')), [['comptes', "'Comptes'"], ['courses', "'Courses'"]]);
+  assert.doesNotMatch(admin, /categor|Catégor/i, 'aucune trace des catégories dans l\'écran');
+  assert.doesNotMatch(code('public/js/screens/settings.js'), /catégories/);
   assert.deepEqual(keys(block('SHOPPING')).map(([key]) => key), ['magasins', 'rayons', 'noms']);
   // Même contenu qu'avant : magasins et rayons par loadReferences (mêmes routes), articles par loadNames
   assert.match(block('SHOPPING'), /\{ key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' \}/);
@@ -36,7 +39,7 @@ test('trois onglets ; « Courses » propose Magasins, Rayons, Articles, chacun a
 });
 
 test('adresses : les anciennes (magasins, rayons, noms) mènent au bon choix de « Courses » ; dernier choix retenu', () => {
-  for (const tab of ['comptes', 'categories', 'courses', 'magasins', 'rayons', 'noms']) {
+  for (const tab of ['comptes', 'courses', 'magasins', 'rayons', 'noms']) {
     assert.deepEqual(matchRoute(`#/administration/${tab}`), { name: 'admin', params: { tab } });
   }
   const admin = code('public/js/screens/admin.js');
@@ -46,7 +49,7 @@ test('adresses : les anciennes (magasins, rayons, noms) mènent au bon choix de 
   // L'onglet « Courses » mène au dernier choix ; il est actif pour chacun des trois
   assert.match(admin, /TABS\.map\(\(t\) => \(t\.key === 'courses' \? \{ \.\.\.t, target: lastShopping \} : t\)\), shopping \? 'courses' : tab\.key, 'Rubriques'\)/);
   // Adresse inconnue : « Comptes », sans écran d'erreur
-  assert.match(admin, /if \(!tab\) \{\s*navigate\('admin', \{ tab: 'comptes' \}, \{ replace: true \}\);/);
+  assert.match(admin, /if \(!tab\) \{\s*queueMicrotask\(\(\) => navigate\('admin', \{ tab: 'comptes' \}, \{ replace: true \}\)\);/);
   // Rien gardé après la fermeture (pas de stockage)
   assert.doesNotMatch(admin, /localStorage|sessionStorage/);
 });
@@ -59,7 +62,7 @@ test('droits inchangés : un compte non Admin n\'a pas accès ; les actions de c
   await login(lea, 'lea', 'MotDePasse-lea');
   // L'écran n'est pas proposé à un autre compte (app.js), et le serveur refuse
   assert.match(read('public/js/app.js'), /if \(name === 'admin' && app\.user\.role !== 'admin'\) \{\s*navigate\('settings', \{\}, \{ replace: true \}\);/);
-  for (const url of ['/api/admin/stores', '/api/admin/aisles', '/api/admin/names', '/api/admin/categories', '/api/admin/users']) {
+  for (const url of ['/api/admin/stores', '/api/admin/aisles', '/api/admin/names', '/api/admin/users']) {
     assert.equal((await lea.get(url)).status, 403, url);
   }
   // Magasins : créer, renommer

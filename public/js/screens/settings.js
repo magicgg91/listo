@@ -83,7 +83,7 @@ export function renderSettings() {
       isAdmin ? [
         h('h2', { class: 'section-title' }, 'Administration'),
         h('div', { class: 'group' },
-          row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, catégories, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
+          row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null,
       // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
       h('h2', { class: 'section-title' }, 'Aide'),

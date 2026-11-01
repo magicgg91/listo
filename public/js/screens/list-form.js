@@ -1,9 +1,9 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
-// formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, catégorie,
-// magasin simple ou « multi » (seulement pour une liste de courses), partage,
-// avec le droit de chaque personne (« Peut modifier » ou « Lecture seule »),
-// priorité et échéance activées ou non (listes autres que les courses), et
-// suppression de la liste (propriétaire).
+// formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, type de
+// liste (Courses ou Tâches), icône, magasin simple ou « multi » (seulement
+// pour une liste de courses), partage, avec le droit de chaque personne
+// (« Peut modifier » ou « Lecture seule »), priorité et échéance activées ou
+// non (listes de tâches), et suppression de la liste (propriétaire).
 
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { put, errorMessage } from '../api.js';
@@ -16,13 +16,14 @@ import { app, refreshData, pendingCount } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { deleteListWithConfirm } from './list-actions.js';
 import { openCreateReference } from '../create-reference.js';
-import { LIST_ICONS, categoryIcon } from '../list-icons.js';
+import { LIST_ICONS } from '../list-icons.js';
+import { CREATABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, usesTaskOptions, typeChangeWarning } from '../list-types.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
   const editing = listId !== null;
 
-  // Il faut les catégories, magasins et comptes (copie locale, rafraîchie à
+  // Il faut les magasins et les comptes (copie locale, rafraîchie à
   // l'ouverture pour proposer un magasin ajouté entre-temps)
   replace(container, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
   let cancelled = false;
@@ -168,29 +169,30 @@ function form(list, users) {
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
   const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
-  // --- Catégorie (choix en cartes) ---
-  // Les catégories actives, plus la catégorie actuelle de la liste si elle a
-  // été désactivée entre-temps (elle reste possible pour cette liste)
-  const categories = activeOnly(app.data.categories);
-  if (list && !categories.some((c) => c.id === list.category.id)) categories.push(list.category);
-  let categoryId = list?.category.id ?? categories[0]?.id ?? null;
+  // --- Type de liste (choix en cartes, même composant qu'avant) ---
+  // Courses ou Tâches (les envies viendront à l'étape suivante : le serveur
+  // les refuse). Changer le type d'une liste existante n'efface rien : la
+  // ligne sous le choix le dit avant l'enregistrement (typeChangeWarning).
+  const savedType = list ? typeOf(list) : null;
+  let listType = CREATABLE_TYPES.includes(savedType) ? savedType : CREATABLE_TYPES[0];
 
-  const categoryButtons = categories.map((category) => {
+  const typeButtons = CREATABLE_TYPES.map((type) => {
     const button = h('button', { class: 'choice__opt', type: 'button', role: 'radio' },
-      icon(categoryIcon(category.isShopping)), category.name);
+      icon(TYPE_ICONS[type]), TYPE_LABELS[type]);
     button.addEventListener('click', () => {
-      categoryId = category.id;
+      listType = type;
       paint();
     });
-    button.dataset.id = String(category.id);
+    button.dataset.type = type;
     return button;
   });
-  const categoryGroup = h('div', { class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'category-label' }, categoryButtons);
+  const typeWarning = h('p', { class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: true });
+  const typeGroup = h('div', { class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
 
   // --- Icône (grille de choix) ---
-  // chosenIcon : icône choisie (« » : aucune, la liste montre celle de sa
-  // catégorie). Au départ, la case cochée est donc l'icône de la catégorie,
-  // et elle suit la catégorie tant que rien n'est choisi. Si on ne touche
+  // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
+  // type). Au départ, la case cochée est donc l'icône du type, et elle suit
+  // le type tant que rien n'est choisi. Si on ne touche
   // pas à la grille, rien n'est envoyé : rien ne change.
   let chosenIcon = list?.icon ?? '';
   const iconButtons = LIST_ICONS.map((choice) => {
@@ -206,9 +208,13 @@ function form(list, users) {
   const iconGroup = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' }, iconButtons);
 
   // --- Magasin (listes de courses seulement) ---
+  // Une liste de tâches qui a été une liste de courses garde son magasin,
+  // caché (keptStore, donné au seul propriétaire) : il revient ici si on
+  // choisit de nouveau « Courses ».
+  const currentStore = list?.store ?? list?.keptStore ?? null;
   const stores = activeOnly(app.data.stores);
-  if (list?.store && !stores.some((s) => s.id === list.store.id)) stores.push(list.store);
-  let storeId = list?.store?.id ?? null;
+  if (currentStore && !stores.some((s) => s.id === currentStore.id)) stores.push(currentStore);
+  let storeId = currentStore?.id ?? null;
   const storeLabel = h('span', { class: 'input__value' });
   const storeHint = h('span', { class: 'field__hint' });
   const storeButton = h('button', { class: 'input input--select', type: 'button', 'aria-labelledby': 'store-label', onClick: () => chooseStore() }, storeLabel, icon('chev-d'));
@@ -293,12 +299,12 @@ function form(list, users) {
   }
 
   // --- Options : « Après l'ajout » (toutes les listes), priorité et
-  // échéance (listes autres que les courses) ---
+  // échéance (listes de tâches) ---
   // Une nouvelle liste commence sans priorité ni échéance ; une liste
   // existante garde ses réglages (même cachés tant qu'elle est une liste de
   // courses). « Après l'ajout » : une liste existante garde son choix ; une
-  // nouvelle liste suit sa catégorie (« Rester sur la liste » pour les
-  // courses, « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
+  // nouvelle liste suit son type (« Rester sur la liste » pour les courses,
+  // « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
   let options = list ? listOptionsOf(list) : { priority: false, due: false };
   let addMode = list ? addModeOf(list) : defaultAddMode(true);
   let addModeChosen = Boolean(list);
@@ -377,30 +383,33 @@ function form(list, users) {
 
   const error = errorNote();
 
-  // Met à jour l'affichage (catégorie et icône choisies, magasin visible ou non)
+  // Met à jour l'affichage (type et icône choisis, magasin visible ou non,
+  // avertissement de changement de type)
   function paint() {
-    for (const button of categoryButtons) {
-      const on = button.dataset.id === String(categoryId);
+    for (const button of typeButtons) {
+      const on = button.dataset.type === listType;
       button.setAttribute('aria-checked', String(on));
       button.querySelector('.icon-end')?.remove();
       if (on) button.append(icon('check', 'icon-end'));
     }
-    const category = categories.find((c) => c.id === categoryId);
+    const shopping = isShoppingList(listType);
+    const warning = list ? typeChangeWarning(savedType, listType) : '';
+    typeWarning.textContent = warning;
+    typeWarning.hidden = !warning;
     // Icône cochée : entourée ET marquée d'une coche (jamais la couleur seule)
-    const shownIcon = chosenIcon || categoryIcon(Boolean(category?.isShopping));
+    const shownIcon = chosenIcon || TYPE_ICONS[listType];
     for (const button of iconButtons) {
       const on = button.dataset.icon === shownIcon;
       button.setAttribute('aria-checked', String(on));
       button.querySelector('.icon-grid__check')?.remove();
       if (on) button.append(h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')));
     }
-    storeField.hidden = !category?.isShopping;
-    optionsField.hidden = !category;
+    storeField.hidden = !shopping;
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
-    for (const row of optionsCard.querySelectorAll('[data-switch]')) row.hidden = Boolean(category?.isShopping);
-    optionsLabel.textContent = category?.isShopping ? `Options des ${itemWords(true).many}` : 'Options des éléments';
-    if (!addModeChosen && category) {
-      addMode = defaultAddMode(category.isShopping);
+    for (const row of optionsCard.querySelectorAll('[data-switch]')) row.hidden = !usesTaskOptions(listType);
+    optionsLabel.textContent = shopping ? `Options des ${itemWords(true).many}` : 'Options des éléments';
+    if (!addModeChosen) {
+      addMode = defaultAddMode(shopping);
       addModeField.set(addMode);
     }
     const store = stores.find((s) => s.id === storeId);
@@ -427,7 +436,7 @@ function form(list, users) {
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, list ? 'Modifier la liste' : 'Nouvelle liste'))),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       nameField.field,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'category-label' }, 'Catégorie'), categoryGroup),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type de liste'), typeGroup, typeWarning),
       h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), iconGroup),
       storeField,
       optionsField,
@@ -443,31 +452,31 @@ function form(list, users) {
     // Nom vide : le champ est signalé sous lui-même, sans y mettre le curseur
     nameField.setError(cleanName ? null : 'Le nom est obligatoire');
     if (!cleanName) return;
-    const category = categories.find((c) => c.id === categoryId);
-    if (!category) {
-      error.show('Choisissez une catégorie.');
-      return;
-    }
-    const chosenStore = category.isShopping ? storeId : null;
+    const shopping = isShoppingList(listType);
+    const chosenStore = shopping ? storeId : null;
     save.disabled = true;
     // Liste : tout de suite dans la copie locale, envoyée ensuite (file
     // d'attente) ; marche aussi sans réseau
     let id = list?.id;
-    // Priorité et échéance : envoyées pour une liste autre que les courses
-    // seulement (une liste de courses garde ses réglages, ignorés)
-    const classic = !category.isShopping;
+    // Priorité et échéance : envoyées pour une liste de tâches seulement
+    // (une liste de courses garde ses réglages, ignorés)
+    const classic = usesTaskOptions(listType);
     const saved = list ? listOptionsOf(list) : null;
     if (!list) {
-      id = await actions.createList({ name: cleanName, categoryId, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, addMode, icon: chosenIcon });
+      id = await actions.createList({ name: cleanName, listType, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, addMode, icon: chosenIcon });
     } else {
+      // Seulement ce qui a changé. Le magasin n'est envoyé que pour une liste
+      // de courses, et s'il diffère de celui de la liste (ou de celui qu'elle
+      // a gardé) : revenir à « Courses » sans y toucher le remet tel quel.
       const switches = {};
+      if (cleanName !== list.name) switches.name = cleanName;
+      if (listType !== savedType) switches.listType = listType;
+      if (shopping && chosenStore !== (currentStore?.id ?? null)) switches.storeId = chosenStore;
       if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
       if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
-      if (cleanName !== list.name || categoryId !== list.category.id || chosenStore !== (list.store?.id ?? null) || Object.keys(switches).length) {
-        await actions.updateList(id, { name: cleanName, categoryId, storeId: chosenStore, ...switches });
-      }
+      if (Object.keys(switches).length) await actions.updateList(id, switches);
     }
     // Partage : seulement s'il a changé, et seulement en ligne (route réservée
     // au propriétaire ; la liste doit d'abord exister sur le serveur)

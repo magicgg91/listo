@@ -1,6 +1,6 @@
 # Listo
 
-Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité, auto-hébergée. Utilisée par deux personnes d'un même foyer (le propriétaire et un proche) presque uniquement depuis un téléphone. Interface en français uniquement.
+Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité, auto-hébergée. Utilisée par une famille de six ou sept personnes, presque uniquement depuis un téléphone. Interface en français uniquement.
 
 ## Documents de référence (à lire avant de coder)
 

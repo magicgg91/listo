@@ -36,11 +36,11 @@ async function household(t) {
   const paulList = uuid();
   const jar = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: courses, name: 'Courses', categoryId: 1 },
-    { id: uuid(), type: 'list.create', listId: weekend, name: 'Week-end', categoryId: 1 },
+    { id: uuid(), type: 'list.create', listId: courses, name: 'Courses', listType: 'shopping' },
+    { id: uuid(), type: 'list.create', listId: weekend, name: 'Week-end', listType: 'shopping' },
     { id: uuid(), type: 'item.create', listId: weekend, itemId: jar, name: 'Pâte à tartiner maison', note: 'le grand pot', ean: NUTELLA },
   ] });
-  await paul.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: paulList, name: 'Courses de Paul', categoryId: 1 }] });
+  await paul.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: paulList, name: 'Courses de Paul', listType: 'shopping' }] });
   const lookup = (client, listId, code) => client.post(`/api/lists/${listId}/products`, { code });
   return { app, guillaume, lea, paul, leaId, courses, weekend, paulList, jar, asked, lookup };
 }
@@ -77,7 +77,7 @@ test('liste partagée : un membre retrouve le produit ; retiré de la liste, plu
   const h = await household(t);
   await h.guillaume.request('PUT', `/api/lists/${h.weekend}/members`, { userIds: [h.leaId], access: { [h.leaId]: 'modification' } });
   const leaList = uuid();
-  await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: leaList, name: 'Courses de Léa', categoryId: 1 }] });
+  await h.lea.post('/api/ops', { ops: [{ id: uuid(), type: 'list.create', listId: leaList, name: 'Courses de Léa', listType: 'shopping' }] });
   assert.equal((await h.lookup(h.lea, leaList, NUTELLA)).body.status, 'known');
   await h.guillaume.request('PUT', `/api/lists/${h.weekend}/members`, { userIds: [] });
   assert.equal((await h.lookup(h.lea, leaList, NUTELLA)).body.status, 'found');

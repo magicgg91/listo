@@ -338,8 +338,8 @@ async function shoppingSetup(t, options = {}) {
   const shop = uuid();
   const tasks = uuid();
   await guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', categoryId: 1 },
-    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', categoryId: 2 },
+    { id: uuid(), type: 'list.create', listId: shop, name: 'Courses', listType: 'shopping' },
+    { id: uuid(), type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' },
   ] });
   return { app, guillaume, shop, tasks, asked };
 }

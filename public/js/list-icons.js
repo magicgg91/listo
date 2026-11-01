@@ -7,7 +7,10 @@
 // d'écran. L'ordre est celui de la grille.
 //
 // En base, une liste sans icône choisie a une valeur vide : elle montre
-// l'icône de sa catégorie (chariot pour les courses, liste cochée sinon).
+// l'icône de son type (public/js/list-types.js : chariot pour les courses,
+// liste cochée pour les tâches, paquet cadeau pour les envies).
+
+import { typeIcon } from './list-types.js';
 
 export const LIST_ICONS = [
   { id: 'cart', label: 'Courses' },
@@ -54,12 +57,7 @@ export function isListIcon(value) {
   return typeof value === 'string' && KNOWN.has(value);
 }
 
-// Icône de la catégorie (comportement d'avant le choix d'une icône)
-export function categoryIcon(isShopping) {
-  return isShopping ? 'cart' : 'tasks';
-}
-
-// Icône à afficher pour une liste : celle choisie, sinon celle de sa catégorie
+// Icône à afficher pour une liste : celle choisie, sinon celle de son type
 export function listIcon(list) {
-  return isListIcon(list?.icon) ? list.icon : categoryIcon(Boolean(list?.category?.isShopping));
+  return isListIcon(list?.icon) ? list.icon : typeIcon(list);
 }

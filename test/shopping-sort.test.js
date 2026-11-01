@@ -18,7 +18,7 @@ function shoppingState({ multi = false, readOnly = false } = {}) {
   state.aisles = [{ id: 1, name: 'Crèmerie', active: true }, { id: 2, name: 'Boulangerie', active: true }, { id: 3, name: 'Épicerie', active: true }];
   state.stores = [{ id: 10, name: 'Fromagerie', active: true }, { id: 11, name: 'Boucherie', active: true }];
   state.lists.set('c', {
-    id: 'c', name: 'Courses', category: { isShopping: true },
+    id: 'c', name: 'Courses', type: 'shopping',
     store: multi ? { id: 9, name: 'En ville', isMulti: true } : { id: 3, name: 'Lidl', isMulti: false },
     members: [], canEdit: !readOnly,
   });
@@ -41,7 +41,7 @@ test('tris proposés : courses → « Par rayon » (par défaut) puis « Ordre a
     assert.equal(effectiveSort(list, 'priority'), 'aisle', 'priorité : jamais pour les courses');
     assert.equal(effectiveSort(list, 'alpha'), 'alpha');
   }
-  const tasks = { category: { isShopping: false }, priorityEnabled: true, dueEnabled: true };
+  const tasks = { type: 'tasks', priorityEnabled: true, dueEnabled: true };
   assert.equal(defaultSort(tasks), 'alpha', 'autres listes : inchangé');
   assert.equal(effectiveSort(tasks, 'aisle'), 'alpha', 'pas de « par rayon » hors courses');
 });

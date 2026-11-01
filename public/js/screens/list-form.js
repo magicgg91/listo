@@ -18,9 +18,10 @@ import { deleteListWithConfirm } from './list-actions.js';
 import { openCreateReference } from '../create-reference.js';
 import { LIST_ICONS } from '../list-icons.js';
 import {
-  CREATABLE_TYPES, CHANGEABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesPriority, usesDue, typeChangeWarning, WISHES_LOCKED_HINT,
+  CREATABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesPriority, usesDue, typeChangeWarning, WISHES_LOCKED_HINT,
 } from '../list-types.js';
 import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
+import { hasPublicLink } from './lists.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -183,13 +184,17 @@ function form(list, users) {
   const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
   // --- Type (choix en cartes, même composant qu'avant, sur une seule ligne) ---
-  // Nouvelle liste : Courses, Tâches ou Envies. Liste existante : Courses ou
-  // Tâches (changer n'efface rien : la ligne sous le choix le dit avant
-  // l'enregistrement, typeChangeWarning) ; une liste d'envies garde son type
-  // et sa destinataire pour toujours (une seule carte, inactive, et une phrase).
+  // Nouvelle liste : Courses, Tâches ou Envies. Liste de courses ou de
+  // tâches existante : les trois aussi (changer n'efface rien : la ligne sous
+  // le choix le dit avant l'enregistrement, typeChangeWarning) ; devenir une
+  // liste d'envies est définitif, et se fait en ligne seulement. Une liste
+  // d'envies garde son type et sa destinataire pour toujours (une seule
+  // carte, inactive, et une phrase).
   const savedType = list ? typeOf(list) : null;
   const wishesLocked = isWishList(savedType);
-  const offered = !list ? CREATABLE_TYPES : wishesLocked ? ['wishes'] : CHANGEABLE_TYPES;
+  const offered = wishesLocked ? ['wishes'] : CREATABLE_TYPES;
+  // Liste existante qui devient une liste d'envies (avec son destinataire)
+  const converting = () => Boolean(list) && !wishesLocked && isWishList(listType);
   let listType = offered.includes(savedType) ? savedType : offered[0];
 
   const typeButtons = offered.map((type) => {
@@ -198,6 +203,7 @@ function form(list, users) {
     button.addEventListener('click', () => {
       listType = type;
       paint();
+      drawShare(); // le destinataire d'une liste d'envies est verrouillé dans le partage
     });
     button.dataset.type = type;
     return button;
@@ -237,8 +243,8 @@ function form(list, users) {
           forRow('name', 'Une personne sans compte', 'Par exemple un enfant')),
         forNameField.field,
       ]);
-  // Compte destinataire choisi à la création (sinon celui de la liste)
-  const beneficiaryId = () => (list ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
+  // Compte destinataire choisi à la création ou à la conversion (sinon celui de la liste)
+  const beneficiaryId = () => (wishesLocked ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
   const typeGroup = h('div', { class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
 
   // --- Icône (un bouton, puis une fenêtre avec la grille) ---
@@ -420,7 +426,7 @@ function form(list, users) {
   // Le compte destinataire d'une liste d'envies est membre d'office, en
   // « Peut modifier », sans choix (le serveur l'impose aussi)
   const personRow = (person, { locked = false } = {}) => {
-    const isBeneficiary = !locked && person.id === beneficiaryId() && (!list || list.members.some((m) => m.id === person.id));
+    const isBeneficiary = !locked && person.id === beneficiaryId() && (!wishesLocked || list.members.some((m) => m.id === person.id));
     if (isBeneficiary) {
       return h('div', { class: 'share__person' },
         h('div', { class: 'tick-row', role: 'checkbox', 'aria-checked': 'true', 'aria-disabled': 'true' },
@@ -462,6 +468,19 @@ function form(list, users) {
   drawShare();
   // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
   const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
+  // Conversion en liste d'envies : en ligne seulement (elle dépend du
+  // destinataire et arrête un éventuel lien public) ; hors ligne, le bouton
+  // « Enregistrer » est inactif, avec une phrase
+  let busy = false;
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
+  const convertNote = h('p', { class: 'field__hint', id: 'convert-offline', hidden: true }, 'Devenir une liste d\'envies demande une connexion : enregistrez quand le réseau sera revenu.');
+  const paintConvert = () => {
+    const blocked = converting() && !navigator.onLine;
+    convertNote.hidden = !blocked;
+    save.disabled = busy || blocked;
+    if (blocked) save.setAttribute('aria-describedby', 'convert-offline');
+    else save.removeAttribute('aria-describedby');
+  };
   let painted = false;
   const paintShare = () => {
     if (painted && !shareGroup.isConnected) { // formulaire quitté
@@ -474,6 +493,7 @@ function form(list, users) {
     shareNote.hidden = !offline;
     shareGroup.inert = offline;
     shareGroup.classList.toggle('is-off', offline);
+    paintConvert();
   };
   paintShare();
   window.addEventListener('online', paintShare);
@@ -492,7 +512,8 @@ function form(list, users) {
     }
     const shopping = isShoppingList(listType);
     if (!wishesLocked) {
-      const warning = list ? typeChangeWarning(savedType, listType) : '';
+      // Devenir une liste d'envies : définitif ; un lien public en cours sera arrêté
+      const warning = list ? `${typeChangeWarning(savedType, listType)}${converting() && hasPublicLink(list) ? ' Son lien public sera arrêté.' : ''}` : '';
       typeWarning.textContent = warning;
       typeWarning.hidden = !warning;
     }
@@ -515,9 +536,10 @@ function form(list, users) {
     for (const row of optionsCard.querySelectorAll('[data-switch]')) {
       row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : !usesDue(listType);
     }
-    // Nouvelle liste : la priorité suit le type tant qu'on n'y a pas touché
-    // (activée par défaut pour une liste d'envies)
-    if (!list && !priorityChosen) optionsCard.set('priority', isWishList(listType));
+    // Nouvelle liste, ou liste qui devient une liste d'envies : la priorité
+    // suit le type tant qu'on n'y a pas touché (activée par défaut pour une
+    // liste d'envies ; une liste existante retrouve son réglage sinon)
+    if (!priorityChosen) optionsCard.set('priority', isWishList(listType) || Boolean(list && listOptionsOf(list).priority));
     optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);
@@ -526,6 +548,7 @@ function form(list, users) {
     const store = stores.find((s) => s.id === storeId);
     replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? 'Aucun magasin', store?.isMulti ? multiBadge() : null);
     storeHint.textContent = store?.isMulti ? 'Les articles seront classés par magasin, sans rayons.' : 'Les articles seront classés par rayon.';
+    paintConvert();
   }
   paint();
 
@@ -540,7 +563,6 @@ function form(list, users) {
   }, icon('trash', 'icon--sm'), 'Supprimer la liste') : null;
 
   // --- Enregistrement ---
-  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
   const formEl = h('form', { novalidate: true },
     h('header', { class: 'topbar' },
       iconButton('close', 'Fermer sans enregistrer', () => goBack(list ? 'list' : 'lists', list ? { id: list.id } : {})),
@@ -555,7 +577,7 @@ function form(list, users) {
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
       error.note,
       deleteButton)),
-    h('div', { class: 'footer' }, save));
+    h('div', { class: 'footer' }, convertNote, save));
 
   formEl.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -564,12 +586,13 @@ function form(list, users) {
     // Nom vide : le champ est signalé sous lui-même, sans y mettre le curseur
     nameField.setError(cleanName ? null : 'Le nom est obligatoire');
     // Liste d'envies pour une personne sans compte : son prénom est obligatoire
-    const forName = !list && isWishList(listType) && forChoice === 'name' ? forNameInput.value.replace(/\s+/g, ' ').trim() : null;
+    const forName = (!list || converting()) && isWishList(listType) && forChoice === 'name' ? forNameInput.value.replace(/\s+/g, ' ').trim() : null;
     forNameField.setError(forName === '' ? 'Le prénom est obligatoire' : null);
     if (!cleanName || forName === '') return;
     const shopping = isShoppingList(listType);
     const chosenStore = shopping ? storeId : null;
-    save.disabled = true;
+    busy = true;
+    paintConvert();
     // Liste : tout de suite dans la copie locale, envoyée ensuite (file
     // d'attente) ; marche aussi sans réseau
     let id = list?.id;
@@ -578,6 +601,26 @@ function form(list, users) {
     const withPriority = usesPriority(listType);
     const withDue = usesDue(listType);
     const saved = list ? listOptionsOf(list) : null;
+    // Devenir une liste d'envies : d'abord, en ligne, le type et le
+    // destinataire ensemble (une seule transaction sur le serveur) ; en cas
+    // de refus, rien n'a changé et rien d'autre n'est envoyé
+    const convert = converting();
+    if (convert) {
+      try {
+        await refreshData({ quiet: true }); // envoie d'abord la file d'attente
+        if (pendingCount() || !navigator.onLine) throw new Error('Devenir une liste d\'envies demande une connexion.');
+        await actions.convertToWishes(id, {
+          ...(beneficiaryId() ? { forUserId: beneficiaryId() } : {}),
+          ...(forName ? { forName } : {}),
+          priorityEnabled: options.priority,
+        });
+      } catch (err) {
+        error.show(errorMessage(err));
+        busy = false;
+        paintConvert();
+        return;
+      }
+    }
     if (!list) {
       id = await actions.createList({
         name: cleanName, listType, storeId: chosenStore, priorityEnabled: withPriority && options.priority, dueEnabled: withDue && options.due, addMode, icon: chosenIcon,
@@ -589,9 +632,9 @@ function form(list, users) {
       // a gardé) : revenir à « Courses » sans y toucher le remet tel quel.
       const switches = {};
       if (cleanName !== list.name) switches.name = cleanName;
-      if (listType !== savedType) switches.listType = listType;
+      if (listType !== savedType && !convert) switches.listType = listType;
       if (shopping && chosenStore !== (currentStore?.id ?? null)) switches.storeId = chosenStore;
-      if (withPriority && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
+      if (withPriority && !convert && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
       if (withDue && options.due !== saved.due) switches.dueEnabled = options.due;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
@@ -602,7 +645,7 @@ function form(list, users) {
     const before = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
     // Le destinataire (membre d'office) fait toujours partie du partage envoyé
     const beneficiary = beneficiaryId();
-    if (beneficiary && (!list || list.members.some((m) => m.id === beneficiary))) {
+    if (beneficiary && (!wishesLocked || list.members.some((m) => m.id === beneficiary))) {
       guests.add(beneficiary);
       rights.set(beneficiary, 'modification');
     }

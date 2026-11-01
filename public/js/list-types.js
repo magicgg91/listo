@@ -37,9 +37,12 @@ export const TYPE_ICONS = { shopping: 'cart', tasks: 'tasks', wishes: 'gift' };
 
 // Refus d'un changement de type (serveur)
 export const WISHES_FIXED = 'Une liste d\'envies ne change pas de type.';
-export const NOT_TO_WISHES = 'Une liste existante ne devient pas une liste d\'envies : créez une nouvelle liste.';
+export const NOT_TO_WISHES = 'Une liste devient une liste d\'envies seulement depuis « Modifier la liste », avec du réseau.';
+// Phrase du formulaire « Modifier la liste » quand une liste de courses ou
+// de tâches devient une liste d'envies (avant l'enregistrement)
+export const CONVERT_TO_WISHES_WARNING = 'Une fois enregistrée, la liste d\'envies ne pourra plus changer de type ni de destinataire. Rien n\'est effacé : quantités et échéances sont gardées sans être affichées, et les éléments cochés deviennent « Reçus ».';
 // Phrase du formulaire « Modifier la liste » d'une liste d'envies
-export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée sont fixés à sa création.';
+export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus.';
 
 export function isListType(value) {
   return typeof value === 'string' && LIST_TYPES.includes(value);
@@ -69,6 +72,7 @@ export const typeIcon = (list) => TYPE_ICONS[typeOf(list)];
 // liste existante : ce qui ne s'affichera plus, et qui reste conservé
 export function typeChangeWarning(from, to) {
   if (from === to) return '';
+  if (to === 'wishes') return CONVERT_TO_WISHES_WARNING;
   if (from === 'shopping') return 'Les rayons, magasins et codes-barres ne s\'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses.';
   if (from === 'tasks') return 'La priorité et l\'échéance ne s\'affichent plus pour ce type ; elles sont conservées si vous revenez à Tâches.';
   return '';

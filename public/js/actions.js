@@ -138,6 +138,14 @@ export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 // suite si quelqu'un a réservé entre-temps (« Déjà réservé. »). Ensuite, une
 // synchronisation rapporte l'état à jour (les réservations ne sont jamais
 // écrites dans la copie locale à la main).
+// Liste de courses ou de tâches qui devient une liste d'envies, avec son
+// destinataire ({ forUserId } ou { forName }, rien pour « Moi ») : en ligne
+// seulement (jamais par la file d'attente), puis synchronisation
+export async function convertToWishes(listId, body) {
+  await post(`/api/lists/${encodeURIComponent(listId)}/wishes`, body);
+  await refreshData({ quiet: true });
+}
+
 const reservationUrl = (itemId, rest = '') => `/api/items/${encodeURIComponent(itemId)}/reservation${rest}`;
 // Réserver un souhait libre (open : « Ouvert à d'autres »), ou participer à
 // une réservation ouverte

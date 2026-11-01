@@ -328,7 +328,7 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
   assert.match(form, /row\.hidden = row\.dataset\.switch === 'priority' \? !usesPriority\(listType\) : !usesDue\(listType\);/);
   assert.match(form, /priorityEnabled: withPriority && options\.priority, dueEnabled: withDue && options\.due/);
-  assert.match(form, /if \(withPriority && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
+  assert.match(form, /if \(withPriority && !convert && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
   // Réservé au propriétaire : le formulaire de modification renvoie un invité vers la liste
   assert.match(form, /if \(editing && !list\.isOwner\) \{\s*navigate\('list', \{ id: listId \}, \{ replace: true \}\);/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);

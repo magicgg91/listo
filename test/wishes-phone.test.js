@@ -77,8 +77,38 @@ test('écran : réservation montrée seulement si la copie en contient ; lien s�
   const form = code('public/js/screens/list-form.js');
   assert.match(form, /forField\.hidden = !isWishList\(listType\);/);
   assert.match(form, /h\('span', \{ class: 'share__hint' \}, 'Destinataire · Peut modifier'\)/);
-  assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée sont fixés à sa création\.';/);
+  assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus\.';/);
   assert.doesNotMatch(read('public/js/list-types.js').match(/WISHES_LOCKED_HINT = '[^']*'/)[0], /réserv/i, 'la phrase ne parle pas des réservations');
   // Service worker : nouveau fichier gardé hors ligne
   assert.ok(read('public/sw.js').includes("'/js/wishes.js'"));
+});
+
+test('formulaire : une liste de courses ou de tâches peut devenir une liste d\'envies, en ligne seulement, avec « Pour qui ? » et une phrase ; quantité cachée', () => {
+  const form = code('public/js/screens/list-form.js');
+  // Les trois types pour une liste existante (sauf une liste d'envies, figée)
+  assert.match(form, /const offered = wishesLocked \? \['wishes'\] : CREATABLE_TYPES;/);
+  assert.match(form, /const converting = \(\) => Boolean\(list\) && !wishesLocked && isWishList\(listType\);/);
+  // « Pour qui ? » comme à la création ; prénom obligatoire ; destinataire verrouillé dans le partage
+  assert.match(form, /const beneficiaryId = \(\) => \(wishesLocked \? list\.forUserId \?\? null : isWishList\(listType\) && typeof forChoice === 'number' \? forChoice : null\);/);
+  assert.match(form, /const forName = \(!list \|\| converting\(\)\) && isWishList\(listType\) && forChoice === 'name' \?/);
+  assert.match(form, /forNameField\.setError\(forName === '' \? 'Le prénom est obligatoire' : null\);/);
+  // Phrase avant l'enregistrement, avec le lien public s'il y en a un
+  assert.match(form, /converting\(\) && hasPublicLink\(list\) \? ' Son lien public sera arrêté\.' : ''/);
+  const types = read('public/js/list-types.js');
+  assert.match(types, /if \(to === 'wishes'\) return CONVERT_TO_WISHES_WARNING;/);
+  const warning = types.match(/CONVERT_TO_WISHES_WARNING = '(\\'|[^'])*'/)[0];
+  assert.match(warning, /ne pourra plus changer de type ni de destinataire/);
+  assert.match(warning, /Rien n\\'est effacé/);
+  assert.doesNotMatch(warning, /réserv/i);
+  // En ligne seulement : bouton inactif hors ligne, avec une phrase ; d'abord la conversion, puis le reste
+  assert.match(form, /const blocked = converting\(\) && !navigator\.onLine;\s*convertNote\.hidden = !blocked;\s*save\.disabled = busy \|\| blocked;/);
+  assert.match(form, /h\('div', \{ class: 'footer' \}, convertNote, save\)/);
+  assert.match(form, /if \(pendingCount\(\) \|\| !navigator\.onLine\) throw new Error\('Devenir une liste d\\'envies demande une connexion\.'\);\s*await actions\.convertToWishes\(id, \{/);
+  assert.match(form, /error\.show\(errorMessage\(err\)\);\s*busy = false;\s*paintConvert\(\);\s*return;/);
+  assert.match(form, /if \(listType !== savedType && !convert\) switches\.listType = listType;/);
+  assert.match(read('public/js/actions.js'), /export async function convertToWishes\(listId, body\) \{\s*await post\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/wishes`, body\);\s*await refreshData\(\{ quiet: true \}\);/);
+  // Liste d'envies : pas de quantité affichée (gardée en base)
+  const list = code('public/js/screens/list.js');
+  assert.match(list, /item\.quantity && !isWishList\(view\?\.list\) \? h\('span', \{ class: 'item__qty' \}, item\.quantity\) : null\)/);
+  assert.match(list, /it\.quantity && !wishes \? value\('Quantité', it\.quantity\) : null,/);
 });

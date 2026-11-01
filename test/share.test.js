@@ -24,7 +24,7 @@ const JPEG = Buffer.concat([
 // Champs autorisés dans la réponse publique (liste blanche)
 const ALLOWED = {
   top: ['done', 'expiresAt', 'groups', 'list'],
-  list: ['category', 'grouping', 'name', 'store'],
+  list: ['grouping', 'name', 'store', 'type'],
   group: ['items', 'name'],
   item: ['checked', 'name', 'note', 'photo', 'quantity'],
   // Seulement si l'article les a (décision du 20 octobre 2026, fiche du lien
@@ -176,7 +176,7 @@ test('visiteur : la page et les données en lecture seule, champ par champ (list
   const data = res.body;
   assert.deepEqual(Object.keys(data).sort(), ALLOWED.top);
   assert.deepEqual(Object.keys(data.list).sort(), ALLOWED.list);
-  assert.deepEqual(data.list, { name: 'Courses', category: 'Courses', store: 'Carrefour', grouping: 'aisle' });
+  assert.deepEqual(data.list, { name: 'Courses', type: 'shopping', store: 'Carrefour', grouping: 'aisle' });
   for (const group of data.groups) {
     assert.deepEqual(Object.keys(group).sort(), ALLOWED.group);
     for (const item of group.items) assert.deepEqual(Object.keys(item).sort(), ALLOWED.item);

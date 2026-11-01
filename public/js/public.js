@@ -14,6 +14,7 @@
 import { h, icon, replace, passwordInput } from './dom.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
 import { itemWords, countItems, doneZoneWords } from './words.js';
+import { typeLabel, typeIcon } from './list-types.js';
 
 const root = document.getElementById('app');
 const token = location.pathname.split('/')[2] ?? '';
@@ -154,7 +155,7 @@ function showList(data) {
   const content = groups.length || done.length
     ? [...groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.map((item) => itemRow(item, group.name))))), doneZone]
     : h('div', { class: 'empty' },
-      h('span', { class: 'empty__icon' }, icon(list.grouping === 'none' ? 'tasks' : 'cart', 'icon--lg')),
+      h('span', { class: 'empty__icon' }, icon(typeIcon(list.type), 'icon--lg')),
       h('h2', { class: 'empty__title' }, 'Cette liste est vide'));
 
   replace(root, h('div', { class: 'screen' },
@@ -164,7 +165,7 @@ function showList(data) {
         h('h1', { class: 'public-head__title' }, list.name),
         list.store
           ? h('p', { class: 'public-head__sub' }, icon('store', 'icon--xs'), list.store)
-          : h('p', { class: 'public-head__sub' }, icon(list.grouping === 'none' ? 'tasks' : 'cart', 'icon--xs'), list.category),
+          : h('p', { class: 'public-head__sub' }, icon(typeIcon(list.type), 'icon--xs'), typeLabel(list.type)),
         h('p', { class: 'public-head__sub' }, icon('sync', 'icon--xs'), `Mis à jour à ${time}`)),
       refresh),
     h('div', { class: `scroll${shopping ? '' : ' scroll--flat'}` }, content),

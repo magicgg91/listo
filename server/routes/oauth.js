@@ -188,12 +188,12 @@ export function oauthConsentRoutes(ctx) {
   };
 
   // Ce qu'il faut afficher : application, adresse de retour, portées
-  // possibles, compte connecté, ses listes (identifiant et nom seulement)
+  // possibles, compte connecté, ses listes (identifiant, nom, icône et type)
   router.get('/oauth/demandes/:id', (req, res) => {
     const request = findRequest(req, res);
     if (!request) return;
     const lists = ctx.lists.myLists(req.user).map((list) => ({
-      id: list.id, name: list.name, icon: list.icon, isShopping: list.category.isShopping,
+      id: list.id, name: list.name, icon: list.icon, type: list.type,
     }));
     res.json({
       request: oauth.describeRequest(request),

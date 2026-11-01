@@ -191,15 +191,15 @@ test('sorties : seulement les champs prévus, aucun nom de personne, contenu pr�
   const c = claude(h, (await connect(h, h.guillaume, PASSWORD)).access_token);
   const listed = await c.tool('list_lists');
   for (const list of data(listed).lists) {
-    assert.deepEqual(Object.keys(list).sort(), ['access', 'category', 'checked_count', 'id', 'item_count', 'name', 'type']);
+    assert.deepEqual(Object.keys(list).sort(), ['access', 'checked_count', 'id', 'item_count', 'name', 'type']);
   }
   const courses = data(listed).lists.find((l) => l.id === h.ids.courses);
-  assert.deepEqual(courses, { id: h.ids.courses, name: 'Courses', type: 'shopping', category: 'Courses', item_count: 3, checked_count: 1, access: 'owner' });
+  assert.deepEqual(courses, { id: h.ids.courses, name: 'Courses', type: 'shopping', item_count: 3, checked_count: 1, access: 'owner' });
 
   const res = await c.tool('read_list', { list_id: h.ids.courses });
   const out = data(res);
   assert.deepEqual(Object.keys(out).sort(), ['items', 'list', 'next_cursor', 'total']);
-  assert.deepEqual(Object.keys(out.list).sort(), ['access', 'category', 'id', 'name', 'type']);
+  assert.deepEqual(Object.keys(out.list).sort(), ['access', 'id', 'name', 'type']);
   assert.equal(out.items.length, 2, 'cochés omis par défaut');
   const lait = out.items.find((i) => i.id === h.ids.lait);
   assert.deepEqual(lait, { id: h.ids.lait, name: 'Lait', quantity: '2 L', checked: false, note: 'demi-écrémé', aisle: 'Crèmerie', ean: '3428272950019' });
@@ -223,7 +223,7 @@ test('sorties : seulement les champs prévus, aucun nom de personne, contenu pr�
   assert.equal(data(await c.tool('read_list', { list_id: h.ids.courses, include_checked: true })).items.length, 3);
   const maison = data(await c.tool('read_list', { list_id: h.ids.maison }));
   assert.deepEqual(maison.items, [{ id: h.ids.ampoule, name: 'Ampoule', quantity: '', checked: false, priority: 'high', due_date: '2026-11-05' }]);
-  assert.equal(maison.list.type, 'other');
+  assert.equal(maison.list.type, 'tasks');
 });
 
 test('read_list : pagination par 200 avec curseur, limit, arguments invalides (-32602)', async (t) => {

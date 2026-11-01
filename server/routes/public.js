@@ -19,6 +19,7 @@
 //   (20 en 15 minutes) est bloquée sur toutes ces routes.
 // - En-têtes : pas d'indexation, jamais de cache, pas de « referrer ».
 
+import { typeOf, isShoppingList, usesTaskOptions } from '../../public/js/list-types.js';
 import fs from 'node:fs';
 import express from 'express';
 import { parseCookies, requireSameOrigin } from '../auth.js';
@@ -56,8 +57,7 @@ export function publicRoutes(ctx, { publicDir }) {
 
   const q = {
     list: db.prepare(`
-      SELECT lists.name, lists.store_id, lists.priority_enabled, lists.due_enabled, categories.name AS category_name, categories.is_shopping
-      FROM lists JOIN categories ON categories.id = lists.category_id WHERE lists.id = ?
+      SELECT name, type, store_id, priority_enabled, due_enabled FROM lists WHERE id = ?
     `),
     store: db.prepare('SELECT id, name, is_multi FROM stores WHERE id = ?'),
     allStores: db.prepare('SELECT id, name FROM stores'),
@@ -111,8 +111,10 @@ export function publicRoutes(ctx, { publicDir }) {
   // Ce que voit le visiteur : liste blanche, champ par champ
   function publicView(share, token) {
     const list = q.list.get(share.list_id);
-    const store = list.store_id === null ? null : q.store.get(list.store_id);
-    const isShopping = list.is_shopping === 1;
+    const isShopping = isShoppingList(list);
+    // Magasin : seulement pour une liste de courses (une liste de tâches qui
+    // a été de courses garde le sien en base, jamais montré ici)
+    const store = !isShopping || list.store_id === null ? null : q.store.get(list.store_id);
     const byStore = isShopping && store?.is_multi === 1;
     const items = q.items.all(share.list_id).map((row) => ({
       id: row.id,
@@ -135,11 +137,11 @@ export function publicRoutes(ctx, { publicDir }) {
     const aisles = q.allAisles.all();
     const stores = q.allStores.all();
     const { groups, done } = splitDone(items, aisles, isShopping, { byStore, stores });
-    // Liste autre que les courses : priorité et échéance en plus (lecture
-    // seule), chacune seulement si elle est activée pour cette liste ;
-    // jamais pour une liste de courses
-    const withPriority = !isShopping && list.priority_enabled === 1;
-    const withDue = !isShopping && list.due_enabled === 1;
+    // Liste de tâches : priorité et échéance en plus (lecture seule),
+    // chacune seulement si elle est activée pour cette liste ; jamais pour
+    // une liste de courses
+    const withPriority = usesTaskOptions(list) && list.priority_enabled === 1;
+    const withDue = usesTaskOptions(list) && list.due_enabled === 1;
     // Nom d'un rayon ou d'un magasin, ou null (aucun, ou inconnu)
     const nameOf = (rows, id) => (id === null ? null : rows.find((row) => row.id === id)?.name ?? null);
     const describe = (item) => ({
@@ -165,7 +167,8 @@ export function publicRoutes(ctx, { publicDir }) {
     return {
       list: {
         name: list.name,
-        category: list.category_name,
+        // Type de la liste : 'shopping' (courses) ou 'tasks' (tâches)
+        type: typeOf(list),
         store: store ? store.name : null,
         grouping: !isShopping ? 'none' : byStore ? 'store' : 'aisle',
       },

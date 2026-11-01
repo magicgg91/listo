@@ -54,7 +54,7 @@ function listTick(list, chosen) {
     button.setAttribute('aria-checked', String(on));
     replace(button,
       h('span', { class: `tick${on ? ' is-on' : ''}` }, on ? icon('check') : null),
-      icon(listIcon({ icon: list.icon, category: { isShopping: list.isShopping } })),
+      icon(listIcon({ icon: list.icon, type: list.type })),
       h('span', { class: 'grow' }, list.name));
   };
   button.addEventListener('click', () => {

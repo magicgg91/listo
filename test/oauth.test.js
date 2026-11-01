@@ -158,7 +158,7 @@ test('flux complet (DCR) : autorisation, écran, accord avec mot de passe, code,
   assert.deepEqual(shown.body.account, { username: 'guillaume', displayName: 'Guillaume' });
   assert.equal(shown.body.twoFactor, false);
   assert.deepEqual(shown.body.lists.map((l) => l.name).sort(), ['Courses', 'Maison']);
-  assert.deepEqual(Object.keys(shown.body.lists[0]).sort(), ['icon', 'id', 'isShopping', 'name'], 'listes : identifiant et nom seulement');
+  assert.deepEqual(Object.keys(shown.body.lists[0]).sort(), ['icon', 'id', 'name', 'type'], 'listes : identifiant, nom, icône et type seulement');
 
   const ok = await claude.consent(h.guillaume, start.requestId, { scope: 'write' });
   assert.equal(ok.status, 200);

@@ -480,8 +480,10 @@ export const MIGRATIONS = [
 // - items.link (lien web http ou https, 500 caractères au plus) et
 //   items.price_cents (prix indicatif en centimes, de 0 à 100 000 €) ;
 // - reservations : un seul réservant par souhait (item_id en clé primaire),
-//   effacée avec le souhait ; jamais transmise au bénéficiaire (voir
-//   server/reservations.js).
+//   effacée avec le souhait ou avec le compte qui a réservé ; jamais
+//   transmise au bénéficiaire (voir server/reservations.js). Une réservation
+//   ne rend pas un compte « utilisé » dans l'administration : sinon un Admin
+//   bénéficiaire pourrait deviner qu'il en existe une.
 // Non destructive (des colonnes vides et une table vide sont ajoutées) ;
 // chaque ajout vérifie d'abord qu'il n'existe pas déjà.
 export function wishesMigration(db) {
@@ -497,7 +499,7 @@ export function wishesMigration(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS reservations (
       item_id    TEXT    PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
-      user_id    INTEGER NOT NULL REFERENCES users(id),
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       created_at TEXT    NOT NULL,
       updated_at TEXT    NOT NULL
     );

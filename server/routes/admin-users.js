@@ -28,14 +28,15 @@ export function adminUserRoutes(ctx) {
   const findUser = db.prepare('SELECT * FROM users WHERE id = ?');
   // Nombre d'Admin actifs autres que le compte indiqué
   const otherActiveAdmins = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'admin' AND active = 1 AND id != ?").pluck();
-  // Un compte est « utilisé » s'il possède une liste, a créé un article ou
-  // est membre d'une liste
+  // Un compte est « utilisé » s'il possède une liste, a créé un article, est
+  // membre d'une liste ou destinataire d'une liste d'envies. Une réservation
+  // n'en fait pas partie (elle s'efface avec le compte) : l'administration ne
+  // laisse ainsi rien deviner des réservations.
   const accountUsed = db.prepare(`
     SELECT EXISTS (SELECT 1 FROM lists WHERE owner_id = :id)
         OR EXISTS (SELECT 1 FROM items WHERE created_by = :id)
         OR EXISTS (SELECT 1 FROM list_members WHERE user_id = :id)
         OR EXISTS (SELECT 1 FROM lists WHERE for_user_id = :id)
-        OR EXISTS (SELECT 1 FROM reservations WHERE user_id = :id)
   `).pluck();
 
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste

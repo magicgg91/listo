@@ -325,12 +325,16 @@ test('membre parti, compte désactivé : ses réservations restent ; le gestionn
   assert.equal((await h.release(h.guillaume, h.ids.velo)).status, 200);
   assert.equal((await h.release(h.guillaume, h.ids.livre)).status, 200);
   assert.deepEqual(await h.reservedIn(h.guillaume, h.ids.lea), []);
-  // Un compte qui a réservé est « utilisé » : il ne se supprime pas (désactiver)
-  await h.reserve(h.zoe, h.ids.velo).catch(() => {});
+  // Une réservation ne rend pas un compte « utilisé » (l'administration ne
+  // doit rien laisser deviner) : Zoé réserve, quitte la liste, son compte
+  // jamais utilisé par ailleurs se supprime, et sa réservation avec lui
   await h.guillaume.request('PUT', `/api/lists/${h.ids.lucas}/members`, { userIds: [h.marieId, h.zoeId], access: { [h.marieId]: 'lecture', [h.zoeId]: 'lecture' } });
-  await h.reserve(h.zoe, h.ids.doudou);
-  await h.guillaume.request('PUT', `/api/lists/${h.ids.lucas}/members`, { userIds: [h.marieId], access: { [h.marieId]: 'lecture' } });
-  assert.equal((await h.guillaume.del(`/api/admin/users/${h.zoeId}`)).status, 409);
+  assert.equal((await h.reserve(h.zoe, h.ids.doudou)).status, 200);
+  assert.equal((await h.zoe.post(`/api/lists/${h.ids.lucas}/leave`, {})).status, 200);
+  const zoe = (await h.guillaume.get('/api/admin/users')).body.users.find((u) => u.id === h.zoeId);
+  assert.equal(zoe.inUse, false, 'la réservation ne se voit pas dans l\'administration');
+  assert.equal((await h.guillaume.del(`/api/admin/users/${h.zoeId}`)).status, 204);
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id = ?').pluck().get(h.ids.doudou), 0);
 });
 
 test('souhait supprimé : sa réservation disparaît de la vue, et revient avec « Annuler » ; « reçu » : bénéficiaire et propriétaire seulement', async (t) => {

@@ -296,7 +296,7 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
   // Fiche : champs cachés, jamais envoyés quand désactivés (même si le réglage change pendant que la fiche est ouverte)
   assert.match(list, /fieldEl\.hidden = !shown;/);
   assert.match(list, /if \(!shown && fieldEl\.contains\(document\.activeElement\)\) document\.activeElement\.blur\(\);/);
-  assert.match(list, /const stopWatching = onDataChange\(\(\) => \{\s*showOptions\(\);/);
+  assert.match(list, /const stopWatching = onDataChange\(\(\) => \{\s*reservation\?\.paint\(\);[^\n]*\n\s*showOptions\(\);/);
   assert.match(list, /const enabled = options\(\);\s*if \(enabled\.priority && priority !== \(item\.priority \?\? 'normal'\)\) changes\.priority = priority;\s*if \(enabled\.due && dueDate !== \(item\.dueDate \?\? null\)\) changes\.dueDate = dueDate;/);
   // Fiche à consulter (lecture seule) : même règle
   assert.match(list, /options\.priority \? value\('Priorité', [^\n]*\) : null,\s*options\.due \? value\('Échéance', [^\n]*\) : null,/);

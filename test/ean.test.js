@@ -140,7 +140,7 @@ test('photo et code-barres facultatifs : un article s\'enregistre sans l\'un ni 
   // une erreur ; la photo n'est pas demandée à l'enregistrement
   const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
   assert.match(list, /const newEan = typedEan \? normalizeBarcode\(typedEan\) : null;/);
-  assert.match(list, /if \(!newName \|\| \(shopping && typedEan && !newEan\)\) return;/);
+  assert.match(list, /if \(!newName \|\| \(shopping && typedEan && !newEan\) \|\| \(wishes && \(\(typedLink && !newLink\) \|\| Number\.isNaN\(newPrice\)\)\)\) return;/);
 });
 
 test('deux articles peuvent porter le même code (pas d\'interdiction)', async (t) => {

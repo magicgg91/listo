@@ -157,7 +157,7 @@ test('les trois usages passent par le même composant, avec un titre ; textes en
   const list = read('public/js/screens/list.js');
   const scan = read('public/js/screens/scan.js');
   assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: 'Scanner un code-barres' \}\)/);
-  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: `Photo de l'\$\{words\.one\}` \}\)/);
+  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: `Photo \$\{words\.of\}` \}\)/);
   assert.match(scan, /\}, \{ title: 'Scanner un produit' \}\);/);
   const photo = read('public/js/photo.js');
   assert.doesNotMatch(photo, /innerHTML|insertAdjacentHTML|outerHTML|getUserMedia/);

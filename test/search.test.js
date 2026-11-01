@@ -161,7 +161,7 @@ test('repli mémorisé intact : la recherche ouvre les groupes sans rien enregis
   assert.match(resultGroup, /h\('span', \{ class: 'aisle__count', 'aria-label': resultsLabel\(count\) \}, String\(count\)\)/);
   assert.match(list, /if \(!inSearch\) rememberZone\(listId, open\); \/\/ recherche : rien de mémorisé/);
   assert.match(list, /show\(inSearch \|\| isZoneOpen\(listId\)\);\s*if \(!inSearch\) foldables\.push\(foldable\);/);
-  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| inSearch;/);
+  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| !mayCheck\(list\) \|\| inSearch;/);
   assert.match(list, /foldAll\.hidden = foldables\.length < 2 \|\| search\.active;/);
 });
 

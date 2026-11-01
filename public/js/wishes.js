@@ -77,3 +77,11 @@ export function formatPrice(cents) {
   if (!Number.isInteger(cents)) return '';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 }
+
+// Sous-titre d'une liste d'envies (telle que décrite par le serveur) : à qui
+// elle est destinée, « Pour vous » pour le bénéficiaire lui-même
+export function wishForLabel(list) {
+  if (list.isBeneficiary) return 'Pour vous';
+  const name = list.forDisplayName ?? list.forName ?? list.members?.find((m) => m.isOwner)?.displayName;
+  return name ? `Pour ${name}` : 'Envies';
+}

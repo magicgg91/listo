@@ -21,6 +21,7 @@
 // d'attente (avec ou sans réseau). Il n'existe pas d'opération pour la
 // remettre : pas d'« Annuler ».
 
+import { isWishList } from '../list-types.js';
 import * as actions from '../actions.js';
 import { post, errorMessage } from '../api.js';
 import { app, refreshData } from '../app.js';
@@ -36,6 +37,7 @@ import { openShareSheet } from './share.js';
 // suppression ou le départ (la liste ouverte retourne alors à « Mes listes »).
 export function listActions(list, { onDeleted } = {}) {
   const duplicate = { icon: 'copy', label: 'Dupliquer la liste', onSelect: () => openDuplicateSheet(list) };
+  const wishes = isWishList(list);
   // Nouveautés : « Ne plus me signaler cette liste » / « Signaler cette
   // liste », pour chaque membre, invité en lecture seule compris (ce n'est
   // pas une modification de la liste)
@@ -53,17 +55,18 @@ export function listActions(list, { onDeleted } = {}) {
       onDeleted();
       setTimeout(() => toast(message, { low: true }), 400);
     } };
-    return canEdit ? [duplicate, mute, leave] : [mute, leave];
+    return canEdit && !wishes ? [duplicate, mute, leave] : [mute, leave];
   }
   return [
     { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
-    duplicate,
-    { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
+    // Liste d'envies : ni duplication, ni lien public (le serveur refuse aussi)
+    wishes ? null : duplicate,
+    wishes ? null : { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
     mute,
     { icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
       if (await deleteListWithConfirm(list)) onDeleted?.();
     } },
-  ];
+  ].filter(Boolean);
 }
 
 // Sourdine des nouveautés d'une liste, pour moi seulement (sur tous mes

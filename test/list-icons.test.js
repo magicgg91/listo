@@ -177,7 +177,7 @@ test('hors ligne : l\'icône passe par la file d\'attente, comme le titre (copie
   // Formulaire : envoyée seulement si elle a changé ; jamais de focus automatique
   const form = read('public/js/screens/list-form.js');
   assert.match(form, /if \(chosenIcon !== \(list\.icon \?\? ''\)\) switches\.icon = chosenIcon;/);
-  assert.match(form, /actions\.createList\(\{[^}]*icon: chosenIcon \}\)/);
+  assert.match(form, /actions\.createList\(\{[^}]*icon: chosenIcon,\n/);
   assert.match(read('public/js/actions.js'), /\.\.\.\(icon \? \{ icon \} : \{\}\)/);
 });
 
@@ -190,7 +190,7 @@ test('grille « Icône » : radiogroup, cases de 44 px, aria-label en français,
   assert.match(form, /let chosenIcon = list\?\.icon \?\? '';/);
   assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];/);
   // Sous « Catégorie »
-  assert.match(form, /'Type de liste'\), typeGroup, typeWarning\),\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
+  assert.match(form, /'Type de liste'\), typeGroup, typeWarning\),\s*forField,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);

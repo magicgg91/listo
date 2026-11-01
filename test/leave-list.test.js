@@ -149,11 +149,11 @@ test('file hors ligne : les opérations de la personne partie sont refusées et 
 test('menus : mêmes actions, même ordre, aux deux endroits, pour chaque profil ; pas de « ⋯ » sans action', () => {
   const source = read('public/js/screens/list-actions.js');
   // Propriétaire : Modifier, Dupliquer, Partager, sourdine (nouveautés), — Supprimer
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste'[^\n]*\n\s*duplicate,\s*\{ icon: 'link', label: 'Partager par lien'[^\n]*\n\s*mute,\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true,/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste'[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*wishes \? null : \{ icon: 'link', label: 'Partager par lien'[^\n]*\n\s*mute,\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true,/);
   // Invité : « Peut modifier » : Dupliquer, — Quitter ; lecture seule : Quitter (sans trait au-dessus)
   assert.match(source, /const leave = \{ icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async \(\) => \{\s*if \(!\(await leaveListWithConfirm\(list\)\)\) return;/);
   assert.match(source, /onDeleted\(\);\s*setTimeout\(\(\) => toast\(message, \{ low: true \}\), 400\);/);
-  assert.match(source, /return canEdit \? \[duplicate, mute, leave\] : \[mute, leave\];/);
+  assert.match(source, /return canEdit && !wishes \? \[duplicate, mute, leave\] : \[mute, leave\];/);
   // Confirmation et hors ligne
   assert.match(source, /title: `Quitter la liste « \$\{list\.name\} » \?`,\s*text: 'Vous ne la verrez plus\. Le propriétaire pourra de nouveau la partager avec vous\.',\s*confirmLabel: 'Quitter',/);
   assert.match(source, /const OFFLINE_LEAVE = 'Connexion nécessaire pour quitter une liste';/);

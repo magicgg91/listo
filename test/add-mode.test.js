@@ -240,7 +240,7 @@ test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.se
   assert.match(form, /let addMode = list \? addModeOf\(list\) : defaultAddMode\(true\);\s*let addModeChosen = Boolean\(list\);/);
   assert.match(form, /if \(!addModeChosen\) \{\s*addMode = defaultAddMode\(shopping\);/);
   assert.doesNotMatch(form, /optionsField\.hidden/, 'visible pour tous les types');
-  assert.match(form, /addMode, icon: chosenIcon \}\);/);
+  assert.match(form, /addMode, icon: chosenIcon,\n/);
   assert.match(form, /if \(addMode !== addModeOf\(list\)\) switches\.addMode = addMode;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);
   // 44 px : les choix .segmented du kit

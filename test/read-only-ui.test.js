@@ -22,15 +22,26 @@ test('un seul composant : accessChoice, dans le formulaire commun à la créatio
   // Les deux écrans passent par la même fonction form() (list = null pour la création)
   assert.match(form, /replace\(container, form\(list, users\)\);/);
   assert.equal((form.match(/function form\(/g) ?? []).length, 1);
-  // Deux choix, « Peut modifier » puis « Lecture seule », coche ET texte sur le choix actif
+  // Deux petits choix au bout de la ligne de la personne, « Modifier » (Peut
+  // modifier) puis « Lire » (Lecture seule) ; le choix actif est en relief
+  // (bord, fond, ombre du kit) et s'annonce par aria-checked
   assert.match(form, /export function accessChoice\(name, value, onChange\) \{/);
-  assert.match(form, /\[\['modification', 'Peut modifier'\], \['lecture', 'Lecture seule'\]\]/);
-  assert.match(form, /replace\(option, on \? icon\('check', 'icon--sm icon--check'\) : null, option\.dataset\.label\);/);
-  assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-label': `Droit de \$\{name\} sur la liste` \}, options\)/);
-  // Chaque personne cochée (pas le propriétaire) : son choix ; une personne ajoutée commence en lecture seule
-  assert.match(form, /on && !locked \? accessChoice\(person\.displayName, rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\)\) : null/);
+  assert.match(form, /\[\['modification', 'Modifier'\], \['lecture', 'Lire'\]\]/);
+  assert.match(form, /for \(const option of options\) option\.setAttribute\('aria-checked', String\(option\.dataset\.value === current\)\);/);
+  assert.match(form, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': `Droit de \$\{name\} sur la liste` \}, options\)/);
+  assert.match(read('public/css/listo.css'), /\.segmented__opt\[aria-checked="true"\] \{ border-color: var\(--color-border\); background: var\(--color-surface\); color: var\(--color-text\); box-shadow: var\(--shadow-1\); \}/);
+  // Chaque personne (pas le propriétaire) : son choix, caché (place gardée) tant qu'elle n'est pas cochée ;
+  // une personne ajoutée commence en lecture seule
+  assert.match(form, /const access = accessChoice\(person\.displayName, rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\)\);/);
+  assert.match(form, /access\.classList\.toggle\('is-off', !on\);/);
+  assert.match(read('public/css/app.css'), /\.share__access\.is-off \{ visibility: hidden; \}/);
   assert.equal((form.match(/accessChoice\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois (pour les deux écrans)');
-  assert.match(form, /locked \? h\('span', \{ class: 'share__hint' \}, 'Tous les droits'\) : null/);
+  // Moi : ligne verrouillée « Propriétaire » ; le destinataire d'une liste d'envies aussi
+  assert.match(form, /lockedRow\(me, `\$\{me\.displayName\} \(vous\)`, 'Propriétaire'\)/);
+  // Le partage s'ouvre dans une fenêtre depuis une ligne de résumé ; « OK » dans l'en-tête
+  assert.match(form, /class: 'input input--select share__summary', type: 'button', 'aria-haspopup': 'dialog', 'aria-labelledby': 'share-label share-summary',/);
+  assert.match(form, /title: 'Partager avec',\s*tools: ok,\s*content: shareList,\s*scroll: true,\s*returnTo: shareButton,/);
+  assert.match(form, /summaryText\.textContent = !names\.length \? 'Personne'/);
   // Envoyé au serveur avec la liste des invités, seulement si quelque chose a changé
   assert.match(form, /const access = Object\.fromEntries\(\[\.\.\.guests\]\.map\(\(id\) => \[id, rights\.get\(id\) \?\? 'lecture'\]\)\);/);
   assert.match(form, /\[\.\.\.guests\]\.some\(\(id\) => before\.get\(id\) !== access\[id\]\)/);

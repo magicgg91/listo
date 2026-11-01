@@ -59,33 +59,29 @@ export function renderListForm(listId, onLeave) {
   return container;
 }
 
-// Droit d'une personne sur la liste : deux choix côte à côte (.segmented),
-// le choix actif a une coche ET son texte (jamais la couleur seule). Le même
-// composant sert à la création de la liste et à « Modifier la liste » (une
-// seule fonction form() pour les deux écrans). onChange(valeur) reçoit
-// 'modification' ou 'lecture'.
+// Droit d'une personne sur la liste, au bout de sa ligne dans la fenêtre
+// « Partager avec » : deux petits choix côte à côte (.segmented), « Modifier »
+// (droit « Peut modifier ») et « Lire » (droit « Lecture seule »). Le choix
+// actif est en relief (bord, fond, ombre : jamais la couleur seule) et
+// s'annonce par aria-checked. Le même composant sert à la création de la
+// liste et à « Modifier la liste » (une seule fonction form() pour les deux
+// écrans). onChange(valeur) reçoit 'modification' ou 'lecture'.
 export function accessChoice(name, value, onChange) {
   let current = value;
-  const options = [['modification', 'Peut modifier'], ['lecture', 'Lecture seule']].map(([choice, label]) => {
+  const options = [['modification', 'Modifier'], ['lecture', 'Lire']].map(([choice, label]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
       current = choice;
       paint();
       onChange(choice);
-    } });
+    } }, label);
     option.dataset.value = choice;
-    option.dataset.label = label;
     return option;
   });
   const paint = () => {
-    for (const option of options) {
-      const on = option.dataset.value === current;
-      option.setAttribute('aria-checked', String(on));
-      replace(option, on ? icon('check', 'icon--sm icon--check') : null, option.dataset.label);
-    }
+    for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === current));
   };
   paint();
-  return h('div', { class: 'share__access' },
-    h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': `Droit de ${name} sur la liste` }, options));
+  return h('div', { class: 'segmented share__access', role: 'radiogroup', 'aria-label': `Droit de ${name} sur la liste` }, options);
 }
 
 // Priorité et échéance d'une liste autre que les courses : deux
@@ -134,14 +130,21 @@ export function optionSwitches(values, onChange, leading = null) {
 }
 
 // « Après l'ajout » (toutes les listes, courses comprises) : deux choix côte
-// à côte (.segmented, le même composant que le droit d'une personne), le
-// choix actif a une coche ET son texte. 'quick' : « Rester sur la liste »
-// (rapide, comme avant) ; 'detail' : « Ouvrir la fiche » de l'élément
-// ajouté (détaillé). onChange(valeur). Renvoie { row, set(valeur) }.
+// à côte sur une seule ligne (.segmented, comme le droit d'une personne), au
+// libellé court ; le choix actif a une coche ET son texte. Sous le choix, une
+// ligne explique l'option choisie (reliée par aria-describedby). 'quick' :
+// « Rester sur la liste » (rapide, comme avant) ; 'detail' : « Ouvrir la
+// fiche » de l'élément ajouté (détaillé). onChange(valeur). Renvoie
+// { row, set(valeur) }.
+const ADD_MODES = [
+  ['quick', 'Rester', 'Rester sur la liste', 'On enchaîne les ajouts sur la liste.'],
+  ['detail', 'Ouvrir', 'Ouvrir la fiche', 'La fiche s\'ouvre pour compléter.'],
+];
 export function addModeChoice(value, onChange) {
   let current = value;
-  const options = [['quick', 'Rester sur la liste'], ['detail', 'Ouvrir la fiche']].map(([choice, label]) => {
-    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
+  const help = h('span', { class: 'row__sub', id: 'add-mode-help' });
+  const options = ADD_MODES.map(([choice, label, name]) => {
+    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', 'aria-label': name, onClick: () => {
       current = choice;
       paint();
       onChange(choice);
@@ -156,13 +159,13 @@ export function addModeChoice(value, onChange) {
       option.setAttribute('aria-checked', String(on));
       replace(option, on ? icon('check', 'icon--sm icon--check') : null, option.dataset.label);
     }
+    help.textContent = ADD_MODES.find(([choice]) => choice === current)?.[3] ?? '';
   };
   paint();
   const row = h('div', { class: 'toggle-row toggle-row--stack' },
-    h('div', {},
-      h('span', { class: 'row__title', id: 'add-mode-label' }, "Après l'ajout"),
-      h('span', { class: 'row__sub' }, 'Rester sur la liste : on enchaîne les ajouts. Ouvrir la fiche : elle s\'ouvre aussitôt pour compléter ce qui vient d\'être ajouté.')),
-    h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label' }, options));
+    h('span', { class: 'row__title', id: 'add-mode-label' }, "Après l'ajout"),
+    h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label', 'aria-describedby': 'add-mode-help' }, options),
+    help);
   return {
     row,
     set: (next) => {
@@ -411,12 +414,18 @@ function form(list, users) {
   const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
   // --- Partage ---
-  // Moi d'abord (toujours inclus, tous les droits), puis les autres comptes
-  // actifs ; une personne déjà présente mais désactivée reste affichée (et peut
-  // être retiré). Chaque personne cochée a son droit sur la liste, choisi
-  // juste sous son nom (accessChoice) : « Peut modifier » ou « Lecture
-  // seule ». Une personne ajoutée commence en « Lecture seule » ; une
-  // personne déjà présente garde le sien.
+  // Dans le formulaire, une seule ligne de résumé, bouton « Partager avec » :
+  // les premières pastilles des personnes, leurs prénoms (« Marie, Paul (+2) »
+  // ou « Personne ») et un chevron. Un appui ouvre une fenêtre du bas avec
+  // une ligne par personne : case à cocher, pastille, prénom, et au bout de
+  // la ligne son droit (accessChoice), visible seulement si elle est cochée
+  // (la place reste réservée). Moi d'abord (toujours inclus, tous les
+  // droits), puis les autres comptes actifs ; une personne déjà présente
+  // mais désactivée reste affichée (et peut être retirée). Une personne
+  // ajoutée commence en « Lecture seule » (« Lire ») ; une personne déjà
+  // présente garde son droit. Fermer la fenêtre (« OK », croix, Échap,
+  // toucher à côté, Retour) garde les choix dans le formulaire : rien n'est
+  // envoyé avant « Enregistrer ».
   const guests = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
   const rights = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
   const people = users.filter((u) => u.id !== me.id).map((u) => ({ ...u, active: true }));
@@ -425,50 +434,89 @@ function form(list, users) {
   }
   people.sort((a, b) => compareNames(a.displayName, b.displayName));
 
-  // Une personne : sa ligne à cocher, puis son droit si elle est cochée.
   // Le compte destinataire d'une liste d'envies est membre d'office, en
   // « Peut modifier », sans choix (le serveur l'impose aussi)
-  const personRow = (person, { locked = false } = {}) => {
-    const isBeneficiary = !locked && person.id === beneficiaryId() && (!wishesLocked || list.members.some((m) => m.id === person.id));
-    if (isBeneficiary) {
-      return h('div', { class: 'share__person' },
-        h('div', { class: 'tick-row', role: 'checkbox', 'aria-checked': 'true', 'aria-disabled': 'true' },
-          h('span', { class: 'tick is-on' }, icon('check')),
-          avatar(person.displayName, { second: true }),
-          h('span', { class: 'grow' }, person.displayName),
-          h('span', { class: 'share__hint' }, 'Destinataire · Peut modifier')));
-    }
-    const on = locked || guests.has(person.id);
-    const row = h('button', {
-      class: 'tick-row',
-      type: 'button',
-      role: 'checkbox',
-      'aria-checked': String(on),
-      'aria-disabled': locked ? 'true' : null,
-    },
-    h('span', { class: `tick${on ? ' is-on' : ''}` }, on ? icon('check') : null),
-    avatar(person.displayName, { second: !locked }),
-    h('span', { class: 'grow' }, locked ? `${person.displayName} (vous)` : person.displayName),
-    locked ? h('span', { class: 'share__hint' }, 'Tous les droits') : null,
-    !locked && !person.active ? h('span', { class: 'share__hint' }, 'Compte désactivé') : null);
-    const block = h('div', { class: 'share__person' }, row,
-      on && !locked ? accessChoice(person.displayName, rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value)) : null);
-    if (!locked) {
-      row.addEventListener('click', () => {
-        if (guests.has(person.id)) guests.delete(person.id);
-        else guests.add(person.id);
-        block.replaceWith(personRow(person));
-      });
-    }
-    return block;
+  const isLockedBeneficiary = (person) => person.id === beneficiaryId() && (!wishesLocked || list.members.some((m) => m.id === person.id));
+  // Personnes avec qui la liste est partagée (destinataire compris), dans l'ordre affiché
+  const sharedWith = () => people.filter((p) => guests.has(p.id) || isLockedBeneficiary(p));
+
+  // Ligne verrouillée (moi, le destinataire) : cochée, sans choix
+  const lockedRow = (person, title, sub) => h('div', { class: 'share__person' },
+    h('div', { class: 'tick-row', role: 'checkbox', 'aria-checked': 'true', 'aria-disabled': 'true' },
+      h('span', { class: 'tick is-on' }, icon('check')),
+      avatar(person.displayName, { second: person.id !== me.id }),
+      h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, title), h('span', { class: 'row__sub' }, sub))));
+  // Une personne : sa case, sa pastille, son prénom, puis son droit
+  const personRow = (person) => {
+    if (isLockedBeneficiary(person)) return lockedRow(person, person.displayName, 'Destinataire · Peut modifier');
+    const box = h('span', { class: 'tick' });
+    const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox' },
+      box,
+      avatar(person.displayName, { second: true }),
+      h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
+        !person.active ? h('span', { class: 'row__sub' }, 'Compte désactivé') : null));
+    const access = accessChoice(person.displayName, rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value));
+    // Mise à jour sur place (la case garde le focus) ; personne non cochée :
+    // son droit est caché (place réservée, hors lecteurs d'écran)
+    const paintRow = () => {
+      const on = guests.has(person.id);
+      tick.setAttribute('aria-checked', String(on));
+      box.classList.toggle('is-on', on);
+      replace(box, on ? icon('check') : null);
+      access.classList.toggle('is-off', !on);
+    };
+    tick.addEventListener('click', () => {
+      if (guests.has(person.id)) guests.delete(person.id);
+      else guests.add(person.id);
+      paintRow();
+    });
+    paintRow();
+    return h('div', { class: 'share__person' }, tick, access);
   };
-  const shareGroup = h('div', { class: 'card share' });
+
+  // Ligne de résumé dans le formulaire
+  const summaryText = h('span', { class: 'share__summary-text', id: 'share-summary' });
+  const summaryAvatars = h('span', { class: 'avatars', 'aria-hidden': 'true' });
+  const shareButton = h('button', {
+    class: 'input input--select share__summary', type: 'button', 'aria-haspopup': 'dialog', 'aria-labelledby': 'share-label share-summary',
+    onClick: () => openShareSheet(),
+  }, h('span', { class: 'input__value' }, summaryAvatars, summaryText), icon('chev-r'));
   function drawShare() {
-    replace(shareGroup,
-      personRow({ id: me.id, displayName: me.displayName }, { locked: true }),
-      people.map((person) => personRow(person)));
+    const shared = sharedWith();
+    const shown = shared.length > 4 ? shared.slice(0, 3) : shared; // 4 pastilles au plus, puis « +N »
+    replace(summaryAvatars, shown.map((p) => avatar(p.displayName, { second: true })),
+      shared.length > shown.length ? h('span', { class: 'avatar avatar--b' }, `+${shared.length - shown.length}`) : null);
+    const names = shared.map((p) => p.displayName);
+    summaryText.textContent = !names.length ? 'Personne'
+      : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ` (+${names.length - 2})` : ''}`;
   }
   drawShare();
+
+  // Fenêtre « Partager avec » (même feuille que le choix de l'icône) : « OK »
+  // dans l'en-tête, à côté de la croix ; la liste défile, l'en-tête reste
+  // visible. Focus sur la première case à l'ouverture, rendu au bouton du
+  // résumé à la fermeture (returnTo).
+  let shareList = null;
+  function openShareSheet() {
+    shareList = h('div', { class: 'share share--sheet' },
+      lockedRow(me, `${me.displayName} (vous)`, 'Propriétaire'),
+      people.map((person) => personRow(person)));
+    shareList.querySelector('button.tick-row')?.setAttribute('data-initial-focus', 'true');
+    const ok = h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => sheet.close() }, 'OK');
+    const sheet = openSheet({
+      title: 'Partager avec',
+      tools: ok,
+      content: shareList,
+      scroll: true,
+      returnTo: shareButton,
+      onClose: () => {
+        shareList = null;
+        drawShare(); // le résumé suit les choix faits dans la fenêtre
+      },
+    });
+    paintShare();
+  }
+
   // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
   const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
   // Conversion en liste d'envies : en ligne seulement (elle dépend du
@@ -486,7 +534,7 @@ function form(list, users) {
   };
   let painted = false;
   const paintShare = () => {
-    if (painted && !shareGroup.isConnected) { // formulaire quitté
+    if (painted && !shareButton.isConnected) { // formulaire quitté
       window.removeEventListener('online', paintShare);
       window.removeEventListener('offline', paintShare);
       return;
@@ -494,8 +542,11 @@ function form(list, users) {
     painted = true;
     const offline = !navigator.onLine;
     shareNote.hidden = !offline;
-    shareGroup.inert = offline;
-    shareGroup.classList.toggle('is-off', offline);
+    shareButton.disabled = offline;
+    if (shareList) {
+      shareList.inert = offline;
+      shareList.classList.toggle('is-off', offline);
+    }
     paintConvert();
   };
   paintShare();
@@ -576,7 +627,7 @@ function form(list, users) {
       forField,
       storeField,
       optionsField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'share-label' }, 'Partager avec'), shareButton, shareNote),
       error.note,
       deleteButton)),
     h('div', { class: 'footer' }, convertNote, save));

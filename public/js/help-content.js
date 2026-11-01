@@ -160,10 +160,10 @@ export const SECTIONS = [
     topics: [
       {
         title: 'Partager la liste',
-        paragraphs: ['Menu de la liste, « Modifier la liste », section « Partager avec » : cochez une personne, puis choisissez son droit.'],
+        paragraphs: ['Menu de la liste, « Modifier la liste », ligne « Partager avec » : une fenêtre s\'ouvre avec une ligne par personne. Cochez une personne, puis choisissez son droit au bout de sa ligne. « OK » ferme la fenêtre ; le partage est enregistré avec « Enregistrer ».'],
         items: [
-          '« Peut modifier » : la personne est contributeur. Elle coche, ajoute, modifie et supprime des articles.',
-          '« Lecture seule » : la personne est invitée. Elle consulte seulement. C\'est le choix de départ.',
+          '« Modifier » (droit « Peut modifier ») : la personne est contributeur. Elle coche, ajoute, modifie et supprime des articles.',
+          '« Lire » (droit « Lecture seule ») : la personne est invitée. Elle consulte seulement. C\'est le choix de départ.',
           'Vous pouvez changer le droit ou retirer une personne à tout moment.',
         ],
       },

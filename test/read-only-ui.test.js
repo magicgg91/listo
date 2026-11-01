@@ -67,21 +67,21 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
   assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\)\), item, meta\);\s*const slide/);
   // Case visible mais inactive (comme la page publique) ; cochée = remplie ET barrée (.is-done)
-  assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': item\.checked \? 'Coché' : 'Non coché' \}/);
+  assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': isWishList\(view\?\.list\) \? \(item\.checked \? 'Reçu' : 'Pas encore reçu'\) : item\.checked \? 'Coché' : 'Non coché' \}/);
   assert.match(list, /'aria-label': `\$\{canEdit \? 'Modifier' : 'Voir'\} \$\{item\.name\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);
   // Pas d'actions sur les cochés
-  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| inSearch;/);
+  assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| !mayCheck\(list\) \|\| inSearch;/);
   // Fiche à consulter : aucun champ, aucun bouton qui écrit, photo qui s'agrandit
   const view = list.slice(list.indexOf('function openItemView'), list.indexOf('// Feuille de choix du rayon'));
   assert.doesNotMatch(view, /h\('input'|h\('textarea'|type: 'submit'|tools:|actions\.(update|delete|check|set|remove)/);
   assert.match(view, /'aria-label': `Agrandir la photo de \$\{it\.name\}`, onClick: \(\) => showPhoto\(it\)/);
-  assert.match(view, /title: `Détail de l'\$\{words\.one\}`/);
+  assert.match(view, /title: `Détail \$\{words\.of\}`/);
   // Tri, repli des groupes : inchangés (aucune condition sur le droit)
   assert.doesNotMatch(list.slice(list.indexOf('function foldableGroup'), list.indexOf('// --- Dessin de la liste')), /canEdit/);
   assert.doesNotMatch(list.slice(list.indexOf('const SORTS'), list.indexOf('let view = null')), /canEdit/);
   // Chaque action d'écriture vérifie aussi le droit (le serveur refuse de toute façon)
   for (const guard of [
-    /function toggle\(item\) \{\s*if \(!editable\(\)\) return;/,
+    /function toggle\(item\) \{\s*if \(!editable\(\) \|\| !mayCheck\(view\?\.list\)\) return;/,
     /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;/,
     /async function createItem\(name, fields = \{\}\) \{\s*if \(!editable\(\)\) return false;/,
     /check: \(item, checked\) => editable\(\) && actions\.checkItem\(item, checked\)/,
@@ -95,7 +95,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), 'Lecture seule'\)/);
   // Invité en lecture seule : seulement « Quitter la liste » (« Dupliquer la liste » est réservé au propriétaire et à « Peut modifier »)
-  assert.match(read('public/js/screens/list-actions.js'), /return canEdit \? \[duplicate, mute, leave\] : \[mute, leave\];/);
+  assert.match(read('public/js/screens/list-actions.js'), /return canEdit && !wishes \? \[duplicate, mute, leave\] : \[mute, leave\];/);
   assert.doesNotMatch(list, /innerHTML/);
 });
 

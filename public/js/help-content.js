@@ -28,6 +28,7 @@ export const PERMISSIONS = [
   { action: 'Cocher, ajouter, modifier ou supprimer des articles, ajouter une photo', roles: ['owner', 'contributor'] },
   { action: 'Créer un magasin ou un rayon manquant', roles: ['owner', 'contributor', 'admin'] },
   { action: 'Dupliquer la liste', roles: ['owner', 'contributor'] },
+  { action: 'Réserver un souhait ou participer à un cadeau (liste d\'envies), sauf la personne à qui la liste est destinée', roles: ['owner', 'contributor', 'guest'] },
   { action: 'Modifier la liste (titre, type, magasin, icône, options)', roles: ['owner'] },
   { action: 'Partager la liste et choisir le droit de chaque personne', roles: ['owner'] },
   { action: 'Créer un lien public', roles: ['owner'] },
@@ -36,7 +37,7 @@ export const PERMISSIONS = [
   { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
 
-export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres.';
+export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres. Dans une liste d\'envies, la personne à qui la liste est destinée ne voit jamais les réservations, même si elle en est la propriétaire.';
 
 // Sections, dans l'ordre de la page. adminOnly : affichée aux seuls comptes
 // Admin. Chaque section a des sujets : un titre, des paragraphes, une liste
@@ -48,17 +49,44 @@ export const SECTIONS = [
     topics: [
       {
         title: 'Articles et éléments',
-        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans une liste de tâches, c\'est un « élément ». Le fonctionnement est le même.'],
+        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans une liste de tâches, c\'est un « élément ». Dans une liste d\'envies, c\'est un « souhait ». Le fonctionnement est le même.'],
       },
       {
         title: 'Créer une liste',
-        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses » ou « Tâches ») et une icône.'],
+        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.'],
         items: [
           'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
           'Liste de tâches : « Options des éléments » active la priorité et l\'échéance.',
           '« Après l\'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d\'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.',
           'Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).',
         ],
+      },
+      {
+        title: 'Listes d\'envies : la surprise',
+        paragraphs: ['Une liste d\'envies rassemble des idées de cadeaux pour une personne. Ses proches peuvent réserver un souhait pour éviter d\'offrir deux fois la même chose. La surprise est préservée : la personne à qui la liste est destinée ne voit jamais qu\'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c\'est elle qui a créé la liste.'],
+        items: [
+          '« Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change pas de type.',
+          'Si la liste est pour un autre compte, cette personne en fait partie d\'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.',
+          'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.',
+          'Pour réserver : touchez le souhait, puis « Réserver ». La ligne indique alors qui a réservé. Il faut du réseau.',
+          'Tout membre peut réserver, même en « Lecture seule ».',
+          'Modifier un souhait réservé ne retire pas la réservation. Cocher un souhait le range dans « Reçus » : seuls la personne à qui la liste est destinée et le propriétaire le peuvent ; les réservations n\'y sont plus affichées.',
+          'Une liste d\'envies n\'a ni lien public, ni copie (« Dupliquer la liste » n\'est pas proposé).',
+        ],
+      },
+      {
+        title: 'Cotiser pour un cadeau',
+        paragraphs: ['Plusieurs proches peuvent se mettre ensemble pour un même souhait. Listo dit seulement qui participe : ni montant, ni part, ni paiement.'],
+        items: [
+          'En réservant, activez « Ouvert à d\'autres » pour que d\'autres puissent se joindre ; sinon, personne d\'autre ne peut le réserver.',
+          'Sur un souhait ouvert, « Participer » vous ajoute. « Quitter » vous retire ; quand le dernier participant s\'en va, le souhait est de nouveau libre.',
+          'Chaque participant peut ouvrir ou fermer la réservation avec « Ouvert à d\'autres ».',
+          'Quand la liste est pour quelqu\'un d\'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu\'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti : les autres participants peuvent seulement ouvrir ou fermer la réservation.',
+        ],
+      },
+      {
+        title: 'La priorité',
+        paragraphs: ['Dans une liste de tâches ou d\'envies, chaque ligne peut avoir une priorité : basse, normale ou élevée. Pour une liste d\'envies, elle est activée dès la création : la personne à qui la liste est destinée indique ainsi ce qui lui ferait le plus plaisir. Tout le monde la voit. Le propriétaire peut la désactiver dans « Modifier la liste » (« Priorité »). L\'échéance n\'existe que pour les listes de tâches.'],
       },
       {
         title: 'Ajouter, modifier, cocher, supprimer',

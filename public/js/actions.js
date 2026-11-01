@@ -13,8 +13,8 @@
 // appliquées ici aussi : elles marchent hors ligne.
 
 import { isShoppingList } from './list-types.js';
-import { app, dataChanged, queueEntry, flushSoon } from './app.js';
-import { uuid, photoUrl } from './api.js';
+import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
+import { uuid, photoUrl, post, patch, del } from './api.js';
 import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames } from './store.js';
 import { isMultiList } from './sorting.js';
 
@@ -36,7 +36,7 @@ async function perform(operation, { hint } = {}) {
 // Ajoute un article. aisleId / storeId : choix explicite (y compris null,
 // « Sans rayon » / « Sans magasin ») ; absent, le serveur choisira le rayon ou
 // le magasin habituel, et le téléphone affiche en attendant sa prévision.
-export async function addItem({ listId, name, quantity, note, aisleId, storeId, ean }) {
+export async function addItem({ listId, name, quantity, note, aisleId, storeId, ean, link, priceCents }) {
   const list = app.data.lists.get(listId);
   if (!list) return null;
   const itemId = uuid();
@@ -46,6 +46,8 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId, 
   if (aisleId !== undefined) fields.aisleId = aisleId;
   if (storeId !== undefined) fields.storeId = storeId;
   if (ean !== undefined) fields.ean = ean; // code-barres normalisé (listes de courses)
+  if (link !== undefined) fields.link = link; // lien et prix (listes d'envies)
+  if (priceCents !== undefined) fields.priceCents = priceCents;
   const multi = isMultiList(list);
   const hint = {};
   if (multi && storeId === undefined) hint.storeId = usualStoreFor(app.data, list, name);
@@ -104,12 +106,17 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon }) {
+export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon, forUserId, forName }) {
   const listId = uuid();
   // listType : 'shopping' ou 'tasks' (« type » est le nom de l'opération) ;
   // icon : envoyée seulement si une icône a été choisie ; addMode (« Après
   // l'ajout ») : sans valeur, le serveur choisit selon le type
-  await perform({ type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled, ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}) });
+  // forUserId / forName : « Pour qui ? » d'une liste d'envies (rien : « Moi »)
+  await perform({
+    type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled,
+    ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}),
+    ...(forUserId ? { forUserId } : {}), ...(forName ? { forName } : {}),
+  });
   return listId;
 }
 
@@ -125,6 +132,38 @@ export const setListMuted = (listId, muted) => perform({ type: 'list.mute', list
 // Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
 export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
+
+// --- Réservations (listes d'envies) ---
+// En ligne seulement, jamais par la file d'attente : la réponse dit tout de
+// suite si quelqu'un a réservé entre-temps (« Déjà réservé. »). Ensuite, une
+// synchronisation rapporte l'état à jour (les réservations ne sont jamais
+// écrites dans la copie locale à la main).
+const reservationUrl = (itemId, rest = '') => `/api/items/${encodeURIComponent(itemId)}/reservation${rest}`;
+// Réserver un souhait libre (open : « Ouvert à d'autres »), ou participer à
+// une réservation ouverte
+export async function reserveWish(itemId, open) {
+  await post(reservationUrl(itemId), open === undefined ? {} : { open });
+  await refreshData({ quiet: true });
+}
+// Ouvrir ou fermer la réservation (participants)
+export async function setWishOpen(itemId, open) {
+  await patch(reservationUrl(itemId), { open });
+  await refreshData({ quiet: true });
+}
+// Quitter ma participation (le dernier qui part libère le souhait)
+export async function leaveWish(itemId) {
+  await del(reservationUrl(itemId));
+  await refreshData({ quiet: true });
+}
+// Gestionnaire : libérer tout le souhait, ou retirer un participant
+export async function releaseWish(itemId) {
+  await del(reservationUrl(itemId, '/all'));
+  await refreshData({ quiet: true });
+}
+export async function removeWishParticipant(itemId, userId) {
+  await del(reservationUrl(itemId, `/participants/${encodeURIComponent(userId)}`));
+  await refreshData({ quiet: true });
+}
 
 // --- Photos ---
 // Une photo prise (même hors ligne) est gardée dans la file d'attente et part

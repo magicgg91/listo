@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { once } from 'node:events';
-import { openDatabase } from '../server/db.js';
+import Database from 'better-sqlite3';
+import { openDatabase, MIGRATIONS } from '../server/db.js';
 import { loadConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
 import { hashPassword } from '../server/passwords.js';
@@ -12,6 +13,26 @@ import { hashPassword } from '../server/passwords.js';
 // Adresse publique utilisée par les tests (pour l'en-tête Origin)
 export const ORIGIN = 'http://listo.test';
 export const SETUP_CODE = 'K7RM-4XQP-9DHT';
+
+// Base « d'avant » pour tester une migration : un fichier où seules les
+// migrations 1 à version sont appliquées (comme une ancienne installation
+// ou une ancienne sauvegarde). La suivante s'appliquera à son ouverture par
+// openDatabase.
+export function databaseAt(file, version) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const db = new Database(file);
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+  for (let v = 0; v < version; v++) {
+    db.transaction(() => {
+      const migration = MIGRATIONS[v];
+      if (typeof migration === 'function') migration(db);
+      else db.exec(migration);
+      db.pragma(`user_version = ${v + 1}`);
+    })();
+  }
+  return db;
+}
 
 // Crée un dossier temporaire vide, effacé à la fin du test.
 export function tempDir(t) {

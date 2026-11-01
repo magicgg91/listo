@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, createClient, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { MAX_EVENTS_PER_LIST, FORMER_MEMBER } from '../server/news.js';
 import { emptyState, applyOp, mergeSync, toSnapshot, fromSnapshot, listNews, newsBadge, newsTotal, seenTarget, isListMuted } from '../public/js/store.js';
@@ -182,15 +182,13 @@ test('nettoyage : 30 jours et 500 événements par liste ; repère plus ancien q
 test('migration 16 : tables du journal et des repères, repère de chaque membre posé sur le dernier événement, réglages par défaut', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-news-'));
   const file = path.join(dir, 'listo.db');
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
-  db.pragma('user_version = 15');
+  let db = databaseAt(file, 15);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x'), ('b', 'B', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Courses', 1, 1), ('l2', 'Maison', 2, 2)").run();
   db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES ('l1', 1, 'modification'), ('l1', 2, 'lecture'), ('l2', 2, 'modification')").run();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   assert.deepEqual(db.prepare('SELECT list_id, user_id, last_seen, behind, muted FROM list_reads ORDER BY list_id, user_id').all().map((r) => ({ ...r })), [
     { list_id: 'l1', user_id: 1, last_seen: 0, behind: 0, muted: 0 },
     { list_id: 'l1', user_id: 2, last_seen: 0, behind: 0, muted: 0 },

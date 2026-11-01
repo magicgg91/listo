@@ -307,11 +307,11 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   assert.equal(fromSnapshot(null), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 99 }), null);
   // Copie d'avant les types de liste (version 1, avec les catégories) : écartée, tout est rechargé
-  assert.equal(snapshot.version, 2);
+  assert.equal(snapshot.version, 3);
   assert.equal(fromSnapshot({ ...snapshot, version: 1, categories: [] }), null);
   assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
   // Aucun secret dans la copie : seulement des données de listes
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {
@@ -410,8 +410,13 @@ test('vocabulaire : « article » pour les courses, « élément » pour les aut
   assert.equal(isShopping(taches), false);
   assert.equal(isShopping(true), true);
   assert.equal(isShopping(undefined), false, 'liste inconnue : pas des courses');
-  assert.deepEqual(itemWords(courses), { one: 'article', many: 'articles' });
-  assert.deepEqual(itemWords(taches), { one: 'élément', many: 'éléments' });
+  const pick = ({ one, many }) => ({ one, many });
+  assert.deepEqual(pick(itemWords(courses)), { one: 'article', many: 'articles' });
+  assert.deepEqual(pick(itemWords(taches)), { one: 'élément', many: 'éléments' });
+  // Liste d'envies : « souhait », mot qui commence par une consonne (formes complètes)
+  const envies = itemWords({ type: 'wishes' });
+  assert.deepEqual([envies.one, envies.many, envies.the, envies.this, envies.aNew, envies.New, envies.of], ['souhait', 'souhaits', 'le souhait', 'ce souhait', 'un nouveau souhait', 'Nouveau souhait', 'du souhait']);
+  assert.deepEqual([itemWords(taches).the, itemWords(taches).New, itemWords(courses).of], ["l'élément", 'Nouvel élément', "de l'article"]);
   assert.equal(countItems(1, taches), '1 élément');
   assert.equal(countItems(2, taches), '2 éléments');
   assert.equal(countItems(1, courses), '1 article');

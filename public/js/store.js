@@ -12,7 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
-import { isListType, isShoppingList, usesTaskOptions } from './list-types.js';
+import { isListType, isShoppingList, usesPriority, usesDue } from './list-types.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -27,6 +27,11 @@ export function emptyState() {
     aisles: [],
     history: [],
     users: [],              // comptes actifs, pour choisir avec qui partager
+    // Réservations des listes d'envies, { <liste> : [{ itemId, userId,
+    // displayName }] }, SEULEMENT pour les listes où le serveur a jugé que
+    // ce compte peut les voir (jamais celles dont il est le bénéficiaire :
+    // le serveur ne les envoie pas). Remplacées en entier à chaque synchronisation.
+    reservations: {},
     news: emptyNews(),      // mes nouveautés (voir « Nouveautés » plus bas)
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
   };
@@ -42,7 +47,9 @@ const emptyNews = () => ({ enabled: true, checks: false, lists: {} });
 // les anciennes catégories) est écartée : tout est rechargé du serveur à
 // l'ouverture suivante (le nouveau code ne lit jamais les catégories). La
 // file d'attente, gardée à part, n'est pas touchée.
-export const SNAPSHOT_VERSION = 2;
+// Version 3 : listes d'envies (lien, prix, réservations). Une copie plus
+// ancienne est écartée et rechargée de la même façon.
+export const SNAPSHOT_VERSION = 3;
 
 // Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
 export function toSnapshot(state, savedAt = new Date().toISOString()) {
@@ -58,6 +65,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     history: state.history,
     users: state.users,
     news: state.news,
+    reservations: state.reservations,
   };
 }
 
@@ -76,6 +84,7 @@ export function fromSnapshot(snapshot) {
     state.history = [...snapshot.history];
     state.users = [...(snapshot.users ?? [])];
     state.news = snapshot.news ?? emptyNews();
+    state.reservations = snapshot.reservations ?? {};
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -120,6 +129,7 @@ export function loadSync(state, data) {
   state.stores = data.stores;
   state.aisles = data.aisles;
   state.history = data.history;
+  state.reservations = data.reservations ?? {};
   if (data.users) state.users = data.users;
   if (data.news) state.news = data.news;
   state.loaded = true;
@@ -149,6 +159,9 @@ export function mergeSync(state, data) {
   if (data.users) state.users = data.users;
   // Nouveautés : envoyées en entier à chaque synchronisation
   if (data.news) state.news = data.news;
+  // Réservations : en entier à chaque synchronisation (une libération
+  // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
+  state.reservations = data.reservations ?? {};
   refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
@@ -178,12 +191,21 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       // de catégorie, jamais lu ici) compte comme une liste de tâches jusqu'à
       // la réponse du serveur, qui la traduit
       const type = isListType(op.listType) ? op.listType : 'tasks';
+      // Liste d'envies : bénéficiaire (rien de secret : les réservations ne
+      // sont jamais dans la description d'une liste)
+      const wishes = type === 'wishes' ? {
+        forUserId: op.forUserId ?? null,
+        forName: op.forName ?? null,
+        forDisplayName: op.forUserId ? state.users.find((u) => u.id === op.forUserId)?.displayName ?? null : null,
+        isBeneficiary: !op.forUserId && !op.forName,
+      } : {};
       const store = op.storeId == null || !isShoppingList(type) ? null : state.stores.find((st) => st.id === op.storeId) ?? null;
       state.lists.set(op.listId, {
         id: op.listId,
         name: op.name,
         icon: isListIcon(op.icon) ? op.icon : '', // rien de choisi : icône du type
         type,
+        ...wishes,
         store: store && { id: store.id, name: store.name, active: store.active, isMulti: Boolean(store.isMulti) },
         ownerId: user.id,
         isOwner: true,
@@ -269,6 +291,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         aisleId: op.aisleId !== undefined ? op.aisleId : hint.aisleId ?? null,
         storeId: op.storeId !== undefined ? op.storeId : hint.storeId ?? null,
         ean: op.ean ?? null, // code-barres (listes de courses), déjà normalisé
+        link: op.link ?? null, // lien web (listes d'envies)
+        priceCents: op.priceCents ?? null, // prix indicatif (listes d'envies)
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -283,7 +307,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'ean']) if (op[field] !== undefined) next[field] = op[field];
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
       state.items.set(item.id, next);
       return;
     }
@@ -591,16 +615,15 @@ export const ADD_MODES = ['quick', 'detail'];
 export const defaultAddMode = (isShopping) => (isShopping ? 'quick' : 'detail');
 export const addModeOf = (list) => (list?.addMode === 'detail' ? 'detail' : 'quick');
 
-// Priorité et échéance utilisées dans cette liste ? Seulement dans une liste
-// de tâches, selon les deux réglages de la liste (choisis par le
-// propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
+// Priorité et échéance utilisées dans cette liste ? Priorité : listes de
+// tâches et d'envies ; échéance : listes de tâches ; chacune selon son
+// réglage (choisi par le propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
 // montre, comme avant, jusqu'à la prochaine synchronisation. Les valeurs des
 // éléments ne sont jamais effacées : un réglage désactivé les cache.
 export function listOptions(list) {
-  const classic = Boolean(list) && usesTaskOptions(list);
   return {
-    priority: classic && list.priorityEnabled !== false,
-    due: classic && list.dueEnabled !== false,
+    priority: Boolean(list) && usesPriority(list) && list.priorityEnabled !== false,
+    due: Boolean(list) && usesDue(list) && list.dueEnabled !== false,
   };
 }
 
@@ -661,7 +684,20 @@ export function computeListView(state, listId, { sort = null } = {}) {
     done,
     checked: done.length,
     total: items.length,
+    // Liste d'envies : réservations par souhait (Map), seulement si le
+    // serveur les a envoyées pour cette liste ; sinon null (bénéficiaire,
+    // ou autre type de liste)
+    reservations: reservationsOf(state, listId),
   };
+}
+
+// Réservations d'une liste d'envies telles que reçues du serveur : Map
+// <souhait> -> { itemId, userId, displayName }, ou null si le serveur n'en a
+// envoyé aucune pour cette liste (le bénéficiaire n'en reçoit jamais)
+export function reservationsOf(state, listId) {
+  const rows = state.reservations?.[listId];
+  if (!Array.isArray(rows)) return null;
+  return new Map(rows.map((row) => [row.itemId, row]));
 }
 
 // Magasins proposés aux articles d'une liste « multi » : ceux que regroupe son

@@ -20,6 +20,7 @@ import { meRoutes } from './routes/me.js';
 import { adminRoutes } from './routes/admin.js';
 import { listRoutes } from './routes/lists.js';
 import { photoRoutes } from './routes/photos.js';
+import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
 import { createShareService, createPublicAccess } from './shares.js';
@@ -241,6 +242,7 @@ export function createApp({
   // Écran « Autoriser Claude » (LISTO_MCP=on seulement ; sinon « Route inconnue »)
   if (config.mcp) api.use(oauthConsentRoutes(ctx));
   api.use(photoRoutes(ctx));
+  api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   // Version installée (Réglages › À propos) : comptes connectés seulement
   // (jamais public : une version publique aiderait un attaquant). build :

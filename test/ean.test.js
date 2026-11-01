@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.js';
 import { openDatabase, migrate, schemaVersion } from '../server/db.js';
 import { emptyState, applyOp, duplicateOf, duplicateText } from '../public/js/store.js';
 
@@ -59,9 +59,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-ean-'));
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 10, sans la colonne, avec des données
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE items DROP COLUMN ean; ALTER TABLE lists DROP COLUMN priority_enabled; ALTER TABLE lists DROP COLUMN due_enabled; ALTER TABLE lists DROP COLUMN icon; ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
-  db.pragma('user_version = 10');
+  let db = databaseAt(file, 10);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Courses', 1, 1)").run();
   db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, checked, checked_at, created_by, created_at, updated_at)
@@ -71,7 +69,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   db.close();
   // Redémarrage : la migration 11 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 19); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(db.prepare(`SELECT ${columns} FROM items`).all(), before);
   assert.equal(db.prepare('SELECT ean FROM items').pluck().get(), null);
   // La contrainte : vide, ou exactement 8 ou 13 chiffres
@@ -80,7 +78,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
     assert.throws(() => db.prepare('UPDATE items SET ean = ?').run(bad), /CHECK/, JSON.stringify(bad));
   }
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 18); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 19); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });
@@ -142,7 +140,7 @@ test('photo et code-barres facultatifs : un article s\'enregistre sans l\'un ni 
   // une erreur ; la photo n'est pas demandée à l'enregistrement
   const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
   assert.match(list, /const newEan = typedEan \? normalizeBarcode\(typedEan\) : null;/);
-  assert.match(list, /if \(!newName \|\| \(shopping && typedEan && !newEan\)\) return;/);
+  assert.match(list, /if \(!newName \|\| \(shopping && typedEan && !newEan\) \|\| \(wishes && \(\(typedLink && !newLink\) \|\| Number\.isNaN\(newPrice\)\)\)\) return;/);
 });
 
 test('deux articles peuvent porter le même code (pas d\'interdiction)', async (t) => {

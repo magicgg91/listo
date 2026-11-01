@@ -19,7 +19,7 @@ test('plus de boutons « Enregistrer » / « Supprimer » en bas de la fiche', (
 });
 
 test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
-  assert.match(list, /const remove = iconButton\('trash', `Supprimer l'\$\{words\.one\}`, null, 'icon-btn--danger sheet__delete'\);/);
+  assert.match(list, /const remove = iconButton\('trash', `Supprimer \$\{words\.the\}`, null, 'icon-btn--danger sheet__delete'\);/);
   assert.match(list, /const save = h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('disquette'\)\);/);
   // Disquette : dans le sprite (kit, application, components.html), même
   // style que les autres icônes, et en fichier séparé dans design/icones/

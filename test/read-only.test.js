@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, ORIGIN, databaseAt } from './helpers.js';
 import { openDatabase, migrate, schemaVersion } from '../server/db.js';
 
 const uuid = () => crypto.randomUUID();
@@ -235,33 +235,14 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-droits-'));
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 11, table des membres sans droit
-  let db = openDatabase(file);
-  db.exec(`
-    DROP TABLE list_members;
-    CREATE TABLE list_members (
-      list_id TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      PRIMARY KEY (list_id, user_id)
-    );
-    CREATE INDEX list_members_user ON list_members(user_id);
-    ALTER TABLE lists DROP COLUMN priority_enabled;\n    ALTER TABLE lists DROP COLUMN due_enabled;
-    ALTER TABLE lists DROP COLUMN icon;
-    ALTER TABLE lists DROP COLUMN add_mode;
-    ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists;
-    DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients;
-    DROP TABLE list_events;
-    DROP TABLE list_reads;
-    ALTER TABLE users DROP COLUMN news_enabled;
-    ALTER TABLE users DROP COLUMN news_checks;
-  `);
-  db.pragma('user_version = 11');
+  let db = databaseAt(file, 11);
   for (const name of ['a', 'b', 'c']) db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES (?, ?, 'x')").run(name, name);
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('l1', 'Courses', 1, 1)").run();
   for (const userId of [1, 2, 3]) db.prepare("INSERT INTO list_members (list_id, user_id) VALUES ('l1', ?)").run(userId);
   db.close();
   // Redémarrage : la migration 12 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   assert.deepEqual(db.prepare('SELECT user_id, access FROM list_members ORDER BY user_id').all().map((r) => [r.user_id, r.access]), [[1, 'modification'], [2, 'modification'], [3, 'modification']]);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('d', 'd', 'x')").run();
   db.prepare("INSERT INTO list_members (list_id, user_id) VALUES ('l1', 4)").run();
@@ -272,7 +253,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.prepare('DELETE FROM users WHERE id = 3').run();
   assert.equal(db.prepare('SELECT COUNT(*) FROM list_members').pluck().get(), 3);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

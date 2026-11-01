@@ -29,13 +29,14 @@
 //   refuse de toute façon chaque écriture ; si le droit change, l'écran
 //   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
 
-import { isShoppingList, typeLabel, typeIcon } from '../list-types.js';
+import { isShoppingList, isWishList, typeLabel, typeIcon } from '../list-types.js';
+import { wishForLabel, formatPrice, parsePrice, cleanLink, LINK_MAX } from '../wishes.js';
 import { h, icon, iconButton, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
-import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark } from '../format.js';
+import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
@@ -317,7 +318,7 @@ export function renderList(listId, onLeave) {
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(titleIcon, icon(listIcon(list), 'icon--sm'));
-    replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : typeLabel(list));
+    replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : isWishList(list) ? wishForLabel(list) : typeLabel(list));
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     // Bouton seulement s'il y a un choix : toujours pour une liste de courses
     // (par rayon ou alphabétique) ; ailleurs, si la priorité ou l'échéance
@@ -395,7 +396,7 @@ export function renderList(listId, onLeave) {
     const show = (open) => {
       toggle.setAttribute('aria-expanded', String(open));
       listEl.hidden = !open;
-      actionsRow.hidden = !open || !canEdit || inSearch;
+      actionsRow.hidden = !open || !canEdit || !mayCheck(list) || inSearch;
     };
     const foldable = {
       isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
@@ -422,6 +423,7 @@ export function renderList(listId, onLeave) {
   // Seulement ce qui est activé pour la liste (listOptions) : rien d'une
   // priorité ou d'une échéance désactivée, ni pastille ni retard.
   const metaOf = (item) => {
+    if (isWishList(view?.list)) return wishMeta(item);
     const options = listOptions(view?.list);
     if (!options.priority && !options.due) return { chips: [], spoken: '' };
     const chips = [];
@@ -439,6 +441,48 @@ export function renderList(listId, onLeave) {
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
+
+  // Liste d'envies : pastilles de la priorité (si activée), du prix et,
+  // SEULEMENT si le serveur a envoyé les réservations de cette liste (jamais
+  // au bénéficiaire), de la réservation : « Réservé par Marie et Paul »
+  // (« vous » pour soi), puis « Ouvert à d'autres ». Plus rien sur un souhait
+  // reçu. Texte ET icône, jamais la couleur seule.
+  const wishMeta = (item) => {
+    const chips = [];
+    const spoken = [];
+    const options = listOptions(view?.list);
+    const priority = options.priority ? priorityChip(item.priority) : null;
+    if (priority) {
+      chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
+      spoken.push(priority.label.toLowerCase());
+    }
+    const price = formatPrice(item.priceCents);
+    if (price) {
+      chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), price));
+      spoken.push(price);
+    }
+    const reservation = item.checked ? null : view?.reservations?.get(item.id);
+    if (reservation?.participants.length) {
+      const text = reservationText(reservation);
+      const mine = reservation.participants.some((p) => p.userId === app.user.id);
+      chips.push(h('span', { class: `chip${mine ? ' chip--accent' : ''}` }, icon('gift', 'icon--xs'), text));
+      spoken.push(text.toLowerCase());
+      if (reservation.open) {
+        chips.push(h('span', { class: 'chip' }, icon('plus', 'icon--xs'), 'Ouvert à d\'autres'));
+        spoken.push('ouvert à d\'autres');
+      }
+    }
+    return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
+  };
+  // « Marie », « Marie et Paul », « vous et Marie »… (soi en premier)
+  const participantNames = (reservation) => {
+    const me = reservation.participants.filter((p) => p.userId === app.user.id).map(() => 'vous');
+    return [...me, ...reservation.participants.filter((p) => p.userId !== app.user.id).map((p) => p.displayName)];
+  };
+  const reservationText = (reservation) => `Réservé par ${namesList(participantNames(reservation))}`;
+  // « Reçu » (le coché d'une liste d'envies) : le bénéficiaire ou le
+  // propriétaire seulement (le serveur refuse les autres)
+  const mayCheck = (list) => !isWishList(list) || Boolean(list?.isOwner || list?.isBeneficiary);
 
   // Ligne d'un article (ou d'un élément) : case à cocher, nom (ouvre la
   // feuille « Article »), vignette de la photo. Elle glisse vers la gauche pour
@@ -476,14 +520,16 @@ export function renderList(listId, onLeave) {
   // canEdit = false (lecture seule) : case non interactive, comme sur la page
   // publique (cochée = remplie ET barrée), et la ligne ouvre la fiche à consulter
   const itemContent = (item, meta, canEdit = true) => [
-    canEdit ? h('button', {
+    canEdit && mayCheck(view?.list) ? h('button', {
       class: 'check',
       type: 'button',
       'aria-pressed': String(item.checked),
-      'aria-label': `${item.checked ? 'Décocher' : 'Cocher'} ${item.name}`,
+      'aria-label': isWishList(view?.list)
+        ? `${item.checked ? 'Marquer non reçu' : 'Marquer reçu'} : ${item.name}`
+        : `${item.checked ? 'Décocher' : 'Cocher'} ${item.name}`,
       onClick: () => toggle(item),
     }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null))
-      : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': item.checked ? 'Coché' : 'Non coché' },
+      : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': isWishList(view?.list) ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
         h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
     h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? 'Modifier' : 'Voir'} ${item.name}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
       h('span', { class: 'item__text' },
@@ -503,7 +549,7 @@ export function renderList(listId, onLeave) {
     openLightbox({
       title: item.name,
       src: actions.photoSrc(item),
-      alt: `Photo de l'${itemWords(view?.list).one} ${item.name}`,
+      alt: `Photo ${itemWords(view?.list).of} ${item.name}`,
       caption: [view?.list.name, group].filter(Boolean).join(' · '),
     });
   }
@@ -524,7 +570,7 @@ export function renderList(listId, onLeave) {
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
-    if (!editable()) return;
+    if (!editable() || !mayCheck(view?.list)) return;
     actions.checkItem(item, !item.checked);
   }
 
@@ -713,7 +759,7 @@ export function renderList(listId, onLeave) {
         const [start, rest] = splitPrefix(s.name, typed);
         return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name));
       }),
-      exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], `Nouvel ${itemWords(view?.list).one}`, () => addTyped(typed), 'suggest__item--new'));
+      exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], itemWords(view?.list).New, () => addTyped(typed), 'suggest__item--new'));
     suggestBox.hidden = false;
   }
 
@@ -817,7 +863,7 @@ export function renderList(listId, onLeave) {
       if (storeId === null) {
         const sub = isKnownItem(app.data, name)
           ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
-          : `« ${name} » est un nouvel ${itemWords(view.list).one}. Son magasin sera retenu pour la prochaine fois.`;
+          : `« ${name} » est ${itemWords(view.list).aNew}. Son magasin sera retenu pour la prochaine fois.`;
         const chosen = await pickStore({ title: 'Dans quel magasin ?', sub, confirmLabel: 'Ajouter à la liste' });
         if (chosen === undefined) return false; // fenêtre fermée sans choisir
         beforeCreate();
@@ -829,7 +875,7 @@ export function renderList(listId, onLeave) {
       }
     } else if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
-      const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est un nouvel ${itemWords(view.list).one}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
+      const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est ${itemWords(view.list).aNew}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
       if (aisleId === undefined) return false; // fenêtre fermée sans choisir
       beforeCreate();
       return createItem(name, { ...extra, aisleId });
@@ -845,6 +891,109 @@ export function renderList(listId, onLeave) {
     return actions.addItem({ listId, name, ...fields });
   }
 
+  // --- Réservation d'un souhait (listes d'envies), avec cotisation ---
+  // Le bloc n'existe que si le serveur a envoyé les réservations de cette
+  // liste : jamais pour le bénéficiaire (rien du tout, pas même un bloc vide).
+  // Selon l'état du souhait :
+  // - libre : interrupteur « Ouvert à d'autres » (désactivé au départ) et
+  //   « Réserver » ;
+  // - réservé : les participants, « Ouvert à d'autres » le cas échéant ;
+  //   « Participer » (ouvert, je n'y suis pas), « Quitter » et
+  //   l'interrupteur (j'y suis) ; gestionnaire : « Retirer » chaque
+  //   participant et « Libérer » tout le souhait ;
+  // - reçu : plus rien (les réservations ne sont plus affichées).
+  // En ligne seulement : hors ligne, tout est inactif, avec une explication.
+  // Renvoie { el, paint, dispose } ou null.
+  function reservationBlock(item) {
+    if (!view?.reservations) return null;
+    const el = h('div', { class: 'field' });
+    let busy = false;
+    let openWanted = false; // « Ouvert à d'autres » pour une nouvelle réservation
+    const run = async (action, done) => {
+      busy = true;
+      paint();
+      try {
+        await action();
+        if (done) toast(done, { low: true });
+      } catch (err) {
+        toast(errorMessage(err), { low: true });
+        refreshData({ quiet: true }); // état à jour (« Déjà réservé. »)
+      }
+      busy = false;
+      paint();
+    };
+    const button = (cls, iconName, label, onClick, extra = {}) => h('button', {
+      class: `btn ${cls}`, type: 'button', disabled: busy || !navigator.onLine, onClick, ...extra,
+    }, icon(iconName, 'icon--sm'), label);
+    const openSwitch = (checked, onToggle) => h('div', { class: 'card' }, h('div', { class: 'toggle-row' },
+      h('div', { class: 'grow' },
+        h('span', { class: 'row__title', id: `open-${item.id}` }, 'Ouvert à d\'autres'),
+        h('span', { class: 'row__sub' }, 'D\'autres proches peuvent participer au cadeau.')),
+      h('button', {
+        class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(checked), 'aria-labelledby': `open-${item.id}`,
+        disabled: busy || !navigator.onLine, onClick: onToggle,
+      })));
+    function paint() {
+      const reservations = view?.reservations;
+      const latest = app.data.items.get(item.id) ?? item;
+      el.hidden = !reservations || latest.checked;
+      if (el.hidden) return;
+      const current = reservations.get(item.id);
+      const participants = current?.participants ?? [];
+      const mine = participants.some((p) => p.userId === app.user.id);
+      const manager = Boolean(view.list.isOwner);
+      const list = view.list;
+      const hidden = list.forName ? null : list.forDisplayName ?? list.members?.find((m) => m.isOwner)?.displayName;
+      let content;
+      if (!participants.length) {
+        content = [
+          h('p', { class: 'field__value' }, 'Pas encore réservé'),
+          openSwitch(openWanted, () => {
+            openWanted = !openWanted;
+            paint();
+          }),
+          button('btn--primary btn--block', 'gift', 'Réserver', () => run(() => actions.reserveWish(item.id, openWanted), 'Souhait réservé')),
+        ];
+      } else {
+        content = [
+          h('p', { class: 'field__value' }, reservationText(current), current.open ? ' · Ouvert à d\'autres' : ''),
+          mine ? openSwitch(current.open, () => run(() => actions.setWishOpen(item.id, !current.open))) : null,
+          !mine && current.open ? button('btn--primary btn--block', 'plus', 'Participer', () => run(() => actions.reserveWish(item.id), 'Vous participez')) : null,
+          mine ? button('btn--secondary btn--block', 'close', 'Quitter', () => run(() => actions.leaveWish(item.id), 'Vous ne participez plus')) : null,
+          // Gestionnaire : retirer un participant, ou libérer tout le souhait
+          manager ? h('div', { class: 'stack stack--sm' },
+            participants.some((p) => p.userId !== app.user.id) ? h('div', { class: 'card list-options' }, participants.filter((p) => p.userId !== app.user.id).map((p) => h('div', { class: 'toggle-row' },
+              h('span', { class: 'grow' }, p.displayName),
+              button('btn--danger-outline btn--sm', 'close', 'Retirer', () => run(() => actions.removeWishParticipant(item.id, p.userId), `${p.displayName} ne participe plus`), { 'aria-label': `Retirer ${p.displayName}` })))) : null,
+            button('btn--danger-outline btn--block', 'close', 'Libérer', () => run(() => actions.releaseWish(item.id), 'Réservation libérée'))) : null,
+        ];
+      }
+      replace(el,
+        h('span', { class: 'field__label' }, 'Réservation'),
+        content,
+        !navigator.onLine ? h('p', { class: 'field__hint' }, 'Réserver, participer ou quitter demande une connexion.') : null,
+        hidden ? h('p', { class: 'field__hint' }, `Les réservations ne sont jamais montrées à ${hidden}.`) : null);
+    }
+    window.addEventListener('online', paint);
+    window.addEventListener('offline', paint);
+    paint();
+    return {
+      el,
+      paint,
+      dispose: () => {
+        window.removeEventListener('online', paint);
+        window.removeEventListener('offline', paint);
+      },
+    };
+  }
+
+  // Lien d'un souhait : « Ouvrir le lien », dans un nouvel onglet, sans
+  // transmettre d'où l'on vient ; seulement une adresse http ou https
+  const linkButton = (link) => {
+    const safe = cleanLink(link ?? '');
+    return safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 'icon--sm'), 'Ouvrir le lien') : null;
+  };
+
   // --- Feuille « Article » : nom, quantité, note, rayon (ou magasin) ---
 
   function openItemSheet(item) {
@@ -852,8 +1001,15 @@ export function renderList(listId, onLeave) {
     if (!editable()) return openItemView(item); // passée en lecture seule entre-temps
     const multi = Boolean(view?.multi);
     const isShopping = isShoppingList(view?.list) && !multi; // rayon seulement hors « multi »
-    const words = itemWords(view?.list); // « article » ou « élément »
+    const words = itemWords(view?.list); // « article », « élément » ou « souhait »
+    const wishes = isWishList(view?.list);
     const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
+    // Souhait : lien web (http ou https) et prix indicatif, facultatifs
+    const linkInput = h('input', { class: 'input', type: 'url', inputmode: 'url', value: item.link ?? '', maxlength: String(LINK_MAX), autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'https://…' });
+    const linkField = field('Lien (facultatif)', linkInput);
+    const priceInput = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: Number.isInteger(item.priceCents) ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '', maxlength: '12', autocomplete: 'off', placeholder: 'ex. 24,90' });
+    const priceField = field('Prix indicatif (facultatif)', priceInput, { aside: 'en euros' });
+    const reservation = wishes ? reservationBlock(item) : null;
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
     note.value = item.note;
@@ -1036,7 +1192,7 @@ export function renderList(listId, onLeave) {
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
     // l'appareil photo ou la photothèque). La photo reste facultative.
-    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: `Photo de l'${words.one}` });
+    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: `Photo ${words.of}` });
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {
@@ -1092,17 +1248,18 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
+      reservation?.paint(); // réservation faite ou libérée (proches seulement)
       showOptions(); // réglage de la liste changé par le propriétaire
       if (mine) return;
       const latest = app.data.items.get(item.id);
       if (!latest) {
         if (gone) return;
         gone = true;
-        conflictText.textContent = `Cet ${words.one} a été supprimé par une autre personne.`;
+        conflictText.textContent = `${capitalized(words.this)} a été supprimé par une autre personne.`;
       } else {
         const changedElsewhere = gone || contentOf(latest) !== seen;
         gone = false;
@@ -1110,7 +1267,7 @@ export function renderList(listId, onLeave) {
         seen = contentOf(latest);
         drawPhoto();
         if (!changedElsewhere) return;
-        conflictText.textContent = `Cet ${words.one} vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.`;
+        conflictText.textContent = `${capitalized(words.this)} vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.`;
       }
       conflict.hidden = false;
       save.disabled = gone;
@@ -1124,27 +1281,32 @@ export function renderList(listId, onLeave) {
     // reliée au formulaire (attribut form) : Entrée dans un champ enregistre
     // toujours.
     const formId = `fiche-${item.id}`;
-    const remove = iconButton('trash', `Supprimer l'${words.one}`, null, 'icon-btn--danger sheet__delete');
+    const remove = iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
     const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
     const form = h('form', { class: 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,
-      field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
+      wishes ? [linkField.field, linkButton(item.link), priceField.field]
+        : field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
       isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
       multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
+      reservation?.el,
       error.note);
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
 
     const sheet = openSheet({
-      title: `Modifier l'${words.one}`,
+      title: `Modifier ${words.the}`,
       content: form,
       tools: [remove, save],
       scroll: true,
-      onClose: () => stopWatching(),
+      onClose: () => {
+        stopWatching();
+        reservation?.dispose();
+      },
     });
 
     form.addEventListener('submit', async (event) => {
@@ -1160,10 +1322,21 @@ export function renderList(listId, onLeave) {
       const typedEan = eanInput.value.trim();
       const newEan = typedEan ? normalizeBarcode(typedEan) : null;
       if (shopping) eanField.setError(typedEan && !newEan ? 'Code invalide : vérifiez les chiffres' : null);
-      if (!newName || (shopping && typedEan && !newEan)) return;
+      // Souhait : lien (http ou https) et prix (euros -> centimes), vérifiés ici
+      // et de nouveau par le serveur
+      const typedLink = linkInput.value.trim();
+      const newLink = typedLink ? cleanLink(typedLink) : null;
+      const newPrice = parsePrice(priceInput.value);
+      if (wishes) {
+        linkField.setError(typedLink && !newLink ? 'Adresse web invalide (http ou https)' : null);
+        priceField.setError(Number.isNaN(newPrice) ? 'Prix invalide (par exemple 24,90)' : null);
+      }
+      if (!newName || (shopping && typedEan && !newEan) || (wishes && ((typedLink && !newLink) || Number.isNaN(newPrice)))) return;
       const changes = {};
       if (newName !== item.name) changes.name = newName;
-      if (quantity.value.trim() !== item.quantity) changes.quantity = quantity.value.trim();
+      if (!wishes && quantity.value.trim() !== item.quantity) changes.quantity = quantity.value.trim();
+      if (wishes && newLink !== (item.link ?? null)) changes.link = newLink;
+      if (wishes && newPrice !== (item.priceCents ?? null)) changes.priceCents = newPrice;
       if (note.value.trim() !== item.note) changes.note = note.value.trim();
       if (isShopping && aisleId !== item.aisleId) changes.aisleId = aisleId;
       if (multi && storeId !== (item.storeId ?? null)) changes.storeId = storeId;
@@ -1198,15 +1371,19 @@ export function renderList(listId, onLeave) {
   function openItemView(item) {
     const words = itemWords(view?.list);
     const body = h('div', { class: 'stack' });
+    const wishes = isWishList(view?.list);
+    const reservation = wishes ? reservationBlock(item) : null;
     const value = (label, text) => h('div', { class: 'field' }, h('span', { class: 'field__label' }, label), h('p', { class: 'field__value' }, text));
     const paint = (it) => {
       const multi = Boolean(view?.multi);
       const shopping = isShoppingList(view?.list);
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
-        h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
+        h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : ${words.this} ne peut pas être modifié.`)),
         value(capitalized(words.one), it.name),
         it.quantity ? value('Quantité', it.quantity) : null,
+        wishes && Number.isInteger(it.priceCents) ? value('Prix indicatif', formatPrice(it.priceCents)) : null,
+        wishes ? linkButton(it.link) : null,
         it.note ? value('Note', it.note) : null,
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
         options.due ? value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance') : null,
@@ -1216,15 +1393,20 @@ export function renderList(listId, onLeave) {
             h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${it.name}`, onClick: () => showPhoto(it) },
               h('img', { class: 'photo', src: actions.photoSrc(it), alt: '' })))) : null,
         shopping && !multi ? value('Rayon', app.data.aisles.find((a) => a.id === it.aisleId)?.name ?? 'Sans rayon') : null,
-        multi ? value('Magasin', storeName(it.storeId) ?? 'Sans magasin') : null);
+        multi ? value('Magasin', storeName(it.storeId) ?? 'Sans magasin') : null,
+        reservation?.el);
+      reservation?.paint();
     };
     paint(item);
     let stopWatching = () => {};
     const sheet = openSheet({
-      title: `Détail de l'${words.one}`,
+      title: `Détail ${words.of}`,
       content: body,
       scroll: true,
-      onClose: () => stopWatching(),
+      onClose: () => {
+        stopWatching();
+        reservation?.dispose();
+      },
     });
     stopWatching = onDataChange(() => {
       const latest = app.data.items.get(item.id);

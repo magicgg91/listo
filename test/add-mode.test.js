@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion, addModeMigration } from '../server/db.js';
 import { ADD_MODES } from '../server/lists.js';
 import { emptyState, applyOp, addModeOf, defaultAddMode } from '../public/js/store.js';
@@ -60,9 +60,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-addmode-'));
   const file = path.join(dir, 'listo.db');
   // Base « d'avant » : version 14, sans la colonne
-  let db = openDatabase(file);
-  db.exec('ALTER TABLE lists DROP COLUMN add_mode; ALTER TABLE lists DROP COLUMN type; DROP TABLE oauth_tokens; DROP TABLE oauth_codes; DROP TABLE oauth_grant_lists; DROP TABLE oauth_grants; DROP TABLE oauth_requests; DROP TABLE oauth_clients; DROP TABLE list_events; DROP TABLE list_reads; ALTER TABLE users DROP COLUMN news_enabled; ALTER TABLE users DROP COLUMN news_checks');
-  db.pragma('user_version = 14');
+  let db = databaseAt(file, 14);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   const add = db.prepare('INSERT INTO lists (id, name, category_id, owner_id, priority_enabled, due_enabled, deleted_at) VALUES (?, ?, ?, 1, ?, ?, ?)');
   add.run('courses', 'Courses', 1, 0, 0, null);
@@ -82,9 +80,9 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ add_mode: mode, type, ...rest }) => rest), before, 'rien d\'autre ne change (type : migration 18)');
+  assert.deepEqual(after.map(({ add_mode: mode, type, for_user_id: forUser, for_name: forName, ...rest }) => rest), before, 'rien d\'autre ne change (type : migration 18)');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
     courses: 'quick',
     'courses-reglee': 'quick',
@@ -100,7 +98,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 18);
+  assert.equal(schemaVersion(db), 19);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
@@ -242,7 +240,7 @@ test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.se
   assert.match(form, /let addMode = list \? addModeOf\(list\) : defaultAddMode\(true\);\s*let addModeChosen = Boolean\(list\);/);
   assert.match(form, /if \(!addModeChosen\) \{\s*addMode = defaultAddMode\(shopping\);/);
   assert.doesNotMatch(form, /optionsField\.hidden/, 'visible pour tous les types');
-  assert.match(form, /addMode, icon: chosenIcon \}\);/);
+  assert.match(form, /addMode, icon: chosenIcon,\n/);
   assert.match(form, /if \(addMode !== addModeOf\(list\)\) switches\.addMode = addMode;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);
   // 44 px : les choix .segmented du kit

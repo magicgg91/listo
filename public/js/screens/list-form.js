@@ -1,6 +1,6 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
 // formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, type de
-// liste (Courses ou Tâches), icône, magasin simple ou « multi » (seulement
+// liste (Courses, Tâches ou Envies), icône (choisie dans une fenêtre), magasin simple ou « multi » (seulement
 // pour une liste de courses), partage, avec le droit de chaque personne
 // (« Peut modifier » ou « Lecture seule »), priorité et échéance activées ou
 // non (listes de tâches), et suppression de la liste (propriétaire).
@@ -17,7 +17,10 @@ import { openSheet, toast } from '../ui.js';
 import { deleteListWithConfirm } from './list-actions.js';
 import { openCreateReference } from '../create-reference.js';
 import { LIST_ICONS } from '../list-icons.js';
-import { CREATABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, usesTaskOptions, typeChangeWarning } from '../list-types.js';
+import {
+  CREATABLE_TYPES, CHANGEABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesPriority, usesDue, typeChangeWarning, WISHES_LOCKED_HINT,
+} from '../list-types.js';
+import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
 
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
@@ -96,6 +99,7 @@ export function accessChoice(name, value, onChange) {
 // liste de courses).
 export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
+  const paints = {};
   const rows = [
     ['priority', 'Priorité', 'Basse, normale ou élevée.'],
     ['due', 'Échéance', 'Une date limite ; retards signalés.'],
@@ -106,17 +110,26 @@ export function optionSwitches(values, onChange, leading = null) {
     const paint = () => {
       toggle.setAttribute('aria-checked', String(current[key]));
     };
+    paints[key] = paint;
     toggle.addEventListener('click', () => {
       current[key] = !current[key];
       paint();
-      onChange({ ...current });
+      onChange({ ...current }, key);
     });
     paint();
     return h('div', { class: 'toggle-row', 'data-switch': key },
       h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
       toggle);
   });
-  return h('div', { class: 'card list-options' }, leading, rows);
+  const card = h('div', { class: 'card list-options' }, leading, rows);
+  // Valeur posée par l'écran (sans appui) : la priorité qui suit le type
+  card.set = (key, value) => {
+    if (current[key] === value) return;
+    current[key] = value;
+    paints[key]();
+    onChange({ ...current }, null);
+  };
+  return card;
 }
 
 // « Après l'ajout » (toutes les listes, courses comprises) : deux choix côte
@@ -169,15 +182,18 @@ function form(list, users) {
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
   const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
-  // --- Type de liste (choix en cartes, même composant qu'avant) ---
-  // Courses ou Tâches (les envies viendront à l'étape suivante : le serveur
-  // les refuse). Changer le type d'une liste existante n'efface rien : la
-  // ligne sous le choix le dit avant l'enregistrement (typeChangeWarning).
+  // --- Type (choix en cartes, même composant qu'avant, sur une seule ligne) ---
+  // Nouvelle liste : Courses, Tâches ou Envies. Liste existante : Courses ou
+  // Tâches (changer n'efface rien : la ligne sous le choix le dit avant
+  // l'enregistrement, typeChangeWarning) ; une liste d'envies garde son type
+  // et sa destinataire pour toujours (une seule carte, inactive, et une phrase).
   const savedType = list ? typeOf(list) : null;
-  let listType = CREATABLE_TYPES.includes(savedType) ? savedType : CREATABLE_TYPES[0];
+  const wishesLocked = isWishList(savedType);
+  const offered = !list ? CREATABLE_TYPES : wishesLocked ? ['wishes'] : CHANGEABLE_TYPES;
+  let listType = offered.includes(savedType) ? savedType : offered[0];
 
-  const typeButtons = CREATABLE_TYPES.map((type) => {
-    const button = h('button', { class: 'choice__opt', type: 'button', role: 'radio' },
+  const typeButtons = offered.map((type) => {
+    const button = h('button', { class: 'choice__opt', type: 'button', role: 'radio', disabled: wishesLocked },
       icon(TYPE_ICONS[type]), TYPE_LABELS[type]);
     button.addEventListener('click', () => {
       listType = type;
@@ -186,26 +202,91 @@ function form(list, users) {
     button.dataset.type = type;
     return button;
   });
-  const typeWarning = h('p', { class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: true });
-  const typeGroup = h('div', { class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
+  const typeWarning = h('p', { class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked }, wishesLocked ? WISHES_LOCKED_HINT : '');
 
-  // --- Icône (grille de choix) ---
-  // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
-  // type). Au départ, la case cochée est donc l'icône du type, et elle suit
-  // le type tant que rien n'est choisi. Si on ne touche
-  // pas à la grille, rien n'est envoyé : rien ne change.
-  let chosenIcon = list?.icon ?? '';
-  const iconButtons = LIST_ICONS.map((choice) => {
-    const button = h('button', { class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice.label, title: choice.label },
-      icon(choice.id));
-    button.addEventListener('click', () => {
-      chosenIcon = choice.id;
+  // --- Pour qui ? (listes d'envies) ---
+  // Nouvelle liste : « Moi » (par défaut), un autre compte actif, ou « Une
+  // personne sans compte » (prénom libre, 80 caractères au plus). Fixé à la
+  // création : une liste d'envies existante l'affiche seulement.
+  let forChoice = 'me'; // 'me', identifiant d'un compte, ou 'name'
+  const forNameInput = h('input', { class: 'input', type: 'text', maxlength: String(FOR_NAME_MAX), autocomplete: 'off', placeholder: 'Ex. Lucas' });
+  const forNameField = field('Prénom', forNameInput);
+  const forRows = [];
+  const forRow = (value, title, sub) => {
+    const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' },
+      h('span', { class: 'radio' }),
+      h('span', { class: 'grow' }, h('span', { class: 'row__title' }, title), sub ? h('span', { class: 'row__sub' }, sub) : null));
+    row.addEventListener('click', () => {
+      forChoice = value;
       paint();
+      drawShare();
     });
-    button.dataset.icon = choice.id;
-    return button;
+    row.dataset.value = String(value);
+    forRows.push(row);
+    return row;
+  };
+  const forOthers = users.filter((u) => u.id !== me.id).sort((a, b) => compareNames(a.displayName, b.displayName));
+  const forField = h('div', { class: 'field' },
+    h('span', { class: 'field__label', id: 'for-label' }, 'Pour qui ?'),
+    wishesLocked
+      ? h('p', { class: 'field__value' }, wishForLabel(list))
+      : [
+        h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'for-label' },
+          forRow('me', 'Moi'),
+          forOthers.map((u) => forRow(u.id, u.displayName)),
+          forRow('name', 'Une personne sans compte', 'Par exemple un enfant')),
+        forNameField.field,
+      ]);
+  // Compte destinataire choisi à la création (sinon celui de la liste)
+  const beneficiaryId = () => (list ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
+  const typeGroup = h('div', { class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
+
+  // --- Icône (un bouton, puis une fenêtre avec la grille) ---
+  // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
+  // type, et le bouton suit le type tant que rien n'est choisi). Si on ne
+  // touche pas à l'icône, rien n'est envoyé : rien ne change.
+  let chosenIcon = list?.icon ?? '';
+  // Le formulaire montre seulement l'icône affichée, dans un bouton
+  const iconPicker = h('button', {
+    class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',
   });
-  const iconGroup = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' }, iconButtons);
+  const iconCurrent = h('span', { class: 'visually-hidden', id: 'icon-current' });
+  iconPicker.addEventListener('click', () => openIconPicker());
+
+  // Fenêtre de choix (feuille du bas, comme les autres choix) : première
+  // case « Par défaut » (l'icône du type, rien de choisi), puis la grille.
+  // Toucher une case la choisit et ferme aussitôt la fenêtre ; la fermer
+  // autrement (croix, Échap, toucher à côté, Retour) ne change rien. Le
+  // focus va sur la case choisie à l'ouverture et revient sur le bouton à
+  // la fermeture (overlay, ui.js ; jamais un champ de saisie).
+  function openIconPicker() {
+    const option = (id, label, content, extra = {}) => {
+      const on = id === chosenIcon;
+      const button = h('button', {
+        class: `icon-grid__opt${id ? '' : ' icon-grid__opt--default'}`, type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': label, title: label,
+        ...(on ? { 'data-initial-focus': true } : {}), ...extra,
+      }, content, on ? h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')) : null);
+      button.addEventListener('click', () => {
+        chosenIcon = id;
+        paint();
+        sheet.close();
+      });
+      button.dataset.icon = id;
+      return button;
+    };
+    const typeName = TYPE_LABELS[listType];
+    const grid = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-label': 'Icônes' },
+      option('', `Par défaut : icône du type ${typeName}`, [icon(TYPE_ICONS[listType]), h('span', {}, 'Par défaut')]),
+      LIST_ICONS.map((choice) => option(choice.id, choice.label, icon(choice.id))));
+    const sheet = openSheet({
+      title: 'Choisir une icône',
+      content: grid,
+      scroll: true,
+      // Retour du focus sur le bouton à la fermeture (même sur un téléphone,
+      // où toucher un bouton ne lui donne pas le focus)
+      returnTo: iconPicker,
+    });
+  }
 
   // --- Magasin (listes de courses seulement) ---
   // Une liste de tâches qui a été une liste de courses garde son magasin,
@@ -313,8 +394,10 @@ function form(list, users) {
     addModeChosen = true;
   });
   const optionsLabel = h('span', { class: 'field__label' }, 'Options des éléments');
-  const optionsCard = optionSwitches(options, (values) => {
+  let priorityChosen = false; // la priorité a été touchée à la main
+  const optionsCard = optionSwitches(options, (values, key) => {
     options = values;
+    if (key === 'priority') priorityChosen = true;
   }, addModeField.row);
   const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
@@ -333,8 +416,19 @@ function form(list, users) {
   }
   people.sort((a, b) => compareNames(a.displayName, b.displayName));
 
-  // Une personne : sa ligne à cocher, puis son droit si elle est cochée
+  // Une personne : sa ligne à cocher, puis son droit si elle est cochée.
+  // Le compte destinataire d'une liste d'envies est membre d'office, en
+  // « Peut modifier », sans choix (le serveur l'impose aussi)
   const personRow = (person, { locked = false } = {}) => {
+    const isBeneficiary = !locked && person.id === beneficiaryId() && (!list || list.members.some((m) => m.id === person.id));
+    if (isBeneficiary) {
+      return h('div', { class: 'share__person' },
+        h('div', { class: 'tick-row', role: 'checkbox', 'aria-checked': 'true', 'aria-disabled': 'true' },
+          h('span', { class: 'tick is-on' }, icon('check')),
+          avatar(person.displayName, { second: true }),
+          h('span', { class: 'grow' }, person.displayName),
+          h('span', { class: 'share__hint' }, 'Destinataire · Peut modifier')));
+    }
     const on = locked || guests.has(person.id);
     const row = h('button', {
       class: 'tick-row',
@@ -359,9 +453,13 @@ function form(list, users) {
     }
     return block;
   };
-  const shareGroup = h('div', { class: 'card share' },
-    personRow({ id: me.id, displayName: me.displayName }, { locked: true }),
-    people.map((person) => personRow(person)));
+  const shareGroup = h('div', { class: 'card share' });
+  function drawShare() {
+    replace(shareGroup,
+      personRow({ id: me.id, displayName: me.displayName }, { locked: true }),
+      people.map((person) => personRow(person)));
+  }
+  drawShare();
   // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
   const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
   let painted = false;
@@ -393,21 +491,34 @@ function form(list, users) {
       if (on) button.append(icon('check', 'icon-end'));
     }
     const shopping = isShoppingList(listType);
-    const warning = list ? typeChangeWarning(savedType, listType) : '';
-    typeWarning.textContent = warning;
-    typeWarning.hidden = !warning;
-    // Icône cochée : entourée ET marquée d'une coche (jamais la couleur seule)
-    const shownIcon = chosenIcon || TYPE_ICONS[listType];
-    for (const button of iconButtons) {
-      const on = button.dataset.icon === shownIcon;
-      button.setAttribute('aria-checked', String(on));
-      button.querySelector('.icon-grid__check')?.remove();
-      if (on) button.append(h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')));
+    if (!wishesLocked) {
+      const warning = list ? typeChangeWarning(savedType, listType) : '';
+      typeWarning.textContent = warning;
+      typeWarning.hidden = !warning;
     }
+    forField.hidden = !isWishList(listType);
+    for (const row of forRows) {
+      const on = row.dataset.value === String(forChoice);
+      row.setAttribute('aria-checked', String(on));
+      row.querySelector('.radio').classList.toggle('is-on', on);
+      row.querySelector('.icon-end')?.remove();
+      if (on) row.append(icon('check', 'icon-end'));
+    }
+    forNameField.field.hidden = forChoice !== 'name';
+    // Bouton de l'icône : celle choisie, sinon celle du type (elle suit alors le type)
+    const shownIcon = chosenIcon || TYPE_ICONS[listType];
+    replace(iconPicker, icon(shownIcon));
+    iconCurrent.textContent = chosenIcon ? `Icône actuelle : ${LIST_ICONS.find((c) => c.id === chosenIcon)?.label ?? ''}` : `Icône actuelle : par défaut (${TYPE_LABELS[listType]})`;
     storeField.hidden = !shopping;
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
-    for (const row of optionsCard.querySelectorAll('[data-switch]')) row.hidden = !usesTaskOptions(listType);
-    optionsLabel.textContent = shopping ? `Options des ${itemWords(true).many}` : 'Options des éléments';
+    // Priorité : tâches et envies ; échéance : tâches seulement
+    for (const row of optionsCard.querySelectorAll('[data-switch]')) {
+      row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : !usesDue(listType);
+    }
+    // Nouvelle liste : la priorité suit le type tant qu'on n'y a pas touché
+    // (activée par défaut pour une liste d'envies)
+    if (!list && !priorityChosen) optionsCard.set('priority', isWishList(listType));
+    optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);
       addModeField.set(addMode);
@@ -436,8 +547,9 @@ function form(list, users) {
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, list ? 'Modifier la liste' : 'Nouvelle liste'))),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       nameField.field,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type de liste'), typeGroup, typeWarning),
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), iconGroup),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type'), typeGroup, typeWarning),
+      forField,
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), h('div', {}, iconPicker), iconCurrent),
       storeField,
       optionsField,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),
@@ -451,7 +563,10 @@ function form(list, users) {
     const cleanName = name.value.replace(/\s+/g, ' ').trim();
     // Nom vide : le champ est signalé sous lui-même, sans y mettre le curseur
     nameField.setError(cleanName ? null : 'Le nom est obligatoire');
-    if (!cleanName) return;
+    // Liste d'envies pour une personne sans compte : son prénom est obligatoire
+    const forName = !list && isWishList(listType) && forChoice === 'name' ? forNameInput.value.replace(/\s+/g, ' ').trim() : null;
+    forNameField.setError(forName === '' ? 'Le prénom est obligatoire' : null);
+    if (!cleanName || forName === '') return;
     const shopping = isShoppingList(listType);
     const chosenStore = shopping ? storeId : null;
     save.disabled = true;
@@ -460,10 +575,14 @@ function form(list, users) {
     let id = list?.id;
     // Priorité et échéance : envoyées pour une liste de tâches seulement
     // (une liste de courses garde ses réglages, ignorés)
-    const classic = usesTaskOptions(listType);
+    const withPriority = usesPriority(listType);
+    const withDue = usesDue(listType);
     const saved = list ? listOptionsOf(list) : null;
     if (!list) {
-      id = await actions.createList({ name: cleanName, listType, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, addMode, icon: chosenIcon });
+      id = await actions.createList({
+        name: cleanName, listType, storeId: chosenStore, priorityEnabled: withPriority && options.priority, dueEnabled: withDue && options.due, addMode, icon: chosenIcon,
+        ...(isWishList(listType) ? { forUserId: beneficiaryId() ?? undefined, forName: forName ?? undefined } : {}),
+      });
     } else {
       // Seulement ce qui a changé. Le magasin n'est envoyé que pour une liste
       // de courses, et s'il diffère de celui de la liste (ou de celui qu'elle
@@ -472,8 +591,8 @@ function form(list, users) {
       if (cleanName !== list.name) switches.name = cleanName;
       if (listType !== savedType) switches.listType = listType;
       if (shopping && chosenStore !== (currentStore?.id ?? null)) switches.storeId = chosenStore;
-      if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
-      if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
+      if (withPriority && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
+      if (withDue && options.due !== saved.due) switches.dueEnabled = options.due;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
       if (Object.keys(switches).length) await actions.updateList(id, switches);
@@ -481,6 +600,12 @@ function form(list, users) {
     // Partage : seulement s'il a changé, et seulement en ligne (route réservée
     // au propriétaire ; la liste doit d'abord exister sur le serveur)
     const before = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
+    // Le destinataire (membre d'office) fait toujours partie du partage envoyé
+    const beneficiary = beneficiaryId();
+    if (beneficiary && (!list || list.members.some((m) => m.id === beneficiary))) {
+      guests.add(beneficiary);
+      rights.set(beneficiary, 'modification');
+    }
     const access = Object.fromEntries([...guests].map((id) => [id, rights.get(id) ?? 'lecture']));
     const changed = before.size !== guests.size || [...guests].some((id) => before.get(id) !== access[id]);
     if (changed) {

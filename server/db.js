@@ -467,7 +467,56 @@ export const MIGRATIONS = [
   // --- Migration 18 : types de liste (courses, tâches, envies) ---
   // Remplace la catégorie. Voir listTypesMigration.
   (db) => listTypesMigration(db),
+
+  // --- Migration 19 : listes d'envies (bénéficiaire, souhaits, réservations) ---
+  // Voir wishesMigration.
+  (db) => wishesMigration(db),
 ];
+
+// Migration 19 : listes d'envies.
+// - lists.for_user_id (compte bénéficiaire) ou lists.for_name (prénom d'une
+//   personne sans compte, 80 caractères au plus), jamais les deux ; aucun
+//   des deux : le propriétaire est le bénéficiaire ;
+// - items.link (lien web http ou https, 500 caractères au plus) et
+//   items.price_cents (prix indicatif en centimes, de 0 à 100 000 €) ;
+// - reservations : les participants d'un souhait réservé, une ligne par
+//   compte (clé item_id + user_id : un compte ne participe pas deux fois),
+//   effacée avec le souhait ou avec le compte ;
+// - reservation_states : l'état « ouvert à d'autres » d'un souhait réservé
+//   (une ligne par souhait réservé, effacée avec le souhait), à part pour ne
+//   toucher ni items ni lists.
+// Jamais transmises au bénéficiaire (voir server/reservations.js). Une
+// participation ne rend pas un compte « utilisé » dans l'administration :
+// sinon un Admin bénéficiaire pourrait deviner qu'il en existe une.
+// Non destructive (des colonnes vides et une table vide sont ajoutées) ;
+// chaque ajout vérifie d'abord qu'il n'existe pas déjà.
+export function wishesMigration(db) {
+  const has = (table, column) => db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+  if (!has('lists', 'for_user_id')) db.exec('ALTER TABLE lists ADD COLUMN for_user_id INTEGER REFERENCES users(id)');
+  if (!has('lists', 'for_name')) {
+    db.exec('ALTER TABLE lists ADD COLUMN for_name TEXT CHECK (for_name IS NULL OR (for_user_id IS NULL AND length(for_name) BETWEEN 1 AND 80))');
+  }
+  if (!has('items', 'link')) db.exec('ALTER TABLE items ADD COLUMN link TEXT CHECK (link IS NULL OR length(link) BETWEEN 1 AND 500)');
+  if (!has('items', 'price_cents')) {
+    db.exec('ALTER TABLE items ADD COLUMN price_cents INTEGER CHECK (price_cents IS NULL OR price_cents BETWEEN 0 AND 10000000)');
+  }
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reservations (
+      item_id    TEXT    NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT    NOT NULL,
+      updated_at TEXT    NOT NULL,
+      PRIMARY KEY (item_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS reservations_user ON reservations(user_id);
+    CREATE TABLE IF NOT EXISTS reservation_states (
+      item_id    TEXT    PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+      open       INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1)),
+      created_at TEXT    NOT NULL,
+      updated_at TEXT    NOT NULL
+    );
+  `);
+}
 
 // Migration 18 : colonne lists.type ('shopping', 'tasks' ou 'wishes').
 // Toute liste dont la catégorie est « courses » (is_shopping) devient

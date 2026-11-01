@@ -19,7 +19,7 @@
 //   (20 en 15 minutes) est bloquée sur toutes ces routes.
 // - En-têtes : pas d'indexation, jamais de cache, pas de « referrer ».
 
-import { typeOf, isShoppingList, usesTaskOptions } from '../../public/js/list-types.js';
+import { typeOf, isShoppingList, usesPriority, usesDue } from '../../public/js/list-types.js';
 import fs from 'node:fs';
 import express from 'express';
 import { parseCookies, requireSameOrigin } from '../auth.js';
@@ -140,8 +140,8 @@ export function publicRoutes(ctx, { publicDir }) {
     // Liste de tâches : priorité et échéance en plus (lecture seule),
     // chacune seulement si elle est activée pour cette liste ; jamais pour
     // une liste de courses
-    const withPriority = usesTaskOptions(list) && list.priority_enabled === 1;
-    const withDue = usesTaskOptions(list) && list.due_enabled === 1;
+    const withPriority = usesPriority(list) && list.priority_enabled === 1;
+    const withDue = usesDue(list) && list.due_enabled === 1;
     // Nom d'un rayon ou d'un magasin, ou null (aucun, ou inconnu)
     const nameOf = (rows, id) => (id === null ? null : rows.find((row) => row.id === id)?.name ?? null);
     const describe = (item) => ({

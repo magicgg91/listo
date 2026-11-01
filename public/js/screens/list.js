@@ -36,7 +36,7 @@ import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
-import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark } from '../format.js';
+import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
@@ -442,27 +442,44 @@ export function renderList(listId, onLeave) {
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
 
-  // Liste d'envies : pastilles du prix et, SEULEMENT si le serveur a envoyé
-  // les réservations de cette liste (jamais au bénéficiaire), de la
-  // réservation : « Réservé par vous » / « Réservé par Marie ». Texte ET
-  // icône, jamais la couleur seule.
+  // Liste d'envies : pastilles de la priorité (si activée), du prix et,
+  // SEULEMENT si le serveur a envoyé les réservations de cette liste (jamais
+  // au bénéficiaire), de la réservation : « Réservé par Marie et Paul »
+  // (« vous » pour soi), puis « Ouvert à d'autres ». Plus rien sur un souhait
+  // reçu. Texte ET icône, jamais la couleur seule.
   const wishMeta = (item) => {
     const chips = [];
     const spoken = [];
+    const options = listOptions(view?.list);
+    const priority = options.priority ? priorityChip(item.priority) : null;
+    if (priority) {
+      chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
+      spoken.push(priority.label.toLowerCase());
+    }
     const price = formatPrice(item.priceCents);
     if (price) {
       chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), price));
       spoken.push(price);
     }
-    const reservation = view?.reservations?.get(item.id);
-    if (reservation) {
+    const reservation = item.checked ? null : view?.reservations?.get(item.id);
+    if (reservation?.participants.length) {
       const text = reservationText(reservation);
-      chips.push(h('span', { class: `chip${reservation.userId === app.user.id ? ' chip--accent' : ''}` }, icon('gift', 'icon--xs'), text));
+      const mine = reservation.participants.some((p) => p.userId === app.user.id);
+      chips.push(h('span', { class: `chip${mine ? ' chip--accent' : ''}` }, icon('gift', 'icon--xs'), text));
       spoken.push(text.toLowerCase());
+      if (reservation.open) {
+        chips.push(h('span', { class: 'chip' }, icon('plus', 'icon--xs'), 'Ouvert à d\'autres'));
+        spoken.push('ouvert à d\'autres');
+      }
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
-  const reservationText = (reservation) => (reservation.userId === app.user.id ? 'Réservé par vous' : `Réservé par ${reservation.displayName}`);
+  // « Marie », « Marie et Paul », « vous et Marie »… (soi en premier)
+  const participantNames = (reservation) => {
+    const me = reservation.participants.filter((p) => p.userId === app.user.id).map(() => 'vous');
+    return [...me, ...reservation.participants.filter((p) => p.userId !== app.user.id).map((p) => p.displayName)];
+  };
+  const reservationText = (reservation) => `Réservé par ${namesList(participantNames(reservation))}`;
   // « Reçu » (le coché d'une liste d'envies) : le bénéficiaire ou le
   // propriétaire seulement (le serveur refuse les autres)
   const mayCheck = (list) => !isWishList(list) || Boolean(list?.isOwner || list?.isBeneficiary);
@@ -874,56 +891,89 @@ export function renderList(listId, onLeave) {
     return actions.addItem({ listId, name, ...fields });
   }
 
-  // --- Réservation d'un souhait (listes d'envies) ---
+  // --- Réservation d'un souhait (listes d'envies), avec cotisation ---
   // Le bloc n'existe que si le serveur a envoyé les réservations de cette
   // liste : jamais pour le bénéficiaire (rien du tout, pas même un bloc vide).
-  // « Réserver » (tout membre, lecture seule comprise), « Annuler ma
-  // réservation », « Libérer » (gestionnaire : le propriétaire qui n'est pas
-  // le bénéficiaire). En ligne seulement : hors ligne, bouton inactif et
-  // explication. Renvoie { el, paint, dispose } ou null.
+  // Selon l'état du souhait :
+  // - libre : interrupteur « Ouvert à d'autres » (désactivé au départ) et
+  //   « Réserver » ;
+  // - réservé : les participants, « Ouvert à d'autres » le cas échéant ;
+  //   « Participer » (ouvert, je n'y suis pas), « Quitter » et
+  //   l'interrupteur (j'y suis) ; gestionnaire : « Retirer » chaque
+  //   participant et « Libérer » tout le souhait ;
+  // - reçu : plus rien (les réservations ne sont plus affichées).
+  // En ligne seulement : hors ligne, tout est inactif, avec une explication.
+  // Renvoie { el, paint, dispose } ou null.
   function reservationBlock(item) {
     if (!view?.reservations) return null;
     const el = h('div', { class: 'field' });
     let busy = false;
-    const paint = () => {
+    let openWanted = false; // « Ouvert à d'autres » pour une nouvelle réservation
+    const run = async (action, done) => {
+      busy = true;
+      paint();
+      try {
+        await action();
+        if (done) toast(done, { low: true });
+      } catch (err) {
+        toast(errorMessage(err), { low: true });
+        refreshData({ quiet: true }); // état à jour (« Déjà réservé. »)
+      }
+      busy = false;
+      paint();
+    };
+    const button = (cls, iconName, label, onClick, extra = {}) => h('button', {
+      class: `btn ${cls}`, type: 'button', disabled: busy || !navigator.onLine, onClick, ...extra,
+    }, icon(iconName, 'icon--sm'), label);
+    const openSwitch = (checked, onToggle) => h('div', { class: 'card' }, h('div', { class: 'toggle-row' },
+      h('div', { class: 'grow' },
+        h('span', { class: 'row__title', id: `open-${item.id}` }, 'Ouvert à d\'autres'),
+        h('span', { class: 'row__sub' }, 'D\'autres proches peuvent participer au cadeau.')),
+      h('button', {
+        class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(checked), 'aria-labelledby': `open-${item.id}`,
+        disabled: busy || !navigator.onLine, onClick: onToggle,
+      })));
+    function paint() {
       const reservations = view?.reservations;
-      el.hidden = !reservations;
-      if (!reservations) return;
+      const latest = app.data.items.get(item.id) ?? item;
+      el.hidden = !reservations || latest.checked;
+      if (el.hidden) return;
       const current = reservations.get(item.id);
-      const mine = current?.userId === app.user.id;
+      const participants = current?.participants ?? [];
+      const mine = participants.some((p) => p.userId === app.user.id);
       const manager = Boolean(view.list.isOwner);
-      let action = null;
-      if (!current) action = { cls: 'btn--primary', icon: 'gift', label: 'Réserver', run: () => actions.reserveWish(item.id), done: 'Souhait réservé' };
-      else if (mine) action = { cls: 'btn--secondary', icon: 'close', label: 'Annuler ma réservation', run: () => actions.releaseWish(item.id), done: 'Réservation annulée' };
-      else if (manager) action = { cls: 'btn--danger-outline', icon: 'close', label: 'Libérer', run: () => actions.releaseWish(item.id), done: 'Réservation libérée' };
-      const offline = !navigator.onLine;
-      // Rappel pour les proches : à qui les réservations restent cachées
       const list = view.list;
       const hidden = list.forName ? null : list.forDisplayName ?? list.members?.find((m) => m.isOwner)?.displayName;
+      let content;
+      if (!participants.length) {
+        content = [
+          h('p', { class: 'field__value' }, 'Pas encore réservé'),
+          openSwitch(openWanted, () => {
+            openWanted = !openWanted;
+            paint();
+          }),
+          button('btn--primary btn--block', 'gift', 'Réserver', () => run(() => actions.reserveWish(item.id, openWanted), 'Souhait réservé')),
+        ];
+      } else {
+        content = [
+          h('p', { class: 'field__value' }, reservationText(current), current.open ? ' · Ouvert à d\'autres' : ''),
+          mine ? openSwitch(current.open, () => run(() => actions.setWishOpen(item.id, !current.open))) : null,
+          !mine && current.open ? button('btn--primary btn--block', 'plus', 'Participer', () => run(() => actions.reserveWish(item.id), 'Vous participez')) : null,
+          mine ? button('btn--secondary btn--block', 'close', 'Quitter', () => run(() => actions.leaveWish(item.id), 'Vous ne participez plus')) : null,
+          // Gestionnaire : retirer un participant, ou libérer tout le souhait
+          manager ? h('div', { class: 'stack stack--sm' },
+            participants.some((p) => p.userId !== app.user.id) ? h('div', { class: 'card list-options' }, participants.filter((p) => p.userId !== app.user.id).map((p) => h('div', { class: 'toggle-row' },
+              h('span', { class: 'grow' }, p.displayName),
+              button('btn--danger-outline btn--sm', 'close', 'Retirer', () => run(() => actions.removeWishParticipant(item.id, p.userId), `${p.displayName} ne participe plus`), { 'aria-label': `Retirer ${p.displayName}` })))) : null,
+            button('btn--danger-outline btn--block', 'close', 'Libérer', () => run(() => actions.releaseWish(item.id), 'Réservation libérée'))) : null,
+        ];
+      }
       replace(el,
         h('span', { class: 'field__label' }, 'Réservation'),
-        h('p', { class: 'field__value' }, current ? reservationText(current) : 'Pas encore réservé'),
-        action ? h('button', {
-          class: `btn ${action.cls} btn--block`,
-          type: 'button',
-          disabled: busy || offline,
-          onClick: async () => {
-            busy = true;
-            paint();
-            try {
-              await action.run();
-              toast(action.done, { low: true });
-            } catch (err) {
-              toast(errorMessage(err), { low: true });
-              refreshData({ quiet: true }); // état à jour (« Déjà réservé. »)
-            }
-            busy = false;
-            paint();
-          },
-        }, icon(action.icon, 'icon--sm'), action.label) : null,
-        action && offline ? h('p', { class: 'field__hint' }, 'Réserver ou annuler demande une connexion.') : null,
+        content,
+        !navigator.onLine ? h('p', { class: 'field__hint' }, 'Réserver, participer ou quitter demande une connexion.') : null,
         hidden ? h('p', { class: 'field__hint' }, `Les réservations ne sont jamais montrées à ${hidden}.`) : null);
-    };
+    }
     window.addEventListener('online', paint);
     window.addEventListener('offline', paint);
     paint();

@@ -15,7 +15,7 @@ import { openDatabase, schemaVersion, fillListTypes } from '../server/db.js';
 import { loadConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
 import { loadOrCreateKey } from '../server/secrets.js';
-import { typeOf, isShoppingList, usesTaskOptions, typeChangeWarning, CREATABLE_TYPES, TYPE_ICONS } from '../public/js/list-types.js';
+import { typeOf, isShoppingList, usesPriority, usesDue, typeChangeWarning, CREATABLE_TYPES, TYPE_ICONS } from '../public/js/list-types.js';
 
 const uuid = () => crypto.randomUUID();
 const PASSWORD = 'MotDePasseAdmin!';
@@ -295,7 +295,8 @@ test('point unique : typeOf (jamais la catégorie), icônes par défaut, avertis
   assert.equal(typeOf({ type: 'autre' }), 'tasks');
   assert.equal(typeOf('wishes'), 'wishes');
   assert.equal(isShoppingList({ type: 'shopping' }), true);
-  assert.equal(usesTaskOptions({ type: 'shopping' }), false);
+  assert.deepEqual([usesPriority({ type: 'shopping' }), usesPriority({ type: 'tasks' }), usesPriority({ type: 'wishes' })], [false, true, true]);
+  assert.deepEqual([usesDue({ type: 'shopping' }), usesDue({ type: 'tasks' }), usesDue({ type: 'wishes' })], [false, true, false]);
   assert.deepEqual(TYPE_ICONS, { shopping: 'cart', tasks: 'tasks', wishes: 'gift' });
   assert.match(typeChangeWarning('shopping', 'tasks'), /^Les rayons, magasins et codes-barres ne s'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses\.$/);
   assert.match(typeChangeWarning('tasks', 'shopping'), /conservées si vous revenez à Tâches/);

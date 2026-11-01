@@ -12,7 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
-import { isListType, isShoppingList, usesTaskOptions } from './list-types.js';
+import { isListType, isShoppingList, usesPriority, usesDue } from './list-types.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -615,16 +615,15 @@ export const ADD_MODES = ['quick', 'detail'];
 export const defaultAddMode = (isShopping) => (isShopping ? 'quick' : 'detail');
 export const addModeOf = (list) => (list?.addMode === 'detail' ? 'detail' : 'quick');
 
-// Priorité et échéance utilisées dans cette liste ? Seulement dans une liste
-// de tâches, selon les deux réglages de la liste (choisis par le
-// propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
+// Priorité et échéance utilisées dans cette liste ? Priorité : listes de
+// tâches et d'envies ; échéance : listes de tâches ; chacune selon son
+// réglage (choisi par le propriétaire). Une copie gardée d'avant ces réglages (aucune valeur) les
 // montre, comme avant, jusqu'à la prochaine synchronisation. Les valeurs des
 // éléments ne sont jamais effacées : un réglage désactivé les cache.
 export function listOptions(list) {
-  const classic = Boolean(list) && usesTaskOptions(list);
   return {
-    priority: classic && list.priorityEnabled !== false,
-    due: classic && list.dueEnabled !== false,
+    priority: Boolean(list) && usesPriority(list) && list.priorityEnabled !== false,
+    due: Boolean(list) && usesDue(list) && list.dueEnabled !== false,
   };
 }
 

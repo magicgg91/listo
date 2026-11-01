@@ -479,11 +479,15 @@ export const MIGRATIONS = [
 //   des deux : le propriétaire est le bénéficiaire ;
 // - items.link (lien web http ou https, 500 caractères au plus) et
 //   items.price_cents (prix indicatif en centimes, de 0 à 100 000 €) ;
-// - reservations : un seul réservant par souhait (item_id en clé primaire),
-//   effacée avec le souhait ou avec le compte qui a réservé ; jamais
-//   transmise au bénéficiaire (voir server/reservations.js). Une réservation
-//   ne rend pas un compte « utilisé » dans l'administration : sinon un Admin
-//   bénéficiaire pourrait deviner qu'il en existe une.
+// - reservations : les participants d'un souhait réservé, une ligne par
+//   compte (clé item_id + user_id : un compte ne participe pas deux fois),
+//   effacée avec le souhait ou avec le compte ;
+// - reservation_states : l'état « ouvert à d'autres » d'un souhait réservé
+//   (une ligne par souhait réservé, effacée avec le souhait), à part pour ne
+//   toucher ni items ni lists.
+// Jamais transmises au bénéficiaire (voir server/reservations.js). Une
+// participation ne rend pas un compte « utilisé » dans l'administration :
+// sinon un Admin bénéficiaire pourrait deviner qu'il en existe une.
 // Non destructive (des colonnes vides et une table vide sont ajoutées) ;
 // chaque ajout vérifie d'abord qu'il n'existe pas déjà.
 export function wishesMigration(db) {
@@ -498,12 +502,19 @@ export function wishesMigration(db) {
   }
   db.exec(`
     CREATE TABLE IF NOT EXISTS reservations (
-      item_id    TEXT    PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+      item_id    TEXT    NOT NULL REFERENCES items(id) ON DELETE CASCADE,
       user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TEXT    NOT NULL,
+      updated_at TEXT    NOT NULL,
+      PRIMARY KEY (item_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS reservations_user ON reservations(user_id);
+    CREATE TABLE IF NOT EXISTS reservation_states (
+      item_id    TEXT    PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+      open       INTEGER NOT NULL DEFAULT 0 CHECK (open IN (0, 1)),
       created_at TEXT    NOT NULL,
       updated_at TEXT    NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS reservations_user ON reservations(user_id);
   `);
 }
 

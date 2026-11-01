@@ -1,6 +1,7 @@
-// Listes d'envies : bénéficiaire, souhaits (lien, prix), « reçu », et
-// réservations cachées au bénéficiaire, canal par canal (tableau du cahier
-// des charges). RÈGLE CRITIQUE vérifiée ici : le bénéficiaire ne doit jamais
+// Listes d'envies : bénéficiaire, souhaits (lien, prix, priorité), « reçu »,
+// et réservations avec cotisation (plusieurs participants, « ouvert à
+// d'autres ») cachées au bénéficiaire, canal par canal (tableau du cahier des
+// charges). RÈGLE CRITIQUE vérifiée ici : le bénéficiaire ne doit jamais
 // savoir qu'un souhait est réservé, ni par qui, ni combien.
 //
 // Foyer : Guillaume (Admin, propriétaire des listes), Léa (bénéficiaire de
@@ -15,11 +16,13 @@ import Database from 'better-sqlite3';
 import { startTestApp, setupAdmin, addUser, login, databaseAt, tempDir } from './helpers.js';
 import { openDatabase, schemaVersion, wishesMigration } from '../server/db.js';
 import { emptyState, loadSync, mergeSync, toSnapshot } from '../public/js/store.js';
-import { BENEFICIARY, ALREADY, NOT_YOURS } from '../server/reservations.js';
+import { BENEFICIARY, ALREADY, ALREADY_IN, NOT_IN, PARTICIPANTS_ONLY, MANAGER_ONLY, RECEIVED } from '../server/reservations.js';
 import { cleanLink, parsePrice, formatPrice } from '../public/js/wishes.js';
 
 const uuid = () => crypto.randomUUID();
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Identifiants fixes : deux foyers identiques donnent les mêmes réponses
+const fixed = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 async function household(t, options = {}) {
   const app = await startTestApp(t, options);
@@ -33,7 +36,7 @@ async function household(t, options = {}) {
   }
   const ops = async (client, list) => (await client.post('/api/ops', { ops: list.map((op) => ({ id: uuid(), ...op })) })).body.results;
   const one = async (client, op) => (await ops(client, [op]))[0];
-  const ids = { lea: uuid(), moi: uuid(), lucas: uuid(), velo: uuid(), livre: uuid(), jeu: uuid(), lampe: uuid(), doudou: uuid() };
+  const ids = { lea: fixed(1), moi: fixed(2), lucas: fixed(3), velo: fixed(4), livre: fixed(5), jeu: fixed(6), lampe: fixed(7), doudou: fixed(8) };
   const res = await ops(guillaume, [
     { type: 'list.create', listId: ids.lea, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId },
     { type: 'item.create', listId: ids.lea, itemId: ids.velo, name: 'Vélo', link: 'https://exemple.fr/velo', priceCents: 24990, note: 'Rouge' },
@@ -49,10 +52,16 @@ async function household(t, options = {}) {
   assert.equal((await share(ids.lea, { [people.leaId]: 'modification', [people.marieId]: 'modification', [people.paulId]: 'lecture' })).status, 200);
   assert.equal((await share(ids.moi, { [people.marieId]: 'modification', [people.paulId]: 'lecture' })).status, 200);
   assert.equal((await share(ids.lucas, { [people.marieId]: 'lecture' })).status, 200);
-  const reserve = (client, itemId) => client.post(`/api/items/${itemId}/reservation`, {});
-  const release = (client, itemId) => client.del(`/api/items/${itemId}/reservation`);
+  const url = (itemId, rest = '') => `/api/items/${itemId}/reservation${rest}`;
+  const reserve = (client, itemId, body = {}) => client.post(url(itemId), body);            // réserver ou participer
+  const setOpen = (client, itemId, open) => client.request('PATCH', url(itemId), { open });  // ouvrir ou fermer
+  const leave = (client, itemId) => client.del(url(itemId));                               // quitter
+  const releaseAll = (client, itemId) => client.del(url(itemId, '/all'));                    // gestionnaire : tout libérer
+  const removeOne = (client, itemId, userId) => client.del(url(itemId, `/participants/${userId}`)); // gestionnaire : retirer
   const reservedIn = async (client, listId) => (await client.get('/api/sync')).body.reservations[listId];
-  return { app, ...people, ops, one, ids, reserve, release, reservedIn };
+  const stateOf = async (client, listId, itemId) => (await reservedIn(client, listId))?.find((r) => r.itemId === itemId) ?? null;
+  const names = (state) => state?.participants.map((p) => p.displayName) ?? [];
+  return { app, ...people, ops, one, ids, reserve, setOpen, leave, releaseAll, removeOne, reservedIn, stateOf, names };
 }
 
 // Tout ce que reçoit un compte par l'API, en-têtes compris (sauf la date
@@ -152,7 +161,9 @@ test('souhaits : lien http/https seulement (jamais appelé), prix en centimes, p
   const upd = await h.one(h.lea, { type: 'item.update', itemId: ok.item.id, link: null, priceCents: 1999 });
   assert.deepEqual([upd.item.link, upd.item.priceCents], [null, 1999]);
   assert.equal((await h.one(h.lea, { type: 'item.update', itemId: ok.item.id, link: 'javascript:void(0)' })).status, 400);
-  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: ok.item.id, priority: 'high' })).error, 'La priorité et l\'échéance ne se choisissent que dans une liste de tâches.');
+  // Priorité : activée par défaut sur une liste d'envies ; échéance : jamais
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: ok.item.id, priority: 'high' })).item.priority, 'high');
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: ok.item.id, dueDate: '2026-12-24' })).error, 'L\'échéance ne se choisit que dans une liste de tâches.');
   // Hors envies
   const tasks = uuid();
   await h.one(h.guillaume, { type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' });
@@ -193,20 +204,20 @@ test('figés : ni changement de type (dans les deux sens), ni de bénéficiaire,
 
 test('qui voit les réservations : proches et gestionnaire oui ; bénéficiaire jamais ; « Moi » : pas le propriétaire ; sans compte : tous', async (t) => {
   const h = await household(t);
-  assert.equal((await h.reserve(h.marie, h.ids.velo)).status, 200);
-  assert.equal((await h.reserve(h.paul, h.ids.jeu)).status, 200, 'lecture seule : réserver n\'est pas modifier');
+  assert.equal((await h.reserve(h.marie, h.ids.velo, { open: true })).status, 200);
+  assert.equal((await h.reserve(h.paul, h.ids.velo)).status, 200, 'lecture seule : participer n\'est pas modifier');
+  assert.equal((await h.reserve(h.paul, h.ids.jeu)).status, 200);
   assert.equal((await h.reserve(h.marie, h.ids.doudou)).status, 200);
-  const velo = [{ itemId: h.ids.velo, userId: h.marieId, displayName: 'Marie' }];
+  const velo = [{ itemId: h.ids.velo, open: true, participants: [{ userId: h.marieId, displayName: 'Marie' }, { userId: h.paulId, displayName: 'Paul' }] }];
   for (const client of [h.marie, h.paul, h.guillaume]) {
     assert.deepEqual(await h.reservedIn(client, h.ids.lea), velo);
     assert.deepEqual((await client.get(`/api/lists/${h.ids.lea}`)).body.reservations, velo);
   }
   // Léa : rien, nulle part
-  const leaSync = (await h.lea.get('/api/sync')).body;
-  assert.deepEqual(leaSync.reservations, {});
+  assert.deepEqual((await h.lea.get('/api/sync')).body.reservations, {});
   assert.equal('reservations' in (await h.lea.get(`/api/lists/${h.ids.lea}`)).body, false);
   // « Mes envies » (Guillaume bénéficiaire) : Marie et Paul voient, Guillaume non
-  assert.deepEqual((await h.reservedIn(h.marie, h.ids.moi)).map((r) => r.itemId), [h.ids.jeu]);
+  assert.deepEqual(h.names(await h.stateOf(h.marie, h.ids.moi, h.ids.jeu)), ['Paul']);
   assert.equal(await h.reservedIn(h.guillaume, h.ids.moi), undefined);
   assert.equal('reservations' in (await h.guillaume.get(`/api/lists/${h.ids.moi}`)).body, false);
   // « Lucas » (sans compte) : tout membre voit, Guillaume compris
@@ -214,52 +225,133 @@ test('qui voit les réservations : proches et gestionnaire oui ; bénéficiaire 
   assert.equal((await h.reservedIn(h.marie, h.ids.lucas)).length, 1);
   // Aucune trace dans les éléments eux-mêmes
   for (const client of [h.marie, h.guillaume, h.lea]) {
-    const text = JSON.stringify((await client.get('/api/sync')).body.items);
-    assert.equal(/reserv|Réserv/i.test(text), false);
+    assert.equal(/reserv|Réserv|participant|open/i.test(JSON.stringify((await client.get('/api/sync')).body.items)), false);
   }
 });
 
-test('droits : bénéficiaire refusé (toujours la même réponse) ; libérer : soi-même ou le gestionnaire ; non-membre 404 ; une seule réservation gagne', async (t) => {
+test('cotisation : réserver fermé ou ouvert, participer, refus sur une réservation fermée, pas de double participation, tout participant ouvre ou ferme', async (t) => {
   const h = await household(t);
-  // Le bénéficiaire : même réponse (statut, texte, en-têtes) que le souhait soit réservé ou non
-  const answer = async (res) => ({ status: res.status, text: res.text, headers: Object.fromEntries([...res.headers].filter(([n]) => n !== 'date')) });
-  const free = [await answer(await h.reserve(h.lea, h.ids.velo)), await answer(await h.release(h.lea, h.ids.velo))];
-  assert.equal(free[0].status, 403);
-  assert.equal(JSON.parse(free[0].text).error, BENEFICIARY);
-  assert.deepEqual(free[0], free[1], 'réserver et libérer : même réponse');
-  assert.equal((await h.reserve(h.marie, h.ids.velo)).status, 200);
-  const booked = [await answer(await h.reserve(h.lea, h.ids.velo)), await answer(await h.release(h.lea, h.ids.velo))];
-  assert.deepEqual(booked, free, 'réservé ou non : réponses identiques');
-  // « Moi » : le propriétaire est le bénéficiaire
-  assert.deepEqual(await answer(await h.reserve(h.guillaume, h.ids.jeu)), free[0]);
-  // Non-membre : comme partout, « introuvable »
-  assert.equal((await h.reserve(h.zoe, h.ids.velo)).status, 404);
-  assert.equal((await h.release(h.zoe, h.ids.velo)).status, 404);
-  assert.equal((await h.reserve(h.marie, uuid())).status, 404);
-  // Déjà réservé : refus propre, aucun écrasement
-  const twice = await h.reserve(h.paul, h.ids.velo);
-  assert.deepEqual([twice.status, twice.body.error], [409, ALREADY]);
-  assert.equal(h.app.db.prepare('SELECT user_id FROM reservations WHERE item_id = ?').pluck().get(h.ids.velo), h.marieId);
-  // Paul ne libère pas la réservation de Marie ; le gestionnaire oui
-  const notYours = await h.release(h.paul, h.ids.velo);
-  assert.deepEqual([notYours.status, notYours.body.error], [403, NOT_YOURS]);
-  assert.equal((await h.release(h.guillaume, h.ids.velo)).status, 200);
-  assert.equal((await h.release(h.guillaume, h.ids.velo)).status, 404, 'déjà libre');
-  // Chacun annule la sienne
-  await h.reserve(h.paul, h.ids.livre);
-  assert.equal((await h.release(h.paul, h.ids.livre)).status, 200);
-  // Deux réservations simultanées : une seule gagne
-  const race = await Promise.all([h.reserve(h.marie, h.ids.livre), h.reserve(h.paul, h.ids.livre), h.reserve(h.guillaume, h.ids.livre)]);
-  assert.deepEqual(race.map((r) => r.status).sort(), [200, 409, 409]);
-  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id = ?').pluck().get(h.ids.livre), 1);
-  // Pas dans une autre liste
+  // Fermée (par défaut) : personne d'autre ne se joint
+  const closed = await h.reserve(h.marie, h.ids.livre);
+  assert.deepEqual(closed.body.reservation, { itemId: h.ids.livre, open: false, participants: [{ userId: h.marieId, displayName: 'Marie' }] });
+  const refused = await h.reserve(h.paul, h.ids.livre);
+  assert.deepEqual([refused.status, refused.body.error], [409, ALREADY]);
+  assert.deepEqual([(await h.reserve(h.marie, h.ids.livre)).status, (await h.reserve(h.marie, h.ids.livre)).body.error], [409, ALREADY_IN]);
+  // Un participant ouvre : Paul peut participer ; pas deux fois
+  assert.equal((await h.setOpen(h.marie, h.ids.livre, true)).body.reservation.open, true);
+  assert.equal((await h.reserve(h.paul, h.ids.livre)).status, 200);
+  assert.equal((await h.reserve(h.paul, h.ids.livre)).body.error, ALREADY_IN);
+  assert.deepEqual(h.names(await h.stateOf(h.marie, h.ids.lea, h.ids.livre)), ['Marie', 'Paul']);
+  // Tout participant ouvre ou ferme (Paul ferme, puis rouvre) ; un non-participant non
+  assert.equal((await h.setOpen(h.paul, h.ids.livre, false)).body.reservation.open, false);
+  assert.equal((await h.setOpen(h.paul, h.ids.livre, true)).body.reservation.open, true);
+  await h.one(h.guillaume, { type: 'list.update', listId: h.ids.lea, name: 'Noël de Léa' });
+  const other = h.app.client();
+  await login(other, 'zoe', 'MotDePasse-zoe');
+  await h.guillaume.request('PUT', `/api/lists/${h.ids.lea}/members`, { userIds: [h.leaId, h.marieId, h.paulId, h.zoeId], access: { [h.leaId]: 'modification', [h.marieId]: 'modification', [h.paulId]: 'lecture', [h.zoeId]: 'lecture' } });
+  assert.deepEqual([(await h.setOpen(h.zoe, h.ids.livre, false)).status, (await h.setOpen(h.zoe, h.ids.livre, false)).body.error], [403, PARTICIPANTS_ONLY]);
+  assert.equal((await h.setOpen(h.guillaume, h.ids.livre, false)).status, 200, 'le gestionnaire aussi');
+  assert.equal((await h.setOpen(h.marie, h.ids.livre, 'oui')).status, 400);
+  assert.equal((await h.setOpen(h.marie, h.ids.velo, true)).status, 404, 'souhait libre : rien à ouvrir');
+  // Ouverte dès la réservation
+  const open = await h.reserve(h.paul, h.ids.velo, { open: true });
+  assert.equal(open.body.reservation.open, true);
+  assert.equal((await h.reserve(h.marie, h.ids.velo, { open: false })).status, 200, 'se joindre ne change pas l\'état');
+  assert.equal((await h.stateOf(h.paul, h.ids.lea, h.ids.velo)).open, true);
+  assert.equal((await h.reserve(h.marie, h.ids.velo, { open: 'oui' })).status, 400);
+  // Un souhait reçu ne se réserve plus
+  await h.one(h.lea, { type: 'item.check', itemId: h.ids.velo, checked: true });
+  assert.equal((await h.reserve(h.zoe, h.ids.velo)).body.error, RECEIVED);
+  // Non-membre, autre type de liste
+  assert.equal((await h.reserve(h.guillaume, uuid())).status, 404);
   const tasks = uuid();
   const item = uuid();
   await h.ops(h.guillaume, [{ type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' }, { type: 'item.create', listId: tasks, itemId: item, name: 'Ampoule' }]);
   assert.equal((await h.reserve(h.guillaume, item)).status, 400);
 });
 
-test('TEST FORT : tout ce que reçoit le bénéficiaire est strictement identique avant et après une réservation, puis une libération (corps, en-têtes, flux temps réel, copie locale)', async (t) => {
+test('cotisation : quitter (le dernier libère le souhait ; le premier part, les autres restent et ouvrent ou ferment) ; le gestionnaire retire et libère', async (t) => {
+  const h = await household(t);
+  await h.reserve(h.marie, h.ids.velo, { open: true });
+  await h.reserve(h.paul, h.ids.velo);
+  // Marie, la première, s'en va : Paul reste et peut toujours ouvrir ou fermer
+  assert.equal((await h.leave(h.marie, h.ids.velo)).status, 200);
+  assert.deepEqual(h.names(await h.stateOf(h.paul, h.ids.lea, h.ids.velo)), ['Paul']);
+  assert.equal((await h.setOpen(h.paul, h.ids.velo, false)).body.reservation.open, false);
+  assert.equal((await h.leave(h.marie, h.ids.velo)).body.error, NOT_IN);
+  // Le dernier part : le souhait est libre (et une nouvelle réservation repart fermée)
+  assert.deepEqual((await h.leave(h.paul, h.ids.velo)).body, { reservation: null });
+  assert.equal(await h.stateOf(h.marie, h.ids.lea, h.ids.velo), null);
+  assert.equal((await h.reserve(h.marie, h.ids.velo)).body.reservation.open, false);
+  // Gestionnaire : retirer un participant, libérer tout ; un proche ne le peut pas
+  await h.setOpen(h.marie, h.ids.velo, true);
+  await h.reserve(h.paul, h.ids.velo);
+  const notManager = await h.removeOne(h.marie, h.ids.velo, h.paulId);
+  assert.deepEqual([notManager.status, notManager.body.error], [403, MANAGER_ONLY]);
+  assert.equal((await h.releaseAll(h.paul, h.ids.velo)).body.error, MANAGER_ONLY);
+  assert.equal((await h.removeOne(h.guillaume, h.ids.velo, h.paulId)).status, 200);
+  assert.deepEqual(h.names(await h.stateOf(h.marie, h.ids.lea, h.ids.velo)), ['Marie']);
+  assert.equal((await h.removeOne(h.guillaume, h.ids.velo, h.paulId)).status, 404, 'déjà retiré');
+  assert.equal((await h.removeOne(h.guillaume, h.ids.velo, 'abc')).status, 404);
+  assert.equal((await h.releaseAll(h.guillaume, h.ids.velo)).status, 200);
+  assert.equal(await h.stateOf(h.marie, h.ids.lea, h.ids.velo), null);
+  assert.equal((await h.releaseAll(h.guillaume, h.ids.velo)).status, 404, 'déjà libre');
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservation_states').pluck().get(), 0, 'aucun état orphelin');
+});
+
+test('course : deux premières réservations simultanées ; fermées, une seule gagne ; ouvertes, la seconde devient participante', async (t) => {
+  const h = await household(t);
+  const closed = await Promise.all([h.reserve(h.marie, h.ids.livre), h.reserve(h.paul, h.ids.livre), h.reserve(h.guillaume, h.ids.livre)]);
+  assert.deepEqual(closed.map((r) => r.status).sort(), [200, 409, 409]);
+  assert.ok(closed.filter((r) => r.status === 409).every((r) => r.body.error === ALREADY));
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id = ?').pluck().get(h.ids.livre), 1);
+  const open = await Promise.all([h.reserve(h.marie, h.ids.velo, { open: true }), h.reserve(h.paul, h.ids.velo, { open: true })]);
+  assert.deepEqual(open.map((r) => r.status), [200, 200]);
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id = ?').pluck().get(h.ids.velo), 2);
+  assert.equal((await h.stateOf(h.guillaume, h.ids.lea, h.ids.velo)).open, true);
+});
+
+test('bénéficiaire : toujours la même réponse, quelles que soient l\'action et l\'état du souhait (statut, texte, en-têtes)', async (t) => {
+  const h = await household(t);
+  const answer = async (res) => ({ status: res.status, text: res.text, headers: Object.fromEntries([...res.headers].filter(([n]) => n !== 'date')) });
+  const all = async () => Promise.all([
+    h.reserve(h.lea, h.ids.velo), h.reserve(h.lea, h.ids.velo, { open: true }), h.reserve(h.lea, h.ids.velo, { open: 'nimporte' }),
+    h.setOpen(h.lea, h.ids.velo, true), h.setOpen(h.lea, h.ids.velo, 'x'), h.leave(h.lea, h.ids.velo),
+    h.releaseAll(h.lea, h.ids.velo), h.removeOne(h.lea, h.ids.velo, h.marieId), h.removeOne(h.lea, h.ids.velo, 'abc'),
+  ].map(async (p) => answer(await p)));
+  const free = await all();
+  assert.equal(free[0].status, 403);
+  assert.equal(JSON.parse(free[0].text).error, BENEFICIARY);
+  for (const other of free) assert.deepEqual(other, free[0], 'toutes les actions : même réponse');
+  await h.reserve(h.marie, h.ids.velo);
+  assert.deepEqual(await all(), free, 'réservé fermé : identique');
+  await h.setOpen(h.marie, h.ids.velo, true);
+  await h.reserve(h.paul, h.ids.velo);
+  assert.deepEqual(await all(), free, 'réservé ouvert, deux participants : identique');
+  // « Moi » : le propriétaire est le bénéficiaire, même réponse
+  await h.reserve(h.marie, h.ids.jeu);
+  assert.deepEqual(await answer(await h.releaseAll(h.guillaume, h.ids.jeu)), free[0]);
+  assert.deepEqual(await answer(await h.removeOne(h.guillaume, h.ids.jeu, h.marieId)), free[0]);
+  // Non-membre : comme partout, « introuvable »
+  assert.equal((await h.reserve(h.zoe, h.ids.velo)).status, 404);
+});
+
+// Toutes les actions de réservation, l'une après l'autre (proches et
+// gestionnaire), avec un contrôle après chacune
+const ALL_ACTIONS = (h) => [
+  ['réserver fermé', () => h.reserve(h.marie, h.ids.velo)],
+  ['ouvrir', () => h.setOpen(h.marie, h.ids.velo, true)],
+  ['participer', () => h.reserve(h.paul, h.ids.velo)],
+  ['fermer', () => h.setOpen(h.paul, h.ids.velo, false)],
+  ['réserver ouvert', () => h.reserve(h.guillaume, h.ids.livre, { open: true })],
+  ['participer (2)', () => h.reserve(h.marie, h.ids.livre)],
+  ['quitter', () => h.leave(h.marie, h.ids.livre)],
+  ['retirer un participant', () => h.removeOne(h.guillaume, h.ids.velo, h.paulId)],
+  ['libérer tout', () => h.releaseAll(h.guillaume, h.ids.livre)],
+  ['réserver de nouveau', () => h.reserve(h.paul, h.ids.livre)],
+];
+
+test('TEST FORT : tout ce que reçoit le bénéficiaire est strictement identique avant et après chaque action de réservation (corps, en-têtes, flux temps réel, copie locale)', async (t) => {
   const h = await household(t, { eventOptions: { keepaliveMs: 60 * 60 * 1000 } });
   const stream = rawStream(t, h, h.lea);
   const marieStream = rawStream(t, h, h.marie);
@@ -271,26 +363,54 @@ test('TEST FORT : tout ce que reçoit le bénéficiaire est strictement identiqu
   const stamps = updatedAt();
   const events = h.app.db.prepare('SELECT COUNT(*) FROM list_events').pluck().get();
   const logs = h.app.logs.length;
-  const othersNews = JSON.stringify([(await h.marie.get('/api/sync')).body.news, (await h.paul.get('/api/sync')).body.news, (await h.guillaume.get('/api/sync')).body.news]);
+  const othersNews = async () => JSON.stringify([(await h.marie.get('/api/sync')).body.news, (await h.paul.get('/api/sync')).body.news, (await h.guillaume.get('/api/sync')).body.news]);
+  const news = await othersNews();
 
-  // Marie réserve deux souhaits, Paul un, puis le gestionnaire en libère un
-  assert.equal((await h.reserve(h.marie, h.ids.velo)).status, 200);
-  assert.equal((await h.reserve(h.paul, h.ids.livre)).status, 200);
-  const during = await snapshotOf(h, h.lea, h.ids.lea);
-  assert.equal((await h.release(h.guillaume, h.ids.livre)).status, 200);
-  await pause(300);
-  const after = await snapshotOf(h, h.lea, h.ids.lea);
-
-  assert.deepEqual(during, before, 'pendant : rien de changé pour Léa');
-  assert.deepEqual(after, before, 'après : rien de changé pour Léa');
-  assert.equal(stream.raw, rawBefore, 'aucun octet de plus sur le flux temps réel de Léa');
-  // Les proches, eux, ont été prévenus
-  assert.ok((marieStream.raw.match(/event: list/g) ?? []).length >= 3, marieStream.raw);
+  for (const [label, action] of ALL_ACTIONS(h)) {
+    assert.equal((await action()).status, 200, label);
+    await pause(60);
+    assert.deepEqual(await snapshotOf(h, h.lea, h.ids.lea), before, `${label} : rien de changé pour Léa`);
+    assert.equal(stream.raw, rawBefore, `${label} : aucun octet de plus sur le flux temps réel de Léa`);
+  }
+  // Les proches, eux, ont été prévenus à chaque action
+  assert.ok((marieStream.raw.match(/event: list/g) ?? []).length >= ALL_ACTIONS(h).length, marieStream.raw);
   // Ni updated_at, ni nouveautés, ni journal
   assert.equal(updatedAt(), stamps, 'lists.updated_at et items.updated_at intacts');
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM list_events').pluck().get(), events, 'aucune nouveauté');
   assert.equal(h.app.logs.length, logs, 'aucune ligne de journal');
-  assert.equal(JSON.stringify([(await h.marie.get('/api/sync')).body.news, (await h.paul.get('/api/sync')).body.news, (await h.guillaume.get('/api/sync')).body.news]), othersNews, 'nouveautés des autres inchangées aussi');
+  assert.equal(await othersNews(), news, 'nouveautés des autres inchangées aussi');
+});
+
+test('TEST FORT, souhait réservé modifié, supprimé puis rétabli, marqué « Reçu » : le bénéficiaire reçoit exactement ce qu\'il recevrait sans aucune réservation', async (t) => {
+  // Deux foyers identiques (mêmes identifiants, même horloge) : dans le
+  // premier, les proches réservent et cotisent ; dans le second, personne.
+  // Les mêmes actions visibles suivent, et ce que reçoit Léa est comparé.
+  const withBookings = await household(t, { eventOptions: { keepaliveMs: 60 * 60 * 1000 } });
+  const without = await household(t, { eventOptions: { keepaliveMs: 60 * 60 * 1000 } });
+  const streams = [rawStream(t, withBookings, withBookings.lea), rawStream(t, without, without.lea)];
+  await Promise.all(streams.map((s) => s.ready));
+  await withBookings.reserve(withBookings.marie, withBookings.ids.velo, { open: true });
+  await withBookings.reserve(withBookings.paul, withBookings.ids.velo);
+  await withBookings.reserve(withBookings.guillaume, withBookings.ids.livre);
+  const steps = [
+    ['modifier le souhait réservé (nom, lien, prix, priorité)', (h) => h.one(h.marie, { type: 'item.update', itemId: h.ids.velo, name: 'Vélo bleu', link: 'https://exemple.fr/velo-bleu', priceCents: 19990, priority: 'high' })],
+    ['supprimer le souhait réservé', (h) => h.one(h.lea, { type: 'item.delete', itemId: h.ids.livre })],
+    ['annuler la suppression', (h) => h.one(h.lea, { type: 'item.restore', itemId: h.ids.livre })],
+    ['marquer « Reçu »', (h) => h.one(h.lea, { type: 'item.check', itemId: h.ids.velo, checked: true })],
+  ];
+  for (const [label, step] of steps) {
+    for (const world of [withBookings, without]) {
+      withBookings.app.clock.now = without.app.clock.now = Date.UTC(2026, 9, 16, 13, steps.findIndex((s) => s[0] === label));
+      assert.equal((await step(world)).status, 200, label);
+    }
+    await pause(80);
+    const [a, b] = [await snapshotOf(withBookings, withBookings.lea, withBookings.ids.lea), await snapshotOf(without, without.lea, without.ids.lea)];
+    for (const key of Object.keys(a)) assert.deepEqual(a[key], b[key], `${label} : ${key}`);
+    assert.equal(streams[0].raw, streams[1].raw, `${label} : même flux temps réel`);
+  }
+  // Les réservations n'ont pas été libérées par la modification, ni par la suppression puis « Annuler »
+  assert.deepEqual(withBookings.names(await withBookings.stateOf(withBookings.marie, withBookings.ids.lea, withBookings.ids.velo)), ['Marie', 'Paul']);
+  assert.deepEqual(withBookings.names(await withBookings.stateOf(withBookings.marie, withBookings.ids.lea, withBookings.ids.livre)), ['Guillaume']);
 });
 
 test('bénéficiaire qui quitte la liste puis y revient : toujours exclu (identité du compte, pas appartenance) ; rajouté en « Peut modifier »', async (t) => {
@@ -313,21 +433,30 @@ test('bénéficiaire qui quitte la liste puis y revient : toujours exclu (identi
   assert.equal((await h.reserve(h.lea, h.ids.livre)).body.error, BENEFICIARY);
 });
 
-test('membre parti, compte désactivé : ses réservations restent ; le gestionnaire les voit et les libère', async (t) => {
+test('participant parti ou désactivé : il reste participant ; le gestionnaire le retire ; « pour moi » : personne ne le retire, on peut seulement ouvrir ou fermer', async (t) => {
   const h = await household(t);
-  await h.reserve(h.marie, h.ids.velo);
-  await h.reserve(h.paul, h.ids.livre);
+  await h.reserve(h.marie, h.ids.velo, { open: true });
+  await h.reserve(h.paul, h.ids.velo);
   // Marie quitte la liste ; Paul est désactivé par l'Admin
   assert.equal((await h.marie.post(`/api/lists/${h.ids.lea}/leave`, {})).status, 200);
   assert.equal((await h.guillaume.request('PATCH', `/api/admin/users/${h.paulId}`, { active: false })).status, 200);
-  const seen = await h.reservedIn(h.guillaume, h.ids.lea);
-  assert.deepEqual(seen.map((r) => r.displayName).sort(), ['Marie', 'Paul']);
-  assert.equal((await h.release(h.guillaume, h.ids.velo)).status, 200);
-  assert.equal((await h.release(h.guillaume, h.ids.livre)).status, 200);
-  assert.deepEqual(await h.reservedIn(h.guillaume, h.ids.lea), []);
-  // Une réservation ne rend pas un compte « utilisé » (l'administration ne
-  // doit rien laisser deviner) : Zoé réserve, quitte la liste, son compte
-  // jamais utilisé par ailleurs se supprime, et sa réservation avec lui
+  assert.deepEqual(h.names(await h.stateOf(h.guillaume, h.ids.lea, h.ids.velo)), ['Marie', 'Paul']);
+  assert.equal((await h.removeOne(h.guillaume, h.ids.velo, h.marieId)).status, 200);
+  assert.equal((await h.removeOne(h.guillaume, h.ids.velo, h.paulId)).status, 200);
+  assert.equal(await h.stateOf(h.guillaume, h.ids.lea, h.ids.velo), null);
+  // « Mes envies » (pour Guillaume) : Marie et Paul participent, Marie part
+  await h.reserve(h.marie, h.ids.jeu, { open: true });
+  await h.guillaume.request('PATCH', `/api/admin/users/${h.paulId}`, { active: true });
+  await login(h.paul, 'paul', 'MotDePasse-paul'); // désactivé : ses sessions étaient fermées
+  assert.equal((await h.reserve(h.paul, h.ids.jeu)).status, 200);
+  assert.equal((await h.marie.post(`/api/lists/${h.ids.moi}/leave`, {})).status, 200);
+  assert.equal((await h.removeOne(h.guillaume, h.ids.jeu, h.marieId)).body.error, BENEFICIARY, 'personne ne retire Marie');
+  assert.equal((await h.removeOne(h.paul, h.ids.jeu, h.marieId)).body.error, MANAGER_ONLY);
+  assert.equal((await h.setOpen(h.paul, h.ids.jeu, false)).status, 200, 'Paul ferme la réservation');
+  assert.deepEqual(h.names(await h.stateOf(h.paul, h.ids.moi, h.ids.jeu)), ['Marie', 'Paul'], 'Marie reste participante (limite connue)');
+  // Une participation ne rend pas un compte « utilisé » (l'administration ne
+  // doit rien laisser deviner) : Zoé participe, quitte la liste, son compte
+  // jamais utilisé par ailleurs se supprime, et sa participation avec lui
   await h.guillaume.request('PUT', `/api/lists/${h.ids.lucas}/members`, { userIds: [h.marieId, h.zoeId], access: { [h.marieId]: 'lecture', [h.zoeId]: 'lecture' } });
   assert.equal((await h.reserve(h.zoe, h.ids.doudou)).status, 200);
   assert.equal((await h.zoe.post(`/api/lists/${h.ids.lucas}/leave`, {})).status, 200);
@@ -337,7 +466,7 @@ test('membre parti, compte désactivé : ses réservations restent ; le gestionn
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id = ?').pluck().get(h.ids.doudou), 0);
 });
 
-test('souhait supprimé : sa réservation disparaît de la vue, et revient avec « Annuler » ; « reçu » : bénéficiaire et propriétaire seulement', async (t) => {
+test('souhait supprimé : ses réservations disparaissent de la vue, et reviennent avec « Annuler » ; « reçu » : bénéficiaire et propriétaire seulement', async (t) => {
   const h = await household(t);
   await h.reserve(h.marie, h.ids.velo);
   assert.equal((await h.one(h.lea, { type: 'item.delete', itemId: h.ids.velo })).status, 200);
@@ -352,26 +481,42 @@ test('souhait supprimé : sa réservation disparaît de la vue, et revient avec 
   assert.equal((await h.one(h.paul, { type: 'item.check', itemId: h.ids.livre, checked: true })).status, 403);
   assert.equal((await h.one(h.lea, { type: 'item.check', itemId: h.ids.livre, checked: true })).status, 200);
   assert.equal((await h.one(h.guillaume, { type: 'item.check', itemId: h.ids.livre, checked: false })).status, 200);
-  // « Moi » : le propriétaire ; sans compte : le propriétaire ; pas les proches
   assert.equal((await h.one(h.guillaume, { type: 'item.check', itemId: h.ids.jeu, checked: true })).status, 200);
   assert.equal((await h.one(h.marie, { type: 'item.check', itemId: h.ids.lampe, checked: true })).status, 403);
-  // Reçu sans lien avec la réservation : le souhait reste réservé
+  // Reçu sans lien avec la réservation : les données restent (l'écran ne les montre plus)
   assert.equal((await h.one(h.lea, { type: 'item.check', itemId: h.ids.velo, checked: true })).status, 200);
   assert.equal((await h.reservedIn(h.marie, h.ids.lea)).length, 1);
+});
+
+test('priorité sur une liste d\'envies : activée par défaut, désactivable, visible du bénéficiaire ; échéance absente', async (t) => {
+  const h = await household(t);
+  const leaList = (await h.lea.get('/api/lists')).body.lists.find((l) => l.id === h.ids.lea);
+  assert.equal(leaList.priorityEnabled, true, 'activée par défaut');
+  assert.equal(leaList.dueEnabled, false);
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.velo, priority: 'high' })).status, 200);
+  assert.equal((await h.lea.get('/api/sync')).body.items.find((i) => i.id === h.ids.velo).priority, 'high', 'visible du bénéficiaire');
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.velo, dueDate: '2026-12-24' })).error, 'L\'échéance ne se choisit que dans une liste de tâches.');
+  // Désactivée par le propriétaire : plus de priorité à choisir (valeur gardée)
+  assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.ids.lea, priorityEnabled: false })).status, 200);
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.velo, priority: 'low' })).error, 'La priorité est désactivée pour cette liste.');
+  // Créée explicitement sans priorité
+  const sans = uuid();
+  await h.one(h.guillaume, { type: 'list.create', listId: sans, name: 'Sans priorité', listType: 'wishes', priorityEnabled: false });
+  assert.equal(h.app.db.prepare('SELECT priority_enabled FROM lists WHERE id = ?').pluck().get(sans), 0);
 });
 
 test('administration : aucune route ne montre une liste d\'envies ni une réservation, même à l\'Admin bénéficiaire', async (t) => {
   const h = await household(t);
   await h.reserve(h.marie, h.ids.jeu); // « Mes envies » : Guillaume (Admin) en est le bénéficiaire
-  await h.reserve(h.marie, h.ids.velo);
+  await h.reserve(h.marie, h.ids.velo, { open: true });
   for (const url of ['/api/admin/users', '/api/admin/stores', '/api/admin/aisles', '/api/admin/names', '/api/admin/names?q=jeu']) {
     const res = await h.guillaume.get(url);
     assert.equal(res.status, 200, url);
-    for (const secret of ['Jeu de société', 'Vélo', 'Noël', 'Mes envies', 'reserv', 'Réserv']) assert.equal(res.text.includes(secret), false, `${url} : ${secret}`);
+    for (const secret of ['Jeu de société', 'Vélo', 'Noël', 'Mes envies', 'reserv', 'Réserv', 'particip']) assert.equal(res.text.includes(secret), false, `${url} : ${secret}`);
   }
   assert.equal((await h.guillaume.get('/api/admin/reservations')).status, 404);
   // Le journal de sécurité ne parle d'aucune réservation
-  assert.equal(h.app.logs.some((l) => /reserv|réserv/i.test(l)), false);
+  assert.equal(h.app.logs.some((l) => /reserv|réserv|particip/i.test(l)), false);
 });
 
 test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idempotente ; une sauvegarde d\'avant se restaure et migre', (t) => {

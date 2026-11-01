@@ -14,7 +14,7 @@
 
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
-import { uuid, photoUrl, post, del } from './api.js';
+import { uuid, photoUrl, post, patch, del } from './api.js';
 import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames } from './store.js';
 import { isMultiList } from './sorting.js';
 
@@ -138,12 +138,30 @@ export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 // suite si quelqu'un a réservé entre-temps (« Déjà réservé. »). Ensuite, une
 // synchronisation rapporte l'état à jour (les réservations ne sont jamais
 // écrites dans la copie locale à la main).
-export async function reserveWish(itemId) {
-  await post(`/api/items/${encodeURIComponent(itemId)}/reservation`);
+const reservationUrl = (itemId, rest = '') => `/api/items/${encodeURIComponent(itemId)}/reservation${rest}`;
+// Réserver un souhait libre (open : « Ouvert à d'autres »), ou participer à
+// une réservation ouverte
+export async function reserveWish(itemId, open) {
+  await post(reservationUrl(itemId), open === undefined ? {} : { open });
   await refreshData({ quiet: true });
 }
+// Ouvrir ou fermer la réservation (participants)
+export async function setWishOpen(itemId, open) {
+  await patch(reservationUrl(itemId), { open });
+  await refreshData({ quiet: true });
+}
+// Quitter ma participation (le dernier qui part libère le souhait)
+export async function leaveWish(itemId) {
+  await del(reservationUrl(itemId));
+  await refreshData({ quiet: true });
+}
+// Gestionnaire : libérer tout le souhait, ou retirer un participant
 export async function releaseWish(itemId) {
-  await del(`/api/items/${encodeURIComponent(itemId)}/reservation`);
+  await del(reservationUrl(itemId, '/all'));
+  await refreshData({ quiet: true });
+}
+export async function removeWishParticipant(itemId, userId) {
+  await del(reservationUrl(itemId, `/participants/${encodeURIComponent(userId)}`));
   await refreshData({ quiet: true });
 }
 

@@ -18,7 +18,7 @@ import { deleteListWithConfirm } from './list-actions.js';
 import { openCreateReference } from '../create-reference.js';
 import { LIST_ICONS } from '../list-icons.js';
 import {
-  CREATABLE_TYPES, CHANGEABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesTaskOptions, typeChangeWarning, WISHES_LOCKED_HINT,
+  CREATABLE_TYPES, CHANGEABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesPriority, usesDue, typeChangeWarning, WISHES_LOCKED_HINT,
 } from '../list-types.js';
 import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
 
@@ -99,6 +99,7 @@ export function accessChoice(name, value, onChange) {
 // liste de courses).
 export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
+  const paints = {};
   const rows = [
     ['priority', 'Priorité', 'Basse, normale ou élevée.'],
     ['due', 'Échéance', 'Une date limite ; retards signalés.'],
@@ -109,17 +110,26 @@ export function optionSwitches(values, onChange, leading = null) {
     const paint = () => {
       toggle.setAttribute('aria-checked', String(current[key]));
     };
+    paints[key] = paint;
     toggle.addEventListener('click', () => {
       current[key] = !current[key];
       paint();
-      onChange({ ...current });
+      onChange({ ...current }, key);
     });
     paint();
     return h('div', { class: 'toggle-row', 'data-switch': key },
       h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
       toggle);
   });
-  return h('div', { class: 'card list-options' }, leading, rows);
+  const card = h('div', { class: 'card list-options' }, leading, rows);
+  // Valeur posée par l'écran (sans appui) : la priorité qui suit le type
+  card.set = (key, value) => {
+    if (current[key] === value) return;
+    current[key] = value;
+    paints[key]();
+    onChange({ ...current }, null);
+  };
+  return card;
 }
 
 // « Après l'ajout » (toutes les listes, courses comprises) : deux choix côte
@@ -355,8 +365,10 @@ function form(list, users) {
     addModeChosen = true;
   });
   const optionsLabel = h('span', { class: 'field__label' }, 'Options des éléments');
-  const optionsCard = optionSwitches(options, (values) => {
+  let priorityChosen = false; // la priorité a été touchée à la main
+  const optionsCard = optionSwitches(options, (values, key) => {
     options = values;
+    if (key === 'priority') priorityChosen = true;
   }, addModeField.row);
   const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
@@ -474,7 +486,13 @@ function form(list, users) {
     }
     storeField.hidden = !shopping;
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
-    for (const row of optionsCard.querySelectorAll('[data-switch]')) row.hidden = !usesTaskOptions(listType);
+    // Priorité : tâches et envies ; échéance : tâches seulement
+    for (const row of optionsCard.querySelectorAll('[data-switch]')) {
+      row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : !usesDue(listType);
+    }
+    // Nouvelle liste : la priorité suit le type tant qu'on n'y a pas touché
+    // (activée par défaut pour une liste d'envies)
+    if (!list && !priorityChosen) optionsCard.set('priority', isWishList(listType));
     optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);
@@ -532,11 +550,12 @@ function form(list, users) {
     let id = list?.id;
     // Priorité et échéance : envoyées pour une liste de tâches seulement
     // (une liste de courses garde ses réglages, ignorés)
-    const classic = usesTaskOptions(listType);
+    const withPriority = usesPriority(listType);
+    const withDue = usesDue(listType);
     const saved = list ? listOptionsOf(list) : null;
     if (!list) {
       id = await actions.createList({
-        name: cleanName, listType, storeId: chosenStore, priorityEnabled: classic && options.priority, dueEnabled: classic && options.due, addMode, icon: chosenIcon,
+        name: cleanName, listType, storeId: chosenStore, priorityEnabled: withPriority && options.priority, dueEnabled: withDue && options.due, addMode, icon: chosenIcon,
         ...(isWishList(listType) ? { forUserId: beneficiaryId() ?? undefined, forName: forName ?? undefined } : {}),
       });
     } else {
@@ -547,8 +566,8 @@ function form(list, users) {
       if (cleanName !== list.name) switches.name = cleanName;
       if (listType !== savedType) switches.listType = listType;
       if (shopping && chosenStore !== (currentStore?.id ?? null)) switches.storeId = chosenStore;
-      if (classic && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
-      if (classic && options.due !== saved.due) switches.dueEnabled = options.due;
+      if (withPriority && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
+      if (withDue && options.due !== saved.due) switches.dueEnabled = options.due;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
       if (Object.keys(switches).length) await actions.updateList(id, switches);

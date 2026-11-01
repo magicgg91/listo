@@ -38,9 +38,15 @@ test('Claude du bénéficiaire : list_lists et read_list strictement identiques 
   const before = await outputs();
   const read = data(await c.tool('read_list', { list_id: ids.noel }));
   assert.equal(read.list.type, 'wishes');
-  assert.deepEqual(read.items.find((i) => i.name === 'Vélo'), { id: ids.velo, name: 'Vélo', quantity: '', checked: false, note: 'Rouge', link: 'https://exemple.fr/velo', price: 249.9 });
-  assert.equal((await paul.post(`/api/items/${ids.velo}/reservation`, {})).status, 200);
+  // Priorité activée par défaut sur une liste d'envies : donnée aussi
+  assert.deepEqual(read.items.find((i) => i.name === 'Vélo'), { id: ids.velo, name: 'Vélo', quantity: '', checked: false, note: 'Rouge', priority: 'normal', link: 'https://exemple.fr/velo', price: 249.9 });
+  assert.equal(read.items.some((i) => 'due_date' in i), false, 'pas d\'échéance');
+  // Réserver (fermé, ouvert), participer, ouvrir, quitter, libérer
+  assert.equal((await paul.post(`/api/items/${ids.velo}/reservation`, { open: true })).status, 200);
+  assert.equal((await h.guillaume.post(`/api/items/${ids.velo}/reservation`, {})).status, 200);
   assert.equal((await h.guillaume.post(`/api/items/${ids.livre}/reservation`, {})).status, 200);
+  assert.equal((await h.guillaume.request('PATCH', `/api/items/${ids.livre}/reservation`, { open: true })).status, 200);
+  assert.equal((await paul.del(`/api/items/${ids.velo}/reservation`)).status, 200);
   assert.equal(await outputs(), before, 'rien de changé pour Claude au nom du bénéficiaire');
 });
 
@@ -54,6 +60,7 @@ test('Claude du gestionnaire et d\'un proche : jamais de réservation non plus ;
   const descriptions = JSON.stringify(TOOLS);
   assert.match(descriptions, /wishes : liste d'envies/);
   assert.match(descriptions, /les réservations des listes d'envies ne sont jamais données/);
+  assert.match(descriptions, /pour une liste d'envies, la priorité si elle est activée, le lien web et le prix indicatif/);
   assert.match(descriptions, /cocher signifie « reçu » : seuls le bénéficiaire et le propriétaire de la liste le peuvent/);
 });
 

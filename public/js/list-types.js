@@ -7,7 +7,8 @@
 //   et mode scan ;
 // - tasks (« Tâches ») : priorité et échéance (si la liste les active) ;
 // - wishes (« Envies ») : idées cadeaux pour un bénéficiaire, avec lien,
-//   prix et réservations cachées au bénéficiaire (public/js/wishes.js). Une
+//   prix, priorité (activée par défaut) et réservations cachées au
+//   bénéficiaire (public/js/wishes.js). Une
 //   liste d'envies ne change jamais de type, et une autre liste ne devient
 //   pas une liste d'envies.
 //
@@ -55,7 +56,10 @@ export function typeOf(list) {
 
 // Ce que le type utilise
 export const isShoppingList = (list) => typeOf(list) === 'shopping'; // magasin, rayons, scan, codes-barres, mémoire des noms
-export const usesTaskOptions = (list) => typeOf(list) === 'tasks';   // priorité, échéance
+// Priorité : listes de tâches et d'envies (activée par défaut pour une
+// nouvelle liste d'envies) ; échéance : listes de tâches seulement
+export const usesPriority = (list) => ['tasks', 'wishes'].includes(typeOf(list));
+export const usesDue = (list) => typeOf(list) === 'tasks';
 export const isWishList = (list) => typeOf(list) === 'wishes';       // bénéficiaire, lien, prix, réservations
 
 export const typeLabel = (list) => TYPE_LABELS[typeOf(list)];

@@ -22,8 +22,9 @@ const base = (reservations) => ({
 });
 
 test('copie locale : réservations telles que reçues, remplacées à chaque synchronisation ; rien reçu = rien gardé', () => {
-  const viewer = loadSync(emptyState(), base({ L: [{ itemId: 'v', userId: 3, displayName: 'Marie' }] }));
-  assert.deepEqual(computeListView(viewer, 'L').reservations.get('v'), { itemId: 'v', userId: 3, displayName: 'Marie' });
+  const booked = { itemId: 'v', open: true, participants: [{ userId: 3, displayName: 'Marie' }, { userId: 4, displayName: 'Paul' }] };
+  const viewer = loadSync(emptyState(), base({ L: [booked] }));
+  assert.deepEqual(computeListView(viewer, 'L').reservations.get('v'), booked);
   // Libération : la synchronisation suivante renvoie la liste vide
   mergeSync(viewer, base({ L: [] }));
   assert.equal(computeListView(viewer, 'L').reservations.size, 0);
@@ -56,13 +57,15 @@ test('règles partagées : bénéficiaire, gestionnaire, « reçu »', () => {
 
 test('écran : réservation montrée seulement si la copie en contient ; lien sûr ; boutons de 44 px ; aucun innerHTML', () => {
   const list = code('public/js/screens/list.js');
-  assert.match(list, /const reservation = view\?\.reservations\?\.get\(item\.id\);/);
+  assert.match(list, /const reservation = item\.checked \? null : view\?\.reservations\?\.get\(item\.id\);/, 'souhait reçu : plus de réservation affichée');
+  assert.match(list, /const reservationText = \(reservation\) => `Réservé par \$\{namesList\(participantNames\(reservation\)\)\}`;/);
+  assert.match(list, /el\.hidden = !reservations \|\| latest\.checked;/);
   assert.match(list, /function reservationBlock\(item\) \{\s*if \(!view\?\.reservations\) return null;/);
   assert.match(list, /h\('a', \{ class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer' \}/);
   assert.match(list, /const safe = cleanLink\(link \?\? ''\);/);
   // Réservation : en ligne seulement (jamais par la file d'attente)
-  assert.match(list, /disabled: busy \|\| offline,/);
-  assert.match(read('public/js/actions.js'), /await post\(`\/api\/items\/\$\{encodeURIComponent\(itemId\)\}\/reservation`\);/);
+  assert.match(list, /disabled: busy \|\| !navigator\.onLine, onClick/);
+  assert.match(read('public/js/actions.js'), /await post\(reservationUrl\(itemId\), open === undefined \? \{\} : \{ open \}\);/);
   assert.doesNotMatch(read('public/js/actions.js'), /type: 'item\.reserve'|reservation.*perform\(/);
   // Boutons pleine largeur (.btn, 44 px du kit)
   assert.match(read('public/css/listo.css'), /\.btn \{[^}]*min-height: var\(--tap\);/);

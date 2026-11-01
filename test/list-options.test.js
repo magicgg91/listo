@@ -148,7 +148,7 @@ test('écriture refusée quand le réglage est désactivé (rien d\'écrit), acc
   // Invité en lecture seule : toujours refusé (droit vérifié d'abord)
   assert.equal((await run(h.paul, { type: 'item.update', itemId: h.bulb, priority: 'low' })).status, 403);
   // Liste de courses : refus habituel, inchangé
-  assert.equal((await run(h.lea, { type: 'item.update', itemId: h.milk, priority: 'high' })).error, 'La priorité et l\'échéance ne se choisissent que dans une liste de tâches.');
+  assert.equal((await run(h.lea, { type: 'item.update', itemId: h.milk, priority: 'high' })).error, 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.');
 });
 
 test('valeurs conservées : désactiver puis réactiver les fait revenir ; changer de catégorie ne perd rien', async (t) => {
@@ -326,9 +326,9 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   // Nouvelle liste : désactivées ; visibles seulement hors courses, aussi quand on change la catégorie
   assert.match(form, /let options = list \? listOptionsOf\(list\) : \{ priority: false, due: false \};/);
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
-  assert.match(form, /for \(const row of optionsCard\.querySelectorAll\('\[data-switch\]'\)\) row\.hidden = !usesTaskOptions\(listType\);/);
-  assert.match(form, /priorityEnabled: classic && options\.priority, dueEnabled: classic && options\.due/);
-  assert.match(form, /if \(classic && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
+  assert.match(form, /row\.hidden = row\.dataset\.switch === 'priority' \? !usesPriority\(listType\) : !usesDue\(listType\);/);
+  assert.match(form, /priorityEnabled: withPriority && options\.priority, dueEnabled: withDue && options\.due/);
+  assert.match(form, /if \(withPriority && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
   // Réservé au propriétaire : le formulaire de modification renvoie un invité vers la liste
   assert.match(form, /if \(editing && !list\.isOwner\) \{\s*navigate\('list', \{ id: listId \}, \{ replace: true \}\);/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);

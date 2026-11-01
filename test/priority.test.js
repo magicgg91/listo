@@ -136,7 +136,7 @@ test('liste de courses : priorité et échéance refusées, sans rien écrire ni
   ]) {
     const res = await op(h.guillaume, { type: 'item.update', itemId: h.milk, ...operation });
     assert.equal(res.status, 400, JSON.stringify(operation));
-    assert.match(res.error, /ne se choisissent que dans une liste de tâches/);
+    assert.match(res.error, /^(La priorité ne se choisit que dans une liste de tâches ou d'envies\.|L'échéance ne se choisit que dans une liste de tâches\.)$/);
   }
   assert.deepEqual(h.row(h.milk), before, 'rien n\'est écrit');
   assert.deepEqual(h.notified, [], 'aucune annonce temps réel');

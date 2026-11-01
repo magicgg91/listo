@@ -33,7 +33,7 @@ import {
 import { groupItems } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
 import {
-  isListType, isShoppingList, isWishList, usesTaskOptions, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
+  isListType, isShoppingList, isWishList, usesPriority, usesDue, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
 } from '../public/js/list-types.js';
 import {
   wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
@@ -654,8 +654,10 @@ export function createListService(ctx) {
         if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
         forName = forNameOf(op.forName);
       }
-      // Priorité et échéance : désactivées sauf demande explicite
-      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
+      // Priorité et échéance : désactivées sauf demande explicite ; une liste
+      // d'envies a la priorité activée par défaut (le propriétaire peut la
+      // désactiver ensuite, comme pour une liste de tâches)
+      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? isWishList(type);
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
       const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône du type
       // « Après l'ajout » : sans choix, « Rester sur la liste » pour une liste
@@ -840,10 +842,13 @@ export function createListService(ctx) {
       const item = itemForEditor(user, op.itemId);
       const multi = item.is_multi === 1;
       checkFieldsForList(multi, op);
-      // Priorité et échéance : listes de tâches seulement (rien n'est écrit),
-      // vérifiées avant toute écriture
-      if (!usesTaskOptions(item.list_type) && (op.priority !== undefined || op.dueDate !== undefined)) {
-        throw new OpError(400, 'La priorité et l\'échéance ne se choisissent que dans une liste de tâches.');
+      // Priorité : listes de tâches et d'envies ; échéance : listes de tâches
+      // seulement (rien n'est écrit), vérifiées avant toute écriture
+      if (op.priority !== undefined && !usesPriority(item.list_type)) {
+        throw new OpError(400, 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.');
+      }
+      if (op.dueDate !== undefined && !usesDue(item.list_type)) {
+        throw new OpError(400, 'L\'échéance ne se choisit que dans une liste de tâches.');
       }
       checkWishFields(isWishList(item.list_type), op);
       // Réglage de la liste désactivé (relu dans la base) : refus, rien n'est écrit

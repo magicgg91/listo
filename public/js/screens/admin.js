@@ -1,12 +1,11 @@
 // Écran « Administration » (maquettes administration-1 à 6), réservé aux Admin
-// (le serveur le vérifie à chaque requête). Trois onglets :
+// (le serveur le vérifie à chaque requête). Deux onglets :
 // - Comptes : liste, création, rôle, réinitialisation du mot de passe,
 //   désactivation de la 2FA, désactivation / réactivation, suppression d'un
 //   compte jamais utilisé ;
-// - Catégories : ajout, renommage, désactivation / réactivation, suppression
-//   d'un élément jamais utilisé ;
 // - Courses, avec trois choix :
-//   - Magasins, Rayons : comme les catégories ;
+//   - Magasins, Rayons : ajout, renommage, désactivation / réactivation,
+//     suppression d'un élément jamais utilisé ;
 //   - Articles : la mémoire commune des articles saisis dans les listes de
 //     courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
 //     les listes de courses, changer son rayon habituel, ou le retirer des
@@ -28,7 +27,9 @@ import { itemWords, countItems } from '../words.js';
 // Mot des listes de courses (words.js) : « article », « articles »
 const ITEM = itemWords(true);
 
-// Trois onglets : Comptes, Catégories, Courses. « Courses » regroupe trois
+// Deux onglets : Comptes, Courses (les catégories de liste ont disparu,
+// remplacées par les types fixes de public/js/list-types.js ; l'ancienne
+// adresse #/administration/categories mène à « Comptes »). « Courses » regroupe trois
 // choix (magasins, rayons et articles ne concernent que les listes de
 // courses), chacun avec son adresse d'avant (#/administration/magasins,
 // /rayons, /noms) : un lien ou un rafraîchissement retombe sur le bon choix.
@@ -39,7 +40,6 @@ const SHOPPING = [
 ];
 const TABS = [
   { key: 'comptes', label: 'Comptes' },
-  { key: 'categories', label: 'Catégories', api: 'categories', placeholder: 'Nouvelle catégorie', feminine: true },
   { key: 'courses', label: 'Courses' },
 ];
 
@@ -302,7 +302,7 @@ function openNewUserSheet(reload) {
   });
 }
 
-// ============ Catégories, magasins, rayons ============
+// ============ Magasins, rayons ============
 
 async function loadReferences(tab, panel, alive) {
   replace(panel, loadingText());
@@ -431,7 +431,7 @@ function storeRows(tab, store, simples, reload) {
 }
 
 // Après une modification : liste rechargée, et données de l'appli à jour
-// (catégories, magasins et rayons proposés dans les listes)
+// (magasins et rayons proposés dans les listes)
 function afterChange(reload) {
   reload();
   refreshData({ quiet: true });
@@ -439,7 +439,6 @@ function afterChange(reload) {
 
 const stateLabel = (tab, item) => {
   const word = item.active ? (tab.feminine ? 'Active' : 'Actif') : (tab.feminine ? 'Désactivée' : 'Désactivé');
-  if (item.isShopping) return `${word} · avec magasins et rayons`;
   if (item.isMulti) return `${item.storeIds.length} magasin${item.storeIds.length > 1 ? 's' : ''} · ${word}`;
   if (item.isMulti === false) return `Simple · ${word}`;
   return word;
@@ -456,7 +455,7 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
       h('div', { class: 'grow' },
         h('p', { class: 'manage__name' }, item.name, item.isMulti ? [' ', multiBadge()] : null),
         h('p', { class: 'manage__sub' }, stateLabel(tab, item))),
-      iconButton('pencil', `Modifier ${item.name}`, () => (tab.api === 'categories' ? openCategorySheet(item, reload) : showEdit())),
+      iconButton('pencil', `Modifier ${item.name}`, showEdit),
       canDelete ? iconButton('trash', `Supprimer ${item.name}`, () => removeReference(tab, item, reload)) : null,
       extra,
       h('button', {
@@ -517,47 +516,6 @@ async function removeReference(tab, item, reload) {
   } catch (err) {
     toast(errorMessage(err), { low: true });
   }
-}
-
-// Catégorie : nom et « liste de courses » (magasin et rayons)
-function openCategorySheet(item, reload) {
-  const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', value: item.name });
-  let shopping = item.isShopping;
-  const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(shopping), 'aria-labelledby': 'shopping-label' });
-  toggle.addEventListener('click', () => {
-    shopping = !shopping;
-    toggle.setAttribute('aria-checked', String(shopping));
-  });
-  const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
-  const form = h('form', { class: 'stack', novalidate: true },
-    field('Libellé', name).field, // jamais « Nom » (voir LABEL_INPUT)
-    h('div', { class: 'card toggle-row' },
-      h('div', { class: 'grow' },
-        h('p', { class: 'row__title', id: 'shopping-label' }, 'Liste de courses'),
-        h('p', { class: 'row__sub' }, 'Les listes de cette catégorie ont un magasin et classent leurs articles par rayon.')),
-      toggle),
-    error.note, submit);
-  const sheet = openSheet({ title: 'Modifier la catégorie', content: form });
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const changes = {};
-    if (name.value.trim() !== item.name) changes.name = name.value.trim();
-    if (shopping !== item.isShopping) changes.isShopping = shopping;
-    if (!Object.keys(changes).length) {
-      sheet.close();
-      return;
-    }
-    submit.disabled = true;
-    try {
-      await patch(`/api/admin/categories/${item.id}`, changes);
-      sheet.close();
-      afterChange(reload);
-    } catch (err) {
-      error.show(errorMessage(err));
-      submit.disabled = false;
-    }
-  });
 }
 
 // ================= Articles (mémoire des noms) =================

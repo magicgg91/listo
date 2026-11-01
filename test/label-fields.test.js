@@ -22,7 +22,7 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
     'screens/list.js': 1,       // fiche d'un élément : nom
     'screens/list-form.js': 1,  // nom de la liste
     'screens/scan.js': 1,       // mode scan : nom du produit
-    'screens/admin.js': 4,      // ajout, renommage sur place, feuille « Modifier la catégorie », nom enregistré
+    'screens/admin.js': 3,      // ajout, renommage sur place, nom enregistré
   };
   for (const [file, count] of Object.entries(uses)) {
     const source = read(file);

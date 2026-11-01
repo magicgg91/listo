@@ -33,7 +33,7 @@ export const PERMISSIONS = [
   { action: 'Créer un lien public', roles: ['owner'] },
   { action: 'Supprimer la liste', roles: ['owner'] },
   { action: 'Quitter la liste', roles: ['contributor', 'guest'] },
-  { action: 'Gérer les comptes, les catégories, les magasins, les rayons et les articles', roles: ['admin'] },
+  { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
 
 export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres.';
@@ -212,10 +212,6 @@ export const SECTIONS = [
           '« Désactiver le compte » ou « Réactiver le compte » ; « Supprimer le compte » s\'il n\'a jamais été utilisé.',
           'Il reste toujours au moins un Admin actif.',
         ],
-      },
-      {
-        title: 'Catégories',
-        paragraphs: ['Onglet « Catégories » : ajouter, renommer, indiquer s\'il s\'agit d\'une liste de courses, désactiver ou réactiver. Une catégorie jamais utilisée peut être supprimée.'],
       },
       {
         title: 'Courses : magasins, rayons, articles',

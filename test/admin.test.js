@@ -22,9 +22,9 @@ async function withAdmin(t) {
 // Crée directement en base une liste (et son propriétaire comme membre)
 function addList(db, ownerId, { name = 'Courses de la semaine', category = 'Courses', storeId = null } = {}) {
   const id = crypto.randomUUID();
-  const categoryId = db.prepare('SELECT id FROM categories WHERE name = ?').pluck().get(category);
-  db.prepare('INSERT INTO lists (id, name, category_id, store_id, owner_id) VALUES (?, ?, ?, ?, ?)')
-    .run(id, name, categoryId, storeId, ownerId);
+  const { id: categoryId, is_shopping: shopping } = db.prepare('SELECT id, is_shopping FROM categories WHERE name = ?').get(category);
+  db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, name, shopping ? 'shopping' : 'tasks', categoryId, storeId, ownerId);
   db.prepare('INSERT INTO list_members (list_id, user_id) VALUES (?, ?)').run(id, ownerId);
   return id;
 }
@@ -47,7 +47,7 @@ function allAdminRoutes(targetId) {
     ['DELETE', `/api/admin/users/${targetId}/2fa`],
     ['DELETE', `/api/admin/users/${targetId}`],
   ];
-  for (const type of ['categories', 'stores', 'aisles']) {
+  for (const type of ['stores', 'aisles']) {
     routes.push(
       ['GET', `/api/admin/${type}`],
       ['POST', `/api/admin/${type}`, { name: 'Pirate' }],
@@ -104,7 +104,7 @@ test("l'administration ne donne jamais accès au contenu des listes", async (t) 
   const listId = addList(app.db, marieId, { name: 'Liste secrète de Marie', storeId: idOf(app.db, 'stores', 'Lidl') });
   addItem(app.db, listId, marieId, { name: 'Cadeau surprise', aisleId: idOf(app.db, 'aisles', 'Boissons') });
 
-  for (const url of ['/api/admin/users', '/api/admin/categories', '/api/admin/stores', '/api/admin/aisles']) {
+  for (const url of ['/api/admin/users', '/api/admin/stores', '/api/admin/aisles']) {
     const res = await admin.get(url);
     assert.equal(res.status, 200);
     assert.ok(!res.text.includes('Liste secrète'), `${url} montre le nom d'une liste`);
@@ -301,24 +301,21 @@ test("désactiver la 2FA d'un autre compte (route de l'étape 2, intégrée)", a
   assert.equal((await admin.del('/api/admin/users/999/2fa')).status, 404);
 });
 
-// --- Catégories, magasins, rayons ---
+// --- Magasins, rayons (les catégories n'existent plus) ---
 
 test('les données de départ sont disponibles pour l\'Admin', async (t) => {
   const { admin } = await withAdmin(t);
   const names = async (type) => (await admin.get(`/api/admin/${type}`)).body.items.map((i) => i.name);
-  assert.deepEqual(await names('categories'), ['Courses', 'Tâches']);
   assert.deepEqual(await names('stores'), ['Carrefour', 'E.Leclerc', 'Lidl']);
   assert.deepEqual(await names('aisles'), [
     'Boissons', 'Boucherie', 'Boulangerie', 'Crèmerie', 'Entretien', 'Épicerie salée', 'Épicerie sucrée',
     'Fromages', 'Fruits et légumes', 'Hygiène', 'Poissonnerie', 'Surgelés',
   ]);
-  const courses = (await admin.get('/api/admin/categories')).body.items.find((c) => c.name === 'Courses');
-  assert.deepEqual(courses, { id: courses.id, name: 'Courses', active: true, isShopping: true, inUse: false });
 });
 
-test('ajouter, renommer, désactiver et réactiver (catégories, magasins, rayons)', async (t) => {
-  const { app, admin } = await withAdmin(t);
-  for (const type of ['categories', 'stores', 'aisles']) {
+test('ajouter, renommer, désactiver et réactiver (magasins, rayons)', async (t) => {
+  const { admin } = await withAdmin(t);
+  for (const type of ['stores', 'aisles']) {
     const created = await admin.post(`/api/admin/${type}`, { name: '  Nouvel   élément ' });
     assert.equal(created.status, 201, type);
     assert.equal(created.body.item.name, 'Nouvel élément');
@@ -337,18 +334,11 @@ test('ajouter, renommer, désactiver et réactiver (catégories, magasins, rayon
     assert.equal((await admin.request('PATCH', url, { active: 'oui' })).status, 400);
     assert.equal((await admin.request('PATCH', `/api/admin/${type}/999`, { name: 'X' })).status, 404);
   }
-  // Une catégorie peut devenir (ou cesser d'être) une liste de courses
-  const cat = (await admin.post('/api/admin/categories', { name: 'Pharmacie', isShopping: true })).body.item;
-  assert.equal(cat.isShopping, true);
-  assert.equal((await admin.request('PATCH', `/api/admin/categories/${cat.id}`, { isShopping: false })).body.item.isShopping, false);
-  assert.equal((await admin.post('/api/admin/categories', { name: 'Autre', isShopping: 'oui' })).status, 400);
-  assert.equal(app.db.prepare("SELECT COUNT(*) FROM categories WHERE name = 'Pharmacie'").pluck().get(), 1);
 });
 
 test('les noms en double (majuscules ou accents différents) sont refusés', async (t) => {
   const { admin } = await withAdmin(t);
   const cases = [
-    ['categories', ['courses', 'COURSES', 'taches', 'TÂCHES']],
     ['stores', ['lidl', 'LIDL', 'e.leclerc']],
     ['aisles', ['épicerie salée', 'ÉPICERIE SALÉE', 'Epicerie salee', 'cremerie', 'surgeles']],
   ];
@@ -374,7 +364,6 @@ test('un élément déjà utilisé peut être désactivé mais pas supprimé ; u
   app.db.prepare("INSERT INTO item_history (name_normalized, display_name, aisle_id) VALUES ('comte', 'Comté', ?)").run(fromages);
 
   const used = [
-    ['categories', idOf(app.db, 'categories', 'Courses')],
     ['stores', lidl],
     ['aisles', boissons],
     ['aisles', fromages],
@@ -387,11 +376,10 @@ test('un élément déjà utilisé peut être désactivé mais pas supprimé ; u
     assert.equal(off.status, 200);
     assert.deepEqual([off.body.item.active, off.body.item.inUse], [false, true]);
   }
-  // La liste garde sa catégorie et son magasin désactivés
+  // La liste garde son magasin désactivé
   assert.equal(app.db.prepare('SELECT store_id FROM lists WHERE id = ?').pluck().get(listId), lidl);
 
   const unused = [
-    ['categories', idOf(app.db, 'categories', 'Tâches')],
     ['stores', idOf(app.db, 'stores', 'Carrefour')],
     ['aisles', idOf(app.db, 'aisles', 'Surgelés')],
   ];
@@ -400,6 +388,22 @@ test('un élément déjà utilisé peut être désactivé mais pas supprimé ; u
     assert.equal((await admin.del(`/api/admin/${type}/${id}`)).status, 404);
   }
   assert.equal(idOf(app.db, 'stores', 'Carrefour'), undefined);
+});
+
+test('catégories retirées : leurs routes d\'administration n\'existent plus (404), rien n\'est écrit', async (t) => {
+  const { app, admin } = await withAdmin(t);
+  const before = app.db.prepare('SELECT * FROM categories ORDER BY id').all();
+  for (const [method, url, body] of [
+    ['GET', '/api/admin/categories'],
+    ['POST', '/api/admin/categories', { name: 'Bricolage', isShopping: true }],
+    ['PATCH', '/api/admin/categories/1', { name: 'Alimentation', isShopping: false }],
+    ['DELETE', '/api/admin/categories/2'],
+  ]) {
+    const res = await admin.request(method, url, body);
+    assert.equal(res.status, 404, `${method} ${url}`);
+    assert.equal(res.body.error, 'Route inconnue.');
+  }
+  assert.deepEqual(app.db.prepare('SELECT * FROM categories ORDER BY id').all(), before, 'table gardée telle quelle');
 });
 
 // --- Journal ---
@@ -419,8 +423,6 @@ test("le journal contient les actions d'administration et aucun secret", async (
   await admin.request('PATCH', `/api/admin/stores/${store.id}`, { name: 'Biocoop Centre' });
   await admin.request('PATCH', `/api/admin/stores/${store.id}`, { active: false });
   await admin.del(`/api/admin/stores/${store.id}`);
-  const cat = (await admin.post('/api/admin/categories', { name: 'Bricolage' })).body.item;
-  await admin.request('PATCH', `/api/admin/categories/${cat.id}`, { isShopping: true });
   const aisle = (await admin.post('/api/admin/aisles', { name: 'Jardin' })).body.item;
   await admin.request('PATCH', `/api/admin/aisles/${aisle.id}`, { active: false });
   await admin.request('PATCH', `/api/admin/aisles/${aisle.id}`, { active: true });
@@ -439,8 +441,6 @@ test("le journal contient les actions d'administration et aucun secret", async (
     'admin_magasin_renomme admin="guillaume" nom="Biocoop Centre"',
     'admin_magasin_desactive admin="guillaume" nom="Biocoop Centre"',
     'admin_magasin_supprime admin="guillaume" nom="Biocoop Centre"',
-    'admin_categorie_ajoute admin="guillaume" nom="Bricolage"',
-    'admin_categorie_courses_change admin="guillaume" nom="Bricolage"',
     'admin_rayon_ajoute admin="guillaume" nom="Jardin"',
     'admin_rayon_desactive admin="guillaume" nom="Jardin"',
     'admin_rayon_reactive admin="guillaume" nom="Jardin"',

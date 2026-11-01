@@ -105,7 +105,6 @@ test('renommer, désactiver, supprimer, regrouper et les catégories restent à 
     ['DELETE', `/api/admin/stores/${store.id}`],
     ['PATCH', `/api/admin/aisles/${aisle.id}`, { name: 'Épicerie vrac' }],
     ['DELETE', `/api/admin/aisles/${aisle.id}`],
-    ['POST', '/api/admin/categories', { name: 'Bricolage' }],
     ['POST', '/api/admin/stores', { name: 'Multi', isMulti: true }],
   ]) {
     assert.equal((await h.lea.request(method, url, body)).status, 403, `${method} ${url}`);

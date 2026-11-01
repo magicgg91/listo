@@ -223,7 +223,7 @@ test('un Utilisateur reçoit un refus sur les routes d\'administration', async (
   const { app } = await withUser(t);
   const marie = app.client();
   await login(marie, 'marie', PASSWORD);
-  for (const [method, url] of [['GET', '/api/admin/users'], ['DELETE', '/api/admin/users/1/2fa'], ['POST', '/api/admin/categories']]) {
+  for (const [method, url] of [['GET', '/api/admin/users'], ['DELETE', '/api/admin/users/1/2fa'], ['POST', '/api/admin/stores']]) {
     const res = await marie.request(method, url, method === 'GET' ? undefined : {});
     assert.equal(res.status, 403, `${method} ${url}`);
   }

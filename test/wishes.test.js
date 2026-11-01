@@ -180,7 +180,7 @@ test('figés : ni changement de type (dans les deux sens), ni de bénéficiaire,
   const tasks = uuid();
   await h.one(h.guillaume, { type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' });
   assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.ids.lea, listType: 'tasks' })).error, 'Une liste d\'envies ne change pas de type.');
-  assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: tasks, listType: 'wishes' })).error, 'Une liste existante ne devient pas une liste d\'envies : créez une nouvelle liste.');
+  assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: tasks, listType: 'wishes' })).error, 'Une liste devient une liste d\'envies seulement depuis « Modifier la liste », avec du réseau.');
   for (const fields of [{ forUserId: h.marieId }, { forName: 'Paul' }, { forUserId: null }]) {
     assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.ids.lea, ...fields })).error, 'La personne à qui la liste est destinée ne change pas.');
   }

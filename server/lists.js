@@ -1182,6 +1182,56 @@ export function createListService(ctx) {
     return readList(user, list.id).list;
   }
 
+  // Convertir une liste de courses ou de tâches EN liste d'envies
+  // (POST /api/lists/:id/wishes, « Modifier la liste », en ligne seulement :
+  // jamais par la file d'attente, list.update refuse toujours NOT_TO_WISHES).
+  // Propriétaire seulement. Le type et le destinataire sont écrits ensemble,
+  // dans une seule transaction : jamais de liste d'envies sans destinataire.
+  // body : { forUserId } (un autre compte actif), { forName } (une personne
+  // sans compte), ou rien (« Moi ») ; priorityEnabled (facultatif, activée
+  // par défaut comme à la création). Toutes les vérifications passent AVANT
+  // la moindre écriture : un refus ne change rien.
+  // Rien n'est effacé : quantités, échéances, rayons, codes-barres et magasin
+  // restent en base (cachés pour une liste d'envies) ; un élément coché
+  // devient « Reçu ». Un lien public en cours est arrêté (une liste d'envies
+  // n'en a jamais). Aucune réservation n'existe encore.
+  function convertToWishes(user, listId, body = {}) {
+    const list = listForOwner(user, listId);
+    if (isWishList(typeOf(list))) throw new OpError(400, 'Cette liste est déjà une liste d\'envies.');
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new OpError(400, 'Demande invalide.');
+    let forUserId = null;
+    let forName = null;
+    if (body.forUserId !== undefined && body.forUserId !== null) {
+      forUserId = parseId(body.forUserId);
+      if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'Utilisateur inconnu ou désactivé.');
+      if (forUserId === user.id) throw new OpError(400, 'Pour vous-même, choisissez « Moi ».');
+    }
+    if (body.forName !== undefined && body.forName !== null) {
+      if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
+      forName = forNameOf(body.forName);
+    }
+    const priorityOn = optionOf(body.priorityEnabled, 'Priorité') ?? true;
+    const before = typeOf(list);
+    const now = nowIso();
+    let share = null;
+    db.transaction(() => {
+      db.prepare('UPDATE lists SET type = ?, category_id = ?, for_user_id = ?, for_name = ?, priority_enabled = ?, updated_at = ? WHERE id = ?')
+        .run('wishes', legacyCategoryId('wishes'), forUserId, forName, Number(priorityOn), now, list.id);
+      // Le compte destinataire : membre d'office en « Peut modifier », comme
+      // à la création (passé en « Peut modifier » s'il était en lecture seule)
+      if (forUserId) {
+        db.prepare(`INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')
+          ON CONFLICT(list_id, user_id) DO UPDATE SET access = 'modification'`).run(list.id, forUserId);
+        news.startReading(list.id, forUserId);
+      }
+      share = ctx.shares?.stopForList(list.id) ?? null;
+    })();
+    ctx.events?.notifyList(list.id);
+    ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: 'wishes' });
+    if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste devenue liste d\'envies' });
+    return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
+  }
+
   // --- Quitter une liste (POST /api/lists/:id/leave) ---
   //
   // Un membre (contributeur ou invité) retire SA propre appartenance (jamais celle d'un autre : la
@@ -1321,7 +1371,7 @@ export function createListService(ctx) {
   }
 
   return {
-    applyOps, myLists, readList, suggestions, changesSince, setMembers, duplicateList, leaveList, purgeDeleted, activeUsers, news,
+    applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

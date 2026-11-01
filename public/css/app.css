@@ -234,7 +234,7 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
    croix, puis le bouton de scan) */
 .field__aside { font-size: 0.93em; font-weight: 400; color: var(--color-text-2); }
 .field__row { display: flex; align-items: center; gap: var(--space-1); }
-.field__row .input-wrap { flex: 1; min-width: 0; }
+.field__row .input-wrap, .field__row > .input { flex: 1; min-width: 0; }
 
 /* Fiche d'un article : en-tête avec les boutons-icônes (poubelle, espace,
    coche « Enregistrer » pleine, croix), toujours visible quand la feuille

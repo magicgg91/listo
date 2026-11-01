@@ -91,7 +91,9 @@ export function passwordInput(attrs = {}) {
 export const LABEL_INPUT = { type: 'text', autocomplete: 'off', autocorrect: 'off', autocapitalize: 'sentences', spellcheck: 'false', enterkeyhint: 'done', inputmode: 'text' };
 
 export function field(label, control, { hint, aside, id } = {}) {
-  const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select, button');
+  // Le libellé désigne le champ de saisie de la ligne s'il y en a un (un
+  // bouton posé à côté, comme celui de l'icône d'une liste, garde son propre nom)
+  const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select') ?? control.querySelector('button');
   const inputId = id ?? `f-${Math.random().toString(36).slice(2, 9)}`;
   if (input && !input.id) input.id = inputId;
   const error = h('span', { class: 'field__error', id: `${inputId}-erreur`, role: 'alert', hidden: true });

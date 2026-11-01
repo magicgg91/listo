@@ -185,7 +185,9 @@ test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre ave
   const form = read('public/js/screens/list-form.js');
   // Formulaire : seulement l'icône affichée, dans un bouton de 44 px
   assert.match(form, /const iconPicker = h\('button', \{\s*class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',/);
-  assert.match(form, /'Icône'\), h\('div', \{\}, iconPicker\), iconCurrent\),/);
+  // … à gauche du champ « Titre de la liste », sur la même ligne (plus de rubrique « Icône »)
+  assert.match(form, /const nameField = field\('Titre de la liste', h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\);/);
+  assert.doesNotMatch(form, /'Icône'\)|icon-label/, 'plus de libellé « Icône »');
   assert.doesNotMatch(form, /iconGroup|iconButtons/, 'plus de grille dans le formulaire');
   // Au départ : l'icône du type (rien de choisi), qui suit le type
   assert.match(form, /let chosenIcon = list\?\.icon \?\? '';/);
@@ -205,8 +207,8 @@ test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre ave
   assert.match(ui, /const opener = returnTo \?\? document\.activeElement;/);
   assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
   assert.match(ui, /\), \{ onClose, returnTo \}\);/);
-  // Sous « Type »
-  assert.match(form, /'Type'\), typeGroup, typeWarning\),\s*forField,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\)/);
+  // Ordre du formulaire : titre (avec l'icône), type, « Pour qui ? », magasin
+  assert.match(form, /nameField\.field,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\),\s*forField,\s*storeField,/);
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);

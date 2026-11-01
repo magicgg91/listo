@@ -181,7 +181,6 @@ function form(list, users) {
 
   // --- Nom ---
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
-  const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
   // --- Type (choix en cartes, même composant qu'avant, sur une seule ligne) ---
   // Nouvelle liste : Courses, Tâches ou Envies. Liste de courses ou de
@@ -247,7 +246,7 @@ function form(list, users) {
   const beneficiaryId = () => (wishesLocked ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
   const typeGroup = h('div', { class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
 
-  // --- Icône (un bouton, puis une fenêtre avec la grille) ---
+  // --- Icône (un bouton à gauche du titre, puis une fenêtre avec la grille) ---
   // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
   // type, et le bouton suit le type tant que rien n'est choisi). Si on ne
   // touche pas à l'icône, rien n'est envoyé : rien ne change.
@@ -258,6 +257,10 @@ function form(list, users) {
   });
   const iconCurrent = h('span', { class: 'visually-hidden', id: 'icon-current' });
   iconPicker.addEventListener('click', () => openIconPicker());
+  // Titre de la liste : le bouton de l'icône à gauche, sur la même ligne que
+  // le champ (qui prend toute la largeur restante) ; le libellé « Titre de la
+  // liste » reste au-dessus et désigne le champ (jamais « Nom » : voir LABEL_INPUT)
+  const nameField = field('Titre de la liste', h('div', { class: 'field__row' }, iconPicker, name, iconCurrent));
 
   // Fenêtre de choix (feuille du bas, comme les autres choix) : première
   // case « Par défaut » (l'icône du type, rien de choisi), puis la grille.
@@ -571,7 +574,6 @@ function form(list, users) {
       nameField.field,
       h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type'), typeGroup, typeWarning),
       forField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), h('div', {}, iconPicker), iconCurrent),
       storeField,
       optionsField,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),

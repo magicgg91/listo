@@ -47,7 +47,7 @@ test('MCP : list_lists et read_list donnent le type (shopping, tasks), jamais la
   assert.deepEqual(Object.keys(maison.list).sort(), ['access', 'id', 'name', 'type']);
   assert.equal(JSON.stringify(lists).includes('category'), false);
   const text = JSON.stringify(TOOLS);
-  assert.match(text, /type \(shopping : liste de courses, tasks : liste de tâches\)/);
+  assert.match(text, /type \(shopping : liste de courses, tasks : liste de tâches, wishes : liste d'envies, des idées cadeaux\)/);
   assert.match(text, /pour une liste de tâches, la priorité et l'échéance/);
   assert.doesNotMatch(text, /catégorie|courses ou autre|'other'|"other"/);
 });

@@ -190,7 +190,7 @@ test('droits : seul le propriétaire change le type ; contributeur et lecture se
 test('types : une liste existante ne devient pas une liste d\'envies ; type inconnu refusé', async (t) => {
   const h = await household(t);
   const update = await h.one(h.guillaume, { type: 'list.update', listId: h.courses, listType: 'wishes' });
-  assert.deepEqual([update.status, update.error], [400, 'Une liste existante ne devient pas une liste d\'envies : créez une nouvelle liste.']);
+  assert.deepEqual([update.status, update.error], [400, 'Une liste devient une liste d\'envies seulement depuis « Modifier la liste », avec du réseau.']);
   for (const listType of ['autre', 'Shopping', 1, null, '']) {
     assert.equal((await h.one(h.guillaume, { type: 'list.create', listId: uuid(), name: 'X', listType })).status, 400, String(listType));
   }

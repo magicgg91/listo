@@ -66,6 +66,7 @@ export const SECTIONS = [
         paragraphs: ['Une liste d\'envies rassemble des idées de cadeaux pour une personne. Ses proches peuvent réserver un souhait pour éviter d\'offrir deux fois la même chose. La surprise est préservée : la personne à qui la liste est destinée ne voit jamais qu\'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c\'est elle qui a créé la liste.'],
         items: [
           '« Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change pas de type.',
+          'Une liste de courses ou de tâches peut devenir une liste d\'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C\'est définitif, il faut du réseau, et rien n\'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.',
           'Si la liste est pour un autre compte, cette personne en fait partie d\'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.',
           'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.',
           'Pour réserver : touchez le souhait, puis « Réserver ». La ligne indique alors qui a réservé. Il faut du réseau.',
@@ -171,6 +172,7 @@ export const SECTIONS = [
         paragraphs: ['« Modifier la liste » change le titre, le type, le magasin et l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité et l\'échéance. « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche », pour toutes les listes. Seul le propriétaire modifie la liste.'],
         items: [
           'Changer le type n\'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l\'échéance. Tout revient si la liste reprend son type d\'origine. Le formulaire le rappelle avant l\'enregistrement.',
+          'Devenir une liste d\'envies, en revanche, est définitif (voir la rubrique sur les listes d\'envies).',
         ],
       },
       {

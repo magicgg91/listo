@@ -39,7 +39,7 @@ test('Claude du bénéficiaire : list_lists et read_list strictement identiques 
   const read = data(await c.tool('read_list', { list_id: ids.noel }));
   assert.equal(read.list.type, 'wishes');
   // Priorité activée par défaut sur une liste d'envies : donnée aussi
-  assert.deepEqual(read.items.find((i) => i.name === 'Vélo'), { id: ids.velo, name: 'Vélo', quantity: '', checked: false, note: 'Rouge', priority: 'normal', link: 'https://exemple.fr/velo', price: 249.9 });
+  assert.deepEqual(read.items.find((i) => i.name === 'Vélo'), { id: ids.velo, name: 'Vélo', checked: false, note: 'Rouge', priority: 'normal', link: 'https://exemple.fr/velo', price: 249.9 });
   assert.equal(read.items.some((i) => 'due_date' in i), false, 'pas d\'échéance');
   // Réserver (fermé, ouvert), participer, ouvrir, quitter, libérer
   assert.equal((await paul.post(`/api/items/${ids.velo}/reservation`, { open: true })).status, 200);
@@ -83,4 +83,36 @@ test('add_items sur une liste d\'envies : lien et prix acceptés, quantité refu
   assert.equal(ailleurs.results[0].reason, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
   // Reçu : Marie (bénéficiaire) oui
   assert.equal(data(await c.tool('set_checked', { list_id: ids.noel, item_ids: [ids.livre], checked: true })).changed, 1);
+});
+
+test('liste de courses devenue liste d\'envies : list_lists donne le nouveau type, read_list cache la quantité, add_items accepte alors lien et prix ; aucune réservation', async (t) => {
+  const h = await household(t);
+  // Claude de Guillaume (propriétaire, lecture et ajout) et de Marie (destinataire, lecture seule avant)
+  const owner = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
+  const marie = claude(h, (await connect(h, h.marie, MARIE_PASSWORD)).access_token);
+  const typeOfCourses = async (c) => data(await c.tool('list_lists')).lists.find((l) => l.id === h.ids.courses).type;
+  assert.equal(await typeOfCourses(owner), 'shopping');
+  const before = data(await owner.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Bougie', link: 'https://exemple.fr/bougie' }] }));
+  assert.equal(before.results[0].reason, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
+
+  assert.equal((await h.guillaume.post(`/api/lists/${h.ids.courses}/wishes`, { forUserId: h.marieId })).status, 200);
+  assert.equal(await typeOfCourses(owner), 'wishes');
+  assert.equal(await typeOfCourses(marie), 'wishes');
+  const read = data(await marie.tool('read_list', { list_id: h.ids.courses, include_checked: true }));
+  const lait = read.items.find((i) => i.id === h.ids.lait);
+  assert.deepEqual(lait, { id: h.ids.lait, name: 'Lait', checked: false, note: 'demi-écrémé', priority: 'normal' }, 'ni quantité, ni rayon, ni code-barres');
+  assert.equal(read.items.find((i) => i.id === h.ids.pain).checked, true, 'coché : « reçu »');
+  const added = data(await owner.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Bougie', link: 'https://exemple.fr/bougie', price: 12.5 }] }));
+  assert.equal(added.results[0].status, 'created');
+  assert.deepEqual(h.app.db.prepare("SELECT link, price_cents FROM items WHERE name = 'Bougie'").get(), { link: 'https://exemple.fr/bougie', price_cents: 1250 });
+  // Une réservation ensuite : rien chez Claude, ni pour Marie ni pour le propriétaire
+  const paulId = await addUser(h.app.db, { username: 'paul', password: 'MotDePasse-paul' });
+  await h.guillaume.request('PUT', `/api/lists/${h.ids.courses}/members`, { userIds: [h.marieId, paulId], access: { [h.marieId]: 'modification', [paulId]: 'lecture' } });
+  const paul = h.app.client();
+  await login(paul, 'paul', 'MotDePasse-paul');
+  assert.equal((await paul.post(`/api/items/${h.ids.lait}/reservation`, {})).status, 200);
+  for (const c of [owner, marie]) {
+    const text = JSON.stringify((await c.tool('read_list', { list_id: h.ids.courses, include_checked: true })).body) + JSON.stringify((await c.tool('list_lists')).body);
+    assert.equal(/reserv|réserv|participants/i.test(text), false);
+  }
 });

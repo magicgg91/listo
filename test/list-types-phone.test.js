@@ -99,15 +99,17 @@ test('copie locale : création selon listType ; ancienne opération (catégorie)
 test('formulaire : « Type » (Courses, Tâches, Envies à la création ; Envies figé), avertissement avant l\'enregistrement, magasin gardé', () => {
   const form = code('public/js/screens/list-form.js');
   assert.match(form, /h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\)/);
-  assert.match(form, /const offered = !list \? CREATABLE_TYPES : wishesLocked \? \['wishes'\] : CHANGEABLE_TYPES;/);
+  assert.match(form, /const offered = wishesLocked \? \['wishes'\] : CREATABLE_TYPES;/);
   assert.match(form, /const typeButtons = offered\.map\(\(type\) => \{/);
   // Même composant qu'avant (choix en cartes du kit), avec coche ET texte,
   // trois cartes de même largeur sur une seule ligne (choice--row), même à 320 px
   assert.match(form, /h\('div', \{ class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' \}, typeButtons\)/);
   assert.match(form, /const typeWarning = h\('p', \{ class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked \}, wishesLocked \? WISHES_LOCKED_HINT : ''\);/);
-  assert.match(form, /const warning = list \? typeChangeWarning\(savedType, listType\) : '';/);
-  // Envoyé seulement s'il change ; magasin conservé repris, renvoyé seulement s'il change
-  assert.match(form, /if \(listType !== savedType\) switches\.listType = listType;/);
+  assert.match(form, /const warning = list \? `\$\{typeChangeWarning\(savedType, listType\)\}\$\{converting\(\) && hasPublicLink\(list\) \? ' Son lien public sera arrêté\.' : ''\}` : '';/);
+  // Envoyé seulement s'il change (devenir une liste d'envies passe par une
+  // route à part, jamais par la file d'attente) ; magasin conservé repris,
+  // renvoyé seulement s'il change
+  assert.match(form, /if \(listType !== savedType && !convert\) switches\.listType = listType;/);
   assert.match(form, /const currentStore = list\?\.store \?\? list\?\.keptStore \?\? null;/);
   assert.match(form, /if \(shopping && chosenStore !== \(currentStore\?\.id \?\? null\)\) switches\.storeId = chosenStore;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);

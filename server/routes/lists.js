@@ -2,6 +2,8 @@
 //   GET  /api/lists                 mes listes (celles dont je suis membre)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
+//   POST /api/lists/:id/wishes      convertir en liste d'envies, avec son
+//                                   destinataire (propriétaire ; en ligne seulement)
 //   POST /api/lists/:id/leave       quitter la liste (contributeur ou invité, pour lui-même ;
 //                                   en ligne seulement)
 //   POST /api/lists/:id/duplicate   dupliquer la liste (propriétaire ou
@@ -40,6 +42,15 @@ export function listRoutes(ctx) {
   router.put('/lists/:id/members', (req, res) => {
     try {
       res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds, req.body?.access ?? {}) });
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
+  });
+
+  router.post('/lists/:id/wishes', (req, res) => {
+    try {
+      res.json(service.convertToWishes(req.user, req.params.id, req.body ?? {}));
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
       throw err;

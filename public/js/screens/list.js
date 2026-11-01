@@ -537,7 +537,9 @@ export function renderList(listId, onLeave) {
         meta.news ? h('span', { class: 'item__news' }, meta.news) : null,
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
         meta.chips.length ? h('span', { class: 'item__meta' }, meta.chips) : null),
-      item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
+      // Liste d'envies : pas de quantité (celle d'une liste convertie reste
+      // en base, cachée)
+      item.quantity && !isWishList(view?.list) ? h('span', { class: 'item__qty' }, item.quantity) : null),
     // Vignette de la photo : un appui l'agrandit
     actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
       h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null,
@@ -1381,7 +1383,7 @@ export function renderList(listId, onLeave) {
       replace(body,
         h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : ${words.this} ne peut pas être modifié.`)),
         value(capitalized(words.one), it.name),
-        it.quantity ? value('Quantité', it.quantity) : null,
+        it.quantity && !wishes ? value('Quantité', it.quantity) : null,
         wishes && Number.isInteger(it.priceCents) ? value('Prix indicatif', formatPrice(it.priceCents)) : null,
         wishes ? linkButton(it.link) : null,
         it.note ? value('Note', it.note) : null,

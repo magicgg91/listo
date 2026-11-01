@@ -28,6 +28,7 @@ export const PERMISSIONS = [
   { action: 'Cocher, ajouter, modifier ou supprimer des articles, ajouter une photo', roles: ['owner', 'contributor'] },
   { action: 'Créer un magasin ou un rayon manquant', roles: ['owner', 'contributor', 'admin'] },
   { action: 'Dupliquer la liste', roles: ['owner', 'contributor'] },
+  { action: 'Réserver un souhait (liste d\'envies), sauf la personne à qui la liste est destinée', roles: ['owner', 'contributor', 'guest'] },
   { action: 'Modifier la liste (titre, type, magasin, icône, options)', roles: ['owner'] },
   { action: 'Partager la liste et choisir le droit de chaque personne', roles: ['owner'] },
   { action: 'Créer un lien public', roles: ['owner'] },
@@ -36,7 +37,7 @@ export const PERMISSIONS = [
   { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
 
-export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres.';
+export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres. Dans une liste d\'envies, la personne à qui la liste est destinée ne voit jamais les réservations, même si elle en est la propriétaire.';
 
 // Sections, dans l'ordre de la page. adminOnly : affichée aux seuls comptes
 // Admin. Chaque section a des sujets : un titre, des paragraphes, une liste
@@ -48,16 +49,30 @@ export const SECTIONS = [
     topics: [
       {
         title: 'Articles et éléments',
-        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans une liste de tâches, c\'est un « élément ». Le fonctionnement est le même.'],
+        paragraphs: ['Dans une liste de courses, chaque ligne est un « article ». Dans une liste de tâches, c\'est un « élément ». Dans une liste d\'envies, c\'est un « souhait ». Le fonctionnement est le même.'],
       },
       {
         title: 'Créer une liste',
-        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses » ou « Tâches ») et une icône.'],
+        paragraphs: ['Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.'],
         items: [
           'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
           'Liste de tâches : « Options des éléments » active la priorité et l\'échéance.',
           '« Après l\'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d\'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.',
           'Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).',
+        ],
+      },
+      {
+        title: 'Listes d\'envies et réservations',
+        paragraphs: ['Une liste d\'envies rassemble des idées de cadeaux pour une personne. Ses proches peuvent réserver un souhait pour éviter d\'offrir deux fois la même chose. La surprise est préservée : la personne à qui la liste est destinée ne voit jamais qu\'un souhait est réservé, ni par qui, ni combien.'],
+        items: [
+          '« Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change pas de type.',
+          'Si la liste est pour un autre compte, cette personne en fait partie d\'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.',
+          'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.',
+          'Pour réserver : touchez le souhait, puis « Réserver ». La ligne affiche « Réservé par vous » ; « Annuler ma réservation » la libère. Il faut du réseau.',
+          'Tout membre peut réserver, même en « Lecture seule ». Un seul proche par souhait : si quelqu\'un vient de le réserver, Listo le dit.',
+          'Quand la liste est pour quelqu\'un d\'autre, son propriétaire voit les réservations et peut « Libérer » celle d\'un proche (par exemple d\'une personne qui a quitté la liste).',
+          'Cocher un souhait le range dans « Reçus » : seuls la personne à qui la liste est destinée et le propriétaire le peuvent. Cela n\'a aucun lien avec la réservation.',
+          'Une liste d\'envies n\'a ni lien public, ni copie (« Dupliquer la liste » n\'est pas proposé).',
         ],
       },
       {

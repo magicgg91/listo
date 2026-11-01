@@ -10,7 +10,8 @@ Gratuite, sans publicité, en français. Pensée pour une famille : quelques com
 - **Un droit par personne** : le propriétaire d'une liste la partage avec d'autres comptes, chacun avec le droit « Peut modifier » (contributeur) ou « Lecture seule » (invité, le choix de départ). Un contributeur peut dupliquer la liste ; contributeurs et invités peuvent la quitter.
 - **Courses classées par rayon**, ou **par magasin** pour une tournée de plusieurs boutiques (magasin « multi »), ou simplement par ordre alphabétique (chacun choisit son tri). Le rayon ou le magasin habituel de chaque article est retenu, et les noms déjà saisis sont proposés. Chacun peut créer un magasin ou un rayon qui manque.
 - **Listes de tâches** : priorité et échéance facultatives, activées liste par liste, avec tri par priorité ou par échéance.
-- **Deux types de liste**, « Courses » et « Tâches », choisis à la création ; le propriétaire peut changer le type d'une liste sans rien perdre (ce qui ne sert plus est caché, et revient au retour au type d'origine).
+- **Trois types de liste**, « Courses », « Tâches » et « Envies », choisis à la création ; le propriétaire peut passer de Courses à Tâches et inversement sans rien perdre (ce qui ne sert plus est caché, et revient au retour au type d'origine).
+- **Listes d'envies** (idées cadeaux) : pour soi, pour un autre compte ou pour une personne sans compte ; lien et prix indicatif ; les proches **réservent** un souhait pour éviter les doublons, et la personne à qui la liste est destinée ne voit jamais les réservations (la surprise est préservée).
 - **Lecture rapide** : une icône au choix pour chaque liste, un compteur « restants/total » (par exemple « 5/8 ») sur chaque carte et chaque groupe, des groupes qui se replient, la suppression d'une ligne en la faisant glisser.
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
 - **Mode scan** des listes de courses : photographier le code-barres d'un produit ; Listo le lit sur le téléphone, retrouve un produit déjà connu ou propose son nom grâce à [Open Food Facts](https://world.openfoodfacts.org). La photo reste sur le téléphone.
@@ -18,7 +19,7 @@ Gratuite, sans publicité, en français. Pensée pour une famille : quelques com
 - **Lien public en lecture seule** pour montrer une liste à quelqu'un sans compte (durée limitée, mot de passe facultatif).
 - **Aide intégrée** (Réglages › Aide), **double authentification**, **sauvegarde chaque nuit**, thèmes clair et sombre, installation sur l'écran d'accueil du téléphone.
 
-Dans une liste de courses, on parle d'« articles » ; dans les autres listes, d'« éléments ».
+Dans une liste de courses, on parle d'« articles » ; dans une liste d'envies, de « souhaits » ; dans les autres listes, d'« éléments ».
 
 ## Limites
 

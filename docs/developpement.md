@@ -26,6 +26,7 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 - [Icône d'une liste (migration 14)](#icône-dune-liste-migration-14)
 - [Nouveautés (migration 16)](#nouveautés-migration-16)
 - [Types de liste (migration 18)](#types-de-liste-migration-18)
+- [Listes d'envies (migration 19)](#listes-denvies-migration-19)
 - [Autorisation pour Claude (migration 17)](#autorisation-pour-claude-migration-17)
 - [Serveur MCP en lecture seule (étape B)](#serveur-mcp-en-lecture-seule-étape-b)
 - [Ajout et cochage par Claude (étape C)](#ajout-et-cochage-par-claude-étape-c)
@@ -88,6 +89,8 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `public/js/format.js` | Mise en forme des textes (dates relatives, noms, version…) |
 | `public/js/help-content.js` | Contenu de la page « Aide » : tableau « Qui peut quoi », sections et sujets. Tout le texte d'aide est là, et seulement là ; la section Administrateur n'est passée à l'écran que pour un Admin |
 | `public/js/list-icons.js` | Les 35 icônes possibles d'une liste (liste blanche, partagée avec le serveur) ; sans choix, l'icône du type |
+| `public/js/wishes.js` | Listes d'envies, règles partagées avec le serveur : bénéficiaire (`beneficiaryId`), qui voit les réservations (`seesReservations`), gestionnaire (`isManager`), « reçu » (`mayMarkReceived`), lien (`cleanLink`), prix (`parsePrice`, `formatPrice`), sous-titre « Pour Léa » |
+| `server/reservations.js` | Réservations des souhaits : le SEUL module qui lit la table `reservations` ; filtre chaque canal (lecture, synchronisation, temps réel) pour que le bénéficiaire ne reçoive jamais rien ; routes dans `server/routes/reservations.js` |
 | `public/js/list-types.js` | Types de liste (courses, tâches, envies), partagés avec le serveur : le seul endroit qui dit ce qu'une liste sait faire (`typeOf`, `isShoppingList`, `usesTaskOptions`), types qu'on peut choisir, noms, icônes par défaut, avertissement du formulaire |
 | `public/js/create-reference.js` | Feuille « Nouveau magasin » / « Nouveau rayon » (même composant pour les deux) |
 | `public/js/theme-boot.js` | Thème posé avant le premier affichage (balises `color-scheme` et `theme-color`), pour que le bandeau du haut de l'iPhone suive le thème de Listo |
@@ -277,6 +280,14 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. Avant la mise à jour, ouvrir Listo sur un téléphone, couper le réseau, ajouter une liste ; mettre à jour le serveur ; rallumer le réseau sans recharger : la liste est envoyée et apparaît avec le bon type ; puis recharger : tout est là.
 
 **Maintien à jour de l'aide** : une évolution qui change un droit, un écran ou le libellé d'un bouton cité met à jour l'aide, dans `public/js/help-content.js`, puis refait le point 36. Les tests `test/help.test.js` et `test/help-labels.test.js` vérifient la structure et que chaque libellé cité entre « » existe dans l'interface, mais pas que chaque phrase est juste.
+38. **Listes d'envies** (trois téléphones : A propriétaire, B bénéficiaire, C proche en « Lecture seule » ; clair et sombre) :
+    1. Sur A, « Nouvelle liste » : « Envies », « Pour qui ? » B. B apparaît dans le partage « Destinataire · Peut modifier », sans choix. Ajouter C. « Enregistrer ».
+    2. Sur B : la liste « Pour vous » ; ajouter un souhait avec un lien et un prix ; « Ouvrir le lien » ouvre un nouvel onglet.
+    3. Sur C : toucher le souhait, « Réserver » ; la ligne montre « Réservé par vous ». Sur A : « Réservé par C » ; « Libérer » dans la fiche. Sur B, **pendant tout ce temps : rien ne bouge** (ni la liste, ni « Mes listes », ni une pastille, ni un halo, ni un message).
+    4. Sur C hors ligne (mode avion) : « Réserver » inactif, avec l'explication ; de retour en ligne, il marche.
+    5. Sur B, cocher un souhait : il passe dans « Reçus » ; sur C, la case n'est pas touchable.
+    6. Sur A : ni « Dupliquer la liste », ni « Partager par lien » dans les menus ; « Modifier la liste » : type et « Pour qui ? » figés, avec la phrase.
+    7. Lecteurs d'écran (VoiceOver, TalkBack) : les pastilles « Réservé par … » sont lues avec la ligne ; le bouton « Réserver » est annoncé.
 
 ## API des comptes (étape 2)
 
@@ -975,6 +986,17 @@ Colonne `lists.icon` (texte, vide par défaut = icône du type), envoyée au té
 - **Serveur** (`server/lists.js`) : `listIconOf` accepte un identifiant de la liste blanche ou `""`, sinon 400 « Icône inconnue. » ; contrôlé dans `list.create` et `list.update` (propriétaire seulement), copié par `duplicateList` ; `describeList` ne renvoie jamais une valeur inconnue. La page publique ne l'envoie pas.
 - **Téléphone** : `listIcon(list)` donne l'icône à afficher (celle choisie, sinon `categoryIcon`). `public/js/screens/list-form.js` : grille `.icon-grid` (boutons `.icon-grid__opt`, `role="radio"`, coche `.icon-grid__check`), `icon` envoyé seulement s'il a changé ; `public/js/store.js` (`applyOp`) : copie locale tout de suite, hors ligne compris ; carte (`public/js/screens/lists.js`) et en-tête (`public/js/screens/list.js`, `.topbar__icon`).
 - Tests : `test/list-icons.test.js` ; vérifié dans Chromium (grille, choix, enregistrement, temps réel sur un second téléphone, nouvelle liste sans choix, clair et sombre).
+
+## Listes d'envies (migration 19)
+
+- **Règle critique** : le bénéficiaire ne doit jamais savoir qu'un souhait est réservé, ni par qui, ni combien. Tableau canal par canal (règle et test) : cahier des charges, section Sécurité. Une ligne de `CLAUDE.md` (section Sécurité) le rappelle.
+- **Base** (`server/db.js`, `wishesMigration`, idempotente : chaque ajout vérifie qu'il n'existe pas) : `lists.for_user_id`, `lists.for_name` (contrainte : jamais les deux), `items.link` (1 à 500), `items.price_cents` (0 à 10 000 000), table `reservations` (`item_id` clé primaire, `ON DELETE CASCADE` ; `user_id` obligatoire).
+- **Règles partagées** (`public/js/wishes.js`) : bénéficiaire = `forUserId`, sinon personne si `forName`, sinon le propriétaire ; voit les réservations = tout compte sauf le bénéficiaire (l'appartenance à la liste est vérifiée à part, par le serveur) ; gestionnaire = propriétaire qui voit les réservations ; « reçu » = propriétaire ou compte bénéficiaire.
+- **Serveur** (`server/lists.js`) : `list.create` accepte `wishes` avec `forUserId` (compte actif, autre que soi ; soi = « Moi ») ou `forName` ; le compte bénéficiaire est ajouté membre en « Peut modifier » dans la même transaction. `list.update` refuse `forUserId`/`forName`, tout changement de type depuis ou vers `wishes` (un ancien `categoryId` est ignoré pour une liste d'envies). `duplicateList` et `PUT /api/lists/:id/share` refusent ; `validByHash` (`server/shares.js`) exclut les listes d'envies (404 comme un lien inconnu). `setMembers` garde le bénéficiaire en « Peut modifier ». Souhaits : `link` (`cleanLink`), `priceCents` (entier), pas de quantité ; `item.check` et `list.uncheckAll` vérifient `mayMarkReceived`. `describeList` ajoute `forUserId`, `forName`, `forDisplayName`, `isBeneficiary` (rien de secret). `readList` ajoute `reservations` seulement si le compte les voit ; `changesSince` ajoute `reservations` (toutes celles des listes visibles, en entier). Admin : un compte qui a réservé ou qui est bénéficiaire est « utilisé ».
+- **Réservations** (`server/reservations.js`) : `POST` / `DELETE /api/items/:id/reservation` (`server/routes/reservations.js`), hors de `/api/ops`. Contrôles dans un ordre fixe (`wishFor`) : membre (404), liste d'envies (400), bénéficiaire (403, toujours `BENEFICIARY`, avant toute lecture des réservations). Insertion protégée par la clé primaire (409 « Déjà réservé. »). `notifyViewers` : `events.notifyUsers` vers les seuls membres actifs qui voient les réservations. Aucune écriture dans `items`, `lists`, `list_events`, aucun `audit`.
+- **Claude** (`server/mcp-tools.js`) : `read_list` donne `link` et `price` (euros) ; `add_items` accepte `link` et `price` (convertis en `priceCents`) ; aucune réservation, aucun outil de réservation ; descriptions et `INSTRUCTIONS` à jour.
+- **Téléphone** : `store.js` (`state.reservations`, remplacé à chaque synchronisation ; `reservationsOf` ; copie en version 3) ; `actions.js` (`reserveWish`, `releaseWish` : en ligne, puis synchronisation) ; `words.js` (formes complètes : « le souhait », « un nouveau souhait », « du souhait »…) ; `list.js` (pastilles prix et « Réservé par … », bloc « Réservation » de la fiche, `linkButton` : `<a target="_blank" rel="noopener noreferrer">` après `cleanLink`, case « reçu » réservée au bénéficiaire et au propriétaire) ; `list-form.js` (« Envies », « Pour qui ? », type figé et `WISHES_LOCKED_HINT`, destinataire verrouillé dans le partage) ; `list-actions.js` (ni « Dupliquer », ni « Partager par lien »). Service worker v51, `/js/wishes.js` dans `APP_FILES`.
+- **Tests** : `test/wishes.test.js` (création, souhaits, figés, qui voit, droits et réponses identiques du bénéficiaire, **test fort** : tout ce que reçoit le bénéficiaire, en-têtes et flux temps réel brut compris, identique avant et après une réservation puis une libération, bénéficiaire qui revient, membre parti, souhait supprimé, « reçu », administration, migration) ; `test/wishes-mcp.test.js` ; `test/wishes-phone.test.js`. Le test fort a été vérifié en cassant volontairement la règle (il échoue alors). Les bases « d'avant » des tests de migration se construisent avec `databaseAt(fichier, version)` (`test/helpers.js`). Vérifié dans Chromium : formulaire, liste vue par un proche, par la bénéficiaire (aucune trace), par le gestionnaire, fiche, hors ligne, menus. **À vérifier sur les téléphones** : point 38.
 
 ## Types de liste (migration 18)
 

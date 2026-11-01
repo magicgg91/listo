@@ -411,3 +411,13 @@ Aucune nouvelle classe, aucune nouvelle icône, aucune couleur nouvelle (1er nov
 - Pour une liste existante, quand le choix diffère du type enregistré, une ligne de texte d'aide du kit (`.field__hint`, `id="type-warning"`, `aria-live="polite"`, reliée au groupe par `aria-describedby`) s'affiche juste sous les cartes, avant l'enregistrement : « Les rayons, magasins et codes-barres ne s'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses. » ou « La priorité et l'échéance ne s'affichent plus pour ce type ; elles sont conservées si vous revenez à Tâches. ».
 - Sous-titre d'une liste sans magasin, et page du lien public : le nom du type (« Courses », « Tâches ») à la place du nom de la catégorie.
 - Le balisage de référence reste celui de « Choix en cartes » dans `components.html` (l'exemple y garde son ancien libellé « Catégorie »).
+
+## Ajout : listes d'envies
+
+Aucune nouvelle classe, aucune nouvelle couleur, aucune nouvelle icône (2 novembre 2026) : `i-gift` (déjà dans le sprite) est l'icône par défaut d'une liste d'envies et celle de la pastille de réservation ; `i-euro` celle du prix ; `i-link` celle de « Ouvrir le lien ».
+
+- Formulaire : « Envies » est la troisième carte de « Type de liste » (`.choice__opt`) ; « Pour qui ? » est une carte de lignes à choix unique (`.card` + `.radio-row`, comme le choix du magasin), puis un champ « Prénom » (`.field`) pour « Une personne sans compte ». Dans « Partager avec », le destinataire est une ligne cochée et inactive (`.tick-row`, `aria-disabled`) avec `.share__hint` « Destinataire · Peut modifier ». Liste d'envies existante : une seule carte, inactive, et un `.field__hint`.
+- Ligne d'un souhait : pastilles `.chip` du prix et de la réservation (« Réservé par vous » en `.chip--accent`, « Réservé par Marie » en `.chip`), texte ET icône, jamais la couleur seule ; elles s'ajoutent au libellé lu par les lecteurs d'écran. Le bénéficiaire ne reçoit jamais ces données : la ligne est celle d'une liste de tâches sans option.
+- Fiche d'un souhait : champs « Lien (facultatif) » et « Prix indicatif (facultatif) » (`.field`), bouton-lien « Ouvrir le lien » (`a.btn.btn--secondary.btn--sm`, `target="_blank"`, `rel="noopener noreferrer"`), bloc « Réservation » (`.field__value`, puis `.btn.btn--block` : `btn--primary` « Réserver », `btn--secondary` « Annuler ma réservation », `btn--danger-outline` « Libérer » ; 44 px au moins), avec `.field__hint` hors ligne et pour le rappel « Les réservations ne sont jamais montrées à … ».
+- Zone du bas : « Reçus » (même composant que « Terminés »).
+

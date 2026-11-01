@@ -181,19 +181,36 @@ test('hors ligne : l\'icône passe par la file d\'attente, comme le titre (copie
   assert.match(read('public/js/actions.js'), /\.\.\.\(icon \? \{ icon \} : \{\}\)/);
 });
 
-test('grille « Icône » : radiogroup, cases de 44 px, aria-label en français, choix entouré ET coché', () => {
+test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre avec la grille ; « Par défaut » d\'abord ; choix entouré ET coché ; 44 px', () => {
   const form = read('public/js/screens/list-form.js');
-  assert.match(form, /h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' \}, iconButtons\)/);
-  assert.match(form, /h\('button', \{ class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice\.label, title: choice\.label \}/);
-  assert.match(form, /button\.setAttribute\('aria-checked', String\(on\)\);\s*button\.querySelector\('\.icon-grid__check'\)\?\.remove\(\);\s*if \(on\) button\.append\(h\('span', \{ class: 'icon-grid__check' \}, icon\('check', 'icon--xs'\)\)\);/);
-  // Au départ : l'icône du type (rien de choisi)
+  // Formulaire : seulement l'icône affichée, dans un bouton de 44 px
+  assert.match(form, /const iconPicker = h\('button', \{\s*class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',/);
+  assert.match(form, /'Icône'\), h\('div', \{\}, iconPicker\), iconCurrent\),/);
+  assert.doesNotMatch(form, /iconGroup|iconButtons/, 'plus de grille dans le formulaire');
+  // Au départ : l'icône du type (rien de choisi), qui suit le type
   assert.match(form, /let chosenIcon = list\?\.icon \?\? '';/);
-  assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];/);
-  // Sous « Catégorie »
-  assert.match(form, /'Type de liste'\), typeGroup, typeWarning\),\s*forField,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\), iconGroup\),/);
+  assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];\s*replace\(iconPicker, icon\(shownIcon\)\);/);
+  // Fenêtre : même feuille que les autres choix, grille en radiogroup,
+  // « Par défaut » (valeur vide) en premier, puis les icônes de la liste blanche
+  assert.match(form, /const grid = h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-label': 'Icônes' \},\s*option\('', `Par défaut : icône du type \$\{typeName\}`, \[icon\(TYPE_ICONS\[listType\]\), h\('span', \{\}, 'Par défaut'\)\]\),\s*LIST_ICONS\.map\(\(choice\) => option\(choice\.id, choice\.label, icon\(choice\.id\)\)\)\);/);
+  assert.match(form, /class: `icon-grid__opt\$\{id \? '' : ' icon-grid__opt--default'\}`, type: 'button', role: 'radio', 'aria-checked': String\(on\), 'aria-label': label, title: label,/);
+  // Choix actuel : entouré ET coché, focus dessus à l'ouverture
+  assert.match(form, /\.\.\.\(on \? \{ 'data-initial-focus': true \} : \{\}\), \.\.\.extra,\s*\}, content, on \? h\('span', \{ class: 'icon-grid__check' \}, icon\('check', 'icon--xs'\)\) : null\);/);
+  // Toucher une case : choisie, fenêtre fermée ; fermer autrement ne change rien
+  assert.match(form, /button\.addEventListener\('click', \(\) => \{\s*chosenIcon = id;\s*paint\(\);\s*sheet\.close\(\);\s*\}\);/);
+  assert.equal((form.match(/^\s*chosenIcon = /gm) || []).length, 1, 'seul le toucher d\'une case change l\'icône');
+  assert.match(form, /const sheet = openSheet\(\{\s*title: 'Choisir une icône',\s*content: grid,\s*scroll: true,[^}]*returnTo: iconPicker,\s*\}\);/);
+  // Focus rendu au bouton à la fermeture (ui.js : returnTo, jamais un champ)
+  const ui = read('public/js/ui.js');
+  assert.match(ui, /const opener = returnTo \?\? document\.activeElement;/);
+  assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
+  assert.match(ui, /\), \{ onClose, returnTo \}\);/);
+  // Sous « Type »
+  assert.match(form, /'Type'\), typeGroup, typeWarning\),\s*forField,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'icon-label' \}, 'Icône'\)/);
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);
+  assert.match(css, /\.icon-grid__opt--default \{ grid-column: 1 \/ -1;/);
   // Affichage : <use href> seulement, jamais de HTML
   for (const file of ['public/js/screens/list-form.js', 'public/js/screens/lists.js', 'public/js/screens/list.js']) {
     assert.doesNotMatch(read(file), /innerHTML|insertAdjacentHTML|outerHTML/, file);

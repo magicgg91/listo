@@ -164,9 +164,11 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 /* Élément masqué visuellement mais lu par les lecteurs d'écran */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Catégories : plus de deux cartes passent à la ligne */
-.choice--wrap { flex-wrap: wrap; }
-.choice--wrap .choice__opt { flex: 1 1 140px; }
+/* Type de liste : trois cartes de même largeur sur une seule ligne, même à
+   320 px (icône au-dessus, libellé centré dessous, qui ne déborde pas) */
+.choice--row .choice__opt { flex: 1 1 0; min-width: 0; align-items: center; padding-inline: 6px; text-align: center; overflow-wrap: anywhere; }
+.choice--row .choice__opt[aria-checked="true"] { padding-inline: 5px; }
+.choice--row .choice__opt .icon-end { top: 6px; right: 6px; }
 
 /* Colonne de gauche (ordinateur) */
 .brand-mark--sm { width: 40px; height: 40px; border-radius: 12px; }
@@ -304,6 +306,9 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .icon-grid__opt[aria-checked="true"] { border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); }
 .icon-grid__check { position: absolute; top: -6px; right: -6px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--color-accent); color: var(--color-on-accent); }
 .icon-grid__check .icon { width: 14px; height: 14px; stroke-width: 3; }
+/* Fenêtre de choix : première case « Par défaut » (icône du type), sur
+   toute la largeur, avec son texte */
+.icon-grid__opt--default { grid-column: 1 / -1; display: flex; justify-content: center; gap: var(--space-1); font-weight: 600; }
 
 /* En-tête d'une liste : son icône juste avant le titre, discrète (couleur
    secondaire, 20 px) ; le titre garde ses points de suspension */

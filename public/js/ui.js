@@ -37,8 +37,11 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([t
 // Ouvre une fenêtre superposée (fond grisé + contenu). Gère le bouton Retour
 // du téléphone, la touche Échap, la touche Tab (le focus reste dans la
 // fenêtre) et le retour du focus clavier à la fermeture.
-function overlay(build, { label, role = 'dialog', onClose } = {}) {
-  const opener = document.activeElement;
+// returnTo : élément qui reprend le focus à la fermeture (un bouton), utile
+// sur un téléphone où toucher un bouton ne lui donne pas le focus ; sinon
+// l'élément qui l'avait à l'ouverture.
+function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {}) {
+  const opener = returnTo ?? document.activeElement;
   const scrim = h('div', { class: 'scrim' });
   let closeViaRouter = null;
   let closed = false;
@@ -115,7 +118,8 @@ function overlay(build, { label, role = 'dialog', onClose } = {}) {
 // tools : boutons-icônes placés dans l'en-tête, avant la croix (fiche d'un
 // article : poubelle et disquette « Enregistrer ») ; l'en-tête reste alors visible
 // quand la feuille défile, et le titre tient sur une ligne (tronqué si besoin).
-export function openSheet({ title, sub, content, onClose, scroll = false, tools = null }) {
+// returnTo : bouton qui reprend le focus à la fermeture (voir overlay).
+export function openSheet({ title, sub, content, onClose, scroll = false, tools = null, returnTo = null }) {
   const titleId = `sheet-${Math.random().toString(36).slice(2, 8)}`;
   return overlay((close) => h('div', { class: `sheet${scroll ? ' sheet--scroll' : ''}`, 'aria-labelledby': titleId },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
@@ -123,7 +127,7 @@ export function openSheet({ title, sub, content, onClose, scroll = false, tools 
       h('div', { class: tools ? 'sheet__heading' : null }, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
       tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', 'Fermer', close)) : iconButton('close', 'Fermer', close)),
     content,
-  ), { onClose });
+  ), { onClose, returnTo });
 }
 
 // Photo en plein écran (photo-plein-ecran-1) : titre, image, légende, Fermer.

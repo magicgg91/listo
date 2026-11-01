@@ -96,13 +96,14 @@ test('copie locale : création selon listType ; ancienne opération (catégorie)
   assert.equal('category' in state.lists.get('O'), false);
 });
 
-test('formulaire : « Type de liste » (Courses, Tâches, Envies à la création ; Envies figé), avertissement avant l\'enregistrement, magasin gardé', () => {
+test('formulaire : « Type » (Courses, Tâches, Envies à la création ; Envies figé), avertissement avant l\'enregistrement, magasin gardé', () => {
   const form = code('public/js/screens/list-form.js');
-  assert.match(form, /h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type de liste'\), typeGroup, typeWarning\)/);
+  assert.match(form, /h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\)/);
   assert.match(form, /const offered = !list \? CREATABLE_TYPES : wishesLocked \? \['wishes'\] : CHANGEABLE_TYPES;/);
   assert.match(form, /const typeButtons = offered\.map\(\(type\) => \{/);
-  // Même composant qu'avant (choix en cartes du kit), avec coche ET texte
-  assert.match(form, /h\('div', \{ class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' \}, typeButtons\)/);
+  // Même composant qu'avant (choix en cartes du kit), avec coche ET texte,
+  // trois cartes de même largeur sur une seule ligne (choice--row), même à 320 px
+  assert.match(form, /h\('div', \{ class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' \}, typeButtons\)/);
   assert.match(form, /const typeWarning = h\('p', \{ class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked \}, wishesLocked \? WISHES_LOCKED_HINT : ''\);/);
   assert.match(form, /const warning = list \? typeChangeWarning\(savedType, listType\) : '';/);
   // Envoyé seulement s'il change ; magasin conservé repris, renvoyé seulement s'il change
@@ -110,8 +111,11 @@ test('formulaire : « Type de liste » (Courses, Tâches, Envies à la création
   assert.match(form, /const currentStore = list\?\.store \?\? list\?\.keptStore \?\? null;/);
   assert.match(form, /if \(shopping && chosenStore !== \(currentStore\?\.id \?\? null\)\) switches\.storeId = chosenStore;/);
   assert.doesNotMatch(form, /innerHTML|\.focus\(/);
-  // Kit : aucune nouvelle classe pour ce champ
+  // Kit : aucune nouvelle classe pour ce champ, sauf la disposition en ligne
   const css = read('public/css/app.css');
+  assert.match(css, /\.choice--row \.choice__opt \{ flex: 1 1 0; min-width: 0; align-items: center;[^}]*overflow-wrap: anywhere; \}/);
+  assert.doesNotMatch(css, /choice--wrap/);
+  assert.match(form, /icon\(TYPE_ICONS\[type\]\), TYPE_LABELS\[type\]\);/);
   assert.doesNotMatch(css, /type-warning|list-type/);
 });
 

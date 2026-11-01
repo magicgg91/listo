@@ -1,6 +1,6 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
 // formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, type de
-// liste (Courses ou Tâches), icône, magasin simple ou « multi » (seulement
+// liste (Courses, Tâches ou Envies), icône (choisie dans une fenêtre), magasin simple ou « multi » (seulement
 // pour une liste de courses), partage, avec le droit de chaque personne
 // (« Peut modifier » ou « Lecture seule »), priorité et échéance activées ou
 // non (listes de tâches), et suppression de la liste (propriétaire).
@@ -182,7 +182,7 @@ function form(list, users) {
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
   const nameField = field('Titre de la liste', name); // jamais « Nom » (voir LABEL_INPUT)
 
-  // --- Type de liste (choix en cartes, même composant qu'avant) ---
+  // --- Type (choix en cartes, même composant qu'avant, sur une seule ligne) ---
   // Nouvelle liste : Courses, Tâches ou Envies. Liste existante : Courses ou
   // Tâches (changer n'efface rien : la ligne sous le choix le dit avant
   // l'enregistrement, typeChangeWarning) ; une liste d'envies garde son type
@@ -239,25 +239,54 @@ function form(list, users) {
       ]);
   // Compte destinataire choisi à la création (sinon celui de la liste)
   const beneficiaryId = () => (list ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
-  const typeGroup = h('div', { class: 'choice choice--wrap', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
+  const typeGroup = h('div', { class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
 
-  // --- Icône (grille de choix) ---
+  // --- Icône (un bouton, puis une fenêtre avec la grille) ---
   // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
-  // type). Au départ, la case cochée est donc l'icône du type, et elle suit
-  // le type tant que rien n'est choisi. Si on ne touche
-  // pas à la grille, rien n'est envoyé : rien ne change.
+  // type, et le bouton suit le type tant que rien n'est choisi). Si on ne
+  // touche pas à l'icône, rien n'est envoyé : rien ne change.
   let chosenIcon = list?.icon ?? '';
-  const iconButtons = LIST_ICONS.map((choice) => {
-    const button = h('button', { class: 'icon-grid__opt', type: 'button', role: 'radio', 'aria-label': choice.label, title: choice.label },
-      icon(choice.id));
-    button.addEventListener('click', () => {
-      chosenIcon = choice.id;
-      paint();
-    });
-    button.dataset.icon = choice.id;
-    return button;
+  // Le formulaire montre seulement l'icône affichée, dans un bouton
+  const iconPicker = h('button', {
+    class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',
   });
-  const iconGroup = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-labelledby': 'icon-label' }, iconButtons);
+  const iconCurrent = h('span', { class: 'visually-hidden', id: 'icon-current' });
+  iconPicker.addEventListener('click', () => openIconPicker());
+
+  // Fenêtre de choix (feuille du bas, comme les autres choix) : première
+  // case « Par défaut » (l'icône du type, rien de choisi), puis la grille.
+  // Toucher une case la choisit et ferme aussitôt la fenêtre ; la fermer
+  // autrement (croix, Échap, toucher à côté, Retour) ne change rien. Le
+  // focus va sur la case choisie à l'ouverture et revient sur le bouton à
+  // la fermeture (overlay, ui.js ; jamais un champ de saisie).
+  function openIconPicker() {
+    const option = (id, label, content, extra = {}) => {
+      const on = id === chosenIcon;
+      const button = h('button', {
+        class: `icon-grid__opt${id ? '' : ' icon-grid__opt--default'}`, type: 'button', role: 'radio', 'aria-checked': String(on), 'aria-label': label, title: label,
+        ...(on ? { 'data-initial-focus': true } : {}), ...extra,
+      }, content, on ? h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')) : null);
+      button.addEventListener('click', () => {
+        chosenIcon = id;
+        paint();
+        sheet.close();
+      });
+      button.dataset.icon = id;
+      return button;
+    };
+    const typeName = TYPE_LABELS[listType];
+    const grid = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-label': 'Icônes' },
+      option('', `Par défaut : icône du type ${typeName}`, [icon(TYPE_ICONS[listType]), h('span', {}, 'Par défaut')]),
+      LIST_ICONS.map((choice) => option(choice.id, choice.label, icon(choice.id))));
+    const sheet = openSheet({
+      title: 'Choisir une icône',
+      content: grid,
+      scroll: true,
+      // Retour du focus sur le bouton à la fermeture (même sur un téléphone,
+      // où toucher un bouton ne lui donne pas le focus)
+      returnTo: iconPicker,
+    });
+  }
 
   // --- Magasin (listes de courses seulement) ---
   // Une liste de tâches qui a été une liste de courses garde son magasin,
@@ -476,14 +505,10 @@ function form(list, users) {
       if (on) row.append(icon('check', 'icon-end'));
     }
     forNameField.field.hidden = forChoice !== 'name';
-    // Icône cochée : entourée ET marquée d'une coche (jamais la couleur seule)
+    // Bouton de l'icône : celle choisie, sinon celle du type (elle suit alors le type)
     const shownIcon = chosenIcon || TYPE_ICONS[listType];
-    for (const button of iconButtons) {
-      const on = button.dataset.icon === shownIcon;
-      button.setAttribute('aria-checked', String(on));
-      button.querySelector('.icon-grid__check')?.remove();
-      if (on) button.append(h('span', { class: 'icon-grid__check' }, icon('check', 'icon--xs')));
-    }
+    replace(iconPicker, icon(shownIcon));
+    iconCurrent.textContent = chosenIcon ? `Icône actuelle : ${LIST_ICONS.find((c) => c.id === chosenIcon)?.label ?? ''}` : `Icône actuelle : par défaut (${TYPE_LABELS[listType]})`;
     storeField.hidden = !shopping;
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
     // Priorité : tâches et envies ; échéance : tâches seulement
@@ -522,9 +547,9 @@ function form(list, users) {
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, list ? 'Modifier la liste' : 'Nouvelle liste'))),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       nameField.field,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type de liste'), typeGroup, typeWarning),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type'), typeGroup, typeWarning),
       forField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), iconGroup),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'icon-label' }, 'Icône'), h('div', {}, iconPicker), iconCurrent),
       storeField,
       optionsField,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Partager avec'), shareGroup, shareNote),

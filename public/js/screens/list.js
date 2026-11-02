@@ -53,7 +53,7 @@ import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
 import { createTapPicker } from '../tap.js';
 import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
-import { readQuantity } from '../quantity.js';
+import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
@@ -744,9 +744,10 @@ export function renderList(listId, onLeave) {
       return;
     }
     const typed = input.value;
-    // La quantité tapée au début ou à la fin (« 6 oeu », « oeufs x6 ») est lue
-    // d'abord : les suggestions cherchent le nom seul (quantity.js)
-    const read = readQuantity(typed);
+    // Liste de courses : la quantité tapée au début ou à la fin (« 6 oeu »,
+    // « oeufs x6 ») est lue d'abord ; les suggestions cherchent le nom seul
+    // (quantityFor, quantity.js ; jamais de lecture hors listes de courses)
+    const read = quantityFor(view?.list, typed);
     const suggestions = read.name.length >= 2 ? computeSuggestions(app.data, read.name) : [];
     if (!suggestions.length && read.name.length < 2) {
       suggestBox.hidden = true;
@@ -790,9 +791,10 @@ export function renderList(listId, onLeave) {
   // Courses et tâches : un texte avec des virgules, des points-virgules ou
   // des retours à la ligne donne plusieurs éléments (addSeveral) ; un seul
   // morceau : l'ajout habituel. Liste d'envies : toujours l'ajout habituel.
-  // Courses et tâches : la quantité écrite avec le nom (« 6 oeufs », « 2 kg
-  // de pommes », « oeufs x6 ») est lue dans chaque morceau (quantity.js),
-  // avant de chercher le rayon ou le magasin habituel du nom seul.
+  // Courses seulement : la quantité écrite avec le nom (« 6 oeufs », « 2 kg
+  // de pommes », « oeufs x6 ») est lue dans chaque morceau (quantityFor,
+  // quantity.js), avant de chercher le rayon ou le magasin habituel du nom
+  // seul ; une tâche garde tout son texte comme nom (« 3 appels à passer »).
   async function addTyped(text, { whole = false, quantity = '' } = {}) {
     if (!view) return;
     let name = text.replace(/\s+/g, ' ').trim();
@@ -802,7 +804,7 @@ export function renderList(listId, onLeave) {
         toast(plan.error); // annoncé (role="status") ; le texte reste dans le champ
         return;
       }
-      const entries = plan.names.map(readQuantity);
+      const entries = plan.names.map((piece) => quantityFor(view.list, piece));
       if (entries.length > 1) {
         await addSeveral(entries);
         return;

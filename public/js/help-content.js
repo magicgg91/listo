@@ -101,13 +101,14 @@ export const SECTIONS = [
       },
       {
         title: 'Saisir la quantité avec le nom',
-        paragraphs: ['Dans une liste de courses ou de tâches, écrivez la quantité au début du nom, ou à la fin avec un x : Listo la range dans le champ « Quantité ».'],
+        paragraphs: ['Dans une liste de courses (seulement), écrivez la quantité au début du nom, ou à la fin avec un x : Listo la range dans le champ « Quantité ».'],
         items: [
           '6 oeufs : oeufs, quantité 6.',
           '2 kg de pommes, ou 2 kg pommes : pommes, quantité 2 kg. Pareil avec 500 g farine, 1,5 L lait, 3 sachets de levure ou 4 paquets de riz.',
           'oeufs x6 : oeufs, quantité 6.',
           'Dans le doute, tout reste le nom : 7up, tarte 6 parts, 2 en 1 shampoing. Pour qu\'un nombre ne soit jamais lu, écrivez-le après le nom (shampoing 2 en 1).',
-          'Ça marche aussi avec plusieurs articles d\'un coup (6 oeufs, 2 kg pommes ; lait). Si Listo s\'est trompé, corrigez dans la fiche de l\'article. Pas de quantité dans une liste d\'envies.',
+          'Ça marche aussi avec plusieurs articles d\'un coup (6 oeufs, 2 kg pommes ; lait). Si Listo s\'est trompé, corrigez dans la fiche de l\'article.',
+          'Dans une liste de tâches, le nombre fait partie du nom (3 appels à passer) : rien n\'est lu ; la quantité se règle dans la fiche. Pas de quantité dans une liste d\'envies.',
         ],
       },
       {

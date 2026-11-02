@@ -1,6 +1,8 @@
-// Lecture de la quantité dans le texte de la barre d'ajout (listes de
-// courses et de tâches ; jamais les listes d'envies, qui n'ont pas de
-// quantité). Rien n'est converti ni calculé : la quantité reste du texte.
+// Lecture de la quantité dans le texte de la barre d'ajout, pour les listes
+// de courses SEULEMENT (quantityFor) : dans une tâche, le nombre fait le plus
+// souvent partie de la phrase (« 3 appels à passer ») ; une liste d'envies
+// n'a pas de quantité. Rien n'est converti ni calculé : la quantité reste du
+// texte.
 //
 // Formats reconnus :
 // - au début, un nombre (entier ou décimal : « 1,5 » ou « 1.5 ») suivi d'une
@@ -16,8 +18,11 @@
 // quantité dépasse 30 caractères (limite du serveur). Pour qu'un nombre ne
 // soit jamais lu, il suffit de l'écrire après le nom (« shampoing 2 en 1 »).
 //
-// Module sans dépendance, testé à part (test/quantity.test.js), sans syntaxe
-// d'expression régulière récente (les anciens iPhone ne la comprennent pas).
+// Module simple (seule dépendance : le type de la liste, list-types.js), testé
+// à part (test/quantity.test.js), sans syntaxe d'expression régulière récente
+// (les anciens iPhone ne la comprennent pas).
+
+import { isShoppingList } from './list-types.js';
 
 export const QUANTITY_MAX = 30; // serveur : quantity (optionalText, 30)
 
@@ -41,6 +46,15 @@ export function isUnit(word) {
   const value = lower(word);
   if (MEASURES.includes(value) || PACKS.includes(value)) return true;
   return (value.endsWith('s') || value.endsWith('x')) && PACKS.includes(value.slice(0, -1));
+}
+
+// Ce que la barre d'ajout tire d'un texte, selon le type de la liste :
+// { name, quantity }. Seul point de décision : une liste de courses lit la
+// quantité (readQuantity) ; une liste de tâches ou d'envies garde tout le
+// texte comme nom (espaces en trop retirés), sans quantité.
+export function quantityFor(list, text) {
+  if (isShoppingList(list)) return readQuantity(text);
+  return { name: String(text ?? '').normalize('NFC').replace(/\s+/g, ' ').trim(), quantity: '' };
 }
 
 // Lit la quantité d'un texte : { name, quantity } (quantity : « » si rien n'est lu)

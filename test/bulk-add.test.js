@@ -110,7 +110,7 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   // Refus : une phrase, le texte reste, rien n'est ajouté
   assert.match(add, /if \(plan\.error\) \{\s*toast\(plan\.error\);[^\n]*\n\s*return;\s*\}/);
   // Plusieurs : addSeveral ; un seul morceau : l'ajout habituel (avec « Ouvrir la fiche » si réglé)
-  assert.match(add, /const entries = plan\.names\.map\(readQuantity\);\s*if \(entries\.length > 1\) \{\s*await addSeveral\(entries\);\s*return;\s*\}/);
+  assert.match(add, /const entries = plan\.names\.map\(\(piece\) => quantityFor\(view\.list, piece\)\);\s*if \(entries\.length > 1\) \{\s*await addSeveral\(entries\);\s*return;\s*\}/);
   // Tout ou rien : toutes les questions (rayon, magasin) d'abord, puis les ajouts
   const several = list.slice(list.indexOf('async function addSeveral('), list.indexOf('function whenKeyboardClosed('));
   assert.ok(several.indexOf('await placeFor(') < several.indexOf("input.value = '';"));

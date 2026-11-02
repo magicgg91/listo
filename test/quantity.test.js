@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { readQuantity, isUnit, QUANTITY_MAX } from '../public/js/quantity.js';
+import { readQuantity, quantityFor, isUnit, QUANTITY_MAX } from '../public/js/quantity.js';
 import { splitItems, planBulkAdd } from '../public/js/bulk-add.js';
 import { emptyState, rememberItem, computeSuggestions, usualAisleFor, isKnownItem } from '../public/js/store.js';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
@@ -131,22 +131,53 @@ test('droits inchangés : lecture seule refusée, même avec une quantité', asy
   assert.equal(rows(h.app, h.ids.courses).length, 1);
 });
 
-test('écran : lecture dans la barre d\'ajout des courses et des tâches seulement ; jamais pour les envies ; suggestion choisie avec la quantité tapée', () => {
+test('courses seulement : une liste de tâches ou d\'envies garde tout le texte comme nom, ajout simple ou saisie multiple', () => {
+  const shopping = { type: 'shopping' };
+  const tasks = { type: 'tasks' };
+  const wishes = { type: 'wishes' };
+  // Mêmes textes : lus sur une liste de courses, entiers sur une liste de tâches
+  assert.deepEqual(quantityFor(shopping, '3 appels à passer'), { name: 'appels à passer', quantity: '3' });
+  assert.deepEqual(quantityFor(shopping, '2 kg pommes'), { name: 'pommes', quantity: '2 kg' });
+  assert.deepEqual(quantityFor(tasks, '3 appels à passer'), { name: '3 appels à passer', quantity: '' });
+  assert.deepEqual(quantityFor(tasks, '2 kg pommes'), { name: '2 kg pommes', quantity: '' });
+  assert.deepEqual(quantityFor(tasks, '  2   lessives à lancer '), { name: '2 lessives à lancer', quantity: '' }, 'espaces en trop retirés, comme avant');
+  assert.deepEqual(quantityFor(tasks, 'linge x3'), { name: 'linge x3', quantity: '' });
+  // Envies : jamais
+  assert.deepEqual(quantityFor(wishes, '2 kg de bonbons'), { name: '2 kg de bonbons', quantity: '' });
+  // Saisie multiple : découpage inchangé, sans lecture sur une liste de tâches
+  assert.deepEqual(splitItems('3 appels à passer, 2 lessives à lancer ; ranger').map((piece) => quantityFor(tasks, piece)), [
+    { name: '3 appels à passer', quantity: '' },
+    { name: '2 lessives à lancer', quantity: '' },
+    { name: 'ranger', quantity: '' },
+  ]);
+  assert.deepEqual(splitItems('6 oeufs, 2 kg pommes ; lait').map((piece) => quantityFor(shopping, piece)).map((e) => e.quantity), ['6', '2 kg', '']);
+  // Liste inconnue (écran pas encore chargé) : rien n'est lu
+  assert.deepEqual(quantityFor(undefined, '6 oeufs'), { name: '6 oeufs', quantity: '' });
+});
+
+test('écran : la quantité n\'est lue que par quantityFor (courses seulement) ; jamais pour les envies ; suggestion choisie avec la quantité tapée sur une liste de courses', () => {
   const list = code('public/js/screens/list.js');
   const add = list.slice(list.indexOf('async function addTyped('), list.indexOf('function whenKeyboardClosed('));
   // Envies : le bloc de découpage et de lecture n'est jamais atteint
-  assert.match(add, /if \(!whole && !isWishList\(view\.list\)\) \{\s*const plan = planBulkAdd\(text\);[\s\S]*const entries = plan\.names\.map\(readQuantity\);/);
+  assert.match(add, /if \(!whole && !isWishList\(view\.list\)\) \{\s*const plan = planBulkAdd\(text\);[\s\S]*const entries = plan\.names\.map\(\(piece\) => quantityFor\(view\.list, piece\)\);/);
+  // Un seul point de décision : l'écran n'appelle jamais readQuantity directement
+  assert.doesNotMatch(list, /readQuantity/);
+  assert.match(read('public/js/quantity.js'), /export function quantityFor\(list, text\) \{\s*if \(isShoppingList\(list\)\) return readQuantity\(text\);/);
   assert.match(add, /const item = await addNamed\(name, quantity \? \{ quantity \} : \{\}, \(\) => \{/);
   assert.match(add, /last = \(await createItem\(name, \{ \.\.\.places\[index\], \.\.\.\(quantity \? \{ quantity \} : \{\}\) \}\)\) \|\| last;/);
   // Le rayon (placeFor) est cherché avec le nom seul
   assert.match(add, /for \(const \[index, \{ name \}\] of entries\.entries\(\)\) \{\s*const key = normalizeItemName\(name\);/);
   // Suggestions : sur le nom lu ; suggestion choisie avec la quantité tapée
-  assert.match(list, /const read = readQuantity\(typed\);\s*const suggestions = read\.name\.length >= 2 \? computeSuggestions\(app\.data, read\.name\) : \[\];/);
+  // Suggestions (listes de courses seulement : une liste de tâches n'en a pas,
+  // et quantityFor ne lirait rien) ; suggestion choisie avec la quantité lue
+  assert.match(list, /if \(!remembersNames\(view\?\.list\) \|\| splitItems\(input\.value\)\.length > 1\) \{/);
+  assert.match(list, /const read = quantityFor\(view\?\.list, typed\);\s*const suggestions = read\.name\.length >= 2 \? computeSuggestions\(app\.data, read\.name\) : \[\];/);
   assert.match(list, /addTyped\(s\.name, \{ whole: true, quantity: read\.quantity \}\)/);
   // La fiche d'un article reste la façon de corriger (champ « Quantité » inchangé)
   assert.match(list, /field\('Quantité', quantity, \{ aside: 'par exemple 2 ou 500 g' \}\)/);
   // Module simple, gardé hors ligne
   const module = read('public/js/quantity.js');
-  assert.doesNotMatch(module, /\(\?<[=!]|innerHTML|^import /m);
+  assert.doesNotMatch(module, /\(\?<[=!]|innerHTML/);
+  assert.deepEqual(module.match(/^import .*$/gm), ["import { isShoppingList } from './list-types.js';"]);
   assert.ok(read('public/sw.js').includes("'/js/quantity.js'"));
 });

@@ -110,7 +110,7 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   // Refus : une phrase, le texte reste, rien n'est ajouté
   assert.match(add, /if \(plan\.error\) \{\s*toast\(plan\.error\);[^\n]*\n\s*return;\s*\}/);
   // Plusieurs : addSeveral ; un seul morceau : l'ajout habituel (avec « Ouvrir la fiche » si réglé)
-  assert.match(add, /if \(plan\.names\.length > 1\) \{\s*await addSeveral\(plan\.names\);\s*return;\s*\}\s*name = plan\.names\[0\] \?\? '';/);
+  assert.match(add, /const entries = plan\.names\.map\(readQuantity\);\s*if \(entries\.length > 1\) \{\s*await addSeveral\(entries\);\s*return;\s*\}/);
   // Tout ou rien : toutes les questions (rayon, magasin) d'abord, puis les ajouts
   const several = list.slice(list.indexOf('async function addSeveral('), list.indexOf('function whenKeyboardClosed('));
   assert.ok(several.indexOf('await placeFor(') < several.indexOf("input.value = '';"));
@@ -118,7 +118,7 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   assert.match(several, /if \(place === undefined\) return;/);
   // Jamais de fiche ouverte ; une phrase annoncée (toast role="status")
   assert.doesNotMatch(several, /openItemSheet|addModeOf/);
-  assert.match(several, /toast\(`\$\{countItems\(names\.length, list\)\} ajoutés`\);/);
+  assert.match(several, /toast\(`\$\{countItems\(entries\.length, list\)\} ajoutés`\);/);
   assert.match(read('public/js/ui.js'), /h\('div', \{ class: `toast\$\{low \? ' toast--low' : ''\}`, role: 'status' \}/);
   // Chaque élément : le même chemin qu'un ajout à la main (une opération, son propre identifiant)
   assert.match(list, /async function createItem\(name, fields = \{\}\) \{\s*if \(!editable\(\)\) return false;[^\n]*\n\s*return actions\.addItem\(\{ listId, name, \.\.\.fields \}\);/);

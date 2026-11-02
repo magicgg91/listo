@@ -297,6 +297,13 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Liste de tâches réglée sur « Ouvrir la fiche » : plusieurs éléments → la liste reste affichée, « 3 éléments ajoutés » ; un seul → la fiche s'ouvre comme avant.
     5. Mode avion : ajouter « a, b, c » : les trois lignes apparaissent ; réseau revenu : elles arrivent une seule fois sur l'autre téléphone.
     6. Liste d'envies : « Vélo, rouge » donne un seul souhait.
+40. **Quantité écrite avec le nom** (iPhone et Android) :
+    1. Liste de courses : « 6 oeufs » puis « + » : la ligne « oeufs » montre « 6 » à droite ; si « Oeufs » est déjà connu, aucun rayon n'est demandé (rayon habituel).
+    2. Taper « 2 L lait d » : la suggestion « Lait demi-écrémé » apparaît ; la toucher : la ligne montre « 2 L ».
+    3. « 6 oeufs, 2 kg de pommes ; pain x3 » : trois lignes, quantités 6, 2 kg et 3.
+    4. « 2 en 1 shampoing », « 7up », « tarte 6 parts » : tout reste le nom, pas de quantité. « shampoing 2 en 1 » aussi.
+    5. Une lecture fausse se corrige dans la fiche (champ « Quantité »).
+    6. Liste de tâches : « 3 chaises à monter » : quantité 3. Liste d'envies : « 2 kg de bonbons » reste un seul nom, sans quantité.
 
 ## API des comptes (étape 2)
 

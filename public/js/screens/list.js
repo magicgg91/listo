@@ -53,6 +53,7 @@ import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
 import { createTapPicker } from '../tap.js';
 import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
+import { readQuantity } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
@@ -743,12 +744,15 @@ export function renderList(listId, onLeave) {
       return;
     }
     const typed = input.value;
-    const suggestions = typed.trim().length >= 2 ? computeSuggestions(app.data, typed) : [];
-    if (!suggestions.length && typed.trim().length < 2) {
+    // La quantité tapée au début ou à la fin (« 6 oeu », « oeufs x6 ») est lue
+    // d'abord : les suggestions cherchent le nom seul (quantity.js)
+    const read = readQuantity(typed);
+    const suggestions = read.name.length >= 2 ? computeSuggestions(app.data, read.name) : [];
+    if (!suggestions.length && read.name.length < 2) {
       suggestBox.hidden = true;
       return;
     }
-    const exact = suggestions.some((s) => normalizeItemName(s.name) === normalizeItemName(typed));
+    const exact = suggestions.some((s) => normalizeItemName(s.name) === normalizeItemName(read.name));
     const option = (content, aisle, onPick, extraClass = '') => {
       const on = taps.button(() => {
         redrawLater = false;
@@ -774,8 +778,9 @@ export function renderList(listId, onLeave) {
     };
     replace(suggestBox,
       suggestions.map((s) => {
-        const [start, rest] = splitPrefix(s.name, typed);
-        return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name, { whole: true }));
+        const [start, rest] = splitPrefix(s.name, read.name);
+        // Suggestion choisie : son nom tel quel, avec la quantité tapée s'il y en a une
+        return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name, { whole: true, quantity: read.quantity }));
       }),
       exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], itemWords(view?.list).New, () => addTyped(typed), 'suggest__item--new'));
     suggestBox.hidden = false;
@@ -785,7 +790,10 @@ export function renderList(listId, onLeave) {
   // Courses et tâches : un texte avec des virgules, des points-virgules ou
   // des retours à la ligne donne plusieurs éléments (addSeveral) ; un seul
   // morceau : l'ajout habituel. Liste d'envies : toujours l'ajout habituel.
-  async function addTyped(text, { whole = false } = {}) {
+  // Courses et tâches : la quantité écrite avec le nom (« 6 oeufs », « 2 kg
+  // de pommes », « oeufs x6 ») est lue dans chaque morceau (quantity.js),
+  // avant de chercher le rayon ou le magasin habituel du nom seul.
+  async function addTyped(text, { whole = false, quantity = '' } = {}) {
     if (!view) return;
     let name = text.replace(/\s+/g, ' ').trim();
     if (!whole && !isWishList(view.list)) {
@@ -794,17 +802,18 @@ export function renderList(listId, onLeave) {
         toast(plan.error); // annoncé (role="status") ; le texte reste dans le champ
         return;
       }
-      if (plan.names.length > 1) {
-        await addSeveral(plan.names);
+      const entries = plan.names.map(readQuantity);
+      if (entries.length > 1) {
+        await addSeveral(entries);
         return;
       }
-      name = plan.names[0] ?? '';
+      ({ name, quantity } = entries[0] ?? { name: '', quantity: '' });
     }
     if (!name) return;
     suggestBox.hidden = true;
     // Le champ est vidé juste avant l'ajout (pas si la fenêtre de choix du
     // rayon ou du magasin est fermée sans choisir)
-    const item = await addNamed(name, {}, () => {
+    const item = await addNamed(name, quantity ? { quantity } : {}, () => {
       input.value = '';
     });
     // Toutes les listes : l'ajout se termine (plus de curseur dans le champ,
@@ -835,15 +844,16 @@ export function renderList(listId, onLeave) {
   // élément dans la file d'attente, avec son propre identifiant : hors ligne
   // compris, un renvoi ne crée jamais de doublon). On reste toujours sur la
   // liste (jamais de fiche ouverte), et une phrase annonce le nombre ajouté.
-  async function addSeveral(names) {
+  // entries : [{ name, quantity }] (quantité lue dans chaque morceau, ou « »)
+  async function addSeveral(entries) {
     if (!editable()) return;
     suggestBox.hidden = true;
     const places = [];
     const chosen = new Map(); // même nom deux fois : une seule question
-    for (const [index, name] of names.entries()) {
+    for (const [index, { name }] of entries.entries()) {
       const key = normalizeItemName(name);
       if (!chosen.has(key)) {
-        const place = await placeFor(name, `${index + 1} sur ${names.length}`);
+        const place = await placeFor(name, `${index + 1} sur ${entries.length}`);
         if (place === undefined) return; // fenêtre fermée sans choisir : rien n'est ajouté
         chosen.set(key, place);
       }
@@ -853,12 +863,12 @@ export function renderList(listId, onLeave) {
     const list = view.list;
     input.value = '';
     let last = null;
-    for (const [index, name] of names.entries()) {
-      last = (await createItem(name, places[index])) || last;
+    for (const [index, { name, quantity }] of entries.entries()) {
+      last = (await createItem(name, { ...places[index], ...(quantity ? { quantity } : {}) })) || last;
     }
     releaseFocus();
     if (last) revealItem(last.id);
-    toast(`${countItems(names.length, list)} ajoutés`);
+    toast(`${countItems(entries.length, list)} ajoutés`);
   }
 
   // Clavier en train de se replier (le champ vient de perdre le curseur) :

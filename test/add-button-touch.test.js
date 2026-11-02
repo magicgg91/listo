@@ -139,7 +139,7 @@ test('écran : « + » branché sur tap.js, Entrée sans doublon, champ vide san
   assert.match(list, /addForm\.addEventListener\('submit', \(event\) => \{\s*event\.preventDefault\(\);\s*addTyped\(input\.value\);/);
   // Champ vide ou espaces seulement : rien n'est ajouté
   assert.match(list, /let name = text\.replace\(\/\\s\+\/g, ' '\)\.trim\(\);/);
-  assert.match(list, /name = plan\.names\[0\] \?\? '';\s*\}\s*if \(!name\) return;/);
+  assert.match(list, /\(\{ name, quantity \} = entries\[0\] \?\? \{ name: '', quantity: '' \}\);\s*\}\s*if \(!name\) return;/);
   // Une seule fabrique d'appuis pour les suggestions et « + »
   assert.equal((list.match(/createTapPicker\(\)/g) ?? []).length, 1);
 });

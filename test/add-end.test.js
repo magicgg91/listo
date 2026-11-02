@@ -31,7 +31,7 @@ test('saisie à la main (toutes les listes) : curseur retiré, élément montré
   assert.match(end, /if \(!item\) return;\s*suggestBox\.hidden = true;\s*releaseFocus\(\);\s*revealItem\(item\.id\);\s*\/\/ « Après l'ajout » = « Ouvrir la fiche »/);
   assert.doesNotMatch(end, /isShopping|\.focus\(/);
   // Le champ est vidé juste avant l'ajout
-  assert.match(end, /const item = await addNamed\(name, \{\}, \(\) => \{\s*input\.value = '';/);
+  assert.match(end, /const item = await addNamed\(name, quantity \? \{ quantity \} : \{\}, \(\) => \{\s*input\.value = '';/);
   assert.match(list, /'data-item-id': item\.id/);
 });
 

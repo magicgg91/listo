@@ -135,7 +135,9 @@ Listo gère plusieurs listes, chacune partagée avec les personnes de son choix.
   - comme avant : la barre d'ajout ne lit pas de quantité dans le nom (« 6 oeufs » est le nom), ne fusionne pas les doublons et ne propose pas « Annuler » après un ajout (seulement après une suppression) ;
   - listes d'envies : rien n'est découpé (un lien contient des virgules et des points-virgules ; prix, lien et priorité se saisissent dans la fiche du souhait) ;
   - aucun changement côté serveur (pas de limite de débit sur les ajouts ; le téléphone envoie la file par lots de 20, le serveur en accepte 100 par envoi) ; module partagé public/js/bulk-add.js.
-- **Quantité écrite avec le nom** (listes de courses et de tâches, qui ont un champ « Quantité » ; jamais les listes d'envies ; décision du 2 novembre 2026) :
+- **Quantité écrite avec le nom** (listes de courses SEULEMENT ; décision du 2 novembre 2026, restreinte aux courses le même jour) :
+  - listes de tâches : aucune lecture ; tout le texte reste le nom (« 3 appels à passer », « 2 lessives à lancer » : le nombre fait le plus souvent partie de la phrase), pour un ajout simple comme pour chaque morceau d'une saisie multiple ; le champ « Quantité » de la fiche se remplit à la main, comme avant ; les tâches déjà ajoutées avec une quantité lue (entre les deux décisions) gardent leur nom et leur quantité ; listes d'envies : jamais de quantité ;
+  - un seul point de décision : quantityFor (public/js/quantity.js), d'après le type de la liste (isShoppingList de list-types.js) ;
   - au début : un nombre (entier ou décimal, « 1,5 » ou « 1.5 »), une unité facultative, puis le nom : « 6 oeufs » (quantité « 6 », nom « oeufs »), « 2 kg pommes », « 2 kg de pommes », « 2 kg d'oignons » (le « de » ou « d' » après l'unité est retiré), « 500 g farine », « 500g farine », « 1,5 L lait » ;
   - à la fin : « oeufs x6 », « oeufs ×6 », « oeufs x 6 » (quantité « 6 ») ;
   - unités reconnues, majuscules ou minuscules, singulier ou pluriel : g, kg, mg, ml, cl, dl, l (seules à pouvoir être collées au nombre), boîte (ou boite), paquet, sachet, bouteille, pot, barquette, lot, pack, tranche, brique, canette, rouleau ;
@@ -735,9 +737,9 @@ Liste courte, datée ; chaque point est décrit dans le texte ci-dessus, et sa r
 - **2 novembre 2026**
   - Listes d'envies : « Pour qui ? », souhaits avec lien, prix et priorité (activée par défaut), réservations et cotisation (plusieurs participants, « Ouvert à d'autres ») cachées au bénéficiaire, « Reçus » (migration 19) ; une liste de courses ou de tâches peut devenir une liste d'envies (définitif).
   - Saisie de plusieurs éléments d'un coup dans la barre d'ajout (courses et tâches : virgules, points-virgules, retours à la ligne ; 20 au plus ; tout ou rien).
-  - Quantité lue dans le texte de la barre d'ajout (« 6 oeufs », « 2 kg de pommes », « oeufs x6 » ; courses et tâches).
+  - Quantité lue dans le texte de la barre d'ajout (« 6 oeufs », « 2 kg de pommes », « oeufs x6 » ; listes de courses seulement).
 
-**Tests automatisés** : 737 tests (`npm test`), tous réussis, mesurés le 2 novembre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
+**Tests automatisés** : 738 tests (`npm test`), tous réussis, mesurés le 2 novembre 2026. Ils couvrent en priorité les droits d'accès (propriétaire, contributeur, invité, Admin), la synchronisation, la file d'attente hors ligne, le lien public (horloge avancée), les photos, les en-têtes de sécurité, la sauvegarde, les commandes de secours, la vérification de mise à jour (GitHub simulé), le rechargement après une mise à jour, le mode scan (Open Food Facts simulé, lecture de codes-barres sur des images générées), le clavier (appuis simulés) et l'exactitude des libellés cités par la page « Aide ». Les vérifications à faire à la main sur les téléphones sont listées dans [docs/developpement.md](developpement.md#vérifier-sur-les-téléphones).
 
 **Consignes pour Claude Code**
 

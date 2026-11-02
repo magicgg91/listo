@@ -290,6 +290,13 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     6. Sur A : ni « Dupliquer la liste », ni « Partager par lien » dans les menus ; « Modifier la liste » : type et « Pour qui ? » figés, avec la phrase.
     6 bis. **Conversion** : sur A, une liste de tâches partagée avec B en « Lecture seule », avec un lien public, une quantité, une échéance et un élément coché. « Modifier la liste », toucher « Envies » : « Pour qui ? » apparaît (« Moi » choisi), avec la phrase (« ne pourra plus changer de type ni de destinataire », « Rien n'est effacé », « Son lien public sera arrêté. ») ; « Priorité » activée, plus d'« Échéance ». Choisir « Une personne sans compte » sans prénom, « Enregistrer » : « Le prénom est obligatoire », rien ne change. Choisir B : dans le partage, « Destinataire · Peut modifier ». Mode avion : « Enregistrer » inactif, avec la phrase ; réseau revenu, « Enregistrer » : la liste devient « Pour B ». Sur B, sans recharger : la liste est « Pour vous », B peut ajouter un souhait ; la quantité et l'échéance ne s'affichent plus, l'élément coché est dans « Reçus ». L'ancien lien public répond « Lien introuvable ». « Modifier la liste » : une seule carte « Envies », figée. Sur C, réserver : sur B, rien ne bouge.
     7. Lecteurs d'écran (VoiceOver, TalkBack) : les pastilles « Réservé par … » et « Ouvert à d'autres » sont lues avec la ligne ; les boutons « Réserver », « Participer », « Quitter », « Retirer … » et l'interrupteur « Ouvert à d'autres » (avec son état) sont annoncés.
+39. **Plusieurs éléments d'un coup** (iPhone et Android, clair et sombre) :
+    1. Liste de courses : taper « lait, pain ; 6 oeufs » puis « + » : pour chaque article jamais vu, « Dans quel rayon ? (2 sur 3) »… ; puis « 3 articles ajoutés » (lu par VoiceOver ou TalkBack), le champ se vide, le clavier se replie, aucune fiche ne s'ouvre. « 1,5 L de lait » reste une seule ligne.
+    2. Fermer une fenêtre « Dans quel rayon ? » sans choisir : rien n'est ajouté, le texte reste dans le champ.
+    3. Coller une liste copiée depuis Notes (une ligne par article) : le champ montre « lait; pain; beurre » ; Entrée ajoute trois lignes. Taper 21 noms séparés par des virgules : « 20 éléments au plus à la fois. Rien n'a été ajouté. ».
+    4. Liste de tâches réglée sur « Ouvrir la fiche » : plusieurs éléments → la liste reste affichée, « 3 éléments ajoutés » ; un seul → la fiche s'ouvre comme avant.
+    5. Mode avion : ajouter « a, b, c » : les trois lignes apparaissent ; réseau revenu : elles arrivent une seule fois sur l'autre téléphone.
+    6. Liste d'envies : « Vélo, rouge » donne un seul souhait.
 
 ## API des comptes (étape 2)
 

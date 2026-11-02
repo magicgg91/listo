@@ -52,6 +52,7 @@ import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController } from '../swipe.js';
 import { createTapPicker } from '../tap.js';
+import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
@@ -315,6 +316,9 @@ export function renderList(listId, onLeave) {
     const words = itemWords(list);
     input.placeholder = `Ajouter un ${words.one}`;
     input.setAttribute('aria-label', `Ajouter un ${words.one}`);
+    // Courses et tâches : plusieurs éléments d'un coup (bulk-add.js), donc un
+    // champ plus long ; liste d'envies : un seul, 100 caractères comme avant
+    input.maxLength = isWishList(list) ? ITEM_NAME_MAX : BULK_INPUT_MAX;
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(titleIcon, icon(listIcon(list), 'icon--sm'));
@@ -713,6 +717,17 @@ export function renderList(listId, onLeave) {
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') suggestBox.hidden = true;
   });
+  // Collage d'une liste sur plusieurs lignes (courses et tâches) : le champ
+  // n'a qu'une ligne et effacerait les retours à la ligne ; ils deviennent
+  // des points-virgules, qui séparent les éléments. La touche Entrée, elle,
+  // valide toujours.
+  input.addEventListener('paste', (event) => {
+    const text = event.clipboardData?.getData('text') ?? '';
+    if (isWishList(view?.list) || !/[\r\n]/.test(text)) return;
+    event.preventDefault();
+    input.setRangeText(joinPastedLines(text), input.selectionStart ?? input.value.length, input.selectionEnd ?? input.value.length, 'end');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 
   // Suggestions : les plus fréquentes d'abord, début tapé en gras. Listes de
   // courses seulement : dans une liste de tâches, pas de menu (Entrée ou +
@@ -722,7 +737,8 @@ export function renderList(listId, onLeave) {
       redrawLater = true;
       return;
     }
-    if (!remembersNames(view?.list)) {
+    // Plusieurs éléments tapés d'un coup : pas de suggestions (+ ou Entrée les ajoutent tous)
+    if (!remembersNames(view?.list) || splitItems(input.value).length > 1) {
       suggestBox.hidden = true;
       return;
     }
@@ -759,16 +775,32 @@ export function renderList(listId, onLeave) {
     replace(suggestBox,
       suggestions.map((s) => {
         const [start, rest] = splitPrefix(s.name, typed);
-        return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name));
+        return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name, { whole: true }));
       }),
       exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], itemWords(view?.list).New, () => addTyped(typed), 'suggest__item--new'));
     suggestBox.hidden = false;
   }
 
-  // Ajoute ce qui a été tapé (ou la suggestion choisie)
-  async function addTyped(text) {
-    const name = text.replace(/\s+/g, ' ').trim();
-    if (!name || !view) return;
+  // Ajoute ce qui a été tapé (ou la suggestion choisie : whole, jamais découpée).
+  // Courses et tâches : un texte avec des virgules, des points-virgules ou
+  // des retours à la ligne donne plusieurs éléments (addSeveral) ; un seul
+  // morceau : l'ajout habituel. Liste d'envies : toujours l'ajout habituel.
+  async function addTyped(text, { whole = false } = {}) {
+    if (!view) return;
+    let name = text.replace(/\s+/g, ' ').trim();
+    if (!whole && !isWishList(view.list)) {
+      const plan = planBulkAdd(text);
+      if (plan.error) {
+        toast(plan.error); // annoncé (role="status") ; le texte reste dans le champ
+        return;
+      }
+      if (plan.names.length > 1) {
+        await addSeveral(plan.names);
+        return;
+      }
+      name = plan.names[0] ?? '';
+    }
+    if (!name) return;
     suggestBox.hidden = true;
     // Le champ est vidé juste avant l'ajout (pas si la fenêtre de choix du
     // rayon ou du magasin est fermée sans choisir)
@@ -793,6 +825,40 @@ export function renderList(listId, onLeave) {
         if (created && view && !created.deletedAt) openItemSheet(created);
       });
     }
+  }
+
+  // Plusieurs éléments d'un coup (2 à 20, déjà vérifiés par planBulkAdd).
+  // Tout ou rien : le rayon (ou le magasin) de chaque nouvel article est
+  // demandé d'abord, l'un après l'autre (« 2 sur 3 ») ; fermer une de ces
+  // fenêtres sans choisir n'ajoute rien et laisse le texte dans le champ.
+  // Puis chaque élément est ajouté comme à la main (une opération par
+  // élément dans la file d'attente, avec son propre identifiant : hors ligne
+  // compris, un renvoi ne crée jamais de doublon). On reste toujours sur la
+  // liste (jamais de fiche ouverte), et une phrase annonce le nombre ajouté.
+  async function addSeveral(names) {
+    if (!editable()) return;
+    suggestBox.hidden = true;
+    const places = [];
+    const chosen = new Map(); // même nom deux fois : une seule question
+    for (const [index, name] of names.entries()) {
+      const key = normalizeItemName(name);
+      if (!chosen.has(key)) {
+        const place = await placeFor(name, `${index + 1} sur ${names.length}`);
+        if (place === undefined) return; // fenêtre fermée sans choisir : rien n'est ajouté
+        chosen.set(key, place);
+      }
+      places.push(chosen.get(key));
+    }
+    if (!editable() || !view) return; // passée en lecture seule entre-temps
+    const list = view.list;
+    input.value = '';
+    let last = null;
+    for (const [index, name] of names.entries()) {
+      last = (await createItem(name, places[index])) || last;
+    }
+    releaseFocus();
+    if (last) revealItem(last.id);
+    toast(`${countItems(names.length, list)} ajoutés`);
   }
 
   // Clavier en train de se replier (le champ vient de perdre le curseur) :
@@ -854,36 +920,40 @@ export function renderList(listId, onLeave) {
     });
   }
 
+  // Où ranger un article qu'on ajoute : {} (le téléphone et le serveur
+  // reprennent le rayon ou le magasin habituel), { aisleId } ou { storeId }
+  // choisi dans la fenêtre « Dans quel rayon ? » / « Dans quel magasin ? »
+  // pour un article jamais vu, ou undefined si cette fenêtre a été fermée
+  // sans choisir. step : « 2 sur 3 » quand plusieurs articles sont ajoutés.
+  async function placeFor(name, step = '') {
+    if (!view) return undefined;
+    const suffix = step ? ` (${step})` : '';
+    if (view.multi) {
+      // Liste « multi » : magasin habituel, sinon on le demande une fois
+      if (usualStoreFor(app.data, view.list, name) !== null) return {}; // le serveur le choisira (le téléphone l'affiche déjà)
+      const sub = isKnownItem(app.data, name)
+        ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
+        : `« ${name} » est ${itemWords(view.list).aNew}. Son magasin sera retenu pour la prochaine fois.`;
+      const storeId = await pickStore({ title: `Dans quel magasin ?${suffix}`, sub, confirmLabel: 'Ajouter à la liste' });
+      return storeId === undefined ? undefined : { storeId };
+    }
+    if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
+      // Article inconnu sur une liste de courses : on demande son rayon une fois
+      const aisleId = await pickAisle({ title: `Dans quel rayon ?${suffix}`, sub: `« ${name} » est ${itemWords(view.list).aNew}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
+      return aisleId === undefined ? undefined : { aisleId };
+    }
+    return {};
+  }
+
   // Ajoute un article (champ d'ajout ou mode scan). extra : autres champs
   // (note, code-barres…). Renvoie l'article ajouté, ou false si la fenêtre de
   // choix du rayon ou du magasin a été fermée sans choisir.
   async function addNamed(name, extra = {}, beforeCreate = () => {}) {
     if (!view) return false;
-    if (view.multi) {
-      // Liste « multi » : magasin habituel, sinon on le demande une fois
-      const storeId = usualStoreFor(app.data, view.list, name);
-      if (storeId === null) {
-        const sub = isKnownItem(app.data, name)
-          ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
-          : `« ${name} » est ${itemWords(view.list).aNew}. Son magasin sera retenu pour la prochaine fois.`;
-        const chosen = await pickStore({ title: 'Dans quel magasin ?', sub, confirmLabel: 'Ajouter à la liste' });
-        if (chosen === undefined) return false; // fenêtre fermée sans choisir
-        beforeCreate();
-        return createItem(name, { ...extra, storeId: chosen });
-      } else {
-        // Magasin habituel : le serveur le choisira (le téléphone l'affiche déjà)
-        beforeCreate();
-        return createItem(name, extra);
-      }
-    } else if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
-      // Article inconnu sur une liste de courses : on demande son rayon une fois
-      const aisleId = await pickAisle({ title: 'Dans quel rayon ?', sub: `« ${name} » est ${itemWords(view.list).aNew}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
-      if (aisleId === undefined) return false; // fenêtre fermée sans choisir
-      beforeCreate();
-      return createItem(name, { ...extra, aisleId });
-    }
+    const place = await placeFor(name);
+    if (place === undefined) return false; // fenêtre fermée sans choisir
     beforeCreate();
-    return createItem(name, extra);
+    return createItem(name, { ...extra, ...place });
   }
 
   // Ajout : tout de suite dans la copie locale, puis envoyé (file d'attente)

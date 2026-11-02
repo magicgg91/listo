@@ -227,7 +227,8 @@ test('écran : ajout détaillé = fiche de l\'élément créé, une fois le clav
   // « + », Entrée et suggestion passent tous par addTyped ; le scan garde son déroulement
   assert.match(list, /const plus = taps\.button\(\(\) => addTyped\(input\.value\), \{ persistent: true \}\);/);
   assert.match(list, /addForm\.addEventListener\('submit', \(event\) => \{\s*event\.preventDefault\(\);\s*addTyped\(input\.value\);/);
-  assert.match(list, /option\(h\('span', \{\}, h\('strong', \{\}, start\), rest\), hintFor\(s\), \(\) => addTyped\(s\.name\)\)/);
+  // Une suggestion choisie n'est jamais découpée (whole)
+  assert.match(list, /option\(h\('span', \{\}, h\('strong', \{\}, start\), rest\), hintFor\(s\), \(\) => addTyped\(s\.name, \{ whole: true \}\)\)/);
   const scan = list.slice(list.indexOf('const scanner = createScanner('), list.indexOf('scanner.button.hidden = true;'));
   assert.doesNotMatch(scan, /addModeOf|openItemSheet/);
 });

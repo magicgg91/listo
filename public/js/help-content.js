@@ -100,6 +100,17 @@ export const SECTIONS = [
         ],
       },
       {
+        title: 'Ajouter plusieurs articles d\'un coup',
+        paragraphs: ['Dans une liste de courses ou de tâches, séparez les noms par des virgules, des points-virgules ou des retours à la ligne, puis touchez « + » : par exemple, lait, pain ; 6 oeufs ajoute trois lignes (lait, pain et 6 oeufs). Vous pouvez aussi coller une liste copiée depuis vos notes.'],
+        items: [
+          'Une virgule entre deux chiffres ne sépare rien : 1,5 L de lait reste une seule ligne.',
+          '20 lignes au plus à la fois. Au-delà, ou si un nom est trop long, rien n\'est ajouté et un message le dit.',
+          'Dans une liste de courses, Listo demande le rayon de chaque nouvel article, l\'un après l\'autre. Si vous fermez une de ces fenêtres, rien n\'est ajouté et le texte reste dans le champ.',
+          'Avec plusieurs lignes, la liste reste affichée, même réglée sur « Ouvrir la fiche ». Cela marche aussi sans réseau.',
+          'Dans une liste d\'envies, le texte n\'est jamais découpé : un souhait à la fois.',
+        ],
+      },
+      {
         title: 'Scanner un code-barres',
         paragraphs: ['Dans une liste de courses, le bouton code-barres à côté du champ d\'ajout (« Scanner un produit ») lit le code-barres sur une photo. Listo cherche le nom du produit ; vous pouvez le corriger avant d\'ajouter l\'article. Un produit déjà dans la liste peut être coché. Ce bouton n\'existe que si le mode scan est activé sur votre serveur.'],
       },

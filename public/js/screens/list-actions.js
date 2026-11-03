@@ -29,7 +29,7 @@ import { h, field, errorNote, LABEL_INPUT } from '../dom.js';
 import { navigate } from '../router.js';
 import { canEditList, isListMuted } from '../store.js';
 import { confirmDialog, openSheet, toast } from '../ui.js';
-import { itemWords } from '../words.js';
+import { itemWords, deleteListText } from '../words.js';
 import { copyName } from '../format.js';
 import { openShareSheet } from './share.js';
 
@@ -85,12 +85,18 @@ function newsMuteAction(list) {
 
 // Renvoie true si la liste a été supprimée, false si la confirmation a été
 // refusée.
+// Même confirmation depuis le menu ⋮ d'une carte, le menu de la liste et
+// « Modifier la liste ». Nombres tirés de la copie locale : éléments non
+// supprimés, personnes avec qui elle est partagée. « Supprimer » est rouge ;
+// le focus va sur « Annuler » (le choix par défaut).
 export async function deleteListWithConfirm(list) {
+  const itemCount = [...app.data.items.values()].filter((item) => item.listId === list.id).length;
+  const sharedWith = (list.members ?? []).filter((m) => !m.isOwner).length;
   const ok = await confirmDialog({
     title: `Supprimer la liste « ${list.name} » ?`,
-    // « ses articles » (liste de courses) ou « ses éléments »
-    text: `Elle disparaît avec ses ${itemWords(list).many} pour toutes les personnes de la liste. Elle ne pourra pas être récupérée (effacement complet au bout de 30 jours).`,
+    text: deleteListText(list, itemCount, sharedWith),
     confirmLabel: 'Supprimer',
+    focusCancel: true,
   });
   if (!ok) return false;
   await actions.deleteList(list.id);

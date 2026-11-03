@@ -144,19 +144,25 @@ export function openLightbox({ title, src, alt, caption }) {
 }
 
 // Boîte de confirmation. Renvoie une promesse : true si l'action est confirmée.
-export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annuler', danger = true }) {
+// text : une phrase, ou plusieurs (un paragraphe chacune), lues par les
+// lecteurs d'écran avec le titre (aria-describedby). focusCancel : le focus va
+// sur « Annuler » à l'ouverture (action grave : supprimer une liste), sinon
+// sur le bouton principal.
+export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annuler', danger = true, focusCancel = false }) {
   return new Promise((resolve) => {
     let answer = false;
     const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
-    const { close } = overlay((closeFn) => h('div', { class: 'dialog', 'aria-labelledby': titleId },
+    const textId = `${titleId}-text`;
+    const paragraphs = Array.isArray(text) ? text : [text];
+    const { close } = overlay((closeFn) => h('div', { class: 'dialog', 'aria-labelledby': titleId, 'aria-describedby': textId },
       h('h2', { class: 'dialog__title', id: titleId }, title),
-      h('p', { class: 'dialog__text' }, text),
+      h('div', { id: textId }, paragraphs.map((p) => h('p', { class: 'dialog__text' }, p))),
       h('div', { class: 'dialog__actions' },
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn }, cancelLabel),
+        h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn, 'data-initial-focus': focusCancel ? true : null }, cancelLabel),
         h('button', {
           class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
           type: 'button',
-          'data-initial-focus': true, // bouton principal : focus à l'ouverture
+          'data-initial-focus': focusCancel ? null : true, // bouton principal : focus à l'ouverture, sauf focusCancel
           onClick: () => {
             answer = true;
             closeFn();

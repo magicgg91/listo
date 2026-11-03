@@ -13,6 +13,7 @@ import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
+import { renderTrash } from './screens/trash.js';
 import { renderLists, renderSidePanel } from './screens/lists.js';
 import { renderList } from './screens/list.js';
 import { renderListForm } from './screens/list-form.js';
@@ -531,6 +532,7 @@ function show(route) {
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
     case 'help': mount(() => renderHelp(app.user)); break;
+    case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Connexions Claude : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':

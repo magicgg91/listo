@@ -32,7 +32,7 @@ export const PERMISSIONS = [
   { action: 'Modifier la liste (titre, type, magasin, icône, options)', roles: ['owner'] },
   { action: 'Partager la liste et choisir le droit de chaque personne', roles: ['owner'] },
   { action: 'Créer un lien public', roles: ['owner'] },
-  { action: 'Supprimer la liste', roles: ['owner'] },
+  { action: 'Supprimer la liste, la restaurer depuis la corbeille (30 jours)', roles: ['owner'] },
   { action: 'Quitter la liste', roles: ['contributor', 'guest'] },
   { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
@@ -216,7 +216,16 @@ export const SECTIONS = [
       },
       {
         title: 'Supprimer la liste',
-        paragraphs: ['« Supprimer la liste », après confirmation, retire la liste pour toutes les personnes. Il n\'y a pas d\'annulation.'],
+        paragraphs: ['« Supprimer la liste » (menu ⋮) demande une confirmation, qui rappelle ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s\'arrête.'],
+      },
+      {
+        title: 'Restaurer une liste supprimée',
+        paragraphs: ['Une liste supprimée reste 30 jours dans votre « Corbeille des listes » (Réglages), puis elle est effacée pour de bon. Seul son propriétaire l\'y voit.'],
+        items: [
+          '« Restaurer » la remet telle qu\'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau.',
+          'Son lien public ne revient pas : recréez-le si besoin. Les nouveautés repartent de zéro.',
+          'Chaque ligne indique dans combien de jours la liste sera effacée.',
+        ],
       },
     ],
   },

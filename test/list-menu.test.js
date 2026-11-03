@@ -64,7 +64,9 @@ test('retour : « Modifier la liste » ouverte depuis l\'accueil revient à l\'a
 test('suppression : une seule logique et la même confirmation pour les trois chemins', () => {
   const source = read('public/js/screens/list-actions.js');
   assert.match(source, /title: `Supprimer la liste « \$\{list\.name\} » \?`,/);
-  assert.match(source, /pour toutes les personnes de la liste\. Elle ne pourra pas être récupérée \(effacement complet au bout de 30 jours\)\./);
+  // Texte précis et restauration possible (corbeille) ; focus sur « Annuler »
+  assert.match(source, /text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: 'Supprimer',\s*focusCancel: true,/);
+  assert.doesNotMatch(source, /ne pourra pas être récupérée/);
   assert.match(source, /if \(!ok\) return false;\s*await actions\.deleteList\(list\.id\);/);
   assert.match(read('public/js/screens/list-form.js'), /if \(await deleteListWithConfirm\(list\)\) navigate\('lists', \{\}, \{ replace: true \}\);/);
   for (const file of ['public/js/screens/lists.js', 'public/js/screens/list.js', 'public/js/screens/list-form.js']) {

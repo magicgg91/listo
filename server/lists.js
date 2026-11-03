@@ -1371,8 +1371,76 @@ export function createListService(ctx) {
       .sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'));
   }
 
+  // --- Corbeille des listes (GET /api/lists/deleted, POST /api/lists/:id/restore) ---
+  // Une liste supprimée (list.delete : suppression logique, deleted_at) reste
+  // en base 30 jours, puis le nettoyage (purgeDeleted) l'efface pour de bon.
+  // Pendant ces 30 jours, son PROPRIÉTAIRE, et lui seul, la voit dans sa
+  // corbeille et peut la restaurer : jamais un membre, jamais l'Admin (qui
+  // n'a aucun droit sur les listes des autres). La limite est EXACTEMENT celle
+  // du nettoyage (deleted_at >= maintenant - 30 jours), pour que l'écran et
+  // le nettoyage soient toujours d'accord.
+  const purgeLimit = () => new Date(ctx.now() - PURGE_AFTER_DAYS * DAY).toISOString();
+  const myDeletedList = db.prepare(`
+    SELECT * FROM lists
+    WHERE id = ? AND owner_id = ? AND deleted_at IS NOT NULL AND deleted_at >= ?
+  `);
+
+  // Mes listes supprimées, de la plus récente à la plus ancienne. Réponse
+  // construite champ par champ : nom, type, icône, nombre d'éléments, date de
+  // suppression, date et jours restants avant l'effacement définitif.
+  function deletedLists(user) {
+    const now = ctx.now();
+    const rows = db.prepare(`
+      SELECT lists.id, lists.name, lists.type, lists.icon, lists.deleted_at,
+        (SELECT COUNT(*) FROM items WHERE items.list_id = lists.id AND items.deleted_at IS NULL) AS item_count
+      FROM lists
+      WHERE lists.owner_id = ? AND lists.deleted_at IS NOT NULL AND lists.deleted_at >= ?
+      ORDER BY lists.deleted_at DESC
+    `).all(user.id, purgeLimit());
+    return rows.map((row) => {
+      const purgeAt = Date.parse(row.deleted_at) + PURGE_AFTER_DAYS * DAY;
+      return {
+        id: row.id,
+        name: row.name,
+        type: typeOf(row),
+        icon: isListIcon(row.icon) ? row.icon : '', // icône inconnue ou vide : celle du type
+        itemCount: row.item_count,
+        deletedAt: row.deleted_at,
+        purgeAt: new Date(purgeAt).toISOString(),
+        // « Suppression définitive dans N jours » (au moins 1 : le nettoyage
+        // passe toutes les heures)
+        daysLeft: Math.max(1, Math.ceil((purgeAt - now) / DAY)),
+      };
+    });
+  }
+
+  // Restaurer une de mes listes supprimées : elle revient telle qu'elle était
+  // (éléments, membres et leurs droits, réglages, photos, réservations des
+  // listes d'envies : rien de tout cela n'a été effacé). Ne revient pas : le
+  // lien public (arrêté à la suppression ; le propriétaire en recrée un) et le
+  // journal des nouveautés (effacé à la suppression ; chaque membre repart de
+  // « tout vu »). updated_at change : les téléphones des membres la
+  // retrouvent à leur synchronisation, prévenus en temps réel. Liste d'un
+  // autre, inconnue, pas supprimée (déjà restaurée) ou déjà effacée : la même
+  // réponse, 404 « Liste introuvable. ».
+  function restoreList(user, listId) {
+    const list = isUuid(listId) ? myDeletedList.get(listId.toLowerCase(), user.id, purgeLimit()) : null;
+    if (!list) throw new OpError(404, LIST_NOT_FOUND);
+    const now = nowIso();
+    db.transaction(() => {
+      db.prepare('UPDATE lists SET deleted_at = NULL, updated_at = ? WHERE id = ?').run(now, list.id);
+      for (const userId of db.prepare('SELECT user_id FROM list_members WHERE list_id = ?').pluck().all(list.id)) {
+        news.startReading(list.id, userId);
+      }
+    })();
+    ctx.events?.notifyList(list.id);
+    ctx.audit('liste_restauree', { utilisateur: user.username, liste: list.id });
+    return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
+  }
+
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
+    deletedLists, restoreList,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

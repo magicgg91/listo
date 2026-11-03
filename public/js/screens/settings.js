@@ -85,6 +85,9 @@ export function renderSettings() {
         h('div', { class: 'group' },
           row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null,
+      // Corbeille : mes listes supprimées, à restaurer pendant 30 jours (trash.js)
+      h('h2', { class: 'section-title' }, 'Listes'),
+      h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') })),
       // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
       h('h2', { class: 'section-title' }, 'Aide'),
       h('div', { class: 'group' }, row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') })),

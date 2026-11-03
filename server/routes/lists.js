@@ -1,5 +1,9 @@
 // Routes des listes et des articles (compte connecté, mot de passe à jour) :
 //   GET  /api/lists                 mes listes (celles dont je suis membre)
+//   GET  /api/lists/deleted         corbeille : mes listes supprimées depuis
+//                                   moins de 30 jours (propriétaire seulement)
+//   POST /api/lists/:id/restore     restaurer une de ces listes (propriétaire ;
+//                                   en ligne seulement)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
 //   POST /api/lists/:id/wishes      convertir en liste d'envies, avec son
@@ -31,6 +35,21 @@ export function listRoutes(ctx) {
 
   router.get('/lists', (req, res) => {
     res.json({ lists: service.myLists(req.user) });
+  });
+
+  // Corbeille : mes listes supprimées depuis moins de 30 jours (propriétaire)
+  // ; déclarée avant /lists/:id
+  router.get('/lists/deleted', (req, res) => {
+    res.json({ lists: service.deletedLists(req.user) });
+  });
+
+  router.post('/lists/:id/restore', (req, res) => {
+    try {
+      res.json(service.restoreList(req.user, req.params.id));
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      throw err;
+    }
   });
 
   router.get('/lists/:id', (req, res) => {

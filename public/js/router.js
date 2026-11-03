@@ -16,6 +16,8 @@ export const ROUTES = [
   { name: 'account', path: '/reglages/compte' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
+  // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
+  { name: 'trash', path: '/reglages/corbeille' },
   { name: 'help', path: '/aide' },
   { name: 'admin', path: '/administration/:tab' },
   // Écran « Autoriser Claude » (autorisation OAuth, voir claude-consent.js)

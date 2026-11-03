@@ -96,7 +96,6 @@ export function accessChoice(name, value, onChange) {
 // liste de courses).
 export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
-  const paints = {};
   const rows = [
     ['priority', 'Priorité', 'Basse, normale ou élevée.'],
     ['due', 'Échéance', 'Une date limite ; retards signalés.'],
@@ -107,7 +106,6 @@ export function optionSwitches(values, onChange, leading = null) {
     const paint = () => {
       toggle.setAttribute('aria-checked', String(current[key]));
     };
-    paints[key] = paint;
     toggle.addEventListener('click', () => {
       current[key] = !current[key];
       paint();
@@ -118,15 +116,7 @@ export function optionSwitches(values, onChange, leading = null) {
       h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
       toggle);
   });
-  const card = h('div', { class: 'card list-options' }, leading, rows);
-  // Valeur posée par l'écran (sans appui) : la priorité qui suit le type
-  card.set = (key, value) => {
-    if (current[key] === value) return;
-    current[key] = value;
-    paints[key]();
-    onChange({ ...current }, null);
-  };
-  return card;
+  return h('div', { class: 'card list-options' }, leading, rows);
 }
 
 // « Après l'ajout » (toutes les listes, courses comprises) : deux choix côte
@@ -393,13 +383,15 @@ function form(list, users) {
 
   // --- Options : « Après l'ajout » (toutes les listes), priorité et
   // échéance (listes de tâches) ---
-  // Une nouvelle liste commence sans priorité ni échéance ; une liste
-  // existante garde ses réglages (même cachés tant qu'elle est une liste de
-  // courses). « Après l'ajout » : une liste existante garde son choix ; une
-  // nouvelle liste suit son type (« Rester sur la liste » pour les courses,
-  // « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
+  // Une nouvelle liste commence sans priorité ni échéance, quel que soit son
+  // type (liste d'envies comprise) ; une liste existante, même en cours de
+  // conversion en liste d'envies, montre ses réglages ENREGISTRÉS (même
+  // cachés tant qu'elle est une liste de courses) et le type choisi ne les
+  // change jamais. « Après l'ajout » : une liste existante garde son choix ;
+  // une nouvelle liste suit son type (« Rester sur la liste » pour les
+  // courses, « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
   // Priorité : priorityAtStart (store.js) ; échéance : le réglage enregistré
-  let options = { priority: priorityAtStart(list, listType), due: list ? listOptionsOf(list).due : false };
+  let options = { priority: priorityAtStart(list), due: list ? listOptionsOf(list).due : false };
   let addMode = list ? addModeOf(list) : defaultAddMode(true);
   let addModeChosen = Boolean(list);
   const addModeField = addModeChoice(addMode, (value) => {
@@ -407,10 +399,8 @@ function form(list, users) {
     addModeChosen = true;
   });
   const optionsLabel = h('span', { class: 'field__label' }, 'Options des éléments');
-  let priorityChosen = false; // la priorité a été touchée à la main
-  const optionsCard = optionSwitches(options, (values, key) => {
+  const optionsCard = optionSwitches(options, (values) => {
     options = values;
-    if (key === 'priority') priorityChosen = true;
   }, addModeField.row);
   const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
@@ -591,12 +581,6 @@ function form(list, users) {
     for (const row of optionsCard.querySelectorAll('[data-switch]')) {
       row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : !usesDue(listType);
     }
-    // Tant qu'on n'y a pas touché : une nouvelle liste d'envies et une liste
-    // qui devient une liste d'envies commencent activées ; une liste
-    // existante (liste d'envies comprise) montre son réglage ENREGISTRÉ.
-    // (Avant, toute liste d'envies s'affichait activée : l'écran mentait, et
-    // l'enregistrer réactivait la priorité.)
-    if (!priorityChosen) optionsCard.set('priority', priorityAtStart(list, listType));
     optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);

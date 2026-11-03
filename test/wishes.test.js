@@ -38,7 +38,7 @@ async function household(t, options = {}) {
   const one = async (client, op) => (await ops(client, [op]))[0];
   const ids = { lea: fixed(1), moi: fixed(2), lucas: fixed(3), velo: fixed(4), livre: fixed(5), jeu: fixed(6), lampe: fixed(7), doudou: fixed(8) };
   const res = await ops(guillaume, [
-    { type: 'list.create', listId: ids.lea, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId },
+    { type: 'list.create', listId: ids.lea, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId, priorityEnabled: true },
     { type: 'item.create', listId: ids.lea, itemId: ids.velo, name: 'Vélo', link: 'https://exemple.fr/velo', priceCents: 24990, note: 'Rouge' },
     { type: 'item.create', listId: ids.lea, itemId: ids.livre, name: 'Livre' },
     { type: 'list.create', listId: ids.moi, name: 'Mes envies', listType: 'wishes' },
@@ -482,10 +482,13 @@ test('souhait supprimé : ses réservations disparaissent de la vue, et revienne
   assert.equal((await h.reservedIn(h.marie, h.ids.lea)).length, 1);
 });
 
-test('priorité sur une liste d\'envies : activée par défaut, désactivable, visible du bénéficiaire ; échéance absente', async (t) => {
+test('priorité sur une liste d\'envies : désactivée par défaut (comme les tâches), activée par le propriétaire, visible du bénéficiaire ; échéance absente', async (t) => {
   const h = await household(t);
+  // Créée sans rien demander : désactivée (Mes envies, Lucas) ; demandée : activée (Noël de Léa)
+  for (const id of [h.ids.moi, h.ids.lucas]) assert.equal(h.app.db.prepare('SELECT priority_enabled FROM lists WHERE id = ?').pluck().get(id), 0, id);
+  assert.equal((await h.one(h.guillaume, { type: 'item.update', itemId: h.ids.jeu, priority: 'high' })).error, 'La priorité est désactivée pour cette liste.');
   const leaList = (await h.lea.get('/api/lists')).body.lists.find((l) => l.id === h.ids.lea);
-  assert.equal(leaList.priorityEnabled, true, 'activée par défaut');
+  assert.equal(leaList.priorityEnabled, true, 'activée à la création, sur demande');
   assert.equal(leaList.dueEnabled, false);
   assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.velo, priority: 'high' })).status, 200);
   assert.equal((await h.lea.get('/api/sync')).body.items.find((i) => i.id === h.ids.velo).priority, 'high', 'visible du bénéficiaire');
@@ -493,10 +496,9 @@ test('priorité sur une liste d\'envies : activée par défaut, désactivable, v
   // Désactivée par le propriétaire : plus de priorité à choisir (valeur gardée)
   assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.ids.lea, priorityEnabled: false })).status, 200);
   assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.velo, priority: 'low' })).error, 'La priorité est désactivée pour cette liste.');
-  // Créée explicitement sans priorité
-  const sans = uuid();
-  await h.one(h.guillaume, { type: 'list.create', listId: sans, name: 'Sans priorité', listType: 'wishes', priorityEnabled: false });
-  assert.equal(h.app.db.prepare('SELECT priority_enabled FROM lists WHERE id = ?').pluck().get(sans), 0);
+  // Activée ensuite par le propriétaire : la priorité se choisit
+  assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.ids.moi, priorityEnabled: true })).status, 200);
+  assert.equal((await h.one(h.guillaume, { type: 'item.update', itemId: h.ids.jeu, priority: 'high' })).status, 200);
 });
 
 test('administration : aucune route ne montre une liste d\'envies ni une réservation, même à l\'Admin bénéficiaire', async (t) => {

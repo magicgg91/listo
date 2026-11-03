@@ -18,7 +18,7 @@ async function setup(t) {
   await login(paul, 'paul', 'MotDePasse-paul');
   const ids = { noel: uuid(), velo: uuid(), livre: uuid() };
   const res = (await h.guillaume.post('/api/ops', { ops: [
-    { id: uuid(), type: 'list.create', listId: ids.noel, name: 'Noël de Marie', listType: 'wishes', forUserId: h.marieId },
+    { id: uuid(), type: 'list.create', listId: ids.noel, name: 'Noël de Marie', listType: 'wishes', forUserId: h.marieId, priorityEnabled: true },
     { id: uuid(), type: 'item.create', listId: ids.noel, itemId: ids.velo, name: 'Vélo', link: 'https://exemple.fr/velo', priceCents: 24990, note: 'Rouge' },
     { id: uuid(), type: 'item.create', listId: ids.noel, itemId: ids.livre, name: 'Livre' },
   ] })).body.results;
@@ -100,7 +100,7 @@ test('liste de courses devenue liste d\'envies : list_lists donne le nouveau typ
   assert.equal(await typeOfCourses(marie), 'wishes');
   const read = data(await marie.tool('read_list', { list_id: h.ids.courses, include_checked: true }));
   const lait = read.items.find((i) => i.id === h.ids.lait);
-  assert.deepEqual(lait, { id: h.ids.lait, name: 'Lait', checked: false, note: 'demi-écrémé', priority: 'normal' }, 'ni quantité, ni rayon, ni code-barres');
+  assert.deepEqual(lait, { id: h.ids.lait, name: 'Lait', checked: false, note: 'demi-écrémé' }, 'ni quantité, ni rayon, ni code-barres ; ni priorité (réglage de la liste de courses gardé : désactivée)');
   assert.equal(read.items.find((i) => i.id === h.ids.pain).checked, true, 'coché : « reçu »');
   const added = data(await owner.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Bougie', link: 'https://exemple.fr/bougie', price: 12.5 }] }));
   assert.equal(added.results[0].status, 'created');

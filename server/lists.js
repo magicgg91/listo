@@ -654,10 +654,10 @@ export function createListService(ctx) {
         if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
         forName = forNameOf(op.forName);
       }
-      // Priorité et échéance : désactivées sauf demande explicite ; une liste
-      // d'envies a la priorité activée par défaut (le propriétaire peut la
-      // désactiver ensuite, comme pour une liste de tâches)
-      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? isWishList(type);
+      // Priorité et échéance : désactivées sauf demande explicite, pour tous
+      // les types (liste d'envies comprise : le propriétaire l'active ensuite
+      // dans « Modifier la liste », comme pour une liste de tâches)
+      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
       const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône du type
       // « Après l'ajout » : sans choix, « Rester sur la liste » pour une liste
@@ -1188,8 +1188,9 @@ export function createListService(ctx) {
   // Propriétaire seulement. Le type et le destinataire sont écrits ensemble,
   // dans une seule transaction : jamais de liste d'envies sans destinataire.
   // body : { forUserId } (un autre compte actif), { forName } (une personne
-  // sans compte), ou rien (« Moi ») ; priorityEnabled (facultatif, activée
-  // par défaut comme à la création). Toutes les vérifications passent AVANT
+  // sans compte), ou rien (« Moi ») ; priorityEnabled (facultatif : sans
+  // valeur, la liste garde son réglage actuel, rien n'est activé d'office).
+  // Toutes les vérifications passent AVANT
   // la moindre écriture : un refus ne change rien.
   // Rien n'est effacé : quantités, échéances, rayons, codes-barres et magasin
   // restent en base (cachés pour une liste d'envies) ; un élément coché
@@ -1210,7 +1211,7 @@ export function createListService(ctx) {
       if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
       forName = forNameOf(body.forName);
     }
-    const priorityOn = optionOf(body.priorityEnabled, 'Priorité') ?? true;
+    const priorityOn = optionOf(body.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
     const before = typeOf(list);
     const now = nowIso();
     let share = null;

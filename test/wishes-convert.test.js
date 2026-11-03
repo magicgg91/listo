@@ -136,7 +136,7 @@ test('conversion vers un compte : type et destinataire ensemble, destinataire pa
   const res = await h.convert(h.guillaume, h.ids.maison, { forUserId: h.leaId });
   assert.equal(res.status, 200, res.text);
   const row = h.app.db.prepare('SELECT type, for_user_id, for_name, priority_enabled, due_enabled FROM lists WHERE id = ?').get(h.ids.maison);
-  assert.deepEqual(row, { type: 'wishes', for_user_id: h.leaId, for_name: null, priority_enabled: 1, due_enabled: 1 }, 'priorité activée (règle des envies) ; échéance gardée en base, ignorée');
+  assert.deepEqual(row, { type: 'wishes', for_user_id: h.leaId, for_name: null, priority_enabled: 0, due_enabled: 1 }, 'priorité : réglage d\'avant gardé (désactivée) ; échéance gardée en base, ignorée');
   assert.equal(h.app.db.prepare('SELECT access FROM list_members WHERE list_id = ? AND user_id = ?').pluck().get(h.ids.maison, h.leaId), 'modification');
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM list_reads WHERE list_id = ? AND user_id = ?').pluck().get(h.ids.maison, h.leaId), 1, 'news.startReading');
   // Les autres membres gardent leur droit
@@ -203,7 +203,7 @@ test('rien n\'est effacé : quantité, note, échéance, rayon, code-barres et m
   assert.equal((await h.one(h.lea, { type: 'item.check', itemId: h.ids.peinture, checked: false })).status, 200, 'la bénéficiaire, si');
   // Un souhait ne prend plus de quantité, mais un lien et un prix
   assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.ampoule, quantity: '4' })).status, 400);
-  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.ampoule, link: 'https://exemple.fr/ampoule', priceCents: 499, priority: 'high' })).status, 200);
+  assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.ampoule, link: 'https://exemple.fr/ampoule', priceCents: 499 })).status, 200);
   assert.equal((await h.one(h.lea, { type: 'item.update', itemId: h.ids.ampoule, dueDate: '2026-12-01' })).status, 400, 'pas d\'échéance');
 });
 

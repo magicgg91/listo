@@ -15,8 +15,10 @@ import { dateTimeLabel, timeLeftLabel } from '../format.js';
 import { hasPublicLink } from './lists.js';
 import { isWishList } from '../list-types.js';
 
-// Liste d'envies : ce que voient les visiteurs (jamais les réservations)
-export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, mais pas les réservations.';
+// Liste d'envies : ce que voient les visiteurs, et l'avertissement sur le
+// destinataire (partie B : les visiteurs voient quels souhaits sont réservés)
+export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, et peuvent réserver un souhait ou participer à un cadeau, sans compte. Elles ne voient jamais qui a réservé.';
+export const WISH_SHARE_WARNING = 'Si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés (jamais par qui). Ne le lui donnez pas.';
 
 const DURATIONS = [
   { label: '1 heure', hours: 1 },
@@ -180,11 +182,11 @@ export function openShareSheet(list) {
   }
 
   const offlineNote = () => h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, OFFLINE_TEXT));
-  // Liste d'envies : la phrase d'information, puis la place d'un futur
-  // avertissement (vide pour l'instant, caché)
+  // Liste d'envies : la phrase d'information, puis l'avertissement sur le
+  // destinataire qui ouvrirait le lien sans être connecté
   const wishNotes = () => (isWishList(list)
     ? [h('p', { class: 'note', id: 'share-wish-note' }, icon('gift', 'icon--sm'), h('span', {}, WISH_SHARE_NOTE)),
-      h('div', { id: 'share-wish-warning', hidden: true })]
+      h('p', { class: 'note note--danger', id: 'share-wish-warning', role: 'note' }, icon('alert', 'icon--sm'), h('span', {}, WISH_SHARE_WARNING))]
     : null);
 
   // --- Aucun lien : création (partage-lien-1, 2 et 7) ---

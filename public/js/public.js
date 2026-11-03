@@ -12,7 +12,15 @@
 //   reçus avec la liste) : aucune requête de plus, aucun champ de saisie.
 // - Liste d'envies : souhaits, prix, « Ouvrir le lien » (vérifié encore ici :
 //   http ou https seulement, nouvel onglet, rel="noopener noreferrer
-//   nofollow") ; le serveur n'envoie jamais rien des réservations.
+//   nofollow").
+// - Liste d'envies, visiteur (le serveur envoie canReserve) : par souhait,
+//   « Réserver » (libre), « Participer » (réservé, ouvert à d'autres),
+//   « Réservé » sans bouton (fermé), « Je participe » et « Annuler » (le
+//   mien). Le prénom est demandé une fois, puis gardé sur cet appareil pour
+//   ce lien (seule donnée gardée par cette page). Après une action, la liste
+//   est relue et une phrase est annoncée (role="status") ; elle est relue
+//   aussi au retour au premier plan. Le bénéficiaire reconnu par sa session
+//   ne reçoit ni état ni bouton.
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
@@ -25,6 +33,11 @@ const token = location.pathname.split('/')[2] ?? '';
 const apiUrl = (path = '') => `/api/public/${encodeURIComponent(token)}${path}`;
 
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
+// Prénom du visiteur, gardé sur cet appareil pour ce lien seulement
+const NAME_KEY = `listo_prenom_${token}`;
+const NAME_MAX = 40;
+let canReserve = false;
+let announcement = null; // phrase à annoncer au prochain affichage
 
 // « article » (liste de courses) ou « élément » (autre liste) : déduit du
 // regroupement envoyé par le serveur (« none » = pas une liste de courses)
@@ -127,6 +140,7 @@ function showGate() {
 function showList(data) {
   const { list, groups, done = [], expiresAt } = data;
   listType = list.type;
+  canReserve = Boolean(list.canReserve);
   // Liste d'envies : « souhait » ; sinon déduit du regroupement, comme avant
   words = isWishList(list) ? itemWords(list) : itemWords(list.grouping !== 'none');
   grouping = list.grouping;
@@ -181,7 +195,131 @@ function showList(data) {
     h('div', { class: `scroll${shopping ? '' : ' scroll--flat'}` }, content),
     h('footer', { class: 'public-foot' }, icon('clock', 'icon--sm'),
       expiresAt ? `Ce lien expire le ${dateTimeLabel(expiresAt)}` : "Ce lien n'a pas de date d'expiration")));
+  if (announcement) {
+    announce(announcement);
+    announcement = null;
+  }
 }
+
+// Message temporaire en bas de l'écran, lu par les lecteurs d'écran
+function announce(text) {
+  root.querySelector('.toast')?.remove();
+  const el = h('div', { class: 'toast', role: 'status' }, h('span', { class: 'toast__text' }, text));
+  root.append(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// --- Réserver ou participer (liste d'envies, visiteur) ---
+function storedName() {
+  try {
+    return localStorage.getItem(NAME_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+// Prénom demandé une fois (fenêtre du bas, sans curseur mis tout seul) ;
+// renvoie une promesse : le prénom, ou null si la fenêtre est fermée
+function askName() {
+  return new Promise((resolve) => {
+    let done = false;
+    const input = h('input', { class: 'input', id: 'prenom', type: 'text', maxlength: String(NAME_MAX), autocomplete: 'given-name', autocapitalize: 'words', enterkeyhint: 'done' });
+    const error = h('p', { class: 'field__error', id: 'prenom-erreur', role: 'alert', hidden: true });
+    const form = h('form', { class: 'stack', novalidate: true },
+      h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'prenom' }, 'Votre prénom'), input, error,
+        h('p', { class: 'field__hint' }, 'Les proches qui gèrent la liste le verront, jamais les autres visiteurs.')),
+      h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Continuer'));
+    let close = () => {};
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = input.value.replace(/\s+/g, ' ').trim();
+      if (!name || [...name].length > NAME_MAX) {
+        replace(error, icon('alert', 'icon--xs'), `Indiquez votre prénom (1 à ${NAME_MAX} caractères).`);
+        error.hidden = false;
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', 'prenom-erreur');
+        return;
+      }
+      try {
+        localStorage.setItem(NAME_KEY, name);
+      } catch {
+        // stockage indisponible : le prénom sera redemandé la prochaine fois
+      }
+      done = true;
+      close();
+      resolve(name);
+    });
+    const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'prenom-titre' },
+      h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
+      h('div', { class: 'sheet__head' },
+        h('h2', { class: 'sheet__title', id: 'prenom-titre' }, 'Qui réserve ?'),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => close() }, icon('close'))),
+      form);
+    close = openLayer(panel, h('div', { class: 'scrim' }), () => {
+      if (!done) resolve(null);
+    });
+  });
+}
+
+// Envoie une action (réserver/participer : POST ; annuler : DELETE), puis
+// relit la liste et annonce le résultat. Aucune information sur les autres
+// participants n'est jamais reçue ni affichée.
+async function visitorAction(item, method) {
+  let body;
+  if (method === 'POST') {
+    const name = storedName() || await askName();
+    if (!name) return;
+    body = JSON.stringify({ firstName: name });
+  }
+  let res;
+  try {
+    res = await fetch(apiUrl(`/souhaits/${encodeURIComponent(item.id)}`), {
+      method,
+      credentials: 'same-origin',
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body,
+    });
+  } catch {
+    announce('Impossible de joindre Listo. Réessayez.');
+    return;
+  }
+  if (res.status === 200) {
+    announcement = method === 'POST'
+      ? (item.reservation === 'open' ? `Vous participez : ${item.name}` : `Réservé : ${item.name}`)
+      : `Vous ne participez plus : ${item.name}`;
+  } else if (res.status === 401) {
+    return showGate();
+  } else {
+    const data = await res.json().catch(() => ({}));
+    // Prénom refusé par le serveur : il sera redemandé
+    if (res.status === 400) {
+      try {
+        localStorage.removeItem(NAME_KEY);
+      } catch {
+        // rien à faire
+      }
+    }
+    announcement = typeof data.error === 'string' ? data.error : 'Action impossible pour le moment.';
+  }
+  load();
+}
+
+// Ligne d'état et bouton d'un souhait (visiteur) : texte ET bouton, 44 px
+function reservationPart(item) {
+  if (!canReserve || item.checked || !item.id) return null;
+  const action = (label, method, kind = 'btn--secondary') => h('button', {
+    class: `btn ${kind} btn--sm`, type: 'button', 'aria-label': `${label} : ${item.name}`, onClick: () => visitorAction(item, method),
+  }, label);
+  if (item.mine) return h('div', { class: 'item__reserve' }, h('span', { class: 'chip chip--accent' }, icon('gift', 'icon--xs'), 'Je participe'), action('Annuler', 'DELETE'));
+  if (item.reservation === 'open') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), 'Réservé · ouvert à d\'autres'), action('Participer', 'POST', 'btn--primary'));
+  if (item.reservation === 'reserved') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), 'Réservé'));
+  return h('div', { class: 'item__reserve' }, action('Réserver', 'POST', 'btn--primary'));
+}
+
+// Retour au premier plan : la liste est relue (pas de temps réel)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && canReserve && !layers.length) load();
+});
 
 // Priorité et échéance (listes autres que les courses : le serveur ne les
 // envoie que pour elles, et chacune seulement si elle est activée pour la
@@ -209,7 +347,7 @@ function metaRow(item) {
 function itemRow(item, place) {
   // Vignette de la ligne : gardée pour la fiche (copie sans nouvelle requête)
   const thumb = item.photo ? h('img', { class: 'photo', src: item.photo, alt: '', loading: 'lazy', decoding: 'async' }) : null;
-  return h('li', { class: `item${item.checked ? ' is-done' : ''}` },
+  return h('li', { class: `item${item.checked ? ' is-done' : ''}${canReserve && !item.checked ? ' item--reserve' : ''}` },
     h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': listType === 'wishes' ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
       h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
     h('button', { class: 'item__body', type: 'button', 'aria-label': `Voir ${item.name}${spokenMeta(item)}`, onClick: () => showItem(item, place, thumb) },
@@ -218,7 +356,8 @@ function itemRow(item, place) {
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
         metaRow(item)),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
-    thumb ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) }, thumb) : null);
+    thumb ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) }, thumb) : null,
+    reservationPart(item));
 }
 
 // Copie de la vignette déjà affichée sur la ligne, dessinée dans un canvas :
@@ -259,7 +398,7 @@ window.addEventListener('popstate', () => layers.pop()?.remove());
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 // panel : la fenêtre ; scrim : fond grisé, ou null. Renvoie close().
-function openLayer(panel, scrim = null) {
+function openLayer(panel, scrim = null, onRemove = null) {
   const opener = document.activeElement;
   const onKey = (event) => {
     if (layers.at(-1) !== layer) return; // seule la fenêtre du dessus réagit
@@ -283,6 +422,7 @@ function openLayer(panel, scrim = null) {
       scrim?.remove();
       panel.remove();
       document.removeEventListener('keydown', onKey);
+      onRemove?.();
       // Retour du focus à l'élément touché (jamais à un champ de saisie)
       if (opener?.isConnected && !opener.matches?.('input, textarea')) opener.focus();
     },

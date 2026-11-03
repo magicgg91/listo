@@ -431,3 +431,9 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .claude-connections__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
 .claude-connections__button { margin-top: var(--space-1); }
 .claude-connections__all { margin: var(--space-3) var(--space-2) 0; }
+
+/* Page publique d'une liste d'envies (visiteur) : état et bouton de
+   réservation sous la ligne du souhait (texte ET bouton de 44 px) */
+.item--reserve { flex-wrap: wrap; }
+.item__reserve { display: flex; flex-basis: 100%; align-items: center; justify-content: flex-end; gap: var(--space-1); padding: 0 0 8px; }
+

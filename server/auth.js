@@ -160,6 +160,21 @@ export function loadSession(ctx) {
   };
 }
 
+// Compte de la session de la requête, LU SEULEMENT (routes publiques d'une
+// liste d'envies : reconnaître le bénéficiaire) : la session n'est ni
+// prolongée, ni renvoyée en cookie, et rien n'est écrit. Renvoie { id } ou null.
+export function createSessionPeek(ctx) {
+  const find = ctx.db.prepare(`
+    SELECT users.id FROM sessions JOIN users ON users.id = sessions.user_id
+    WHERE sessions.id = ? AND sessions.expires_at > ? AND users.active = 1
+  `);
+  return (req) => {
+    const token = parseCookies(req.headers.cookie)[cookieNames(ctx.config).session];
+    if (!token) return null;
+    return find.get(hashToken(token), new Date(ctx.now()).toISOString()) ?? null;
+  };
+}
+
 // --- Contrôles d'accès ---
 
 // Refuse un visiteur non connecté (401)

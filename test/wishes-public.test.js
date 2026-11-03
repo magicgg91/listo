@@ -85,12 +85,13 @@ test('droits : seul le propriétaire crée, lit, modifie et arrête le lien ; co
   assert.equal((await h.guillaume.post(`/api/lists/${h.ids.noel}/duplicate`, { name: 'Copie' })).status, 400);
 });
 
-test('page publique d\'une liste d\'envies : champs exacts d\'un souhait, « Pour Léa », reçus à part ; aucun identifiant interne, aucune réservation', async (t) => {
+test('page publique d\'une liste d\'envies : champs exacts d\'un souhait, « Pour Léa », reçus à part ; le bénéficiaire connecté n\'a aucune réservation ; un visiteur, seulement un état', async (t) => {
   const h = await household(t);
   await h.marie.post(`/api/items/${h.ids.velo}/reservation`, { open: true });
   await h.paul.post(`/api/items/${h.ids.velo}/reservation`, {});
   const { token } = await h.link(h.ids.noel);
-  const res = await h.visitor().get(`/api/public/${token}`);
+  // Bénéficiaire reconnu par sa session : la lecture seule, sans aucune réservation ni identifiant
+  const res = await h.lea.get(`/api/public/${token}`);
   assert.equal(res.status, 200);
   assert.deepEqual(res.body.list, { name: 'Noël de Léa', type: 'wishes', forName: 'Lea', store: null, grouping: 'none' });
   assert.equal(res.body.groups.length, 1);
@@ -98,8 +99,15 @@ test('page publique d\'une liste d\'envies : champs exacts d\'un souhait, « Pou
   assert.deepEqual(velo, { name: 'Vélo', note: 'Rouge', checked: false, photo: null, priority: 'high', link: 'https://exemple.fr/velo', priceCents: 24990 });
   assert.deepEqual(lampe, { name: 'Lampe', note: '', checked: false, photo: null, priority: 'normal', priceCents: 0 }, 'ni lien vide, ni quantité');
   assert.deepEqual(res.body.done, [{ name: 'Livre', note: '', checked: true, photo: null, priority: 'normal' }], 'souhait reçu : zone « Reçus »');
-  // Rien d'interne ni de réservation, sous aucune forme
-  assert.doesNotMatch(res.text, new RegExp([h.ids.velo, h.ids.livre, h.ids.noel, 'reserv', 'particip', '"open"', 'Marie', 'Paul', 'userId', 'ownerId', 'forUserId'].join('|'), 'i'));
+  assert.doesNotMatch(res.text, new RegExp([h.ids.velo, h.ids.livre, h.ids.noel, 'reserv', 'particip', '"open"', 'Marie', 'Paul', 'userId', 'ownerId', 'forUserId', 'mine', 'canReserve'].join('|'), 'i'));
+  assert.equal(res.headers.get('set-cookie'), null, 'session lue sans être prolongée');
+  // Visiteur : en plus, l'identifiant du souhait (pour réserver), son état et « le mien » ; jamais qui, ni combien
+  const anon = await h.visitor().get(`/api/public/${token}`);
+  assert.equal(anon.body.list.canReserve, true);
+  const anonVelo = anon.body.groups[0].items.find((i) => i.name === 'Vélo');
+  assert.deepEqual(anonVelo, { ...velo, id: h.ids.velo, reservation: 'open', mine: false });
+  assert.deepEqual(anon.body.done, res.body.done, 'rien pour un souhait reçu');
+  assert.doesNotMatch(anon.text, new RegExp([h.ids.noel, 'Marie', 'Paul', 'userId', 'participants', 'ownerId', 'forUserId'].join('|')));
   // Photo : seulement l'adresse publique, pour les articles qui en ont une (mêmes règles que les autres listes)
   h.app.db.prepare('UPDATE items SET photo_at = ? WHERE id = ?').run('2026-10-16T12:00:00.000Z', h.ids.lampe);
   const withPhoto = (await h.visitor().get(`/api/public/${token}`)).body.groups[0].items.find((i) => i.name === 'Lampe');
@@ -159,10 +167,10 @@ test('mêmes règles que les autres listes : mot de passe, expiration, lien arr�
   assert.equal((await h.visitor().get(`/p/${third}`)).status, 404);
 });
 
-test('TEST FORT : la réponse publique d\'une liste d\'envies est strictement identique avant et après chaque action de réservation (corps et en-têtes)', async (t) => {
+test('TEST FORT : pour le bénéficiaire connecté, la réponse publique d\'une liste d\'envies est strictement identique avant et après chaque action de réservation des comptes (corps et en-têtes)', async (t) => {
   const h = await household(t);
   const { token } = await h.link(h.ids.noel);
-  const v = h.visitor();
+  const v = h.lea; // le bénéficiaire, avec sa session (voir test/wishes-visitors.test.js pour les visiteurs)
   const urls = [`/api/public/${token}`, `/p/${token}`];
   const before = await Promise.all(urls.map((u) => snapshot(v, u)));
   assert.equal(before[0].status, 200);
@@ -187,8 +195,8 @@ test('TEST FORT : la réponse publique d\'une liste d\'envies est strictement id
   await reserve(h.marie, h.ids.velo, { open: true });
   await reserve(h.paul, h.ids.velo);
   assert.deepEqual(await Promise.all(urls.map((u) => snapshot(v, u))), before);
-  // Le serveur public ne lit jamais les tables des réservations
-  assert.doesNotMatch(read('server/routes/public.js').replace(/\/\/.*$/gm, ''), /reservation/i);
+  // Le serveur public ne lit jamais les tables des réservations directement (seulement par server/reservations.js)
+  assert.doesNotMatch(read('server/routes/public.js').replace(/\/\/.*$/gm, ''), /FROM reservations|visitor_reservations|reservation_states/i);
 });
 
 test('autres types inchangés : liste de tâches (quantité, priorité, ni lien, ni prix, ni « pour qui »)', async (t) => {
@@ -199,7 +207,7 @@ test('autres types inchangés : liste de tâches (quantité, priorité, ni lien,
   assert.deepEqual(body.groups[0].items[0], { name: 'Vis', quantity: '12', note: '', checked: false, photo: null, priority: 'normal' });
 });
 
-test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », phrase d\'information et place d\'un futur avertissement', () => {
+test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », phrase d\'information et avertissement sur le destinataire', () => {
   // Fiche d'un souhait (lecture seule)
   const rows = publicItemDetails({ name: 'Vélo', note: 'Rouge', checked: false, priority: 'high', priceCents: 24990, link: 'https://exemple.fr/velo' }, { grouping: 'none', type: 'wishes' });
   assert.deepEqual(rows.map((r) => [r.label, r.text.replace(/\s/g, ' ')]), [['Souhait', 'Vélo'], ['État', 'Pas encore reçu'], ['Prix indicatif', '249,90 €'], ['Note', 'Rouge'], ['Priorité', 'Élevée']]);
@@ -211,8 +219,9 @@ test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », p
   assert.match(page, /'aria-label': listType === 'wishes' \? \(item\.checked \? 'Reçu' : 'Pas encore reçu'\)/);
   // Écran du lien : la phrase pour une liste d'envies, et la place (vide) d'un futur avertissement
   const share = read('public/js/screens/share.js');
-  assert.match(share, /export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, mais pas les réservations\.';/);
-  assert.match(share, /h\('div', \{ id: 'share-wish-warning', hidden: true \}\)/);
+  assert.match(share, /export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, et peuvent réserver un souhait ou participer à un cadeau, sans compte\. Elles ne voient jamais qui a réservé\.';/);
+  assert.match(share, /export const WISH_SHARE_WARNING = 'Si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\.';/);
+  assert.match(share, /h\('p', \{ class: 'note note--danger', id: 'share-wish-warning', role: 'note' \}/);
   assert.equal((share.match(/wishNotes\(\),/g) ?? []).length, 2, 'à la création et pour un lien actif');
   // Menu : « Partager par lien » proposé aussi pour une liste d'envies ; pas de duplication
   const actions = code('public/js/screens/list-actions.js');

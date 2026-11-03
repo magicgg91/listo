@@ -3,6 +3,10 @@
 //   GET  /api/public/:jeton                 la liste, en lecture seule
 //   POST /api/public/:jeton/acces           saisie du mot de passe
 //   GET  /api/public/:jeton/photos/:id      photo d'un article de CETTE liste
+//   POST   /api/public/:jeton/souhaits/:id  liste d'envies : réserver un souhait
+//                                           libre (fermé) ou participer à une
+//                                           réservation ouverte ({ firstName })
+//   DELETE /api/public/:jeton/souhaits/:id  liste d'envies : annuler SA participation
 //
 // Règles (refus par défaut) :
 // - Ces routes ne lisent jamais la session d'un compte ; le cookie de
@@ -20,15 +24,27 @@
 // - En-têtes : pas d'indexation, jamais de cache, pas de « referrer ».
 // - Liste d'envies : souhaits (nom, note, lien vérifié encore ici, prix,
 //   priorité si activée, photo, reçu) et « Pour <prénom> ». Les tables des
-//   réservations (reservations, reservation_states) ne sont JAMAIS lues ici :
-//   aucune réservation ni cotisation ne peut sortir par ce lien, sous aucune
-//   forme (corps, en-têtes, taille, ETag, erreurs).
+//   réservations ne sont JAMAIS lues ici directement : seulement par
+//   server/reservations.js (forVisitor, visitorReserve, visitorLeave).
+// - Visiteur (partie B) : par souhait, seulement son état (libre, réservé,
+//   réservé et ouvert à d'autres) et « c'est la mienne » ; jamais le prénom,
+//   le nombre ni l'identifiant d'un autre participant. Il est reconnu par un
+//   cookie (jeton aléatoire de 128 bits, un cookie par lien, HttpOnly,
+//   SameSite=Lax, préfixe __Host- en production) dont seule l'empreinte est
+//   gardée ; le jeton n'est jamais écrit dans un journal. Ses actions
+//   n'écrivent dans aucun journal.
+// - Bénéficiaire : sur une liste d'envies, la session d'un compte est LUE
+//   (sans être prolongée, sans effet) ; si c'est le bénéficiaire, la réponse
+//   est celle de la lecture seule, sans aucun état de réservation, et ses
+//   actions de visiteur reçoivent la réponse d'un lien inconnu.
 
 import { typeOf, isShoppingList, isWishList, usesPriority, usesDue } from '../../public/js/list-types.js';
 import { cleanLink, wishListOf, beneficiaryId } from '../../public/js/wishes.js';
 import fs from 'node:fs';
 import express from 'express';
-import { parseCookies, requireSameOrigin } from '../auth.js';
+import crypto from 'node:crypto';
+import { parseCookies, requireSameOrigin, hashToken, createSessionPeek } from '../auth.js';
+import { OpError } from '../lists.js';
 import { verifyPassword, getDummyHash, PASSWORD_MAX } from '../passwords.js';
 import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
@@ -39,6 +55,13 @@ const NOT_FOUND = 'Lien expiré ou inexistant.';
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
 const WRONG_PASSWORD = 'Mot de passe incorrect.';
 const PASSWORD_REQUIRED = 'Mot de passe requis.';
+const TOO_MANY_ACTIONS = 'Trop d\'actions en peu de temps. Réessayez dans quelques minutes.';
+const JSON_ONLY = 'Requête invalide.';
+// Actions des visiteurs (réserver, participer, annuler) : 30 en 15 minutes par adresse IP
+const VISITOR_ACTIONS_PER_IP = 30;
+// Jeton d'un visiteur : 128 bits aléatoires, en base64url (22 caractères)
+const VISITOR_TOKEN = /^[A-Za-z0-9_-]{22}$/;
+const YEAR = 365 * 24 * 60 * 60 * 1000;
 
 const PAGES = new URL('../pages/', import.meta.url);
 
@@ -59,7 +82,11 @@ export function publicRoutes(ctx, { publicDir }) {
   const passwordLimiter = createLimiter({ now: ctx.now });
   // Liens invalides essayés : 20 en 15 minutes par adresse IP
   const unknownLimiter = createLimiter({ max: 20, now: ctx.now });
-  ctx.publicLimiters = [passwordLimiter, unknownLimiter]; // ménage (app.js)
+  // Actions des visiteurs : 30 en 15 minutes par adresse IP
+  const actionLimiter = createLimiter({ max: VISITOR_ACTIONS_PER_IP, now: ctx.now });
+  ctx.publicLimiters = [passwordLimiter, unknownLimiter, actionLimiter]; // ménage (app.js)
+  const peekSession = createSessionPeek(ctx);
+  const reservations = () => ctx.reservations; // créé par le service des listes (server/lists.js)
 
   const q = {
     list: db.prepare(`
@@ -116,8 +143,25 @@ export function publicRoutes(ctx, { publicDir }) {
     return publicAccess.allows(parseCookies(req.headers.cookie)[ACCESS_COOKIE], share);
   }
 
-  // Ce que voit le visiteur : liste blanche, champ par champ
-  function publicView(share, token) {
+  // Liste d'envies : le compte connecté (session lue seulement) en est-il le
+  // bénéficiaire ? (identité du compte, comme dans l'application)
+  function isBeneficiary(req, list) {
+    if (!isWishList(list)) return false;
+    const user = peekSession(req);
+    return Boolean(user) && beneficiaryId(wishListOf(list)) === user.id;
+  }
+
+  // Cookie du visiteur pour ce lien (un cookie par lien)
+  const visitorCookie = (share) => `${ctx.config.production ? '__Host-' : ''}listo_visiteur_${share.id}`;
+  function visitorHash(req, share) {
+    const token = parseCookies(req.headers.cookie)[visitorCookie(share)];
+    return typeof token === 'string' && VISITOR_TOKEN.test(token) ? hashToken(token) : null;
+  }
+
+  // Ce que voit le visiteur : liste blanche, champ par champ.
+  // visitor : null (pas de réservation montrée : autre type de liste, ou
+  // bénéficiaire reconnu), ou { tokenHash } pour un visiteur d'une liste d'envies.
+  function publicView(share, token, visitor = null) {
     const list = q.list.get(share.list_id);
     const isShopping = isShoppingList(list);
     // Magasin : seulement pour une liste de courses (une liste de tâches qui
@@ -155,6 +199,8 @@ export function publicRoutes(ctx, { publicDir }) {
     // Nom d'un rayon ou d'un magasin, ou null (aucun, ou inconnu)
     const nameOf = (rows, id) => (id === null ? null : rows.find((row) => row.id === id)?.name ?? null);
     const wishes = isWishList(list);
+    // Visiteur d'une liste d'envies : état de chaque souhait réservé et « le mien »
+    const states = wishes && visitor ? reservations().forVisitor(share.list_id, visitor.tokenHash) : null;
     const describe = (item) => ({
       name: item.name,
       // Liste d'envies : pas de quantité (comme dans l'application)
@@ -172,6 +218,14 @@ export function publicRoutes(ctx, { publicDir }) {
       // s'ils existent
       ...(wishes && cleanLink(item.link ?? '') ? { link: cleanLink(item.link) } : {}),
       ...(wishes && Number.isInteger(item.priceCents) ? { priceCents: item.priceCents } : {}),
+      // Visiteur (jamais le bénéficiaire) : identifiant du souhait (pour
+      // réserver), état (free, reserved, open) et « le mien » ; rien pour un
+      // souhait reçu
+      ...(states && !item.checked ? {
+        id: item.id,
+        reservation: states.get(item.id)?.state ?? 'free',
+        mine: states.get(item.id)?.mine ?? false,
+      } : {}),
     });
     // Article coché : il a quitté son groupe, son rayon (ou son magasin dans
     // une liste « multi ») n'est donc plus donné par l'en-tête ; il est
@@ -189,6 +243,8 @@ export function publicRoutes(ctx, { publicDir }) {
         // Liste d'envies : le prénom de la personne à qui elle est destinée
         // (personne sans compte, autre compte, ou le propriétaire pour « Moi »)
         ...(wishes ? { forName: forNameOf(list) } : {}),
+        // Visiteur d'une liste d'envies : il peut réserver (jamais le bénéficiaire reconnu)
+        ...(states ? { canReserve: true } : {}),
         store: store ? store.name : null,
         grouping: !isShopping ? 'none' : byStore ? 'store' : 'aisle',
       },
@@ -231,8 +287,66 @@ export function publicRoutes(ctx, { publicDir }) {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
     if (!hasAccess(req, share)) return res.status(401).json({ error: PASSWORD_REQUIRED, passwordRequired: true });
-    res.json(publicView(share, req.params.token));
+    const list = q.list.get(share.list_id);
+    // Liste d'envies : un visiteur voit l'état des réservations ; le
+    // bénéficiaire reconnu par sa session, jamais (réponse de la lecture seule)
+    const visitor = isWishList(list) && !isBeneficiary(req, list) ? { tokenHash: visitorHash(req, share) } : null;
+    res.json(publicView(share, req.params.token, visitor));
   });
+
+  // --- Actions d'un visiteur sur une liste d'envies (sans compte) ---
+  // Même contrôle du lien que la lecture (jeton, mot de passe, expiration,
+  // arrêt, liste supprimée) ; une liste qui n'est pas d'envies, ou le
+  // bénéficiaire reconnu, reçoivent la réponse d'un lien inconnu. Origine
+  // contrôlée (requireSameOrigin plus haut), JSON seulement, 30 actions en
+  // 15 minutes par adresse IP. Rien n'est écrit dans un journal.
+  function visitorAction(handler) {
+    return (req, res) => {
+      const share = findShare(req, res, refuseJson);
+      if (!share) return;
+      if (!hasAccess(req, share)) return res.status(401).json({ error: PASSWORD_REQUIRED, passwordRequired: true });
+      const list = q.list.get(share.list_id);
+      if (!isWishList(list) || isBeneficiary(req, list)) return refuseJson(res, 404);
+      if (actionLimiter.isBlocked([ipKey(req)])) return res.status(429).json({ error: TOO_MANY_ACTIONS });
+      actionLimiter.fail([ipKey(req)]); // chaque action compte
+      try {
+        handler(req, res, share);
+      } catch (err) {
+        if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+        throw err;
+      }
+    };
+  }
+
+  // Réserver un souhait libre (réservation fermée) ou participer à une
+  // réservation ouverte. Première action : un jeton aléatoire de 128 bits est
+  // créé et posé dans le cookie du visiteur pour ce lien ; seule son
+  // empreinte est enregistrée.
+  apiRouter.post('/:token/souhaits/:itemId', visitorAction((req, res, share) => {
+    if (!req.is('application/json')) return res.status(415).json({ error: JSON_ONLY });
+    let tokenHash = visitorHash(req, share);
+    let fresh = null;
+    if (!tokenHash) {
+      fresh = crypto.randomBytes(16).toString('base64url');
+      tokenHash = hashToken(fresh);
+    }
+    reservations().visitorReserve(share.list_id, tokenHash, String(req.params.itemId), req.body?.firstName);
+    if (fresh) {
+      // Jusqu'à l'expiration du lien (un an au plus, pour un lien sans limite)
+      const left = share.expires_at ? Math.max(0, Date.parse(share.expires_at) - ctx.now()) : YEAR;
+      res.cookie(visitorCookie(share), fresh, { httpOnly: true, secure: ctx.config.production, sameSite: 'lax', path: '/', maxAge: Math.min(left, YEAR) });
+    }
+    res.json({ ok: true });
+  }));
+
+  // Annuler SA participation (le cookie prouve qu'elle est la sienne ; sans
+  // cookie, ou avec celui d'un autre, rien n'est trouvé)
+  apiRouter.delete('/:token/souhaits/:itemId', visitorAction((req, res, share) => {
+    const tokenHash = visitorHash(req, share);
+    if (!tokenHash) throw new OpError(404, 'Vous ne participez pas à ce cadeau.');
+    reservations().visitorLeave(share.list_id, tokenHash, String(req.params.itemId));
+    res.json({ ok: true });
+  }));
 
   apiRouter.post('/:token/acces', async (req, res) => {
     const share = findShare(req, res, refuseJson);

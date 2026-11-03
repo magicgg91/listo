@@ -471,6 +471,10 @@ export const MIGRATIONS = [
   // --- Migration 19 : listes d'envies (bénéficiaire, souhaits, réservations) ---
   // Voir wishesMigration.
   (db) => wishesMigration(db),
+
+  // --- Migration 20 : réservations des visiteurs du lien public (envies) ---
+  // Voir visitorReservationsMigration.
+  (db) => visitorReservationsMigration(db),
 ];
 
 // Migration 19 : listes d'envies.
@@ -515,6 +519,25 @@ export function wishesMigration(db) {
       created_at TEXT    NOT NULL,
       updated_at TEXT    NOT NULL
     );
+  `);
+}
+
+// Migration 20 : participations des visiteurs sans compte (lien public d'une
+// liste d'envies). Une ligne par visiteur et par souhait ; le visiteur est
+// reconnu par l'empreinte (SHA-256) du jeton de son cookie, jamais par le
+// jeton lui-même. Effacée avec le souhait. Seul server/reservations.js lit
+// cette table. Non destructive (nouvelle table), idempotente.
+export function visitorReservationsMigration(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS visitor_reservations (
+      item_id    TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL CHECK (length(token_hash) = 64),
+      first_name TEXT NOT NULL CHECK (length(first_name) BETWEEN 1 AND 40),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (item_id, token_hash)
+    );
+    CREATE INDEX IF NOT EXISTS visitor_reservations_token ON visitor_reservations(token_hash);
   `);
 }
 

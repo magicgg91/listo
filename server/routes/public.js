@@ -18,8 +18,14 @@
 //   pendant 15 minutes. Et une adresse IP qui essaie trop de liens invalides
 //   (20 en 15 minutes) est bloquée sur toutes ces routes.
 // - En-têtes : pas d'indexation, jamais de cache, pas de « referrer ».
+// - Liste d'envies : souhaits (nom, note, lien vérifié encore ici, prix,
+//   priorité si activée, photo, reçu) et « Pour <prénom> ». Les tables des
+//   réservations (reservations, reservation_states) ne sont JAMAIS lues ici :
+//   aucune réservation ni cotisation ne peut sortir par ce lien, sous aucune
+//   forme (corps, en-têtes, taille, ETag, erreurs).
 
-import { typeOf, isShoppingList, usesPriority, usesDue } from '../../public/js/list-types.js';
+import { typeOf, isShoppingList, isWishList, usesPriority, usesDue } from '../../public/js/list-types.js';
+import { cleanLink, wishListOf, beneficiaryId } from '../../public/js/wishes.js';
 import fs from 'node:fs';
 import express from 'express';
 import { parseCookies, requireSameOrigin } from '../auth.js';
@@ -57,13 +63,15 @@ export function publicRoutes(ctx, { publicDir }) {
 
   const q = {
     list: db.prepare(`
-      SELECT name, type, store_id, priority_enabled, due_enabled FROM lists WHERE id = ?
+      SELECT name, type, store_id, priority_enabled, due_enabled, owner_id, for_user_id, for_name FROM lists WHERE id = ?
     `),
+    // Prénom affiché d'un compte (destinataire d'une liste d'envies)
+    displayName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
     store: db.prepare('SELECT id, name, is_multi FROM stores WHERE id = ?'),
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, ean
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, ean, link, price_cents
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -129,6 +137,8 @@ export function publicRoutes(ctx, { publicDir }) {
       priority: row.priority,
       dueDate: row.due_date,
       ean: row.ean,
+      link: row.link,
+      priceCents: row.price_cents,
     }));
     // Articles à acheter groupés par rayon (ou magasin) ; articles cochés à
     // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
@@ -144,9 +154,11 @@ export function publicRoutes(ctx, { publicDir }) {
     const withDue = usesDue(list) && list.due_enabled === 1;
     // Nom d'un rayon ou d'un magasin, ou null (aucun, ou inconnu)
     const nameOf = (rows, id) => (id === null ? null : rows.find((row) => row.id === id)?.name ?? null);
+    const wishes = isWishList(list);
     const describe = (item) => ({
       name: item.name,
-      quantity: item.quantity,
+      // Liste d'envies : pas de quantité (comme dans l'application)
+      ...(wishes ? {} : { quantity: item.quantity }),
       note: item.note,
       checked: item.checked,
       photo: item.photoAt ? `/api/public/${token}/photos/${item.id}` : null,
@@ -155,6 +167,11 @@ export function publicRoutes(ctx, { publicDir }) {
       // Liste de courses : le code-barres, seulement si l'article en a un
       // (jamais pour une autre liste, comme dans l'application)
       ...(isShopping && item.ean ? { ean: item.ean } : {}),
+      // Liste d'envies : le lien, vérifié encore à la sortie (http ou https
+      // seulement, sinon rien), et le prix indicatif en centimes, seulement
+      // s'ils existent
+      ...(wishes && cleanLink(item.link ?? '') ? { link: cleanLink(item.link) } : {}),
+      ...(wishes && Number.isInteger(item.priceCents) ? { priceCents: item.priceCents } : {}),
     });
     // Article coché : il a quitté son groupe, son rayon (ou son magasin dans
     // une liste « multi ») n'est donc plus donné par l'en-tête ; il est
@@ -167,8 +184,11 @@ export function publicRoutes(ctx, { publicDir }) {
     return {
       list: {
         name: list.name,
-        // Type de la liste : 'shopping' (courses) ou 'tasks' (tâches)
+        // Type de la liste : 'shopping' (courses), 'tasks' (tâches) ou 'wishes' (envies)
         type: typeOf(list),
+        // Liste d'envies : le prénom de la personne à qui elle est destinée
+        // (personne sans compte, autre compte, ou le propriétaire pour « Moi »)
+        ...(wishes ? { forName: forNameOf(list) } : {}),
         store: store ? store.name : null,
         grouping: !isShopping ? 'none' : byStore ? 'store' : 'aisle',
       },
@@ -179,6 +199,13 @@ export function publicRoutes(ctx, { publicDir }) {
       done: done.map(describeDone),
       expiresAt: share.expires_at,
     };
+  }
+
+  // Prénom du destinataire d'une liste d'envies (null si introuvable)
+  function forNameOf(list) {
+    if (list.for_name) return list.for_name;
+    const id = beneficiaryId(wishListOf(list));
+    return id === null ? null : q.displayName.get(id) ?? null;
   }
 
   // --- La page /p/<jeton> ---

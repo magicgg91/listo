@@ -10,11 +10,15 @@
 //   téléphone.
 // - Toucher un article ouvre sa fiche en lecture seule (tous ses détails,
 //   reçus avec la liste) : aucune requête de plus, aucun champ de saisie.
+// - Liste d'envies : souhaits, prix, « Ouvrir le lien » (vérifié encore ici :
+//   http ou https seulement, nouvel onglet, rel="noopener noreferrer
+//   nofollow") ; le serveur n'envoie jamais rien des réservations.
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
 import { itemWords, countItems, doneZoneWords } from './words.js';
-import { typeLabel, typeIcon } from './list-types.js';
+import { typeLabel, typeIcon, isWishList } from './list-types.js';
+import { cleanLink, formatPrice } from './wishes.js';
 
 const root = document.getElementById('app');
 const token = location.pathname.split('/')[2] ?? '';
@@ -27,6 +31,8 @@ const TOO_MANY = "Trop d'essais, réessayez plus tard.";
 let words = itemWords(true);
 // Regroupement de la liste affichée : « aisle », « store » ou « none »
 let grouping = 'aisle';
+// Type de la liste affichée (« shopping », « tasks » ou « wishes »)
+let listType = 'shopping';
 
 // Message plein écran (lien invalide, réseau…) : balisage .empty du kit
 function message(iconName, title, text) {
@@ -120,7 +126,9 @@ function showGate() {
 // --- La liste en lecture seule (page-publique-1 et 2) ---
 function showList(data) {
   const { list, groups, done = [], expiresAt } = data;
-  words = itemWords(list.grouping !== 'none');
+  listType = list.type;
+  // Liste d'envies : « souhait » ; sinon déduit du regroupement, comme avant
+  words = isWishList(list) ? itemWords(list) : itemWords(list.grouping !== 'none');
   grouping = list.grouping;
   document.title = `${list.name} · Listo`;
   const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
@@ -142,11 +150,12 @@ function showList(data) {
   // seule : un titre fixe (ni repli ni action), puis les lignes barrées, du
   // plus récemment coché au plus ancien (ordre donné par le serveur)
   const shopping = list.grouping !== 'none';
-  const zone = doneZoneWords(shopping);
+  const kind = isWishList(list) ? list : shopping; // « Reçus » pour une liste d'envies
+  const zone = doneZoneWords(kind);
   const doneZone = done.length
     ? h('section', { class: 'cart' },
       h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' },
-        h('h2', { class: 'cart__toggle', 'aria-label': `${zone.title}, ${countItems(done.length, shopping)}` },
+        h('h2', { class: 'cart__toggle', 'aria-label': `${zone.title}, ${countItems(done.length, kind)}` },
           h('span', {}, `${zone.title} · `, h('span', { class: 'cart__count' }, String(done.length)))))),
       // Article coché : son rayon (ou son magasin) est envoyé avec lui
       h('ul', {}, done.map((item) => itemRow(item, item.aisle ?? item.store ?? null))))
@@ -165,7 +174,8 @@ function showList(data) {
         h('h1', { class: 'public-head__title' }, list.name),
         list.store
           ? h('p', { class: 'public-head__sub' }, icon('store', 'icon--xs'), list.store)
-          : h('p', { class: 'public-head__sub' }, icon(typeIcon(list.type), 'icon--xs'), typeLabel(list.type)),
+          // Liste d'envies : « Pour Léa » (le prénom de la personne à qui elle est destinée)
+          : h('p', { class: 'public-head__sub' }, icon(typeIcon(list.type), 'icon--xs'), isWishList(list) && list.forName ? `Pour ${list.forName}` : typeLabel(list.type)),
         h('p', { class: 'public-head__sub' }, icon('sync', 'icon--xs'), `Mis à jour à ${time}`)),
       refresh),
     h('div', { class: `scroll${shopping ? '' : ' scroll--flat'}` }, content),
@@ -181,6 +191,9 @@ function metaRow(item) {
   const chips = [];
   const priority = priorityChip(item.priority);
   if (priority) chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Priorité '), priority.text));
+  // Liste d'envies : le prix indicatif
+  const price = formatPrice(item.priceCents);
+  if (price) chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Prix indicatif : '), price));
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
   if (due) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
@@ -197,7 +210,7 @@ function itemRow(item, place) {
   // Vignette de la ligne : gardée pour la fiche (copie sans nouvelle requête)
   const thumb = item.photo ? h('img', { class: 'photo', src: item.photo, alt: '', loading: 'lazy', decoding: 'async' }) : null;
   return h('li', { class: `item${item.checked ? ' is-done' : ''}` },
-    h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': item.checked ? 'Coché' : 'Non coché' },
+    h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': listType === 'wishes' ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
       h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
     h('button', { class: 'item__body', type: 'button', 'aria-label': `Voir ${item.name}${spokenMeta(item)}`, onClick: () => showItem(item, place, thumb) },
       h('span', { class: 'item__text' },
@@ -229,6 +242,8 @@ function spokenMeta(item) {
   if (priority) spoken.push(priority.label.toLowerCase());
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
   if (due) spoken.push(due.label.toLowerCase());
+  const price = formatPrice(item.priceCents);
+  if (price) spoken.push(price);
   return spoken.length ? `, ${spoken.join(', ')}` : '';
 }
 
@@ -300,7 +315,11 @@ function openLayer(panel, scrim = null) {
 // « none ») ; place : voir itemRow ; thumb : vignette de la ligne.
 function showItem(item, place, thumb) {
   const value = ({ label, text }) => h('div', { class: 'field' }, h('span', { class: 'field__label' }, label), h('p', { class: 'field__value' }, text));
-  const rows = publicItemDetails(item, { grouping, place }).map(value);
+  const rows = publicItemDetails(item, { grouping, place, type: listType }).map(value);
+  // Liste d'envies : « Ouvrir le lien » (vérifié encore ici ; nouvel onglet,
+  // sans « referrer », sans suivi)
+  const safe = listType === 'wishes' ? cleanLink(item.link ?? '') : null;
+  const linkButton = safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer nofollow' }, icon('link', 'icon--sm'), 'Ouvrir le lien') : null;
   // La photo s'insère avant le rayon (ou le magasin), comme dans l'application
   const placeRows = grouping === 'none' ? 0 : 1;
   let close = () => {};
@@ -310,11 +329,12 @@ function showItem(item, place, thumb) {
   const panel = h('div', { class: 'sheet sheet--fixed-head', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: 'sheet__head' },
-      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, `Détail de l'${words.one}`),
+      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, `Détail ${words.of}`),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => close() }, icon('close'))),
     h('div', { class: 'stack sheet__scroll' },
-      h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : cet ${words.one} ne peut pas être modifié.`)),
+      h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : ${words.this} ne peut pas être modifié.`)),
       rows.slice(0, rows.length - placeRows),
+      linkButton,
       item.photo ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
         h('div', { class: 'photo-block' },
           h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
@@ -329,7 +349,7 @@ function showPhoto(item) {
   const panel = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'photo-titre' },
     h('div', { class: 'lightbox__bar' }, h('h2', { class: 'lightbox__title', id: 'photo-titre' }, item.name),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer la photo', 'data-initial-focus': true, onClick: () => close() }, icon('close'))),
-    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: `Photo de l'${words.one} ${item.name}` })),
+    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: `Photo ${words.of} ${item.name}` })),
     h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => close() }, 'Fermer')));
   close = openLayer(panel);
 }

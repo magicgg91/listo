@@ -4,6 +4,7 @@
 
 import { normalizeItemName } from './history.js';
 import { countItems, itemWords } from './words.js';
+import { formatPrice } from './wishes.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -184,13 +185,18 @@ export const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevé
 // existe). La photo est montrée à part. grouping : « aisle », « store » ou
 // « none » (pas une liste de courses) ; place : nom du rayon (ou du magasin
 // d'une liste « multi »), null pour « Sans rayon » / « Sans magasin ».
-export function publicItemDetails(item, { grouping, place = null, today = todayKey() }) {
+export function publicItemDetails(item, { grouping, place = null, today = todayKey(), type = null }) {
   const shopping = grouping !== 'none';
-  const one = itemWords(shopping).one;
+  const wishes = type === 'wishes'; // liste d'envies : « Souhait », « Reçu », prix
+  const one = itemWords(wishes ? { type } : shopping).one;
+  const state = wishes
+    ? (item.checked ? 'Reçu' : 'Pas encore reçu')
+    : item.checked ? (shopping ? 'Coché, dans le panier' : 'Coché, terminé') : (shopping ? 'À acheter' : 'À faire');
   const rows = [
-    [one.charAt(0).toUpperCase() + one.slice(1), item.name], // « Article » ou « Élément »
-    ['État', item.checked ? (shopping ? 'Coché, dans le panier' : 'Coché, terminé') : (shopping ? 'À acheter' : 'À faire')],
+    [one.charAt(0).toUpperCase() + one.slice(1), item.name], // « Article », « Élément » ou « Souhait »
+    ['État', state],
     item.quantity ? ['Quantité', item.quantity] : null,
+    wishes && Number.isInteger(item.priceCents) ? ['Prix indicatif', formatPrice(item.priceCents)] : null,
     item.note ? ['Note', item.note] : null,
     'priority' in item ? ['Priorité', PRIORITY_LABELS[item.priority ?? 'normal'] ?? 'Normale'] : null,
     'dueDate' in item ? ['Échéance', item.dueDate ? dueDateLabel(item.dueDate, today) : 'Aucune échéance'] : null,

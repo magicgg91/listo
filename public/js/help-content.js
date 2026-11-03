@@ -72,7 +72,7 @@ export const SECTIONS = [
           'Pour réserver : touchez le souhait, puis « Réserver ». La ligne indique alors qui a réservé. Il faut du réseau.',
           'Tout membre peut réserver, même en « Lecture seule ».',
           'Modifier un souhait réservé ne retire pas la réservation. Cocher un souhait le range dans « Reçus » : seuls la personne à qui la liste est destinée et le propriétaire le peuvent ; les réservations n\'y sont plus affichées.',
-          'Une liste d\'envies n\'a ni lien public, ni copie (« Dupliquer la liste » n\'est pas proposé).',
+          'Une liste d\'envies n\'a pas de copie (« Dupliquer la liste » n\'est pas proposé). Elle peut avoir un lien public : les personnes qui l\'ont voient les souhaits, leurs liens et leurs prix, mais jamais les réservations.',
         ],
       },
       {
@@ -206,6 +206,7 @@ export const SECTIONS = [
         title: 'Lien public',
         paragraphs: ['« Partager par lien » crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule.'],
         items: [
+          'Pour une liste d\'envies : la personne voit les souhaits (nom, note, lien, prix, priorité, photo) et ceux déjà reçus, mais jamais les réservations ni qui participe.',
           'Durée : 1 heure, 24 heures, 7 jours, 30 jours, personnalisée ou illimitée. « Changer la durée » la modifie.',
           '« Protéger par mot de passe » : le mot de passe n\'est affiché qu\'une fois. Notez-le.',
           '« Arrêter le partage » rend le lien inutilisable tout de suite.',

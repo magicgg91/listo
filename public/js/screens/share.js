@@ -13,6 +13,10 @@ import { h, icon, replace, field } from '../dom.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { dateTimeLabel, timeLeftLabel } from '../format.js';
 import { hasPublicLink } from './lists.js';
+import { isWishList } from '../list-types.js';
+
+// Liste d'envies : ce que voient les visiteurs (jamais les réservations)
+export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, mais pas les réservations.';
 
 const DURATIONS = [
   { label: '1 heure', hours: 1 },
@@ -176,6 +180,12 @@ export function openShareSheet(list) {
   }
 
   const offlineNote = () => h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, OFFLINE_TEXT));
+  // Liste d'envies : la phrase d'information, puis la place d'un futur
+  // avertissement (vide pour l'instant, caché)
+  const wishNotes = () => (isWishList(list)
+    ? [h('p', { class: 'note', id: 'share-wish-note' }, icon('gift', 'icon--sm'), h('span', {}, WISH_SHARE_NOTE)),
+      h('div', { id: 'share-wish-warning', hidden: true })]
+    : null);
 
   // --- Aucun lien : création (partage-lien-1, 2 et 7) ---
   function createView(offline) {
@@ -195,6 +205,7 @@ export function openShareSheet(list) {
     });
     return [
       offline ? offlineNote() : h('p', { class: 'muted' }, 'Toute personne avec le lien voit la liste en lecture seule, sans compte.'),
+      wishNotes(),
       picker.element,
       h('div', { class: 'card' }, h('div', { class: 'row' },
         h('span', { class: 'row__icon' }, icon('lock', 'icon--sm')),
@@ -287,6 +298,7 @@ export function openShareSheet(list) {
 
     return [
       offline ? offlineNote() : null,
+      wishNotes(),
       // Adresse illisible (clé de Listo changée) : il faut recréer le lien
       share.url
         ? [h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Lien'),

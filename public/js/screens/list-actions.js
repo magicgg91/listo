@@ -59,9 +59,9 @@ export function listActions(list, { onDeleted } = {}) {
   }
   return [
     { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
-    // Liste d'envies : ni duplication, ni lien public (le serveur refuse aussi)
+    // Liste d'envies : pas de duplication (refusée aussi par le serveur) ; lien public permis, sans réservations
     wishes ? null : duplicate,
-    wishes ? null : { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
+    { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
     mute,
     { icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
       if (await deleteListWithConfirm(list)) onDeleted?.();

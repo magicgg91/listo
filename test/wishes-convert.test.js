@@ -145,7 +145,10 @@ test('conversion vers un compte : type et destinataire ensemble, destinataire pa
   assert.equal((await h.app.client().get(`/api/public/${token}`)).status, 404);
   assert.equal((await h.listOf(h.guillaume, h.ids.maison)).publicLink ?? null, null);
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM public_shares WHERE list_id = ? AND revoked_at IS NULL').pluck().get(h.ids.maison), 0);
-  assert.equal((await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/share`, {})).status, 400);
+  // L'ancien lien est arrêté ; un nouveau lien peut être créé ensuite (lecture seule, sans réservations)
+  const fresh = await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/share`, {});
+  assert.equal(fresh.status, 201);
+  assert.notEqual(fresh.body.share.url.split('/p/')[1], token);
   // Vue de Léa : sa liste, « Pour vous », en « Peut modifier »
   const lea = await h.listOf(h.lea, h.ids.maison);
   assert.deepEqual([lea.type, lea.isBeneficiary, lea.canEdit, lea.forUserId], ['wishes', true, true, h.leaId]);

@@ -407,6 +407,39 @@ test('TEST FORT, souhait réservé modifié, supprimé puis rétabli, marqué «
   assert.deepEqual(withBookings.names(await withBookings.stateOf(withBookings.marie, withBookings.ids.lea, withBookings.ids.livre)), ['Guillaume']);
 });
 
+test('TEST FORT, liste d\'envies supprimée puis restaurée (corbeille) : le bénéficiaire reçoit exactement ce qu\'il recevrait sans aucune réservation ; les réservations reviennent pour les proches', async (t) => {
+  // Deux foyers identiques (mêmes identifiants, même horloge) : dans le
+  // premier, les proches réservent et cotisent, un visiteur du lien public
+  // participe ; dans le second, personne. Le propriétaire supprime puis
+  // restaure la liste dans les deux, et ce que reçoit Léa est comparé.
+  const withBookings = await household(t, { eventOptions: { keepaliveMs: 60 * 60 * 1000 } });
+  const without = await household(t, { eventOptions: { keepaliveMs: 60 * 60 * 1000 } });
+  const streams = [rawStream(t, withBookings, withBookings.lea), rawStream(t, without, without.lea)];
+  await Promise.all(streams.map((s) => s.ready));
+  await withBookings.reserve(withBookings.marie, withBookings.ids.velo, { open: true });
+  await withBookings.reserve(withBookings.paul, withBookings.ids.velo);
+  await withBookings.reserve(withBookings.guillaume, withBookings.ids.livre);
+  withBookings.app.ctx.reservations.visitorReserve(withBookings.ids.lea, 'a'.repeat(64), withBookings.ids.velo, 'Tante Jo');
+  const steps = [
+    ['supprimer la liste', (h) => h.one(h.guillaume, { type: 'list.delete', listId: h.ids.lea })],
+    ['restaurer la liste', (h) => h.guillaume.post(`/api/lists/${h.ids.lea}/restore`, {})],
+  ];
+  for (const [index, [label, step]] of steps.entries()) {
+    for (const world of [withBookings, without]) {
+      withBookings.app.clock.now = without.app.clock.now = Date.UTC(2026, 9, 16, 14, index);
+      assert.equal((await step(world)).status, 200, label);
+    }
+    await pause(80);
+    const [a, b] = [await snapshotOf(withBookings, withBookings.lea, withBookings.ids.lea), await snapshotOf(without, without.lea, without.ids.lea)];
+    for (const key of Object.keys(a)) assert.deepEqual(a[key], b[key], `${label} : ${key}`);
+    assert.equal(streams[0].raw, streams[1].raw, `${label} : même flux temps réel`);
+  }
+  // Restaurée : Léa la retrouve ; les réservations et la participation du visiteur sont revenues pour les proches
+  assert.equal((await withBookings.lea.get(`/api/lists/${withBookings.ids.lea}`)).status, 200);
+  assert.deepEqual(withBookings.names(await withBookings.stateOf(withBookings.marie, withBookings.ids.lea, withBookings.ids.velo)), ['Marie', 'Paul', 'Tante Jo']);
+  assert.deepEqual(withBookings.names(await withBookings.stateOf(withBookings.marie, withBookings.ids.lea, withBookings.ids.livre)), ['Guillaume']);
+});
+
 test('bénéficiaire qui quitte la liste puis y revient : toujours exclu (identité du compte, pas appartenance) ; rajouté en « Peut modifier »', async (t) => {
   const h = await household(t);
   await h.reserve(h.marie, h.ids.velo);

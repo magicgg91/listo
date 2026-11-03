@@ -40,6 +40,23 @@ export function countItems(count, listOrFlag) {
   return `${count} ${count === 1 ? words.one : words.many}`;
 }
 
+// Confirmation « Supprimer la liste » : ce qu'elle contient, avec qui elle
+// est partagée (seulement s'il y a quelqu'un), puis ce qui va se passer.
+// Deux paragraphes. itemCount : éléments non supprimés ; sharedWith : nombre
+// de personnes avec qui elle est partagée (le propriétaire non compris).
+export function deleteListText(list, itemCount, sharedWith) {
+  const content = itemCount ? `Elle contient ${countItems(itemCount, list)}` : 'Elle est vide';
+  const shared = sharedWith ? ` et elle est partagée avec ${sharedWith} ${sharedWith === 1 ? 'personne' : 'personnes'}` : '';
+  return [
+    `${content}${shared}.`,
+    'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis Réglages > Corbeille des listes.',
+  ];
+}
+
+// Corbeille des listes : « Suppression définitive dans 12 jours » (« dans
+// 1 jour »). Le nombre de jours vient du serveur, calculé comme le nettoyage.
+export const trashDaysText = (days) => `Suppression définitive dans ${days} ${days === 1 ? 'jour' : 'jours'}`;
+
 // Zone des articles cochés, en bas de la liste (design : section 16.5) :
 // textes selon la liste. title : titre de la zone ; reopen : action qui
 // décoche tout ; remove : action qui supprime les cochés.

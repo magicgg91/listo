@@ -437,3 +437,12 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .item--reserve { flex-wrap: wrap; }
 .item__reserve { display: flex; flex-basis: 100%; align-items: center; justify-content: flex-end; gap: var(--space-1); padding: 0 0 8px; }
 
+
+/* --- Corbeille des listes (screens/trash.js) ---
+   Le texte de chaque ligne prend toute la largeur à côté de l'icône ;
+   « Restaurer » passe dessous, à droite (bouton de 44 px). */
+.trash__intro { margin: 0 0 var(--space-2); color: var(--color-text-2); }
+.trash .note { margin-bottom: var(--space-2); }
+.trash__row { flex-wrap: wrap; }
+.trash__row .row__body { flex: 1 1 calc(100% - 64px); min-width: 0; }
+.trash__row .btn { margin-left: auto; }

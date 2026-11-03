@@ -12,7 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
-import { isListType, isShoppingList, usesPriority, usesDue } from './list-types.js';
+import { isListType, isShoppingList, isWishList, usesPriority, usesDue } from './list-types.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -625,6 +625,20 @@ export function listOptions(list) {
     priority: Boolean(list) && usesPriority(list) && list.priorityEnabled !== false,
     due: Boolean(list) && usesDue(list) && list.dueEnabled !== false,
   };
+}
+
+// Interrupteur « Priorité » du formulaire de liste, à l'ouverture et quand
+// le type choisi change, tant que le propriétaire n'y a pas touché :
+// - nouvelle liste : activée pour une liste d'envies, sinon désactivée ;
+// - liste existante qui devient une liste d'envies (conversion) : activée ;
+// - toute autre liste existante (liste d'envies comprise) : son réglage
+//   ENREGISTRÉ, jamais une valeur forcée (une copie d'avant ces réglages,
+//   sans valeur : activée, comme listOptions).
+// list : la liste telle qu'enregistrée (ou null) ; listType : le type choisi.
+export function priorityAtStart(list, listType) {
+  if (!list) return isWishList(listType);
+  if (!isWishList(list) && isWishList(listType)) return true;
+  return list.priorityEnabled !== false;
 }
 
 // Tris proposés : liste de courses, « par rayon » (ou « par magasin » pour

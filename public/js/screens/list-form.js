@@ -8,7 +8,7 @@
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { put, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { activeOnly, addModeOf, defaultAddMode } from '../store.js';
+import { activeOnly, addModeOf, defaultAddMode, priorityAtStart } from '../store.js';
 import { itemWords } from '../words.js';
 import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
@@ -398,7 +398,8 @@ function form(list, users) {
   // courses). « Après l'ajout » : une liste existante garde son choix ; une
   // nouvelle liste suit son type (« Rester sur la liste » pour les courses,
   // « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
-  let options = list ? listOptionsOf(list) : { priority: false, due: false };
+  // Priorité : priorityAtStart (store.js) ; échéance : le réglage enregistré
+  let options = { priority: priorityAtStart(list, listType), due: list ? listOptionsOf(list).due : false };
   let addMode = list ? addModeOf(list) : defaultAddMode(true);
   let addModeChosen = Boolean(list);
   const addModeField = addModeChoice(addMode, (value) => {
@@ -590,10 +591,12 @@ function form(list, users) {
     for (const row of optionsCard.querySelectorAll('[data-switch]')) {
       row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : !usesDue(listType);
     }
-    // Nouvelle liste, ou liste qui devient une liste d'envies : la priorité
-    // suit le type tant qu'on n'y a pas touché (activée par défaut pour une
-    // liste d'envies ; une liste existante retrouve son réglage sinon)
-    if (!priorityChosen) optionsCard.set('priority', isWishList(listType) || Boolean(list && listOptionsOf(list).priority));
+    // Tant qu'on n'y a pas touché : une nouvelle liste d'envies et une liste
+    // qui devient une liste d'envies commencent activées ; une liste
+    // existante (liste d'envies comprise) montre son réglage ENREGISTRÉ.
+    // (Avant, toute liste d'envies s'affichait activée : l'écran mentait, et
+    // l'enregistrer réactivait la priorité.)
+    if (!priorityChosen) optionsCard.set('priority', priorityAtStart(list, listType));
     optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);

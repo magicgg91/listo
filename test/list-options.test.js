@@ -323,8 +323,10 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   const block = form.slice(form.indexOf('export function optionSwitches('), form.indexOf('export function addModeChoice('));
   for (const gone of ['Activée', 'Désactivée', 'textContent', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
   assert.doesNotMatch(block, /\btri\b|par priorité|par échéance/);
-  // Nouvelle liste : désactivées ; visibles seulement hors courses, aussi quand on change la catégorie
-  assert.match(form, /let options = list \? listOptionsOf\(list\) : \{ priority: false, due: false \};/);
+  // Nouvelle liste : désactivées (priorité activée pour une liste d'envies,
+  // voir test/wish-priority.test.js) ; liste existante : ses réglages enregistrés ;
+  // visibles seulement hors courses, aussi quand on change la catégorie
+  assert.match(form, /let options = \{ priority: priorityAtStart\(list, listType\), due: list \? listOptionsOf\(list\)\.due : false \};/);
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
   assert.match(form, /row\.hidden = row\.dataset\.switch === 'priority' \? !usesPriority\(listType\) : !usesDue\(listType\);/);
   assert.match(form, /priorityEnabled: withPriority && options\.priority, dueEnabled: withDue && options\.due/);

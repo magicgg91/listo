@@ -160,17 +160,18 @@ test('lien expiré ou protégé : refusé comme avant, le code-barres n\'est don
   assert.equal(unknown.text, expired.text);
 });
 
-test('aucune nouvelle route, aucune écriture : seules les routes publiques d\'avant', async (t) => {
+test('routes publiques : seulement celles prévues ; écritures limitées aux actions des visiteurs d\'une liste d\'envies', async (t) => {
   const route = read('server/routes/public.js');
   const declared = [...route.matchAll(/(pageRouter|apiRouter)\.(get|post|put|patch|delete)\('([^']+)'/g)].map((m) => `${m[2]} ${m[3]}`);
-  assert.deepEqual(declared, ['get /:token', 'get /:token', 'post /:token/acces', 'get /:token/photos/:itemId']);
+  assert.deepEqual(declared, ['get /:token', 'get /:token', 'post /:token/souhaits/:itemId', 'delete /:token/souhaits/:itemId', 'post /:token/acces', 'get /:token/photos/:itemId']);
   // Le code-barres n'est lu que dans la liste blanche, jamais écrit dans un journal
   assert.match(route, /\.\.\.\(isShopping && item\.ean \? \{ ean: item\.ean \} : \{\}\),/);
   assert.doesNotMatch(route, /audit\([^)]*ean/);
   // Une écriture depuis la page publique : refusée comme toute autre route
   const h = await household(t);
   const { token } = await linkTo(h, h.L.shop);
-  for (const [method, path] of [['PUT', ''], ['PATCH', ''], ['DELETE', ''], ['POST', '/items'], ['PUT', '/photos/x']]) {
+  // (les actions de visiteur n'existent que pour une liste d'envies : ici, comme un lien inconnu)
+  for (const [method, path] of [['PUT', ''], ['PATCH', ''], ['DELETE', ''], ['POST', '/items'], ['PUT', '/photos/x'], ['POST', `/souhaits/${crypto.randomUUID()}`], ['DELETE', `/souhaits/${crypto.randomUUID()}`]]) {
     const res = await visitor(h).request(method, `/api/public/${token}${path}`, {});
     assert.equal(res.status, 404, `${method} ${path}`);
   }
@@ -231,8 +232,10 @@ test('page publique : fiche sans champ ni bouton qui écrit, aucune requête à 
   // Aucun champ, aucun bouton d'écriture, aucune requête
   assert.doesNotMatch(sheet, /h\('(input|textarea|select|form)'|Enregistrer|Supprimer|trash|disquette|camera|fetch\(|XMLHttpRequest|sendBeacon/);
   assert.doesNotMatch(page.replace(/\/\/.*$/gm, ''), /innerHTML|outerHTML|insertAdjacentHTML/, 'commentaires mis à part');
-  // Une seule requête de données (load) et la saisie du mot de passe : rien de plus
-  assert.equal([...page.matchAll(/fetch\(/g)].length, 2);
+  // La requête de données (load), la saisie du mot de passe, et les actions
+  // d'un visiteur d'une liste d'envies (réserver, participer, annuler) : rien de plus
+  assert.equal([...page.matchAll(/fetch\(/g)].length, 3);
+  assert.match(page, /fetch\(apiUrl\(`\/souhaits\/\$\{encodeURIComponent\(item\.id\)\}`\), \{\s*method,/);
   assert.match(page, /fetch\(apiUrl\('\/acces'\), \{\s*method: 'POST',/);
   // Retour du téléphone : chaque fenêtre ajoute une étape à l'historique
   assert.match(sheet, /history\.pushState\(/);

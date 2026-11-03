@@ -479,10 +479,12 @@ export function renderList(listId, onLeave) {
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
-  // « Marie », « Marie et Paul », « vous et Marie »… (soi en premier)
+  // « Marie », « Marie et Paul », « vous et Marie »… (soi en premier) ; un
+  // visiteur du lien public : « Jo (lien public) »
+  const participantLabel = (p) => (p.viaLink ? `${p.displayName} (lien public)` : p.displayName);
   const participantNames = (reservation) => {
     const me = reservation.participants.filter((p) => p.userId === app.user.id).map(() => 'vous');
-    return [...me, ...reservation.participants.filter((p) => p.userId !== app.user.id).map((p) => p.displayName)];
+    return [...me, ...reservation.participants.filter((p) => p.userId !== app.user.id).map(participantLabel)];
   };
   const reservationText = (reservation) => `Réservé par ${namesList(participantNames(reservation))}`;
   // « Reçu » (le coché d'une liste d'envies) : le bénéficiaire ou le
@@ -1041,14 +1043,16 @@ export function renderList(listId, onLeave) {
       } else {
         content = [
           h('p', { class: 'field__value' }, reservationText(current), current.open ? ' · Ouvert à d\'autres' : ''),
-          mine ? openSwitch(current.open, () => run(() => actions.setWishOpen(item.id, !current.open))) : null,
+          // Ouvrir ou fermer : les participants, et le gestionnaire (même s'il n'y a que des visiteurs)
+          mine || manager ? openSwitch(current.open, () => run(() => actions.setWishOpen(item.id, !current.open))) : null,
           !mine && current.open ? button('btn--primary btn--block', 'plus', 'Participer', () => run(() => actions.reserveWish(item.id), 'Vous participez')) : null,
           mine ? button('btn--secondary btn--block', 'close', 'Quitter', () => run(() => actions.leaveWish(item.id), 'Vous ne participez plus')) : null,
           // Gestionnaire : retirer un participant, ou libérer tout le souhait
           manager ? h('div', { class: 'stack stack--sm' },
             participants.some((p) => p.userId !== app.user.id) ? h('div', { class: 'card list-options' }, participants.filter((p) => p.userId !== app.user.id).map((p) => h('div', { class: 'toggle-row' },
-              h('span', { class: 'grow' }, p.displayName),
-              button('btn--danger-outline btn--sm', 'close', 'Retirer', () => run(() => actions.removeWishParticipant(item.id, p.userId), `${p.displayName} ne participe plus`), { 'aria-label': `Retirer ${p.displayName}` })))) : null,
+              h('span', { class: 'grow' }, participantLabel(p)),
+              // Un visiteur du lien public : retiré par son identifiant opaque (v<numéro>)
+              button('btn--danger-outline btn--sm', 'close', 'Retirer', () => run(() => (p.viaLink ? actions.removeWishVisitor(item.id, p.visitorId) : actions.removeWishParticipant(item.id, p.userId)), `${p.displayName} ne participe plus`), { 'aria-label': `Retirer ${participantLabel(p)}` })))) : null,
             button('btn--danger-outline btn--block', 'close', 'Libérer', () => run(() => actions.releaseWish(item.id), 'Réservation libérée'))) : null,
         ];
       }

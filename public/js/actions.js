@@ -172,6 +172,11 @@ export async function removeWishParticipant(itemId, userId) {
   await del(reservationUrl(itemId, `/participants/${encodeURIComponent(userId)}`));
   await refreshData({ quiet: true });
 }
+// Gestionnaire : retirer un visiteur du lien public (identifiant opaque « v<numéro> »)
+export async function removeWishVisitor(itemId, visitorId) {
+  await del(reservationUrl(itemId, `/visitors/${encodeURIComponent(visitorId)}`));
+  await refreshData({ quiet: true });
+}
 
 // --- Photos ---
 // Une photo prise (même hors ligne) est gardée dans la file d'attente et part

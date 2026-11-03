@@ -16,7 +16,7 @@ Gratuite, sans publicité, en français. Pensée pour une famille : quelques com
 - **Photos** des articles, réduites sur le téléphone avant l'envoi.
 - **Mode scan** des listes de courses : photographier le code-barres d'un produit ; Listo le lit sur le téléphone, retrouve un produit déjà connu ou propose son nom grâce à [Open Food Facts](https://world.openfoodfacts.org). La photo reste sur le téléphone.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; les modifications partent au retour du réseau.
-- **Lien public en lecture seule** pour montrer une liste à quelqu'un sans compte (durée limitée, mot de passe facultatif).
+- **Lien public en lecture seule** pour montrer une liste à quelqu'un sans compte (durée limitée, mot de passe facultatif), y compris une liste d'envies : ses souhaits, liens et prix, et un visiteur sans compte peut y **réserver** un souhait ou participer à un cadeau, en donnant son prénom ; il ne voit jamais qui d'autre a réservé, et la personne à qui la liste est destinée, connectée à Listo, ne voit rien (ne lui donnez pas le lien : sans être connectée, elle verrait quels souhaits sont réservés).
 - **Aide intégrée** (Réglages › Aide), **double authentification**, **sauvegarde chaque nuit**, thèmes clair et sombre, installation sur l'écran d'accueil du téléphone.
 
 Dans une liste de courses, on parle d'« articles » ; dans une liste d'envies, de « souhaits » ; dans les autres listes, d'« éléments ».

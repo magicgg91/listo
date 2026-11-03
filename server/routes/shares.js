@@ -42,9 +42,8 @@ export function shareRoutes(ctx) {
   });
 
   router.put('/lists/:id/share', ownList, async (req, res) => {
-    // Pas de lien public pour une liste d'envies (il montrerait la liste sans
-    // compte ; les réservations, elles, ne sortent jamais)
-    if (req.list.type === 'wishes') return res.status(400).json({ error: 'Pas de lien public pour une liste d\'envies.' });
+    // Liste d'envies : lien public permis (lecture seule ; la page publique
+    // ne lit jamais les réservations, voir routes/public.js)
     const body = req.body ?? {};
     const durationHours = body.durationHours === undefined ? undefined : checkDuration(body.durationHours);
     if (body.durationHours !== undefined && durationHours === undefined) return res.status(400).json({ error: BAD_DURATION });

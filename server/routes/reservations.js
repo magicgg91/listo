@@ -9,6 +9,8 @@
 //   DELETE /api/items/:id/reservation/all      libérer tout le souhait (gestionnaire)
 //   DELETE /api/items/:id/reservation/participants/:userId
 //                                              retirer un participant (gestionnaire)
+//   DELETE /api/items/:id/reservation/visitors/:visitorId
+//                                              retirer un visiteur du lien public (gestionnaire)
 // Toutes les règles, et la confidentialité vis-à-vis du bénéficiaire, sont
 // dans server/reservations.js. Aucune ligne de journal (le journal de
 // sécurité est lisible par l'Admin, qui peut être le bénéficiaire).
@@ -32,5 +34,6 @@ export function reservationRoutes(ctx) {
   router.delete('/items/:id/reservation', run((req) => service().leave(req.user, req.params.id)));
   router.delete('/items/:id/reservation/all', run((req) => service().releaseAll(req.user, req.params.id)));
   router.delete('/items/:id/reservation/participants/:userId', run((req) => service().removeParticipant(req.user, req.params.id, req.params.userId)));
+  router.delete('/items/:id/reservation/visitors/:visitorId', run((req) => service().removeVisitor(req.user, req.params.id, req.params.visitorId)));
   return router;
 }

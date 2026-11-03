@@ -471,6 +471,10 @@ export const MIGRATIONS = [
   // --- Migration 19 : listes d'envies (bénéficiaire, souhaits, réservations) ---
   // Voir wishesMigration.
   (db) => wishesMigration(db),
+
+  // --- Migration 20 : réservations des visiteurs du lien public (envies) ---
+  // Voir visitorReservationsMigration.
+  (db) => visitorReservationsMigration(db),
 ];
 
 // Migration 19 : listes d'envies.
@@ -516,6 +520,58 @@ export function wishesMigration(db) {
       updated_at TEXT    NOT NULL
     );
   `);
+}
+
+// Migration 20 : participations des visiteurs sans compte (lien public d'une
+// liste d'envies). Une ligne par visiteur et par souhait ; le visiteur est
+// reconnu par l'empreinte (SHA-256) du jeton de son cookie, jamais par le
+// jeton lui-même. Effacée avec le souhait. Seul server/reservations.js lit
+// cette table. Non destructive (nouvelle table), idempotente.
+// Elle ajoute aussi le nettoyage de l'état « ouvert à d'autres »
+// (reservation_states) : cet état n'a de sens que pour un souhait qui a au
+// moins un participant. Avant, la suppression d'un compte effaçait ses
+// participations (ON DELETE CASCADE) mais laissait l'état seul : le souhait
+// paraissait « Réservé » sur la page publique et le gestionnaire ne pouvait
+// pas le libérer. Deux déclencheurs (triggers) effacent désormais l'état dès
+// que le dernier participant disparaît, quelle que soit la façon (départ,
+// retrait, suppression du compte) ; les états déjà orphelins sont effacés.
+export function visitorReservationsMigration(db) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS visitor_reservations (
+      item_id    TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+      token_hash TEXT NOT NULL CHECK (length(token_hash) = 64),
+      first_name TEXT NOT NULL CHECK (length(first_name) BETWEEN 1 AND 40),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (item_id, token_hash)
+    );
+    CREATE INDEX IF NOT EXISTS visitor_reservations_token ON visitor_reservations(token_hash);
+  `);
+  dropOrphanStates(db);
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS reservations_state_cleanup AFTER DELETE ON reservations
+    BEGIN
+      DELETE FROM reservation_states WHERE item_id = OLD.item_id
+        AND NOT EXISTS (SELECT 1 FROM reservations WHERE item_id = OLD.item_id)
+        AND NOT EXISTS (SELECT 1 FROM visitor_reservations WHERE item_id = OLD.item_id);
+    END;
+    CREATE TRIGGER IF NOT EXISTS visitor_reservations_state_cleanup AFTER DELETE ON visitor_reservations
+    BEGIN
+      DELETE FROM reservation_states WHERE item_id = OLD.item_id
+        AND NOT EXISTS (SELECT 1 FROM reservations WHERE item_id = OLD.item_id)
+        AND NOT EXISTS (SELECT 1 FROM visitor_reservations WHERE item_id = OLD.item_id);
+    END;
+  `);
+}
+
+// Efface les états « ouvert à d'autres » des souhaits qui n'ont plus aucun
+// participant (compte ou visiteur). Renvoie le nombre de lignes effacées.
+export function dropOrphanStates(db) {
+  return db.prepare(`
+    DELETE FROM reservation_states
+    WHERE NOT EXISTS (SELECT 1 FROM reservations WHERE reservations.item_id = reservation_states.item_id)
+      AND NOT EXISTS (SELECT 1 FROM visitor_reservations WHERE visitor_reservations.item_id = reservation_states.item_id)
+  `).run().changes;
 }
 
 // Migration 18 : colonne lists.type ('shopping', 'tasks' ou 'wishes').

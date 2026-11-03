@@ -37,7 +37,7 @@ export const PERMISSIONS = [
   { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
 
-export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire. « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres. Dans une liste d\'envies, la personne à qui la liste est destinée ne voit jamais les réservations, même si elle en est la propriétaire.';
+export const PERMISSIONS_NOTE = 'Un invité peut avoir un compte (droit « Lecture seule » sur la liste) ou ouvrir le lien public sans compte : dans les deux cas, il ne fait que lire (sauf, par le lien d\'une liste d\'envies, réserver un souhait ou participer à un cadeau). « Quitter la liste » demande un compte. L\'Admin ne voit pas le contenu des listes des autres. Dans une liste d\'envies, la personne à qui la liste est destinée ne voit jamais les réservations, même si elle en est la propriétaire.';
 
 // Sections, dans l'ordre de la page. adminOnly : affichée aux seuls comptes
 // Admin. Chaque section a des sujets : un titre, des paragraphes, une liste
@@ -72,7 +72,8 @@ export const SECTIONS = [
           'Pour réserver : touchez le souhait, puis « Réserver ». La ligne indique alors qui a réservé. Il faut du réseau.',
           'Tout membre peut réserver, même en « Lecture seule ».',
           'Modifier un souhait réservé ne retire pas la réservation. Cocher un souhait le range dans « Reçus » : seuls la personne à qui la liste est destinée et le propriétaire le peuvent ; les réservations n\'y sont plus affichées.',
-          'Une liste d\'envies n\'a ni lien public, ni copie (« Dupliquer la liste » n\'est pas proposé).',
+          'Une liste d\'envies n\'a pas de copie (« Dupliquer la liste » n\'est pas proposé). Elle peut avoir un lien public : les personnes qui l\'ont voient les souhaits, leurs liens et leurs prix, et peuvent réserver ou participer sans compte (voir « Lien public »).',
+          'Une réservation faite par le lien apparaît avec le prénom donné, suivi de « (lien public) ». La personne qui gère la liste peut la retirer, comme celle d\'un proche.',
         ],
       },
       {
@@ -206,6 +207,8 @@ export const SECTIONS = [
         title: 'Lien public',
         paragraphs: ['« Partager par lien » crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule.'],
         items: [
+          'Pour une liste d\'envies : la personne voit les souhaits (nom, note, lien, prix, priorité, photo) et ceux déjà reçus. Elle peut « Réserver » un souhait libre, « Participer » à un cadeau ouvert à d\'autres, et annuler sa participation ; son prénom lui est demandé une fois. Elle voit seulement si un souhait est réservé, jamais par qui ni combien.',
+          'Attention : si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés (jamais par qui). Ne le lui donnez pas. Connectée, elle ne voit rien des réservations.',
           'Durée : 1 heure, 24 heures, 7 jours, 30 jours, personnalisée ou illimitée. « Changer la durée » la modifie.',
           '« Protéger par mot de passe » : le mot de passe n\'est affiché qu\'une fois. Notez-le.',
           '« Arrêter le partage » rend le lien inutilisable tout de suite.',
@@ -248,7 +251,7 @@ export const SECTIONS = [
       {
         title: 'Sans compte',
         paragraphs: [
-          'Le lien public ouvre la liste en lecture seule, sans compte. Il peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage.',
+          'Le lien public ouvre la liste en lecture seule, sans compte (le lien d\'une liste d\'envies permet en plus de réserver un souhait ou de participer à un cadeau). Il peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage.',
           'Toucher un article ouvre sa fiche, en lecture seule : quantité, note en entier, rayon (ou magasin), état coché, code-barres, photo à agrandir, et pour une liste de tâches la priorité et l\'échéance si elles sont activées. Le bouton Retour du téléphone ou la croix la referment.',
         ],
       },

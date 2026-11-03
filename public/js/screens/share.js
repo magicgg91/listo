@@ -13,6 +13,12 @@ import { h, icon, replace, field } from '../dom.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { dateTimeLabel, timeLeftLabel } from '../format.js';
 import { hasPublicLink } from './lists.js';
+import { isWishList } from '../list-types.js';
+
+// Liste d'envies : ce que voient les visiteurs, et l'avertissement sur le
+// destinataire (partie B : les visiteurs voient quels souhaits sont réservés)
+export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, et peuvent réserver un souhait ou participer à un cadeau, sans compte. Elles ne voient jamais qui a réservé.';
+export const WISH_SHARE_WARNING = 'Si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés (jamais par qui). Ne le lui donnez pas.';
 
 const DURATIONS = [
   { label: '1 heure', hours: 1 },
@@ -176,6 +182,12 @@ export function openShareSheet(list) {
   }
 
   const offlineNote = () => h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, OFFLINE_TEXT));
+  // Liste d'envies : la phrase d'information, puis l'avertissement sur le
+  // destinataire qui ouvrirait le lien sans être connecté
+  const wishNotes = () => (isWishList(list)
+    ? [h('p', { class: 'note', id: 'share-wish-note' }, icon('gift', 'icon--sm'), h('span', {}, WISH_SHARE_NOTE)),
+      h('p', { class: 'note note--danger', id: 'share-wish-warning', role: 'note' }, icon('alert', 'icon--sm'), h('span', {}, WISH_SHARE_WARNING))]
+    : null);
 
   // --- Aucun lien : création (partage-lien-1, 2 et 7) ---
   function createView(offline) {
@@ -195,6 +207,7 @@ export function openShareSheet(list) {
     });
     return [
       offline ? offlineNote() : h('p', { class: 'muted' }, 'Toute personne avec le lien voit la liste en lecture seule, sans compte.'),
+      wishNotes(),
       picker.element,
       h('div', { class: 'card' }, h('div', { class: 'row' },
         h('span', { class: 'row__icon' }, icon('lock', 'icon--sm')),
@@ -287,6 +300,7 @@ export function openShareSheet(list) {
 
     return [
       offline ? offlineNote() : null,
+      wishNotes(),
       // Adresse illisible (clé de Listo changée) : il faut recréer le lien
       share.url
         ? [h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Lien'),

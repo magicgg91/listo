@@ -175,7 +175,7 @@ test('souhaits : lien http/https seulement (jamais appelé), prix en centimes, p
   assert.equal(formatPrice(24990).replace(/\s/g, ' '), '249,90 €');
 });
 
-test('figés : ni changement de type (dans les deux sens), ni de bénéficiaire, ni duplication, ni lien public', async (t) => {
+test('figés : ni changement de type (dans les deux sens), ni de bénéficiaire, ni duplication ; lien public permis', async (t) => {
   const h = await household(t);
   const tasks = uuid();
   await h.one(h.guillaume, { type: 'list.create', listId: tasks, name: 'Maison', listType: 'tasks' });
@@ -189,17 +189,11 @@ test('figés : ni changement de type (dans les deux sens), ni de bénéficiaire,
   assert.deepEqual(h.app.db.prepare('SELECT type, for_user_id FROM lists WHERE id = ?').get(h.ids.lea), { type: 'wishes', for_user_id: h.leaId });
   const dup = await h.guillaume.post(`/api/lists/${h.ids.lea}/duplicate`, { name: 'Copie' });
   assert.deepEqual([dup.status, dup.body.error], [400, 'Une liste d\'envies ne se duplique pas.']);
+  // Lien public : permis depuis la décision du 3 novembre 2026 (voir test/wishes-public.test.js)
   const link = await h.guillaume.request('PUT', `/api/lists/${h.ids.lea}/share`, {});
-  assert.deepEqual([link.status, link.body.error], [400, 'Pas de lien public pour une liste d\'envies.']);
-  // Vue publique : refus défensif, même réponse qu'un lien inconnu (un lien
-  // posé directement en base, comme s'il datait d'avant)
-  const token = crypto.randomBytes(32).toString('base64url');
-  h.app.db.prepare('INSERT INTO public_shares (list_id, token_hash, token_sealed, created_by, created_at) VALUES (?, ?, ?, 1, ?)').run(h.ids.lea, crypto.createHash('sha256').update(token).digest('hex'), 'scellé', '2026-10-16T12:00:00.000Z');
+  assert.equal(link.status, 201);
   const visitor = h.app.client({ ip: '203.0.113.5' });
-  const wish = await visitor.get(`/api/public/${token}`);
-  const unknown = await visitor.get(`/api/public/${crypto.randomBytes(32).toString('base64url')}`);
-  assert.equal(wish.status, 404);
-  assert.deepEqual([wish.status, wish.text], [unknown.status, unknown.text]);
+  assert.equal((await visitor.get(`/api/public/${link.body.share.url.split('/p/')[1]}`)).status, 200);
 });
 
 test('qui voit les réservations : proches et gestionnaire oui ; bénéficiaire jamais ; « Moi » : pas le propriétaire ; sans compte : tous', async (t) => {
@@ -528,7 +522,7 @@ test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idemp
   const before = { lists: db.prepare('SELECT * FROM lists ORDER BY id').all(), items: db.prepare('SELECT * FROM items ORDER BY id').all() };
   db.close();
   db = openDatabase(file); // restauration : la copie est ouverte par Listo, la migration 19 s'applique
-  assert.equal(schemaVersion(db), 19);
+  assert.equal(schemaVersion(db), 20);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, ...rest }) => rest), before.lists);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map((l) => [l.for_user_id, l.for_name]), [[null, null], [null, null]]);
   assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, ...rest }) => rest), before.items);

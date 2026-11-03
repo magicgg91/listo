@@ -69,6 +69,14 @@ export const LINK_FULL = 'Ce lien a atteint son nombre de réservations. Demande
 // Limites des visiteurs (voir le cahier des charges)
 export const VISITOR_LIMITS = { perVisitor: 20, perItem: 10, perLink: 100 };
 
+// Condition SQL : le souhait de cette ligne de reservation_states a au moins
+// un participant (compte ou visiteur). Tout lecteur de l'état l'utilise, pour
+// qu'un état resté seul (par exemple après la suppression d'un compte) ne
+// fasse jamais paraître un souhait réservé. La base l'efface aussi d'elle-même
+// (déclencheurs de la migration 20, server/db.js).
+const HAS_PARTICIPANT = `(EXISTS (SELECT 1 FROM reservations WHERE reservations.item_id = reservation_states.item_id)
+  OR EXISTS (SELECT 1 FROM visitor_reservations WHERE visitor_reservations.item_id = reservation_states.item_id))`;
+
 export function createReservationService(ctx) {
   const { db } = ctx;
   const nowIso = () => new Date(ctx.now()).toISOString();
@@ -83,7 +91,9 @@ export function createReservationService(ctx) {
       WHERE items.id = :itemId AND items.deleted_at IS NULL
     `),
     participants: db.prepare('SELECT user_id FROM reservations WHERE item_id = ?').pluck(),
-    state: db.prepare('SELECT open FROM reservation_states WHERE item_id = ?').pluck(),
+    // État « ouvert à d'autres » : retenu seulement si le souhait a au moins
+    // un participant (compte ou visiteur) ; un état resté seul ne compte pas
+    state: db.prepare(`SELECT open FROM reservation_states WHERE item_id = ? AND ${HAS_PARTICIPANT}`).pluck(),
     join: db.prepare('INSERT INTO reservations (item_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?)'),
     leave: db.prepare('DELETE FROM reservations WHERE item_id = ? AND user_id = ?'),
     clear: db.prepare('DELETE FROM reservations WHERE item_id = ?'),
@@ -146,7 +156,7 @@ export function createReservationService(ctx) {
     statesOfList: db.prepare(`
       SELECT reservation_states.item_id, reservation_states.open FROM reservation_states
       JOIN items ON items.id = reservation_states.item_id AND items.deleted_at IS NULL
-      WHERE items.list_id = ?
+      WHERE items.list_id = ? AND ${HAS_PARTICIPANT}
     `),
     mineInList: db.prepare(`
       SELECT visitor_reservations.item_id FROM visitor_reservations

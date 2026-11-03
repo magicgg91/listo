@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { emptyState, loadSync, toSnapshot } from '../public/js/store.js';
+import { dropOrphanStates } from '../server/db.js';
 import { ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, BAD_FIRST_NAME, VISITOR_LIMIT, ITEM_FULL, LINK_FULL } from '../server/reservations.js';
 
 const uuid = () => crypto.randomUUID();
@@ -420,4 +421,119 @@ test('écrans : visiteurs marqués « (lien public) » et retirés par le gestio
   const share = read('public/js/screens/share.js');
   assert.match(share, /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
   assert.ok(read('public/sw.js').includes('v60'));
+});
+
+// --- État « ouvert à d'autres » resté seul (correction avant fusion) ---
+// reservation_states n'a de sens que si le souhait a au moins un participant.
+// Supprimer un compte efface ses participations (ON DELETE CASCADE) : l'état
+// doit disparaître avec la dernière, sinon le souhait paraîtrait « Réservé »
+// aux visiteurs et le gestionnaire ne pourrait pas le libérer.
+const statesCount = (h) => h.app.db.prepare('SELECT COUNT(*) FROM reservation_states').pluck().get();
+
+test('compte participant supprimé (après avoir quitté la liste) : le souhait redevient libre partout, et un visiteur peut le réserver', async (t) => {
+  const h = await household(t);
+  const { token } = await h.link();
+  // Paul réserve (ouvert), puis quitte la liste : sa participation reste (voulu)
+  assert.equal((await h.paul.post(`/api/items/${h.ids.velo}/reservation`, { open: true })).status, 200);
+  // Sur la lampe, Paul et un visiteur : elle restera réservée après la suppression de Paul
+  assert.equal((await h.paul.post(`/api/items/${h.ids.lampe}/reservation`, { open: true })).status, 200);
+  const jo = h.visitor();
+  assert.equal((await h.act(jo, token, h.ids.lampe)).status, 200);
+  assert.equal((await h.paul.post(`/api/lists/${h.ids.noel}/leave`)).status, 200);
+  assert.equal((await h.wish(h.visitor(), token, 'Vélo')).reservation, 'open', 'Paul parti : toujours réservé');
+  assert.deepEqual((await h.stateOf(h.marie, h.ids.velo)).participants, [{ userId: h.paulId, displayName: 'Paul' }]);
+  // L'Admin supprime le compte de Paul (il n'a plus servi à rien : permis)
+  assert.equal((await h.guillaume.del(`/api/admin/users/${h.paulId}`)).status, 204);
+  // Vélo : aucun participant, aucun état resté seul
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservation_states WHERE item_id = ?').pluck().get(h.ids.velo), 0);
+  const visitor = h.visitor();
+  assert.deepEqual([(await h.wish(visitor, token, 'Vélo')).reservation, (await h.wish(visitor, token, 'Vélo')).mine], ['free', false]);
+  // Lampe : Jo reste, l'état « ouvert » est gardé
+  assert.equal((await h.wish(visitor, token, 'Lampe')).reservation, 'open');
+  assert.deepEqual(await h.stateOf(h.marie, h.ids.lampe), { itemId: h.ids.lampe, open: true, participants: [{ visitorId: 'v1', displayName: 'Tante Jo', viaLink: true }] });
+  // Synchronisation des membres cohérente : le vélo n'y est plus, rien pour Léa
+  assert.equal(await h.stateOf(h.marie, h.ids.velo), null);
+  assert.equal(await h.stateOf(h.guillaume, h.ids.velo), null);
+  assert.equal((await h.lea.get('/api/sync')).body.reservations?.[h.ids.noel], undefined);
+  // Rien à libérer : la réponse de « pas réservé » est juste
+  assert.equal((await h.guillaume.del(`/api/items/${h.ids.velo}/reservation/all`)).status, 404);
+  // Un visiteur peut le réserver ; la réservation est FERMÉE (l'ancien « ouvert » n'a pas survécu)
+  assert.equal((await h.act(visitor, token, h.ids.velo, 'POST', 'Oncle Max')).status, 200);
+  assert.deepEqual(await h.stateOf(h.marie, h.ids.velo), { itemId: h.ids.velo, open: false, participants: [{ visitorId: 'v2', displayName: 'Oncle Max', viaLink: true }] });
+  assert.equal((await h.wish(h.visitor(), token, 'Vélo')).reservation, 'reserved');
+  assert.deepEqual((await h.marie.post(`/api/items/${h.ids.velo}/reservation`, {})).body.error, ALREADY);
+  // Le gestionnaire libère : plus rien, dans aucune table
+  assert.equal((await h.guillaume.del(`/api/items/${h.ids.velo}/reservation/all`)).status, 200);
+  assert.equal((await h.wish(h.visitor(), token, 'Vélo')).reservation, 'free');
+});
+
+test('état resté seul (base d\'avant la correction) : ignoré par tous les lecteurs, effacé par la migration ; un compte et un visiteur réservent normalement', async (t) => {
+  const h = await household(t);
+  const { token } = await h.link();
+  // Un état seul, comme en laissait la suppression d'un compte avant la correction
+  const orphan = (itemId, open = 1) => h.app.db.prepare("INSERT INTO reservation_states (item_id, open, created_at, updated_at) VALUES (?, ?, '2026-11-01T10:00:00.000Z', '2026-11-01T10:00:00.000Z')").run(itemId, open);
+  orphan(h.ids.velo);
+  orphan(h.ids.lampe, 0);
+  // Lecture : libre pour un visiteur, absent pour les membres
+  assert.equal((await h.wish(h.visitor(), token, 'Vélo')).reservation, 'free');
+  assert.equal((await h.wish(h.visitor(), token, 'Lampe')).reservation, 'free');
+  assert.equal(await h.stateOf(h.marie, h.ids.velo), null);
+  // Ouvrir ou libérer : « pas réservé »
+  assert.equal((await h.guillaume.request('PATCH', `/api/items/${h.ids.velo}/reservation`, { open: true })).status, 404);
+  assert.equal((await h.guillaume.del(`/api/items/${h.ids.velo}/reservation/all`)).status, 404);
+  // Un compte réserve fermé : l'ancien état « ouvert » est remplacé
+  assert.equal((await h.marie.post(`/api/items/${h.ids.velo}/reservation`, {})).status, 200);
+  assert.equal((await h.stateOf(h.paul, h.ids.velo)).open, false);
+  assert.deepEqual((await h.act(h.visitor(), token, h.ids.velo)).body.error, ALREADY, 'fermé : un visiteur ne rejoint pas');
+  // Un visiteur réserve la lampe : fermée
+  assert.equal((await h.act(h.visitor(), token, h.ids.lampe)).status, 200);
+  assert.equal((await h.stateOf(h.paul, h.ids.lampe)).open, false);
+  // La migration efface les états restés seuls (et eux seulement)
+  orphan(h.ids.jeu);
+  assert.equal(dropOrphanStates(h.app.db), 1);
+  assert.equal(statesCount(h), 2);
+  assert.equal(dropOrphanStates(h.app.db), 0, 'rien de plus');
+});
+
+test('les déclencheurs effacent l\'état avec le dernier participant, par tous les chemins (départ, effacement en cascade d\'un compte, d\'un visiteur)', async (t) => {
+  const h = await household(t);
+  const { token } = await h.link();
+  // Effacement direct dans la base (comme une suppression en cascade) : l'état part avec le dernier
+  await h.marie.post(`/api/items/${h.ids.velo}/reservation`, { open: true });
+  await h.act(h.visitor(), token, h.ids.velo);
+  h.app.db.prepare('DELETE FROM reservations WHERE item_id = ?').run(h.ids.velo);
+  assert.equal(statesCount(h), 1, 'un visiteur reste : état gardé');
+  h.app.db.prepare('DELETE FROM visitor_reservations WHERE item_id = ?').run(h.ids.velo);
+  assert.equal(statesCount(h), 0, 'plus personne : état effacé');
+  // Les chemins habituels restent justes
+  await h.marie.post(`/api/items/${h.ids.lampe}/reservation`, {});
+  assert.equal((await h.marie.del(`/api/items/${h.ids.lampe}/reservation`)).status, 200);
+  assert.equal(statesCount(h), 0);
+  const names = h.app.db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name").pluck().all();
+  assert.deepEqual(names, ['reservations_state_cleanup', 'visitor_reservations_state_cleanup']);
+});
+
+test('compte désactivé ou qui quitte la liste : ses participations restent, le souhait reste réservé (voulu) ; le gestionnaire peut libérer', async (t) => {
+  const h = await household(t);
+  const { token } = await h.link();
+  await h.paul.post(`/api/items/${h.ids.velo}/reservation`, {});
+  await h.marie.post(`/api/items/${h.ids.lampe}/reservation`, { open: true });
+  // Paul quitte la liste ; Marie est désactivée par l'Admin
+  assert.equal((await h.paul.post(`/api/lists/${h.ids.noel}/leave`)).status, 200);
+  assert.equal((await h.guillaume.request('PATCH', `/api/admin/users/${h.marieId}`, { active: false })).status, 200);
+  const visitor = h.visitor();
+  assert.equal((await h.wish(visitor, token, 'Vélo')).reservation, 'reserved');
+  assert.equal((await h.wish(visitor, token, 'Lampe')).reservation, 'open');
+  assert.deepEqual((await h.stateOf(h.guillaume, h.ids.velo)).participants, [{ userId: h.paulId, displayName: 'Paul' }]);
+  assert.deepEqual((await h.stateOf(h.guillaume, h.ids.lampe)).participants, [{ userId: h.marieId, displayName: 'Marie' }]);
+  assert.equal(statesCount(h), 2);
+  // Fermé : un visiteur ne peut pas ; ouvert : il participe
+  assert.deepEqual((await h.act(visitor, token, h.ids.velo)).body.error, ALREADY);
+  assert.equal((await h.act(visitor, token, h.ids.lampe)).status, 200);
+  // Le gestionnaire libère (comptes partis ou désactivés compris)
+  assert.equal((await h.guillaume.del(`/api/items/${h.ids.velo}/reservation/all`)).status, 200);
+  assert.equal((await h.guillaume.del(`/api/items/${h.ids.lampe}/reservation/all`)).status, 200);
+  assert.equal((await h.wish(visitor, token, 'Vélo')).reservation, 'free');
+  assert.equal((await h.wish(visitor, token, 'Lampe')).reservation, 'free');
+  assert.equal(statesCount(h), 0);
 });

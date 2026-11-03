@@ -627,6 +627,18 @@ export function listOptions(list) {
   };
 }
 
+// Interrupteur « Priorité » du formulaire de liste, à l'ouverture :
+// - nouvelle liste, quel que soit son type (liste d'envies comprise) :
+//   désactivée ; le propriétaire l'active s'il la veut ;
+// - liste existante, y compris une liste en cours de conversion en liste
+//   d'envies : son réglage ENREGISTRÉ, jamais une valeur forcée (une copie
+//   d'avant ces réglages, sans valeur : activée, comme listOptions).
+// Le type choisi dans le formulaire ne change pas l'interrupteur.
+// list : la liste telle qu'enregistrée, ou null pour une nouvelle liste.
+export function priorityAtStart(list) {
+  return Boolean(list) && list.priorityEnabled !== false;
+}
+
 // Tris proposés : liste de courses, « par rayon » (ou « par magasin » pour
 // une liste « multi ») puis l'ordre alphabétique ; autre liste, l'ordre
 // alphabétique toujours, « par priorité » et « par échéance » seulement si

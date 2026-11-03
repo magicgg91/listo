@@ -35,7 +35,7 @@ async function household(t, options = {}) {
   const ids = { noel: uuid(), moi: uuid(), courses: uuid(), velo: uuid(), livre: uuid(), lampe: uuid(), jeu: uuid(), autre: uuid(), lait: uuid() };
   const ops = (client, list) => client.post('/api/ops', { ops: list.map((op) => ({ id: uuid(), ...op })) });
   const res = await ops(guillaume, [
-    { type: 'list.create', listId: ids.noel, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId },
+    { type: 'list.create', listId: ids.noel, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId, priorityEnabled: true },
     { type: 'item.create', listId: ids.noel, itemId: ids.velo, name: 'Vélo', priceCents: 24990 },
     { type: 'item.create', listId: ids.noel, itemId: ids.livre, name: 'Livre' },
     { type: 'item.check', itemId: ids.livre, checked: true },
@@ -420,7 +420,7 @@ test('écrans : visiteurs marqués « (lien public) » et retirés par le gestio
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);
   const share = read('public/js/screens/share.js');
   assert.match(share, /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
-  assert.ok(read('public/sw.js').includes('v60'));
+  assert.match(read('public/sw.js'), /const VERSION = `v6[0-9]-/);
 });
 
 // --- État « ouvert à d'autres » resté seul (correction avant fusion) ---

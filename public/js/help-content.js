@@ -88,7 +88,7 @@ export const SECTIONS = [
       },
       {
         title: 'La priorité',
-        paragraphs: ['Dans une liste de tâches ou d\'envies, chaque ligne peut avoir une priorité : basse, normale ou élevée. Pour une liste d\'envies, elle est activée dès la création : la personne à qui la liste est destinée indique ainsi ce qui lui ferait le plus plaisir. Tout le monde la voit. Le propriétaire peut la désactiver dans « Modifier la liste » (« Priorité »). L\'échéance n\'existe que pour les listes de tâches.'],
+        paragraphs: ['Dans une liste de tâches ou d\'envies, chaque ligne peut avoir une priorité : basse, normale ou élevée. Pour une liste d\'envies, elle sert à indiquer ce qui ferait le plus plaisir. Comme pour une liste de tâches, elle est désactivée au départ : le propriétaire l\'active (ou la désactive) dans « Modifier la liste » (« Priorité »). Tout le monde la voit. L\'échéance n\'existe que pour les listes de tâches.'],
       },
       {
         title: 'Ajouter, modifier, cocher, supprimer',

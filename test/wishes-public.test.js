@@ -34,7 +34,7 @@ async function household(t) {
   const ids = { noel: uuid(), moi: uuid(), lucas: uuid(), tasks: uuid(), velo: uuid(), livre: uuid(), lampe: uuid(), vis: uuid() };
   const ops = (client, list) => client.post('/api/ops', { ops: list.map((op) => ({ id: uuid(), ...op })) });
   const res = await ops(guillaume, [
-    { type: 'list.create', listId: ids.noel, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId },
+    { type: 'list.create', listId: ids.noel, name: 'Noël de Léa', listType: 'wishes', forUserId: people.leaId, priorityEnabled: true },
     { type: 'item.create', listId: ids.noel, itemId: ids.velo, name: 'Vélo', link: 'https://exemple.fr/velo', priceCents: 24990, note: 'Rouge' },
     { type: 'item.update', itemId: ids.velo, priority: 'high' },
     { type: 'item.create', listId: ids.noel, itemId: ids.livre, name: 'Livre' },

@@ -57,7 +57,7 @@ test('migration 18 : courses → shopping, autres → tasks, rien de perdu, idem
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 21);
+  assert.equal(schemaVersion(db), 22);
   const types = Object.fromEntries(db.prepare('SELECT id, type FROM lists').all().map((l) => [l.id, l.type]));
   assert.deepEqual(types, { 'l-courses': 'shopping', 'l-taches': 'tasks', 'l-bricolage': 'tasks', 'l-marche': 'shopping', 'l-supprimee': 'shopping' });
   // Rien d'autre ne change : listes (catégorie, magasin, options, icône), articles, catégories
@@ -129,7 +129,7 @@ test('restauration d\'une ancienne sauvegarde (avant les types) : migrée au dé
   });
   const client = createClient(`http://127.0.0.1:${server.address().port}`);
   assert.equal((await login(client, 'guillaume', PASSWORD)).status, 200);
-  assert.equal(schemaVersion(db), 21);
+  assert.equal(schemaVersion(db), 22);
   const lists = Object.fromEntries((await client.get('/api/lists')).body.lists.map((l) => [l.name, l]));
   assert.deepEqual(Object.keys(lists).sort(), ['Courses', 'Maison', 'Marché du samedi', 'Travaux']);
   assert.equal(lists.Courses.type, 'shopping');

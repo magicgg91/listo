@@ -4,9 +4,9 @@
 // (sinon l'écran de connexion passe d'abord, avec la 2FA), voit :
 // - qui demande l'accès et où la réponse sera envoyée (hôte de retour bien
 //   visible : « claude.ai », ou une application sur cet ordinateur) ;
-// - l'accès : « Lecture seule » (présélectionnée), « Lecture et ajout »
-//   ou « Lecture, ajout et modification » (choix volontaire ; ce dernier
-//   seulement si l'application le demande, avec un avertissement) ;
+// - l'accès : « Lecture seule » (présélectionnée) ou « Lecture et écriture »
+//   (choix volontaire, seulement si l'application le demande, avec un
+//   avertissement) ;
 // - les listes : « Toutes mes listes » (par défaut) ou une sélection ;
 // - son mot de passe (et un code 2FA), redemandés à chaque autorisation.
 // « Autoriser » et « Refuser » passent par l'API (POST, même origine) ; le
@@ -21,14 +21,13 @@ import { listIcon } from '../list-icons.js';
 
 const enc = encodeURIComponent;
 
-// Ce que Claude pourra faire, pour chaque niveau d'accord (écran
+// Ce que Claude pourra faire, pour chacun des deux niveaux d'accord (écran
 // d'autorisation ; mêmes niveaux que server/oauth.js)
 export const SCOPE_TEXTS = {
   read: 'Claude pourra lire vos listes, sans rien y changer.',
-  write: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et régler leur priorité et leur échéance. Jamais supprimer, renommer ni partager.',
-  edit: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance). Jamais supprimer d\'élément ni de liste, ni partager.',
+  write: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance). Jamais supprimer d\'élément ni de liste, ni partager.',
 };
-// Avertissement du niveau « Lecture, ajout et modification »
+// Avertissement du niveau « Lecture et écriture »
 export const EDIT_WARNING = 'Une liste partagée peut contenir un texte piégé, écrit pour tromper Claude et lui faire changer vos éléments. C\'est pourquoi ce niveau demande plus de confiance : choisissez-le seulement si vous en avez besoin.';
 
 // Choix exclusif du kit (.radio-row dans une carte) : rond plein ET texte
@@ -120,17 +119,16 @@ function consentForm(id, { request, account, twoFactor, lists }) {
     row({ iconName: 'link', title: local ? 'une application sur cet ordinateur (localhost)' : request.redirect.host, sub: 'La réponse sera envoyée ici' }),
     row({ iconName: 'lock', title: account.displayName, sub: `Votre compte Listo (${account.username})` }));
 
-  // Accès : la lecture et l'ajout, puis la modification, seulement si
-  // l'application les a demandés. Le niveau « modification » est signalé :
-  // il demande plus de confiance (voir SCOPE_TEXTS)
+  // Accès : « Lecture et écriture » seulement si l'application l'a demandé ;
+  // ce niveau est signalé : il demande de la confiance (EDIT_WARNING)
   const scopeHint = h('p', { class: 'field__hint', id: 'consent-scope-hint' });
   const editWarning = h('div', { class: 'note note--danger', id: 'consent-edit-warning', hidden: true }, icon('alert'), h('p', {}, EDIT_WARNING));
   const paintScopeHint = () => {
     scopeHint.textContent = SCOPE_TEXTS[scope];
-    editWarning.hidden = scope !== 'edit';
+    editWarning.hidden = scope !== 'write';
   };
   paintScopeHint();
-  const levels = [['read', 'Lecture seule'], ['write', 'Lecture et ajout'], ...(request.edit ? [['edit', 'Lecture, ajout et modification']] : [])];
+  const levels = [['read', 'Lecture seule'], ['write', 'Lecture et écriture']];
   const scopeField = h('div', { class: 'field' },
     h('span', { class: 'field__label', id: 'consent-scope' }, 'Accès'),
     request.write

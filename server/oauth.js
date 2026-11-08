@@ -48,21 +48,21 @@ export const MAX_DCR_CLIENTS = 50;
 export const DCR_PER_IP_HOUR = 5;
 const CIMD_CACHE = HOUR;
 
-// Portées, et les trois niveaux d'accord qu'une personne peut choisir :
+// Portées, et les deux niveaux d'accord qu'une personne peut choisir :
 // - « Lecture seule » (read) : lists:read ;
-// - « Lecture et ajout » (write) : + lists:write (add_items, set_checked,
-//   set_item_options) ;
-// - « Lecture, ajout et modification » (edit, depuis la migration 21) :
-//   + lists:edit (update_items : nom, quantité, note, priorité, échéance).
-// Une connexion garde exactement le niveau accordé ; un niveau plus haut
-// demande une nouvelle autorisation.
+// - « Lecture et écriture » (write) : + lists:write (add_items, set_checked,
+//   update_items).
+// Un troisième niveau (lists:edit) a existé brièvement (migrations 21 et
+// 22) : une application qui demande encore lists:edit est traitée comme
+// si elle demandait lists:write (LEGACY_EDIT), sans erreur ; il n'est plus
+// proposé ni enregistré.
 export const SCOPE_READ = 'lists:read';
 export const SCOPE_WRITE = 'lists:write';
-export const SCOPE_EDIT = 'lists:edit';
-export const SCOPES = [SCOPE_READ, SCOPE_WRITE, SCOPE_EDIT];
-export const GRANT_SCOPES = { read: SCOPE_READ, write: `${SCOPE_READ} ${SCOPE_WRITE}`, edit: `${SCOPE_READ} ${SCOPE_WRITE} ${SCOPE_EDIT}` };
-// Niveau d'une connexion d'après ses portées : 'read', 'write' ou 'edit'
-export const accessOf = (scopes) => (scopes.includes(SCOPE_EDIT) ? 'edit' : scopes.includes(SCOPE_WRITE) ? 'write' : 'read');
+export const LEGACY_EDIT = 'lists:edit';
+export const SCOPES = [SCOPE_READ, SCOPE_WRITE];
+export const GRANT_SCOPES = { read: SCOPE_READ, write: `${SCOPE_READ} ${SCOPE_WRITE}` };
+// Niveau d'une connexion d'après ses portées : 'read' ou 'write'
+export const accessOf = (scopes) => (scopes.includes(SCOPE_WRITE) ? 'write' : 'read');
 
 export const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;          // BASE64URL(SHA256(…)), sans « = »
 const PKCE_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;    // RFC 7636, §4.1
@@ -90,12 +90,13 @@ export function pkceMatches(verifier, challenge) {
 }
 
 // Portées demandées (« lists:read lists:write ») : liste sans doublon, ou
-// null si une portée est inconnue. Rien de demandé : toutes (la personne
+// null si une portée est inconnue. Rien de demandé : les deux (la personne
 // choisit ensuite son niveau, « Lecture seule » étant proposée d'abord).
+// lists:edit (ancien troisième niveau) compte comme lists:write.
 export function parseScope(value) {
   if (value === undefined || value === null || String(value).trim() === '') return [...SCOPES];
   if (typeof value !== 'string') return null;
-  const asked = [...new Set(value.trim().split(/\s+/))];
+  const asked = [...new Set(value.trim().split(/\s+/).map((s) => (s === LEGACY_EDIT ? SCOPE_WRITE : s)))];
   return asked.every((s) => SCOPES.includes(s)) ? asked : null;
 }
 
@@ -260,8 +261,6 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       },
       redirect: { host: redirectHost(request.redirect_uri), local: !request.redirect_uri.startsWith('https:') },
       write: request.scope.split(' ').includes(SCOPE_WRITE),
-      // Le niveau « modification » n'est proposé que si l'application le demande
-      edit: request.scope.split(' ').includes(SCOPE_WRITE) && request.scope.split(' ').includes(SCOPE_EDIT),
       expiresAt: request.expires_at,
     };
   }
@@ -278,7 +277,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   }
 
   // Accord : crée la connexion et son code. choice : { scope: 'read' |
-  // 'write' | 'edit', lists: 'all' | [identifiants] } ; listIds déjà vérifiés par
+  // 'write', lists: 'all' | [identifiants] } ; listIds déjà vérifiés par
   // l'appelant (listes dont le compte est membre). Renvoie l'adresse de retour.
   function approve(request, user, { scope, allLists, listIds }, ip) {
     const granted = GRANT_SCOPES[scope];

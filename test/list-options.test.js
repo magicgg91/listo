@@ -76,7 +76,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 21);
+  assert.equal(schemaVersion(db), 22);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');

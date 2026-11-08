@@ -126,7 +126,7 @@ test('descriptions : ressource protégée et serveur d\'autorisation, construite
   for (const path of ['/.well-known/oauth-protected-resource/mcp', '/.well-known/oauth-protected-resource']) {
     const res = await raw(h.app, 'GET', path);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['lists:read', 'lists:write', 'lists:edit'], bearer_methods_supported: ['header'], resource_name: 'Listo' });
+    assert.deepEqual(res.body, { resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['lists:read', 'lists:write'], bearer_methods_supported: ['header'], resource_name: 'Listo' });
   }
   const as = (await raw(h.app, 'GET', '/.well-known/oauth-authorization-server')).body;
   assert.equal(as.issuer, ORIGIN);
@@ -318,7 +318,7 @@ test('portée accordée respectée : lecture seule par défaut, écriture seulem
   assert.deepEqual(grant.listIds, [h.lists.maison]);
   // Renouvellement : portée jamais élargie
   assert.equal((await claude.refresh(read.refresh_token, { scope: 'lists:read lists:write' })).body.error, 'invalid_scope');
-  // Application qui n'a demandé que la lecture : « Lecture et ajout » refusé
+  // Application qui n'a demandé que la lecture : « Lecture et écriture » refusé
   const start = await claude.authorize({ scope: 'lists:read' });
   assert.equal((await h.guillaume.get(`/api/oauth/demandes/${start.requestId}`)).body.request.write, false);
   assert.equal((await claude.consent(h.guillaume, start.requestId, { scope: 'write' })).status, 400);

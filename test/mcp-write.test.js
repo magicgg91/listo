@@ -37,7 +37,7 @@ test('droits : liste hors connexion et liste inconnue (même réponse), invitée
   assert.deepEqual(unknown.body.result, outside.body.result, 'liste inconnue et interdite : même réponse');
   assert.deepEqual((await limited.tool('set_checked', { list_id: h.ids.courses, item_ids: [h.ids.lait], checked: true })).body.result, outside.body.result);
 
-  // Marie, invitée en lecture seule sur Courses, avec une connexion « Lecture et ajout »
+  // Marie, invitée en lecture seule sur Courses, avec une connexion « Lecture et écriture »
   const marie = claude(h, (await connect(h, h.marie, MARIE_PASSWORD, write())).access_token);
   const before = countItems(h, h.ids.courses);
   assert.equal(toolError(await marie.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Thé' }] })), 'Vous avez un accès en lecture seule à cette liste.');

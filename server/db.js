@@ -479,18 +479,21 @@ export const MIGRATIONS = [
   // --- Migration 21 : niveau d'accord « Lecture, ajout et modification » (Claude) ---
   // Voir oauthEditScopeMigration.
   (db) => oauthEditScopeMigration(db),
+
+  // --- Migration 22 : deux niveaux d'accord seulement pour Claude ---
+  // Voir oauthTwoLevelsMigration.
+  (db) => oauthTwoLevelsMigration(db),
 ];
 
-// Migration 21 : troisième niveau d'accord pour Claude, « Lecture, ajout et
-// modification » (portée 'lists:read lists:write lists:edit', outil
-// update_items). La colonne oauth_grants.scope n'accepte que les deux
-// niveaux d'avant (contrainte CHECK), et SQLite ne sait pas changer une
-// contrainte : la table est recopiée. Trois tables pointent vers elle
-// (listes choisies, codes, jetons) : elles sont recopiées aussi, AVANT la
-// suppression de l'ancienne, pour que rien ne disparaisse en cascade. Les
-// connexions existantes gardent exactement leur niveau, leurs listes et
-// leurs jetons. Rien d'autre ne change.
-export function oauthEditScopeMigration(db) {
+// Recopie des tables des connexions Claude (oauth_grants et les trois tables
+// qui pointent vers elle : listes choisies, codes, jetons) avec une nouvelle
+// contrainte sur oauth_grants.scope : SQLite ne sait pas changer une
+// contrainte. Les tables enfants sont recopiées AVANT la suppression de
+// l'ancienne oauth_grants, pour que rien ne disparaisse en cascade ; puis
+// tout est renommé (SQLite met à jour les références). Rien d'autre ne
+// change. scopes : les valeurs permises pour oauth_grants.scope.
+function rebuildOauthTables(db, scopes) {
+  const allowed = scopes.map((scope) => `'${scope}'`).join(', ');
   db.exec(`
     CREATE TABLE oauth_grants_new (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -499,7 +502,7 @@ export function oauthEditScopeMigration(db) {
       app_key       TEXT    NOT NULL,
       client_host   TEXT    NOT NULL,
       redirect_host TEXT    NOT NULL,
-      scope         TEXT    NOT NULL CHECK (scope IN ('lists:read', 'lists:read lists:write', 'lists:read lists:write lists:edit')),
+      scope         TEXT    NOT NULL CHECK (scope IN (${allowed})),
       all_lists     INTEGER NOT NULL CHECK (all_lists IN (0, 1)),
       created_at    TEXT    NOT NULL,
       last_used_at  TEXT,
@@ -548,6 +551,31 @@ export function oauthEditScopeMigration(db) {
     CREATE INDEX oauth_tokens_grant ON oauth_tokens(grant_id);
     CREATE INDEX oauth_tokens_expiry ON oauth_tokens(expires_at);
   `);
+}
+
+// Migration 21 : troisième niveau d'accord pour Claude, « Lecture, ajout et
+// modification » (portée 'lists:read lists:write lists:edit'). Abandonné
+// par la migration 22 (décision du propriétaire : deux niveaux seulement) ;
+// gardée telle quelle, car les migrations ne changent jamais une fois livrées.
+export function oauthEditScopeMigration(db) {
+  rebuildOauthTables(db, ['lists:read', 'lists:read lists:write', 'lists:read lists:write lists:edit']);
+}
+
+// Migration 22 : retour à deux niveaux d'accord pour Claude, « Lecture
+// seule » et « Lecture et écriture » (lists:write, qui donne aussi la
+// modification des éléments). Les connexions, codes et jetons au niveau
+// « modification » (lists:edit) passent au niveau « écriture » ; rien
+// d'autre ne change (connexions, listes choisies, jetons gardés), puis la
+// contrainte n'accepte plus que les deux niveaux.
+const EDIT_SCOPE = 'lists:read lists:write lists:edit';
+const WRITE_SCOPE = 'lists:read lists:write';
+export function oauthTwoLevelsMigration(db) {
+  for (const table of ['oauth_grants', 'oauth_codes', 'oauth_tokens']) {
+    db.prepare(`UPDATE ${table} SET scope = ? WHERE scope = ?`).run(WRITE_SCOPE, EDIT_SCOPE);
+  }
+  // Une demande en attente (10 minutes au plus) qui demandait lists:edit
+  db.prepare("UPDATE oauth_requests SET scope = trim(replace(' ' || scope || ' ', ' lists:edit ', ' ')) WHERE ' ' || scope || ' ' LIKE '% lists:edit %'").run();
+  rebuildOauthTables(db, ['lists:read', WRITE_SCOPE]);
 }
 
 // Migration 19 : listes d'envies.

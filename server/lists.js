@@ -92,7 +92,7 @@ export const BAD_DUE = 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2
 
 // LA règle de la priorité et de l'échéance d'un élément, partagée par
 // l'application (opérations item.create et item.update) et par la connexion
-// Claude (add_items, set_item_options, qui s'en servent pour refuser un
+// Claude (add_items et update_items, qui s'en servent pour refuser un
 // appel entier AVANT toute écriture). Renvoie le message de refus, ou null.
 // type : type de la liste ; enabled : { priorityEnabled, dueEnabled }
 // (réglages enregistrés de la liste) ; fields : { priority, dueDate }

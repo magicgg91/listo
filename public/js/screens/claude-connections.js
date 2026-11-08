@@ -5,8 +5,7 @@
 //   « Copier ») et un lien vers l'aide ;
 // - puis les connexions actives du compte : application (hôte, et nom
 //   « non vérifié » s'il est donné par l'application elle-même), où va la
-//   réponse, droit (« Lecture seule », « Lecture et ajout » ou « Lecture,
-//   ajout et modification »), listes,
+//   réponse, droit (« Lecture seule » ou « Lecture et écriture »), listes,
 //   date de connexion, dernière utilisation ; « Déconnecter » pour chacune,
 //   « Tout déconnecter » en bas, toujours avec confirmation, sans mot de
 //   passe (déconnecter est une mesure de sécurité, toujours permise).
@@ -23,7 +22,7 @@ import { topbar } from './settings.js';
 import { relativeTime, dateTimeLabel, namesList } from '../format.js';
 
 // Niveau d'accord de chaque connexion (mêmes niveaux que server/oauth.js)
-export const ACCESS_LABELS = { read: 'Lecture seule', write: 'Lecture et ajout', edit: 'Lecture, ajout et modification' };
+export const ACCESS_LABELS = { read: 'Lecture seule', write: 'Lecture et écriture' };
 
 // Nom de l'application, comme sur l'écran « Autoriser Claude »
 function appName(connection) {
@@ -49,7 +48,7 @@ export function renderClaudeConnections() {
   const screen = h('div', { class: 'screen claude-connections' },
     topbar('Connexions Claude', () => goBack('account')),
     h('div', { class: 'body' },
-      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, selon le niveau que vous avez accordé, y ajouter des éléments, les cocher et régler leur priorité et leur échéance (« Lecture et ajout »), ou aussi modifier leur nom, leur quantité et leur note (« Lecture, ajout et modification »), au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
+      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous lui avez accordé « Lecture et écriture », y ajouter des éléments, les cocher et les modifier (nom, quantité, note, priorité, échéance), au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
       h('h2', { class: 'section-title' }, 'Adresse à saisir dans Claude'),
       h('div', { class: 'group' },
         // L'adresse sur sa propre ligne (elle peut être longue), puis « Copier »

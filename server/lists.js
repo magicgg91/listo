@@ -30,7 +30,7 @@ import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
 } from '../public/js/history.js';
-import { groupItems } from '../public/js/sorting.js';
+import { groupItems, compareNames } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
 import {
   isListType, isShoppingList, isWishList, usesPriority, usesDue, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
@@ -85,6 +85,8 @@ export const OWNER_CANNOT_LEAVE = 'Le propriétaire ne peut pas quitter sa liste
 // (migration 13) : refus avant toute écriture
 export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
 export const DUE_OFF = "L'échéance est désactivée pour cette liste.";
+// Rayon demandé dans une liste « multi » (un magasin par article, pas de rayon)
+export const MULTI_NO_AISLE = "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.";
 export const PRIORITY_NOT_HERE = 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.';
 export const DUE_NOT_HERE = 'L\'échéance ne se choisit que dans une liste de tâches.';
 export const BAD_PRIORITY = 'Priorité inconnue (basse, normale ou élevée).';
@@ -368,6 +370,14 @@ export function createListService(ctx) {
     return aisle;
   }
 
+  // Rayons actifs, { id, name }, dans l'ordre de l'application (ordre
+  // alphabétique des noms) : ceux qu'on peut choisir pour un article
+  function activeAisles() {
+    return q.allAisles.all().filter((a) => a.active === 1)
+      .map((a) => ({ id: a.id, name: a.name }))
+      .sort((a, b) => compareNames(a.name, b.name));
+  }
+
   // Magasins proposés pour les articles d'une liste « multi » : ceux que
   // regroupe son magasin, et qui sont actifs
   function storeChoices(multiStoreId) {
@@ -525,7 +535,7 @@ export function createListService(ctx) {
 
   function checkFieldsForList(multi, op) {
     if (multi && op.aisleId !== undefined && op.aisleId !== null) {
-      throw new OpError(400, "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.");
+      throw new OpError(400, MULTI_NO_AISLE);
     }
     if (!multi && op.storeId !== undefined && op.storeId !== null) {
       throw new OpError(400, 'Le magasin ne se choisit que dans une liste « multi ».');
@@ -1489,7 +1499,7 @@ export function createListService(ctx) {
 
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
-    deletedLists, restoreList,
+    deletedLists, restoreList, activeAisles,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

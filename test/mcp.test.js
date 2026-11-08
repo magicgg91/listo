@@ -200,7 +200,8 @@ test('sorties : seulement les champs prévus, aucun nom de personne, contenu pr�
   const res = await c.tool('read_list', { list_id: h.ids.courses });
   const out = data(res);
   assert.deepEqual(Object.keys(out).sort(), ['items', 'list', 'next_cursor', 'total']);
-  assert.deepEqual(Object.keys(out.list).sort(), ['access', 'id', 'name', 'type']);
+  assert.deepEqual(Object.keys(out.list).sort(), ['access', 'aisles', 'id', 'name', 'type']);
+  assert.ok(out.list.aisles.length > 0 && out.list.aisles.every((name) => typeof name === 'string'), 'rayons : des noms seulement');
   assert.equal(out.items.length, 2, 'cochés omis par défaut');
   const lait = out.items.find((i) => i.id === h.ids.lait);
   assert.deepEqual(lait, { id: h.ids.lait, name: 'Lait', quantity: '2 L', checked: false, note: 'demi-écrémé', aisle: 'Crèmerie', ean: '3428272950019' });

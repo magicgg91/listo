@@ -5,7 +5,8 @@
 //   « Copier ») et un lien vers l'aide ;
 // - puis les connexions actives du compte : application (hôte, et nom
 //   « non vérifié » s'il est donné par l'application elle-même), où va la
-//   réponse, droit (« Lecture seule » ou « Lecture et ajout »), listes,
+//   réponse, droit (« Lecture seule », « Lecture et ajout » ou « Lecture,
+//   ajout et modification »), listes,
 //   date de connexion, dernière utilisation ; « Déconnecter » pour chacune,
 //   « Tout déconnecter » en bas, toujours avec confirmation, sans mot de
 //   passe (déconnecter est une mesure de sécurité, toujours permise).
@@ -20,6 +21,9 @@ import { navigate, goBack } from '../router.js';
 import { confirmDialog, toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { relativeTime, dateTimeLabel, namesList } from '../format.js';
+
+// Niveau d'accord de chaque connexion (mêmes niveaux que server/oauth.js)
+export const ACCESS_LABELS = { read: 'Lecture seule', write: 'Lecture et ajout', edit: 'Lecture, ajout et modification' };
 
 // Nom de l'application, comme sur l'écran « Autoriser Claude »
 function appName(connection) {
@@ -45,7 +49,7 @@ export function renderClaudeConnections() {
   const screen = h('div', { class: 'screen claude-connections' },
     topbar('Connexions Claude', () => goBack('account')),
     h('div', { class: 'body' },
-      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous l\'avez autorisé (« Lecture et ajout »), y ajouter des éléments, les cocher et régler leur priorité et leur échéance, au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
+      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, selon le niveau que vous avez accordé, y ajouter des éléments, les cocher et régler leur priorité et leur échéance (« Lecture et ajout »), ou aussi modifier leur nom, leur quantité et leur note (« Lecture, ajout et modification »), au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
       h('h2', { class: 'section-title' }, 'Adresse à saisir dans Claude'),
       h('div', { class: 'group' },
         // L'adresse sur sa propre ligne (elle peut être longue), puis « Copier »
@@ -140,7 +144,7 @@ function connectionRow(connection, onDisconnect) {
       name ? h('span', { class: 'row__sub' }, name) : null,
       h('span', { class: 'row__sub' }, `Réponse envoyée à : ${connection.redirect.local ? 'une application sur cet ordinateur (localhost)' : connection.redirect.host}`),
       h('span', { class: 'claude-connections__chips' },
-        h('span', { class: `chip${connection.access === 'write' ? ' chip--accent' : ''}` }, connection.access === 'write' ? 'Lecture et ajout' : 'Lecture seule')),
+        h('span', { class: `chip${connection.access === 'read' ? '' : ' chip--accent'}` }, ACCESS_LABELS[connection.access] ?? ACCESS_LABELS.read)),
       h('span', { class: 'row__sub' }, `Listes : ${lists}`),
       h('span', { class: 'row__sub' }, `Connectée le ${dateTimeLabel(connection.createdAt)}`),
       h('span', { class: 'row__sub' }, `Dernière utilisation : ${used}`),

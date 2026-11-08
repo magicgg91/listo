@@ -211,8 +211,9 @@ export function oauthConsentRoutes(ctx) {
     const user = req.user;
     const described = oauth.describeRequest(request);
 
-    if (scope !== 'read' && scope !== 'write') return res.status(400).json({ error: 'Choisissez « Lecture seule » ou « Lecture et ajout ».' });
+    if (!['read', 'write', 'edit'].includes(scope)) return res.status(400).json({ error: 'Choisissez « Lecture seule », « Lecture et ajout » ou « Lecture, ajout et modification ».' });
     if (scope === 'write' && !described.write) return res.status(400).json({ error: "Cette application n'a demandé que la lecture." });
+    if (scope === 'edit' && !described.edit) return res.status(400).json({ error: "Cette application n'a pas demandé la modification des éléments." });
     const allLists = lists === 'all';
     let listIds = [];
     if (!allLists) {

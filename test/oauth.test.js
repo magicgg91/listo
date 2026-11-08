@@ -126,7 +126,7 @@ test('descriptions : ressource protégée et serveur d\'autorisation, construite
   for (const path of ['/.well-known/oauth-protected-resource/mcp', '/.well-known/oauth-protected-resource']) {
     const res = await raw(h.app, 'GET', path);
     assert.equal(res.status, 200);
-    assert.deepEqual(res.body, { resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['lists:read', 'lists:write'], bearer_methods_supported: ['header'], resource_name: 'Listo' });
+    assert.deepEqual(res.body, { resource: RESOURCE, authorization_servers: [ORIGIN], scopes_supported: ['lists:read', 'lists:write', 'lists:edit'], bearer_methods_supported: ['header'], resource_name: 'Listo' });
   }
   const as = (await raw(h.app, 'GET', '/.well-known/oauth-authorization-server')).body;
   assert.equal(as.issuer, ORIGIN);

@@ -475,7 +475,80 @@ export const MIGRATIONS = [
   // --- Migration 20 : réservations des visiteurs du lien public (envies) ---
   // Voir visitorReservationsMigration.
   (db) => visitorReservationsMigration(db),
+
+  // --- Migration 21 : niveau d'accord « Lecture, ajout et modification » (Claude) ---
+  // Voir oauthEditScopeMigration.
+  (db) => oauthEditScopeMigration(db),
 ];
+
+// Migration 21 : troisième niveau d'accord pour Claude, « Lecture, ajout et
+// modification » (portée 'lists:read lists:write lists:edit', outil
+// update_items). La colonne oauth_grants.scope n'accepte que les deux
+// niveaux d'avant (contrainte CHECK), et SQLite ne sait pas changer une
+// contrainte : la table est recopiée. Trois tables pointent vers elle
+// (listes choisies, codes, jetons) : elles sont recopiées aussi, AVANT la
+// suppression de l'ancienne, pour que rien ne disparaisse en cascade. Les
+// connexions existantes gardent exactement leur niveau, leurs listes et
+// leurs jetons. Rien d'autre ne change.
+export function oauthEditScopeMigration(db) {
+  db.exec(`
+    CREATE TABLE oauth_grants_new (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      client_id     TEXT    NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+      app_key       TEXT    NOT NULL,
+      client_host   TEXT    NOT NULL,
+      redirect_host TEXT    NOT NULL,
+      scope         TEXT    NOT NULL CHECK (scope IN ('lists:read', 'lists:read lists:write', 'lists:read lists:write lists:edit')),
+      all_lists     INTEGER NOT NULL CHECK (all_lists IN (0, 1)),
+      created_at    TEXT    NOT NULL,
+      last_used_at  TEXT,
+      revoked_at    TEXT
+    );
+    INSERT INTO oauth_grants_new SELECT id, user_id, client_id, app_key, client_host, redirect_host, scope, all_lists, created_at, last_used_at, revoked_at FROM oauth_grants;
+    CREATE TABLE oauth_grant_lists_new (
+      grant_id INTEGER NOT NULL REFERENCES oauth_grants_new(id) ON DELETE CASCADE,
+      list_id  TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+      PRIMARY KEY (grant_id, list_id)
+    );
+    INSERT INTO oauth_grant_lists_new SELECT grant_id, list_id FROM oauth_grant_lists;
+    CREATE TABLE oauth_codes_new (
+      code_hash      TEXT    PRIMARY KEY,
+      grant_id       INTEGER NOT NULL REFERENCES oauth_grants_new(id) ON DELETE CASCADE,
+      client_id      TEXT    NOT NULL,
+      redirect_uri   TEXT    NOT NULL,
+      code_challenge TEXT    NOT NULL,
+      resource       TEXT    NOT NULL,
+      scope          TEXT    NOT NULL,
+      expires_at     TEXT    NOT NULL,
+      used_at        TEXT
+    );
+    INSERT INTO oauth_codes_new SELECT code_hash, grant_id, client_id, redirect_uri, code_challenge, resource, scope, expires_at, used_at FROM oauth_codes;
+    CREATE TABLE oauth_tokens_new (
+      token_hash TEXT    PRIMARY KEY,
+      grant_id   INTEGER NOT NULL REFERENCES oauth_grants_new(id) ON DELETE CASCADE,
+      kind       TEXT    NOT NULL CHECK (kind IN ('access', 'refresh')),
+      resource   TEXT    NOT NULL,
+      scope      TEXT    NOT NULL,
+      created_at TEXT    NOT NULL,
+      expires_at TEXT    NOT NULL,
+      used_at    TEXT,
+      revoked_at TEXT
+    );
+    INSERT INTO oauth_tokens_new SELECT token_hash, grant_id, kind, resource, scope, created_at, expires_at, used_at, revoked_at FROM oauth_tokens;
+    DROP TABLE oauth_tokens;
+    DROP TABLE oauth_codes;
+    DROP TABLE oauth_grant_lists;
+    DROP TABLE oauth_grants;
+    ALTER TABLE oauth_grants_new RENAME TO oauth_grants;
+    ALTER TABLE oauth_grant_lists_new RENAME TO oauth_grant_lists;
+    ALTER TABLE oauth_codes_new RENAME TO oauth_codes;
+    ALTER TABLE oauth_tokens_new RENAME TO oauth_tokens;
+    CREATE INDEX oauth_grants_user ON oauth_grants(user_id, revoked_at);
+    CREATE INDEX oauth_tokens_grant ON oauth_tokens(grant_id);
+    CREATE INDEX oauth_tokens_expiry ON oauth_tokens(expires_at);
+  `);
+}
 
 // Migration 19 : listes d'envies.
 // - lists.for_user_id (compte bénéficiaire) ou lists.for_name (prénom d'une

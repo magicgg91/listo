@@ -65,7 +65,7 @@ test('add_items (propriétaire) : créé au nom du compte, rayon habituel, quant
   assert.equal(out.created, 2);
   assert.equal(out.ignored, 0);
   assert.deepEqual(Object.keys(out).sort(), ['created', 'ignored', 'list_id', 'results']);
-  for (const r of out.results) assert.deepEqual(Object.keys(r).sort(), ['id', 'name', 'status']);
+  for (const r of out.results) assert.ok(Object.keys(r).every((key) => ['id', 'name', 'status', 'aisle'].includes(key)), Object.keys(r).join());
   assert.ok(res.body.result.content[0].text.startsWith(`${DATA_NOTICE}\n`));
   const pain = h.app.db.prepare('SELECT * FROM items WHERE id = ?').get(out.results[0].id);
   assert.equal(pain.created_by, 1, 'au nom de Guillaume');

@@ -45,7 +45,7 @@ export function renderClaudeConnections() {
   const screen = h('div', { class: 'screen claude-connections' },
     topbar('Connexions Claude', () => goBack('account')),
     h('div', { class: 'body' },
-      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous l\'avez autorisé, y ajouter des éléments et les cocher, au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
+      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous l\'avez autorisé (« Lecture et ajout »), y ajouter des éléments, les cocher et régler leur priorité et leur échéance, au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
       h('h2', { class: 'section-title' }, 'Adresse à saisir dans Claude'),
       h('div', { class: 'group' },
         // L'adresse sur sa propre ligne (elle peut être longue), puis « Copier »

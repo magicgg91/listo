@@ -56,7 +56,7 @@ test('Claude du gestionnaire et d\'un proche : jamais de réservation non plus ;
   const c = claude(h, (await connect(h, h.guillaume, PASSWORD)).access_token);
   const text = JSON.stringify((await c.tool('read_list', { list_id: ids.noel, include_checked: true })).body) + JSON.stringify((await c.tool('list_lists')).body);
   assert.equal(/reserv|réserv|Paul|paul/i.test(text), false);
-  assert.deepEqual(TOOLS.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked']);
+  assert.deepEqual(TOOLS.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'set_item_options']);
   const descriptions = JSON.stringify(TOOLS);
   assert.match(descriptions, /wishes : liste d'envies/);
   assert.match(descriptions, /les réservations des listes d'envies ne sont jamais données/);

@@ -384,6 +384,15 @@ export function createListService(ctx) {
     return q.memberStores.all(multiStoreId).filter((id) => q.store.get(id)?.active === 1);
   }
 
+  // Les mêmes magasins, { id, name }, dans l'ordre de l'application (ordre
+  // alphabétique des noms, comme storeChoices du téléphone) : ceux qu'on peut
+  // choisir pour un article de cette liste « multi »
+  function activeStoreChoices(multiStoreId) {
+    return storeChoices(multiStoreId).map((id) => q.store.get(id))
+      .map((row) => ({ id: row.id, name: row.name }))
+      .sort((a, b) => compareNames(a.name, b.name));
+  }
+
   // Magasin choisi pour un article d'une liste « multi » : vide (« Sans
   // magasin »), ou un des magasins regroupés par celui de la liste, actif.
   function chosenStore(value, multiStoreId) {
@@ -1499,7 +1508,7 @@ export function createListService(ctx) {
 
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
-    deletedLists, restoreList, activeAisles,
+    deletedLists, restoreList, activeAisles, activeStoreChoices,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
   };
 }

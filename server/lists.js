@@ -85,6 +85,29 @@ export const OWNER_CANNOT_LEAVE = 'Le propriétaire ne peut pas quitter sa liste
 // (migration 13) : refus avant toute écriture
 export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
 export const DUE_OFF = "L'échéance est désactivée pour cette liste.";
+export const PRIORITY_NOT_HERE = 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.';
+export const DUE_NOT_HERE = 'L\'échéance ne se choisit que dans une liste de tâches.';
+export const BAD_PRIORITY = 'Priorité inconnue (basse, normale ou élevée).';
+export const BAD_DUE = 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2100, sans heure).';
+
+// LA règle de la priorité et de l'échéance d'un élément, partagée par
+// l'application (opérations item.create et item.update) et par la connexion
+// Claude (add_items, set_item_options, qui s'en servent pour refuser un
+// appel entier AVANT toute écriture). Renvoie le message de refus, ou null.
+// type : type de la liste ; enabled : { priorityEnabled, dueEnabled }
+// (réglages enregistrés de la liste) ; fields : { priority, dueDate }
+// (undefined : non demandé ; dueDate null : effacer l'échéance).
+// Ordre : le type de liste s'en sert-il, le réglage est-il activé, la
+// valeur est-elle permise (vraie date du calendrier, entre 2000 et 2100).
+export function itemOptionsError(type, { priorityEnabled, dueEnabled }, { priority, dueDate }) {
+  if (priority !== undefined && !usesPriority(type)) return PRIORITY_NOT_HERE;
+  if (dueDate !== undefined && !usesDue(type)) return DUE_NOT_HERE;
+  if (priority !== undefined && !priorityEnabled) return PRIORITY_OFF;
+  if (dueDate !== undefined && !dueEnabled) return DUE_OFF;
+  if (priority !== undefined && !PRIORITIES.includes(priority)) return BAD_PRIORITY;
+  if (dueDate !== undefined && dueDate !== null && !isDueDate(dueDate)) return BAD_DUE;
+  return null;
+}
 export const ACCESS = ['modification', 'lecture'];
 
 // Droit d'écriture d'un compte sur une liste : LE seul contrôle, utilisé par
@@ -426,14 +449,14 @@ export function createListService(ctx) {
   }
 
   function priorityOf(value) {
-    if (!PRIORITIES.includes(value)) throw new OpError(400, 'Priorité inconnue (basse, normale ou élevée).');
+    if (!PRIORITIES.includes(value)) throw new OpError(400, BAD_PRIORITY);
     return value;
   }
   // Échéance : null efface ; sinon une vraie date AAAA-MM-JJ (une chaîne vide
   // n'est pas null : elle est refusée)
   function dueDateOf(value) {
     if (value === null) return null;
-    if (!isDueDate(value)) throw new OpError(400, 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2100, sans heure).');
+    if (!isDueDate(value)) throw new OpError(400, BAD_DUE);
     return value;
   }
 
@@ -808,6 +831,12 @@ export function createListService(ctx) {
       checkFieldsForList(list.is_multi === 1, op);
       checkEanForList(isShoppingList(list), op);
       checkWishFields(isWishList(list), op);
+      // Priorité et échéance dès l'ajout (facultatives ; utilisées par la
+      // connexion Claude) : même règle que item.update (itemOptionsError)
+      const optionsError = itemOptionsError(typeOf(list), { priorityEnabled: list.priority_enabled === 1, dueEnabled: list.due_enabled === 1 }, op);
+      if (optionsError) throw new OpError(400, optionsError);
+      const priority = op.priority === undefined ? 'normal' : op.priority;
+      const dueDate = op.dueDate ?? null;
       const ean = op.ean === undefined ? null : eanOf(op.ean);
       const link = linkOf(op.link) ?? null;
       const priceCents = priceOf(op.priceCents) ?? null;
@@ -819,9 +848,9 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, user.id, now, now);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
@@ -843,17 +872,12 @@ export function createListService(ctx) {
       const multi = item.is_multi === 1;
       checkFieldsForList(multi, op);
       // Priorité : listes de tâches et d'envies ; échéance : listes de tâches
-      // seulement (rien n'est écrit), vérifiées avant toute écriture
-      if (op.priority !== undefined && !usesPriority(item.list_type)) {
-        throw new OpError(400, 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.');
-      }
-      if (op.dueDate !== undefined && !usesDue(item.list_type)) {
-        throw new OpError(400, 'L\'échéance ne se choisit que dans une liste de tâches.');
-      }
+      // seulement ; réglage de la liste activé (relu dans la base) ; valeur
+      // permise. Vérifiées avant toute écriture (itemOptionsError, la même
+      // règle que item.create et la connexion Claude)
+      const optionsError = itemOptionsError(item.list_type, { priorityEnabled: item.list_priority_enabled === 1, dueEnabled: item.list_due_enabled === 1 }, op);
+      if (optionsError) throw new OpError(400, optionsError);
       checkWishFields(isWishList(item.list_type), op);
-      // Réglage de la liste désactivé (relu dans la base) : refus, rien n'est écrit
-      if (op.priority !== undefined && item.list_priority_enabled !== 1) throw new OpError(400, PRIORITY_OFF);
-      if (op.dueDate !== undefined && item.list_due_enabled !== 1) throw new OpError(400, DUE_OFF);
       checkEanForList(isShoppingList(item.list_type), op);
       const ean = op.ean === undefined ? item.ean : eanOf(op.ean);
       const priority = op.priority === undefined ? item.priority : priorityOf(op.priority);

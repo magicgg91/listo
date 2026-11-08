@@ -129,19 +129,20 @@ test('protocole : JSON invalide, corps trop gros, lot refusé, requête mal form
   assert.equal(evil.headers.get('access-control-allow-origin'), null, 'pas de CORS');
 });
 
-test('tools/list : quatre outils, annotations (lecture, ajout, cochage), descriptions sans donnée d\'un compte', async (t) => {
+test('tools/list : cinq outils, annotations (lecture, ajout, cochage, priorité et échéance), descriptions sans donnée d\'un compte', async (t) => {
   const h = await household(t);
   const { access_token: token } = await connect(h, h.guillaume, PASSWORD);
   const { tools } = (await claude(h, token).rpc('tools/list')).body.result;
-  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked']);
+  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'set_item_options']);
   const hints = Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]));
   for (const name of ['list_lists', 'read_list']) assert.equal(hints[name].readOnlyHint, true, name);
-  for (const name of ['add_items', 'set_checked']) {
+  for (const name of ['add_items', 'set_checked', 'set_item_options']) {
     assert.equal(hints[name].readOnlyHint, false, name);
     assert.equal(hints[name].destructiveHint, false, name);
   }
   assert.equal(hints.add_items.idempotentHint, false);
   assert.equal(hints.set_checked.idempotentHint, true);
+  assert.equal(hints.set_item_options.idempotentHint, true);
   for (const tool of tools) {
     assert.equal(tool.annotations.openWorldHint, false);
     assert.equal(tool.inputSchema.type, 'object');

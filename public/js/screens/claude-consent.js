@@ -113,7 +113,7 @@ function consentForm(id, { request, account, twoFactor, lists }) {
   const scopeHint = h('p', { class: 'field__hint' });
   const paintScopeHint = () => {
     scopeHint.textContent = scope === 'write'
-      ? 'Claude pourra lire vos listes, y ajouter des éléments et les cocher. Jamais supprimer ni partager.'
+      ? 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et régler leur priorité et leur échéance. Jamais supprimer, renommer ni partager.'
       : 'Claude pourra lire vos listes, sans rien y changer.';
   };
   paintScopeHint();

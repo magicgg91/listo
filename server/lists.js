@@ -199,6 +199,42 @@ function listIconOf(value) {
 const quantity = (value) => optionalText(value, 30, 'Quantité');
 const note = (value) => optionalText(value, 500, 'Note');
 
+// Lien et prix : listes d'envies seulement ; une liste d'envies n'a pas
+// de quantité. Vérifié avant toute écriture.
+function checkWishFields(wishes, op) {
+  if (!wishes && (op.link !== undefined || op.priceCents !== undefined)) {
+    throw new OpError(400, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
+  }
+  if (wishes && typeof op.quantity === 'string' && op.quantity.trim() !== '') {
+    throw new OpError(400, 'Pas de quantité dans une liste d\'envies.');
+  }
+}
+
+// Modification d'un élément par la connexion Claude (update_items) : les
+// MÊMES règles que l'opération item.update de l'application (nom, quantité,
+// note, quantité refusée dans une liste d'envies, priorité et échéance avec
+// itemOptionsError), pour tout vérifier AVANT d'écrire. Renvoie { error }
+// (message de l'application) ou { fields } : les valeurs telles que
+// l'application les enregistrera (nom et textes nettoyés), seulement pour
+// les champs demandés. type : type de la liste ; enabled : ses réglages.
+export function checkItemEdit(type, enabled, op) {
+  try {
+    const fields = {};
+    if (op.name !== undefined) fields.name = itemName(op.name);
+    if (op.quantity !== undefined) fields.quantity = quantity(op.quantity);
+    if (op.note !== undefined) fields.note = note(op.note);
+    checkWishFields(isWishList(type), op);
+    const error = itemOptionsError(type, enabled, op);
+    if (error) return { error };
+    if (op.priority !== undefined) fields.priority = op.priority;
+    if (op.dueDate !== undefined) fields.dueDate = op.dueDate;
+    return { fields };
+  } catch (err) {
+    if (err instanceof OpError) return { error: err.message };
+    throw err;
+  }
+}
+
 // --- Accès aux données ---
 
 export function createListService(ctx) {
@@ -474,17 +510,6 @@ export function createListService(ctx) {
   function checkEanForList(isShopping, op) {
     if (!isShopping && op.ean !== undefined) {
       throw new OpError(400, 'Le code-barres ne se choisit que dans une liste de courses.');
-    }
-  }
-
-  // Lien et prix : listes d'envies seulement ; une liste d'envies n'a pas
-  // de quantité. Vérifié avant toute écriture.
-  function checkWishFields(wishes, op) {
-    if (!wishes && (op.link !== undefined || op.priceCents !== undefined)) {
-      throw new OpError(400, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
-    }
-    if (wishes && typeof op.quantity === 'string' && op.quantity.trim() !== '') {
-      throw new OpError(400, 'Pas de quantité dans une liste d\'envies.');
     }
   }
 

@@ -53,7 +53,7 @@ test('règle partagée : type de liste, réglage activé, valeur, vraie date du 
   assert.equal(itemOptionsError('tasks', on, { dueDate: '2028-02-29' }), null, 'année bissextile');
   // L'application (item.update, item.create) et Claude utilisent cette seule fonction
   const lists = read('server/lists.js');
-  assert.equal((lists.match(/itemOptionsError\(/g) ?? []).length, 3, 'définie une fois, utilisée par item.create et item.update');
+  assert.equal((lists.match(/itemOptionsError\(/g) ?? []).length, 4, 'définie une fois, utilisée par item.create, item.update et checkItemEdit (update_items)');
   assert.doesNotMatch(lists, /throw new OpError\(400, PRIORITY_OFF\)|throw new OpError\(400, DUE_OFF\)/, 'plus de règle en double');
   const tools = read('server/mcp-tools.js');
   assert.match(tools, /const error = itemOptionsError\(typeOf\(list\), list, \{ priority: item\.priority, dueDate: item\.due_date \}\);/);
@@ -280,10 +280,10 @@ test('descriptions et instructions : ce que Claude peut faire, exactement ; read
   assert.deepEqual(Object.keys(options.inputSchema.properties.items.items.properties), ['id', 'priority', 'due_date']);
   assert.equal(options.inputSchema.properties.items.items.additionalProperties, false);
   assert.deepEqual(options.inputSchema.properties.items.items.properties.priority.enum, ['low', 'normal', 'high']);
-  assert.match(INSTRUCTIONS, /add_items, set_checked et set_item_options \(modification limitée à la priorité et à l'échéance ; ni suppression, ni autre modification\)/);
+  assert.match(INSTRUCTIONS, /« Lecture et ajout » : en plus, add_items, set_checked et set_item_options \(modification limitée à la priorité et à l'échéance\)/);
   assert.doesNotMatch(INSTRUCTIONS, /rien d'autre : ni suppression, ni modification/);
   // Écrans de l'application : autorisation et « Connexions Claude »
   assert.match(read('public/js/screens/claude-consent.js'), /Claude pourra lire vos listes, y ajouter des éléments, les cocher et régler leur priorité et leur échéance\. Jamais supprimer, renommer ni partager\./);
   assert.match(read('public/js/screens/claude-connections.js'), /y ajouter des éléments, les cocher et régler leur priorité et leur échéance/);
-  assert.match(read('public/sw.js'), /const VERSION = `v64-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v6[4-9]-/);
 });

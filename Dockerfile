@@ -15,7 +15,7 @@
 # exactement de la même base, vérifiée. Dependabot propose chaque semaine une
 # pull request quand une nouvelle version de node:24-slim sort (correctifs) ;
 # le passage à une nouvelle version majeure se fait à la main (voir le README).
-FROM node:24-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
 
 ENV NODE_ENV=production
 WORKDIR /app

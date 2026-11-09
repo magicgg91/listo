@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { createClient, ORIGIN } from './helpers.js';
 import { PASSWORD, MARIE_PASSWORD, household, connect, claude } from './mcp-helpers.js';
-import { helpSections } from '../public/js/help-content.js';
+import { GUIDE } from '../public/js/help-content.js';
 import { matchRoute } from '../public/js/router.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -144,14 +144,15 @@ test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\
   assert.match(screen, /nom donné par l\\'application, non vérifié/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|https:\/\//);
   assert.ok(read('public/sw.js').includes("'/js/screens/claude-connections.js'"));
-  // Aide : rubrique ajoutée à « Pour tout le monde » avec l'adresse du serveur
-  const user = { role: 'user', claudeUrl: 'https://listo.exemple.fr/mcp' };
-  const topics = helpSections(user).find((s) => s.id === 'tous').topics;
-  const topic = topics.find((t) => t.title === 'Utiliser Listo avec Claude');
-  assert.ok(topic);
-  assert.ok(topic.items.some((line) => line.includes('https://listo.exemple.fr/mcp')));
-  assert.ok(topic.items.some((line) => line.includes('claude mcp add --transport http listo https://listo.exemple.fr/mcp')));
-  assert.equal(topic.items.some((line) => line.includes('{adresse}')), false);
-  assert.equal(helpSections({ role: 'user', claudeUrl: null }).find((s) => s.id === 'tous').topics.some((t) => t.title === 'Utiliser Listo avec Claude'), false);
-  assert.doesNotMatch(read('public/js/help-content.js'), /https:\/\/[a-z.]+\/mcp/, 'adresse jamais écrite en dur');
+  // Aide : le chapitre « Claude et Listo » du guide, le même pour tous ; il
+  // renvoie à « Connexions Claude » pour l'adresse réelle, et ne donne qu'une
+  // adresse d'exemple inventée
+  const claude = GUIDE.find((c) => c.id === 'claude');
+  const connect = JSON.stringify(claude.sections.find((s) => s.id === 'claude-connecter'));
+  assert.match(connect, /« Connexions Claude »/);
+  assert.match(connect, /« Copier l'adresse »/);
+  assert.match(connect, /claude mcp add --transport http listo https:\/\/listo\.exemple\.fr\/mcp/);
+  const addresses = [...read('public/js/help-content.js').matchAll(/https:\/\/([a-z.-]+)\/mcp/g)].map((m) => m[1]);
+  assert.ok(addresses.length && addresses.every((host) => host === 'listo.exemple.fr'), 'seulement l\'adresse d\'exemple');
+  assert.doesNotMatch(read('public/js/help-content.js'), /\{adresse\}|claudeUrl/);
 });

@@ -56,7 +56,7 @@ export function renderClaudeConnections() {
           h('p', { class: 'row__sub' }, 'À ajouter comme connecteur personnalisé dans Claude :'),
           h('p', { class: 'claude-connections__url' }, url),
           h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => copyAddress(url) }, icon('copy', 'icon--sm'), 'Copier l\'adresse')),
-        h('button', { class: 'row', type: 'button', onClick: () => navigate('help') },
+        h('button', { class: 'row', type: 'button', onClick: () => navigate('helpSection', { section: 'claude' }) },
           h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('book')),
           h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, 'Utiliser Listo avec Claude'), h('span', { class: 'row__sub' }, 'Aide : se connecter, ce que Claude peut faire')),
           icon('chev-r'))),

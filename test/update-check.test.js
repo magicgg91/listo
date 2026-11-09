@@ -263,7 +263,7 @@ test('À propos : liens vers GitHub ouverts à part (noopener noreferrer), libel
   assert.ok(source.includes("'aria-label': 'Projet Listo sur GitHub'"));
   assert.ok(source.includes("'aria-label': 'Vérifier maintenant'"));
   assert.ok(source.includes("class: 'icon-btn about__check'"));
-  // Aucune commande de serveur dans l'interface (elle reste dans docs/exploitation.md)
+  // Aucune commande de serveur dans l'interface (elle reste dans docs/guide.md)
   for (const file of ['public/js/format.js', 'public/js/screens/settings.js', 'public/js/app.js', 'design/components.html']) {
     assert.equal(fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8').includes('docker compose'), false, file);
   }

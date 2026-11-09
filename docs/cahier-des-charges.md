@@ -287,7 +287,7 @@ Le plus important reste l'écran d'une liste : il doit permettre d'ajouter et de
 
 ## Modèle de données
 
-Vingt-quatre tables SQLite (dont categories, gardée provisoirement, et reservations, reservation_states et visitor_reservations, listes d'envies) (avec recovery_codes, qui garde les codes de secours du 2FA, les deux tables des nouveautés et les six de l'autorisation pour Claude). Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant. Le schéma évolue par migrations numérotées (22 aujourd'hui), appliquées seules au démarrage ; la liste de celles qui ont suivi les onze étapes est dans [docs/exploitation.md](exploitation.md#9-mettre-à-jour-listo).
+Vingt-quatre tables SQLite (dont categories, gardée provisoirement, et reservations, reservation_states et visitor_reservations, listes d'envies) (avec recovery_codes, qui garde les codes de secours du 2FA, les deux tables des nouveautés et les six de l'autorisation pour Claude). Les listes et les articles ont un identifiant UUID créé côté téléphone, pour pouvoir les créer hors ligne sans conflit d'identifiant. Le schéma évolue par migrations numérotées (22 aujourd'hui), appliquées seules au démarrage ; la liste de celles qui ont suivi les onze étapes est dans le guide, [docs/guide.md](guide.md#migrations).
 
 | Table | Champs principaux | Remarques |
 | --- | --- | --- |
@@ -575,7 +575,7 @@ listo/
     vendor/         lecteur de codes-barres (zxing-wasm 3.1.4)
     icons/
   test/             tests automatisés (npm test)
-  docs/             ce cahier des charges, guide d'exploitation, détails techniques, captures
+  docs/             ce cahier des charges, guide (guide.md), détails techniques, captures
   design/           kit de design et maquettes
   data/             volume Docker : base listo.db, sauvegardes, photos/, journal.log (jamais dans le dépôt)
   secrets/          volume Docker séparé : secret.key (jamais dans le dépôt)
@@ -611,7 +611,7 @@ services:
       - ./secrets:/secrets
 ```
 
-Le rôle de chaque variable est expliqué dans [docs/exploitation.md](exploitation.md#2-fichiers-à-créer-sur-le-serveur) ; LISTO_COMMIT est posée par l'image elle-même.
+Le rôle de chaque variable est expliqué dans le guide, [docs/guide.md](guide.md#variables) ; LISTO_COMMIT est posée par l'image elle-même.
 
 **Points d'attention**
 
@@ -626,7 +626,7 @@ Le rôle de chaque variable est expliqué dans [docs/exploitation.md](exploitati
 **Flux SSE derrière Nginx Proxy Manager**
 
 - Le serveur envoie l'en-tête X-Accel-Buffering: no sur le flux, et un signal de maintien de connexion toutes les 25 secondes.
-- Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : docs/exploitation.md, chapitre 3).
+- Ajouter aussi dans l'onglet Advanced du proxy host : proxy_buffering off; proxy_cache off; proxy_read_timeout 3600s; (réglages complets de Nginx Proxy Manager : docs/guide.md, section « Régler Nginx Proxy Manager »).
 - Pour le reconnaître : un article coché sur un téléphone n'apparaît sur l'autre qu'au bout d'une minute environ (synchronisation de secours) au lieu de quelques secondes.
 - Le temps réel passe par une connexion HTTP ordinaire (SSE), pas par WebSocket : l'option « Websockets Support » de Nginx Proxy Manager n'est pas nécessaire. Ce qui compte, c'est de couper le cache et la mise en mémoire tampon pour /api/events (les lignes ci-dessus).
 
@@ -645,7 +645,7 @@ Le rôle de chaque variable est expliqué dans [docs/exploitation.md](exploitati
 - Deux commandes à lancer sur le serveur, sous l'utilisateur node (elles refusent d'être lancées en root) : `docker exec -u node listo node server/backup-now.js` (sauvegarde à la demande, avant une mise à jour par exemple) et `docker exec -u node listo node server/admin-secours.js IDENTIFIANT` (mot de passe provisoire, et retrait du 2FA avec `--retirer-2fa`, quand plus aucun Admin ne peut se connecter).
 - Le dossier data (base, sauvegardes, photos, journal) est à inclure dans la sauvegarde habituelle de l'hôte : les photos sont de simples fichiers, absents de la copie de la base. La clé secrets/secret.key en est volontairement exclue : à copier une seule fois, à part (dans un gestionnaire de mots de passe, par exemple), car sans elle les secrets 2FA ne sont plus lisibles.
 - Mise à jour : `docker compose pull && docker compose up -d`, après une sauvegarde à la demande. Aucun code à récupérer sur le serveur. La base est conservée dans le volume et mise à jour seule au démarrage.
-- Procédures détaillées (installation, Nginx Proxy Manager, restauration, dépannage) : [docs/exploitation.md](exploitation.md).
+- Procédures détaillées (installation, Nginx Proxy Manager, restauration, dépannage) : le guide, [docs/guide.md](guide.md).
 
 ## Brief visuel pour Claude Design
 
@@ -858,7 +858,7 @@ Une entrée par écart ou par décision, avec sa date et sa raison ; le texte pr
   - list_lists : id, name, type (shopping ou other), category, item_count, checked_count, access (owner, editor ou reader) ;
   - read_list : list (id, name, type, category, store s'il y en a un, access), items (id, name, quantity, checked, note ; liste de courses : aisle ou store, ean ; autre liste : priority et due_date si l'option est activée), total, next_cursor ; 200 éléments au plus par appel (limit de 1 à 200) ; cochés omis sauf include_checked ; nom 100 caractères, quantité 50, note 200 ; l'identifiant des éléments et le droit du compte sont fournis dès maintenant (choix du propriétaire), pour l'étape C ;
   - corps de 20 ko (au lieu de 64 ko prévus), 120 appels par minute (au lieu de 60), Origin limitée à claude.ai et claude.com (l'origine de Listo, prévue au cadrage, est refusée : aucun navigateur n'a à appeler /mcp), une ligne de journal par appel d'outil, lectures comprises (le cadrage ne prévoyait que les écritures) : précisions du propriétaire ;
-  - LISTO_MCP ne doit pas être activé en production avant l'essai réel avec Claude (docs/exploitation.md, chapitre 14).
+  - LISTO_MCP ne doit pas être activé en production avant l'essai réel avec Claude (docs/guide.md, section « Claude : premier essai »).
 - **Accès depuis Claude, étape A : autorisation OAuth** (décisions du 31 octobre 2026, migration 17 ; conception dans [docs/mcp-cadrage.md](mcp-cadrage.md), validée). Raison : utiliser Listo depuis Claude sans lui donner son mot de passe ni créer de jeton personnel. Règles :
   - quatrième exception au principe « aucune donnée hors du serveur » et exception encadrée à « seul le lien public est accessible sans compte » (voir Principes directeurs et Sécurité) ; LISTO_MCP désactivé par défaut, jamais activé dans docker-compose.yml ;
   - écrit à la main (node:crypto, express, better-sqlite3), sans bibliothèque OAuth ni MCP ;

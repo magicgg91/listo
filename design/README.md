@@ -154,7 +154,7 @@ Maquettes (`maquettes/`, chacune en `-clair` et `-sombre`) :
 
 ## Ajout : bloc « À propos » (Réglages)
 
-Une carte `.group` en deux zones `.row` séparées par un trait fin. Styles : section 16.6 de `listo.css` (variables existantes uniquement). Balisage : dernière partie de `components.html`. Aucune nouvelle icône. Aucune commande de serveur dans l'interface (elle reste dans `docs/exploitation.md`).
+Une carte `.group` en deux zones `.row` séparées par un trait fin. Styles : section 16.6 de `listo.css` (variables existantes uniquement). Balisage : dernière partie de `components.html`. Aucune nouvelle icône. Aucune commande de serveur dans l'interface (elle reste dans le guide, `docs/guide.md`).
 
 - `.row.about` (zone 1), ligne du haut : à gauche, `.row__title.about__version` « Version : » + lien `.about__link` sur les 7 caractères du commit (zone tactile de 44 px par marges négatives, sans agrandir la ligne). À droite, pour l'Admin, `.about__actions` : un état éventuel dans `.about__state` (`role="status"`, masqué s'il est vide), puis `.about__checked`, qui garde ensemble (`nowrap`) le texte `.row__sub` (`role="status"`) et le bouton-icône `.icon-btn.about__check` (`#i-sync`, `aria-label="Vérifier maintenant"`, 44 px ; pendant la vérification : `disabled` et `.is-busy`, l'icône tourne sauf mouvement réduit). Le texte est « Vérifié il y a 15 min », ou, à jour, « À jour · il y a 15 min » (`.about__ok`, vert ET écrit : une pastille de plus ne tient pas sur la ligne d'un téléphone de 375 px). Trop étroit (360 px, texte agrandi) : le groupe passe sous la version, aligné à droite.
 - Nouvelle version : `.about__update`, ligne à part sous la ligne du haut (`flex: 1 0 100%`), avec la seule pastille `.chip--accent` « Nouvelle version : 7025130 » (`#i-alert`), toute la pastille est un lien `.about__chip-link` vers le commit (`aria-label="Nouvelle version disponible : 7025130, ouvrir sur GitHub"`, zone tactile étendue à 44 px), sans bouton à côté. Sans nouvelle version, cette ligne n'existe pas. `.chip--neutral` « Vérification impossible » ou « Hors ligne » : dans `.about__state`, ligne du haut.
@@ -352,13 +352,16 @@ Styles : `public/css/app.css` (`.tabs--sub`). Balisage : « Administration : ong
 - Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ». **Depuis le 1er novembre 2026** : « Comptes » et « Courses » seulement (les catégories sont remplacées par les types de liste).
 - Sous « Courses », une seconde barre `.tabs.tabs--sub` (`role="tablist"`, `aria-label="Courses"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-selected="true"` : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
 
-## Ajout : page « Aide »
+## Ajout : page « Aide » (le guide numéroté)
 
-Styles : `public/css/app.css` (`.help`, `.help-who__*`, `.help__*`). Balisage : « Page « Aide » » dans `components.html`. Aucune nouvelle icône (`i-book` pour la ligne des Réglages, `i-check` / `i-close` dans les pastilles).
+Styles : `public/css/app.css` (`.help`, `.help-who__*`, `.help__*`, `.help-table__*`, `.help-toc__*`). Contenu : `public/js/help-content.js`, la même source que `docs/guide.md`. Aucune nouvelle icône : `i-book` pour la ligne des Réglages, `i-layers` pour « Sommaire », `i-arrow-up` pour « Haut de page », `i-chev-r` pour la section en cours, `i-wrench` pour « Pour la personne qui gère le serveur », `i-check` / `i-close` dans les pastilles, `i-alert` dans les encadrés.
 
 - Réglages : une `.row` « Aide » (`#i-book`, sous-titre « Mode d'emploi de Listo »), sous un `.section-title` « Aide ».
-- « Qui peut quoi » : `.section-title`, puis un `.group` de `.help-who__row` (l'action en gras, puis `ul.help-who__roles` de `.chip.help-who__role`). Oui : fond d'accent doux, `#i-check` ; non : fond transparent, bord pointillé, `#i-close`, texte secondaire. Le « oui » / « non » est aussi écrit pour les lecteurs d'écran (`.visually-hidden`). Note `.help__note` en dessous.
-- Sections : `section.help__part` > `h2.aisle.aisle--fold` > `button.aisle__toggle` (`aria-expanded`, `aria-controls`, chevron qui tourne), puis `.help__section` (masqué replié) fait de `.card.help__topic` : `h3.help__title`, `p.help__text`, `ul.help__list` (puces).
+- Chapitres numérotés : `section.help__part` > `h2.aisle.aisle--fold` (en-tête collé en haut pendant le défilement) > `button.aisle__toggle` (`aria-expanded`, `aria-controls`, chevron qui tourne), puis `.help__section` (masqué replié). Seul le premier est déplié au départ.
+- Sections numérotées : `.card.help__topic` > `h3.help__title` (ancre `guide-<identifiant>`, focusable pour les sauts ; s'arrête sous l'en-tête collé), puis les blocs : `p.help__text`, `ul.help__list`, `ol.help__list--steps`, `pre.help__code` (commandes, retour à la ligne), `code.help__code-inline`, `.note.help__note-box` (encadré), `h4.help__sub`, `a.help__ref` (renvoi vers une autre section).
+- Tableaux : `.help-table` en blocs empilés, lisibles à 320 px (première colonne en titre, les autres en « Titre : valeur »).
+- « Qui peut quoi » (chapitre « Rôle par rôle ») : un `.group` de `.help-who__row` (l'action en gras, puis `ul.help-who__roles` de `.chip.help-who__role`, cinq rôles). Oui : fond d'accent doux, `#i-check` ; non : fond transparent, bord pointillé, `#i-close`, texte secondaire. Le « oui » / « non » est aussi écrit pour les lecteurs d'écran (`.visually-hidden`).
+- « Sommaire » : le bouton flottant `.fab` (comme « Nouvelle liste »), `aria-haspopup="dialog"`, `aria-expanded`. Il ouvre la feuille du kit (`.sheet--scroll`) : « Haut de page », puis le sommaire sur deux niveaux, entrées de 44 px ; la section en cours a `aria-current="location"`, une flèche et un texte en gras (pas seulement une couleur). Échap ou la croix ferment et rendent le focus au bouton.
 
 ## Ajout : tri d'une liste de courses
 

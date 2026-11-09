@@ -402,15 +402,27 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .help-table__key { margin: 0 0 2px; font-weight: 600; }
 .help-table__cell { margin: 0; font-size: var(--text-sm); }
 .help-table__head { color: var(--color-text-2); }
+/* Recherche dans le guide : le champ du kit (.searchfield, 48 px), le
+   compteur annoncé dessous, un message quand rien n'est trouvé */
+.help-search { display: flex; flex-direction: column; gap: 4px; padding: var(--space-1) 0; }
+/* Dans une colonne, « flex: 1 » du champ du kit écraserait sa hauteur de 48 px */
+.help-search .searchfield { flex: none; }
+.help-search__status { margin: 0 var(--space-1); min-height: 1.4em; font-size: var(--text-sm); color: var(--color-text-2); }
+.help-search__status:empty { min-height: 0; }
+.help-search__empty { padding: var(--space-3) var(--space-2); }
 /* Feuille « Sommaire » : deux niveaux, entrées de 44 px ; la section en
    cours a une flèche ET un texte en gras (pas seulement une couleur) */
 .help-toc { display: flex; flex-direction: column; padding-bottom: var(--space-2); }
 .help-toc__list { margin: 0; padding: 0; list-style: none; }
-.help-toc__list--sub { padding-left: var(--space-2); }
 .help-toc__entry { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--tap-min); padding: 6px var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font: inherit; text-align: left; }
 .help-toc__entry--1 { font-weight: 700; }
 .help-toc__entry.is-current { background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
 .help-toc__top { color: var(--color-accent-ink); font-weight: 600; }
+/* Chapitres du sommaire : boutons qui déplient leurs sections (un seul à la
+   fois), chevron qui tourne comme celui des groupes */
+.help-toc__chapter > .icon { flex: none; transition: transform 160ms var(--ease); }
+.help-toc__chapter[aria-expanded="false"] > .icon { transform: rotate(-90deg); }
+.help-toc__list--sub { padding-left: calc(var(--space-2) + 20px); }
 
 /* Recherche (search-row.js, section 16.12 de listo.css) */
 /* Champ de type « search » : ni la croix ni l'arrondi du navigateur (la

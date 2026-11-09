@@ -84,11 +84,22 @@ export function guideMarkdown() {
     '',
     '<!-- Fichier fabriqué par scripts/guide.js à partir de public/js/help-content.js : ne pas le modifier à la main. -->',
     '',
-    `Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [${SITE_URL}](${SITE_URL}). Les chapitres marqués « Pour la personne qui gère le serveur » ne concernent que l'installation et l'entretien.`,
+    `Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [${SITE_URL}](${SITE_URL}). Les parties marquées « Pour la personne qui gère le serveur » ne concernent que l'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d'exploitation, [docs/exploitation.md](exploitation.md).`,
     '',
     '## Sommaire',
     '',
-    ...entries.map((e) => `${e.level === 2 ? '  ' : ''}- [${escape(numbered(e))}](#${e.id})`),
+    // Chapitres seulement ; chacun déplie ses sections (<details>, affiché
+    // par GitHub) : « Aller au chapitre », puis les sections
+    ...entries.filter((e) => e.level === 1).flatMap((chapter) => [
+      '<details>',
+      `<summary>${html(numbered(chapter))}</summary>`,
+      '',
+      `- [Aller au chapitre](#${chapter.id})`,
+      ...entries.filter((e) => e.chapter === chapter.id).map((e) => `- [${escape(numbered(e))}](#${e.id})`),
+      '',
+      '</details>',
+      '',
+    ]),
   ];
   const heading = (level, id) => ['', `<a id="${id}"></a>`, '', `${'#'.repeat(level)} ${escape(numbered(entryOf.get(id)))}`];
   for (const chapter of GUIDE) {
@@ -151,16 +162,22 @@ function blockHtml(entry) {
 
 const serverNote = () => `<p class="help__server">${svgIcon('wrench', 'icon--xs')}${html(SERVER_NOTE)}</p>`;
 
-// Sommaire : liens vers les ancres ; inSheet : entrées de la feuille, avec
-// la marque de la section en cours (cachée, montrée par guide.js)
-function tocHtml(inSheet) {
+// Sommaire du haut de la page : un <details> natif par chapitre (marche sans
+// JavaScript ; name : un seul ouvert à la fois), « Aller au chapitre » puis
+// les sections
+function pageTocHtml() {
   const entries = outline();
-  const entry = (e) => {
-    const mark = inSheet ? `<span class="help-toc__mark" hidden>${svgIcon('chev-r', 'icon--sm')}</span>` : '';
-    const current = inSheet ? '<span class="visually-hidden" hidden> (section en cours)</span>' : '';
-    return `<a class="help-toc__entry help-toc__entry--${e.level}" href="#${e.id}"${inSheet ? ` data-section="${e.id}"` : ''}>${mark}<span>${html(numbered(e))}</span>${current}</a>`;
-  };
-  return `<ol class="help-toc__list">${entries.filter((e) => e.level === 1).map((chapter) => `\n<li>${entry(chapter)}<ol class="help-toc__list help-toc__list--sub">${entries.filter((e) => e.chapter === chapter.id).map((s) => `<li>${entry(s)}</li>`).join('')}</ol></li>`).join('')}\n</ol>`;
+  const link = (e, label = numbered(e)) => `<a class="help-toc__entry help-toc__entry--2" href="#${e.id}">${html(label)}</a>`;
+  return `<ol class="help-toc__list">${entries.filter((e) => e.level === 1).map((chapter) => `\n<li><details class="site__toc-chapter" name="sommaire-page"><summary class="help-toc__entry help-toc__entry--1">${svgIcon('chev-d', 'icon--sm')}<span>${html(numbered(chapter))}</span></summary><ol class="help-toc__list help-toc__list--sub"><li>${link(chapter, 'Aller au chapitre')}</li>${entries.filter((e) => e.chapter === chapter.id).map((e) => `<li>${link(e)}</li>`).join('')}</ol></details></li>`).join('')}\n</ol>`;
+}
+
+// Sommaire de la feuille : chaque chapitre est un bouton (aria-expanded,
+// aria-controls) qui déplie ses sections, un seul à la fois (guide.js) ; la
+// marque de la section en cours est cachée, montrée par guide.js
+function sheetTocHtml() {
+  const entries = outline();
+  const entry = (e, label = numbered(e)) => `<a class="help-toc__entry help-toc__entry--2" href="#${e.id}" data-section="${e.id}"><span class="help-toc__mark" hidden>${svgIcon('chev-r', 'icon--sm')}</span><span>${html(label)}</span><span class="visually-hidden" hidden> (section en cours)</span></a>`;
+  return `<ol class="help-toc__list">${entries.filter((e) => e.level === 1).map((chapter) => `\n<li><button class="help-toc__entry help-toc__entry--1 help-toc__chapter" type="button" aria-expanded="false" aria-controls="sommaire-${chapter.id}" data-chapter="${chapter.id}">${svgIcon('chev-d', 'icon--sm')}<span>${html(numbered(chapter))}</span></button><ol class="help-toc__list help-toc__list--sub" id="sommaire-${chapter.id}" hidden><li>${entry(chapter, 'Aller au chapitre')}</li>${entries.filter((e) => e.chapter === chapter.id).map((e) => `<li>${entry(e)}</li>`).join('')}</ol></li>`).join('')}\n</ol>`;
 }
 
 // Le sprite d'icônes de l'application, collé tel quel (aucun fichier distant)
@@ -181,11 +198,16 @@ function siteCss() {
   // En-tête collé d'une feuille qui défile (fiche d'un article, sommaire)
   const sheetHead = app.split('\n').filter((line) => /^\.sheet__(head--tools|heading|tools) /.test(line));
   if (sheetHead.length !== 4) throw new Error('En-tête de feuille introuvable dans public/css/app.css');
+  // Champ de recherche : ni la croix ni l'arrondi du navigateur, pas de
+  // second contour (le cadre .searchfield montre déjà le focus)
+  const searchInput = app.split('\n').filter((line) => /^(\.app )?\.searchfield(__input[ :{,]| > \.icon )/.test(line));
+  if (searchInput.length !== 4) throw new Error('Règles du champ de recherche introuvables dans public/css/app.css');
   return [
     '/* Fichier fabriqué par scripts/guide.js : ne pas le modifier à la main. */',
     '/* Règles de la page « Aide » et de l\'en-tête de feuille de l\'application (public/css/app.css) */',
     app.slice(start, end).trimEnd(),
     ...sheetHead,
+    ...searchInput,
     '',
     read('scripts/site-assets/site.css'),
   ].join('\n');
@@ -228,7 +250,7 @@ export function siteHtml() {
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="listo.css">
 <link rel="stylesheet" href="guide.css">
-<script src="guide.js" defer></script>
+<script type="module" src="guide.js"></script>
 </head>
 <body class="app site">
 ${sprite()}
@@ -236,12 +258,17 @@ ${sprite()}
 <div class="site__inner">
 <header class="site__head">
 <div class="site__brand"><img class="site__logo" src="icon.svg" alt="" width="44" height="44"><h1 class="site__title" id="haut" tabindex="-1">Listo : le guide</h1></div>
-<p class="site__intro">Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide »). Les chapitres marqués « ${html(SERVER_NOTE)} » ne concernent que l'installation et l'entretien.</p>
+<p class="site__intro">Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide »). Les parties marquées « ${html(SERVER_NOTE)} » ne concernent que l'installation du serveur.</p>
 </header>
+<div class="help-search" id="guide-recherche" hidden>
+<label class="searchfield">${svgIcon('search', 'icon--sm')}<input class="searchfield__input" id="guide-recherche-champ" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="100" placeholder="Rechercher dans le guide" aria-label="Rechercher dans le guide"><button class="icon-btn" type="button" aria-label="Effacer la recherche" data-clear hidden>${svgIcon('x-circle')}</button></label>
+<p class="help-search__status" role="status"></p>
+</div>
 <nav class="card site__toc" aria-labelledby="sommaire-page"><h2 class="site__toc-title" id="sommaire-page">Sommaire</h2>
-${tocHtml(false)}
+${pageTocHtml()}
 </nav>
 <main class="help" id="contenu">
+<div class="empty help-search__empty" id="guide-recherche-vide" hidden>${svgIcon('search', 'icon--lg')}<p class="empty__text">Aucun résultat. Essayez un autre mot, ou ouvrez le sommaire.</p></div>
 ${chapters.join('\n')}
 </main>
 <footer class="site__foot"><p>Listo est un logiciel libre (licence Apache-2.0). Code source : <a href="${REPO_URL}" rel="noopener noreferrer">${REPO_URL.replace('https://', '')}</a>.</p></footer>
@@ -252,7 +279,7 @@ ${chapters.join('\n')}
 <div class="sheet__head sheet__head--tools"><div class="sheet__heading"><h2 class="sheet__title" id="sommaire-titre">Sommaire</h2></div><div class="sheet__tools"><button class="icon-btn" type="button" aria-label="Fermer" data-close>${svgIcon('close')}</button></div></div>
 <nav class="help-toc" aria-label="Sommaire">
 <a class="help-toc__entry help-toc__top" href="#haut">${svgIcon('arrow-up', 'icon--sm')}<span>Haut de page</span></a>
-${tocHtml(true)}
+${sheetTocHtml()}
 </nav>
 </dialog>
 </body>
@@ -267,6 +294,7 @@ export function siteFiles() {
     'listo.css': read('public/css/listo.css'),
     'guide.css': siteCss(),
     'guide.js': read('scripts/site-assets/guide.js'),
+    'search.js': read('public/js/search.js'),
     'icon.svg': read('public/icons/icon.svg'),
   };
 }

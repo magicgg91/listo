@@ -1,7 +1,9 @@
-// Page « Aide » (#/aide, #/aide/<section>) : le guide numéroté, source
-// unique (public/js/help-content.js), chapitres repliables, bouton
-// « Sommaire », même contenu et mêmes numéros pour tout le monde, disponible
-// hors ligne. Un petit faux document suffit pour dessiner l'écran ; la
+// Page « Aide » (#/aide, #/aide/<section>) : le guide numéroté en 8
+// chapitres, source unique (public/js/help-content.js), recherche, chapitres
+// repliables, bouton « Sommaire » (chapitres repliables, un seul déplié),
+// même contenu et mêmes numéros pour tout le monde, disponible hors ligne ;
+// tout ce qui concerne Claude dans « MCP Claude » ; l'entretien du serveur
+// dans docs/exploitation.md, hors du guide. Un petit faux document suffit pour dessiner l'écran ; la
 // feuille du sommaire, les sauts et le thème sont vérifiés dans Chromium
 // (docs/developpement.md, point 36).
 
@@ -10,7 +12,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { matchRoute, ROUTES } from '../public/js/router.js';
-import { GUIDE, PERMISSIONS, PERMISSIONS_NOTE, ROLES, SERVER_NOTE, outline, numbered, parseInline, refLabel, blockTexts } from '../public/js/help-content.js';
+import { GUIDE, PERMISSIONS, PERMISSIONS_NOTE, ROLES, SERVER_NOTE, outline, numbered, parseInline, refLabel, blockTexts, searchGuide, plainText } from '../public/js/help-content.js';
+import { resultsLabel } from '../public/js/search.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -39,6 +42,10 @@ class FakeNode {
   addEventListener(type, fn) { (this.listeners[type] ??= []).push(fn); }
   click() { for (const fn of this.listeners.click ?? []) fn({ preventDefault() {} }); }
   get textContent() { return this.children.map((c) => c.textContent ?? '').join(''); }
+  set textContent(text) { this.children = text === '' ? [] : [new FakeText(text)]; }
+  replaceChildren(...nodes) { this.children = nodes; }
+  fire(type, event = {}) { for (const fn of this.listeners[type] ?? []) fn({ preventDefault() {}, ...event }); }
+  focus() { this.focused = true; }
   findAll(check) {
     const found = check(this) ? [this] : [];
     for (const child of this.children) if (child instanceof FakeNode) found.push(...child.findAll(check));
@@ -95,7 +102,8 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.equal(new Set(ids).size, ids.length, 'identifiants uniques');
   for (const id of ids) assert.match(id, /^[a-z][a-z0-9-]*$/, `ancre valable : ${id}`);
   // Ordre demandé : présentation, possibilités et Claude au début ; serveur à la fin
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'claude', 'installation', 'comptes', 'quotidien', 'roles', 'faq', 'serveur']);
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'claude', 'installation', 'comptes', 'quotidien', 'roles', 'faq']);
+  assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'MCP Claude');
   assert.deepEqual(entries.filter((e) => e.chapter === 'roles').map((e) => e.id).filter((id) => id.startsWith('role-')),
     ['role-admin', 'role-contributeur', 'role-lecture', 'role-visiteur', 'role-beneficiaire']);
   // Aucun numéro écrit à la main dans les titres
@@ -104,8 +112,9 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.equal(numbered(entries[1]), '1.1 Ce qu\'est Listo');
   // Même contenu pour tout le monde : plus de section réservée aux Admin
   assert.ok(GUIDE.every((c) => !('adminOnly' in c)));
-  // Chapitres du serveur : marqués
-  assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation', 'serveur']);
+  // Parties du serveur : marquées (un chapitre, et des sections d'autres chapitres)
+  assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation']);
+  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['mcp-serveur', 'mcp-regles', 'mcp-essai', 'secours', 'cle-perdue']);
 });
 
 test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens en https seulement', () => {
@@ -122,7 +131,7 @@ test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens e
     assert.doesNotMatch(text, /\[\[(?![a-z0-9-]+\]\])/, `renvoi mal écrit : ${text.slice(0, 60)}`);
   }
   assert.ok(refs > 40, `${refs} renvois`);
-  assert.equal(refLabel('restauration'), '9.2 Restaurer une sauvegarde');
+  assert.equal(refLabel('sauvegardes'), '4.7 Sauvegardes');
   assert.throws(() => refLabel('inconnu'));
   const kinds = new Set(allBlocks().map((b) => (typeof b === 'string' ? 'p' : Object.keys(b)[0])));
   assert.deepEqual([...kinds].sort(), ['code', 'note', 'ol', 'p', 'sub', 'table', 'ul', 'who']);
@@ -132,11 +141,11 @@ test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens e
   assert.deepEqual(parseInline('[lien](javascript:alert(1))'), [{ text: '[lien](javascript:alert(1))' }], 'seulement https');
 });
 
-test('contenu : les parties demandées sont là (types, possibilités, Claude, installation, comptes, rôles, dépannage, serveur)', () => {
+test('contenu : les parties demandées sont là (types, possibilités, MCP Claude, installation, comptes, rôles, dépannage)', () => {
   const ids = new Set(outline().map((e) => e.id));
   for (const id of ['types', 'vocabulaire', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'claude-prudence', 'claude-activation',
-    'prerequis', 'dossier', 'npm', 'demarrage', 'cle', 'verifications', 'premier-admin', 'creer-comptes', 'premiere-connexion', 'double-auth', 'oubli',
-    'faq-hors-ligne', 'faq-photo', 'faq-lien', 'faq-claude', 'sauvegardes', 'restauration', 'mises-a-jour', 'journaux', 'scan-serveur', 'mcp-serveur']) {
+    'prerequis', 'dossier', 'npm', 'demarrage', 'cle', 'sauvegardes', 'verifications', 'premier-admin', 'creer-comptes', 'premiere-connexion', 'double-auth', 'oubli', 'secours',
+    'faq-hors-ligne', 'faq-photo', 'faq-lien', 'faq-double-auth', 'cle-perdue', 'version', 'faq-claude', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
     assert.ok(ids.has(id), id);
   }
   const text = allTexts().join('\n');
@@ -156,10 +165,10 @@ test('aucun secret ni adresse réelle : seulement des exemples inventés ; vouvo
   // Domaines : l'exemple inventé, et des sites publics connus
   const hosts = [...text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase());
   // (« ip » : le nom à remplacer de http://IP:13300 et http://IP_LOCALE:13300)
-  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'ip'].includes(host), host);
+  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'platform.claude.com', 'ip'].includes(host), host);
   assert.doesNotMatch(text, /mondomaine/);
-  // Adresses IP : réseau local d'exemple, ou la plage publique d'Anthropic
-  for (const ip of text.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g) ?? []) assert.ok(/^192\.168\.1\.\d+$|^160\.79\.104\.0$|^0\.0\.0\.0$/.test(ip), ip);
+  // Adresses IP : seulement le réseau local d'exemple (la liste d'Anthropic est un lien vers sa page officielle, jamais une plage recopiée)
+  for (const ip of text.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g) ?? []) assert.ok(/^192\.168\.1\.\d+$|^0\.0\.0\.0$/.test(ip), ip);
   // Pas de code de démarrage réel, ni de clé
   assert.doesNotMatch(text, /K7RM|BEGIN|sk-/);
   assert.doesNotMatch(text, /(?<!\p{L})(tu|ton|tes|ta)(?!\p{L})/iu, 'vouvoiement');
@@ -187,8 +196,8 @@ test('écran : chapitres numérotés repliables (premier déplié), titres h2 et
   assert.deepEqual(h3.map((n) => n.textContent), outline().filter((e) => e.level === 2).map(numbered));
   assert.deepEqual(h3.map((n) => n.attrs.id), outline().filter((e) => e.level === 2).map((e) => `guide-${e.id}`));
   assert.ok([...h2, ...h3].every((n) => n.attrs.tabindex === '-1'), 'focus possible après un saut');
-  // Mention des chapitres du serveur
-  assert.equal(screen.findAll((n) => hasClass(n, 'help__server')).length, GUIDE.filter((c) => c.server).length);
+  // Mention des parties du serveur (chapitre et sections)
+  assert.equal(screen.findAll((n) => hasClass(n, 'help__server')).length, GUIDE.filter((c) => c.server).length + GUIDE.flatMap((c) => c.sections ?? []).filter((x) => x.server).length);
   assert.ok(screen.textContent.includes(SERVER_NOTE));
   // Bouton « Sommaire » : texte visible, aria-label, aria-expanded, fenêtre annoncée
   const toc = screen.findAll((n) => hasClass(n, 'help__toc-btn'))[0];
@@ -201,7 +210,10 @@ test('écran : chapitres numérotés repliables (premier déplié), titres h2 et
   // Barre du haut, aucun champ de saisie
   assert.equal(screen.findAll((n) => hasClass(n, 'topbar__title'))[0].textContent, 'Aide');
   assert.equal(screen.findAll((n) => n.attrs['aria-label'] === 'Retour').length, 1);
-  assert.equal(screen.findAll((n) => n.tag === 'input' || n.tag === 'textarea').length, 0);
+  // Un seul champ, la recherche ; il ne prend jamais le focus tout seul
+  const fields = screen.findAll((n) => n.tag === 'input' || n.tag === 'textarea');
+  assert.equal(fields.length, 1);
+  assert.equal(fields[0].focused, undefined);
   // Renvois : de vrais liens vers #/aide/<section> ; liens externes protégés
   const refs = screen.findAll((n) => hasClass(n, 'help__ref'));
   assert.ok(refs.length > 40);
@@ -209,10 +221,11 @@ test('écran : chapitres numérotés repliables (premier déplié), titres h2 et
   const external = screen.findAll((n) => n.tag === 'a' && /^https:/.test(n.attrs.href ?? ''));
   assert.ok(external.length >= 1 && external.every((a) => a.attrs.rel === 'noopener noreferrer' && a.attrs.target === '_blank'));
   // Un renvoi déplie le chapitre de sa cible
-  const toRestore = refs.find((a) => a.attrs.href === '#/aide/restauration');
-  assert.equal(buttons[8].getAttribute('aria-expanded'), 'false');
-  toRestore.click();
-  assert.equal(buttons[8].getAttribute('aria-expanded'), 'true');
+  const toBackups = refs.find((a) => a.attrs.href === '#/aide/sauvegardes');
+  buttons[3].click(); // replié d'abord (il a été déplié plus haut)
+  assert.equal(buttons[3].getAttribute('aria-expanded'), 'false');
+  toBackups.click();
+  assert.equal(buttons[3].getAttribute('aria-expanded'), 'true');
 });
 
 test('« Qui peut quoi » : cinq rôles, oui ou non en icône ET en texte ; droits vérifiés', async (t) => {
@@ -261,6 +274,7 @@ test('sommaire : feuille du kit (openSheet), section en cours repérée sans la 
   assert.match(screen, /openSheet\(\{\s*title: 'Sommaire',/);
   assert.match(screen, /returnTo: tocButton,/);
   assert.match(screen, /'aria-current': current \? 'location' : null/);
+  assert.match(screen, /tocContent\(\{ entries, here, hereChapter, onChoose: choose \}\)/);
   assert.match(screen, /current \? icon\('chev-r', 'icon--sm'\) : null/);
   assert.match(screen, /\(section en cours\)/);
   assert.match(screen, /'Haut de page'/);
@@ -276,5 +290,173 @@ test('hors ligne : les fichiers de l\'aide sont gardés par le service worker, n
   const sw = read('public/sw.js');
   assert.match(sw, /'\/js\/help-content\.js',/);
   assert.match(sw, /'\/js\/screens\/help\.js',/);
-  assert.match(sw, /const VERSION = `v6[7-9]-/);
+  assert.match(sw, /const VERSION = `v69-/);
+  assert.match(sw, /'\/js\/search\.js',/);
+});
+
+// --- Recherche dans le guide ---
+
+test('recherche (source) : titres et texte, majuscules et accents ignorés ; chapitres et sections trouvés ; compteur ; rien trouvé', () => {
+  assert.equal(searchGuide(''), null);
+  assert.equal(searchGuide('   '), null);
+  const a = searchGuide('sauvegarde');
+  const b = searchGuide('SAUVEGARDÉ');
+  assert.deepEqual(a, b, 'majuscules et accents ignorés');
+  assert.ok(a.count >= 3, `${a.count} résultats`);
+  const install = a.chapters.find((c) => c.id === 'installation');
+  assert.ok(install.sections.includes('sauvegardes') && install.sections.includes('cle'));
+  assert.ok(!install.sections.includes('npm'), 'une section sans le mot est masquée');
+  assert.ok(!a.chapters.some((c) => c.id === 'quotidien'), 'un chapitre sans le mot est masqué');
+  // Le texte des renvois, du code et des tableaux compte aussi
+  assert.ok(searchGuide('LISTO_MCP').chapters.some((c) => c.id === 'claude'));
+  assert.ok(searchGuide('docker-compose.yml').count > 0);
+  assert.ok(searchGuide('Lecture seule').chapters.some((c) => c.id === 'roles' && c.intro), '« Qui peut quoi » compte');
+  // Un titre de chapitre trouvé : tout le chapitre
+  const claude = searchGuide('mcp claude').chapters.find((c) => c.id === 'claude');
+  assert.equal(claude.sections.length, GUIDE.find((c) => c.id === 'claude').sections.length);
+  // Rien
+  assert.deepEqual(searchGuide('zzqqxw'), { chapters: [], count: 0 });
+  // Caractères spéciaux : jamais lus comme une expression
+  assert.doesNotThrow(() => searchGuide('(*[<&'));
+  assert.equal(plainText('Voir [[sauvegardes]] et `docker logs listo`.'), 'Voir 4.7 Sauvegardes et docker logs listo.');
+});
+
+test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N résultats » annoncé, rien trouvé, Échap et la croix effacent', async (t) => {
+  const screen = await render(t);
+  const input = screen.findAll((n) => n.tag === 'input')[0];
+  assert.equal(input.attrs['aria-label'], 'Rechercher dans le guide');
+  assert.equal(input.attrs.type, 'search');
+  assert.ok(screen.findAll((n) => hasClass(n, 'searchfield')).length === 1, 'composant .searchfield du kit');
+  const status = screen.findAll((n) => n.attrs.role === 'status')[0];
+  const clear = screen.findAll((n) => n.attrs['aria-label'] === 'Effacer la recherche')[0];
+  assert.equal(clear.hidden, true);
+  const chapters = () => toggles(screen).map((b) => b.textContent);
+  assert.equal(chapters().length, 8);
+  // Taper : seuls les chapitres trouvés, dépliés ; texte surligné ; compteur
+  input.value = 'SAUVEGARDÉ';
+  input.fire('input');
+  const expected = searchGuide('sauvegarde');
+  assert.equal(status.textContent, resultsLabel(expected.count));
+  assert.equal(chapters().length, expected.chapters.length);
+  assert.ok(toggles(screen).every((b) => b.getAttribute('aria-expanded') === 'true'));
+  assert.equal(screen.findAll((n) => n.tag === 'h3').length, expected.chapters.reduce((n, c) => n + c.sections.length, 0));
+  const marks = screen.findAll((n) => n.tag === 'mark');
+  assert.ok(marks.length >= expected.count);
+  assert.ok(marks.every((m) => m.attrs.class === 'hit' && /^sauvegard/i.test(m.textContent)), marks.map((m) => m.textContent).join(','));
+  assert.equal(clear.hidden, false);
+  // Rien trouvé : message, « 0 résultat »
+  input.value = 'zzqqxw';
+  input.fire('input');
+  assert.equal(status.textContent, '0 résultat');
+  assert.equal(chapters().length, 0);
+  assert.match(screen.textContent, /Aucun résultat\./);
+  // Échap : tout revient (8 chapitres, le premier déplié, rien de surligné)
+  input.fire('keydown', { key: 'Escape' });
+  assert.equal(input.value, '');
+  assert.equal(status.textContent, '');
+  assert.equal(chapters().length, 8);
+  assert.equal(screen.findAll((n) => n.tag === 'mark').length, 0);
+  assert.equal(toggles(screen)[0].getAttribute('aria-expanded'), 'true');
+  // La croix aussi
+  input.value = 'claude';
+  input.fire('input');
+  assert.ok(chapters().length < 8);
+  clear.click();
+  assert.equal(chapters().length, 8);
+  assert.equal(clear.hidden, true);
+  // Jamais de HTML : le surlignage est posé en DOM
+  assert.doesNotMatch(code('public/js/screens/help.js'), /innerHTML|insertAdjacentHTML/);
+  assert.match(code('public/js/screens/help.js'), /h\('mark', \{ class: 'hit' \}, part\.text\)/);
+});
+
+test('sommaire à deux niveaux : chapitres seulement, un seul déplié (celui de la section en cours), « Aller au chapitre », aria-expanded et aria-controls, saut', async (t) => {
+  fakeDom(t);
+  const { tocContent } = await import('../public/js/screens/help.js');
+  const chosen = [];
+  const entries = outline();
+  const nav = tocContent({ entries, here: 'sauvegardes', hereChapter: 'installation', onChoose: (id) => chosen.push(id) });
+  const chapterButtons = nav.findAll((n) => hasClass(n, 'help-toc__chapter'));
+  assert.deepEqual(chapterButtons.map((b) => b.textContent), entries.filter((e) => e.level === 1).map(numbered));
+  const subs = nav.findAll((n) => hasClass(n, 'help-toc__list--sub'));
+  chapterButtons.forEach((b, i) => assert.equal(b.attrs['aria-controls'], subs[i].attrs.id));
+  const expanded = () => chapterButtons.map((b) => b.getAttribute('aria-expanded'));
+  assert.deepEqual(expanded(), GUIDE.map((c) => String(c.id === 'installation')), 'le chapitre de la section en cours');
+  assert.deepEqual(subs.map((sub) => sub.hidden), GUIDE.map((c) => c.id !== 'installation'));
+  // « Aller au chapitre » en premier, puis les sections
+  const first = subs[3].findAll((n) => n.tag === 'button');
+  assert.equal(first[0].textContent, 'Aller au chapitre');
+  assert.deepEqual(first.slice(1).map((b) => b.textContent.replace(' (section en cours)', '')), entries.filter((e) => e.chapter === 'installation').map(numbered));
+  // Section en cours : aria-current, icône ET texte caché pour les lecteurs d'écran
+  const current = nav.findAll((n) => n.attrs['aria-current'] === 'location');
+  assert.equal(current.length, 1);
+  assert.match(current[0].textContent, /4\.7 Sauvegardes \(section en cours\)/);
+  assert.equal(current[0].findAll((n) => n.tag === 'use')[0].attrs.href, '#i-chev-r');
+  // Un autre chapitre : il se déplie, le premier se replie (un seul à la fois)
+  chapterButtons[2].click();
+  assert.deepEqual(expanded(), GUIDE.map((c) => String(c.id === 'claude')));
+  chapterButtons[2].click();
+  assert.ok(expanded().every((v) => v === 'false'), 'retoucher le replie');
+  // Saut : l'entrée touchée est transmise (la feuille se ferme et l'écran saute)
+  chapterButtons[2].click();
+  subs[2].findAll((n) => n.tag === 'button')[0].click();
+  subs[2].findAll((n) => n.tag === 'button')[2].click();
+  nav.findAll((n) => hasClass(n, 'help-toc__top'))[0].click();
+  assert.deepEqual(chosen, ['claude', entries.filter((e) => e.chapter === 'claude')[1].id, 'top']);
+  // 44 px : entrées et chapitres
+  assert.match(read('public/css/app.css'), /\.help-toc__entry \{[^}]*min-height: var\(--tap-min\)/);
+});
+
+// --- Structure : chapitre serveur retiré, Claude regroupé ---
+
+test('plus de chapitre « Gérer le serveur » : son entretien est dans docs/exploitation.md (écrit à la main), les cinq sujets gardés sont dans le guide', () => {
+  const ids = new Set(outline().map((e) => e.id));
+  for (const gone of ['serveur', 'restauration', 'mises-a-jour', 'revenir', 'migrations', 'surveillance', 'journaux', 'scan-serveur']) assert.ok(!ids.has(gone), gone);
+  const text = [allTexts(), allBlocks().filter((b) => b.code).map((b) => b.code)].flat().join('\n');
+  for (const marker of ['Dependabot', 'npm audit', 'sha-xxxxxxx', 'listo-avant-restauration', 'journal.log.1', 'Ce qu\'Open Food Facts apprend', 'docker compose pull', 'Migration 15']) {
+    assert.ok(!text.includes(marker), `encore dans le guide : ${marker}`);
+  }
+  // Où sont passés les cinq sujets gardés
+  const chapterOf = (id) => outline().find((e) => e.id === id).chapter;
+  assert.equal(chapterOf('sauvegardes'), 'installation');
+  assert.equal(chapterOf('cle'), 'installation');
+  assert.equal(chapterOf('secours'), 'comptes');
+  assert.equal(chapterOf('faq-double-auth'), 'faq');
+  assert.equal(chapterOf('cle-perdue'), 'faq');
+  assert.equal(chapterOf('version'), 'faq');
+  // Le guide d'exploitation : écrit à la main, avec un sommaire et les ancres des sections retirées
+  const expl = read('docs/exploitation.md');
+  assert.doesNotMatch(expl, /Fichier fabriqué/);
+  assert.match(expl, /## Sommaire/);
+  for (const id of ['restauration', 'mises-a-jour', 'revenir', 'migrations', 'surveillance', 'journaux', 'depannage-serveur', 'scan-serveur']) {
+    assert.match(expl, new RegExp(`<a id="${id}"></a>`), id);
+    assert.match(expl, new RegExp(`\\]\\(#${id}\\)`), `sommaire : ${id}`);
+  }
+  for (const marker of ['Dependabot', 'npm audit', 'sha-xxxxxxx', 'listo-avant-restauration', 'journal.log.1', 'Ce qu\'Open Food Facts apprend', 'docker compose pull', 'Migration 15']) {
+    assert.ok(expl.includes(marker), `perdu : ${marker}`);
+  }
+  // Le guide y renvoie en une ligne, sans l'inclure (ni l'application, ni le site)
+  assert.match(text, /guide d'exploitation, dans le dépôt/);
+});
+
+test('« MCP Claude » regroupe tout ce qui concerne Claude ; ailleurs, au plus un renvoi', () => {
+  const claude = GUIDE.find((c) => c.id === 'claude');
+  const claudeIds = new Set([claude.id, ...claude.sections.map((s) => s.id)]);
+  for (const id of ['claude-quoi', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'claude-prudence', 'faq-claude', 'claude-activation', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
+    assert.ok(claudeIds.has(id), id);
+  }
+  // Dans les autres chapitres, une phrase qui parle de Claude renvoie au chapitre
+  for (const chapter of GUIDE.filter((c) => c.id !== 'claude')) {
+    // (une ligne de tableau se lit en entier : la cellule de renvoi compte)
+    const textsOf = (block) => (block.table ? block.table.rows.map((row) => row.join(' | ')) : blockTexts(block));
+    const texts = [chapter.title, ...(chapter.blocks ?? []).flatMap(textsOf), ...(chapter.sections ?? []).flatMap((s) => [s.title, ...(s.blocks ?? []).flatMap(textsOf)])];
+    for (const text of texts.filter((x) => /Claude|MCP/.test(x))) {
+      const refs = parseInline(text).filter((p) => p.ref !== undefined).map((p) => p.ref);
+      assert.ok(refs.some((id) => claudeIds.has(id)), `${chapter.id} : « ${text.slice(0, 80)} » sans renvoi vers « MCP Claude »`);
+    }
+  }
+  // Ce qui concernait Claude n'est pas perdu
+  const claudeText = claude.sections.flatMap((s) => (s.blocks ?? []).flatMap(blockTexts)).join('\n');
+  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Nginx Proxy Manager', 'claude.origine_refusee', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
+    assert.ok(claudeText.includes(marker) || claude.sections.some((s) => s.title.includes(marker)), marker);
+  }
 });

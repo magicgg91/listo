@@ -35,16 +35,20 @@ test('sommaire : une entrée par section, dans l\'ordre, avec le même numéro q
     const title = `${e.level === 1 ? '##' : '###'} ${numbered(e).replace(/([\\*_[\]<>#|])/g, '\\$1')}`;
     assert.ok(md.includes(`<a id="${e.id}"></a>\n\n${title}\n`), title);
   }
-  // Mention des chapitres du serveur
-  assert.equal((md.match(/^\*Pour la personne qui gère le serveur\.\*$/gm) ?? []).length, 2);
+  // Mention des parties du serveur (chapitre Installation et quelques sections)
+  assert.equal((md.match(/^\*Pour la personne qui gère le serveur\.\*$/gm) ?? []).length, 1 + 5);
+  // Sommaire court : les chapitres, chacun repliable (<details>, affiché par GitHub)
+  assert.equal((toc.match(/<details>/g) ?? []).length, entries.filter((e) => e.level === 1).length);
+  assert.equal((toc.match(/\[Aller au chapitre\]/g) ?? []).length, entries.filter((e) => e.level === 1).length);
+  assert.match(toc, /<summary>1\. Présentation<\/summary>\n\n- \[Aller au chapitre\]\(#presentation\)/);
   // Ni HTML (hors ancres et commentaire), ni renvoi non résolu
-  assert.doesNotMatch(md.replace(/<a id="[^"]+"><\/a>|<!--[^>]*-->/g, ''), /<[a-z]/i);
+  assert.doesNotMatch(md.replace(/<a id="[^"]+"><\/a>|<!--[^>]*-->|<\/?details>|<summary>[^<]*<\/summary>/g, ''), /<[a-z]/i);
   assert.doesNotMatch(md, /\[\[/);
 });
 
 test('Markdown : texte protégé, code, renvois et liens', () => {
-  assert.equal(inlineMarkdown('Voir [[restauration]], `docker logs listo` et [le site](https://securityheaders.com).'),
-    'Voir [9.2 Restaurer une sauvegarde](#restauration), `docker logs listo` et [le site](https://securityheaders.com).');
+  assert.equal(inlineMarkdown('Voir [[sauvegardes]], `docker logs listo` et [le site](https://securityheaders.com).'),
+    'Voir [4.7 Sauvegardes](#sauvegardes), `docker logs listo` et [le site](https://securityheaders.com).');
   assert.equal(inlineMarkdown('__Host- *a* <b> [x] | #'), '\\_\\_Host- \\*a\\* \\<b\\> \\[x\\] \\| \\#');
 });
 
@@ -55,11 +59,12 @@ test('liens des documents du dépôt : aucun lien cassé (fichiers et ancres)', 
   assert.equal(slug('Mode scan : Open Food Facts'), 'mode-scan--open-food-facts');
   assert.ok(anchorsOf('<a id="npm"></a>\n\n### 4.4 Régler').has('npm'));
   assert.deepEqual(linksOf('[a](b.md#c) `[x](y)`\n```\n[z](w)\n```'), ['b.md#c']);
-  // Plus aucun renvoi vers l'ancien guide d'exploitation, sauf son renvoi
-  for (const file of ['README.md', 'SECURITY.md', 'docker-compose.yml', '.github/dependabot.yml', 'design/README.md']) {
-    assert.doesNotMatch(read(file), /exploitation\.md/, file);
+  // Le guide d'exploitation (écrit à la main) : cité là où l'on parle d'entretien
+  for (const file of ['README.md', 'SECURITY.md', 'docker-compose.yml', '.github/dependabot.yml']) {
+    assert.match(read(file), /exploitation\.md/, file);
   }
   assert.match(read('docs/exploitation.md'), /\[docs\/guide\.md\]\(guide\.md\)/);
+  assert.doesNotMatch(read('README.md'), /guide\.md#serveur/);
 });
 
 test('README court : moins de 60 lignes, renvoie au guide, sans tableau des variables', () => {
@@ -73,7 +78,7 @@ test('README court : moins de 60 lignes, renvoie au guide, sans tableau des vari
 
 test('site/ est à jour et ne contient que la page du guide et ce qu\'il lui faut (ni docs/, ni cahier des charges)', () => {
   const files = siteFiles();
-  assert.deepEqual(Object.keys(files).sort(), ['guide.css', 'guide.js', 'icon.svg', 'index.html', 'listo.css']);
+  assert.deepEqual(Object.keys(files).sort(), ['guide.css', 'guide.js', 'icon.svg', 'index.html', 'listo.css', 'search.js']);
   assert.deepEqual(fs.readdirSync(SITE_DIR).sort(), Object.keys(files).sort(), 'aucun autre fichier dans site/');
   for (const [name, content] of Object.entries(files)) {
     assert.equal(fs.readFileSync(path.join(SITE_DIR, name), 'utf8'), content, `site/${name} n'est pas à jour : lancez node scripts/guide.js`);
@@ -81,6 +86,7 @@ test('site/ est à jour et ne contient que la page du guide et ce qu\'il lui fau
   // Copies exactes du kit et de l'application ; sources propres au site
   assert.equal(files['listo.css'], read('public/css/listo.css'));
   assert.equal(files['guide.js'], read('scripts/site-assets/guide.js'));
+  assert.equal(files['search.js'], read('public/js/search.js'), 'la même recherche que l\'application');
   assert.ok(files['guide.css'].includes(read('scripts/site-assets/site.css')));
   assert.ok(files['guide.css'].includes('.help-toc__entry.is-current {'));
   const index = files['index.html'];
@@ -97,9 +103,23 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   }
   // Sommaire : écrit dans la page (sans JavaScript) et dans la feuille
   const pageToc = page.slice(page.indexOf('<nav class="card site__toc"'), page.indexOf('</nav>'));
-  assert.deepEqual([...pageToc.matchAll(/href="#([a-z0-9-]+)"/g)].map((m) => m[1]), entries.map((e) => e.id));
+  assert.deepEqual([...pageToc.matchAll(/<a [^>]*href="#([a-z0-9-]+)"/g)].map((m) => m[1]), entries.map((e) => e.id));
+  const chapters = entries.filter((e) => e.level === 1);
+  assert.equal((pageToc.match(/<details class="site__toc-chapter" name="sommaire-page">/g) ?? []).length, chapters.length, 'sans JavaScript : <details> natifs, un seul ouvert');
+  assert.equal((pageToc.match(/>Aller au chapitre</g) ?? []).length, chapters.length);
   const sheet = page.slice(page.indexOf('<dialog'), page.indexOf('</dialog>'));
   assert.deepEqual([...sheet.matchAll(/data-section="([a-z0-9-]+)"/g)].map((m) => m[1]), entries.map((e) => e.id));
+  for (const c of chapters) {
+    assert.match(sheet, new RegExp(`<button class="help-toc__entry help-toc__entry--1 help-toc__chapter" type="button" aria-expanded="false" aria-controls="sommaire-${c.id}" data-chapter="${c.id}">`));
+    assert.match(sheet, new RegExp(`<ol class="help-toc__list help-toc__list--sub" id="sommaire-${c.id}" hidden>`));
+  }
+  // Recherche : champ du kit, compteur annoncé, message quand rien n'est trouvé ; caché sans JavaScript
+  assert.match(page, /<div class="help-search" id="guide-recherche" hidden>/);
+  assert.match(page, /<input class="searchfield__input" id="guide-recherche-champ" type="search"[^>]*aria-label="Rechercher dans le guide">/);
+  assert.match(page, /<p class="help-search__status" role="status"><\/p>/);
+  assert.match(page, /<button class="icon-btn" type="button" aria-label="Effacer la recherche" data-clear hidden>/);
+  assert.match(page, /id="guide-recherche-vide" hidden>/);
+  assert.match(page, /<script type="module" src="guide\.js"><\/script>/);
   assert.match(sheet, /href="#haut">.*Haut de page/);
   assert.match(page, /<h1 class="site__title" id="haut" tabindex="-1">/);
   // Bouton « Sommaire » : caché sans JavaScript, accessible
@@ -109,8 +129,8 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   assert.match(page, /<html lang="fr" data-theme="auto">/);
   assert.match(page, /<meta name="color-scheme" content="light dark">/);
   assert.match(page, /<a class="skip-link" href="#contenu">/);
-  // Mention des chapitres du serveur ; tableau « Qui peut quoi »
-  assert.equal(page.split('class="help__server"').length - 1, 2);
+  // Mention des parties du serveur ; tableau « Qui peut quoi »
+  assert.equal(page.split('class="help__server"').length - 1, 1 + 5);
   assert.equal(page.split('class="help-who__row"').length - 1, PERMISSIONS.length);
   // Script du sommaire : aria-current, focus rendu, Échap natif (dialog)
   const script = read('scripts/site-assets/guide.js');
@@ -119,6 +139,10 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   assert.match(script, /else button\.focus\(\);/);
   assert.match(script, /el\.focus\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(script, /innerHTML|fetch\(|XMLHttpRequest|import\(/);
+  assert.deepEqual([...script.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]), ['./search.js'], 'rien d\'autre que la recherche, copiée sur le site');
+  assert.match(script, /mark\.className = 'hit';/);
+  assert.match(script, /if \(event\.key === 'Escape' && field\.value !== ''\)/);
+  assert.match(script, /other\.setAttribute\('aria-expanded', String\(open\)\)/);
 });
 
 test('page publique autonome : rien chargé d\'ailleurs, pas de noindex (choix du propriétaire), aucun secret ni adresse réelle', () => {
@@ -126,6 +150,7 @@ test('page publique autonome : rien chargé d\'ailleurs, pas de noindex (choix d
   const page = files['index.html'];
   // Ressources : seulement des fichiers de site/ (pas de CDN, pas de police distante)
   const loaded = [...page.matchAll(/<(?:script|link|img)\b[^>]*\b(?:src|href)="([^"]+)"/g)].map((m) => m[1]);
+  assert.doesNotMatch(files['search.js'], /^import /m, 'search.js n\'importe rien');
   assert.deepEqual([...new Set(loaded)].sort(), [SITE_URL, 'guide.css', 'guide.js', 'icon.svg', 'listo.css'].sort());
   assert.match(page, new RegExp(`<link rel="canonical" href="${SITE_URL}">`), 'seule adresse absolue : le lien canonique');
   for (const css of [files['listo.css'], files['guide.css']]) assert.doesNotMatch(css, /@import|@font-face|url\(\s*['"]?(?:https?:)?\/\//);
@@ -133,7 +158,7 @@ test('page publique autonome : rien chargé d\'ailleurs, pas de noindex (choix d
   assert.doesNotMatch(page, /noindex|name="robots"/);
   // Liens vers d'autres sites : exemples inventés et sites publics connus
   const hosts = [...page.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase());
-  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'magicgg91.github.io', 'www.w3.org', 'ip'].includes(host), host);
+  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'magicgg91.github.io', 'platform.claude.com', 'www.w3.org', 'ip'].includes(host), host);
   assert.doesNotMatch(page, /mondomaine|192\.168\.(?!1\.(10|20)\b)/);
   // Texte toujours protégé
   assert.equal(html('<b>"&'), '&lt;b&gt;&quot;&amp;');
@@ -155,4 +180,26 @@ test('workflow GitHub Pages : publie site/ seulement, à chaque fusion sur main,
   assert.match(wf, /name: github-pages/);
   // L'image Docker ne contient ni le site ni les scripts
   assert.match(read('.dockerignore'), /^site\/$/m);
+});
+
+test('captures du README : toutes utilisées, toutes présentes, sans métadonnées, poids raisonnable, hors de l\'image Docker', () => {
+  const readme = read('README.md');
+  const used = [...readme.matchAll(/\]\(docs\/images\/([^)]+)\)/g)].map((m) => m[1]).sort();
+  const files = fs.readdirSync(path.join(ROOT, 'docs/images')).sort();
+  assert.deepEqual(files, used, 'chaque capture est montrée par le README, et chaque image du README existe');
+  for (const file of files) {
+    const data = fs.readFileSync(path.join(ROOT, 'docs/images', file));
+    assert.equal(data.subarray(1, 4).toString(), 'PNG', file);
+    // Morceaux du PNG : aucun texte, aucune date, aucune donnée EXIF
+    const kinds = [];
+    for (let i = 8; i < data.length;) {
+      const length = data.readUInt32BE(i);
+      kinds.push(data.subarray(i + 4, i + 8).toString());
+      i += length + 12;
+    }
+    assert.deepEqual(kinds.filter((k) => /^(tEXt|iTXt|zTXt|eXIf|tIME)$/.test(k)), [], file);
+    assert.ok(data.length < 150_000, `${file} : ${data.length} octets`);
+  }
+  assert.doesNotMatch(readme, /captures datent d'avant/);
+  assert.match(read('.dockerignore'), /^docs\/$/m);
 });

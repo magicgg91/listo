@@ -15,11 +15,15 @@
 
 ## En images
 
-| ![Liste de courses classée par rayon, avec quantités](docs/images/liste-courses.png) | ![Liste de tâches](docs/images/liste-taches.png) |
-| :---: | :---: |
-| Courses classées par rayon | Liste de tâches |
+| ![« Mes listes » : quatre listes, chacune avec son icône et le compteur des restants](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) |
+| :---: | :---: | :---: |
+| Mes listes | Courses classées par rayon | « Dans le panier » |
+| ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) |
+| Tâches : priorité, échéance | Envies : réservation, cotisation | Mode scan |
+| ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Connexions Claude » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
+| Lien public, sans compte | « Connexions Claude » | Réglages |
 
-*Instance de démonstration, données inventées. Ces captures datent d'avant le compteur « X/Y » des groupes, l'icône de chaque liste et le bouton de scan.*
+*Instance de démonstration, données inventées.*
 
 ## Installation en trois commandes
 
@@ -31,7 +35,7 @@ docker compose up -d                     # télécharge et démarre Listo
 docker logs listo                        # affiche le code de démarrage du premier Admin
 ```
 
-Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Mises à jour, sauvegardes et dépannage : [Gérer le serveur](docs/guide.md#serveur).
+Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
 
 ## Liens utiles
 

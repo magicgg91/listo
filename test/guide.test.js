@@ -156,3 +156,25 @@ test('workflow GitHub Pages : publie site/ seulement, à chaque fusion sur main,
   // L'image Docker ne contient ni le site ni les scripts
   assert.match(read('.dockerignore'), /^site\/$/m);
 });
+
+test('captures du README : toutes utilisées, toutes présentes, sans métadonnées, poids raisonnable, hors de l\'image Docker', () => {
+  const readme = read('README.md');
+  const used = [...readme.matchAll(/\]\(docs\/images\/([^)]+)\)/g)].map((m) => m[1]).sort();
+  const files = fs.readdirSync(path.join(ROOT, 'docs/images')).sort();
+  assert.deepEqual(files, used, 'chaque capture est montrée par le README, et chaque image du README existe');
+  for (const file of files) {
+    const data = fs.readFileSync(path.join(ROOT, 'docs/images', file));
+    assert.equal(data.subarray(1, 4).toString(), 'PNG', file);
+    // Morceaux du PNG : aucun texte, aucune date, aucune donnée EXIF
+    const kinds = [];
+    for (let i = 8; i < data.length;) {
+      const length = data.readUInt32BE(i);
+      kinds.push(data.subarray(i + 4, i + 8).toString());
+      i += length + 12;
+    }
+    assert.deepEqual(kinds.filter((k) => /^(tEXt|iTXt|zTXt|eXIf|tIME)$/.test(k)), [], file);
+    assert.ok(data.length < 150_000, `${file} : ${data.length} octets`);
+  }
+  assert.doesNotMatch(readme, /captures datent d'avant/);
+  assert.match(read('.dockerignore'), /^docs\/$/m);
+});

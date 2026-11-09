@@ -6,7 +6,8 @@
 #   docker compose pull && docker compose up -d   (mettre à jour)
 #   docker exec -u node listo node server/backup-now.js   (sauvegarde à la demande)
 # Le guide complet (installation, sauvegarde, restauration, dépannage) est
-# dans le dépôt : README, puis docs/guide.md (chapitre Installation).
+# dans le dépôt : README, puis docs/guide.md (chapitre Installation) ;
+# mises à jour et restauration : docs/exploitation.md.
 #
 # Nginx Proxy Manager n'étant pas sur la même machine, il n'y a pas de réseau
 # Docker partagé : Listo publie son port sur l'adresse du réseau local du

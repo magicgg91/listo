@@ -36,6 +36,8 @@
 // Ce module ne touche pas à l'écran : il est testé automatiquement
 // (test/help.test.js, test/help-labels.test.js, test/guide.test.js).
 
+import { matches, isSearching } from './search.js';
+
 // --- Tableau « Qui peut quoi » ---
 
 // Colonnes : les rôles sur une liste (l'Admin : sur les listes des autres)
@@ -93,7 +95,7 @@ export const GUIDE = [
             'Français seulement.',
             'Pas de notification : les nouveautés se voient en ouvrant Listo.',
             'Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.',
-            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf deux demandes que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]) et le nom d\'un produit scanné (Open Food Facts, [[scan-serveur]]). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
+            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf deux demandes que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]) et le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
           ] },
         ],
       },
@@ -206,7 +208,7 @@ export const GUIDE = [
   // ============ 3. Claude ============
   {
     id: 'claude',
-    title: 'Claude et Listo',
+    title: 'MCP Claude',
     sections: [
       {
         id: 'claude-quoi',
@@ -296,6 +298,7 @@ export const GUIDE = [
             '« Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n\'est demandé.',
             'Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.',
             'Pour reconnecter Claude, il faut l\'autoriser de nouveau.',
+            'L\'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.',
           ] },
         ],
       },
@@ -308,9 +311,71 @@ export const GUIDE = [
         ],
       },
       {
+        id: 'faq-claude',
+        title: 'Dépannage',
+        blocks: [{ ul: [
+          'Après une mise à jour de Listo, Claude peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.',
+          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([[claude-connecter]]).',
+          'Claude refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
+          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([[claude-connexions]]).',
+          'Claude dit qu\'un rayon ou un magasin est inconnu : il n\'existe pas, il est désactivé, ou (magasin d\'une liste « Multi ») cette liste ne le propose pas. Rien n\'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l\'Admin de le créer (Réglages, « Administration », onglet « Courses »).',
+          'Claude dit qu\'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».',
+        ] }],
+      },
+      {
         id: 'claude-activation',
         title: 'Un accès désactivé au départ',
         blocks: ['L\'accès depuis Claude est désactivé tant que la personne qui gère le serveur n\'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([[mcp-serveur]]). Désactivé, toutes ses adresses répondent comme si elles n\'existaient pas, et la section « Claude » de « Mon compte » n\'apparaît pas.'],
+      },
+      {
+        id: 'mcp-serveur',
+        title: 'Activer l\'accès sur le serveur',
+        server: true,
+        blocks: [
+          'L\'accès depuis Claude est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
+          'Nginx Proxy Manager : rien à régler. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d\'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.',
+          { table: {
+            head: ['Adresse', 'Qui l\'appelle', 'Rôle'],
+            rows: [
+              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'Claude', 'Dit où demander l\'autorisation.'],
+              ['`/.well-known/oauth-authorization-server`', 'Claude', 'Description du serveur d\'autorisation.'],
+              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser Claude ».'],
+              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'Claude', 'Jetons, révocation, enregistrement automatique.'],
+              ['`/mcp`', 'Claude', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
+            ],
+          } },
+        ],
+      },
+      {
+        id: 'mcp-regles',
+        title: 'Règles et journal',
+        server: true,
+        blocks: [
+          { ul: [
+            'Jeton d\'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l\'empreinte des jetons, jamais les jetons eux-mêmes.',
+            'Un jeton Claude n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
+            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.',
+            'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
+            'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
+          ] },
+          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.',
+        ],
+      },
+      {
+        id: 'mcp-essai',
+        title: 'Premier essai',
+        server: true,
+        blocks: [
+          'Après l\'activation, une fois, avant tout usage régulier :',
+          { ol: [
+            'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
+            'Connecter Claude ([[claude-connecter]]).',
+            'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
+            '`docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s\'il y en a.',
+            'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
+            'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
+          ] },
+        ],
       },
     ],
   },
@@ -364,8 +429,8 @@ export const GUIDE = [
               ['`LISTO_SESSION_DAYS`', '`30`', 'Durée d\'une session sans se reconnecter, en jours.'],
               ['`LISTO_COMMIT`', 'posée par l\'image', 'Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir.'],
               ['`LISTO_UPDATE_CHECK`', 'absente : activée', '`off` coupe la vérification de mise à jour sur GitHub ([[version]]).'],
-              ['`LISTO_PRODUCT_LOOKUP`', 'absente : activé', '`off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([[scan-serveur]]).'],
-              ['`LISTO_PRODUCT_CONTACT`', 'absente', 'Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([[scan-serveur]]).'],
+              ['`LISTO_PRODUCT_LOOKUP`', 'absente : activé', '`off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
+              ['`LISTO_PRODUCT_CONTACT`', 'absente', 'Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
               ['`LISTO_MCP`', 'absente : désactivé', '`on` active l\'accès depuis Claude ([[mcp-serveur]]). Toute autre valeur : désactivé.'],
             ],
           } },
@@ -416,7 +481,19 @@ export const GUIDE = [
         blocks: [
           'Tout de suite après le premier démarrage, affichez la clé et copiez-la dans votre gestionnaire de mots de passe (une ligne de texte) :',
           { code: 'cat /opt/listo/secrets/secret.key' },
-          'Sans elle, après une panne du serveur, les doubles authentifications ne marchent plus ([[cle-perdue]]). Elle n\'est jamais copiée dans les sauvegardes de la nuit, volontairement : gardez-la à part, une fois pour toutes.',
+          'Sans elle, après une panne du serveur ou une restauration sur une autre machine, les doubles authentifications ne se lisent plus : chacun doit les refaire ([[cle-perdue]]). Les listes, les photos et les mots de passe, eux, ne dépendent pas d\'elle. Elle n\'est jamais copiée dans les sauvegardes de la nuit, volontairement : gardez-la à part, une fois pour toutes.',
+        ],
+      },
+      {
+        id: 'sauvegardes',
+        title: 'Sauvegardes',
+        blocks: [
+          { ul: [
+            'Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n\'arrête pas Listo.',
+            'Sauvegarde à la demande, avant une mise à jour par exemple (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit) :',
+          ] },
+          { code: 'docker exec -u node listo node server/backup-now.js' },
+          'La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`data/journal.log`), ni la clé `secrets/secret.key` (volontairement : une copie de la base seule ne permet pas de lire les secrets de double authentification). Sauvegardez donc le dossier `/opt/listo/data` entier avec la sauvegarde habituelle du serveur, et gardez la clé à part ([[cle]]). Restaurer une sauvegarde : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).',
         ],
       },
       {
@@ -427,7 +504,7 @@ export const GUIDE = [
           'Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.',
           'En-têtes de sécurité : passez l\'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par Nginx Proxy Manager), et aucun `X-Powered-By`.',
           'Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.',
-          'Une restauration d\'essai : suivez [[restauration]] une fois, avec la copie de la nuit.',
+          'Une restauration d\'essai, une fois, avec la copie de la nuit : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).',
           'Le port fermé : voir [[npm]].',
           'Le téléphone : installation sur l\'écran d\'accueil ([[telephone]]), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).',
         ] }],
@@ -491,7 +568,7 @@ export const GUIDE = [
       {
         id: 'mot-de-passe',
         title: 'Changer de mot de passe',
-        blocks: ['Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions Claude.'],
+        blocks: ['Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions Claude ([[claude-connexions]]).'],
       },
       {
         id: 'double-auth',
@@ -516,6 +593,16 @@ export const GUIDE = [
           'Trop d\'essais : 5 mauvais mots de passe bloquent la connexion pendant 15 minutes.',
           'L\'Admin a lui-même perdu son mot de passe : voir [[secours]].',
         ] }],
+      },
+      {
+        id: 'secours',
+        title: 'Compte Admin perdu',
+        server: true,
+        blocks: [
+          'S\'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([[role-admin]]). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :',
+          { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
+          'Un mot de passe provisoire s\'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([[claude-connexions]]). Ce que l\'Admin peut faire et ne peut pas faire : [[role-admin]].',
+        ],
       },
     ],
   },
@@ -576,7 +663,7 @@ export const GUIDE = [
             'Un article de la liste porte déjà ce code : Listo propose de le cocher.',
             'Un article d\'une autre de vos listes le porte : Listo reprend son nom (« Produit connu »).',
             'Sinon, Listo cherche le nom du produit dans Open Food Facts ; vous pouvez le corriger, puis « Ajouter à la liste ».',
-            'Ce bouton n\'existe que si le mode scan est activé sur votre serveur ([[scan-serveur]]).',
+            'Ce bouton n\'existe que si le mode scan est activé sur votre serveur (réglage `LISTO_PRODUCT_LOOKUP`, [[variables]]).',
           ] },
         ],
       },
@@ -683,7 +770,8 @@ export const GUIDE = [
           { ul: [
             'Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s\'il existe une nouvelle version (Réglages › « À propos »).',
             'Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire.',
-            'Ne peut pas : voir les connexions Claude des autres comptes (mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes).',
+            'Connexions Claude des autres comptes : voir [[claude-connexions]].',
+            'Savoir qu\'une nouvelle version existe : [[version]].',
           ] },
         ],
       },
@@ -808,7 +896,7 @@ export const GUIDE = [
         blocks: [
           'La personne à qui la liste d\'envies est destinée ajoute ses souhaits (si elle a un compte) et les marque « Reçus ».',
           { ul: [
-            'Ne voit jamais : qu\'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d\'autres ». Ni dans la liste, ni dans les nouveautés, ni par Claude, ni sur la page du lien public quand elle est connectée.',
+            'Ne voit jamais : qu\'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d\'autres ». Ni dans la liste, ni dans les nouveautés, ni par Claude ([[claude-envies]]), ni sur la page du lien public quand elle est connectée.',
             'Ne peut pas réserver ses propres souhaits.',
             'Seule une personne qui a la main sur le serveur (fichiers de la base, sauvegardes) pourrait lire une réservation : ne donnez pas cet accès au bénéficiaire si la surprise compte.',
           ] },
@@ -841,16 +929,6 @@ export const GUIDE = [
         blocks: ['Il a expiré, ou son propriétaire l\'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien). Demandez un nouveau lien au propriétaire ([[lien-public]]). S\'il demande un mot de passe, c\'est celui que le propriétaire a noté à sa création.'],
       },
       {
-        id: 'faq-claude',
-        title: 'Claude ne voit pas un outil ou une liste',
-        blocks: [{ ul: [
-          'Après une mise à jour de Listo, Claude peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.',
-          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([[claude-connecter]]).',
-          'Claude refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
-          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([[claude-connexions]]).',
-        ] }],
-      },
-      {
         id: 'faq-retard',
         title: 'Les changements arrivent avec une minute de retard',
         blocks: ['Il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_timeout 3600s;` dans Nginx Proxy Manager ([[npm]]).'],
@@ -863,7 +941,7 @@ export const GUIDE = [
           'Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (les modifications en attente sont gardées).',
           'En dernier recours, effacez les données du site dans le navigateur (Chrome : cadenas à gauche de l\'adresse, “Paramètres du site”, “Effacer les données” ; iPhone : Réglages, Safari, Avancé, Données des sites web), puis reconnectez-vous.',
           'Android, application installée, bas de l\'écran caché par la barre de navigation : fermez complètement l\'application puis rouvrez-la ; sinon désinstallez-la et réinstallez-la (attendez « À jour » avant, pour ne rien perdre).',
-          'Tous les téléphones sont touchés : la personne qui gère le serveur regarde `docker logs listo` et `https://listo.exemple.fr/healthz` ([[journaux]]).',
+          'Tous les téléphones sont touchés : la personne qui gère le serveur regarde `docker logs listo` et `https://listo.exemple.fr/healthz` ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#depannage-serveur)).',
         ] }],
       },
       {
@@ -877,164 +955,20 @@ export const GUIDE = [
         ] }],
       },
       {
-        id: 'faq-suggestion',
-        title: 'Une faute de frappe revient dans les suggestions',
-        blocks: ['L\'Admin : Réglages, « Administration », onglet « Courses », « Articles ». Cherchez le nom et « Corriger » : Listo dit combien d\'articles et dans combien de listes de courses il sera corrigé, puis le corrige partout (s\'il existe déjà, les deux sont réunis). « Retirer » l\'enlève seulement des suggestions, sans toucher aux listes. Un nom corrigé ou retiré peut revenir si quelqu\'un le saisit de nouveau.'],
-      },
-      {
-        id: 'faq-orphelin',
-        title: 'Liste d\'envies : un participant est parti',
-        blocks: ['Un proche a réservé, puis a quitté la liste ou son compte a été désactivé : il reste participant. Sur une liste créée pour quelqu\'un d\'autre, le propriétaire le voit et peut le « Retirer », ou « Libérer » tout le souhait. Sur une liste “pour moi”, personne ne le peut (le propriétaire est le bénéficiaire et ne voit pas les réservations, c\'est voulu) : les autres participants peuvent seulement ouvrir ou fermer la réservation. Si le proche a seulement été désactivé, l\'Admin peut le réactiver le temps qu\'il « Quitte » ; sinon, supprimez le souhait puis recréez-le.'],
-      },
-    ],
-  },
-
-  // ============ 9. Pour la personne qui gère le serveur ============
-  {
-    id: 'serveur',
-    title: 'Gérer le serveur',
-    server: true,
-    sections: [
-      {
-        id: 'sauvegardes',
-        title: 'Sauvegardes',
-        blocks: [
-          { ul: [
-            'Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n\'arrête pas Listo.',
-            'Sauvegarde à la demande, avant une mise à jour par exemple (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit) :',
-          ] },
-          { code: 'docker exec -u node listo node server/backup-now.js' },
-          'La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`data/journal.log`), ni la clé `secrets/secret.key` (volontairement : une copie de la base seule ne permet pas de lire les secrets de double authentification). Sauvegardez donc le dossier `/opt/listo/data` entier avec la sauvegarde habituelle du serveur, et gardez la clé à part ([[cle]]).',
-        ],
-      },
-      {
-        id: 'restauration',
-        title: 'Restaurer une sauvegarde',
-        blocks: [
-          'Pour revenir à l\'état d\'une nuit précédente (erreur, base abîmée, nouveau serveur) :',
-          { ol: [
-            'Aller dans le dossier de Listo : `cd /opt/listo`',
-            'Arrêter Listo : `docker compose stop`',
-            'Par précaution, mettre la base actuelle de côté : `mv data/listo.db data/listo-avant-restauration.db`',
-            'Supprimer les deux petits fichiers de travail de l\'ancienne base, s\'ils existent : `rm -f data/listo.db-wal data/listo.db-shm`',
-            'Choisir la copie (`ls data/backups`) et la mettre à la place de la base : `cp data/backups/listo-2026-10-17-0300.db data/listo.db`',
-            'La clé : `secrets/secret.key` doit être celle d\'avant. Sur un serveur neuf, recréer le fichier avec la ligne gardée dans le gestionnaire de mots de passe : `mkdir -p secrets && nano secrets/secret.key`.',
-            'Les photos : sur un serveur neuf, remettre aussi le dossier `data/photos` depuis la sauvegarde du serveur.',
-            'Redémarrer : `docker compose up -d` (Listo remet tout seul les bons droits sur les fichiers).',
-            'Vérifier : `docker logs listo` (pas d\'erreur, pas de code de démarrage : les comptes existent), puis se connecter. Ce qui a été fait après la nuit choisie est perdu.',
-          ] },
-          'Quand tout va bien, `data/listo-avant-restauration.db` peut être supprimé. Une sauvegarde plus ancienne que la version de Listo se restaure de la même façon : au redémarrage, Listo lui applique tout seul les mises à jour de la base qui lui manquent ([[migrations]]).',
-        ],
-      },
-      {
-        id: 'mises-a-jour',
-        title: 'Mettre à jour Listo',
-        blocks: [
-          'Chaque fusion sur `main` publie une nouvelle image `ghcr.io/magicgg91/listo`. Pour la prendre :',
-          { code: 'cd /opt/listo\n# sauvegarde juste avant\ndocker exec -u node listo node server/backup-now.js\n# télécharge la nouvelle version, puis redémarre Listo avec elle\ndocker compose pull\ndocker compose up -d\n# vérifier le démarrage\ndocker logs listo' },
-          'Listo s\'arrête proprement : une mise à jour n\'abîme rien, et la base est mise à jour toute seule au démarrage si besoin.',
-          'Les téléphones prennent la nouvelle version tout seuls, sans réinstaller l\'application :',
-          { ul: [
-            'dès que Listo est au premier plan avec du réseau (ouverture, retour dans l\'application, ou au bout d\'une heure au plus), le téléphone voit que son code est ancien ;',
-            'il recharge la page au premier moment sûr, avec le message « Mise à jour de Listo… » : aucune fenêtre ouverte, aucun texte en cours de saisie, aucun envoi en cours ;',
-            'sinon, un bandeau « Nouvelle version disponible » propose « Recharger » ;',
-            'rien n\'est perdu : les modifications pas encore envoyées repartent après le rechargement.',
-          ] },
-        ],
-      },
-      {
-        id: 'version',
-        title: 'Savoir qu\'une nouvelle version existe',
-        blocks: [
-          'Dans Réglages › « À propos », sur la ligne de la version, l\'Admin voit l\'état de la vérification :',
-          { ul: [
-            '« À jour » : l\'image installée est la dernière construite ;',
-            '“Vérifié il y a 15 min”, avec une pastille « Nouvelle version » suivie de son numéro (par exemple “Nouvelle version : 9f8e7d6”) : une image plus récente existe ([[mises-a-jour]]) ;',
-            '« Vérification impossible » : GitHub n\'a pas répondu. Sans conséquence : Listo marche normalement ;',
-            'le bouton d\'actualisation, au bout de la ligne, refait la demande tout de suite (une fois par minute au plus).',
-          ] },
-          'C\'est le serveur (pas le téléphone) qui demande à GitHub, au plus une fois par heure, sans compte ni jeton, quel est le dernier commit dont l\'image a été construite. Listo ne se met jamais à jour tout seul. Les autres comptes ne voient que la version. Pour couper la vérification : `LISTO_UPDATE_CHECK=off` dans `docker-compose.yml` (la ligne est déjà prête, en commentaire), puis `docker compose up -d`.',
-        ],
-      },
-      {
-        id: 'revenir',
-        title: 'Revenir à la version précédente',
-        blocks: [
-          { ol: [
-            'Sur GitHub, page du dépôt, “Packages”, `listo` : chaque version a une étiquette `sha-xxxxxxx` (les 7 premiers caractères du commit).',
-            'Dans `docker-compose.yml`, remplacer `ghcr.io/magicgg91/listo:latest` par `ghcr.io/magicgg91/listo:sha-xxxxxxx`.',
-            '`docker compose up -d`.',
-            'Si la nouvelle version avait changé la base, restaurer aussi la sauvegarde faite juste avant la mise à jour ([[restauration]] et [[migrations]]).',
-          ] },
-          'Pour revenir ensuite aux mises à jour normales, remettre `:latest`.',
-        ],
-      },
-      {
-        id: 'migrations',
-        title: 'Mises à jour qui changent la base',
-        blocks: [
-          'Certaines versions modifient la base une seule fois, toutes seules, au démarrage (migrations numérotées). Rien n\'est à faire à la main, mais faites toujours la sauvegarde à la demande juste avant : pour revenir en arrière, il faut restaurer cette sauvegarde et reprendre l\'image précédente ([[revenir]]). Celles qui ont suivi les onze étapes de départ :',
-          { table: {
-            head: ['Migration', 'Ce qui change', 'Effet sur les listes existantes'],
-            rows: [
-              ['8', 'La mémoire des noms est réservée aux listes de courses.', 'Les noms venus seulement des listes de tâches sont retirés des suggestions. Les listes ne changent pas.'],
-              ['9', 'Date du coché (« Dans le panier », « Terminés »).', 'Les articles déjà cochés reçoivent leur date de modification.'],
-              ['10', 'Priorité et échéance des éléments.', 'Les éléments existants sont en priorité normale, sans échéance.'],
-              ['11', 'Code-barres des articles.', 'Les articles existants n\'ont pas de code.'],
-              ['12', 'Droit de chaque personne sur une liste partagée.', 'Les personnes déjà membres gardent « Peut modifier » ; une personne ajoutée ensuite commence en « Lecture seule ».'],
-              ['13', 'Priorité et échéance activées liste par liste.', 'Les listes existantes autres que les courses gardent les deux activées ; une nouvelle liste les a désactivées.'],
-              ['14', 'Une icône pour chaque liste.', 'Les listes existantes gardent l\'icône de leur catégorie.'],
-              ['15', '« Après l\'ajout », liste par liste.', 'Les listes de courses restent sur la liste ; une autre liste ouvre la fiche si sa priorité ou son échéance est activée. Une ligne “Migration 15” dans `docker logs listo` donne les nombres.'],
-              ['16', 'Nouveautés.', 'Rien n\'est signalé au départ : chaque membre est posé sur “tout vu”. Le journal des nouveautés ne garde que des identifiants et se nettoie seul (30 jours, 500 événements par liste).'],
-              ['17', 'Accès depuis Claude : tables de l\'autorisation (codes et jetons gardés seulement sous forme d\'empreinte).', 'Aucun : les tables partent vides.'],
-              ['18', 'Types de liste « Courses » et « Tâches » à la place des catégories.', 'Une liste de catégorie “courses” devient une liste de courses, toutes les autres des listes de tâches. Rien n\'est effacé. L\'image précédente marche encore sans restauration.'],
-              ['19', 'Listes d\'envies (bénéficiaire, lien, prix, réservations).', 'Aucun : tout part vide. L\'image précédente ne connaît pas les listes d\'envies.'],
-              ['20', 'Réservations par le lien public (prénom du visiteur, empreinte de son jeton).', 'Aucun : la table part vide ; un souhait qui paraissait réservé sans plus avoir de participant redevient libre.'],
-              ['21', 'Claude : troisième niveau d\'accord.', 'Aucun : chaque connexion garde son niveau, ses listes et ses jetons.'],
-              ['22', 'Claude : retour à deux niveaux, « Lecture seule » et « Lecture et écriture ».', 'Aucun : chaque connexion garde ses listes et ses jetons ; celles du niveau intermédiaire deviennent « Lecture et écriture ».'],
-            ],
-          } },
-          'La mise à jour qui a apporté les cookies `__Host-` a déconnecté tout le monde une fois ; les listes n\'ont pas été touchées.',
-        ],
-      },
-      {
-        id: 'surveillance',
-        title: 'Surveiller les mises à jour de sécurité',
-        blocks: [
-          'Dependabot (`.github/dependabot.yml`) vérifie chaque semaine s\'il existe une nouvelle version des bibliothèques du serveur (express, better-sqlite3, qrcode), de l\'image de base du Dockerfile (`node:24-slim`) et des actions qui construisent l\'image. S\'il en trouve une, il ouvre une pull request vers `main` (3 au plus par type). Rien n\'est fusionné tout seul.',
-          { ul: [
-            'Le titre dit quoi passe de quelle version à quelle version ; une mention “security” ou un identifiant CVE dans la description signale une faille corrigée : à fusionner en priorité.',
-            'Une montée de version majeure (4.x vers 5.x) peut changer un comportement : en cas de doute, demandez une vérification avant de fusionner.',
-            'De temps en temps, dans une copie du dépôt : `npm audit --omit=dev` (“found 0 vulnerabilities” : tout va bien).',
-            'Version de Node : Dependabot ne propose que les correctifs de `node:24-slim`. Pour changer de version, à la main : ligne `FROM` du `Dockerfile` (version et empreinte `sha256`), `npm test`, puis essai avec `docker compose -f docker-compose.dev.yml up --build`. Seulement une version paire (24, 26…).',
-          ] },
-        ],
-      },
-      {
-        id: 'journaux',
-        title: 'Journaux',
-        blocks: [
-          { ul: [
-            '`docker logs listo` : démarrage, erreurs, et le journal de sécurité (lignes `[journal]`). Pour suivre en direct : `docker logs -f listo`.',
-            '`data/journal.log` : le même journal de sécurité, gardé dans un fichier (1 Mo au plus, puis `journal.log.1` à `.5`).',
-            'Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.',
-          ] },
-          'Le journal de sécurité note les connexions réussies et ratées, les blocages après trop d\'essais, les actions d\'administration, les liens publics (créés, modifiés, arrêtés, mots de passe refusés), les sauvegardes et les appels de Claude. Il ne contient jamais de mot de passe, de jeton, de code, ni le contenu d\'une liste ; aucune ligne n\'y est écrite pour une réservation.',
-          'Listo ne démarre pas : `docker logs listo` donne la raison en français.',
-        ],
-      },
-      {
-        id: 'secours',
-        title: 'Compte Admin perdu',
-        blocks: [
-          'S\'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([[role-admin]]). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :',
-          { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
-          'Un mot de passe provisoire s\'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées.',
-        ],
+        id: 'faq-double-auth',
+        title: 'Double authentification : plus d\'accès',
+        blocks: [{ ul: [
+          'Téléphone changé ou perdu : connectez-vous avec un de vos « Codes de secours » (« Utiliser un code de secours »), puis réactivez la double authentification avec le nouveau téléphone ([[double-auth]]).',
+          'Plus de téléphone ni de codes de secours : l\'Admin choisit « Désactiver la double authentification » sur votre compte (« Administration », « Comptes », bouton ⋮). Vous vous connectez avec votre seul mot de passe, puis vous la réactivez.',
+          'C\'est l\'Admin qui est bloqué : voir [[secours]] (commande de secours avec `--retirer-2fa`).',
+          'Le code à 6 chiffres est toujours refusé : l\'heure du téléphone est peut-être fausse ; mettez-la en réglage automatique.',
+          'Plus personne ne peut valider ses codes après une panne du serveur : la clé secrète a peut-être été perdue ([[cle-perdue]]).',
+        ] }],
       },
       {
         id: 'cle-perdue',
-        title: 'Clé secrète perdue',
+        title: 'La clé secrète a été perdue',
+        server: true,
         blocks: [
           'Sans copie de `secrets/secret.key`, Listo crée une nouvelle clé au démarrage. Les listes, articles, photos et mots de passe ne sont pas touchés, mais :',
           { ul: [
@@ -1045,72 +979,28 @@ export const GUIDE = [
         ],
       },
       {
-        id: 'scan-serveur',
-        title: 'Mode scan : Open Food Facts',
+        id: 'version',
+        title: 'Savoir qu\'une nouvelle version existe',
         blocks: [
-          'Le mode scan ([[scan]]) demande le nom d\'un produit à Open Food Facts, une base libre de produits alimentaires. Il faut que le serveur puisse joindre `https://world.openfoodfacts.org` (HTTPS, port 443, en sortie). Sans cet accès, rien ne casse : Listo propose de taper le nom.',
-          { sub: 'Ce qu\'Open Food Facts apprend' },
-          'L\'adresse IP publique du serveur, les codes-barres demandés avec leur heure, et l\'en-tête `User-Agent: Listo/0.1.0 (+https://github.com/magicgg91/listo)`, plus le contact de `LISTO_PRODUCT_CONTACT` s\'il est renseigné. Rien sur les personnes : ni compte, ni nom de liste, ni l\'adresse des téléphones.',
-          { sub: 'Ce que Listo fait pour limiter cela' },
+          'Dans Réglages › « À propos », sur la ligne de la version, l\'Admin voit l\'état de la vérification :',
           { ul: [
-            'seul le numéro du code part, et seulement s\'il est valide (8, 12 ou 13 chiffres avec une clé de contrôle juste) ;',
-            'un code déjà porté par un article de vos listes n\'est jamais demandé ; les codes “en 2” (articles pesés par le magasin, avec souvent un prix) non plus ;',
-            'chaque réponse est gardée en mémoire (500 produits au plus, 7 jours pour un produit trouvé, 1 jour pour un inconnu, tout s\'efface au redémarrage) ;',
-            '30 recherches par minute et par compte, 10 demandes par minute au total vers Open Food Facts ;',
-            'délai de 5 secondes, réponse de 32 ko au plus, aucune redirection suivie ;',
-            'ni le code ni le nom ne sont écrits dans les journaux ; une panne écrit seulement une ligne du genre “Recherche de produit impossible : délai dépassé”.',
+            '« À jour » : l\'image installée est la dernière construite ;',
+            '“Vérifié il y a 15 min”, avec une pastille « Nouvelle version » suivie de son numéro (par exemple “Nouvelle version : 9f8e7d6”) : une image plus récente existe ; pour la prendre : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#mises-a-jour) ;',
+            '« Vérification impossible » : GitHub n\'a pas répondu. Sans conséquence : Listo marche normalement ;',
+            'le bouton d\'actualisation, au bout de la ligne, refait la demande tout de suite (une fois par minute au plus).',
           ] },
-          'Licence : les noms viennent d\'Open Food Facts, sous licence ODbL ; la mention apparaît dans la fiche du produit et dans Réglages › « À propos ». Pour couper le mode scan : `LISTO_PRODUCT_LOOKUP=off` dans `docker-compose.yml` (la ligne est déjà prête, en commentaire), puis `docker compose up -d`.',
-          'Le lecteur de codes-barres (environ 1 Mo, livré avec Listo) n\'est envoyé au téléphone qu\'au premier scan, puis gardé : le scan marche ensuite hors ligne (le nom, lui, demande du réseau).',
-          'À vérifier une fois en production (le vrai service n\'a pas pu être joint pendant le développement) : un produit courant donne son nom en français ; un produit non alimentaire donne “Produit inconnu” ; `docker logs listo` ne montre aucune ligne “Recherche de produit impossible”.',
+          'C\'est le serveur (pas le téléphone) qui demande à GitHub, au plus une fois par heure, sans compte ni jeton, quel est le dernier commit dont l\'image a été construite. Listo ne se met jamais à jour tout seul. Les autres comptes ne voient que la version. Pour couper la vérification : `LISTO_UPDATE_CHECK=off` dans `docker-compose.yml` (la ligne est déjà prête, en commentaire), puis `docker compose up -d`.',
         ],
       },
       {
-        id: 'mcp-serveur',
-        title: 'Claude : activer l\'accès',
-        blocks: [
-          'L\'accès depuis Claude ([[claude]]) est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
-          'Nginx Proxy Manager : rien à régler. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d\'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.',
-          { table: {
-            head: ['Adresse', 'Qui l\'appelle', 'Rôle'],
-            rows: [
-              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'Claude', 'Dit où demander l\'autorisation.'],
-              ['`/.well-known/oauth-authorization-server`', 'Claude', 'Description du serveur d\'autorisation.'],
-              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser Claude ».'],
-              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'Claude', 'Jetons, révocation, enregistrement automatique.'],
-              ['`/mcp`', 'Claude', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
-            ],
-          } },
-        ],
+        id: 'faq-suggestion',
+        title: 'Une faute de frappe revient dans les suggestions',
+        blocks: ['L\'Admin : Réglages, « Administration », onglet « Courses », « Articles ». Cherchez le nom et « Corriger » : Listo dit combien d\'articles et dans combien de listes de courses il sera corrigé, puis le corrige partout (s\'il existe déjà, les deux sont réunis). « Retirer » l\'enlève seulement des suggestions, sans toucher aux listes. Un nom corrigé ou retiré peut revenir si quelqu\'un le saisit de nouveau.'],
       },
       {
-        id: 'mcp-regles',
-        title: 'Claude : règles et journal',
-        blocks: [
-          { ul: [
-            'Jeton d\'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l\'empreinte des jetons, jamais les jetons eux-mêmes.',
-            'Un jeton Claude n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
-            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.',
-            'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
-            'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
-          ] },
-          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.',
-        ],
-      },
-      {
-        id: 'mcp-essai',
-        title: 'Claude : premier essai',
-        blocks: [
-          'Après l\'activation, une fois, avant tout usage régulier :',
-          { ol: [
-            'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
-            'Connecter Claude ([[claude-connecter]]).',
-            'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
-            '`docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s\'il y en a.',
-            'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
-            'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
-          ] },
-        ],
+        id: 'faq-orphelin',
+        title: 'Liste d\'envies : un participant est parti',
+        blocks: ['Un proche a réservé, puis a quitté la liste ou son compte a été désactivé : il reste participant. Sur une liste créée pour quelqu\'un d\'autre, le propriétaire le voit et peut le « Retirer », ou « Libérer » tout le souhait. Sur une liste “pour moi”, personne ne le peut (le propriétaire est le bénéficiaire et ne voit pas les réservations, c\'est voulu) : les autres participants peuvent seulement ouvrir ou fermer la réservation. Si le proche a seulement été désactivé, l\'Admin peut le réactiver le temps qu\'il « Quitte » ; sinon, supprimez le souhait puis recréez-le.'],
       },
     ],
   },
@@ -1171,4 +1061,45 @@ export function blockTexts(block) {
   if (block.sub) return [block.sub];
   if (block.table) return [...block.table.head, ...block.table.rows.flat()];
   return [];
+}
+
+// --- Recherche dans le guide ---
+
+// Texte simple d'un texte enrichi (code, renvois et liens compris), pour
+// chercher dedans
+export function plainText(text) {
+  return parseInline(text).map((part) => part.code ?? part.link ?? (part.ref !== undefined ? refLabel(part.ref) : part.text)).join('');
+}
+
+// Tout le texte d'une suite de blocs (commandes et « Qui peut quoi » compris)
+function blocksText(blocks = []) {
+  return blocks.flatMap((block) => {
+    if (block.code !== undefined) return [block.code];
+    if (block.who) return [...PERMISSIONS.map((p) => p.action), ...ROLES.map((r) => r.label), PERMISSIONS_NOTE];
+    return blockTexts(block);
+  }).map(plainText).join('\n');
+}
+
+// Recherche dans les titres et le texte (majuscules et accents ignorés, voir
+// search.js). Renvoie null sans recherche ; sinon { chapters, count } :
+// chapters, les chapitres à montrer, chacun { id, intro (ses blocs
+// d'introduction contiennent le texte), sections (identifiants des sections
+// à montrer : celles qui le contiennent, ou toutes si le titre du chapitre
+// le contient) } ; count, le nombre de résultats (sections et
+// introductions trouvées, ou le chapitre seul si seul son titre est trouvé).
+export function searchGuide(query, guide = GUIDE) {
+  if (!isSearching(query)) return null;
+  const entryOf = new Map(outline(guide).map((e) => [e.id, e]));
+  const chapters = [];
+  let count = 0;
+  for (const chapter of guide) {
+    const titleHit = matches(numbered(entryOf.get(chapter.id)), query);
+    const intro = (chapter.blocks ?? []).length > 0 && matches(blocksText(chapter.blocks), query);
+    const found = (chapter.sections ?? []).filter((section) => matches(`${numbered(entryOf.get(section.id))}\n${blocksText(section.blocks)}`, query)).map((section) => section.id);
+    count += found.length + (intro ? 1 : 0) + (titleHit && !found.length && !intro ? 1 : 0);
+    if (titleHit || intro || found.length) {
+      chapters.push({ id: chapter.id, intro: intro || titleHit, sections: titleHit ? (chapter.sections ?? []).map((section) => section.id) : found });
+    }
+  }
+  return { chapters, count };
 }

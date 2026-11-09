@@ -35,7 +35,7 @@ docker compose up -d                     # télécharge et démarre Listo
 docker logs listo                        # affiche le code de démarrage du premier Admin
 ```
 
-Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Mises à jour, sauvegardes et dépannage : [Gérer le serveur](docs/guide.md#serveur).
+Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
 
 ## Liens utiles
 

@@ -28,6 +28,16 @@ body { margin: 0; }
 .site__toc { margin: var(--space-1) 0 var(--space-3); padding: 12px var(--space-2); }
 .site__toc-title { margin: 0 0 6px; font-size: var(--text-lg); font-weight: 700; }
 .help-toc__entry { text-decoration: none; }
+/* Chapitres du sommaire du haut : <details> natifs (sans JavaScript), un
+   seul ouvert à la fois (name) ; même chevron que les groupes */
+.site__toc-chapter > summary { list-style: none; cursor: pointer; }
+.site__toc-chapter > summary::-webkit-details-marker { display: none; }
+.site__toc-chapter > summary > .icon { flex: none; transform: rotate(-90deg); transition: transform 160ms var(--ease); }
+.site__toc-chapter[open] > summary > .icon { transform: none; }
+.site__toc-chapter > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.site .help-search { margin-bottom: var(--space-1); }
+/* Recherche cachée sans JavaScript (elle ne marcherait pas) : [hidden] l'emporte sur display: flex */
+.site .help-search[hidden], .site .help-search__empty[hidden] { display: none; }
 a.help-toc__entry:hover { text-decoration: underline; }
 
 /* Chapitres : en-tête collé en haut de l'écran pendant la lecture */

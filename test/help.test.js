@@ -156,10 +156,10 @@ test('aucun secret ni adresse réelle : seulement des exemples inventés ; vouvo
   // Domaines : l'exemple inventé, et des sites publics connus
   const hosts = [...text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase());
   // (« ip » : le nom à remplacer de http://IP:13300 et http://IP_LOCALE:13300)
-  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'ip'].includes(host), host);
+  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'platform.claude.com', 'ip'].includes(host), host);
   assert.doesNotMatch(text, /mondomaine/);
-  // Adresses IP : réseau local d'exemple, ou la plage publique d'Anthropic
-  for (const ip of text.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g) ?? []) assert.ok(/^192\.168\.1\.\d+$|^160\.79\.104\.0$|^0\.0\.0\.0$/.test(ip), ip);
+  // Adresses IP : seulement le réseau local d'exemple (la liste d'Anthropic est un lien vers sa page officielle, jamais une plage recopiée)
+  for (const ip of text.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g) ?? []) assert.ok(/^192\.168\.1\.\d+$|^0\.0\.0\.0$/.test(ip), ip);
   // Pas de code de démarrage réel, ni de clé
   assert.doesNotMatch(text, /K7RM|BEGIN|sk-/);
   assert.doesNotMatch(text, /(?<!\p{L})(tu|ton|tes|ta)(?!\p{L})/iu, 'vouvoiement');

@@ -133,7 +133,7 @@ test('page publique autonome : rien chargé d\'ailleurs, pas de noindex (choix d
   assert.doesNotMatch(page, /noindex|name="robots"/);
   // Liens vers d'autres sites : exemples inventés et sites publics connus
   const hosts = [...page.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase());
-  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'magicgg91.github.io', 'www.w3.org', 'ip'].includes(host), host);
+  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'magicgg91.github.io', 'platform.claude.com', 'www.w3.org', 'ip'].includes(host), host);
   assert.doesNotMatch(page, /mondomaine|192\.168\.(?!1\.(10|20)\b)/);
   // Texte toujours protégé
   assert.equal(html('<b>"&'), '&lt;b&gt;&quot;&amp;');

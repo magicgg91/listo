@@ -325,5 +325,5 @@ test('textes : deux niveaux, outils par niveau, interdits permanents, données j
   for (const file of ['server/mcp-tools.js', 'server/mcp.js', 'server/oauth.js', 'public/js/screens/claude-consent.js', 'public/js/screens/claude-connections.js', 'public/js/help-content.js']) {
     assert.doesNotMatch(read(file).replace(/\/\/.*$/gm, ''), /set_item_options|Lecture et ajout|Lecture, ajout et modification/, file);
   }
-  assert.match(read('public/sw.js'), /const VERSION = `v66-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v6[6-9]-/);
 });

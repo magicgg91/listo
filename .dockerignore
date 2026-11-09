@@ -11,5 +11,7 @@ design/photos
 design/recherche
 test/
 docs/
+site/
+scripts/
 *.log
 .DS_Store

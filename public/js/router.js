@@ -19,6 +19,7 @@ export const ROUTES = [
   // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
   { name: 'trash', path: '/reglages/corbeille' },
   { name: 'help', path: '/aide' },
+  { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },
   // Écran « Autoriser Claude » (autorisation OAuth, voir claude-consent.js)
   { name: 'authorize', path: '/autoriser/:id' },

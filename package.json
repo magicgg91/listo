@@ -20,6 +20,7 @@
   },
   "scripts": {
     "start": "node server/index.js",
+    "guide": "node scripts/guide.js",
     "test": "node --test \"test/**/*.test.js\""
   },
   "dependencies": {

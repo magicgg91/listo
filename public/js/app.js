@@ -531,7 +531,9 @@ function show(route) {
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
-    case 'help': mount(() => renderHelp(app.user)); break;
+    case 'help': mount(() => renderHelp()); break;
+    // Aide ouverte sur une section précise (renvoi depuis un autre écran)
+    case 'helpSection': mount(() => renderHelp(params.section)); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Connexions Claude : seulement si l'accès est activé sur le serveur

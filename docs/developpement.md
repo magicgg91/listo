@@ -105,7 +105,8 @@ Organisation du code, tests, API et vérifications à la main. Pour installer et
 | `test/` | Tests automatisés (`npm test`) |
 | `LICENSE`, `NOTICE`, `CONTRIBUTING.md`, `SECURITY.md` | Licence Apache-2.0 (texte officiel), mentions à conserver, règles de contribution, signalement des failles |
 | `docs/` | Cahier des charges (`cahier-des-charges.md`), guide (`guide.md`, fabriqué ; `exploitation.md` n'est plus qu'un renvoi) et ce document (`developpement.md`) |
-| `scripts/` | `guide.js` (fabrique `docs/guide.md`) et `doc-links.js` (vérifie les liens des documents), lancés à la main ; hors de l'image Docker |
+| `scripts/` | `guide.js` (fabrique `docs/guide.md` et le site `site/`, à partir de `site-assets/`) et `doc-links.js` (vérifie les liens des documents), lancés à la main ; hors de l'image Docker |
+| `site/` | Page publique du guide (fabriquée, jamais modifiée à la main), publiée sur <https://magicgg91.github.io/listo/> par `.github/workflows/pages.yml` à chaque fusion sur `main` |
 | `design/` | Kit de design (`listo.css`, `components.html`, `icons-sprite.html`, icônes, maquettes) : voir `design/README.md` |
 | `.github/` | Workflow de l'image Docker (`workflows/docker.yml`) et Dependabot (`dependabot.yml`) |
 | `docs/images/` | Captures d'écran du README (instance de démonstration, données inventées) |
@@ -288,7 +289,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Sur B (contributeur ou lecture seule) : pas de « Modifier la liste ».
     5. Avant la mise à jour, ouvrir Listo sur un téléphone, couper le réseau, ajouter une liste ; mettre à jour le serveur ; rallumer le réseau sans recharger : la liste est envoyée et apparaît avec le bon type ; puis recharger : tout est là.
 
-**Maintien à jour de l'aide** : une évolution qui change un droit, un écran ou le libellé d'un bouton cité met à jour le guide, dans `public/js/help-content.js`, lance `node scripts/guide.js` (qui réécrit `docs/guide.md`), puis refait le point 36. Les tests `test/help.test.js`, `test/help-labels.test.js` et `test/guide.test.js` vérifient la structure, la numérotation, que chaque libellé cité entre « » existe dans l'interface, que `docs/guide.md` est à jour et que les liens des documents mènent quelque part (`node scripts/doc-links.js`), mais pas que chaque phrase est juste.
+**Maintien à jour de l'aide** : une évolution qui change un droit, un écran ou le libellé d'un bouton cité met à jour le guide, dans `public/js/help-content.js`, lance `node scripts/guide.js` (qui réécrit `docs/guide.md` et `site/`), puis refait le point 36. Les tests `test/help.test.js`, `test/help-labels.test.js` et `test/guide.test.js` vérifient la structure, la numérotation, que chaque libellé cité entre « » existe dans l'interface, que `docs/guide.md` et `site/` sont à jour et que les liens des documents mènent quelque part (`node scripts/doc-links.js`), mais pas que chaque phrase est juste.
 38. **Listes d'envies** (trois téléphones : A propriétaire, B bénéficiaire, C proche en « Lecture seule » ; clair et sombre) :
     1. Sur A, « Nouvelle liste » : « Envies », « Pour qui ? » B. B apparaît dans le partage « Destinataire · Peut modifier », sans choix. Ajouter C. « Enregistrer ».
     2. Sur B : la liste « Pour vous » ; ajouter un souhait avec un lien et un prix ; « Ouvrir le lien » ouvre un nouvel onglet.

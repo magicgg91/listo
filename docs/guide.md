@@ -2,7 +2,7 @@
 
 <!-- Fichier fabriqué par scripts/guide.js à partir de public/js/help-content.js : ne pas le modifier à la main. -->
 
-Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide »). Les chapitres marqués « Pour la personne qui gère le serveur » ne concernent que l'installation et l'entretien.
+Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [https://magicgg91.github.io/listo/](https://magicgg91.github.io/listo/). Les chapitres marqués « Pour la personne qui gère le serveur » ne concernent que l'installation et l'entretien.
 
 ## Sommaire
 

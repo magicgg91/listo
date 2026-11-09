@@ -11,7 +11,7 @@
 - **Lien public** pour montrer une liste à quelqu'un sans compte, et **corbeille** de 30 jours.
 - **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur.
-- **Un seul guide numéroté**, le même dans l'application (Réglages › Aide) et dans le dépôt : [docs/guide.md](docs/guide.md).
+- **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
 ## En images
 
@@ -35,7 +35,7 @@ Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérificat
 
 ## Liens utiles
 
-- [docs/guide.md](docs/guide.md) : le guide, pour tout le monde.
+- [Le guide en ligne](https://magicgg91.github.io/listo/), ou [docs/guide.md](docs/guide.md) dans le dépôt : pour tout le monde.
 - [docs/cahier-des-charges.md](docs/cahier-des-charges.md) : fonctions, droits, modèle de données, sécurité, décisions.
 - [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones.
 - [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès depuis Claude.

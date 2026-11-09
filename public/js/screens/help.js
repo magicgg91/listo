@@ -162,6 +162,8 @@ export function renderHelp(sectionId = null) {
       title: 'Sommaire',
       content,
       scroll: true,
+      // En-tête collé (titre et croix toujours visibles quand la feuille défile)
+      tools: [],
       returnTo: tocButton,
       onClose: () => {
         tocButton.setAttribute('aria-expanded', 'false');

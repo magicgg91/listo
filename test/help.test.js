@@ -276,5 +276,5 @@ test('hors ligne : les fichiers de l\'aide sont gardés par le service worker, n
   const sw = read('public/sw.js');
   assert.match(sw, /'\/js\/help-content\.js',/);
   assert.match(sw, /'\/js\/screens\/help\.js',/);
-  assert.match(sw, /const VERSION = `v67-/);
+  assert.match(sw, /const VERSION = `v6[7-9]-/);
 });

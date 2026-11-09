@@ -1,0 +1,114 @@
+/* Fichier fabriqué par scripts/guide.js : ne pas le modifier à la main. */
+/* Règles de la page « Aide » et de l'en-tête de feuille de l'application (public/css/app.css) */
+/* Page « Aide » (help.js) : le guide numéroté. Chapitres repliables (même
+   composant que les groupes d'une liste), sections en cartes ; « Qui peut
+   quoi » et les tableaux en blocs empilés (lisibles à 320 px) ; oui / non
+   en icône ET en texte, jamais la couleur seule. Bouton « Sommaire »
+   flottant (.fab) : le bas de la page garde la place de ce bouton. */
+.help-screen { position: relative; }
+/* Pas de marge en haut : l'en-tête collé d'un chapitre touche la barre du haut (rien ne défile au-dessus) */
+.help { padding-top: 0; padding-bottom: calc(56px + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px)); }
+.help-who__row { padding: 12px var(--space-2); border-bottom: 1px solid var(--color-border); }
+.help-who__row:last-child { border-bottom: 0; }
+.help-who__action { margin: 0 0 8px; font-weight: 600; }
+.help-who__roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.help-who__role { height: 26px; padding: 0 8px; }
+.help-who__role--yes { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.help-who__role--no { background: transparent; border: 1px dashed var(--color-control); color: var(--color-text-2); }
+.help-who { margin: var(--space-1) 0; }
+.help__note { margin: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.help__part { margin-top: 4px; }
+.help__part:first-child { margin-top: var(--space-0); }
+.help__part h2:focus, .help__title:focus, .topbar__title:focus { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.help__section { display: flex; flex-direction: column; gap: var(--space-1); }
+.help__topic { padding: 12px var(--space-2); overflow-wrap: anywhere; }
+/* Après un saut, le titre s'arrête sous l'en-tête collé du chapitre (.aisle : 44 px au moins) */
+.help__title { margin: 0 0 6px; font-size: var(--text-base); font-weight: 700; scroll-margin-top: calc(var(--tap-min) + var(--space-3)); }
+.help__sub { margin: 10px 0 4px; font-size: var(--text-base); font-weight: 600; }
+.help__server { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: var(--text-sm); color: var(--color-text-2); }
+.help__section > .help__server { margin: 0 var(--space-1); }
+.help__text { margin: 0 0 6px; }
+.help__text:last-child { margin-bottom: 0; }
+.help__list { margin: 0 0 6px; padding-left: 1.2em; list-style: disc; }
+.help__list--steps { list-style: decimal; }
+.help__list:last-child { margin-bottom: 0; }
+.help__list li + li { margin-top: 4px; }
+/* Commandes : retour à la ligne plutôt qu'un défilement de côté (téléphone) */
+.help__code { margin: 0 0 6px; padding: 10px 12px; overflow-x: auto; border-radius: var(--radius-sm); background: var(--color-bg); font-family: var(--font-mono); font-size: var(--text-sm); white-space: break-spaces; overflow-wrap: anywhere; }
+.help__code-inline { padding: 0 3px; border-radius: 4px; background: var(--color-bg); font-family: var(--font-mono); font-size: 0.92em; overflow-wrap: anywhere; }
+.help__ref { color: var(--color-accent-ink); text-decoration: underline; }
+.help__note-box { margin: 0 0 6px; }
+.help__note-box p { margin: 0; }
+.help-table { display: flex; flex-direction: column; margin: 0 0 6px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }
+.help-table__row { padding: 8px 12px; border-bottom: 1px solid var(--color-border); }
+.help-table__row:last-child { border-bottom: 0; }
+.help-table__key { margin: 0 0 2px; font-weight: 600; }
+.help-table__cell { margin: 0; font-size: var(--text-sm); }
+.help-table__head { color: var(--color-text-2); }
+/* Feuille « Sommaire » : deux niveaux, entrées de 44 px ; la section en
+   cours a une flèche ET un texte en gras (pas seulement une couleur) */
+.help-toc { display: flex; flex-direction: column; padding-bottom: var(--space-2); }
+.help-toc__list { margin: 0; padding: 0; list-style: none; }
+.help-toc__list--sub { padding-left: var(--space-2); }
+.help-toc__entry { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--tap-min); padding: 6px var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text); font: inherit; text-align: left; }
+.help-toc__entry--1 { font-weight: 700; }
+.help-toc__entry.is-current { background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
+.help-toc__top { color: var(--color-accent-ink); font-weight: 600; }
+.sheet__head--tools { position: sticky; top: calc(-1 * var(--space-1)); z-index: 2; margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2)) 0; padding: var(--space-1) var(--space-2); background: var(--color-surface); }
+.sheet__heading { flex: 1; min-width: 0; }
+.sheet__head--tools .sheet__title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.sheet__tools { display: flex; flex: none; align-items: center; gap: var(--space-0); }
+
+/* Page publique du guide (site/, publiée par GitHub Pages) : mise en page
+   propre au site. Les composants viennent du kit (listo.css, copié tel quel)
+   et des règles de la page « Aide » de l'application (copiées depuis
+   public/css/app.css par scripts/guide.js). Rien n'est chargé d'ailleurs :
+   polices du système, icônes du sprite collé dans la page.
+   Fichier source : scripts/site-assets/site.css (site/ est fabriqué). */
+
+html { background: var(--color-bg); scroll-padding-top: var(--space-1); }
+body { margin: 0; }
+/* La page défile comme un site ordinaire (ancres, recherche du navigateur) */
+.site { display: block; height: auto; min-height: 100vh; }
+.site__inner { max-width: 760px; margin: 0 auto; padding: var(--space-2) var(--space-2) calc(56px + var(--space-3) * 3 + env(safe-area-inset-bottom, 0px)); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Lien d'évitement : visible seulement au clavier */
+.skip-link { position: absolute; left: var(--space-2); top: -60px; z-index: 20; padding: 10px 14px; border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-accent-ink); font-weight: 600; }
+.skip-link:focus { top: var(--space-1); }
+
+/* En-tête : logo, titre, présentation */
+.site__head { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) 0; }
+.site__brand { display: flex; align-items: center; gap: 12px; }
+.site__logo { width: 44px; height: 44px; border-radius: var(--radius-sm); }
+.site__title { font-size: var(--text-title); font-weight: 700; line-height: var(--lh-tight); }
+.site__title:focus { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.site__intro { color: var(--color-text-2); }
+
+/* Sommaire dans la page (lisible aussi sans JavaScript) */
+.site__toc { margin: var(--space-1) 0 var(--space-3); padding: 12px var(--space-2); }
+.site__toc-title { margin: 0 0 6px; font-size: var(--text-lg); font-weight: 700; }
+.help-toc__entry { text-decoration: none; }
+a.help-toc__entry:hover { text-decoration: underline; }
+
+/* Chapitres : en-tête collé en haut de l'écran pendant la lecture */
+.site .help__part { margin-top: var(--space-2); }
+.site .help__chapter { margin: 0 calc(-1 * var(--space-2)); padding: 0 var(--space-2); scroll-margin-top: 0; }
+.site .help__title { scroll-margin-top: calc(var(--tap-min) + var(--space-3)); }
+.site .help__chapter:focus, .site .help__title:focus { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.site a { color: var(--color-accent-ink); }
+
+/* Pied de page */
+.site__foot { margin-top: var(--space-3); color: var(--color-text-2); font-size: var(--text-sm); }
+
+/* Bouton « Sommaire » : flottant en bas à droite, à portée du pouce */
+.site .fab { position: fixed; right: max(var(--space-2), calc((100vw - 760px) / 2)); }
+.site .fab[hidden] { display: none; }
+
+/* Feuille du sommaire : un <dialog> natif (Échap, fond inerte, focus) avec
+   l'apparence de la feuille du kit */
+dialog.site-sheet { position: fixed; inset: auto 0 0 0; width: 100%; max-width: 760px; max-height: 85vh; margin: 0 auto; color: var(--color-text); font: 400 var(--text-base) / var(--lh-base) var(--font); }
+dialog.site-sheet:not([open]) { display: none; }
+dialog.site-sheet::backdrop { background: var(--color-scrim); }
+dialog.site-sheet :where(h2, ol) { margin: 0; padding: 0; }
+@media (prefers-reduced-motion: reduce) { dialog.site-sheet { animation: none; } }

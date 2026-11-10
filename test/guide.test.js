@@ -36,7 +36,7 @@ test('sommaire : une entrée par section, dans l\'ordre, avec le même numéro q
     assert.ok(md.includes(`<a id="${e.id}"></a>\n\n${title}\n`), title);
   }
   // Mention des parties du serveur (chapitre Installation et quelques sections)
-  assert.equal((md.match(/^\*Pour la personne qui gère le serveur\.\*$/gm) ?? []).length, 1 + 5);
+  assert.equal((md.match(/^\*Pour la personne qui gère le serveur\.\*$/gm) ?? []).length, 1 + 6); // + « Activer la fonction sur le serveur » (notifications)
   // Sommaire court : les chapitres, chacun repliable (<details>, affiché par GitHub)
   assert.equal((toc.match(/<details>/g) ?? []).length, entries.filter((e) => e.level === 1).length);
   assert.equal((toc.match(/\[Aller au chapitre\]/g) ?? []).length, entries.filter((e) => e.level === 1).length);
@@ -137,7 +137,7 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   assert.match(page, /<meta name="color-scheme" content="light dark">/);
   assert.match(page, /<a class="skip-link" href="#contenu">/);
   // Mention des parties du serveur ; tableau « Qui peut quoi »
-  assert.equal(page.split('class="help__server"').length - 1, 1 + 5);
+  assert.equal(page.split('class="help__server"').length - 1, 1 + 6);
   assert.equal(page.split('class="help-who__row"').length - 1, PERMISSIONS.length);
   // Script du sommaire : aria-current, focus rendu, Échap natif (dialog)
   const script = read('scripts/site-assets/guide.js');

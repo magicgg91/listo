@@ -102,7 +102,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.equal(new Set(ids).size, ids.length, 'identifiants uniques');
   for (const id of ids) assert.match(id, /^[a-z][a-z0-9-]*$/, `ancre valable : ${id}`);
   // Ordre demandé : présentation, possibilités et Claude au début ; serveur à la fin
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'roles', 'claude', 'faq']);
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
   assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'MCP Claude');
   assert.deepEqual(entries.filter((e) => e.chapter === 'roles').map((e) => e.id).filter((id) => id.startsWith('role-')),
     ['role-admin', 'role-contributeur', 'role-lecture', 'role-visiteur', 'role-beneficiaire']);
@@ -114,7 +114,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.ok(GUIDE.every((c) => !('adminOnly' in c)));
   // Parties du serveur : marquées (un chapitre, et des sections d'autres chapitres)
   assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation']);
-  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['secours', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
+  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['secours', 'notif-serveur', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
 });
 
 test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens en https seulement', () => {
@@ -351,7 +351,7 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   const clear = screen.findAll((n) => n.attrs['aria-label'] === 'Effacer la recherche')[0];
   assert.equal(clear.hidden, true);
   const chapters = () => toggles(screen).map((b) => b.textContent);
-  assert.equal(chapters().length, 8);
+  assert.equal(chapters().length, 9);
   // Taper : seuls les chapitres trouvés, dépliés ; texte surligné ; compteur
   input.value = 'SAUVEGARDÉ';
   input.fire('input');
@@ -370,11 +370,11 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   assert.equal(status.textContent, '0 résultat');
   assert.equal(chapters().length, 0);
   assert.match(screen.textContent, /Aucun résultat\./);
-  // Échap : tout revient (8 chapitres, le premier déplié, rien de surligné)
+  // Échap : tout revient (9 chapitres, le premier déplié, rien de surligné)
   input.fire('keydown', { key: 'Escape' });
   assert.equal(input.value, '');
   assert.equal(status.textContent, '');
-  assert.equal(chapters().length, 8);
+  assert.equal(chapters().length, 9);
   assert.equal(screen.findAll((n) => n.tag === 'mark').length, 0);
   assert.equal(toggles(screen)[0].getAttribute('aria-expanded'), 'true');
   // La croix aussi
@@ -382,7 +382,7 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   input.fire('input');
   assert.ok(chapters().length < 8);
   clear.click();
-  assert.equal(chapters().length, 8);
+  assert.equal(chapters().length, 9);
   assert.equal(clear.hidden, true);
   // Jamais de HTML : le surlignage est posé en DOM
   assert.doesNotMatch(code('public/js/screens/help.js'), /innerHTML|insertAdjacentHTML/);
@@ -503,4 +503,26 @@ test('boutons flottants : pile au-dessus de la zone de sécurité, place gardée
   assert.match(site, /\.site__inner \{[^}]*padding: var\(--space-2\) var\(--space-2\) calc\(var\(--help-fab\) \* 3 \+ 12px \* 2 \+ var\(--space-3\) \* 2 \+ env\(safe-area-inset-bottom, 0px\)\);/);
   // Retour en haut : sans animation si moins de mouvement est demandé
   assert.match(code('public/js/screens/help.js'), /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)\.matches;\s*body\.scrollTo\?\.\(\{ top: 0, behavior: still \? 'auto' : 'smooth' \}\);\s*topTitle\.focus\(\{ preventScroll: true \}\);/);
+});
+
+test('chapitre « Notifications » : son sommaire, ses sujets ; plus aucune affirmation « pas de notification » ; trois exceptions au principe', () => {
+  const chapter = GUIDE.find((c) => c.id === 'notifications');
+  assert.equal(chapter.title, 'Notifications');
+  assert.equal(GUIDE.indexOf(chapter), GUIDE.findIndex((c) => c.id === 'quotidien') + 1, 'juste après « Au quotidien »');
+  assert.deepEqual(chapter.sections.map((s) => s.id), ['notif-activer', 'notif-recevoir', 'notif-detail', 'notif-silencer', 'notif-limites', 'notif-confidentialite', 'notif-serveur', 'notif-depannage']);
+  const text = JSON.stringify(chapter);
+  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Silencer cette liste »', '30 notifications par personne et par heure', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
+    assert.ok(text.includes(needle), needle);
+  }
+  // Dans la recherche du guide
+  assert.ok(searchGuide('notification').chapters.some((c) => c.id === 'notifications'));
+  // L'ancienne affirmation a disparu partout (guide, aide, site, documents)
+  const sources = ['public/js/help-content.js', 'docs/guide.md', 'site/index.html', 'README.md', 'SECURITY.md', 'docs/exploitation.md'];
+  for (const file of sources) {
+    assert.doesNotMatch(read(file), /pas de notification|aucune notification|sans notification|ne vous dérange/i, file);
+  }
+  // Le principe et ses trois exceptions (version, scan, notifications)
+  const limits = JSON.stringify(GUIDE.find((c) => c.id === 'presentation').sections.find((s) => s.id === 'limites'));
+  assert.match(limits, /Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions/);
+  for (const needle of ['GitHub', 'Open Food Facts', 'notifications']) assert.ok(limits.includes(needle), needle);
 });

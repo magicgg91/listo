@@ -93,9 +93,9 @@ export const GUIDE = [
           { ul: [
             'Pas de version en ligne : Listo s\'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [[installation]].',
             'Français seulement.',
-            'Pas de notification : les nouveautés se voient en ouvrant Listo.',
+            'Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([[notifications]]).',
             'Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.',
-            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf deux demandes que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]) et le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
+            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]), le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l\'appareil voit l\'heure, la taille et l\'appareil, jamais le texte : [[notif-confidentialite]]). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
           ] },
         ],
       },
@@ -142,6 +142,7 @@ export const GUIDE = [
           'Une liste se partage avec d\'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([[partager]]).',
           'Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.',
           'Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([[nouveautes]]).',
+          'Notifications, facultatives : modifications des autres, réservations, partage et résumé des échéances, sur le téléphone ou l\'ordinateur ([[notifications]]).',
           'Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([[tri]]).',
         ] }],
       },
@@ -242,12 +243,14 @@ export const GUIDE = [
         title: 'Les réglages (variables)',
         blocks: [
           'Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot de passe ni de clé.',
+          'La partie `environment:` du fichier, telle qu\'elle est livrée (les lignes en commentaire, commençant par `#`, sont facultatives : enlevez le `#` pour les utiliser) :',
+          { code: '    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # sauvegarde vers 3 h, résumé des échéances à 8 h\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »)\n      # Notifications push : DÉSACTIVÉES par défaut. Contenu chiffré : Apple,\n      # Google, Mozilla ou Microsoft ne voient que l\'heure, la taille et\n      # l\'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.\n      # - LISTO_PUSH=on' },
           { table: {
             head: ['Variable', 'Valeur de production', 'Rôle'],
             rows: [
               ['`NODE_ENV`', '`production`', 'Mode production : cookies sécurisés, HTTPS obligatoire.'],
               ['`PORT`', '`13300`', 'Port d\'écoute dans le conteneur (le même que dans `ports:`).'],
-              ['`TZ`', '`Europe/Paris`', 'Fuseau horaire : heure de la sauvegarde de la nuit, dates du journal.'],
+              ['`TZ`', '`Europe/Paris`', 'Fuseau horaire : heure de la sauvegarde de la nuit (3 h), du résumé des échéances (8 h) et dates du journal. À régler : sans lui, le serveur compte en heure universelle (une ou deux heures plus tôt qu\'à Paris).'],
               ['`LISTO_PUBLIC_URL`', '`https://listo.exemple.fr`', 'Adresse publique exacte, obligatoirement en `https://` en production (sinon Listo refuse de démarrer et l\'explique dans `docker logs listo`).'],
               ['`LISTO_DB_PATH`', '`/data/listo.db`', 'Base de données (dossier `data/`).'],
               ['`LISTO_KEY_PATH`', '`/secrets/secret.key`', 'Clé de chiffrement, créée au premier démarrage (dossier `secrets/`).'],
@@ -257,6 +260,7 @@ export const GUIDE = [
               ['`LISTO_PRODUCT_LOOKUP`', 'absente : activé', '`off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
               ['`LISTO_PRODUCT_CONTACT`', 'absente', 'Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
               ['`LISTO_MCP`', 'absente : désactivé', '`on` active l\'accès depuis Claude ([[mcp-serveur]]). Toute autre valeur : désactivé.'],
+              ['`LISTO_PUSH`', 'absente : désactivées', '`on` active les notifications ([[notif-serveur]]) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées.'],
             ],
           } },
         ],
@@ -324,6 +328,7 @@ export const GUIDE = [
           'Tout de suite après le premier démarrage, affichez la clé et copiez-la dans votre gestionnaire de mots de passe (une ligne de texte) :',
           { code: 'cat /opt/listo/secrets/secret.key' },
           'Sans elle, après une panne du serveur ou une restauration sur une autre machine, les doubles authentifications ne se lisent plus : chacun doit les refaire ([[cle-perdue]]). Les listes, les photos et les mots de passe, eux, ne dépendent pas d\'elle. Elle n\'est jamais copiée dans les sauvegardes de la nuit, volontairement : gardez-la à part, une fois pour toutes.',
+          'Avec les notifications activées (`LISTO_PUSH=on`), gardez de la même façon `secrets/vapid.json` (clés des notifications) : sans lui, chaque appareil doit se réabonner ([[notif-serveur]]).',
         ],
       },
       {
@@ -562,7 +567,7 @@ export const GUIDE = [
           'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
           'Menu ⋮ de la liste : « Ne plus me signaler cette liste », puis « Signaler cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise.',
           '« Mon compte », section « Nouveautés » : désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
-          'Il n\'y a pas de notification. Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total.',
+          'Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total. Pour être prévenu sans ouvrir Listo : [[notifications]].',
         ] }],
       },
       {
@@ -623,7 +628,103 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 6. Rôle par rôle ============
+  // ============ 6. Notifications ============
+  {
+    id: 'notifications',
+    title: 'Notifications',
+    blocks: [
+      'Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l\'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C\'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.',
+    ],
+    sections: [
+      {
+        id: 'notif-activer',
+        title: 'Les activer sur un appareil',
+        blocks: [
+          'Réglages, « Notifications », puis l\'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu\'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.',
+          { ul: [
+            'Android : dans Chrome (ou un autre navigateur), ou depuis Listo installé sur l\'écran d\'accueil ([[telephone]]).',
+            'Ordinateur : Chrome, Edge, Firefox ou Safari. La notification s\'affiche dans le coin de l\'écran ou le centre de notifications du système.',
+            'iPhone et iPad : ajoutez d\'abord Listo à l\'écran d\'accueil ([[telephone]]), puis ouvrez-le depuis son icône. Dans un simple onglet de Safari, l\'écran l\'explique et l\'interrupteur reste grisé. Il faut iOS 16.4 ou plus récent.',
+          ] },
+          'Chaque appareil s\'active à part : un appareil où vous vous déconnectez ne reçoit plus rien. Toucher une notification ouvre Listo sur la liste concernée.',
+        ],
+      },
+      {
+        id: 'notif-recevoir',
+        title: 'Ce que vous recevez, et quand',
+        blocks: [
+          'Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour tous vos appareils.',
+          { table: {
+            head: ['Catégorie', 'Quand', 'Exemple'],
+            rows: [
+              ['« Modifications des autres »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous. Les changements d\'une minute sont regroupés en une seule notification par liste.', '“Léa a modifié « Courses »”, “3 changements”'],
+              ['« Envies »', 'Quelqu\'un réserve un souhait ou participe à un cadeau, dans une liste d\'envies dont vous voyez les réservations.', '“Marc a réservé un souhait”'],
+              ['« Partage »', 'On vous ajoute à une liste, ou votre droit change.', '“Léa vous a ajouté à « Maison »”'],
+              ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a.', '“3 tâches à faire aujourd\'hui · 1 en retard”'],
+            ],
+          } },
+          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée.',
+        ],
+      },
+      {
+        id: 'notif-detail',
+        title: 'Le détail dans la notification',
+        blocks: [
+          'Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour). À éviter si d\'autres personnes voient l\'écran de votre téléphone verrouillé.',
+        ],
+      },
+      {
+        id: 'notif-silencer',
+        title: 'Silencer une liste',
+        blocks: [
+          'Menu ⋮ de la liste : « Silencer cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Ne plus silencer cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. À ne pas confondre avec « Ne plus me signaler cette liste », qui concerne les pastilles des nouveautés ([[nouveautes]]).',
+        ],
+      },
+      {
+        id: 'notif-limites',
+        title: 'Limites et listes d\'envies',
+        blocks: [{ ul: [
+          'Au plus 30 notifications par personne et par heure (le résumé des échéances ne compte pas).',
+          'Si vous avez déjà la liste ouverte à l\'écran quand quelqu\'un la modifie, vous n\'êtes pas prévenu : vous l\'avez vu.',
+          'Liste d\'envies : la personne à qui elle est destinée ne reçoit jamais rien qui parle d\'une réservation ou d\'une participation, ni ce que les autres ajoutent dans sa liste. La surprise est préservée. Un visiteur du lien public, sans compte, ne reçoit jamais de notification.',
+        ] }],
+      },
+      {
+        id: 'notif-confidentialite',
+        title: 'Ce que voient Apple, Google, Mozilla et Microsoft',
+        blocks: [
+          'Une notification passe par le service de votre appareil : Apple (iPhone, iPad, Safari sur Mac), Google (Chrome, Android, Edge sur Android), Mozilla (Firefox) ou Microsoft (Edge sur Windows). Le texte est chiffré pour votre appareil seul : ces services ne peuvent pas le lire. Ils voient l\'heure, la taille du message et l\'appareil qui le reçoit.',
+          'C\'est la troisième exception au principe “aucune donnée envoyée ailleurs que sur votre serveur”, avec la vérification de version et le mode scan ([[limites]]). Elle n\'existe que si la personne qui gère le serveur active la fonction.',
+        ],
+      },
+      {
+        id: 'notif-serveur',
+        title: 'Activer la fonction sur le serveur',
+        server: true,
+        blocks: [
+          'Désactivée par défaut. Pour l\'activer, décommentez la ligne `- LISTO_PUSH=on` de `docker-compose.yml`, puis :',
+          { code: 'docker compose up -d' },
+          'Le résumé des échéances part vers 8 h dans le fuseau du serveur : réglez `TZ` (par exemple `TZ=Europe/Paris`, déjà dans le fichier livré), sinon il arrive à 8 h en heure universelle ([[variables]]).',
+          'Au premier démarrage, Listo crée ses clés de notification dans `secrets/vapid.json`, à côté de la clé secrète. Gardez-en une copie avec elle ([[cle]]). Si ce fichier est perdu, Listo en crée un nouveau : chaque appareil dont l\'accord est déjà donné se réabonne tout seul à sa prochaine ouverture de Listo ; sinon, il suffit de réactiver l\'interrupteur.',
+          'Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). Désactivée, aucune clé n\'est créée et aucune demande ne part vers eux.',
+        ],
+      },
+      {
+        id: 'notif-depannage',
+        title: 'Rien ne s\'affiche',
+        blocks: [{ ul: [
+          'L\'écran dit que les notifications ont été refusées : autorisez-les dans les réglages du navigateur ou du téléphone (notifications de ce site, ou de l\'application Listo), puis revenez dans Réglages, « Notifications ».',
+          'Sur iPhone : Listo doit être installé sur l\'écran d\'accueil et ouvert depuis son icône, pas depuis Safari.',
+          'La liste était déjà ouverte à l\'écran : rien n\'est envoyé pour ce que vous avez vu.',
+          'Une modification arrive environ une minute plus tard (regroupement) ; le résumé des échéances, vers 8 h seulement.',
+          'Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».',
+          'Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que la liste n\'est pas silencée. L\'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [[notif-serveur]].',
+        ] }],
+      },
+    ],
+  },
+
+  // ============ 7. Rôle par rôle ============
   {
     id: 'roles',
     title: 'Rôle par rôle',
@@ -788,7 +889,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 7. Claude ============
+  // ============ 8. Claude ============
   {
     id: 'claude',
     title: 'MCP Claude',
@@ -963,7 +1064,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 8. Questions fréquentes ============
+  // ============ 9. Questions fréquentes ============
   {
     id: 'faq',
     title: 'Questions fréquentes et dépannage',

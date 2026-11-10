@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { fakeDevice, fakePushService } from './push-helpers.js';
 import { connect, claude, PASSWORD } from './mcp-helpers.js';
-import { GROUP_MS, HOURLY_CAP } from '../server/notify.js';
+import { GROUP_MS, HOURLY_CAP, createNotifier, localDay } from '../server/notify.js';
 
 // Identifiants fixes : deux foyers identiques donnent les mêmes notifications
 const fixed = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -335,6 +335,18 @@ async function scenario(t, withReservations) {
   await f.share(f.ids.courses, { lea: 'lecture', marc: 'modification', zoe: 'lecture' }); // droit de Léa changé
   if (withReservations) await f.people.guillaume.client.del(`/api/items/${f.ids.velo}/reservation/all`);
   await f.tick(GROUP_MS);
+  // Résumé des échéances du lendemain matin : une liste de tâches de Léa, et
+  // une échéance écrite en base sur un souhait de sa liste d'envies (jamais compté)
+  const tomorrow = dayOf(at(f.app, 1, 8));
+  await f.ops('guillaume', [
+    { type: 'list.create', listId: fixed(42), name: 'Maison', listType: 'tasks', dueEnabled: true },
+    { type: 'item.create', listId: fixed(42), itemId: fixed(43), name: 'Appeler le plombier', dueDate: tomorrow },
+  ]);
+  await f.share(fixed(42), { lea: 'modification' });
+  f.app.db.prepare('UPDATE lists SET due_enabled = 1 WHERE id = ?').run(f.ids.noel);
+  f.app.db.prepare('UPDATE items SET due_date = ? WHERE id = ?').run(tomorrow, f.ids.lampe);
+  await f.tick(GROUP_MS);
+  await digestAt(f, at(f.app, 1, 8));
   await f.settle();
   const others = f.push.calls.filter((c) => c.endpoint !== f.people.lea.device.subscription.endpoint).length;
   return { lea: f.inbox('lea'), others };
@@ -343,9 +355,148 @@ async function scenario(t, withReservations) {
 test('TEST FORT : le bénéficiaire reçoit exactement les mêmes notifications avec ou sans réservation (compte et visiteur)', async (t) => {
   const without = await scenario(t, false);
   const withRes = await scenario(t, true);
-  assert.ok(without.lea.length >= 2, 'Léa reçoit bien des notifications (liste de courses, partage)');
+  assert.ok(without.lea.length >= 3, 'Léa reçoit bien des notifications (liste de courses, partage, échéances)');
+  assert.equal(without.lea.at(-1).title, '1 tâche à faire aujourd\'hui', 'résumé des échéances : sans le souhait de sa liste d\'envies');
   assert.deepEqual(withRes.lea, without.lea, 'texte, titre, tag, adresse, heure, taille et en-têtes identiques');
   assert.ok(withRes.others > without.others, 'les réservations ont bien été notifiées aux autres');
   // Rien de ce qu'a reçu Léa ne parle de réservation
   assert.doesNotMatch(JSON.stringify(withRes.lea), /réserv|particip|envies-|Tante Jo|lien public|Vélo|Livre/i);
+});
+
+// --- b) Résumé quotidien des échéances ---
+
+// Heure locale du serveur (variable TZ) : tel jour (décalage depuis
+// aujourd'hui), à telle heure
+function at(app, dayOffset, hour, minute = 0) {
+  const date = new Date(app.clock.now);
+  date.setDate(date.getDate() + dayOffset);
+  date.setHours(hour, minute, 0, 0);
+  return date.getTime();
+}
+const dayOf = (time, offset = 0) => {
+  const d = new Date(time);
+  d.setDate(d.getDate() + offset);
+  return localDay(d);
+};
+async function digestAt(f, time, notifier = f.app.ctx.notify) {
+  f.app.clock.now = time;
+  await notifier.runDigest();
+  await f.settle();
+}
+
+// « Maison » (tâches, échéance activée) de Guillaume, partagée avec Léa et Marc
+async function withTasks(t) {
+  const f = await family(t);
+  f.app.clock.now = at(f.app, 1, 6); // demain, 6 h (heure du serveur)
+  const today = dayOf(f.app.clock.now);
+  const ids = { maison: fixed(50), garage: fixed(51), noel: fixed(52), plombier: fixed(53), cantine: fixed(54), demain: fixed(55), fait: fixed(56), efface: fixed(57), outil: fixed(58), velo: fixed(59) };
+  await f.ops('guillaume', [
+    { type: 'list.create', listId: ids.maison, name: 'Maison', listType: 'tasks', dueEnabled: true },
+    { type: 'item.create', listId: ids.maison, itemId: ids.plombier, name: 'Appeler le plombier', dueDate: today },
+    { type: 'item.create', listId: ids.maison, itemId: ids.cantine, name: 'Payer la cantine', dueDate: dayOf(f.app.clock.now, -2) },
+    { type: 'item.create', listId: ids.maison, itemId: ids.demain, name: 'Tondre', dueDate: dayOf(f.app.clock.now, 1) },
+    { type: 'item.create', listId: ids.maison, itemId: ids.fait, name: 'Fait', dueDate: today },
+    { type: 'item.check', itemId: ids.fait, checked: true },
+    { type: 'item.create', listId: ids.maison, itemId: ids.efface, name: 'Effacé', dueDate: today },
+    { type: 'item.delete', itemId: ids.efface },
+    // Échéance désactivée ensuite : ses tâches n'entrent plus dans le résumé
+    { type: 'list.create', listId: ids.garage, name: 'Garage', listType: 'tasks', dueEnabled: true },
+    { type: 'item.create', listId: ids.garage, itemId: ids.outil, name: 'Ranger les outils', dueDate: today },
+    { type: 'list.update', listId: ids.garage, dueEnabled: false },
+    // Liste d'envies pour Léa : jamais dans un résumé (même avec une échéance écrite en base)
+    { type: 'list.create', listId: ids.noel, name: 'Noël de Léa', listType: 'wishes', forUserId: f.people.lea.id },
+    { type: 'item.create', listId: ids.noel, itemId: ids.velo, name: 'Vélo' },
+  ]);
+  f.app.db.prepare('UPDATE items SET due_date = ? WHERE id = ?').run(today, ids.velo);
+  f.app.db.prepare('UPDATE lists SET due_enabled = 1 WHERE id = ?').run(ids.noel);
+  await f.share(ids.maison, { lea: 'modification', marc: 'lecture' });
+  await f.share(ids.garage, { lea: 'modification' });
+  await f.share(ids.noel, { lea: 'modification', marc: 'modification' });
+  await f.tick(GROUP_MS);
+  f.push.calls.length = 0;
+  return { ...f, ids, today };
+}
+
+test('échéances : un seul résumé par personne, à 8 h, « 1 tâche à faire aujourd\'hui · 1 en retard » ; listes et tâches exclues', async (t) => {
+  const f = await withTasks(t);
+  await digestAt(f, at(f.app, 0, 7, 59));
+  assert.equal(f.push.calls.length, 0, 'rien avant 8 h');
+  await digestAt(f, at(f.app, 0, 8, 0));
+  for (const who of ['guillaume', 'lea', 'marc']) {
+    const inbox = f.inbox(who);
+    assert.equal(inbox.length, 1, who);
+    assert.equal(inbox[0].title, '1 tâche à faire aujourd\'hui · 1 en retard', who);
+    assert.equal(inbox[0].body, 'Dans « Maison »', 'neutre : sans le nom des tâches');
+    assert.equal(inbox[0].tag, 'echeances');
+    assert.equal(inbox[0].navigate, `http://listo.test/#/listes/${f.ids.maison}`, 'une seule liste : elle s\'ouvre');
+    assert.ok(Number(inbox[0].ttl) > 0 && Number(inbox[0].ttl) <= 16 * 3600, 'utile jusqu\'à minuit');
+  }
+  assert.equal(f.inbox('zoe').length, 0, 'non-membre');
+  assert.doesNotMatch(JSON.stringify(['guillaume', 'lea', 'marc'].map((who) => f.inbox(who))), /Vélo|Noël|Ranger|Garage|Tondre|Fait|Effacé/);
+  // Plus tard dans la matinée : rien de plus, même avec une nouvelle tâche du jour
+  await f.ops('guillaume', [{ type: 'item.create', listId: f.ids.maison, itemId: fixed(60), name: 'Nouvelle', dueDate: f.today }]);
+  await f.tick(GROUP_MS);
+  f.push.calls.length = 0;
+  await digestAt(f, at(f.app, 0, 9, 30));
+  assert.equal(f.push.calls.length, 0, 'une seule fois par jour');
+  // Le lendemain, 8 h : de nouveau (tout est en retard ou du jour)
+  await digestAt(f, at(f.app, 1, 8, 0));
+  assert.equal(f.inbox('guillaume').at(-1).title, '1 tâche à faire aujourd\'hui · 3 en retard');
+});
+
+test('échéances : un redémarrage ne renvoie jamais le résumé ; serveur arrêté à 8 h : envoi au redémarrage avant midi, sinon rien', async (t) => {
+  const f = await withTasks(t);
+  await digestAt(f, at(f.app, 0, 8, 0));
+  assert.equal(f.inbox('lea').length, 1);
+  // « Redémarrage » : un nouveau service, rien en mémoire ; seule la base sait
+  f.app.ctx.notify.stop();
+  const restarted = createNotifier(f.app.ctx);
+  t.after(() => restarted.stop());
+  await digestAt(f, at(f.app, 0, 8, 5), restarted);
+  assert.equal(f.inbox('lea').length, 1, 'pas deux fois le même jour');
+  assert.deepEqual(f.app.db.prepare('SELECT DISTINCT last_day FROM push_digests').pluck().all(), [f.today]);
+  // Lendemain : serveur arrêté à 8 h, redémarré à 11 h 59 : envoi tardif
+  await digestAt(f, at(f.app, 1, 11, 59), restarted);
+  assert.equal(f.inbox('lea').length, 2);
+  // Surlendemain : redémarré à midi : rien ce jour-là
+  await digestAt(f, at(f.app, 2, 12, 0), restarted);
+  await digestAt(f, at(f.app, 2, 18, 0), restarted);
+  assert.equal(f.inbox('lea').length, 2);
+});
+
+test('échéances : catégorie coupée, liste silencée, plus membre, liste supprimée, aucun appareil : relus à l\'envoi', async (t) => {
+  const f = await withTasks(t);
+  await f.people.guillaume.client.request('PUT', '/api/push/settings', { due: false });
+  await f.people.lea.client.request('PUT', `/api/push/mutes/${f.ids.maison}`, { muted: true });
+  await f.share(f.ids.maison, { lea: 'modification' }); // Marc retiré
+  await f.people.zoe.client.request('DELETE', '/api/push/subscription');
+  await f.tick(GROUP_MS);
+  f.push.calls.length = 0;
+  await digestAt(f, at(f.app, 0, 8, 0));
+  assert.equal(f.push.calls.length, 0);
+  // Le lendemain, réglages rétablis ; mais la liste a été supprimée
+  await f.people.guillaume.client.request('PUT', '/api/push/settings', { due: true });
+  await f.ops('guillaume', [{ type: 'list.delete', listId: f.ids.maison }]);
+  await f.tick(GROUP_MS);
+  f.push.calls.length = 0;
+  await digestAt(f, at(f.app, 1, 8, 0));
+  assert.equal(f.push.calls.length, 0);
+});
+
+test('échéances : détail (noms des premières tâches, les plus en retard d\'abord) ; plusieurs listes : « Mes listes » ; seulement du retard', async (t) => {
+  const f = await withTasks(t);
+  await f.people.guillaume.client.request('PUT', '/api/push/settings', { detail: true });
+  await f.ops('guillaume', [
+    { type: 'list.create', listId: fixed(70), name: 'Bureau', listType: 'tasks', dueEnabled: true },
+    { type: 'item.create', listId: fixed(70), itemId: fixed(71), name: 'Déclarer les impôts', dueDate: dayOf(f.app.clock.now, -5) },
+  ]);
+  await f.ops('guillaume', [{ type: 'item.check', itemId: f.ids.plombier, checked: true }]);
+  await f.tick(GROUP_MS);
+  f.push.calls.length = 0;
+  await digestAt(f, at(f.app, 0, 8, 0));
+  const [mine] = f.inbox('guillaume');
+  assert.equal(mine.title, '2 tâches en retard');
+  assert.equal(mine.body, 'Déclarer les impôts, Payer la cantine');
+  assert.equal(mine.navigate, 'http://listo.test/#/listes', 'plusieurs listes : « Mes listes »');
+  assert.equal(f.inbox('lea')[0].body, 'Dans « Maison »', 'détail désactivé pour Léa');
 });

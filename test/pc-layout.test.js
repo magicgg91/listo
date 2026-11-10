@@ -230,6 +230,6 @@ test('guide : section « Sur ordinateur » dans « Au quotidien » (disposition,
   for (const words of ['1 024 pixels', 'panneau à droite', 'Raccourcis à une touche', 'Ctrl+Z', 'Modifié entre-temps', 'Ne s\'annulent pas', 'aucun raccourci ne réserve']) assert.ok(text.includes(words), words);
   const keys = section.blocks.find((b) => b.table).table.rows.map((r) => r[0]);
   assert.deepEqual(keys, ['?', 'N', '/', ',', 'Échap', '[ et ]', 'P', 'A', '↓ et ↑', 'Espace', 'Entrée', 'E', 'Suppr', 'Ctrl+Z', 'Ctrl+Entrée', 'S']);
-  // Toujours 8 chapitres, dans l'ordre demandé
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'roles', 'claude', 'faq']);
+  // Toujours 9 chapitres, dans l'ordre demandé (Notifications ajouté le 10 novembre 2026)
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
 });

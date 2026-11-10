@@ -58,6 +58,7 @@ Contexte et historique : `docs/passation-2026-11.md` (passation d'une conversati
 - MCP : deux niveaux seulement (lecture ; lecture et écriture, qui inclut `update_items`) ; `lists:edit` traité comme l'écriture, jamais stocké ; rayon ou magasin inconnu = refus de tout l'appel ; aucune donnée de réservation.
 - Service worker : incrémenter la version (`public/sw.js`) à chaque changement de fichier servi ; ajouter les nouveaux fichiers à `APP_FILES`.
 - Ne jamais annoncer un test ou une vérification non faite ; dire ce qui exige de vrais appareils. Annonces de nouveautés pour les proches : courtes, phrases simples, sans détail technique.
+- Relecture de sécurité : Claude Code relit lui-même chaque PR sous l'angle de la sécurité avant de la proposer, et dit au propriétaire ce qu'il a trouvé et quoi en faire (décision du 10 novembre 2026).
 
 ## Dépôt
 

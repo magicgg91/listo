@@ -136,3 +136,10 @@ test('raccourcis : ils n\'appuient que sur des boutons présents ; rien pour un 
   assert.match(keys, /check \? \{ icon: 'check'/);
   assert.match(keys, /trash \? \{ icon: 'trash', label: 'Supprimer'/);
 });
+
+test('Espace (cocher) : son relâchement ne clique jamais en plus, quel que soit le bouton de la ligne (Firefox)', () => {
+  const keys = read('public/js/shortcuts.js');
+  assert.match(keys, /let spaceHandled = false;/);
+  assert.match(keys, /if \(run && run\(\)\) \{\s*event\.preventDefault\(\);\s*if \(key === ' '\) spaceHandled = true;/);
+  assert.match(keys, /if \(event\.key !== ' ' \|\| !onPc\(\)\) return;\s*if \(spaceHandled \|\| event\.target\.closest\?\.\('\.item__body'\)\) event\.preventDefault\(\);\s*spaceHandled = false;/);
+});

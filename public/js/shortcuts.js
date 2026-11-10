@@ -208,14 +208,23 @@ export function openRowMenu(row, at = null) {
   openMenu(items, { label: `Actions de ${name}`, at: at ?? { x: rect.left + 48, y: rect.bottom } });
 }
 
+// Espace traitée par un raccourci : son relâchement est bloqué (voir keyup)
+let spaceHandled = false;
+
 // --- Démarrage ---
 // onUndo : Ctrl+Z (voir app.js : annule dans la liste ouverte)
 export function startShortcuts({ onUndo }) {
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
-  // (voir keydown) et ne doit pas ouvrir la fiche en plus
+  // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
+  // soit le bouton de la ligne qui a le focus (corps de la ligne : ouvrir la
+  // fiche ; case : décocher aussitôt ; crayon, corbeille). Firefox clique au
+  // relâchement même quand l'appui a été traité : on bloque donc le
+  // relâchement de chaque Espace traitée par un raccourci.
   document.addEventListener('keyup', (event) => {
-    if (event.key === ' ' && onPc() && event.target.closest?.('.item__body')) event.preventDefault();
+    if (event.key !== ' ' || !onPc()) return;
+    if (spaceHandled || event.target.closest?.('.item__body')) event.preventDefault();
+    spaceHandled = false;
   });
   // Clic droit sur une ligne : son menu
   document.addEventListener('contextmenu', (event) => {
@@ -290,7 +299,10 @@ export function startShortcuts({ onUndo }) {
       ' ': () => pressInRow('button.check'),
       Delete: () => deleteCurrent(),
     }[key];
-    if (run && run()) event.preventDefault();
+    if (run && run()) {
+      event.preventDefault();
+      if (key === ' ') spaceHandled = true; // son relâchement ne cliquera pas
+    }
   });
 }
 

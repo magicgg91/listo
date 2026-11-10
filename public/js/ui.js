@@ -394,9 +394,27 @@ export function setPendingCount(count) {
   setSyncState(syncState);
 }
 const syncPills = new Set();
+const offlineBanners = new Set();
+
+// Ordinateur : bandeau « Hors ligne » sous l'en-tête d'un écran (en plus de
+// la pastille), visible tant que Listo n'atteint pas le serveur
+export function offlineBanner() {
+  const el = h('p', { class: 'note note--danger pc-banner', role: 'status' }, icon('cloud-off', 'icon--sm'),
+    h('span', {}, 'Hors ligne : vos changements sont gardés sur cet appareil et partiront au retour du réseau.'));
+  el.hidden = syncState !== 'off';
+  offlineBanners.add(el);
+  return el;
+}
 
 export function setSyncState(state) {
   syncState = state;
+  for (const banner of [...offlineBanners]) {
+    if (!banner.isConnected && banner.dataset.shown) offlineBanners.delete(banner);
+    else {
+      banner.hidden = state !== 'off';
+      if (banner.isConnected) banner.dataset.shown = '1';
+    }
+  }
   for (const pill of [...syncPills]) {
     if (!pill.isConnected) syncPills.delete(pill);
     else paintPill(pill);

@@ -22,7 +22,7 @@ test('kit : section 16.14 identique dans design/ et public/, sans couleur en dur
   // Rien des planches de maquettes
   assert.doesNotMatch(section, /\.(is-hover|is-focus|is-selected|pc-yes|pc-no|pc--wide|pc--narrow|desk|shot|stage|schema|cmp|rz)\b/);
   // Aide : noms propres au PC (l'écran d'aide du téléphone garde .help)
-  assert.doesNotMatch(section.replace(/\/\*[\s\S]*?\*\//g, ''), /(^|[\s,}])\.(help|toc|prose)\b/m);
+  assert.doesNotMatch(section.replace(/\/\*[\s\S]*?\*\//g, ''), /(^|[\s,}])\.(help|toc|prose)(?![\w-])/m);
   assert.match(section, /\.pc-help \{/);
   assert.match(section, /\.pc-toc \{/);
   assert.match(section, /\.pc-prose \{/);
@@ -176,4 +176,60 @@ test('« Nouvelle liste » et « Modifier la liste » (ordinateur) : fenêtre ce
   assert.match(read('public/js/router.js'), /export function openOverlay\(close, \{ push = true \} = \{\}\) \{/);
   // Aucun data-initial-focus dans la fenêtre : elle prend le focus sur elle-même
   assert.doesNotMatch(form.slice(form.indexOf('export function openListFormPanel'), form.indexOf('export function renderListForm')), /data-initial-focus|\.focus\(/);
+});
+
+// --- Étape 4 : Réglages, aide, états, guide ---
+
+test('aide (ordinateur) : sommaire fixe à gauche (chapitre en cours repéré), recherche dans l\'en-tête, pas de boutons flottants ; téléphone inchangé', () => {
+  const help = read('public/js/screens/help.js');
+  assert.match(help, /const pc = onPc\(\);/);
+  assert.match(help, /const opened = new Set\(pc \? GUIDE\.map\(\(c\) => c\.id\) : \[GUIDE\[0\]\.id\]\);/);
+  assert.match(help, /if \(id === chapter\) link\.setAttribute\('aria-current', 'true'\);\s*else link\.removeAttribute\('aria-current'\);/);
+  // Ordinateur : l'écran est rendu sans la pile de boutons flottants
+  const pcBranch = help.slice(help.indexOf('if (pc) {\n    searchRow.hidden = false;'), help.indexOf("const screen = h('div', { class: 'screen help-screen' },"));
+  assert.ok(pcBranch.length > 0);
+  assert.doesNotMatch(pcBranch, /help-fabs/);
+  assert.match(pcBranch, /h\('header', \{ class: 'pc-head' \}/);
+  // Téléphone : les trois boutons flottants restent
+  assert.match(help, /h\('div', \{ class: 'help-fabs' \}, topButton, searchButton, tocButton\)\);/);
+  // Échap : sur ordinateur la recherche reste affichée
+  assert.match(help, /else if \(pc\) releaseFocus\(\); \/\/ ordinateur : la recherche reste affichée/);
+  assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
+});
+
+test('Réglages (ordinateur) : mêmes contenus en cartes, « Raccourcis à une touche », Administration pour l\'Admin seulement', () => {
+  const settings = read('public/js/screens/settings.js');
+  assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
+  assert.match(settings, /section\('Apparence et clavier', h\('div', \{ class: 'group' \},/);
+  assert.match(settings, /keysRow\(\)\)\),/);
+  assert.match(settings, /isAdmin \? section\('Administration',/);
+  assert.match(settings, /user\.claudeUrl \? section\('Connexions Claude',/);
+  // Téléphone : plus de section « Clavier » (rien de nouveau)
+  assert.doesNotMatch(settings.slice(settings.indexOf('export function renderSettings'), settings.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
+});
+
+test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après une erreur, astuce dans une liste vide ; rien de cela sur téléphone', () => {
+  const ui = read('public/js/ui.js');
+  assert.match(ui, /export function offlineBanner\(\) \{/);
+  assert.match(ui, /banner\.hidden = state !== 'off';/);
+  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: 'Réessayer', onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, 'Astuce : appuyez sur '/);
+  // Le bandeau n'est posé que dans les écrans de l'ordinateur
+  const phone = list.slice(list.lastIndexOf("  return h('div', { class: 'screen' },"));
+  assert.doesNotMatch(phone, /offlineBanner/);
+});
+
+test('guide : section « Sur ordinateur » dans « Au quotidien » (disposition, panneaux, raccourcis, désactivation, Ctrl+Z)', async () => {
+  const { GUIDE } = await import('../public/js/help-content.js');
+  const quotidien = GUIDE.find((c) => c.id === 'quotidien');
+  const section = quotidien.sections.find((s) => s.id === 'ordinateur');
+  assert.ok(section);
+  assert.equal(section.title, 'Sur ordinateur');
+  const text = JSON.stringify(section.blocks);
+  for (const words of ['1 024 pixels', 'panneau à droite', 'Raccourcis à une touche', 'Ctrl+Z', 'Modifié entre-temps', 'Ne s\'annulent pas', 'aucun raccourci ne réserve']) assert.ok(text.includes(words), words);
+  const keys = section.blocks.find((b) => b.table).table.rows.map((r) => r[0]);
+  assert.deepEqual(keys, ['?', 'N', '/', ',', 'Échap', '[ et ]', 'P', 'A', '↓ et ↑', 'Espace', 'Entrée', 'E', 'Suppr', 'Ctrl+Z', 'Ctrl+Entrée', 'S']);
+  // Toujours 8 chapitres, dans l'ordre demandé
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'roles', 'claude', 'faq']);
 });

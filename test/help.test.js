@@ -80,8 +80,8 @@ test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; �
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
   assert.deepEqual(matchRoute('#/aide/sauvegardes'), { name: 'helpSection', params: { section: 'sauvegardes' } });
   assert.ok(ROUTES.some((r) => r.name === 'help' && r.path === '/aide'));
-  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\)\); break;/);
-  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\)\); break;/);
+  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
+  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\), \{ wide: true \}\); break;/);
   assert.match(code('public/js/screens/claude-connections.js'), /navigate\('helpSection', \{ section: 'claude' \}\)/);
   assert.match(read('public/index.html'), /<symbol id="i-book"/);
   assert.match(read('public/index.html'), /<symbol id="i-layers"/);

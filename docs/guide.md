@@ -77,6 +77,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.9 Nouveautés](#nouveautes)
 - [5.10 Hors ligne et synchronisation](#hors-ligne)
 - [5.11 Thème clair ou sombre](#theme)
+- [5.12 Sur ordinateur](#ordinateur)
 
 </details>
 
@@ -613,7 +614,50 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 ### 5.11 Thème clair ou sombre
 
-Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone.
+Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».
+
+<a id="ordinateur"></a>
+
+### 5.12 Sur ordinateur
+
+Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
+
+- À gauche, le menu : vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Rechercher une liste », « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».
+- À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d'ajout est au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent ; sur un écran tactile, ils restent affichés.
+- La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
+- « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
+- Clic droit sur une ligne (ou touche Menu, ou Maj+F10) : Modifier, Cocher, Supprimer, selon vos droits.
+
+**Raccourcis clavier**
+
+La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Aucun raccourci à une touche ne marche pendant que vous tapez dans un champ. Un raccourci ne fait que ce que vos droits permettent : en lecture seule, ni Espace, ni E, ni Suppr ; aucun raccourci ne réserve un souhait.
+
+| Touche | Action |
+| --- | --- |
+| ? | Afficher les raccourcis |
+| N | Nouvelle liste |
+| / | Rechercher (dans la liste, ou dans le menu) |
+| , | Réglages |
+| Échap | Fermer la fenêtre ; vider puis quitter la recherche |
+| \[ et \] | Liste précédente, suivante |
+| P | Partager la liste |
+| A | Aller au champ d'ajout |
+| ↓ et ↑ | Article suivant, précédent |
+| Espace | Cocher ou décocher |
+| Entrée | Ouvrir la fiche |
+| E | Modifier |
+| Suppr | Supprimer (annulable) |
+| Ctrl+Z | Annuler la dernière action |
+| Ctrl+Entrée | Enregistrer la fiche ou le formulaire |
+| S | Aller au sommaire de l'aide |
+
+Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
+
+**Annuler (Ctrl+Z)**
+
+Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l'annulation part avec le reste au retour du réseau. Si quelqu'un a changé l'article entre-temps, rien n'est écrasé : « Modifié entre-temps : rien n'est annulé ».
+
+Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.
 
 <a id="roles"></a>
 

@@ -30,6 +30,12 @@
 //   entrée ferme la feuille (et efface une recherche en cours), déplie le
 //   chapitre, fait défiler jusqu'au titre et lui donne le focus ; Échap ou
 //   la croix ferment la feuille et rendent le focus au bouton.
+// - Ordinateur (à partir de 1 024 px, design/maquettes/pc-A, capture 08b) :
+//   pas de boutons flottants ; en-tête « Aide » avec la recherche toujours
+//   visible (Échap la vide, puis la quitte) ; sommaire fixe à gauche
+//   (.pc-toc : un lien par chapitre, le chapitre en cours repéré par
+//   aria-current="true" ET un fond, touche S), le texte dans une colonne
+//   lisible (.pc-prose) ; tous les chapitres dépliés.
 // - « Retour en haut » : remonte au tout début (sans animation si
 //   prefers-reduced-motion) et donne le focus au titre « Aide ».
 // Textes posés avec textContent (h() de dom.js), jamais en HTML.
@@ -38,7 +44,7 @@
 
 import { h, icon, iconButton, replace } from '../dom.js';
 import { goBack } from '../router.js';
-import { openSheet } from '../ui.js';
+import { openSheet, onPc, releaseFocus } from '../ui.js';
 import { keepFieldFocus } from '../tap.js';
 import { highlightParts, resultsLabel } from '../search.js';
 import { GUIDE, ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE, outline, numbered, parseInline, refLabel, searchGuide } from '../help-content.js';
@@ -59,7 +65,9 @@ function marked(text, query) {
 export function renderHelp(sectionId = null) {
   const entries = outline();
   const entryOf = new Map(entries.map((e) => [e.id, e]));
-  const opened = new Set([GUIDE[0].id]); // chapitres dépliés (hors recherche)
+  const pc = onPc(); // ordinateur : sommaire fixe à gauche, recherche dans l'en-tête
+  // chapitres dépliés (hors recherche) : le premier ; tous sur ordinateur
+  const opened = new Set(pc ? GUIDE.map((c) => c.id) : [GUIDE[0].id]);
   let folds = new Map(); // chapitre -> show(on)
   let headings = new Map(); // section ou chapitre -> titre (h2, h3)
   let query = '';
@@ -94,7 +102,7 @@ export function renderHelp(sectionId = null) {
   const searchRow = h('div', { class: 'help-search help-search--bar', id: 'aide-recherche' },
     h('div', { class: 'help-search__row' },
       h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton),
-      iconButton('close', 'Fermer la recherche', () => closeSearch())),
+      pc ? null : iconButton('close', 'Fermer la recherche', () => closeSearch())),
     status);
   searchRow.hidden = true;
 
@@ -113,6 +121,7 @@ export function renderHelp(sectionId = null) {
     if (event.key !== 'Escape') return;
     event.preventDefault();
     if (input.value !== '') clearSearch();
+    else if (pc) releaseFocus(); // ordinateur : la recherche reste affichée
     else closeSearch();
   });
 
@@ -138,13 +147,20 @@ export function renderHelp(sectionId = null) {
     const entry = entryOf.get(id);
     if (!entry) return;
     if (query) clearSearch();
-    if (!searchRow.hidden) {
+    if (!pc && !searchRow.hidden) {
       searchRow.hidden = true;
       searchButton.setAttribute('aria-expanded', 'false');
     }
     folds.get(entry.level === 1 ? entry.id : entry.chapter)?.(true);
     const target = headings.get(id);
-    target.scrollIntoView?.({ block: 'start' });
+    if (pc) {
+      // Ordinateur : seule la colonne de l'aide défile (scrollIntoView ferait
+      // aussi bouger la page entière et le menu de gauche)
+      const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      body.scrollTop += target.getBoundingClientRect().top - body.getBoundingClientRect().top - margin;
+    } else {
+      target.scrollIntoView?.({ block: 'start' });
+    }
     target.focus?.({ preventScroll: true });
   };
 
@@ -235,7 +251,36 @@ export function renderHelp(sectionId = null) {
   }
   draw();
 
-  const body = h('div', { class: 'body help' }, content);
+  // Ordinateur : sommaire fixe à gauche du texte, chapitre en cours repéré
+  const tocLinks = new Map(); // chapitre -> lien du sommaire
+  const pcToc = pc ? h('nav', { class: 'pc-toc', 'aria-labelledby': 'pc-toc-titre' },
+    h('h2', { class: 'pc-toc__title', id: 'pc-toc-titre' }, 'Sommaire ', h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, 'S')),
+    h('ol', { class: 'pc-toc__list' }, GUIDE.map((chapter) => {
+      const entry = entryOf.get(chapter.id);
+      const link = h('a', {
+        class: 'pc-toc__link',
+        href: `#/aide/${chapter.id}`,
+        'aria-keyshortcuts': 'S',
+        onClick: (event) => {
+          event.preventDefault();
+          jump(chapter.id);
+        },
+      }, h('span', { class: 'pc-toc__num' }, `${entry.number}.`), h('span', {}, chapter.title));
+      tocLinks.set(chapter.id, link);
+      return h('li', {}, link);
+    }))) : null;
+  const body = h('div', { class: 'body help' }, pc ? h('div', { class: 'pc-help' }, pcToc, h('div', { class: 'pc-prose' }, content)) : content);
+  // Chapitre en cours (le dernier dont le titre est passé en haut)
+  const markToc = () => {
+    if (!pc) return;
+    const here = currentId();
+    const chapter = entryOf.get(here)?.level === 1 ? here : entryOf.get(here)?.chapter;
+    for (const [id, link] of tocLinks) {
+      if (id === chapter) link.setAttribute('aria-current', 'true');
+      else link.removeAttribute('aria-current');
+    }
+  };
+  if (pc) body.addEventListener('scroll', markToc, { passive: true });
 
   // Section en cours : le dernier titre visible déjà arrivé en haut de
   // l'écran (sous l'en-tête collé du chapitre : sa marge de défilement)
@@ -316,7 +361,19 @@ export function renderHelp(sectionId = null) {
     sheet.panel.querySelector?.('.is-current')?.scrollIntoView?.({ block: 'center' });
   }
 
-  const topTitle = h('h1', { class: 'topbar__title', tabindex: '-1' }, 'Aide');
+  const topTitle = h('h1', { class: pc ? 'pc-head__title' : 'topbar__title', tabindex: '-1' }, 'Aide');
+  if (pc) {
+    searchRow.hidden = false;
+    searchRow.classList.add('help-search--pc');
+    input.setAttribute('aria-keyshortcuts', '/');
+    requestAnimationFrame(markToc);
+    if (sectionId && entryOf.has(sectionId)) requestAnimationFrame(() => jump(sectionId));
+    return h('div', { class: 'screen help-screen help-screen--pc' },
+      h('header', { class: 'pc-head' },
+        h('div', { class: 'pc-head__main' }, topTitle, h('p', { class: 'pc-head__sub' }, icon('book', 'icon--xs'), 'Guide d\'utilisation')),
+        searchRow),
+      body);
+  }
   const screen = h('div', { class: 'screen help-screen' },
     // Barre du haut (même balisage que les Réglages) : retour vers les Réglages
     h('header', { class: 'topbar' },

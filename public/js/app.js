@@ -8,7 +8,7 @@ import { applyTheme, savedTheme } from './theme.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
-import { setOverlayHost, setPcLayer, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
+import { setOverlayHost, setPcLayer, onPc, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
 import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
@@ -234,7 +234,8 @@ export function refreshData({ quiet = false, full = false } = {}) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
       setSyncState(error instanceof NetworkError || (error instanceof ApiError && error.status >= 500) ? 'off' : 'ok');
-      if (!quiet && !unauthorized) toast(errorMessage(error));
+      // Ordinateur : le message propose « Réessayer » (maquette pc-A, état « erreur »)
+      if (!quiet && !unauthorized) toast(errorMessage(error), onPc() ? { action: 'Réessayer', onAction: () => refreshData({ full: true }) } : {});
     } finally {
       clearTimeout(busy);
       refreshing = null;
@@ -612,9 +613,9 @@ function show(route) {
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
-    case 'help': mount(() => renderHelp()); break;
+    case 'help': mount(() => renderHelp(), { wide: true }); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
-    case 'helpSection': mount(() => renderHelp(params.section)); break;
+    case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Connexions Claude : seulement si l'accès est activé sur le serveur

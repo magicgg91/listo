@@ -47,7 +47,7 @@ import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
@@ -64,7 +64,7 @@ import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 import { openSharePanel } from './share-panel.js';
 import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
-import { keycap } from '../shortcuts.js';
+import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
@@ -412,7 +412,9 @@ export function renderList(listId, onLeave) {
       search.show(h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(typeIcon(list), 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')), { available: false });
+        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ${pc ? 'ci-dessus' : 'ci-dessous'}.` : 'Rien à afficher pour le moment.'),
+        // Ordinateur : l'astuce du raccourci (si les raccourcis à une touche sont actifs)
+        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, 'Astuce : appuyez sur ', h('kbd', { class: 'keycap' }, 'A'), ` pour aller au champ d'ajout.`) : null), { available: false });
       drawFoldAll();
       searchMeta.textContent = '';
       return;
@@ -1846,6 +1848,7 @@ export function renderList(listId, onLeave) {
         menuButton),
       h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), searchMeta,
         h('div', { class: 'pc-tools__end' }, sortButton, foldAll)),
+      offlineBanner(),
       readOnlyBanner,
       wishNote,
       addbar,

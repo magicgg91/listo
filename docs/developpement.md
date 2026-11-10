@@ -329,6 +329,14 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. « Restaurer » : « Liste « <nom> » restaurée » avec « Ouvrir », qui ouvre la liste avec ses éléments, ses photos, ses pastilles ; la liste revient sur le deuxième téléphone de A et chez B (même droit qu'avant). Son lien public, s'il y en avait un, reste arrêté.
     6. Téléphone de B en mode avion pendant la suppression puis la restauration : au retour du réseau, la liste est toujours là, une seule fois, avec ses éléments.
     7. Liste d'envies destinée à B, avec des réservations : supprimer puis restaurer ; chez B, rien d'autre n'apparaît (ni « Réservé », ni prénom) ; chez les proches, les réservations sont revenues.
+42. **Interface ordinateur** (vrai ordinateur avec clavier et souris ; une tablette tournée en largeur ; Chrome, Firefox et Safari ; clair et sombre ; fenêtre de 1 024, 1 280 et 1 920 px) :
+    1. Réduire la fenêtre sous 1 024 px avec la fiche d'un article ouverte : la fiche se ferme, l'affichage du téléphone revient sur la même liste ; agrandir : l'affichage ordinateur revient.
+    2. Au clavier seulement : Tab parcourt le menu de gauche, l'en-tête, le champ d'ajout puis les articles ; le crayon et la corbeille apparaissent au focus d'une ligne ; dans une fenêtre, Tab reste dedans, Échap la ferme et le focus revient au bouton d'origine.
+    3. Raccourcis (« ? » les liste) : N, /, « , », [ ], P, A, ↓ ↑, Espace (coche sans ouvrir la fiche), Entrée, E, Suppr, Ctrl+Z, Ctrl+Entrée, S dans l'aide ; aucun pendant la saisie ; sur un clavier AZERTY, « ? » et « / » (avec Maj) marchent.
+    4. Réglages, « Raccourcis à une touche » désactivé : plus aucune lettre ne déclenche rien (essai avec une commande vocale si possible), les flèches marchent ; le réglage reste après rechargement.
+    5. Ctrl+Z après une suppression, un cochage, une modification ; en mode avion, puis au retour du réseau (le deuxième ordinateur voit l'article revenu) ; un autre compte change l'article entre-temps : « Modifié entre-temps : rien n'est annulé ».
+    6. Lecteur d'écran (NVDA ou VoiceOver) : le tiroir et les fenêtres sont annoncés avec leur titre ; « Partager la liste » pour un membre qui n'est pas propriétaire : seulement la liste des personnes ; le destinataire d'une liste d'envies n'entend jamais parler de réservation.
+    7. Tablette en largeur : tailles tactiles du téléphone, crayon et corbeille toujours visibles, glissement pour supprimer.
 
 ## API des comptes (étape 2)
 

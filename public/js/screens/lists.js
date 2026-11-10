@@ -11,7 +11,7 @@ import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, openMenu, offlineBanner } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
@@ -321,6 +321,7 @@ function renderListsPc(onLeave) {
       searchMeta,
       h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sorter.button)),
     sorter.status,
+    offlineBanner(),
     content);
 }
 

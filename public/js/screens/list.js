@@ -183,7 +183,7 @@ export function renderList(listId, onLeave) {
         draw();
         toast(message, { duration: 2000 });
       },
-    })), { label: 'Trier la liste' });
+    })), { label: 'Trier la liste', anchor: pc ? sortButton : null }); // ordinateur : sous le bouton
   }
 
   // --- En-tête de l'ordinateur ---

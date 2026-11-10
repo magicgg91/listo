@@ -57,6 +57,7 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/screens/help.js: input', 'EXCEPTION voulue : champ de recherche, juste après un appui sur la loupe'],
   ['public/js/screens/help.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],
   ['public/js/screens/help.js: topTitle', 'titre « Aide » (tabindex="-1") après « Retour en haut »'],
+  ['public/sw.js: open', 'fenêtre de Listo déjà ouverte, ramenée au premier plan quand on touche une notification (jamais un champ)'],
   ['scripts/site-assets/guide.js: field', 'EXCEPTION voulue : champ de recherche, juste après un appui sur la loupe'],
   // Ordinateur (shortcuts.js) : « / » (recherche) et « A » (champ d'ajout),
   // gestes dont le seul but est d'écrire ; S : le sommaire de l'aide

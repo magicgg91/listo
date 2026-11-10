@@ -35,6 +35,9 @@ import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
+import { createPushService, fetchPush } from './push.js';
+import { pushRoutes } from './routes/push.js';
+import { generateVapidKeys } from './webpush.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
@@ -100,6 +103,11 @@ export const PERMISSIONS_POLICY = [
 // - clientMetadataRequest : lecture du document d'identification (CIMD)
 //   d'une application, sur claude.ai ou claude.com seulement (autorisation
 //   pour Claude ; les tests la remplacent : aucun vrai réseau)
+// - vapidKeys : clés des notifications push (secrets/vapid.json, lues par
+//   index.js), seulement avec LISTO_PUSH=on ; absentes : une paire
+//   temporaire (tests)
+// - pushRequest : envoi vers un service de push (notifications ; les tests
+//   la remplacent : aucun vrai réseau)
 export function createApp({
   db,
   config = loadConfig({}),
@@ -114,6 +122,8 @@ export function createApp({
   githubRequest = fetchGithub,
   productRequest = fetchProduct,
   clientMetadataRequest = fetchClientMetadata,
+  vapidKeys = null,
+  pushRequest = fetchPush,
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -148,6 +158,10 @@ export function createApp({
   // compte désactivé doit révoquer ses connexions dans tous les cas. Seules
   // les ROUTES dépendent de LISTO_MCP (plus bas).
   ctx.oauth = createOAuthService(ctx, { fetchMetadata: clientMetadataRequest });
+  // Notifications push (voir push.js) : seulement avec LISTO_PUSH=on.
+  // Coupées : aucun service, aucune clé, aucune demande sortante.
+  ctx.push = config.push ? createPushService(ctx, { keys: vapidKeys ?? generateVapidKeys(), request: pushRequest }) : null;
+  ctx.pushCounters = [];
   // Identifiant opaque de la version installée (null en développement) : le
   // téléphone le compare à celui de son code pour savoir s'il doit recharger
   // la page (voir public/js/freshness.js). Jamais le commit lui-même.
@@ -244,6 +258,8 @@ export function createApp({
   api.use(photoRoutes(ctx));
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
+  // Notifications push (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
+  if (ctx.push) api.use(pushRoutes(ctx));
   // Version installée (Réglages › À propos) : comptes connectés seulement
   // (jamais public : une version publique aiderait un attaquant). build :
   // identifiant opaque, pour que le téléphone sache si son code est périmé.
@@ -320,6 +336,7 @@ export function createApp({
     for (const limiter of ctx.publicLimiters) limiter.prune();
     ctx.oauth.purge();           // autorisations Claude : demandes, codes, jetons expirés
     mcp?.prune();                // compteurs d'appels de /mcp
+    for (const counter of ctx.pushCounters) counter.prune(); // notifications : compteurs de demandes
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);

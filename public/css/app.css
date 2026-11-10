@@ -187,6 +187,10 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .row__icon .icon, .row > .icon { flex: none; }
 .row > .icon:last-child { color: var(--color-text-2); }
 .body:has(> .group) { padding-left: 0; padding-right: 0; }
+/* Contenu placé sous une carte, dans un écran de cartes (marges de la carte) :
+   état expliqué et notification test de l'écran Notifications */
+.group-after { margin: var(--space-2) var(--space-2) 0; }
+.group-after > [role="status"]:empty { display: none; }
 
 /* Administration : ajout en tête de liste, renommage sur place */
 .add-inline--flush { padding: var(--space-1) var(--space-2) var(--space-2); }

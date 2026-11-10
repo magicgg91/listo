@@ -483,6 +483,54 @@ export const MIGRATIONS = [
   // --- Migration 22 : deux niveaux d'accord seulement pour Claude ---
   // Voir oauthTwoLevelsMigration.
   (db) => oauthTwoLevelsMigration(db),
+
+  // --- Migration 23 : notifications push (LISTO_PUSH=on, voir server/push.js) ---
+  `
+  -- Abonnement d'un appareil : lié au compte ET à la session de cet
+  -- appareil. Déconnexion, session expirée ou fermée, compte supprimé :
+  -- l'abonnement disparaît avec elle (ON DELETE CASCADE). Une seule
+  -- adresse par session, une adresse n'appartient qu'à une session.
+  -- endpoint : adresse du service de push (vérifiée : liste autorisée) ;
+  -- p256dh, auth : clé publique et secret de l'appareil (base64url).
+  CREATE TABLE push_subscriptions (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_id  TEXT    NOT NULL UNIQUE REFERENCES sessions(id) ON DELETE CASCADE,
+    endpoint    TEXT    NOT NULL UNIQUE CHECK (length(endpoint) BETWEEN 1 AND 1024),
+    p256dh      TEXT    NOT NULL CHECK (length(p256dh) BETWEEN 80 AND 100),
+    auth        TEXT    NOT NULL CHECK (length(auth) BETWEEN 16 AND 30),
+    created_at  TEXT    NOT NULL,
+    last_sent_at TEXT
+  );
+  CREATE INDEX push_subscriptions_user ON push_subscriptions(user_id);
+
+  -- Préférences d'une personne (valables sur tous ses appareils). Pas de
+  -- ligne : valeurs par défaut (catégories actives, détail désactivé).
+  CREATE TABLE push_settings (
+    user_id  INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    changes  INTEGER NOT NULL DEFAULT 1 CHECK (changes IN (0, 1)),  -- modifications des autres
+    due      INTEGER NOT NULL DEFAULT 1 CHECK (due IN (0, 1)),      -- échéances des tâches
+    wishes   INTEGER NOT NULL DEFAULT 1 CHECK (wishes IN (0, 1)),   -- réservations, cotisations
+    sharing  INTEGER NOT NULL DEFAULT 1 CHECK (sharing IN (0, 1)),  -- partage
+    detail   INTEGER NOT NULL DEFAULT 0 CHECK (detail IN (0, 1)),   -- détail dans le texte
+    updated_at TEXT NOT NULL
+  );
+
+  -- « Silencer cette liste » : plus aucune notification venant d'elle
+  CREATE TABLE push_list_mutes (
+    list_id  TEXT    NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+    user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    PRIMARY KEY (list_id, user_id)
+  );
+
+  -- Résumé quotidien des échéances : jour (AAAA-MM-JJ, heure du serveur) du
+  -- dernier envoi, pour ne jamais l'envoyer deux fois (même après un
+  -- redémarrage)
+  CREATE TABLE push_digests (
+    user_id  INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    last_day TEXT    NOT NULL
+  );
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

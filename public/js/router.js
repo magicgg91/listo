@@ -18,6 +18,8 @@ export const ROUTES = [
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
   { name: 'trash', path: '/reglages/corbeille' },
+  // Notifications (cet appareil ; catégories à l'étape suivante)
+  { name: 'notifications', path: '/reglages/notifications' },
   { name: 'help', path: '/aide' },
   { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },

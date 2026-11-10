@@ -84,6 +84,8 @@ export function publicUser(user, config) {
     // Accès depuis Claude (LISTO_MCP=on) : l'adresse à saisir dans Claude,
     // pour afficher l'écran « Connexions Claude » et l'aide ; null sinon
     claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
+    // Notifications push activées sur le serveur (LISTO_PUSH=on)
+    push: config?.push === true,
   };
 }
 

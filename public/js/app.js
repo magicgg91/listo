@@ -22,6 +22,8 @@ import { renderSettings, renderPassword, renderTwoFactor } from './screens/setti
 import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
+import { renderNotifications } from './screens/notifications.js';
+import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
 import { startShortcuts } from './shortcuts.js';
 import { undoLast, NOTHING_TO_UNDO } from './undo.js';
@@ -396,6 +398,7 @@ export function loggedIn(user) {
   openAccount(user).then(() => {
     refreshData({ quiet: true, full: true });
     goLive();
+    resyncPush(user); // notifications : abonnement rendu au serveur si besoin
   });
   const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'lists', params: {} };
   app.afterLogin = null;
@@ -441,6 +444,9 @@ export async function logOut() {
     });
     if (!ok) return;
   }
+  // Notifications : cet appareil n'en reçoit plus (le serveur efface son
+  // abonnement avec la session)
+  await forgetPush();
   try {
     await post('/api/logout');
   } catch {
@@ -617,6 +623,7 @@ function show(route) {
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
+    case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Connexions Claude : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':
@@ -661,6 +668,7 @@ async function start() {
     await openAccount(app.user);
     refreshData({ quiet: true, full: true });
     goLive();
+    resyncPush(app.user); // notifications : abonnement rendu au serveur si besoin
   }
   startRouter(show);
 }
@@ -673,3 +681,11 @@ start();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
 }
+
+// Notification touchée alors que Listo est déjà ouvert : le service worker
+// demande d'aller à l'écran de la notification (adresse de Listo seulement,
+// vérifiée par sw.js), sans recharger la page
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  const hash = event.data?.type === 'listo-open' ? event.data.hash : null;
+  if (typeof hash === 'string' && /^#\/[\w\-/%]*$/.test(hash)) location.hash = hash;
+});

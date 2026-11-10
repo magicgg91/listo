@@ -48,6 +48,14 @@ services:
       # User-Agent envoyé à Open Food Facts, qui le demande pour joindre
       # l'application en cas de souci. Sans lui : adresse du projet seulement.
       # - LISTO_PRODUCT_CONTACT=https://exemple.fr/contact
+      # Notifications push (sur les téléphones et ordinateurs qui les activent
+      # dans Réglages › Notifications) : DÉSACTIVÉES par défaut. Décommenter la
+      # ligne ci-dessous pour les activer. Le conteneur envoie alors des
+      # messages chiffrés aux services de notification d'Apple, Google,
+      # Mozilla ou Microsoft (ils ne lisent pas le contenu, mais voient l'heure,
+      # la taille et l'appareil). Clés créées au 1er démarrage dans
+      # secrets/vapid.json : à sauvegarder à part, comme secret.key.
+      # - LISTO_PUSH=on
     ports:
       - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:

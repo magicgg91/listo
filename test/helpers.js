@@ -43,14 +43,15 @@ export function tempDir(t) {
 
 // Démarre Listo sur un port libre, avec une base en mémoire, une horloge
 // réglable (clock.now) et un journal capturé (logs).
-// Aucun test ne contacte GitHub, Open Food Facts ni claude.ai : les demandes
-// sont remplacées par des fausses (githubRequest, productRequest,
-// clientMetadataRequest), qui échouent par défaut.
+// Aucun test ne contacte GitHub, Open Food Facts, claude.ai ni un service de
+// push : les demandes sont remplacées par des fausses (githubRequest,
+// productRequest, clientMetadataRequest, pushRequest), qui échouent par
+// défaut.
 const noNetwork = async () => {
   throw new Error('réseau interdit dans les tests');
 };
 
-export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {}, backupDir = tempDir(t), githubRequest = noNetwork, productRequest = noNetwork, clientMetadataRequest = noNetwork } = {}) {
+export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {}, backupDir = tempDir(t), githubRequest = noNetwork, productRequest = noNetwork, clientMetadataRequest = noNetwork, pushRequest = noNetwork, vapidKeys = null } = {}) {
   const clock = { now: Date.UTC(2026, 9, 16, 12, 0, 0) };
   const logs = [];
   const db = openDatabase(':memory:');
@@ -67,6 +68,8 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
     githubRequest,
     productRequest,
     clientMetadataRequest,
+    pushRequest,
+    vapidKeys,
   });
   const server = app.listen(0);
   await once(server, 'listening');

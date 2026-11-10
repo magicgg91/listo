@@ -12,6 +12,9 @@
 // Un contributeur voit donc « Dupliquer la liste » puis
 // « Quitter la liste » ; un invité en lecture seule, « Quitter la liste »
 // seulement.
+// « Ne plus me signaler cette liste » (Nouveautés) et « Silencer cette
+// liste » (notifications push, si elles sont activées sur le serveur) : pour
+// tout membre, juste avant « Supprimer » ou « Quitter ».
 // Chaque action n'est proposée qu'à qui y a droit ; le serveur le revérifie
 // à chaque requête. Aucune action : pas de bouton de menu.
 //
@@ -32,6 +35,7 @@ import { confirmDialog, openSheet, toast } from '../ui.js';
 import { itemWords, deleteListText } from '../words.js';
 import { copyName } from '../format.js';
 import { openShareSheet } from './share.js';
+import { isListPushMuted, setListPushMuted } from '../push.js';
 
 // Éléments de menu (pour openMenu de ui.js). onDeleted : appelé après la
 // suppression ou le départ (la liste ouverte retourne alors à « Mes listes »).
@@ -42,6 +46,7 @@ export function listActions(list, { onDeleted } = {}) {
   // liste », pour chaque membre, invité en lecture seule compris (ce n'est
   // pas une modification de la liste)
   const mute = newsMuteAction(list);
+  const pushMute = pushMuteAction(list);
   if (!list.isOwner) {
     const canEdit = canEditList(list);
     const leave = { icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async () => {
@@ -55,7 +60,7 @@ export function listActions(list, { onDeleted } = {}) {
       onDeleted();
       setTimeout(() => toast(message, { low: true }), 400);
     } };
-    return canEdit && !wishes ? [duplicate, mute, leave] : [mute, leave];
+    return (canEdit && !wishes ? [duplicate, mute, pushMute, leave] : [mute, pushMute, leave]).filter(Boolean);
   }
   return [
     { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
@@ -63,6 +68,7 @@ export function listActions(list, { onDeleted } = {}) {
     wishes ? null : duplicate,
     { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
     mute,
+    pushMute,
     { icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
       if (await deleteListWithConfirm(list)) onDeleted?.();
     } },
@@ -81,6 +87,26 @@ function newsMuteAction(list) {
       actions.setListMuted(list.id, true);
       toast('Les nouveautés de cette liste ne vous seront plus signalées', { low: true });
     } };
+}
+
+// Notifications push : « Silencer cette liste » (plus aucune notification
+// venant d'elle, quelle que soit la catégorie) / « Ne plus silencer cette
+// liste ». Seulement si la fonction est activée sur le serveur ; en ligne
+// seulement (réglage du compte, gardé par le serveur).
+function pushMuteAction(list) {
+  if (!app.user?.push) return null;
+  const muted = isListPushMuted(list.id);
+  const run = async () => {
+    try {
+      await setListPushMuted(list.id, !muted);
+      toast(muted ? 'Les notifications de cette liste sont réactivées' : 'Cette liste ne vous enverra plus de notification', { low: true });
+    } catch (error) {
+      toast(errorMessage(error));
+    }
+  };
+  return muted
+    ? { icon: 'bell', label: 'Ne plus silencer cette liste', onSelect: run }
+    : { icon: 'bell', label: 'Silencer cette liste', onSelect: run };
 }
 
 // Renvoie true si la liste a été supprimée, false si la confirmation a été

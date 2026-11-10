@@ -14,8 +14,43 @@
 //
 // Le navigateur crée l'abonnement auprès du service de push de son
 // fabricant ; le serveur ne l'accepte que pour des services connus.
+//
+// Préférences du compte (valables sur tous ses appareils) et listes
+// silencées : gardées en mémoire après chaque lecture de GET /api/push,
+// pour que le menu d'une liste sache dire « Silencer » ou « Ne plus
+// silencer » sans attendre le réseau.
 
 import { get, put, post, del } from './api.js';
+
+// Dernier état connu du serveur (préférences, listes silencées)
+const known = { settings: null, muted: new Set() };
+function remember(server) {
+  if (server?.settings) known.settings = server.settings;
+  if (Array.isArray(server?.mutedLists)) known.muted = new Set(server.mutedLists);
+  return server;
+}
+export const pushSettings = () => known.settings;
+export const isListPushMuted = (listId) => known.muted.has(listId);
+
+// Préférences : { changes?, wishes?, sharing?, detail? } (vrai ou faux)
+export async function savePushSettings(changes) {
+  return remember(await put('/api/push/settings', changes)).settings;
+}
+
+// « Silencer cette liste » / « Ne plus silencer cette liste »
+export async function setListPushMuted(listId, muted) {
+  remember(await put(`/api/push/mutes/${encodeURIComponent(listId)}`, { muted }));
+}
+
+// Relit l'état du serveur (préférences, listes silencées) ; sans réseau : rien
+export async function loadPushState(user) {
+  if (!user?.push) return null;
+  try {
+    return remember(await get('/api/push'));
+  } catch {
+    return null;
+  }
+}
 
 // Compte qui a activé les notifications sur cet appareil (pour ne jamais
 // rendre l'abonnement d'un compte à un autre compte connecté ensuite)
@@ -91,7 +126,7 @@ export async function deviceState(user) {
   if (!browserSupportsPush()) return { state: 'unsupported' };
   let server;
   try {
-    server = await get('/api/push');
+    server = remember(await get('/api/push'));
   } catch {
     return { state: 'offline' };
   }
@@ -140,12 +175,13 @@ export async function forgetPush() {
 
 // Au démarrage : rend son abonnement au serveur si besoin (voir plus haut)
 export async function resyncPush(user) {
+  await loadPushState(user); // préférences et listes silencées, pour les menus
   try {
     if (!user?.push || !browserSupportsPush() || Notification.permission !== 'granted') return;
     if (readOwner() !== String(user.id)) return;
     const { subscription } = await browserSubscription();
     if (!subscription) return;
-    const server = await get('/api/push');
+    const server = remember(await get('/api/push'));
     if (server.device.subscribed && sameKey(subscription, server.publicKey)) return;
     const fresh = await subscribeBrowser(server.publicKey);
     await put('/api/push/subscription', fresh.toJSON());

@@ -211,9 +211,24 @@ export function createReservationService(ctx) {
   // puis le signal aux proches ; renvoie l'état du souhait (ou null s'il est libre)
   function act(user, itemId, change) {
     const { item, list } = wishFor(user, itemId);
-    db.transaction(() => change(item, list, q.participants.all(item.id)))();
+    const kind = db.transaction(() => change(item, list, q.participants.all(item.id)))();
     notifyViewers(item.list_id);
+    // Réservation ou participation : notification push aux seuls membres
+    // qui voient les réservations (jamais le bénéficiaire)
+    if (kind === 'reserve' || kind === 'join') pushToViewers(item.list_id, item.id, kind, { userId: user.id });
     return { reservation: describeItem(item.list_id, item.id) };
+  }
+
+  // Notification push (server/notify.js, catégorie « envies ») : la liste
+  // des destinataires est calculée ICI, seul module qui connaît les
+  // réservations ; notify.js refait le contrôle d'après la liste seule
+  function pushToViewers(listId, itemId, kind, actor) {
+    if (!ctx.notify) return;
+    const row = q.list.get(listId);
+    if (!row) return;
+    const list = wishListOf(row);
+    const recipients = q.activeMembers.all(listId).filter((id) => seesReservations(id, list));
+    ctx.notify.wish({ listId, itemId, kind, actor, recipients });
   }
 
   const openOf = (value, fallback) => {
@@ -237,11 +252,12 @@ export function createReservationService(ctx) {
       if (!countAll(item.id)) {
         q.join.run(item.id, user.id, now, now);
         q.setState.run({ itemId: item.id, open: open ? 1 : 0, now });
-        return;
+        return 'reserve';
       }
       if (participants.includes(user.id)) throw new OpError(409, ALREADY_IN);
       if (q.state.get(item.id) !== 1) throw new OpError(409, ALREADY);
       q.join.run(item.id, user.id, now, now);
+      return 'join';
     });
   }
 
@@ -331,7 +347,7 @@ export function createReservationService(ctx) {
   function visitorReserve(listId, tokenHash, itemId, firstName, limits = VISITOR_LIMITS) {
     const item = visitorItem(listId, itemId);
     const name = visitorName(firstName);
-    db.transaction(() => {
+    const kind = db.transaction(() => {
       if (item.checked === 1) throw new OpError(409, RECEIVED);
       const visitors = q.visitors.all(item.id);
       if (visitors.some((v) => v.token_hash === tokenHash)) throw new OpError(409, ALREADY_IN);
@@ -343,8 +359,10 @@ export function createReservationService(ctx) {
       const now = nowIso();
       q.joinVisitor.run(item.id, tokenHash, name, now, now);
       if (!taken) q.setState.run({ itemId: item.id, open: 0, now }); // réservation de visiteur : fermée
+      return taken ? 'join' : 'reserve';
     })();
     notifyViewers(listId);
+    pushToViewers(listId, item.id, kind, { visitorName: name });
   }
 
   // Quitter SA participation (le jeton prouve qu'elle est la sienne)

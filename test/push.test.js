@@ -349,3 +349,31 @@ test('clés VAPID : créées une fois dans secrets/ (droits 600), relues ensuite
   fs.writeFileSync(file, 'abîmé');
   assert.throws(() => loadOrCreateVapidKeys(file), /invalide/);
 });
+
+test('adresse déjà connue d\'un AUTRE compte connecté : refusée (409), il garde ses notifications ; reprise seulement si sa session a pris fin', async (t) => {
+  const { app, admin, push } = await startPush(t);
+  const device = fakeDevice();
+  assert.equal((await put(admin, '/api/push/subscription', device.subscription)).status, 200);
+  await addUser(app.db, { username: 'lea', password: 'MotDePasseLea!!' });
+  const lea = app.client();
+  await login(lea, 'lea', 'MotDePasseLea!!');
+  // Léa envoie l'adresse de Guillaume (par erreur ou exprès)
+  const res = await put(lea, '/api/push/subscription', device.subscription);
+  assert.equal(res.status, 409);
+  assert.match(res.body.error, /autre compte/);
+  assert.equal((await lea.get('/api/push')).body.device.subscribed, false);
+  // Guillaume est toujours abonné et reçoit toujours ses notifications
+  assert.equal((await admin.get('/api/push')).body.device.subscribed, true);
+  assert.equal((await admin.post('/api/push/test')).status, 200);
+  assert.equal(push.calls.length, 1);
+  assert.equal(push.calls[0].endpoint, device.subscription.endpoint);
+  assert.deepEqual(app.db.prepare('SELECT user_id FROM push_subscriptions').pluck().all(), [1]);
+  // Même avec d'autres clés : refusée, rien ne change
+  assert.equal((await put(lea, '/api/push/subscription', { ...fakeDevice(device.subscription.endpoint).subscription })).status, 409);
+  assert.equal((await admin.post('/api/push/test')).status, 200);
+  assert.equal(push.calls.length, 2);
+  // Session de Guillaume terminée (expirée) : l'adresse peut changer de compte
+  app.db.prepare('UPDATE sessions SET expires_at = ? WHERE user_id = 1').run(new Date(app.clock.now - 1000).toISOString());
+  assert.equal((await put(lea, '/api/push/subscription', device.subscription)).status, 200);
+  assert.deepEqual(app.db.prepare('SELECT COUNT(*) FROM push_subscriptions WHERE endpoint = ?').pluck().get(device.subscription.endpoint), 1);
+});

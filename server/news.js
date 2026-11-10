@@ -18,6 +18,8 @@
 //   fois. Jamais ses propres actions ; ni les suppressions ; les cochés et
 //   décochés seulement avec « Signaler les éléments cochés ». Rien pour une
 //   liste en sourdine, ni quand « Nouveautés » est désactivé.
+// - Notifications push : chaque écriture du journal est aussi passée à
+//   server/notify.js (catégorie « modifications des autres »).
 // - Confidentialité : seuls les membres reçoivent les nouveautés d'une liste
 //   (et le nom des auteurs) ; le lien public n'en reçoit rien.
 
@@ -95,6 +97,9 @@ export function createNewsService(ctx) {
     for (const itemId of itemIds) last = Number(q.insert.run(listId, userId, type, itemId, now).lastInsertRowid);
     db.prepare('UPDATE list_reads SET last_seen = ? WHERE list_id = ? AND user_id = ? AND last_seen >= ?').run(last, listId, userId, before);
     capList(listId);
+    // Notifications push (server/notify.js) : ce que les autres membres
+    // apprendront, regroupé ; rien si la fonction est coupée
+    ctx.notify?.activity(listId, userId, type, itemIds, last);
   }
 
   // Repère d'un membre qui arrive dans une liste (création, partage, copie)
@@ -105,6 +110,8 @@ export function createNewsService(ctx) {
   // Membre retiré, ou qui quitte la liste : il perd son repère (et sa sourdine)
   function stopReading(listId, userId) {
     q.dropRead.run(listId, userId);
+    // « Silencer cette liste » (notifications) : oublié avec le départ
+    db.prepare('DELETE FROM push_list_mutes WHERE list_id = ? AND user_id = ?').run(listId, userId);
   }
 
   // Liste supprimée : son journal et ses repères disparaissent avec elle

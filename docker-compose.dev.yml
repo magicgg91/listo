@@ -24,11 +24,22 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - TZ=Europe/Paris
+      - TZ=Europe/Paris              # fuseau : sauvegarde vers 3 h, résumé des échéances à 8 h
       - LISTO_PUBLIC_URL=${LISTO_DEV_URL:-http://localhost:3000}
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+      # Facultatifs (comme dans docker-compose.yml, voir docs/guide.md,
+      # « Les réglages (variables) ») :
+      # - LISTO_UPDATE_CHECK=off
+      # - LISTO_PRODUCT_LOOKUP=off
+      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
+      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »).
+      # Notifications push : DÉSACTIVÉES par défaut ; décommenter la ligne
+      # ci-dessous pour les activer. Contenu chiffré : Apple, Google, Mozilla
+      # ou Microsoft ne voient que l'heure, la taille et l'appareil. Clés
+      # créées dans secrets/vapid.json : à sauvegarder avec secret.key.
+      # - LISTO_PUSH=on
     volumes:
       - ./data:/data
       - ./secrets:/secrets

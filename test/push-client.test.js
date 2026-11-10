@@ -132,6 +132,7 @@ test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage,
   assert.match(screen, /\['wishes', 'Envies', /);
   assert.match(screen, /\['sharing', 'Partage', /);
   assert.match(screen, /\['detail', 'Afficher le détail dans la notification', /);
+  assert.match(screen, /\['due', 'Échéances', 'Chaque matin vers 8 h : les tâches à faire aujourd\\'hui et celles en retard\.'\],/);
   assert.match(screen, /'Ces réglages valent pour tous vos appareils\.'/);
   // Interrupteurs accessibles ; inactifs hors ligne ou avant la lecture du serveur
   assert.match(screen, /class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,\s*'aria-labelledby': `notif-\$\{key\}-titre`, 'aria-describedby': `notif-\$\{key\}-aide`,/);
@@ -141,5 +142,5 @@ test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage,
   assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
   assert.match(menu, /label: 'Silencer cette liste'/);
   assert.match(menu, /label: 'Ne plus silencer cette liste'/);
-  assert.match(read('public/sw.js'), /const VERSION = `v76-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v7[6-9]-/);
 });

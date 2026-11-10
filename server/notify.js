@@ -20,6 +20,15 @@
 //   File d'envoi à part (server/push.js) : rien ne peut retarder ce que
 //   reçoit le bénéficiaire.
 // - d) 'sharing' : on m'ajoute à une liste, ou mon droit change.
+// - b) 'due' : un résumé par personne et par jour, vers 8 h (heure du
+//   serveur, variable TZ), « 3 tâches à faire aujourd'hui · 1 en retard » ;
+//   jamais une notification par tâche. Seulement les listes de TÂCHES dont
+//   l'échéance est activée (jamais une liste d'envies, pour personne) ;
+//   tâches non cochées, échéance aujourd'hui ou passée. Le jour est noté en
+//   base (push_digests) AVANT l'envoi, pour chaque personne examinée : un
+//   redémarrage ne renvoie jamais le résumé, une tâche ajoutée plus tard
+//   n'en déclenche pas un second. Serveur arrêté à 8 h : envoi au
+//   redémarrage s'il a lieu avant midi le même jour, sinon rien ce jour-là.
 //
 // Règles communes, vérifiées AU MOMENT DE L'ENVOI (relues en base) :
 // - jamais la personne qui a fait l'action ;
@@ -44,6 +53,13 @@ export const HOURLY_CAP = 30;           // notifications par personne et par heu
 export const FLUSH_EVERY_MS = 5 * 1000; // fréquence de la vérification des groupes
 const HOUR = 60 * 60 * 1000;
 const NAMES_MAX = 8;                    // noms d'éléments cités au plus (détail)
+export const DIGEST_HOUR = 8;           // résumé des échéances : à partir de 8 h…
+export const DIGEST_LATEST_HOUR = 12;   // …et jusqu'à midi (serveur arrêté à 8 h)
+export const DIGEST_EVERY_MS = 60 * 1000;
+
+// Jour local (heure du serveur, variable TZ) : « 2026-11-12 »
+const two = (n) => String(n).padStart(2, '0');
+export const localDay = (date) => `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
 
 // Types du journal qui donnent une notification « modifications »
 const ACTIVITY = { add: 'added', update: 'updated', check: 'checked' };
@@ -92,6 +108,22 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     itemName: db.prepare('SELECT name FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL').pluck(),
     isMember: db.prepare(`SELECT 1 FROM list_members JOIN lists ON lists.id = list_members.list_id AND lists.deleted_at IS NULL
       WHERE list_members.list_id = ? AND list_members.user_id = ?`).pluck(),
+    // Résumé des échéances : comptes actifs pas encore examinés aujourd'hui
+    digestUsers: db.prepare(`SELECT users.id FROM users WHERE users.active = 1
+      AND NOT EXISTS (SELECT 1 FROM push_digests WHERE push_digests.user_id = users.id AND push_digests.last_day = ?)`).pluck(),
+    // « Examiné aujourd'hui », noté avant l'envoi ; changes = 0 : déjà fait
+    claimDigest: db.prepare(`INSERT INTO push_digests (user_id, last_day) VALUES (:userId, :day)
+      ON CONFLICT(user_id) DO UPDATE SET last_day = :day WHERE push_digests.last_day <> :day`),
+    // Tâches concernées, relues au moment de l'envoi : membre, liste de
+    // tâches non supprimée avec l'échéance activée, non silencée ; tâche non
+    // supprimée, non cochée, échéance aujourd'hui ou passée
+    dueTasks: db.prepare(`SELECT items.name, items.due_date, lists.id AS list_id, lists.name AS list_name
+      FROM items
+      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
+      JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
+      WHERE items.deleted_at IS NULL AND items.checked = 0 AND items.due_date IS NOT NULL AND items.due_date <> '' AND items.due_date <= :today
+        AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
+      ORDER BY items.due_date, items.name COLLATE NOCASE`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
   };
 
@@ -240,14 +272,64 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     send(userId, message);
   }
 
-  // Vérification régulière des groupes (arrêtée avec Listo)
+  // --- b) Résumé quotidien des échéances ---
+  const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+  function digestMessage(tasks, today, detail) {
+    const dueToday = tasks.filter((t) => t.due_date === today).length;
+    const late = tasks.length - dueToday;
+    const parts = [];
+    if (dueToday) parts.push(`${plural(dueToday, 'tâche')} à faire aujourd'hui`);
+    if (late) parts.push(dueToday ? `${late} en retard` : `${plural(late, 'tâche')} en retard`);
+    const lists = [...new Map(tasks.map((t) => [t.list_id, t.list_name])).entries()];
+    const body = detail
+      ? nameList(tasks.map((t) => t.name)) // les plus en retard d'abord
+      : (lists.length === 1 ? `Dans « ${lists[0][1]} »` : `Dans ${lists.length} listes`);
+    // Une seule liste : on l'ouvre ; plusieurs : « Mes listes »
+    const navigate = lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
+    return buildMessage({ title: parts.join(' · '), body, navigate, tag: 'echeances' });
+  }
+
+  // Appelé chaque minute (et une fois au démarrage) : entre 8 h et midi,
+  // chaque compte pas encore examiné aujourd'hui l'est, une seule fois
+  async function runDigest() {
+    const now = new Date(ctx.now());
+    const hour = now.getHours();
+    if (hour < DIGEST_HOUR || hour >= DIGEST_LATEST_HOUR) return;
+    const today = localDay(now);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(24, 0, 0, 0);
+    const ttl = Math.max(60, Math.floor((endOfDay - now) / 1000)); // utile jusqu'à minuit
+    const work = [];
+    for (const userId of q.digestUsers.all(today)) {
+      // Noté AVANT tout envoi : jamais deux fois, même après un redémarrage
+      if (!q.claimDigest.run({ userId, day: today }).changes) continue;
+      const settings = settingsOf(userId);
+      if (!settings.due || !push.hasDevices(userId)) continue;
+      const tasks = q.dueTasks.all({ userId, today });
+      if (!tasks.length) continue;
+      work.push(push.sendToUser(userId, digestMessage(tasks, today, settings.detail), { ttl }));
+    }
+    await Promise.all(work);
+  }
+
+  // Vérifications régulières (arrêtées avec Listo) : groupes toutes les 5 s,
+  // résumé des échéances chaque minute, et une première fois peu après le
+  // démarrage (serveur redémarré après 8 h)
   const timer = setInterval(() => { flushDue().catch(() => {}); }, FLUSH_EVERY_MS);
   timer.unref?.();
+  const digestTimer = setInterval(() => { runDigest().catch(() => {}); }, DIGEST_EVERY_MS);
+  digestTimer.unref?.();
+  const firstDigest = setTimeout(() => { runDigest().catch(() => {}); }, 5000);
+  firstDigest.unref?.();
 
   return {
-    activity, wish, sharing, flushDue, settingsOf, setSettings, mutedLists, setMuted, isMember,
+    activity, wish, sharing, flushDue, runDigest, settingsOf, setSettings, mutedLists, setMuted, isMember,
     pending: () => groups.size,
     prune: () => { for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId); },
-    stop: () => clearInterval(timer),
+    stop: () => {
+      clearInterval(timer);
+      clearInterval(digestTimer);
+      clearTimeout(firstDigest);
+    },
   };
 }

@@ -318,6 +318,7 @@ test('LISTO_PUSH absente : aucune clé créée, adresses inconnues (404), aucune
   const app = await startTestApp(t, { pushRequest: push });
   const admin = await setupAdmin(app);
   assert.equal(app.ctx.push, null);
+  assert.equal(app.ctx.notify, null, 'ni regroupement, ni résumé des échéances');
   assert.equal((await admin.get('/api/me')).body.user.push, false);
   for (const [method, url] of [['GET', '/api/push'], ['PUT', '/api/push/subscription'], ['DELETE', '/api/push/subscription'], ['POST', '/api/push/test']]) {
     const res = await admin.request(method, url, method === 'GET' ? undefined : fakeDevice().subscription);

@@ -16,7 +16,8 @@
 //
 // Étape 2 : réglages du COMPTE (tous ses appareils ; fonction activée sur le
 // serveur seulement), en ligne seulement :
-// - « Notifications reçues » : Modifications des autres, Envies, Partage ;
+// - « Notifications reçues » : Modifications des autres, Envies, Partage,
+//   Échéances (étape 3 : résumé quotidien des tâches, vers 8 h) ;
 // - « Contenu » : « Afficher le détail dans la notification » (désactivé au
 //   départ ; sinon « Léa a modifié « Courses » », sans le nom des éléments).
 // Mêmes interrupteurs que « Nouveautés » (role="switch", aria-checked, titre
@@ -47,6 +48,7 @@ export const KIND_ROWS = [
   ['changes', 'Modifications des autres', 'Ajouts, modifications et coches dans vos listes partagées, regroupés.'],
   ['wishes', 'Envies', 'Une réservation ou une participation à un cadeau, dans les listes d\'envies que vous voyez.'],
   ['sharing', 'Partage', 'On vous ajoute à une liste, ou votre droit change.'],
+  ['due', 'Échéances', 'Chaque matin vers 8 h : les tâches à faire aujourd\'hui et celles en retard.'],
 ];
 export const DETAIL_ROW = ['detail', 'Afficher le détail dans la notification', 'Le nom des éléments, par exemple « Ajouté : Lait, Pain ». Désactivé : seulement qui a modifié quelle liste.'];
 export const ACCOUNT_NOTE = 'Ces réglages valent pour tous vos appareils.';

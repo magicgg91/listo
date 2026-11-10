@@ -9,10 +9,9 @@
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
 - **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
-- **Lien public** pour montrer une liste à quelqu'un sans compte, et **corbeille** de 30 jours.
-- **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
-- **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur.
-- **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
+- **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
+- **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
+- **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
 ## En images
 
@@ -38,13 +37,16 @@ docker logs listo                        # affiche le code de démarrage du prem
 
 Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pour Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
 
+## Limites
+
+- **Aucune donnée envoyée ailleurs que sur votre serveur**, sauf trois exceptions désactivables : la vérification d'une nouvelle version (GitHub), le nom d'un produit scanné (Open Food Facts) et les **notifications push**, désactivées par défaut (`LISTO_PUSH=on` les active ; contenu chiffré de bout en bout, mais Apple, Google, Mozilla ou Microsoft voient l'heure, la taille du message et l'appareil destinataire). Si vous connectez Claude (`LISTO_MCP=on`), les listes autorisées lui sont envoyées quand vous l'interrogez. Français seulement, pas de paiement ; notifications sur iPhone et iPad : iOS 16.4 ou plus, Listo installé sur l'écran d'accueil ([chapitre Notifications](docs/guide.md#notifications)).
+
 ## Liens utiles
 
 - [Le guide en ligne](https://magicgg91.github.io/listo/), ou [docs/guide.md](docs/guide.md) dans le dépôt : pour tout le monde.
 - [docs/cahier-des-charges.md](docs/cahier-des-charges.md) : fonctions, droits, modèle de données, sécurité, décisions.
 - [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones.
-- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès depuis Claude.
-- [design/README.md](design/README.md) : le kit de design.
+- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès depuis Claude ; [design/README.md](design/README.md) : le kit de design.
 
 ## Sécurité
 

@@ -64,9 +64,13 @@ test('mot de passe et double authentification reviennent sur « Mon compte », j
   assert.match(settings, /const finish = \(\) => navigate\('account', \{\}, \{ replace: true \}\);/);
 });
 
-test('« Nouveautés » : description seule sous le titre, état annoncé par l\'interrupteur', () => {
-  const start = account.indexOf('function newsSwitches(');
-  const block = account.slice(start, account.indexOf('\n}\n', start) + 2);
+test('« Nouveautés » : dans Réglages › Notifications (partie « Dans l\'application »), plus dans Mon compte ; description seule sous le titre', () => {
+  // Regroupement du 10 novembre 2026 : plus de section « Nouveautés » dans Mon compte (téléphone compris)
+  assert.doesNotMatch(account, /newsSwitches|'Nouveautés'|setNewsSettings/);
+  const screen = fs.readFileSync(new URL('../public/js/screens/notifications.js', import.meta.url), 'utf8');
+  assert.match(screen, /h\('h2', \{ class: 'section-title' \}, 'Dans l\\'application'\),\s*newsSwitches\(onLeave\),\s*h\('h2', \{ class: 'section-title' \}, 'Sur cet appareil'\),/);
+  const start = screen.indexOf('function newsSwitches(');
+  const block = screen.slice(start, screen.indexOf('\n}\n', start) + 2);
   // Plus d'« Activé · » / « Désactivé · » : l'interrupteur montre déjà l'état
   for (const gone of ['Activé', 'Désactivé', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
   assert.ok(block.includes("'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'"));

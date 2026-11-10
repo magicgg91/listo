@@ -21,14 +21,25 @@
 // - « Contenu » : « Afficher le détail dans la notification » (désactivé au
 //   départ ; sinon « Léa a modifié « Courses » », sans le nom des éléments).
 // Mêmes interrupteurs que « Nouveautés » (role="switch", aria-checked, titre
-// et description reliés) ; « Silencer cette liste » est dans le menu ⋮ de
+// et description reliés) ; « Couper les notifications de cette liste » est dans le menu ⋮ de
 // chaque liste (list-actions.js).
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
+//
+// Regroupement du 10 novembre 2026 (décision du propriétaire) : un seul
+// écran, sur téléphone et ordinateur, en deux parties :
+// - « Dans l'application » : les Nouveautés (pastilles et halo), auparavant
+//   dans « Mon compte » ; marchent hors ligne (file d'attente) et même si
+//   les notifications sont coupées sur le serveur ;
+// - « Sur cet appareil » : les notifications push (interrupteur, état, test),
+//   puis « Notifications reçues » et « Contenu », qui valent pour tous les
+//   appareils du compte.
+// En bas, un rappel : les deux réglages par liste sont dans le menu ⋮.
 
 import { h, icon, replace } from '../dom.js';
 import { errorMessage } from '../api.js';
 import { goBack } from '../router.js';
-import { app } from '../app.js';
+import { app, onDataChange } from '../app.js';
+import * as actions from '../actions.js';
 import { toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { deviceState, enablePush, disablePush, sendTestPush, loadPushState, savePushSettings } from '../push.js';
@@ -52,6 +63,7 @@ export const KIND_ROWS = [
 ];
 export const DETAIL_ROW = ['detail', 'Afficher le détail dans la notification', 'Le nom des éléments, par exemple « Ajouté : Lait, Pain ». Désactivé : seulement qui a modifié quelle liste.'];
 export const ACCOUNT_NOTE = 'Ces réglages valent pour tous vos appareils.';
+export const PER_LIST_NOTE = 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».';
 export const PRIVACY_NOTE = 'Le contenu des notifications est chiffré : seul votre appareil peut le lire. Le service de notification de votre appareil (Apple, Google, Mozilla ou Microsoft) voit seulement l\'heure, la taille du message et l\'appareil qui le reçoit.';
 
 export function renderNotifications(onLeave = () => {}) {
@@ -178,7 +190,9 @@ export function renderNotifications(onLeave = () => {}) {
   return h('div', { class: 'screen' },
     topbar('Notifications', () => goBack('settings')),
     h('div', { class: 'body' },
-      h('h2', { class: 'section-title' }, 'Cet appareil'),
+      h('h2', { class: 'section-title' }, 'Dans l\'application'),
+      newsSwitches(onLeave),
+      h('h2', { class: 'section-title' }, 'Sur cet appareil'),
       h('div', { class: 'group list-options' },
         h('div', { class: 'toggle-row' },
           h('div', { class: 'grow' },
@@ -187,5 +201,46 @@ export function renderNotifications(onLeave = () => {}) {
           toggle)),
       // Sous la carte : état expliqué, notification test, confidentialité
       h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, PRIVACY_NOTE)),
-      accountPart));
+      accountPart,
+      // Réglages d'une seule liste : dans son menu ⋮ (list-actions.js)
+      h('div', { class: 'group-after' }, h('p', { class: 'muted' }, PER_LIST_NOTE))));
+}
+
+// Nouveautés (réglages du compte, valables sur tous mes appareils) :
+// « Nouveautés » (activé par défaut : pastilles sur « Mes listes » et halo
+// sur les éléments ajoutés ou modifiés par les autres) et « Signaler les
+// éléments cochés » (désactivé par défaut ; libellé générique : il vaut pour
+// toutes les listes). Celui-ci n'a d'effet que si « Nouveautés » est
+// activé : sinon sa ligne est cachée (hidden : ni vue, ni Tab, ni lecteur
+// d'écran), et sa valeur gardée revient avec elle. On ne fait que montrer ou
+// cacher la ligne, sans redessiner la section : le focus reste sur
+// l'interrupteur touché. Même interrupteur que les options
+// d'une liste (.switch, role="switch") : l'état se voit à la position du
+// bouton (jamais la couleur seule) et s'annonce par aria-checked ; sous le
+// titre, seulement la description, qui ne change pas (reliée au bouton par
+// aria-describedby). Passent par la file d'attente : hors ligne compris.
+export function newsSwitches(onLeave) {
+  const rows = [
+    ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
+    ['checks', 'Signaler les éléments cochés', 'Ce que les autres cochent ou décochent.'],
+  ].map(([key, label, help]) => {
+    const titleId = `news-${key}-title`;
+    const helpId = `news-${key}-help`;
+    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
+    const paint = () => {
+      toggle.setAttribute('aria-checked', String(Boolean(app.data.news?.[key])));
+      if (key === 'checks') row.hidden = !app.data.news?.enabled;
+    };
+    toggle.addEventListener('click', () => {
+      actions.setNewsSettings({ [key]: !app.data.news?.[key] });
+    });
+    const row = h('div', { class: 'toggle-row' },
+      h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
+      toggle);
+    return { row, paint };
+  });
+  const paintAll = () => rows.forEach((r) => r.paint());
+  paintAll();
+  onLeave(onDataChange(paintAll)); // changé sur un autre appareil : suit
+  return h('div', { class: 'group list-options' }, rows.map((r) => r.row));
 }

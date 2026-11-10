@@ -17,8 +17,8 @@
 //
 // Préférences du compte (valables sur tous ses appareils) et listes
 // silencées : gardées en mémoire après chaque lecture de GET /api/push,
-// pour que le menu d'une liste sache dire « Silencer » ou « Ne plus
-// silencer » sans attendre le réseau.
+// pour que le menu d'une liste sache dire « Couper » ou « Réactiver les
+// notifications de cette liste » sans attendre le réseau.
 
 import { get, put, post, del } from './api.js';
 
@@ -37,7 +37,7 @@ export async function savePushSettings(changes) {
   return remember(await put('/api/push/settings', changes)).settings;
 }
 
-// « Silencer cette liste » / « Ne plus silencer cette liste »
+// « Couper les notifications de cette liste » / « Réactiver les notifications de cette liste »
 export async function setListPushMuted(listId, muted) {
   remember(await put(`/api/push/mutes/${encodeURIComponent(listId)}`, { muted }));
 }

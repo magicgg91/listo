@@ -1,16 +1,17 @@
 // Écran « Mon compte » (ouvert depuis la carte du compte, en haut des
 // Réglages) : identité, puis les blocs Sécurité (mot de passe, double
-// authentification), Apparence (thème), Nouveautés (deux interrupteurs du
-// compte) et Ce téléphone (réinitialisation).
+// authentification), Apparence (thème), Claude (si l'accès est activé) et
+// Ce téléphone (réinitialisation). Les réglages des Nouveautés sont dans
+// Réglages › Notifications, partie « Dans l'application » (décision du
+// propriétaire du 10 novembre 2026).
 // Ces blocs étaient auparavant dans les Réglages : mêmes écrans, mêmes
 // confirmations, mêmes actions, simplement déplacés. Ouvert à tous les
 // comptes connectés ; chaque action reste vérifiée par le serveur.
 
 import { h, icon, avatar } from '../dom.js';
-import * as actions from '../actions.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount, onDataChange } from '../app.js';
+import { app, resetLocalCopy, pendingCount } from '../app.js';
 import { toast, confirmDialog, onPc } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
@@ -55,8 +56,6 @@ export function renderAccount(onLeave = () => {}) {
         twoFactorRow),
       h('h2', { class: 'section-title' }, 'Apparence'),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
-      h('h2', { class: 'section-title' }, 'Nouveautés'),
-      newsSwitches(onLeave),
       // Accès depuis Claude : seulement s'il est activé sur le serveur
       user.claudeUrl ? [
         h('h2', { class: 'section-title' }, 'Claude'),
@@ -97,43 +96,4 @@ async function resetPhone() {
   if (!ok) return;
   await resetLocalCopy();
   toast('Données rechargées depuis le serveur', { low: true });
-}
-
-// Nouveautés (réglages du compte, valables sur tous mes appareils) :
-// « Nouveautés » (activé par défaut : pastilles sur « Mes listes » et halo
-// sur les éléments ajoutés ou modifiés par les autres) et « Signaler les
-// éléments cochés » (désactivé par défaut ; libellé générique : il vaut pour
-// toutes les listes). Celui-ci n'a d'effet que si « Nouveautés » est
-// activé : sinon sa ligne est cachée (hidden : ni vue, ni Tab, ni lecteur
-// d'écran), et sa valeur gardée revient avec elle. On ne fait que montrer ou
-// cacher la ligne, sans redessiner la section : le focus reste sur
-// l'interrupteur touché. Même interrupteur que les options
-// d'une liste (.switch, role="switch") : l'état se voit à la position du
-// bouton (jamais la couleur seule) et s'annonce par aria-checked ; sous le
-// titre, seulement la description, qui ne change pas (reliée au bouton par
-// aria-describedby). Passent par la file d'attente : hors ligne compris.
-function newsSwitches(onLeave) {
-  const rows = [
-    ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
-    ['checks', 'Signaler les éléments cochés', 'Ce que les autres cochent ou décochent.'],
-  ].map(([key, label, help]) => {
-    const titleId = `news-${key}-title`;
-    const helpId = `news-${key}-help`;
-    const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId });
-    const paint = () => {
-      toggle.setAttribute('aria-checked', String(Boolean(app.data.news?.[key])));
-      if (key === 'checks') row.hidden = !app.data.news?.enabled;
-    };
-    toggle.addEventListener('click', () => {
-      actions.setNewsSettings({ [key]: !app.data.news?.[key] });
-    });
-    const row = h('div', { class: 'toggle-row' },
-      h('div', { class: 'grow' }, h('span', { class: 'row__title', id: titleId }, label), h('span', { class: 'row__sub', id: helpId }, help)),
-      toggle);
-    return { row, paint };
-  });
-  const paintAll = () => rows.forEach((r) => r.paint());
-  paintAll();
-  onLeave(onDataChange(paintAll)); // changé sur un autre appareil : suit
-  return h('div', { class: 'group list-options' }, rows.map((r) => r.row));
 }

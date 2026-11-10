@@ -500,3 +500,19 @@ test('échéances : détail (noms des premières tâches, les plus en retard d\'
   assert.equal(mine.navigate, 'http://listo.test/#/listes', 'plusieurs listes : « Mes listes »');
   assert.equal(f.inbox('lea')[0].body, 'Dans « Maison »', 'détail désactivé pour Léa');
 });
+
+test('deux réglages par liste, indépendants : masquer les nouveautés ne coupe pas les notifications, et l\'inverse', async (t) => {
+  const f = await withCourses(t);
+  // Guillaume masque les nouveautés (list_reads.muted), Marc coupe les notifications (push_list_mutes)
+  await f.ops('guillaume', [{ type: 'list.mute', listId: f.ids.courses, muted: true }]);
+  assert.equal((await f.people.marc.client.request('PUT', `/api/push/mutes/${f.ids.courses}`, { muted: true })).status, 200);
+  await f.ops('lea', [{ type: 'item.create', listId: f.ids.courses, itemId: f.ids.lait, name: 'Lait' }]);
+  await f.tick(GROUP_MS);
+  assert.equal(f.inbox('guillaume').length, 1, 'nouveautés masquées : la notification arrive quand même');
+  assert.equal(f.inbox('marc').length, 0, 'notifications coupées');
+  const newsOf = async (who) => (await f.people[who].client.get('/api/sync')).body.news.lists[f.ids.courses];
+  assert.equal((await newsOf('guillaume')).muted, true);
+  assert.equal((await newsOf('marc')).muted, false, 'notifications coupées : les nouveautés restent');
+  assert.equal((await newsOf('marc')).count, 1);
+  assert.deepEqual((await f.people.guillaume.client.get('/api/push')).body.mutedLists, [], 'deux réglages séparés en base');
+});

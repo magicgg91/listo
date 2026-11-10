@@ -565,8 +565,8 @@ export const GUIDE = [
           'Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.',
           'Sur « Mes listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (“30+” après plus d\'un mois d\'absence).',
           'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
-          'Menu ⋮ de la liste : « Ne plus me signaler cette liste », puis « Signaler cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise.',
-          '« Mon compte », section « Nouveautés » : désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
+          'Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C\'est indépendant des notifications de la liste ([[notif-silencer]]).',
+          'Réglages, « Notifications », partie « Dans l\'application » : « Nouveautés » désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
           'Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total. Pour être prévenu sans ouvrir Listo : [[notifications]].',
         ] }],
       },
@@ -634,13 +634,14 @@ export const GUIDE = [
     title: 'Notifications',
     blocks: [
       'Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l\'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C\'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.',
+      'L\'écran Réglages, « Notifications » a deux parties : « Dans l\'application » (les nouveautés, pastilles et halo : [[nouveautes]]) et « Sur cet appareil » (les notifications, décrites ici).',
     ],
     sections: [
       {
         id: 'notif-activer',
         title: 'Les activer sur un appareil',
         blocks: [
-          'Réglages, « Notifications », puis l\'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu\'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.',
+          'Réglages, « Notifications », partie « Sur cet appareil », puis l\'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu\'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.',
           { ul: [
             'Android : dans Chrome (ou un autre navigateur), ou depuis Listo installé sur l\'écran d\'accueil ([[telephone]]).',
             'Ordinateur : Chrome, Edge, Firefox ou Safari. La notification s\'affiche dans le coin de l\'écran ou le centre de notifications du système.',
@@ -675,9 +676,10 @@ export const GUIDE = [
       },
       {
         id: 'notif-silencer',
-        title: 'Silencer une liste',
+        title: 'Couper les notifications d\'une liste',
         blocks: [
-          'Menu ⋮ de la liste : « Silencer cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Ne plus silencer cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. À ne pas confondre avec « Ne plus me signaler cette liste », qui concerne les pastilles des nouveautés ([[nouveautes]]).',
+          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste.',
+          'C\'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [[nouveautes]]) : on peut garder les nouveautés d\'une liste sans recevoir ses notifications, et l\'inverse.',
         ],
       },
       {
@@ -718,7 +720,7 @@ export const GUIDE = [
           'La liste était déjà ouverte à l\'écran : rien n\'est envoyé pour ce que vous avez vu.',
           'Une modification arrive environ une minute plus tard (regroupement) ; le résumé des échéances, vers 8 h seulement.',
           'Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».',
-          'Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que la liste n\'est pas silencée. L\'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [[notif-serveur]].',
+          'Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L\'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [[notif-serveur]].',
         ] }],
       },
     ],

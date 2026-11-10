@@ -511,7 +511,7 @@ test('chapitre « Notifications » : son sommaire, ses sujets ; plus aucune affi
   assert.equal(GUIDE.indexOf(chapter), GUIDE.findIndex((c) => c.id === 'quotidien') + 1, 'juste après « Au quotidien »');
   assert.deepEqual(chapter.sections.map((s) => s.id), ['notif-activer', 'notif-recevoir', 'notif-detail', 'notif-silencer', 'notif-limites', 'notif-confidentialite', 'notif-serveur', 'notif-depannage']);
   const text = JSON.stringify(chapter);
-  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Silencer cette liste »', '30 notifications par personne et par heure', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
+  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Couper les notifications de cette liste »', '« Masquer les nouveautés de cette liste »', '30 notifications par personne et par heure', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
     assert.ok(text.includes(needle), needle);
   }
   // Dans la recherche du guide

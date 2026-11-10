@@ -140,7 +140,13 @@ test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage,
   // Menu ⋮ : seulement si la fonction est activée sur le serveur
   const menu = read('public/js/screens/list-actions.js');
   assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
-  assert.match(menu, /label: 'Silencer cette liste'/);
-  assert.match(menu, /label: 'Ne plus silencer cette liste'/);
+  assert.match(menu, /label: 'Couper les notifications de cette liste'/);
+  assert.match(menu, /label: 'Réactiver les notifications de cette liste'/);
+  // Deux options distinctes et indépendantes (décision du 10 novembre 2026)
+  assert.match(menu, /label: 'Masquer les nouveautés de cette liste'/);
+  assert.match(menu, /label: 'Afficher les nouveautés de cette liste'/);
+  assert.doesNotMatch(menu, /'Silencer cette liste'|'Ne plus me signaler cette liste'|'Signaler cette liste'/);
+  assert.match(screen, /'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste »\.'/);
+  assert.match(read('public/js/screens/settings.js'), /title: 'Notifications', sub: 'Nouveautés et notifications'/);
   assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d)-/);
 });

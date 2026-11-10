@@ -121,7 +121,7 @@ function renderSettingsPc() {
         class: 'row', type: 'button', 'aria-label': `Mon compte : ${user.displayName}`, onClick: () => navigate('account'),
       },
       avatar(user.displayName),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème, nouveautés')),
+      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème')),
       roleChip(user), icon('chev-r')))),
       section('Clavier', h('div', { class: 'group' }, keysRow())),
       isAdmin ? section('Administration',
@@ -138,7 +138,7 @@ function renderSettingsPc() {
 // Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des
 // notifications de cet appareil (notifications.js)
 function notificationsRow() {
-  return row({ iconName: 'bell', title: 'Notifications', sub: app.user.push ? 'Recevoir les notifications sur cet appareil' : 'Désactivées sur ce serveur', onClick: () => navigate('notifications') });
+  return row({ iconName: 'bell', title: 'Notifications', sub: 'Nouveautés et notifications', onClick: () => navigate('notifications') });
 }
 
 // Interrupteur « Raccourcis à une touche » (ordinateur) : désactivés, il ne

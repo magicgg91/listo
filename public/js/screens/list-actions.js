@@ -12,8 +12,8 @@
 // Un contributeur voit donc « Dupliquer la liste » puis
 // « Quitter la liste » ; un invité en lecture seule, « Quitter la liste »
 // seulement.
-// « Ne plus me signaler cette liste » (Nouveautés) et « Silencer cette
-// liste » (notifications push, si elles sont activées sur le serveur) : pour
+// « Masquer les nouveautés de cette liste » (Nouveautés) et « Couper les
+// notifications de cette liste » (notifications push, si elles sont activées sur le serveur) : pour
 // tout membre, juste avant « Supprimer » ou « Quitter ».
 // Chaque action n'est proposée qu'à qui y a droit ; le serveur le revérifie
 // à chaque requête. Aucune action : pas de bouton de menu.
@@ -42,7 +42,7 @@ import { isListPushMuted, setListPushMuted } from '../push.js';
 export function listActions(list, { onDeleted } = {}) {
   const duplicate = { icon: 'copy', label: 'Dupliquer la liste', onSelect: () => openDuplicateSheet(list) };
   const wishes = isWishList(list);
-  // Nouveautés : « Ne plus me signaler cette liste » / « Signaler cette
+  // Nouveautés : « Masquer les nouveautés de cette liste » / « Signaler cette
   // liste », pour chaque membre, invité en lecture seule compris (ce n'est
   // pas une modification de la liste)
   const mute = newsMuteAction(list);
@@ -76,22 +76,24 @@ export function listActions(list, { onDeleted } = {}) {
 }
 
 // Sourdine des nouveautés d'une liste, pour moi seulement (sur tous mes
-// appareils) : ni pastille, ni halo, ni compte dans le badge de l'icône
+// appareils) : ni pastille, ni halo, ni compte dans le badge de l'icône.
+// Indépendante de « Couper les notifications de cette liste » (deux
+// réglages séparés, en base comme à l'écran ; libellés du 10 novembre 2026).
 function newsMuteAction(list) {
   return isListMuted(app.data, list.id)
-    ? { icon: 'eye', label: 'Signaler cette liste', onSelect: () => {
+    ? { icon: 'eye', label: 'Afficher les nouveautés de cette liste', onSelect: () => {
       actions.setListMuted(list.id, false);
-      toast('Les nouveautés de cette liste vous sont de nouveau signalées', { low: true });
+      toast('Les nouveautés de cette liste sont de nouveau affichées', { low: true });
     } }
-    : { icon: 'eye-off', label: 'Ne plus me signaler cette liste', onSelect: () => {
+    : { icon: 'eye-off', label: 'Masquer les nouveautés de cette liste', onSelect: () => {
       actions.setListMuted(list.id, true);
-      toast('Les nouveautés de cette liste ne vous seront plus signalées', { low: true });
+      toast('Les nouveautés de cette liste sont masquées', { low: true });
     } };
 }
 
-// Notifications push : « Silencer cette liste » (plus aucune notification
-// venant d'elle, quelle que soit la catégorie) / « Ne plus silencer cette
-// liste ». Seulement si la fonction est activée sur le serveur ; en ligne
+// Notifications push : « Couper les notifications de cette liste » (plus aucune notification
+// venant d'elle, quelle que soit la catégorie) / « Réactiver les
+// notifications de cette liste ». Seulement si la fonction est activée sur le serveur ; en ligne
 // seulement (réglage du compte, gardé par le serveur).
 function pushMuteAction(list) {
   if (!app.user?.push) return null;
@@ -99,14 +101,14 @@ function pushMuteAction(list) {
   const run = async () => {
     try {
       await setListPushMuted(list.id, !muted);
-      toast(muted ? 'Les notifications de cette liste sont réactivées' : 'Cette liste ne vous enverra plus de notification', { low: true });
+      toast(muted ? 'Les notifications de cette liste sont réactivées' : 'Les notifications de cette liste sont coupées', { low: true });
     } catch (error) {
       toast(errorMessage(error));
     }
   };
   return muted
-    ? { icon: 'bell', label: 'Ne plus silencer cette liste', onSelect: run }
-    : { icon: 'bell', label: 'Silencer cette liste', onSelect: run };
+    ? { icon: 'bell', label: 'Réactiver les notifications de cette liste', onSelect: run }
+    : { icon: 'bell', label: 'Couper les notifications de cette liste', onSelect: run };
 }
 
 // Renvoie true si la liste a été supprimée, false si la confirmation a été

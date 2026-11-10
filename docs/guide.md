@@ -654,7 +654,7 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 ### 5.11 Thème clair ou sombre
 
-Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».
+Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="ordinateur"></a>
 
@@ -691,7 +691,7 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | Ctrl+Entrée | Enregistrer la fiche ou le formulaire |
 | S | Aller au sommaire de l'aide |
 
-Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
+Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
 
 **Annuler (Ctrl+Z)**
 
@@ -1138,7 +1138,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 ### 9.5 Écran blanc ou application figée
 
 - Fermez Listo et rouvrez-le avec du réseau : il prend la dernière version. Si le bandeau « Nouvelle version disponible » reste affiché, touchez « Recharger ».
-- Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (les modifications en attente sont gardées).
+- Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (sur un ordinateur : « Réinitialiser les données de cet appareil ») ; les modifications en attente sont gardées.
 - En dernier recours, effacez les données du site dans le navigateur (Chrome : cadenas à gauche de l'adresse, “Paramètres du site”, “Effacer les données” ; iPhone : Réglages, Safari, Avancé, Données des sites web), puis reconnectez-vous.
 - Android, application installée, bas de l'écran caché par la barre de navigation : fermez complètement l'application puis rouvrez-la ; sinon désinstallez-la et réinstallez-la (attendez « À jour » avant, pour ne rien perdre).
 - Tous les téléphones sont touchés : la personne qui gère le serveur regarde `docker logs listo` et `https://listo.exemple.fr/healthz` ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#depannage-serveur)).

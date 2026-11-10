@@ -41,7 +41,7 @@ test('Réglages : la carte du compte est un bouton qui ouvre « Mon compte »', 
 
 test('« Mon compte » : identité, puis Sécurité, Apparence, Ce téléphone, dans cet ordre', () => {
   const screen = body(account, 'renderAccount');
-  const order = ["topbar('Mon compte'", 'roleChip(user)', "'Sécurité'", "title: 'Mot de passe'", 'twoFactorRow)', "'Apparence'", "'aria-label': 'Thème'", "'Ce téléphone'", "title: 'Réinitialiser les données de ce téléphone'"];
+  const order = ["topbar('Mon compte'", 'roleChip(user)', "'Sécurité'", "title: 'Mot de passe'", 'twoFactorRow)', "'Apparence'", "'aria-label': 'Thème'", 'device().section', 'title: device().reset'];
   const view = screen.slice(screen.indexOf("return h('div', { class: 'screen' }"));
   const positions = order.map((text) => view.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(positions[i] >= 0, text);
@@ -51,7 +51,9 @@ test('« Mon compte » : identité, puis Sécurité, Apparence, Ce téléphone, 
   assert.match(account, /onClick: \(\) => \{\s*applyTheme\(value\);/);
   // Réinitialisation : même garde hors ligne, même confirmation, file gardée
   assert.ok(account.includes("toast('Indisponible hors ligne : il faut du réseau pour tout recharger.')"));
-  assert.match(account, /confirmDialog\(\{\s*title: 'Réinitialiser les données de ce téléphone \?'/);
+  assert.match(account, /confirmDialog\(\{\s*title: `\$\{device\(\)\.reset\} \?`/);
+  // Téléphone : « Ce téléphone » ; ordinateur : « Cet appareil » (décision du 10 novembre 2026)
+  assert.match(account, /: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
   assert.ok(account.includes('pendingCount()') && account.includes('await resetLocalCopy()'));
 });
 

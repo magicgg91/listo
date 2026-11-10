@@ -142,5 +142,5 @@ test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage,
   assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
   assert.match(menu, /label: 'Silencer cette liste'/);
   assert.match(menu, /label: 'Ne plus silencer cette liste'/);
-  assert.match(read('public/sw.js'), /const VERSION = `v7[6-9]-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d)-/);
 });

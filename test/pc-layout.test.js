@@ -197,15 +197,33 @@ test('aide (ordinateur) : sommaire fixe à gauche (chapitre en cours repéré), 
   assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
 });
 
-test('Réglages (ordinateur) : mêmes contenus en cartes, « Raccourcis à une touche », Administration pour l\'Admin seulement', () => {
+test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte « Clavier » (raccourcis) ; thème et Connexions Claude dans Mon compte seulement', () => {
   const settings = read('public/js/screens/settings.js');
   assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
-  assert.match(settings, /section\('Apparence et clavier', h\('div', \{ class: 'group' \},/);
-  assert.match(settings, /keysRow\(\)\)\),/);
-  assert.match(settings, /isAdmin \? section\('Administration',/);
-  assert.match(settings, /user\.claudeUrl \? section\('Connexions Claude',/);
+  const pc = settings.slice(settings.indexOf('function renderSettingsPc'), settings.indexOf('export function keysRow'));
+  const code = settings.replace(/\/\/.*$/gm, ''); // sans les commentaires
+  // Ordre des cartes : Compte, Clavier, Administration (Admin), Notifications, Listes, Aide, À propos
+  const order = [...pc.matchAll(/section\('([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual(order, ['Compte', 'Clavier', 'Administration', 'Notifications', 'Listes', 'Aide', 'À propos']);
+  assert.match(pc, /section\('Clavier', h\('div', \{ class: 'group' \}, keysRow\(\)\)\),/);
+  assert.match(pc, /isAdmin \? section\('Administration',/);
+  assert.match(pc, /title: 'Raccourcis clavier'/);
+  // Même libellé que le téléphone pour l'aide ; pas de phrase sous « Administration » (décisions du 10 novembre 2026)
+  const helpRow = "row({ iconName: 'book', title: 'Aide', sub: 'Mode d\\'emploi de Listo', onClick: () => navigate('help') })";
+  assert.ok(pc.includes(helpRow), 'ordinateur : « Aide »');
+  assert.ok(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')).includes(helpRow), 'téléphone : la même ligne');
+  assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
+  // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
+  assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
+  // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
+  const account = read('public/js/screens/account.js');
+  assert.match(account, /h\('h2', \{ class: 'section-title' \}, 'Apparence'\),/);
+  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
+  // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
+  assert.equal((account.match(/onPc\(\)/g) ?? []).length, 1);
+  assert.match(account, /return onPc\(\)\s*\? \{ section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' \}\s*: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
   // Téléphone : plus de section « Clavier » (rien de nouveau)
-  assert.doesNotMatch(settings.slice(settings.indexOf('export function renderSettings'), settings.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
+  assert.doesNotMatch(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
 });
 
 test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après une erreur, astuce dans une liste vide ; rien de cela sur téléphone', () => {

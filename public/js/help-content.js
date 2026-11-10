@@ -582,7 +582,7 @@ export const GUIDE = [
       {
         id: 'theme',
         title: 'Thème clair ou sombre',
-        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».'],
+        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c\'est au même endroit : Réglages, « Mon compte », « Apparence ».'],
       },
       {
         id: 'ordinateur',
@@ -619,7 +619,7 @@ export const GUIDE = [
               ['S', 'Aller au sommaire de l\'aide'],
             ],
           } },
-          'Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
+          'Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
           { sub: 'Annuler (Ctrl+Z)' },
           'Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l\'annulation part avec le reste au retour du réseau. Si quelqu\'un a changé l\'article entre-temps, rien n\'est écrasé : « Modifié entre-temps : rien n\'est annulé ».',
           'Ne s\'annulent pas par Ctrl+Z : un ajout (supprimez l\'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d\'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.',
@@ -1097,7 +1097,7 @@ export const GUIDE = [
         title: 'Écran blanc ou application figée',
         blocks: [{ ul: [
           'Fermez Listo et rouvrez-le avec du réseau : il prend la dernière version. Si le bandeau « Nouvelle version disponible » reste affiché, touchez « Recharger ».',
-          'Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (les modifications en attente sont gardées).',
+          'Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (sur un ordinateur : « Réinitialiser les données de cet appareil ») ; les modifications en attente sont gardées.',
           'En dernier recours, effacez les données du site dans le navigateur (Chrome : cadenas à gauche de l\'adresse, “Paramètres du site”, “Effacer les données” ; iPhone : Réglages, Safari, Avancé, Données des sites web), puis reconnectez-vous.',
           'Android, application installée, bas de l\'écran caché par la barre de navigation : fermez complètement l\'application puis rouvrez-la ; sinon désinstallez-la et réinstallez-la (attendez « À jour » avant, pour ne rien perdre).',
           'Tous les téléphones sont touchés : la personne qui gère le serveur regarde `docker logs listo` et `https://listo.exemple.fr/healthz` ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#depannage-serveur)).',

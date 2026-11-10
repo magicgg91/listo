@@ -11,7 +11,7 @@ import * as actions from '../actions.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
 import { app, resetLocalCopy, pendingCount, onDataChange } from '../app.js';
-import { toast, confirmDialog } from '../ui.js';
+import { toast, confirmDialog, onPc } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
 export function renderAccount(onLeave = () => {}) {
@@ -64,10 +64,20 @@ export function renderAccount(onLeave = () => {}) {
           row({ iconName: 'link', title: 'Connexions Claude', sub: 'Voir et déconnecter Claude', onClick: () => navigate('claudeConnections') })),
       ] : null,
       // Données gardées sur ce téléphone : remise à zéro si elles semblent
-      // abîmées (tout est rechargé depuis le serveur)
-      h('h2', { class: 'section-title' }, 'Ce téléphone'),
+      // abîmées (tout est rechargé depuis le serveur). Sur ordinateur, « Cet
+      // appareil » (décision du propriétaire du 10 novembre 2026) ; le
+      // téléphone garde « Ce téléphone ».
+      h('h2', { class: 'section-title' }, device().section),
       h('div', { class: 'group' },
-        row({ iconName: 'sync', title: 'Réinitialiser les données de ce téléphone', sub: 'Recharger les listes depuis le serveur', onClick: resetPhone }))));
+        row({ iconName: 'sync', title: device().reset, sub: 'Recharger les listes depuis le serveur', onClick: resetPhone }))));
+}
+
+// Nom de l'appareil dans les textes : « ce téléphone » ou, sur ordinateur,
+// « cet appareil »
+function device() {
+  return onPc()
+    ? { section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' }
+    : { section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' };
 }
 
 // Remise à zéro de la copie locale (avec confirmation). Les modifications
@@ -79,8 +89,8 @@ async function resetPhone() {
   }
   const waiting = pendingCount();
   const ok = await confirmDialog({
-    title: 'Réinitialiser les données de ce téléphone ?',
-    text: `Les listes gardées sur ce téléphone seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
+    title: `${device().reset} ?`,
+    text: `Les listes gardées ${device().on} seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
     confirmLabel: 'Réinitialiser',
     danger: false,
   });

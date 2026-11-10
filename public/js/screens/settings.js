@@ -11,7 +11,6 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace }
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { app, logOut } from '../app.js';
-import { applyTheme, savedTheme } from '../theme.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
@@ -103,24 +102,16 @@ export function renderSettings() {
 }
 
 // --- Réglages sur ordinateur (design/maquettes/pc-A, capture 08a) ---
-// Le même contenu que sur le téléphone, rangé en cartes : Compte, Connexions
-// Claude (si l'accès est activé sur le serveur), Apparence et clavier (thème,
-// « Raccourcis à une touche »), Administration (compte Admin seulement),
-// Listes (corbeille), Aide, À propos, puis « Se déconnecter ».
+// Le même rangement que sur le téléphone (décision du propriétaire du
+// 10 novembre 2026 : le téléphone fait référence), en cartes : Compte (ouvre
+// « Mon compte », où sont le thème et « Connexions Claude », comme sur le
+// téléphone), Clavier (« Raccourcis à une touche », propre à l'ordinateur),
+// Administration (compte Admin seulement), Notifications, Listes (corbeille),
+// Aide (et « Raccourcis clavier »), À propos, puis « Se déconnecter ».
 function renderSettingsPc() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
   const section = (title, ...content) => h('section', { class: 'pc-settings__section' }, h('h2', { class: 'pc-settings__title' }, title), content);
-  // Thème : écrit simplement data-theme sur <html> (comme dans « Mon compte »)
-  const themes = [['light', 'sun', 'Clair'], ['dark', 'moon', 'Sombre'], ['auto', 'auto', 'Auto']];
-  const options = themes.map(([value, iconName, label]) => {
-    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', 'aria-checked': String(savedTheme() === value) }, icon(iconName, 'icon--sm'), label);
-    option.addEventListener('click', () => {
-      applyTheme(value);
-      for (const [i, other] of options.entries()) other.setAttribute('aria-checked', String(themes[i][0] === value));
-    });
-    return option;
-  });
   return h('div', { class: 'screen' },
     h('header', { class: 'pc-head' }, h('div', { class: 'pc-head__main' },
       h('h1', { class: 'pc-head__title' }, 'Réglages'),
@@ -130,24 +121,15 @@ function renderSettingsPc() {
         class: 'row', type: 'button', 'aria-label': `Mon compte : ${user.displayName}`, onClick: () => navigate('account'),
       },
       avatar(user.displayName),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, nouveautés')),
+      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème, nouveautés')),
       roleChip(user), icon('chev-r')))),
-      user.claudeUrl ? section('Connexions Claude',
-        h('p', { class: 'pc-settings__hint' }, 'Autorisez Claude à lire, voire modifier vos listes. Il ne peut jamais rien supprimer.'),
-        h('div', { class: 'group' }, row({ iconName: 'plug', title: 'Connexions Claude', sub: 'Voir, gérer ou déconnecter', onClick: () => navigate('claudeConnections') }))) : null,
-      section('Apparence et clavier', h('div', { class: 'group' },
-        h('div', { class: 'row' },
-          h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('sun')),
-          h('span', { class: 'row__body' }, h('span', { class: 'row__title', id: 'reglage-theme' }, 'Thème')),
-          h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'reglage-theme' }, options)),
-        keysRow())),
+      section('Clavier', h('div', { class: 'group' }, keysRow())),
       isAdmin ? section('Administration',
-        h('p', { class: 'pc-settings__hint' }, 'Visible seulement pour les comptes Admin.'),
         h('div', { class: 'group' }, row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) }))) : null,
       section('Notifications', h('div', { class: 'group' }, notificationsRow())),
       section('Listes', h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') }))),
       section('Aide', h('div', { class: 'group' },
-        row({ iconName: 'book', title: 'Guide d\'utilisation', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
+        row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
         row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }))),
       section('À propos', aboutGroup(isAdmin)),
       h('div', {}, h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => logOut() }, icon('logout', 'icon--sm'), 'Se déconnecter')))));

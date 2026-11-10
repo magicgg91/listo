@@ -124,7 +124,6 @@ button.sync { cursor: pointer; }
    d'air), plus la zone de sécurité, pour que la dernière carte ne reste pas
    cachée derrière le bouton */
 .cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) calc(112px + env(safe-area-inset-bottom, 0px)); }
-.cards--side { padding-bottom: var(--space-2); }
 
 /* Formulaires en pleine page (nouvelle liste, mot de passe…) */
 .form-body { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -169,13 +168,6 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .choice--row .choice__opt { flex: 1 1 0; min-width: 0; align-items: center; padding-inline: 6px; text-align: center; overflow-wrap: anywhere; }
 .choice--row .choice__opt[aria-checked="true"] { padding-inline: 5px; }
 .choice--row .choice__opt .icon-end { top: 6px; right: 6px; }
-
-/* Colonne de gauche (ordinateur) */
-.brand-mark--sm { width: 40px; height: 40px; border-radius: 12px; }
-.brand-mark--sm .icon { width: 24px; height: 24px; }
-.statusbar--side { padding-top: var(--space-1); }
-.side-title { font-size: var(--text-lg); font-weight: 700; }
-.side-empty { padding: var(--space-2); }
 
 /* Le champ d'ajout a déjà son propre cadre bleu quand il est actif : pas de
    second contour autour du texte */

@@ -28,10 +28,16 @@
 //   Tri, groupes repliables et photo agrandie restent possibles. Le serveur
 //   refuse de toute façon chaque écriture ; si le droit change, l'écran
 //   bascule tout de suite (fenêtres ouvertes refermées, clavier replié).
+// - Ordinateur (à partir de 1 024 px, design/maquettes/pc-A) : même écran,
+//   autre disposition : en-tête (titre, « Partager », recherche toujours
+//   visible, menu), outils (pastille d'état, tri, « Tout replier »), champ
+//   d'ajout en haut, crayon et corbeille au survol (et au focus clavier) de
+//   chaque ligne, « Réserver » au bout d'un souhait libre. Mêmes données,
+//   mêmes actions, mêmes droits (revérifiés par le serveur).
 
 import { isShoppingList, isWishList, typeLabel, typeIcon } from '../list-types.js';
 import { wishForLabel, formatPrice, parsePrice, cleanLink, LINK_MAX } from '../wishes.js';
-import { h, icon, iconButton, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
+import { h, icon, iconButton, avatar, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
@@ -40,7 +46,7 @@ import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PR
 import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
-import { app, onDataChange, refreshData } from '../app.js';
+import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
@@ -56,14 +62,16 @@ import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
+import { openShareSheet } from './share.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
 export function renderList(listId, onLeave) {
-  const title = h('h1', { class: 'topbar__title' });
+  const pc = isDesktop(); // interface ordinateur (voir en tête du fichier)
+  const title = h('h1', { class: pc ? 'pc-head__title' : 'topbar__title' });
   // Icône de la liste, juste avant le titre (décorative : le titre suffit)
   const titleIcon = h('span', { class: 'topbar__icon' });
-  const sub = h('p', { class: 'topbar__sub' });
+  const sub = h('p', { class: pc ? 'pc-head__sub' : 'topbar__sub' });
   const content = h('div', { class: 'scroll' });
   // Glissement des lignes vers la gauche : une seule ouverte à la fois,
   // refermée par un toucher ailleurs ou par le défilement
@@ -113,6 +121,9 @@ export function renderList(listId, onLeave) {
   // l'écran le vide.
   const search = createSearchRow(content, {
     label: 'Rechercher dans la liste',
+    // Ordinateur : champ toujours visible dans l'en-tête
+    docked: pc,
+    placeholder: pc ? 'Rechercher' : 'Rechercher dans la liste',
     onChange: () => draw(),
     // Champ utilisé : « Tout replier » masqué ; barre d'ajout masquée tant
     // que le curseur est dans le champ (clavier ouvert)
@@ -172,7 +183,36 @@ export function renderList(listId, onLeave) {
         draw();
         toast(message, { duration: 2000 });
       },
-    })), { label: 'Trier la liste' });
+    })), { label: 'Trier la liste', anchor: pc ? sortButton : null }); // ordinateur : sous le bouton
+  }
+
+  // --- En-tête de l'ordinateur ---
+  // « Partager » (propriétaire : feuille « Partager par lien ») avec les
+  // pastilles des personnes ; les autres membres voient seulement les
+  // pastilles. Le serveur revérifie de toute façon chaque action.
+  const shareSlot = h('div', { class: 'pc-head__share' });
+  // Liste d'envies : bandeau qui dit ce que la personne voit (texte ET icône)
+  const wishNote = h('p', { class: 'note pc-banner', hidden: true });
+  function drawPcHead(list) {
+    const members = list.members.filter((m) => m.active || m.isOwner);
+    members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
+    const people = h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
+      members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
+    replace(shareSlot, list.isOwner
+      ? h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => openShareSheet(list) }, icon('users', 'icon--sm'), 'Partager', people)
+      : people);
+    shareSlot.hidden = false;
+    // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
+    // ne les envoie pas) ; les autres membres les voient
+    if (!isWishList(list)) {
+      wishNote.hidden = true;
+      return;
+    }
+    const hidden = list.forName ? null : list.forDisplayName ?? list.members?.find((m) => m.isOwner)?.displayName;
+    replace(wishNote, list.isBeneficiary
+      ? [icon('eye-off', 'icon--sm'), h('span', {}, 'Vous ne voyez jamais les réservations : la surprise reste entière.')]
+      : [icon('eye', 'icon--sm'), h('span', {}, hidden ? `Réservations visibles. ${hidden}, à qui la liste est destinée, ne les voit pas.` : 'Réservations visibles par les personnes qui partagent la liste.')]);
+    wishNote.hidden = false;
   }
 
   let view = null;
@@ -301,6 +341,8 @@ export function renderList(listId, onLeave) {
       replace(sub);
       menuButton.hidden = true;
       sortButton.hidden = true;
+      shareSlot.hidden = true;
+      wishNote.hidden = true;
       search.show(h('div', { class: 'empty' },
         h('h2', { class: 'empty__title' }, 'Liste introuvable'),
         h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
@@ -323,7 +365,15 @@ export function renderList(listId, onLeave) {
     document.title = `${list.name} · Listo`;
     title.textContent = list.name;
     replace(titleIcon, icon(listIcon(list), 'icon--sm'));
-    replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : isWishList(list) ? wishForLabel(list) : typeLabel(list));
+    if (pc) {
+      // Ordinateur : « Carrefour Market · Courses », « Tâches », « Envies · pour vous »
+      replace(sub, list.store
+        ? [icon('store', 'icon--xs'), `${list.store.name} · ${typeLabel(list)}`, view.multi ? multiBadge() : null]
+        : [icon(typeIcon(list), 'icon--xs'), isWishList(list) ? `${typeLabel(list)} · ${wishForLabel(list).replace(/^Pour /, 'pour ')}` : typeLabel(list)]);
+      drawPcHead(list);
+    } else {
+      replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : isWishList(list) ? wishForLabel(list) : typeLabel(list));
+    }
     menuButton.hidden = !menuActions().length; // aucune action : pas de menu
     // Bouton seulement s'il y a un choix : toujours pour une liste de courses
     // (par rayon ou alphabétique) ; ailleurs, si la priorité ou l'échéance
@@ -418,7 +468,7 @@ export function renderList(listId, onLeave) {
     show(inSearch || isZoneOpen(listId));
     if (!inSearch) foldables.push(foldable); // « Tout replier » la replie aussi
     return h('section', { class: 'cart' },
-      h('div', { class: 'cart__head' }, h('div', { class: 'cart__bar' }, toggle), actionsRow),
+      h('div', { class: 'cart__head' }, pc ? h('div', { class: 'cart__bar' }, toggle, actionsRow) : [h('div', { class: 'cart__bar' }, toggle), actionsRow]),
       listEl);
   }
 
@@ -514,8 +564,8 @@ export function renderList(listId, onLeave) {
     return row;
   };
   const itemRowWith = (item, meta) => {
-    if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false)), item, meta);
-    const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta));
+    if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false), pc ? reserveButton(item) : null), item, meta);
+    const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta), pc ? rowActions(item) : null);
     const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
       swipes.close();
       deleteWithUndo(item);
@@ -551,6 +601,43 @@ export function renderList(listId, onLeave) {
     actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
       h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null,
   ];
+
+  // Ordinateur : actions au bout de la ligne. Souhait libre (vue d'une
+  // personne qui offre) : « Réserver » ; puis crayon (la fiche) et corbeille
+  // (suppression annulable, comme le glissement). Visibles au survol de la
+  // ligne et au focus clavier (CSS), toujours sur un écran tactile.
+  function rowActions(item) {
+    return [
+      reserveButton(item),
+      h('span', { class: 'item__actions' },
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
+    ];
+  }
+  // « Réserver » : seulement si le serveur a envoyé les réservations de la
+  // liste (jamais au bénéficiaire), pour un souhait ni reçu ni réservé. En
+  // ligne seulement (comme dans la fiche) ; le serveur revérifie tout.
+  function reserveButton(item) {
+    if (!view?.reservations || item.checked || view.reservations.get(item.id)?.participants.length) return null;
+    return h('button', {
+      class: 'btn btn--secondary btn--sm item__act',
+      type: 'button',
+      'aria-label': `Réserver ${item.name}`,
+      onClick: async () => {
+        if (!navigator.onLine) {
+          toast('Réserver, participer ou quitter demande une connexion.');
+          return;
+        }
+        try {
+          await actions.reserveWish(item.id, false);
+          toast('Souhait réservé');
+        } catch (err) {
+          toast(errorMessage(err));
+          refreshData({ quiet: true });
+        }
+      },
+    }, icon('gift', 'icon--sm'), 'Réserver');
+  }
 
   // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
   function showPhoto(item) {
@@ -677,8 +764,15 @@ export function renderList(listId, onLeave) {
       onPointerup: plus.pointerup,
       onPointercancel: plus.pointercancel,
       onClick: plus.click,
-    }, icon('plus')));
-  const addbar = h('div', { class: 'addbar' }, suggestBox, addForm, scanner.inputs);
+    }, icon('plus', pc ? 'icon--sm' : ''), pc ? 'Ajouter' : null));
+  // Ordinateur : bouton écrit « Ajouter » (plus de libellé caché)
+  if (pc) {
+    const submit = addForm.querySelector('[type=submit]');
+    submit.classList.remove('btn--icon');
+    submit.removeAttribute('aria-label');
+  }
+  // Ordinateur : champ d'ajout en haut de la liste (sous les outils)
+  const addbar = h('div', { class: pc ? 'pc-add' : 'addbar' }, suggestBox, addForm, scanner.inputs);
 
   // Touche Entrée : le navigateur « clique » le bouton « + » (ajout ci-dessus,
   // envoi du formulaire annulé) ; ceci n'est qu'un secours, sans doublon
@@ -1663,6 +1757,21 @@ export function renderList(listId, onLeave) {
   draw();
   refreshData({ quiet: true }); // actualisation à l'ouverture
 
+  if (pc) {
+    readOnlyBanner.classList.add('pc-banner');
+    return h('div', { class: 'screen' },
+      h('header', { class: 'pc-head' },
+        h('div', { class: 'pc-head__main' }, title, sub),
+        shareSlot,
+        search.field,
+        menuButton),
+      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), searchMeta,
+        h('div', { class: 'pc-tools__end' }, sortButton, foldAll)),
+      readOnlyBanner,
+      wishNote,
+      addbar,
+      content);
+  }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),

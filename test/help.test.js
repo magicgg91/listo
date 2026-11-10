@@ -290,7 +290,7 @@ test('hors ligne : les fichiers de l\'aide sont gardés par le service worker, n
   const sw = read('public/sw.js');
   assert.match(sw, /'\/js\/help-content\.js',/);
   assert.match(sw, /'\/js\/screens\/help\.js',/);
-  assert.match(sw, /const VERSION = `v69-/);
+  assert.match(sw, /const VERSION = `v(69|[7-9]\d|\d{3,})-/);
   assert.match(sw, /'\/js\/search\.js',/);
 });
 

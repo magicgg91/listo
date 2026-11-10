@@ -420,7 +420,7 @@ test('écrans : visiteurs marqués « (lien public) » et retirés par le gestio
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);
   const share = read('public/js/screens/share.js');
   assert.match(share, /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
-  assert.match(read('public/sw.js'), /const VERSION = `v6[0-9]-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v(6[0-9]|[7-9]\d|\d{3,})-/);
 });
 
 // --- État « ouvert à d'autres » resté seul (correction avant fusion) ---

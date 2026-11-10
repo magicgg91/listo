@@ -338,7 +338,7 @@ test('écran : halo gardé pendant la visite (jusqu\'au toucher de la ligne), ab
   assert.match(body, /meta\.news \? h\('span', \{ class: 'item__news' \}, meta\.news\) : null,/);
   // Kit de design, section 16.13 (identique dans design/ et public/)
   const css = read('public/css/listo.css');
-  const section = css.slice(css.indexOf('/* 16.13 Nouveautés'));
+  const section = css.slice(css.indexOf('/* 16.13 Nouveautés'), css.indexOf('/* 16.14'));
   assert.match(section, /\.item--news \{ background: var\(--color-accent-soft\); \}/);
   assert.match(section, /\.news-badge \{[^}]*background: var\(--color-accent\); color: var\(--color-on-accent\);/);
   assert.doesNotMatch(section, /animation|transition|#[0-9a-f]{3,6}\b|--[a-z-]+:/i, 'statique, couleurs et variables du kit seulement');

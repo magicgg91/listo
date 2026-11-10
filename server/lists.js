@@ -742,6 +742,8 @@ export function createListService(ctx) {
         news.startReading(id, forUserId);
       }
       changed(id);
+      // Notification « partage » au compte destinataire (ajouté à la liste)
+      if (forUserId) ctx.notify?.sharing({ listId: id, userId: forUserId, actorId: user.id, kind: 'added' });
       ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
@@ -1247,6 +1249,9 @@ export function createListService(ctx) {
     for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: rights.get(id) ?? 'lecture' });
     for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, personne: nameOf(id) });
     for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: value });
+    // Notifications « partage » : ajoutés, droits changés
+    for (const id of added) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'added' });
+    for (const [id] of changedRights) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'access' });
     return readList(user, list.id).list;
   }
 
@@ -1283,6 +1288,8 @@ export function createListService(ctx) {
     const before = typeOf(list);
     const now = nowIso();
     let share = null;
+    // Droit du destinataire avant le changement (notification « partage »)
+    const accessBefore = forUserId ? db.prepare('SELECT access FROM list_members WHERE list_id = ? AND user_id = ?').pluck().get(list.id, forUserId) : undefined;
     db.transaction(() => {
       db.prepare('UPDATE lists SET type = ?, category_id = ?, for_user_id = ?, for_name = ?, priority_enabled = ?, updated_at = ? WHERE id = ?')
         .run('wishes', legacyCategoryId('wishes'), forUserId, forName, Number(priorityOn), now, list.id);
@@ -1296,6 +1303,9 @@ export function createListService(ctx) {
       share = ctx.shares?.stopForList(list.id) ?? null;
     })();
     ctx.events?.notifyList(list.id);
+    if (forUserId && accessBefore !== 'modification') {
+      ctx.notify?.sharing({ listId: list.id, userId: forUserId, actorId: user.id, kind: accessBefore === undefined ? 'added' : 'access' });
+    }
     ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: 'wishes' });
     if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste devenue liste d\'envies' });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };

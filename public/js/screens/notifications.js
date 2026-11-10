@@ -13,6 +13,15 @@
 // - « Envoyer une notification test » (activées seulement).
 // - En bas : ce que voient les services de notification (Apple, Google,
 //   Mozilla, Microsoft).
+//
+// Étape 2 : réglages du COMPTE (tous ses appareils ; fonction activée sur le
+// serveur seulement), en ligne seulement :
+// - « Notifications reçues » : Modifications des autres, Envies, Partage ;
+// - « Contenu » : « Afficher le détail dans la notification » (désactivé au
+//   départ ; sinon « Léa a modifié « Courses » », sans le nom des éléments).
+// Mêmes interrupteurs que « Nouveautés » (role="switch", aria-checked, titre
+// et description reliés) ; « Silencer cette liste » est dans le menu ⋮ de
+// chaque liste (list-actions.js).
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
 
 import { h, icon, replace } from '../dom.js';
@@ -21,7 +30,7 @@ import { goBack } from '../router.js';
 import { app } from '../app.js';
 import { toast } from '../ui.js';
 import { topbar } from './settings.js';
-import { deviceState, enablePush, disablePush, sendTestPush } from '../push.js';
+import { deviceState, enablePush, disablePush, sendTestPush, loadPushState, savePushSettings } from '../push.js';
 
 // Explication de chaque état (icône, texte, ton d'alerte)
 export const STATE_NOTES = {
@@ -33,6 +42,14 @@ export const STATE_NOTES = {
   on: ['check', 'Activées sur cet appareil.'],
   off: null,
 };
+// Réglages du compte : [clé, titre, description]
+export const KIND_ROWS = [
+  ['changes', 'Modifications des autres', 'Ajouts, modifications et coches dans vos listes partagées, regroupés.'],
+  ['wishes', 'Envies', 'Une réservation ou une participation à un cadeau, dans les listes d\'envies que vous voyez.'],
+  ['sharing', 'Partage', 'On vous ajoute à une liste, ou votre droit change.'],
+];
+export const DETAIL_ROW = ['detail', 'Afficher le détail dans la notification', 'Le nom des éléments, par exemple « Ajouté : Lait, Pain ». Désactivé : seulement qui a modifié quelle liste.'];
+export const ACCOUNT_NOTE = 'Ces réglages valent pour tous vos appareils.';
 export const PRIVACY_NOTE = 'Le contenu des notifications est chiffré : seul votre appareil peut le lire. Le service de notification de votre appareil (Apple, Google, Mozilla ou Microsoft) voit seulement l\'heure, la taille du message et l\'appareil qui le reçoit.';
 
 export function renderNotifications(onLeave = () => {}) {
@@ -60,9 +77,50 @@ export function renderNotifications(onLeave = () => {}) {
     } else replace(note);
   }
 
+  // --- Réglages du compte (catégories, détail) ---
+  let settings = null;
+  const switches = [...KIND_ROWS, DETAIL_ROW].map(([key, label, help]) => {
+    const toggle = h('button', {
+      class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,
+      'aria-labelledby': `notif-${key}-titre`, 'aria-describedby': `notif-${key}-aide`,
+    });
+    toggle.addEventListener('click', async () => {
+      if (!settings || toggle.disabled) return;
+      toggle.disabled = true;
+      try {
+        settings = await savePushSettings({ [key]: !settings[key] });
+      } catch (error) {
+        toast(errorMessage(error));
+      }
+      paintSettings();
+    });
+    const row = h('div', { class: 'toggle-row' },
+      h('div', { class: 'grow' },
+        h('span', { class: 'row__title', id: `notif-${key}-titre` }, label),
+        h('span', { class: 'row__sub', id: `notif-${key}-aide` }, help)),
+      toggle);
+    return { key, toggle, row };
+  });
+  const accountPart = h('div', { hidden: true },
+    h('h2', { class: 'section-title' }, 'Notifications reçues'),
+    h('div', { class: 'group list-options' }, switches.filter((s) => s.key !== 'detail').map((s) => s.row)),
+    h('h2', { class: 'section-title' }, 'Contenu'),
+    h('div', { class: 'group list-options' }, switches.filter((s) => s.key === 'detail').map((s) => s.row)),
+    h('div', { class: 'group-after' }, h('p', { class: 'muted' }, ACCOUNT_NOTE)));
+  function paintSettings() {
+    accountPart.hidden = !app.user.push;
+    for (const { key, toggle } of switches) {
+      toggle.setAttribute('aria-checked', String(Boolean(settings?.[key])));
+      toggle.disabled = !settings || !navigator.onLine;
+    }
+  }
+
   async function load() {
-    current = await deviceState(app.user);
+    const [state, server] = await Promise.all([deviceState(app.user), loadPushState(app.user)]);
+    current = state;
+    settings = server?.settings ?? null;
     paint();
+    paintSettings();
   }
 
   toggle.addEventListener('click', async () => {
@@ -126,5 +184,6 @@ export function renderNotifications(onLeave = () => {}) {
             h('span', { class: 'row__sub', id: 'notif-appareil-aide' }, 'Sur ce téléphone ou cet ordinateur seulement.')),
           toggle)),
       // Sous la carte : état expliqué, notification test, confidentialité
-      h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, PRIVACY_NOTE))));
+      h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, PRIVACY_NOTE)),
+      accountPart));
 }

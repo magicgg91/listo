@@ -189,6 +189,12 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
     remove: db.prepare('DELETE FROM push_subscriptions WHERE session_id = ?'),
     takeOver: db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ? OR session_id = ?'),
     insert: db.prepare('INSERT INTO push_subscriptions (user_id, session_id, endpoint, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?, ?)'),
+    // Adresse déjà connue d'un AUTRE compte, dont la session est encore
+    // valable (compte actif) : elle n'est pas reprise
+    ownerOf: db.prepare(`SELECT push_subscriptions.user_id FROM push_subscriptions
+      JOIN users ON users.id = push_subscriptions.user_id AND users.active = 1
+      JOIN sessions ON sessions.id = push_subscriptions.session_id AND sessions.expires_at > ?
+      WHERE push_subscriptions.endpoint = ?`).pluck(),
     // Au-delà de 10 appareils, les plus anciens laissent leur place
     trim: db.prepare(`DELETE FROM push_subscriptions WHERE user_id = :userId AND id NOT IN (
       SELECT id FROM push_subscriptions WHERE user_id = :userId ORDER BY created_at DESC, id DESC LIMIT :max)`),
@@ -214,31 +220,39 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
     return value;
   }
 
-  // File d'envoi : 4 envois simultanés au plus ; idle() attend la fin
-  const waiting = [];
-  let running = 0;
-  let idleWaiters = [];
-  function pump() {
-    while (running < CONCURRENCY && waiting.length) {
-      const job = waiting.shift();
-      running += 1;
-      job().finally(() => {
-        running -= 1;
-        pump();
-        if (!running && !waiting.length) {
-          for (const resolve of idleWaiters) resolve();
-          idleWaiters = [];
-        }
-      });
+  // Files d'envoi : 4 envois simultanés au plus par file ; idle() attend la
+  // fin. Deux files séparées : les notifications des listes d'envies
+  // (réservations) ont la leur, pour qu'une réservation ne puisse jamais
+  // retarder, même d'un instant, ce qu'un bénéficiaire reçoit par ailleurs.
+  function createQueue() {
+    const waiting = [];
+    let running = 0;
+    let idleWaiters = [];
+    function pump() {
+      while (running < CONCURRENCY && waiting.length) {
+        const job = waiting.shift();
+        running += 1;
+        job().finally(() => {
+          running -= 1;
+          pump();
+          if (!running && !waiting.length) {
+            for (const resolve of idleWaiters) resolve();
+            idleWaiters = [];
+          }
+        });
+      }
     }
+    return {
+      enqueue: (job) => new Promise((resolve) => {
+        waiting.push(() => job().then(resolve, () => resolve('failed')));
+        pump();
+      }),
+      idle: () => (running || waiting.length ? new Promise((resolve) => idleWaiters.push(resolve)) : Promise.resolve()),
+    };
   }
-  function enqueue(job) {
-    return new Promise((resolve) => {
-      waiting.push(() => job().then(resolve, () => resolve('failed')));
-      pump();
-    });
-  }
-  const idle = () => (running || waiting.length ? new Promise((resolve) => idleWaiters.push(resolve)) : Promise.resolve());
+  const queues = { main: createQueue(), wishes: createQueue() };
+  const enqueue = (job) => queues.main.enqueue(job);
+  const idle = () => Promise.all([queues.main.idle(), queues.wishes.idle()]);
 
   // Envoie un message à UN abonnement. Renvoie 'sent', 'expired' (effacé),
   // 'refused' (le service a refusé), 'failed' (pas de réponse) ou 'gone'
@@ -286,12 +300,16 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
     publicKey: keys.publicKey,
 
     // Abonne l'appareil de cette session (remplace son abonnement précédent ;
-    // une adresse déjà connue change de session). Renvoie null si
-    // l'abonnement est refusé.
+    // une adresse déjà connue du MÊME compte change de session). Renvoie
+    // null si l'abonnement est refusé, 'taken' si l'adresse appartient à un
+    // autre compte encore connecté (il garde ses notifications : jamais un
+    // compte ne peut retirer celles d'un autre en envoyant son adresse).
     subscribe(user, sessionId, body) {
       const endpoint = checkEndpoint(body?.endpoint);
       const keysOk = checkKeys(body?.keys);
       if (!endpoint || !keysOk) return null;
+      const owner = q.ownerOf.get(nowIso(), endpoint);
+      if (owner !== undefined && owner !== user.id) return 'taken';
       db.transaction(() => {
         q.takeOver.run(endpoint, sessionId);
         q.insert.run(user.id, sessionId, endpoint, keysOk.p256dh, keysOk.auth, nowIso());
@@ -323,9 +341,16 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
       return enqueue(() => deliver(sub.id, message, { ttl: 300 }));
     },
 
-    // Envoie un message à tous les appareils d'un compte (étapes suivantes)
-    sendToUser(userId, message, options) {
-      return Promise.all(q.ofUser.all(userId).map((id) => enqueue(() => deliver(id, message, options))));
+    // Ce compte a-t-il au moins un appareil abonné ?
+    hasDevices(userId) {
+      return q.ofUser.all(userId).length > 0;
+    },
+
+    // Envoie un message à tous les appareils d'un compte. options.queue :
+    // 'wishes' pour les réservations (file à part), sinon la file commune.
+    sendToUser(userId, message, { queue = 'main', ...options } = {}) {
+      const target = queues[queue] ?? queues.main;
+      return Promise.all(q.ofUser.all(userId).map((id) => target.enqueue(() => deliver(id, message, options))));
     },
 
     idle,

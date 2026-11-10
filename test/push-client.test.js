@@ -125,3 +125,21 @@ test('écran Notifications : états expliqués en clair, interrupteur accessible
   assert.ok(bell(read('public/index.html')));
   assert.equal(bell(read('public/index.html')), bell(read('design/icons-sprite.html')));
 });
+
+test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage, détail) et « Silencer cette liste » dans le menu', () => {
+  const screen = read('public/js/screens/notifications.js');
+  assert.match(screen, /\['changes', 'Modifications des autres', /);
+  assert.match(screen, /\['wishes', 'Envies', /);
+  assert.match(screen, /\['sharing', 'Partage', /);
+  assert.match(screen, /\['detail', 'Afficher le détail dans la notification', /);
+  assert.match(screen, /'Ces réglages valent pour tous vos appareils\.'/);
+  // Interrupteurs accessibles ; inactifs hors ligne ou avant la lecture du serveur
+  assert.match(screen, /class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,\s*'aria-labelledby': `notif-\$\{key\}-titre`, 'aria-describedby': `notif-\$\{key\}-aide`,/);
+  assert.match(screen, /toggle\.disabled = !settings \|\| !navigator\.onLine;/);
+  // Menu ⋮ : seulement si la fonction est activée sur le serveur
+  const menu = read('public/js/screens/list-actions.js');
+  assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
+  assert.match(menu, /label: 'Silencer cette liste'/);
+  assert.match(menu, /label: 'Ne plus silencer cette liste'/);
+  assert.match(read('public/sw.js'), /const VERSION = `v76-/);
+});

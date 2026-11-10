@@ -36,6 +36,7 @@ import { fetchClientMetadata } from './oauth-clients.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
+import { createNotifier } from './notify.js';
 import { pushRoutes } from './routes/push.js';
 import { generateVapidKeys } from './webpush.js';
 
@@ -162,6 +163,8 @@ export function createApp({
   // Coupées : aucun service, aucune clé, aucune demande sortante.
   ctx.push = config.push ? createPushService(ctx, { keys: vapidKeys ?? generateVapidKeys(), request: pushRequest }) : null;
   ctx.pushCounters = [];
+  // Qui reçoit quoi (modifications, envies, partage ; voir notify.js)
+  ctx.notify = ctx.push ? createNotifier(ctx) : null;
   // Identifiant opaque de la version installée (null en développement) : le
   // téléphone le compare à celui de son code pour savoir s'il doit recharger
   // la page (voir public/js/freshness.js). Jamais le commit lui-même.
@@ -337,6 +340,7 @@ export function createApp({
     ctx.oauth.purge();           // autorisations Claude : demandes, codes, jetons expirés
     mcp?.prune();                // compteurs d'appels de /mcp
     for (const counter of ctx.pushCounters) counter.prune(); // notifications : compteurs de demandes
+    ctx.notify?.prune();         // notifications : plafonds par heure
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);
@@ -347,6 +351,7 @@ export function createApp({
   ctx.stop = () => {
     clearInterval(cleanupTimer);
     ctx.backups.stop();
+    ctx.notify?.stop();
     ctx.events.closeAll();
   };
 

@@ -344,6 +344,14 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. **Ordinateur** (Chrome, Firefox, Edge et Safari sur Mac) : même parcours ; la notification apparaît dans le centre de notifications du système ; la toucher ramène la fenêtre de Listo au premier plan sur le bon écran.
     5. **Désactiver** l'interrupteur, puis « Envoyer une notification test » n'est plus proposé ; un autre appareil du même compte, resté activé, reçoit toujours sa propre notification test. **Se déconnecter** de Listo sur un appareil : il ne reçoit plus rien (se reconnecter puis réactiver l'interrupteur, sans nouvelle demande d'autorisation).
     6. **Journaux** (`docker logs listo`) : « Notifications push activées. Clés créées : /secrets/vapid.json » au premier démarrage, « chargées » ensuite ; jamais une adresse d'abonnement ni une clé. Sans `LISTO_PUSH=on` : l'écran dit « Les notifications sont désactivées sur ce serveur Listo », aucun fichier `secrets/vapid.json`.
+44. **Notifications push, étape 2** (trois comptes A, B, C sur trois appareils, notifications activées ; une liste de courses de A partagée avec B et C ; une liste d'envies « Noël de C » créée par A pour le compte de C, partagée avec B) :
+    1. B ajoute deux articles et en coche un, en moins d'une minute : A et C reçoivent UNE notification environ une minute plus tard (« B a modifié « Courses » », « 3 changements ») ; B ne reçoit rien. Une nouvelle série remplace la notification précédente (même liste).
+    2. A ouvre la liste (écran allumé) pendant que B ajoute : A ne reçoit pas de notification pour ce qu'il a vu.
+    3. A active « Afficher le détail » : la suivante nomme les articles (« Ajouté : Lait, Pain · Coché : Lait »), et rien ne s'affiche en clair chez Apple ou Google (seul l'appareil déchiffre).
+    4. A coupe « Modifications des autres », puis « Silencer cette liste » sur une autre liste : plus rien de ces listes ni de cette catégorie ; réactivées, elles reviennent.
+    5. A partage une nouvelle liste avec C en lecture seule : C reçoit « A vous a ajouté à … », « En lecture seule. » ; A passe C en « Peut modifier » : « Votre droit … a changé ».
+    6. **Envies** : B réserve un souhait de « Noël de C », puis une personne sans compte réserve par le lien public : A reçoit les deux, C ne reçoit RIEN (ni pendant, ni après, ni écran verrouillé, ni dans le centre de notifications, ni sur un autre de ses appareils). B ajoute un souhait dans « Noël de C » : A reçoit « B a modifié « Noël de C » », C rien.
+    7. Toucher chaque notification ouvre Listo sur la liste concernée.
 
 ## API des comptes (étape 2)
 

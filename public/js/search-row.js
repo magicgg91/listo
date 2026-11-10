@@ -26,7 +26,10 @@ import { releaseFocus } from './ui.js';
 // onChange(texte) : le texte cherché a changé ; onActive(actif) : le champ
 // sert (curseur dedans ou texte tapé) ou ne sert plus ; status : élément
 // gardé juste sous le champ (nombre de résultats annoncé), ou rien.
-export function createSearchRow(content, { label, onChange, onActive = () => {}, status = null }) {
+// docked (ordinateur) : le champ n'est pas dans la zone qui défile ; il est
+// toujours visible, posé par l'écran dans son en-tête (propriété field), et
+// Échap le vide puis le quitte.
+export function createSearchRow(content, { label, onChange, onActive = () => {}, status = null, docked = false, placeholder = label }) {
   const input = h('input', {
     class: 'searchfield__input',
     type: 'search',
@@ -35,7 +38,7 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     autocapitalize: 'off',
     spellcheck: 'false',
     maxlength: '100',
-    placeholder: label,
+    placeholder,
     'aria-label': label,
   });
   // Croix « Effacer la saisie » : un appui ne retire pas le curseur du champ
@@ -48,8 +51,8 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     onMousedown: keepFieldFocus.mousedown,
     onClick: () => clear(),
   }, icon('x-circle'));
-  const row = h('div', { class: 'searchrow', hidden: true },
-    h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton));
+  const field = h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton);
+  const row = h('div', { class: 'searchrow', hidden: true }, docked ? null : field);
   // Marge invisible en bas (liste courte), toujours le dernier élément
   const room = h('div', { class: 'searchroom', 'aria-hidden': 'true' });
 
@@ -78,6 +81,13 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
   input.addEventListener('blur', updateActive);
   // Touche « rechercher » (Entrée) : ferme le clavier, garde le texte
   input.addEventListener('keydown', (event) => {
+    // Ordinateur : Échap vide le champ, puis (déjà vide) le quitte
+    if (docked && event.key === 'Escape') {
+      event.preventDefault();
+      if (input.value !== '') clear();
+      else releaseFocus();
+      return;
+    }
     if (event.key !== 'Enter') return;
     event.preventDefault();
     releaseFocus();
@@ -95,7 +105,7 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
 
   // Hauteur de la marge du bas : juste de quoi défiler de la hauteur du champ
   function updateRoom() {
-    if (row.hidden) {
+    if (row.hidden || docked) {
       room.style.height = '0px';
       return;
     }
@@ -114,7 +124,7 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
   // zone est affichée avec quelque chose à chercher)
   let hiddenOnce = false;
   function hideOnce() {
-    if (hiddenOnce || row.hidden) return;
+    if (hiddenOnce || row.hidden || docked) return;
     if (!content.isConnected) {
       requestAnimationFrame(hideOnce); // écran pas encore posé
       return;
@@ -125,6 +135,8 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
   }
 
   return {
+    // Le champ (ordinateur : à poser dans l'en-tête de l'écran)
+    field,
     // Le texte cherché
     get value() { return input.value; },
     // Le champ sert : curseur dedans ou texte tapé
@@ -138,6 +150,12 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     // et son curseur ; la marge reste à la fin). available : faux quand il
     // n'y a rien à chercher (chargement, liste vide ou introuvable).
     show(nodes, { available = true } = {}) {
+      // Ordinateur : le champ reste dans l'en-tête ; la zone ne montre que
+      // le contenu (et l'élément d'état, s'il y en a un)
+      if (docked) {
+        content.replaceChildren(...[status, nodes].flat(Infinity).filter((node) => node !== null && node !== undefined && node !== false));
+        return;
+      }
       row.hidden = !available;
       // Le champ (et l'élément gardé sous lui) restent en place, sans être
       // déplacés : la saisie, le curseur et les annonces ne sont pas perdus.

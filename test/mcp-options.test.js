@@ -109,5 +109,5 @@ test('descriptions et instructions : ce que Claude peut faire, exactement ; read
   // Plus d'outil set_item_options : update_items fait la même chose en plus large
   assert.equal(byName.set_item_options, undefined);
   assert.deepEqual(byName.update_items.inputSchema.properties.items.items.properties.priority.enum, ['low', 'normal', 'high']);
-  assert.match(read('public/sw.js'), /const VERSION = `v6[4-9]-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v(6[4-9]|[7-9]\d|\d{3,})-/);
 });

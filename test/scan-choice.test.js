@@ -84,7 +84,7 @@ test('tous les points d\'entrée utilisent le même composant', () => {
   assert.match(list, /photoArea, photoNote, photoPicker\.input\)/);
   assert.match(list, /eanStatus, eanTwin, eanPicker\.input\)/);
   assert.match(scan, /return \{ button, inputs: \[picker\.input\] \};/);
-  assert.match(list, /h\('div', \{ class: 'addbar' \}, suggestBox, addForm, scanner\.inputs\)/);
+  assert.match(list, /h\('div', \{ class: pc \? 'pc-add' : 'addbar' \}, suggestBox, addForm, scanner\.inputs\)/);
 });
 
 test('fichier qui n\'est pas une image : refusé avant toute lecture', async () => {

@@ -14,7 +14,8 @@ import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
 import { renderTrash } from './screens/trash.js';
-import { renderLists, renderSidePanel } from './screens/lists.js';
+import { renderLists } from './screens/lists.js';
+import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm } from './screens/list-form.js';
 import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
@@ -459,33 +460,65 @@ onSessionProblem({
 
 // --- Mise en page ---
 
+// Ordinateur (à partir de 1 024 px de large) : interface en deux zones
+// (design/maquettes/pc-A), classe app--pc sur .app. En dessous, l'interface
+// du téléphone, inchangée. Passage de l'une à l'autre (fenêtre
+// redimensionnée, tablette tournée) : le même écran est redessiné (la liste
+// ouverte reste ouverte), les fenêtres ouvertes se ferment.
 const root = document.getElementById('app');
 const desktop = window.matchMedia('(min-width: 1024px)');
-desktop.addEventListener('change', () => show(app.route));
 export const isDesktop = () => desktop.matches;
+const markLayout = () => root.classList.toggle('app--pc', isDesktop());
+markLayout();
+desktop.addEventListener('change', () => {
+  markLayout();
+  show(app.route);
+});
 
 let cleanup = [];   // fonctions à appeler en quittant l'écran (désabonnements)
 
-// Affiche un écran. withSide : colonne « Mes listes » à gauche sur ordinateur.
-function mount(screen, { withSide = true, selectedListId = null } = {}) {
+// Menu de gauche de l'ordinateur : créé une fois et gardé d'un écran à
+// l'autre (recherche et défilement conservés) ; refait si le compte change
+// (autre compte, nom modifié), retiré sur téléphone et hors connexion
+let pcSide = null;
+let pcSideOwner = '';
+function dropPcSide() {
+  pcSide?.dispose();
+  pcSide = null;
+  pcSideOwner = '';
+}
+function pcSideFor(route) {
+  const owner = JSON.stringify([app.user?.id, app.user?.displayName, app.user?.role]);
+  if (pcSide && owner !== pcSideOwner) dropPcSide();
+  if (!pcSide) {
+    pcSide = createPcSide();
+    pcSideOwner = owner;
+  }
+  pcSide.select(route);
+  return pcSide.el;
+}
+
+// Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
+// l'écran de connexion, par exemple). wide : colonne large (ordinateur).
+function mount(screen, { withSide = true, wide = false } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
-  const col = h('div', { class: 'shell__col' });
+  const pc = Boolean(app.user) && withSide && isDesktop();
+  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}` : 'shell__col' });
   setOverlayHost(col);
   const content = typeof screen === 'function' ? screen((fn) => cleanup.push(fn)) : screen;
   replace(col, content);
   currentCol = col;
   placeBanner();
 
-  if (app.user && withSide && isDesktop()) {
-    const side = h('aside', { class: 'shell__side', 'aria-label': 'Mes listes' });
-    cleanup.push(renderSidePanel(side, selectedListId));
-    replace(root, h('div', { class: 'shell' }, side, h('main', { class: 'shell__main' }, col)));
-  } else {
-    replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
+  if (pc) {
+    replace(root, h('div', { class: 'pc pc--a' }, pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
+    return;
   }
+  dropPcSide();
+  replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
 }
 
 // Choisit l'écran à afficher pour une adresse
@@ -523,9 +556,9 @@ function show(route) {
 
   switch (name) {
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
-    case 'list': mount((onLeave) => renderList(params.id, onLeave), { selectedListId: params.id }); break;
+    case 'list': mount((onLeave) => renderList(params.id, onLeave)); break;
     case 'newList': mount((onLeave) => renderListForm(null, onLeave)); break;
-    case 'editList': mount((onLeave) => renderListForm(params.id, onLeave), { selectedListId: params.id }); break;
+    case 'editList': mount((onLeave) => renderListForm(params.id, onLeave)); break;
     case 'settings': mount(() => renderSettings()); break;
     case 'account': mount((onLeave) => renderAccount(onLeave)); break;
     case 'password': mount(() => renderPassword()); break;

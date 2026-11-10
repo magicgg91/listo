@@ -1,8 +1,9 @@
-// Écran « Mes listes » (maquettes mes-listes-1 à 3) et colonne de gauche de
-// la version ordinateur (bureau-1) : une carte par liste, la plus récemment
-// active en premier, et le bouton « Nouvelle liste ».
+// Écran « Mes listes » (maquettes mes-listes-1 à 3 ; ordinateur :
+// design/maquettes/pc-A, capture 01) : une carte par liste, la plus
+// récemment active en premier, et le bouton « Nouvelle liste ».
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
+import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton, newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
@@ -164,6 +165,7 @@ function sortControl(onChange) {
 // --- Écran « Mes listes » (téléphone) ---
 
 export function renderLists(onLeave) {
+  if (isDesktop()) return renderListsPc(onLeave);
   const content = h('div', { class: 'scroll' });
   const sorter = sortControl(() => draw());
   const fab = h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste');
@@ -185,15 +187,6 @@ export function renderLists(onLeave) {
     if (!app.data.loaded) {
       search.show(loading(), { available: false });
       return;
-    }
-    // Sur ordinateur, la colonne de gauche montre déjà les listes : on ouvre
-    // directement la plus récente
-    if (isDesktop()) {
-      const recent = computeSummaries(app.data);
-      if (recent.length) {
-        navigate('list', { id: recent[0].id }, { replace: true });
-        return;
-      }
     }
     const lists = computeSummaries(app.data, { sort: currentSort() });
     sorter.setCount(lists.length);
@@ -247,42 +240,98 @@ export function renderLists(onLeave) {
     fab);
 }
 
-// --- Colonne de gauche (ordinateur) ---
-// Renvoie la fonction de désabonnement.
-
-export function renderSidePanel(side, selectedListId) {
-  const cards = h('div', { class: 'scroll' });
+// --- Écran « Mes listes » (ordinateur, design/maquettes/pc-A, capture 01) ---
+// En-tête : titre, « 6 listes · 4 partagées », champ « Rechercher une
+// liste » toujours visible ; outils : filtre par type (Toutes, Courses,
+// Tâches, Envies), pastille d'état, tri ; puis les cartes, groupées par type
+// sur deux colonnes (ou plus, selon la largeur). « Nouvelle liste » est dans
+// le menu de gauche. Filtre, tri et recherche : une simple vue sur la copie
+// locale (ni données, ni file d'attente touchées).
+let pcFilter = 'all';
+function renderListsPc(onLeave) {
+  const content = h('div', { class: 'scroll' });
   const sorter = sortControl(() => draw());
+  const sub = h('p', { class: 'pc-head__sub' });
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const search = createSearchRow(content, { label: 'Rechercher une liste', onChange: () => draw(), docked: true });
+
+  // Filtre par type : un choix exclusif (radiogroup), « Toutes » au départ
+  const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
+  const filterButtons = filters.map(([value, label]) => h('button', {
+    class: 'segmented__opt',
+    type: 'button',
+    role: 'radio',
+    'data-value': value,
+    onClick: () => {
+      pcFilter = value;
+      draw();
+    },
+  }, label));
+  const filterBar = h('div', { class: 'segmented pc-filter', role: 'radiogroup', 'aria-label': 'Afficher' }, filterButtons);
+
   const draw = () => {
+    for (const button of filterButtons) button.setAttribute('aria-checked', String(button.dataset.value === pcFilter));
     if (!app.data.loaded) {
-      replace(cards, loading());
+      search.show(loading());
       return;
     }
     const lists = computeSummaries(app.data, { sort: currentSort() });
     sorter.setCount(lists.length);
-    replace(cards, lists.length
-      ? h('div', { class: 'cards cards--side' }, lists.map((list) => listCard(list, { selected: list.id === selectedListId })))
-      : h('p', { class: 'empty__text muted side-empty' }, 'Aucune liste pour le moment.'));
+    pruneListMemory(lists.map((list) => list.id));
+    const shared = lists.filter((list) => list.members.filter((m) => m.active || m.isOwner).length > 1).length;
+    sub.textContent = lists.length ? `${listsLabel(lists.length)} · ${shared} ${shared > 1 ? 'partagées' : 'partagée'}` : '';
+    if (!lists.length) {
+      searchMeta.textContent = '';
+      search.show(emptyLists());
+      return;
+    }
+    const query = search.value;
+    const searching = isSearching(query);
+    const found = (searching ? filterLists(lists, query) : lists).filter((list) => pcFilter === 'all' || typeOf(list) === pcFilter);
+    searchMeta.textContent = searching ? listsLabel(found.length) : '';
+    if (!found.length) {
+      search.show(searching ? noListsPc(query, search) : h('div', { class: 'empty' },
+        h('h2', { class: 'empty__title' }, 'Aucune liste de ce type'),
+        h('p', { class: 'empty__text' }, 'Choisissez « Toutes » pour voir toutes vos listes.')));
+      return;
+    }
+    search.show(LIST_TYPES.map((type) => {
+      const ofType = found.filter((list) => typeOf(list) === type);
+      if (!ofType.length) return null;
+      return h('section', {},
+        h('h2', { class: 'pc-section-title' }, TYPE_LABELS[type]),
+        h('div', { class: 'pc-cards' }, ofType.map((list) => listCard(list, { query: searching ? query : '' }))));
+    }));
   };
-  const idle = drawWhenIdle(cards, draw);
-  const unsubscribe = onDataChange(idle.request);
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
   draw();
+  refreshData({ quiet: true });
 
-  replace(side,
-    h('div', { class: 'side-head' },
-      h('div', { class: 'brand-mark brand-mark--sm', 'aria-hidden': 'true' }, icon('logo')),
-      h('p', { class: 'side-head__name' }, 'Listo'),
-      sorter.button,
-      iconButton('sliders', 'Réglages', () => navigate('settings'))),
+  return h('div', { class: 'screen' },
+    h('header', { class: 'pc-head' },
+      h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, 'Mes listes'), sub),
+      search.field),
+    h('div', { class: 'pc-tools' },
+      filterBar,
+      searchMeta,
+      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sorter.button)),
     sorter.status,
-    h('div', { class: 'statusbar statusbar--side' },
-      h('h2', { class: 'side-title' }, 'Mes listes'),
-      syncPill(() => refreshData({ full: true }))),
-    cards,
-    h('div', { class: 'side-foot' },
-      h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste')));
-  return () => {
-    unsubscribe();
-    idle.stop();
-  };
+    content);
+}
+
+// Aucune liste trouvée (ordinateur) : message et « Effacer la recherche »
+function noListsPc(query, search) {
+  return h('div', { class: 'empty' },
+    h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
+    h('h2', { class: 'empty__title' }, 'Aucun résultat'),
+    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} ».`),
+    h('button', {
+      class: 'btn btn--secondary',
+      type: 'button',
+      onPointerdown: search.keepFocus.pointerdown,
+      onMousedown: search.keepFocus.mousedown,
+      onClick: () => search.clear(),
+    }, 'Effacer la recherche'));
 }

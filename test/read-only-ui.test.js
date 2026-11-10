@@ -76,7 +76,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| search\.focused;/);
   assert.match(list, /scanner\.button\.hidden = !canEdit \|\| !scanAvailable\(list\);/);
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
-  assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\)\), item, meta\);\s*const slide/);
+  assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\), pc \? reserveButton\(item\) : null\), item, meta\);\s*const slide/);
   // Case visible mais inactive (comme la page publique) ; cochée = remplie ET barrée (.is-done)
   assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': isWishList\(view\?\.list\) \? \(item\.checked \? 'Reçu' : 'Pas encore reçu'\) : item\.checked \? 'Coché' : 'Non coché' \}/);
   assert.match(list, /'aria-label': `\$\{canEdit \? 'Modifier' : 'Voir'\} \$\{item\.name\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);

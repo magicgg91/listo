@@ -201,14 +201,19 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   const settings = read('public/js/screens/settings.js');
   assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
   const pc = settings.slice(settings.indexOf('function renderSettingsPc'), settings.indexOf('export function keysRow'));
+  const code = settings.replace(/\/\/.*$/gm, ''); // sans les commentaires
   // Ordre des cartes : Compte, Clavier, Administration (Admin), Notifications, Listes, Aide, À propos
   const order = [...pc.matchAll(/section\('([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual(order, ['Compte', 'Clavier', 'Administration', 'Notifications', 'Listes', 'Aide', 'À propos']);
   assert.match(pc, /section\('Clavier', h\('div', \{ class: 'group' \}, keysRow\(\)\)\),/);
   assert.match(pc, /isAdmin \? section\('Administration',/);
   assert.match(pc, /title: 'Raccourcis clavier'/);
+  // Même libellé que le téléphone pour l'aide ; pas de phrase sous « Administration » (décisions du 10 novembre 2026)
+  const helpRow = "row({ iconName: 'book', title: 'Aide', sub: 'Mode d\\'emploi de Listo', onClick: () => navigate('help') })";
+  assert.ok(pc.includes(helpRow), 'ordinateur : « Aide »');
+  assert.ok(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')).includes(helpRow), 'téléphone : la même ligne');
+  assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
   // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
-  const code = settings.replace(/\/\/.*$/gm, ''); // sans les commentaires
   assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');

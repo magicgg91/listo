@@ -125,12 +125,11 @@ function renderSettingsPc() {
       roleChip(user), icon('chev-r')))),
       section('Clavier', h('div', { class: 'group' }, keysRow())),
       isAdmin ? section('Administration',
-        h('p', { class: 'pc-settings__hint' }, 'Visible seulement pour les comptes Admin.'),
         h('div', { class: 'group' }, row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) }))) : null,
       section('Notifications', h('div', { class: 'group' }, notificationsRow())),
       section('Listes', h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') }))),
       section('Aide', h('div', { class: 'group' },
-        row({ iconName: 'book', title: 'Guide d\'utilisation', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
+        row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
         row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }))),
       section('À propos', aboutGroup(isAdmin)),
       h('div', {}, h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => logOut() }, icon('logout', 'icon--sm'), 'Se déconnecter')))));

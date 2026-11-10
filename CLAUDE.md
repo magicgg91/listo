@@ -43,6 +43,23 @@ Si le cahier des charges et les maquettes se contredisent, ne pas trancher seul 
 - Listes d'envies : une réservation n'est jamais transmise au bénéficiaire, sous aucune forme (lecture, synchronisation, temps réel, copie locale, Nouveautés, journal, Claude, page publique avec sa session, messages d'erreur) ; le filtrage est fait côté serveur, et un test compare ce que reçoit le bénéficiaire avant et après une réservation, y compris par un visiteur.
 - Avec LISTO_MCP=on, /.well-known/…, /oauth/… (autorisation pour Claude) et /mcp (étape B) sont aussi accessibles sans session. Mêmes règles : réponses construites champ par champ, jetons jamais écrits en clair en base ni dans les journaux, expiration et révocation contrôlées par le serveur à chaque requête, contenu des listes présenté à Claude comme des données et jamais comme des instructions. Désactivé (par défaut), toutes ces adresses répondent 404.
 
+## Décisions de novembre 2026 (interface ordinateur, notifications, documentation)
+
+Contexte et historique : `docs/passation-2026-11.md` (passation d'une conversation claude.ai ; ne remplace pas les documents de référence).
+
+- Rangement des réglages : identique sur téléphone et ordinateur. Thème, Connexions Claude et Sécurité dans « Mon compte » ; Nouveautés et notifications dans Réglages › Notifications (« Dans l'application » puis « Sur cet appareil »). Seuls « Clavier » et « Raccourcis clavier » sont propres à l'ordinateur ; « Cet appareil » remplace « Ce téléphone » sur ordinateur seulement (décisions du 10 novembre 2026).
+- Deux sourdines par liste, indépendantes : nouveautés (`list_reads.muted`) et notifications (`push_list_mutes`). Ne pas les fusionner.
+- Notifications push : facultatives, `LISTO_PUSH=on`, désactivées par défaut (troisième exception à « aucune donnée envoyée ailleurs que sur votre serveur »). Clés dans `secrets/vapid.json` (à sauvegarder avec la clé secrète), sujet VAPID = `LISTO_PUBLIC_URL`, jamais un e-mail. Seuls les services de push de la liste fermée dans `server/push.js` sont appelés (https, sans IP, sans redirection).
+- Notifications et envies (en plus de la règle « Listes d'envies » ci-dessus) : le bénéficiaire ne reçoit jamais rien issu d'une réservation ni des ajouts des autres dans sa liste, seulement le partage. Les destinataires d'une réservation viennent de `server/reservations.js` (seul lecteur des réservations) ; file d'envoi à part ; le test « identique avec ou sans réservation » doit rester vert.
+- Aucun message push silencieux ; contenu neutre par défaut, détail au choix de la personne ; 30 notifications par personne et par heure.
+- Documentation : source unique `public/js/help-content.js`, numéros calculés (jamais à la main) ; régénérer `docs/guide.md` et `site/` avec `node scripts/guide.js`, puis passer `node scripts/doc-links.js`. Tout nouveau paramètre de configuration figure dans le tableau du guide et dans les exemples de compose (test `compose-params`). `LISTO_MCP=on` n'est jamais écrit dans `docker-compose.yml` (décision du 31 octobre 2026).
+- Interface ordinateur : à partir de 1 024 px (`app--pc`) ; le téléphone ne change jamais (captures avant/après identiques au pixel près, chaque différence expliquée). Raccourcis à une touche désactivables, jamais pendant la saisie, et seulement si le bouton existe pour le rôle.
+- Curseur automatique : interdit, sauf après un geste explicite dont le but est d'écrire (loupe de l'aide, touches `/` et `A`) ; voir `test/focus.test.js`.
+- MCP : deux niveaux seulement (lecture ; lecture et écriture, qui inclut `update_items`) ; `lists:edit` traité comme l'écriture, jamais stocké ; rayon ou magasin inconnu = refus de tout l'appel ; aucune donnée de réservation.
+- Service worker : incrémenter la version (`public/sw.js`) à chaque changement de fichier servi ; ajouter les nouveaux fichiers à `APP_FILES`.
+- Ne jamais annoncer un test ou une vérification non faite ; dire ce qui exige de vrais appareils. Annonces de nouveautés pour les proches : courtes, phrases simples, sans détail technique.
+- Relecture de sécurité : Claude Code relit lui-même chaque PR sous l'angle de la sécurité avant de la proposer, et dit au propriétaire ce qu'il a trouvé et quoi en faire (décision du 10 novembre 2026).
+
 ## Dépôt
 
 - Branche par défaut : `main`. Le propriétaire fusionne lui-même, toujours.

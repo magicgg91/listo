@@ -105,6 +105,20 @@ async function copy(text, done) {
 const lastKnown = new Map();
 
 export function openShareSheet(list) {
+  const part = linkPart(list, () => sheet.close());
+  const sheet = openSheet({
+    title: 'Partager par lien',
+    content: part.body,
+    scroll: true,
+    onClose: part.dispose,
+  });
+  part.start();
+}
+
+// Contenu « lien public » (feuille du téléphone, ou section du panneau
+// « Partager la liste » sur ordinateur). close() ferme la fenêtre qui le
+// contient. Renvoie { body, start(), dispose() }.
+export function linkPart(list, close) {
   const url = `/api/lists/${encodeURIComponent(list.id)}/share`;
   const body = h('div', { class: 'stack' }, h('p', { class: 'muted' }, 'Chargement…'));
   let share = lastKnown.get(list.id) ?? null; // état du lien selon le serveur
@@ -118,18 +132,12 @@ export function openShareSheet(list) {
   const onOffline = () => draw();
   window.addEventListener('online', onOnline);
   window.addEventListener('offline', onOffline);
-
-  const { close } = openSheet({
-    title: 'Partager par lien',
-    content: body,
-    scroll: true,
-    onClose: () => {
-      closed = true;
-      password = null; // le mot de passe n'est gardé nulle part
-      window.removeEventListener('online', onOnline);
-      window.removeEventListener('offline', onOffline);
-    },
-  });
+  const dispose = () => {
+    closed = true;
+    password = null; // le mot de passe n'est gardé nulle part
+    window.removeEventListener('online', onOnline);
+    window.removeEventListener('offline', onOffline);
+  };
 
   async function load() {
     if (!navigator.onLine) return draw();
@@ -322,5 +330,6 @@ export function openShareSheet(list) {
     ];
   }
 
-  load(); // tout est prêt : premier affichage
+  // load() : premier affichage, une fois la fenêtre ouverte
+  return { body, start: () => load(), dispose };
 }

@@ -205,182 +205,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 3. Claude ============
-  {
-    id: 'claude',
-    title: 'MCP Claude',
-    sections: [
-      {
-        id: 'claude-quoi',
-        title: 'À quoi ça sert',
-        blocks: [
-          'Claude est l\'assistant d\'Anthropic (claude.ai, l\'application mobile, Claude Desktop, Claude Code). Une fois connecté à Listo, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.',
-          'Claude agit avec votre compte et vos droits, jamais plus : ce qu\'il ajoute apparaît à votre nom, comme si vous l\'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées.',
-          'Cet accès n\'existe que si la personne qui gère le serveur l\'a activé ([[claude-activation]]). Sinon, la section « Claude » n\'apparaît pas dans « Mon compte ».',
-        ],
-      },
-      {
-        id: 'claude-phrases',
-        title: 'Exemples de phrases',
-        blocks: [
-          { ul: [
-            'Lire : “Quelles sont mes listes Listo ?”, “Qu\'y a-t-il dans la liste Courses ?”.',
-            'Ajouter, avec un rayon : “Ajoute des tomates au rayon fruits et légumes dans Courses.”',
-            'Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”',
-            'Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”',
-            'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
-            'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
-            'Ranger : “Range le lait au rayon crèmerie.”',
-          ] },
-          'Claude lit d\'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.',
-        ],
-      },
-      {
-        id: 'claude-niveaux',
-        title: 'Deux niveaux d\'accord',
-        blocks: [
-          'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
-          { ul: [
-            '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
-            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.',
-          ] },
-          'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
-        ],
-      },
-      {
-        id: 'claude-jamais',
-        title: 'Ce que Claude ne peut jamais faire',
-        blocks: [
-          'Quel que soit le niveau d\'accord, Claude ne peut jamais :',
-          { ul: [
-            'supprimer un élément, ni changer son lien ou son prix ;',
-            'créer, renommer, supprimer ou partager une liste ;',
-            'gérer les personnes, le lien public ou la corbeille ;',
-            'voir les photos, ni qui a ajouté quoi.',
-          ] },
-        ],
-      },
-      {
-        id: 'claude-envies',
-        title: 'Listes d\'envies : aucune réservation',
-        blocks: ['Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge Claude. Dans une liste d\'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec Claude comme sans lui.'],
-      },
-      {
-        id: 'claude-limites',
-        title: 'Limites',
-        blocks: [{ ul: [
-          '20 éléments au plus par demande.',
-          'Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, Claude reçoit un refus et rien n\'est écrit.',
-          '120 appels par minute et par connexion.',
-          '5 connexions Claude actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.',
-          'Claude ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.',
-        ] }],
-      },
-      {
-        id: 'claude-connecter',
-        title: 'Connecter Claude',
-        blocks: [
-          { ol: [
-            'Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l\'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.',
-            'Dans Claude (claude.ai, l\'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.',
-            'Claude ouvre l\'écran « Autoriser Claude » de Listo. Vérifiez que c\'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».',
-          ] },
-          'Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.',
-          'Si vous n\'avez pas lancé vous-même la connexion, touchez « Refuser ».',
-        ],
-      },
-      {
-        id: 'claude-connexions',
-        title: 'Voir et déconnecter Claude',
-        blocks: [
-          'Réglages, « Mon compte », « Connexions Claude » : chaque connexion autorisée y apparaît, avec l\'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.',
-          { ul: [
-            '« Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n\'est demandé.',
-            'Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.',
-            'Pour reconnecter Claude, il faut l\'autoriser de nouveau.',
-            'L\'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.',
-          ] },
-        ],
-      },
-      {
-        id: 'claude-prudence',
-        title: 'Prudence : les textes piégés',
-        blocks: [
-          { note: 'Une liste partagée peut contenir un texte piégé, écrit par quelqu\'un d\'autre pour tromper Claude (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à Claude comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.' },
-          'Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans Listo ce qu\'il a fait.',
-        ],
-      },
-      {
-        id: 'faq-claude',
-        title: 'Dépannage',
-        blocks: [{ ul: [
-          'Après une mise à jour de Listo, Claude peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.',
-          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([[claude-connecter]]).',
-          'Claude refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
-          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([[claude-connexions]]).',
-          'Claude dit qu\'un rayon ou un magasin est inconnu : il n\'existe pas, il est désactivé, ou (magasin d\'une liste « Multi ») cette liste ne le propose pas. Rien n\'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l\'Admin de le créer (Réglages, « Administration », onglet « Courses »).',
-          'Claude dit qu\'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».',
-        ] }],
-      },
-      {
-        id: 'claude-activation',
-        title: 'Un accès désactivé au départ',
-        blocks: ['L\'accès depuis Claude est désactivé tant que la personne qui gère le serveur n\'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([[mcp-serveur]]). Désactivé, toutes ses adresses répondent comme si elles n\'existaient pas, et la section « Claude » de « Mon compte » n\'apparaît pas.'],
-      },
-      {
-        id: 'mcp-serveur',
-        title: 'Activer l\'accès sur le serveur',
-        server: true,
-        blocks: [
-          'L\'accès depuis Claude est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
-          'Nginx Proxy Manager : rien à régler. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d\'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.',
-          { table: {
-            head: ['Adresse', 'Qui l\'appelle', 'Rôle'],
-            rows: [
-              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'Claude', 'Dit où demander l\'autorisation.'],
-              ['`/.well-known/oauth-authorization-server`', 'Claude', 'Description du serveur d\'autorisation.'],
-              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser Claude ».'],
-              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'Claude', 'Jetons, révocation, enregistrement automatique.'],
-              ['`/mcp`', 'Claude', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
-            ],
-          } },
-        ],
-      },
-      {
-        id: 'mcp-regles',
-        title: 'Règles et journal',
-        server: true,
-        blocks: [
-          { ul: [
-            'Jeton d\'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l\'empreinte des jetons, jamais les jetons eux-mêmes.',
-            'Un jeton Claude n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
-            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.',
-            'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
-            'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
-          ] },
-          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.',
-        ],
-      },
-      {
-        id: 'mcp-essai',
-        title: 'Premier essai',
-        server: true,
-        blocks: [
-          'Après l\'activation, une fois, avant tout usage régulier :',
-          { ol: [
-            'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
-            'Connecter Claude ([[claude-connecter]]).',
-            'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
-            '`docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s\'il y en a.',
-            'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
-            'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
-          ] },
-        ],
-      },
-    ],
-  },
-
-  // ============ 4. Installation ============
+  // ============ 3. Installation ============
   {
     id: 'installation',
     title: 'Installation',
@@ -392,7 +217,7 @@ export const GUIDE = [
         blocks: [
           { ul: [
             'Un serveur : un ordinateur toujours allumé, sous Linux, avec Docker et Docker Compose. Repérez son adresse sur le réseau local (par exemple `192.168.1.20`) : c\'est l\'`IP_LOCALE` de la suite.',
-            'Nginx Proxy Manager (il peut être sur une autre machine), avec un sous-domaine qui pointe vers lui (par exemple `listo.exemple.fr`) et un certificat HTTPS Let\'s Encrypt.',
+            'Un proxy inverse HTTPS (reverse proxy), sur ce serveur ou sur une autre machine : Nginx Proxy Manager, Caddy, Traefik, nginx, Apache ou un autre, peu importe lequel. Il lui faut un sous-domaine qui pointe vers lui (par exemple `listo.exemple.fr`) et un certificat HTTPS valide pour ce nom (Let\'s Encrypt, par exemple). Ce qu\'il doit faire : [[proxy]].',
             'Un gestionnaire de mots de passe, pour y garder la clé de Listo ([[cle]]).',
           ] },
           'Listo s\'utilise en HTTPS : sans HTTPS, il refuse de démarrer en production, car la connexion, le mode hors ligne et l\'installation sur le téléphone en ont besoin.',
@@ -407,7 +232,7 @@ export const GUIDE = [
           'Dans `docker-compose.yml` (commenté ligne par ligne), remplacez deux valeurs :',
           { ol: [
             '`LISTO_PUBLIC_URL=https://listo.exemple.fr` : l\'adresse exacte que vous taperez dans le navigateur, sans `/` à la fin. Une adresse différente fait refuser toutes les connexions (“origine inconnue”).',
-            '`IP_LOCALE` : l\'adresse du serveur sur le réseau local (`192.168.1.20:13300:13300`). Jamais `0.0.0.0` : le port ne doit être ouvert que sur le réseau local, et seul Nginx Proxy Manager doit l\'utiliser.',
+            '`IP_LOCALE` : l\'adresse du serveur sur le réseau local (`192.168.1.20:13300:13300`). Jamais `0.0.0.0` : le port ne doit être ouvert que sur le réseau local, et seul le proxy doit l\'utiliser.',
           ] },
           'Les dossiers `data/` (base, sauvegardes, photos, journal) et `secrets/` (clé de chiffrement) se créent tout seuls au premier démarrage, à côté du fichier. Ils ne doivent jamais être copiés ailleurs que dans vos sauvegardes.',
         ],
@@ -437,28 +262,45 @@ export const GUIDE = [
         ],
       },
       {
-        id: 'npm',
-        title: 'Régler Nginx Proxy Manager',
+        id: 'proxy',
+        title: 'Ce que doit faire le proxy',
         blocks: [
-          'Dans Nginx Proxy Manager, “Hosts”, “Proxy Hosts”, “Add Proxy Host” :',
+          'N\'importe quel proxy inverse convient, s\'il fait ce qui suit. Ces besoins viennent du code de Listo ; la façon de les régler dépend du produit (voir sa documentation, ou l\'exemple avec Nginx Proxy Manager : [[npm]]).',
+          { ol: [
+            'Terminer le HTTPS avec un certificat valide pour le sous-domaine, et rediriger `http://` vers `https://`. Le HTTPS est obligatoire : en production, Listo refuse de démarrer si `LISTO_PUBLIC_URL` ne commence pas par `https://`, ses cookies de connexion sont « Secure » (le navigateur ne les envoie qu\'en HTTPS), et l\'installation sur l\'écran d\'accueil comme le mode hors ligne demandent le HTTPS.',
+            'Transmettre tout le sous-domaine, à sa racine et sans changer les chemins, vers `http://IP_LOCALE:13300` (HTTP simple sur le réseau local). Listo ne s\'installe pas dans un sous-dossier d\'un autre site (une adresse en `…/listo` ne marche pas). L\'adresse tapée dans le navigateur doit être exactement `LISTO_PUBLIC_URL` : chaque modification est refusée (« origine inconnue ») si l\'en-tête `Origin` envoyé par le navigateur ne lui correspond pas ; le proxy ne doit donc pas réécrire cet en-tête.',
+            'Laisser passer le temps réel : `/api/events` est une connexion HTTP qui reste ouverte (Server-Sent Events, type `text/event-stream`), pas un WebSocket. Le proxy ne doit ni retenir ni mettre en cache ses réponses (Listo envoie l\'en-tête `X-Accel-Buffering: no`, que nginx comprend), et son délai de lecture doit dépasser 25 secondes : Listo envoie un signal toutes les 25 secondes sur cette connexion. Sinon, les changements arrivent en retard ou la connexion est coupée sans cesse.',
+            'Accepter des envois d\'au moins 2 Mo : une photo d\'article fait au plus 2 Mo (Listo la refuse au-delà). Beaucoup de proxys acceptent moins par défaut (nginx : 1 Mo) ; prévoir un peu de marge, par exemple 5 Mo.',
+            'Donner l\'adresse IP réelle des visiteurs : Listo fait confiance à un seul proxy et lit la dernière adresse de l\'en-tête `X-Forwarded-For`, que le proxy doit compléter avec l\'adresse de la personne. Elle sert à bloquer les essais de mots de passe répétés. Avec deux proxys l\'un derrière l\'autre (un service en ligne devant votre proxy, par exemple), Listo verrait l\'adresse du premier, et un blocage toucherait tout le monde.',
+            'Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès depuis Claude, [[mcp-serveur]]) et `Sec-Fetch-Site`.',
+            'Ajouter l\'en-tête `Strict-Transport-Security` (HSTS), si le proxy le permet : Listo ne l\'envoie pas lui-même.',
+          ] },
+          { sub: 'Limiter l\'accès au port de Listo' },
+          'Listo croit l\'adresse IP que lui transmet le proxy : quelqu\'un qui joindrait directement le port 13300 pourrait en inventer une et contourner le blocage des essais de mots de passe. Ce port ne doit donc être joignable que depuis la machine du proxy, par une règle de pare-feu sur le serveur ou sur le réseau (box, routeur).',
+          { ul: [
+            'Exemple avec ufw, si le proxy est en `192.168.1.10` : `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. Attention : Docker ouvre les ports qu\'il publie en passant à côté de ufw ; il faut un réglage propre à Docker (chaîne `DOCKER-USER`) ou un pare-feu en amont.',
+            'Vérifier : depuis un autre ordinateur du réseau, `curl http://IP_LOCALE:13300/healthz` doit échouer ; depuis la machine du proxy, il doit répondre `{"status":"ok"}`.',
+            'Le journal d\'accès du proxy enregistre les adresses des liens publics ouverts (`/p/…`). Pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.',
+          ] },
+        ],
+      },
+      {
+        id: 'npm',
+        title: 'Exemple avec Nginx Proxy Manager',
+        blocks: [
+          'Un exemple pas à pas, avec Nginx Proxy Manager (il peut être sur une autre machine). Dans Nginx Proxy Manager, “Hosts”, “Proxy Hosts”, “Add Proxy Host” :',
           { ul: [
             'Details : “Domain Names” = votre sous-domaine ; “Scheme” = `http` ; “Forward Hostname / IP” = `IP_LOCALE` ; “Forward Port” = `13300`. “Websockets Support” : inutile, laisser décoché (le temps réel passe par une connexion HTTP ordinaire).',
-            'SSL : demander un certificat Let\'s Encrypt, cocher “Force SSL”, “HTTP/2 Support” et “HSTS Enabled”. C\'est Nginx Proxy Manager qui ajoute l\'en-tête HSTS : Listo ne l\'envoie pas lui-même.',
-            'Advanced (“Custom Nginx Configuration”) : coller les quatre lignes ci-dessous.',
+            'SSL : demander un certificat Let\'s Encrypt, cocher “Force SSL”, “HTTP/2 Support” et “HSTS Enabled” (c\'est lui qui ajoute l\'en-tête HSTS).',
+            'Advanced (“Custom Nginx Configuration”) : coller les quatre lignes ci-dessous. Ce sont des directives nginx : avec nginx seul, elles vont dans le bloc `location` qui transmet à Listo.',
           ] },
           { code: 'client_max_body_size 5m;\nproxy_buffering off;\nproxy_cache off;\nproxy_read_timeout 3600s;' },
           { ul: [
-            '`client_max_body_size 5m;` : sans elle, l\'envoi des photos est refusé (Nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).',
+            '`client_max_body_size 5m;` : sans elle, l\'envoi des photos est refusé (nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).',
             'Les trois autres servent au temps réel : sans elles, les changements n\'arrivent sur l\'autre téléphone qu\'au bout d\'environ une minute.',
-            'Nginx Proxy Manager transmet l\'adresse IP réelle des téléphones ; Listo s\'en sert pour bloquer les essais de mots de passe répétés. Rien à régler.',
+            'Nginx Proxy Manager complète déjà l\'en-tête `X-Forwarded-For` avec l\'adresse IP réelle des téléphones : rien à régler.',
             'Accès depuis Claude : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([[mcp-serveur]]).',
-          ] },
-          { sub: 'Limiter l\'accès au port de Listo' },
-          'Listo croit l\'adresse IP que lui transmet Nginx Proxy Manager : quelqu\'un qui joindrait directement le port 13300 pourrait en inventer une et contourner le blocage des essais de mots de passe. Ce port ne doit donc être joignable que depuis la machine de Nginx Proxy Manager, par une règle de pare-feu sur le serveur ou sur le réseau (box, routeur).',
-          { ul: [
-            'Exemple avec ufw, si Nginx Proxy Manager est en `192.168.1.10` : `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. Attention : Docker ouvre les ports qu\'il publie en passant à côté de ufw ; il faut un réglage propre à Docker (chaîne `DOCKER-USER`) ou un pare-feu en amont.',
-            'Vérifier : depuis un autre ordinateur du réseau, `curl http://IP_LOCALE:13300/healthz` doit échouer ; depuis la machine de Nginx Proxy Manager, il doit répondre `{"status":"ok"}`.',
-            'Le journal d\'accès de Nginx Proxy Manager enregistre les adresses des liens publics ouverts (`/p/…`). Pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.',
+            'Pare-feu : n\'autoriser que l\'adresse de Nginx Proxy Manager à joindre le port 13300 ([[proxy]]).',
           ] },
         ],
       },
@@ -502,17 +344,17 @@ export const GUIDE = [
         blocks: [{ ol: [
           'HTTPS : `https://listo.exemple.fr` s\'ouvre avec le cadenas ; `http://listo.exemple.fr` redirige vers `https://`.',
           'Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.',
-          'En-têtes de sécurité : passez l\'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par Nginx Proxy Manager), et aucun `X-Powered-By`.',
+          'En-têtes de sécurité : passez l\'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par le proxy, voir [[proxy]]), et aucun `X-Powered-By`.',
           'Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.',
           'Une restauration d\'essai, une fois, avec la copie de la nuit : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).',
-          'Le port fermé : voir [[npm]].',
+          'Le port fermé : voir [[proxy]].',
           'Le téléphone : installation sur l\'écran d\'accueil ([[telephone]]), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).',
         ] }],
       },
     ],
   },
 
-  // ============ 5. Les comptes ============
+  // ============ 4. Les comptes ============
   {
     id: 'comptes',
     title: 'Les comptes',
@@ -607,7 +449,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 6. Au quotidien ============
+  // ============ 5. Au quotidien ============
   {
     id: 'quotidien',
     title: 'Au quotidien',
@@ -735,12 +577,53 @@ export const GUIDE = [
       {
         id: 'theme',
         title: 'Thème clair ou sombre',
-        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone.'],
+        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».'],
+      },
+      {
+        id: 'ordinateur',
+        title: 'Sur ordinateur',
+        blocks: [
+          'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
+          { ul: [
+            'À gauche, le menu : vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Rechercher une liste », « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».',
+            'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent ; sur un écran tactile, ils restent affichés.',
+            'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
+            '« Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.',
+            'Clic droit sur une ligne (ou touche Menu, ou Maj+F10) : Modifier, Cocher, Supprimer, selon vos droits.',
+          ] },
+          { sub: 'Raccourcis clavier' },
+          'La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Aucun raccourci à une touche ne marche pendant que vous tapez dans un champ. Un raccourci ne fait que ce que vos droits permettent : en lecture seule, ni Espace, ni E, ni Suppr ; aucun raccourci ne réserve un souhait.',
+          { table: {
+            head: ['Touche', 'Action'],
+            rows: [
+              ['?', 'Afficher les raccourcis'],
+              ['N', 'Nouvelle liste'],
+              ['/', 'Rechercher (dans la liste, ou dans le menu)'],
+              [',', 'Réglages'],
+              ['Échap', 'Fermer la fenêtre ; vider puis quitter la recherche'],
+              ['[ et ]', 'Liste précédente, suivante'],
+              ['P', 'Partager la liste'],
+              ['A', 'Aller au champ d\'ajout'],
+              ['↓ et ↑', 'Article suivant, précédent'],
+              ['Espace', 'Cocher ou décocher'],
+              ['Entrée', 'Ouvrir la fiche'],
+              ['E', 'Modifier'],
+              ['Suppr', 'Supprimer (annulable)'],
+              ['Ctrl+Z', 'Annuler la dernière action'],
+              ['Ctrl+Entrée', 'Enregistrer la fiche ou le formulaire'],
+              ['S', 'Aller au sommaire de l\'aide'],
+            ],
+          } },
+          'Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
+          { sub: 'Annuler (Ctrl+Z)' },
+          'Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l\'annulation part avec le reste au retour du réseau. Si quelqu\'un a changé l\'article entre-temps, rien n\'est écrasé : « Modifié entre-temps : rien n\'est annulé ».',
+          'Ne s\'annulent pas par Ctrl+Z : un ajout (supprimez l\'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d\'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.',
+        ],
       },
     ],
   },
 
-  // ============ 7. Rôle par rôle ============
+  // ============ 6. Rôle par rôle ============
   {
     id: 'roles',
     title: 'Rôle par rôle',
@@ -905,6 +788,181 @@ export const GUIDE = [
     ],
   },
 
+  // ============ 7. Claude ============
+  {
+    id: 'claude',
+    title: 'MCP Claude',
+    sections: [
+      {
+        id: 'claude-quoi',
+        title: 'À quoi ça sert',
+        blocks: [
+          'Claude est l\'assistant d\'Anthropic (claude.ai, l\'application mobile, Claude Desktop, Claude Code). Une fois connecté à Listo, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.',
+          'Claude agit avec votre compte et vos droits, jamais plus : ce qu\'il ajoute apparaît à votre nom, comme si vous l\'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées.',
+          'Cet accès n\'existe que si la personne qui gère le serveur l\'a activé ([[claude-activation]]). Sinon, la section « Claude » n\'apparaît pas dans « Mon compte ».',
+        ],
+      },
+      {
+        id: 'claude-phrases',
+        title: 'Exemples de phrases',
+        blocks: [
+          { ul: [
+            'Lire : “Quelles sont mes listes Listo ?”, “Qu\'y a-t-il dans la liste Courses ?”.',
+            'Ajouter, avec un rayon : “Ajoute des tomates au rayon fruits et légumes dans Courses.”',
+            'Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”',
+            'Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”',
+            'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
+            'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
+            'Ranger : “Range le lait au rayon crèmerie.”',
+          ] },
+          'Claude lit d\'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.',
+        ],
+      },
+      {
+        id: 'claude-niveaux',
+        title: 'Deux niveaux d\'accord',
+        blocks: [
+          'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
+          { ul: [
+            '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
+            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.',
+          ] },
+          'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
+        ],
+      },
+      {
+        id: 'claude-jamais',
+        title: 'Ce que Claude ne peut jamais faire',
+        blocks: [
+          'Quel que soit le niveau d\'accord, Claude ne peut jamais :',
+          { ul: [
+            'supprimer un élément, ni changer son lien ou son prix ;',
+            'créer, renommer, supprimer ou partager une liste ;',
+            'gérer les personnes, le lien public ou la corbeille ;',
+            'voir les photos, ni qui a ajouté quoi.',
+          ] },
+        ],
+      },
+      {
+        id: 'claude-envies',
+        title: 'Listes d\'envies : aucune réservation',
+        blocks: ['Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge Claude. Dans une liste d\'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec Claude comme sans lui.'],
+      },
+      {
+        id: 'claude-limites',
+        title: 'Limites',
+        blocks: [{ ul: [
+          '20 éléments au plus par demande.',
+          'Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, Claude reçoit un refus et rien n\'est écrit.',
+          '120 appels par minute et par connexion.',
+          '5 connexions Claude actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.',
+          'Claude ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.',
+        ] }],
+      },
+      {
+        id: 'claude-connecter',
+        title: 'Connecter Claude',
+        blocks: [
+          { ol: [
+            'Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l\'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.',
+            'Dans Claude (claude.ai, l\'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.',
+            'Claude ouvre l\'écran « Autoriser Claude » de Listo. Vérifiez que c\'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».',
+          ] },
+          'Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.',
+          'Si vous n\'avez pas lancé vous-même la connexion, touchez « Refuser ».',
+        ],
+      },
+      {
+        id: 'claude-connexions',
+        title: 'Voir et déconnecter Claude',
+        blocks: [
+          'Réglages, « Mon compte », « Connexions Claude » : chaque connexion autorisée y apparaît, avec l\'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.',
+          { ul: [
+            '« Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n\'est demandé.',
+            'Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.',
+            'Pour reconnecter Claude, il faut l\'autoriser de nouveau.',
+            'L\'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.',
+          ] },
+        ],
+      },
+      {
+        id: 'claude-prudence',
+        title: 'Prudence : les textes piégés',
+        blocks: [
+          { note: 'Une liste partagée peut contenir un texte piégé, écrit par quelqu\'un d\'autre pour tromper Claude (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à Claude comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.' },
+          'Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans Listo ce qu\'il a fait.',
+        ],
+      },
+      {
+        id: 'faq-claude',
+        title: 'Dépannage',
+        blocks: [{ ul: [
+          'Après une mise à jour de Listo, Claude peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.',
+          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([[claude-connecter]]).',
+          'Claude refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
+          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([[claude-connexions]]).',
+          'Claude dit qu\'un rayon ou un magasin est inconnu : il n\'existe pas, il est désactivé, ou (magasin d\'une liste « Multi ») cette liste ne le propose pas. Rien n\'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l\'Admin de le créer (Réglages, « Administration », onglet « Courses »).',
+          'Claude dit qu\'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».',
+        ] }],
+      },
+      {
+        id: 'claude-activation',
+        title: 'Un accès désactivé au départ',
+        blocks: ['L\'accès depuis Claude est désactivé tant que la personne qui gère le serveur n\'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([[mcp-serveur]]). Désactivé, toutes ses adresses répondent comme si elles n\'existaient pas, et la section « Claude » de « Mon compte » n\'apparaît pas.'],
+      },
+      {
+        id: 'mcp-serveur',
+        title: 'Activer l\'accès sur le serveur',
+        server: true,
+        blocks: [
+          'L\'accès depuis Claude est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
+          'Proxy : rien à régler, ces adresses passent par le même hôte. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d\'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.',
+          { table: {
+            head: ['Adresse', 'Qui l\'appelle', 'Rôle'],
+            rows: [
+              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'Claude', 'Dit où demander l\'autorisation.'],
+              ['`/.well-known/oauth-authorization-server`', 'Claude', 'Description du serveur d\'autorisation.'],
+              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser Claude ».'],
+              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'Claude', 'Jetons, révocation, enregistrement automatique.'],
+              ['`/mcp`', 'Claude', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
+            ],
+          } },
+        ],
+      },
+      {
+        id: 'mcp-regles',
+        title: 'Règles et journal',
+        server: true,
+        blocks: [
+          { ul: [
+            'Jeton d\'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l\'empreinte des jetons, jamais les jetons eux-mêmes.',
+            'Un jeton Claude n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
+            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.',
+            'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
+            'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
+          ] },
+          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.',
+        ],
+      },
+      {
+        id: 'mcp-essai',
+        title: 'Premier essai',
+        server: true,
+        blocks: [
+          'Après l\'activation, une fois, avant tout usage régulier :',
+          { ol: [
+            'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
+            'Connecter Claude ([[claude-connecter]]).',
+            'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
+            '`docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s\'il y en a.',
+            'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
+            'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
+          ] },
+        ],
+      },
+    ],
+  },
+
   // ============ 8. Questions fréquentes ============
   {
     id: 'faq',
@@ -920,7 +978,7 @@ export const GUIDE = [
         title: 'Une photo ne s\'envoie pas',
         blocks: [{ ul: [
           'Sans réseau, la photo attend le retour du réseau.',
-          'Le message « Photo trop lourde. » : il manque la ligne `client_max_body_size 5m;` dans Nginx Proxy Manager ([[npm]]).',
+          'Le message « Photo trop lourde. » : le proxy refuse les envois de plus de 2 Mo ([[proxy]]). Avec nginx ou Nginx Proxy Manager, il manque la ligne `client_max_body_size 5m;` ([[npm]]).',
         ] }],
       },
       {
@@ -931,7 +989,7 @@ export const GUIDE = [
       {
         id: 'faq-retard',
         title: 'Les changements arrivent avec une minute de retard',
-        blocks: ['Il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_timeout 3600s;` dans Nginx Proxy Manager ([[npm]]).'],
+        blocks: ['Le proxy retient les messages du temps réel ([[proxy]]). Avec nginx ou Nginx Proxy Manager, il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_timeout 3600s;` ([[npm]]).'],
       },
       {
         id: 'faq-blanc',
@@ -1024,10 +1082,10 @@ export function outline(guide = GUIDE) {
 }
 
 // Titre numéroté, le même partout (écran, sommaire, docs/guide.md) :
-// chapitre « 3. Claude et Listo », section « 3.2 Exemples de phrases »
+// chapitre « 7. MCP Claude », section « 7.2 … » (numéros calculés)
 export const numbered = (entry) => (entry.level === 1 ? `${entry.number}. ${entry.title}` : `${entry.number} ${entry.title}`);
 
-// Numéro et titre d'une section, pour un renvoi [[id]] : « 9.2 Restaurer… »
+// Numéro et titre d'une section, pour un renvoi [[id]] : « 3.8 Sauvegardes »
 export function refLabel(id, guide = GUIDE) {
   const entry = outline(guide).find((e) => e.id === id);
   if (!entry) throw new Error(`Renvoi inconnu dans le guide : [[${id}]]`);

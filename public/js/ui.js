@@ -12,6 +12,25 @@ export function setOverlayHost(element) {
   host = element;
 }
 
+// Ordinateur (.app--pc, à partir de 1 024 px, design/maquettes/pc-A) : les
+// feuilles et les confirmations deviennent un tiroir à droite ou une
+// fenêtre centrée, posés sur toute l'application (pcLayer : l'élément
+// .app) ; le reste (.pc) devient inerte (inert : ni clic, ni Tab, ni
+// lecteur d'écran) tant qu'une fenêtre est ouverte. Les menus restent dans
+// l'écran. Sur téléphone, rien ne change.
+let pcLayer = null;
+export function setPcLayer(element) {
+  pcLayer = element;
+}
+export const onPc = () => Boolean(pcLayer?.classList.contains('app--pc'));
+let pcOpen = 0; // fenêtres ouvertes sur ordinateur
+function setPcInert(on) {
+  const rest = pcLayer?.querySelector(':scope > .pc');
+  if (!rest) return;
+  if (on) rest.setAttribute('inert', '');
+  else rest.removeAttribute('inert');
+}
+
 // Champ de saisie de texte (le clavier du téléphone s'ouvre s'il reçoit le
 // focus). Listo ne met jamais le curseur dans un tel champ de lui-même : le
 // clavier ne s'ouvre que quand on touche le champ.
@@ -40,9 +59,15 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([t
 // returnTo : élément qui reprend le focus à la fermeture (un bouton), utile
 // sur un téléphone où toucher un bouton ne lui donne pas le focus ; sinon
 // l'élément qui l'avait à l'ouverture.
-function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {}) {
+// pc : fenêtre posée sur toute l'application sur ordinateur (voir pcLayer).
+// beforeClose : appelée avant une fermeture demandée (Échap, croix, fond,
+// « Annuler ») ; si elle répond faux, la fenêtre reste ouverte.
+// history = false : pas d'entrée d'historique (voir openOverlay du routeur).
+function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc = false, beforeClose = null, history = true } = {}) {
   const opener = returnTo ?? document.activeElement;
   const scrim = h('div', { class: 'scrim' });
+  const target = pc && onPc() ? pcLayer : host;
+  const onLayer = target === pcLayer;
   let closeViaRouter = null;
   let closed = false;
 
@@ -55,13 +80,30 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {
     scrim.remove();
     panel.remove();
     document.removeEventListener('keydown', onKey);
+    if (onLayer) {
+      pcOpen = Math.max(0, pcOpen - 1);
+      if (!pcOpen) setPcInert(false);
+    }
     onClose?.();
     // Retour du focus à l'élément d'origine (bouton, ligne…), sauf si c'était
     // un champ de saisie : le clavier se rouvrirait tout seul
     if (opener?.isConnected && !isTextField(opener)) opener.focus();
   };
-  const close = () => (closeViaRouter ? closeViaRouter() : remove());
+  const shut = () => (closeViaRouter ? closeViaRouter() : remove());
+  let asking = false;
+  const close = async () => {
+    if (closed || asking) return;
+    if (beforeClose) {
+      asking = true;
+      const ok = await beforeClose();
+      asking = false;
+      if (!ok) return;
+    }
+    shut();
+  };
   const onKey = (event) => {
+    // Seule la fenêtre du dessus répond à Échap (sur ordinateur)
+    if (event.key === 'Escape' && onLayer && target.lastElementChild !== panel) return;
     if (event.key === 'Escape') close();
     if (event.key === 'Tab') keepFocusInside(event);
   };
@@ -88,19 +130,25 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {
   panel.setAttribute('role', role);
   panel.setAttribute('aria-modal', 'true');
   if (label) panel.setAttribute('aria-label', label);
-  scrim.addEventListener('click', close);
-  host.append(scrim, panel);
+  scrim.addEventListener('click', () => close());
+  target.append(scrim, panel);
+  if (onLayer) {
+    pcOpen++;
+    setPcInert(true);
+  }
   // Fenêtre ouverte par-dessus une autre (choix du rayon depuis une fiche,
   // « Nouveau rayon… » depuis ce choix…) : elle passe au-dessus, fond grisé
   // compris ; la fenêtre du dessous est grisée et ne réagit plus aux appuis
-  const below = host.querySelectorAll(':scope > .scrim').length - 1;
+  const below = target.querySelectorAll(':scope > .scrim').length - 1;
   if (below > 0) {
     const base = parseInt(getComputedStyle(panel).zIndex, 10) || 11;
     scrim.style.zIndex = String(base + below * 2 - 1);
     panel.style.zIndex = String(base + below * 2);
   }
   document.addEventListener('keydown', onKey);
-  closeViaRouter = openOverlay(remove);
+  closeViaRouter = openOverlay(remove, { push: history });
+  // Fermeture forcée (sans beforeClose) : changement d'écran, droit retiré
+  const forceClose = shut;
 
   // Focus sur le bouton de départ de la fenêtre (data-initial-focus, jamais
   // un champ de saisie), sinon sur la fenêtre elle-même : les lecteurs
@@ -109,7 +157,7 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {
   const start = panel.querySelector('[data-initial-focus]');
   if (start && !isTextField(start)) start.focus();
   else panel.focus();
-  return { close, panel };
+  return { close, panel, forceClose };
 }
 
 // Feuille qui monte du bas (édition d'article, choix du rayon…).
@@ -119,15 +167,33 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null } = {
 // article : poubelle et disquette « Enregistrer ») ; l'en-tête reste alors visible
 // quand la feuille défile, et le titre tient sur une ligne (tronqué si besoin).
 // returnTo : bouton qui reprend le focus à la fermeture (voir overlay).
-export function openSheet({ title, sub, content, onClose, scroll = false, tools = null, returnTo = null }) {
+// Ordinateur : pc = 'drawer' (tiroir à droite : fiche d'un article,
+// partage) ou 'modal' (fenêtre centrée, par défaut : confirmations,
+// choix, création) ; size : 'sm' ou 'lg' ; footer : boutons du pied
+// (téléphone : ils restent dans le contenu, voir l'appelant) ; beforeClose :
+// voir overlay.
+export function openSheet({ title, sub, content, onClose, scroll = false, tools = null, returnTo = null, pc = 'modal', size = '', footer = null, beforeClose = null, history = true }) {
   const titleId = `sheet-${Math.random().toString(36).slice(2, 8)}`;
+  if (onPc()) {
+    return overlay((close) => h('div', {
+      class: `pc-panel ${pc === 'drawer' ? 'pc-drawer' : `pc-modal${size ? ` pc-modal--${size}` : ''}`}`,
+      'aria-labelledby': titleId,
+    },
+    h('div', { class: 'pc-panel__head' },
+      h('div', { class: 'pc-panel__heading' }, h('h2', { class: 'pc-panel__title', id: titleId }, title), sub ? h('p', { class: 'pc-panel__sub' }, sub) : null),
+      tools,
+      iconButton('close', 'Fermer', () => close())),
+    h('div', { class: 'pc-panel__body' }, content),
+    footer ? h('div', { class: 'pc-panel__foot' }, footer) : null,
+    ), { onClose, returnTo, pc: true, beforeClose, history });
+  }
   return overlay((close) => h('div', { class: `sheet${scroll ? ' sheet--scroll' : ''}`, 'aria-labelledby': titleId },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: `sheet__head${tools ? ' sheet__head--tools' : ''}` },
       h('div', { class: tools ? 'sheet__heading' : null }, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
-      tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', 'Fermer', close)) : iconButton('close', 'Fermer', close)),
+      tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', 'Fermer', () => close())) : iconButton('close', 'Fermer', () => close())),
     content,
-  ), { onClose, returnTo });
+  ), { onClose, returnTo, beforeClose });
 }
 
 // Photo en plein écran (photo-plein-ecran-1) : titre, image, légende, Fermer.
@@ -140,7 +206,7 @@ export function openLightbox({ title, src, alt, caption }) {
       iconButton('close', 'Fermer la photo', close)),
     h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src, alt })),
     caption ? h('p', { class: 'lightbox__cap' }, caption) : null,
-    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, 'Fermer'))));
+    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, 'Fermer'))), { pc: true });
 }
 
 // Boîte de confirmation. Renvoie une promesse : true si l'action est confirmée.
@@ -154,10 +220,12 @@ export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annule
     const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
     const textId = `${titleId}-text`;
     const paragraphs = Array.isArray(text) ? text : [text];
-    const { close } = overlay((closeFn) => h('div', { class: 'dialog', 'aria-labelledby': titleId, 'aria-describedby': textId },
-      h('h2', { class: 'dialog__title', id: titleId }, title),
-      h('div', { id: textId }, paragraphs.map((p) => h('p', { class: 'dialog__text' }, p))),
-      h('div', { class: 'dialog__actions' },
+    // Ordinateur : fenêtre centrée (maquette pc-A 18), mêmes boutons au pied
+    const pc = onPc();
+    const { close } = overlay((closeFn) => h('div', { class: pc ? 'pc-panel pc-modal pc-modal--sm' : 'dialog', 'aria-labelledby': titleId, 'aria-describedby': textId },
+      pc ? h('div', { class: 'pc-panel__head' }, h('h2', { class: 'pc-panel__title', id: titleId }, title)) : h('h2', { class: 'dialog__title', id: titleId }, title),
+      h('div', { id: textId, class: pc ? 'pc-panel__body' : null }, paragraphs.map((p) => h('p', { class: 'dialog__text' }, p))),
+      h('div', { class: pc ? 'pc-panel__foot pc-panel__foot--end' : 'dialog__actions' },
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn, 'data-initial-focus': focusCancel ? true : null }, cancelLabel),
         h('button', {
           class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
@@ -168,7 +236,7 @@ export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annule
             closeFn();
           },
         }, confirmLabel)),
-    ), { role: 'alertdialog', onClose: () => resolve(answer) });
+    ), { role: 'alertdialog', onClose: () => resolve(answer), pc: true });
     void close;
   });
 }
@@ -197,6 +265,7 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
           }, confirmLabel)),
       ],
       onClose: () => resolve(answer),
+      size: 'sm',
     });
   });
 }
@@ -206,7 +275,10 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
 // des actions précédentes par un trait. onClose : appelé à la fermeture.
 // anchor : bouton qui ouvre le menu (carte de « Mes listes ») ; le menu
 // s'affiche alors juste sous lui, sans jamais sortir de l'écran.
-export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {}) {
+// at : { x, y } (clic droit, ordinateur) : le menu s'ouvre à cet endroit.
+// item.keys : touche du raccourci (ordinateur), écrite en .keycap et
+// annoncée par aria-keyshortcuts.
+export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = null } = {}) {
   let closeMenu;
   let panel;
   const { close } = overlay((close) => {
@@ -224,10 +296,21 @@ export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {})
           // une autre fenêtre ou changer d'écran)
           setTimeout(() => item.onSelect(), 0);
         },
-      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)]));
+        'aria-keyshortcuts': item.keys ? item.keys.aria : null,
+      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null,
+      item.keys ? h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, item.keys.label) : null)]));
     return panel;
   }, { role: 'menu', label, onClose });
-  if (anchor) {
+  if (at) {
+    // Clic droit : sous le pointeur, sans sortir de l'écran
+    const box = host.getBoundingClientRect();
+    const left = Math.min(at.x - box.left, box.width - panel.offsetWidth - 8);
+    const top = Math.min(at.y - box.top, box.height - panel.offsetHeight - 8);
+    panel.classList.add('menu--pc');
+    panel.style.left = `${Math.max(8, left)}px`;
+    panel.style.right = 'auto';
+    panel.style.top = `${Math.max(8, top)}px`;
+  } else if (anchor) {
     const box = host.getBoundingClientRect();
     const below = anchor.getBoundingClientRect().bottom - box.top + 4;
     const room = box.height - panel.offsetHeight - 8;
@@ -253,7 +336,7 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
     }, action) : null);
   host.append(el);
   currentToast = el;
-  setTimeout(() => el.remove(), duration ?? (action ? 6000 : 4000));
+  setTimeout(() => el.remove(), duration ?? (action ? (onPc() ? 8000 : 6000) : 4000));
 }
 
 // Redessine à chaque changement de données, mais jamais pendant qu'un doigt
@@ -311,9 +394,27 @@ export function setPendingCount(count) {
   setSyncState(syncState);
 }
 const syncPills = new Set();
+const offlineBanners = new Set();
+
+// Ordinateur : bandeau « Hors ligne » sous l'en-tête d'un écran (en plus de
+// la pastille), visible tant que Listo n'atteint pas le serveur
+export function offlineBanner() {
+  const el = h('p', { class: 'note note--danger pc-banner', role: 'status' }, icon('cloud-off', 'icon--sm'),
+    h('span', {}, 'Hors ligne : vos changements sont gardés sur cet appareil et partiront au retour du réseau.'));
+  el.hidden = syncState !== 'off';
+  offlineBanners.add(el);
+  return el;
+}
 
 export function setSyncState(state) {
   syncState = state;
+  for (const banner of [...offlineBanners]) {
+    if (!banner.isConnected && banner.dataset.shown) offlineBanners.delete(banner);
+    else {
+      banner.hidden = state !== 'off';
+      if (banner.isConnected) banner.dataset.shown = '1';
+    }
+  }
   for (const pill of [...syncPills]) {
     if (!pill.isConnected) syncPills.delete(pill);
     else paintPill(pill);

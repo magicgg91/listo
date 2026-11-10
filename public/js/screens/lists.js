@@ -4,13 +4,14 @@
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
+import { keycap } from '../shortcuts.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton, newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle, openMenu } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, openMenu, offlineBanner } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
@@ -254,6 +255,8 @@ function renderListsPc(onLeave) {
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, { label: 'Rechercher une liste', onChange: () => draw(), docked: true });
+  search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
+  search.field.append(keycap('/'));
 
   // Filtre par type : un choix exclusif (radiogroup), « Toutes » au départ
   const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
@@ -318,6 +321,7 @@ function renderListsPc(onLeave) {
       searchMeta,
       h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sorter.button)),
     sorter.status,
+    offlineBanner(),
     content);
 }
 

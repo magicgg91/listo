@@ -48,7 +48,7 @@ test('sommaire : une entrée par section, dans l\'ordre, avec le même numéro q
 
 test('Markdown : texte protégé, code, renvois et liens', () => {
   assert.equal(inlineMarkdown('Voir [[sauvegardes]], `docker logs listo` et [le site](https://securityheaders.com).'),
-    'Voir [4.7 Sauvegardes](#sauvegardes), `docker logs listo` et [le site](https://securityheaders.com).');
+    'Voir [3.8 Sauvegardes](#sauvegardes), `docker logs listo` et [le site](https://securityheaders.com).');
   assert.equal(inlineMarkdown('__Host- *a* <b> [x] | #'), '\\_\\_Host- \\*a\\* \\<b\\> \\[x\\] \\| \\#');
 });
 
@@ -113,8 +113,11 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
     assert.match(sheet, new RegExp(`<button class="help-toc__entry help-toc__entry--1 help-toc__chapter" type="button" aria-expanded="false" aria-controls="sommaire-${c.id}" data-chapter="${c.id}">`));
     assert.match(sheet, new RegExp(`<ol class="help-toc__list help-toc__list--sub" id="sommaire-${c.id}" hidden>`));
   }
-  // Recherche : champ du kit, compteur annoncé, message quand rien n'est trouvé ; caché sans JavaScript
-  assert.match(page, /<div class="help-search" id="guide-recherche" hidden>/);
+  // Recherche : barre ouverte par la loupe (cachée au départ et sans
+  // JavaScript), champ du kit, « Fermer la recherche », compteur annoncé,
+  // message quand rien n'est trouvé
+  assert.match(page, /<div class="help-search help-search--bar site__search" id="guide-recherche" hidden>/);
+  assert.match(page, /<button class="icon-btn" type="button" aria-label="Fermer la recherche" data-close-search>/);
   assert.match(page, /<input class="searchfield__input" id="guide-recherche-champ" type="search"[^>]*aria-label="Rechercher dans le guide">/);
   assert.match(page, /<p class="help-search__status" role="status"><\/p>/);
   assert.match(page, /<button class="icon-btn" type="button" aria-label="Effacer la recherche" data-clear hidden>/);
@@ -122,8 +125,12 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   assert.match(page, /<script type="module" src="guide\.js"><\/script>/);
   assert.match(sheet, /href="#haut">.*Haut de page/);
   assert.match(page, /<h1 class="site__title" id="haut" tabindex="-1">/);
-  // Bouton « Sommaire » : caché sans JavaScript, accessible
-  assert.match(page, /<button class="fab help__toc-btn" id="sommaire-bouton" type="button" aria-label="Sommaire du guide" aria-haspopup="dialog" aria-expanded="false" aria-controls="sommaire" hidden>/);
+  // Trois boutons ronds, icône seule, cachés sans JavaScript (pile cachée) ;
+  // nom (aria-label) et info-bulle (data-tip) ; « Retour en haut » caché au départ
+  assert.match(page, /<div class="help-fabs" id="boutons" hidden>/);
+  assert.match(page, /<button class="help-fab" id="haut-bouton" type="button" aria-label="Retour en haut de la page" data-tip="Retour en haut de la page" hidden><svg class="icon" aria-hidden="true"><use href="#i-arrow-up"\/><\/svg><\/button>/);
+  assert.match(page, /<button class="help-fab" id="recherche-bouton" type="button" aria-label="Rechercher dans le guide" data-tip="Rechercher dans le guide" aria-expanded="false" aria-controls="guide-recherche"><svg class="icon" aria-hidden="true"><use href="#i-search"\/><\/svg><\/button>/);
+  assert.match(page, /<button class="help-fab help__toc-btn" id="sommaire-bouton" type="button" aria-label="Sommaire du guide" data-tip="Sommaire du guide" aria-haspopup="dialog" aria-expanded="false" aria-controls="sommaire"><svg class="icon" aria-hidden="true"><use href="#i-layers"\/><\/svg><\/button>/);
   assert.match(page, /<dialog class="sheet sheet--scroll site-sheet" id="sommaire" aria-labelledby="sommaire-titre">/);
   assert.match(page, /aria-label="Fermer" data-close>/);
   assert.match(page, /<html lang="fr" data-theme="auto">/);
@@ -138,10 +145,19 @@ test('page publique : même numérotation, mêmes ancres, sommaire dans la page 
   assert.match(script, /sheet\.showModal\(\)/);
   assert.match(script, /else button\.focus\(\);/);
   assert.match(script, /el\.focus\(\{ preventScroll: true \}\)/);
+  // Boutons : affichés avec JavaScript ; sans <dialog> (anciens Safari), le
+  // bouton « Sommaire » reste et mène au sommaire de la page (non-régression
+  // du bouton disparu)
+  assert.match(script, /if \(buttons\) buttons\.hidden = false;/);
+  assert.match(script, /if \(button && sheet && typeof sheet\.showModal !== 'function'\) \{/);
+  assert.match(script, /topButton\.hidden = window\.scrollY < window\.innerHeight \* 0\.75;/);
+  assert.match(script, /prefers-reduced-motion: reduce/);
+  assert.match(page, /<h2 class="site__toc-title" id="sommaire-page" tabindex="-1">/);
   assert.doesNotMatch(script, /innerHTML|fetch\(|XMLHttpRequest|import\(/);
   assert.deepEqual([...script.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]), ['./search.js'], 'rien d\'autre que la recherche, copiée sur le site');
   assert.match(script, /mark\.className = 'hit';/);
-  assert.match(script, /if \(event\.key === 'Escape' && field\.value !== ''\)/);
+  // Échap : efface, puis (déjà vide) ferme la barre
+  assert.match(script, /if \(event\.key !== 'Escape'\) return;\s*event\.preventDefault\(\);\s*if \(field\.value !== ''\) \{/);
   assert.match(script, /other\.setAttribute\('aria-expanded', String\(open\)\)/);
 });
 
@@ -163,7 +179,7 @@ test('page publique autonome : rien chargé d\'ailleurs, pas de noindex (choix d
   // Texte toujours protégé
   assert.equal(html('<b>"&'), '&lt;b&gt;&quot;&amp;');
   assert.equal(inlineHtml('Voir [[npm]], `a<b`, [site](https://exemple.fr).'),
-    'Voir <a class="help__ref" href="#npm">4.4 Régler Nginx Proxy Manager</a>, <code class="help__code-inline">a&lt;b</code>, <a href="https://exemple.fr" rel="noopener noreferrer">site</a>.');
+    'Voir <a class="help__ref" href="#npm">3.5 Exemple avec Nginx Proxy Manager</a>, <code class="help__code-inline">a&lt;b</code>, <a href="https://exemple.fr" rel="noopener noreferrer">site</a>.');
   assert.match(read('README.md'), /https:\/\/magicgg91\.github\.io\/listo\//);
 });
 

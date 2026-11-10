@@ -98,7 +98,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
     /check: \(item, checked\) => editable\(\) && actions\.checkItem\(item, checked\)/,
     /async function sendPhoto\(file\) \{\s*if \(!editable\(\)\) return;/,
     /if \(!ok \|\| !editable\(\)\) return;\s*await actions\.removePhoto\(current\);/,
-    /event\.preventDefault\(\);\s*if \(!editable\(\)\) \{\s*sheet\.close\(\);/,
+    /event\.preventDefault\(\);\s*if \(!editable\(\)\) \{\s*sheet\.forceClose\(\);/,
     /function openItemSheet\(item\) \{\s*swipes\.close\(\);[^\n]*\n\s*if \(!editable\(\)\) return openItemView\(item\);/,
   ]) assert.match(list, guard);
   assert.equal((list.match(/if \(!ok \|\| !editable\(\)\) return;/g) ?? []).length, 3, 'tout décocher, retirer les cochés, retirer la photo');

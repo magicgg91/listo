@@ -206,7 +206,7 @@ test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre ave
   const ui = read('public/js/ui.js');
   assert.match(ui, /const opener = returnTo \?\? document\.activeElement;/);
   assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
-  assert.match(ui, /\), \{ onClose, returnTo \}\);/);
+  assert.match(ui, /\), \{ onClose, returnTo, beforeClose \}\);/);
   // Ordre du formulaire : titre (avec l'icône), type, « Pour qui ? », magasin
   assert.match(form, /nameField\.field,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\),\s*forField,\s*storeField,/);
   const css = read('public/css/app.css');

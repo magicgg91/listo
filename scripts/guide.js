@@ -255,16 +255,16 @@ export function siteHtml() {
 <body class="app site">
 ${sprite()}
 <a class="skip-link" href="#contenu">Aller au contenu</a>
+<div class="help-search help-search--bar site__search" id="guide-recherche" hidden>
+<div class="help-search__row"><label class="searchfield">${svgIcon('search', 'icon--sm')}<input class="searchfield__input" id="guide-recherche-champ" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="100" placeholder="Rechercher dans le guide" aria-label="Rechercher dans le guide"><button class="icon-btn" type="button" aria-label="Effacer la recherche" data-clear hidden>${svgIcon('x-circle')}</button></label><button class="icon-btn" type="button" aria-label="Fermer la recherche" data-close-search>${svgIcon('close')}</button></div>
+<p class="help-search__status" role="status"></p>
+</div>
 <div class="site__inner">
 <header class="site__head">
 <div class="site__brand"><img class="site__logo" src="icon.svg" alt="" width="44" height="44"><h1 class="site__title" id="haut" tabindex="-1">Listo : le guide</h1></div>
 <p class="site__intro">Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide »). Les parties marquées « ${html(SERVER_NOTE)} » ne concernent que l'installation du serveur.</p>
 </header>
-<div class="help-search" id="guide-recherche" hidden>
-<label class="searchfield">${svgIcon('search', 'icon--sm')}<input class="searchfield__input" id="guide-recherche-champ" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="100" placeholder="Rechercher dans le guide" aria-label="Rechercher dans le guide"><button class="icon-btn" type="button" aria-label="Effacer la recherche" data-clear hidden>${svgIcon('x-circle')}</button></label>
-<p class="help-search__status" role="status"></p>
-</div>
-<nav class="card site__toc" aria-labelledby="sommaire-page"><h2 class="site__toc-title" id="sommaire-page">Sommaire</h2>
+<nav class="card site__toc" aria-labelledby="sommaire-page"><h2 class="site__toc-title" id="sommaire-page" tabindex="-1">Sommaire</h2>
 ${pageTocHtml()}
 </nav>
 <main class="help" id="contenu">
@@ -273,7 +273,11 @@ ${chapters.join('\n')}
 </main>
 <footer class="site__foot"><p>Listo est un logiciel libre (licence Apache-2.0). Code source : <a href="${REPO_URL}" rel="noopener noreferrer">${REPO_URL.replace('https://', '')}</a>.</p></footer>
 </div>
-<button class="fab help__toc-btn" id="sommaire-bouton" type="button" aria-label="Sommaire du guide" aria-haspopup="dialog" aria-expanded="false" aria-controls="sommaire" hidden>${svgIcon('layers')}Sommaire</button>
+<div class="help-fabs" id="boutons" hidden>
+<button class="help-fab" id="haut-bouton" type="button" aria-label="Retour en haut de la page" data-tip="Retour en haut de la page" hidden>${svgIcon('arrow-up')}</button>
+<button class="help-fab" id="recherche-bouton" type="button" aria-label="Rechercher dans le guide" data-tip="Rechercher dans le guide" aria-expanded="false" aria-controls="guide-recherche">${svgIcon('search')}</button>
+<button class="help-fab help__toc-btn" id="sommaire-bouton" type="button" aria-label="Sommaire du guide" data-tip="Sommaire du guide" aria-haspopup="dialog" aria-expanded="false" aria-controls="sommaire">${svgIcon('layers')}</button>
+</div>
 <dialog class="sheet sheet--scroll site-sheet" id="sommaire" aria-labelledby="sommaire-titre">
 <div class="sheet__grab" aria-hidden="true"></div>
 <div class="sheet__head sheet__head--tools"><div class="sheet__heading"><h2 class="sheet__title" id="sommaire-titre">Sommaire</h2></div><div class="sheet__tools"><button class="icon-btn" type="button" aria-label="Fermer" data-close>${svgIcon('close')}</button></div></div>

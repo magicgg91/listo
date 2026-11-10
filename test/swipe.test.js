@@ -157,7 +157,7 @@ test('écran : chaque ligne glisse, zone rouge = vrai bouton « Supprimer <nom> 
   assert.match(list, /icon\('trash'\), h\('span', \{\}, 'Supprimer'\)\);/);
   assert.match(list, /swipes\.attach\(row, slide, remove\);/);
   // Même chemin que la poubelle de la fiche : file d'attente, puis « Annuler »
-  assert.match(list, /await actions\.deleteItem\(item\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: 'Annuler', onAction: \(\) => actions\.restoreItem\(item\.id\) \}\);/);
+  assert.match(list, /await actions\.deleteItem\(item\);[\s\S]{0,200}toast\(`« \$\{item\.name\} » supprimé`, \{ action: pc \? 'Annuler \(Ctrl\+Z\)' : 'Annuler', onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);/);
   const actionsJs = read('public/js/actions.js');
   assert.match(actionsJs, /export const deleteItem = \(item\) => perform\(\{ type: 'item\.delete', itemId: item\.id \}\);/);
   assert.match(actionsJs, /export const restoreItem = \(itemId\) => perform\(\{ type: 'item\.restore', itemId \}\);/);

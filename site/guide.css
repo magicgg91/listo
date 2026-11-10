@@ -7,7 +7,7 @@
    flottant (.fab) : le bas de la page garde la place de ce bouton. */
 .help-screen { position: relative; }
 /* Pas de marge en haut : l'en-tête collé d'un chapitre touche la barre du haut (rien ne défile au-dessus) */
-.help { padding-top: 0; padding-bottom: calc(56px + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px)); }
+.help { padding-top: 0; padding-bottom: calc(var(--help-fab) * 3 + 12px * 2 + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px)); }
 .help-who__row { padding: 12px var(--space-2); border-bottom: 1px solid var(--color-border); }
 .help-who__row:last-child { border-bottom: 0; }
 .help-who__action { margin: 0 0 8px; font-weight: 600; }
@@ -45,9 +45,30 @@
 .help-table__key { margin: 0 0 2px; font-weight: 600; }
 .help-table__cell { margin: 0; font-size: var(--text-sm); }
 .help-table__head { color: var(--color-text-2); }
-/* Recherche dans le guide : le champ du kit (.searchfield, 48 px), le
-   compteur annoncé dessous, un message quand rien n'est trouvé */
+/* Boutons flottants du guide (application et site) : trois ronds de même
+   taille, icône seule, en pile en bas à droite, au-dessus de la zone de
+   sécurité ; de bas en haut : Sommaire, Recherche, Retour en haut (ce
+   dernier après un certain défilement). Cibles de 48 px (44 au moins).
+   Info-bulle (data-tip) au survol et au focus, seulement avec une souris. */
+.help-screen, .site, .help-fabs { --help-fab: 48px; }
+.help-fabs { position: absolute; right: var(--space-2); bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); z-index: 5; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.help-fab { position: relative; display: grid; place-items: center; width: var(--help-fab); height: var(--help-fab); padding: 0; border: 0; border-radius: 50%; background: var(--color-accent); color: var(--color-on-accent); box-shadow: var(--shadow-fab); }
+.help-fab[hidden] { display: none; }
+.help-fab:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.help-fab[aria-expanded="true"] { background: var(--color-accent-ink); }
+@media (hover: hover) and (pointer: fine) {
+  .help-fab::after { content: attr(data-tip); position: absolute; right: calc(100% + 10px); top: 50%; display: none; padding: 6px 10px; border-radius: 8px; background: var(--color-inverse-bg); color: var(--color-inverse-text); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; transform: translateY(-50%); box-shadow: var(--shadow-pop); pointer-events: none; }
+  .help-fab:hover::after, .help-fab:focus-visible::after { display: block; }
+}
+/* Recherche dans le guide : barre ouverte par la loupe, collée sous la barre
+   du haut (hors de la zone qui défile) : le champ du kit (.searchfield,
+   48 px), « Fermer la recherche », le compteur annoncé dessous ; un message
+   quand rien n'est trouvé */
 .help-search { display: flex; flex-direction: column; gap: 4px; padding: var(--space-1) 0; }
+.help-search--bar { flex: none; padding: 0 var(--space-2) var(--space-1); border-bottom: 1px solid var(--color-border); background: var(--color-bg); }
+.help-search--bar[hidden] { display: none; }
+.help-search__row { display: flex; align-items: center; gap: var(--space-0); }
+.help-search .help-search__row .searchfield { flex: 1; min-width: 0; }
 /* Dans une colonne, « flex: 1 » du champ du kit écraserait sa hauteur de 48 px */
 .help-search .searchfield { flex: none; }
 .help-search__status { margin: 0 var(--space-1); min-height: 1.4em; font-size: var(--text-sm); color: var(--color-text-2); }
@@ -86,7 +107,7 @@ html { background: var(--color-bg); scroll-padding-top: var(--space-1); }
 body { margin: 0; }
 /* La page défile comme un site ordinaire (ancres, recherche du navigateur) */
 .site { display: block; height: auto; min-height: 100vh; }
-.site__inner { max-width: 760px; margin: 0 auto; padding: var(--space-2) var(--space-2) calc(56px + var(--space-3) * 3 + env(safe-area-inset-bottom, 0px)); }
+.site__inner { max-width: 760px; margin: 0 auto; padding: var(--space-2) var(--space-2) calc(var(--help-fab) * 3 + 12px * 2 + var(--space-3) * 2 + env(safe-area-inset-bottom, 0px)); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Lien d'évitement : visible seulement au clavier */
@@ -112,8 +133,10 @@ body { margin: 0; }
 .site__toc-chapter > summary > .icon { flex: none; transform: rotate(-90deg); transition: transform 160ms var(--ease); }
 .site__toc-chapter[open] > summary > .icon { transform: none; }
 .site__toc-chapter > summary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-.site .help-search { margin-bottom: var(--space-1); }
-/* Recherche cachée sans JavaScript (elle ne marcherait pas) : [hidden] l'emporte sur display: flex */
+/* Barre de recherche (ouverte par la loupe) : collée en haut de la fenêtre
+   pendant le défilement, contenu centré sur la largeur de la page. Cachée
+   sans JavaScript (elle ne marcherait pas) : [hidden] l'emporte sur display: flex */
+.site__search { position: sticky; top: 0; z-index: 6; padding: var(--space-1) max(var(--space-2), calc((100% - 760px) / 2 + var(--space-2))); }
 .site .help-search[hidden], .site .help-search__empty[hidden] { display: none; }
 a.help-toc__entry:hover { text-decoration: underline; }
 
@@ -127,9 +150,10 @@ a.help-toc__entry:hover { text-decoration: underline; }
 /* Pied de page */
 .site__foot { margin-top: var(--space-3); color: var(--color-text-2); font-size: var(--text-sm); }
 
-/* Bouton « Sommaire » : flottant en bas à droite, à portée du pouce */
-.site .fab { position: fixed; right: max(var(--space-2), calc((100vw - 760px) / 2)); }
-.site .fab[hidden] { display: none; }
+/* Boutons flottants (Retour en haut, Recherche, Sommaire) : fixés en bas à
+   droite de la fenêtre, à portée du pouce ; absents sans JavaScript */
+.site .help-fabs { position: fixed; right: max(var(--space-2), calc((100vw - 760px) / 2)); }
+.site .help-fabs[hidden] { display: none; }
 
 /* Feuille du sommaire : un <dialog> natif (Échap, fond inerte, focus) avec
    l'apparence de la feuille du kit */

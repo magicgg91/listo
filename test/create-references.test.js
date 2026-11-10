@@ -181,5 +181,5 @@ test('écran : même feuille pour magasin et rayon, dernière ligne des choix, h
   assert.match(form, /selected = made\.id;\s*paintRows\(\);/);
   assert.match(read('public/sw.js'), /'\/js\/create-reference\.js',/);
   // Feuille ouverte par-dessus un choix : elle passe au-dessus, fond grisé compris
-  assert.match(read('public/js/ui.js'), /const below = host\.querySelectorAll\(':scope > \.scrim'\)\.length - 1;\s*if \(below > 0\) \{/);
+  assert.match(read('public/js/ui.js'), /const below = target\.querySelectorAll\(':scope > \.scrim'\)\.length - 1;\s*if \(below > 0\) \{/);
 });

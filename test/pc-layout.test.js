@@ -22,7 +22,7 @@ test('kit : section 16.14 identique dans design/ et public/, sans couleur en dur
   // Rien des planches de maquettes
   assert.doesNotMatch(section, /\.(is-hover|is-focus|is-selected|pc-yes|pc-no|pc--wide|pc--narrow|desk|shot|stage|schema|cmp|rz)\b/);
   // Aide : noms propres au PC (l'écran d'aide du téléphone garde .help)
-  assert.doesNotMatch(section.replace(/\/\*[\s\S]*?\*\//g, ''), /(^|[\s,}])\.(help|toc|prose)\b/m);
+  assert.doesNotMatch(section.replace(/\/\*[\s\S]*?\*\//g, ''), /(^|[\s,}])\.(help|toc|prose)(?![\w-])/m);
   assert.match(section, /\.pc-help \{/);
   assert.match(section, /\.pc-toc \{/);
   assert.match(section, /\.pc-prose \{/);
@@ -55,7 +55,7 @@ test('bascule : app--pc à partir de 1 024 px, même écran redessiné, menu gar
   const app = read('public/js/app.js');
   assert.match(app, /const desktop = window\.matchMedia\('\(min-width: 1024px\)'\);/);
   assert.match(app, /const markLayout = \(\) => root\.classList\.toggle\('app--pc', isDesktop\(\)\);/);
-  assert.match(app, /desktop\.addEventListener\('change', \(\) => \{\s*markLayout\(\);\s*show\(app\.route\);\s*\}\);/);
+  assert.match(app, /desktop\.addEventListener\('change', \(\) => \{[^}]*closeOverlays\(\);\s*markLayout\(\);\s*show\(app\.route\);\s*\}\);/);
   assert.match(app, /replace\(root, h\('div', \{ class: 'pc pc--a' \}, pcSideFor\(app\.route\), h\('main', \{ class: 'pc-main' \}, col\)\)\);/);
   // Menu refait si le compte change (autre compte, nom, rôle), retiré hors connexion
   assert.match(app, /const owner = JSON\.stringify\(\[app\.user\?\.id, app\.user\?\.displayName, app\.user\?\.role\]\);/);
@@ -84,9 +84,9 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   // Le serveur n'envoie jamais les réservations au bénéficiaire : sans elles, aucun bouton
   assert.match(list, /if \(!view\?\.reservations \|\| item\.checked \|\| view\.reservations\.get\(item\.id\)\?\.participants\.length\) return null;/);
   // Corbeille au survol : même suppression annulable que le glissement
-  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, onClick: \(\) => deleteWithUndo\(item\) \}/);
-  // « Partager » : propriétaire seulement (le serveur refuse aussi)
-  assert.match(list, /replace\(shareSlot, list\.isOwner\s*\? h\('button'/);
+  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: \(\) => deleteWithUndo\(item\) \}/);
+  // « Partager » (propriétaire) ou « Personnes » (les autres) : le tiroir du partage
+  assert.match(list, /list\.isOwner \? 'Partager' : 'Personnes', people\)\);/);
   // Bandeau du bénéficiaire : il ne voit jamais les réservations
   assert.match(list, /list\.isBeneficiary\s*\? \[icon\('eye-off', 'icon--sm'\), h\('span', \{\}, 'Vous ne voyez jamais les réservations : la surprise reste entière\.'\)\]/);
   assert.doesNotMatch(list, /innerHTML/);
@@ -111,4 +111,125 @@ test('icônes de l\'interface ordinateur : dans les deux sprites, sans doublon',
     assert.equal(kitSprite.match(symbol)?.[0], inApp, `i-${name} identique dans design/icons-sprite.html`);
     assert.equal(app.split(`id="i-${name}"`).length, 2, `i-${name} une seule fois`);
   }
+});
+
+// --- Étape 2 : tiroir, fenêtres centrées, partage ---
+
+test('fenêtres de l\'ordinateur : tiroir ou fenêtre centrée, role dialog et aria-modal, titre relié, reste de la page inerte, Échap à la fenêtre du dessus', () => {
+  const ui = read('public/js/ui.js');
+  // Posées sur toute l'application, et le reste inerte tant qu'une fenêtre est ouverte
+  assert.match(ui, /const target = pc && onPc\(\) \? pcLayer : host;/);
+  assert.match(ui, /if \(onLayer\) \{\s*pcOpen\+\+;\s*setPcInert\(true\);\s*\}/);
+  assert.match(ui, /if \(!pcOpen\) setPcInert\(false\);/);
+  assert.match(ui, /if \(on\) rest\.setAttribute\('inert', ''\);\s*else rest\.removeAttribute\('inert'\);/);
+  assert.match(ui, /panel\.setAttribute\('role', role\);\s*panel\.setAttribute\('aria-modal', 'true'\);/);
+  // Tiroir (fiche, partage) ou fenêtre centrée (confirmations, choix, création), titre relié
+  assert.match(ui, /class: `pc-panel \$\{pc === 'drawer' \? 'pc-drawer' : `pc-modal\$\{size \? ` pc-modal--\$\{size\}` : ''\}`\}`,\s*'aria-labelledby': titleId,/);
+  assert.match(ui, /class: pc \? 'pc-panel pc-modal pc-modal--sm' : 'dialog', 'aria-labelledby': titleId, 'aria-describedby': textId/);
+  // Seule la fenêtre du dessus répond à Échap ; focus rendu à l'élément d'origine
+  assert.match(ui, /if \(event\.key === 'Escape' && onLayer && target\.lastElementChild !== panel\) return;/);
+  assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
+  // Passage sous 1 024 px : fenêtres refermées avant de redessiner
+  assert.match(read('public/js/app.js'), /closeOverlays\(\);\s*markLayout\(\);\s*show\(app\.route\);/);
+  // Le téléphone garde ses feuilles : rien de tout cela sans .app--pc
+  assert.match(ui, /export const onPc = \(\) => Boolean\(pcLayer\?\.classList\.contains\('app--pc'\)\);/);
+  assert.match(ui, /if \(onPc\(\)\) \{\s*return overlay\(/);
+});
+
+test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer / Annuler / Enregistrer, confirmation avant d\'abandonner des changements', () => {
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, 'Annuler'\), save\] : null,/);
+  assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: 'Abandonner les modifications \?',/);
+  assert.match(list, /focusCancel: true,\s*\}\) : null,/);
+  assert.match(list, /const dirtyNote = h\('p', \{ class: 'pc-meta' \}, 'Modifications non enregistrées'\);/);
+  // Enregistrer et supprimer ferment sans demander
+  assert.match(list, /await actions\.updateItem\(item, changes\);\s*sheet\.forceClose\(\);/);
+  // Fiche à consulter (lecture seule) : tiroir aussi, sans bouton qui écrit
+  assert.match(list, /pc: 'drawer', \/\/ ordinateur : tiroir à droite, comme la fiche à modifier/);
+});
+
+test('partage (ordinateur) : le propriétaire gère personnes et lien ; les autres voient les personnes, sans gestion ni lien public', () => {
+  const panel = read('public/js/screens/share-panel.js');
+  // Gestion (choix du droit, retrait, ajout, lien) : propriétaire seulement
+  assert.match(panel, /const owner = Boolean\(start\.isOwner\);/);
+  assert.match(panel, /else if \(!owner\) right = h\('span', \{ class: 'pc-meta' \}, levelLabel\(person\.access\)\);/);
+  assert.match(panel, /if \(owner\) \{\s*const candidates/);
+  assert.match(panel, /const link = owner \? linkPart\(start, \(\) => panel\.close\(\)\) : null;/);
+  assert.match(panel, /title: owner \? 'Partager la liste' : 'Personnes',/);
+  // Destinataire d'une liste d'envies : « Peut modifier », sans choix
+  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, 'Destinataire · Peut modifier'\);/);
+  // Même route que le formulaire, en ligne seulement ; jamais d'e-mail
+  assert.match(panel, /await put\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`, \{/);
+  assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
+  // Le lien public : le même contenu que la feuille du téléphone
+  assert.match(read('public/js/screens/share.js'), /export function linkPart\(list, close\) \{/);
+  assert.match(read('public/sw.js'), /'\/js\/screens\/share-panel\.js',/);
+});
+
+test('« Nouvelle liste » et « Modifier la liste » (ordinateur) : fenêtre centrée, adresse gardée, focus sur la fenêtre (jamais sur le champ)', () => {
+  const form = read('public/js/screens/list-form.js');
+  assert.match(form, /export function openListFormPanel\(listId\) \{/);
+  assert.match(form, /pc: 'modal',\s*size: 'lg',\s*history: false,/);
+  assert.match(form, /if \(location\.hash === hash\) goBack\(/);
+  const app = read('public/js/app.js');
+  assert.match(app, /case 'newList':\s*if \(isDesktop\(\)\) \{\s*if \(!mountedOnPc\) mount\(\(onLeave\) => renderLists\(onLeave\)\);\s*openListFormPanel\(null\);/);
+  assert.match(read('public/js/router.js'), /export function openOverlay\(close, \{ push = true \} = \{\}\) \{/);
+  // Aucun data-initial-focus dans la fenêtre : elle prend le focus sur elle-même
+  assert.doesNotMatch(form.slice(form.indexOf('export function openListFormPanel'), form.indexOf('export function renderListForm')), /data-initial-focus|\.focus\(/);
+});
+
+// --- Étape 4 : Réglages, aide, états, guide ---
+
+test('aide (ordinateur) : sommaire fixe à gauche (chapitre en cours repéré), recherche dans l\'en-tête, pas de boutons flottants ; téléphone inchangé', () => {
+  const help = read('public/js/screens/help.js');
+  assert.match(help, /const pc = onPc\(\);/);
+  assert.match(help, /const opened = new Set\(pc \? GUIDE\.map\(\(c\) => c\.id\) : \[GUIDE\[0\]\.id\]\);/);
+  assert.match(help, /if \(id === chapter\) link\.setAttribute\('aria-current', 'true'\);\s*else link\.removeAttribute\('aria-current'\);/);
+  // Ordinateur : l'écran est rendu sans la pile de boutons flottants
+  const pcBranch = help.slice(help.indexOf('if (pc) {\n    searchRow.hidden = false;'), help.indexOf("const screen = h('div', { class: 'screen help-screen' },"));
+  assert.ok(pcBranch.length > 0);
+  assert.doesNotMatch(pcBranch, /help-fabs/);
+  assert.match(pcBranch, /h\('header', \{ class: 'pc-head' \}/);
+  // Téléphone : les trois boutons flottants restent
+  assert.match(help, /h\('div', \{ class: 'help-fabs' \}, topButton, searchButton, tocButton\)\);/);
+  // Échap : sur ordinateur la recherche reste affichée
+  assert.match(help, /else if \(pc\) releaseFocus\(\); \/\/ ordinateur : la recherche reste affichée/);
+  assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
+});
+
+test('Réglages (ordinateur) : mêmes contenus en cartes, « Raccourcis à une touche », Administration pour l\'Admin seulement', () => {
+  const settings = read('public/js/screens/settings.js');
+  assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
+  assert.match(settings, /section\('Apparence et clavier', h\('div', \{ class: 'group' \},/);
+  assert.match(settings, /keysRow\(\)\)\),/);
+  assert.match(settings, /isAdmin \? section\('Administration',/);
+  assert.match(settings, /user\.claudeUrl \? section\('Connexions Claude',/);
+  // Téléphone : plus de section « Clavier » (rien de nouveau)
+  assert.doesNotMatch(settings.slice(settings.indexOf('export function renderSettings'), settings.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
+});
+
+test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après une erreur, astuce dans une liste vide ; rien de cela sur téléphone', () => {
+  const ui = read('public/js/ui.js');
+  assert.match(ui, /export function offlineBanner\(\) \{/);
+  assert.match(ui, /banner\.hidden = state !== 'off';/);
+  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: 'Réessayer', onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, 'Astuce : appuyez sur '/);
+  // Le bandeau n'est posé que dans les écrans de l'ordinateur
+  const phone = list.slice(list.lastIndexOf("  return h('div', { class: 'screen' },"));
+  assert.doesNotMatch(phone, /offlineBanner/);
+});
+
+test('guide : section « Sur ordinateur » dans « Au quotidien » (disposition, panneaux, raccourcis, désactivation, Ctrl+Z)', async () => {
+  const { GUIDE } = await import('../public/js/help-content.js');
+  const quotidien = GUIDE.find((c) => c.id === 'quotidien');
+  const section = quotidien.sections.find((s) => s.id === 'ordinateur');
+  assert.ok(section);
+  assert.equal(section.title, 'Sur ordinateur');
+  const text = JSON.stringify(section.blocks);
+  for (const words of ['1 024 pixels', 'panneau à droite', 'Raccourcis à une touche', 'Ctrl+Z', 'Modifié entre-temps', 'Ne s\'annulent pas', 'aucun raccourci ne réserve']) assert.ok(text.includes(words), words);
+  const keys = section.blocks.find((b) => b.table).table.rows.map((r) => r[0]);
+  assert.deepEqual(keys, ['?', 'N', '/', ',', 'Échap', '[ et ]', 'P', 'A', '↓ et ↑', 'Espace', 'Entrée', 'E', 'Suppr', 'Ctrl+Z', 'Ctrl+Entrée', 'S']);
+  // Toujours 8 chapitres, dans l'ordre demandé
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'roles', 'claude', 'faq']);
 });

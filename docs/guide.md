@@ -32,89 +32,91 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 </details>
 
 <details>
-<summary>3. MCP Claude</summary>
-
-- [Aller au chapitre](#claude)
-- [3.1 À quoi ça sert](#claude-quoi)
-- [3.2 Exemples de phrases](#claude-phrases)
-- [3.3 Deux niveaux d'accord](#claude-niveaux)
-- [3.4 Ce que Claude ne peut jamais faire](#claude-jamais)
-- [3.5 Listes d'envies : aucune réservation](#claude-envies)
-- [3.6 Limites](#claude-limites)
-- [3.7 Connecter Claude](#claude-connecter)
-- [3.8 Voir et déconnecter Claude](#claude-connexions)
-- [3.9 Prudence : les textes piégés](#claude-prudence)
-- [3.10 Dépannage](#faq-claude)
-- [3.11 Un accès désactivé au départ](#claude-activation)
-- [3.12 Activer l'accès sur le serveur](#mcp-serveur)
-- [3.13 Règles et journal](#mcp-regles)
-- [3.14 Premier essai](#mcp-essai)
-
-</details>
-
-<details>
-<summary>4. Installation</summary>
+<summary>3. Installation</summary>
 
 - [Aller au chapitre](#installation)
-- [4.1 Ce qu'il faut](#prerequis)
-- [4.2 Le dossier et docker-compose.yml](#dossier)
-- [4.3 Les réglages (variables)](#variables)
-- [4.4 Régler Nginx Proxy Manager](#npm)
-- [4.5 Premier démarrage et code de démarrage](#demarrage)
-- [4.6 Garder la clé secrète](#cle)
-- [4.7 Sauvegardes](#sauvegardes)
-- [4.8 Vérifications une fois en production](#verifications)
+- [3.1 Ce qu'il faut](#prerequis)
+- [3.2 Le dossier et docker-compose.yml](#dossier)
+- [3.3 Les réglages (variables)](#variables)
+- [3.4 Ce que doit faire le proxy](#proxy)
+- [3.5 Exemple avec Nginx Proxy Manager](#npm)
+- [3.6 Premier démarrage et code de démarrage](#demarrage)
+- [3.7 Garder la clé secrète](#cle)
+- [3.8 Sauvegardes](#sauvegardes)
+- [3.9 Vérifications une fois en production](#verifications)
 
 </details>
 
 <details>
-<summary>5. Les comptes</summary>
+<summary>4. Les comptes</summary>
 
 - [Aller au chapitre](#comptes)
-- [5.1 Le premier Admin](#premier-admin)
-- [5.2 Créer les autres comptes](#creer-comptes)
-- [5.3 Première connexion](#premiere-connexion)
-- [5.4 Installer Listo sur le téléphone](#telephone)
-- [5.5 Changer de mot de passe](#mot-de-passe)
-- [5.6 Double authentification et codes de secours](#double-auth)
-- [5.7 Mot de passe oublié, téléphone perdu](#oubli)
-- [5.8 Compte Admin perdu](#secours)
+- [4.1 Le premier Admin](#premier-admin)
+- [4.2 Créer les autres comptes](#creer-comptes)
+- [4.3 Première connexion](#premiere-connexion)
+- [4.4 Installer Listo sur le téléphone](#telephone)
+- [4.5 Changer de mot de passe](#mot-de-passe)
+- [4.6 Double authentification et codes de secours](#double-auth)
+- [4.7 Mot de passe oublié, téléphone perdu](#oubli)
+- [4.8 Compte Admin perdu](#secours)
 
 </details>
 
 <details>
-<summary>6. Au quotidien</summary>
+<summary>5. Au quotidien</summary>
 
 - [Aller au chapitre](#quotidien)
-- [6.1 Ajouter, modifier, cocher, supprimer](#ajouter)
-- [6.2 Saisir la quantité avec le nom](#quantite)
-- [6.3 Ajouter plusieurs articles d'un coup](#plusieurs)
-- [6.4 Scanner un code-barres](#scan)
-- [6.5 Ajouter une photo](#photo)
-- [6.6 Groupes, tri et compteur](#tri)
-- [6.7 Rechercher](#recherche)
-- [6.8 Réserver un souhait, cotiser](#reserver)
-- [6.9 Nouveautés](#nouveautes)
-- [6.10 Hors ligne et synchronisation](#hors-ligne)
-- [6.11 Thème clair ou sombre](#theme)
+- [5.1 Ajouter, modifier, cocher, supprimer](#ajouter)
+- [5.2 Saisir la quantité avec le nom](#quantite)
+- [5.3 Ajouter plusieurs articles d'un coup](#plusieurs)
+- [5.4 Scanner un code-barres](#scan)
+- [5.5 Ajouter une photo](#photo)
+- [5.6 Groupes, tri et compteur](#tri)
+- [5.7 Rechercher](#recherche)
+- [5.8 Réserver un souhait, cotiser](#reserver)
+- [5.9 Nouveautés](#nouveautes)
+- [5.10 Hors ligne et synchronisation](#hors-ligne)
+- [5.11 Thème clair ou sombre](#theme)
+- [5.12 Sur ordinateur](#ordinateur)
 
 </details>
 
 <details>
-<summary>7. Rôle par rôle</summary>
+<summary>6. Rôle par rôle</summary>
 
 - [Aller au chapitre](#roles)
-- [7.1 Admin](#role-admin)
-- [7.2 Propriétaire : créer une liste](#creer)
-- [7.3 Propriétaire : modifier la liste](#modifier)
-- [7.4 Propriétaire : partager et choisir les droits](#partager)
-- [7.5 Propriétaire : liste d'envies](#envies)
-- [7.6 Propriétaire : le lien public](#lien-public)
-- [7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)
-- [7.8 Contributeur (« Peut modifier »)](#role-contributeur)
-- [7.9 Lecture seule](#role-lecture)
-- [7.10 Visiteur du lien public](#role-visiteur)
-- [7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)
+- [6.1 Admin](#role-admin)
+- [6.2 Propriétaire : créer une liste](#creer)
+- [6.3 Propriétaire : modifier la liste](#modifier)
+- [6.4 Propriétaire : partager et choisir les droits](#partager)
+- [6.5 Propriétaire : liste d'envies](#envies)
+- [6.6 Propriétaire : le lien public](#lien-public)
+- [6.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)
+- [6.8 Contributeur (« Peut modifier »)](#role-contributeur)
+- [6.9 Lecture seule](#role-lecture)
+- [6.10 Visiteur du lien public](#role-visiteur)
+- [6.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)
+
+</details>
+
+<details>
+<summary>7. MCP Claude</summary>
+
+- [Aller au chapitre](#claude)
+- [7.1 À quoi ça sert](#claude-quoi)
+- [7.2 Exemples de phrases](#claude-phrases)
+- [7.3 Deux niveaux d'accord](#claude-niveaux)
+- [7.4 Ce que Claude ne peut jamais faire](#claude-jamais)
+- [7.5 Listes d'envies : aucune réservation](#claude-envies)
+- [7.6 Limites](#claude-limites)
+- [7.7 Connecter Claude](#claude-connecter)
+- [7.8 Voir et déconnecter Claude](#claude-connexions)
+- [7.9 Prudence : les textes piégés](#claude-prudence)
+- [7.10 Dépannage](#faq-claude)
+- [7.11 Un accès désactivé au départ](#claude-activation)
+- [7.12 Activer l'accès sur le serveur](#mcp-serveur)
+- [7.13 Règles et journal](#mcp-regles)
+- [7.14 Premier essai](#mcp-essai)
 
 </details>
 
@@ -155,11 +157,11 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 
 ### 1.2 Ce que Listo ne fait pas
 
-- Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [4. Installation](#installation).
+- Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
 - Français seulement.
 - Pas de notification : les nouveautés se voient en ouvrant Listo.
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
-- Aucune donnée envoyée ailleurs que sur votre serveur, sauf deux demandes que l'on peut couper : la vérification d'une nouvelle version (GitHub, [8.9 Savoir qu'une nouvelle version existe](#version)) et le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([3. MCP Claude](#claude)).
+- Aucune donnée envoyée ailleurs que sur votre serveur, sauf deux demandes que l'on peut couper : la vérification d'une nouvelle version (GitHub, [8.9 Savoir qu'une nouvelle version existe](#version)) et le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([7. MCP Claude](#claude)).
 
 <a id="types"></a>
 
@@ -193,242 +195,81 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 ### 2.1 Listes partagées en direct
 
-- Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([7.4 Propriétaire : partager et choisir les droits](#partager)).
+- Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([6.4 Propriétaire : partager et choisir les droits](#partager)).
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
-- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([6.9 Nouveautés](#nouveautes)).
-- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([6.6 Groupes, tri et compteur](#tri)).
+- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.9 Nouveautés](#nouveautes)).
+- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.6 Groupes, tri et compteur](#tri)).
 
 <a id="p-courses"></a>
 
 ### 2.2 Courses : rayons et magasins
 
-- Articles classés par rayon ; Listo retient le rayon habituel de chaque article et propose les noms déjà saisis ([6.1 Ajouter, modifier, cocher, supprimer](#ajouter)).
-- Magasin « Multi » : une tournée de plusieurs boutiques, où chaque article a son magasin au lieu d'un rayon ([7.2 Propriétaire : créer une liste](#creer)).
-- Chacun peut créer un magasin ou un rayon qui manque ; l'Admin les gère ([7.1 Admin](#role-admin)).
+- Articles classés par rayon ; Listo retient le rayon habituel de chaque article et propose les noms déjà saisis ([5.1 Ajouter, modifier, cocher, supprimer](#ajouter)).
+- Magasin « Multi » : une tournée de plusieurs boutiques, où chaque article a son magasin au lieu d'un rayon ([6.2 Propriétaire : créer une liste](#creer)).
+- Chacun peut créer un magasin ou un rayon qui manque ; l'Admin les gère ([6.1 Admin](#role-admin)).
 
 <a id="p-taches"></a>
 
 ### 2.3 Tâches : priorité et échéance
 
-- Priorité (basse, normale, élevée) et échéance, activées liste par liste ([7.3 Propriétaire : modifier la liste](#modifier)).
-- Tri par priorité ou par échéance ([6.6 Groupes, tri et compteur](#tri)).
+- Priorité (basse, normale, élevée) et échéance, activées liste par liste ([6.3 Propriétaire : modifier la liste](#modifier)).
+- Tri par priorité ou par échéance ([5.6 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
 
 ### 2.4 Envies : réservation et cotisation
 
-- Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([7.5 Propriétaire : liste d'envies](#envies)).
-- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([6.8 Réserver un souhait, cotiser](#reserver)).
-- La personne à qui la liste est destinée ne voit jamais les réservations ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
-- Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([7.10 Visiteur du lien public](#role-visiteur)).
+- Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([6.5 Propriétaire : liste d'envies](#envies)).
+- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.8 Réserver un souhait, cotiser](#reserver)).
+- La personne à qui la liste est destinée ne voit jamais les réservations ([6.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+- Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([6.10 Visiteur du lien public](#role-visiteur)).
 
 <a id="p-saisie"></a>
 
 ### 2.5 Saisie rapide
 
-- Plusieurs articles d'un coup, séparés par des virgules ou des retours à la ligne ([6.3 Ajouter plusieurs articles d'un coup](#plusieurs)).
-- Quantité lue dans le nom : “6 oeufs” ou “oeufs x6” ([6.2 Saisir la quantité avec le nom](#quantite)).
-- Mode scan : le code-barres d'un produit, photographié, donne son nom ([6.4 Scanner un code-barres](#scan)).
-- Photo d'un article ([6.5 Ajouter une photo](#photo)).
+- Plusieurs articles d'un coup, séparés par des virgules ou des retours à la ligne ([5.3 Ajouter plusieurs articles d'un coup](#plusieurs)).
+- Quantité lue dans le nom : “6 oeufs” ou “oeufs x6” ([5.2 Saisir la quantité avec le nom](#quantite)).
+- Mode scan : le code-barres d'un produit, photographié, donne son nom ([5.4 Scanner un code-barres](#scan)).
+- Photo d'un article ([5.5 Ajouter une photo](#photo)).
 
 <a id="p-securite"></a>
 
 ### 2.6 Hors ligne, corbeille, lien public
 
-- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([6.10 Hors ligne et synchronisation](#hors-ligne)).
-- Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
-- Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)).
+- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.10 Hors ligne et synchronisation](#hors-ligne)).
+- Corbeille : une liste supprimée se restaure pendant 30 jours ([6.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
+- Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([6.6 Propriétaire : le lien public](#lien-public)).
 
 <a id="p-confort"></a>
 
 ### 2.7 Sécurité et confort
 
-- Double authentification, avec des codes de secours ([5.6 Double authentification et codes de secours](#double-auth)).
-- Sauvegarde automatique chaque nuit ([4.7 Sauvegardes](#sauvegardes)).
-- Thème clair, sombre ou automatique ([6.11 Thème clair ou sombre](#theme)).
-- Installation sur l'écran d'accueil du téléphone, comme une application ([5.4 Installer Listo sur le téléphone](#telephone)).
-- Claude (l'assistant d'Anthropic) peut lire vos listes et, si vous le permettez, y écrire ([3. MCP Claude](#claude)).
-
-<a id="claude"></a>
-
-## 3. MCP Claude
-
-<a id="claude-quoi"></a>
-
-### 3.1 À quoi ça sert
-
-Claude est l'assistant d'Anthropic (claude.ai, l'application mobile, Claude Desktop, Claude Code). Une fois connecté à Listo, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.
-
-Claude agit avec votre compte et vos droits, jamais plus : ce qu'il ajoute apparaît à votre nom, comme si vous l'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées.
-
-Cet accès n'existe que si la personne qui gère le serveur l'a activé ([3.11 Un accès désactivé au départ](#claude-activation)). Sinon, la section « Claude » n'apparaît pas dans « Mon compte ».
-
-<a id="claude-phrases"></a>
-
-### 3.2 Exemples de phrases
-
-- Lire : “Quelles sont mes listes Listo ?”, “Qu'y a-t-il dans la liste Courses ?”.
-- Ajouter, avec un rayon : “Ajoute des tomates au rayon fruits et légumes dans Courses.”
-- Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”
-- Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”
-- Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”
-- Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
-- Ranger : “Range le lait au rayon crèmerie.”
-
-Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.
-
-<a id="claude-niveaux"></a>
-
-### 3.3 Deux niveaux d'accord
-
-Au moment de connecter Claude, l'écran « Autoriser Claude » de Listo vous laisse choisir :
-
-- « Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.
-- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.
-
-Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.
-
-<a id="claude-jamais"></a>
-
-### 3.4 Ce que Claude ne peut jamais faire
-
-Quel que soit le niveau d'accord, Claude ne peut jamais :
-
-- supprimer un élément, ni changer son lien ou son prix ;
-- créer, renommer, supprimer ou partager une liste ;
-- gérer les personnes, le lien public ou la corbeille ;
-- voir les photos, ni qui a ajouté quoi.
-
-<a id="claude-envies"></a>
-
-### 3.5 Listes d'envies : aucune réservation
-
-Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge Claude. Dans une liste d'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec Claude comme sans lui.
-
-<a id="claude-limites"></a>
-
-### 3.6 Limites
-
-- 20 éléments au plus par demande.
-- Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, Claude reçoit un refus et rien n'est écrit.
-- 120 appels par minute et par connexion.
-- 5 connexions Claude actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.
-- Claude ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.
-
-<a id="claude-connecter"></a>
-
-### 3.7 Connecter Claude
-
-1. Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.
-2. Dans Claude (claude.ai, l'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.
-3. Claude ouvre l'écran « Autoriser Claude » de Listo. Vérifiez que c'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
-
-Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.
-
-Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
-
-<a id="claude-connexions"></a>
-
-### 3.8 Voir et déconnecter Claude
-
-Réglages, « Mon compte », « Connexions Claude » : chaque connexion autorisée y apparaît, avec l'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.
-
-- « Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n'est demandé.
-- Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.
-- Pour reconnecter Claude, il faut l'autoriser de nouveau.
-- L'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.
-
-<a id="claude-prudence"></a>
-
-### 3.9 Prudence : les textes piégés
-
-> **Attention** : Une liste partagée peut contenir un texte piégé, écrit par quelqu'un d'autre pour tromper Claude (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à Claude comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.
-
-Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans Listo ce qu'il a fait.
-
-<a id="faq-claude"></a>
-
-### 3.10 Dépannage
-
-- Après une mise à jour de Listo, Claude peut garder l'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.
-- Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([3.7 Connecter Claude](#claude-connecter)).
-- Claude refuse d'écrire : la connexion est en « Lecture seule », ou vous n'avez que le droit « Lecture seule » sur cette liste.
-- Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([3.8 Voir et déconnecter Claude](#claude-connexions)).
-- Claude dit qu'un rayon ou un magasin est inconnu : il n'existe pas, il est désactivé, ou (magasin d'une liste « Multi ») cette liste ne le propose pas. Rien n'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l'Admin de le créer (Réglages, « Administration », onglet « Courses »).
-- Claude dit qu'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».
-
-<a id="claude-activation"></a>
-
-### 3.11 Un accès désactivé au départ
-
-L'accès depuis Claude est désactivé tant que la personne qui gère le serveur n'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([3.12 Activer l'accès sur le serveur](#mcp-serveur)). Désactivé, toutes ses adresses répondent comme si elles n'existaient pas, et la section « Claude » de « Mon compte » n'apparaît pas.
-
-<a id="mcp-serveur"></a>
-
-### 3.12 Activer l'accès sur le serveur
-
-*Pour la personne qui gère le serveur.*
-
-L'accès depuis Claude est désactivé par défaut. Pour l'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l'on réactive, tant qu'elles n'ont pas expiré). Aucun mot de passe ni aucune clé n'est à fournir.
-
-Nginx Proxy Manager : rien à régler. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.
-
-| Adresse | Qui l'appelle | Rôle |
-| --- | --- | --- |
-| `/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource` | Claude | Dit où demander l'autorisation. |
-| `/.well-known/oauth-authorization-server` | Claude | Description du serveur d'autorisation. |
-| `/oauth/authorize` | votre navigateur | Vérifie la demande, puis ouvre l'écran « Autoriser Claude ». |
-| `/oauth/token`, `/oauth/revoke`, `/oauth/register` | Claude | Jetons, révocation, enregistrement automatique. |
-| `/mcp` | Claude | Le serveur MCP : exige un jeton obtenu par l'autorisation ; sans jeton valable, refus (401). |
-
-<a id="mcp-regles"></a>
-
-### 3.13 Règles et journal
-
-*Pour la personne qui gère le serveur.*
-
-- Jeton d'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l'empreinte des jetons, jamais les jetons eux-mêmes.
-- Un jeton Claude n'ouvre rien d'autre que `/mcp` : ni l'application, ni ses autres adresses.
-- Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.
-- Les plafonds ([3.6 Limites](#claude-limites)) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.
-- L'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d'un coup : retirer `LISTO_MCP=on`.
-
-Journal de sécurité (jamais un jeton, un code ni le contenu d'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d'outil, avec le nombre d'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.
-
-<a id="mcp-essai"></a>
-
-### 3.14 Premier essai
-
-*Pour la personne qui gère le serveur.*
-
-Après l'activation, une fois, avant tout usage régulier :
-
-1. Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.
-2. Connecter Claude ([3.7 Connecter Claude](#claude-connecter)).
-3. Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu'y a-t-il dans les courses ?” : les réponses doivent correspondre à l'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.
-4. `docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s'il y en a.
-5. Plus d'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.
-6. En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).
+- Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
+- Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
+- Thème clair, sombre ou automatique ([5.11 Thème clair ou sombre](#theme)).
+- Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
+- Claude (l'assistant d'Anthropic) peut lire vos listes et, si vous le permettez, y écrire ([7. MCP Claude](#claude)).
 
 <a id="installation"></a>
 
-## 4. Installation
+## 3. Installation
 
 *Pour la personne qui gère le serveur.*
 
 <a id="prerequis"></a>
 
-### 4.1 Ce qu'il faut
+### 3.1 Ce qu'il faut
 
 - Un serveur : un ordinateur toujours allumé, sous Linux, avec Docker et Docker Compose. Repérez son adresse sur le réseau local (par exemple `192.168.1.20`) : c'est l'`IP_LOCALE` de la suite.
-- Nginx Proxy Manager (il peut être sur une autre machine), avec un sous-domaine qui pointe vers lui (par exemple `listo.exemple.fr`) et un certificat HTTPS Let's Encrypt.
-- Un gestionnaire de mots de passe, pour y garder la clé de Listo ([4.6 Garder la clé secrète](#cle)).
+- Un proxy inverse HTTPS (reverse proxy), sur ce serveur ou sur une autre machine : Nginx Proxy Manager, Caddy, Traefik, nginx, Apache ou un autre, peu importe lequel. Il lui faut un sous-domaine qui pointe vers lui (par exemple `listo.exemple.fr`) et un certificat HTTPS valide pour ce nom (Let's Encrypt, par exemple). Ce qu'il doit faire : [3.4 Ce que doit faire le proxy](#proxy).
+- Un gestionnaire de mots de passe, pour y garder la clé de Listo ([3.7 Garder la clé secrète](#cle)).
 
 Listo s'utilise en HTTPS : sans HTTPS, il refuse de démarrer en production, car la connexion, le mode hors ligne et l'installation sur le téléphone en ont besoin.
 
 <a id="dossier"></a>
 
-### 4.2 Le dossier et docker-compose.yml
+### 3.2 Le dossier et docker-compose.yml
 
 Un seul fichier suffit, aucun code source :
 
@@ -440,13 +281,13 @@ mkdir -p /opt/listo && cd /opt/listo
 Dans `docker-compose.yml` (commenté ligne par ligne), remplacez deux valeurs :
 
 1. `LISTO_PUBLIC_URL=https://listo.exemple.fr` : l'adresse exacte que vous taperez dans le navigateur, sans `/` à la fin. Une adresse différente fait refuser toutes les connexions (“origine inconnue”).
-2. `IP_LOCALE` : l'adresse du serveur sur le réseau local (`192.168.1.20:13300:13300`). Jamais `0.0.0.0` : le port ne doit être ouvert que sur le réseau local, et seul Nginx Proxy Manager doit l'utiliser.
+2. `IP_LOCALE` : l'adresse du serveur sur le réseau local (`192.168.1.20:13300:13300`). Jamais `0.0.0.0` : le port ne doit être ouvert que sur le réseau local, et seul le proxy doit l'utiliser.
 
 Les dossiers `data/` (base, sauvegardes, photos, journal) et `secrets/` (clé de chiffrement) se créent tout seuls au premier démarrage, à côté du fichier. Ils ne doivent jamais être copiés ailleurs que dans vos sauvegardes.
 
 <a id="variables"></a>
 
-### 4.3 Les réglages (variables)
+### 3.3 Les réglages (variables)
 
 Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot de passe ni de clé.
 
@@ -463,17 +304,39 @@ Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot d
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([8.9 Savoir qu'une nouvelle version existe](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | absente | Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
-| `LISTO_MCP` | absente : désactivé | `on` active l'accès depuis Claude ([3.12 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
+| `LISTO_MCP` | absente : désactivé | `on` active l'accès depuis Claude ([7.12 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
+
+<a id="proxy"></a>
+
+### 3.4 Ce que doit faire le proxy
+
+N'importe quel proxy inverse convient, s'il fait ce qui suit. Ces besoins viennent du code de Listo ; la façon de les régler dépend du produit (voir sa documentation, ou l'exemple avec Nginx Proxy Manager : [3.5 Exemple avec Nginx Proxy Manager](#npm)).
+
+1. Terminer le HTTPS avec un certificat valide pour le sous-domaine, et rediriger `http://` vers `https://`. Le HTTPS est obligatoire : en production, Listo refuse de démarrer si `LISTO_PUBLIC_URL` ne commence pas par `https://`, ses cookies de connexion sont « Secure » (le navigateur ne les envoie qu'en HTTPS), et l'installation sur l'écran d'accueil comme le mode hors ligne demandent le HTTPS.
+2. Transmettre tout le sous-domaine, à sa racine et sans changer les chemins, vers `http://IP_LOCALE:13300` (HTTP simple sur le réseau local). Listo ne s'installe pas dans un sous-dossier d'un autre site (une adresse en `…/listo` ne marche pas). L'adresse tapée dans le navigateur doit être exactement `LISTO_PUBLIC_URL` : chaque modification est refusée (« origine inconnue ») si l'en-tête `Origin` envoyé par le navigateur ne lui correspond pas ; le proxy ne doit donc pas réécrire cet en-tête.
+3. Laisser passer le temps réel : `/api/events` est une connexion HTTP qui reste ouverte (Server-Sent Events, type `text/event-stream`), pas un WebSocket. Le proxy ne doit ni retenir ni mettre en cache ses réponses (Listo envoie l'en-tête `X-Accel-Buffering: no`, que nginx comprend), et son délai de lecture doit dépasser 25 secondes : Listo envoie un signal toutes les 25 secondes sur cette connexion. Sinon, les changements arrivent en retard ou la connexion est coupée sans cesse.
+4. Accepter des envois d'au moins 2 Mo : une photo d'article fait au plus 2 Mo (Listo la refuse au-delà). Beaucoup de proxys acceptent moins par défaut (nginx : 1 Mo) ; prévoir un peu de marge, par exemple 5 Mo.
+5. Donner l'adresse IP réelle des visiteurs : Listo fait confiance à un seul proxy et lit la dernière adresse de l'en-tête `X-Forwarded-For`, que le proxy doit compléter avec l'adresse de la personne. Elle sert à bloquer les essais de mots de passe répétés. Avec deux proxys l'un derrière l'autre (un service en ligne devant votre proxy, par exemple), Listo verrait l'adresse du premier, et un blocage toucherait tout le monde.
+6. Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès depuis Claude, [7.12 Activer l'accès sur le serveur](#mcp-serveur)) et `Sec-Fetch-Site`.
+7. Ajouter l'en-tête `Strict-Transport-Security` (HSTS), si le proxy le permet : Listo ne l'envoie pas lui-même.
+
+**Limiter l'accès au port de Listo**
+
+Listo croit l'adresse IP que lui transmet le proxy : quelqu'un qui joindrait directement le port 13300 pourrait en inventer une et contourner le blocage des essais de mots de passe. Ce port ne doit donc être joignable que depuis la machine du proxy, par une règle de pare-feu sur le serveur ou sur le réseau (box, routeur).
+
+- Exemple avec ufw, si le proxy est en `192.168.1.10` : `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. Attention : Docker ouvre les ports qu'il publie en passant à côté de ufw ; il faut un réglage propre à Docker (chaîne `DOCKER-USER`) ou un pare-feu en amont.
+- Vérifier : depuis un autre ordinateur du réseau, `curl http://IP_LOCALE:13300/healthz` doit échouer ; depuis la machine du proxy, il doit répondre `{"status":"ok"}`.
+- Le journal d'accès du proxy enregistre les adresses des liens publics ouverts (`/p/…`). Pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.
 
 <a id="npm"></a>
 
-### 4.4 Régler Nginx Proxy Manager
+### 3.5 Exemple avec Nginx Proxy Manager
 
-Dans Nginx Proxy Manager, “Hosts”, “Proxy Hosts”, “Add Proxy Host” :
+Un exemple pas à pas, avec Nginx Proxy Manager (il peut être sur une autre machine). Dans Nginx Proxy Manager, “Hosts”, “Proxy Hosts”, “Add Proxy Host” :
 
 - Details : “Domain Names” = votre sous-domaine ; “Scheme” = `http` ; “Forward Hostname / IP” = `IP_LOCALE` ; “Forward Port” = `13300`. “Websockets Support” : inutile, laisser décoché (le temps réel passe par une connexion HTTP ordinaire).
-- SSL : demander un certificat Let's Encrypt, cocher “Force SSL”, “HTTP/2 Support” et “HSTS Enabled”. C'est Nginx Proxy Manager qui ajoute l'en-tête HSTS : Listo ne l'envoie pas lui-même.
-- Advanced (“Custom Nginx Configuration”) : coller les quatre lignes ci-dessous.
+- SSL : demander un certificat Let's Encrypt, cocher “Force SSL”, “HTTP/2 Support” et “HSTS Enabled” (c'est lui qui ajoute l'en-tête HSTS).
+- Advanced (“Custom Nginx Configuration”) : coller les quatre lignes ci-dessous. Ce sont des directives nginx : avec nginx seul, elles vont dans le bloc `location` qui transmet à Listo.
 
 ```sh
 client_max_body_size 5m;
@@ -482,22 +345,15 @@ proxy_cache off;
 proxy_read_timeout 3600s;
 ```
 
-- `client_max_body_size 5m;` : sans elle, l'envoi des photos est refusé (Nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).
+- `client_max_body_size 5m;` : sans elle, l'envoi des photos est refusé (nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).
 - Les trois autres servent au temps réel : sans elles, les changements n'arrivent sur l'autre téléphone qu'au bout d'environ une minute.
-- Nginx Proxy Manager transmet l'adresse IP réelle des téléphones ; Listo s'en sert pour bloquer les essais de mots de passe répétés. Rien à régler.
-- Accès depuis Claude : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([3.12 Activer l'accès sur le serveur](#mcp-serveur)).
-
-**Limiter l'accès au port de Listo**
-
-Listo croit l'adresse IP que lui transmet Nginx Proxy Manager : quelqu'un qui joindrait directement le port 13300 pourrait en inventer une et contourner le blocage des essais de mots de passe. Ce port ne doit donc être joignable que depuis la machine de Nginx Proxy Manager, par une règle de pare-feu sur le serveur ou sur le réseau (box, routeur).
-
-- Exemple avec ufw, si Nginx Proxy Manager est en `192.168.1.10` : `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. Attention : Docker ouvre les ports qu'il publie en passant à côté de ufw ; il faut un réglage propre à Docker (chaîne `DOCKER-USER`) ou un pare-feu en amont.
-- Vérifier : depuis un autre ordinateur du réseau, `curl http://IP_LOCALE:13300/healthz` doit échouer ; depuis la machine de Nginx Proxy Manager, il doit répondre `{"status":"ok"}`.
-- Le journal d'accès de Nginx Proxy Manager enregistre les adresses des liens publics ouverts (`/p/…`). Pour couper un lien qui aurait circulé, arrêtez-le depuis Listo.
+- Nginx Proxy Manager complète déjà l'en-tête `X-Forwarded-For` avec l'adresse IP réelle des téléphones : rien à régler.
+- Accès depuis Claude : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([7.12 Activer l'accès sur le serveur](#mcp-serveur)).
+- Pare-feu : n'autoriser que l'adresse de Nginx Proxy Manager à joindre le port 13300 ([3.4 Ce que doit faire le proxy](#proxy)).
 
 <a id="demarrage"></a>
 
-### 4.5 Premier démarrage et code de démarrage
+### 3.6 Premier démarrage et code de démarrage
 
 Sur le serveur, dans `/opt/listo` :
 
@@ -509,12 +365,12 @@ docker logs listo
 ```
 
 1. Dans `docker logs listo`, repérez le code de démarrage, encadré de `====` (il ressemble à `ABCD-EFGH-JKLM`). Ne le communiquez à personne.
-2. Ouvrez `https://listo.exemple.fr` : l'écran « Bienvenue sur Listo » propose de créer le compte Admin ([5.1 Le premier Admin](#premier-admin)).
+2. Ouvrez `https://listo.exemple.fr` : l'écran « Bienvenue sur Listo » propose de créer le compte Admin ([4.1 Le premier Admin](#premier-admin)).
 3. Ce code ne sert qu'une fois : l'écran disparaît dès qu'un compte existe.
 
 <a id="cle"></a>
 
-### 4.6 Garder la clé secrète
+### 3.7 Garder la clé secrète
 
 Tout de suite après le premier démarrage, affichez la clé et copiez-la dans votre gestionnaire de mots de passe (une ligne de texte) :
 
@@ -526,7 +382,7 @@ Sans elle, après une panne du serveur ou une restauration sur une autre machine
 
 <a id="sauvegardes"></a>
 
-### 4.7 Sauvegardes
+### 3.8 Sauvegardes
 
 - Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n'arrête pas Listo.
 - Sauvegarde à la demande, avant une mise à jour par exemple (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit) :
@@ -535,39 +391,39 @@ Sans elle, après une panne du serveur ou une restauration sur une autre machine
 docker exec -u node listo node server/backup-now.js
 ```
 
-La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`data/journal.log`), ni la clé `secrets/secret.key` (volontairement : une copie de la base seule ne permet pas de lire les secrets de double authentification). Sauvegardez donc le dossier `/opt/listo/data` entier avec la sauvegarde habituelle du serveur, et gardez la clé à part ([4.6 Garder la clé secrète](#cle)). Restaurer une sauvegarde : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
+La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`data/journal.log`), ni la clé `secrets/secret.key` (volontairement : une copie de la base seule ne permet pas de lire les secrets de double authentification). Sauvegardez donc le dossier `/opt/listo/data` entier avec la sauvegarde habituelle du serveur, et gardez la clé à part ([3.7 Garder la clé secrète](#cle)). Restaurer une sauvegarde : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
 
 <a id="verifications"></a>
 
-### 4.8 Vérifications une fois en production
+### 3.9 Vérifications une fois en production
 
 1. HTTPS : `https://listo.exemple.fr` s'ouvre avec le cadenas ; `http://listo.exemple.fr` redirige vers `https://`.
 2. Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.
-3. En-têtes de sécurité : passez l'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par Nginx Proxy Manager), et aucun `X-Powered-By`.
+3. En-têtes de sécurité : passez l'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par le proxy, voir [3.4 Ce que doit faire le proxy](#proxy)), et aucun `X-Powered-By`.
 4. Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
 5. Une restauration d'essai, une fois, avec la copie de la nuit : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
-6. Le port fermé : voir [4.4 Régler Nginx Proxy Manager](#npm).
-7. Le téléphone : installation sur l'écran d'accueil ([5.4 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
+6. Le port fermé : voir [3.4 Ce que doit faire le proxy](#proxy).
+7. Le téléphone : installation sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
 
 <a id="comptes"></a>
 
-## 5. Les comptes
+## 4. Les comptes
 
 <a id="premier-admin"></a>
 
-### 5.1 Le premier Admin
+### 4.1 Le premier Admin
 
 À la toute première ouverture, l'écran « Bienvenue sur Listo » demande :
 
 - « Identifiant » : 2 à 50 caractères (lettres sans accent, chiffres, . \_ -) ;
 - « Mot de passe » : au moins 10 caractères, puis « Confirmation du mot de passe » ;
-- « Code de démarrage » : celui affiché dans les journaux du serveur ([4.5 Premier démarrage et code de démarrage](#demarrage)).
+- « Code de démarrage » : celui affiché dans les journaux du serveur ([3.6 Premier démarrage et code de démarrage](#demarrage)).
 
 Puis « Créer le compte Admin ». Ce compte crée ensuite tous les autres.
 
 <a id="creer-comptes"></a>
 
-### 5.2 Créer les autres comptes
+### 4.2 Créer les autres comptes
 
 L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un compte ».
 
@@ -578,7 +434,7 @@ L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un c
 
 <a id="premiere-connexion"></a>
 
-### 5.3 Première connexion
+### 4.3 Première connexion
 
 1. Ouvrez l'adresse de Listo (par exemple `https://listo.exemple.fr`).
 2. Saisissez votre « Identifiant » et votre « Mot de passe », puis « Se connecter ».
@@ -587,7 +443,7 @@ L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un c
 
 <a id="telephone"></a>
 
-### 5.4 Installer Listo sur le téléphone
+### 4.4 Installer Listo sur le téléphone
 
 Ouvrez l'adresse de Listo et connectez-vous, puis :
 
@@ -598,13 +454,13 @@ L'icône Listo apparaît. Ouverte depuis l'écran d'accueil, Listo s'affiche en 
 
 <a id="mot-de-passe"></a>
 
-### 5.5 Changer de mot de passe
+### 4.5 Changer de mot de passe
 
-Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions Claude ([3.8 Voir et déconnecter Claude](#claude-connexions)).
+Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions Claude ([7.8 Voir et déconnecter Claude](#claude-connexions)).
 
 <a id="double-auth"></a>
 
-### 5.6 Double authentification et codes de secours
+### 4.6 Double authentification et codes de secours
 
 Conseillée pour l'Admin. Il faut une application d'authentification sur le téléphone (Aegis, Google Authenticator, Microsoft Authenticator…).
 
@@ -618,36 +474,36 @@ Pour la retirer : même écran, « Mot de passe » et « Code » (de l'applicati
 
 <a id="oubli"></a>
 
-### 5.7 Mot de passe oublié, téléphone perdu
+### 4.7 Mot de passe oublié, téléphone perdu
 
 - Mot de passe oublié : demandez à l'Admin. Dans « Administration », « Comptes », bouton ⋮ de votre compte, « Réinitialiser le mot de passe » : il vous donne un mot de passe provisoire, à changer à la connexion suivante. Il n'y a pas d'envoi par e-mail.
 - Téléphone de double authentification perdu, et plus de codes de secours : l'Admin choisit « Désactiver la double authentification » sur votre compte ; vous pourrez la réactiver ensuite.
 - Trop d'essais : 5 mauvais mots de passe bloquent la connexion pendant 15 minutes.
-- L'Admin a lui-même perdu son mot de passe : voir [5.8 Compte Admin perdu](#secours).
+- L'Admin a lui-même perdu son mot de passe : voir [4.8 Compte Admin perdu](#secours).
 
 <a id="secours"></a>
 
-### 5.8 Compte Admin perdu
+### 4.8 Compte Admin perdu
 
 *Pour la personne qui gère le serveur.*
 
-S'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([7.1 Admin](#role-admin)). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :
+S'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([6.1 Admin](#role-admin)). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :
 
 ```sh
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([3.8 Voir et déconnecter Claude](#claude-connexions)). Ce que l'Admin peut faire et ne peut pas faire : [7.1 Admin](#role-admin).
+Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([7.8 Voir et déconnecter Claude](#claude-connexions)). Ce que l'Admin peut faire et ne peut pas faire : [6.1 Admin](#role-admin).
 
 <a id="quotidien"></a>
 
-## 6. Au quotidien
+## 5. Au quotidien
 
 Les gestes de tous les jours, pour toute personne qui peut modifier la liste (propriétaire ou « Peut modifier »). En « Lecture seule », on peut lire, trier et rechercher.
 
 <a id="ajouter"></a>
 
-### 6.1 Ajouter, modifier, cocher, supprimer
+### 5.1 Ajouter, modifier, cocher, supprimer
 
 - Ajouter : tapez le nom dans le champ en bas de la liste, puis touchez « + ». Des suggestions s'affichent pendant la saisie. Dans une liste de courses, pour un nouvel article, Listo demande son rayon, puis s'en souvient.
 - Après l'ajout, le clavier se replie. Si la liste est réglée sur « Ouvrir la fiche », la fiche de ce qui vient d'être ajouté s'ouvre (sans clavier) : réglez quantité, note, priorité ou échéance, puis la disquette ; la croix la referme sans rien changer, la ligne reste ajoutée.
@@ -658,7 +514,7 @@ Les gestes de tous les jours, pour toute personne qui peut modifier la liste (pr
 
 <a id="quantite"></a>
 
-### 6.2 Saisir la quantité avec le nom
+### 5.2 Saisir la quantité avec le nom
 
 Dans une liste de courses (seulement), écrivez la quantité au début du nom, ou à la fin avec un x : Listo la range dans le champ « Quantité ».
 
@@ -671,7 +527,7 @@ Dans une liste de courses (seulement), écrivez la quantité au début du nom, o
 
 <a id="plusieurs"></a>
 
-### 6.3 Ajouter plusieurs articles d'un coup
+### 5.3 Ajouter plusieurs articles d'un coup
 
 Dans une liste de courses ou de tâches, séparez les noms par des virgules, des points-virgules ou des retours à la ligne, puis touchez « + » : par exemple, lait, pain ; 6 oeufs ajoute trois lignes. Vous pouvez aussi coller une liste copiée depuis vos notes.
 
@@ -683,24 +539,24 @@ Dans une liste de courses ou de tâches, séparez les noms par des virgules, des
 
 <a id="scan"></a>
 
-### 6.4 Scanner un code-barres
+### 5.4 Scanner un code-barres
 
 Dans une liste de courses, le bouton code-barres à côté du champ d'ajout (« Scanner un produit ») ouvre l'appareil photo ou la photothèque du téléphone. Photographiez le code-barres d'un produit : Listo le lit sur le téléphone (la photo n'est jamais envoyée).
 
 - Un article de la liste porte déjà ce code : Listo propose de le cocher.
 - Un article d'une autre de vos listes le porte : Listo reprend son nom (« Produit connu »).
 - Sinon, Listo cherche le nom du produit dans Open Food Facts ; vous pouvez le corriger, puis « Ajouter à la liste ».
-- Ce bouton n'existe que si le mode scan est activé sur votre serveur (réglage `LISTO_PRODUCT_LOOKUP`, [4.3 Les réglages (variables)](#variables)).
+- Ce bouton n'existe que si le mode scan est activé sur votre serveur (réglage `LISTO_PRODUCT_LOOKUP`, [3.3 Les réglages (variables)](#variables)).
 
 <a id="photo"></a>
 
-### 6.5 Ajouter une photo
+### 5.5 Ajouter une photo
 
 Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisit une. Elle est réduite sur le téléphone avant l'envoi, et ses informations cachées (lieu, appareil) sont retirées par le serveur. La photo est facultative ; seuls les membres de la liste la voient (et les visiteurs d'un lien public valable).
 
 <a id="tri"></a>
 
-### 6.6 Groupes, tri et compteur
+### 5.6 Groupes, tri et compteur
 
 - Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
@@ -711,7 +567,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 <a id="recherche"></a>
 
-### 6.7 Rechercher
+### 5.7 Rechercher
 
 - Dans une liste, tirez la liste vers le bas (ou remontez tout en haut) : le champ « Rechercher dans la liste » apparaît au-dessus du premier groupe. Il cherche dans le nom des articles, pas dans les notes.
 - Sur « Mes listes », de la même façon, le champ « Rechercher une liste » cherche dans le titre des listes, celles partagées avec vous comprises.
@@ -722,7 +578,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 <a id="reserver"></a>
 
-### 6.8 Réserver un souhait, cotiser
+### 5.8 Réserver un souhait, cotiser
 
 Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lecture seule », sauf la personne à qui la liste est destinée. Il faut du réseau.
 
@@ -735,7 +591,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="nouveautes"></a>
 
-### 6.9 Nouveautés
+### 5.9 Nouveautés
 
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
 - Sur « Mes listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
@@ -746,7 +602,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="hors-ligne"></a>
 
-### 6.10 Hors ligne et synchronisation
+### 5.10 Hors ligne et synchronisation
 
 Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.
 
@@ -756,13 +612,56 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 <a id="theme"></a>
 
-### 6.11 Thème clair ou sombre
+### 5.11 Thème clair ou sombre
 
-Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone.
+Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».
+
+<a id="ordinateur"></a>
+
+### 5.12 Sur ordinateur
+
+Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
+
+- À gauche, le menu : vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Rechercher une liste », « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».
+- À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d'ajout est au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent ; sur un écran tactile, ils restent affichés.
+- La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
+- « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
+- Clic droit sur une ligne (ou touche Menu, ou Maj+F10) : Modifier, Cocher, Supprimer, selon vos droits.
+
+**Raccourcis clavier**
+
+La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Aucun raccourci à une touche ne marche pendant que vous tapez dans un champ. Un raccourci ne fait que ce que vos droits permettent : en lecture seule, ni Espace, ni E, ni Suppr ; aucun raccourci ne réserve un souhait.
+
+| Touche | Action |
+| --- | --- |
+| ? | Afficher les raccourcis |
+| N | Nouvelle liste |
+| / | Rechercher (dans la liste, ou dans le menu) |
+| , | Réglages |
+| Échap | Fermer la fenêtre ; vider puis quitter la recherche |
+| \[ et \] | Liste précédente, suivante |
+| P | Partager la liste |
+| A | Aller au champ d'ajout |
+| ↓ et ↑ | Article suivant, précédent |
+| Espace | Cocher ou décocher |
+| Entrée | Ouvrir la fiche |
+| E | Modifier |
+| Suppr | Supprimer (annulable) |
+| Ctrl+Z | Annuler la dernière action |
+| Ctrl+Entrée | Enregistrer la fiche ou le formulaire |
+| S | Aller au sommaire de l'aide |
+
+Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
+
+**Annuler (Ctrl+Z)**
+
+Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l'annulation part avec le reste au retour du réseau. Si quelqu'un a changé l'article entre-temps, rien n'est écrasé : « Modifié entre-temps : rien n'est annulé ».
+
+Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.
 
 <a id="roles"></a>
 
-## 7. Rôle par rôle
+## 6. Rôle par rôle
 
 Sur chaque liste, chacun a un rôle : propriétaire, contributeur (« Peut modifier »), lecture seule, ou visiteur du lien public. L'Admin, lui, gère les comptes. Le tableau ci-dessous résume qui peut quoi ; les sections qui suivent le détaillent.
 
@@ -784,13 +683,13 @@ Contributeur : un compte avec le droit « Peut modifier » sur la liste. Lecture
 
 <a id="role-admin"></a>
 
-### 7.1 Admin
+### 6.1 Admin
 
 Réglages, « Administration » (visible seulement pour un Admin).
 
 **Onglet « Comptes »**
 
-- « Ajouter un compte » ([5.2 Créer les autres comptes](#creer-comptes)).
+- « Ajouter un compte » ([4.2 Créer les autres comptes](#creer-comptes)).
 - Bouton ⋮ d'un compte : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi.
 - Rôle : « Utilisateur » ou « Admin ». Il reste toujours au moins un Admin actif.
 
@@ -804,12 +703,12 @@ Réglages, « Administration » (visible seulement pour un Admin).
 
 - Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s'il existe une nouvelle version (Réglages › « À propos »).
 - Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire.
-- Connexions Claude des autres comptes : voir [3.8 Voir et déconnecter Claude](#claude-connexions).
+- Connexions Claude des autres comptes : voir [7.8 Voir et déconnecter Claude](#claude-connexions).
 - Savoir qu'une nouvelle version existe : [8.9 Savoir qu'une nouvelle version existe](#version).
 
 <a id="creer"></a>
 
-### 7.2 Propriétaire : créer une liste
+### 6.2 Propriétaire : créer une liste
 
 Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.
 
@@ -820,29 +719,29 @@ Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez 
 
 <a id="modifier"></a>
 
-### 7.3 Propriétaire : modifier la liste
+### 6.3 Propriétaire : modifier la liste
 
 Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité et l'échéance ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
 - La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d'envies. Tout le monde la voit. L'échéance n'existe que pour les listes de tâches.
-- Devenir une liste d'envies, en revanche, est définitif ([7.5 Propriétaire : liste d'envies](#envies)).
+- Devenir une liste d'envies, en revanche, est définitif ([6.5 Propriétaire : liste d'envies](#envies)).
 
 <a id="partager"></a>
 
-### 7.4 Propriétaire : partager et choisir les droits
+### 6.4 Propriétaire : partager et choisir les droits
 
 « Modifier la liste », ligne « Partager avec » : une fenêtre s'ouvre avec une ligne par personne. Cochez une personne, puis choisissez son droit au bout de sa ligne. « OK » ferme la fenêtre ; le partage est enregistré avec « Enregistrer ».
 
-- « Modifier » (droit « Peut modifier ») : la personne est contributeur ([7.8 Contributeur (« Peut modifier »)](#role-contributeur)).
-- « Lire » (droit « Lecture seule ») : la personne peut seulement lire ([7.9 Lecture seule](#role-lecture)). C'est le choix de départ.
+- « Modifier » (droit « Peut modifier ») : la personne est contributeur ([6.8 Contributeur (« Peut modifier »)](#role-contributeur)).
+- « Lire » (droit « Lecture seule ») : la personne peut seulement lire ([6.9 Lecture seule](#role-lecture)). C'est le choix de départ.
 - Vous pouvez changer le droit ou retirer une personne à tout moment.
 
 <a id="envies"></a>
 
-### 7.5 Propriétaire : liste d'envies
+### 6.5 Propriétaire : liste d'envies
 
-Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([6.8 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.8 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([6.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
@@ -854,9 +753,9 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 <a id="lien-public"></a>
 
-### 7.6 Propriétaire : le lien public
+### 6.6 Propriétaire : le lien public
 
-« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([7.10 Visiteur du lien public](#role-visiteur)).
+« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([6.10 Visiteur du lien public](#role-visiteur)).
 
 - Durée : 1 heure, 24 heures, 7 jours, 30 jours, « Personnalisée » ou « Illimitée ». « Changer la durée » la modifie.
 - « Protéger par mot de passe » : le mot de passe n'est affiché qu'une fois. Notez-le.
@@ -867,7 +766,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 <a id="corbeille"></a>
 
-### 7.7 Propriétaire : dupliquer, supprimer, restaurer
+### 6.7 Propriétaire : dupliquer, supprimer, restaurer
 
 - « Dupliquer la liste » crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.
 - « Supprimer la liste » (menu ⋮) demande une confirmation, qui rappelle ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s'arrête.
@@ -877,16 +776,16 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 <a id="role-contributeur"></a>
 
-### 7.8 Contributeur (« Peut modifier »)
+### 6.8 Contributeur (« Peut modifier »)
 
-- Peut : cocher, ajouter, modifier et supprimer des articles et leur photo ([6. Au quotidien](#quotidien)) ; créer un magasin ou un rayon manquant ; « Dupliquer la liste » (la copie lui appartient) ; réserver sur une liste d'envies (sauf s'il en est le bénéficiaire).
+- Peut : cocher, ajouter, modifier et supprimer des articles et leur photo ([5. Au quotidien](#quotidien)) ; créer un magasin ou un rayon manquant ; « Dupliquer la liste » (la copie lui appartient) ; réserver sur une liste d'envies (sauf s'il en est le bénéficiaire).
 - Ne peut pas : changer le titre, le type ou les options, partager, créer un lien public, supprimer la liste.
 
 Quitter : menu ⋮, « Quitter la liste ». La liste disparaît de vos listes ; vos articles y restent. Le propriétaire pourra de nouveau la partager avec vous. Il faut du réseau.
 
 <a id="role-lecture"></a>
 
-### 7.9 Lecture seule
+### 6.9 Lecture seule
 
 La carte de la liste et le haut de la liste portent la mention « Lecture seule ».
 
@@ -895,7 +794,7 @@ La carte de la liste et le haut de la liste portent la mention « Lecture seule 
 
 <a id="role-visiteur"></a>
 
-### 7.10 Visiteur du lien public
+### 6.10 Visiteur du lien public
 
 Une personne sans compte ouvre le lien qu'on lui a envoyé, sans rien installer.
 
@@ -906,13 +805,174 @@ Une personne sans compte ouvre le lien qu'on lui a envoyé, sans rien installer.
 
 <a id="role-beneficiaire"></a>
 
-### 7.11 Bénéficiaire d'une liste d'envies
+### 6.11 Bénéficiaire d'une liste d'envies
 
 La personne à qui la liste d'envies est destinée ajoute ses souhaits (si elle a un compte) et les marque « Reçus ».
 
-- Ne voit jamais : qu'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d'autres ». Ni dans la liste, ni dans les nouveautés, ni par Claude ([3.5 Listes d'envies : aucune réservation](#claude-envies)), ni sur la page du lien public quand elle est connectée.
+- Ne voit jamais : qu'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d'autres ». Ni dans la liste, ni dans les nouveautés, ni par Claude ([7.5 Listes d'envies : aucune réservation](#claude-envies)), ni sur la page du lien public quand elle est connectée.
 - Ne peut pas réserver ses propres souhaits.
 - Seule une personne qui a la main sur le serveur (fichiers de la base, sauvegardes) pourrait lire une réservation : ne donnez pas cet accès au bénéficiaire si la surprise compte.
+
+<a id="claude"></a>
+
+## 7. MCP Claude
+
+<a id="claude-quoi"></a>
+
+### 7.1 À quoi ça sert
+
+Claude est l'assistant d'Anthropic (claude.ai, l'application mobile, Claude Desktop, Claude Code). Une fois connecté à Listo, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.
+
+Claude agit avec votre compte et vos droits, jamais plus : ce qu'il ajoute apparaît à votre nom, comme si vous l'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées.
+
+Cet accès n'existe que si la personne qui gère le serveur l'a activé ([7.11 Un accès désactivé au départ](#claude-activation)). Sinon, la section « Claude » n'apparaît pas dans « Mon compte ».
+
+<a id="claude-phrases"></a>
+
+### 7.2 Exemples de phrases
+
+- Lire : “Quelles sont mes listes Listo ?”, “Qu'y a-t-il dans la liste Courses ?”.
+- Ajouter, avec un rayon : “Ajoute des tomates au rayon fruits et légumes dans Courses.”
+- Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”
+- Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”
+- Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”
+- Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
+- Ranger : “Range le lait au rayon crèmerie.”
+
+Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.
+
+<a id="claude-niveaux"></a>
+
+### 7.3 Deux niveaux d'accord
+
+Au moment de connecter Claude, l'écran « Autoriser Claude » de Listo vous laisse choisir :
+
+- « Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.
+- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.
+
+Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.
+
+<a id="claude-jamais"></a>
+
+### 7.4 Ce que Claude ne peut jamais faire
+
+Quel que soit le niveau d'accord, Claude ne peut jamais :
+
+- supprimer un élément, ni changer son lien ou son prix ;
+- créer, renommer, supprimer ou partager une liste ;
+- gérer les personnes, le lien public ou la corbeille ;
+- voir les photos, ni qui a ajouté quoi.
+
+<a id="claude-envies"></a>
+
+### 7.5 Listes d'envies : aucune réservation
+
+Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge Claude. Dans une liste d'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec Claude comme sans lui.
+
+<a id="claude-limites"></a>
+
+### 7.6 Limites
+
+- 20 éléments au plus par demande.
+- Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, Claude reçoit un refus et rien n'est écrit.
+- 120 appels par minute et par connexion.
+- 5 connexions Claude actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.
+- Claude ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.
+
+<a id="claude-connecter"></a>
+
+### 7.7 Connecter Claude
+
+1. Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.
+2. Dans Claude (claude.ai, l'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.
+3. Claude ouvre l'écran « Autoriser Claude » de Listo. Vérifiez que c'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
+
+Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.
+
+Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
+
+<a id="claude-connexions"></a>
+
+### 7.8 Voir et déconnecter Claude
+
+Réglages, « Mon compte », « Connexions Claude » : chaque connexion autorisée y apparaît, avec l'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.
+
+- « Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n'est demandé.
+- Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.
+- Pour reconnecter Claude, il faut l'autoriser de nouveau.
+- L'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.
+
+<a id="claude-prudence"></a>
+
+### 7.9 Prudence : les textes piégés
+
+> **Attention** : Une liste partagée peut contenir un texte piégé, écrit par quelqu'un d'autre pour tromper Claude (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à Claude comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.
+
+Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans Listo ce qu'il a fait.
+
+<a id="faq-claude"></a>
+
+### 7.10 Dépannage
+
+- Après une mise à jour de Listo, Claude peut garder l'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.
+- Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([7.7 Connecter Claude](#claude-connecter)).
+- Claude refuse d'écrire : la connexion est en « Lecture seule », ou vous n'avez que le droit « Lecture seule » sur cette liste.
+- Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([7.8 Voir et déconnecter Claude](#claude-connexions)).
+- Claude dit qu'un rayon ou un magasin est inconnu : il n'existe pas, il est désactivé, ou (magasin d'une liste « Multi ») cette liste ne le propose pas. Rien n'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l'Admin de le créer (Réglages, « Administration », onglet « Courses »).
+- Claude dit qu'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».
+
+<a id="claude-activation"></a>
+
+### 7.11 Un accès désactivé au départ
+
+L'accès depuis Claude est désactivé tant que la personne qui gère le serveur n'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([7.12 Activer l'accès sur le serveur](#mcp-serveur)). Désactivé, toutes ses adresses répondent comme si elles n'existaient pas, et la section « Claude » de « Mon compte » n'apparaît pas.
+
+<a id="mcp-serveur"></a>
+
+### 7.12 Activer l'accès sur le serveur
+
+*Pour la personne qui gère le serveur.*
+
+L'accès depuis Claude est désactivé par défaut. Pour l'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l'on réactive, tant qu'elles n'ont pas expiré). Aucun mot de passe ni aucune clé n'est à fournir.
+
+Proxy : rien à régler, ces adresses passent par le même hôte. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.
+
+| Adresse | Qui l'appelle | Rôle |
+| --- | --- | --- |
+| `/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource` | Claude | Dit où demander l'autorisation. |
+| `/.well-known/oauth-authorization-server` | Claude | Description du serveur d'autorisation. |
+| `/oauth/authorize` | votre navigateur | Vérifie la demande, puis ouvre l'écran « Autoriser Claude ». |
+| `/oauth/token`, `/oauth/revoke`, `/oauth/register` | Claude | Jetons, révocation, enregistrement automatique. |
+| `/mcp` | Claude | Le serveur MCP : exige un jeton obtenu par l'autorisation ; sans jeton valable, refus (401). |
+
+<a id="mcp-regles"></a>
+
+### 7.13 Règles et journal
+
+*Pour la personne qui gère le serveur.*
+
+- Jeton d'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l'empreinte des jetons, jamais les jetons eux-mêmes.
+- Un jeton Claude n'ouvre rien d'autre que `/mcp` : ni l'application, ni ses autres adresses.
+- Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.
+- Les plafonds ([7.6 Limites](#claude-limites)) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.
+- L'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d'un coup : retirer `LISTO_MCP=on`.
+
+Journal de sécurité (jamais un jeton, un code ni le contenu d'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d'outil, avec le nombre d'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.
+
+<a id="mcp-essai"></a>
+
+### 7.14 Premier essai
+
+*Pour la personne qui gère le serveur.*
+
+Après l'activation, une fois, avant tout usage régulier :
+
+1. Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.
+2. Connecter Claude ([7.7 Connecter Claude](#claude-connecter)).
+3. Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu'y a-t-il dans les courses ?” : les réponses doivent correspondre à l'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.
+4. `docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s'il y en a.
+5. Plus d'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.
+6. En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).
 
 <a id="faq"></a>
 
@@ -922,26 +982,26 @@ La personne à qui la liste d'envies est destinée ajoute ses souhaits (si elle 
 
 ### 8.1 Je n'ai pas de réseau
 
-Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([6.10 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
+Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.10 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
 
 <a id="faq-photo"></a>
 
 ### 8.2 Une photo ne s'envoie pas
 
 - Sans réseau, la photo attend le retour du réseau.
-- Le message « Photo trop lourde. » : il manque la ligne `client_max_body_size 5m;` dans Nginx Proxy Manager ([4.4 Régler Nginx Proxy Manager](#npm)).
+- Le message « Photo trop lourde. » : le proxy refuse les envois de plus de 2 Mo ([3.4 Ce que doit faire le proxy](#proxy)). Avec nginx ou Nginx Proxy Manager, il manque la ligne `client_max_body_size 5m;` ([3.5 Exemple avec Nginx Proxy Manager](#npm)).
 
 <a id="faq-lien"></a>
 
 ### 8.3 Un lien public ne marche plus
 
-Il a expiré, ou son propriétaire l'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien). Demandez un nouveau lien au propriétaire ([7.6 Propriétaire : le lien public](#lien-public)). S'il demande un mot de passe, c'est celui que le propriétaire a noté à sa création.
+Il a expiré, ou son propriétaire l'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien). Demandez un nouveau lien au propriétaire ([6.6 Propriétaire : le lien public](#lien-public)). S'il demande un mot de passe, c'est celui que le propriétaire a noté à sa création.
 
 <a id="faq-retard"></a>
 
 ### 8.4 Les changements arrivent avec une minute de retard
 
-Il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_timeout 3600s;` dans Nginx Proxy Manager ([4.4 Régler Nginx Proxy Manager](#npm)).
+Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#proxy)). Avec nginx ou Nginx Proxy Manager, il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_timeout 3600s;` ([3.5 Exemple avec Nginx Proxy Manager](#npm)).
 
 <a id="faq-blanc"></a>
 
@@ -958,17 +1018,17 @@ Il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_t
 ### 8.6 Je ne peux pas me connecter
 
 - « Trop d'essais » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
-- « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([4.2 Le dossier et docker-compose.yml](#dossier)).
-- Mot de passe oublié, téléphone perdu : [5.7 Mot de passe oublié, téléphone perdu](#oubli).
+- « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
+- Mot de passe oublié, téléphone perdu : [4.7 Mot de passe oublié, téléphone perdu](#oubli).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.
 
 <a id="faq-double-auth"></a>
 
 ### 8.7 Double authentification : plus d'accès
 
-- Téléphone changé ou perdu : connectez-vous avec un de vos « Codes de secours » (« Utiliser un code de secours »), puis réactivez la double authentification avec le nouveau téléphone ([5.6 Double authentification et codes de secours](#double-auth)).
+- Téléphone changé ou perdu : connectez-vous avec un de vos « Codes de secours » (« Utiliser un code de secours »), puis réactivez la double authentification avec le nouveau téléphone ([4.6 Double authentification et codes de secours](#double-auth)).
 - Plus de téléphone ni de codes de secours : l'Admin choisit « Désactiver la double authentification » sur votre compte (« Administration », « Comptes », bouton ⋮). Vous vous connectez avec votre seul mot de passe, puis vous la réactivez.
-- C'est l'Admin qui est bloqué : voir [5.8 Compte Admin perdu](#secours) (commande de secours avec `--retirer-2fa`).
+- C'est l'Admin qui est bloqué : voir [4.8 Compte Admin perdu](#secours) (commande de secours avec `--retirer-2fa`).
 - Le code à 6 chiffres est toujours refusé : l'heure du téléphone est peut-être fausse ; mettez-la en réglage automatique.
 - Plus personne ne peut valider ses codes après une panne du serveur : la clé secrète a peut-être été perdue ([8.8 La clé secrète a été perdue](#cle-perdue)).
 
@@ -980,9 +1040,9 @@ Il manque les lignes `proxy_buffering off;`, `proxy_cache off;` et `proxy_read_t
 
 Sans copie de `secrets/secret.key`, Listo crée une nouvelle clé au démarrage. Les listes, articles, photos et mots de passe ne sont pas touchés, mais :
 
-- les doubles authentifications ne se lisent plus : l'Admin la désactive pour les autres comptes (« Désactiver la double authentification »), pour lui-même avec la commande de secours et `--retirer-2fa` ([5.8 Compte Admin perdu](#secours)), puis chacun la réactive ;
+- les doubles authentifications ne se lisent plus : l'Admin la désactive pour les autres comptes (« Désactiver la double authentification »), pour lui-même avec la commande de secours et `--retirer-2fa` ([4.8 Compte Admin perdu](#secours)), puis chacun la réactive ;
 - les liens publics déjà créés marchent encore, mais leur adresse ne peut plus être réaffichée : les arrêter et en créer de nouveaux ;
-- gardez cette fois une copie de la nouvelle clé ([4.6 Garder la clé secrète](#cle)).
+- gardez cette fois une copie de la nouvelle clé ([3.7 Garder la clé secrète](#cle)).
 
 <a id="version"></a>
 

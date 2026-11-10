@@ -47,7 +47,7 @@ import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
@@ -62,7 +62,9 @@ import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
-import { openShareSheet } from './share.js';
+import { openSharePanel } from './share-panel.js';
+import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
+import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
@@ -187,9 +189,10 @@ export function renderList(listId, onLeave) {
   }
 
   // --- En-tête de l'ordinateur ---
-  // « Partager » (propriétaire : feuille « Partager par lien ») avec les
-  // pastilles des personnes ; les autres membres voient seulement les
-  // pastilles. Le serveur revérifie de toute façon chaque action.
+  // « Partager » (propriétaire) ou « Personnes » (les autres membres), avec
+  // les pastilles des personnes : ouvre le tiroir « Partager la liste »
+  // (share-panel.js ; les autres n'y voient que les personnes, en lecture).
+  // Le serveur revérifie de toute façon chaque action.
   const shareSlot = h('div', { class: 'pc-head__share' });
   // Liste d'envies : bandeau qui dit ce que la personne voit (texte ET icône)
   const wishNote = h('p', { class: 'note pc-banner', hidden: true });
@@ -198,9 +201,8 @@ export function renderList(listId, onLeave) {
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
     const people = h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, list.isOwner
-      ? h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => openShareSheet(list) }, icon('users', 'icon--sm'), 'Partager', people)
-      : people);
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? 'Partager' : 'Personnes'} · P`, onClick: () => openSharePanel(list.id) },
+      icon('users', 'icon--sm'), list.isOwner ? 'Partager' : 'Personnes', people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
     // ne les envoie pas) ; les autres membres les voient
@@ -323,7 +325,25 @@ export function renderList(listId, onLeave) {
   }
 
   // --- Dessin de la liste ---
+  // Ordinateur : la liste est redessinée à chaque changement (copie locale,
+  // serveur, temps réel) ; le focus clavier reste sur la même ligne (le même
+  // bouton), ou passe à la ligne qui a pris sa place si elle a disparu
   const draw = () => {
+    if (!pc) return drawList();
+    const focused = document.activeElement;
+    const row = content.contains(focused) ? focused.closest('li.item') : null;
+    if (!row) return drawList();
+    const rows = [...content.querySelectorAll('li.item')];
+    const index = rows.indexOf(row);
+    const id = row.dataset.itemId;
+    const part = ['.item__body', 'button.check', '[data-action="edit"]', '[data-action="delete"]'].find((sel) => focused.matches(sel)) ?? '.item__body';
+    drawList();
+    if (content.contains(focused)) return; // rien n'a été remplacé
+    const same = content.querySelector(`li.item[data-item-id="${CSS.escape(id)}"]`);
+    const target = same ? same.querySelector(part) ?? same.querySelector('.item__body') : content.querySelectorAll('li.item .item__body')[Math.min(index, content.querySelectorAll('li.item').length - 1)];
+    target?.focus({ preventScroll: true });
+  };
+  const drawList = () => {
     // Groupes repliables du nouveau dessin. « Tout replier » n'est recalculé
     // qu'après le dessin : le cacher un instant au début changeait la hauteur
     // de la zone qui défile pendant le dessin (12 px), et la liste pouvait
@@ -392,7 +412,9 @@ export function renderList(listId, onLeave) {
       search.show(h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(typeIcon(list), 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ci-dessous.` : 'Rien à afficher pour le moment.')), { available: false });
+        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ${pc ? 'ci-dessus' : 'ci-dessous'}.` : 'Rien à afficher pour le moment.'),
+        // Ordinateur : l'astuce du raccourci (si les raccourcis à une touche sont actifs)
+        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, 'Astuce : appuyez sur ', h('kbd', { class: 'keycap' }, 'A'), ` pour aller au champ d'ajout.`) : null), { available: false });
       drawFoldAll();
       searchMeta.textContent = '';
       return;
@@ -610,8 +632,8 @@ export function renderList(listId, onLeave) {
     return [
       reserveButton(item),
       h('span', { class: 'item__actions' },
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, 'aria-keyshortcuts': 'E', 'data-action': 'edit', 'data-pc-tip': 'Modifier · E', onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
     ];
   }
   // « Réserver » : seulement si le serveur a envoyé les réservations de la
@@ -657,16 +679,24 @@ export function renderList(listId, onLeave) {
   // file d'attente, avec ou sans réseau) ; un message en bas propose
   // « Annuler » pendant quelques secondes, qui remet le même article avec sa
   // photo (opération item.restore).
+  // Ordinateur : l'action est aussi notée pour Ctrl+Z (undo.js) ; le message
+  // reste 8 secondes et rappelle la touche.
   async function deleteWithUndo(item) {
     if (!editable()) return;
     await actions.deleteItem(item);
-    toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+    const entry = { kind: 'delete', itemId: item.id, name: item.name };
+    recordUndo(listId, entry);
+    toast(`« ${item.name} » supprimé`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+      forgetUndo(listId, (e) => e === entry);
+      actions.restoreItem(item.id);
+    } });
   }
 
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
     if (!editable() || !mayCheck(view?.list)) return;
+    recordUndo(listId, { kind: 'check', itemId: item.id, name: item.name, checked: !item.checked });
     actions.checkItem(item, !item.checked);
   }
 
@@ -1463,28 +1493,70 @@ export function renderList(listId, onLeave) {
     // reliée au formulaire (attribut form) : Entrée dans un champ enregistre
     // toujours.
     const formId = `fiche-${item.id}`;
-    const remove = iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
-    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
-    const form = h('form', { class: 'stack', id: formId, novalidate: true },
+    // Ordinateur (tiroir, maquette pc-A 06) : boutons écrits au pied
+    // (Supprimer, Annuler, Enregistrer), formulaire sur deux colonnes
+    // (quantité et rayon côte à côte), « Modifications non enregistrées »
+    // et une confirmation avant de fermer sans enregistrer
+    const pc = onPc();
+    const remove = pc
+      ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer')
+      : iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
+    const save = pc
+      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId, 'aria-keyshortcuts': 'Control+Enter' }, 'Enregistrer', keycap('Ctrl'), keycap('↵'))
+      : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
+    const half = (el) => {
+      if (pc) el.classList.add('pc-half');
+      return el;
+    };
+    const dirtyNote = h('p', { class: 'pc-meta' }, 'Modifications non enregistrées');
+    dirtyNote.hidden = true;
+    const form = h('form', { class: pc ? 'pc-form' : 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,
       wishes ? [linkField.field, linkButton(item.link), priceField.field]
-        : field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
+        : half(field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field),
+      // Ordinateur : le rayon (ou le magasin) juste à côté de la quantité
+      pc && isShopping ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton)) : null,
+      pc && multi ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton)) : null,
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
-      isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
-      multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
+      !pc && isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
+      !pc && multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
       reservation?.el,
-      error.note);
+      error.note,
+      pc ? dirtyNote : null);
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
+
+    // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
+    // savoir s'il reste des modifications non enregistrées (ordinateur)
+    const snapshot = () => JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate]);
+    const initial = snapshot();
+    const dirty = () => snapshot() !== initial;
+    if (pc) {
+      const paintDirty = () => setTimeout(() => {
+        dirtyNote.hidden = !dirty();
+      }, 0);
+      form.addEventListener('input', paintDirty);
+      form.addEventListener('click', paintDirty);
+    }
 
     const sheet = openSheet({
       title: `Modifier ${words.the}`,
       content: form,
-      tools: [remove, save],
+      tools: pc ? null : [remove, save],
       scroll: true,
+      pc: 'drawer',
+      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, 'Annuler'), save] : null,
+      // Ordinateur : fermer sans enregistrer demande confirmation (rien ne se perd par erreur)
+      beforeClose: pc ? async () => !dirty() || confirmDialog({
+        title: 'Abandonner les modifications ?',
+        text: 'Ce que vous avez changé dans cette fiche ne sera pas enregistré.',
+        confirmLabel: 'Abandonner',
+        cancelLabel: 'Continuer',
+        focusCancel: true,
+      }) : null,
       onClose: () => {
         stopWatching();
         reservation?.dispose();
@@ -1494,7 +1566,7 @@ export function renderList(listId, onLeave) {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!editable()) {
-        sheet.close();
+        sheet.forceClose();
         return;
       }
       const newName = name.value.replace(/\s+/g, ' ').trim();
@@ -1528,19 +1600,22 @@ export function renderList(listId, onLeave) {
       if (enabled.due && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
-        sheet.close();
+        sheet.forceClose();
         return;
       }
       // Ma propre modification (pas d'avertissement) : copie locale tout de
       // suite, puis envoi (file d'attente). Historique mis à jour par actions.js.
       mine = true;
+      // Ctrl+Z (ordinateur) : valeurs d'avant, pour les seuls champs changés
+      const latest = app.data.items.get(item.id) ?? item;
+      recordUndo(listId, { kind: 'update', itemId: item.id, name: item.name, before: beforeOf(latest, changes), after: changes });
       await actions.updateItem(item, changes);
-      sheet.close();
+      sheet.forceClose();
     });
 
     remove.addEventListener('click', async () => {
       mine = true;
-      sheet.close();
+      sheet.forceClose();
       await deleteWithUndo(item);
     });
   }
@@ -1585,6 +1660,7 @@ export function renderList(listId, onLeave) {
       title: `Détail ${words.of}`,
       content: body,
       scroll: true,
+      pc: 'drawer', // ordinateur : tiroir à droite, comme la fiche à modifier
       onClose: () => {
         stopWatching();
         reservation?.dispose();
@@ -1759,6 +1835,11 @@ export function renderList(listId, onLeave) {
 
   if (pc) {
     readOnlyBanner.classList.add('pc-banner');
+    // Touches écrites dans les champs (cachées si les raccourcis à une touche sont désactivés)
+    input.setAttribute('aria-keyshortcuts', 'A');
+    input.after(keycap('A'));
+    search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
+    search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, title, sub),
@@ -1767,6 +1848,7 @@ export function renderList(listId, onLeave) {
         menuButton),
       h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), searchMeta,
         h('div', { class: 'pc-tools__end' }, sortButton, foldAll)),
+      offlineBanner(),
       readOnlyBanner,
       wishNote,
       addbar,

@@ -1,19 +1,29 @@
-// Page publique du guide : recherche, bouton « Sommaire » et sa feuille.
+// Page publique du guide : trois boutons flottants (Retour en haut,
+// Recherche, Sommaire), la barre de recherche et la feuille du sommaire.
 // Sans JavaScript, la page reste complète : le sommaire est aussi écrit en
 // haut de la page (<details> natifs), et ses liens mènent aux sections
-// (ancres stables). Avec JavaScript :
-// - « Rechercher dans le guide » : recherche en direct dans les titres et
-//   le texte, majuscules et accents ignorés (search.js, le même module que
-//   l'application) ; chapitres et sections sans résultat masqués, texte
-//   trouvé surligné (<mark class="hit">, posé en DOM), « N résultats »
-//   annoncé (role=status), message quand il n'y a rien ; Échap ou la croix
-//   effacent tout ;
-// - le bouton flottant « Sommaire » apparaît (aria-expanded suit la feuille) ;
-//   il ouvre la feuille (<dialog> natif : Échap la ferme, le reste de la page
+// (ancres stables) ; les boutons flottants ne s'affichent pas. Avec
+// JavaScript :
+// - les boutons ronds apparaissent en bas à droite (icône seule, aria-label,
+//   info-bulle) ; « Retour en haut » seulement après un certain défilement :
+//   il remonte au début (sans animation si prefers-reduced-motion) et donne
+//   le focus au titre ;
+// - la loupe ouvre la barre « Rechercher dans le guide », collée en haut, et
+//   y met le curseur (geste dont le seul but est d'écrire) : recherche en
+//   direct dans les titres et le texte, majuscules et accents ignorés
+//   (search.js, le même module que l'application) ; chapitres et sections
+//   sans résultat masqués, texte trouvé surligné (<mark class="hit">, posé
+//   en DOM), « N résultats » annoncé (role=status), message quand il n'y a
+//   rien ; la croix efface ; Échap efface, puis ferme ; « Fermer la
+//   recherche » remet l'affichage normal et rend le focus à la loupe ;
+// - le bouton « Sommaire » (aria-expanded suit la feuille) ouvre la
+//   feuille (<dialog> natif : Échap la ferme, le reste de la page
 //   devient inerte) : les chapitres seulement, chacun un bouton qui déplie
 //   ses sections (un seul à la fois), le chapitre de la section en cours
 //   déplié au départ et la section en cours repérée (aria-current, flèche,
 //   texte en gras : jamais la couleur seule) ;
+//   Navigateur sans <dialog> (Safari avant 15.4) : le bouton mène au
+//   sommaire écrit en haut de la page (il ne disparaît plus) ;
 // - toucher une entrée ferme la feuille (et efface une recherche en cours),
 //   fait défiler jusqu'au titre et lui donne le focus ; Échap ou la croix
 //   rendent le focus au bouton.
@@ -84,14 +94,42 @@ function runSearch(value) {
   search.querySelector('[role=status]').textContent = active ? resultsLabel(count) : '';
 }
 
-if (search && field && main) {
+// --- Boutons flottants ---
+const buttons = document.getElementById('boutons');
+const searchButton = document.getElementById('recherche-bouton');
+const topButton = document.getElementById('haut-bouton');
+const title = document.getElementById('haut');
+if (buttons) buttons.hidden = false;
+
+// Barre de recherche : ouverte par la loupe, fermée par « Fermer la recherche »
+const openSearch = () => {
   search.hidden = false;
+  searchButton.setAttribute('aria-expanded', 'true');
+  field.focus(); // la personne vient de toucher la loupe : elle veut écrire
+};
+const closeSearch = ({ returnFocus = true } = {}) => {
+  if (field.value !== '') {
+    field.value = '';
+    runSearch('');
+  }
+  search.hidden = true;
+  searchButton.setAttribute('aria-expanded', 'false');
+  if (returnFocus) searchButton.focus();
+};
+
+if (search && field && main && searchButton) {
+  searchButton.addEventListener('click', () => (search.hidden ? openSearch() : closeSearch()));
+  search.querySelector('[data-close-search]').addEventListener('click', () => closeSearch());
   field.addEventListener('input', () => runSearch(field.value));
+  // Échap : efface, puis (déjà vide) ferme la barre
   field.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && field.value !== '') {
-      event.preventDefault();
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    if (field.value !== '') {
       field.value = '';
       runSearch('');
+    } else {
+      closeSearch();
     }
   });
   // Croix : un appui ne retire pas le curseur du champ (s'il y était) ;
@@ -105,9 +143,32 @@ if (search && field && main) {
   });
 }
 
+// Retour en haut : visible après trois quarts d'écran de défilement
+if (topButton && title) {
+  const showTop = () => { topButton.hidden = window.scrollY < window.innerHeight * 0.75; };
+  window.addEventListener('scroll', showTop, { passive: true });
+  showTop();
+  topButton.addEventListener('click', () => {
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+    title.focus({ preventScroll: true });
+    history.replaceState(null, '', '#haut');
+  });
+}
+
 // --- Sommaire ---
 const button = document.getElementById('sommaire-bouton');
 const sheet = document.getElementById('sommaire');
+// Sans <dialog> : le bouton mène au sommaire écrit en haut de la page
+if (button && sheet && typeof sheet.showModal !== 'function') {
+  button.removeAttribute('aria-haspopup');
+  button.removeAttribute('aria-expanded');
+  button.addEventListener('click', () => {
+    const pageTitle = document.getElementById('sommaire-page');
+    pageTitle.scrollIntoView({ block: 'start' });
+    pageTitle.focus({ preventScroll: true });
+  });
+}
 if (button && sheet && typeof sheet.showModal === 'function') {
   const entries = [...sheet.querySelectorAll('a[data-section]')];
   const chapters = [...sheet.querySelectorAll('button[data-chapter]')];
@@ -159,10 +220,7 @@ if (button && sheet && typeof sheet.showModal === 'function') {
 
   // Défile jusqu'au titre et lui donne le focus ; l'adresse garde l'ancre
   const jump = (id) => {
-    if (query) {
-      field.value = '';
-      runSearch('');
-    }
+    if (query || !search.hidden) closeSearch({ returnFocus: false });
     const el = document.getElementById(id);
     if (!el) return;
     // « Haut de page » : tout en haut, logo compris
@@ -172,7 +230,6 @@ if (button && sheet && typeof sheet.showModal === 'function') {
     history.replaceState(null, '', `#${id}`);
   };
 
-  button.hidden = false;
   button.addEventListener('click', () => {
     target = null;
     mark(currentId());

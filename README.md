@@ -8,6 +8,7 @@
 - **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
+- **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
 - **Lien public** pour montrer une liste à quelqu'un sans compte, et **corbeille** de 30 jours.
 - **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur.
@@ -27,7 +28,7 @@
 
 ## Installation en trois commandes
 
-Il faut un serveur Linux avec Docker, et un proxy HTTPS (Nginx Proxy Manager) avec un nom de domaine.
+Il faut un serveur Linux avec Docker, un nom de domaine, et un proxy inverse HTTPS, peu importe lequel (Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…).
 
 ```sh
 mkdir -p /opt/listo && cd /opt/listo     # puis y copier docker-compose.yml et le régler
@@ -35,7 +36,7 @@ docker compose up -d                     # télécharge et démarre Listo
 docker logs listo                        # affiche le code de démarrage du premier Admin
 ```
 
-Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
+Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pour Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
 
 ## Liens utiles
 

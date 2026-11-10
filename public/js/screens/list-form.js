@@ -23,6 +23,33 @@ import {
 import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
 import { hasPublicLink } from './lists.js';
 
+// Ordinateur (design/maquettes/pc-A, capture 17) : le même formulaire dans
+// une fenêtre centrée, posée sur l'écran en cours ; l'adresse reste
+// #/listes/nouvelle (ou …/modifier) : Retour ou la croix la ferment (retour
+// à l'écran précédent), « Enregistrer » ouvre la liste. Le focus va sur la
+// fenêtre elle-même (règle « aucun curseur automatique ») : Tab mène au nom.
+export function openListFormPanel(listId) {
+  const leaving = [];
+  const hash = location.hash;
+  const content = renderListForm(listId, (fn) => leaving.push(fn));
+  return openSheet({
+    title: listId ? 'Modifier la liste' : 'Nouvelle liste',
+    sub: listId ? null : 'Courses, tâches ou envies',
+    content,
+    pc: 'modal',
+    size: 'lg',
+    history: false, // l'adresse de la fenêtre est déjà dans l'historique
+    onClose: () => {
+      for (const fn of leaving) fn();
+      // Fermée par la croix ou Échap (pas par un changement d'écran) : on
+      // revient à l'écran précédent
+      setTimeout(() => {
+        if (location.hash === hash) goBack(listId ? 'list' : 'lists', listId ? { id: listId } : {});
+      }, 0);
+    },
+  });
+}
+
 export function renderListForm(listId, onLeave) {
   const container = h('div', { class: 'screen' });
   const editing = listId !== null;

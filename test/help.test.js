@@ -80,8 +80,8 @@ test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; �
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
   assert.deepEqual(matchRoute('#/aide/sauvegardes'), { name: 'helpSection', params: { section: 'sauvegardes' } });
   assert.ok(ROUTES.some((r) => r.name === 'help' && r.path === '/aide'));
-  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\)\); break;/);
-  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\)\); break;/);
+  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
+  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\), \{ wide: true \}\); break;/);
   assert.match(code('public/js/screens/claude-connections.js'), /navigate\('helpSection', \{ section: 'claude' \}\)/);
   assert.match(read('public/index.html'), /<symbol id="i-book"/);
   assert.match(read('public/index.html'), /<symbol id="i-layers"/);
@@ -102,7 +102,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.equal(new Set(ids).size, ids.length, 'identifiants uniques');
   for (const id of ids) assert.match(id, /^[a-z][a-z0-9-]*$/, `ancre valable : ${id}`);
   // Ordre demandé : présentation, possibilités et Claude au début ; serveur à la fin
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'claude', 'installation', 'comptes', 'quotidien', 'roles', 'faq']);
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'roles', 'claude', 'faq']);
   assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'MCP Claude');
   assert.deepEqual(entries.filter((e) => e.chapter === 'roles').map((e) => e.id).filter((id) => id.startsWith('role-')),
     ['role-admin', 'role-contributeur', 'role-lecture', 'role-visiteur', 'role-beneficiaire']);
@@ -114,7 +114,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.ok(GUIDE.every((c) => !('adminOnly' in c)));
   // Parties du serveur : marquées (un chapitre, et des sections d'autres chapitres)
   assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation']);
-  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['mcp-serveur', 'mcp-regles', 'mcp-essai', 'secours', 'cle-perdue']);
+  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['secours', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
 });
 
 test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens en https seulement', () => {
@@ -131,7 +131,7 @@ test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens e
     assert.doesNotMatch(text, /\[\[(?![a-z0-9-]+\]\])/, `renvoi mal écrit : ${text.slice(0, 60)}`);
   }
   assert.ok(refs > 40, `${refs} renvois`);
-  assert.equal(refLabel('sauvegardes'), '4.7 Sauvegardes');
+  assert.equal(refLabel('sauvegardes'), '3.8 Sauvegardes');
   assert.throws(() => refLabel('inconnu'));
   const kinds = new Set(allBlocks().map((b) => (typeof b === 'string' ? 'p' : Object.keys(b)[0])));
   assert.deepEqual([...kinds].sort(), ['code', 'note', 'ol', 'p', 'sub', 'table', 'ul', 'who']);
@@ -144,7 +144,7 @@ test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens e
 test('contenu : les parties demandées sont là (types, possibilités, MCP Claude, installation, comptes, rôles, dépannage)', () => {
   const ids = new Set(outline().map((e) => e.id));
   for (const id of ['types', 'vocabulaire', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'claude-prudence', 'claude-activation',
-    'prerequis', 'dossier', 'npm', 'demarrage', 'cle', 'sauvegardes', 'verifications', 'premier-admin', 'creer-comptes', 'premiere-connexion', 'double-auth', 'oubli', 'secours',
+    'prerequis', 'dossier', 'proxy', 'npm', 'demarrage', 'cle', 'sauvegardes', 'verifications', 'premier-admin', 'creer-comptes', 'premiere-connexion', 'double-auth', 'oubli', 'secours',
     'faq-hors-ligne', 'faq-photo', 'faq-lien', 'faq-double-auth', 'cle-perdue', 'version', 'faq-claude', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
     assert.ok(ids.has(id), id);
   }
@@ -177,7 +177,7 @@ test('aucun secret ni adresse réelle : seulement des exemples inventés ; vouvo
   assert.match(text, /“Ajoute du lait chez Leclerc dans la liste Samedi\.”/);
 });
 
-test('écran : chapitres numérotés repliables (premier déplié), titres h2 et h3 avec ancres, bouton « Sommaire » accessible', async (t) => {
+test('écran : chapitres numérotés repliables (premier déplié), titres h2 et h3 avec ancres, trois boutons flottants accessibles', async (t) => {
   const screen = await render(t);
   const buttons = toggles(screen);
   assert.equal(buttons.length, GUIDE.length);
@@ -199,21 +199,40 @@ test('écran : chapitres numérotés repliables (premier déplié), titres h2 et
   // Mention des parties du serveur (chapitre et sections)
   assert.equal(screen.findAll((n) => hasClass(n, 'help__server')).length, GUIDE.filter((c) => c.server).length + GUIDE.flatMap((c) => c.sections ?? []).filter((x) => x.server).length);
   assert.ok(screen.textContent.includes(SERVER_NOTE));
-  // Bouton « Sommaire » : texte visible, aria-label, aria-expanded, fenêtre annoncée
-  const toc = screen.findAll((n) => hasClass(n, 'help__toc-btn'))[0];
-  assert.equal(toc.tag, 'button');
-  assert.ok(hasClass(toc, 'fab'), 'même bouton flottant que « Nouvelle liste » (56 px)');
-  assert.equal(toc.textContent, 'Sommaire');
-  assert.equal(toc.attrs['aria-label'], 'Sommaire du guide');
+  // Trois boutons flottants ronds, icône seule (aucun texte visible), nom
+  // pour les lecteurs d'écran et info-bulle ; de haut en bas dans la pile :
+  // retour en haut (caché au départ), loupe, sommaire
+  const fabs = screen.findAll((n) => hasClass(n, 'help-fab'));
+  assert.deepEqual(fabs.map((b) => b.attrs['aria-label']), ['Retour en haut de la page', 'Rechercher dans le guide', 'Sommaire du guide']);
+  assert.ok(fabs.every((b) => b.tag === 'button' && b.textContent === '' && b.attrs['data-tip'] === b.attrs['aria-label']));
+  assert.deepEqual(fabs.map((b) => b.hidden), [true, false, false]);
+  const [topFab, searchFab, toc] = fabs;
+  assert.ok(hasClass(toc, 'help__toc-btn'));
   assert.equal(toc.attrs['aria-expanded'], 'false');
   assert.equal(toc.attrs['aria-haspopup'], 'dialog');
+  assert.equal(searchFab.attrs['aria-expanded'], 'false');
+  assert.equal(searchFab.attrs['aria-controls'], 'aide-recherche');
+  // La barre de recherche n'apparaît qu'après la loupe ; le curseur y va
+  // alors (exception voulue) ; « Fermer la recherche » remet tout
+  const bar = screen.findAll((n) => n.attrs.id === 'aide-recherche')[0];
+  assert.equal(bar.hidden, true);
+  const searchField = bar.findAll((n) => n.tag === 'input')[0];
+  assert.equal(searchField.focused, undefined, 'aucun curseur au départ');
+  searchFab.click();
+  assert.equal(bar.hidden, false);
+  assert.equal(searchFab.getAttribute('aria-expanded'), 'true');
+  assert.equal(searchField.focused, true, 'la loupe met le curseur dans le champ');
+  bar.findAll((n) => n.attrs['aria-label'] === 'Fermer la recherche')[0].click();
+  assert.equal(bar.hidden, true);
+  assert.equal(searchFab.getAttribute('aria-expanded'), 'false');
+  assert.equal(searchFab.focused, true, 'focus rendu à la loupe');
+  assert.ok(topFab);
   // Barre du haut, aucun champ de saisie
   assert.equal(screen.findAll((n) => hasClass(n, 'topbar__title'))[0].textContent, 'Aide');
   assert.equal(screen.findAll((n) => n.attrs['aria-label'] === 'Retour').length, 1);
-  // Un seul champ, la recherche ; il ne prend jamais le focus tout seul
+  // Un seul champ, la recherche
   const fields = screen.findAll((n) => n.tag === 'input' || n.tag === 'textarea');
   assert.equal(fields.length, 1);
-  assert.equal(fields[0].focused, undefined);
   // Renvois : de vrais liens vers #/aide/<section> ; liens externes protégés
   const refs = screen.findAll((n) => hasClass(n, 'help__ref'));
   assert.ok(refs.length > 40);
@@ -222,10 +241,11 @@ test('écran : chapitres numérotés repliables (premier déplié), titres h2 et
   assert.ok(external.length >= 1 && external.every((a) => a.attrs.rel === 'noopener noreferrer' && a.attrs.target === '_blank'));
   // Un renvoi déplie le chapitre de sa cible
   const toBackups = refs.find((a) => a.attrs.href === '#/aide/sauvegardes');
-  buttons[3].click(); // replié d'abord (il a été déplié plus haut)
-  assert.equal(buttons[3].getAttribute('aria-expanded'), 'false');
+  const install = GUIDE.findIndex((c) => c.id === 'installation');
+  if (buttons[install].getAttribute('aria-expanded') === 'true') buttons[install].click(); // replié d'abord
+  assert.equal(buttons[install].getAttribute('aria-expanded'), 'false');
   toBackups.click();
-  assert.equal(buttons[3].getAttribute('aria-expanded'), 'true');
+  assert.equal(buttons[install].getAttribute('aria-expanded'), 'true');
 });
 
 test('« Qui peut quoi » : cinq rôles, oui ou non en icône ET en texte ; droits vérifiés', async (t) => {
@@ -282,7 +302,7 @@ test('sommaire : feuille du kit (openSheet), section en cours repérée sans la 
   // La fenêtre (ui.js) se ferme par Échap, par la croix « Fermer » et rend le focus
   const ui = code('public/js/ui.js');
   assert.match(ui, /if \(event\.key === 'Escape'\) close\(\);/);
-  assert.match(ui, /iconButton\('close', 'Fermer', close\)/);
+  assert.match(ui, /iconButton\('close', 'Fermer', \(\) => close\(\)\)/);
   assert.match(ui, /opener\.focus\(\)/);
 });
 
@@ -318,7 +338,7 @@ test('recherche (source) : titres et texte, majuscules et accents ignorés ; cha
   assert.deepEqual(searchGuide('zzqqxw'), { chapters: [], count: 0 });
   // Caractères spéciaux : jamais lus comme une expression
   assert.doesNotThrow(() => searchGuide('(*[<&'));
-  assert.equal(plainText('Voir [[sauvegardes]] et `docker logs listo`.'), 'Voir 4.7 Sauvegardes et docker logs listo.');
+  assert.equal(plainText('Voir [[sauvegardes]] et `docker logs listo`.'), 'Voir 3.8 Sauvegardes et docker logs listo.');
 });
 
 test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N résultats » annoncé, rien trouvé, Échap et la croix effacent', async (t) => {
@@ -383,23 +403,24 @@ test('sommaire à deux niveaux : chapitres seulement, un seul déplié (celui de
   assert.deepEqual(expanded(), GUIDE.map((c) => String(c.id === 'installation')), 'le chapitre de la section en cours');
   assert.deepEqual(subs.map((sub) => sub.hidden), GUIDE.map((c) => c.id !== 'installation'));
   // « Aller au chapitre » en premier, puis les sections
-  const first = subs[3].findAll((n) => n.tag === 'button');
+  const at = (id) => GUIDE.findIndex((c) => c.id === id); // place d'un chapitre (ordre calculé)
+  const first = subs[at('installation')].findAll((n) => n.tag === 'button');
   assert.equal(first[0].textContent, 'Aller au chapitre');
   assert.deepEqual(first.slice(1).map((b) => b.textContent.replace(' (section en cours)', '')), entries.filter((e) => e.chapter === 'installation').map(numbered));
   // Section en cours : aria-current, icône ET texte caché pour les lecteurs d'écran
   const current = nav.findAll((n) => n.attrs['aria-current'] === 'location');
   assert.equal(current.length, 1);
-  assert.match(current[0].textContent, /4\.7 Sauvegardes \(section en cours\)/);
+  assert.match(current[0].textContent, /3\.8 Sauvegardes \(section en cours\)/);
   assert.equal(current[0].findAll((n) => n.tag === 'use')[0].attrs.href, '#i-chev-r');
   // Un autre chapitre : il se déplie, le premier se replie (un seul à la fois)
-  chapterButtons[2].click();
+  chapterButtons[at('claude')].click();
   assert.deepEqual(expanded(), GUIDE.map((c) => String(c.id === 'claude')));
-  chapterButtons[2].click();
+  chapterButtons[at('claude')].click();
   assert.ok(expanded().every((v) => v === 'false'), 'retoucher le replie');
   // Saut : l'entrée touchée est transmise (la feuille se ferme et l'écran saute)
-  chapterButtons[2].click();
-  subs[2].findAll((n) => n.tag === 'button')[0].click();
-  subs[2].findAll((n) => n.tag === 'button')[2].click();
+  chapterButtons[at('claude')].click();
+  subs[at('claude')].findAll((n) => n.tag === 'button')[0].click();
+  subs[at('claude')].findAll((n) => n.tag === 'button')[2].click();
   nav.findAll((n) => hasClass(n, 'help-toc__top'))[0].click();
   assert.deepEqual(chosen, ['claude', entries.filter((e) => e.chapter === 'claude')[1].id, 'top']);
   // 44 px : entrées et chapitres
@@ -456,7 +477,30 @@ test('« MCP Claude » regroupe tout ce qui concerne Claude ; ailleurs, au plus 
   }
   // Ce qui concernait Claude n'est pas perdu
   const claudeText = claude.sections.flatMap((s) => (s.blocks ?? []).flatMap(blockTexts)).join('\n');
-  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Nginx Proxy Manager', 'claude.origine_refusee', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
+  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Proxy : rien à régler', 'claude.origine_refusee', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
     assert.ok(claudeText.includes(marker) || claude.sections.some((s) => s.title.includes(marker)), marker);
   }
+});
+
+// --- Boutons flottants : non-régression du bouton « Sommaire » disparu ---
+// (vérifié aussi dans Chromium à 320, 390 et 768 px, en clair et en sombre,
+// en haut, au milieu et tout en bas de la page : voir docs/developpement.md)
+test('boutons flottants : pile au-dessus de la zone de sécurité, place gardée en bas de page, 44 px au moins, cachés sans JavaScript sur le site', () => {
+  const css = read('public/css/app.css');
+  assert.match(css, /\.help-screen, \.site, \.help-fabs \{ --help-fab: 48px; \}/);
+  assert.match(css, /\.help-fabs \{ position: absolute; right: var\(--space-2\); bottom: calc\(var\(--space-3\) \+ env\(safe-area-inset-bottom, 0px\)\); z-index: 5; display: flex; flex-direction: column;/);
+  assert.match(css, /\.help-fab \{[^}]*width: var\(--help-fab\); height: var\(--help-fab\);[^}]*border-radius: 50%;/);
+  assert.match(css, /\.help-fab\[hidden\] \{ display: none; \}/);
+  // Le bas de la page garde la place des trois boutons (rien de caché dessous)
+  assert.match(css, /\.help \{ padding-top: 0; padding-bottom: calc\(var\(--help-fab\) \* 3 \+ 12px \* 2 \+ var\(--space-3\) \* 2 \+ env\(safe-area-inset-bottom, 0px\)\); \}/);
+  // Info-bulle seulement avec une souris, au survol ET au focus clavier
+  assert.match(css, /@media \(hover: hover\) and \(pointer: fine\) \{\s*\.help-fab::after \{ content: attr\(data-tip\);/);
+  assert.match(css, /\.help-fab:hover::after, \.help-fab:focus-visible::after \{ display: block; \}/);
+  // Site : pile fixée à la fenêtre, cachée sans JavaScript
+  const site = read('scripts/site-assets/site.css');
+  assert.match(site, /\.site \.help-fabs \{ position: fixed;/);
+  assert.match(site, /\.site \.help-fabs\[hidden\] \{ display: none; \}/);
+  assert.match(site, /\.site__inner \{[^}]*padding: var\(--space-2\) var\(--space-2\) calc\(var\(--help-fab\) \* 3 \+ 12px \* 2 \+ var\(--space-3\) \* 2 \+ env\(safe-area-inset-bottom, 0px\)\);/);
+  // Retour en haut : sans animation si moins de mouvement est demandé
+  assert.match(code('public/js/screens/help.js'), /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)\.matches;\s*body\.scrollTo\?\.\(\{ top: 0, behavior: still \? 'auto' : 'smooth' \}\);\s*topTitle\.focus\(\{ preventScroll: true \}\);/);
 });

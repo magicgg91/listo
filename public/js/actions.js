@@ -127,7 +127,7 @@ export const updateList = (listId, fields) => perform({ type: 'list.update', lis
 
 // « Vu » : mon repère monte jusqu'au dernier événement connu de la liste
 export const markSeen = (listId, upTo) => perform({ type: 'list.seen', listId, upTo });
-// « Ne plus me signaler cette liste » / « Signaler cette liste »
+// « Masquer les nouveautés de cette liste » / « Afficher les nouveautés de cette liste »
 export const setListMuted = (listId, muted) => perform({ type: 'list.mute', listId, muted });
 // Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
 export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });

@@ -88,7 +88,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [6.1 Les activer sur un appareil](#notif-activer)
 - [6.2 Ce que vous recevez, et quand](#notif-recevoir)
 - [6.3 Le détail dans la notification](#notif-detail)
-- [6.4 Silencer une liste](#notif-silencer)
+- [6.4 Couper les notifications d'une liste](#notif-silencer)
 - [6.5 Limites et listes d'envies](#notif-limites)
 - [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)
 - [6.7 Activer la fonction sur le serveur](#notif-serveur)
@@ -636,8 +636,8 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
 - Sur « Mes listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
 - Dans la liste, chaque nouveauté est surlignée, avec qui l'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.
-- Menu ⋮ de la liste : « Ne plus me signaler cette liste », puis « Signaler cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise.
-- « Mon compte », section « Nouveautés » : désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.
+- Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C'est indépendant des notifications de la liste ([6.4 Couper les notifications d'une liste](#notif-silencer)).
+- Réglages, « Notifications », partie « Dans l'application » : « Nouveautés » désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.
 - Sur certains téléphones, l'icône de l'application installée montre aussi leur total. Pour être prévenu sans ouvrir Listo : [6. Notifications](#notifications).
 
 <a id="hors-ligne"></a>
@@ -705,11 +705,13 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.
 
+L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.9 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
+
 <a id="notif-activer"></a>
 
 ### 6.1 Les activer sur un appareil
 
-Réglages, « Notifications », puis l'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.
+Réglages, « Notifications », partie « Sur cet appareil », puis l'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.
 
 - Android : dans Chrome (ou un autre navigateur), ou depuis Listo installé sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Ordinateur : Chrome, Edge, Firefox ou Safari. La notification s'affiche dans le coin de l'écran ou le centre de notifications du système.
@@ -740,9 +742,11 @@ Section « Contenu », « Afficher le détail dans la notification » : désacti
 
 <a id="notif-silencer"></a>
 
-### 6.4 Silencer une liste
+### 6.4 Couper les notifications d'une liste
 
-Menu ⋮ de la liste : « Silencer cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Ne plus silencer cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste. À ne pas confondre avec « Ne plus me signaler cette liste », qui concerne les pastilles des nouveautés ([5.9 Nouveautés](#nouveautes)).
+Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste.
+
+C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.9 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
 
 <a id="notif-limites"></a>
 
@@ -787,7 +791,7 @@ Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googl
 - La liste était déjà ouverte à l'écran : rien n'est envoyé pour ce que vous avez vu.
 - Une modification arrive environ une minute plus tard (regroupement) ; le résumé des échéances, vers 8 h seulement.
 - Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».
-- Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que la liste n'est pas silencée. L'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [6.7 Activer la fonction sur le serveur](#notif-serveur).
+- Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [6.7 Activer la fonction sur le serveur](#notif-serveur).
 
 <a id="roles"></a>
 

@@ -26,6 +26,7 @@ function interfaceFiles() {
   };
   walk('public');
   walk('server/pages');
+  walk('scripts/site-assets'); // page publique du guide (site/)
   return found;
 }
 
@@ -50,6 +51,18 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/public.js: opener', "retour à la ligne ou à la vignette touchée, sauf champ de saisie"],
   ['public/js/public.js: first', 'piège de focus : touche Tab (geste de la personne)'],
   ['public/js/public.js: last', 'piège de focus : Maj+Tab (geste de la personne)'],
+  // Guide (application et site) : SEULE exception à « aucun curseur
+  // automatique » (décision du 10 novembre 2026) : après un appui sur la
+  // loupe, dont le seul but est d'écrire, le curseur va dans le champ
+  ['public/js/screens/help.js: input', 'EXCEPTION voulue : champ de recherche, juste après un appui sur la loupe'],
+  ['public/js/screens/help.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],
+  ['public/js/screens/help.js: topTitle', 'titre « Aide » (tabindex="-1") après « Retour en haut »'],
+  ['scripts/site-assets/guide.js: field', 'EXCEPTION voulue : champ de recherche, juste après un appui sur la loupe'],
+  ['scripts/site-assets/guide.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],
+  ['scripts/site-assets/guide.js: title', 'titre de la page (tabindex="-1") après « Retour en haut »'],
+  ['scripts/site-assets/guide.js: pageTitle', 'titre du sommaire de la page (tabindex="-1"), navigateur sans <dialog>'],
+  ['scripts/site-assets/guide.js: el', 'titre d\'une section (tabindex="-1") après un saut'],
+  ['scripts/site-assets/guide.js: button', 'retour au bouton « Sommaire » à la fermeture de la feuille'],
 ]);
 
 test('aucun .select(), autofocus ni setSelectionRange dans l\'interface', () => {

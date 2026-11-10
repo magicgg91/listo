@@ -27,7 +27,7 @@
 
 ## Installation en trois commandes
 
-Il faut un serveur Linux avec Docker, et un proxy HTTPS (Nginx Proxy Manager) avec un nom de domaine.
+Il faut un serveur Linux avec Docker, un nom de domaine, et un proxy inverse HTTPS, peu importe lequel (Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…).
 
 ```sh
 mkdir -p /opt/listo && cd /opt/listo     # puis y copier docker-compose.yml et le régler
@@ -35,7 +35,7 @@ docker compose up -d                     # télécharge et démarre Listo
 docker logs listo                        # affiche le code de démarrage du premier Admin
 ```
 
-Le pas à pas complet (réglages, Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
+Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pour Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
 
 ## Liens utiles
 

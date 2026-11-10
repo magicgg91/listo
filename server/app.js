@@ -179,7 +179,7 @@ export function createApp({
     next();
   });
 
-  // Listo est derrière un seul proxy (Nginx Proxy Manager) : on ne croit son
+  // Listo est derrière un seul proxy inverse (HTTPS) : on ne croit son
   // en-tête X-Forwarded-For que pour un seul intermédiaire, ce qui donne la
   // vraie adresse IP du téléphone (utile pour limiter les tentatives).
   app.set('trust proxy', 1);

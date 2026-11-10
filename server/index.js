@@ -10,6 +10,7 @@ import { loadOrCreateKey } from './secrets.js';
 import { createApp } from './app.js';
 import { createJournalFile } from './audit.js';
 import { generateSetupCode } from './auth.js';
+import { preparePushKeys } from './push.js';
 
 const config = loadConfig();
 
@@ -38,6 +39,22 @@ if (created) {
   console.log(`Clé de chiffrement chargée : ${config.keyPath}`);
 }
 
+// 2 bis. Notifications push (LISTO_PUSH=on seulement) : clés VAPID créées au
+//    premier démarrage dans le dossier secrets/. Fonction coupée : rien
+//    n'est lu ni créé. Jamais la clé elle-même dans les journaux.
+let vapidKeys = null;
+try {
+  const prepared = preparePushKeys(config);
+  if (prepared) {
+    vapidKeys = prepared.keys;
+    console.log(`Notifications push activées. Clés ${prepared.created ? 'créées' : 'chargées'} : ${config.vapidPath}`);
+    if (prepared.created) console.log('  Gardez-en une copie avec la clé de chiffrement (sauvegarde à part).');
+  }
+} catch (err) {
+  console.error(`Listo ne démarre pas : ${err.message}`);
+  process.exit(1);
+}
+
 // 3. Tant qu'aucun compte n'existe : code de démarrage à usage unique, à
 //    saisir pour créer le compte Admin. Il n'est affiché qu'ici, dans les
 //    journaux du conteneur (docker logs listo). Un nouveau code est tiré à
@@ -63,7 +80,7 @@ const journalFile = createJournalFile({ path: journalPath });
 console.log(`Journal de sécurité : ${journalPath}`);
 
 // 5. Serveur web
-const app = createApp({ db, config, masterKey: key, setupCode, journalFile });
+const app = createApp({ db, config, masterKey: key, setupCode, journalFile, vapidKeys });
 const { ctx } = app.locals;
 const server = app.listen(config.port, () => {
   console.log(`Listo est démarré sur le port ${server.address().port}`);

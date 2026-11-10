@@ -1,6 +1,6 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
 // - réglages : carte du compte (ouvre « Mon compte », voir account.js),
-//   administration (Admin), aide (voir help.js), à propos, déconnexion ;
+//   administration (Admin), notifications (voir notifications.js), aide (voir help.js), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
 //   secours affichés une seule fois) ;
@@ -88,6 +88,9 @@ export function renderSettings() {
         h('div', { class: 'group' },
           row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
       ] : null,
+      // Notifications push : cet appareil (notifications.js)
+      h('h2', { class: 'section-title' }, 'Notifications'),
+      h('div', { class: 'group' }, notificationsRow()),
       // Corbeille : mes listes supprimées, à restaurer pendant 30 jours (trash.js)
       h('h2', { class: 'section-title' }, 'Listes'),
       h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') })),
@@ -141,12 +144,19 @@ function renderSettingsPc() {
       isAdmin ? section('Administration',
         h('p', { class: 'pc-settings__hint' }, 'Visible seulement pour les comptes Admin.'),
         h('div', { class: 'group' }, row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) }))) : null,
+      section('Notifications', h('div', { class: 'group' }, notificationsRow())),
       section('Listes', h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') }))),
       section('Aide', h('div', { class: 'group' },
         row({ iconName: 'book', title: 'Guide d\'utilisation', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
         row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }))),
       section('À propos', aboutGroup(isAdmin)),
       h('div', {}, h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => logOut() }, icon('logout', 'icon--sm'), 'Se déconnecter')))));
+}
+
+// Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des
+// notifications de cet appareil (notifications.js)
+function notificationsRow() {
+  return row({ iconName: 'bell', title: 'Notifications', sub: app.user.push ? 'Recevoir les notifications sur cet appareil' : 'Désactivées sur ce serveur', onClick: () => navigate('notifications') });
 }
 
 // Interrupteur « Raccourcis à une touche » (ordinateur) : désactivés, il ne

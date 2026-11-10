@@ -47,6 +47,16 @@ export function loadConfig(env = process.env) {
     // /api/oauth/…) répondent comme une adresse inexistante (404).
     mcp: String(env.LISTO_MCP ?? '').trim().toLowerCase() === 'on',
 
+    // Notifications push (voir server/push.js). DÉSACTIVÉES par défaut :
+    // seul LISTO_PUSH=on les active. Désactivées : aucune clé créée, aucune
+    // demande vers un service de push, leurs adresses (/api/push/…)
+    // répondent comme une adresse inexistante (404).
+    push: String(env.LISTO_PUSH ?? '').trim().toLowerCase() === 'on',
+
+    // Clés VAPID des notifications (créées au premier démarrage avec
+    // LISTO_PUSH=on), dans le même dossier que la clé de chiffrement
+    vapidPath: path.resolve(path.dirname(path.resolve(env.LISTO_KEY_PATH || 'secrets/secret.key')), 'vapid.json'),
+
     // Contact facultatif ajouté à l'en-tête User-Agent des demandes à Open
     // Food Facts (adresse e-mail ou URL), ou null. Une valeur mal formée est
     // ignorée (voir validContact).

@@ -20,6 +20,14 @@
 //    version, seulement quand sa propre version change. Ensuite, le scan
 //    marche hors ligne.
 //
+// 5. Notifications push (LISTO_PUSH=on) : affiche chaque message reçu
+//    (jamais de message « silencieux » : Safari retirerait l'autorisation),
+//    puis, quand on touche la notification, ouvre Listo sur le bon écran.
+//    Le message suit le format « Declarative Web Push » (W3C) :
+//    { web_push: 8030, notification: { title, body, navigate, tag, lang } }.
+//    Un iPhone ou un Mac récent (Safari 18.4 et après) l'affiche lui-même,
+//    sans passer par ici ; les autres navigateurs passent par ici.
+//
 // Ce qu'il ne fait JAMAIS : garder les réponses de l'API (/api/…, sauf les
 // photos ci-dessus), le flux temps réel (/api/events), ni le lien public
 // (page /p/…, données et photos /api/public/…, script js/public.js). Ces
@@ -34,7 +42,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v74-${BUILD ?? 'dev'}`;
+const VERSION = `v75-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -74,6 +82,7 @@ const APP_FILES = [
   '/js/live.js',
   '/js/localdb.js',
   '/js/photo.js',
+  '/js/push.js',
   '/js/queue.js',
   '/js/router.js',
   '/js/search.js',
@@ -102,6 +111,7 @@ const APP_FILES = [
   '/js/screens/list.js',
   '/js/screens/lists.js',
   '/js/screens/login.js',
+  '/js/screens/notifications.js',
   '/js/screens/pc-side.js',
   '/js/screens/scan.js',
   '/js/screens/settings.js',
@@ -231,3 +241,57 @@ async function localPhoto(userId, seq) {
     return notFound();
   }
 }
+
+// --- Notifications push ---
+
+// Adresse à ouvrir : une adresse de Listo seulement (sinon l'accueil)
+function listoUrl(value) {
+  try {
+    const url = new URL(value, self.location.origin);
+    if (url.origin === self.location.origin) return url.href;
+  } catch {
+    // adresse illisible
+  }
+  return `${self.location.origin}/`;
+}
+
+// Message reçu : une notification est TOUJOURS affichée (texte par défaut si
+// le message est illisible)
+self.addEventListener('push', (event) => {
+  let message = null;
+  try {
+    message = event.data?.json() ?? null;
+  } catch {
+    message = null;
+  }
+  const n = message?.web_push === 8030 && message.notification && typeof message.notification === 'object' ? message.notification : {};
+  const text = (value, max) => (typeof value === 'string' ? value.slice(0, max) : '');
+  const title = text(n.title, 120) || 'Listo';
+  const options = {
+    body: text(n.body, 500),
+    lang: 'fr-FR',
+    dir: 'ltr',
+    icon: '/icons/icon-192.png',
+    data: { url: listoUrl(n.navigate) },
+  };
+  const tag = text(n.tag, 64);
+  if (tag) options.tag = tag;
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Notification touchée : Listo déjà ouvert passe au bon écran (sans
+// recharger) et revient au premier plan ; sinon, Listo s'ouvre sur cet écran
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL(listoUrl(event.notification.data?.url));
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const open = windows.find((client) => new URL(client.url).origin === self.location.origin);
+    if (open) {
+      open.postMessage({ type: 'listo-open', hash: url.hash || '#/listes' });
+      await open.focus();
+      return;
+    }
+    await self.clients.openWindow(url.href);
+  })());
+});

@@ -1138,7 +1138,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 ### 9.5 Écran blanc ou application figée
 
 - Fermez Listo et rouvrez-le avec du réseau : il prend la dernière version. Si le bandeau « Nouvelle version disponible » reste affiché, touchez « Recharger ».
-- Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (les modifications en attente sont gardées).
+- Sinon : Réglages, « Mon compte », « Réinitialiser les données de ce téléphone » (sur un ordinateur : « Réinitialiser les données de cet appareil ») ; les modifications en attente sont gardées.
 - En dernier recours, effacez les données du site dans le navigateur (Chrome : cadenas à gauche de l'adresse, “Paramètres du site”, “Effacer les données” ; iPhone : Réglages, Safari, Avancé, Données des sites web), puis reconnectez-vous.
 - Android, application installée, bas de l'écran caché par la barre de navigation : fermez complètement l'application puis rouvrez-la ; sinon désinstallez-la et réinstallez-la (attendez « À jour » avant, pour ne rien perdre).
 - Tous les téléphones sont touchés : la personne qui gère le serveur regarde `docker logs listo` et `https://listo.exemple.fr/healthz` ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#depannage-serveur)).

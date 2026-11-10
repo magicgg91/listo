@@ -214,7 +214,9 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   const account = read('public/js/screens/account.js');
   assert.match(account, /h\('h2', \{ class: 'section-title' \}, 'Apparence'\),/);
   assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
-  assert.doesNotMatch(account, /onPc/, 'Mon compte : pas de version ordinateur à part');
+  // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
+  assert.equal((account.match(/onPc\(\)/g) ?? []).length, 1);
+  assert.match(account, /return onPc\(\)\s*\? \{ section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' \}\s*: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
   // Téléphone : plus de section « Clavier » (rien de nouveau)
   assert.doesNotMatch(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
 });

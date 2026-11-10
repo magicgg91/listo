@@ -654,7 +654,7 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 ### 5.11 Thème clair ou sombre
 
-Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».
+Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="ordinateur"></a>
 
@@ -691,7 +691,7 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | Ctrl+Entrée | Enregistrer la fiche ou le formulaire |
 | S | Aller au sommaire de l'aide |
 
-Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
+Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
 
 **Annuler (Ctrl+Z)**
 

@@ -582,7 +582,7 @@ export const GUIDE = [
       {
         id: 'theme',
         title: 'Thème clair ou sombre',
-        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour ce téléphone. Sur un ordinateur, le thème se choisit aussi dans Réglages, « Apparence et clavier ».'],
+        blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c\'est au même endroit : Réglages, « Mon compte », « Apparence ».'],
       },
       {
         id: 'ordinateur',
@@ -619,7 +619,7 @@ export const GUIDE = [
               ['S', 'Aller au sommaire de l\'aide'],
             ],
           } },
-          'Les raccourcis à une touche se désactivent dans Réglages, « Apparence et clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
+          'Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
           { sub: 'Annuler (Ctrl+Z)' },
           'Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l\'annulation part avec le reste au retour du réseau. Si quelqu\'un a changé l\'article entre-temps, rien n\'est écrasé : « Modifié entre-temps : rien n\'est annulé ».',
           'Ne s\'annulent pas par Ctrl+Z : un ajout (supprimez l\'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d\'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.',

@@ -4,6 +4,7 @@
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
+import { keycap } from '../shortcuts.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton, newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
@@ -254,6 +255,8 @@ function renderListsPc(onLeave) {
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, { label: 'Rechercher une liste', onChange: () => draw(), docked: true });
+  search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
+  search.field.append(keycap('/'));
 
   // Filtre par type : un choix exclusif (radiogroup), « Toutes » au départ
   const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];

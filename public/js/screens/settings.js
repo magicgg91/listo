@@ -12,7 +12,8 @@ import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { app, logOut } from '../app.js';
 import { aboutVersion } from '../format.js';
-import { toast } from '../ui.js';
+import { toast, onPc } from '../ui.js';
+import { singleKeysOn, setSingleKeys } from '../shortcuts.js';
 
 const MIN_PASSWORD = 10;
 
@@ -88,12 +89,33 @@ export function renderSettings() {
       // Corbeille : mes listes supprimées, à restaurer pendant 30 jours (trash.js)
       h('h2', { class: 'section-title' }, 'Listes'),
       h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') })),
+      // Ordinateur : « Raccourcis à une touche » (critère WCAG 2.1.4), gardé sur cet appareil
+      onPc() ? [h('h2', { class: 'section-title' }, 'Clavier'), h('div', { class: 'group' }, keysRow())] : null,
       // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
       h('h2', { class: 'section-title' }, 'Aide'),
       h('div', { class: 'group' }, row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') })),
       h('h2', { class: 'section-title' }, 'À propos'),
       aboutGroup(isAdmin)),
     h('div', { class: 'footer' }, logout));
+}
+
+// Interrupteur « Raccourcis à une touche » (ordinateur) : désactivés, il ne
+// reste que les flèches, Entrée et les raccourcis avec Ctrl (utile avec une
+// commande vocale, qui pourrait taper une lettre par erreur)
+export function keysRow() {
+  const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(singleKeysOn()), 'aria-labelledby': 'reglage-touches', 'aria-describedby': 'reglage-touches-aide' });
+  toggle.addEventListener('click', () => {
+    const on = toggle.getAttribute('aria-checked') !== 'true';
+    setSingleKeys(on);
+    toggle.setAttribute('aria-checked', String(on));
+    toast(on ? 'Raccourcis à une touche activés' : 'Raccourcis à une touche désactivés');
+  });
+  return h('div', { class: 'row' },
+    h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('keyboard')),
+    h('span', { class: 'row__body' },
+      h('span', { class: 'row__title', id: 'reglage-touches' }, 'Raccourcis à une touche'),
+      h('span', { class: 'row__sub', id: 'reglage-touches-aide' }, 'Désactivez-les si vous utilisez une commande vocale. Sur cet appareil seulement.')),
+    toggle);
 }
 
 // Bloc « À propos » : une carte en deux zones séparées par un trait fin :

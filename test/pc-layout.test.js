@@ -84,7 +84,7 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   // Le serveur n'envoie jamais les réservations au bénéficiaire : sans elles, aucun bouton
   assert.match(list, /if \(!view\?\.reservations \|\| item\.checked \|\| view\.reservations\.get\(item\.id\)\?\.participants\.length\) return null;/);
   // Corbeille au survol : même suppression annulable que le glissement
-  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, onClick: \(\) => deleteWithUndo\(item\) \}/);
+  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: \(\) => deleteWithUndo\(item\) \}/);
   // « Partager » (propriétaire) ou « Personnes » (les autres) : le tiroir du partage
   assert.match(list, /list\.isOwner \? 'Partager' : 'Personnes', people\)\);/);
   // Bandeau du bénéficiaire : il ne voit jamais les réservations

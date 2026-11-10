@@ -58,6 +58,11 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/screens/help.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],
   ['public/js/screens/help.js: topTitle', 'titre « Aide » (tabindex="-1") après « Retour en haut »'],
   ['scripts/site-assets/guide.js: field', 'EXCEPTION voulue : champ de recherche, juste après un appui sur la loupe'],
+  // Ordinateur (shortcuts.js) : « / » (recherche) et « A » (champ d'ajout),
+  // gestes dont le seul but est d'écrire ; S : le sommaire de l'aide
+  ['public/js/shortcuts.js: field', 'EXCEPTION voulue : touche « / » (recherche) ou « A » (champ d\'ajout)'],
+  ['public/js/screens/list.js: target', 'ordinateur : focus clavier gardé sur la même ligne après un redessin (un bouton de la ligne, jamais un champ)'],
+  ['public/js/shortcuts.js: link', 'touche S : une entrée du sommaire de l\'aide (un lien, jamais un champ)'],
   ['scripts/site-assets/guide.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],
   ['scripts/site-assets/guide.js: title', 'titre de la page (tabindex="-1") après « Retour en haut »'],
   ['scripts/site-assets/guide.js: pageTitle', 'titre du sommaire de la page (tabindex="-1"), navigateur sans <dialog>'],

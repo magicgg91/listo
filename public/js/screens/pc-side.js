@@ -19,6 +19,7 @@ import { app, onDataChange } from '../app.js';
 import { drawWhenIdle } from '../ui.js';
 import { keepFieldFocus } from '../tap.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
+import { openShortcuts, keycap } from '../shortcuts.js';
 
 // Crée le menu. Renvoie { el, select(route), dispose() }.
 export function createPcSide() {
@@ -34,6 +35,7 @@ export function createPcSide() {
     maxlength: '100',
     placeholder: 'Rechercher',
     'aria-label': 'Rechercher une liste',
+    'aria-keyshortcuts': '/',
   });
   const clearButton = h('button', {
     class: 'icon-btn',
@@ -122,12 +124,15 @@ export function createPcSide() {
   h('span', { class: 'visually-hidden' }, ' : Mes listes'));
   const user = app.user ?? {};
   const el = h('aside', { class: 'pc-side', 'aria-label': 'Navigation' },
-    h('div', { class: 'pc-brand' }, home, iconButton('help', 'Aide', () => navigate('help'))),
-    h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton),
+    // « ? » : la fenêtre des raccourcis (elle mène aussi à l'aide)
+    h('div', { class: 'pc-brand' }, home, h('button', {
+      class: 'icon-btn', type: 'button', 'aria-label': 'Raccourcis clavier', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '?', 'data-pc-tip': 'Raccourcis clavier · ?', onClick: () => openShortcuts(),
+    }, icon('help'))),
+    h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/')),
     status,
     nav,
     h('div', { class: 'pc-side__foot' },
-      h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), 'Nouvelle liste'),
+      h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), 'Nouvelle liste', keycap('N')),
       h('div', { class: 'pc-user' },
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },

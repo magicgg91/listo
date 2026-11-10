@@ -53,7 +53,7 @@ test('la coche enregistre (formulaire relié), Entrée aussi ; la poubelle suppr
   assert.match(list, /form\.addEventListener\('submit', async \(event\) => \{/);
   // Poubelle : la fiche se ferme, puis la même suppression que le glissement
   assert.match(list, /remove\.addEventListener\('click', async \(\) => \{\s*mine = true;\s*sheet\.forceClose\(\);\s*await deleteWithUndo\(item\);\s*\}\);/);
-  assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*await actions\.deleteItem\(item\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: 'Annuler', onAction: \(\) => actions\.restoreItem\(item\.id\) \}\);\s*\}/);
+  assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*await actions\.deleteItem\(item\);\s*const entry = \{ kind: 'delete', itemId: item\.id, name: item\.name \};\s*recordUndo\(listId, entry\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: pc \? 'Annuler \(Ctrl\+Z\)' : 'Annuler', onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);\s*\} \}\);\s*\}/);
   // Enregistrement impossible pendant qu'un autre téléphone supprime l'article
   assert.match(list, /save\.disabled = gone;\s*remove\.disabled = gone;/);
 });

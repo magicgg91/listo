@@ -5,7 +5,7 @@ import { h, icon, replace } from './dom.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setPcLayer, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
@@ -23,6 +23,9 @@ import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { BUILD } from './version.js';
+import { startShortcuts } from './shortcuts.js';
+import { undoLast, NOTHING_TO_UNDO } from './undo.js';
+import * as actions from './actions.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
 applyTheme(savedTheme());
@@ -472,6 +475,28 @@ const markLayout = () => root.classList.toggle('app--pc', isDesktop());
 markLayout();
 // Fenêtres de l'ordinateur (tiroir, fenêtre centrée) : posées sur .app
 setPcLayer(root);
+
+// Raccourcis clavier de l'ordinateur (shortcuts.js). Ctrl+Z : annule la
+// dernière action faite sur cet appareil dans la liste ouverte (undo.js),
+// avec les mêmes opérations que l'action d'origine (file d'attente).
+startShortcuts({
+  onUndo: async () => {
+    const listId = app.route?.name === 'list' ? app.route.params.id : null;
+    if (!listId) {
+      toast(NOTHING_TO_UNDO);
+      return;
+    }
+    if (!canEditList(app.data.lists.get(listId))) {
+      toast('Liste en lecture seule : rien n\'est annulé.');
+      return;
+    }
+    toast(await undoLast(listId, app.data.items, {
+      restore: (itemId) => actions.restoreItem(itemId),
+      check: (item, checked) => actions.checkItem(item, checked),
+      update: (item, changes) => actions.updateItem(item, changes),
+    }));
+  },
+});
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
   // puis le même écran redessiné dans l'autre disposition

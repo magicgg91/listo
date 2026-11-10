@@ -63,6 +63,8 @@ import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
 import { openSharePanel } from './share-panel.js';
+import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
+import { keycap } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
@@ -199,7 +201,7 @@ export function renderList(listId, onLeave) {
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
     const people = h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', onClick: () => openSharePanel(list.id) },
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? 'Partager' : 'Personnes'} · P`, onClick: () => openSharePanel(list.id) },
       icon('users', 'icon--sm'), list.isOwner ? 'Partager' : 'Personnes', people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
@@ -323,7 +325,25 @@ export function renderList(listId, onLeave) {
   }
 
   // --- Dessin de la liste ---
+  // Ordinateur : la liste est redessinée à chaque changement (copie locale,
+  // serveur, temps réel) ; le focus clavier reste sur la même ligne (le même
+  // bouton), ou passe à la ligne qui a pris sa place si elle a disparu
   const draw = () => {
+    if (!pc) return drawList();
+    const focused = document.activeElement;
+    const row = content.contains(focused) ? focused.closest('li.item') : null;
+    if (!row) return drawList();
+    const rows = [...content.querySelectorAll('li.item')];
+    const index = rows.indexOf(row);
+    const id = row.dataset.itemId;
+    const part = ['.item__body', 'button.check', '[data-action="edit"]', '[data-action="delete"]'].find((sel) => focused.matches(sel)) ?? '.item__body';
+    drawList();
+    if (content.contains(focused)) return; // rien n'a été remplacé
+    const same = content.querySelector(`li.item[data-item-id="${CSS.escape(id)}"]`);
+    const target = same ? same.querySelector(part) ?? same.querySelector('.item__body') : content.querySelectorAll('li.item .item__body')[Math.min(index, content.querySelectorAll('li.item').length - 1)];
+    target?.focus({ preventScroll: true });
+  };
+  const drawList = () => {
     // Groupes repliables du nouveau dessin. « Tout replier » n'est recalculé
     // qu'après le dessin : le cacher un instant au début changeait la hauteur
     // de la zone qui défile pendant le dessin (12 px), et la liste pouvait
@@ -610,8 +630,8 @@ export function renderList(listId, onLeave) {
     return [
       reserveButton(item),
       h('span', { class: 'item__actions' },
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, 'aria-keyshortcuts': 'E', 'data-action': 'edit', 'data-pc-tip': 'Modifier · E', onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
     ];
   }
   // « Réserver » : seulement si le serveur a envoyé les réservations de la
@@ -657,16 +677,24 @@ export function renderList(listId, onLeave) {
   // file d'attente, avec ou sans réseau) ; un message en bas propose
   // « Annuler » pendant quelques secondes, qui remet le même article avec sa
   // photo (opération item.restore).
+  // Ordinateur : l'action est aussi notée pour Ctrl+Z (undo.js) ; le message
+  // reste 8 secondes et rappelle la touche.
   async function deleteWithUndo(item) {
     if (!editable()) return;
     await actions.deleteItem(item);
-    toast(`« ${item.name} » supprimé`, { action: 'Annuler', onAction: () => actions.restoreItem(item.id) });
+    const entry = { kind: 'delete', itemId: item.id, name: item.name };
+    recordUndo(listId, entry);
+    toast(`« ${item.name} » supprimé`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+      forgetUndo(listId, (e) => e === entry);
+      actions.restoreItem(item.id);
+    } });
   }
 
   // Cocher / décocher : affiché tout de suite (copie locale), envoyé ensuite
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
     if (!editable() || !mayCheck(view?.list)) return;
+    recordUndo(listId, { kind: 'check', itemId: item.id, name: item.name, checked: !item.checked });
     actions.checkItem(item, !item.checked);
   }
 
@@ -1472,7 +1500,7 @@ export function renderList(listId, onLeave) {
       ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer')
       : iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
     const save = pc
-      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId }, 'Enregistrer')
+      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId, 'aria-keyshortcuts': 'Control+Enter' }, 'Enregistrer', keycap('Ctrl'), keycap('↵'))
       : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
     const half = (el) => {
       if (pc) el.classList.add('pc-half');
@@ -1576,6 +1604,9 @@ export function renderList(listId, onLeave) {
       // Ma propre modification (pas d'avertissement) : copie locale tout de
       // suite, puis envoi (file d'attente). Historique mis à jour par actions.js.
       mine = true;
+      // Ctrl+Z (ordinateur) : valeurs d'avant, pour les seuls champs changés
+      const latest = app.data.items.get(item.id) ?? item;
+      recordUndo(listId, { kind: 'update', itemId: item.id, name: item.name, before: beforeOf(latest, changes), after: changes });
       await actions.updateItem(item, changes);
       sheet.forceClose();
     });
@@ -1802,6 +1833,11 @@ export function renderList(listId, onLeave) {
 
   if (pc) {
     readOnlyBanner.classList.add('pc-banner');
+    // Touches écrites dans les champs (cachées si les raccourcis à une touche sont désactivés)
+    input.setAttribute('aria-keyshortcuts', 'A');
+    input.after(keycap('A'));
+    search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
+    search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, title, sub),

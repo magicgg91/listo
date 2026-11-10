@@ -771,6 +771,19 @@
 .tip--up { top: auto; bottom: 100%; margin: 0 0 6px; }
 .menu--pc { position: absolute; z-index: 12; min-width: 280px; }
 .menu--pc .menu__item { min-height: 36px; }
+/* Raccourcis désactivés (Réglages) : plus de touches écrites sur les boutons */
+.app--no-keys .keycap[aria-hidden="true"] { display: none; }
+/* Fenêtre « Raccourcis clavier » : liste de définitions */
+.keys__list { margin: 0; }
+.keys__row dt, .keys__row dd { margin: 0; }
+.keys__label { color: var(--color-text); }
+/* Info-bulle (data-pc-tip) au survol et au focus clavier, après 400 ms ;
+   jamais la seule explication (le nom du bouton dit déjà tout) */
+@media (hover: hover) and (pointer: fine) {
+  .app--pc [data-pc-tip] { position: relative; }
+  .app--pc [data-pc-tip]::after { content: attr(data-pc-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 12; padding: 6px 10px; border-radius: 8px; background: var(--color-inverse-bg); color: var(--color-inverse-text); font-size: var(--text-sm); font-weight: 600; line-height: 1.3; white-space: nowrap; box-shadow: var(--shadow-pop); pointer-events: none; opacity: 0; visibility: hidden; }
+  .app--pc [data-pc-tip]:hover::after, .app--pc [data-pc-tip]:focus-visible::after { opacity: 1; visibility: visible; transition: visibility 0s 400ms, opacity 0s 400ms; }
+}
 
 /* Priorité, échéance, envies */
 .chip--high { background: var(--color-danger-soft); color: var(--color-danger-ink); }

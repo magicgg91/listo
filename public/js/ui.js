@@ -275,7 +275,10 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
 // des actions précédentes par un trait. onClose : appelé à la fermeture.
 // anchor : bouton qui ouvre le menu (carte de « Mes listes ») ; le menu
 // s'affiche alors juste sous lui, sans jamais sortir de l'écran.
-export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {}) {
+// at : { x, y } (clic droit, ordinateur) : le menu s'ouvre à cet endroit.
+// item.keys : touche du raccourci (ordinateur), écrite en .keycap et
+// annoncée par aria-keyshortcuts.
+export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = null } = {}) {
   let closeMenu;
   let panel;
   const { close } = overlay((close) => {
@@ -293,10 +296,21 @@ export function openMenu(items, { label = 'Menu', onClose, anchor = null } = {})
           // une autre fenêtre ou changer d'écran)
           setTimeout(() => item.onSelect(), 0);
         },
-      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null)]));
+        'aria-keyshortcuts': item.keys ? item.keys.aria : null,
+      }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null,
+      item.keys ? h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, item.keys.label) : null)]));
     return panel;
   }, { role: 'menu', label, onClose });
-  if (anchor) {
+  if (at) {
+    // Clic droit : sous le pointeur, sans sortir de l'écran
+    const box = host.getBoundingClientRect();
+    const left = Math.min(at.x - box.left, box.width - panel.offsetWidth - 8);
+    const top = Math.min(at.y - box.top, box.height - panel.offsetHeight - 8);
+    panel.classList.add('menu--pc');
+    panel.style.left = `${Math.max(8, left)}px`;
+    panel.style.right = 'auto';
+    panel.style.top = `${Math.max(8, top)}px`;
+  } else if (anchor) {
     const box = host.getBoundingClientRect();
     const below = anchor.getBoundingClientRect().bottom - box.top + 4;
     const room = box.height - panel.offsetHeight - 8;
@@ -322,7 +336,7 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
     }, action) : null);
   host.append(el);
   currentToast = el;
-  setTimeout(() => el.remove(), duration ?? (action ? 6000 : 4000));
+  setTimeout(() => el.remove(), duration ?? (action ? (onPc() ? 8000 : 6000) : 4000));
 }
 
 // Redessine à chaque changement de données, mais jamais pendant qu'un doigt

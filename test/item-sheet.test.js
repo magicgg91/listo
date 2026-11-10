@@ -19,8 +19,9 @@ test('plus de boutons « Enregistrer » / « Supprimer » en bas de la fiche', (
 });
 
 test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
-  assert.match(list, /const remove = iconButton\('trash', `Supprimer \$\{words\.the\}`, null, 'icon-btn--danger sheet__delete'\);/);
-  assert.match(list, /const save = h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('disquette'\)\);/);
+  // Téléphone (l'ordinateur a ses boutons écrits au pied du tiroir)
+  assert.match(list, /: iconButton\('trash', `Supprimer \$\{words\.the\}`, null, 'icon-btn--danger sheet__delete'\);/);
+  assert.match(list, /: h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('disquette'\)\);/);
   // Disquette : dans le sprite (kit, application, components.html), même
   // style que les autres icônes, et en fichier séparé dans design/icones/
   const symbol = (file) => read(file).match(/<symbol id="i-disquette"[^\n]*<\/symbol>/)?.[0];
@@ -31,9 +32,9 @@ test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, av
   assert.match(read('design/icones/i-disquette.svg'), /stroke="currentColor" stroke-width="2"/);
   // Plus aucune coche sur le bouton « Enregistrer » d'une fiche
   assert.doesNotMatch(list, /'aria-label': 'Enregistrer' \}, icon\('check'\)/);
-  assert.match(list, /tools: \[remove, save\],/);
+  assert.match(list, /tools: pc \? null : \[remove, save\],/);
   // La croix (« Fermer ») vient toujours après les boutons de la fiche
-  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', 'Fermer', close\)\)/);
+  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', 'Fermer', \(\) => close\(\)\)\)/);
   // Un espace visible entre la poubelle et la disquette ; couleurs du kit
   const css = read('public/css/app.css');
   assert.match(css, /\.sheet__delete \{ margin-right: var\(--space-2\); \}/);
@@ -48,10 +49,10 @@ test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, av
 
 test('la coche enregistre (formulaire relié), Entrée aussi ; la poubelle supprime avec « Annuler »', () => {
   assert.match(list, /const formId = `fiche-\$\{item\.id\}`;/);
-  assert.match(list, /const form = h\('form', \{ class: 'stack', id: formId, novalidate: true \},/);
+  assert.match(list, /const form = h\('form', \{ class: pc \? 'pc-form' : 'stack', id: formId, novalidate: true \},/);
   assert.match(list, /form\.addEventListener\('submit', async \(event\) => \{/);
   // Poubelle : la fiche se ferme, puis la même suppression que le glissement
-  assert.match(list, /remove\.addEventListener\('click', async \(\) => \{\s*mine = true;\s*sheet\.close\(\);\s*await deleteWithUndo\(item\);\s*\}\);/);
+  assert.match(list, /remove\.addEventListener\('click', async \(\) => \{\s*mine = true;\s*sheet\.forceClose\(\);\s*await deleteWithUndo\(item\);\s*\}\);/);
   assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*await actions\.deleteItem\(item\);\s*toast\(`« \$\{item\.name\} » supprimé`, \{ action: 'Annuler', onAction: \(\) => actions\.restoreItem\(item\.id\) \}\);\s*\}/);
   // Enregistrement impossible pendant qu'un autre téléphone supprime l'article
   assert.match(list, /save\.disabled = gone;\s*remove\.disabled = gone;/);

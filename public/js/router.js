@@ -115,10 +115,13 @@ export function goBack(fallback = 'lists', params = {}) {
 
 // Enregistre une fenêtre superposée. close() est appelé pour la fermer quand
 // on appuie sur Retour. Renvoie la fonction à appeler pour la fermer soi-même.
-export function openOverlay(close) {
+// push = false : aucune entrée ajoutée (fenêtre qui a déjà sa propre
+// adresse, comme « Nouvelle liste » sur ordinateur) ; elle est quand même
+// fermée d'office au changement d'écran.
+export function openOverlay(close, { push = true } = {}) {
   const entry = { close, pushed: false, hash: location.hash };
   overlays.push(entry);
-  whenHistoryReady(() => {
+  if (push) whenHistoryReady(() => {
     if (!overlays.includes(entry)) return; // déjà refermée entre-temps
     history.pushState({ depth: depth(), overlay: true }, '', location.hash);
     entry.pushed = true;

@@ -3,12 +3,12 @@
 
 import { h, icon, replace } from './dom.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
-import { startRouter, navigate } from './router.js';
+import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
-import { setOverlayHost, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
+import { setOverlayHost, setPcLayer, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
 import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
@@ -17,7 +17,7 @@ import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
-import { renderListForm } from './screens/list-form.js';
+import { renderListForm, openListFormPanel } from './screens/list-form.js';
 import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
@@ -470,7 +470,12 @@ const desktop = window.matchMedia('(min-width: 1024px)');
 export const isDesktop = () => desktop.matches;
 const markLayout = () => root.classList.toggle('app--pc', isDesktop());
 markLayout();
+// Fenêtres de l'ordinateur (tiroir, fenêtre centrée) : posées sur .app
+setPcLayer(root);
 desktop.addEventListener('change', () => {
+  // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
+  // puis le même écran redessiné dans l'autre disposition
+  closeOverlays();
   markLayout();
   show(app.route);
 });
@@ -500,7 +505,11 @@ function pcSideFor(route) {
 
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
 // l'écran de connexion, par exemple). wide : colonne large (ordinateur).
-function mount(screen, { withSide = true, wide = false } = {}) {
+// Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
+// liste », qui s'ouvrent par-dessus l'écran en cours
+let mountedOnPc = false;
+let mountedListId = null;
+function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
@@ -513,6 +522,8 @@ function mount(screen, { withSide = true, wide = false } = {}) {
   currentCol = col;
   placeBanner();
 
+  mountedOnPc = pc;
+  mountedListId = listId;
   if (pc) {
     replace(root, h('div', { class: 'pc pc--a' }, pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
     return;
@@ -556,9 +567,21 @@ function show(route) {
 
   switch (name) {
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
-    case 'list': mount((onLeave) => renderList(params.id, onLeave)); break;
-    case 'newList': mount((onLeave) => renderListForm(null, onLeave)); break;
-    case 'editList': mount((onLeave) => renderListForm(params.id, onLeave)); break;
+    case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
+    // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
+    // l'écran en cours (ou sur « Mes listes », sur la liste à modifier)
+    case 'newList':
+      if (isDesktop()) {
+        if (!mountedOnPc) mount((onLeave) => renderLists(onLeave));
+        openListFormPanel(null);
+      } else mount((onLeave) => renderListForm(null, onLeave));
+      break;
+    case 'editList':
+      if (isDesktop()) {
+        if (mountedListId !== params.id) mount((onLeave) => renderList(params.id, onLeave), { listId: params.id });
+        openListFormPanel(params.id);
+      } else mount((onLeave) => renderListForm(params.id, onLeave));
+      break;
     case 'settings': mount(() => renderSettings()); break;
     case 'account': mount((onLeave) => renderAccount(onLeave)); break;
     case 'password': mount(() => renderPassword()); break;

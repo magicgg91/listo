@@ -666,7 +666,7 @@
 .pc-col { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%; max-width: var(--pc-col); margin-inline: auto; }
 .pc-col--wide { --pc-col: 1040px; }
 @media (min-width: 1920px) { .pc { grid-template-columns: 320px minmax(0, 1fr); } }
-@media (max-width: 1279.98px) { .pc { grid-template-columns: 240px minmax(0, 1fr); } .pc-drawer { width: 400px; } .pc-head .searchfield { width: 180px; } }
+@media (max-width: 1279.98px) { .pc { grid-template-columns: 240px minmax(0, 1fr); } .pc-head .searchfield { width: 180px; } }
 
 /* Menu de gauche : marque, recherche, listes groupées par type, pied */
 .pc-brand { display: flex; align-items: center; gap: 10px; padding: 16px 12px 8px 16px; }
@@ -724,19 +724,34 @@
 .pc-panel { display: flex; flex-direction: column; min-height: 0; background: var(--color-surface); }
 .pc-panel__head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 12px 20px; border-bottom: 1px solid var(--color-border); }
 .pc-panel__title { flex: 1; min-width: 0; font-size: var(--text-sheet); font-weight: 700; line-height: var(--lh-tight); }
+.pc-panel__heading { flex: 1; min-width: 0; }
+.pc-panel__foot--end { justify-content: flex-end; }
+.pc-panel__body .dialog__text { margin: 0; }
+.pc-panel__body > .stack, .pc-panel__body > form { flex: none; }
+/* Formulaire d'un écran (« Nouvelle liste », « Modifier la liste ») dans une
+   fenêtre : sa barre du haut est remplacée par l'en-tête de la fenêtre ; ses
+   champs défilent, son pied (« Enregistrer ») reste en bas */
+.pc-panel__body:has(> .screen) { padding: 0; overflow: hidden; }
+.pc-panel__body > .screen { flex: 1; min-height: 0; }
+.pc-panel__body > .screen > form > .topbar { display: none; }
 .pc-panel__sub { font-size: var(--text-sm); color: var(--color-text-2); }
 .pc-panel__body { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 16px; overflow: hidden auto; padding: 20px; }
 .pc-panel__foot { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--color-border); background: var(--color-surface); }
 .pc-panel__foot .grow { flex: 1; }
 .pc-panel__foot .btn { padding: 0 14px; }
 .pc-drawer { position: absolute; top: 0; right: 0; bottom: 0; z-index: 11; width: 520px; border-left: 1px solid var(--color-border); box-shadow: var(--shadow-pop); }
-.pc-modal { position: absolute; left: 50%; top: 50%; z-index: 11; width: var(--pc-modal, 680px); max-width: calc(100% - 2 * var(--pc-gutter)); max-height: 88%; transform: translate(-50%, -50%); overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; box-shadow: var(--shadow-pop); }
+.pc-modal { position: absolute; left: 50%; top: 50%; z-index: 11; width: var(--pc-modal, 680px); max-width: calc(100% - 2 * var(--pc-gutter, 24px)); max-height: 88%; transform: translate(-50%, -50%); overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; box-shadow: var(--shadow-pop); }
 .pc-modal--sm { --pc-modal: 560px; }
 .pc-modal--lg { --pc-modal: 760px; }
 .pc-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .pc-form .span2 { grid-column: span 2; }
+/* Fiche d'un article : chaque champ sur toute la largeur, sauf .pc-half
+   (quantité et rayon côte à côte) */
+.pc-form > * { grid-column: span 2; min-width: 0; }
+.pc-form > .pc-half { grid-column: span 1; }
+.pc-form > [hidden] { display: none; }
 .pc-meta { font-size: var(--text-sm); color: var(--color-text-2); }
-@media (max-width: 1279.98px) { .pc-panel__foot .keycap { display: none; } }
+@media (max-width: 1279.98px) { .pc-panel__foot .keycap { display: none; } .pc-drawer { width: 400px; } }
 
 /* Raccourcis clavier : touches, fenêtre des raccourcis, bulles */
 .keycap { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid var(--color-control); border-bottom-width: 2px; border-radius: 6px; background: var(--color-surface); color: var(--color-text-2); font-size: var(--text-sm); font-weight: 600; line-height: 1; white-space: nowrap; }
@@ -767,7 +782,12 @@
 .share-row:last-child { border-bottom: 0; }
 .share-row .avatar { width: 36px; height: 36px; border: 0; }
 .select--sm { width: 176px; }
-.share-row--invite { flex-wrap: wrap; }
+.share-row--add { flex-wrap: wrap; }
+.share-row .grow { flex: 1; min-width: 0; }
+.share-row--add { gap: 8px; padding: 8px 0; border-bottom: 0; }
+.share-row--add select.grow { flex: 1; min-width: 140px; width: auto; }
+.pc-share__people { margin: 0; padding: 0; list-style: none; }
+.pc-share__title { margin: 0; font-size: var(--text-base); font-weight: 700; }
 
 /* Aide : texte long numéroté, sommaire fixe à gauche (.pc-help, .pc-toc,
    .pc-prose : noms propres au PC, l'écran d'aide du téléphone garde .help) */

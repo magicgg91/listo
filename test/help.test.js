@@ -302,7 +302,7 @@ test('sommaire : feuille du kit (openSheet), section en cours repérée sans la 
   // La fenêtre (ui.js) se ferme par Échap, par la croix « Fermer » et rend le focus
   const ui = code('public/js/ui.js');
   assert.match(ui, /if \(event\.key === 'Escape'\) close\(\);/);
-  assert.match(ui, /iconButton\('close', 'Fermer', close\)/);
+  assert.match(ui, /iconButton\('close', 'Fermer', \(\) => close\(\)\)/);
   assert.match(ui, /opener\.focus\(\)/);
 });
 

@@ -47,7 +47,7 @@ import { normalizeItemName } from '../history.js';
 import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
@@ -62,7 +62,7 @@ import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { listActions } from './list-actions.js';
-import { openShareSheet } from './share.js';
+import { openSharePanel } from './share-panel.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
@@ -187,9 +187,10 @@ export function renderList(listId, onLeave) {
   }
 
   // --- En-tête de l'ordinateur ---
-  // « Partager » (propriétaire : feuille « Partager par lien ») avec les
-  // pastilles des personnes ; les autres membres voient seulement les
-  // pastilles. Le serveur revérifie de toute façon chaque action.
+  // « Partager » (propriétaire) ou « Personnes » (les autres membres), avec
+  // les pastilles des personnes : ouvre le tiroir « Partager la liste »
+  // (share-panel.js ; les autres n'y voient que les personnes, en lecture).
+  // Le serveur revérifie de toute façon chaque action.
   const shareSlot = h('div', { class: 'pc-head__share' });
   // Liste d'envies : bandeau qui dit ce que la personne voit (texte ET icône)
   const wishNote = h('p', { class: 'note pc-banner', hidden: true });
@@ -198,9 +199,8 @@ export function renderList(listId, onLeave) {
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
     const people = h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, list.isOwner
-      ? h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => openShareSheet(list) }, icon('users', 'icon--sm'), 'Partager', people)
-      : people);
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', onClick: () => openSharePanel(list.id) },
+      icon('users', 'icon--sm'), list.isOwner ? 'Partager' : 'Personnes', people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
     // ne les envoie pas) ; les autres membres les voient
@@ -1463,28 +1463,70 @@ export function renderList(listId, onLeave) {
     // reliée au formulaire (attribut form) : Entrée dans un champ enregistre
     // toujours.
     const formId = `fiche-${item.id}`;
-    const remove = iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
-    const save = h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
-    const form = h('form', { class: 'stack', id: formId, novalidate: true },
+    // Ordinateur (tiroir, maquette pc-A 06) : boutons écrits au pied
+    // (Supprimer, Annuler, Enregistrer), formulaire sur deux colonnes
+    // (quantité et rayon côte à côte), « Modifications non enregistrées »
+    // et une confirmation avant de fermer sans enregistrer
+    const pc = onPc();
+    const remove = pc
+      ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer')
+      : iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
+    const save = pc
+      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId }, 'Enregistrer')
+      : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
+    const half = (el) => {
+      if (pc) el.classList.add('pc-half');
+      return el;
+    };
+    const dirtyNote = h('p', { class: 'pc-meta' }, 'Modifications non enregistrées');
+    dirtyNote.hidden = true;
+    const form = h('form', { class: pc ? 'pc-form' : 'stack', id: formId, novalidate: true },
       conflict,
       nameField.field,
       wishes ? [linkField.field, linkButton(item.link), priceField.field]
-        : field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field,
+        : half(field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field),
+      // Ordinateur : le rayon (ou le magasin) juste à côté de la quantité
+      pc && isShopping ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton)) : null,
+      pc && multi ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton)) : null,
       field('Note (facultative)', note).field,
       classicFields,
       eanFields,
       h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
-      isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
-      multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
+      !pc && isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
+      !pc && multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
       reservation?.el,
-      error.note);
+      error.note,
+      pc ? dirtyNote : null);
     if (isShopping) aisleButton.setAttribute('aria-labelledby', 'aisle-label');
+
+    // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
+    // savoir s'il reste des modifications non enregistrées (ordinateur)
+    const snapshot = () => JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate]);
+    const initial = snapshot();
+    const dirty = () => snapshot() !== initial;
+    if (pc) {
+      const paintDirty = () => setTimeout(() => {
+        dirtyNote.hidden = !dirty();
+      }, 0);
+      form.addEventListener('input', paintDirty);
+      form.addEventListener('click', paintDirty);
+    }
 
     const sheet = openSheet({
       title: `Modifier ${words.the}`,
       content: form,
-      tools: [remove, save],
+      tools: pc ? null : [remove, save],
       scroll: true,
+      pc: 'drawer',
+      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, 'Annuler'), save] : null,
+      // Ordinateur : fermer sans enregistrer demande confirmation (rien ne se perd par erreur)
+      beforeClose: pc ? async () => !dirty() || confirmDialog({
+        title: 'Abandonner les modifications ?',
+        text: 'Ce que vous avez changé dans cette fiche ne sera pas enregistré.',
+        confirmLabel: 'Abandonner',
+        cancelLabel: 'Continuer',
+        focusCancel: true,
+      }) : null,
       onClose: () => {
         stopWatching();
         reservation?.dispose();
@@ -1494,7 +1536,7 @@ export function renderList(listId, onLeave) {
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!editable()) {
-        sheet.close();
+        sheet.forceClose();
         return;
       }
       const newName = name.value.replace(/\s+/g, ' ').trim();
@@ -1528,19 +1570,19 @@ export function renderList(listId, onLeave) {
       if (enabled.due && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
-        sheet.close();
+        sheet.forceClose();
         return;
       }
       // Ma propre modification (pas d'avertissement) : copie locale tout de
       // suite, puis envoi (file d'attente). Historique mis à jour par actions.js.
       mine = true;
       await actions.updateItem(item, changes);
-      sheet.close();
+      sheet.forceClose();
     });
 
     remove.addEventListener('click', async () => {
       mine = true;
-      sheet.close();
+      sheet.forceClose();
       await deleteWithUndo(item);
     });
   }
@@ -1585,6 +1627,7 @@ export function renderList(listId, onLeave) {
       title: `Détail ${words.of}`,
       content: body,
       scroll: true,
+      pc: 'drawer', // ordinateur : tiroir à droite, comme la fiche à modifier
       onClose: () => {
         stopWatching();
         reservation?.dispose();

@@ -34,7 +34,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v71-${BUILD ?? 'dev'}`;
+const VERSION = `v72-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -104,6 +104,7 @@ const APP_FILES = [
   '/js/screens/scan.js',
   '/js/screens/settings.js',
   '/js/screens/share.js',
+  '/js/screens/share-panel.js',
 ];
 
 // Installation : copie de tous les fichiers de l'application

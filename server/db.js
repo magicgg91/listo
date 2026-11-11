@@ -531,6 +531,15 @@ export const MIGRATIONS = [
     last_day TEXT    NOT NULL
   );
   `,
+
+  // --- Migration 24 : tâches qui se répètent (11 novembre 2026) ---
+  // repeat : règle de répétition d'une tâche (public/js/repeat.js : 'day',
+  // 'week:1,3', '2week:1', 'month:5', 'year'), ou vide. Contrôlée par le
+  // serveur ; toujours avec une échéance. Une tâche cochée revient à la date
+  // suivante au lieu d'aller dans « Terminés ».
+  `
+  ALTER TABLE items ADD COLUMN repeat TEXT CHECK (repeat IS NULL OR length(repeat) BETWEEN 1 AND 20);
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

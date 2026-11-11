@@ -949,6 +949,18 @@
 .choice--row.choice--pill .choice__opt[aria-checked="true"] { padding: 4px 6px; border: 0; background: transparent; color: var(--color-accent-ink); font-weight: 700; }
 .choice--pill .choice__opt .icon-end { display: none; }
 
+/* 16.18 Tâche qui se répète (décisions du 11 novembre 2026). Dans la
+   fiche, sous l'échéance : le choix « Se répète » (même champ que
+   l'échéance, icône i-repeat), puis, pour « Chaque semaine » et « Toutes
+   les 2 semaines », les sept jours en pastilles rondes .weekdays__opt
+   (« Lu » … « Di », aria-pressed) : jour choisi = liseré bleu de 2 px, fond
+   bleu clair et texte en gras (jamais la couleur seule). Sept colonnes
+   égales : au moins 44 px de large dès 360 px d'écran. Sur la ligne, la
+   pastille « ↻ Lu, Me » rejoint celles de la priorité et de l'échéance. */
+.weekdays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.weekdays__opt { min-height: var(--tap-min); padding: 0; border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; }
+.weekdays__opt[aria-pressed="true"] { border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

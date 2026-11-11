@@ -87,10 +87,14 @@ test('annulation : les actions inverses sont les opérations habituelles (file d
   assert.match(app, /if \(!canEditList\(app\.data\.lists\.get\(listId\)\)\) \{\s*toast\('Liste en lecture seule : rien n\\'est annulé\.'\);/);
   const actions = read('public/js/actions.js');
   assert.match(actions, /export const restoreItem = \(itemId\) => perform\(\{ type: 'item\.restore', itemId \}\);/);
-  assert.match(actions, /export const checkItem = \(item, checked\) => perform\(\{ type: 'item\.check', itemId: item\.id, checked \}\);/);
+  assert.match(actions, /export function checkItem\(item, checked\) \{\s*const next = checked \? nextDueOf\(item\) : null;\s*return perform\(\{ type: 'item\.check', itemId: item\.id, checked, \.\.\.\(next \? \{ nextDue: next \} : \{\}\) \}\);\s*\}/);
   // Ce qui est noté : suppression, cochage, modification (jamais un ajout, une photo, une réservation)
   const list = read('public/js/screens/list.js');
-  assert.equal((list.match(/recordUndo\(listId, /g) ?? []).length, 3);
+  // (5 : suppression, cochage, modification, et pour une tâche qui se
+  // répète, son cochage et « Passer cette fois », notés comme une
+  // modification de l'échéance)
+  assert.equal((list.match(/recordUndo\(listId, /g) ?? []).length, 5);
+  assert.equal((list.match(/const entry = \{ kind: 'update', itemId: item\.id, name: (item|saved)\.name, before, after: \{ dueDate: next \} \};/g) ?? []).length, 2);
   assert.match(list, /recordUndo\(listId, \{ kind: 'check', itemId: item\.id, name: item\.name, checked: !item\.checked \}\);\s*actions\.checkItem\(item, !item\.checked\);/);
   assert.match(list, /recordUndo\(listId, \{ kind: 'update', itemId: item\.id, name: item\.name, before: beforeOf\(latest, changes\), after: changes \}\);\s*await actions\.updateItem\(item, changes\);/);
   assert.doesNotMatch(read('public/js/undo.js').replace(/\/\/.*$/gm, ''), /reserv|photo|addItem|createItem/i);

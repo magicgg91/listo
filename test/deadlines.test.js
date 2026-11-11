@@ -126,10 +126,13 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   assert.match(screen, /const canCheck = canEditList\(list\);/);
   assert.match(screen, /canCheck\s*\? h\('button', \{ class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': `Cocher \$\{item\.name\}`, onClick: \(\) => check\(item\) \}/);
   assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' \}/);
-  // Une seule écriture : checkItem (actions.js → perform → file d'attente)
+  // Écritures : checkItem (actions.js → perform → file d'attente), et
+  // updateItem seulement pour « Annuler » d'une tâche qui se répète
+  // (l'ancienne date revient) ; nextDueOf ne fait que calculer
   const writes = [...screen.matchAll(/actions\.(\w+)\(/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(writes)], ['checkItem']);
-  assert.match(read('public/js/actions.js'), /export const checkItem = \(item, checked\) => perform\(\{ type: 'item\.check', itemId: item\.id, checked \}\);/);
+  assert.deepEqual([...new Set(writes)], ['nextDueOf', 'checkItem', 'updateItem']);
+  assert.match(screen, /if \(current && current\.dueDate === next\) actions\.updateItem\(current, before\);/);
+  assert.match(read('public/js/actions.js'), /export function checkItem\(item, checked\) \{\s*const next = checked \? nextDueOf\(item\) : null;\s*return perform\(\{ type: 'item\.check', itemId: item\.id, checked, \.\.\.\(next \? \{ nextDue: next \} : \{\}\) \}\);\s*\}/);
   assert.doesNotMatch(screen, /fetch\(|api\.js|innerHTML|\.focus\(/);
   // Toucher la ligne : la tâche s'ouvre dans sa liste (fiche à l'arrivée, à consulter en lecture seule)
   assert.match(screen, /app\.openItem = \{ listId: item\.listId, itemId: item\.id \};\s*navigate\('list', \{ id: item\.listId \}\);/);

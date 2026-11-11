@@ -557,10 +557,10 @@ test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idemp
   const before = { lists: db.prepare('SELECT * FROM lists ORDER BY id').all(), items: db.prepare('SELECT * FROM items ORDER BY id').all() };
   db.close();
   db = openDatabase(file); // restauration : la copie est ouverte par Listo, la migration 19 s'applique
-  assert.equal(schemaVersion(db), 23);
+  assert.equal(schemaVersion(db), 24);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, ...rest }) => rest), before.lists);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map((l) => [l.for_user_id, l.for_name]), [[null, null], [null, null]]);
-  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, ...rest }) => rest), before.items);
+  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, ...rest }) => rest), before.items);
   assert.equal(db.prepare('SELECT COUNT(*) FROM reservations').pluck().get(), 0);
   // Contraintes : un seul réservant par souhait ; jamais compte ET prénom
   db.prepare("INSERT INTO reservations (item_id, user_id, created_at, updated_at) VALUES ('i1', 1, 'x', 'x')").run();

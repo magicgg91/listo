@@ -27,6 +27,7 @@ import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } fro
 import { itemWords, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
+import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
 const token = location.pathname.split('/')[2] ?? '';
@@ -336,6 +337,7 @@ function metaRow(item) {
   if (due) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
     chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Échéance : '), due.text));
+    if (item.repeat) chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Se répète : '), repeatChip(item.repeat)));
   }
   return chips.length ? h('span', { class: 'item__meta' }, chips) : null;
 }
@@ -381,6 +383,7 @@ function spokenMeta(item) {
   if (priority) spoken.push(priority.label.toLowerCase());
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
   if (due) spoken.push(due.label.toLowerCase());
+  if (due && item.repeat) spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
   const price = formatPrice(item.priceCents);
   if (price) spoken.push(price);
   return spoken.length ? `, ${spoken.join(', ')}` : '';

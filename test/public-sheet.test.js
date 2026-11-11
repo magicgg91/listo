@@ -216,7 +216,7 @@ test('fiche : mêmes champs que la fiche à consulter de l\'application, aucun o
   const view = app.slice(app.indexOf('function openItemView'), app.indexOf('// Feuille de choix du rayon'));
   // (« Prix indicatif » : listes d'envies, qui n'ont jamais de lien public)
   const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif');
-  assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Code-barres', 'Rayon', 'Magasin']);
+  assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Se répète', 'Code-barres', 'Rayon', 'Magasin']);
   const format = read('public/js/format.js');
   const details = format.slice(format.indexOf('export function publicItemDetails'), format.indexOf('export function priorityChip'));
   for (const label of labels) assert.ok(details.includes(`'${label}'`), `« ${label} » manque sur la fiche publique`);

@@ -137,8 +137,15 @@ button.sync { cursor: pointer; }
 .share { overflow: hidden; }
 .share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
 
-/* Feuille du bas : défilement si le contenu est long */
-.sheet { overflow-y: auto; }
+/* Feuille du bas : défilement si le contenu est long, de haut en bas
+   seulement. Sans overflow-x, un défilement vertical rend aussi possible le
+   défilement de côté : sur iPhone, la fiche glissait de gauche à droite
+   (constat du 11 novembre 2026). */
+.sheet { overflow-y: auto; overflow-x: hidden; }
+/* Les vrais champs de date et de choix posés, invisibles, sur l'échéance et
+   sur « Se répète » : jamais plus larges que leur case (Safari sur iPhone
+   leur donne sinon une largeur minimale à lui) */
+.due-picker__input { box-sizing: border-box; min-width: 0; max-width: 100%; }
 .sheet .group { margin: 0; }
 .sheet__actions { display: flex; flex-direction: column; gap: var(--space-1); }
 

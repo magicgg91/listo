@@ -57,3 +57,9 @@ test('la coche enregistre (formulaire relié), Entrée aussi ; la poubelle suppr
   // Enregistrement impossible pendant qu'un autre téléphone supprime l'article
   assert.match(list, /save\.disabled = gone;\s*remove\.disabled = gone;/);
 });
+
+test('fiche du bas : défilement de haut en bas seulement, jamais de côté (iPhone, 11 novembre 2026)', () => {
+  const css = read('public/css/app.css');
+  assert.match(css, /\.sheet \{ overflow-y: auto; overflow-x: hidden; \}/);
+  assert.match(css, /\.due-picker__input \{ box-sizing: border-box; min-width: 0; max-width: 100%; \}/);
+});

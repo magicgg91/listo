@@ -377,6 +377,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. « Passer cette fois » : la date avance sans cocher ; sur l'autre téléphone, « Modifié par » dans les Nouveautés.
     6. Par Claude (connexion « Lecture et écriture ») : « Ajoute “sortir les poubelles”, chaque lundi et jeudi » : la tâche arrive avec la pastille ↻ Lu, Je et le prochain lundi ou jeudi, que Claude annonce. « Le loyer, le 5 de chaque mois », « Arrête de répéter l'arrosage » : la pastille change ou disparaît. Sur une liste de courses : Claude répond que la répétition ne s'y choisit pas. « Coche les poubelles » : Claude dit la date suivante.
     7. VoiceOver / TalkBack : les jours sont lus en entier (« lundi, bouton, sélectionné ») ; la ligne lit « se répète : chaque lundi et mercredi ».
+    8. Fiche d'un élément sur iPhone (Safari et application installée) : glisser le doigt de gauche à droite et de droite à gauche : rien ne bouge de côté ; seul le défilement de haut en bas marche. Les champs, la croix et la disquette restent entiers à l'écran.
 
 ## API des comptes (étape 2)
 

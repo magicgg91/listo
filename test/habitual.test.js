@@ -7,7 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { habitual, HABITUAL_DAYS, HABITUAL_LIMIT, normalizeItemName } from '../public/js/history.js';
+import { habitual, HABITUAL_DAYS, HABITUAL_LIMIT, HABITUAL_LIMIT_KEYBOARD, normalizeItemName } from '../public/js/history.js';
 import { emptyState, computeHabitual, checkedNamed } from '../public/js/store.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -18,6 +18,7 @@ const line = (name, storeId, useCount, lastUsedAt = daysAgo(1), aisleId = null) 
 test('règle : magasin de la liste, deux mois, les plus ajoutés d\'abord, sans les articles à exclure, 6 au plus', () => {
   assert.equal(HABITUAL_DAYS, 60);
   assert.equal(HABITUAL_LIMIT, 6);
+  assert.equal(HABITUAL_LIMIT_KEYBOARD, 4);
   const history = [
     line('Lait', null, 40), line('Lait', 1, 30),
     line('Pain', null, 25), line('Pain', 1, 20),
@@ -62,6 +63,7 @@ test('copie locale : sans les articles à acheter, avec ceux du panier ; rayon o
   assert.deepEqual(computeHabitual(state, courses, { now }), [{ name: 'Pain', hint: 'Boulangerie' }, { name: 'Yaourts', hint: 'Crèmerie' }]);
   assert.deepEqual(computeHabitual(state, centre, { now }), [{ name: 'Comté', hint: 'Fromagerie' }, { name: 'Pain', hint: 'Boulangerie' }]);
   assert.deepEqual(computeHabitual(state, taches, { now }), []);
+  assert.deepEqual(computeHabitual(state, courses, { now, limit: 1 }), [{ name: 'Pain', hint: 'Boulangerie' }]);
   assert.equal(checkedNamed(state, 'c', 'yaourts').id, 'b');
   assert.equal(checkedNamed(state, 'c', 'Lait'), null, 'à acheter : pas dans le panier');
 });
@@ -73,6 +75,8 @@ test('écran : « + » champ vide ouvre l\'encart sans curseur ; croix, toucher 
   // Ouvrir par « + » : jamais de curseur dans le champ (règle « aucun curseur automatique »)
   assert.doesNotMatch(body('openHabitual'), /focus\(/);
   assert.match(body('openHabitual'), /if \(!editable\(\) \|\| !remembersNames\(view\?\.list\)\) return;/);
+  // Téléphone, clavier ouvert : 4 ; « + » (sans clavier) et ordinateur : 6
+  assert.match(body('drawHabitual'), /const keyboard = !pc && document\.activeElement === input;\s*const entries = computeHabitual\(app\.data, view\?\.list, keyboard \? \{ limit: HABITUAL_LIMIT_KEYBOARD \} : \{\}\);/);
   // Croix « Fermer » : ferme aussi le clavier
   assert.match(list, /h\('button', \{ class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: \(\) => closeHabitual\(\) \}, icon\('close'\)\)/);
   assert.match(body('closeHabitual'), /if \(document\.activeElement === input\) releaseFocus\(\);/);

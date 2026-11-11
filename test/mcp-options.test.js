@@ -55,7 +55,7 @@ test('règle partagée : type de liste, réglage activé, valeur, vraie date du 
   assert.equal((lists.match(/itemOptionsError\(/g) ?? []).length, 4, 'définie une fois, utilisée par item.create, item.update et checkItemEdit (update_items)');
   assert.doesNotMatch(lists, /throw new OpError\(400, PRIORITY_OFF\)|throw new OpError\(400, DUE_OFF\)/, 'plus de règle en double');
   const tools = read('server/mcp-tools.js');
-  assert.match(tools, /const error = itemOptionsError\(typeOf\(list\), list, \{ priority: item\.priority, dueDate: item\.due_date \}\);/);
+  assert.match(tools, /const error = itemOptionsError\(typeOf\(list\), list, \{ priority: item\.priority, dueDate: item\.due_date, repeat: ruleForCheck\(repeats\.get\(item\)\) \}\);/);
 });
 
 test('add_items : priorité et échéance enregistrées si la liste les active ; sinon l\'appel entier est refusé et rien n\'est ajouté', async (t) => {
@@ -101,11 +101,11 @@ test('add_items : un élément déjà là (non coché) est ignoré et n\'est PAS
 
 test('descriptions et instructions : ce que Claude peut faire, exactement ; read_list donne priorité et échéance', () => {
   const byName = Object.fromEntries(TOOLS.map((tool) => [tool.name, tool]));
-  assert.match(byName.read_list.description, /pour une liste de tâches, la priorité et l'échéance si elles sont activées ; pour une liste d'envies, la priorité si elle est activée/);
+  assert.match(byName.read_list.description, /pour une liste de tâches, la priorité et l'échéance si elles sont activées, et repeat \(la répétition en clair, par exemple « Chaque lundi et mercredi »\) pour une tâche qui se répète ; pour une liste d'envies, la priorité si elle est activée/);
   assert.match(byName.add_items.description, /priority \(low, normal ou high\) pour une liste de tâches ou d'envies dont la priorité est activée ; due_date \(date AAAA-MM-JJ, sans heure\) pour une liste de tâches dont l'échéance est activée/);
   assert.match(byName.add_items.description, /l'appel entier est refusé et rien n'est ajouté/);
   assert.match(byName.add_items.description, /déjà dans la liste sans être coché \(il n'est pas modifié\)/);
-  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'aisle', 'store']);
+  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'repeat', 'aisle', 'store']);
   // Plus d'outil set_item_options : update_items fait la même chose en plus large
   assert.equal(byName.set_item_options, undefined);
   assert.deepEqual(byName.update_items.inputSchema.properties.items.items.properties.priority.enum, ['low', 'normal', 'high']);

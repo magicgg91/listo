@@ -5,8 +5,10 @@
 // Jamais une liste d'envies ni une liste de courses.
 //
 // - Chaque ligne montre la tâche, sa liste, sa priorité (si activée) et sa
-//   date. Le rond coche la tâche (seulement si j'ai le droit de modifier la
-//   liste ; le serveur revérifie) : elle quitte l'écran, avec « Annuler ».
+//   date (et sa répétition). Le rond coche la tâche (seulement si j'ai le
+//   droit de modifier la liste ; le serveur revérifie) : elle quitte
+//   l'écran, avec « Annuler » ; une tâche qui se répète revient à sa date
+//   suivante (« Prochaine fois : … »).
 //   Toucher la ligne ouvre la tâche dans sa liste.
 // - Tout vient de la copie locale : l'écran marche hors ligne, et un coche
 //   hors ligne passe par la file d'attente, comme dans une liste.
@@ -17,7 +19,8 @@
 
 import { h, icon } from '../dom.js';
 import { navigate } from '../router.js';
-import { dueChip, priorityChip, todayKey } from '../format.js';
+import { dueChip, dueDateLabel, priorityChip, todayKey } from '../format.js';
+import { repeatChip, repeatSentence } from '../repeat.js';
 import { listIcon } from '../list-icons.js';
 import { canEditList, listOptions } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
@@ -49,8 +52,23 @@ export function renderDeadlines(onLeave) {
     : name);
 
   // Cocher depuis cet écran : même opération que dans la liste (file
-  // d'attente hors ligne comprise) ; « Annuler » la décoche
+  // d'attente hors ligne comprise) ; « Annuler » la décoche. Une tâche qui
+  // se répète reste à l'écran, à sa date suivante ; « Annuler » remet
+  // l'ancienne date.
   const check = (item) => {
+    const next = actions.nextDueOf(item);
+    if (next) {
+      const before = { dueDate: item.dueDate };
+      actions.checkItem(item, true);
+      toast(`Prochaine fois : ${dueDateLabel(next)}`, {
+        action: 'Annuler',
+        onAction: () => {
+          const current = app.data.items.get(item.id);
+          if (current && current.dueDate === next) actions.updateItem(current, before);
+        },
+      });
+      return;
+    }
     actions.checkItem(item, true);
     toast(`Coché : ${item.name}`, {
       action: 'Annuler',
@@ -80,6 +98,10 @@ export function renderDeadlines(onLeave) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
     chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
     spoken.push(due.label.toLowerCase());
+    if (item.repeat) {
+      chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
+      spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
+    }
     const canCheck = canEditList(list);
     return h('li', { class: 'item', 'data-item-id': item.id },
       canCheck

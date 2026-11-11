@@ -369,6 +369,15 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     6. Pastille d'« Échéances » : le nombre change quand on coche une tâche en retard ou du jour, et le lendemain matin (sans fermer Listo).
     7. VoiceOver / TalkBack : le bouton « Échéances » est lu avec son nombre (« Échéances, 2 tâches en retard ou pour aujourd'hui ») ; la loupe est lue « Rechercher une liste » (ou « … dans la liste », « … une tâche ») et dit si la recherche est ouverte.
 
+47. **Tâches qui se répètent** (11 novembre 2026 ; vérifié dans Chromium, téléphone 320, 360 et 390 px, clair et sombre, et ordinateur : choix de la règle, jours, phrase, pastille ↻, coche avec « Prochaine fois » et « Annuler », « Passer cette fois », « Échéances ») ; une liste de tâches avec l'échéance activée :
+    1. Fiche d'une tâche, « Se répète » : la liste de choix du téléphone s'ouvre (roue sur iPhone, liste sur Android), sans clavier ; « Chaque semaine » montre les sept jours, le jour de l'échéance déjà choisi ; toucher Lu, Me… les allume (bleu ET gras) ; le dernier jour allumé ne s'éteint pas.
+    2. Tâche sans échéance : choisir « Chaque lundi » pose le prochain lundi (ou aujourd'hui si on est lundi).
+    3. Cocher la tâche : elle reste dans la liste, décochée, à sa date suivante ; « Prochaine fois : … » en bas ; « Annuler » remet l'ancienne date. Sur un deuxième téléphone, la date change en quelques secondes.
+    4. Mode avion : cocher une tâche qui se répète, puis remettre le réseau le lendemain : la date est celle calculée au moment du geste.
+    5. « Passer cette fois » : la date avance sans cocher ; sur l'autre téléphone, « Modifié par » dans les Nouveautés.
+    6. Par Claude (connexion « Lecture et écriture ») : « Ajoute “sortir les poubelles”, chaque lundi et jeudi » : la tâche arrive avec la pastille ↻ Lu, Je et le prochain lundi ou jeudi, que Claude annonce. « Le loyer, le 5 de chaque mois », « Arrête de répéter l'arrosage » : la pastille change ou disparaît. Sur une liste de courses : Claude répond que la répétition ne s'y choisit pas. « Coche les poubelles » : Claude dit la date suivante.
+    7. VoiceOver / TalkBack : les jours sont lus en entier (« lundi, bouton, sélectionné ») ; la ligne lit « se répète : chaque lundi et mercredi ».
+
 ## API des comptes (étape 2)
 
 | Route | Rôle |

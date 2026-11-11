@@ -5,6 +5,7 @@
 import { normalizeItemName } from './history.js';
 import { countItems, itemWords } from './words.js';
 import { formatPrice } from './wishes.js';
+import { repeatSentence } from './repeat.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -200,6 +201,7 @@ export function publicItemDetails(item, { grouping, place = null, today = todayK
     item.note ? ['Note', item.note] : null,
     'priority' in item ? ['Priorité', PRIORITY_LABELS[item.priority ?? 'normal'] ?? 'Normale'] : null,
     'dueDate' in item ? ['Échéance', item.dueDate ? dueDateLabel(item.dueDate, today) : 'Aucune échéance'] : null,
+    item.dueDate && item.repeat ? ['Se répète', repeatSentence(item.repeat)] : null,
     item.ean ? ['Code-barres', item.ean] : null,
     grouping === 'aisle' ? ['Rayon', place ?? 'Sans rayon'] : null,
     grouping === 'store' ? ['Magasin', place ?? 'Sans magasin'] : null,

@@ -481,3 +481,11 @@ Décision du propriétaire, pour accorder les fenêtres et les formulaires au ba
 - En pilule (`--radius-pill`) : `.btn` (toutes les variantes), `.btn--icon`, `.icon-btn` (dont la disquette `.icon-btn--primary`, et les actions de ligne de l'ordinateur), `.segmented` et `.segmented__opt`, `.duration__opt`, `.cart__action`, `.fold-all`.
 - Inchangés : champs de saisie (`.input`, `.searchfield` hors loupe, `.addbar__field` hors verre), cartes, cases de choix `.choice__opt` (« Courses / Tâches / Envies ») et `.icon-grid__opt` : on distingue ce qu'on touche de ce qu'on écrit.
 - Pas d'effet verre dans les fenêtres : il reste à ce qui flotte au-dessus des listes (16.15).
+
+## Ajout : tâche qui se répète (11 novembre 2026)
+
+Décisions du propriétaire (cahier des charges, « Tâches qui se répètent »). Styles : section 16.18 de `listo.css`, aucune couleur ni variable nouvelle. Balisage : « Tâche qui se répète » dans `components.html`. **Nouvelle icône** `i-repeat` (deux flèches en boucle, même trait que les autres), soit 87 icônes dans le sprite.
+
+- Fiche, sous l'échéance (liste de tâches, échéance activée) : « Se répète » en `.due-picker` (champ `.input--select` avec `#i-repeat` et le choix ; par-dessus, le vrai `<select>` invisible `.due-picker__input`, comme pour la date) ; pour « Chaque semaine » et « Toutes les 2 semaines », `.weekdays` (`role="group"`, sept colonnes égales) de `.weekdays__opt` (« Lu » … « Di », `aria-pressed`, nom entier en `aria-label` ; jour choisi : liseré bleu de 2 px, fond bleu clair, texte en gras, jamais la couleur seule ; 44 px de haut, au moins 44 px de large dès 360 px d'écran) ; pour « Chaque mois », un second `.due-picker` (« Le 5 de chaque mois ») ; la phrase en `.field__hint` ; « Passer cette fois » en `.btn--secondary.btn--sm`.
+- Ligne : dans `.item__meta`, après l'échéance, `.chip` avec `#i-repeat` ET le texte court (« Lu, Me », « 2 sem. · Lu », « Le 5 », « Chaque jour », « Chaque année »).
+

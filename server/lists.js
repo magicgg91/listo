@@ -38,6 +38,7 @@ import {
 import {
   wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
 } from '../public/js/wishes.js';
+import { isRepeatRule, isOccurrence, nextDue } from '../public/js/repeat.js';
 import { createReservationService } from './reservations.js';
 import { cleanName, parseId } from './validate.js';
 import { normalizeBarcode } from './products.js';
@@ -91,23 +92,37 @@ export const PRIORITY_NOT_HERE = 'La priorité ne se choisit que dans une liste 
 export const DUE_NOT_HERE = 'L\'échéance ne se choisit que dans une liste de tâches.';
 export const BAD_PRIORITY = 'Priorité inconnue (basse, normale ou élevée).';
 export const BAD_DUE = 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2100, sans heure).';
+// Tâches qui se répètent (public/js/repeat.js)
+export const REPEAT_NOT_HERE = 'La répétition ne se choisit que dans une liste de tâches.';
+export const REPEAT_OFF = "La répétition demande l'échéance, désactivée pour cette liste.";
+export const BAD_REPEAT = 'Répétition invalide.';
+export const REPEAT_NEEDS_DUE = "Une tâche qui se répète a besoin d'une échéance.";
+export const BAD_NEXT_DUE = 'Date suivante invalide.';
+
+// Date du jour sur le serveur (AAAA-MM-JJ, fuseau du serveur : variable TZ)
+export const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 // LA règle de la priorité et de l'échéance d'un élément, partagée par
 // l'application (opérations item.create et item.update) et par la connexion
 // Claude (add_items et update_items, qui s'en servent pour refuser un
 // appel entier AVANT toute écriture). Renvoie le message de refus, ou null.
 // type : type de la liste ; enabled : { priorityEnabled, dueEnabled }
-// (réglages enregistrés de la liste) ; fields : { priority, dueDate }
-// (undefined : non demandé ; dueDate null : effacer l'échéance).
+// (réglages enregistrés de la liste) ; fields : { priority, dueDate, repeat }
+// (undefined : non demandé ; dueDate null : effacer l'échéance ; repeat
+// null : ne plus répéter). La répétition suit l'échéance : listes de
+// tâches, échéance activée.
 // Ordre : le type de liste s'en sert-il, le réglage est-il activé, la
 // valeur est-elle permise (vraie date du calendrier, entre 2000 et 2100).
-export function itemOptionsError(type, { priorityEnabled, dueEnabled }, { priority, dueDate }) {
+export function itemOptionsError(type, { priorityEnabled, dueEnabled }, { priority, dueDate, repeat }) {
   if (priority !== undefined && !usesPriority(type)) return PRIORITY_NOT_HERE;
   if (dueDate !== undefined && !usesDue(type)) return DUE_NOT_HERE;
+  if (repeat !== undefined && !usesDue(type)) return REPEAT_NOT_HERE;
   if (priority !== undefined && !priorityEnabled) return PRIORITY_OFF;
   if (dueDate !== undefined && !dueEnabled) return DUE_OFF;
+  if (repeat !== undefined && !dueEnabled) return REPEAT_OFF;
   if (priority !== undefined && !PRIORITIES.includes(priority)) return BAD_PRIORITY;
   if (dueDate !== undefined && dueDate !== null && !isDueDate(dueDate)) return BAD_DUE;
+  if (repeat !== undefined && repeat !== null && !isRepeatRule(repeat)) return BAD_REPEAT;
   return null;
 }
 export const ACCESS = ['modification', 'lecture'];
@@ -230,6 +245,7 @@ export function checkItemEdit(type, enabled, op) {
     if (error) return { error };
     if (op.priority !== undefined) fields.priority = op.priority;
     if (op.dueDate !== undefined) fields.dueDate = op.dueDate;
+    if (op.repeat !== undefined) fields.repeat = op.repeat;
     return { fields };
   } catch (err) {
     if (err instanceof OpError) return { error: err.message };
@@ -524,6 +540,12 @@ export function createListService(ctx) {
     if (!code) throw new OpError(400, 'Code-barres invalide : vérifiez les chiffres (8, 12 ou 13 chiffres).');
     return code;
   }
+  // La tâche se répète-t-elle en ce moment ? (règle, échéance, liste de
+  // tâches dont l'échéance est activée : sinon la règle est gardée, cachée)
+  function repeatsNow(item) {
+    return Boolean(item.repeat && item.due_date) && usesDue(item.list_type) && item.list_due_enabled === 1;
+  }
+
   // Refusé sur une liste autre que les courses (rien n'est écrit), vérifié
   // avant toute écriture
   function checkEanForList(isShopping, op) {
@@ -564,6 +586,8 @@ export function createListService(ctx) {
     photoAt: item.photo_at,
     priority: item.priority ?? 'normal',
     dueDate: item.due_date ?? null,
+    // Règle de répétition (public/js/repeat.js), ou null
+    repeat: item.repeat ?? null,
     ean: item.ean ?? null,
     // Liste d'envies : lien web et prix indicatif (centimes)
     link: item.link ?? null,
@@ -883,6 +907,8 @@ export function createListService(ctx) {
       if (optionsError) throw new OpError(400, optionsError);
       const priority = op.priority === undefined ? 'normal' : op.priority;
       const dueDate = op.dueDate ?? null;
+      const repeat = op.repeat ?? null;
+      if (repeat !== null && dueDate === null) throw new OpError(400, REPEAT_NEEDS_DUE);
       const ean = op.ean === undefined ? null : eanOf(op.ean);
       const link = linkOf(op.link) ?? null;
       const priceCents = priceOf(op.priceCents) ?? null;
@@ -894,9 +920,9 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, user.id, now, now);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
@@ -928,6 +954,10 @@ export function createListService(ctx) {
       const ean = op.ean === undefined ? item.ean : eanOf(op.ean);
       const priority = op.priority === undefined ? item.priority : priorityOf(op.priority);
       const dueDate = op.dueDate === undefined ? item.due_date : dueDateOf(op.dueDate);
+      // Répétition : effacer l'échéance arrête la répétition ; une tâche qui
+      // se répète garde toujours une échéance
+      const repeat = op.repeat !== undefined ? op.repeat : op.dueDate === null ? null : item.repeat ?? null;
+      if (repeat !== null && !dueDate) throw new OpError(400, REPEAT_NEEDS_DUE);
       const name = op.name === undefined ? item.name : itemName(op.name);
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
@@ -946,11 +976,11 @@ export function createListService(ctx) {
         const wanted = op.storeId === null ? null : parseId(op.storeId);
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
-      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, priority, dueDate, ean, link, priceCents, nowIso(), item.id);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, ean, link, priceCents, nowIso(), item.id);
 
       // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {
@@ -969,6 +999,24 @@ export function createListService(ctx) {
       const item = itemForEditor(user, op.itemId);
       if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
       checkReceived(user, item, item.list_owner_id);
+      // Tâche qui se répète (liste de tâches, échéance activée) : cochée, elle
+      // revient décochée à la date suivante, au lieu d'aller dans « Terminés ».
+      // nextDue : la date calculée par le téléphone (public/js/repeat.js, son
+      // « aujourd'hui » au moment du geste, hors ligne compris), vérifiée ici.
+      // Sans elle (Claude, ancienne version), ou si elle ne tombe plus sur la
+      // règle (changée entre-temps par quelqu'un d'autre), le serveur la
+      // calcule : le coché n'est jamais perdu.
+      if (op.nextDue !== undefined && !isDueDate(op.nextDue)) throw new OpError(400, BAD_NEXT_DUE);
+      if (op.checked && repeatsNow(item)) {
+        const proposed = op.nextDue;
+        const next = proposed !== undefined && proposed > item.due_date && isOccurrence(item.repeat, proposed, item.due_date)
+          ? proposed
+          : nextDue(item.repeat, item.due_date, serverToday(new Date(ctx.now())));
+        db.prepare('UPDATE items SET due_date = ?, checked = 0, checked_at = NULL, updated_at = ? WHERE id = ?').run(next, nowIso(), item.id);
+        news.log(item.list_id, user.id, 'check', [item.id]);
+        changed(item.list_id);
+        return { item: describeItem(q.item.get(item.id)), repeated: next };
+      }
       // Date du coché : posée au premier coché (un second « cocher » la
       // garde), effacée au décoché
       const now = nowIso();
@@ -1341,7 +1389,7 @@ export function createListService(ctx) {
   // propriétaire, sans partage ni lien public), même type, même magasin,
   // même icône, mêmes réglages de priorité, d'échéance et « Après l'ajout » ;
   // avec withItems (vrai par défaut) : les éléments non supprimés, avec nom,
-  // quantité, note, rayon, magasin, priorité, échéance et code-barres, tous
+  // quantité, note, rayon, magasin, priorité, échéance (et sa répétition) et code-barres, tous
   // décochés. Les photos ne
   // sont pas copiées (un fichier ne peut pas faire partie de la transaction,
   // et la copie échapperait au plafond d'envoi des photos). La mémoire des
@@ -1361,10 +1409,10 @@ export function createListService(ctx) {
         .run(id, title, typeOf(source), source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, source.add_mode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
-      const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, ean, created_by, created_at, updated_at)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+      const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, repeat, ean, created_by, created_at, updated_at)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
       for (const item of items) {
-        insert.run(crypto.randomUUID(), id, item.name, item.quantity, item.note, item.aisle_id, item.store_id, item.priority, item.due_date, item.ean, user.id, now, now);
+        insert.run(crypto.randomUUID(), id, item.name, item.quantity, item.note, item.aisle_id, item.store_id, item.priority, item.due_date, item.repeat ?? null, item.ean, user.id, now, now);
         // Comme un ajout : la mémoire des noms (listes de courses seulement)
         if (isShoppingList(source)) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
       }

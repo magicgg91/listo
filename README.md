@@ -5,7 +5,7 @@
 ## L'essentiel
 
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur les autres en quelques secondes ; chaque personne a son droit, « Peut modifier » ou « Lecture seule ».
-- **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
+- **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance, répétition) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
 - **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.

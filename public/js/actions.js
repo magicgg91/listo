@@ -15,7 +15,9 @@
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
 import { uuid, photoUrl, post, patch, del } from './api.js';
-import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames } from './store.js';
+import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions } from './store.js';
+import { nextDue } from './repeat.js';
+import { todayKey } from './format.js';
 import { isMultiList } from './sorting.js';
 
 const now = () => new Date().toISOString();
@@ -61,7 +63,22 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId, 
   return item;
 }
 
-export const checkItem = (item, checked) => perform({ type: 'item.check', itemId: item.id, checked });
+// Tâche qui se répète, en ce moment ? (règle et échéance, dans une liste de
+// tâches dont l'échéance est activée : sinon la règle est gardée, cachée)
+export function repeatsNow(item) {
+  return Boolean(item?.repeat && item.dueDate) && listOptions(app.data.lists.get(item.listId)).due;
+}
+// Date suivante d'une tâche qui se répète (cochée ou « passée »), avec la
+// date du téléphone ; null si elle ne se répète pas (repeat.js)
+export const nextDueOf = (item) => (repeatsNow(item) ? nextDue(item.repeat, item.dueDate, todayKey()) : null);
+
+// Cocher ou décocher. Une tâche qui se répète, cochée, revient décochée à la
+// date suivante : la date est calculée ici (hors ligne compris) et vérifiée
+// par le serveur.
+export function checkItem(item, checked) {
+  const next = checked ? nextDueOf(item) : null;
+  return perform({ type: 'item.check', itemId: item.id, checked, ...(next ? { nextDue: next } : {}) });
+}
 
 // Modifie un article (seulement les champs changés)
 export async function updateItem(item, changes) {

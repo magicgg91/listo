@@ -68,6 +68,7 @@ import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
 import { loupeButton } from '../tabbar.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
+import { REPEAT_CHOICES, WEEKDAYS, parseRepeat, makeRepeat, isOccurrence, firstOccurrence, weekdayOf, repeatSentence, repeatChip } from '../repeat.js';
 
 export function renderList(listId, onLeave) {
   const pc = isDesktop(); // interface ordinateur (voir en tête du fichier)
@@ -525,6 +526,11 @@ export function renderList(listId, onLeave) {
       const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
       chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
       spoken.push(due.label.toLowerCase());
+      // Tâche qui se répète : « ↻ Lu, Me » (phrase entière pour la lecture)
+      if (item.repeat) {
+        chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
+        spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
+      }
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
@@ -706,8 +712,29 @@ export function renderList(listId, onLeave) {
   // (file d'attente : avec ou sans réseau)
   function toggle(item) {
     if (!editable() || !mayCheck(view?.list)) return;
+    // Tâche qui se répète : elle revient décochée, à sa date suivante
+    const next = item.checked ? null : actions.nextDueOf(item);
+    if (next) {
+      checkRepeating(item, next);
+      return;
+    }
     recordUndo(listId, { kind: 'check', itemId: item.id, name: item.name, checked: !item.checked });
     actions.checkItem(item, !item.checked);
+  }
+
+  // Cocher une tâche qui se répète : elle ne va pas dans « Terminés », elle
+  // revient décochée à la date suivante (actions.checkItem). Le message dit
+  // laquelle ; « Annuler » (et Ctrl+Z) remet l'ancienne date.
+  function checkRepeating(item, next) {
+    const before = { dueDate: item.dueDate };
+    const entry = { kind: 'update', itemId: item.id, name: item.name, before, after: { dueDate: next } };
+    recordUndo(listId, entry);
+    actions.checkItem(item, true);
+    toast(`Prochaine fois : ${dueDateLabel(next)}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+      forgetUndo(listId, (e) => e === entry);
+      const current = app.data.items.get(item.id);
+      if (current && current.dueDate === next) actions.updateItem(current, before);
+    } });
   }
 
   // « Tout remettre à acheter » / « Tout rouvrir » : décoche tous les cochés
@@ -1297,6 +1324,9 @@ export function renderList(listId, onLeave) {
     const options = () => listOptions(app.data.lists.get(listId));
     let priority = item.priority ?? 'normal';
     let dueDate = item.dueDate ?? null;
+    // Échéance enregistrée (base de comparaison à l'enregistrement ; avancée
+    // par « Passer cette fois », qui s'enregistre tout de suite)
+    let savedDue = item.dueDate ?? null;
     // Priorité : trois choix ; le choix actif a une coche ET son texte
     const priorityOptions = [['low', 'Basse'], ['normal', 'Normale'], ['high', 'Élevée']].map(([value, label]) => {
       const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
@@ -1342,11 +1372,126 @@ export function renderList(listId, onLeave) {
       dateInput.value = dueDate ?? '';
       dateInput.setAttribute('aria-label', `Échéance : ${label}. Choisir une date`);
       clearDue.disabled = !dueDate;
+      // Plus d'échéance : plus de répétition (une répétition en demande une)
+      if (!dueDate && repeatKind) {
+        repeatKind = '';
+        repeat = null;
+      }
+      drawRepeat();
     };
     const shortcut = (label, days) => h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
       dueDate = addDays(todayKey(), days);
       drawDue();
     } }, label);
+
+    // --- Se répète (décisions du 11 novembre 2026, repeat.js) : seulement
+    // avec l'option « Échéance ». Jamais, chaque jour, chaque semaine ou
+    // toutes les 2 semaines (jours choisis, au moins un), chaque mois (le
+    // jour choisi), chaque année. Choisir une répétition pose l'échéance si
+    // elle manque ou si elle ne tombe pas sur la règle ; effacer l'échéance
+    // arrête la répétition. Une phrase résume la règle.
+    let repeat = item.repeat ?? null;
+    const parsedRepeat = parseRepeat(repeat);
+    let repeatKind = parsedRepeat?.kind ?? '';
+    let repeatDays = parsedRepeat?.days ?? [];
+    let monthDay = parsedRepeat?.monthDay ?? null;
+    const savedRepeat = item.repeat ?? null;
+    // Choix « Se répète » et jour du mois : la liste de choix du téléphone,
+    // posée, invisible, sur un champ qui affiche le choix (comme l'échéance)
+    const nativePicker = (select) => {
+      const text = h('span', { class: 'input__value' });
+      return { text, el: h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, text, icon('chev-d')), select) };
+    };
+    const kindSelect = h('select', { class: 'due-picker__input' }, REPEAT_CHOICES.map(([value, label]) => h('option', { value }, label)));
+    const kindPicker = nativePicker(kindSelect);
+    kindSelect.addEventListener('change', () => {
+      repeatKind = kindSelect.value;
+      applyRepeat();
+    });
+    // Jours de la semaine : pastilles Lu … Di, appuyées ou non
+    const dayButtons = WEEKDAYS.map(([day, short, long]) => {
+      const button = h('button', { class: 'weekdays__opt', type: 'button', 'aria-label': long, onClick: () => {
+        const on = repeatDays.includes(day);
+        if (on && repeatDays.length === 1) return; // au moins un jour
+        repeatDays = on ? repeatDays.filter((d) => d !== day) : [...repeatDays, day];
+        applyRepeat();
+      } }, short);
+      button.dataset.day = String(day);
+      return button;
+    });
+    const daysRow = h('div', { class: 'weekdays', role: 'group', 'aria-label': 'Jours de la semaine' }, dayButtons);
+    const monthSelect = h('select', { class: 'due-picker__input' },
+      Array.from({ length: 31 }, (_, i) => h('option', { value: String(i + 1) }, `Le ${i === 0 ? '1er' : i + 1}`)));
+    const monthPicker = nativePicker(monthSelect);
+    monthSelect.addEventListener('change', () => {
+      monthDay = Number(monthSelect.value);
+      applyRepeat();
+    });
+    const repeatNote = h('p', { class: 'field__hint' });
+    // « Passer cette fois » : seulement sur la règle et la date ENREGISTRÉES
+    const skipButton = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => skipOnce() }, 'Passer cette fois');
+    const skipRow = h('div', { class: 'due-shortcuts' }, skipButton);
+    // Règle choisie -> repeat ; date posée si besoin
+    const applyRepeat = () => {
+      const base = dueDate ?? todayKey();
+      if ((repeatKind === 'week' || repeatKind === '2week') && !repeatDays.length) repeatDays = [weekdayOf(base)];
+      if (repeatKind === 'month' && !monthDay) monthDay = Number(base.slice(8));
+      repeat = repeatKind ? makeRepeat(repeatKind, { days: repeatDays, monthDay: monthDay ?? 1 }) : null;
+      if (repeat && (!dueDate || !isOccurrence(repeat, dueDate, dueDate))) {
+        // Toutes les 2 semaines : la première date est le prochain jour
+        // choisi (les semaines se comptent ensuite à partir d'elle)
+        dueDate = firstOccurrence(repeatKind === '2week' ? repeat.replace('2week', 'week') : repeat, todayKey());
+      }
+      drawDue();
+    };
+    function drawRepeat() {
+      kindSelect.value = repeatKind;
+      const label = REPEAT_CHOICES.find(([value]) => value === repeatKind)?.[1] ?? 'Jamais';
+      replace(kindPicker.text, icon('repeat', 'icon--sm'), label);
+      kindSelect.setAttribute('aria-label', `Se répète : ${label}. Changer`);
+      daysRow.hidden = repeatKind !== 'week' && repeatKind !== '2week';
+      for (const button of dayButtons) button.setAttribute('aria-pressed', String(repeatDays.includes(Number(button.dataset.day))));
+      monthPicker.el.hidden = repeatKind !== 'month';
+      monthSelect.value = String(monthDay ?? 1);
+      monthPicker.text.textContent = `Le ${monthDay === 1 || !monthDay ? '1er' : monthDay} de chaque mois`;
+      monthSelect.setAttribute('aria-label', `Jour du mois : ${monthPicker.text.textContent}. Changer`);
+      repeatNote.textContent = repeat ? repeatSentence(repeat) : '';
+      repeatNote.hidden = !repeat;
+      const saved = app.data.items.get(item.id);
+      skipRow.hidden = !(saved && !saved.checked && actions.repeatsNow(saved) && repeat === savedRepeat && repeat === saved.repeat && dueDate === savedDue);
+    }
+    // « Passer cette fois » : la date avance d'un cran (même règle, même
+    // calcul que si la tâche était cochée), sans la cocher ; enregistré tout
+    // de suite, avec « Annuler ». Les autres voient « Modifié par ».
+    const moveSaved = (from, to) => {
+      if (dueDate === from) dueDate = to;
+      savedDue = to;
+      drawDue();
+      initialSnapshot = snapshot();
+    };
+    const skipOnce = async () => {
+      const saved = app.data.items.get(item.id);
+      const next = saved ? actions.nextDueOf(saved) : null;
+      if (!next || !editable()) return;
+      const before = { dueDate: saved.dueDate };
+      const entry = { kind: 'update', itemId: item.id, name: saved.name, before, after: { dueDate: next } };
+      recordUndo(listId, entry);
+      mine = true;
+      await actions.updateItem(saved, { dueDate: next });
+      mine = false;
+      seen = contentOf(app.data.items.get(item.id) ?? saved);
+      moveSaved(before.dueDate, next);
+      toast(`Prochaine fois : ${dueDateLabel(next)}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: async () => {
+        forgetUndo(listId, (e) => e === entry);
+        const current = app.data.items.get(item.id);
+        if (!current || current.dueDate !== next) return;
+        mine = true;
+        await actions.updateItem(current, before);
+        mine = false;
+        seen = contentOf(app.data.items.get(item.id) ?? current);
+        moveSaved(next, before.dueDate);
+      } });
+    };
     drawDue();
     const priorityField = h('div', { class: 'field' },
       h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
@@ -1355,16 +1500,19 @@ export function renderList(listId, onLeave) {
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
       h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
       h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue));
+    const repeatField = h('div', { class: 'field' },
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Se répète'),
+      kindPicker.el, daysRow, monthPicker.el, repeatNote, skipRow);
     const showOptions = () => {
       const { priority: withPriority, due: withDue } = options();
       // Un champ qui disparaît perd le curseur (clavier ou calendrier refermé)
-      for (const [fieldEl, shown] of [[priorityField, withPriority], [dueField, withDue]]) {
+      for (const [fieldEl, shown] of [[priorityField, withPriority], [dueField, withDue], [repeatField, withDue]]) {
         if (!shown && fieldEl.contains(document.activeElement)) document.activeElement.blur();
         fieldEl.hidden = !shown;
       }
     };
     showOptions();
-    const classicFields = classic ? [priorityField, dueField] : null;
+    const classicFields = classic ? [priorityField, dueField, repeatField] : null;
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
     // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
@@ -1485,12 +1633,13 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
       reservation?.paint(); // réservation faite ou libérée (proches seulement)
       showOptions(); // réglage de la liste changé par le propriétaire
+      drawRepeat(); // « Passer cette fois » suit la tâche enregistrée
       if (mine) return;
       const latest = app.data.items.get(item.id);
       if (!latest) {
@@ -1556,9 +1705,11 @@ export function renderList(listId, onLeave) {
 
     // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
     // savoir s'il reste des modifications non enregistrées (ordinateur)
-    const snapshot = () => JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate]);
-    const initial = snapshot();
-    const dirty = () => snapshot() !== initial;
+    function snapshot() {
+      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat]);
+    }
+    let initialSnapshot = snapshot();
+    const dirty = () => snapshot() !== initialSnapshot;
     if (pc) {
       const paintDirty = () => setTimeout(() => {
         dirtyNote.hidden = !dirty();
@@ -1622,7 +1773,8 @@ export function renderList(listId, onLeave) {
       // Priorité et échéance : seulement si elles sont activées à cet instant
       const enabled = options();
       if (enabled.priority && priority !== (item.priority ?? 'normal')) changes.priority = priority;
-      if (enabled.due && dueDate !== (item.dueDate ?? null)) changes.dueDate = dueDate; // null : échéance effacée
+      if (enabled.due && dueDate !== savedDue) changes.dueDate = dueDate; // null : échéance effacée
+      if (enabled.due && repeat !== savedRepeat) changes.repeat = repeat; // null : ne se répète plus
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
         sheet.forceClose();
@@ -1669,6 +1821,7 @@ export function renderList(listId, onLeave) {
         it.note ? value('Note', it.note) : null,
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
         options.due ? value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance') : null,
+        options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
         shopping && it.ean ? value('Code-barres', it.ean) : null,
         actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
           h('div', { class: 'photo-block' },

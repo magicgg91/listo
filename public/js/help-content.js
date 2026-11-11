@@ -157,9 +157,10 @@ export const GUIDE = [
       },
       {
         id: 'p-taches',
-        title: 'Tâches : priorité et échéance',
+        title: 'Tâches : priorité, échéance, répétition',
         blocks: [{ ul: [
           'Priorité (basse, normale, élevée) et échéance, activées liste par liste ([[modifier]]).',
+          'Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([[repeter]]).',
           'Tri par priorité ou par échéance ([[tri]]).',
         ] }],
       },
@@ -473,6 +474,23 @@ export const GUIDE = [
         ] }],
       },
       {
+        id: 'repeter',
+        title: 'Tâches qui se répètent',
+        blocks: [
+          'Dans une liste de tâches où l\'échéance est activée ([[modifier]]), la fiche d\'une tâche propose « Se répète » : « Jamais », « Chaque jour », « Chaque semaine », « Toutes les 2 semaines », « Chaque mois » ou « Chaque année ».',
+          { ul: [
+            'Chaque semaine, ou toutes les 2 semaines : touchez les jours voulus (Lu, Ma, Me, Je, Ve, Sa, Di), au moins un. Par exemple, lundi et jeudi pour sortir les poubelles.',
+            'Chaque mois : choisissez le jour (le 5 de chaque mois). Le 31 tombe le dernier jour des mois plus courts.',
+            'Chaque année : le même jour et le même mois que l\'échéance.',
+            'Une phrase sous le choix résume la règle, par exemple : Chaque lundi et jeudi. Si la tâche n\'a pas encore d\'échéance, Listo pose la première date tout seul.',
+            'Sur la ligne, une pastille montre la répétition (par exemple ↻ Lu, Je).',
+          ] },
+          'Quand vous cochez une tâche qui se répète, elle ne va pas dans « Terminés » : elle revient aussitôt, décochée, à sa date suivante. Un message dit « Prochaine fois : » et la date ; « Annuler » remet l\'ancienne date. Une tâche faite en retard revient à la prochaine date à venir, jamais déjà en retard. Cela marche pareil depuis « Échéances » et hors ligne.',
+          '« Passer cette fois », dans la fiche, avance à la date suivante sans cocher la tâche (une semaine où il n\'y a rien à faire). Les autres le voient comme une modification.',
+          'Pour arrêter : « Se répète », « Jamais » (ou effacez l\'échéance, ou supprimez la tâche).',
+        ],
+      },
+      {
         id: 'quantite',
         title: 'Saisir la quantité avec le nom',
         blocks: [
@@ -553,7 +571,7 @@ export const GUIDE = [
           'Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
-            'Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet. Touchez la ligne pour ouvrir la tâche dans sa liste.',
+            'Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
             'Le nombre sur « Échéances » compte les tâches en retard et celles du jour.',
             'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
           ] },
@@ -885,7 +903,7 @@ export const GUIDE = [
         blocks: [
           'Une personne sans compte ouvre le lien qu\'on lui a envoyé, sans rien installer.',
           { ul: [
-            'Peut : lire la liste ; toucher un article pour ouvrir sa fiche (quantité, note en entier, rayon ou magasin, état coché, code-barres, photo à agrandir, priorité et échéance si elles sont activées).',
+            'Peut : lire la liste ; toucher un article pour ouvrir sa fiche (quantité, note en entier, rayon ou magasin, état coché, code-barres, photo à agrandir, priorité et échéance si elles sont activées, et la répétition d\'une tâche).',
             'Liste d\'envies : voir les souhaits (nom, note, lien, prix, priorité, photo) et ceux déjà reçus ; « Réserver » un souhait libre, « Participer » à un cadeau ouvert à d\'autres, annuler sa participation. Son prénom lui est demandé une fois. Il voit seulement si un souhait est réservé, jamais par qui ni combien.',
             'Ne peut pas : modifier la liste, voir qui d\'autre a réservé.',
             'Le lien peut demander un mot de passe, et il cesse de fonctionner à son expiration ou quand le propriétaire arrête le partage ([[faq-lien]]).',
@@ -931,6 +949,7 @@ export const GUIDE = [
             'Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”',
             'Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”',
             'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
+            'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
             'Ranger : “Range le lait au rayon crèmerie.”',
           ] },
@@ -944,7 +963,7 @@ export const GUIDE = [
           'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
           { ul: [
             '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
-            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.',
+            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, leur rayon ou leur magasin.',
           ] },
           'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
         ],

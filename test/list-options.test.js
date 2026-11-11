@@ -76,11 +76,11 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 23);
+  assert.equal(schemaVersion(db), 24);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
-  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19)');
+  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, repeat, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19 ; répétition : migration 24)');
   // Nouvelle liste : désactivées (valeur par défaut de la base)
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
   assert.deepEqual(row('neuve'), { priority_enabled: 0, due_enabled: 0 });
@@ -297,7 +297,7 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
   assert.match(list, /fieldEl\.hidden = !shown;/);
   assert.match(list, /if \(!shown && fieldEl\.contains\(document\.activeElement\)\) document\.activeElement\.blur\(\);/);
   assert.match(list, /const stopWatching = onDataChange\(\(\) => \{\s*reservation\?\.paint\(\);[^\n]*\n\s*showOptions\(\);/);
-  assert.match(list, /const enabled = options\(\);\s*if \(enabled\.priority && priority !== \(item\.priority \?\? 'normal'\)\) changes\.priority = priority;\s*if \(enabled\.due && dueDate !== \(item\.dueDate \?\? null\)\) changes\.dueDate = dueDate;/);
+  assert.match(list, /const enabled = options\(\);\s*if \(enabled\.priority && priority !== \(item\.priority \?\? 'normal'\)\) changes\.priority = priority;\s*if \(enabled\.due && dueDate !== savedDue\) changes\.dueDate = dueDate; \/\/ null : échéance effacée\s*if \(enabled\.due && repeat !== savedRepeat\) changes\.repeat = repeat;/);
   // Fiche à consulter (lecture seule) : même règle
   assert.match(list, /options\.priority \? value\('Priorité', [^\n]*\) : null,\s*options\.due \? value\('Échéance', [^\n]*\) : null,/);
   // Tri : seulement les choix proposés ; pas de bouton sans choix

@@ -230,7 +230,7 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   const before = db.prepare('SELECT * FROM lists ORDER BY id').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 23);
+  assert.equal(schemaVersion(db), 24);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
   assert.deepEqual(after.map(({ icon, add_mode: addMode, type, for_user_id: forUser, for_name: forName, ...rest }) => rest), before, 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');

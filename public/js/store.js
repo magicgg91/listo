@@ -293,6 +293,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         ean: op.ean ?? null, // code-barres (listes de courses), déjà normalisé
         link: op.link ?? null, // lien web (listes d'envies)
         priceCents: op.priceCents ?? null, // prix indicatif (listes d'envies)
+        repeat: op.repeat ?? null, // répétition (listes de tâches, repeat.js)
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -307,13 +308,22 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      // Effacer l'échéance arrête la répétition (même règle que le serveur)
+      if (op.dueDate === null && op.repeat === undefined) next.repeat = null;
       state.items.set(item.id, next);
       return;
     }
     case 'item.check':
+      if (!item) return;
+      // Tâche qui se répète : elle revient décochée à la date suivante
+      // (nextDue, calculée par actions.js avec repeat.js)
+      if (op.checked && op.nextDue) {
+        state.items.set(item.id, { ...item, dueDate: op.nextDue, checked: false, checkedAt: null, updatedAt: now });
+        return;
+      }
       // Date du coché : celle du téléphone en attendant celle du serveur
-      if (item) state.items.set(item.id, { ...item, checked: op.checked, checkedAt: op.checked ? item.checkedAt ?? now : null, updatedAt: now });
+      state.items.set(item.id, { ...item, checked: op.checked, checkedAt: op.checked ? item.checkedAt ?? now : null, updatedAt: now });
       return;
     case 'item.delete':
       if (item) {

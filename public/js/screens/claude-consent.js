@@ -25,7 +25,7 @@ const enc = encodeURIComponent;
 // d'autorisation ; mêmes niveaux que server/oauth.js)
 export const SCOPE_TEXTS = {
   read: 'Claude pourra lire vos listes, sans rien y changer.',
-  write: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance). Jamais supprimer d\'élément ni de liste, ni partager.',
+  write: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Jamais supprimer d\'élément ni de liste, ni partager.',
 };
 // Avertissement du niveau « Lecture et écriture »
 export const EDIT_WARNING = 'Une liste partagée peut contenir un texte piégé, écrit pour tromper Claude et lui faire changer vos éléments. C\'est pourquoi ce niveau demande plus de confiance : choisissez-le seulement si vous en avez besoin.';

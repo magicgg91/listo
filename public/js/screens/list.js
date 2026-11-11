@@ -68,7 +68,7 @@ import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
 import { loupeButton } from '../tabbar.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
-import { REPEAT_CHOICES, WEEKDAYS, parseRepeat, makeRepeat, isOccurrence, firstOccurrence, weekdayOf, repeatSentence, repeatChip } from '../repeat.js';
+import { REPEAT_CHOICES, WEEKDAYS, MONTH_WEEKS, parseRepeat, makeRepeat, isOccurrence, firstOccurrence, weekdayOf, monthWeekOf, repeatSentence, repeatChip } from '../repeat.js';
 import { REMINDERS, reminderLabel, timeLabel, isDueTime } from '../due-time.js';
 
 export function renderList(listId, onLeave) {
@@ -1557,6 +1557,11 @@ export function renderList(listId, onLeave) {
     let repeatKind = parsedRepeat?.kind ?? '';
     let repeatDays = parsedRepeat?.days ?? [];
     let monthDay = parsedRepeat?.monthDay ?? null;
+    // Chaque mois : un jour précis (« le 5 ») ou un jour de la semaine (« le
+    // 1er lundi », « le dernier vendredi » ; complément du 11 novembre 2026)
+    let monthMode = parsedRepeat?.nth ? 'week' : 'day';
+    let monthNth = parsedRepeat?.nth ?? null;
+    let monthWeekday = parsedRepeat?.weekday ?? null;
     const savedRepeat = item.repeat ?? null;
     // Choix « Se répète » et jour du mois : la liste de choix du téléphone,
     // posée, invisible, sur un champ qui affiche le choix (comme l'échéance)
@@ -1589,6 +1594,27 @@ export function renderList(listId, onLeave) {
       monthDay = Number(monthSelect.value);
       applyRepeat();
     });
+    const modeSelect = h('select', { class: 'due-picker__input' },
+      h('option', { value: 'day' }, 'Un jour du mois (le 5)'),
+      h('option', { value: 'week' }, 'Un jour de la semaine (le 1er lundi)'));
+    const modePicker = nativePicker(modeSelect);
+    modeSelect.addEventListener('change', () => {
+      monthMode = modeSelect.value;
+      applyRepeat();
+    });
+    const nthSelect = h('select', { class: 'due-picker__input' }, MONTH_WEEKS.map(([n, label]) => h('option', { value: String(n) }, `Le ${label}`)));
+    const nthPicker = nativePicker(nthSelect);
+    nthSelect.addEventListener('change', () => {
+      monthNth = Number(nthSelect.value);
+      applyRepeat();
+    });
+    const weekdaySelect = h('select', { class: 'due-picker__input' }, WEEKDAYS.map(([day, , long]) => h('option', { value: String(day) }, long)));
+    const weekdayPicker = nativePicker(weekdaySelect);
+    weekdaySelect.addEventListener('change', () => {
+      monthWeekday = Number(weekdaySelect.value);
+      applyRepeat();
+    });
+    const monthWeekRow = h('div', { class: 'time-row' }, nthPicker.el, weekdayPicker.el);
     const repeatNote = h('p', { class: 'field__hint' });
     // « Passer cette fois » : seulement sur la règle et la date ENREGISTRÉES
     const skipButton = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => skipOnce() }, 'Passer cette fois');
@@ -1598,7 +1624,13 @@ export function renderList(listId, onLeave) {
       const base = dueDate ?? todayKey();
       if ((repeatKind === 'week' || repeatKind === '2week') && !repeatDays.length) repeatDays = [weekdayOf(base)];
       if (repeatKind === 'month' && !monthDay) monthDay = Number(base.slice(8));
-      repeat = repeatKind ? makeRepeat(repeatKind, { days: repeatDays, monthDay: monthDay ?? 1 }) : null;
+      // « Le 1er lundi » : par défaut, le rang et le jour de l'échéance
+      if (repeatKind === 'month' && monthMode === 'week') {
+        if (!monthNth) monthNth = monthWeekOf(base);
+        if (!monthWeekday) monthWeekday = weekdayOf(base);
+      }
+      const byWeek = repeatKind === 'month' && monthMode === 'week';
+      repeat = repeatKind ? makeRepeat(repeatKind, { days: repeatDays, monthDay: monthDay ?? 1, ...(byWeek ? { nth: monthNth, weekday: monthWeekday } : {}) }) : null;
       if (repeat && (!dueDate || !isOccurrence(repeat, dueDate, dueDate))) {
         // Toutes les 2 semaines : la première date est le prochain jour
         // choisi (les semaines se comptent ensuite à partir d'elle)
@@ -1613,7 +1645,18 @@ export function renderList(listId, onLeave) {
       kindSelect.setAttribute('aria-label', `Se répète : ${label}. Changer`);
       daysRow.hidden = repeatKind !== 'week' && repeatKind !== '2week';
       for (const button of dayButtons) button.setAttribute('aria-pressed', String(repeatDays.includes(Number(button.dataset.day))));
-      monthPicker.el.hidden = repeatKind !== 'month';
+      modePicker.el.hidden = repeatKind !== 'month';
+      modeSelect.value = monthMode;
+      modePicker.text.textContent = monthMode === 'week' ? 'Un jour de la semaine' : 'Un jour du mois';
+      modeSelect.setAttribute('aria-label', `Chaque mois : ${modePicker.text.textContent}. Changer`);
+      monthWeekRow.hidden = repeatKind !== 'month' || monthMode !== 'week';
+      nthSelect.value = String(monthNth ?? 1);
+      nthPicker.text.textContent = `Le ${MONTH_WEEKS.find(([n]) => n === (monthNth ?? 1))[1]}`;
+      nthSelect.setAttribute('aria-label', `Rang dans le mois : ${nthPicker.text.textContent}. Changer`);
+      weekdaySelect.value = String(monthWeekday ?? 1);
+      weekdayPicker.text.textContent = WEEKDAYS.find(([d]) => d === (monthWeekday ?? 1))[2];
+      weekdaySelect.setAttribute('aria-label', `Jour de la semaine : ${weekdayPicker.text.textContent}. Changer`);
+      monthPicker.el.hidden = repeatKind !== 'month' || monthMode !== 'day';
       monthSelect.value = String(monthDay ?? 1);
       monthPicker.text.textContent = `Le ${monthDay === 1 || !monthDay ? '1er' : monthDay} de chaque mois`;
       monthSelect.setAttribute('aria-label', `Jour du mois : ${monthPicker.text.textContent}. Changer`);
@@ -1757,7 +1800,7 @@ export function renderList(listId, onLeave) {
 
     const repeatField = h('div', { class: 'field' },
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Se répète'),
-      kindPicker.el, daysRow, monthPicker.el, repeatNote, skipRow);
+      kindPicker.el, daysRow, modePicker.el, monthPicker.el, monthWeekRow, repeatNote, skipRow);
     const showOptions = () => {
       const { priority: withPriority, due: withDue } = options();
       // Un champ qui disparaît perd le curseur (clavier ou calendrier refermé)

@@ -316,7 +316,7 @@ test('textes : deux niveaux, outils par niveau, interdits permanents, données j
   assert.match(consent, /let scope = 'read';/, '« Lecture seule » reste présélectionnée');
   assert.match(read('public/js/screens/claude-connections.js'), /export const ACCESS_LABELS = \{ read: 'Lecture seule', write: 'Lecture et écriture' \};/);
   const tool = TOOLS.find((t) => t.name === 'update_items');
-  assert.deepEqual(Object.keys(tool.inputSchema.properties.items.items.properties), ['id', 'name', 'quantity', 'note', 'priority', 'due_date', 'repeat', 'aisle', 'store']);
+  assert.deepEqual(Object.keys(tool.inputSchema.properties.items.items.properties), ['id', 'name', 'quantity', 'note', 'priority', 'due_date', 'repeat', 'assigned_to', 'aisle', 'store']);
   assert.equal(tool.inputSchema.properties.items.items.additionalProperties, false);
   assert.match(tool.description, /une seule erreur .* refuse l'appel entier et rien n'est modifié/);
   assert.match(tool.description, /Ne supprime jamais rien\. 300 éléments modifiés par heure au plus\. Exige une connexion « Lecture et écriture » et le droit de modifier la liste\./);

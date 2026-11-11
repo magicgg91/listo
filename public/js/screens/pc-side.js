@@ -100,7 +100,7 @@ export function createPcSide() {
     },
   }, h('span', { class: 'pc-nav__icon' }, icon('calendar', 'icon--sm')), h('span', { class: 'pc-nav__name' }, 'Échéances'), deadlinesCount);
   const drawDeadlines = () => {
-    const count = app.data.loaded ? deadlineBadge(app.data) : 0;
+    const count = app.data.loaded ? deadlineBadge(app.data, undefined, app.user?.id ?? null) : 0;
     deadlinesCount.hidden = count === 0;
     deadlinesCount.textContent = count > 99 ? '99+' : String(count);
     deadlinesLink.setAttribute('aria-label', deadlinesLabel(count));

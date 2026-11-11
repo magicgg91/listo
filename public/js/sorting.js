@@ -77,15 +77,33 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
 //   ordre alphabétique dans chaque groupe ;
 // - 'due' : une seule liste, échéance la plus proche d'abord (les dates
 //   passées en tête), sans échéance à la fin ; à date égale, priorité
-//   élevée d'abord, puis ordre alphabétique.
+//   élevée d'abord, puis ordre alphabétique ;
+// - 'person' (attribution activée, décision du 11 novembre 2026) : un groupe
+//   par personne avec un en-tête, « Moi » d'abord, puis les autres par ordre
+//   alphabétique, puis « Personne » ; ordre alphabétique dans chaque groupe.
+//   people : Map(identifiant -> prénom) des membres de la liste ; me : mon
+//   identifiant. Une tâche attribuée à quelqu'un qui n'est plus membre va
+//   dans « Personne » (le serveur l'y remet aussi).
 // Renvoie des groupes comme groupItems : [{ aisle: null, items }] ou, par
 // priorité, [{ aisle: null, priority, label, items }].
-export const ITEM_SORTS = ['alpha', 'priority', 'due', 'aisle'];
+export const ITEM_SORTS = ['alpha', 'priority', 'due', 'person', 'aisle'];
 const PRIORITY_GROUPS = [['high', 'Priorité élevée'], ['normal', 'Priorité normale'], ['low', 'Priorité basse']];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
 
-export function sortTasks(items, sort = 'alpha') {
+export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null } = {}) {
+  if (sort === 'person') {
+    const owner = (item) => (item.assignedTo != null && people.has(item.assignedTo) ? item.assignedTo : null);
+    const ids = [...new Set(items.map(owner))];
+    const rank = (id) => (id === me ? 0 : id === null ? 2 : 1);
+    ids.sort((a, b) => rank(a) - rank(b) || compareNames(people.get(a) ?? '', people.get(b) ?? ''));
+    return ids.map((id) => ({
+      aisle: null,
+      person: id,
+      label: id === null ? 'Personne' : id === me ? 'Moi' : people.get(id),
+      items: items.filter((item) => owner(item) === id).sort((a, b) => compareNames(a.name, b.name)),
+    }));
+  }
   if (sort === 'priority') {
     return PRIORITY_GROUPS
       .map(([priority, label]) => ({
@@ -132,7 +150,7 @@ export function splitDone(items, aisles, isShopping, options = {}) {
     .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
   const toDo = items.filter((item) => !item.checked);
   const arrange = (list) => {
-    if (!isShopping && options.sort) return sortTasks(list, options.sort);
+    if (!isShopping && options.sort) return sortTasks(list, options.sort, options);
     if (isShopping && options.sort === 'alpha') return sortShopping(list);
     return groupItems(list, aisles, isShopping, options);
   };
@@ -148,6 +166,7 @@ export function splitDone(items, aisles, isShopping, options = {}) {
 function groupId(group) {
   if (group.all) return 'tous';
   if (group.priority) return `p:${group.priority}`;
+  if ('person' in group) return `u:${group.person ?? ''}`;
   if ('store' in group) return `s:${group.store?.id ?? ''}`;
   return `a:${group.aisle?.id ?? ''}`;
 }

@@ -142,7 +142,7 @@ export const GUIDE = [
           'Une liste se partage avec d\'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([[partager]]).',
           'Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.',
           'Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([[nouveautes]]).',
-          'Notifications, facultatives : modifications des autres, réservations, partage et résumé des échéances, sur le téléphone ou l\'ordinateur ([[notifications]]).',
+          'Notifications, facultatives : modifications (des autres), réservations, partage et résumé des échéances, sur le téléphone ou l\'ordinateur ([[notifications]]).',
           'Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([[tri]]).',
         ] }],
       },
@@ -157,10 +157,11 @@ export const GUIDE = [
       },
       {
         id: 'p-taches',
-        title: 'Tâches : priorité, échéance, répétition',
+        title: 'Tâches : priorité, échéance, répétition, attribution',
         blocks: [{ ul: [
           'Priorité (basse, normale, élevée) et échéance, activées liste par liste ([[modifier]]).',
           'Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([[repeter]]).',
+          'Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([[attribuer]]).',
           'Tri par priorité ou par échéance ([[tri]]).',
         ] }],
       },
@@ -491,6 +492,22 @@ export const GUIDE = [
         ],
       },
       {
+        id: 'attribuer',
+        title: 'Attribuer une tâche',
+        blocks: [
+          'Dans une liste de tâches, le propriétaire active « Attribution » dans « Options des éléments » ([[modifier]]). La fiche d\'une tâche propose alors « Pour » : « Personne », « Moi », ou une autre personne qui peut modifier la liste. Une seule personne par tâche.',
+          { ul: [
+            'Sur la ligne, une pastille dit à qui est la tâche : « Moi » (en bleu) ou le prénom.',
+            '« Trier la liste », « Par personne » : les tâches de « Moi » d\'abord, puis celles de chacun, puis celles de « Personne ».',
+            '« Échéances » propose « Toutes » ou « Les miennes » ([[echeances]]).',
+            'Une tâche qui se répète garde la même personne quand elle revient.',
+            'Si la personne quitte la liste, en est retirée ou passe en « Lecture seule », ses tâches reviennent à « Personne ».',
+            'Le lien public ne montre jamais à qui est une tâche.',
+          ] },
+          'Quand quelqu\'un vous attribue une tâche, la notification « Modifications » le dit ([[notifications]]).',
+        ],
+      },
+      {
         id: 'quantite',
         title: 'Saisir la quantité avec le nom',
         blocks: [
@@ -545,7 +562,7 @@ export const GUIDE = [
           '« Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).',
           'Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n\'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.',
           'Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.',
-          'Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité » et « Par échéance », selon les options de la liste.',
+          'Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité », « Par échéance » et « Par personne », selon les options de la liste.',
           'Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.',
           '« X/Y » donne le nombre d\'articles restants sur le total, sur chaque carte et en tête de chaque groupe.',
         ] }],
@@ -572,7 +589,8 @@ export const GUIDE = [
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
-            'Le nombre sur « Échéances » compte les tâches en retard et celles du jour.',
+            'Si une de vos listes a l\'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s\'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([[attribuer]]). Le choix est retenu sur l\'appareil.',
+            'Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu\'un d\'autre.',
             'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
           ] },
         ],
@@ -692,13 +710,13 @@ export const GUIDE = [
           { table: {
             head: ['Catégorie', 'Quand', 'Exemple'],
             rows: [
-              ['« Modifications des autres »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous. Les changements d\'une minute sont regroupés en une seule notification par liste.', '“Léa a modifié « Courses »”, “3 changements”'],
+              ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste.', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”'],
               ['« Envies »', 'Quelqu\'un réserve un souhait ou participe à un cadeau, dans une liste d\'envies dont vous voyez les réservations.', '“Marc a réservé un souhait”'],
               ['« Partage »', 'On vous ajoute à une liste, ou votre droit change.', '“Léa vous a ajouté à « Maison »”'],
               ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a.', '“3 tâches à faire aujourd\'hui · 1 en retard”'],
             ],
           } },
-          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée.',
+          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée, et jamais les tâches attribuées à quelqu\'un d\'autre.',
         ],
       },
       {
@@ -802,7 +820,7 @@ export const GUIDE = [
           'Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.',
           { ul: [
             'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
-            'Liste de tâches : « Options des éléments » active la priorité et l\'échéance.',
+            'Liste de tâches : « Options des éléments » active la priorité, l\'échéance et l\'attribution.',
             '« Après l\'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d\'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.',
             'Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).',
           ] },
@@ -812,7 +830,7 @@ export const GUIDE = [
         id: 'modifier',
         title: 'Propriétaire : modifier la liste',
         blocks: [
-          'Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité et l\'échéance ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
+          'Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l\'échéance et l\'attribution ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
           { ul: [
             'Changer le type n\'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l\'échéance. Tout revient si la liste reprend son type d\'origine. Le formulaire le rappelle avant l\'enregistrement.',
             'La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d\'envies. Tout le monde la voit. L\'échéance n\'existe que pour les listes de tâches.',
@@ -949,6 +967,7 @@ export const GUIDE = [
             'Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”',
             'Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”',
             'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
+            'Attribuer ([[attribuer]]) : “Donne la tâche ampoule à Léa.” “Qu\'est-ce que j\'ai à faire cette semaine ?”',
             'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
             'Ranger : “Range le lait au rayon crèmerie.”',
@@ -963,7 +982,7 @@ export const GUIDE = [
           'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
           { ul: [
             '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
-            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, leur rayon ou leur magasin.',
+            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.',
           ] },
           'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
         ],

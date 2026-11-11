@@ -44,7 +44,7 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner } from '../ui.js';
@@ -162,15 +162,16 @@ export function renderList(listId, onLeave) {
   // - Liste de courses : « Par rayon » (« Par magasin » pour une liste
   //   « multi »), le tri par défaut, ou « Ordre alphabétique » (à plat, sous
   //   un seul en-tête « À acheter ») ; le rayon des articles ne change pas.
-  // - Autre liste : « Ordre alphabétique » (par défaut) ; « Par priorité » et
-  //   « Par échéance » ne sont proposés que si le réglage de la liste est
-  //   activé ; un choix gardé devenu indisponible laisse place au tri par
+  // - Autre liste : « Ordre alphabétique » (par défaut) ; « Par priorité »,
+  //   « Par échéance » et « Par personne » ne sont proposés que si le réglage
+  //   de la liste (priorité, échéance, attribution) est activé ; un choix gardé devenu indisponible laisse place au tri par
   //   défaut (sans être effacé : il revient avec le réglage).
   const SORTS = [
     ['aisle', 'layers', 'Par rayon', 'Tri : par rayon'],
     ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
     ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
     ['due', 'calendar', 'Par échéance', 'Tri : par échéance'],
+    ['person', 'users', 'Par personne', 'Tri : par personne'],
   ];
   // Liste « multi » : le premier choix groupe par magasin, il le dit
   const sortEntry = ([value, iconName, label, message]) => (value === 'aisle' && isMultiList(currentList())
@@ -365,7 +366,7 @@ export function renderList(listId, onLeave) {
       drawFoldAll();
       return;
     }
-    view = computeListView(app.data, listId, { sort: itemSort });
+    view = computeListView(app.data, listId, { sort: itemSort, me: app.user.id });
     if (!view) {
       title.textContent = 'Liste introuvable';
       replace(titleIcon);
@@ -513,7 +514,7 @@ export function renderList(listId, onLeave) {
   const metaOf = (item) => {
     if (isWishList(view?.list)) return wishMeta(item);
     const options = listOptions(view?.list);
-    if (!options.priority && !options.due) return { chips: [], spoken: '' };
+    if (!options.priority && !options.due && !options.assign) return { chips: [], spoken: '' };
     const chips = [];
     const spoken = [];
     const priority = options.priority ? priorityChip(item.priority) : null;
@@ -532,8 +533,23 @@ export function renderList(listId, onLeave) {
         spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
       }
     }
+    // Tâche attribuée (après la date) : « Moi » (en bleu) ou le prénom, avec l'icône
+    const who = options.assign ? personOf(view?.list, item.assignedTo) : null;
+    if (who) {
+      chips.push(h('span', { class: `chip${who.me ? ' chip--accent' : ''}` }, icon('user', 'icon--xs'), who.name));
+      spoken.push(who.me ? 'pour moi' : `pour ${who.name}`);
+    }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
+
+  // Personne à qui une tâche est attribuée : { name, me } (« Moi » pour
+  // soi), ou null (personne, ou plus membre de la liste)
+  function personOf(list, userId) {
+    if (userId == null) return null;
+    if (userId === app.user.id) return { name: 'Moi', me: true };
+    const name = memberNames(list).get(userId);
+    return name ? { name, me: false } : null;
+  }
 
   // Liste d'envies : pastilles de la priorité (si activée), du prix et,
   // SEULEMENT si le serveur a envoyé les réservations de cette liste (jamais
@@ -1500,19 +1516,53 @@ export function renderList(listId, onLeave) {
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
       h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
       h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue));
+    // --- Pour (attribution, décisions du 11 novembre 2026) : seulement si
+    // l'option « Attribution » de la liste est activée. « Personne », « Moi »
+    // (si je peux modifier la liste), puis les autres personnes qui peuvent
+    // la modifier (le serveur revérifie). Même champ que « Se répète ».
+    let assignee = item.assignedTo ?? null;
+    const savedAssignee = item.assignedTo ?? null;
+    const assignSelect = h('select', { class: 'due-picker__input' });
+    const assignPicker = nativePicker(assignSelect);
+    assignSelect.addEventListener('change', () => {
+      assignee = assignSelect.value ? Number(assignSelect.value) : null;
+      drawAssign();
+    });
+    function drawAssign() {
+      const list = app.data.lists.get(listId);
+      const people = assignablePeople(list);
+      const choices = [['', 'Personne']];
+      if (people.some((p) => p.id === app.user.id)) choices.push([String(app.user.id), 'Moi']);
+      for (const person of people) if (person.id !== app.user.id) choices.push([String(person.id), person.displayName]);
+      // Personne déjà attribuée qui ne serait plus dans les choix : gardée,
+      // pour ne rien changer sans le vouloir
+      if (assignee !== null && !choices.some(([value]) => value === String(assignee))) {
+        choices.push([String(assignee), memberNames(list).get(assignee) ?? 'Ancien membre']);
+      }
+      assignSelect.replaceChildren(...choices.map(([value, label]) => h('option', { value }, label)));
+      assignSelect.value = assignee === null ? '' : String(assignee);
+      const label = choices.find(([value]) => value === assignSelect.value)?.[1] ?? 'Personne';
+      replace(assignPicker.text, icon('user', 'icon--sm'), label);
+      assignSelect.setAttribute('aria-label', `Pour : ${label}. Changer`);
+    }
+    drawAssign();
+    const assignField = h('div', { class: 'field' },
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Pour'),
+      assignPicker.el);
+
     const repeatField = h('div', { class: 'field' },
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Se répète'),
       kindPicker.el, daysRow, monthPicker.el, repeatNote, skipRow);
     const showOptions = () => {
       const { priority: withPriority, due: withDue } = options();
       // Un champ qui disparaît perd le curseur (clavier ou calendrier refermé)
-      for (const [fieldEl, shown] of [[priorityField, withPriority], [dueField, withDue], [repeatField, withDue]]) {
+      for (const [fieldEl, shown] of [[priorityField, withPriority], [dueField, withDue], [repeatField, withDue], [assignField, options().assign]]) {
         if (!shown && fieldEl.contains(document.activeElement)) document.activeElement.blur();
         fieldEl.hidden = !shown;
       }
     };
     showOptions();
-    const classicFields = classic ? [priorityField, dueField, repeatField] : null;
+    const classicFields = classic ? [priorityField, dueField, repeatField, assignField] : null;
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
     // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
@@ -1633,13 +1683,14 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null, it.assignedTo ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
       reservation?.paint(); // réservation faite ou libérée (proches seulement)
       showOptions(); // réglage de la liste changé par le propriétaire
       drawRepeat(); // « Passer cette fois » suit la tâche enregistrée
+      drawAssign(); // personnes de la liste (partage changé)
       if (mine) return;
       const latest = app.data.items.get(item.id);
       if (!latest) {
@@ -1706,7 +1757,7 @@ export function renderList(listId, onLeave) {
     // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
     // savoir s'il reste des modifications non enregistrées (ordinateur)
     function snapshot() {
-      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat]);
+      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee]);
     }
     let initialSnapshot = snapshot();
     const dirty = () => snapshot() !== initialSnapshot;
@@ -1775,6 +1826,7 @@ export function renderList(listId, onLeave) {
       if (enabled.priority && priority !== (item.priority ?? 'normal')) changes.priority = priority;
       if (enabled.due && dueDate !== savedDue) changes.dueDate = dueDate; // null : échéance effacée
       if (enabled.due && repeat !== savedRepeat) changes.repeat = repeat; // null : ne se répète plus
+      if (enabled.assign && assignee !== savedAssignee) changes.assignedTo = assignee; // null : à personne
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
         sheet.forceClose();
@@ -1822,6 +1874,8 @@ export function renderList(listId, onLeave) {
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
         options.due ? value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance') : null,
         options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
+        // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
+        options.assign ? value('Pour', personOf(view?.list, it.assignedTo)?.name ?? 'Personne') : null,
         shopping && it.ean ? value('Code-barres', it.ean) : null,
         actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
           h('div', { class: 'photo-block' },

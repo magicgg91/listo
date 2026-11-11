@@ -328,7 +328,7 @@ test('Claude : read_list donne la répétition en clair ; set_checked fait reven
 test('écran : « Se répète » seulement avec l\'échéance, règle avec la date, coche et « Passer cette fois » avec « Annuler », texte sûr', () => {
   const list = read('public/js/screens/list.js');
   // Champ affiché et caché avec l'échéance ; envoyé seulement si l'échéance est activée
-  assert.match(list, /\[\[priorityField, withPriority\], \[dueField, withDue\], \[repeatField, withDue\]\]/);
+  assert.match(list, /\[\[priorityField, withPriority\], \[dueField, withDue\], \[repeatField, withDue\], \[assignField, options\(\)\.assign\]\]/);
   assert.match(list, /if \(enabled\.due && repeat !== savedRepeat\) changes\.repeat = repeat;/);
   // Échéance effacée : plus de répétition ; règle choisie : la date suit
   assert.match(list, /if \(!dueDate && repeatKind\) \{\s*repeatKind = '';\s*repeat = null;\s*\}/);

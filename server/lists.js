@@ -33,7 +33,7 @@ import {
 import { groupItems, compareNames } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
 import {
-  isListType, isShoppingList, isWishList, usesPriority, usesDue, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
+  isListType, isShoppingList, isWishList, usesPriority, usesDue, usesAssign, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
 } from '../public/js/list-types.js';
 import {
   wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
@@ -98,6 +98,10 @@ export const REPEAT_OFF = "La répétition demande l'échéance, désactivée po
 export const BAD_REPEAT = 'Répétition invalide.';
 export const REPEAT_NEEDS_DUE = "Une tâche qui se répète a besoin d'une échéance.";
 export const BAD_NEXT_DUE = 'Date suivante invalide.';
+// Attribuer une tâche (décisions du 11 novembre 2026)
+export const ASSIGN_NOT_HERE = "L'attribution ne se choisit que dans une liste de tâches.";
+export const ASSIGN_OFF = "L'attribution est désactivée pour cette liste.";
+export const BAD_ASSIGNEE = 'Cette personne ne peut pas recevoir de tâche dans cette liste (le propriétaire ou une personne qui peut la modifier).';
 
 // Date du jour sur le serveur (AAAA-MM-JJ, fuseau du serveur : variable TZ)
 export const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -293,6 +297,7 @@ export function createListService(ctx) {
         lists.owner_id AS list_owner_id, list_members.access AS member_access,
         lists.for_user_id AS list_for_user_id, lists.for_name AS list_for_name,
         lists.priority_enabled AS list_priority_enabled, lists.due_enabled AS list_due_enabled,
+        lists.assign_enabled AS list_assign_enabled,
         (lists.type = 'shopping' AND COALESCE(stores.is_multi, 0) = 1) AS is_multi
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL
@@ -310,6 +315,13 @@ export function createListService(ctx) {
     anyList: db.prepare('SELECT id FROM lists WHERE id = ?'),
     anyItem: db.prepare('SELECT id FROM items WHERE id = ?'),
     item: db.prepare('SELECT * FROM items WHERE id = ?'),
+    // Peut recevoir une tâche : membre « Peut modifier » (le propriétaire
+    // l'est toujours), compte actif
+    assignable: db.prepare(`SELECT 1 FROM list_members JOIN users ON users.id = list_members.user_id AND users.active = 1
+      WHERE list_members.list_id = ? AND list_members.user_id = ? AND list_members.access = 'modification'`).pluck(),
+    // Tâches qui ne sont plus attribuables (personne partie ou passée en
+    // lecture seule) : remises à « Personne »
+    unassign: db.prepare('UPDATE items SET assigned_to = NULL, updated_at = ? WHERE list_id = ? AND assigned_to = ?'),
     members: db.prepare(`
       SELECT users.id, users.username, users.display_name, users.active, list_members.access
       FROM list_members JOIN users ON users.id = list_members.user_id
@@ -540,6 +552,21 @@ export function createListService(ctx) {
     if (!code) throw new OpError(400, 'Code-barres invalide : vérifiez les chiffres (8, 12 ou 13 chiffres).');
     return code;
   }
+  // Attribution demandée (opération) : undefined (non demandée), null
+  // (« Personne »), ou l'identifiant d'un compte qui peut recevoir la tâche
+  // (propriétaire ou « Peut modifier », compte actif). Listes de tâches
+  // dont l'attribution est activée seulement ; sinon refus, avant toute
+  // écriture.
+  function assigneeFor(type, assignEnabled, listId, value) {
+    if (value === undefined) return undefined;
+    if (!usesAssign(type)) throw new OpError(400, ASSIGN_NOT_HERE);
+    if (!assignEnabled) throw new OpError(400, ASSIGN_OFF);
+    if (value === null) return null;
+    const id = typeof value === 'number' || typeof value === 'string' ? parseId(value) : null;
+    if (!id || !q.assignable.get(listId, id)) throw new OpError(400, BAD_ASSIGNEE);
+    return id;
+  }
+
   // La tâche se répète-t-elle en ce moment ? (règle, échéance, liste de
   // tâches dont l'échéance est activée : sinon la règle est gardée, cachée)
   function repeatsNow(item) {
@@ -588,6 +615,8 @@ export function createListService(ctx) {
     dueDate: item.due_date ?? null,
     // Règle de répétition (public/js/repeat.js), ou null
     repeat: item.repeat ?? null,
+    // Personne à qui la tâche est attribuée (identifiant du compte), ou null
+    assignedTo: item.assigned_to ?? null,
     ean: item.ean ?? null,
     // Liste d'envies : lien web et prix indicatif (centimes)
     link: item.link ?? null,
@@ -652,6 +681,8 @@ export function createListService(ctx) {
       // tâches s'en sert ; les autres types les gardent, ignorées)
       priorityEnabled: list.priority_enabled === 1,
       dueEnabled: list.due_enabled === 1,
+      // Attribution des tâches activée (listes de tâches)
+      assignEnabled: list.assign_enabled === 1,
       // « Après l'ajout » : 'quick' (rester sur la liste) ou 'detail' (ouvrir la fiche)
       addMode: list.add_mode === 'detail' ? 'detail' : 'quick',
       // Lien public en cours ({ expiresAt } ou null) : pour le propriétaire seulement
@@ -750,13 +781,14 @@ export function createListService(ctx) {
       // dans « Modifier la liste », comme pour une liste de tâches)
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
+      const assignOn = optionOf(op.assignEnabled, 'Attribution') ?? false;
       const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône du type
       // « Après l'ajout » : sans choix, « Rester sur la liste » pour une liste
       // de courses, « Ouvrir la fiche » pour les autres
       const addMode = addModeOf(op.addMode) ?? (isShoppingList(type) ? 'quick' : 'detail');
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, for_user_id, for_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), icon, addMode, forUserId, forName, now, now);
+      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, icon, add_mode, for_user_id, for_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), Number(assignOn), icon, addMode, forUserId, forName, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       // Le compte bénéficiaire est membre d'office, en « Peut modifier » : il
@@ -791,11 +823,12 @@ export function createListService(ctx) {
       if (op.forUserId !== undefined || op.forName !== undefined) {
         throw new OpError(400, 'La personne à qui la liste est destinée ne change pas.');
       }
-      if ([op.name, op.listType, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
+      if ([op.name, op.listType, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.assignEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
       const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? list.due_enabled === 1;
+      const assignOn = optionOf(op.assignEnabled, 'Attribution') ?? list.assign_enabled === 1;
       const name = op.name === undefined ? list.name : listName(op.name);
       const icon = listIconOf(op.icon) ?? list.icon;
       const addMode = addModeOf(op.addMode) ?? list.add_mode;
@@ -828,8 +861,8 @@ export function createListService(ctx) {
         throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
 
-      db.prepare('UPDATE lists SET name = ?, type = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
-        .run(name, type, categoryId, storeId, Number(priorityOn), Number(dueOn), icon, addMode, nowIso(), list.id);
+      db.prepare('UPDATE lists SET name = ?, type = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, assign_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
+        .run(name, type, categoryId, storeId, Number(priorityOn), Number(dueOn), Number(assignOn), icon, addMode, nowIso(), list.id);
       if (isShoppingList(type) && (storeId !== list.store_id || type !== before)) completeItems(list.id);
       if (type !== before) ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: type });
       changed(list.id);
@@ -909,6 +942,7 @@ export function createListService(ctx) {
       const dueDate = op.dueDate ?? null;
       const repeat = op.repeat ?? null;
       if (repeat !== null && dueDate === null) throw new OpError(400, REPEAT_NEEDS_DUE);
+      const assignedTo = assigneeFor(typeOf(list), list.assign_enabled === 1, list.id, op.assignedTo) ?? null;
       const ean = op.ean === undefined ? null : eanOf(op.ean);
       const link = linkOf(op.link) ?? null;
       const priceCents = priceOf(op.priceCents) ?? null;
@@ -920,13 +954,16 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, user.id, now, now);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, assigned_to, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, assignedTo, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
       news.log(list.id, user.id, 'add', [id]);
+      // Notification : « Léa vous a attribué une tâche » (regroupée avec ses
+      // autres changements de la minute, server/notify.js)
+      if (assignedTo !== null) ctx.notify?.assigned({ listId: list.id, itemId: id, userId: assignedTo, actorId: user.id });
       changed(list.id);
       return { item: describeItem(q.item.get(id)) };
     },
@@ -958,6 +995,9 @@ export function createListService(ctx) {
       // se répète garde toujours une échéance
       const repeat = op.repeat !== undefined ? op.repeat : op.dueDate === null ? null : item.repeat ?? null;
       if (repeat !== null && !dueDate) throw new OpError(400, REPEAT_NEEDS_DUE);
+      // Attribution : vérifiée avant toute écriture (absente : inchangée)
+      const asked = assigneeFor(item.list_type, item.list_assign_enabled === 1, item.list_id, op.assignedTo);
+      const assignedTo = asked === undefined ? item.assigned_to ?? null : asked;
       const name = op.name === undefined ? item.name : itemName(op.name);
       const qty = op.quantity === undefined ? item.quantity : quantity(op.quantity);
       const text = op.note === undefined ? item.note : note(op.note);
@@ -976,11 +1016,11 @@ export function createListService(ctx) {
         const wanted = op.storeId === null ? null : parseId(op.storeId);
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
-      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.assignedTo, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, ean, link, priceCents, nowIso(), item.id);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, assigned_to = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, assignedTo, ean, link, priceCents, nowIso(), item.id);
 
       // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {
@@ -990,6 +1030,11 @@ export function createListService(ctx) {
         remember(name, { storeId: item.list_store_id, aisleId, count: 0 });
       }
       news.log(item.list_id, user.id, 'update', [item.id]);
+      // Tâche attribuée à quelqu'un d'autre (pas à soi, pas inchangée) :
+      // « Léa vous a attribué une tâche » (server/notify.js)
+      if (assignedTo !== null && assignedTo !== (item.assigned_to ?? null)) {
+        ctx.notify?.assigned({ listId: item.list_id, itemId: item.id, userId: assignedTo, actorId: user.id });
+      }
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
     },
@@ -1287,6 +1332,11 @@ export function createListService(ctx) {
         news.stopReading(list.id, id);
       }
       for (const [id, value] of changedRights) db.prepare('UPDATE list_members SET access = ? WHERE list_id = ? AND user_id = ?').run(value, list.id, id);
+      // Leurs tâches attribuées reviennent à « Personne » : une personne
+      // retirée ou en lecture seule ne peut plus les faire (ni les cocher)
+      const now = nowIso();
+      for (const id of removed) q.unassign.run(now, list.id, id);
+      for (const [id, value] of changedRights) if (value !== 'modification') q.unassign.run(now, list.id, id);
       // La liste « change » : les membres l'apprendront à leur synchronisation
       // (et chacun son droit, dans la description de la liste)
       if (added.length || removed.length || changedRights.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
@@ -1374,6 +1424,8 @@ export function createListService(ctx) {
     db.transaction(() => {
       db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, user.id);
       news.stopReading(list.id, user.id);
+      // Ses tâches attribuées reviennent à « Personne »
+      q.unassign.run(nowIso(), list.id, user.id);
       db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
@@ -1404,9 +1456,9 @@ export function createListService(ctx) {
     const now = nowIso();
     const items = withItems ? q.liveItems.all(source.id) : [];
     db.transaction(() => {
-      db.prepare(`INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, icon, add_mode, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, title, typeOf(source), source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.icon, source.add_mode, now, now);
+      db.prepare(`INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, icon, add_mode, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, typeOf(source), source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.assign_enabled ?? 0, source.icon, source.add_mode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, repeat, ean, created_by, created_at, updated_at)

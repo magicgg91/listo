@@ -540,6 +540,18 @@ export const MIGRATIONS = [
   `
   ALTER TABLE items ADD COLUMN repeat TEXT CHECK (repeat IS NULL OR length(repeat) BETWEEN 1 AND 20);
   `,
+
+  // --- Migration 25 : attribuer une tâche (11 novembre 2026) ---
+  // lists.assign_enabled : option « Attribution » de la liste (listes de
+  // tâches ; désactivée au départ, comme la priorité et l'échéance).
+  // items.assigned_to : la personne à qui la tâche est attribuée (le
+  // propriétaire ou un membre « Peut modifier »), ou vide. Effacée quand la
+  // personne quitte la liste, en est retirée ou passe en lecture seule
+  // (server/lists.js), ou si son compte est supprimé (ON DELETE SET NULL).
+  `
+  ALTER TABLE lists ADD COLUMN assign_enabled INTEGER NOT NULL DEFAULT 0 CHECK (assign_enabled IN (0, 1));
+  ALTER TABLE items ADD COLUMN assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL;
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

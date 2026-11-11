@@ -102,7 +102,7 @@ function createTabBar() {
 
   // Pastille d'« Échéances »
   const drawBadge = () => {
-    const count = app.data.loaded ? deadlineBadge(app.data) : 0;
+    const count = app.data.loaded ? deadlineBadge(app.data, undefined, app.user?.id ?? null) : 0;
     badge.hidden = count === 0;
     badge.textContent = count > 99 ? '99+' : String(count);
     buttons.get('deadlines').setAttribute('aria-label', deadlinesLabel(count));

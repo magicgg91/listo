@@ -379,6 +379,15 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     7. VoiceOver / TalkBack : les jours sont lus en entier (« lundi, bouton, sélectionné ») ; la ligne lit « se répète : chaque lundi et mercredi ».
     8. Fiche d'un élément sur iPhone (Safari et application installée) : glisser le doigt de gauche à droite et de droite à gauche : rien ne bouge de côté ; seul le défilement de haut en bas marche. Les champs, la croix et la disquette restent entiers à l'écran.
 
+48. **Attribuer une tâche** (11 novembre 2026 ; vérifié dans Chromium, téléphone 320 et 390 px, clair et sombre, et ordinateur : interrupteur « Attribution », champ « Pour », pastilles, tri « Par personne », « Toutes / Les miennes », pastille d'« Échéances », libellé « Modifications ») ; deux comptes A et B sur deux téléphones, une liste de tâches de A partagée avec B en « Peut modifier » et avec C en « Lecture seule » :
+    1. A active « Attribution » dans « Modifier la liste ». Fiche d'une tâche : « Pour » ouvre la liste de choix du téléphone (« Personne », « Moi », B ; jamais C).
+    2. A attribue une tâche à B : sur le téléphone de B, la pastille « Moi » (bleue) apparaît en quelques secondes ; avec les notifications activées, B reçoit « A vous a attribué une tâche dans « … » » environ une minute plus tard (le détail, s'il est activé, donne le nom).
+    3. « Trier la liste », « Par personne » : « Moi », puis les autres, puis « Personne » ; chaque groupe se replie.
+    4. « Échéances » : « Toutes » / « Les miennes » ; le choix reste après avoir fermé Listo. Le nombre sur « Échéances » ne compte pas les tâches de l'autre.
+    5. A passe B en « Lecture seule » : les tâches de B reviennent à « Personne » sur les deux téléphones.
+    6. Le lien public de la liste ne montre jamais à qui sont les tâches.
+    7. Réglages › Notifications : la catégorie s'appelle « Modifications ».
+
 ## API des comptes (étape 2)
 
 | Route | Rôle |

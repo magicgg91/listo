@@ -12,7 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
-import { isListType, isShoppingList, usesPriority, usesDue } from './list-types.js';
+import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
 import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -212,6 +212,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         canEdit: true, // le propriétaire a tous les droits
         priorityEnabled: op.priorityEnabled === true, // désactivées sauf demande
         dueEnabled: op.dueEnabled === true,
+        assignEnabled: op.assignEnabled === true,
         addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(isShoppingList(type)),
         members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
@@ -245,6 +246,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       }
       if (typeof op.priorityEnabled === 'boolean') next.priorityEnabled = op.priorityEnabled;
       if (typeof op.dueEnabled === 'boolean') next.dueEnabled = op.dueEnabled;
+      if (typeof op.assignEnabled === 'boolean') next.assignEnabled = op.assignEnabled;
       if (ADD_MODES.includes(op.addMode)) next.addMode = op.addMode;
       state.lists.set(list.id, next);
       return;
@@ -293,7 +295,10 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         ean: op.ean ?? null, // code-barres (listes de courses), déjà normalisé
         link: op.link ?? null, // lien web (listes d'envies)
         priceCents: op.priceCents ?? null, // prix indicatif (listes d'envies)
+        priority: op.priority ?? 'normal', // priorité et échéance dès l'ajout (comme le serveur)
+        dueDate: op.dueDate ?? null,
         repeat: op.repeat ?? null, // répétition (listes de tâches, repeat.js)
+        assignedTo: op.assignedTo ?? null, // personne à qui la tâche est attribuée
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -308,7 +313,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
       // Effacer l'échéance arrête la répétition (même règle que le serveur)
       if (op.dueDate === null && op.repeat === undefined) next.repeat = null;
       state.items.set(item.id, next);
@@ -509,6 +514,7 @@ export const FOLDED_PREFIX = 'listo-groupes-replies-';
 export function groupKey(group) {
   if (group.all) return 'tous';
   if (group.priority) return `p:${group.priority}`;
+  if ('person' in group) return `u:${group.person ?? 'aucun'}`;
   if ('store' in group) return `s:${group.store?.id ?? 'aucun'}`;
   return `a:${group.aisle?.id ?? 'aucun'}`;
 }
@@ -521,6 +527,8 @@ export function possibleGroupKeys(state) {
     ...state.aisles.map((aisle) => `a:${aisle.id}`), 'a:aucun',
     ...state.stores.map((store) => `s:${store.id}`), 's:aucun',
     'p:high', 'p:normal', 'p:low', 'tous',
+    // Par personne : les membres de mes listes, et « Personne »
+    ...[...state.lists.values()].flatMap((list) => (list.members ?? []).map((m) => `u:${m.id}`)), 'u:aucun',
   ]);
 }
 
@@ -654,8 +662,21 @@ export function listOptions(list) {
   return {
     priority: Boolean(list) && usesPriority(list) && list.priorityEnabled !== false,
     due: Boolean(list) && usesDue(list) && list.dueEnabled !== false,
+    // Attribution (11 novembre 2026) : activée seulement si le réglage le dit
+    // (une copie d'avant ce réglage, sans valeur : désactivée)
+    assign: Boolean(list) && usesAssign(list) && list.assignEnabled === true,
   };
 }
+
+// Personnes à qui on peut attribuer une tâche de cette liste : le
+// propriétaire et les membres « Peut modifier », comptes actifs (le serveur
+// revérifie) ; prénom en ordre alphabétique, « Moi » à part dans l'écran
+export const assignablePeople = (list) => (list?.members ?? [])
+  .filter((m) => m.active !== false && (m.isOwner || m.access === 'modification'))
+  .sort((a, b) => compareNames(a.displayName, b.displayName));
+
+// Prénom des membres d'une liste (Map identifiant -> prénom)
+export const memberNames = (list) => new Map((list?.members ?? []).map((m) => [m.id, m.displayName]));
 
 // Interrupteur « Priorité » du formulaire de liste, à l'ouverture :
 // - nouvelle liste, quel que soit son type (liste d'envies comprise) :
@@ -676,7 +697,7 @@ export function priorityAtStart(list) {
 export function availableSorts(list) {
   if (isShoppingList(list)) return ['aisle', 'alpha'];
   const options = listOptions(list);
-  return ['alpha', 'priority', 'due'].filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due));
+  return ['alpha', 'priority', 'due', 'person'].filter((sort) => sort === 'alpha' || (sort === 'priority' && options.priority) || (sort === 'due' && options.due) || (sort === 'person' && options.assign));
 }
 export const defaultSort = (list) => availableSorts(list)[0];
 
@@ -713,12 +734,12 @@ export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
 // sort : tri choisi sur ce téléphone (voir availableSorts ; sans choix, le
 // tri par défaut de la liste). Liste de courses en ordre alphabétique : un
 // seul groupe « À acheter » (group.all).
-export function computeListView(state, listId, { sort = null } = {}) {
+export function computeListView(state, listId, { sort = null, me = null } = {}) {
   const list = state.lists.get(listId);
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort) });
+  const { groups, done } = splitDone(items, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort), people: memberNames(list), me });
   return {
     list,
     multi,

@@ -19,7 +19,7 @@
 //   décochés seulement avec « Signaler les éléments cochés ». Rien pour une
 //   liste en sourdine, ni quand « Nouveautés » est désactivé.
 // - Notifications push : chaque écriture du journal est aussi passée à
-//   server/notify.js (catégorie « modifications des autres »).
+//   server/notify.js (catégorie « Modifications »).
 // - Confidentialité : seuls les membres reçoivent les nouveautés d'une liste
 //   (et le nom des auteurs) ; le lien public n'en reçoit rien.
 

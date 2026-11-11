@@ -105,7 +105,7 @@ test('descriptions et instructions : ce que Claude peut faire, exactement ; read
   assert.match(byName.add_items.description, /priority \(low, normal ou high\) pour une liste de tâches ou d'envies dont la priorité est activée ; due_date \(date AAAA-MM-JJ, sans heure\) pour une liste de tâches dont l'échéance est activée/);
   assert.match(byName.add_items.description, /l'appel entier est refusé et rien n'est ajouté/);
   assert.match(byName.add_items.description, /déjà dans la liste sans être coché \(il n'est pas modifié\)/);
-  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'repeat', 'aisle', 'store']);
+  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'repeat', 'assigned_to', 'aisle', 'store']);
   // Plus d'outil set_item_options : update_items fait la même chose en plus large
   assert.equal(byName.set_item_options, undefined);
   assert.deepEqual(byName.update_items.inputSchema.properties.items.items.properties.priority.enum, ['low', 'normal', 'high']);

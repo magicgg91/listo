@@ -821,11 +821,23 @@ export function renderList(listId, onLeave) {
     event.preventDefault();
     addTyped(input.value);
   });
+  // Téléphone : pendant qu'on écrit dans le champ d'ajout, la loupe se cache
+  // et la barre prend toute la largeur (on voit mieux ce qu'on tape) ; elle
+  // revient quand le champ n'a plus le curseur (décision du 11 novembre 2026)
+  const setTyping = (typing) => {
+    if (pc) return;
+    loupeDock.hidden = typing;
+    addbar.classList.toggle('addbar--with-loupe', !typing);
+  };
   input.addEventListener('input', drawSuggestions);
-  input.addEventListener('focus', drawSuggestions);
+  input.addEventListener('focus', () => {
+    setTyping(true);
+    drawSuggestions();
+  });
   // Champ quitté : la liste se ferme, mais jamais pendant qu'un doigt est
   // posé dessus (elle se fermera au relâchement si le champ n'a plus le curseur)
   input.addEventListener('blur', () => setTimeout(() => {
+    if (document.activeElement !== input) setTyping(false);
     if (document.activeElement !== input && !taps.pressing) suggestBox.hidden = true;
   }, 150));
 

@@ -215,3 +215,10 @@ test('boutons arrondis (16.16) : tous les boutons en pilule, ni les champs ni le
   assert.match(rule, /^\.btn, \.btn--icon, \.icon-btn, \.item__actions \.icon-btn,\s*\.segmented, \.segmented__opt, \.duration__opt, \.cart__action, \.fold-all \{ border-radius: var\(--radius-pill\); \}$/);
   assert.doesNotMatch(rule, /\.input|\.choice__opt|\.icon-grid__opt|\.searchfield|\.card|\.glass|backdrop/);
 });
+
+test('liste (téléphone) : pendant la saisie dans le champ d\'ajout, la loupe se cache et la barre prend toute la largeur', () => {
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /const setTyping = \(typing\) => \{\s*if \(pc\) return;\s*loupeDock\.hidden = typing;\s*addbar\.classList\.toggle\('addbar--with-loupe', !typing\);\s*\};/);
+  assert.match(list, /input\.addEventListener\('focus', \(\) => \{\s*setTyping\(true\);/);
+  assert.match(list, /if \(document\.activeElement !== input\) setTyping\(false\);/);
+});

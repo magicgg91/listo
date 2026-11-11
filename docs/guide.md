@@ -611,7 +611,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.7 Rechercher
 
-- Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre.
+- Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre. Pendant que vous écrivez dans le champ d'ajout d'une liste, la loupe se cache pour lui laisser la place.
 - Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d'ajout se cache pendant la recherche.
 - Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.
 - Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.

@@ -420,6 +420,26 @@ export function saveListSort(sort, storage = () => globalThis.localStorage) {
   }
 }
 
+// --- Filtre des types de « Mes listes » (téléphone) : le dernier choisi
+// est retenu sur ce téléphone (décision du 11 novembre 2026). 'all'
+// (Toutes) par défaut ; toute autre valeur inconnue y retombe.
+export const TYPE_FILTER_KEY = 'listo-type-listes';
+export const typeFilterFrom = (value) => (value === 'all' || isListType(value) ? value : 'all');
+export function loadTypeFilter(storage = () => globalThis.localStorage) {
+  try {
+    return typeFilterFrom(storage().getItem(TYPE_FILTER_KEY));
+  } catch {
+    return 'all';
+  }
+}
+export function saveTypeFilter(value, storage = () => globalThis.localStorage) {
+  try {
+    storage().setItem(TYPE_FILTER_KEY, typeFilterFrom(value));
+  } catch {
+    // sans importance : le choix vaut pour cette visite
+  }
+}
+
 // --- Tri d'une liste (choix gardé sur ce téléphone, pour chaque liste :
 // clé listo-tri-liste-<identifiant>). Sans choix gardé (null), la liste a
 // son tri par défaut (defaultSort) : par rayon pour une liste de courses,

@@ -15,6 +15,8 @@ import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
 import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
+import { renderDeadlines } from './screens/deadlines.js';
+import { tabBar, hasTabs } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -40,6 +42,7 @@ export const app = {
   data: emptyState(),    // copie des listes, articles, rayons… (store.js)
   route: null,
   afterLogin: null,      // écran demandé avant la connexion
+  openItem: null,        // { listId, itemId } : fiche à ouvrir en arrivant dans la liste (Échéances)
 };
 
 // Abonnements aux changements de données (les écrans se redessinent)
@@ -547,8 +550,11 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
+  const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
   const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}` : 'shell__col' });
   setOverlayHost(col);
+  // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
+  if (bar) tabBar().loupe.set(null);
   const content = typeof screen === 'function' ? screen((fn) => cleanup.push(fn)) : screen;
   replace(col, content);
   currentCol = col;
@@ -559,6 +565,14 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   if (pc) {
     replace(root, h('div', { class: 'pc pc--a' }, pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
     return;
+  }
+  // Téléphone : bandeau du bas sur « Mes listes », « Échéances » et
+  // « Réglages » (tabbar.js), toujours le même élément, posé en bas de la
+  // colonne (au-dessus de l'écran, sous les fenêtres)
+  if (bar) {
+    col.classList.add('shell__col--tabs');
+    col.append(tabBar().el);
+    tabBar().select(app.route.name);
   }
   dropPcSide();
   replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
@@ -599,6 +613,7 @@ function show(route) {
 
   switch (name) {
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
+    case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
     // l'écran en cours (ou sur « Mes listes », sur la liste à modifier)

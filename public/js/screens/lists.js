@@ -1,6 +1,6 @@
-// Écran « Mes listes » (maquettes mes-listes-1 à 3 ; ordinateur :
-// design/maquettes/pc-A, capture 01) : une carte par liste, la plus
-// récemment active en premier, et le bouton « Nouvelle liste ».
+// Écran « Mes listes » (maquettes mes-listes-1 à 3, refaites le 11 novembre
+// 2026 ; ordinateur : design/maquettes/pc-A, capture 01) : une carte par
+// liste, la plus récemment active en premier, et « Nouvelle liste ».
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
@@ -9,11 +9,12 @@ import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList, listSortButton, newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
-import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge } from '../store.js';
+import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge, loadTypeFilter, saveTypeFilter } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, offlineBanner } from '../ui.js';
 import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
+import { tabBar } from '../tabbar.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
@@ -164,43 +165,82 @@ function sortControl(onChange) {
 }
 
 // --- Écran « Mes listes » (téléphone) ---
+// Barre du haut : titre, pastille d'état, tri, et « + » (Nouvelle liste).
+// Dessous : le filtre des types (Toutes, Courses, Tâches, Envies), en
+// verre, retenu sur ce téléphone. Recherche : la loupe ronde du bandeau du
+// bas ouvre le champ à la place du filtre (search-row.js) ; elle cherche dans
+// le type choisi. Sous « Toutes », les listes restent mélangées dans l'ordre
+// du tri (décisions du 11 novembre 2026).
+
+// Filtre des types : un choix exclusif (radiogroup), du kit (.segmented)
+function typeFilter(current, onPick) {
+  const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
+  const buttons = filters.map(([value, label]) => h('button', {
+    class: 'segmented__opt',
+    type: 'button',
+    role: 'radio',
+    'data-value': value,
+    onClick: () => onPick(value),
+  }, label));
+  const bar = h('div', { class: 'segmented glass', role: 'radiogroup', 'aria-label': 'Afficher' }, buttons);
+  const mark = (value) => {
+    for (const button of buttons) button.setAttribute('aria-checked', String(button.dataset.value === value));
+  };
+  mark(current);
+  return { el: h('div', { class: 'typebar' }, bar), mark };
+}
+
+// Aucune liste du type choisi
+const noListOfType = () => h('div', { class: 'empty' },
+  h('h2', { class: 'empty__title' }, 'Aucune liste de ce type'),
+  h('p', { class: 'empty__text' }, 'Choisissez « Toutes » pour voir toutes vos listes.'));
 
 export function renderLists(onLeave) {
   if (isDesktop()) return renderListsPc(onLeave);
   const content = h('div', { class: 'scroll' });
   const sorter = sortControl(() => draw());
-  const fab = h('button', { class: 'fab', type: 'button', onClick: () => navigate('newList') }, icon('plus'), 'Nouvelle liste');
+  let type = loadTypeFilter();
+  const filter = typeFilter(type, (value) => {
+    type = value;
+    saveTypeFilter(value);
+    filter.mark(value);
+    content.scrollTop = 0;
+    draw();
+  });
 
-  // Recherche des listes (design/recherche) : champ masqué au-dessus des
-  // cartes, révélé en tirant vers le bas, comme dans une liste (aucune
-  // loupe, barre du haut inchangée). Sur le titre seulement, listes
-  // partagées avec moi comprises ; vue locale, vidée en quittant l'écran.
-  // Nombre de listes trouvées, sous le champ (annoncé) ; vide hors recherche
+  // Nombre de listes trouvées, au-dessus des résultats (annoncé) ; vide hors recherche
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, {
     label: 'Rechercher une liste',
     onChange: () => draw(),
-    onActive: (active) => { fab.hidden = active; }, // « Nouvelle liste » masqué pendant la recherche
     status: searchMeta,
+    // Recherche ouverte : le champ prend la place du filtre
+    onOpen: (open) => {
+      filter.el.hidden = open;
+      tabBar().loupe.sync();
+    },
   });
+  tabBar().loupe.set(search.loupe);
 
   const draw = () => {
     if (!app.data.loaded) {
-      search.show(loading(), { available: false });
-      return;
-    }
-    const lists = computeSummaries(app.data, { sort: currentSort() });
-    sorter.setCount(lists.length);
-    pruneListMemory(lists.map((list) => list.id)); // tri et groupes repliés des listes disparues : oubliés
-    if (!lists.length) {
       searchMeta.textContent = '';
-      search.show(emptyLists(), { available: false }); // rien à chercher
+      search.show(loading());
       return;
     }
+    const all = computeSummaries(app.data, { sort: currentSort() });
+    sorter.setCount(all.length);
+    pruneListMemory(all.map((list) => list.id)); // tri et groupes repliés des listes disparues : oubliés
+    if (!all.length) {
+      searchMeta.textContent = '';
+      search.show(emptyLists());
+      return;
+    }
+    const lists = all.filter((list) => type === 'all' || typeOf(list) === type);
     const query = search.value;
     if (!isSearching(query)) {
       searchMeta.textContent = '';
-      search.show(h('div', { class: 'cards' }, lists.map((list) => listCard(list))));
+      search.show(lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : noListOfType());
       return;
     }
     const found = filterLists(lists, query);
@@ -214,7 +254,7 @@ export function renderLists(onLeave) {
   const noLists = (query) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
     h('h2', { class: 'empty__title' }, 'Aucun résultat'),
-    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} ».`),
+    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} »${type === 'all' ? '' : ` dans « ${TYPE_LABELS[type]} »`}.`),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',
@@ -230,15 +270,16 @@ export function renderLists(onLeave) {
 
   return h('div', { class: 'screen' },
     // Barre du haut sur une ligne : titre, pastille d'état (réduite à
-    // l'icône si la place manque), tri des listes, réglages
+    // l'icône si la place manque), tri des listes, « + » (Nouvelle liste)
     h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Mes listes')),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
       sorter.button,
-      iconButton('sliders', 'Réglages', () => navigate('settings'))),
+      iconButton('plus', 'Nouvelle liste', () => navigate('newList'), 'icon-btn--accent')),
     sorter.status,
-    content,
-    fab);
+    filter.el,
+    search.bar,
+    content);
 }
 
 // --- Écran « Mes listes » (ordinateur, design/maquettes/pc-A, capture 01) ---

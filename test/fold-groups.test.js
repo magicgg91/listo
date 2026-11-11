@@ -178,7 +178,7 @@ test('« Tout replier / Tout déplier » : au moins deux groupes, zone des coch�
   assert.match(list, /anyOpen \? 'Tout replier' : 'Tout déplier'/);
   assert.match(list, /const open = !foldables\.some\(\(f\) => f\.isOpen\(\)\);\s*for \(const f of foldables\) f\.setOpen\(open\);/);
   assert.match(list, /if \(!inSearch\) foldables\.push\(foldable\); \/\/ « Tout replier » la replie aussi/);
-  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), searchMeta, foldAll\)/);
+  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\);/);
 });
 
 test('ajout dans un groupe replié : le groupe se déplie (toutes les listes)', () => {

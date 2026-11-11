@@ -66,6 +66,7 @@ import { openSharePanel } from './share-panel.js';
 import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
 import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
+import { loupeButton } from '../tabbar.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 
 export function renderList(listId, onLeave) {
@@ -114,29 +115,37 @@ export function renderList(listId, onLeave) {
     row.querySelector('.item__news')?.remove();
   }
 
-  // --- Recherche dans la liste (design/recherche, variante B) ---
-  // Champ masqué au-dessus du premier groupe, révélé en tirant la liste vers
-  // le bas (search-row.js). Sur le nom des articles seulement, jamais la
-  // note ; une simple vue sur la copie locale : ni données, ni synchro, ni
-  // file d'attente touchées, hors ligne compris, lecture seule comprise. Le
-  // texte cherché n'appartient qu'à cet écran : changer de liste ou quitter
-  // l'écran le vide.
+  // --- Recherche dans la liste (design/recherche) ---
+  // Téléphone : la loupe ronde en bas à droite ouvre le champ sous le titre,
+  // à la place de la ligne « À jour · Tout replier » ; la barre d'ajout se
+  // cache pendant la recherche (décisions du 11 novembre 2026). Ordinateur :
+  // champ toujours visible dans l'en-tête. Sur le nom des articles
+  // seulement, jamais la note ; une simple vue sur la copie locale : ni
+  // données, ni synchro, ni file d'attente touchées, hors ligne compris,
+  // lecture seule comprise. Le texte cherché n'appartient qu'à cet écran :
+  // changer de liste, quitter l'écran ou refermer la recherche le vide.
+  // Nombre de résultats (annoncé aux lecteurs d'écran) : à droite de
+  // l'indicateur de synchro sur ordinateur, au-dessus des résultats sur le
+  // téléphone ; vide hors recherche
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const statusbar = h('div', { class: 'statusbar' });
+  const loupe = pc ? null : loupeButton();
   const search = createSearchRow(content, {
     label: 'Rechercher dans la liste',
-    // Ordinateur : champ toujours visible dans l'en-tête
     docked: pc,
     placeholder: pc ? 'Rechercher' : 'Rechercher dans la liste',
+    status: pc ? null : searchMeta,
     onChange: () => draw(),
-    // Champ utilisé : « Tout replier » masqué ; barre d'ajout masquée tant
-    // que le curseur est dans le champ (clavier ouvert)
-    onActive: () => {
-      drawFoldAll();
+    // Champ utilisé : « Tout replier » masqué
+    onActive: () => drawFoldAll(),
+    // Téléphone : recherche ouverte ou refermée
+    onOpen: (open) => {
+      statusbar.hidden = open;
+      loupe.sync();
       showAddbar();
     },
   });
-  // Nombre de résultats, à droite de l'indicateur de synchro (annoncé aux
-  // lecteurs d'écran) ; vide hors recherche
-  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  loupe?.set(search.loupe);
   const searching = () => isSearching(search.value);
   // Nom d'un article, le texte trouvé dans <mark class="hit"> (texte simple,
   // jamais de HTML)
@@ -318,10 +327,10 @@ export function renderList(listId, onLeave) {
       }, 'Effacer la recherche'));
   }
 
-  // Barre d'ajout : jamais en lecture seule ; masquée tant que le curseur
-  // est dans le champ de recherche (clavier ouvert pour chercher)
+  // Barre d'ajout : jamais en lecture seule ; masquée pendant la recherche
+  // (téléphone : recherche ouverte ; ordinateur : curseur dans le champ)
   function showAddbar() {
-    addbar.hidden = !editable() || search.focused;
+    addbar.hidden = !editable() || (pc ? search.focused : search.open);
   }
 
   // --- Dessin de la liste ---
@@ -346,8 +355,7 @@ export function renderList(listId, onLeave) {
   const drawList = () => {
     // Groupes repliables du nouveau dessin. « Tout replier » n'est recalculé
     // qu'après le dessin : le cacher un instant au début changeait la hauteur
-    // de la zone qui défile pendant le dessin (12 px), et la liste pouvait
-    // redescendre et laisser voir le bas du champ de recherche masqué.
+    // de la zone qui défile pendant le dessin (12 px), et la liste sautait.
     foldables = [];
     if (!app.data.loaded) {
       search.show(h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'), { available: false });
@@ -803,6 +811,9 @@ export function renderList(listId, onLeave) {
   }
   // Ordinateur : champ d'ajout en haut de la liste (sous les outils)
   const addbar = h('div', { class: pc ? 'pc-add' : 'addbar' }, suggestBox, addForm, scanner.inputs);
+  // Téléphone : la loupe, en bas à droite (à droite de la barre d'ajout, ou
+  // seule en lecture seule et pendant la recherche)
+  const loupeDock = pc ? null : h('div', { class: 'list-dock' }, loupe.el);
 
   // Touche Entrée : le navigateur « clique » le bouton « + » (ajout ci-dessus,
   // envoi du formulaire annulé) ; ceci n'est qu'un secours, sans doublon
@@ -1833,6 +1844,19 @@ export function renderList(listId, onLeave) {
   draw();
   refreshData({ quiet: true }); // actualisation à l'ouverture
 
+  // Arrivée depuis « Échéances » (une tâche touchée) : sa fiche s'ouvre,
+  // une fois l'écran posé ; en lecture seule, la fiche à consulter
+  if (app.openItem?.listId === listId) {
+    const { itemId } = app.openItem;
+    app.openItem = null;
+    requestAnimationFrame(() => {
+      const item = app.data.items.get(itemId);
+      if (!item || !view || item.listId !== listId) return;
+      if (canEditList(view.list)) openItemSheet(item);
+      else openItemView(item);
+    });
+  }
+
   if (pc) {
     readOnlyBanner.classList.add('pc-banner');
     // Touches écrites dans les champs (cachées si les raccourcis à une touche sont désactivés)
@@ -1854,6 +1878,11 @@ export function renderList(listId, onLeave) {
       addbar,
       content);
   }
+  // Téléphone : barre d'ajout en verre, flottante, et loupe ronde à sa
+  // droite (16.15) ; les articles passent dessous
+  replace(statusbar, syncPill(() => refreshData({ full: true })), foldAll);
+  addbar.classList.add('addbar--glass', 'glass', 'addbar--with-loupe');
+  content.classList.add('scroll--under-dock');
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
       iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
@@ -1861,7 +1890,9 @@ export function renderList(listId, onLeave) {
       sortButton,
       menuButton),
     readOnlyBanner,
-    h('div', { class: 'statusbar' }, syncPill(() => refreshData({ full: true })), searchMeta, foldAll),
+    statusbar,
+    search.bar,
     content,
-    addbar);
+    addbar,
+    loupeDock);
 }

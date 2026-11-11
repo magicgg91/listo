@@ -1,8 +1,9 @@
 // Menu de gauche de l'interface ordinateur (design/maquettes/pc-A, à partir
 // de 1 024 px) : marque (lien vers « Mes listes ») et bouton d'aide, champ
-// « Rechercher une liste », listes groupées par type (Courses, Tâches,
-// Envies) avec leur compteur « restants/total », puis « Nouvelle liste »,
-// le compte connecté et « Réglages ».
+// « Rechercher une liste », « Échéances » (avec sa pastille : tâches en
+// retard et du jour), listes groupées par type (Courses, Tâches, Envies)
+// avec leur compteur « restants/total », puis « Nouvelle liste », le compte
+// connecté et « Réglages ».
 //
 // Le menu est créé une fois et gardé d'un écran à l'autre (texte cherché et
 // défilement conservés) ; seule la liste ouverte change (aria-current).
@@ -16,7 +17,9 @@ import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
 import { computeSummaries, loadListSort, newsBadge } from '../store.js';
 import { app, onDataChange } from '../app.js';
-import { drawWhenIdle } from '../ui.js';
+import { drawWhenIdle, watchNewDay } from '../ui.js';
+import { deadlineBadge } from '../deadlines.js';
+import { deadlinesLabel } from '../tabbar.js';
 import { keepFieldFocus } from '../tap.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 import { openShortcuts, keycap } from '../shortcuts.js';
@@ -86,7 +89,28 @@ export function createPcSide() {
     h('span', { class: 'pc-nav__count', role: 'img', 'aria-label': text, title: text }, progressText(list.remaining, list.total))));
   };
 
+  // --- « Échéances » (deadlines.js) : entrée fixe, au-dessus des listes ---
+  const deadlinesCount = h('span', { class: 'news-badge', 'aria-hidden': 'true', hidden: true });
+  const deadlinesLink = h('a', {
+    class: 'pc-nav__item pc-side__deadlines',
+    href: pathFor('deadlines'),
+    onClick: (event) => {
+      event.preventDefault();
+      navigate('deadlines', {}, { replace: selected.name === 'deadlines' });
+    },
+  }, h('span', { class: 'pc-nav__icon' }, icon('calendar', 'icon--sm')), h('span', { class: 'pc-nav__name' }, 'Échéances'), deadlinesCount);
+  const drawDeadlines = () => {
+    const count = app.data.loaded ? deadlineBadge(app.data) : 0;
+    deadlinesCount.hidden = count === 0;
+    deadlinesCount.textContent = count > 99 ? '99+' : String(count);
+    deadlinesLink.setAttribute('aria-label', deadlinesLabel(count));
+    if (selected.name === 'deadlines') deadlinesLink.setAttribute('aria-current', 'page');
+    else deadlinesLink.removeAttribute('aria-current');
+  };
+  const stopDay = watchNewDay(drawDeadlines);
+
   const draw = () => {
+    drawDeadlines();
     if (!app.data.loaded) {
       replace(nav, h('p', { class: 'pc-nav__empty', role: 'status' }, 'Chargement…'));
       return;
@@ -130,6 +154,7 @@ export function createPcSide() {
     }, icon('help'))),
     h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/')),
     status,
+    deadlinesLink,
     nav,
     h('div', { class: 'pc-side__foot' },
       h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), 'Nouvelle liste', keycap('N')),
@@ -157,6 +182,7 @@ export function createPcSide() {
     dispose() {
       unsubscribe();
       idle.stop();
+      stopDay();
     },
   };
 }

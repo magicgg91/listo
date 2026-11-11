@@ -31,9 +31,10 @@ const VERSION_KEY = 'listo-version';
 const isCommit = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
 
 // Barre de titre avec retour (aussi utilisée par account.js)
-export function topbar(title, onBack) {
-  return h('header', { class: 'topbar' },
-    iconButton('chev-l', 'Retour', onBack),
+// onBack absent : pas de bouton Retour (écran du bandeau du bas)
+export function topbar(title, onBack = null) {
+  return h('header', { class: onBack ? 'topbar' : 'topbar topbar--plain' },
+    onBack ? iconButton('chev-l', 'Retour', onBack) : null,
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
@@ -68,7 +69,8 @@ export function renderSettings() {
   }, icon('logout', 'icon--sm'), 'Se déconnecter');
 
   return h('div', { class: 'screen' },
-    topbar('Réglages', () => goBack('lists')),
+    // Écran du bandeau du bas (tabbar.js) : pas de bouton Retour
+    topbar('Réglages'),
     h('div', { class: 'body' },
       // Carte du compte : un bouton sur toute sa surface, qui ouvre « Mon
       // compte » (sécurité, apparence, ce téléphone)

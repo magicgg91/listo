@@ -1,35 +1,33 @@
-// Champ de recherche masqué en haut d'une zone qui défile (design/recherche,
-// variante B) : dans une liste et sur « Mes listes ». Aucune loupe, la barre
-// du haut ne change pas.
+// Champ de recherche d'un écran, en deux façons :
 //
-// - Le champ est le premier élément de la zone .scroll. À l'arrivée sur
-//   l'écran, la zone est défilée de sa hauteur : il est hors de vue et
-//   l'écran est le même qu'avant. On tire la liste vers le bas (ou on
-//   remonte tout en haut) pour le voir.
-// - Jamais de curseur mis tout seul : le clavier ne s'ouvre qu'au toucher
-//   du champ.
-// - Tant qu'il sert (curseur dedans, ou texte tapé), il reste en haut de la
-//   zone, même en faisant défiler les résultats. Vide et sans curseur, il
-//   repart avec le défilement.
-// - Touche « rechercher » du clavier : le clavier se ferme, le texte reste.
-//   La croix (et « Effacer la recherche ») vide le texte et garde le curseur.
-// - Liste courte : une marge invisible en bas permet quand même de défiler
-//   de la hauteur du champ (sans elle, il resterait visible). Elle ne fait
-//   jamais apparaître de bande vide : défilé tout en bas, l'écran montre
-//   exactement la même chose qu'avant.
+// 1. Téléphone (toggled) : ouvert par la loupe ronde en bas à droite
+//    (décision du 11 novembre 2026, sur « Mes listes », « Échéances » et
+//    dans chaque liste). Le champ s'ouvre SOUS LE TITRE, à une place fixe :
+//    il ne bouge pas quand le clavier s'ouvre. La loupe est un geste dont le
+//    seul but est d'écrire : le curseur va dans le champ (exception permise,
+//    voir test/focus.test.js). Pour refermer : la croix du champ, la loupe
+//    retouchée, le bouton Retour du téléphone ou Échap ; le texte est vidé.
+//    La propriété bar est la rangée à poser par l'écran sous son titre.
+// 2. Ordinateur (docked) : le champ est toujours visible, posé par l'écran
+//    dans son en-tête (propriété field) ; Échap le vide puis le quitte.
+//
+// Dans les deux cas : touche « rechercher » du clavier (Entrée) : le clavier
+// se ferme, le texte reste. Les résultats remplacent le contenu de la zone
+// qui défile (show).
 
 import { h, icon } from './dom.js';
 import { keepFieldFocus } from './tap.js';
 import { releaseFocus } from './ui.js';
+import { openOverlay } from './router.js';
 
 // content : la zone .scroll ; label : « Rechercher dans la liste »… ;
 // onChange(texte) : le texte cherché a changé ; onActive(actif) : le champ
-// sert (curseur dedans ou texte tapé) ou ne sert plus ; status : élément
-// gardé juste sous le champ (nombre de résultats annoncé), ou rien.
-// docked (ordinateur) : le champ n'est pas dans la zone qui défile ; il est
-// toujours visible, posé par l'écran dans son en-tête (propriété field), et
-// Échap le vide puis le quitte.
-export function createSearchRow(content, { label, onChange, onActive = () => {}, status = null, docked = false, placeholder = label }) {
+// sert (curseur dedans ou texte tapé) ou ne sert plus ; onOpen(ouvert) :
+// téléphone, la recherche s'ouvre ou se ferme ; status : élément gardé juste
+// au-dessus des résultats (nombre de résultats annoncé), ou rien.
+// docked : ordinateur (voir plus haut) ; sinon, téléphone (loupe).
+export function createSearchRow(content, { label, onChange, onActive = () => {}, onOpen = () => {}, status = null, docked = false, placeholder = label }) {
+  const toggled = !docked;
   const input = h('input', {
     class: 'searchfield__input',
     type: 'search',
@@ -41,20 +39,25 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     placeholder,
     'aria-label': label,
   });
-  // Croix « Effacer la saisie » : un appui ne retire pas le curseur du champ
-  const clearButton = h('button', {
-    class: 'icon-btn',
-    type: 'button',
-    'aria-label': 'Effacer la saisie',
-    hidden: true,
-    onPointerdown: keepFieldFocus.pointerdown,
-    onMousedown: keepFieldFocus.mousedown,
-    onClick: () => clear(),
-  }, icon('x-circle'));
-  const field = h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton);
-  const row = h('div', { class: 'searchrow', hidden: true }, docked ? null : field);
-  // Marge invisible en bas (liste courte), toujours le dernier élément
-  const room = h('div', { class: 'searchroom', 'aria-hidden': 'true' });
+  // Ordinateur : croix « Effacer la saisie » (un appui ne retire pas le
+  // curseur du champ). Téléphone : croix « Fermer la recherche », toujours
+  // là (elle vide le texte et referme).
+  const clearButton = toggled
+    ? h('button', { class: 'icon-btn searchfield__close', type: 'button', 'aria-label': 'Fermer la recherche', onClick: () => close() }, icon('close'))
+    : h('button', {
+      class: 'icon-btn',
+      type: 'button',
+      'aria-label': 'Effacer la saisie',
+      hidden: true,
+      onPointerdown: keepFieldFocus.pointerdown,
+      onMousedown: keepFieldFocus.mousedown,
+      onClick: () => clear(),
+    }, icon('x-circle'));
+  const field = h('label', { class: `searchfield${toggled ? ' searchfield--glass glass' : ''}` }, icon('search', 'icon--sm'), input, clearButton);
+  // Téléphone : rangée à poser sous le titre, cachée tant que la loupe n'a
+  // pas été touchée
+  const barId = `recherche-${Math.random().toString(36).slice(2, 10)}`;
+  const bar = toggled ? h('div', { class: 'searchbar', id: barId, hidden: true }, field) : null;
 
   let active = false;
   let focused = false;
@@ -63,38 +66,38 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
   const updateActive = () => {
     const nowFocused = document.activeElement === input;
     const now = nowFocused || input.value !== '';
-    clearButton.hidden = input.value === '';
+    if (!toggled) clearButton.hidden = input.value === '';
     if (now === active && nowFocused === focused) return;
     active = now;
     focused = nowFocused;
-    row.classList.toggle('searchrow--pinned', now); // reste en haut tant qu'il sert
-    content.classList.toggle('scroll--searching', now);
     onActive(now);
   };
 
   input.addEventListener('input', () => {
     updateActive();
     onChange(input.value);
-    content.scrollTop = 0; // résultats montrés depuis le début, champ compris
+    content.scrollTop = 0; // résultats montrés depuis le début
   });
   input.addEventListener('focus', updateActive);
   input.addEventListener('blur', updateActive);
-  // Touche « rechercher » (Entrée) : ferme le clavier, garde le texte
   input.addEventListener('keydown', (event) => {
-    // Ordinateur : Échap vide le champ, puis (déjà vide) le quitte
-    if (docked && event.key === 'Escape') {
+    if (event.key === 'Escape') {
       event.preventDefault();
-      if (input.value !== '') clear();
+      // Téléphone : Échap referme. Ordinateur : vide le champ, puis (déjà
+      // vide) le quitte.
+      if (toggled) close();
+      else if (input.value !== '') clear();
       else releaseFocus();
       return;
     }
+    // Touche « rechercher » (Entrée) : ferme le clavier, garde le texte
     if (event.key !== 'Enter') return;
     event.preventDefault();
     releaseFocus();
   });
 
   // Vide la recherche ; le curseur reste là où il était (dans le champ s'il y
-  // était : la croix et « Effacer la recherche » ne le lui retirent pas)
+  // était : « Effacer la recherche » ne le lui retire pas)
   function clear() {
     if (input.value === '') return;
     input.value = '';
@@ -103,40 +106,43 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     content.scrollTop = 0;
   }
 
-  // Hauteur de la marge du bas : juste de quoi défiler de la hauteur du champ
-  function updateRoom() {
-    if (row.hidden || docked) {
-      room.style.height = '0px';
-      return;
-    }
-    // Hauteur de tout ce qui précède la marge, plus l'espace du bas de la
-    // zone (scrollHeight ne convient pas : il ne descend jamais sous la
-    // hauteur visible)
-    const top = room.getBoundingClientRect().top - content.getBoundingClientRect().top + content.scrollTop;
-    const others = top + (parseFloat(getComputedStyle(content).paddingBottom) || 0);
-    const missing = content.clientHeight + row.offsetHeight - others;
-    room.style.height = `${Math.max(0, Math.ceil(missing))}px`;
+  // --- Téléphone : ouvrir et refermer ---
+  let isOpen = false;
+  let closeOverlay = null;
+  // Referme sans toucher à l'historique (bouton Retour, changement d'écran)
+  function hide() {
+    if (!isOpen) return;
+    isOpen = false;
+    closeOverlay = null;
+    if (document.activeElement === input) input.blur(); // clavier replié
+    bar.hidden = true;
+    clear();
+    updateActive();
+    onOpen(false);
   }
-  // Clavier ouvert ou fermé, rotation : la zone change de hauteur
-  if (typeof ResizeObserver === 'function') new ResizeObserver(updateRoom).observe(content);
-
-  // Le champ est masqué une seule fois, à l'arrivée sur l'écran (dès que la
-  // zone est affichée avec quelque chose à chercher)
-  let hiddenOnce = false;
-  function hideOnce() {
-    if (hiddenOnce || row.hidden || docked) return;
-    if (!content.isConnected) {
-      requestAnimationFrame(hideOnce); // écran pas encore posé
-      return;
-    }
-    hiddenOnce = true;
-    updateRoom();
-    content.scrollTop = row.offsetHeight;
+  // Loupe touchée : la rangée apparaît sous le titre et le curseur va dans
+  // le champ (geste dont le but est d'écrire). Le bouton Retour du téléphone
+  // la referme, comme une fenêtre.
+  function open() {
+    if (!toggled || isOpen) return;
+    isOpen = true;
+    bar.hidden = false;
+    closeOverlay = openOverlay(hide);
+    onOpen(true);
+    input.focus();
+  }
+  function close() {
+    if (!isOpen) return;
+    const done = closeOverlay;
+    if (done) done(); // appelle hide() et retire l'entrée de l'historique
+    else hide();
   }
 
   return {
     // Le champ (ordinateur : à poser dans l'en-tête de l'écran)
     field,
+    // Téléphone : la rangée du champ, à poser sous le titre
+    bar,
     // Le texte cherché
     get value() { return input.value; },
     // Le champ sert : curseur dedans ou texte tapé
@@ -144,30 +150,18 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     // Curseur dans le champ (clavier ouvert sur un téléphone)
     get focused() { return document.activeElement === input; },
     clear,
+    // Téléphone : recherche ouverte, ouvrir, refermer, basculer (loupe)
+    get open() { return isOpen; },
+    openSearch: open,
+    close,
+    // Ce qu'attend la loupe (tabbar.js) : libellé, état, bascule
+    loupe: { label, controls: barId, isOpen: () => isOpen, toggle: () => (isOpen ? close() : open()) },
     // Boutons qui vident la recherche sans retirer le curseur du champ
     keepFocus: keepFieldFocus,
-    // Remplace le contenu de la zone (le champ reste en tête, avec sa saisie
-    // et son curseur ; la marge reste à la fin). available : faux quand il
-    // n'y a rien à chercher (chargement, liste vide ou introuvable).
-    show(nodes, { available = true } = {}) {
-      // Ordinateur : le champ reste dans l'en-tête ; la zone ne montre que
-      // le contenu (et l'élément d'état, s'il y en a un)
-      if (docked) {
-        content.replaceChildren(...[status, nodes].flat(Infinity).filter((node) => node !== null && node !== undefined && node !== false));
-        return;
-      }
-      row.hidden = !available;
-      // Le champ (et l'élément gardé sous lui) restent en place, sans être
-      // déplacés : la saisie, le curseur et les annonces ne sont pas perdus.
-      // Tout ce qui les suit est retiré, puis remplacé.
-      const head = status ?? row;
-      if (row.parentNode !== content) content.prepend(row);
-      if (status && status.previousSibling !== row) row.after(status);
-      while (head.nextSibling) head.nextSibling.remove();
-      while (content.firstChild !== row) content.firstChild.remove();
-      content.append(...[nodes].flat(Infinity).filter((node) => node !== null && node !== undefined && node !== false), room);
-      updateRoom();
-      if (available) hideOnce();
+    // Remplace le contenu de la zone qui défile. status (s'il y en a un)
+    // reste en tête, sans être recréé (annonces non perdues).
+    show(nodes) {
+      content.replaceChildren(...[status, nodes].flat(Infinity).filter((node) => node !== null && node !== undefined && node !== false));
     },
   };
 }

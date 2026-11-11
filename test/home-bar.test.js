@@ -1,5 +1,6 @@
 // Accueil « Mes listes » : une seule barre du haut (titre, pastille d'état,
-// tri des listes, réglages) ; la pastille se réduit à l'icône quand la place
+// tri des listes, « + » Nouvelle liste ; Réglages est dans le bandeau du
+// bas depuis le 11 novembre 2026) ; la pastille se réduit à l'icône quand la place
 // manque, sans jamais cacher son texte aux lecteurs d'écran. (Rendu réel :
 // vérifié dans un vrai navigateur, à 360, 390 et 430 px, texte à 130 %.)
 
@@ -11,14 +12,15 @@ const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const lists = read('public/js/screens/lists.js');
 const ui = read('public/js/ui.js');
 
-test('barre de l\'accueil : titre, pastille, tri, réglages, sur une ligne ; plus de ligne d\'état dessous', () => {
+test('barre de l\'accueil : titre, pastille, tri, « + », sur une ligne ; plus de ligne d\'état dessous', () => {
   const screen = lists.slice(lists.indexOf('export function renderLists'), lists.indexOf('// --- Colonne de gauche'));
   const bar = screen.slice(screen.indexOf("h('header', { class: 'topbar topbar--plain topbar--status' }"));
-  const order = ["h('h1', { class: 'topbar__title' }, 'Mes listes')", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('sliders', 'Réglages'"];
+  const order = ["h('h1', { class: 'topbar__title' }, 'Mes listes')", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', 'Nouvelle liste', () => navigate('newList'), 'icon-btn--accent')"];
   const at = order.map((text) => bar.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(at[i] >= 0, text);
   assert.deepEqual([...at].sort((a, b) => a - b), at, 'ordre de la barre');
   assert.equal(screen.includes("class: 'statusbar'"), false, 'la ligne sous la barre a disparu');
+  assert.equal(screen.includes("'Réglages'"), false, 'Réglages : dans le bandeau du bas');
 });
 
 test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seulement si la place manque', () => {
@@ -44,7 +46,8 @@ test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seuleme
 
 test('écran d\'une liste : pastille laissée sous la barre (le titre y perdrait la moitié de sa place)', () => {
   const list = read('public/js/screens/list.js');
-  // (à droite, « Tout replier / Tout déplier » quand la liste a des groupes,
-  // ou le nombre de résultats pendant une recherche)
-  assert.match(list, /h\('div', \{ class: 'statusbar' \}, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), searchMeta, foldAll\)/);
+  // (à droite, « Tout replier / Tout déplier » quand la liste a des groupes ;
+  // la recherche ouverte prend la place de cette ligne)
+  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\);/);
+  assert.match(list, /statusbar\.hidden = open;/);
 });

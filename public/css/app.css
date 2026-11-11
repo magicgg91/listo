@@ -81,6 +81,11 @@ html, body { background: var(--color-bg); }
    marges que sans zone de sécurité ; elles reviennent à la fermeture du
    clavier. */
 html[data-keyboard] .addbar { padding-bottom: 12px; }
+/* Barre d'ajout en verre et loupe d'une liste (16.15) : flottantes, posées
+   à 12 px du bas ; clavier ouvert, sans la marge de sécurité */
+html[data-keyboard] .addbar--glass { bottom: 12px; }
+html[data-keyboard] .addbar.addbar--glass { padding-bottom: 5px; }
+html[data-keyboard] .list-dock { bottom: 12px; }
 html[data-keyboard] .sheet,
 html[data-keyboard] .footer { padding-bottom: var(--space-3); }
 html[data-keyboard] .body:last-child,
@@ -449,15 +454,7 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .app .searchfield__input:focus-visible { outline: none; }
 .searchfield__input::-webkit-search-cancel-button, .searchfield__input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
 .searchfield > .icon { flex: none; }
-.searchrow { flex: none; }
-/* Champ utilisé (curseur dedans ou texte tapé) : il reste en haut de la
-   zone pendant qu'on fait défiler les résultats ; les en-têtes collants des
-   groupes se posent juste dessous */
-.searchrow--pinned { position: sticky; top: 0; z-index: 3; background: var(--color-bg); }
-.scroll--searching .aisle { top: calc(var(--tap) + var(--space-1)); }
-/* Marge invisible du bas (liste courte) : de quoi masquer le champ */
-.searchroom { flex: none; }
-/* « Mes listes » : nombre de listes trouvées, sous le champ */
+/* Nombre de résultats, en tête des résultats */
 .scroll > .search-meta { flex: none; padding: 0 var(--space-2) var(--space-1); }
 .scroll > .search-meta:empty { padding: 0; }
 
@@ -507,3 +504,10 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .trash__row { flex-wrap: wrap; }
 .trash__row .row__body { flex: 1 1 calc(100% - 64px); min-width: 0; }
 .trash__row .btn { margin-left: auto; }
+
+/* Bandeau du bas du téléphone (tabbar.js, section 16.15 de listo.css) : posé
+   en bas de la colonne. Ce qui défile garde une marge pour passer dessous ;
+   « Se déconnecter » (Réglages) reste juste au-dessus. */
+.shell__col--tabs > .screen > .scroll, .shell__col--tabs > .screen > .body:last-child { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.shell__col--tabs > .screen > .footer { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); border-top: 0; background: transparent; }
+.shell__col--tabs .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }

@@ -525,6 +525,7 @@ export const GUIDE = [
         blocks: [{ ul: [
           'Touchez l\'en-tête d\'un rayon (ou d\'un magasin, ou d\'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.',
           '« Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).',
+          'Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n\'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.',
           'Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.',
           'Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité » et « Par échéance », selon les options de la liste.',
           'Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.',
@@ -535,13 +536,28 @@ export const GUIDE = [
         id: 'recherche',
         title: 'Rechercher',
         blocks: [{ ul: [
-          'Dans une liste, tirez la liste vers le bas (ou remontez tout en haut) : le champ « Rechercher dans la liste » apparaît au-dessus du premier groupe. Il cherche dans le nom des articles, pas dans les notes.',
-          'Sur « Mes listes », de la même façon, le champ « Rechercher une liste » cherche dans le titre des listes, celles partagées avec vous comprises.',
+          'Touchez la loupe ronde, en bas à droite : le champ s\'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s\'ouvre.',
+          'Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d\'ajout se cache pendant la recherche.',
+          'Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.',
+          'Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.',
           'Majuscules et accents ne comptent pas : “eclair” trouve “Éclair”. Le texte trouvé est surligné, et le nombre de résultats s\'affiche.',
           'Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.',
-          'La touche “rechercher” du clavier ferme le clavier et garde la recherche ; la croix ou « Effacer la recherche » la vide. Changer de liste ou quitter l\'écran la vide aussi.',
+          'La touche “rechercher” du clavier ferme le clavier et garde la recherche ; « Effacer la recherche » la vide. Pour refermer : la croix du champ, la loupe retouchée ou le bouton Retour du téléphone. Changer de liste ou quitter l\'écran la vide aussi.',
           'La recherche ne change rien à la liste ni pour les autres. Elle marche hors ligne, et aussi en lecture seule.',
         ] }],
+      },
+      {
+        id: 'echeances',
+        title: 'Se déplacer, Échéances',
+        blocks: [
+          'Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, à sa droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».',
+          { ul: [
+            '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
+            'Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet. Touchez la ligne pour ouvrir la tâche dans sa liste.',
+            'Le nombre sur « Échéances » compte les tâches en retard et celles du jour.',
+            'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
+          ] },
+        ],
       },
       {
         id: 'reserver',
@@ -590,7 +606,7 @@ export const GUIDE = [
         blocks: [
           'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
           { ul: [
-            'À gauche, le menu : vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Rechercher une liste », « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».',
+            'À gauche, le menu : « Rechercher une liste », « Échéances », vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».',
             'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent ; sur un écran tactile, ils restent affichés.',
             'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
             '« Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.',
@@ -765,7 +781,7 @@ export const GUIDE = [
         id: 'creer',
         title: 'Propriétaire : créer une liste',
         blocks: [
-          'Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.',
+          'Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.',
           { ul: [
             'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
             'Liste de tâches : « Options des éléments » active la priorité et l\'échéance.',

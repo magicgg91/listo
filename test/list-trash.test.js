@@ -283,7 +283,7 @@ test('hors ligne : « Restaurer » inactif avec une phrase ; pas de restauration
   // Aucune opération « restaurer » dans la file d'attente (/api/ops)
   assert.doesNotMatch(read('server/lists.js'), /'list\.restore'/);
   assert.match(read('public/js/router.js'), /\{ name: 'trash', path: '\/reglages\/corbeille' \}/);
-  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée \(30 jours\)', onClick: \(\) => navigate\('trash'\) \}\)/);
+  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: 'Corbeille des listes', onClick: \(\) => navigate\('trash'\) \}\)/);
   assert.match(read('public/sw.js'), /'\/js\/screens\/trash\.js',/);
   assert.match(read('public/sw.js'), /const VERSION = `v(6[3-9]|[7-9]\d|\d{3,})-/);
 });

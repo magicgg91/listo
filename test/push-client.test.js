@@ -115,7 +115,7 @@ test('écran Notifications : états expliqués en clair, interrupteur accessible
   assert.match(screen, /role: 'status'/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(/);
   const settings = read('public/js/screens/settings.js');
-  assert.equal(settings.match(/notificationsRow\(\)/g).length, 3, 'téléphone, ordinateur, définition');
+  assert.equal(settings.match(/notificationsRow\(\)/g).length, 2, 'generalRows (téléphone et ordinateur), définition');
   assert.match(read('public/js/router.js'), /\{ name: 'notifications', path: '\/reglages\/notifications' \}/);
   const sw = read('public/sw.js');
   assert.match(sw, /'\/js\/push\.js',/);
@@ -147,6 +147,6 @@ test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) e
   assert.match(menu, /label: 'Afficher les nouveautés de cette liste'/);
   assert.doesNotMatch(menu, /'Silencer cette liste'|'Ne plus me signaler cette liste'|'Signaler cette liste'/);
   assert.match(screen, /'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste »\.'/);
-  assert.match(read('public/js/screens/settings.js'), /title: 'Notifications', sub: 'Nouveautés et notifications'/);
+  assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: 'Notifications', onClick: \(\) => navigate\('notifications'\) \}\)/);
   assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d)-/);
 });

@@ -76,7 +76,7 @@ async function render(t, section) {
 const toggles = (screen) => screen.findAll((n) => hasClass(n, 'aisle__toggle'));
 
 test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; « Connexions Claude » renvoie au chapitre Claude', () => {
-  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'book', title: 'Aide', sub: 'Mode d\\'emploi de Listo', onClick: \(\) => navigate\('help'\) \}\)/);
+  assert.match(code('public/js/screens/settings.js'), /const helpRow = \(\) => row\(\{ iconName: 'book', title: 'Aide', onClick: \(\) => navigate\('help'\) \}\);/);
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
   assert.deepEqual(matchRoute('#/aide/sauvegardes'), { name: 'helpSection', params: { section: 'sauvegardes' } });
   assert.ok(ROUTES.some((r) => r.name === 'help' && r.path === '/aide'));

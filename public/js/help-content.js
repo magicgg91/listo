@@ -671,7 +671,7 @@ export const GUIDE = [
               ['S', 'Aller au sommaire de l\'aide'],
             ],
           } },
-          'Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
+          'Les raccourcis à une touche se désactivent dans Réglages, « Général », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.',
           { sub: 'Annuler (Ctrl+Z)' },
           'Ctrl+Z annule, dans la liste ouverte, les dernières actions faites sur cet ordinateur (20 au plus par liste, oubliées si la page est rechargée) : supprimer un article, le cocher ou le décocher, le modifier. Cela marche aussi hors ligne : l\'annulation part avec le reste au retour du réseau. Si quelqu\'un a changé l\'article entre-temps, rien n\'est écrasé : « Modifié entre-temps : rien n\'est annulé ».',
           'Ne s\'annulent pas par Ctrl+Z : un ajout (supprimez l\'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d\'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.',
@@ -1197,7 +1197,7 @@ export const GUIDE = [
         id: 'version',
         title: 'Savoir qu\'une nouvelle version existe',
         blocks: [
-          'Dans Réglages › « À propos », sur la ligne de la version, l\'Admin voit l\'état de la vérification :',
+          'Dans Réglages, la ligne « À propos » montre la version installée, ou la pastille « Mise à jour » quand une version plus récente existe. Touchez-la : sur la page « À propos », à la ligne de la version, l\'Admin voit l\'état de la vérification :',
           { ul: [
             '« À jour » : l\'image installée est la dernière construite ;',
             '“Vérifié il y a 15 min”, avec une pastille « Nouvelle version » suivie de son numéro (par exemple “Nouvelle version : 9f8e7d6”) : une image plus récente existe ; pour la prendre : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#mises-a-jour) ;',

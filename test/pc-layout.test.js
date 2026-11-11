@@ -205,16 +205,19 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
   const pc = settings.slice(settings.indexOf('function renderSettingsPc'), settings.indexOf('export function keysRow'));
   const code = settings.replace(/\/\/.*$/gm, ''); // sans les commentaires
-  // Ordre des cartes : Compte, Clavier, Administration (Admin), Notifications, Listes, Aide, À propos
+  // Ordre des cartes (rangement allégé du 11 novembre 2026) : Compte,
+  // Général (« Raccourcis à une touche » d'abord, puis les lignes du
+  // téléphone), Informations (Aide, Raccourcis clavier, À propos)
   const order = [...pc.matchAll(/section\('([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(order, ['Compte', 'Clavier', 'Administration', 'Notifications', 'Listes', 'Aide', 'À propos']);
-  assert.match(pc, /section\('Clavier', h\('div', \{ class: 'group' \}, keysRow\(\)\)\),/);
-  assert.match(pc, /isAdmin \? section\('Administration',/);
-  assert.match(pc, /title: 'Raccourcis clavier'/);
-  // Même libellé que le téléphone pour l'aide ; pas de phrase sous « Administration » (décisions du 10 novembre 2026)
-  const helpRow = "row({ iconName: 'book', title: 'Aide', sub: 'Mode d\\'emploi de Listo', onClick: () => navigate('help') })";
-  assert.ok(pc.includes(helpRow), 'ordinateur : « Aide »');
-  assert.ok(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')).includes(helpRow), 'téléphone : la même ligne');
+  assert.deepEqual(order, ['Compte', 'Général', 'Informations']);
+  assert.match(pc, /section\('Général', h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(pc, /section\('Informations', h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: 'Raccourcis clavier'/);
+  assert.match(pc, /aboutRow\(isAdmin\)/);
+  // Mêmes lignes que le téléphone (une seule définition)
+  const phone = code.slice(code.indexOf('export function renderSettings'), code.indexOf('function generalRows'));
+  assert.match(phone, /h\('div', \{ class: 'group' \}, generalRows\(isAdmin\)\),/);
+  assert.match(phone, /h\('div', \{ class: 'group' \}, helpRow\(\), aboutRow\(isAdmin\)\)/);
+  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: 'Administration', onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
   assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
   // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
   assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);

@@ -16,6 +16,7 @@ export const ROUTES = [
   { name: 'list', path: '/listes/:id' },
   { name: 'settings', path: '/reglages' },
   { name: 'account', path: '/reglages/compte' },
+  { name: 'about', path: '/reglages/a-propos' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   // Corbeille des listes : mes listes supprimées depuis moins de 30 jours

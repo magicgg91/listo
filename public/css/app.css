@@ -137,6 +137,14 @@ button.sync { cursor: pointer; }
 .share { overflow: hidden; }
 .share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
 
+/* Réglages : valeur à droite d'une ligne (« Version 536d95c » sur « À propos »),
+   avant le chevron
+   (sur un petit écran, c'est la valeur qui se réduit, jamais le titre) */
+.row__end { display: flex; flex: 0 1 auto; min-width: 0; align-items: center; gap: var(--space-1); }
+.row__end > .icon { flex: none; }
+.row__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-text-2); font-size: var(--text-sm); white-space: nowrap; }
+.row:has(> .row__end) .row__title { white-space: nowrap; }
+
 /* « Mon compte » : « Se déconnecter » tout en bas, séparé des blocs */
 .account__logout { margin: var(--space-3) var(--space-2) 0; }
 .app--pc .account__logout .btn { width: auto; }

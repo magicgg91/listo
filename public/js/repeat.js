@@ -10,6 +10,10 @@
 //                  à partir de celle de l'échéance)
 //   'month:5'      le 5 de chaque mois (1 à 31 ; un jour qui n'existe pas
 //                  dans le mois devient son dernier jour)
+//   'monthw:1:1'   le 1er lundi de chaque mois : rang (1 à 4, ou -1 : le
+//                  dernier) puis jour de la semaine (1 = lundi … 7 =
+//                  dimanche) ; 'monthw:-1:5' : le dernier vendredi
+//                  (décision du 11 novembre 2026)
 //   'year'         chaque année, le même jour et le même mois que l'échéance
 //                  (un 29 février devient le 28 les autres années)
 //
@@ -80,19 +84,37 @@ export function parseRepeat(rule) {
   }
   const month = /^month:([1-9]|[12]\d|3[01])$/.exec(rule);
   if (month) return { kind: 'month', monthDay: Number(month[1]) };
+  const monthWeek = /^monthw:([1-4]|-1):([1-7])$/.exec(rule);
+  if (monthWeek) return { kind: 'month', nth: Number(monthWeek[1]), weekday: Number(monthWeek[2]) };
   return null;
+}
+
+// Rangs proposés pour « le … lundi du mois » : [rang, libellé]
+export const MONTH_WEEKS = [[1, '1er'], [2, '2e'], [3, '3e'], [4, '4e'], [-1, 'dernier']];
+
+// Rang d'une date dans son mois, pour proposer « le même » par défaut :
+// 1 à 4, ou -1 (le dernier) pour un 5e jour de la semaine du mois
+export function monthWeekOf(key) {
+  const d = Number(key.slice(8));
+  const rank = Math.ceil(d / 7);
+  return rank > 4 ? -1 : rank;
 }
 
 export const isRepeatRule = (rule) => parseRepeat(rule) !== null;
 
 // Fabrique une règle à partir du choix de l'écran
-export function makeRepeat(kind, { days = [], monthDay = 1 } = {}) {
+// Chaque mois : le jour donné (monthDay), ou, avec nth et weekday, « le 1er
+// lundi », « le dernier vendredi »…
+export function makeRepeat(kind, { days = [], monthDay = 1, nth = null, weekday = null } = {}) {
   if (kind === 'day' || kind === 'year') return kind;
   if (kind === 'week' || kind === '2week') {
     const list = [...new Set(days)].filter((d) => d >= 1 && d <= 7).sort((a, b) => a - b);
     return list.length ? `${kind}:${list.join(',')}` : null;
   }
-  if (kind === 'month') return `month:${Math.min(31, Math.max(1, Math.trunc(monthDay)))}`;
+  if (kind === 'month') {
+    if ((nth >= 1 && nth <= 4) || nth === -1) return weekday >= 1 && weekday <= 7 ? `monthw:${nth}:${weekday}` : null;
+    return `month:${Math.min(31, Math.max(1, Math.trunc(monthDay)))}`;
+  }
   return null;
 }
 
@@ -105,6 +127,11 @@ export function isOccurrence(rule, key, anchor = key) {
   if (r.kind === 'week') return r.days.includes(weekdayOf(key));
   if (r.kind === '2week') return r.days.includes(weekdayOf(key)) && Math.abs(weekIndex(key) - weekIndex(anchor)) % 2 === 0;
   const [y, m, d] = key.split('-').map(Number);
+  if (r.kind === 'month' && r.nth) {
+    // Le n-ième (ou le dernier) jour de la semaine voulu du mois
+    if (weekdayOf(key) !== r.weekday) return false;
+    return r.nth === -1 ? d + 7 > daysInMonth(y, m) : Math.ceil(d / 7) === r.nth;
+  }
   if (r.kind === 'month') return d === Math.min(r.monthDay, daysInMonth(y, m));
   // Chaque année : même jour et même mois que l'ancre (29 février → 28)
   const [, am, ad] = anchor.split('-').map(Number);
@@ -138,6 +165,7 @@ export function nextDue(rule, dueDate, today) {
 
 const dayName = (d) => WEEKDAYS.find(([n]) => n === d)[2];
 const shortDay = (d) => WEEKDAYS.find(([n]) => n === d)[1];
+const monthWeekLabel = (nth) => MONTH_WEEKS.find(([n]) => n === nth)[1];
 const andList = (words) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} et ${words.at(-1)}`);
 
 // Phrase sous le choix (fiche) : « Chaque lundi et mercredi »,
@@ -147,6 +175,7 @@ export function repeatSentence(rule) {
   if (!r) return '';
   if (r.kind === 'day') return 'Chaque jour';
   if (r.kind === 'year') return 'Chaque année';
+  if (r.kind === 'month' && r.nth) return `Le ${monthWeekLabel(r.nth)} ${dayName(r.weekday)} de chaque mois`;
   if (r.kind === 'month') return `Le ${r.monthDay === 1 ? '1er' : r.monthDay} de chaque mois${r.monthDay > 28 ? ' (ou le dernier jour du mois)' : ''}`;
   const names = r.days.map(dayName);
   if (r.kind === 'week') return r.days.length === 7 ? 'Chaque jour' : `Chaque ${andList(names)}`;
@@ -160,6 +189,7 @@ export function repeatChip(rule) {
   if (!r) return '';
   if (r.kind === 'day') return 'Chaque jour';
   if (r.kind === 'year') return 'Chaque année';
+  if (r.kind === 'month' && r.nth) return `${r.nth === -1 ? 'Dernier' : monthWeekLabel(r.nth)} ${shortDay(r.weekday)}`;
   if (r.kind === 'month') return `Le ${r.monthDay === 1 ? '1er' : r.monthDay}`;
   const days = r.days.map(shortDay).join(', ');
   return r.kind === 'week' ? (r.days.length === 7 ? 'Chaque jour' : days) : `2 sem. · ${days}`;

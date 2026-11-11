@@ -148,5 +148,5 @@ test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) e
   assert.doesNotMatch(menu, /'Silencer cette liste'|'Ne plus me signaler cette liste'|'Signaler cette liste'/);
   assert.match(screen, /'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste »\.'/);
   assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: 'Notifications', onClick: \(\) => navigate\('notifications'\) \}\)/);
-  assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d)-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d|\d{3,})-/);
 });

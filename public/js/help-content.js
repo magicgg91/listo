@@ -506,6 +506,7 @@ export const GUIDE = [
           { ul: [
             'Chaque semaine, ou toutes les 2 semaines : touchez les jours voulus (Lu, Ma, Me, Je, Ve, Sa, Di), au moins un. Par exemple, lundi et jeudi pour sortir les poubelles.',
             'Chaque mois : choisissez le jour (le 5 de chaque mois). Le 31 tombe le dernier jour des mois plus courts.',
+            'Ou, avec « Un jour de la semaine » : le 1er, 2e, 3e, 4e ou dernier lundi, mardi… du mois (“Le 1er lundi de chaque mois”, “Le dernier vendredi de chaque mois”). Au départ, Listo propose celui de l\'échéance.',
             'Chaque année : le même jour et le même mois que l\'échéance.',
             'Une phrase sous le choix résume la règle, par exemple : Chaque lundi et jeudi. Si la tâche n\'a pas encore d\'échéance, Listo pose la première date tout seul.',
             'Sur la ligne, une pastille montre la répétition (par exemple ↻ Lu, Je).',
@@ -993,7 +994,7 @@ export const GUIDE = [
             'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
             'Heure et rappel ([[heure]]) : “Dentiste jeudi à 14 h, rappelle-le une heure avant.” “Plus de rappel pour le dentiste.”',
             'Attribuer ([[attribuer]]) : “Donne la tâche ampoule à Léa.” “Qu\'est-ce que j\'ai à faire cette semaine ?”',
-            'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
+            'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
             'Ranger : “Range le lait au rayon crèmerie.”',
           ] },

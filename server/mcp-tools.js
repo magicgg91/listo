@@ -76,31 +76,46 @@ export function clip(value, max) {
 // l'échéance (sinon d'aujourd'hui) ; échéance posée si elle manque.
 const REPEAT_EVERY = { day: 'day', week: 'week', '2weeks': '2week', month: 'month', year: 'year' };
 const WEEKDAY_NAMES = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+// « Le 1er lundi du mois » : rang dans le mois (dernier : -1)
+const MONTH_WEEK_NAMES = { first: 1, second: 2, third: 3, fourth: 4, last: -1 };
 const REPEAT_SCHEMA = {
   type: 'object',
-  description: 'Répétition (listes de tâches dont l\'échéance est activée). every : day (chaque jour), week (chaque semaine), 2weeks (toutes les 2 semaines), month (chaque mois) ou year (chaque année, même jour et même mois que l\'échéance). weekdays (avec week ou 2weeks) : jours, en anglais ; sans lui, le jour de l\'échéance. month_day (avec month) : 1 à 31 (un jour absent du mois devient son dernier jour) ; sans lui, le jour de l\'échéance. Sans due_date, l\'échéance est posée sur la prochaine date de la règle (à partir d\'aujourd\'hui), ou gardée si elle tombe déjà sur la règle.',
+  description: 'Répétition (listes de tâches dont l\'échéance est activée). every : day (chaque jour), week (chaque semaine), 2weeks (toutes les 2 semaines), month (chaque mois) ou year (chaque année, même jour et même mois que l\'échéance). weekdays (avec week ou 2weeks) : jours, en anglais ; sans lui, le jour de l\'échéance. month_day (avec month) : 1 à 31 (un jour absent du mois devient son dernier jour) ; sans lui, le jour de l\'échéance. Ou month_week (avec month) : first, second, third, fourth ou last, avec weekdays (un seul jour) : par exemple { every: "month", month_week: "first", weekdays: ["monday"] } pour le 1er lundi de chaque mois, { every: "month", month_week: "last", weekdays: ["friday"] } pour le dernier vendredi ; sans weekdays, le jour de la semaine de l\'échéance. Sans due_date, l\'échéance est posée sur la prochaine date de la règle (à partir d\'aujourd\'hui), ou gardée si elle tombe déjà sur la règle.',
   properties: {
     every: { type: 'string', enum: Object.keys(REPEAT_EVERY) },
     weekdays: { type: 'array', minItems: 1, maxItems: 7, items: { type: 'string', enum: WEEKDAY_NAMES } },
     month_day: { type: 'integer', minimum: 1, maximum: 31 },
+    month_week: { type: 'string', enum: Object.keys(MONTH_WEEK_NAMES) },
   },
   required: ['every'],
   additionalProperties: false,
 };
 
 // Vérifie la forme demandée : null (ne plus répéter), ou
-// { kind, days, monthDay } (days et monthDay : null si non donnés).
+// { kind, days, monthDay, nth } (days, monthDay et nth : null si non donnés ;
+// nth : rang de « le 1er lundi », avec un seul jour dans days).
 // Une forme invalide lance une ParamsError (rien n'est écrit).
 function repeatSpec(value) {
   if (value === null) return null;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ParamsError('repeat : objet { every, weekdays?, month_day? } ou null attendu.');
-  const extra = Object.keys(value).filter((key) => !['every', 'weekdays', 'month_day'].includes(key));
-  if (extra.length) throw new ParamsError(`repeat : champ inconnu ${extra[0].slice(0, 50)} (seuls every, weekdays et month_day sont acceptés).`);
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ParamsError('repeat : objet { every, weekdays?, month_day?, month_week? } ou null attendu.');
+  const extra = Object.keys(value).filter((key) => !['every', 'weekdays', 'month_day', 'month_week'].includes(key));
+  if (extra.length) throw new ParamsError(`repeat : champ inconnu ${extra[0].slice(0, 50)} (seuls every, weekdays, month_day et month_week sont acceptés).`);
   const kind = typeof value.every === 'string' && Object.hasOwn(REPEAT_EVERY, value.every) ? REPEAT_EVERY[value.every] : null;
   if (!kind) throw new ParamsError('repeat.every : day, week, 2weeks, month ou year attendu.');
+  let nth = null;
+  if (value.month_week !== undefined) {
+    if (kind !== 'month') throw new ParamsError('repeat.month_week : seulement avec every month.');
+    if (typeof value.month_week !== 'string' || !Object.hasOwn(MONTH_WEEK_NAMES, value.month_week)) throw new ParamsError('repeat.month_week : first, second, third, fourth ou last attendu.');
+    if (value.month_day !== undefined) throw new ParamsError('repeat : month_day ou month_week, pas les deux.');
+    nth = MONTH_WEEK_NAMES[value.month_week];
+  }
   let days = null;
   if (value.weekdays !== undefined) {
-    if (kind !== 'week' && kind !== '2week') throw new ParamsError('repeat.weekdays : seulement avec every week ou 2weeks.');
+    if (kind === 'month' && nth !== null) {
+      if (!Array.isArray(value.weekdays) || value.weekdays.length !== 1 || !WEEKDAY_NAMES.includes(value.weekdays[0])) {
+        throw new ParamsError('repeat.weekdays : avec month_week, un seul jour parmi monday, tuesday, wednesday, thursday, friday, saturday, sunday.');
+      }
+    } else if (kind !== 'week' && kind !== '2week') throw new ParamsError('repeat.weekdays : seulement avec every week ou 2weeks (ou month avec month_week).');
     if (!Array.isArray(value.weekdays) || value.weekdays.length < 1 || value.weekdays.length > 7 || !value.weekdays.every((day) => WEEKDAY_NAMES.includes(day))) {
       throw new ParamsError('repeat.weekdays : 1 à 7 jours parmi monday, tuesday, wednesday, thursday, friday, saturday, sunday.');
     }
@@ -112,7 +127,7 @@ function repeatSpec(value) {
     if (!Number.isInteger(value.month_day) || value.month_day < 1 || value.month_day > 31) throw new ParamsError('repeat.month_day : nombre entier de 1 à 31.');
     monthDay = value.month_day;
   }
-  return { kind, days, monthDay };
+  return { kind, days, monthDay, nth };
 }
 
 // Règle et échéance obtenues, comme dans la fiche : échéance donnée par
@@ -122,7 +137,8 @@ function repeatSpec(value) {
 // partir de lui)
 function placeRepeat(spec, { givenDue, currentDue, today }) {
   const base = givenDue ?? currentDue ?? today;
-  const rule = makeRepeat(spec.kind, { days: spec.days ?? [weekdayOf(base)], monthDay: spec.monthDay ?? Number(base.slice(8)) });
+  const byWeek = spec.kind === 'month' && spec.nth ? { nth: spec.nth, weekday: spec.days?.[0] ?? weekdayOf(base) } : {};
+  const rule = makeRepeat(spec.kind, { days: spec.days ?? [weekdayOf(base)], monthDay: spec.monthDay ?? Number(base.slice(8)), ...byWeek });
   if (givenDue) return { rule, dueDate: givenDue };
   if (currentDue && isOccurrence(rule, currentDue, currentDue)) return { rule, dueDate: currentDue };
   return { rule, dueDate: firstOccurrence(spec.kind === '2week' ? rule.replace('2week', 'week') : rule, today) };

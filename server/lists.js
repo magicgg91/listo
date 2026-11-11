@@ -100,7 +100,7 @@ export const REPEAT_NEEDS_DUE = "Une tâche qui se répète a besoin d'une éch�
 export const BAD_NEXT_DUE = 'Date suivante invalide.';
 
 // Date du jour sur le serveur (AAAA-MM-JJ, fuseau du serveur : variable TZ)
-const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+export const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 // LA règle de la priorité et de l'échéance d'un élément, partagée par
 // l'application (opérations item.create et item.update) et par la connexion
@@ -245,6 +245,7 @@ export function checkItemEdit(type, enabled, op) {
     if (error) return { error };
     if (op.priority !== undefined) fields.priority = op.priority;
     if (op.dueDate !== undefined) fields.dueDate = op.dueDate;
+    if (op.repeat !== undefined) fields.repeat = op.repeat;
     return { fields };
   } catch (err) {
     if (err instanceof OpError) return { error: err.message };
@@ -1010,7 +1011,7 @@ export function createListService(ctx) {
         const proposed = op.nextDue;
         const next = proposed !== undefined && proposed > item.due_date && isOccurrence(item.repeat, proposed, item.due_date)
           ? proposed
-          : nextDue(item.repeat, item.due_date, serverToday());
+          : nextDue(item.repeat, item.due_date, serverToday(new Date(ctx.now())));
         db.prepare('UPDATE items SET due_date = ?, checked = 0, checked_at = NULL, updated_at = ? WHERE id = ?').run(next, nowIso(), item.id);
         news.log(item.list_id, user.id, 'check', [item.id]);
         changed(item.list_id);

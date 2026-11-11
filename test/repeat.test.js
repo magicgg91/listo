@@ -13,12 +13,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { REPEAT_NOT_HERE, REPEAT_OFF, BAD_REPEAT, REPEAT_NEEDS_DUE, BAD_NEXT_DUE } from '../server/lists.js';
+import { REPEAT_NOT_HERE, REPEAT_OFF, BAD_REPEAT, REPEAT_NEEDS_DUE, BAD_NEXT_DUE, BAD_DUE, serverToday } from '../server/lists.js';
 import {
   parseRepeat, isRepeatRule, makeRepeat, isOccurrence, occurrenceAfter, firstOccurrence, nextDue,
   weekdayOf, repeatSentence, repeatChip, REPEAT_RULE_MAX,
 } from '../public/js/repeat.js';
-import { todayKey, publicItemDetails } from '../public/js/format.js';
+import { publicItemDetails } from '../public/js/format.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
@@ -235,11 +235,12 @@ test('cocher une tâche qui se répète : elle revient décochée à la date pro
   // Lecture seule : refusé
   assert.equal((await op(h.paul, { type: 'item.check', itemId: h.ids.bins, checked: true })).status, 403);
   assert.deepEqual(h.row(h.ids.bins), before);
-  // Échéance en retard : la suivante après aujourd'hui (date du serveur)
+  // Échéance en retard : la suivante après aujourd'hui (date du serveur,
+  // ici son horloge de test : vendredi 16 octobre 2026)
   await op(h.guillaume, { type: 'item.update', itemId: h.ids.bins, dueDate: '2020-01-06', repeat: 'week:1' });
   const late = await op(h.guillaume, { type: 'item.check', itemId: h.ids.bins, checked: true });
-  assert.equal(late.repeated, nextDue('week:1', '2020-01-06', todayKey()));
-  assert.ok(late.repeated > todayKey(), 'jamais déjà en retard');
+  assert.equal(serverToday(new Date(h.app.clock.now)), '2026-10-16');
+  assert.equal(late.repeated, '2026-10-19', 'le lundi qui suit, jamais déjà en retard');
   // Option « Échéance » désactivée ensuite : la tâche se coche normalement
   await op(h.guillaume, { type: 'list.update', listId: h.ids.tasks, dueEnabled: false });
   const off = await op(h.guillaume, { type: 'item.check', itemId: h.ids.bins, checked: true, nextDue: '2099-01-05' });
@@ -359,4 +360,88 @@ test('écran : « Se répète » seulement avec l\'échéance, règle avec la da
   // Aucun curseur posé par la fiche ou par « Passer cette fois »
   const sheet = list.slice(list.indexOf('// --- Se répète'), list.indexOf('const repeatField'));
   assert.doesNotMatch(sheet, /\.focus\(/);
+});
+
+test('Claude : add_items crée une tâche qui se répète (échéance posée comme dans la fiche) ; refus de tout l\'appel sinon', async (t) => {
+  const h = await mcpHousehold(t); // horloge du serveur de test : vendredi 16 octobre 2026
+  const c = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
+  const rowOf = (name) => h.app.db.prepare('SELECT due_date, repeat FROM items WHERE name = ? AND deleted_at IS NULL').get(name);
+  const count = () => h.app.db.prepare('SELECT COUNT(*) FROM items').pluck().get();
+  const res = data(await c.tool('add_items', { list_id: h.ids.maison, items: [
+    { name: 'Poubelles', repeat: { every: 'week', weekdays: ['monday', 'thursday'] } },
+    { name: 'Loyer', due_date: '2026-11-05', repeat: { every: 'month' } },
+    { name: 'Anniversaire de Léa', repeat: { every: 'year' } },
+    { name: 'Arroser', repeat: { every: '2weeks', weekdays: ['sunday'] } },
+    { name: 'Vider le lave-vaisselle' },
+  ] }));
+  assert.equal(res.created, 5);
+  const [bins, rent, birthday, water, plain] = res.results;
+  assert.deepEqual([bins.due_date, bins.repeat], ['2026-10-19', 'Chaque lundi et jeudi'], 'sans échéance : le prochain lundi ou jeudi');
+  assert.deepEqual([rent.due_date, rent.repeat], ['2026-11-05', 'Le 5 de chaque mois'], 'échéance donnée gardée ; jour du mois pris d\'elle');
+  assert.deepEqual([birthday.due_date, birthday.repeat], ['2026-10-16', 'Chaque année']);
+  assert.deepEqual([water.due_date, water.repeat], ['2026-10-18', 'Toutes les 2 semaines, le dimanche']);
+  assert.ok(!('repeat' in plain) && !('due_date' in plain), 'sans répétition : réponse inchangée');
+  assert.deepEqual(rowOf('Poubelles'), { due_date: '2026-10-19', repeat: 'week:1,4' });
+  assert.deepEqual(rowOf('Loyer'), { due_date: '2026-11-05', repeat: 'month:5' });
+  // Refus : l'appel entier, rien n'est ajouté (règle de l'application)
+  const before = count();
+  const toolError = (r) => r.body.result?.isError ? r.body.result.content[0].text : null;
+  assert.equal(toolError(await c.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Lait', repeat: { every: 'week' } }] })), REPEAT_NOT_HERE);
+  assert.equal(toolError(await c.tool('add_items', { list_id: h.ids.secret, items: [{ name: 'Clé', repeat: { every: 'day' } }] })), REPEAT_OFF);
+  assert.equal(toolError(await c.tool('add_items', { list_id: h.ids.maison, items: [{ name: 'Bien', repeat: { every: 'day' } }, { name: 'Mal', due_date: '2026-02-30', repeat: { every: 'day' } }] })), BAD_DUE);
+  assert.equal(rowOf('Bien'), undefined, 'rien n\'est ajouté');
+  // Forme invalide : paramètres refusés (-32602)
+  for (const repeat of ['week', { every: 'weekly' }, { every: 'month', weekdays: ['monday'] }, { every: 'week', month_day: 5 }, { every: 'month', month_day: 32 },
+    { every: 'month', month_day: 1.5 }, { every: 'week', weekdays: ['lundi'] }, { every: 'week', weekdays: [] }, { every: 'day', at: '8h' }, [], null]) {
+    const r = await c.tool('add_items', { list_id: h.ids.maison, items: [{ name: 'Essai', repeat }] });
+    if (repeat === null) {
+      assert.equal(r.body.result?.isError ?? false, false, 'null : pas de répétition');
+      continue;
+    }
+    assert.equal(r.body.error?.code, -32602, JSON.stringify(repeat));
+  }
+  assert.equal(count(), before + 1, 'seul l\'essai sans répétition (null) a été ajouté');
+  assert.equal(rowOf('Essai').repeat, null);
+});
+
+test('Claude : update_items pose, change ou arrête la répétition ; échéance gardée, donnée ou posée ; jamais sans échéance', async (t) => {
+  const h = await mcpHousehold(t); // vendredi 16 octobre 2026 ; Ampoule : échéance jeudi 5 novembre
+  const c = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
+  const row = () => h.app.db.prepare('SELECT due_date, repeat FROM items WHERE id = ?').get(h.ids.ampoule);
+  const update = async (fields) => data(await c.tool('update_items', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, ...fields }] }));
+  // Chaque semaine, sans jours : le jour de l'échéance, gardée
+  let res = await update({ repeat: { every: 'week' } });
+  assert.deepEqual([res.results[0].due_date, res.results[0].repeat], ['2026-11-05', 'Chaque jeudi']);
+  assert.deepEqual(row(), { due_date: '2026-11-05', repeat: 'week:4' });
+  // Même demande : inchangé
+  assert.equal((await update({ repeat: { every: 'week', weekdays: ['thursday'] } })).unchanged, 1);
+  // Le lundi : l'échéance (un jeudi) passe au prochain lundi
+  res = await update({ repeat: { every: 'week', weekdays: ['monday'] } });
+  assert.deepEqual(row(), { due_date: '2026-10-19', repeat: 'week:1' });
+  // Échéance donnée : gardée telle quelle
+  await update({ due_date: '2026-11-07', repeat: { every: '2weeks', weekdays: ['saturday'] } });
+  assert.deepEqual(row(), { due_date: '2026-11-07', repeat: '2week:6' });
+  // Changer seulement l'échéance garde la règle
+  await update({ due_date: '2026-11-21' });
+  assert.deepEqual(row(), { due_date: '2026-11-21', repeat: '2week:6' });
+  // null : ne se répète plus, l'échéance reste
+  res = await update({ repeat: null });
+  assert.deepEqual([res.results[0].due_date, res.results[0].repeat], ['2026-11-21', null]);
+  assert.deepEqual(row(), { due_date: '2026-11-21', repeat: null });
+  // Répétition ET échéance effacée : refus de tout l'appel, rien n'est écrit
+  const toolError = (r) => (r.body.result?.isError ? r.body.result.content[0].text : null);
+  const both = await c.tool('update_items', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, name: 'Ne doit pas être écrit', due_date: null, repeat: { every: 'day' } }] });
+  assert.equal(toolError(both), REPEAT_NEEDS_DUE);
+  assert.deepEqual(row(), { due_date: '2026-11-21', repeat: null });
+  // Effacer l'échéance arrête la répétition (comme dans l'application)
+  await update({ repeat: { every: 'month', month_day: 31 } });
+  assert.deepEqual(row(), { due_date: '2026-10-31', repeat: 'month:31' });
+  res = await update({ due_date: null });
+  assert.deepEqual([res.results[0].due_date, res.results[0].repeat], [null, null]);
+  // Liste de courses : refusé
+  assert.equal(toolError(await c.tool('update_items', { list_id: h.ids.courses, items: [{ id: h.ids.lait, repeat: null }] })), REPEAT_NOT_HERE);
+  // Connexion « Lecture seule » : refusé
+  const reader = claude(h, (await connect(h, h.guillaume, PASSWORD)).access_token);
+  assert.ok(toolError(await reader.tool('update_items', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, repeat: { every: 'day' } }] })));
+  assert.equal(row().repeat, null);
 });

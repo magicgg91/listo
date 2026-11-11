@@ -1005,7 +1005,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.11 U
 - Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”
 - Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”
 - Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”
-- Tâche qui se répète : Claude la voit, en clair (par exemple : Chaque lundi et jeudi) ; s'il la coche, elle revient à sa date suivante, et il vous la donne. La répétition elle-même se règle dans la fiche ([5.2 Tâches qui se répètent](#repeter)).
+- Tâche qui se répète ([5.2 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
 
@@ -1018,7 +1018,7 @@ Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne
 Au moment de connecter Claude, l'écran « Autoriser Claude » de Listo vous laisse choisir :
 
 - « Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.
-- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur rayon ou leur magasin.
+- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, leur rayon ou leur magasin.
 
 Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.
 

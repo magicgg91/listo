@@ -1,7 +1,9 @@
 // Écran « Mon compte » (ouvert depuis la carte du compte, en haut des
 // Réglages) : identité, puis les blocs Sécurité (mot de passe, double
-// authentification), Apparence (thème), Claude (si l'accès est activé) et
-// Ce téléphone (réinitialisation). Les réglages des Nouveautés sont dans
+// authentification), Apparence (thème), Claude (si l'accès est activé), Ce
+// téléphone (réinitialisation), et tout en bas « Se déconnecter » (déplacé
+// des Réglages, où il était fixé au-dessus du bandeau du bas : décision du
+// propriétaire du 11 novembre 2026 ; il défile avec le reste). Les réglages des Nouveautés sont dans
 // Réglages › Notifications, partie « Dans l'application » (décision du
 // propriétaire du 10 novembre 2026).
 // Ces blocs étaient auparavant dans les Réglages : mêmes écrans, mêmes
@@ -11,7 +13,7 @@
 import { h, icon, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount } from '../app.js';
+import { app, resetLocalCopy, pendingCount, logOut } from '../app.js';
 import { toast, confirmDialog, onPc } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
@@ -68,7 +70,29 @@ export function renderAccount(onLeave = () => {}) {
       // téléphone garde « Ce téléphone ».
       h('h2', { class: 'section-title' }, device().section),
       h('div', { class: 'group' },
-        row({ iconName: 'sync', title: device().reset, sub: 'Recharger les listes depuis le serveur', onClick: resetPhone }))));
+        row({ iconName: 'sync', title: device().reset, sub: 'Recharger les listes depuis le serveur', onClick: resetPhone })),
+      // Se déconnecter : tout en bas, à part du reste
+      h('div', { class: 'account__logout' },
+        h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => confirmLogOut() }, icon('logout', 'icon--sm'), 'Se déconnecter'))));
+}
+
+// « Se déconnecter » : sur le téléphone, une confirmation d'abord (décision
+// du propriétaire du 11 novembre 2026 : pour revenir, il faut retaper son
+// mot de passe). S'il reste des modifications pas encore envoyées, logOut
+// pose sa propre question, plus précise : une seule fenêtre dans les deux
+// cas. Sur ordinateur, pas de confirmation (comme avant).
+async function confirmLogOut() {
+  if (!onPc() && !pendingCount()) {
+    const ok = await confirmDialog({
+      title: 'Se déconnecter ?',
+      text: 'Pour revenir, il faudra votre identifiant et votre mot de passe (et le code de double authentification s\'il est activé).',
+      confirmLabel: 'Se déconnecter',
+      cancelLabel: 'Rester connecté',
+      focusCancel: true,
+    });
+    if (!ok) return;
+  }
+  await logOut();
 }
 
 // Nom de l'appareil dans les textes : « ce téléphone » ou, sur ordinateur,

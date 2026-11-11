@@ -165,7 +165,7 @@ Réutilisés tels quels : `.group`, `.row`, `.row__body`, `.row__title`, `.row__
 
 ## Ajout : carte du compte et écran « Mon compte »
 
-Réglages devient court : carte du compte, Administration (Admin), À propos, Se déconnecter. Sécurité, Apparence et Ce téléphone passent dans un écran « Mon compte » (même gabarit que les autres : barre de titre avec retour, zone qui défile). Styles : section 16.7 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
+Réglages devient court : carte du compte, Administration (Admin), À propos, Se déconnecter (déplacé le 11 novembre 2026 tout en bas de « Mon compte », bouton `.btn--secondary.btn--block` dans `.account__logout`, défile avec le reste). Sécurité, Apparence et Ce téléphone passent dans un écran « Mon compte » (même gabarit que les autres : barre de titre avec retour, zone qui défile). Styles : section 16.7 de `listo.css`. Balisage : dernière partie de `components.html`. Aucune nouvelle icône.
 
 - `.card.account.account--link` : `<button>` sur toute la surface de la carte du compte (avatar `.avatar--lg`, nom, sous-titre « Mon compte », pastille du rôle, chevron `#i-chev-r`), `aria-label="Mon compte : Guillaume"`, fond `--color-neutral-soft` au toucher. Ouvre « Mon compte ».
 - Écran « Mon compte » : `.card.account` (identité : avatar, nom, « Identifiant : … », pastille du rôle), puis `.section-title` + `.group` de `.row` : Sécurité (Mot de passe, Double authentification avec la pastille « Activée »), Apparence (`.segmented` Clair / Sombre / Auto), Ce téléphone (Réinitialiser les données de ce téléphone).

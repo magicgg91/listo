@@ -10,7 +10,7 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace } from '../dom.js';
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { app, logOut } from '../app.js';
+import { app } from '../app.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
@@ -62,12 +62,6 @@ export function renderSettings() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
 
-  const logout = h('button', {
-    class: 'btn btn--secondary btn--block',
-    type: 'button',
-    onClick: () => logOut(),
-  }, icon('logout', 'icon--sm'), 'Se déconnecter');
-
   return h('div', { class: 'screen' },
     // Écran du bandeau du bas (tabbar.js) : pas de bouton Retour
     topbar('Réglages'),
@@ -99,8 +93,7 @@ export function renderSettings() {
       h('h2', { class: 'section-title' }, 'Aide'),
       h('div', { class: 'group' }, row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') })),
       h('h2', { class: 'section-title' }, 'À propos'),
-      aboutGroup(isAdmin)),
-    h('div', { class: 'footer' }, logout));
+      aboutGroup(isAdmin)));
 }
 
 // --- Réglages sur ordinateur (design/maquettes/pc-A, capture 08a) ---
@@ -109,7 +102,8 @@ export function renderSettings() {
 // « Mon compte », où sont le thème et « Connexions Claude », comme sur le
 // téléphone), Clavier (« Raccourcis à une touche », propre à l'ordinateur),
 // Administration (compte Admin seulement), Notifications, Listes (corbeille),
-// Aide (et « Raccourcis clavier »), À propos, puis « Se déconnecter ».
+// Aide (et « Raccourcis clavier »), À propos. « Se déconnecter » est en bas
+// de « Mon compte » (décision du propriétaire du 11 novembre 2026).
 function renderSettingsPc() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
@@ -123,7 +117,7 @@ function renderSettingsPc() {
         class: 'row', type: 'button', 'aria-label': `Mon compte : ${user.displayName}`, onClick: () => navigate('account'),
       },
       avatar(user.displayName),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème')),
+      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème, déconnexion')),
       roleChip(user), icon('chev-r')))),
       section('Clavier', h('div', { class: 'group' }, keysRow())),
       isAdmin ? section('Administration',
@@ -133,8 +127,7 @@ function renderSettingsPc() {
       section('Aide', h('div', { class: 'group' },
         row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
         row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }))),
-      section('À propos', aboutGroup(isAdmin)),
-      h('div', {}, h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => logOut() }, icon('logout', 'icon--sm'), 'Se déconnecter')))));
+      section('À propos', aboutGroup(isAdmin)))));
 }
 
 // Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des

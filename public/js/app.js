@@ -20,7 +20,7 @@ import { tabBar, hasTabs } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
-import { renderSettings, renderPassword, renderTwoFactor } from './screens/settings.js';
+import { renderSettings, renderAbout, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
@@ -631,6 +631,7 @@ function show(route) {
       break;
     case 'settings': mount(() => renderSettings()); break;
     case 'account': mount((onLeave) => renderAccount(onLeave)); break;
+    case 'about': mount(() => renderAbout()); break;
     case 'password': mount(() => renderPassword()); break;
     case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;

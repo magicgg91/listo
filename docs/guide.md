@@ -744,7 +744,7 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | Ctrl+Entrée | Enregistrer la fiche ou le formulaire |
 | S | Aller au sommaire de l'aide |
 
-Les raccourcis à une touche se désactivent dans Réglages, « Clavier », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
+Les raccourcis à une touche se désactivent dans Réglages, « Général », « Raccourcis à une touche » (utile avec une commande vocale). Le réglage vaut pour cet appareil ; les flèches, Entrée et les raccourcis avec Ctrl restent.
 
 **Annuler (Ctrl+Z)**
 
@@ -1237,7 +1237,7 @@ Sans copie de `secrets/secret.key`, Listo crée une nouvelle clé au démarrage.
 
 ### 9.9 Savoir qu'une nouvelle version existe
 
-Dans Réglages › « À propos », sur la ligne de la version, l'Admin voit l'état de la vérification :
+Dans Réglages, la ligne « À propos » montre la version installée, ou la pastille « Mise à jour » quand une version plus récente existe. Touchez-la : sur la page « À propos », à la ligne de la version, l'Admin voit l'état de la vérification :
 
 - « À jour » : l'image installée est la dernière construite ;
 - “Vérifié il y a 15 min”, avec une pastille « Nouvelle version » suivie de son numéro (par exemple “Nouvelle version : 9f8e7d6”) : une image plus récente existe ; pour la prendre : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#mises-a-jour) ;

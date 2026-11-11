@@ -36,7 +36,8 @@ test('Réglages : la carte du compte est un bouton qui ouvre « Mon compte »', 
   }
   // Ce qui reste : Administration (Admin), À propos ; « Se déconnecter » est
   // passé en bas de « Mon compte » (11 novembre 2026), ni footer ni bouton ici
-  assert.ok(screen.indexOf("'Administration'") < screen.indexOf("'À propos'"));
+  assert.ok(screen.indexOf("'Général'") < screen.indexOf("'Informations'"));
+  assert.match(screen, /helpRow\(\), aboutRow\(isAdmin\)/);
   assert.equal(settings.includes("'Se déconnecter'"), false);
   assert.equal(screen.includes("class: 'footer'"), false);
 });
@@ -62,7 +63,9 @@ test('« Mon compte » : identité, puis Sécurité, Apparence, Ce téléphone, 
 test('mot de passe et double authentification reviennent sur « Mon compte », jamais sur Réglages', () => {
   assert.ok(body(settings, 'renderPassword').includes("topbar('Mot de passe', () => goBack('account'))"));
   assert.ok(settings.includes("topbar('Double authentification', () => goBack('account'))"));
-  assert.equal(/goBack\('settings'\)|navigate\('settings'/.test(settings.replace(body(settings, 'renderSettings'), '')), false);
+  // (sauf la page « À propos », ouverte depuis les Réglages : retour vers eux)
+  assert.equal(/goBack\('settings'\)|navigate\('settings'/.test(settings.replace(body(settings, 'renderSettings'), '').replace(body(settings, 'renderAbout'), '')), false);
+  assert.match(body(settings, 'renderAbout'), /topbar\('À propos', \(\) => goBack\('settings'\)\)/);
   assert.match(settings, /const finish = \(\) => navigate\('account', \{\}, \{ replace: true \}\);/);
 });
 
@@ -90,4 +93,18 @@ test('« Se déconnecter » : en bas de « Mon compte » ; confirmation sur le t
   assert.match(account, /if \(!onPc\(\) && !pendingCount\(\)\) \{\s*const ok = await confirmDialog\(\{\s*title: 'Se déconnecter \?',/);
   assert.match(account, /cancelLabel: 'Rester connecté',\s*focusCancel: true,/);
   assert.match(account, /if \(!ok\) return;\s*\}\s*await logOut\(\);/);
+});
+
+test('« À propos » : une ligne des Réglages (version à droite) qui ouvre sa page #/reglages/a-propos, avec le même bloc qu\'avant', () => {
+  assert.deepEqual(matchRoute('#/reglages/a-propos'), { name: 'about', params: {} });
+  assert.equal(pathFor('about'), '#/reglages/a-propos');
+  assert.match(read('app.js'), /case 'about': mount\(\(\) => renderAbout\(\)\); break;/);
+  const about = body(settings, 'renderAbout');
+  assert.match(about, /h\('div', \{ class: 'body' \}, aboutGroup\(isAdmin\)\)/);
+  const inner = (name) => settings.slice(settings.indexOf(`function ${name}(`), settings.indexOf('\n}\n', settings.indexOf(`function ${name}(`)) + 2);
+  const line = inner('aboutRow');
+  assert.match(line, /return row\(\{ iconName: 'help', title: 'À propos', end: h\('span', \{ class: 'row__end' \}, value, icon\('chev-r'\)\), onClick: \(\) => navigate\('about'\) \}\);/);
+  assert.match(line, /line\.update \? h\('span', \{ class: 'chip chip--accent' \}, 'Mise à jour'\) : line\.version\.commit \? `Version \$\{line\.version\.text\}` : null/);
+  // Lignes courtes : plus aucune phrase sous les lignes des Réglages (téléphone)
+  assert.doesNotMatch(inner('generalRows'), /sub:/);
 });

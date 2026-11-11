@@ -116,7 +116,7 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "'Échap'", "'[', ']'", "'Ctrl', 'Z'", "'Ctrl', 'Entrée'", "'P'", "'A'", "'↓', '↑'", "'Espace'", "'Entrée'", "'E'", "'Suppr'", "'Menu'", "'S'"]);
   // Réglages : l'interrupteur, sur ordinateur
   const settings = read('public/js/screens/settings.js');
-  assert.match(settings, /section\('Clavier', h\('div', \{ class: 'group' \}, keysRow\(\)\)\),/);
+  assert.match(settings, /section\('Général', h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
   assert.match(settings, /'Raccourcis à une touche'/);
   assert.match(read('public/sw.js'), /'\/js\/shortcuts\.js',\s*'\/js\/undo\.js',/);
 });

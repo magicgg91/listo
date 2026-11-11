@@ -62,12 +62,16 @@ export function renderSettings() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
 
+  // Rangement allégé (décision du propriétaire du 11 novembre 2026) : la
+  // carte du compte, puis deux blocs seulement, « Général » et
+  // « Informations », aux lignes courtes (icône et nom, sans phrase
+  // dessous) ; « À propos » est une ligne qui ouvre sa propre page.
   return h('div', { class: 'screen' },
     // Écran du bandeau du bas (tabbar.js) : pas de bouton Retour
     topbar('Réglages'),
     h('div', { class: 'body' },
       // Carte du compte : un bouton sur toute sa surface, qui ouvre « Mon
-      // compte » (sécurité, apparence, ce téléphone)
+      // compte » (sécurité, apparence, ce téléphone, déconnexion)
       h('button', {
         class: 'card account account--link',
         type: 'button',
@@ -78,32 +82,73 @@ export function renderSettings() {
       h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte')),
       roleChip(user),
       icon('chev-r')),
-      isAdmin ? [
-        h('h2', { class: 'section-title' }, 'Administration'),
-        h('div', { class: 'group' },
-          row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) })),
-      ] : null,
-      // Notifications push : cet appareil (notifications.js)
-      h('h2', { class: 'section-title' }, 'Notifications'),
-      h('div', { class: 'group' }, notificationsRow()),
-      // Corbeille : mes listes supprimées, à restaurer pendant 30 jours (trash.js)
-      h('h2', { class: 'section-title' }, 'Listes'),
-      h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') })),
-      // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
-      h('h2', { class: 'section-title' }, 'Aide'),
-      h('div', { class: 'group' }, row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') })),
-      h('h2', { class: 'section-title' }, 'À propos'),
-      aboutGroup(isAdmin)));
+      h('h2', { class: 'section-title' }, 'Général'),
+      h('div', { class: 'group' }, generalRows(isAdmin)),
+      h('h2', { class: 'section-title' }, 'Informations'),
+      h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin))));
+}
+
+// « Général » (téléphone et ordinateur) : notifications (notifications.js),
+// corbeille des listes (trash.js), administration (compte Admin seulement)
+function generalRows(isAdmin) {
+  return [
+    notificationsRow(),
+    row({ iconName: 'trash', title: 'Corbeille des listes', onClick: () => navigate('trash') }),
+    isAdmin ? row({ iconName: 'shield', title: 'Administration', onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
+  ];
+}
+
+// Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
+const helpRow = () => row({ iconName: 'book', title: 'Aide', onClick: () => navigate('help') });
+
+// Ligne « À propos » : ouvre la page « À propos » ; à droite, la version
+// installée (dernière connue sur cet appareil, puis celle du serveur) ou,
+// pour l'Admin, « Mise à jour » quand une nouvelle version existe
+function aboutRow(isAdmin) {
+  const value = h('span', { class: 'row__value' });
+  let commit = null;
+  try {
+    commit = localStorage.getItem(VERSION_KEY);
+  } catch {
+    // stockage indisponible : sans importance
+  }
+  let result = null;
+  const paint = () => {
+    const line = aboutVersion({ commit: isCommit(commit) ? commit : null, isAdmin, result, online: navigator.onLine });
+    replace(value, line.update ? h('span', { class: 'chip chip--accent' }, 'Mise à jour') : line.version.commit ? `Version ${line.version.text}` : null);
+  };
+  paint();
+  get('/api/about').then((about) => {
+    commit = about.commit;
+    try {
+      if (isCommit(commit)) localStorage.setItem(VERSION_KEY, commit);
+    } catch {
+      // sans importance
+    }
+    paint();
+  }, () => {});
+  if (isAdmin && navigator.onLine) get('/api/admin/update-check').then((answer) => { result = answer; paint(); }, () => {});
+  return row({ iconName: 'help', title: 'À propos', end: h('span', { class: 'row__end' }, value, icon('chev-r')), onClick: () => navigate('about') });
+}
+
+// Page « À propos » (#/reglages/a-propos, téléphone et ordinateur) : ce
+// qui était en bas des Réglages, sans changement : version (et, pour
+// l'Admin, la vérification de mise à jour), le projet sur GitHub, les
+// données du mode scan
+export function renderAbout() {
+  const isAdmin = app.user.role === 'admin';
+  return h('div', { class: 'screen' },
+    topbar('À propos', () => goBack('settings')),
+    h('div', { class: 'body' }, aboutGroup(isAdmin)));
 }
 
 // --- Réglages sur ordinateur (design/maquettes/pc-A, capture 08a) ---
 // Le même rangement que sur le téléphone (décision du propriétaire du
 // 10 novembre 2026 : le téléphone fait référence), en cartes : Compte (ouvre
-// « Mon compte », où sont le thème et « Connexions Claude », comme sur le
-// téléphone), Clavier (« Raccourcis à une touche », propre à l'ordinateur),
-// Administration (compte Admin seulement), Notifications, Listes (corbeille),
-// Aide (et « Raccourcis clavier »), À propos. « Se déconnecter » est en bas
-// de « Mon compte » (décision du propriétaire du 11 novembre 2026).
+// « Mon compte », où sont le thème, « Connexions Claude » et « Se
+// déconnecter », comme sur le téléphone), Général (« Raccourcis à une
+// touche », propre à l'ordinateur, puis les mêmes lignes que le téléphone),
+// Informations (Aide, « Raccourcis clavier », À propos).
 function renderSettingsPc() {
   const user = app.user;
   const isAdmin = user.role === 'admin';
@@ -119,21 +164,17 @@ function renderSettingsPc() {
       avatar(user.displayName),
       h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème, déconnexion')),
       roleChip(user), icon('chev-r')))),
-      section('Clavier', h('div', { class: 'group' }, keysRow())),
-      isAdmin ? section('Administration',
-        h('div', { class: 'group' }, row({ iconName: 'shield', title: 'Administration', sub: 'Comptes, courses', onClick: () => navigate('admin', { tab: 'comptes' }) }))) : null,
-      section('Notifications', h('div', { class: 'group' }, notificationsRow())),
-      section('Listes', h('div', { class: 'group' }, row({ iconName: 'trash', title: 'Corbeille des listes', sub: 'Restaurer une liste supprimée (30 jours)', onClick: () => navigate('trash') }))),
-      section('Aide', h('div', { class: 'group' },
-        row({ iconName: 'book', title: 'Aide', sub: 'Mode d\'emploi de Listo', onClick: () => navigate('help') }),
-        row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }))),
-      section('À propos', aboutGroup(isAdmin)))));
+      section('Général', h('div', { class: 'group' }, keysRow(), generalRows(isAdmin))),
+      section('Informations', h('div', { class: 'group' },
+        helpRow(),
+        row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }),
+        aboutRow(isAdmin))))));
 }
 
 // Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des
 // notifications de cet appareil (notifications.js)
 function notificationsRow() {
-  return row({ iconName: 'bell', title: 'Notifications', sub: 'Nouveautés et notifications', onClick: () => navigate('notifications') });
+  return row({ iconName: 'bell', title: 'Notifications', onClick: () => navigate('notifications') });
 }
 
 // Interrupteur « Raccourcis à une touche » (ordinateur) : désactivés, il ne

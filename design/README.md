@@ -499,3 +499,7 @@ Décisions du propriétaire (cahier des charges, « Attribuer une tâche »). Au
 - « Échéances » : `.segmented` « Toutes / Les miennes » (choix actif : coche ET texte), sous la barre du haut (téléphone) ou dans `.pc-tools` (ordinateur) ; style d'espacement dans `public/css/app.css` (`.deadlines-scope`).
 - Formulaire de la liste : troisième interrupteur « Attribution » dans « Options des éléments » (`.toggle-row`, `.switch`).
 
+## Ajout : Réglages allégés (11 novembre 2026)
+
+Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).
+

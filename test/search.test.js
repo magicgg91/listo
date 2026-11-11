@@ -202,8 +202,8 @@ test('droits inchangés : un invité en lecture seule peut chercher ; rien n\'es
   const screen = read('public/js/screens/list.js');
   assert.match(screen, /const search = createSearchRow\(content, \{\s*label: 'Rechercher dans la liste',/);
   assert.doesNotMatch(screen.slice(screen.indexOf('const search = createSearchRow('), screen.indexOf('const menuButton')), /canEdit|editable/);
-  // Barre d'ajout : toujours masquée en lecture seule, et pendant la saisie d'une recherche
-  assert.match(screen, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| search\.focused;/);
+  // Barre d'ajout : toujours masquée en lecture seule, et pendant la recherche
+  assert.match(screen, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| \(pc \? search\.focused : search\.open\);/);
   // Une vue locale : aucune opération, aucune requête, aucun stockage
   for (const file of ['public/js/search.js', 'public/js/search-row.js']) {
     const code = read(file);
@@ -229,18 +229,28 @@ test('recherche vidée au changement de liste ou en quittant l\'écran (état pr
   assert.match(read('public/js/app.js'), /case 'list': mount\(\(onLeave\) => renderList\(params\.id, onLeave\)/);
 });
 
-test('champ : jamais de curseur mis tout seul ; touche « rechercher », croix, « Effacer la recherche »', () => {
+test('champ : curseur seulement après la loupe ; touche « rechercher », croix, « Effacer la recherche »', () => {
   const row = read('public/js/search-row.js');
-  assert.doesNotMatch(row, /\.focus\(|autofocus|\.select\(/);
+  assert.doesNotMatch(row, /autofocus|\.select\(/);
+  // Un seul .focus() : dans open(), appelé par la loupe (téléphone)
+  assert.equal(row.match(/\.focus\(/g).length, 1);
+  assert.match(row, /function open\(\) \{\s*if \(!toggled \|\| isOpen\) return;\s*isOpen = true;\s*bar\.hidden = false;\s*closeOverlay = openOverlay\(hide\);\s*onOpen\(true\);\s*input\.focus\(\);\s*\}/);
+  assert.match(row, /loupe: \{ label, controls: barId, isOpen: \(\) => isOpen, toggle: \(\) => \(isOpen \? close\(\) : open\(\)\) \}/);
   assert.match(row, /enterkeyhint: 'search'/);
   assert.match(row, /if \(event\.key !== 'Enter'\) return;\s*event\.preventDefault\(\);\s*releaseFocus\(\);/, 'Entrée : clavier fermé, texte gardé');
-  // Croix et « Effacer la recherche » : l'appui ne retire pas le curseur du champ
+  // Téléphone : la croix referme (texte vidé, clavier replié) ; Échap aussi
+  assert.match(row, /'aria-label': 'Fermer la recherche', onClick: \(\) => close\(\) \}, icon\('close'\)\)/);
+  assert.match(row, /function hide\(\) \{\s*if \(!isOpen\) return;\s*isOpen = false;\s*closeOverlay = null;\s*if \(document\.activeElement === input\) input\.blur\(\);[^\n]*\s*bar\.hidden = true;\s*clear\(\);/);
+  // Ordinateur : croix « Effacer la saisie », l'appui ne retire pas le curseur du champ
   assert.match(row, /'aria-label': 'Effacer la saisie',\s*hidden: true,\s*onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,/);
-  for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js']) {
+  for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js']) {
     assert.match(read(file), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, 'Effacer la recherche'\)/, file);
   }
-  // Aucune loupe dans les barres du haut
-  for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js']) assert.doesNotMatch(read(file), /iconButton\('search'/, file);
-  // « Nouvelle liste » masqué pendant la recherche
-  assert.match(read('public/js/screens/lists.js'), /onActive: \(active\) => \{ fab\.hidden = active; \}/);
+  // Aucune loupe dans les barres du haut : la loupe est en bas à droite
+  for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js']) assert.doesNotMatch(read(file), /iconButton\('search'/, file);
+  assert.match(read('public/js/screens/list.js'), /const loupe = pc \? null : loupeButton\(\);/);
+  assert.match(read('public/js/screens/lists.js'), /tabBar\(\)\.loupe\.set\(search\.loupe\);/);
+  assert.match(read('public/js/screens/deadlines.js'), /if \(!pc\) tabBar\(\)\.loupe\.set\(search\.loupe\);/);
+  // Plus de champ caché à révéler en tirant vers le bas
+  assert.doesNotMatch(row, /searchrow|hideOnce|searchroom/);
 });

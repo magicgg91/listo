@@ -10,9 +10,9 @@ import fs from 'node:fs';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
-// Section 16.14 du kit (jusqu'à la fin de la copie de l'application)
+// Section 16.14 du kit (jusqu'à la section 16.15, navigation du bas du téléphone)
 const kit = read('public/css/listo.css');
-const section = kit.slice(kit.indexOf('/* 16.14 Interface ordinateur'));
+const section = kit.slice(kit.indexOf('/* 16.14 Interface ordinateur'), kit.indexOf('/* 16.15 Navigation du bas'));
 const before = kit.slice(0, kit.indexOf('/* 16.14 Interface ordinateur')) + read('public/css/app.css');
 
 test('kit : section 16.14 identique dans design/ et public/, sans couleur en dur ni partie des maquettes', () => {
@@ -94,9 +94,12 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
 
 test('recherche ordinateur : champ toujours visible, Échap vide puis quitte, jamais de curseur mis tout seul', () => {
   const row = read('public/js/search-row.js');
-  assert.match(row, /if \(docked && event\.key === 'Escape'\) \{\s*event\.preventDefault\(\);\s*if \(input\.value !== ''\) clear\(\);\s*else releaseFocus\(\);/);
-  assert.match(row, /const row = h\('div', \{ class: 'searchrow', hidden: true \}, docked \? null : field\);/);
-  assert.doesNotMatch(row, /\.focus\(/);
+  assert.match(row, /if \(toggled\) close\(\);\s*else if \(input\.value !== ''\) clear\(\);\s*else releaseFocus\(\);/);
+  // Ordinateur : pas de rangée cachée, le champ est posé dans l'en-tête
+  assert.match(row, /const bar = toggled \? h\('div', \{ class: 'searchbar', id: barId, hidden: true \}, field\) : null;/);
+  // Le seul .focus() : téléphone, juste après la loupe (open() n'existe que si toggled)
+  assert.equal(row.match(/\.focus\(/g).length, 1);
+  assert.match(row, /function open\(\) \{\s*if \(!toggled \|\| isOpen\) return;[\s\S]*?input\.focus\(\);\s*\}/);
   assert.match(read('public/js/screens/list.js'), /docked: pc,/);
   assert.match(read('public/js/screens/lists.js'), /createSearchRow\(content, \{ label: 'Rechercher une liste', onChange: \(\) => draw\(\), docked: true \}\);/);
 });

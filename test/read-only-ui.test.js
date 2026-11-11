@@ -73,7 +73,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   const list = read('public/js/screens/list.js');
   assert.match(list, /const readOnlyBanner = h\('p', \{ class: 'readonly-banner', hidden: true \}, icon\('eye', 'icon--sm'\), 'Lecture seule'\);/);
   assert.match(list, /readOnlyBanner\.hidden = canEdit;\s*showAddbar\(\); \/\/ lecture seule : aucun ajout/);
-  assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| search\.focused;/);
+  assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| \(pc \? search\.focused : search\.open\);/);
   assert.match(list, /scanner\.button\.hidden = !canEdit \|\| !scanAvailable\(list\);/);
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
   assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\), pc \? reserveButton\(item\) : null\), item, meta\);\s*const slide/);

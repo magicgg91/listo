@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read = (file) => fs.readFileSync(new URL(`../public/${file}`, import.meta.url), 'utf8');
-const SCREENS = ['lists', 'list', 'list-form', 'settings', 'account', 'admin', 'login'];
+const SCREENS = ['lists', 'list', 'list-form', 'settings', 'account', 'admin', 'login', 'deadlines'];
 
 // Texte d'un appel h(…) qui commence à « start » (parenthèses équilibrées,
 // chaînes et commentaires ignorés)
@@ -47,10 +47,11 @@ test('chaque écran : la barre du haut n\'est jamais dans une zone qui défile',
   assert.ok(bars >= 12, `barres trouvées : ${bars}`);
   // list.js : la zone des éléments est créée à part, la barre du haut est
   // la première enfant de l'écran, puis le bandeau « Lecture seule », la
-  // barre d'état, la zone qui défile et la barre d'ajout (en bas)
+  // barre d'état, la rangée de recherche (cachée tant que la loupe n'est pas
+  // touchée), la zone qui défile, la barre d'ajout et la loupe (en bas)
   const list = read('js/screens/list.js');
   assert.match(list, /const content = h\('div', \{ class: 'scroll' \}\);/);
-  assert.match(list, /return h\('div', \{ class: 'screen' \},\s*h\('header', \{ class: 'topbar' \},[\s\S]*?menuButton\),\s*readOnlyBanner,\s*h\('div', \{ class: 'statusbar' \}[^\n]*\n\s*content,\s*addbar\);/);
+  assert.match(list, /return h\('div', \{ class: 'screen' \},\s*h\('header', \{ class: 'topbar' \},[\s\S]*?menuButton\),\s*readOnlyBanner,\s*statusbar,\s*search\.bar,\s*content,\s*addbar,\s*loupeDock\);/);
 });
 
 test('styles : seules les zones prévues défilent ; la page, .app et la barre du haut jamais', () => {

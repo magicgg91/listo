@@ -9,6 +9,8 @@
 export const ROUTES = [
   { name: 'login', path: '/connexion' },
   { name: 'lists', path: '/listes' },
+  // Échéances : les tâches à faire de toutes mes listes (deadlines.js)
+  { name: 'deadlines', path: '/echeances' },
   { name: 'newList', path: '/listes/nouvelle' },
   { name: 'editList', path: '/listes/:id/modifier' },
   { name: 'list', path: '/listes/:id' },

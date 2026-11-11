@@ -50,6 +50,34 @@ export function releaseFocus() {
   if (isTextField(active)) active.blur();
 }
 
+// Changement de jour (minuit, ou retour au premier plan le lendemain) :
+// onNewDay() est appelé pour recalculer « Aujourd'hui », « En retard »…
+// Renvoie la fonction qui arrête la surveillance.
+export function watchNewDay(onNewDay) {
+  const dayKey = () => new Date().toDateString();
+  let day = dayKey();
+  const check = () => {
+    if (dayKey() === day) return;
+    day = dayKey();
+    onNewDay();
+  };
+  let timer = null;
+  const arm = () => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    timer = setTimeout(() => {
+      check();
+      arm();
+    }, next - now);
+  };
+  arm();
+  document.addEventListener('visibilitychange', check);
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener('visibilitychange', check);
+  };
+}
+
 // Éléments qu'on peut atteindre avec la touche Tab dans une fenêtre
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

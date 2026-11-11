@@ -469,3 +469,11 @@ Décisions du propriétaire du 11 novembre 2026, à partir d'aperçus faits sur 
 - « Mes listes » : `.icon-btn--accent` « + » (« Nouvelle liste ») en haut à droite, à la place de Réglages ; plus de `.fab`. `.typebar` : `.segmented.glass` arrondi complet, Toutes / Courses / Tâches / Envies (`role="radiogroup"`, choix actif : fond `--color-accent-soft` ET texte `--color-accent-ink`). La recherche ouverte prend sa place.
 - Liste : `.addbar.addbar--glass.glass.addbar--with-loupe` (pilule flottante : champ sans cadre, scan, « + » ronds ; anneau `--color-accent` intérieur quand le champ a le curseur) et `.list-dock` (la loupe) à sa droite ; `.scroll--under-dock` garde la place en bas. La recherche ouverte prend la place de `.statusbar` ; la barre d'ajout se cache.
 - « Échéances » : groupes `h2.aisle` (« En retard », « Aujourd'hui », « Demain », « Cette semaine », « Plus tard », avec leur nombre) et lignes `.item` du kit : `.check` (ou `.check--static` en lecture seule), nom, pastilles `.chip--list` (icône et nom de la liste), priorité, échéance (`.chip--late` / `.chip--accent`, icône ET texte). Ordinateur : `a.pc-nav__item.pc-side__deadlines` dans le menu de gauche, avec `.news-badge` à plat.
+
+## Ajout : boutons arrondis (11 novembre 2026)
+
+Décision du propriétaire, pour accorder les fenêtres et les formulaires au bandeau du bas. Styles : section 16.16 de `listo.css`, aucune variable ni couleur nouvelle ; téléphone et ordinateur.
+
+- En pilule (`--radius-pill`) : `.btn` (toutes les variantes), `.btn--icon`, `.icon-btn` (dont la disquette `.icon-btn--primary`, et les actions de ligne de l'ordinateur), `.segmented` et `.segmented__opt`, `.duration__opt`, `.cart__action`, `.fold-all`.
+- Inchangés : champs de saisie (`.input`, `.searchfield` hors loupe, `.addbar__field` hors verre), cartes, cases de choix `.choice__opt` (« Courses / Tâches / Envies ») et `.icon-grid__opt` : on distingue ce qu'on touche de ce qu'on écrit.
+- Pas d'effet verre dans les fenêtres : il reste à ce qui flotte au-dessus des listes (16.15).

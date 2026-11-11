@@ -926,6 +926,18 @@
   .addbar--glass .addbar__input { font-size: var(--text-base); }
 }
 
+/* 16.16 Boutons arrondis (décision du propriétaire du 11 novembre 2026) :
+   tous les boutons en pilule, comme le bandeau du bas, sur le téléphone et
+   sur l'ordinateur : boutons texte (.btn), boutons ronds (.btn--icon,
+   .icon-btn, la disquette .icon-btn--primary), choix à plusieurs options
+   (.segmented), durées du lien public, actions de la zone des cochés,
+   « Tout replier ». Les champs de saisie, les cartes et les cases de choix
+   (« Courses / Tâches / Envies », grille des icônes) gardent leurs coins :
+   on voit ce qu'on touche et ce qu'on écrit. Pas d'effet verre dans les
+   fenêtres (le verre reste à ce qui flotte au-dessus des listes). */
+.btn, .btn--icon, .icon-btn, .item__actions .icon-btn,
+.segmented, .segmented__opt, .duration__opt, .cart__action, .fold-all { border-radius: var(--radius-pill); }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

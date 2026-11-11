@@ -91,7 +91,7 @@ test('doigt posé ailleurs, ou toucher annulé (défilement) : rien n\'est chois
 test('écran : liste ni redessinée ni fermée pendant un toucher ; choix au relâchement branché sur chaque suggestion', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /function drawSuggestions\(\) \{\s*if \(taps\.pressing\) \{ \/\/ jamais sous le doigt : après le relâchement\s*redrawLater = true;\s*return;\s*\}/);
-  assert.match(list, /if \(document\.activeElement !== input && !taps\.pressing\) suggestBox\.hidden = true;/);
+  assert.match(list, /if \(document\.activeElement !== input && !taps\.pressing && !habitualOpen\) suggestBox\.hidden = true;/);
   assert.match(list, /onPointerdown: on\.pointerdown,\s*onMousedown: on\.mousedown,\s*onPointerup: on\.pointerup,\s*onPointercancel: on\.pointercancel,\s*onClick: on\.click,/);
   // Relâchement n'importe où : phase de remontée (après le bouton) ; click ignoré : phase de capture
   assert.match(list, /document\.addEventListener\(type, releaseSuggestions\); \/\/ après le bouton lui-même/);

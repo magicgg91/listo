@@ -48,6 +48,36 @@ export function suggest(history, typed, limit = 8) {
     .slice(0, limit);
 }
 
+// Articles habituels (« Souvent ajoutés », décision du 11 novembre 2026) :
+// les plus ajoutés dans le ou les magasins de la liste (storeIds ; liste sans
+// magasin : lignes générales), parmi ceux ajoutés ces HABITUAL_DAYS derniers
+// jours, sans ceux de exclude (noms normalisés : déjà à acheter). Liste
+// « multi » : les ajouts de ses magasins sont additionnés. now : date ISO.
+// Renvoie au plus limit entrées { name, nameNormalized, useCount, lastUsedAt },
+// les plus ajoutées d'abord, puis les plus récentes.
+export const HABITUAL_DAYS = 60;
+export const HABITUAL_LIMIT = 6;
+export function habitual(history, { storeIds = [], exclude = new Set(), now, days = HABITUAL_DAYS, limit = HABITUAL_LIMIT } = {}) {
+  const since = new Date(Date.parse(now) - days * 24 * 3600 * 1000).toISOString();
+  const stores = new Set(storeIds);
+  // Nom affiché : celui de la ligne générale (première saisie)
+  const shown = new Map(history.filter((e) => (e.storeId ?? null) === null).map((e) => [e.nameNormalized, e.name]));
+  const totals = new Map();
+  for (const entry of history) {
+    const line = entry.storeId ?? null;
+    const inScope = stores.size ? stores.has(line) : line === null;
+    if (!inScope || !(entry.useCount > 0) || String(entry.lastUsedAt) < since || exclude.has(entry.nameNormalized)) continue;
+    const key = entry.nameNormalized;
+    const total = totals.get(key) ?? { name: shown.get(key) ?? entry.name, nameNormalized: key, useCount: 0, lastUsedAt: '' };
+    total.useCount += entry.useCount;
+    if (String(entry.lastUsedAt) > total.lastUsedAt) total.lastUsedAt = String(entry.lastUsedAt);
+    totals.set(key, total);
+  }
+  return [...totals.values()]
+    .sort((a, b) => b.useCount - a.useCount || b.lastUsedAt.localeCompare(a.lastUsedAt) || a.name.localeCompare(b.name, 'fr'))
+    .slice(0, limit);
+}
+
 // Vrai si l'article est déjà connu (ligne générale de l'historique)
 export function isKnownName(history, name) {
   const key = normalizeItemName(name);

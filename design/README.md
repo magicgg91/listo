@@ -507,6 +507,10 @@ Décisions du propriétaire (cahier des charges, « Heure et rappel »). Aucune 
 - « Rappel » : `.due-picker` avec `#i-bell` et le choix, et une phrase `.field__hint` qui dit à qui part la notification.
 - Ligne : la pastille d'échéance existante porte l'heure (« Aujourd'hui · 18:30 ») ; « En retard · 14:00 » (`.chip--late` et `#i-alert`, icône ET texte) dès l'heure passée.
 
+## Ajout : « Souvent ajoutés » (11 novembre 2026)
+
+Décisions du propriétaire (cahier des charges, « Souvent ajoutés »). Même encart que les suggestions (`.suggest`, `.suggest__item`, `.suggest__aisle`), avec en tête `.suggest__head` : le titre `.suggest__title` (« Souvent ajoutés », petit, gras, couleur secondaire) et la croix `.icon-btn` (`#i-close`, `aria-label="Fermer"`) ; style dans `public/css/app.css`, aucune couleur ni variable nouvelle. Ordinateur : sous le champ d'ajout, comme les suggestions.
+
 ## Ajout : Réglages allégés (11 novembre 2026)
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).

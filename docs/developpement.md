@@ -394,6 +394,11 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Quand l'heure passe, la pastille devient « En retard · … » sans recharger (en moins d'une minute), et la tâche monte dans « En retard » sur « Échéances ».
     5. Sur un serveur sans `LISTO_PUSH`, « Rappel » n'apparaît pas ; l'heure, oui.
 50. **Pas de zoom par double appui** (11 novembre 2026 ; vérifié dans Chromium : la règle s'applique aux boutons de la fiche, aux jours d'une répétition et aux coches ; le zoom lui-même ne peut pas être essayé dans Chromium) : sur iPhone et sur Android, toucher deux fois vite les jours d'une répétition (Lu, Ma…), une coche ou un bouton de la fiche : la page ne s'agrandit pas. Écarter deux doigts : la page s'agrandit toujours. Balayer une ligne vers la gauche : « Supprimer » apparaît toujours.
+51. **« Souvent ajoutés »** (11 novembre 2026 ; vérifié dans Chromium, téléphone 390 px clair et sombre, et ordinateur : « + » champ vide sans clavier, champ touché, ajout, article du panier remis dans la liste, saisie, croix, toucher ailleurs, liste de tâches sans encart) ; une liste de courses déjà utilisée quelques semaines, panier vidé :
+    1. Toucher « + » sans rien taper : l'encart « Souvent ajoutés » s'ouvre, sans clavier, avec au plus 6 articles et leur rayon.
+    2. Toucher un article : il arrive dans la liste (message « Ajouté : … ») et quitte l'encart, qui reste ouvert. Un article coché dans le panier revient dans la liste (« Remis dans la liste : … »), sans doublon.
+    3. Toucher la liste derrière : l'encart se ferme. Toucher le champ : l'encart revient avec le clavier ; taper « la » : les suggestions habituelles. La croix ferme l'encart et le clavier.
+    4. Mode avion : même chose avec ce que le téléphone a gardé ; les ajouts partent au retour du réseau.
 
 ## API des comptes (étape 2)
 

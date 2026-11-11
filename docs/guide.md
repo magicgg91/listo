@@ -224,7 +224,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 ### 2.2 Courses : rayons et magasins
 
-- Articles classés par rayon ; Listo retient le rayon habituel de chaque article et propose les noms déjà saisis ([5.1 Ajouter, modifier, cocher, supprimer](#ajouter)).
+- Articles classés par rayon ; Listo retient le rayon habituel de chaque article, propose les noms déjà saisis et les articles « Souvent ajoutés » ([5.1 Ajouter, modifier, cocher, supprimer](#ajouter)).
 - Magasin « Multi » : une tournée de plusieurs boutiques, où chaque article a son magasin au lieu d'un rayon ([7.2 Propriétaire : créer une liste](#creer)).
 - Chacun peut créer un magasin ou un rayon qui manque ; l'Admin les gère ([7.1 Admin](#role-admin)).
 
@@ -553,6 +553,7 @@ Les gestes de tous les jours, pour toute personne qui peut modifier la liste (pr
 ### 5.1 Ajouter, modifier, cocher, supprimer
 
 - Ajouter : tapez le nom dans le champ en bas de la liste, puis touchez « + ». Des suggestions s'affichent pendant la saisie. Dans une liste de courses, pour un nouvel article, Listo demande son rayon, puis s'en souvient.
+- « Souvent ajoutés » (listes de courses) : touchez le champ sans rien taper, ou « + » directement (sans clavier), pour voir les articles les plus ajoutés dans ce magasin ces deux derniers mois, sauf ceux déjà à acheter. Un appui ajoute l'article (s'il est dans « Dans le panier », il revient dans la liste) ; l'encart reste ouvert pour en ajouter d'autres. La croix « Fermer », ou toucher la liste, le referme ; dès que vous tapez, les suggestions habituelles reprennent.
 - Après l'ajout, le clavier se replie. Si la liste est réglée sur « Ouvrir la fiche », la fiche de ce qui vient d'être ajouté s'ouvre (sans clavier) : réglez quantité, note, priorité ou échéance, puis la disquette ; la croix la referme sans rien changer, la ligne reste ajoutée.
 - Modifier : touchez la ligne. La fiche s'ouvre ; la disquette enregistre.
 - Cocher : touchez la case. Un article coché est barré et passe dans « Dans le panier » (« Terminés » dans une liste de tâches), en bas de la liste.

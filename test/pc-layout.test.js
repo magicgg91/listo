@@ -223,7 +223,10 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   assert.match(account, /h\('h2', \{ class: 'section-title' \}, 'Apparence'\),/);
   assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
   // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
-  assert.equal((account.match(/onPc\(\)/g) ?? []).length, 1);
+  // Deux différences seulement : « Cet appareil », et la confirmation de
+  // « Se déconnecter », sur le téléphone seulement (décision du 11 novembre 2026)
+  assert.equal((account.match(/onPc\(\)/g) ?? []).length, 2);
+  assert.match(account, /if \(!onPc\(\) && !pendingCount\(\)\) \{/);
   assert.match(account, /return onPc\(\)\s*\? \{ section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' \}\s*: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
   // Téléphone : plus de section « Clavier » (rien de nouveau)
   assert.doesNotMatch(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')), /keysRow|Clavier/);

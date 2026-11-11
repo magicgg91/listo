@@ -245,7 +245,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. **Retour du réseau** : la pastille repasse à « À jour » en quelques secondes. Sur l'autre téléphone : les 3 articles, les 2 cochages et la photo apparaissent, sans doublon.
     5. **Mise en veille** : en mode avion, faire une modification, verrouiller le téléphone quelques minutes, couper le mode avion, déverrouiller : la modification part toute seule.
     6. **Application installée** : refaire les points 2 à 4 en ouvrant Listo depuis son icône (sur iPhone, l'application installée a sa propre copie, séparée de Safari).
-    7. **Déconnexion avec des modifications en attente** (en mode avion) : Réglages → Se déconnecter avertit et propose « Rester connecté ».
+    7. **Déconnexion avec des modifications en attente** (en mode avion) : Réglages → Mon compte → Se déconnecter (tout en bas) avertit et propose « Rester connecté ». Sans modification en attente, le téléphone demande aussi « Se déconnecter ? » ; l'ordinateur non.
     8. **Modification refusée** : sur A en mode avion, modifier un article ; sur B, supprimer cet article. Au retour du réseau de A : « Une modification n'a pas pu être enregistrée : … » et l'article reste supprimé.
 
 **Nouveautés**

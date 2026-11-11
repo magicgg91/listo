@@ -137,6 +137,10 @@ button.sync { cursor: pointer; }
 .share { overflow: hidden; }
 .share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
 
+/* « Mon compte » : « Se déconnecter » tout en bas, séparé des blocs */
+.account__logout { margin: var(--space-3) var(--space-2) 0; }
+.app--pc .account__logout .btn { width: auto; }
+
 /* « Échéances » : choix « Toutes / Les miennes » (attribution, 11 novembre
    2026), sous la barre du haut sur le téléphone, dans la barre d'outils
    sur ordinateur */

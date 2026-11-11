@@ -34,14 +34,16 @@ test('Réglages : la carte du compte est un bouton qui ouvre « Mon compte »', 
   for (const gone of ["'Sécurité'", "'Apparence'", "'Ce téléphone'", 'Mot de passe', 'Double authentification', 'Réinitialiser', 'segmented', 'applyTheme']) {
     assert.equal(screen.includes(gone), false, gone);
   }
-  // Ce qui reste : Administration (Admin), À propos, Se déconnecter
+  // Ce qui reste : Administration (Admin), À propos ; « Se déconnecter » est
+  // passé en bas de « Mon compte » (11 novembre 2026), ni footer ni bouton ici
   assert.ok(screen.indexOf("'Administration'") < screen.indexOf("'À propos'"));
-  assert.ok(screen.includes("'Se déconnecter'"));
+  assert.equal(settings.includes("'Se déconnecter'"), false);
+  assert.equal(screen.includes("class: 'footer'"), false);
 });
 
 test('« Mon compte » : identité, puis Sécurité, Apparence, Ce téléphone, dans cet ordre', () => {
   const screen = body(account, 'renderAccount');
-  const order = ["topbar('Mon compte'", 'roleChip(user)', "'Sécurité'", "title: 'Mot de passe'", 'twoFactorRow)', "'Apparence'", "'aria-label': 'Thème'", 'device().section', 'title: device().reset'];
+  const order = ["topbar('Mon compte'", 'roleChip(user)', "'Sécurité'", "title: 'Mot de passe'", 'twoFactorRow)', "'Apparence'", "'aria-label': 'Thème'", 'device().section', 'title: device().reset', "'Se déconnecter'"];
   const view = screen.slice(screen.indexOf("return h('div', { class: 'screen' }"));
   const positions = order.map((text) => view.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(positions[i] >= 0, text);
@@ -81,4 +83,11 @@ test('« Nouveautés » : dans Réglages › Notifications (partie « Dans l\'ap
   assert.match(block, /toggle\.setAttribute\('aria-checked', String\(Boolean\(app\.data\.news\?\.\[key\]\)\)\);/);
   // Le texte de la ligne ne change plus quand on bascule
   assert.equal(block.includes('textContent'), false);
+});
+
+test('« Se déconnecter » : en bas de « Mon compte » ; confirmation sur le téléphone (sauf si logOut pose déjà sa question), pas sur ordinateur', () => {
+  assert.match(account, /h\('div', \{ class: 'account__logout' \},\s*h\('button', \{ class: 'btn btn--secondary btn--block', type: 'button', onClick: \(\) => confirmLogOut\(\) \}, icon\('logout', 'icon--sm'\), 'Se déconnecter'\)\)/);
+  assert.match(account, /if \(!onPc\(\) && !pendingCount\(\)\) \{\s*const ok = await confirmDialog\(\{\s*title: 'Se déconnecter \?',/);
+  assert.match(account, /cancelLabel: 'Rester connecté',\s*focusCancel: true,/);
+  assert.match(account, /if \(!ok\) return;\s*\}\s*await logOut\(\);/);
 });

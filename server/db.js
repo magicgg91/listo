@@ -577,6 +577,16 @@ export const MIGRATIONS = [
   `
   ALTER TABLE item_history ADD COLUMN hidden_at TEXT;
   `,
+
+  // --- Migration 28 : plusieurs personnes, chacun son tour (11 novembre 2026) ---
+  // assign_mode : 'one' (une personne ou personne, comme avant), 'all'
+  // (plusieurs personnes à la fois), 'turn' (chacun son tour ; assigned_to
+  // est la personne de cette fois). assign_people : les personnes, dans
+  // l'ordre, « 3,5,7 » (public/js/assign.js) ; vide en mode 'one'.
+  `
+  ALTER TABLE items ADD COLUMN assign_mode TEXT NOT NULL DEFAULT 'one' CHECK (assign_mode IN ('one', 'all', 'turn'));
+  ALTER TABLE items ADD COLUMN assign_people TEXT CHECK (assign_people IS NULL OR (length(assign_people) BETWEEN 3 AND 300 AND assign_people NOT GLOB '*[^0-9,]*'));
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

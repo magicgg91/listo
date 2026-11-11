@@ -513,6 +513,10 @@ Décisions du propriétaire (cahier des charges, « Souvent ajoutés »). Même 
 
 Retirer un article : chaque ligne est un `.suggest__row`. Téléphone : `.suggest__row.swipe`, la ligne (`.suggest__item.swipe__slide`) glisse vers la gauche et révèle `.swipe__delete` (`#i-eye-off` ET « Retirer »), comme une ligne de liste. Ordinateur : `.suggest__actions` au bout de la ligne, un `.icon-btn` `#i-eye-off` (« Retirer … de « Souvent ajoutés » »), visible au survol et au clavier.
 
+## Ajout : plusieurs personnes, chacun son tour (11 novembre 2026)
+
+Décisions du propriétaire (cahier des charges, « Attribuer une tâche »). « Pour » garde son `.due-picker` (`#i-users` pour plusieurs, `#i-repeat` pour chacun son tour) ; dessous, les prénoms en pastilles `.weekdays__opt` (`aria-pressed`, choisi : liseré ET fond accent, jamais la couleur seule) dans `.people-picker` (retour à la ligne ; style dans `public/css/app.css`), numérotées pour un tour (« 1 · Léa »), et une phrase `.field__hint`. Ligne : `.chip` avec `#i-users` (« Moi, Léa », « Léa +2 », ou la personne de cette fois). Aucune couleur ni icône nouvelle.
+
 ## Ajout : Réglages allégés (11 novembre 2026)
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).

@@ -101,11 +101,11 @@ test('add_items : un élément déjà là (non coché) est ignoré et n\'est PAS
 
 test('descriptions et instructions : ce que Claude peut faire, exactement ; read_list donne priorité et échéance', () => {
   const byName = Object.fromEntries(TOOLS.map((tool) => [tool.name, tool]));
-  assert.match(byName.read_list.description, /pour une liste de tâches, la priorité et l'échéance si elles sont activées \(due_time : l'heure, et remind : le rappel, s'il y en a\), repeat \(la répétition en clair, par exemple « Chaque lundi et mercredi »\) pour une tâche qui se répète, et assigned_to \(le prénom de la personne\) si la tâche est attribuée ; pour une liste d'envies, la priorité si elle est activée/);
+  assert.match(byName.read_list.description, /pour une liste de tâches, la priorité et l'échéance si elles sont activées \(due_time : l'heure, et remind : le rappel, s'il y en a\), repeat \(la répétition en clair, par exemple « Chaque lundi et mercredi »\) pour une tâche qui se répète, et assigned_to \(le prénom de la personne\) si la tâche est attribuée, together \(les prénoms\) si elle est à plusieurs personnes, turn \(les prénoms dans l'ordre, assigned_to étant la personne de cette fois\) si c'est chacun son tour ; pour une liste d'envies, la priorité si elle est activée/);
   assert.match(byName.add_items.description, /priority \(low, normal ou high\) pour une liste de tâches ou d'envies dont la priorité est activée ; due_date \(date AAAA-MM-JJ\) pour une liste de tâches dont l'échéance est activée \(jamais pour une liste de courses ou d'envies\), avec si besoin due_time \(heure HH:MM\) et remind/);
   assert.match(byName.add_items.description, /l'appel entier est refusé et rien n'est ajouté/);
   assert.match(byName.add_items.description, /déjà dans la liste sans être coché \(il n'est pas modifié\)/);
-  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'repeat', 'due_time', 'remind', 'assigned_to', 'aisle', 'store']);
+  assert.deepEqual(Object.keys(byName.add_items.inputSchema.properties.items.items.properties), ['name', 'quantity', 'note', 'link', 'price', 'priority', 'due_date', 'repeat', 'due_time', 'remind', 'assigned_to', 'together', 'turn', 'aisle', 'store']);
   // Plus d'outil set_item_options : update_items fait la même chose en plus large
   assert.equal(byName.set_item_options, undefined);
   assert.deepEqual(byName.update_items.inputSchema.properties.items.items.properties.priority.enum, ['low', 'normal', 'high']);

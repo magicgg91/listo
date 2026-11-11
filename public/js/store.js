@@ -13,6 +13,7 @@
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
+import { modeOf, turnAfterCheck } from './assign.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -298,7 +299,10 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         priority: op.priority ?? 'normal', // priorité et échéance dès l'ajout (comme le serveur)
         dueDate: op.dueDate ?? null,
         repeat: op.repeat ?? null, // répétition (listes de tâches, repeat.js)
-        assignedTo: op.assignedTo ?? null, // personne à qui la tâche est attribuée
+        assignedTo: op.assignedTo ?? (op.assignMode === 'turn' ? op.assignPeople?.[0] ?? null : null), // personne (de cette fois)
+        // Plusieurs personnes ('all') ou chacun son tour ('turn') : assign.js
+        assignMode: op.assignMode ?? 'one',
+        assignPeople: op.assignMode && op.assignMode !== 'one' ? op.assignPeople ?? [] : [],
         dueTime: op.dueTime ?? null, // heure de l'échéance (« HH:MM ») et rappel (minutes avant)
         remindBefore: op.remindBefore ?? null,
         photoAt: null,
@@ -315,10 +319,18 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'dueTime', 'remindBefore', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'assignMode', 'assignPeople', 'dueTime', 'remindBefore', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      // Attribution (mêmes règles que le serveur, assign.js) : une personne
+      // demandée seule fait repasser en « une personne », sauf si c'est la
+      // personne de cette fois d'un tour ; plusieurs : personne « de cette fois »
+      if (op.assignedTo !== undefined && op.assignMode === undefined && !(modeOf(item) === 'turn' && (item.assignPeople ?? []).includes(op.assignedTo))) next.assignMode = 'one';
+      if (modeOf(next) === 'one') next.assignPeople = [];
+      if (modeOf(next) === 'all') next.assignedTo = null;
       // Effacer l'échéance arrête la répétition et efface l'heure ; effacer
       // l'heure efface le rappel (mêmes règles que le serveur)
       if (op.dueDate === null && op.repeat === undefined) next.repeat = null;
+      // Plus de répétition : « chacun son tour » redevient « une personne »
+      if (next.repeat == null && modeOf(next) === 'turn') Object.assign(next, { assignMode: 'one', assignPeople: [] });
       if (op.dueDate === null && op.dueTime === undefined) next.dueTime = null;
       if (next.dueTime == null && op.remindBefore === undefined) next.remindBefore = null;
       state.items.set(item.id, next);
@@ -336,7 +348,11 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       // Tâche qui se répète : elle revient décochée à la date suivante
       // (nextDue, calculée par actions.js avec repeat.js)
       if (op.checked && op.nextDue) {
-        state.items.set(item.id, { ...item, dueDate: op.nextDue, checked: false, checkedAt: null, updatedAt: now });
+        // Chacun son tour : la fois suivante est pour la personne qui suit
+        // celle qui a coché (assign.js, même règle que le serveur)
+        const turn = modeOf(item) === 'turn' && state.lists.get(item.listId)?.assignEnabled === true;
+        const assignedTo = turn ? turnAfterCheck(item.assignPeople ?? [], item.assignedTo ?? null, user?.id) : item.assignedTo ?? null;
+        state.items.set(item.id, { ...item, dueDate: op.nextDue, assignedTo, checked: false, checkedAt: null, updatedAt: now });
         return;
       }
       // Date du coché : celle du téléphone en attendant celle du serveur
@@ -540,7 +556,7 @@ export function possibleGroupKeys(state) {
     ...state.stores.map((store) => `s:${store.id}`), 's:aucun',
     'p:high', 'p:normal', 'p:low', 'tous',
     // Par personne : les membres de mes listes, et « Personne »
-    ...[...state.lists.values()].flatMap((list) => (list.members ?? []).map((m) => `u:${m.id}`)), 'u:aucun',
+    ...[...state.lists.values()].flatMap((list) => (list.members ?? []).map((m) => `u:${m.id}`)), 'u:aucun', 'u:all',
   ]);
 }
 

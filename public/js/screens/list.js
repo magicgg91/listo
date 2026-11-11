@@ -58,6 +58,7 @@ import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
 import { createSwipeController, SWIPE } from '../swipe.js';
 import { createTapPicker, keepFieldFocus } from '../tap.js';
+import { modeOf, peopleOf, assigneesOf } from '../assign.js';
 import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
@@ -534,14 +535,35 @@ export function renderList(listId, onLeave) {
         spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
       }
     }
-    // Tâche attribuée (après la date) : « Moi » (en bleu) ou le prénom, avec l'icône
-    const who = options.assign ? personOf(view?.list, item.assignedTo) : null;
-    if (who) {
-      chips.push(h('span', { class: `chip${who.me ? ' chip--accent' : ''}` }, icon('user', 'icon--xs'), who.name));
-      spoken.push(who.me ? 'pour moi' : `pour ${who.name}`);
+    // Tâche attribuée (après la date) : « Moi » (en bleu) ou le prénom, avec
+    // l'icône ; plusieurs personnes : « Moi, Léa », « Léa +2 » ; chacun son
+    // tour : la personne de cette fois (icône des personnes)
+    if (options.assign && modeOf(item) === 'all') {
+      const people = peopleOf(item).map((id) => personOf(view?.list, id)).filter(Boolean).sort((a, b) => Number(b.me) - Number(a.me));
+      if (people.length) {
+        const text = people.length <= 2 ? people.map((p) => p.name).join(', ') : `${people[0].name} +${people.length - 1}`;
+        chips.push(h('span', { class: `chip${people.some((p) => p.me) ? ' chip--accent' : ''}` }, icon('users', 'icon--xs'), text));
+        spoken.push(`pour ${people.map((p) => (p.me ? 'moi' : p.name)).join(', ')}`);
+      }
+    } else {
+      const who = options.assign ? personOf(view?.list, item.assignedTo) : null;
+      if (who) {
+        const turn = modeOf(item) === 'turn';
+        chips.push(h('span', { class: `chip${who.me ? ' chip--accent' : ''}` }, icon(turn ? 'users' : 'user', 'icon--xs'), who.name));
+        spoken.push(turn ? `chacun son tour, cette fois ${who.me ? 'moi' : who.name}` : who.me ? 'pour moi' : `pour ${who.name}`);
+      }
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
+
+  // « Pour » en lecture seule : la personne, « Léa, Marc », ou « Chacun son
+  // tour : Léa → Marc → Zoé (cette fois : Léa) »
+  function assignText(it) {
+    const name = (id) => personOf(view?.list, id)?.name;
+    if (modeOf(it) === 'all') return peopleOf(it).map(name).filter(Boolean).join(', ') || 'Personne';
+    if (modeOf(it) === 'turn') return `Chacun son tour : ${peopleOf(it).map(name).filter(Boolean).join(' → ')} (cette fois : ${name(it.assignedTo) ?? 'personne'})`;
+    return name(it.assignedTo) ?? 'Personne';
+  }
 
   // Personne à qui une tâche est attribuée : { name, me } (« Moi » pour
   // soi), ou null (personne, ou plus membre de la liste)
@@ -743,11 +765,14 @@ export function renderList(listId, onLeave) {
   // revient décochée à la date suivante (actions.checkItem). Le message dit
   // laquelle ; « Annuler » (et Ctrl+Z) remet l'ancienne date.
   function checkRepeating(item, next) {
-    const before = { dueDate: item.dueDate };
-    const entry = { kind: 'update', itemId: item.id, name: item.name, before, after: { dueDate: next } };
+    const before = actions.undoOfRepeat(item);
+    // Chacun son tour : le message dit aussi pour qui est la fois suivante
+    const nextPerson = actions.nextTurnOf(item);
+    const who = nextPerson === null ? '' : ` · ${nextPerson === app.user.id ? 'Moi' : memberNames(view?.list).get(nextPerson) ?? ''}`;
+    const entry = { kind: 'update', itemId: item.id, name: item.name, before, after: { dueDate: next, ...(nextPerson !== null ? { assignedTo: nextPerson } : {}) } };
     recordUndo(listId, entry);
     actions.checkItem(item, true);
-    toast(`Prochaine fois : ${dueDateLabel(next)}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+    toast(`Prochaine fois : ${dueDateLabel(next)}${who}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
       forgetUndo(listId, (e) => e === entry);
       const current = app.data.items.get(item.id);
       if (current && current.dueDate === next) actions.updateItem(current, before);
@@ -1527,6 +1552,7 @@ export function renderList(listId, onLeave) {
       dueDate = null;
       drawDue();
     } }, 'Effacer');
+    let redrawAssign = null; // « Pour » (plus bas) : « Chacun son tour » suit la répétition
     const drawDue = () => {
       const label = dueDate ? dueDateLabel(dueDate) : 'Aucune échéance';
       replace(dueText, icon('calendar', 'icon--sm'), label);
@@ -1540,6 +1566,7 @@ export function renderList(listId, onLeave) {
       }
       drawRepeat();
       drawTime();
+      redrawAssign?.();
     };
     const shortcut = (label, days) => h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
       dueDate = addDays(todayKey(), days);
@@ -1766,37 +1793,90 @@ export function renderList(listId, onLeave) {
       h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue));
     // --- Pour (attribution, décisions du 11 novembre 2026) : seulement si
     // l'option « Attribution » de la liste est activée. « Personne », « Moi »
-    // (si je peux modifier la liste), puis les autres personnes qui peuvent
-    // la modifier (le serveur revérifie). Même champ que « Se répète ».
+    // (si je peux modifier la liste), les autres personnes qui peuvent la
+    // modifier, puis « Plusieurs personnes… » et, pour une tâche qui se
+    // répète, « Chacun son tour… » (assign.js) : les prénoms en pastilles, à
+    // toucher (chacun son tour : dans l'ordre du tour). Le serveur revérifie.
     let assignee = item.assignedTo ?? null;
-    const savedAssignee = item.assignedTo ?? null;
+    let assignMode = modeOf(item);
+    let assignPeople = [...peopleOf(item)];
+    const savedAssign = JSON.stringify([item.assignedTo ?? null, modeOf(item), peopleOf(item)]);
     const assignSelect = h('select', { class: 'due-picker__input' });
     const assignPicker = nativePicker(assignSelect);
     assignSelect.addEventListener('change', () => {
-      assignee = assignSelect.value ? Number(assignSelect.value) : null;
+      const value = assignSelect.value;
+      if (value === 'all' || value === 'turn') {
+        // Personnes déjà choisies gardées ; sinon, la personne actuelle d'abord
+        if (assignMode === 'one') assignPeople = assignee !== null ? [assignee] : [];
+        assignMode = value;
+      } else {
+        assignMode = 'one';
+        assignPeople = [];
+        assignee = value ? Number(value) : null;
+      }
       drawAssign();
     });
+    const peopleRow = h('div', { class: 'people-picker', role: 'group', 'aria-label': 'Personnes' });
+    const peopleHint = h('p', { class: 'field__hint' });
     function drawAssign() {
       const list = app.data.lists.get(listId);
       const people = assignablePeople(list);
+      const names = memberNames(list);
+      const nameOf = (id) => (id === app.user.id ? 'Moi' : names.get(id) ?? 'Ancien membre');
+      // Plus de répétition : « chacun son tour » redevient la personne de cette fois
+      if (assignMode === 'turn' && !repeat) {
+        assignMode = 'one';
+        assignee = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0] ?? null;
+        assignPeople = [];
+      }
       const choices = [['', 'Personne']];
       if (people.some((p) => p.id === app.user.id)) choices.push([String(app.user.id), 'Moi']);
       for (const person of people) if (person.id !== app.user.id) choices.push([String(person.id), person.displayName]);
       // Personne déjà attribuée qui ne serait plus dans les choix : gardée,
       // pour ne rien changer sans le vouloir
-      if (assignee !== null && !choices.some(([value]) => value === String(assignee))) {
-        choices.push([String(assignee), memberNames(list).get(assignee) ?? 'Ancien membre']);
+      if (assignMode === 'one' && assignee !== null && !choices.some(([value]) => value === String(assignee))) {
+        choices.push([String(assignee), nameOf(assignee)]);
+      }
+      if (people.length >= 2) {
+        choices.push(['all', 'Plusieurs personnes…']);
+        if (repeat || assignMode === 'turn') choices.push(['turn', 'Chacun son tour…']);
       }
       assignSelect.replaceChildren(...choices.map(([value, label]) => h('option', { value }, label)));
-      assignSelect.value = assignee === null ? '' : String(assignee);
-      const label = choices.find(([value]) => value === assignSelect.value)?.[1] ?? 'Personne';
-      replace(assignPicker.text, icon('user', 'icon--sm'), label);
+      assignSelect.value = assignMode === 'one' ? (assignee === null ? '' : String(assignee)) : assignMode;
+      const label = assignMode === 'all' ? 'Plusieurs personnes' : assignMode === 'turn' ? 'Chacun son tour'
+        : choices.find(([value]) => value === assignSelect.value)?.[1] ?? 'Personne';
+      replace(assignPicker.text, icon(assignMode === 'turn' ? 'repeat' : assignMode === 'all' ? 'users' : 'user', 'icon--sm'), label);
       assignSelect.setAttribute('aria-label', `Pour : ${label}. Changer`);
+      // Pastilles des personnes (plusieurs, ou chacun son tour : numéro dans le tour)
+      peopleRow.hidden = assignMode === 'one';
+      peopleHint.hidden = assignMode === 'one';
+      if (assignMode === 'one') return;
+      // Les personnes choisies d'abord, dans l'ordre (du tour), puis les autres
+      const ids = [...new Set([...assignPeople, ...people.map((p) => p.id)])];
+      replace(peopleRow, ids.map((id) => {
+        const rank = assignPeople.indexOf(id);
+        const on = rank >= 0;
+        const text = assignMode === 'turn' && on ? `${rank + 1} · ${nameOf(id)}` : nameOf(id);
+        return h('button', {
+          class: 'weekdays__opt', type: 'button', 'aria-pressed': String(on),
+          'aria-label': assignMode === 'turn' && on ? `${nameOf(id)}, numéro ${rank + 1} dans le tour` : nameOf(id),
+          onClick: () => {
+            assignPeople = on ? assignPeople.filter((p) => p !== id) : [...assignPeople, id];
+            drawAssign();
+          },
+        }, text);
+      }));
+      // Chacun son tour : la personne de cette fois (l'actuelle si elle reste dans le tour, sinon la première)
+      const current = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0] ?? null;
+      peopleHint.textContent = assignMode === 'all'
+        ? 'La tâche est à chacune des personnes choisies (au moins deux) ; la première qui la coche la termine.'
+        : `Touchez les personnes dans l'ordre du tour (au moins deux).${current !== null ? ` Cette fois : ${nameOf(current)}.` : ''}`;
     }
     drawAssign();
+    redrawAssign = drawAssign;
     const assignField = h('div', { class: 'field' },
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Pour'),
-      assignPicker.el);
+      assignPicker.el, peopleRow, peopleHint);
 
     const repeatField = h('div', { class: 'field' },
       h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Se répète'),
@@ -1932,7 +2012,7 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null, it.assignedTo ?? null, it.dueTime ?? null, it.remindBefore ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null, it.assignedTo ?? null, modeOf(it), peopleOf(it), it.dueTime ?? null, it.remindBefore ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
@@ -2006,7 +2086,7 @@ export function renderList(listId, onLeave) {
     // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
     // savoir s'il reste des modifications non enregistrées (ordinateur)
     function snapshot() {
-      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee, dueTime, remind]);
+      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee, assignMode, assignPeople, dueTime, remind]);
     }
     let initialSnapshot = snapshot();
     const dirty = () => snapshot() !== initialSnapshot;
@@ -2075,7 +2155,20 @@ export function renderList(listId, onLeave) {
       if (enabled.priority && priority !== (item.priority ?? 'normal')) changes.priority = priority;
       if (enabled.due && dueDate !== savedDue) changes.dueDate = dueDate; // null : échéance effacée
       if (enabled.due && repeat !== savedRepeat) changes.repeat = repeat; // null : ne se répète plus
-      if (enabled.assign && assignee !== savedAssignee) changes.assignedTo = assignee; // null : à personne
+      // Attribution : une personne (null : à personne), plusieurs, ou chacun
+      // son tour (au moins deux personnes ; assign.js)
+      if (enabled.assign && assignMode !== 'one' && assignPeople.length < 2) {
+        toast('Choisissez au moins deux personnes.');
+        return;
+      }
+      const turnNow = assignMode === 'turn' ? (assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0]) : null;
+      const wantedAssign = assignMode === 'one' ? [assignee, 'one', []] : assignMode === 'all' ? [null, 'all', assignPeople] : [turnNow, 'turn', assignPeople];
+      if (enabled.assign && JSON.stringify(wantedAssign) !== savedAssign) {
+        changes.assignMode = assignMode;
+        if (assignMode === 'one') changes.assignedTo = assignee;
+        else changes.assignPeople = [...assignPeople];
+        if (assignMode === 'turn') changes.assignedTo = turnNow;
+      }
       if (enabled.due && dueTime !== savedDueTime) changes.dueTime = dueTime; // null : sans heure
       if (enabled.due && remind !== savedRemind) changes.remindBefore = remind; // null : aucun rappel
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
@@ -2128,7 +2221,7 @@ export function renderList(listId, onLeave) {
         options.due && it.dueDate && it.dueTime && it.remindBefore != null && app.user?.push ? value('Rappel', reminderLabel(it.remindBefore)) : null,
         options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
         // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
-        options.assign ? value('Pour', personOf(view?.list, it.assignedTo)?.name ?? 'Personne') : null,
+        options.assign ? value('Pour', assignText(it)) : null,
         shopping && it.ean ? value('Code-barres', it.ean) : null,
         actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
           h('div', { class: 'photo-block' },

@@ -39,6 +39,7 @@ import {
   wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
 } from '../public/js/wishes.js';
 import { isRepeatRule, isOccurrence, nextDue } from '../public/js/repeat.js';
+import { ASSIGN_MODES, parsePeople, formatPeople, isPeopleList, assigneesOf, turnAfterCheck, withoutPerson } from '../public/js/assign.js';
 import { isDueTime, isReminder } from '../public/js/due-time.js';
 import { createReservationService } from './reservations.js';
 import { cleanName, parseId } from './validate.js';
@@ -108,6 +109,9 @@ export const REMIND_NEEDS_TIME = 'Un rappel demande une heure.';
 export const ASSIGN_NOT_HERE = "L'attribution ne se choisit que dans une liste de tâches.";
 export const ASSIGN_OFF = "L'attribution est désactivée pour cette liste.";
 export const BAD_ASSIGNEE = 'Cette personne ne peut pas recevoir de tâche dans cette liste (le propriétaire ou une personne qui peut la modifier).';
+export const BAD_ASSIGN_MODE = 'Façon d\'attribuer inconnue (une personne, plusieurs, ou chacun son tour).';
+export const BAD_PEOPLE = 'Choisissez au moins deux personnes (vingt au plus), sans doublon, parmi celles qui peuvent modifier la liste.';
+export const TURN_NEEDS_REPEAT = '« Chacun son tour » demande une tâche qui se répète.';
 
 // Date du jour sur le serveur (AAAA-MM-JJ, fuseau du serveur : variable TZ)
 export const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -333,7 +337,10 @@ export function createListService(ctx) {
       WHERE list_members.list_id = ? AND list_members.user_id = ? AND list_members.access = 'modification'`).pluck(),
     // Tâches qui ne sont plus attribuables (personne partie ou passée en
     // lecture seule) : remises à « Personne »
-    unassign: db.prepare('UPDATE items SET assigned_to = NULL, updated_at = ? WHERE list_id = ? AND assigned_to = ?'),
+    // (une, plusieurs, ou chacun son tour : withoutPerson, public/js/assign.js)
+    assignedOf: db.prepare(`SELECT id, assign_mode, assign_people, assigned_to FROM items
+      WHERE list_id = :listId AND (assigned_to = :userId OR instr(',' || COALESCE(assign_people, '') || ',', ',' || CAST(:userId AS INTEGER) || ',') > 0)`),
+    setAssignment: db.prepare('UPDATE items SET assign_mode = ?, assign_people = ?, assigned_to = ?, updated_at = ? WHERE id = ?'),
     members: db.prepare(`
       SELECT users.id, users.username, users.display_name, users.active, list_members.access
       FROM list_members JOIN users ON users.id = list_members.user_id
@@ -580,6 +587,58 @@ export function createListService(ctx) {
     return id;
   }
 
+  // Façon d'attribuer demandée (opération : assignMode, assignPeople,
+  // assignedTo), à partir de l'état actuel { mode, people, assignedTo }.
+  // undefined : rien de demandé. Vérifiée avant toute écriture :
+  // - 'one' : la personne (assignedTo) ou personne ;
+  // - 'all' : 2 à 20 personnes qui peuvent recevoir la tâche ;
+  // - 'turn' : de même, dans l'ordre, seulement si la tâche se répète
+  //   (repeat : la règle après l'opération) ; la personne de cette fois :
+  //   celle demandée, sinon l'actuelle si elle est dans le tour, sinon la
+  //   première.
+  // Sans assignMode, assignedTo seul : chacun son tour, change la personne
+  // de cette fois (si elle est dans le tour) ; sinon passe en « une personne ».
+  function assignmentFor(type, assignEnabled, listId, op, current, repeat) {
+    if (op.assignMode === undefined && op.assignPeople === undefined && op.assignedTo === undefined) return undefined;
+    if (!usesAssign(type)) throw new OpError(400, ASSIGN_NOT_HERE);
+    if (!assignEnabled) throw new OpError(400, ASSIGN_OFF);
+    if (op.assignMode !== undefined && !ASSIGN_MODES.includes(op.assignMode)) throw new OpError(400, BAD_ASSIGN_MODE);
+    const person = assigneeFor(type, assignEnabled, listId, op.assignedTo);
+    let mode = op.assignMode;
+    if (mode === undefined) {
+      if (op.assignPeople !== undefined) mode = current.mode === 'one' ? 'all' : current.mode;
+      else mode = current.mode === 'turn' && person != null && current.people.includes(person) ? 'turn' : 'one';
+    }
+    if (mode === 'one') {
+      if (op.assignPeople !== undefined && op.assignPeople !== null) throw new OpError(400, BAD_PEOPLE);
+      return { mode, people: [], assignedTo: person !== undefined ? person : current.mode === 'all' ? null : current.assignedTo };
+    }
+    let people = current.people;
+    if (op.assignPeople !== undefined) {
+      const ids = Array.isArray(op.assignPeople) ? op.assignPeople.map((value) => (typeof value === 'number' || typeof value === 'string' ? parseId(value) : null)) : null;
+      if (!ids || !isPeopleList(ids) || !ids.every((id) => q.assignable.get(listId, id))) throw new OpError(400, BAD_PEOPLE);
+      people = ids;
+    }
+    if (!isPeopleList(people)) throw new OpError(400, BAD_PEOPLE);
+    if (mode === 'all') return { mode, people, assignedTo: null };
+    if (repeat === null) throw new OpError(400, TURN_NEEDS_REPEAT);
+    const assignedTo = person != null && people.includes(person) ? person
+      : current.assignedTo != null && people.includes(current.assignedTo) ? current.assignedTo : people[0];
+    return { mode, people, assignedTo };
+  }
+  const assignmentOf = (item) => ({ mode: item.assign_mode ?? 'one', people: parsePeople(item.assign_people), assignedTo: item.assigned_to ?? null });
+  // Pour comparer « avant / après » avec les règles partagées (assign.js)
+  const asItem = ({ mode, people, assignedTo }) => ({ assignMode: mode, assignPeople: people, assignedTo });
+
+  // Une personne quitte la liste, en est retirée ou passe en lecture seule :
+  // retirée de ses tâches (une, plusieurs, chacun son tour), supprimées comprises
+  function unassign(listId, userId, now) {
+    for (const row of q.assignedOf.all({ listId, userId })) {
+      const next = withoutPerson(assignmentOf(row), userId);
+      q.setAssignment.run(next.mode, formatPeople(next.people), next.assignedTo, now, row.id);
+    }
+  }
+
   // La tâche se répète-t-elle en ce moment ? (règle, échéance, liste de
   // tâches dont l'échéance est activée : sinon la règle est gardée, cachée)
   function repeatsNow(item) {
@@ -630,6 +689,10 @@ export function createListService(ctx) {
     repeat: item.repeat ?? null,
     // Personne à qui la tâche est attribuée (identifiant du compte), ou null
     assignedTo: item.assigned_to ?? null,
+    // Plusieurs personnes ('all') ou chacun son tour ('turn', assignedTo :
+    // la personne de cette fois) : les personnes, dans l'ordre (assign.js)
+    assignMode: item.assign_mode ?? 'one',
+    assignPeople: parsePeople(item.assign_people),
     // Heure « HH:MM » et rappel (minutes avant l'heure), ou null
     dueTime: item.due_time ?? null,
     remindBefore: item.remind_before ?? null,
@@ -975,7 +1038,9 @@ export function createListService(ctx) {
       const dueDate = op.dueDate ?? null;
       const repeat = op.repeat ?? null;
       if (repeat !== null && dueDate === null) throw new OpError(400, REPEAT_NEEDS_DUE);
-      const assignedTo = assigneeFor(typeOf(list), list.assign_enabled === 1, list.id, op.assignedTo) ?? null;
+      const assignment = assignmentFor(typeOf(list), list.assign_enabled === 1, list.id, op, { mode: 'one', people: [], assignedTo: null }, repeat)
+        ?? { mode: 'one', people: [], assignedTo: null };
+      const assignedTo = assignment.assignedTo;
       const dueTime = op.dueTime ?? null;
       const remindBefore = op.remindBefore ?? null;
       if (dueTime !== null && dueDate === null) throw new OpError(400, TIME_NEEDS_DUE);
@@ -991,16 +1056,16 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, assigned_to, due_time, remind_before, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, assignedTo, dueTime, remindBefore, user.id, now, now);
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, assigned_to, assign_mode, assign_people, due_time, remind_before, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, user.id, now, now);
       // Historique (listes de courses seulement) : magasin de l'article
       // (« multi ») ou magasin de la liste (simple)
       if (isShoppingList(list)) remember(name, { storeId: list.is_multi === 1 ? storeId : list.store_id, aisleId, count: 1 });
       news.log(list.id, user.id, 'add', [id]);
       // Notification : « Léa vous a attribué une tâche » (regroupée avec ses
       // autres changements de la minute, server/notify.js)
-      if (assignedTo !== null) ctx.notify?.assigned({ listId: list.id, itemId: id, userId: assignedTo, actorId: user.id });
+      for (const userId of assigneesOf(asItem(assignment))) ctx.notify?.assigned({ listId: list.id, itemId: id, userId, actorId: user.id });
       changed(list.id);
       return { item: describeItem(q.item.get(id)) };
     },
@@ -1033,8 +1098,11 @@ export function createListService(ctx) {
       const repeat = op.repeat !== undefined ? op.repeat : op.dueDate === null ? null : item.repeat ?? null;
       if (repeat !== null && !dueDate) throw new OpError(400, REPEAT_NEEDS_DUE);
       // Attribution : vérifiée avant toute écriture (absente : inchangée)
-      const asked = assigneeFor(item.list_type, item.list_assign_enabled === 1, item.list_id, op.assignedTo);
-      const assignedTo = asked === undefined ? item.assigned_to ?? null : asked;
+      const before = assignmentOf(item);
+      let assignment = assignmentFor(item.list_type, item.list_assign_enabled === 1, item.list_id, op, before, repeat) ?? before;
+      // Plus de répétition : « chacun son tour » redevient « une personne » (celle de cette fois)
+      if (assignment.mode === 'turn' && repeat === null) assignment = { mode: 'one', people: [], assignedTo: assignment.assignedTo };
+      const assignedTo = assignment.assignedTo;
       // Heure et rappel : effacer l'échéance efface l'heure ; effacer
       // l'heure efface le rappel (comme la répétition)
       const dueTime = op.dueTime !== undefined ? op.dueTime : op.dueDate === null ? null : item.due_time ?? null;
@@ -1059,11 +1127,11 @@ export function createListService(ctx) {
         const wanted = op.storeId === null ? null : parseId(op.storeId);
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
-      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.assignedTo, op.dueTime, op.remindBefore, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
+      if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.assignedTo, op.assignMode, op.assignPeople, op.dueTime, op.remindBefore, op.ean, op.link, op.priceCents].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, assigned_to = ?, due_time = ?, remind_before = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, assignedTo, dueTime, remindBefore, ean, link, priceCents, nowIso(), item.id);
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, assigned_to = ?, assign_mode = ?, assign_people = ?, due_time = ?, remind_before = ?, ean = ?, link = ?, price_cents = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, ean, link, priceCents, nowIso(), item.id);
 
       // Historique : listes de courses seulement (une liste « multi » en est une)
       if (multi) {
@@ -1075,8 +1143,9 @@ export function createListService(ctx) {
       news.log(item.list_id, user.id, 'update', [item.id]);
       // Tâche attribuée à quelqu'un d'autre (pas à soi, pas inchangée) :
       // « Léa vous a attribué une tâche » (server/notify.js)
-      if (assignedTo !== null && assignedTo !== (item.assigned_to ?? null)) {
-        ctx.notify?.assigned({ listId: item.list_id, itemId: item.id, userId: assignedTo, actorId: user.id });
+      const already = new Set(assigneesOf(asItem(before)));
+      for (const userId of assigneesOf(asItem(assignment))) {
+        if (!already.has(userId)) ctx.notify?.assigned({ listId: item.list_id, itemId: item.id, userId, actorId: user.id });
       }
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)) };
@@ -1100,10 +1169,17 @@ export function createListService(ctx) {
         const next = proposed !== undefined && proposed > item.due_date && isOccurrence(item.repeat, proposed, item.due_date)
           ? proposed
           : nextDue(item.repeat, item.due_date, serverToday(new Date(ctx.now())));
-        db.prepare('UPDATE items SET due_date = ?, checked = 0, checked_at = NULL, updated_at = ? WHERE id = ?').run(next, nowIso(), item.id);
+        // Chacun son tour (liste dont l'attribution est activée) : la fois
+        // suivante est pour la personne qui suit, dans l'ordre, celle qui a
+        // coché (ou, si elle n'est pas dans le tour, celle de cette fois)
+        const turn = item.assign_mode === 'turn' && item.list_assign_enabled === 1;
+        const nextPerson = turn ? turnAfterCheck(parsePeople(item.assign_people), item.assigned_to, user.id) : item.assigned_to ?? null;
+        db.prepare('UPDATE items SET due_date = ?, assigned_to = ?, checked = 0, checked_at = NULL, updated_at = ? WHERE id = ?').run(next, nextPerson, nowIso(), item.id);
         news.log(item.list_id, user.id, 'check', [item.id]);
+        // « C'est votre tour » (server/notify.js), jamais à la personne qui a coché
+        if (turn && nextPerson != null) ctx.notify?.assigned({ listId: item.list_id, itemId: item.id, userId: nextPerson, actorId: user.id, turn: true });
         changed(item.list_id);
-        return { item: describeItem(q.item.get(item.id)), repeated: next };
+        return { item: describeItem(q.item.get(item.id)), repeated: next, ...(turn ? { nextPerson } : {}) };
       }
       // Date du coché : posée au premier coché (un second « cocher » la
       // garde), effacée au décoché
@@ -1379,8 +1455,8 @@ export function createListService(ctx) {
       // Leurs tâches attribuées reviennent à « Personne » : une personne
       // retirée ou en lecture seule ne peut plus les faire (ni les cocher)
       const now = nowIso();
-      for (const id of removed) q.unassign.run(now, list.id, id);
-      for (const [id, value] of changedRights) if (value !== 'modification') q.unassign.run(now, list.id, id);
+      for (const id of removed) unassign(list.id, id, now);
+      for (const [id, value] of changedRights) if (value !== 'modification') unassign(list.id, id, now);
       // La liste « change » : les membres l'apprendront à leur synchronisation
       // (et chacun son droit, dans la description de la liste)
       if (added.length || removed.length || changedRights.length) db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
@@ -1469,7 +1545,7 @@ export function createListService(ctx) {
       db.prepare('DELETE FROM list_members WHERE list_id = ? AND user_id = ?').run(list.id, user.id);
       news.stopReading(list.id, user.id);
       // Ses tâches attribuées reviennent à « Personne »
-      q.unassign.run(nowIso(), list.id, user.id);
+      unassign(list.id, user.id, nowIso());
       db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });

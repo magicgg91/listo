@@ -17,6 +17,7 @@ import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
 import { uuid, photoUrl, post, patch, del } from './api.js';
 import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions } from './store.js';
 import { nextDue } from './repeat.js';
+import { modeOf, turnAfterCheck } from './assign.js';
 import { todayKey } from './format.js';
 import { isMultiList } from './sorting.js';
 
@@ -71,6 +72,18 @@ export function repeatsNow(item) {
 // Date suivante d'une tâche qui se répète (cochée ou « passée »), avec la
 // date du téléphone ; null si elle ne se répète pas (repeat.js)
 export const nextDueOf = (item) => (repeatsNow(item) ? nextDue(item.repeat, item.dueDate, todayKey()) : null);
+
+// Chacun son tour : la personne de la fois suivante si JE coche cette tâche
+// (assign.js) ; null si la tâche n'est pas à tour de rôle
+export function nextTurnOf(item) {
+  const list = app.data.lists.get(item.listId);
+  if (modeOf(item) !== 'turn' || list?.assignEnabled !== true || !repeatsNow(item)) return null;
+  return turnAfterCheck(item.assignPeople ?? [], item.assignedTo ?? null, app.user?.id);
+}
+
+// Ce que « Annuler » remet après le coché d'une tâche qui se répète : la
+// date, et, à tour de rôle, la personne de cette fois
+export const undoOfRepeat = (item) => ({ dueDate: item.dueDate, ...(nextTurnOf(item) !== null ? { assignedTo: item.assignedTo ?? null } : {}) });
 
 // Cocher ou décocher. Une tâche qui se répète, cochée, revient décochée à la
 // date suivante : la date est calculée ici (hors ligne compris) et vérifiée

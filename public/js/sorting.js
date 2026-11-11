@@ -94,14 +94,19 @@ const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
 
 export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null } = {}) {
   if (sort === 'person') {
-    const owner = (item) => (item.assignedTo != null && people.has(item.assignedTo) ? item.assignedTo : null);
+    // Plusieurs personnes : dans « Moi » si j'en fais partie, sinon dans « À
+    // plusieurs » ; chacun son tour : la personne de cette fois
+    const owner = (item) => {
+      if (item.assignMode === 'all') return (item.assignPeople ?? []).includes(me) ? me : 'all';
+      return item.assignedTo != null && people.has(item.assignedTo) ? item.assignedTo : null;
+    };
     const ids = [...new Set(items.map(owner))];
-    const rank = (id) => (id === me ? 0 : id === null ? 2 : 1);
+    const rank = (id) => (id === me ? 0 : id === null ? 3 : id === 'all' ? 2 : 1);
     ids.sort((a, b) => rank(a) - rank(b) || compareNames(people.get(a) ?? '', people.get(b) ?? ''));
     return ids.map((id) => ({
       aisle: null,
       person: id,
-      label: id === null ? 'Personne' : id === me ? 'Moi' : people.get(id),
+      label: id === null ? 'Personne' : id === me ? 'Moi' : id === 'all' ? 'À plusieurs' : people.get(id),
       items: items.filter((item) => owner(item) === id).sort((a, b) => compareNames(a.name, b.name)),
     }));
   }

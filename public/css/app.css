@@ -34,6 +34,10 @@ html, body { height: 100%; margin: 0; }
 .app .toast__action { color: var(--color-inverse-accent); font-weight: 700; }
 .app .suggest__item { font-size: var(--text-item); }
 .app .suggest__item--new { color: var(--color-accent-ink); font-weight: 600; }
+/* « Pour » d'une tâche : plusieurs personnes ou chacun son tour, prénoms en
+   pastilles (style .weekdays__opt du kit), sur plusieurs lignes si besoin */
+.people-picker { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }
+.people-picker .weekdays__opt { padding: 0 var(--space-2); }
 /* « Souvent ajoutés » : titre de l'encart des suggestions et sa croix (Fermer) */
 .suggest__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); padding: 0 4px 0 var(--space-2); border-bottom: 1px solid var(--color-border); }
 .suggest__title { font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); }

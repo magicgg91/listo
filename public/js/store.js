@@ -13,7 +13,7 @@
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
-import { suggest, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
+import { suggest, habitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -796,6 +796,33 @@ export function computeSuggestions(state, typed, limit = 5) {
     aisleId: aisleName.has(entry.aisleId) ? entry.aisleId : null,
     aisleName: aisleName.get(entry.aisleId) ?? null,
   }));
+}
+
+// « Souvent ajoutés » d'une liste de courses (history.js, habitual) : les
+// articles les plus ajoutés dans son magasin (ou ses magasins, liste
+// « multi »), sans ceux déjà à acheter dans la liste. Chaque entrée garde
+// son nom et, pour l'écran, son rayon habituel (magasin simple) ou son
+// magasin habituel (« multi »). Liste qui n'est pas de courses : [].
+// Calculé sur la copie locale : marche hors ligne.
+export function computeHabitual(state, list, { now = new Date().toISOString() } = {}) {
+  if (!list || !isShoppingList(list)) return [];
+  const multi = isMultiList(list);
+  const storeIds = multi ? storeChoices(state, list).map((store) => store.id) : list.store?.id ? [list.store.id] : [];
+  if (multi && !storeIds.length) return [];
+  const exclude = new Set(itemsOf(state, list.id).filter((item) => !item.checked).map((item) => normalizeItemName(item.name)));
+  const aisleName = new Map(state.aisles.filter((a) => a.active).map((a) => [a.id, a.name]));
+  const storeName = new Map(state.stores.map((store) => [store.id, store.name]));
+  return habitual(state.history, { storeIds, exclude, now }).map((entry) => ({
+    name: entry.name,
+    hint: multi ? storeName.get(usualStoreFor(state, list, entry.name)) ?? null : aisleName.get(usualAisleFor(state, list, entry.name)) ?? null,
+  }));
+}
+
+// Article coché (« Dans le panier ») de cette liste qui porte ce nom
+// (majuscules et accents ignorés), ou null
+export function checkedNamed(state, listId, name) {
+  const key = normalizeItemName(name);
+  return itemsOf(state, listId).find((item) => item.checked && normalizeItemName(item.name) === key) ?? null;
 }
 
 // Vrai si ce nom d'article est déjà connu (dans l'historique commun)

@@ -34,6 +34,9 @@ html, body { height: 100%; margin: 0; }
 .app .toast__action { color: var(--color-inverse-accent); font-weight: 700; }
 .app .suggest__item { font-size: var(--text-item); }
 .app .suggest__item--new { color: var(--color-accent-ink); font-weight: 600; }
+/* « Souvent ajoutés » : titre de l'encart des suggestions et sa croix (Fermer) */
+.suggest__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); padding: 0 4px 0 var(--space-2); border-bottom: 1px solid var(--color-border); }
+.suggest__title { font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); }
 .app .menu__item { font-size: var(--text-base); }
 .app .menu__item--danger { color: var(--color-danger-ink); }
 .app .tab { color: var(--color-text-2); font-size: var(--text-base); font-weight: 600; }

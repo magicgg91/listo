@@ -44,7 +44,7 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName } from '../history.js';
-import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
@@ -835,7 +835,9 @@ export function renderList(listId, onLeave) {
   // le curseur dès l'appui, la barre d'ajout bougeait et il fallait toucher
   // « + » deux fois. Le click reste en secours (souris, clavier, lecteur
   // d'écran, touche Entrée) : un seul ajout par appui.
-  const plus = taps.button(() => addTyped(input.value), { persistent: true });
+  // Champ vide (liste de courses) : « + » ouvre « Souvent ajoutés », sans
+  // clavier (jamais de curseur automatique)
+  const plus = taps.button(() => (input.value.trim() ? addTyped(input.value) : openHabitual()), { persistent: true });
   const addForm = h('form', { class: 'addbar__row', novalidate: true },
     h('label', { class: 'addbar__field' }, input),
     scanner.button,
@@ -884,7 +886,7 @@ export function renderList(listId, onLeave) {
   // posé dessus (elle se fermera au relâchement si le champ n'a plus le curseur)
   input.addEventListener('blur', () => setTimeout(() => {
     if (document.activeElement !== input) setTyping(false);
-    if (document.activeElement !== input && !taps.pressing) suggestBox.hidden = true;
+    if (document.activeElement !== input && !taps.pressing && !habitualOpen) suggestBox.hidden = true;
   }, 150));
 
   // --- Toucher d'une suggestion (tap.js) ---
@@ -900,7 +902,7 @@ export function renderList(listId, onLeave) {
       redrawLater = false;
       drawSuggestions();
     }
-    if (document.activeElement !== input) suggestBox.hidden = true;
+    if (document.activeElement !== input && !habitualOpen) suggestBox.hidden = true;
   };
   for (const type of ['pointerup', 'pointercancel']) {
     document.addEventListener(type, releaseSuggestions); // après le bouton lui-même
@@ -911,8 +913,90 @@ export function renderList(listId, onLeave) {
   onLeave(() => document.removeEventListener('click', ghostClick, true));
 
   input.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') suggestBox.hidden = true;
+    if (event.key === 'Escape') closeHabitual() || (suggestBox.hidden = true);
   });
+
+  // --- « Souvent ajoutés » (décisions du 11 novembre 2026) ---
+  // Liste de courses, champ d'ajout vide : en touchant le champ (clavier
+  // ouvert) ou « + » (sans clavier), l'encart des suggestions montre les
+  // articles les plus ajoutés dans ce magasin (store.js, computeHabitual :
+  // 6 au plus, ajoutés ces deux derniers mois, sans ceux déjà à acheter).
+  // Un appui ajoute l'article (ou remet dans la liste celui qui est dans le
+  // panier) ; l'encart reste ouvert pour en ajouter d'autres. Il se ferme
+  // par sa croix, en touchant ailleurs, ou dès qu'on tape (les suggestions
+  // habituelles reprennent la place).
+  let habitualOpen = false; // ouvert par « + », sans curseur dans le champ
+  function openHabitual() {
+    if (!editable() || !remembersNames(view?.list)) return;
+    if (!computeHabitual(app.data, view.list).length) return; // rien à proposer : « + » ne fait rien
+    habitualOpen = true;
+    setTyping(true); // la loupe flottante laisse la place
+    drawSuggestions();
+  }
+  // Ferme l'encart (et le clavier) ; vrai s'il était affiché
+  function closeHabitual() {
+    const shown = !suggestBox.hidden && suggestBox.dataset.mode === 'habitual';
+    habitualOpen = false;
+    if (!shown) return false;
+    suggestBox.hidden = true;
+    if (document.activeElement === input) releaseFocus();
+    setTyping(false);
+    return true;
+  }
+  // Toucher ailleurs (la liste, la barre du haut) : l'encart ouvert par « + » se ferme
+  const outside = (event) => {
+    if (habitualOpen && !addbar.contains(event.target)) closeHabitual();
+  };
+  document.addEventListener('pointerdown', outside, true);
+  onLeave(() => document.removeEventListener('pointerdown', outside, true));
+
+  // Appui sur un article de l'encart : ajouté (ou remis dans la liste s'il
+  // est dans le panier), sans quitter l'encart ni ouvrir de fiche
+  async function pickHabitual(name) {
+    if (!editable() || !view) return;
+    const inCart = checkedNamed(app.data, listId, name);
+    if (inCart) {
+      await actions.checkItem(inCart, false); // copie locale d'abord (hors ligne compris)
+      toast(`Remis dans la liste : ${inCart.name}`, { low: true });
+    } else {
+      const item = await addNamed(name);
+      if (!item) return;
+      toast(`Ajouté : ${item.name}`, { low: true });
+    }
+    drawSuggestions();
+  }
+
+  function drawHabitual() {
+    const entries = computeHabitual(app.data, view?.list);
+    if (!entries.length) {
+      suggestBox.hidden = true;
+      habitualOpen = false;
+      return;
+    }
+    const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => closeHabitual() }, icon('close'));
+    replace(suggestBox,
+      h('div', { class: 'suggest__head' }, h('span', { class: 'suggest__title' }, 'Souvent ajoutés'), close),
+      entries.map((entry) => {
+        const on = taps.button(() => {
+          redrawLater = false;
+          pickHabitual(entry.name);
+        });
+        return h('button', {
+          class: 'suggest__item',
+          type: 'button',
+          onPointerdown: on.pointerdown,
+          onMousedown: on.mousedown,
+          onPointerup: on.pointerup,
+          onPointercancel: on.pointercancel,
+          onClick: on.click,
+        }, h('span', {}, entry.name), entry.hint ? h('span', { class: 'suggest__aisle' }, entry.hint) : null);
+      }));
+    // Un groupe de boutons (pas une liste de choix : il a sa croix)
+    suggestBox.dataset.mode = 'habitual';
+    suggestBox.setAttribute('role', 'group');
+    suggestBox.setAttribute('aria-label', 'Souvent ajoutés');
+    suggestBox.hidden = false;
+  }
   // Collage d'une liste sur plusieurs lignes (courses et tâches) : le champ
   // n'a qu'une ligne et effacerait les retours à la ligne ; ils deviennent
   // des points-virgules, qui séparent les éléments. La touche Entrée, elle,
@@ -938,6 +1022,17 @@ export function renderList(listId, onLeave) {
       suggestBox.hidden = true;
       return;
     }
+    // Champ vide : « Souvent ajoutés » (champ touché, ou « + ») ; on tape :
+    // les suggestions habituelles
+    if (!input.value.trim()) {
+      if (document.activeElement === input || habitualOpen) drawHabitual();
+      else suggestBox.hidden = true;
+      return;
+    }
+    habitualOpen = false;
+    suggestBox.dataset.mode = 'suggest';
+    suggestBox.setAttribute('role', 'listbox');
+    suggestBox.setAttribute('aria-label', 'Suggestions');
     const typed = input.value;
     // Liste de courses : la quantité tapée au début ou à la fin (« 6 oeu »,
     // « oeufs x6 ») est lue d'abord ; les suggestions cherchent le nom seul

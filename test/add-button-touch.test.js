@@ -129,7 +129,7 @@ test('suggestions inchangées : une suggestion ne sert qu\'une fois', () => {
 
 test('écran : « + » branché sur tap.js, Entrée sans doublon, champ vide sans ajout', () => {
   const list = code('public/js/screens/list.js');
-  assert.match(list, /const plus = taps\.button\(\(\) => addTyped\(input\.value\), \{ persistent: true \}\);/);
+  assert.match(list, /const plus = taps\.button\(\(\) => \(input\.value\.trim\(\) \? addTyped\(input\.value\) : openHabitual\(\)\), \{ persistent: true \}\);/);
   for (const name of ['Pointerdown', 'Mousedown', 'Pointerup', 'Pointercancel', 'Click']) {
     assert.match(list, new RegExp(`on${name}: plus\\.${name.toLowerCase()},`), name);
   }
@@ -137,7 +137,7 @@ test('écran : « + » branché sur tap.js, Entrée sans doublon, champ vide san
   // l'envoi lui-même n'est qu'un secours qui passe par la même fonction
   assert.match(list, /type: 'submit',\s*'aria-label': 'Ajouter',/);
   assert.match(list, /addForm\.addEventListener\('submit', \(event\) => \{\s*event\.preventDefault\(\);\s*addTyped\(input\.value\);/);
-  // Champ vide ou espaces seulement : rien n'est ajouté
+  // Champ vide ou espaces seulement : rien n'est ajouté (liste de courses : « + » ouvre « Souvent ajoutés »)
   assert.match(list, /let name = text\.replace\(\/\\s\+\/g, ' '\)\.trim\(\);/);
   assert.match(list, /\(\{ name, quantity \} = entries\[0\] \?\? \{ name: '', quantity: '' \}\);\s*\}\s*if \(!name\) return;/);
   // Une seule fabrique d'appuis pour les suggestions et « + »

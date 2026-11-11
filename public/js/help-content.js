@@ -542,7 +542,7 @@ export const GUIDE = [
           'Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.',
           'Majuscules et accents ne comptent pas : “eclair” trouve “Éclair”. Le texte trouvé est surligné, et le nombre de résultats s\'affiche.',
           'Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.',
-          'La touche “rechercher” du clavier ferme le clavier et garde la recherche ; « Effacer la recherche » la vide. Pour refermer : la croix du champ, la loupe retouchée ou le bouton Retour du téléphone. Changer de liste ou quitter l\'écran la vide aussi.',
+          'La touche “rechercher” du clavier ferme le clavier et garde la recherche ; « Effacer la recherche » la vide. Pour refermer : la croix du champ, la loupe retouchée ou le bouton Retour du téléphone ; si vous touchez ailleurs sans avoir rien tapé, elle se referme d\'elle-même. Changer de liste ou quitter l\'écran la vide aussi.',
           'La recherche ne change rien à la liste ni pour les autres. Elle marche hors ligne, et aussi en lecture seule.',
         ] }],
       },

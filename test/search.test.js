@@ -254,3 +254,10 @@ test('champ : curseur seulement après la loupe ; touche « rechercher », croix
   // Plus de champ caché à révéler en tirant vers le bas
   assert.doesNotMatch(row, /searchrow|hideOnce|searchroom/);
 });
+
+test('téléphone : champ quitté sans rien y avoir tapé, la recherche se referme (la barre d\'ajout revient)', () => {
+  const row = read('public/js/search-row.js');
+  assert.match(row, /if \(toggled\) setTimeout\(\(\) => \{\s*if \(isOpen && input\.value === '' && document\.activeElement !== input\) close\(\);\s*\}, 200\);/);
+  // Avec un texte tapé, elle reste ouverte (seul le champ vide la referme)
+  assert.doesNotMatch(row, /isOpen && document\.activeElement !== input\) close/);
+});

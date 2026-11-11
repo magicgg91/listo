@@ -7,6 +7,7 @@
 //    seul but est d'écrire : le curseur va dans le champ (exception permise,
 //    voir test/focus.test.js). Pour refermer : la croix du champ, la loupe
 //    retouchée, le bouton Retour du téléphone ou Échap ; le texte est vidé.
+//    Quitter le champ sans rien y avoir tapé la referme aussi.
 //    La propriété bar est la rangée à poser par l'écran sous son titre.
 // 2. Ordinateur (docked) : le champ est toujours visible, posé par l'écran
 //    dans son en-tête (propriété field) ; Échap le vide puis le quitte.
@@ -79,7 +80,16 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
     content.scrollTop = 0; // résultats montrés depuis le début
   });
   input.addEventListener('focus', updateActive);
-  input.addEventListener('blur', updateActive);
+  input.addEventListener('blur', () => {
+    updateActive();
+    // Téléphone : champ quitté sans rien y avoir tapé (on a touché ailleurs,
+    // on a changé d'avis) : la recherche se referme d'elle-même et la barre
+    // d'ajout revient. Un instant d'attente : si c'est la croix ou la loupe
+    // qui a été touchée, elle a déjà refermé la recherche (pas de double effet).
+    if (toggled) setTimeout(() => {
+      if (isOpen && input.value === '' && document.activeElement !== input) close();
+    }, 200);
+  });
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
       event.preventDefault();

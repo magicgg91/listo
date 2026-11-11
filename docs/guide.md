@@ -73,11 +73,12 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.5 Ajouter une photo](#photo)
 - [5.6 Groupes, tri et compteur](#tri)
 - [5.7 Rechercher](#recherche)
-- [5.8 Réserver un souhait, cotiser](#reserver)
-- [5.9 Nouveautés](#nouveautes)
-- [5.10 Hors ligne et synchronisation](#hors-ligne)
-- [5.11 Thème clair ou sombre](#theme)
-- [5.12 Sur ordinateur](#ordinateur)
+- [5.8 Se déplacer, Échéances](#echeances)
+- [5.9 Réserver un souhait, cotiser](#reserver)
+- [5.10 Nouveautés](#nouveautes)
+- [5.11 Hors ligne et synchronisation](#hors-ligne)
+- [5.12 Thème clair ou sombre](#theme)
+- [5.13 Sur ordinateur](#ordinateur)
 
 </details>
 
@@ -212,7 +213,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([7.4 Propriétaire : partager et choisir les droits](#partager)).
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
-- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.9 Nouveautés](#nouveautes)).
+- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.10 Nouveautés](#nouveautes)).
 - Notifications, facultatives : modifications des autres, réservations, partage et résumé des échéances, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
 - Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.6 Groupes, tri et compteur](#tri)).
 
@@ -236,7 +237,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 ### 2.4 Envies : réservation et cotisation
 
 - Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([7.5 Propriétaire : liste d'envies](#envies)).
-- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.8 Réserver un souhait, cotiser](#reserver)).
+- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.9 Réserver un souhait, cotiser](#reserver)).
 - La personne à qui la liste est destinée ne voit jamais les réservations ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 - Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([7.10 Visiteur du lien public](#role-visiteur)).
 
@@ -253,7 +254,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 ### 2.6 Hors ligne, corbeille, lien public
 
-- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.10 Hors ligne et synchronisation](#hors-ligne)).
+- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.11 Hors ligne et synchronisation](#hors-ligne)).
 - Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
 - Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)).
 
@@ -263,7 +264,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
-- Thème clair, sombre ou automatique ([5.11 Thème clair ou sombre](#theme)).
+- Thème clair, sombre ou automatique ([5.12 Thème clair ou sombre](#theme)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Claude (l'assistant d'Anthropic) peut lire vos listes et, si vous le permettez, y écrire ([8. MCP Claude](#claude)).
 
@@ -600,6 +601,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 - Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
+- Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
 - Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité » et « Par échéance », selon les options de la liste.
 - Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.
@@ -609,16 +611,29 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.7 Rechercher
 
-- Dans une liste, tirez la liste vers le bas (ou remontez tout en haut) : le champ « Rechercher dans la liste » apparaît au-dessus du premier groupe. Il cherche dans le nom des articles, pas dans les notes.
-- Sur « Mes listes », de la même façon, le champ « Rechercher une liste » cherche dans le titre des listes, celles partagées avec vous comprises.
+- Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre.
+- Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d'ajout se cache pendant la recherche.
+- Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.
+- Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.
 - Majuscules et accents ne comptent pas : “eclair” trouve “Éclair”. Le texte trouvé est surligné, et le nombre de résultats s'affiche.
 - Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.
-- La touche “rechercher” du clavier ferme le clavier et garde la recherche ; la croix ou « Effacer la recherche » la vide. Changer de liste ou quitter l'écran la vide aussi.
+- La touche “rechercher” du clavier ferme le clavier et garde la recherche ; « Effacer la recherche » la vide. Pour refermer : la croix du champ, la loupe retouchée ou le bouton Retour du téléphone. Changer de liste ou quitter l'écran la vide aussi.
 - La recherche ne change rien à la liste ni pour les autres. Elle marche hors ligne, et aussi en lecture seule.
+
+<a id="echeances"></a>
+
+### 5.8 Se déplacer, Échéances
+
+Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, à sa droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».
+
+- « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
+- Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet. Touchez la ligne pour ouvrir la tâche dans sa liste.
+- Le nombre sur « Échéances » compte les tâches en retard et celles du jour.
+- L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
 
 <a id="reserver"></a>
 
-### 5.8 Réserver un souhait, cotiser
+### 5.9 Réserver un souhait, cotiser
 
 Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lecture seule », sauf la personne à qui la liste est destinée. Il faut du réseau.
 
@@ -631,7 +646,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="nouveautes"></a>
 
-### 5.9 Nouveautés
+### 5.10 Nouveautés
 
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
 - Sur « Mes listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
@@ -642,7 +657,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="hors-ligne"></a>
 
-### 5.10 Hors ligne et synchronisation
+### 5.11 Hors ligne et synchronisation
 
 Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.
 
@@ -652,17 +667,17 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 <a id="theme"></a>
 
-### 5.11 Thème clair ou sombre
+### 5.12 Thème clair ou sombre
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="ordinateur"></a>
 
-### 5.12 Sur ordinateur
+### 5.13 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
-- À gauche, le menu : vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Rechercher une liste », « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».
+- À gauche, le menu : « Rechercher une liste », « Échéances », vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».
 - À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d'ajout est au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent ; sur un écran tactile, ils restent affichés.
 - La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
 - « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
@@ -705,7 +720,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.
 
-L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.9 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
+L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.10 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
 
 <a id="notif-activer"></a>
 
@@ -746,7 +761,7 @@ Section « Contenu », « Afficher le détail dans la notification » : désacti
 
 Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste.
 
-C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.9 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
+C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.10 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
 
 <a id="notif-limites"></a>
 
@@ -844,7 +859,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 
 ### 7.2 Propriétaire : créer une liste
 
-Sur « Mes listes », touchez « Nouvelle liste ». Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.
+Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.
 
 - Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».
 - Liste de tâches : « Options des éléments » active la priorité et l'échéance.
@@ -875,7 +890,7 @@ Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l
 
 ### 7.5 Propriétaire : liste d'envies
 
-Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.8 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.9 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
@@ -1116,7 +1131,7 @@ Après l'activation, une fois, avant tout usage régulier :
 
 ### 9.1 Je n'ai pas de réseau
 
-Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.10 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
+Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.11 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
 
 <a id="faq-photo"></a>
 

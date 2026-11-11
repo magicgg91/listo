@@ -176,7 +176,7 @@ test('« Nouvelle liste » et « Modifier la liste » (ordinateur) : fenêtre ce
   assert.match(form, /if \(location\.hash === hash\) goBack\(/);
   const app = read('public/js/app.js');
   assert.match(app, /case 'newList':\s*if \(isDesktop\(\)\) \{\s*if \(!mountedOnPc\) mount\(\(onLeave\) => renderLists\(onLeave\)\);\s*openListFormPanel\(null\);/);
-  assert.match(read('public/js/router.js'), /export function openOverlay\(close, \{ push = true \} = \{\}\) \{/);
+  assert.match(read('public/js/router.js'), /export function openOverlay\(close, \{ push = true, back = null \} = \{\}\) \{/);
   // Aucun data-initial-focus dans la fenêtre : elle prend le focus sur elle-même
   assert.doesNotMatch(form.slice(form.indexOf('export function openListFormPanel'), form.indexOf('export function renderListForm')), /data-initial-focus|\.focus\(/);
 });

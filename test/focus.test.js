@@ -65,6 +65,9 @@ const ALLOWED_FOCUS = new Map([
   // Ordinateur (shortcuts.js) : « / » (recherche) et « A » (champ d'ajout),
   // gestes dont le seul but est d'écrire ; S : le sommaire de l'aide
   ['public/js/shortcuts.js: field', 'EXCEPTION voulue : touche « / » (recherche) ou « A » (champ d\'ajout)'],
+  // Fiche d'une tâche : sous-pages (décision du 11 novembre 2026)
+  ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
+  ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: target', 'ordinateur : focus clavier gardé sur la même ligne après un redessin (un bouton de la ligne, jamais un champ)'],
   ['public/js/shortcuts.js: link', 'touche S : une entrée du sommaire de l\'aide (un lien, jamais un champ)'],
   ['scripts/site-assets/guide.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],

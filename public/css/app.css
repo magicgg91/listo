@@ -34,6 +34,20 @@ html, body { height: 100%; margin: 0; }
 .app .toast__action { color: var(--color-inverse-accent); font-weight: 700; }
 .app .suggest__item { font-size: var(--text-item); }
 .app .suggest__item--new { color: var(--color-accent-ink); font-weight: 600; }
+/* Fiche d'une tâche : lignes résumées et sous-pages (Échéance, Se répète,
+   Pour). Dans une sous-page, le reste de la fiche est caché (.is-sub) ;
+   la sous-page prend toute la largeur sur ordinateur. */
+.subpage:not(.is-current) { display: none; }
+.is-sub > :not(.subpage) { display: none !important; }
+.app--pc .subpage, .app--pc .sheet-rows { grid-column: 1 / -1; }
+.subpage__bar { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
+.subpage__title { margin: 0; font-size: 20px; font-weight: 700; }
+.subpage__title:focus { outline: none; }
+/* Raccourcis de date : trois boutons de même largeur, une ligne (texte un
+   peu plus petit sur les très petits écrans) */
+.due-shortcuts--row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-1); }
+.due-shortcuts--row .btn { padding-left: 4px; padding-right: 4px; white-space: nowrap; }
+@media (max-width: 359px) { .due-shortcuts--row .btn { font-size: var(--text-sm); } }
 /* « Pour » d'une tâche : plusieurs personnes ou chacun son tour, prénoms en
    pastilles (style .weekdays__opt du kit), sur plusieurs lignes si besoin */
 .people-picker { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1); }

@@ -223,7 +223,9 @@ test('écran : ajout détaillé = fiche de l\'élément créé, une fois le clav
   assert.match(add, /requestAnimationFrame\(\(\) => requestAnimationFrame\(then\)\);/);
   // Aucun focus dans la fiche ni ailleurs (test/focus.test.js le vérifie aussi)
   const sheet = list.slice(list.indexOf('function openItemSheet('), list.indexOf('function openItemView('));
-  assert.doesNotMatch(sheet + add, /\.focus\(|autofocus|\.select\(\)/);
+  // (seules exceptions : le titre d'une sous-page de la fiche et la ligne qui
+  // l'a ouverte, jamais un champ : voir test/focus.test.js)
+  assert.doesNotMatch((sheet + add).replace(/entry\.heading\.focus\(\)|row\.focus\(\)/g, ''), /\.focus\(|autofocus|\.select\(\)/);
   // « + », Entrée et suggestion passent tous par addTyped ; le scan garde son déroulement
   assert.match(list, /const plus = taps\.button\(\(\) => \(input\.value\.trim\(\) \? addTyped\(input\.value\) : openHabitual\(\)\), \{ persistent: true \}\);/);
   assert.match(list, /addForm\.addEventListener\('submit', \(event\) => \{\s*event\.preventDefault\(\);\s*addTyped\(input\.value\);/);

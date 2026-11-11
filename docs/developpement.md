@@ -403,6 +403,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Toucher la liste derrière : l'encart se ferme. Toucher le champ : l'encart revient avec le clavier ; taper « la » : les suggestions habituelles. La croix ferme l'encart et le clavier.
     4. Mode avion : même chose avec ce que le téléphone a gardé ; les ajouts partent au retour du réseau.
     5. Retirer : faire glisser une ligne de l'encart vers la gauche, « Retirer » : elle disparaît (message « Retiré de « Souvent ajoutés » : … ») ; sur un autre téléphone, après synchronisation, elle n'est plus proposée non plus. Un petit glissement qui revient n'ajoute rien. Ajouter de nouveau l'article à la main : il revient dans l'encart.
+52. **Fiche d'une tâche en sous-pages** (11 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16, 393 × 852, clair et sombre, et sur ordinateur) : ouvrir une tâche : nom, note, priorité, puis les lignes « Échéance », « Se répète », « Pour » avec leur résumé ; pas de « Quantité ». Toucher « Échéance » : la sous-page s'ouvre, la fiche ne bouge pas, aucun clavier ; « Effacer » est à droite de la date et les trois raccourcis tiennent sur une ligne ; changer l'heure, « ‹ » : le résumé montre l'heure. Ouvrir « Pour », faire le geste Retour (iPhone : glisser depuis le bord gauche ; Android : bouton ou geste Retour) : retour à la fiche, pas à la liste. Enregistrer depuis une sous-page : tout est enregistré.
 
 ## API des comptes (étape 2)
 

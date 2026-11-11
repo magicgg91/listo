@@ -517,6 +517,10 @@ Retirer un article : chaque ligne est un `.suggest__row`. Téléphone : `.sugges
 
 Décisions du propriétaire (cahier des charges, « Attribuer une tâche »). « Pour » garde son `.due-picker` (`#i-users` pour plusieurs, `#i-repeat` pour chacun son tour) ; dessous, les prénoms en pastilles `.weekdays__opt` (`aria-pressed`, choisi : liseré ET fond accent, jamais la couleur seule) dans `.people-picker` (retour à la ligne ; style dans `public/css/app.css`), numérotées pour un tour (« 1 · Léa »), et une phrase `.field__hint`. Ligne : `.chip` avec `#i-users` (« Moi, Léa », « Léa +2 », ou la personne de cette fois). Aucune couleur ni icône nouvelle.
 
+## Ajout : fiche d'une tâche en sous-pages (11 novembre 2026)
+
+Décisions du propriétaire (cahier des charges, « Fiche d'une tâche en sous-pages »). Lignes résumées : `.group.sheet-rows` de `.row` (comme les Réglages : `.row__icon`, `.row__title`, `.row__sub` pour le résumé, chevron `#i-chev-r`). Sous-page : `.subpage` (visible avec `.is-current` ; la fiche prend `.is-sub` et cache le reste), barre `.subpage__bar` (bouton-icône `#i-chev-l` « Retour à la fiche » et titre `.subpage__title`). Raccourcis de date sur une ligne : `.due-shortcuts--row` (trois colonnes égales). Styles dans `public/css/app.css` ; aucune couleur, variable ni icône nouvelle.
+
 ## Ajout : Réglages allégés (11 novembre 2026)
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).

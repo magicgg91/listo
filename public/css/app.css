@@ -7,6 +7,14 @@
 
 html, body { height: 100%; margin: 0; }
 
+/* Pas de zoom par double appui (décision du 11 novembre 2026) : deux
+   appuis rapides sur des boutons (jours d'une répétition, coches) ne
+   doivent pas agrandir la page. Le pincement reste possible (accessibilité).
+   Posé sur chaque élément, car une zone qui défile (fiche, liste) ne reprend
+   pas la règle de ses parents ; :where() garde une priorité nulle, pour
+   qu'une règle plus précise (balayage d'une ligne : pan-y) l'emporte. */
+:where(*) { touch-action: manipulation; }
+
 /* Un élément masqué (attribut hidden) reste masqué, même si sa classe du kit
    lui donne un affichage (ex. .note { display: flex }) */
 [hidden] { display: none !important; }

@@ -27,7 +27,16 @@
 //   l'échéance est activée (jamais une liste d'envies, pour personne) ;
 //   tâches non cochées, échéance aujourd'hui ou passée ; les miennes et
 //   celles de personne, jamais celles attribuées à quelqu'un d'autre (si
-//   l'attribution est activée pour la liste). Le jour est noté en
+//   l'attribution est activée pour la liste). Avec le détail, l'heure suit
+//   le nom (« Plombier (14:00) »).
+// - e) rappel d'une tâche à heure précise (même catégorie 'due', décisions
+//   du 11 novembre 2026) : le délai est choisi tâche par tâche (à l'heure,
+//   15 min, 30 min, 1 h, 2 h avant, ou la veille). Une notification par
+//   tâche, à la personne à qui elle est attribuée, sinon aux membres de la
+//   liste. Une seule fois par date, heure et délai (push_reminders, noté
+//   AVANT l'envoi) ; serveur arrêté au bon moment : envoyé au redémarrage
+//   avec moins de 30 minutes de retard, sinon abandonné. Une tâche cochée
+//   ou supprimée avant ne déclenche rien. Le jour est noté en
 //   base (push_digests) AVANT l'envoi, pour chaque personne examinée : un
 //   redémarrage ne renvoie jamais le résumé, une tâche ajoutée plus tard
 //   n'en déclenche pas un second. Serveur arrêté à 8 h : envoi au
@@ -48,6 +57,7 @@
 
 import { buildMessage } from './push.js';
 import { wishListOf, beneficiaryId, seesReservations } from '../public/js/wishes.js';
+import { reminderAt, timeLabel } from '../public/js/due-time.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -59,6 +69,7 @@ const NAMES_MAX = 8;                    // noms d'éléments cités au plus (dé
 export const DIGEST_HOUR = 8;           // résumé des échéances : à partir de 8 h…
 export const DIGEST_LATEST_HOUR = 12;   // …et jusqu'à midi (serveur arrêté à 8 h)
 export const DIGEST_EVERY_MS = 60 * 1000;
+export const REMIND_LATE_MS = 30 * 60 * 1000; // rappel encore envoyé jusqu'à 30 min après son moment
 
 // Jour local (heure du serveur, variable TZ) : « 2026-11-12 »
 const two = (n) => String(n).padStart(2, '0');
@@ -124,14 +135,25 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     // Tâches concernées, relues au moment de l'envoi : membre, liste de
     // tâches non supprimée avec l'échéance activée, non silencée ; tâche non
     // supprimée, non cochée, échéance aujourd'hui ou passée
-    dueTasks: db.prepare(`SELECT items.name, items.due_date, lists.id AS list_id, lists.name AS list_name
+    dueTasks: db.prepare(`SELECT items.name, items.due_date, items.due_time, lists.id AS list_id, lists.name AS list_name
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       WHERE items.deleted_at IS NULL AND items.checked = 0 AND items.due_date IS NOT NULL AND items.due_date <> '' AND items.due_date <= :today
         AND (lists.assign_enabled = 0 OR items.assigned_to IS NULL OR items.assigned_to = :userId)
         AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
-      ORDER BY items.due_date, items.name COLLATE NOCASE`),
+      ORDER BY items.due_date, COALESCE(items.due_time, '99:99'), items.name COLLATE NOCASE`),
+    // Rappels : tâches à faire avec date, heure et délai, autour d'aujourd'hui
+    // (le moment exact est calculé ensuite, en heure locale du serveur)
+    reminderTasks: db.prepare(`SELECT items.id, items.name, items.due_date, items.due_time, items.remind_before, items.assigned_to,
+        lists.id AS list_id, lists.assign_enabled
+      FROM items
+      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
+      WHERE items.deleted_at IS NULL AND items.checked = 0 AND items.due_time IS NOT NULL AND items.remind_before IS NOT NULL
+        AND items.due_date BETWEEN :from AND :to`),
+    // « Envoyé pour cette signature » : noté avant l'envoi ; changes = 0 : déjà fait
+    claimReminder: db.prepare(`INSERT INTO push_reminders (item_id, sent_key) VALUES (:itemId, :key)
+      ON CONFLICT(item_id) DO UPDATE SET sent_key = :key WHERE push_reminders.sent_key <> :key`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
   };
 
@@ -316,7 +338,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     if (late) parts.push(dueToday ? `${late} en retard` : `${plural(late, 'tâche')} en retard`);
     const lists = [...new Map(tasks.map((t) => [t.list_id, t.list_name])).entries()];
     const body = detail
-      ? nameList(tasks.map((t) => t.name)) // les plus en retard d'abord
+      ? nameList(tasks.map((t) => (t.due_time ? `${t.name} (${timeLabel(t.due_time)})` : t.name))) // les plus en retard d'abord
       : (lists.length === 1 ? `Dans « ${lists[0][1]} »` : `Dans ${lists.length} listes`);
     // Une seule liste : on l'ouvre ; plusieurs : « Mes listes »
     const navigate = lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
@@ -346,18 +368,59 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     await Promise.all(work);
   }
 
+  // --- e) Rappels d'une tâche à heure précise ---
+  const dayShift = (day, n) => {
+    const [y, m, d] = day.split('-').map(Number);
+    return localDay(new Date(y, m - 1, d + n));
+  };
+  function reminderMessage(task, list, detail, today) {
+    const time = timeLabel(task.due_time);
+    const when = task.due_date === today ? `aujourd'hui à ${time}` : task.due_date === dayShift(today, 1) ? `demain à ${time}` : `le ${task.due_date.split('-').reverse().join('/')} à ${time}`;
+    const message = detail
+      ? { title: `Rappel : ${task.name}`, body: `${when.charAt(0).toUpperCase()}${when.slice(1)} · « ${list.name} »` }
+      : { title: `Rappel : une tâche ${when}`, body: `Dans « ${list.name} »` };
+    return buildMessage({ ...message, navigate: listUrl(list.id), tag: `rappel-${task.id}` });
+  }
+  // Appelé chaque minute (et une fois au démarrage)
+  async function runReminders() {
+    const now = ctx.now();
+    const today = localDay(new Date(now));
+    const work = [];
+    for (const task of q.reminderTasks.all({ from: dayShift(today, -1), to: dayShift(today, 2) })) {
+      const at = reminderAt(task.due_date, task.due_time, task.remind_before);
+      if (at === null || at > now || now - at > REMIND_LATE_MS) continue;
+      // Noté AVANT tout envoi : jamais deux fois pour la même signature
+      const key = `${task.due_date} ${task.due_time} ${task.remind_before}`;
+      if (!q.claimReminder.run({ itemId: task.id, key }).changes) continue;
+      // Destinataires : la personne à qui elle est attribuée, sinon les membres
+      const recipients = task.assign_enabled === 1 && task.assigned_to ? [task.assigned_to] : q.members.all(task.list_id);
+      for (const userId of recipients) {
+        const list = allowed(userId, task.list_id, 'due');
+        if (!list) continue;
+        work.push(send(userId, reminderMessage(task, list, settingsOf(userId).detail, today)));
+      }
+    }
+    await Promise.all(work);
+  }
+
   // Vérifications régulières (arrêtées avec Listo) : groupes toutes les 5 s,
   // résumé des échéances chaque minute, et une première fois peu après le
   // démarrage (serveur redémarré après 8 h)
   const timer = setInterval(() => { flushDue().catch(() => {}); }, FLUSH_EVERY_MS);
   timer.unref?.();
-  const digestTimer = setInterval(() => { runDigest().catch(() => {}); }, DIGEST_EVERY_MS);
+  const digestTimer = setInterval(() => {
+    runDigest().catch(() => {});
+    runReminders().catch(() => {});
+  }, DIGEST_EVERY_MS);
   digestTimer.unref?.();
-  const firstDigest = setTimeout(() => { runDigest().catch(() => {}); }, 5000);
+  const firstDigest = setTimeout(() => {
+    runDigest().catch(() => {});
+    runReminders().catch(() => {});
+  }, 5000);
   firstDigest.unref?.();
 
   return {
-    activity, assigned, wish, sharing, flushDue, runDigest, settingsOf, setSettings, mutedLists, setMuted, isMember,
+    activity, assigned, wish, sharing, flushDue, runDigest, runReminders, settingsOf, setSettings, mutedLists, setMuted, isMember,
     pending: () => groups.size,
     prune: () => { for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId); },
     stop: () => {

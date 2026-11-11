@@ -387,6 +387,12 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     5. A passe B en « Lecture seule » : les tâches de B reviennent à « Personne » sur les deux téléphones.
     6. Le lien public de la liste ne montre jamais à qui sont les tâches.
     7. Réglages › Notifications : la catégorie s'appelle « Modifications ».
+49. **Heure et rappel** (11 novembre 2026 ; vérifié dans Chromium, téléphone 320 et 390 px, clair et sombre, et ordinateur : champs « Heure (facultative) » et « Rappel », pastilles « Demain · 18:30 » et « En retard · 15:00 », ordre sur « Échéances », vue en lecture seule ; rappels testés avec un faux service de push) ; serveur avec `LISTO_PUSH=on` et `TZ=Europe/Paris`, deux comptes A et B sur deux téléphones, notifications activées, une liste de tâches de A partagée avec B en « Peut modifier », échéance activée :
+    1. Fiche d'une tâche avec une date : « Heure (facultative) » ouvre le sélecteur d'heure du téléphone (roue sur iPhone, horloge sur Android) ; l'heure choisie s'affiche, « Effacer » la retire. Sans date, le champ n'apparaît pas.
+    2. Une heure choisie : « Rappel » apparaît et ouvre la liste de choix du téléphone (« Aucun », « À l'heure », « 15 min avant », … « La veille (24 h avant) »).
+    3. Tâche du jour, heure dans 20 minutes, rappel « 15 min avant » : la notification arrive sur les deux téléphones environ 5 minutes plus tard (« Rappel : une tâche aujourd'hui à … »). Une seule fois. Attribuée à B : seulement chez B.
+    4. Quand l'heure passe, la pastille devient « En retard · … » sans recharger (en moins d'une minute), et la tâche monte dans « En retard » sur « Échéances ».
+    5. Sur un serveur sans `LISTO_PUSH`, « Rappel » n'apparaît pas ; l'heure, oui.
 
 ## API des comptes (étape 2)
 

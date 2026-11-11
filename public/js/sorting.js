@@ -12,6 +12,7 @@
 // ITEM_SORTS) : seul l'affichage change, jamais les articles.
 
 import { isShoppingList } from './list-types.js';
+import { compareDue } from './due-time.js';
 
 // Comparaison alphabétique française : « Épicerie » se range avec les « E »,
 // et les majuscules ne comptent pas.
@@ -118,7 +119,7 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
   if (sort === 'due') {
     const byDue = (a, b) => {
       if (Boolean(a.dueDate) !== Boolean(b.dueDate)) return a.dueDate ? -1 : 1; // sans échéance à la fin
-      return String(a.dueDate ?? '').localeCompare(String(b.dueDate ?? '')) || rankOf(a) - rankOf(b) || compareNames(a.name, b.name);
+      return compareDue(a.dueDate, a.dueTime, b.dueDate, b.dueTime) || rankOf(a) - rankOf(b) || compareNames(a.name, b.name);
     };
     return items.length ? [{ aisle: null, items: [...items].sort(byDue) }] : [];
   }

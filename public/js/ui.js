@@ -78,6 +78,29 @@ export function watchNewDay(onNewDay) {
   };
 }
 
+// À chaque nouvelle minute (et au retour au premier plan) : une tâche avec
+// une heure passe « En retard » dès que son heure est dépassée (heure
+// d'échéance, décision du 11 novembre 2026). Renvoie la fonction d'arrêt.
+export function watchMinute(onTick) {
+  let timer = null;
+  const arm = () => {
+    const now = new Date();
+    timer = setTimeout(() => {
+      onTick();
+      arm();
+    }, (60 - now.getSeconds()) * 1000 + 50);
+  };
+  arm();
+  const visible = () => {
+    if (document.visibilityState === 'visible') onTick();
+  };
+  document.addEventListener('visibilitychange', visible);
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener('visibilitychange', visible);
+  };
+}
+
 // Éléments qu'on peut atteindre avec la touche Tab dans une fenêtre
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 

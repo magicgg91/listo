@@ -69,7 +69,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
   db.close();
   // Redémarrage : la migration 11 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 25); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 26); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   assert.deepEqual(db.prepare(`SELECT ${columns} FROM items`).all(), before);
   assert.equal(db.prepare('SELECT ean FROM items').pluck().get(), null);
   // La contrainte : vide, ou exactement 8 ou 13 chiffres
@@ -78,7 +78,7 @@ test('migration 11 : base existante (fichier), articles sans code, rien d\'autre
     assert.throws(() => db.prepare('UPDATE items SET ean = ?').run(bad), /CHECK/, JSON.stringify(bad));
   }
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 25); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
+  assert.equal(schemaVersion(db), 26); // toutes les migrations, jusqu'à la 17 (autorisation Claude)
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

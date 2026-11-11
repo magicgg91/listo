@@ -39,7 +39,7 @@ const MINUTE = 60 * 1000;
 export const INSTRUCTIONS = [
   'Listo : listes partagées (courses, tâches, envies). Ce que vous pouvez faire dépend du niveau que la personne a accordé à cette connexion :',
   '- « Lecture seule » : list_lists, puis read_list. Rien d\'autre : les outils d\'écriture sont refusés.',
-  '- « Lecture et écriture » : en plus, add_items (ajouter), set_checked (cocher ou décocher) et update_items (modifier le nom, la quantité, la note, la priorité, l\'échéance, la répétition, le rayon ou le magasin d\'éléments existants).',
+  '- « Lecture et écriture » : en plus, add_items (ajouter), set_checked (cocher ou décocher) et update_items (modifier le nom, la quantité, la note, la priorité, l\'échéance (date, heure, rappel), la répétition, le rayon ou le magasin d\'éléments existants).',
   'Jamais, quel que soit le niveau : supprimer un élément ; créer, renommer, supprimer ou partager une liste ; gérer les personnes, le lien public ou la corbeille.',
   'Demandez confirmation avant d\'ajouter plus de 5 éléments.',
   'Rayons (listes de courses) : lisez la liste avec read_list, choisissez le rayon parmi ses rayons disponibles (list.aisles) et passez-le dans aisle ; n\'inventez jamais de rayon. La réponse dit le rayon obtenu : si un article est resté sans rayon, dites-le à la personne au lieu d\'affirmer qu\'il est rangé.',

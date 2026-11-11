@@ -1553,6 +1553,7 @@ export function renderList(listId, onLeave) {
       drawDue();
     } }, 'Effacer');
     let redrawAssign = null; // « Pour » (plus bas) : « Chacun son tour » suit la répétition
+    let redrawSummaries = null; // lignes résumées des sous-pages (plus bas)
     const drawDue = () => {
       const label = dueDate ? dueDateLabel(dueDate) : 'Aucune échéance';
       replace(dueText, icon('calendar', 'icon--sm'), label);
@@ -1787,10 +1788,14 @@ export function renderList(listId, onLeave) {
     const priorityField = h('div', { class: 'field' },
       h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
       h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'priority-label' }, priorityOptions));
+    // Date (sous-page « Échéance ») : « Effacer » à droite du champ, comme
+    // l'heure ; trois raccourcis de même largeur, sur une ligne
+    const weekShortcut = shortcut('Dans 1 sem.', 7);
+    weekShortcut.setAttribute('aria-label', 'Dans une semaine');
     const dueField = h('div', { class: 'field' },
-      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Échéance'),
-      h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput),
-      h('div', { class: 'due-shortcuts' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), shortcut('Dans 1 semaine', 7), clearDue));
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Date'),
+      h('div', { class: 'time-row' }, h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput), clearDue),
+      h('div', { class: 'due-shortcuts due-shortcuts--row' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), weekShortcut));
     // --- Pour (attribution, décisions du 11 novembre 2026) : seulement si
     // l'option « Attribution » de la liste est activée. « Personne », « Moi »
     // (si je peux modifier la liste), les autres personnes qui peuvent la
@@ -1889,9 +1894,98 @@ export function renderList(listId, onLeave) {
         fieldEl.hidden = !shown;
       }
       drawTime(); // heure et rappel : avec l'échéance, et seulement avec une date
+      redrawSummaries?.();
     };
     showOptions();
-    const classicFields = classic ? [priorityField, dueField, timeField, remindField, repeatField, assignField] : null;
+
+    // --- Sous-pages (décision du 11 novembre 2026 : la fiche d'une tâche
+    // devenait trop longue). La fiche garde la priorité et trois lignes
+    // résumées : « Échéance » (date, heure, rappel), « Se répète », « Pour ».
+    // Toucher une ligne ouvre sa sous-page DANS la fiche (« ‹ » et le titre
+    // en haut) ; rien n'est enregistré en revenant : la disquette enregistre
+    // tout, la croix abandonne tout. Échap et le geste Retour du téléphone
+    // ramènent d'abord à la fiche (setBack, ui.js). La fiche prend la hauteur
+    // de la sous-page (pas de grand vide : décision du propriétaire). Aucun
+    // champ ne prend le curseur : le focus va au titre.
+    const tasks = classic && !wishes;
+    const subpages = [];
+    let currentSub = null;
+    const subpage = (title, iconName, children) => {
+      const heading = h('h3', { class: 'subpage__title', tabindex: '-1' }, title);
+      const page = h('div', { class: 'subpage stack' },
+        h('div', { class: 'subpage__bar' },
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Retour à la fiche', onClick: () => leaveSub() }, icon('chev-l')),
+          heading),
+        children);
+      const summary = h('span', { class: 'row__sub' });
+      const row = h('button', { class: 'row', type: 'button', onClick: () => enterSub(entry) },
+        h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
+        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), summary),
+        icon('chev-r'));
+      const entry = { title, page, row, summary, heading };
+      subpages.push(entry);
+      return entry;
+    };
+    const dueSub = tasks ? subpage('Échéance', 'calendar', [dueField, timeField, remindField]) : null;
+    const repeatSub = tasks ? subpage('Se répète', 'repeat', [repeatField]) : null;
+    const assignSub = tasks ? subpage('Pour', 'users', [assignField]) : null;
+    // Dans une sous-page, son titre dit déjà de quoi il s'agit
+    if (tasks) for (const fieldEl of [repeatField, assignField]) fieldEl.querySelector(':scope > .field__label').hidden = true;
+    const subRows = tasks ? h('div', { class: 'group sheet-rows' }, subpages.map((entry) => entry.row)) : null;
+    // Résumés des lignes (relus en revenant d'une sous-page)
+    function drawSummaries() {
+      if (!tasks) return;
+      const opts = options();
+      const names = memberNames(app.data.lists.get(listId));
+      const nameOf = (id) => (id === app.user.id ? 'Moi' : names.get(id) ?? 'Ancien membre');
+      const due = !dueDate ? 'Aucune échéance' : [dueDateLabel(dueDate), dueTime ? timeLabel(dueTime) : null,
+        dueTime && remind !== null && app.user?.push ? `rappel ${reminderLabel(remind).charAt(0).toLowerCase()}${reminderLabel(remind).slice(1)}` : null].filter(Boolean).join(' · ');
+      const turnNow = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0];
+      const who = assignMode === 'all' ? assignPeople.map(nameOf).join(', ') || 'Plusieurs personnes'
+        : assignMode === 'turn' ? `Chacun son tour : ${assignPeople.map(nameOf).join(', ')}${turnNow != null ? ` · cette fois : ${nameOf(turnNow)}` : ''}`
+          : assignee === null ? 'Personne' : nameOf(assignee);
+      for (const [entry, text, shown] of [[dueSub, due, opts.due], [repeatSub, repeat ? repeatSentence(repeat) : 'Jamais', opts.due], [assignSub, who, opts.assign]]) {
+        entry.summary.textContent = text;
+        entry.row.setAttribute('aria-label', `${entry.title} : ${text}. Modifier`);
+        entry.row.hidden = !shown;
+        // Option désactivée pendant qu'on est dans sa sous-page : retour à la fiche
+        if (!shown && currentSub === entry) leaveSub();
+      }
+      subRows.hidden = subpages.every((entry) => entry.row.hidden);
+    }
+    // Dans une sous-page : une seule ligne en haut, « ‹ » et son titre
+    // (décision du propriétaire) : l'en-tête de la fiche (titre, corbeille,
+    // disquette, croix) et, sur ordinateur, le pied du panneau sont cachés ;
+    // on enregistre depuis la fiche. Appui en dehors, Échap, Retour : retour
+    // à la fiche (setBack, ui.js).
+    const showSheetActions = (shown) => {
+      const panel = form.closest('.sheet, .pc-panel');
+      for (const part of panel?.querySelectorAll(':scope > .sheet__head, :scope > .pc-panel__head, :scope > .pc-panel__foot') ?? []) part.hidden = !shown;
+    };
+    function enterSub(entry) {
+      currentSub = entry;
+      showSheetActions(false);
+      form.classList.add('is-sub');
+      for (const other of subpages) other.page.classList.toggle('is-current', other === entry);
+      form.closest('.sheet, .pc-drawer')?.scrollTo?.(0, 0);
+      entry.heading.focus();
+    }
+    function leaveSub() {
+      if (!currentSub) return false;
+      const { row } = currentSub;
+      currentSub = null;
+      form.classList.remove('is-sub');
+      showSheetActions(true);
+      for (const entry of subpages) entry.page.classList.remove('is-current');
+      drawSummaries();
+      if (row.isConnected && !row.hidden) row.focus();
+      return true;
+    }
+    redrawSummaries = drawSummaries;
+    drawSummaries();
+    const classicFields = !classic ? null
+      : tasks ? [priorityField, subRows, ...subpages.map((entry) => entry.page)]
+        : [priorityField, dueField, timeField, remindField, repeatField, assignField];
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
     // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
@@ -2068,7 +2162,9 @@ export function renderList(listId, onLeave) {
       conflict,
       nameField.field,
       wishes ? [linkField.field, linkButton(item.link), priceField.field]
-        : half(field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field),
+        // Liste de tâches : pas de quantité (gardée seulement si une avait été saisie)
+        : tasks && !item.quantity ? null
+          : half(field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field),
       // Ordinateur : le rayon (ou le magasin) juste à côté de la quantité
       pc && isShopping ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton)) : null,
       pc && multi ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton)) : null,
@@ -2118,6 +2214,8 @@ export function renderList(listId, onLeave) {
         reservation?.dispose();
       },
     });
+    // Échap et le geste Retour : d'abord la sous-page ouverte, s'il y en a une
+    sheet.setBack(() => leaveSub());
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();

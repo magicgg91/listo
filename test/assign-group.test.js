@@ -279,3 +279,64 @@ test('écran : « Plusieurs personnes… » et « Chacun son tour… » (tâche 
     assert.doesNotMatch(read(file).replace(/\/\/.*$/gm, ''), /innerHTML|outerHTML|insertAdjacentHTML/, file);
   }
 });
+
+// --- Fiche d'une tâche en sous-pages ---
+
+test('fiche d\'une tâche : lignes résumées, sous-pages, Retour et Échap reviennent à la fiche, pas de quantité', () => {
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /const dueSub = tasks \? subpage\('Échéance', 'calendar', \[dueField, timeField, remindField\]\) : null;/);
+  assert.match(list, /const repeatSub = tasks \? subpage\('Se répète', 'repeat', \[repeatField\]\) : null;/);
+  assert.match(list, /const assignSub = tasks \? subpage\('Pour', 'users', \[assignField\]\) : null;/);
+  assert.match(list, /sheet\.setBack\(\(\) => leaveSub\(\)\);/);
+  assert.match(list, /: tasks && !item\.quantity \? null/);
+  assert.match(list, /h\('div', \{ class: 'due-shortcuts due-shortcuts--row' \}, shortcut\("Aujourd'hui", 0\), shortcut\('Demain', 1\), weekShortcut\)\)/);
+  // Le focus va au titre de la sous-page (jamais un champ), et revient à la ligne
+  assert.match(list, /entry\.heading\.focus\(\);/);
+  // Sous-page : une seule ligne (« ‹ » et le titre), en-tête et pied de la fiche cachés ; pas de hauteur forcée
+  assert.match(list, /:scope > \.sheet__head, :scope > \.pc-panel__head, :scope > \.pc-panel__foot'\) \?\? \[\]\) part\.hidden = !shown;/);
+  assert.match(read('public/js/ui.js'), /scrim\.addEventListener\('click', \(\) => \{\s*if \(backHandler\?\.\(\)\) return;\s*close\(\);/);
+  assert.match(list, /currentSub = entry;\s*showSheetActions\(false\);/);
+  assert.match(list, /form\.classList\.remove\('is-sub'\);\s*showSheetActions\(true\);/);
+  assert.doesNotMatch(list, /form\.style\.minHeight/);
+  assert.match(list, /const heading = h\('h3', \{ class: 'subpage__title', tabindex: '-1' \}, title\);/);
+  // Retour : la fenêtre gère d'abord le retour (ui.js), le routeur remet son entrée
+  const ui = read('public/js/ui.js');
+  assert.match(ui, /if \(event\.key === 'Escape' && backHandler\?\.\(\)\) return;/);
+  assert.match(ui, /openOverlay\(remove, \{ push: history, back: \(\) => Boolean\(backHandler\?\.\(\)\) \}\)/);
+  assert.match(read('public/js/router.js'), /if \(top\.pushed && top\.back\?\.\(\)\) \{\s*history\.pushState\(\{ depth: depth\(\), overlay: true \}, '', location\.hash\);\s*return;\s*\}/);
+  const css = read('public/css/app.css');
+  assert.match(css, /\.is-sub > :not\(\.subpage\) \{ display: none !important; \}/);
+  assert.match(css, /@media \(max-width: 359px\) \{ \.due-shortcuts--row \.btn \{ font-size: var\(--text-sm\); \} \}/);
+});
+
+test('routeur : une fenêtre qui gère Retour reste ouverte, son entrée d\'historique revient', async () => {
+  // Petit faux navigateur : historique et écouteurs, sans DOM
+  const listeners = {};
+  const entries = [{ state: null, hash: '#/listes/a' }];
+  let index = 0;
+  globalThis.location = { get hash() { return entries[index].hash; } };
+  globalThis.history = {
+    get state() { return entries[index].state; },
+    replaceState(state, _t, hash) { entries[index] = { state, hash: hash ?? entries[index].hash }; },
+    pushState(state, _t, hash) { entries.splice(index + 1); entries.push({ state, hash }); index++; },
+    back() { index--; queueMicrotask(() => listeners.popstate?.()); },
+    go(n) { index += n; queueMicrotask(() => listeners.popstate?.()); },
+  };
+  globalThis.window = { addEventListener: (type, fn) => { listeners[type] = fn; } };
+  const router = await import(`../public/js/router.js?test=${Date.now()}`);
+  router.startRouter(() => {});
+  let closed = false;
+  let sub = true;
+  router.openOverlay(() => { closed = true; }, { back: () => { if (!sub) return false; sub = false; return true; } });
+  await new Promise((r) => setTimeout(r, 10));
+  const depth = entries.length;
+  // Retour avec une sous-page ouverte : la sous-page se ferme, la fenêtre reste
+  history.back();
+  await new Promise((r) => setTimeout(r, 10));
+  assert.deepEqual([closed, sub, entries.length, index], [false, false, depth, depth - 1]);
+  // Retour suivant : la fenêtre se ferme
+  history.back();
+  await new Promise((r) => setTimeout(r, 10));
+  assert.equal(closed, true);
+  delete globalThis.location; delete globalThis.history; delete globalThis.window;
+});

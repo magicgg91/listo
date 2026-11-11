@@ -123,8 +123,10 @@ export function goBack(fallback = 'lists', params = {}) {
 // push = false : aucune entrée ajoutée (fenêtre qui a déjà sa propre
 // adresse, comme « Nouvelle liste » sur ordinateur) ; elle est quand même
 // fermée d'office au changement d'écran.
-export function openOverlay(close, { push = true } = {}) {
-  const entry = { close, pushed: false, hash: location.hash };
+// back : appelé d'abord par Retour ; s'il renvoie vrai, la fenêtre a géré le
+// retour elle-même (sous-page d'une fiche refermée) et reste ouverte.
+export function openOverlay(close, { push = true, back = null } = {}) {
+  const entry = { close, back, pushed: false, hash: location.hash };
   overlays.push(entry);
   if (push) whenHistoryReady(() => {
     if (!overlays.includes(entry)) return; // déjà refermée entre-temps
@@ -178,6 +180,11 @@ export function startRouter(onRoute) {
     // seulement la fenêtre
     const top = overlays.at(-1);
     if (top && top.hash === location.hash) {
+      // La fenêtre gère ce retour (sous-page refermée) : son entrée revient
+      if (top.pushed && top.back?.()) {
+        history.pushState({ depth: depth(), overlay: true }, '', location.hash);
+        return;
+      }
       overlays.pop();
       top.close();
       return;

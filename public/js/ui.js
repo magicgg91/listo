@@ -152,9 +152,13 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
     }
     shut();
   };
+  // Retour (Échap, geste Retour du téléphone) : d'abord la fenêtre elle-même
+  // (setBack : sous-page d'une fiche), sinon elle se ferme
+  let backHandler = null;
   const onKey = (event) => {
     // Seule la fenêtre du dessus répond à Échap (sur ordinateur)
     if (event.key === 'Escape' && onLayer && target.lastElementChild !== panel) return;
+    if (event.key === 'Escape' && backHandler?.()) return;
     if (event.key === 'Escape') close();
     if (event.key === 'Tab') keepFocusInside(event);
   };
@@ -181,7 +185,11 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
   panel.setAttribute('role', role);
   panel.setAttribute('aria-modal', 'true');
   if (label) panel.setAttribute('aria-label', label);
-  scrim.addEventListener('click', () => close());
+  // Appui en dehors : comme Retour (sous-page d'une fiche : retour à la fiche), sinon fermeture
+  scrim.addEventListener('click', () => {
+    if (backHandler?.()) return;
+    close();
+  });
   target.append(scrim, panel);
   if (onLayer) {
     pcOpen++;
@@ -197,7 +205,7 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
     panel.style.zIndex = String(base + below * 2);
   }
   document.addEventListener('keydown', onKey);
-  closeViaRouter = openOverlay(remove, { push: history });
+  closeViaRouter = openOverlay(remove, { push: history, back: () => Boolean(backHandler?.()) });
   // Fermeture forcée (sans beforeClose) : changement d'écran, droit retiré
   const forceClose = shut;
 
@@ -208,7 +216,7 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
   const start = panel.querySelector('[data-initial-focus]');
   if (start && !isTextField(start)) start.focus();
   else panel.focus();
-  return { close, panel, forceClose };
+  return { close, panel, forceClose, setBack: (fn) => { backHandler = fn; } };
 }
 
 // Feuille qui monte du bas (édition d'article, choix du rayon…).

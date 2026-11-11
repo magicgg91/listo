@@ -137,6 +137,14 @@ button.sync { cursor: pointer; }
 .share { overflow: hidden; }
 .share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
 
+/* « Échéances » : choix « Toutes / Les miennes » (attribution, 11 novembre
+   2026), sous la barre du haut sur le téléphone, dans la barre d'outils
+   sur ordinateur */
+.deadlines-scope { margin: 0 var(--space-2) var(--space-1); }
+.app--pc .deadlines-scope { flex: none; margin: 0; width: auto; }
+.deadlines-scope .segmented__opt { white-space: nowrap; }
+.app--pc .deadlines-scope .segmented__opt { padding: 0 16px; }
+
 /* Feuille du bas : défilement si le contenu est long, de haut en bas
    seulement. Sans overflow-x, un défilement vertical rend aussi possible le
    défilement de côté : sur iPhone, la fiche glissait de gauche à droite

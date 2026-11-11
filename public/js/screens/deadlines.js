@@ -16,18 +16,22 @@
 //   titre ; ordinateur, le champ est dans l'en-tête. Sur le nom des tâches.
 // - « Aujourd'hui », « Demain »… sont recalculés à minuit et au retour au
 //   premier plan.
+// - Attribution (11 novembre 2026) : si une de mes listes l'active, un choix
+//   « Toutes / Les miennes » (retenu sur l'appareil) ; « Les miennes » ne
+//   garde que les tâches qui me sont attribuées. Chaque ligne montre aussi
+//   à qui est la tâche (« Moi » ou le prénom).
 
-import { h, icon } from '../dom.js';
+import { h, icon, replace } from '../dom.js';
 import { navigate } from '../router.js';
 import { dueChip, dueDateLabel, priorityChip, todayKey } from '../format.js';
 import { repeatChip, repeatSentence } from '../repeat.js';
 import { listIcon } from '../list-icons.js';
-import { canEditList, listOptions } from '../store.js';
+import { canEditList, listOptions, memberNames } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
-import { computeDeadlines } from '../deadlines.js';
+import { computeDeadlines, assigneeOf } from '../deadlines.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
@@ -45,6 +49,32 @@ export function renderDeadlines(onLeave) {
     onOpen: () => tabBar().loupe.sync(),
   });
   if (!pc) tabBar().loupe.set(search.loupe);
+
+  // « Toutes / Les miennes » : seulement si une de mes listes de tâches a
+  // l'attribution activée ; le choix est retenu sur cet appareil
+  let mine = loadScope();
+  const scopeButtons = [['all', 'Toutes'], ['mine', 'Les miennes']].map(([value, label]) => {
+    const button = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
+      mine = value === 'mine';
+      saveScope(mine);
+      paintScope();
+      draw();
+    } });
+    button.dataset.value = value;
+    button.dataset.label = label;
+    return button;
+  });
+  const scope = h('div', { class: 'segmented deadlines-scope', role: 'radiogroup', 'aria-label': 'Tâches affichées' }, scopeButtons);
+  const paintScope = () => {
+    const offered = [...app.data.lists.values()].some((list) => listOptions(list).assign);
+    scope.hidden = !offered;
+    if (!offered) mine = false;
+    for (const button of scopeButtons) {
+      const on = (button.dataset.value === 'mine') === mine;
+      button.setAttribute('aria-checked', String(on));
+      replace(button, on ? icon('check', 'icon--sm icon--check') : null, button.dataset.label);
+    }
+  };
 
   // Nom de la tâche, le texte cherché dans <mark class="hit"> (texte simple)
   const nameOf = (name) => (isSearching(search.value)
@@ -102,6 +132,13 @@ export function renderDeadlines(onLeave) {
       chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
       spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
     }
+    // À qui est la tâche (attribution activée) : « Moi » ou le prénom
+    const who = assigneeOf(item, list);
+    const whoName = who === app.user.id ? 'Moi' : who !== null ? memberNames(list).get(who) : null;
+    if (whoName) {
+      chips.push(h('span', { class: `chip${who === app.user.id ? ' chip--accent' : ''}` }, icon('user', 'icon--xs'), whoName));
+      spoken.push(who === app.user.id ? 'pour moi' : `pour ${whoName}`);
+    }
     const canCheck = canEditList(list);
     return h('li', { class: 'item', 'data-item-id': item.id },
       canCheck
@@ -121,7 +158,8 @@ export function renderDeadlines(onLeave) {
     }
     const today = todayKey();
     const query = search.value;
-    const groups = computeDeadlines(app.data, { today, query: isSearching(query) ? query : '' });
+    paintScope();
+    const groups = computeDeadlines(app.data, { today, query: isSearching(query) ? query : '', mine, me: app.user.id });
     const count = groups.reduce((sum, group) => sum + group.entries.length, 0);
     searchMeta.textContent = isSearching(query) ? resultsLabel(count) : '';
     searchMeta.classList.toggle('visually-hidden', isSearching(query) && count === 0);
@@ -129,7 +167,9 @@ export function renderDeadlines(onLeave) {
       search.show(isSearching(query) ? noResults(query) : h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon('calendar', 'icon--lg')),
         h('h2', { class: 'empty__title' }, 'Aucune échéance'),
-        h('p', { class: 'empty__text' }, 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues. Pour en donner une, activez l\'option « Échéance » dans « Modifier la liste ».')));
+        h('p', { class: 'empty__text' }, mine
+          ? 'Aucune tâche à faire ne vous est attribuée. « Toutes » montre aussi celles des autres et celles de personne.'
+          : 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues. Pour en donner une, activez l\'option « Échéance » dans « Modifier la liste ».')));
       return;
     }
     search.show(groups.map((group) => h('section', {},
@@ -167,7 +207,7 @@ export function renderDeadlines(onLeave) {
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, 'Échéances'),
           h('p', { class: 'pc-head__sub' }, 'Les tâches à faire de toutes vos listes')),
         search.field),
-      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), searchMeta),
+      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), scope, searchMeta),
       offlineBanner(),
       content);
   }
@@ -176,5 +216,25 @@ export function renderDeadlines(onLeave) {
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Échéances')),
       syncPill(() => refreshData({ full: true }), { inBar: true })),
     search.bar,
+    scope,
     content);
+}
+
+// Choix « Les miennes » retenu sur cet appareil (jamais envoyé au serveur ;
+// stockage indisponible : « Toutes » pour la visite)
+const SCOPE_KEY = 'listo-echeances-miennes';
+function loadScope() {
+  try {
+    return localStorage.getItem(SCOPE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function saveScope(mine) {
+  try {
+    if (mine) localStorage.setItem(SCOPE_KEY, '1');
+    else localStorage.removeItem(SCOPE_KEY);
+  } catch {
+    // stockage indisponible : le choix vaut pour la visite
+  }
 }

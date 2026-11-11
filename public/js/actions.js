@@ -123,14 +123,14 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, addMode, icon, forUserId, forName }) {
+export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, assignEnabled = false, addMode, icon, forUserId, forName }) {
   const listId = uuid();
   // listType : 'shopping' ou 'tasks' (« type » est le nom de l'opération) ;
   // icon : envoyée seulement si une icône a été choisie ; addMode (« Après
   // l'ajout ») : sans valeur, le serveur choisit selon le type
   // forUserId / forName : « Pour qui ? » d'une liste d'envies (rien : « Moi »)
   await perform({
-    type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled,
+    type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled, assignEnabled,
     ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}),
     ...(forUserId ? { forUserId } : {}), ...(forName ? { forName } : {}),
   });

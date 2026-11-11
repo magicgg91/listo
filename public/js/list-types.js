@@ -63,6 +63,8 @@ export const isShoppingList = (list) => typeOf(list) === 'shopping'; // magasin,
 // propriétaire l'active) ; échéance : listes de tâches seulement
 export const usesPriority = (list) => ['tasks', 'wishes'].includes(typeOf(list));
 export const usesDue = (list) => typeOf(list) === 'tasks';
+// Attribuer une tâche à une personne de la liste : listes de tâches seulement
+export const usesAssign = (list) => typeOf(list) === 'tasks';
 export const isWishList = (list) => typeOf(list) === 'wishes';       // bénéficiaire, lien, prix, réservations
 
 export const typeLabel = (list) => TYPE_LABELS[typeOf(list)];

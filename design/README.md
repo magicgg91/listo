@@ -489,3 +489,13 @@ Décisions du propriétaire (cahier des charges, « Tâches qui se répètent »
 - Fiche, sous l'échéance (liste de tâches, échéance activée) : « Se répète » en `.due-picker` (champ `.input--select` avec `#i-repeat` et le choix ; par-dessus, le vrai `<select>` invisible `.due-picker__input`, comme pour la date) ; pour « Chaque semaine » et « Toutes les 2 semaines », `.weekdays` (`role="group"`, sept colonnes égales) de `.weekdays__opt` (« Lu » … « Di », `aria-pressed`, nom entier en `aria-label` ; jour choisi : liseré bleu de 2 px, fond bleu clair, texte en gras, jamais la couleur seule ; 44 px de haut, au moins 44 px de large dès 360 px d'écran) ; pour « Chaque mois », un second `.due-picker` (« Le 5 de chaque mois ») ; la phrase en `.field__hint` ; « Passer cette fois » en `.btn--secondary.btn--sm`.
 - Ligne : dans `.item__meta`, après l'échéance, `.chip` avec `#i-repeat` ET le texte court (« Lu, Me », « 2 sem. · Lu », « Le 5 », « Chaque jour », « Chaque année »).
 
+## Ajout : attribuer une tâche (11 novembre 2026)
+
+Décisions du propriétaire (cahier des charges, « Attribuer une tâche »). Aucune classe ni icône nouvelle dans le kit : composants existants.
+
+- Fiche : « Pour » en `.due-picker` (champ `.input--select` avec `#i-user` et le choix ; par-dessus, le vrai `<select>` invisible), sous « Se répète » : « Personne », « Moi », puis les prénoms.
+- Ligne : dans `.item__meta`, après l'échéance, `.chip` avec `#i-user` ET « Moi » (`.chip--accent`) ou le prénom (`.chip`).
+- Tri « Par personne » (icône `#i-users`) : en-têtes repliables de la section 16.11 (« Moi », prénoms, « Personne »).
+- « Échéances » : `.segmented` « Toutes / Les miennes » (choix actif : coche ET texte), sous la barre du haut (téléphone) ou dans `.pc-tools` (ordinateur) ; style d'espacement dans `public/css/app.css` (`.deadlines-scope`).
+- Formulaire de la liste : troisième interrupteur « Attribution » dans « Options des éléments » (`.toggle-row`, `.switch`).
+

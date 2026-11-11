@@ -5,12 +5,12 @@
 ## L'essentiel
 
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur les autres en quelques secondes ; chaque personne a son droit, « Peut modifier » ou « Lecture seule ».
-- **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance, répétition) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
+- **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance, répétition, attribution) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
 - **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
 - **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
-- **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
+- **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées, et tâches qu'on vous attribue), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
 ## En images

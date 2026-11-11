@@ -214,8 +214,10 @@ test('fiche : chaque champ reçu est affiché, aucun champ absent', () => {
 test('fiche : mêmes champs que la fiche à consulter de l\'application, aucun oubli', () => {
   const app = read('public/js/screens/list.js');
   const view = app.slice(app.indexOf('function openItemView'), app.indexOf('// Feuille de choix du rayon'));
-  // (« Prix indicatif » : listes d'envies, qui n'ont jamais de lien public)
-  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif');
+  // (« Prix indicatif » : listes d'envies, qui n'ont jamais de lien public ;
+  // « Pour » : jamais sur la page publique, pour ne pas montrer les prénoms
+  // de la famille à un visiteur sans compte)
+  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour');
   assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Se répète', 'Code-barres', 'Rayon', 'Magasin']);
   const format = read('public/js/format.js');
   const details = format.slice(format.indexOf('export function publicItemDetails'), format.indexOf('export function priorityChip'));

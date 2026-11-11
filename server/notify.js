@@ -2,8 +2,9 @@
 // l'envoi chiffré lui-même est dans server/push.js).
 //
 // Trois catégories ici (la quatrième, le résumé des échéances, est à part) :
-// - a) 'changes' : ce que les AUTRES ajoutent, modifient ou cochent dans une
-//   liste dont je suis membre. Point d'entrée unique : le journal des
+// - a) 'changes' (« Modifications ») : ce que les AUTRES ajoutent, modifient
+//   ou cochent dans une liste dont je suis membre ; une tâche qu'ils
+//   m'attribuent y est dite en titre (« Léa vous a attribué une tâche »). Point d'entrée unique : le journal des
 //   Nouveautés (server/news.js, log), donc l'application, la file d'attente
 //   hors ligne et Claude (une action de Claude compte pour le compte qui l'a
 //   autorisé). Les décochés et les suppressions ne sont pas notifiés.
@@ -24,7 +25,9 @@
 //   serveur, variable TZ), « 3 tâches à faire aujourd'hui · 1 en retard » ;
 //   jamais une notification par tâche. Seulement les listes de TÂCHES dont
 //   l'échéance est activée (jamais une liste d'envies, pour personne) ;
-//   tâches non cochées, échéance aujourd'hui ou passée. Le jour est noté en
+//   tâches non cochées, échéance aujourd'hui ou passée ; les miennes et
+//   celles de personne, jamais celles attribuées à quelqu'un d'autre (si
+//   l'attribution est activée pour la liste). Le jour est noté en
 //   base (push_digests) AVANT l'envoi, pour chaque personne examinée : un
 //   redémarrage ne renvoie jamais le résumé, une tâche ajoutée plus tard
 //   n'en déclenche pas un second. Serveur arrêté à 8 h : envoi au
@@ -106,6 +109,10 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       WHERE list_members.list_id = ? AND users.active = 1`).pluck(),
     name: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
     itemName: db.prepare('SELECT name FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL').pluck(),
+    // Tâche encore attribuée à cette personne, non cochée, non supprimée, dans
+    // une liste de tâches dont l'attribution est activée
+    stillMine: db.prepare(`SELECT 1 FROM items JOIN lists ON lists.id = items.list_id AND lists.type = 'tasks' AND lists.assign_enabled = 1
+      WHERE items.id = ? AND items.list_id = ? AND items.assigned_to = ? AND items.deleted_at IS NULL AND items.checked = 0`).pluck(),
     isMember: db.prepare(`SELECT 1 FROM list_members JOIN lists ON lists.id = list_members.list_id AND lists.deleted_at IS NULL
       WHERE list_members.list_id = ? AND list_members.user_id = ?`).pluck(),
     // Résumé des échéances : comptes actifs pas encore examinés aujourd'hui
@@ -122,6 +129,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       WHERE items.deleted_at IS NULL AND items.checked = 0 AND items.due_date IS NOT NULL AND items.due_date <> '' AND items.due_date <= :today
+        AND (lists.assign_enabled = 0 OR items.assigned_to IS NULL OR items.assigned_to = :userId)
         AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
       ORDER BY items.due_date, items.name COLLATE NOCASE`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
@@ -187,7 +195,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     await push.sendToUser(userId, message, options);
   }
 
-  // --- a) Modifications des autres, regroupées ---
+  // --- a) Modifications (des autres), regroupées ---
   const groups = new Map(); // `${compte}:${liste}` -> groupe
   // Appelé par le journal des Nouveautés après chaque écriture (lastEventId :
   // numéro du dernier événement écrit)
@@ -199,7 +207,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       const key = `${userId}:${listId}`;
       let group = groups.get(key);
       if (!group) {
-        group = { userId, listId, firstAt: ctx.now(), actors: [], items: { added: [], updated: [], checked: [] }, count: 0, lastEventId: 0 };
+        group = newGroup(userId, listId);
         groups.set(key, group);
       }
       if (!group.actors.includes(actorId)) group.actors.push(actorId);
@@ -211,13 +219,39 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     }
   }
 
+  // Une tâche m'est attribuée par quelqu'un d'autre (server/lists.js) : notée
+  // dans MON groupe de la liste (même minute de regroupement, même
+  // catégorie « Modifications ») ; le titre le dit. L'écriture elle-même
+  // passe aussi par le journal (activity), qui compte le changement.
+  function assigned({ listId, itemId, userId, actorId }) {
+    if (!actorId || userId === actorId || !push.hasDevices(userId)) return;
+    const key = `${userId}:${listId}`;
+    let group = groups.get(key);
+    if (!group) {
+      group = newGroup(userId, listId);
+      groups.set(key, group);
+    }
+    if (!group.actors.includes(actorId)) group.actors.push(actorId);
+    if (!group.assigned.includes(itemId)) group.assigned.push(itemId);
+  }
+
+  function newGroup(userId, listId) {
+    return { userId, listId, firstAt: ctx.now(), actors: [], items: { added: [], updated: [], checked: [] }, assigned: [], count: 0, lastEventId: 0 };
+  }
+
   function changesMessage(group, list, detail) {
     const actors = group.actors.map((id) => q.name.get(id) ?? 'Un ancien membre');
+    // Tâches qui me sont attribuées (toujours à moi, encore à faire)
+    const mine = group.assigned.filter((id) => q.stillMine.get(id, list.id, group.userId));
     const verb = actors.length > 1 ? 'ont modifié' : 'a modifié';
-    const title = `${peopleList(actors)} ${verb} « ${list.name} »`;
+    const title = mine.length
+      ? `${peopleList(actors)} vous ${actors.length > 1 ? 'ont' : 'a'} attribué ${mine.length > 1 ? `${mine.length} tâches` : 'une tâche'} dans « ${list.name} »`
+      : `${peopleList(actors)} ${verb} « ${list.name} »`;
     let body = `${group.count} changement${group.count > 1 ? 's' : ''}`;
     if (detail) {
       const parts = [];
+      const assignedNames = mine.map((id) => q.itemName.get(id, list.id)).filter(Boolean);
+      if (assignedNames.length) parts.push(`Pour vous : ${nameList(assignedNames)}`);
       for (const [kind, label] of [['added', 'Ajouté'], ['updated', 'Modifié'], ['checked', 'Coché']]) {
         const names = group.items[kind].map((id) => q.itemName.get(id, list.id)).filter(Boolean);
         if (names.length) parts.push(`${label} : ${nameList(names)}`);
@@ -323,7 +357,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   firstDigest.unref?.();
 
   return {
-    activity, wish, sharing, flushDue, runDigest, settingsOf, setSettings, mutedLists, setMuted, isMember,
+    activity, assigned, wish, sharing, flushDue, runDigest, settingsOf, setSettings, mutedLists, setMuted, isMember,
     pending: () => groups.size,
     prune: () => { for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId); },
     stop: () => {

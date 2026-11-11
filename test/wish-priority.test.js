@@ -34,7 +34,7 @@ test('formulaire : valeur de départ de « Priorité » — désactivée pour to
 
 test('formulaire : aucune valeur forcée ni liée au type ; création sans priorité sauf choix ; seul un changement de l\'interrupteur est envoyé ; conversion avec le réglage affiché', () => {
   const form = code('public/js/screens/list-form.js');
-  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false \};/);
+  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false, assign: list \? listOptionsOf\(list\)\.assign : false \};/);
   // Le type choisi ne touche plus l'interrupteur (plus de valeur posée par l'écran)
   assert.doesNotMatch(form, /optionsCard\.set\(|priorityChosen|card\.set =/);
   assert.doesNotMatch(form, /isWishList\(listType\) \|\| Boolean/);
@@ -133,11 +133,11 @@ test('téléphone : champ, pastille et tri suivent le réglage enregistré ; cop
   const item = { id: 'I', listId: 'L', name: 'Vélo', checked: false, priority: 'high', updatedAt: '2026-11-03T10:00:00.000Z' };
   let state = loadSync(emptyState(), { lists: [list], items: [item], listIds: ['L'], stores: [], aisles: [], history: [], serverTime: '2026-11-03T10:00:00.000Z' });
   // Désactivée : ni champ ni pastille (listOptions), pas de tri « Par priorité »
-  assert.deepEqual(listOptions(state.lists.get('L')), { priority: false, due: false });
+  assert.deepEqual(listOptions(state.lists.get('L')), { priority: false, due: false, assign: false });
   assert.deepEqual(availableSorts(state.lists.get('L')), ['alpha']);
   // Activée hors ligne par le propriétaire (file d'attente) : appliquée tout de suite à la copie locale
   applyOp(state, { id: 'op1', type: 'list.update', listId: 'L', priorityEnabled: true }, { user: { id: 1 }, now: '2026-11-03T10:00:30.000Z' });
-  assert.deepEqual(listOptions(state.lists.get('L')), { priority: true, due: false });
+  assert.deepEqual(listOptions(state.lists.get('L')), { priority: true, due: false, assign: false });
   assert.deepEqual(availableSorts(state.lists.get('L')), ['alpha', 'priority']);
   // Gardée telle quelle dans la copie locale (rechargement hors ligne)
   const reloaded = fromSnapshot(toSnapshot(state, '2026-11-03T10:01:00.000Z'));

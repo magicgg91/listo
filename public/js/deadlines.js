@@ -16,7 +16,12 @@
 // proche d'abord, puis la priorité élevée, puis l'ordre alphabétique.
 //
 // Pastille du bouton « Échéances » : tâches en retard + tâches du jour
-// (comme le résumé de 8 h des notifications).
+// (comme le résumé de 8 h des notifications), sans celles attribuées à
+// quelqu'un d'autre.
+//
+// Attribution (décisions du 11 novembre 2026) : « Les miennes » ne garde que
+// les tâches qui me sont attribuées ; « Toutes » montre tout. Une
+// attribution ne compte que si l'option est activée pour la liste.
 
 import { typeOf } from './list-types.js';
 import { listOptions } from './store.js';
@@ -55,13 +60,18 @@ export function listHasDeadlines(list) {
 
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 
-// Tâches retenues, chacune avec sa liste : [{ item, list }], triées
-function collect(state) {
+// Personne à qui la tâche est attribuée (null : personne, ou attribution
+// désactivée pour sa liste)
+export const assigneeOf = (item, list) => (listOptions(list).assign ? item.assignedTo ?? null : null);
+
+// Tâches retenues, chacune avec sa liste : [{ item, list }], triées.
+// keep(item, list) : filtre de plus, facultatif.
+function collect(state, keep = () => true) {
   const found = [];
   for (const item of state.items.values()) {
     if (item.checked || !item.dueDate) continue;
     const list = state.lists.get(item.listId);
-    if (!listHasDeadlines(list)) continue;
+    if (!listHasDeadlines(list) || !keep(item, list)) continue;
     found.push({ item, list });
   }
   const priority = (entry) => (listOptions(entry.list).priority ? PRIORITY_RANK[entry.item.priority] ?? 1 : 1);
@@ -71,15 +81,19 @@ function collect(state) {
 }
 
 // Groupes à afficher (vides retirés) : [{ key, title, entries }].
-// query : texte cherché (nom de la tâche), facultatif.
-export function computeDeadlines(state, { today = todayKey(), query = '' } = {}) {
-  const entries = collect(state).filter((entry) => !query || matches(entry.item.name, query));
+// query : texte cherché (nom de la tâche), facultatif ; mine : seulement les
+// tâches attribuées à me (« Les miennes »).
+export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null } = {}) {
+  const keep = mine ? (item, list) => assigneeOf(item, list) === me : undefined;
+  const entries = collect(state, keep).filter((entry) => !query || matches(entry.item.name, query));
   return DEADLINE_GROUPS
     .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today) === key) }))
     .filter((group) => group.entries.length > 0);
 }
 
-// Nombre de la pastille : tâches en retard et tâches du jour
-export function deadlineBadge(state, today = todayKey()) {
-  return collect(state).filter((entry) => entry.item.dueDate <= today).length;
+// Nombre de la pastille : tâches en retard et tâches du jour, les miennes et
+// celles de personne (pas celles attribuées à quelqu'un d'autre)
+export function deadlineBadge(state, today = todayKey(), me = null) {
+  const keep = (item, list) => { const who = assigneeOf(item, list); return who === null || who === me; };
+  return collect(state, keep).filter((entry) => entry.item.dueDate <= today).length;
 }

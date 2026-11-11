@@ -55,7 +55,7 @@ test('liste de tâches qui a été de courses : le magasin conservé n\'apparaî
   assert.equal(view.groups[0].store ?? null, null);
   assert.equal(JSON.stringify(view.groups).includes('Crèmerie'), false);
   assert.deepEqual(availableSorts(view.list), ['alpha', 'priority'], 'ni « Par rayon » ni « Par magasin »');
-  assert.deepEqual(listOptions(view.list), { priority: true, due: false });
+  assert.deepEqual(listOptions(view.list), { priority: true, due: false, assign: false });
   assert.equal(remembersNames(view.list), false);
   assert.equal(itemWords(view.list).one, 'élément');
   assert.equal(listIcon(view.list), 'tasks');

@@ -126,9 +126,9 @@ test('écran Notifications : états expliqués en clair, interrupteur accessible
   assert.equal(bell(read('public/index.html')), bell(read('design/icons-sprite.html')));
 });
 
-test('étape 2 : réglages du compte (Modifications des autres, Envies, Partage, détail) et « Silencer cette liste » dans le menu', () => {
+test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) et « Silencer cette liste » dans le menu', () => {
   const screen = read('public/js/screens/notifications.js');
-  assert.match(screen, /\['changes', 'Modifications des autres', /);
+  assert.match(screen, /\['changes', 'Modifications', 'Ce que les autres ajoutent, modifient, cochent ou vous attribuent/);
   assert.match(screen, /\['wishes', 'Envies', /);
   assert.match(screen, /\['sharing', 'Partage', /);
   assert.match(screen, /\['detail', 'Afficher le détail dans la notification', /);

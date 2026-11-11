@@ -205,3 +205,13 @@ test('service worker : nouveaux fichiers gardés pour l\'ouverture sans réseau'
   const sw = read('public/sw.js');
   for (const file of ['/js/tabbar.js', '/js/deadlines.js', '/js/screens/deadlines.js']) assert.match(sw, new RegExp(`'${file.replace(/[/.]/g, '\\$&')}',`));
 });
+
+test('boutons arrondis (16.16) : tous les boutons en pilule, ni les champs ni les cartes de choix', () => {
+  const css = read('public/css/listo.css');
+  const section = css.slice(css.indexOf('/* 16.16 Boutons arrondis'));
+  assert.ok(section.length > 200);
+  assert.ok(read('design/listo.css').includes(section.trim()), 'même section dans design/listo.css');
+  const rule = section.replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  assert.match(rule, /^\.btn, \.btn--icon, \.icon-btn, \.item__actions \.icon-btn,\s*\.segmented, \.segmented__opt, \.duration__opt, \.cart__action, \.fold-all \{ border-radius: var\(--radius-pill\); \}$/);
+  assert.doesNotMatch(rule, /\.input|\.choice__opt|\.icon-grid__opt|\.searchfield|\.card|\.glass|backdrop/);
+});

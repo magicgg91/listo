@@ -930,6 +930,25 @@
 .btn, .btn--icon, .icon-btn, .item__actions .icon-btn,
 .segmented, .segmented__opt, .duration__opt, .cart__action, .fold-all { border-radius: var(--radius-pill); }
 
+/* 16.17 Choix du type en pilule (décision du propriétaire du 11 novembre
+   2026) : dans « Nouvelle liste » / « Modifier la liste », le choix Courses,
+   Tâches, Envies prend l'allure du bandeau du bas : une pilule (surface,
+   liseré, ombre légère ; pas de verre dans une fenêtre), chaque type avec
+   son icône au-dessus du nom, et un fond bleu clair .choice__pill qui glisse
+   sous le type choisi avec un petit rebond (data-current = 0, 1 ou 2 ;
+   data-count = nombre de types proposés). Type choisi : fond bleu clair,
+   texte --color-accent-ink en gras (jamais la couleur seule). La coche des
+   cartes n'est plus affichée (aria-checked dit le choix). Mouvement réduit :
+   sans glissement (15). */
+.choice--pill { position: relative; gap: 0; padding: 5px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); box-shadow: var(--shadow-1); }
+.choice__pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: var(--radius-pill); background: var(--color-accent-soft); transition: transform 380ms cubic-bezier(0.34, 1.45, 0.64, 1); }
+.choice--pill[data-count="1"] .choice__pill { width: calc(100% - 10px); }
+.choice--pill[data-current="1"] .choice__pill { transform: translateX(100%); }
+.choice--pill[data-current="2"] .choice__pill { transform: translateX(200%); }
+.choice--row.choice--pill .choice__opt { position: relative; z-index: 1; min-height: 62px; gap: 2px; padding: 4px 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); }
+.choice--row.choice--pill .choice__opt[aria-checked="true"] { padding: 4px 6px; border: 0; background: transparent; color: var(--color-accent-ink); font-weight: 700; }
+.choice--pill .choice__opt .icon-end { display: none; }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

@@ -210,7 +210,7 @@ test('service worker : nouveaux fichiers gardés pour l\'ouverture sans réseau'
 
 test('boutons arrondis (16.16) : tous les boutons en pilule, ni les champs ni les cartes de choix', () => {
   const css = read('public/css/listo.css');
-  const section = css.slice(css.indexOf('/* 16.16 Boutons arrondis'));
+  const section = css.slice(css.indexOf('/* 16.16 Boutons arrondis'), css.indexOf('/* 16.17 Choix du type'));
   assert.ok(section.length > 200);
   assert.ok(read('design/listo.css').includes(section.trim()), 'même section dans design/listo.css');
   const rule = section.replace(/\/\*[\s\S]*?\*\//g, '').trim();
@@ -229,4 +229,17 @@ test('liste (téléphone) : barre d\'ajout toute la largeur, loupe au-dessus, ca
   assert.match(css, /\.addbar--glass \.suggest \{ left: 0; right: 0; \}/);
   assert.match(list, /input\.addEventListener\('focus', \(\) => \{\s*setTyping\(true\);/);
   assert.match(list, /if \(document\.activeElement !== input\) setTyping\(false\);/);
+});
+
+test('choix du type en pilule (16.17) : comme le bandeau du bas, fond qui glisse, choix lu par aria-checked', () => {
+  const css = read('public/css/listo.css');
+  const section = css.slice(css.indexOf('/* 16.17 Choix du type'));
+  assert.ok(section.length > 300);
+  assert.ok(read('design/listo.css').includes(section.trim()), 'même section dans design/listo.css');
+  assert.doesNotMatch(section, /#[0-9a-f]{3,8}\b|rgba?\(|\.glass|backdrop/i, 'couleurs du kit, pas de verre dans une fenêtre');
+  assert.match(section, /\.choice--pill\[data-current="2"\] \.choice__pill \{ transform: translateX\(200%\); \}/);
+  assert.match(section, /\.choice--row\.choice--pill \.choice__opt\[aria-checked="true"\] \{[^}]*color: var\(--color-accent-ink\); font-weight: 700; \}/);
+  const form = read('public/js/screens/list-form.js');
+  assert.match(form, /button\.setAttribute\('aria-checked', String\(on\)\);/);
+  assert.match(form, /typeGroup\.dataset\.current = String\(Math\.max\(0, offered\.indexOf\(listType\)\)\);/);
 });

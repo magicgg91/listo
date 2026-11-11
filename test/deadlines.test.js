@@ -149,9 +149,11 @@ test('bandeau du bas : trois boutons, même place partout, loupe seulement là o
   const app = read('public/js/app.js');
   assert.match(app, /if \(bar\) tabBar\(\)\.loupe\.set\(null\);\s*const content = /);
   assert.doesNotMatch(read('public/js/screens/settings.js'), /loupe/);
-  // Place de la loupe gardée (cachée, pas retirée) : les boutons ne bougent pas
+  // Bandeau toute la largeur ; la loupe flotte au-dessus, à droite (pas sur Réglages)
   const css = read('public/css/listo.css');
-  assert.match(css, /\.loupe--off \{ visibility: hidden; \}/);
+  assert.match(css, /\.tabdock > \.loupe \{ position: absolute; right: 0; bottom: calc\(100% \+ 12px\); \}/);
+  assert.match(css, /\.loupe--off \{ display: none; \}/);
+  assert.doesNotMatch(css, /addbar--with-loupe/);
   assert.match(tabbar, /button\.classList\.toggle\('loupe--off', !search\);/);
   // Pas sur ordinateur ni dans une liste
   assert.match(app, /const bar = !pc && Boolean\(app\.user\) && withSide && hasTabs\(app\.route\?\.name\);/);
@@ -177,7 +179,7 @@ test('style verre : repli opaque sans flou ou avec « moins de transparence » ;
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.app \*, \.app \*::before, \.app \*::after \{ animation: none !important; transition: none !important; \}/);
   // Zones tactiles : 54 px (bandeau), 66 px (loupe)
   assert.match(section, /\.tabbar__tab \{[^}]*min-height: 54px;/);
-  assert.match(section, /\.loupe \{[^}]*width: 66px; height: 66px;/);
+  assert.match(section, /\.loupe \{[^}]*width: 56px; height: 56px;/);
 });
 
 test('filtre des types de « Mes listes » : retenu sur le téléphone, valeur inconnue = Toutes', () => {
@@ -214,4 +216,17 @@ test('boutons arrondis (16.16) : tous les boutons en pilule, ni les champs ni le
   const rule = section.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   assert.match(rule, /^\.btn, \.btn--icon, \.icon-btn, \.item__actions \.icon-btn,\s*\.segmented, \.segmented__opt, \.duration__opt, \.cart__action, \.fold-all \{ border-radius: var\(--radius-pill\); \}$/);
   assert.doesNotMatch(rule, /\.input|\.choice__opt|\.icon-grid__opt|\.searchfield|\.card|\.glass|backdrop/);
+});
+
+test('liste (téléphone) : barre d\'ajout toute la largeur, loupe au-dessus, cachée pendant la saisie', () => {
+  const list = read('public/js/screens/list.js');
+  assert.match(list, /const setTyping = \(typing\) => \{\s*if \(pc\) return;\s*loupeDock\.hidden = typing;\s*\};/);
+  // Au-dessus de la barre si on peut ajouter (même pendant la recherche), en bas sinon
+  assert.match(list, /loupeDock\?\.classList\.toggle\('list-dock--high', editable\(\)\);/);
+  const css = read('public/css/listo.css');
+  assert.match(css, /\.list-dock--high \{ bottom: calc\(12px \+ 66px \+ 12px \+ env\(safe-area-inset-bottom, 0px\)\); \}/);
+  // Suggestions sur toute la largeur de la barre
+  assert.match(css, /\.addbar--glass \.suggest \{ left: 0; right: 0; \}/);
+  assert.match(list, /input\.addEventListener\('focus', \(\) => \{\s*setTyping\(true\);/);
+  assert.match(list, /if \(document\.activeElement !== input\) setTyping\(false\);/);
 });

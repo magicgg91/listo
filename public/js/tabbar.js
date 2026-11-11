@@ -1,12 +1,12 @@
 // Bandeau du bas du téléphone (décision du 11 novembre 2026) : trois
 // boutons, « Mes listes », « Échéances » et « Réglages », en style verre, et
-// la loupe ronde à droite.
+// la loupe ronde qui flotte juste au-dessus, à droite.
 //
 // - Il n'existe que sur ces trois écrans (pas dans une liste, où le bas est
 //   pris par le champ d'ajout), et pas sur ordinateur (menu de gauche).
-// - Il garde toujours la même taille et la même place : les boutons ne
+// - Il prend toute la largeur et garde la même place : les boutons ne
 //   bougent jamais d'un écran à l'autre. Sur « Réglages », il n'y a rien à
-//   chercher : la loupe disparaît, sa place reste vide.
+//   chercher : la loupe n'est pas affichée.
 // - Une pastille (fond bleu clair) glisse vers le bouton de l'écran affiché,
 //   avec un petit rebond ; sans animation si le téléphone en demande moins.
 // - « Échéances » porte une pastille numérique : tâches en retard et tâches
@@ -60,7 +60,6 @@ export function loupeButton() {
   return {
     el: button,
     // Branche la loupe sur la recherche de l'écran ; null : pas de loupe
-    // (sa place reste vide)
     set(next) {
       search = next;
       button.classList.toggle('loupe--off', !search);

@@ -568,6 +568,15 @@ export const MIGRATIONS = [
     sent_key TEXT NOT NULL
   );
   `,
+
+  // --- Migration 27 : retirer un article de « Souvent ajoutés » (11 novembre 2026) ---
+  // hidden_at : date à laquelle quelqu'un a retiré l'article de « Souvent
+  // ajoutés » pour ce magasin (ligne du magasin ; ligne générale pour les
+  // listes sans magasin). Effacée au prochain ajout de l'article
+  // (public/js/history.js, recordUse) : il revient s'il est racheté.
+  `
+  ALTER TABLE item_history ADD COLUMN hidden_at TEXT;
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

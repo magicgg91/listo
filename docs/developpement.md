@@ -399,6 +399,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     2. Toucher un article : il arrive dans la liste (message « Ajouté : … ») et quitte l'encart, qui reste ouvert. Un article coché dans le panier revient dans la liste (« Remis dans la liste : … »), sans doublon.
     3. Toucher la liste derrière : l'encart se ferme. Toucher le champ : l'encart revient avec le clavier ; taper « la » : les suggestions habituelles. La croix ferme l'encart et le clavier.
     4. Mode avion : même chose avec ce que le téléphone a gardé ; les ajouts partent au retour du réseau.
+    5. Retirer : faire glisser une ligne de l'encart vers la gauche, « Retirer » : elle disparaît (message « Retiré de « Souvent ajoutés » : … ») ; sur un autre téléphone, après synchronisation, elle n'est plus proposée non plus. Un petit glissement qui revient n'ajoute rien. Ajouter de nouveau l'article à la main : il revient dans l'encart.
 
 ## API des comptes (étape 2)
 

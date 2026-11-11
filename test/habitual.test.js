@@ -94,3 +94,91 @@ test('écran : « + » champ vide ouvre l\'encart sans curseur ; croix, toucher 
   assert.doesNotMatch(body('drawHabitual'), /innerHTML/);
   assert.match(read('public/css/app.css'), /\.suggest__head \{/);
 });
+
+// --- Retirer un article de « Souvent ajoutés » (migration 27) ---
+
+import crypto from 'node:crypto';
+import { hideHabitual, recordUse, moveUse } from '../public/js/history.js';
+import { applyOp } from '../public/js/store.js';
+import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+
+test('règle partagée : retiré dans ce magasin seulement ; revient au prochain ajout, pas à une simple modification', () => {
+  const history = [line('Chips', null, 5), line('Chips', 1, 5), line('Chips', 2, 3)];
+  hideHabitual(history, { name: 'CHIPS', storeIds: [1], now: NOW });
+  assert.deepEqual(history.map((e) => e.hiddenAt ?? null), [null, NOW, null]);
+  assert.deepEqual(habitual(history, { storeIds: [1], now: NOW }), []);
+  assert.equal(habitual(history, { storeIds: [2], now: NOW }).length, 1, 'autre magasin : toujours proposé');
+  recordUse(history, { name: 'Chips', storeId: 1, count: 0, now: NOW });
+  assert.equal(history[1].hiddenAt, NOW, 'modification : reste retiré');
+  recordUse(history, { name: 'Chips', storeId: 1, count: 1, now: NOW });
+  assert.equal(history[1].hiddenAt, null, 'racheté : revient');
+  // Liste sans magasin : la ligne générale ; liste « multi » : un article qui change de magasin revient
+  hideHabitual(history, { name: 'Chips', now: NOW });
+  assert.equal(history[0].hiddenAt, NOW);
+  hideHabitual(history, { name: 'Chips', storeIds: [2], now: NOW });
+  moveUse(history, { name: 'Chips', from: 1, to: 2, now: NOW });
+  assert.equal(history[2].hiddenAt, null);
+});
+
+test('copie locale : l\'opération retire l\'article dans le magasin de la liste', () => {
+  const state = emptyState();
+  state.stores = [{ id: 1, name: 'Carrefour', active: true }];
+  state.history = [line('Chips', null, 5), line('Chips', 1, 5)];
+  const list = { id: 'c', type: 'shopping', store: { id: 1, name: 'Carrefour', isMulti: false } };
+  state.lists.set('c', list);
+  assert.equal(computeHabitual(state, list, { now: NOW }).length, 1);
+  applyOp(state, { type: 'habitual.hide', listId: 'c', name: 'chips' }, { user: { id: 1 }, now: NOW });
+  assert.deepEqual(computeHabitual(state, list, { now: NOW }), []);
+  assert.equal(state.history[0].hiddenAt ?? null, null, 'ligne générale intacte');
+});
+
+test('serveur : retirer demande le droit de modifier une liste de courses ; pour la famille, dans ce magasin ; revient si racheté ; synchronisé', async (t) => {
+  const app = await startTestApp(t);
+  const guillaume = await setupAdmin(app);
+  const leaId = await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+  const lea = app.client();
+  await login(lea, 'lea', 'MotDePasse-lea');
+  const uuid = () => crypto.randomUUID();
+  const send = async (client, op) => (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const courses = uuid();
+  const taches = uuid();
+  const chips = uuid();
+  await send(guillaume, { type: 'list.create', listId: courses, name: 'Courses', listType: 'shopping', storeId: 1 });
+  await send(guillaume, { type: 'list.create', listId: taches, name: 'Maison', listType: 'tasks' });
+  await send(guillaume, { type: 'item.create', listId: courses, itemId: chips, name: 'Chips', aisleId: 1 });
+  await guillaume.request('PUT', `/api/lists/${courses}/members`, { userIds: [leaId], access: { [leaId]: 'lecture' } });
+  const hidden = () => app.db.prepare('SELECT store_id, hidden_at IS NOT NULL AS hidden FROM item_history WHERE name_normalized = ? ORDER BY store_id').all('chips');
+  // Horloge du serveur de test : on avance d'une minute, puis on retient ce moment
+  app.clock.now += 60000;
+  const since = new Date(app.clock.now).toISOString();
+  app.clock.now += 60000;
+  // Lecture seule, liste de tâches, nom vide : refusé, rien d'écrit
+  assert.equal((await send(lea, { type: 'habitual.hide', listId: courses, name: 'Chips' })).status, 403);
+  assert.equal((await send(guillaume, { type: 'habitual.hide', listId: taches, name: 'Chips' })).status, 400);
+  assert.equal((await send(guillaume, { type: 'habitual.hide', listId: courses, name: '' })).status, 400);
+  assert.deepEqual(hidden(), [{ store_id: null, hidden: 0 }, { store_id: 1, hidden: 0 }]);
+  // Le propriétaire retire : ligne du magasin seulement
+  assert.equal((await send(guillaume, { type: 'habitual.hide', listId: courses, name: 'chips' })).status, 200);
+  assert.deepEqual(hidden(), [{ store_id: null, hidden: 0 }, { store_id: 1, hidden: 1 }]);
+  // Les autres téléphones l'apprennent à leur synchronisation (même sans nouvel achat)
+  const synced = (await lea.get(`/api/sync?since=${encodeURIComponent(since)}`)).body.history;
+  assert.deepEqual(synced.filter((h) => h.nameNormalized === 'chips').map((h) => [h.storeId, Boolean(h.hiddenAt)]), [[1, true]]);
+  // Racheté (nouvel ajout) : revient
+  await send(guillaume, { type: 'item.create', listId: courses, itemId: uuid(), name: 'Chips' });
+  assert.deepEqual(hidden(), [{ store_id: null, hidden: 0 }, { store_id: 1, hidden: 0 }]);
+});
+
+test('écran : « Retirer » derrière la ligne (glissement, téléphone) ou au bout (ordinateur) ; un glissement n\'ajoute jamais', () => {
+  const list = read('public/js/screens/list.js');
+  const body = (name) => list.slice(list.indexOf(`function ${name}(`), list.indexOf('\n  }\n', list.indexOf(`function ${name}(`)));
+  const row = body('habitualRow');
+  assert.match(row, /if \(blocked \|\| row\.classList\.contains\('is-open'\) \|\| row\.classList\.contains\('is-swiping'\)\) return;/);
+  assert.match(row, /if \(startX !== null && Math\.abs\(event\.clientX - startX\) > SWIPE\.slop\) blocked = true;/);
+  assert.match(row, /'aria-label': label,/);
+  assert.match(row, /const label = `Retirer \$\{entry\.name\} de « Souvent ajoutés »`;/);
+  assert.match(row, /onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,\s*onClick: \(\) => removeHabitual\(entry\.name\),/);
+  assert.match(row, /if \(!pc\) habitualSwipes\.attach\(row, add, remove\);/);
+  assert.match(body('removeHabitual'), /await actions\.hideHabitual\(view\.list, name\);/);
+  assert.match(read('public/js/actions.js'), /return perform\(\{ type: 'habitual\.hide', listId: list\.id, name \}\);/);
+  assert.match(read('public/css/app.css'), /\.suggest__row\.is-swiping \.swipe__delete, \.suggest__row\.is-open \.swipe__delete \{ visibility: visible; \}/);
+});

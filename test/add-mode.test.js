@@ -80,7 +80,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 26);
+  assert.equal(schemaVersion(db), 27);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
   assert.deepEqual(after.map(({ add_mode: mode, type, for_user_id: forUser, for_name: forName, assign_enabled: assign, ...rest }) => rest), before, 'rien d\'autre ne change (type : migration 18)');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
@@ -98,7 +98,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 26);
+  assert.equal(schemaVersion(db), 27);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();

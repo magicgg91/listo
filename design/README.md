@@ -511,6 +511,8 @@ Décisions du propriétaire (cahier des charges, « Heure et rappel »). Aucune 
 
 Décisions du propriétaire (cahier des charges, « Souvent ajoutés »). Même encart que les suggestions (`.suggest`, `.suggest__item`, `.suggest__aisle`), avec en tête `.suggest__head` : le titre `.suggest__title` (« Souvent ajoutés », petit, gras, couleur secondaire) et la croix `.icon-btn` (`#i-close`, `aria-label="Fermer"`) ; style dans `public/css/app.css`, aucune couleur ni variable nouvelle. Ordinateur : sous le champ d'ajout, comme les suggestions.
 
+Retirer un article : chaque ligne est un `.suggest__row`. Téléphone : `.suggest__row.swipe`, la ligne (`.suggest__item.swipe__slide`) glisse vers la gauche et révèle `.swipe__delete` (`#i-eye-off` ET « Retirer »), comme une ligne de liste. Ordinateur : `.suggest__actions` au bout de la ligne, un `.icon-btn` `#i-eye-off` (« Retirer … de « Souvent ajoutés » »), visible au survol et au clavier.
+
 ## Ajout : Réglages allégés (11 novembre 2026)
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).

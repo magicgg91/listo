@@ -28,7 +28,7 @@
 import { createNewsService } from './news.js';
 import crypto from 'node:crypto';
 import {
-  normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse,
+  normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse, hideHabitual,
 } from '../public/js/history.js';
 import { groupItems, compareNames } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
@@ -355,11 +355,11 @@ export function createListService(ctx) {
     history: db.prepare('SELECT * FROM item_history WHERE name_normalized = ?'),
     allHistory: db.prepare('SELECT * FROM item_history'),
     insertHistory: db.prepare(`
-      INSERT INTO item_history (name_normalized, store_id, display_name, aisle_id, use_count, last_used_at)
-      VALUES (:nameNormalized, :storeId, :name, :aisleId, :useCount, :lastUsedAt)
+      INSERT INTO item_history (name_normalized, store_id, display_name, aisle_id, use_count, last_used_at, hidden_at)
+      VALUES (:nameNormalized, :storeId, :name, :aisleId, :useCount, :lastUsedAt, :hiddenAt)
     `),
     updateHistory: db.prepare(`
-      UPDATE item_history SET aisle_id = :aisleId, use_count = :useCount, last_used_at = :lastUsedAt
+      UPDATE item_history SET aisle_id = :aisleId, use_count = :useCount, last_used_at = :lastUsedAt, hidden_at = :hiddenAt
       WHERE id = :id
     `),
   };
@@ -478,7 +478,8 @@ export function createListService(ctx) {
 
   // Enregistre les lignes modifiées par une règle partagée
   function saveHistory(entries) {
-    for (const entry of entries) {
+    for (const line of entries) {
+      const entry = { ...line, hiddenAt: line.hiddenAt ?? null };
       if (entry.id) q.updateHistory.run(entry);
       else q.insertHistory.run(entry);
     }
@@ -740,6 +741,7 @@ export function createListService(ctx) {
     aisleId: row.aisle_id,
     useCount: row.use_count,
     lastUsedAt: row.last_used_at,
+    hiddenAt: row.hidden_at ?? null,
   });
 
   // Listes modifiées par l'opération en cours : leurs membres sont prévenus
@@ -941,6 +943,22 @@ export function createListService(ctx) {
     //   reprend son rayon habituel (celui de ce magasin, sinon le général) ;
     // - liste « multi » : pas de rayon ; sans magasin précisé, un article
     //   déjà acheté dans un des magasins de la liste reprend son magasin habituel.
+    // Retirer un article de « Souvent ajoutés » (décision du 11 novembre
+    // 2026) : pour toute la famille, dans le ou les magasins de cette liste de
+    // courses (ligne générale si elle n'a pas de magasin). Il revient s'il
+    // est de nouveau ajouté (recordUse efface la date). Demande le droit de
+    // modifier la liste.
+    'habitual.hide'(user, op) {
+      const list = listForEditor(user, op.listId);
+      if (!isShoppingList(list)) throw new OpError(400, '« Souvent ajoutés » n\'existe que dans les listes de courses.');
+      const name = itemName(op.name);
+      const storeIds = !list.store_id ? [] : list.is_multi === 1 ? storeChoices(list.store_id) : [list.store_id];
+      if (list.is_multi === 1 && !storeIds.length) return {};
+      saveHistory(hideHabitual(historyOf(name), { name, storeIds, now: nowIso() }));
+      changed(list.id);
+      return {};
+    },
+
     'item.create'(user, op) {
       const list = listForEditor(user, op.listId);
       const id = requireUuid(op.itemId);
@@ -1284,7 +1302,8 @@ export function createListService(ctx) {
       categories: q.allCategories.all().map(describeReference),
       stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
-      history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ?').all(from).map(describeHistory),
+      // (lignes utilisées, ou retirées de « Souvent ajoutés », depuis la dernière synchronisation)
+      history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ? OR hidden_at >= ?').all(from, from).map(describeHistory),
       // Comptes actifs (choix des personnes avec qui partager), gardés sur le téléphone pour
       // ouvrir le formulaire de liste sans réseau
       users: activeUsers(),

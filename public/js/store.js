@@ -299,6 +299,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         dueDate: op.dueDate ?? null,
         repeat: op.repeat ?? null, // répétition (listes de tâches, repeat.js)
         assignedTo: op.assignedTo ?? null, // personne à qui la tâche est attribuée
+        dueTime: op.dueTime ?? null, // heure de l'échéance (« HH:MM ») et rappel (minutes avant)
+        remindBefore: op.remindBefore ?? null,
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -313,9 +315,12 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
-      // Effacer l'échéance arrête la répétition (même règle que le serveur)
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'dueTime', 'remindBefore', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      // Effacer l'échéance arrête la répétition et efface l'heure ; effacer
+      // l'heure efface le rappel (mêmes règles que le serveur)
       if (op.dueDate === null && op.repeat === undefined) next.repeat = null;
+      if (op.dueDate === null && op.dueTime === undefined) next.dueTime = null;
+      if (next.dueTime == null && op.remindBefore === undefined) next.remindBefore = null;
       state.items.set(item.id, next);
       return;
     }

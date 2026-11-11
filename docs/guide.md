@@ -23,7 +23,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [Aller au chapitre](#possibilites)
 - [2.1 Listes partagées en direct](#p-partage)
 - [2.2 Courses : rayons et magasins](#p-courses)
-- [2.3 Tâches : priorité, échéance, répétition, attribution](#p-taches)
+- [2.3 Tâches : priorité, échéance, heure, rappel, répétition, attribution](#p-taches)
 - [2.4 Envies : réservation et cotisation](#p-envies)
 - [2.5 Saisie rapide](#p-saisie)
 - [2.6 Hors ligne, corbeille, lien public](#p-securite)
@@ -67,20 +67,21 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 
 - [Aller au chapitre](#quotidien)
 - [5.1 Ajouter, modifier, cocher, supprimer](#ajouter)
-- [5.2 Tâches qui se répètent](#repeter)
-- [5.3 Attribuer une tâche](#attribuer)
-- [5.4 Saisir la quantité avec le nom](#quantite)
-- [5.5 Ajouter plusieurs articles d'un coup](#plusieurs)
-- [5.6 Scanner un code-barres](#scan)
-- [5.7 Ajouter une photo](#photo)
-- [5.8 Groupes, tri et compteur](#tri)
-- [5.9 Rechercher](#recherche)
-- [5.10 Se déplacer, Échéances](#echeances)
-- [5.11 Réserver un souhait, cotiser](#reserver)
-- [5.12 Nouveautés](#nouveautes)
-- [5.13 Hors ligne et synchronisation](#hors-ligne)
-- [5.14 Thème clair ou sombre](#theme)
-- [5.15 Sur ordinateur](#ordinateur)
+- [5.2 Heure et rappel](#heure)
+- [5.3 Tâches qui se répètent](#repeter)
+- [5.4 Attribuer une tâche](#attribuer)
+- [5.5 Saisir la quantité avec le nom](#quantite)
+- [5.6 Ajouter plusieurs articles d'un coup](#plusieurs)
+- [5.7 Scanner un code-barres](#scan)
+- [5.8 Ajouter une photo](#photo)
+- [5.9 Groupes, tri et compteur](#tri)
+- [5.10 Rechercher](#recherche)
+- [5.11 Se déplacer, Échéances](#echeances)
+- [5.12 Réserver un souhait, cotiser](#reserver)
+- [5.13 Nouveautés](#nouveautes)
+- [5.14 Hors ligne et synchronisation](#hors-ligne)
+- [5.15 Thème clair ou sombre](#theme)
+- [5.16 Sur ordinateur](#ordinateur)
 
 </details>
 
@@ -215,9 +216,9 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([7.4 Propriétaire : partager et choisir les droits](#partager)).
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
-- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.12 Nouveautés](#nouveautes)).
+- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.13 Nouveautés](#nouveautes)).
 - Notifications, facultatives : modifications (des autres), réservations, partage et résumé des échéances, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
-- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.8 Groupes, tri et compteur](#tri)).
+- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-courses"></a>
 
@@ -229,19 +230,20 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 <a id="p-taches"></a>
 
-### 2.3 Tâches : priorité, échéance, répétition, attribution
+### 2.3 Tâches : priorité, échéance, heure, rappel, répétition, attribution
 
 - Priorité (basse, normale, élevée) et échéance, activées liste par liste ([7.3 Propriétaire : modifier la liste](#modifier)).
-- Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.2 Tâches qui se répètent](#repeter)).
-- Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.3 Attribuer une tâche](#attribuer)).
-- Tri par priorité ou par échéance ([5.8 Groupes, tri et compteur](#tri)).
+- Une heure, et un rappel choisi tâche par tâche ([5.2 Heure et rappel](#heure)).
+- Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.3 Tâches qui se répètent](#repeter)).
+- Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.4 Attribuer une tâche](#attribuer)).
+- Tri par priorité ou par échéance ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
 
 ### 2.4 Envies : réservation et cotisation
 
 - Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([7.5 Propriétaire : liste d'envies](#envies)).
-- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.11 Réserver un souhait, cotiser](#reserver)).
+- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.12 Réserver un souhait, cotiser](#reserver)).
 - La personne à qui la liste est destinée ne voit jamais les réservations ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 - Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([7.10 Visiteur du lien public](#role-visiteur)).
 
@@ -249,16 +251,16 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 ### 2.5 Saisie rapide
 
-- Plusieurs articles d'un coup, séparés par des virgules ou des retours à la ligne ([5.5 Ajouter plusieurs articles d'un coup](#plusieurs)).
-- Quantité lue dans le nom : “6 oeufs” ou “oeufs x6” ([5.4 Saisir la quantité avec le nom](#quantite)).
-- Mode scan : le code-barres d'un produit, photographié, donne son nom ([5.6 Scanner un code-barres](#scan)).
-- Photo d'un article ([5.7 Ajouter une photo](#photo)).
+- Plusieurs articles d'un coup, séparés par des virgules ou des retours à la ligne ([5.6 Ajouter plusieurs articles d'un coup](#plusieurs)).
+- Quantité lue dans le nom : “6 oeufs” ou “oeufs x6” ([5.5 Saisir la quantité avec le nom](#quantite)).
+- Mode scan : le code-barres d'un produit, photographié, donne son nom ([5.7 Scanner un code-barres](#scan)).
+- Photo d'un article ([5.8 Ajouter une photo](#photo)).
 
 <a id="p-securite"></a>
 
 ### 2.6 Hors ligne, corbeille, lien public
 
-- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.13 Hors ligne et synchronisation](#hors-ligne)).
+- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.14 Hors ligne et synchronisation](#hors-ligne)).
 - Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
 - Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)).
 
@@ -268,7 +270,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
-- Thème clair, sombre ou automatique ([5.14 Thème clair ou sombre](#theme)).
+- Thème clair, sombre ou automatique ([5.15 Thème clair ou sombre](#theme)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Claude (l'assistant d'Anthropic) peut lire vos listes et, si vous le permettez, y écrire ([8. MCP Claude](#claude)).
 
@@ -557,9 +559,29 @@ Les gestes de tous les jours, pour toute personne qui peut modifier la liste (pr
 - Supprimer : faites glisser la ligne vers la gauche, puis touchez « Supprimer ». « Annuler » remet la ligne pendant quelques secondes.
 - Tout d'un coup, en bas de la liste, après confirmation : « Tout remettre à acheter » décoche les articles du panier, « Retirer du panier » les supprime pour tout le monde. Dans une liste de tâches : « Tout rouvrir » et « Retirer les terminés » ; dans une liste d'envies : « Tout rouvrir » et « Retirer les reçus ».
 
+<a id="heure"></a>
+
+### 5.2 Heure et rappel
+
+Dans une liste de tâches où l'échéance est activée ([7.3 Propriétaire : modifier la liste](#modifier)), une tâche qui a une date peut aussi avoir une heure : « Heure (facultative) », dans sa fiche. « Effacer » retire l'heure ; effacer la date retire aussi l'heure.
+
+- Sur la ligne, la pastille montre la date et l'heure : “Aujourd'hui · 18:30”, “Demain · 9:00”.
+- Une tâche avec une heure passe « En retard » dès que l'heure est dépassée, sans attendre le lendemain. Sans heure, rien ne change : elle passe en retard le lendemain.
+- À la même date, les tâches avec une heure passent avant les autres, dans l'ordre des heures (tri « Par échéance » et écran « Échéances »).
+- Une tâche qui se répète garde son heure à chaque fois ([5.3 Tâches qui se répètent](#repeter)).
+- Le lien public montre l'heure, jamais le rappel.
+
+Une fois l'heure choisie, « Rappel » propose : « Aucun » (au départ), « À l'heure », « 15 min avant », « 30 min avant », « 1 h avant », « 2 h avant » ou « La veille (24 h avant) ». Chaque tâche a son propre rappel.
+
+- Le rappel est une notification ([6. Notifications](#notifications)). Il part vers la personne à qui la tâche est attribuée ([5.4 Attribuer une tâche](#attribuer)) ; si elle n'est attribuée à personne, vers tous les membres de la liste.
+- Il ne part qu'une fois. Si vous changez la date, l'heure ou le rappel, il repartira au nouveau moment. Une tâche cochée n'envoie rien.
+- Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications, appareils où elles sont activées.
+- Si le serveur était arrêté au moment prévu, le rappel part encore dans la demi-heure qui suit ; après, il est abandonné.
+- Si les notifications sont coupées sur le serveur, le choix « Rappel » n'apparaît pas.
+
 <a id="repeter"></a>
 
-### 5.2 Tâches qui se répètent
+### 5.3 Tâches qui se répètent
 
 Dans une liste de tâches où l'échéance est activée ([7.3 Propriétaire : modifier la liste](#modifier)), la fiche d'une tâche propose « Se répète » : « Jamais », « Chaque jour », « Chaque semaine », « Toutes les 2 semaines », « Chaque mois » ou « Chaque année ».
 
@@ -577,13 +599,13 @@ Pour arrêter : « Se répète », « Jamais » (ou effacez l'échéance, ou sup
 
 <a id="attribuer"></a>
 
-### 5.3 Attribuer une tâche
+### 5.4 Attribuer une tâche
 
 Dans une liste de tâches, le propriétaire active « Attribution » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). La fiche d'une tâche propose alors « Pour » : « Personne », « Moi », ou une autre personne qui peut modifier la liste. Une seule personne par tâche.
 
 - Sur la ligne, une pastille dit à qui est la tâche : « Moi » (en bleu) ou le prénom.
 - « Trier la liste », « Par personne » : les tâches de « Moi » d'abord, puis celles de chacun, puis celles de « Personne ».
-- « Échéances » propose « Toutes » ou « Les miennes » ([5.10 Se déplacer, Échéances](#echeances)).
+- « Échéances » propose « Toutes » ou « Les miennes » ([5.11 Se déplacer, Échéances](#echeances)).
 - Une tâche qui se répète garde la même personne quand elle revient.
 - Si la personne quitte la liste, en est retirée ou passe en « Lecture seule », ses tâches reviennent à « Personne ».
 - Le lien public ne montre jamais à qui est une tâche.
@@ -592,7 +614,7 @@ Quand quelqu'un vous attribue une tâche, la notification « Modifications » le
 
 <a id="quantite"></a>
 
-### 5.4 Saisir la quantité avec le nom
+### 5.5 Saisir la quantité avec le nom
 
 Dans une liste de courses (seulement), écrivez la quantité au début du nom, ou à la fin avec un x : Listo la range dans le champ « Quantité ».
 
@@ -605,7 +627,7 @@ Dans une liste de courses (seulement), écrivez la quantité au début du nom, o
 
 <a id="plusieurs"></a>
 
-### 5.5 Ajouter plusieurs articles d'un coup
+### 5.6 Ajouter plusieurs articles d'un coup
 
 Dans une liste de courses ou de tâches, séparez les noms par des virgules, des points-virgules ou des retours à la ligne, puis touchez « + » : par exemple, lait, pain ; 6 oeufs ajoute trois lignes. Vous pouvez aussi coller une liste copiée depuis vos notes.
 
@@ -617,7 +639,7 @@ Dans une liste de courses ou de tâches, séparez les noms par des virgules, des
 
 <a id="scan"></a>
 
-### 5.6 Scanner un code-barres
+### 5.7 Scanner un code-barres
 
 Dans une liste de courses, le bouton code-barres à côté du champ d'ajout (« Scanner un produit ») ouvre l'appareil photo ou la photothèque du téléphone. Photographiez le code-barres d'un produit : Listo le lit sur le téléphone (la photo n'est jamais envoyée).
 
@@ -628,13 +650,13 @@ Dans une liste de courses, le bouton code-barres à côté du champ d'ajout (« 
 
 <a id="photo"></a>
 
-### 5.7 Ajouter une photo
+### 5.8 Ajouter une photo
 
 Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisit une. Elle est réduite sur le téléphone avant l'envoi, et ses informations cachées (lieu, appareil) sont retirées par le serveur. La photo est facultative ; seuls les membres de la liste la voient (et les visiteurs d'un lien public valable).
 
 <a id="tri"></a>
 
-### 5.8 Groupes, tri et compteur
+### 5.9 Groupes, tri et compteur
 
 - Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
@@ -646,7 +668,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 <a id="recherche"></a>
 
-### 5.9 Rechercher
+### 5.10 Rechercher
 
 - Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre. Dans une liste, elle flotte au-dessus de la barre d'ajout, et se cache pendant que vous y écrivez.
 - Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d'ajout se cache pendant la recherche.
@@ -659,19 +681,19 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 <a id="echeances"></a>
 
-### 5.10 Se déplacer, Échéances
+### 5.11 Se déplacer, Échéances
 
 Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».
 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
-- Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.2 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
-- Si une de vos listes a l'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([5.3 Attribuer une tâche](#attribuer)). Le choix est retenu sur l'appareil.
+- Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
+- Si une de vos listes a l'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([5.4 Attribuer une tâche](#attribuer)). Le choix est retenu sur l'appareil.
 - Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu'un d'autre.
 - L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
 
 <a id="reserver"></a>
 
-### 5.11 Réserver un souhait, cotiser
+### 5.12 Réserver un souhait, cotiser
 
 Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lecture seule », sauf la personne à qui la liste est destinée. Il faut du réseau.
 
@@ -684,7 +706,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="nouveautes"></a>
 
-### 5.12 Nouveautés
+### 5.13 Nouveautés
 
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
 - Sur « Mes listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
@@ -695,7 +717,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="hors-ligne"></a>
 
-### 5.13 Hors ligne et synchronisation
+### 5.14 Hors ligne et synchronisation
 
 Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.
 
@@ -705,13 +727,13 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 <a id="theme"></a>
 
-### 5.14 Thème clair ou sombre
+### 5.15 Thème clair ou sombre
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="ordinateur"></a>
 
-### 5.15 Sur ordinateur
+### 5.16 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
@@ -758,7 +780,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.
 
-L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.12 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
+L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.13 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
 
 <a id="notif-activer"></a>
 
@@ -783,15 +805,15 @@ Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications
 | « Modifications » | Quelqu'un d'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d'une minute sont regroupés en une seule notification par liste. | “Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »” |
 | « Envies » | Quelqu'un réserve un souhait ou participe à un cadeau, dans une liste d'envies dont vous voyez les réservations. | “Marc a réservé un souhait” |
 | « Partage » | On vous ajoute à une liste, ou votre droit change. | “Léa vous a ajouté à « Maison »” |
-| « Échéances » | Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd'hui et en retard, s'il y en a. | “3 tâches à faire aujourd'hui · 1 en retard” |
+| « Échéances » | Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd'hui et en retard, s'il y en a. Et le rappel d'une tâche, au moment choisi dans sa fiche ([5.2 Heure et rappel](#heure)). | “3 tâches à faire aujourd'hui · 1 en retard”, “Rappel : une tâche aujourd'hui à 14:00” |
 
-Vous n'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [8. MCP Claude](#claude)). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l'échéance est activée, et jamais les tâches attribuées à quelqu'un d'autre.
+Vous n'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [8. MCP Claude](#claude)). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l'échéance est activée, et jamais les tâches attribuées à quelqu'un d'autre. Le rappel d'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.
 
 <a id="notif-detail"></a>
 
 ### 6.3 Le détail dans la notification
 
-Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour). À éviter si d'autres personnes voient l'écran de votre téléphone verrouillé.
+Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour avec leur heure, “Rappel : Dentiste”). À éviter si d'autres personnes voient l'écran de votre téléphone verrouillé.
 
 <a id="notif-silencer"></a>
 
@@ -799,7 +821,7 @@ Section « Contenu », « Afficher le détail dans la notification » : désacti
 
 Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste.
 
-C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.12 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
+C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.13 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
 
 <a id="notif-limites"></a>
 
@@ -928,7 +950,7 @@ Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l
 
 ### 7.5 Propriétaire : liste d'envies
 
-Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.11 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.12 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
@@ -1023,8 +1045,9 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.11 U
 - Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”
 - Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”
 - Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”
-- Attribuer ([5.3 Attribuer une tâche](#attribuer)) : “Donne la tâche ampoule à Léa.” “Qu'est-ce que j'ai à faire cette semaine ?”
-- Tâche qui se répète ([5.2 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
+- Heure et rappel ([5.2 Heure et rappel](#heure)) : “Dentiste jeudi à 14 h, rappelle-le une heure avant.” “Plus de rappel pour le dentiste.”
+- Attribuer ([5.4 Attribuer une tâche](#attribuer)) : “Donne la tâche ampoule à Léa.” “Qu'est-ce que j'ai à faire cette semaine ?”
+- Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
 
@@ -1037,7 +1060,7 @@ Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne
 Au moment de connecter Claude, l'écran « Autoriser Claude » de Listo vous laisse choisir :
 
 - « Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.
-- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.
+- « Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.
 
 Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.
 
@@ -1171,7 +1194,7 @@ Après l'activation, une fois, avant tout usage régulier :
 
 ### 9.1 Je n'ai pas de réseau
 
-Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.13 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
+Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.14 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
 
 <a id="faq-photo"></a>
 

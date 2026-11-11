@@ -28,6 +28,7 @@ import { listOptions } from './store.js';
 import { addDays, todayKey } from './format.js';
 import { compareNames } from './sorting.js';
 import { matches } from './search.js';
+import { compareDue, isLate, nowTime } from './due-time.js';
 
 export const DEADLINE_GROUPS = [
   ['late', 'En retard'],
@@ -44,9 +45,11 @@ export function endOfWeek(today) {
   return addDays(today, day === 0 ? 0 : 7 - day);
 }
 
-// Groupe d'une échéance (« AAAA-MM-JJ ») par rapport au jour donné
-export function deadlineGroup(dueDate, today) {
-  if (dueDate < today) return 'late';
+// Groupe d'une échéance (« AAAA-MM-JJ », heure « HH:MM » facultative) par
+// rapport au jour et à l'heure donnés : une tâche du jour dont l'heure est
+// dépassée est « En retard »
+export function deadlineGroup(dueDate, today, dueTime = null, now = nowTime()) {
+  if (isLate(dueDate, dueTime, today, now)) return 'late';
   if (dueDate === today) return 'today';
   const tomorrow = addDays(today, 1);
   if (dueDate === tomorrow) return 'tomorrow';
@@ -75,7 +78,7 @@ function collect(state, keep = () => true) {
     found.push({ item, list });
   }
   const priority = (entry) => (listOptions(entry.list).priority ? PRIORITY_RANK[entry.item.priority] ?? 1 : 1);
-  return found.sort((a, b) => a.item.dueDate.localeCompare(b.item.dueDate)
+  return found.sort((a, b) => compareDue(a.item.dueDate, a.item.dueTime, b.item.dueDate, b.item.dueTime)
     || priority(a) - priority(b)
     || compareNames(a.item.name, b.item.name));
 }
@@ -83,11 +86,11 @@ function collect(state, keep = () => true) {
 // Groupes à afficher (vides retirés) : [{ key, title, entries }].
 // query : texte cherché (nom de la tâche), facultatif ; mine : seulement les
 // tâches attribuées à me (« Les miennes »).
-export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null } = {}) {
+export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null, now = nowTime() } = {}) {
   const keep = mine ? (item, list) => assigneeOf(item, list) === me : undefined;
   const entries = collect(state, keep).filter((entry) => !query || matches(entry.item.name, query));
   return DEADLINE_GROUPS
-    .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today) === key) }))
+    .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today, entry.item.dueTime, now) === key) }))
     .filter((group) => group.entries.length > 0);
 }
 

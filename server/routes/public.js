@@ -41,6 +41,7 @@
 import { typeOf, isShoppingList, isWishList, usesPriority, usesDue } from '../../public/js/list-types.js';
 import { cleanLink, wishListOf, beneficiaryId } from '../../public/js/wishes.js';
 import { isRepeatRule } from '../../public/js/repeat.js';
+import { isDueTime } from '../../public/js/due-time.js';
 import fs from 'node:fs';
 import express from 'express';
 import crypto from 'node:crypto';
@@ -99,7 +100,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, repeat, ean, link, price_cents
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -181,6 +182,7 @@ export function publicRoutes(ctx, { publicDir }) {
       photoAt: row.photo_at,
       priority: row.priority,
       dueDate: row.due_date,
+      dueTime: row.due_time,
       repeat: row.repeat,
       ean: row.ean,
       link: row.link,
@@ -215,6 +217,8 @@ export function publicRoutes(ctx, { publicDir }) {
       // Tâche qui se répète : sa règle (vérifiée encore à la sortie), seulement
       // avec une échéance
       ...(withDue && item.dueDate && isRepeatRule(item.repeat) ? { repeat: item.repeat } : {}),
+      // Heure de l'échéance (vérifiée à la sortie) ; jamais le rappel
+      ...(withDue && item.dueDate && isDueTime(item.dueTime) ? { dueTime: item.dueTime } : {}),
       // Liste de courses : le code-barres, seulement si l'article en a un
       // (jamais pour une autre liste, comme dans l'application)
       ...(isShopping && item.ean ? { ean: item.ean } : {}),

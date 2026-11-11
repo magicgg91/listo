@@ -333,7 +333,7 @@ function metaRow(item) {
   // Liste d'envies : le prix indicatif
   const price = formatPrice(item.priceCents);
   if (price) chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Prix indicatif : '), price));
-  const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
+  const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
     chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Échéance : '), due.text));
@@ -381,7 +381,7 @@ function spokenMeta(item) {
   const spoken = [];
   const priority = priorityChip(item.priority);
   if (priority) spoken.push(priority.label.toLowerCase());
-  const due = dueChip(item.dueDate ?? null, item.checked, todayKey());
+  const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) spoken.push(due.label.toLowerCase());
   if (due && item.repeat) spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
   const price = formatPrice(item.priceCents);

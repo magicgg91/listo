@@ -6,6 +6,7 @@ import { normalizeItemName } from './history.js';
 import { countItems, itemWords } from './words.js';
 import { formatPrice } from './wishes.js';
 import { repeatSentence } from './repeat.js';
+import { isDueTime, isLate, nowTime, timeLabel } from './due-time.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -150,14 +151,24 @@ export function dueDateLabel(key, today = todayKey()) {
 // Pastille d'échéance d'un élément, ou null sans échéance.
 // state : 'late' (en retard), 'today', 'tomorrow', 'later', 'done' (coché :
 // sa date, en gris, jamais « en retard »)
-export function dueChip(dueDate, checked, today = todayKey()) {
+// dueTime : heure « HH:MM » facultative (ajoutée au texte : « Aujourd'hui ·
+// 18:30 ») ; now : heure actuelle « HH:MM » (une tâche du jour passe en
+// retard dès que son heure est dépassée)
+export function dueChip(dueDate, checked, today = todayKey(), dueTime = null, now = nowTime()) {
   if (!dueDate) return null;
+  const time = isDueTime(dueTime) ? timeLabel(dueTime) : '';
+  const at = time ? ` · ${time}` : '';
+  const spokenAt = time ? ` à ${time}` : '';
   const date = dueDateLabel(dueDate, today);
-  if (checked) return { state: 'done', text: date, label: `Échéance : ${date}` };
-  if (dueDate < today) return { state: 'late', text: `En retard · ${date}`, label: `Échéance : ${date}, en retard` };
-  if (dueDate === today) return { state: 'today', text: "Aujourd'hui", label: "Échéance : aujourd'hui" };
-  if (dueDate === addDays(today, 1)) return { state: 'tomorrow', text: 'Demain', label: 'Échéance : demain' };
-  return { state: 'later', text: date, label: `Échéance : ${date}` };
+  if (checked) return { state: 'done', text: `${date}${at}`, label: `Échéance : ${date}${spokenAt}` };
+  if (isLate(dueDate, dueTime, today, now)) {
+    return dueDate === today
+      ? { state: 'late', text: `En retard · ${time}`, label: `Échéance : aujourd'hui${spokenAt}, en retard` }
+      : { state: 'late', text: `En retard · ${date}${at}`, label: `Échéance : ${date}${spokenAt}, en retard` };
+  }
+  if (dueDate === today) return { state: 'today', text: `Aujourd'hui${at}`, label: `Échéance : aujourd'hui${spokenAt}` };
+  if (dueDate === addDays(today, 1)) return { state: 'tomorrow', text: `Demain${at}`, label: `Échéance : demain${spokenAt}` };
+  return { state: 'later', text: `${date}${at}`, label: `Échéance : ${date}${spokenAt}` };
 }
 
 // Pastille de priorité : élevée et basse seulement (normale : rien)
@@ -200,7 +211,7 @@ export function publicItemDetails(item, { grouping, place = null, today = todayK
     wishes && Number.isInteger(item.priceCents) ? ['Prix indicatif', formatPrice(item.priceCents)] : null,
     item.note ? ['Note', item.note] : null,
     'priority' in item ? ['Priorité', PRIORITY_LABELS[item.priority ?? 'normal'] ?? 'Normale'] : null,
-    'dueDate' in item ? ['Échéance', item.dueDate ? dueDateLabel(item.dueDate, today) : 'Aucune échéance'] : null,
+    'dueDate' in item ? ['Échéance', item.dueDate ? `${dueDateLabel(item.dueDate, today)}${isDueTime(item.dueTime) ? ` à ${timeLabel(item.dueTime)}` : ''}` : 'Aucune échéance'] : null,
     item.dueDate && item.repeat ? ['Se répète', repeatSentence(item.repeat)] : null,
     item.ean ? ['Code-barres', item.ean] : null,
     grouping === 'aisle' ? ['Rayon', place ?? 'Sans rayon'] : null,

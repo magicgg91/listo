@@ -552,6 +552,22 @@ export const MIGRATIONS = [
   ALTER TABLE lists ADD COLUMN assign_enabled INTEGER NOT NULL DEFAULT 0 CHECK (assign_enabled IN (0, 1));
   ALTER TABLE items ADD COLUMN assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL;
   `,
+
+  // --- Migration 26 : heure d'échéance et rappel (11 novembre 2026) ---
+  // due_time : heure facultative « HH:MM » (24 h), seulement avec une date.
+  // remind_before : rappel choisi pour la tâche, en minutes avant l'heure
+  // (0 : à l'heure ; 1440 : la veille), seulement avec une heure.
+  // push_reminders : le dernier rappel envoyé pour chaque tâche (signature
+  // date, heure, délai) : jamais deux fois le même, même après un
+  // redémarrage ; un changement d'heure en prévoit un nouveau.
+  `
+  ALTER TABLE items ADD COLUMN due_time TEXT CHECK (due_time IS NULL OR (length(due_time) = 5 AND due_time GLOB '[0-2][0-9]:[0-5][0-9]'));
+  ALTER TABLE items ADD COLUMN remind_before INTEGER CHECK (remind_before IS NULL OR remind_before IN (0, 15, 30, 60, 120, 1440));
+  CREATE TABLE push_reminders (
+    item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+    sent_key TEXT NOT NULL
+  );
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

@@ -157,9 +157,10 @@ export const GUIDE = [
       },
       {
         id: 'p-taches',
-        title: 'Tâches : priorité, échéance, répétition, attribution',
+        title: 'Tâches : priorité, échéance, heure, rappel, répétition, attribution',
         blocks: [{ ul: [
           'Priorité (basse, normale, élevée) et échéance, activées liste par liste ([[modifier]]).',
+          'Une heure, et un rappel choisi tâche par tâche ([[heure]]).',
           'Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([[repeter]]).',
           'Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([[attribuer]]).',
           'Tri par priorité ou par échéance ([[tri]]).',
@@ -475,6 +476,28 @@ export const GUIDE = [
         ] }],
       },
       {
+        id: 'heure',
+        title: 'Heure et rappel',
+        blocks: [
+          'Dans une liste de tâches où l\'échéance est activée ([[modifier]]), une tâche qui a une date peut aussi avoir une heure : « Heure (facultative) », dans sa fiche. « Effacer » retire l\'heure ; effacer la date retire aussi l\'heure.',
+          { ul: [
+            'Sur la ligne, la pastille montre la date et l\'heure : “Aujourd\'hui · 18:30”, “Demain · 9:00”.',
+            'Une tâche avec une heure passe « En retard » dès que l\'heure est dépassée, sans attendre le lendemain. Sans heure, rien ne change : elle passe en retard le lendemain.',
+            'À la même date, les tâches avec une heure passent avant les autres, dans l\'ordre des heures (tri « Par échéance » et écran « Échéances »).',
+            'Une tâche qui se répète garde son heure à chaque fois ([[repeter]]).',
+            'Le lien public montre l\'heure, jamais le rappel.',
+          ] },
+          'Une fois l\'heure choisie, « Rappel » propose : « Aucun » (au départ), « À l\'heure », « 15 min avant », « 30 min avant », « 1 h avant », « 2 h avant » ou « La veille (24 h avant) ». Chaque tâche a son propre rappel.',
+          { ul: [
+            'Le rappel est une notification ([[notifications]]). Il part vers la personne à qui la tâche est attribuée ([[attribuer]]) ; si elle n\'est attribuée à personne, vers tous les membres de la liste.',
+            'Il ne part qu\'une fois. Si vous changez la date, l\'heure ou le rappel, il repartira au nouveau moment. Une tâche cochée n\'envoie rien.',
+            'Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications, appareils où elles sont activées.',
+            'Si le serveur était arrêté au moment prévu, le rappel part encore dans la demi-heure qui suit ; après, il est abandonné.',
+            'Si les notifications sont coupées sur le serveur, le choix « Rappel » n\'apparaît pas.',
+          ] },
+        ],
+      },
+      {
         id: 'repeter',
         title: 'Tâches qui se répètent',
         blocks: [
@@ -588,7 +611,7 @@ export const GUIDE = [
           'Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
-            'Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
+            'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
             'Si une de vos listes a l\'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s\'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([[attribuer]]). Le choix est retenu sur l\'appareil.',
             'Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu\'un d\'autre.',
             'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
@@ -713,17 +736,17 @@ export const GUIDE = [
               ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste.', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”'],
               ['« Envies »', 'Quelqu\'un réserve un souhait ou participe à un cadeau, dans une liste d\'envies dont vous voyez les réservations.', '“Marc a réservé un souhait”'],
               ['« Partage »', 'On vous ajoute à une liste, ou votre droit change.', '“Léa vous a ajouté à « Maison »”'],
-              ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a.', '“3 tâches à faire aujourd\'hui · 1 en retard”'],
+              ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a. Et le rappel d\'une tâche, au moment choisi dans sa fiche ([[heure]]).', '“3 tâches à faire aujourd\'hui · 1 en retard”, “Rappel : une tâche aujourd\'hui à 14:00”'],
             ],
           } },
-          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée, et jamais les tâches attribuées à quelqu\'un d\'autre.',
+          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée, et jamais les tâches attribuées à quelqu\'un d\'autre. Le rappel d\'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.',
         ],
       },
       {
         id: 'notif-detail',
         title: 'Le détail dans la notification',
         blocks: [
-          'Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour). À éviter si d\'autres personnes voient l\'écran de votre téléphone verrouillé.',
+          'Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour avec leur heure, “Rappel : Dentiste”). À éviter si d\'autres personnes voient l\'écran de votre téléphone verrouillé.',
         ],
       },
       {
@@ -967,6 +990,7 @@ export const GUIDE = [
             'Ajouter, avec un magasin (liste « Multi ») : “Ajoute du lait chez Leclerc dans la liste Samedi.”',
             'Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”',
             'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
+            'Heure et rappel ([[heure]]) : “Dentiste jeudi à 14 h, rappelle-le une heure avant.” “Plus de rappel pour le dentiste.”',
             'Attribuer ([[attribuer]]) : “Donne la tâche ampoule à Léa.” “Qu\'est-ce que j\'ai à faire cette semaine ?”',
             'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
@@ -982,7 +1006,7 @@ export const GUIDE = [
           'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
           { ul: [
             '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
-            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance, leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.',
+            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.',
           ] },
           'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
         ],

@@ -47,7 +47,7 @@ import { normalizeItemName } from '../history.js';
 import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner } from '../ui.js';
+import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
@@ -69,6 +69,7 @@ import { createSearchRow } from '../search-row.js';
 import { loupeButton } from '../tabbar.js';
 import { isSearching, filterListView, highlightParts, resultsLabel } from '../search.js';
 import { REPEAT_CHOICES, WEEKDAYS, parseRepeat, makeRepeat, isOccurrence, firstOccurrence, weekdayOf, repeatSentence, repeatChip } from '../repeat.js';
+import { REMINDERS, reminderLabel, timeLabel, isDueTime } from '../due-time.js';
 
 export function renderList(listId, onLeave) {
   const pc = isDesktop(); // interface ordinateur (voir en tête du fichier)
@@ -522,7 +523,7 @@ export function renderList(listId, onLeave) {
       chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
       spoken.push(priority.label.toLowerCase());
     }
-    const due = options.due ? dueChip(item.dueDate, item.checked, todayKey()) : null;
+    const due = options.due ? dueChip(item.dueDate, item.checked, todayKey(), item.dueTime) : null;
     if (due) {
       const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
       chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
@@ -1394,6 +1395,7 @@ export function renderList(listId, onLeave) {
         repeat = null;
       }
       drawRepeat();
+      drawTime();
     };
     const shortcut = (label, days) => h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
       dueDate = addDays(todayKey(), days);
@@ -1508,6 +1510,65 @@ export function renderList(listId, onLeave) {
         moveSaved(next, before.dueDate);
       } });
     };
+    // --- Heure et rappel (décisions du 11 novembre 2026, due-time.js) :
+    // seulement avec une date (effacer la date efface l'heure ; effacer
+    // l'heure efface le rappel). L'heure : le sélecteur d'heure du téléphone,
+    // posé, invisible, sur un champ qui l'affiche ; « Effacer » à côté. Le
+    // rappel : Aucun, À l'heure, 15 min, 30 min, 1 h, 2 h ou la veille.
+    let dueTime = item.dueTime ?? null;
+    const savedDueTime = item.dueTime ?? null;
+    let remind = item.remindBefore ?? null;
+    const savedRemind = item.remindBefore ?? null;
+    const timeText = h('span', { class: 'input__value' });
+    const timeInput = h('input', { class: 'due-picker__input', type: 'time', step: '60' });
+    timeInput.addEventListener('click', () => {
+      try {
+        timeInput.showPicker?.();
+      } catch {
+        // sélecteur indisponible : le champ reste utilisable
+      }
+    });
+    timeInput.addEventListener('change', () => {
+      if (isDueTime(timeInput.value)) dueTime = timeInput.value;
+      drawTime();
+    });
+    const clearTime = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
+      dueTime = null;
+      drawTime();
+    } }, 'Effacer');
+    const timeRow = h('div', { class: 'time-row' },
+      h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, timeText, icon('chev-d')), timeInput),
+      clearTime);
+    const remindSelect = h('select', { class: 'due-picker__input' }, REMINDERS.map(([minutes, label]) => h('option', { value: minutes === null ? '' : String(minutes) }, label)));
+    const remindPicker = nativePicker(remindSelect);
+    remindSelect.addEventListener('change', () => {
+      remind = remindSelect.value === '' ? null : Number(remindSelect.value);
+      drawTime();
+    });
+    const timeField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Heure (facultative)'), timeRow);
+    // Texte d'aide : à qui part le rappel (voir server/notify.js)
+    const remindHint = h('p', { class: 'field__hint' });
+    const remindField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Rappel'), remindPicker.el, remindHint);
+    function drawTime() {
+      if (!dueDate) dueTime = null;
+      if (!dueTime) remind = null;
+      const label = dueTime ? timeLabel(dueTime) : 'Aucune heure';
+      replace(timeText, icon('clock', 'icon--sm'), label);
+      timeInput.value = dueTime ?? '';
+      timeInput.setAttribute('aria-label', `Heure : ${label}. Choisir une heure`);
+      clearTime.disabled = !dueTime;
+      remindSelect.value = remind === null ? '' : String(remind);
+      replace(remindPicker.text, icon('bell', 'icon--sm'), reminderLabel(remind));
+      remindSelect.setAttribute('aria-label', `Rappel : ${reminderLabel(remind)}. Changer`);
+      const withDue = options().due;
+      remindHint.textContent = options().assign
+        ? 'Une notification à la personne choisie dans « Pour », sinon à tous les membres, si leurs notifications sont activées.'
+        : 'Une notification à tous les membres de la liste, si leurs notifications sont activées.';
+      timeField.hidden = !withDue || !dueDate;
+      // Pas de rappel proposé si les notifications sont coupées sur le serveur
+      remindField.hidden = !withDue || !dueDate || !dueTime || !app.user?.push;
+    }
+
     drawDue();
     const priorityField = h('div', { class: 'field' },
       h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
@@ -1560,9 +1621,10 @@ export function renderList(listId, onLeave) {
         if (!shown && fieldEl.contains(document.activeElement)) document.activeElement.blur();
         fieldEl.hidden = !shown;
       }
+      drawTime(); // heure et rappel : avec l'échéance, et seulement avec une date
     };
     showOptions();
-    const classicFields = classic ? [priorityField, dueField, repeatField, assignField] : null;
+    const classicFields = classic ? [priorityField, dueField, timeField, remindField, repeatField, assignField] : null;
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
     // lu sur une photo par le bouton de scan, à droite du champ (sélecteur
@@ -1683,7 +1745,7 @@ export function renderList(listId, onLeave) {
     // mon envoi, ne déclenchent pas d'avertissement.)
     const conflictText = h('span');
     const conflict = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), conflictText);
-    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null, it.assignedTo ?? null]);
+    const contentOf = (it) => JSON.stringify([it.name, it.quantity, it.note, it.aisleId ?? null, it.storeId ?? null, it.priority ?? 'normal', it.dueDate ?? null, it.ean ?? null, it.link ?? null, it.priceCents ?? null, it.repeat ?? null, it.assignedTo ?? null, it.dueTime ?? null, it.remindBefore ?? null]);
     let seen = contentOf(item);
     let mine = false; // vrai pendant mes propres enregistrements
     const stopWatching = onDataChange(() => {
@@ -1757,7 +1819,7 @@ export function renderList(listId, onLeave) {
     // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
     // savoir s'il reste des modifications non enregistrées (ordinateur)
     function snapshot() {
-      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee]);
+      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee, dueTime, remind]);
     }
     let initialSnapshot = snapshot();
     const dirty = () => snapshot() !== initialSnapshot;
@@ -1827,6 +1889,8 @@ export function renderList(listId, onLeave) {
       if (enabled.due && dueDate !== savedDue) changes.dueDate = dueDate; // null : échéance effacée
       if (enabled.due && repeat !== savedRepeat) changes.repeat = repeat; // null : ne se répète plus
       if (enabled.assign && assignee !== savedAssignee) changes.assignedTo = assignee; // null : à personne
+      if (enabled.due && dueTime !== savedDueTime) changes.dueTime = dueTime; // null : sans heure
+      if (enabled.due && remind !== savedRemind) changes.remindBefore = remind; // null : aucun rappel
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
       if (!Object.keys(changes).length) {
         sheet.forceClose();
@@ -1872,7 +1936,9 @@ export function renderList(listId, onLeave) {
         wishes ? linkButton(it.link) : null,
         it.note ? value('Note', it.note) : null,
         options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
-        options.due ? value('Échéance', it.dueDate ? dueDateLabel(it.dueDate) : 'Aucune échéance') : null,
+        options.due ? value('Échéance', it.dueDate ? `${dueDateLabel(it.dueDate)}${it.dueTime ? ` à ${timeLabel(it.dueTime)}` : ''}` : 'Aucune échéance') : null,
+        // Rappel : propre à cette tâche, jamais sur la page publique
+        options.due && it.dueDate && it.dueTime && it.remindBefore != null && app.user?.push ? value('Rappel', reminderLabel(it.remindBefore)) : null,
         options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
         // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
         options.assign ? value('Pour', personOf(view?.list, it.assignedTo)?.name ?? 'Personne') : null,
@@ -2006,6 +2072,12 @@ export function renderList(listId, onLeave) {
   // le dessin, et le repère monte (liste à l'écran seulement)
   onLeave(onDataChange(() => takeNews()));
   onLeave(onDataChange(idle.request));
+  // Une tâche du jour à heure précise passe « En retard » à son heure :
+  // redessin à la minute, seulement s'il y en a une dans la liste
+  onLeave(watchMinute(() => {
+    const today = todayKey();
+    if ([...app.data.items.values()].some((it) => it.listId === listId && !it.checked && it.dueDate === today && it.dueTime)) idle.request();
+  }));
   // Retour au premier plan (application, écran déverrouillé) : les nouveautés
   // arrivées entre-temps sont prises, puis la liste est redessinée
   const onVisible = () => {

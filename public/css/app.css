@@ -137,6 +137,11 @@ button.sync { cursor: pointer; }
 .share { overflow: hidden; }
 .share__hint { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); }
 
+/* Fiche d'une tâche : l'heure (champ qui ouvre le sélecteur du téléphone) et
+   « Effacer » sur la même ligne (heure d'échéance, 11 novembre 2026) */
+.time-row { display: flex; align-items: center; gap: var(--space-1); }
+.time-row .due-picker { flex: 1; min-width: 0; }
+
 /* Réglages : valeur à droite d'une ligne (« Version 536d95c » sur « À propos »),
    avant le chevron
    (sur un petit écran, c'est la valeur qui se réduit, jamais le titre) */

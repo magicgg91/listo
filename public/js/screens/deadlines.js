@@ -28,7 +28,7 @@ import { repeatChip, repeatSentence } from '../repeat.js';
 import { listIcon } from '../list-icons.js';
 import { canEditList, listOptions, memberNames } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
 import { computeDeadlines, assigneeOf } from '../deadlines.js';
@@ -124,7 +124,7 @@ export function renderDeadlines(onLeave) {
       chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
       spoken.push(priority.label.toLowerCase());
     }
-    const due = dueChip(item.dueDate, false, today);
+    const due = dueChip(item.dueDate, false, today, item.dueTime);
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
     chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
     spoken.push(due.label.toLowerCase());
@@ -195,6 +195,8 @@ export function renderDeadlines(onLeave) {
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
   onLeave(watchNewDay(draw));
+  // Une tâche du jour à heure précise passe « En retard » à son heure
+  onLeave(watchMinute(() => idle.request()));
   draw();
   refreshData({ quiet: true });
 

@@ -185,11 +185,11 @@ test('messages d\'erreur d\'update_items : ils citent tous les champs acceptés,
   const { h, c } = await town(t);
   const extra = (await c.tool('update_items', { list_id: h.ids.samedi, items: [{ id: h.ids.pommes, magasin: 'Lidl' }] })).body.error;
   assert.equal(extra.code, -32602);
-  assert.match(extra.message, /seuls id, name, quantity, note, priority, due_date, repeat, assigned_to, aisle et store sont acceptés/);
+  assert.match(extra.message, /seuls id, name, quantity, note, priority, due_date, due_time, remind, repeat, assigned_to, aisle et store sont acceptés/);
   const empty = (await c.tool('update_items', { list_id: h.ids.samedi, items: [{ id: h.ids.pommes }] })).body.error;
-  assert.match(empty.message, /au moins un champ à modifier \(name, quantity, note, priority, due_date, repeat, assigned_to, aisle ou store\)/);
+  assert.match(empty.message, /au moins un champ à modifier \(name, quantity, note, priority, due_date, due_time, remind, repeat, assigned_to, aisle ou store\)/);
   const shape = (await c.tool('update_items', { list_id: h.ids.samedi, items: ['x'] })).body.error;
-  assert.match(shape.message, /\{ id, name\?, quantity\?, note\?, priority\?, due_date\?, repeat\?, assigned_to\?, aisle\?, store\? \}/);
+  assert.match(shape.message, /\{ id, name\?, quantity\?, note\?, priority\?, due_date\?, due_time\?, remind\?, repeat\?, assigned_to\?, aisle\?, store\? \}/);
 });
 
 test('connexion en lecture seule : toujours refusée, magasin ou pas', async (t) => {

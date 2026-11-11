@@ -804,7 +804,7 @@ export function computeSuggestions(state, typed, limit = 5) {
 // son nom et, pour l'écran, son rayon habituel (magasin simple) ou son
 // magasin habituel (« multi »). Liste qui n'est pas de courses : [].
 // Calculé sur la copie locale : marche hors ligne.
-export function computeHabitual(state, list, { now = new Date().toISOString() } = {}) {
+export function computeHabitual(state, list, { now = new Date().toISOString(), limit } = {}) {
   if (!list || !isShoppingList(list)) return [];
   const multi = isMultiList(list);
   const storeIds = multi ? storeChoices(state, list).map((store) => store.id) : list.store?.id ? [list.store.id] : [];
@@ -812,7 +812,7 @@ export function computeHabitual(state, list, { now = new Date().toISOString() } 
   const exclude = new Set(itemsOf(state, list.id).filter((item) => !item.checked).map((item) => normalizeItemName(item.name)));
   const aisleName = new Map(state.aisles.filter((a) => a.active).map((a) => [a.id, a.name]));
   const storeName = new Map(state.stores.map((store) => [store.id, store.name]));
-  return habitual(state.history, { storeIds, exclude, now }).map((entry) => ({
+  return habitual(state.history, { storeIds, exclude, now, ...(limit ? { limit } : {}) }).map((entry) => ({
     name: entry.name,
     hint: multi ? storeName.get(usualStoreFor(state, list, entry.name)) ?? null : aisleName.get(usualAisleFor(state, list, entry.name)) ?? null,
   }));

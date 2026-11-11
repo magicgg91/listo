@@ -57,6 +57,9 @@ export function suggest(history, typed, limit = 8) {
 // les plus ajoutées d'abord, puis les plus récentes.
 export const HABITUAL_DAYS = 60;
 export const HABITUAL_LIMIT = 6;
+// Téléphone, clavier ouvert : 4 seulement, sinon l'encart sort de l'écran
+// (constat sur iPhone, 11 novembre 2026)
+export const HABITUAL_LIMIT_KEYBOARD = 4;
 export function habitual(history, { storeIds = [], exclude = new Set(), now, days = HABITUAL_DAYS, limit = HABITUAL_LIMIT } = {}) {
   const since = new Date(Date.parse(now) - days * 24 * 3600 * 1000).toISOString();
   const stores = new Set(storeIds);

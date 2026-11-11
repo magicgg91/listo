@@ -43,7 +43,7 @@ import * as actions from '../actions.js';
 import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
-import { normalizeItemName } from '../history.js';
+import { normalizeItemName, HABITUAL_LIMIT_KEYBOARD } from '../history.js';
 import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
@@ -967,7 +967,9 @@ export function renderList(listId, onLeave) {
   }
 
   function drawHabitual() {
-    const entries = computeHabitual(app.data, view?.list);
+    // Téléphone, clavier ouvert (curseur dans le champ) : 4 articles ; sinon 6
+    const keyboard = !pc && document.activeElement === input;
+    const entries = computeHabitual(app.data, view?.list, keyboard ? { limit: HABITUAL_LIMIT_KEYBOARD } : {});
     if (!entries.length) {
       suggestBox.hidden = true;
       habitualOpen = false;

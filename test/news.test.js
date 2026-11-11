@@ -188,7 +188,7 @@ test('migration 16 : tables du journal et des repères, repère de chaque membre
   db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES ('l1', 1, 'modification'), ('l1', 2, 'lecture'), ('l2', 2, 'modification')").run();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 26);
+  assert.equal(schemaVersion(db), 27);
   assert.deepEqual(db.prepare('SELECT list_id, user_id, last_seen, behind, muted FROM list_reads ORDER BY list_id, user_id').all().map((r) => ({ ...r })), [
     { list_id: 'l1', user_id: 1, last_seen: 0, behind: 0, muted: 0 },
     { list_id: 'l1', user_id: 2, last_seen: 0, behind: 0, muted: 0 },

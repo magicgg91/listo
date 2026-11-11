@@ -13,7 +13,7 @@
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
-import { suggest, habitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
+import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -322,6 +322,13 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (op.dueDate === null && op.dueTime === undefined) next.dueTime = null;
       if (next.dueTime == null && op.remindBefore === undefined) next.remindBefore = null;
       state.items.set(item.id, next);
+      return;
+    }
+    // Retirer un article de « Souvent ajoutés » (même règle que le serveur)
+    case 'habitual.hide': {
+      const list = state.lists.get(op.listId);
+      if (!list || !isShoppingList(list)) return;
+      hideHabitual(state.history, { name: op.name, storeIds: habitualStoreIds(state, list), now });
       return;
     }
     case 'item.check':
@@ -807,7 +814,7 @@ export function computeSuggestions(state, typed, limit = 5) {
 export function computeHabitual(state, list, { now = new Date().toISOString(), limit } = {}) {
   if (!list || !isShoppingList(list)) return [];
   const multi = isMultiList(list);
-  const storeIds = multi ? storeChoices(state, list).map((store) => store.id) : list.store?.id ? [list.store.id] : [];
+  const storeIds = habitualStoreIds(state, list);
   if (multi && !storeIds.length) return [];
   const exclude = new Set(itemsOf(state, list.id).filter((item) => !item.checked).map((item) => normalizeItemName(item.name)));
   const aisleName = new Map(state.aisles.filter((a) => a.active).map((a) => [a.id, a.name]));
@@ -816,6 +823,13 @@ export function computeHabitual(state, list, { now = new Date().toISOString(), l
     name: entry.name,
     hint: multi ? storeName.get(usualStoreFor(state, list, entry.name)) ?? null : aisleName.get(usualAisleFor(state, list, entry.name)) ?? null,
   }));
+}
+
+// Magasins dont « Souvent ajoutés » tient compte : celui de la liste, ceux
+// d'une liste « multi » ; aucun (lignes générales) pour une liste sans magasin
+export function habitualStoreIds(state, list) {
+  if (isMultiList(list)) return storeChoices(state, list).map((store) => store.id);
+  return list.store?.id ? [list.store.id] : [];
 }
 
 // Article coché (« Dans le panier ») de cette liste qui porte ce nom

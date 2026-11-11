@@ -56,8 +56,8 @@ import { isMultiList } from '../sorting.js';
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 import { createScanner, scanAvailable } from './scan.js';
 import { readBarcode, normalizeBarcode, ImageUnreadable } from '../barcode.js';
-import { createSwipeController } from '../swipe.js';
-import { createTapPicker } from '../tap.js';
+import { createSwipeController, SWIPE } from '../swipe.js';
+import { createTapPicker, keepFieldFocus } from '../tap.js';
 import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
@@ -926,6 +926,9 @@ export function renderList(listId, onLeave) {
   // par sa croix, en touchant ailleurs, ou dès qu'on tape (les suggestions
   // habituelles reprennent la place).
   let habitualOpen = false; // ouvert par « + », sans curseur dans le champ
+  // Glissement des lignes de l'encart (téléphone)
+  const habitualSwipes = pc ? null : createSwipeController(suggestBox);
+  if (habitualSwipes) onLeave(() => habitualSwipes.stop());
   function openHabitual() {
     if (!editable() || !remembersNames(view?.list)) return;
     if (!computeHabitual(app.data, view.list).length) return; // rien à proposer : « + » ne fait rien
@@ -966,6 +969,64 @@ export function renderList(listId, onLeave) {
     drawSuggestions();
   }
 
+  // Une ligne de l'encart : l'article (un appui l'ajoute) ; « Retirer »
+  // (pour toute la famille, dans ce magasin) : derrière la ligne, révélé en
+  // la faisant glisser vers la gauche (téléphone, swipe.js, comme pour
+  // supprimer un article), ou bouton au bout de la ligne (ordinateur, au
+  // survol et au clavier). Un glissement n'ajoute jamais l'article.
+  function habitualRow(entry) {
+    let blocked = false; // appui qui a glissé, ou sur une ligne ouverte : pas d'ajout
+    let startX = null;
+    const on = taps.button(() => {
+      redrawLater = false;
+      if (blocked || row.classList.contains('is-open') || row.classList.contains('is-swiping')) return;
+      pickHabitual(entry.name);
+    }, { persistent: true });
+    const add = h('button', {
+      class: `suggest__item${pc ? '' : ' swipe__slide'}`,
+      type: 'button',
+      onPointerdown: (event) => {
+        blocked = row.classList.contains('is-open');
+        startX = event.clientX;
+        on.pointerdown(event);
+      },
+      onPointermove: (event) => {
+        if (startX !== null && Math.abs(event.clientX - startX) > SWIPE.slop) blocked = true;
+      },
+      onMousedown: on.mousedown,
+      onPointerup: on.pointerup,
+      onPointercancel: on.pointercancel,
+      onClick: on.click,
+    }, h('span', {}, entry.name), entry.hint ? h('span', { class: 'suggest__aisle' }, entry.hint) : null);
+    const label = `Retirer ${entry.name} de « Souvent ajoutés »`;
+    const remove = h('button', {
+      class: pc ? 'icon-btn' : 'swipe__delete',
+      type: 'button',
+      'aria-label': label,
+      ...(pc ? { 'data-pc-tip': 'Retirer' } : {}),
+      // Le champ garde le curseur (clavier ouvert) pendant l'appui
+      onPointerdown: keepFieldFocus.pointerdown,
+      onMousedown: keepFieldFocus.mousedown,
+      onClick: () => removeHabitual(entry.name),
+    }, icon('eye-off', pc ? 'icon--sm' : ''), pc ? null : h('span', {}, 'Retirer'));
+    const row = pc
+      ? h('div', { class: 'suggest__row' }, add, h('span', { class: 'suggest__actions' }, remove))
+      : h('div', { class: 'suggest__row swipe' }, add, remove);
+    if (!pc) habitualSwipes.attach(row, add, remove);
+    return row;
+  }
+
+  // « Retirer » : l'article n'est plus proposé dans ce magasin, pour toute
+  // la famille (copie locale tout de suite, puis le serveur), jusqu'à ce
+  // qu'il soit de nouveau ajouté
+  async function removeHabitual(name) {
+    if (!editable() || !view) return;
+    habitualSwipes?.close();
+    await actions.hideHabitual(view.list, name);
+    toast(`Retiré de « Souvent ajoutés » : ${name}`, { low: true });
+    drawSuggestions();
+  }
+
   function drawHabitual() {
     // Téléphone, clavier ouvert (curseur dans le champ) : 4 articles ; sinon 6
     const keyboard = !pc && document.activeElement === input;
@@ -978,21 +1039,7 @@ export function renderList(listId, onLeave) {
     const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => closeHabitual() }, icon('close'));
     replace(suggestBox,
       h('div', { class: 'suggest__head' }, h('span', { class: 'suggest__title' }, 'Souvent ajoutés'), close),
-      entries.map((entry) => {
-        const on = taps.button(() => {
-          redrawLater = false;
-          pickHabitual(entry.name);
-        });
-        return h('button', {
-          class: 'suggest__item',
-          type: 'button',
-          onPointerdown: on.pointerdown,
-          onMousedown: on.mousedown,
-          onPointerup: on.pointerup,
-          onPointercancel: on.pointercancel,
-          onClick: on.click,
-        }, h('span', {}, entry.name), entry.hint ? h('span', { class: 'suggest__aisle' }, entry.hint) : null);
-      }));
+      entries.map(habitualRow));
     // Un groupe de boutons (pas une liste de choix : il a sa croix)
     suggestBox.dataset.mode = 'habitual';
     suggestBox.setAttribute('role', 'group');

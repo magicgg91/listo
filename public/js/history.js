@@ -70,6 +70,7 @@ export function habitual(history, { storeIds = [], exclude = new Set(), now, day
     const line = entry.storeId ?? null;
     const inScope = stores.size ? stores.has(line) : line === null;
     if (!inScope || !(entry.useCount > 0) || String(entry.lastUsedAt) < since || exclude.has(entry.nameNormalized)) continue;
+    if (entry.hiddenAt) continue; // retiré de « Souvent ajoutés » (hideHabitual)
     const key = entry.nameNormalized;
     const total = totals.get(key) ?? { name: shown.get(key) ?? entry.name, nameNormalized: key, useCount: 0, lastUsedAt: '' };
     total.useCount += entry.useCount;
@@ -132,8 +133,9 @@ export function recordUse(history, { name, storeId = null, aisleId = null, count
       entry.useCount += count;
       entry.lastUsedAt = now;
       if (aisleId !== null) entry.aisleId = aisleId;
+      if (count > 0) entry.hiddenAt = null; // racheté : revient dans « Souvent ajoutés »
     } else {
-      entry = { name, nameNormalized: key, storeId: lineStore, aisleId, useCount: Math.max(count, 1), lastUsedAt: now };
+      entry = { name, nameNormalized: key, storeId: lineStore, aisleId, useCount: Math.max(count, 1), lastUsedAt: now, hiddenAt: null };
       history.push(entry);
     }
     touched.push(entry);
@@ -157,11 +159,25 @@ export function moveUse(history, { name, from = null, to = null, now }) {
     if (entry) {
       entry.useCount += 1;
       entry.lastUsedAt = now;
+      entry.hiddenAt = null;
     } else {
-      entry = { name, nameNormalized: key, storeId: to, aisleId: null, useCount: 1, lastUsedAt: now };
+      entry = { name, nameNormalized: key, storeId: to, aisleId: null, useCount: 1, lastUsedAt: now, hiddenAt: null };
       history.push(entry);
     }
     touched.push(entry);
   }
+  return touched;
+}
+
+// Retire un article de « Souvent ajoutés » (décision du 11 novembre 2026),
+// pour toute la famille, dans le ou les magasins d'une liste (storeIds ;
+// liste sans magasin : ligne générale). La date est notée sur ces lignes ;
+// le prochain ajout de l'article l'efface (recordUse) : il revient s'il est
+// racheté. Modifie le tableau history et renvoie les lignes touchées.
+export function hideHabitual(history, { name, storeIds = [], now }) {
+  const key = normalizeItemName(name);
+  const scope = new Set(storeIds.length ? storeIds : [null]);
+  const touched = history.filter((entry) => entry.nameNormalized === key && scope.has(entry.storeId ?? null));
+  for (const entry of touched) entry.hiddenAt = now;
   return touched;
 }

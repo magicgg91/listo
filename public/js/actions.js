@@ -80,6 +80,12 @@ export function checkItem(item, checked) {
   return perform({ type: 'item.check', itemId: item.id, checked, ...(next ? { nextDue: next } : {}) });
 }
 
+// Retire un article de « Souvent ajoutés » de cette liste de courses (pour
+// toute la famille, dans son magasin) ; il revient s'il est racheté
+export function hideHabitual(list, name) {
+  return perform({ type: 'habitual.hide', listId: list.id, name });
+}
+
 // Modifie un article (seulement les champs changés)
 export async function updateItem(item, changes) {
   const list = app.data.lists.get(item.listId);

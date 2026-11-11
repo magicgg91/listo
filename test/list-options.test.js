@@ -76,11 +76,11 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 27);
+  assert.equal(schemaVersion(db), 28);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
-  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19 ; répétition : migration 24)');
+  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19 ; répétition : migration 24)');
   // Nouvelle liste : désactivées (valeur par défaut de la base)
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
   assert.deepEqual(row('neuve'), { priority_enabled: 0, due_enabled: 0 });

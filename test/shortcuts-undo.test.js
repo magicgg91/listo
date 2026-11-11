@@ -94,7 +94,9 @@ test('annulation : les actions inverses sont les opérations habituelles (file d
   // répète, son cochage et « Passer cette fois », notés comme une
   // modification de l'échéance)
   assert.equal((list.match(/recordUndo\(listId, /g) ?? []).length, 5);
-  assert.equal((list.match(/const entry = \{ kind: 'update', itemId: item\.id, name: (item|saved)\.name, before, after: \{ dueDate: next \} \};/g) ?? []).length, 2);
+  assert.equal((list.match(/const entry = \{ kind: 'update', itemId: item\.id, name: saved\.name, before, after: \{ dueDate: next \} \};/g) ?? []).length, 1);
+  // Coché d'une tâche qui se répète : la date, et chacun son tour, la personne de cette fois
+  assert.match(list, /const entry = \{ kind: 'update', itemId: item\.id, name: item\.name, before, after: \{ dueDate: next, \.\.\.\(nextPerson !== null \? \{ assignedTo: nextPerson \} : \{\}\) \} \};/);
   assert.match(list, /recordUndo\(listId, \{ kind: 'check', itemId: item\.id, name: item\.name, checked: !item\.checked \}\);\s*actions\.checkItem\(item, !item\.checked\);/);
   assert.match(list, /recordUndo\(listId, \{ kind: 'update', itemId: item\.id, name: item\.name, before: beforeOf\(latest, changes\), after: changes \}\);\s*await actions\.updateItem\(item, changes\);/);
   assert.doesNotMatch(read('public/js/undo.js').replace(/\/\/.*$/gm, ''), /reserv|photo|addItem|createItem/i);

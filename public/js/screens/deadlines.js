@@ -31,7 +31,7 @@ import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
-import { computeDeadlines, assigneeOf } from '../deadlines.js';
+import { computeDeadlines, assigneesFor } from '../deadlines.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
@@ -88,9 +88,12 @@ export function renderDeadlines(onLeave) {
   const check = (item) => {
     const next = actions.nextDueOf(item);
     if (next) {
-      const before = { dueDate: item.dueDate };
+      const before = actions.undoOfRepeat(item);
+      const nextPerson = actions.nextTurnOf(item);
+      const list = app.data.lists.get(item.listId);
+      const who = nextPerson === null ? '' : ` · ${nextPerson === app.user.id ? 'Moi' : (list?.members ?? []).find((m) => m.id === nextPerson)?.displayName ?? ''}`;
       actions.checkItem(item, true);
-      toast(`Prochaine fois : ${dueDateLabel(next)}`, {
+      toast(`Prochaine fois : ${dueDateLabel(next)}${who}`, {
         action: 'Annuler',
         onAction: () => {
           const current = app.data.items.get(item.id);
@@ -132,12 +135,16 @@ export function renderDeadlines(onLeave) {
       chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
       spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
     }
-    // À qui est la tâche (attribution activée) : « Moi » ou le prénom
-    const who = assigneeOf(item, list);
-    const whoName = who === app.user.id ? 'Moi' : who !== null ? memberNames(list).get(who) : null;
-    if (whoName) {
-      chips.push(h('span', { class: `chip${who === app.user.id ? ' chip--accent' : ''}` }, icon('user', 'icon--xs'), whoName));
-      spoken.push(who === app.user.id ? 'pour moi' : `pour ${whoName}`);
+    // À qui est la tâche (attribution activée) : « Moi » ou le prénom ;
+    // plusieurs personnes : « Moi, Léa », « Léa +2 » (assign.js)
+    const names = memberNames(list);
+    const who = assigneesFor(item, list)
+      .map((id) => (id === app.user.id ? { name: 'Moi', me: true } : names.has(id) ? { name: names.get(id), me: false } : null))
+      .filter(Boolean).sort((a, b) => Number(b.me) - Number(a.me));
+    if (who.length) {
+      const text = who.length <= 2 ? who.map((p) => p.name).join(', ') : `${who[0].name} +${who.length - 1}`;
+      chips.push(h('span', { class: `chip${who.some((p) => p.me) ? ' chip--accent' : ''}` }, icon(who.length > 1 || item.assignMode === 'turn' ? 'users' : 'user', 'icon--xs'), text));
+      spoken.push(`pour ${who.map((p) => (p.me ? 'moi' : p.name)).join(', ')}`);
     }
     const canCheck = canEditList(list);
     return h('li', { class: 'item', 'data-item-id': item.id },

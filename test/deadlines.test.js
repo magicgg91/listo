@@ -128,9 +128,10 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' \}/);
   // Écritures : checkItem (actions.js → perform → file d'attente), et
   // updateItem seulement pour « Annuler » d'une tâche qui se répète
-  // (l'ancienne date revient) ; nextDueOf ne fait que calculer
+  // (l'ancienne date revient, et chacun son tour, la personne de cette
+  // fois) ; nextDueOf, undoOfRepeat et nextTurnOf ne font que calculer
   const writes = [...screen.matchAll(/actions\.(\w+)\(/g)].map((m) => m[1]);
-  assert.deepEqual([...new Set(writes)], ['nextDueOf', 'checkItem', 'updateItem']);
+  assert.deepEqual([...new Set(writes)], ['nextDueOf', 'undoOfRepeat', 'nextTurnOf', 'checkItem', 'updateItem']);
   assert.match(screen, /if \(current && current\.dueDate === next\) actions\.updateItem\(current, before\);/);
   assert.match(read('public/js/actions.js'), /export function checkItem\(item, checked\) \{\s*const next = checked \? nextDueOf\(item\) : null;\s*return perform\(\{ type: 'item\.check', itemId: item\.id, checked, \.\.\.\(next \? \{ nextDue: next \} : \{\}\) \}\);\s*\}/);
   assert.doesNotMatch(screen, /fetch\(|api\.js|innerHTML|\.focus\(/);

@@ -58,6 +58,7 @@
 import { buildMessage } from './push.js';
 import { wishListOf, beneficiaryId, seesReservations } from '../public/js/wishes.js';
 import { reminderAt, timeLabel } from '../public/js/due-time.js';
+import { assigneesOf, parsePeople } from '../public/js/assign.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -123,7 +124,8 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     // Tâche encore attribuée à cette personne, non cochée, non supprimée, dans
     // une liste de tâches dont l'attribution est activée
     stillMine: db.prepare(`SELECT 1 FROM items JOIN lists ON lists.id = items.list_id AND lists.type = 'tasks' AND lists.assign_enabled = 1
-      WHERE items.id = ? AND items.list_id = ? AND items.assigned_to = ? AND items.deleted_at IS NULL AND items.checked = 0`).pluck(),
+      WHERE items.id = :itemId AND items.list_id = :listId AND items.deleted_at IS NULL AND items.checked = 0
+        AND (items.assigned_to = :userId OR (items.assign_mode = 'all' AND instr(',' || COALESCE(items.assign_people, '') || ',', ',' || CAST(:userId AS INTEGER) || ',') > 0))`).pluck(),
     isMember: db.prepare(`SELECT 1 FROM list_members JOIN lists ON lists.id = list_members.list_id AND lists.deleted_at IS NULL
       WHERE list_members.list_id = ? AND list_members.user_id = ?`).pluck(),
     // Résumé des échéances : comptes actifs pas encore examinés aujourd'hui
@@ -140,12 +142,14 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = :userId
       WHERE items.deleted_at IS NULL AND items.checked = 0 AND items.due_date IS NOT NULL AND items.due_date <> '' AND items.due_date <= :today
-        AND (lists.assign_enabled = 0 OR items.assigned_to IS NULL OR items.assigned_to = :userId)
+        AND (lists.assign_enabled = 0
+          OR (items.assign_mode = 'all' AND instr(',' || COALESCE(items.assign_people, '') || ',', ',' || CAST(:userId AS INTEGER) || ',') > 0)
+          OR (items.assign_mode <> 'all' AND (items.assigned_to IS NULL OR items.assigned_to = :userId)))
         AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
       ORDER BY items.due_date, COALESCE(items.due_time, '99:99'), items.name COLLATE NOCASE`),
     // Rappels : tâches à faire avec date, heure et délai, autour d'aujourd'hui
     // (le moment exact est calculé ensuite, en heure locale du serveur)
-    reminderTasks: db.prepare(`SELECT items.id, items.name, items.due_date, items.due_time, items.remind_before, items.assigned_to,
+    reminderTasks: db.prepare(`SELECT items.id, items.name, items.due_date, items.due_time, items.remind_before, items.assigned_to, items.assign_mode, items.assign_people,
         lists.id AS list_id, lists.assign_enabled
       FROM items
       JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'tasks' AND lists.due_enabled = 1
@@ -245,7 +249,9 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   // dans MON groupe de la liste (même minute de regroupement, même
   // catégorie « Modifications ») ; le titre le dit. L'écriture elle-même
   // passe aussi par le journal (activity), qui compte le changement.
-  function assigned({ listId, itemId, userId, actorId }) {
+  // turn : « chacun son tour », la tâche revient à cette personne (« C'est
+  // votre tour »)
+  function assigned({ listId, itemId, userId, actorId, turn = false }) {
     if (!actorId || userId === actorId || !push.hasDevices(userId)) return;
     const key = `${userId}:${listId}`;
     let group = groups.get(key);
@@ -254,21 +260,28 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       groups.set(key, group);
     }
     if (!group.actors.includes(actorId)) group.actors.push(actorId);
-    if (!group.assigned.includes(itemId)) group.assigned.push(itemId);
+    const bucket = turn ? group.turns : group.assigned;
+    if (!bucket.includes(itemId)) bucket.push(itemId);
   }
 
   function newGroup(userId, listId) {
-    return { userId, listId, firstAt: ctx.now(), actors: [], items: { added: [], updated: [], checked: [] }, assigned: [], count: 0, lastEventId: 0 };
+    return { userId, listId, firstAt: ctx.now(), actors: [], items: { added: [], updated: [], checked: [] }, assigned: [], turns: [], count: 0, lastEventId: 0 };
   }
 
   function changesMessage(group, list, detail) {
     const actors = group.actors.map((id) => q.name.get(id) ?? 'Un ancien membre');
     // Tâches qui me sont attribuées (toujours à moi, encore à faire)
-    const mine = group.assigned.filter((id) => q.stillMine.get(id, list.id, group.userId));
+    const stillMine = (id) => q.stillMine.get({ itemId: id, listId: list.id, userId: group.userId });
+    const mine = group.assigned.filter(stillMine);
+    // Chacun son tour : la tâche m'est revenue (toujours à moi, encore à faire)
+    const turns = group.turns.filter(stillMine);
+    const turnNames = turns.map((id) => q.itemName.get(id, list.id)).filter(Boolean);
     const verb = actors.length > 1 ? 'ont modifié' : 'a modifié';
-    const title = mine.length
-      ? `${peopleList(actors)} vous ${actors.length > 1 ? 'ont' : 'a'} attribué ${mine.length > 1 ? `${mine.length} tâches` : 'une tâche'} dans « ${list.name} »`
-      : `${peopleList(actors)} ${verb} « ${list.name} »`;
+    const title = turns.length
+      ? (detail && turnNames.length ? `C'est votre tour : ${nameList(turnNames)}` : `C'est votre tour dans « ${list.name} »`)
+      : mine.length
+        ? `${peopleList(actors)} vous ${actors.length > 1 ? 'ont' : 'a'} attribué ${mine.length > 1 ? `${mine.length} tâches` : 'une tâche'} dans « ${list.name} »`
+        : `${peopleList(actors)} ${verb} « ${list.name} »`;
     let body = `${group.count} changement${group.count > 1 ? 's' : ''}`;
     if (detail) {
       const parts = [];
@@ -393,7 +406,9 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       const key = `${task.due_date} ${task.due_time} ${task.remind_before}`;
       if (!q.claimReminder.run({ itemId: task.id, key }).changes) continue;
       // Destinataires : la personne à qui elle est attribuée, sinon les membres
-      const recipients = task.assign_enabled === 1 && task.assigned_to ? [task.assigned_to] : q.members.all(task.list_id);
+      // (plusieurs personnes : chacune ; chacun son tour : celle de cette fois)
+      const people = task.assign_enabled === 1 ? assigneesOf({ assignMode: task.assign_mode, assignPeople: parsePeople(task.assign_people), assignedTo: task.assigned_to }) : [];
+      const recipients = people.length ? people : q.members.all(task.list_id);
       for (const userId of recipients) {
         const list = allowed(userId, task.list_id, 'due');
         if (!list) continue;

@@ -332,9 +332,9 @@ test('copie locale : option, attribution, tri « Par personne » (Moi, les autre
 test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prénom ; jamais sur la page publique ; « Toutes / Les miennes » retenu ; texte sûr', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /\[assignField, options\(\)\.assign\]/);
-  assert.match(list, /if \(enabled\.assign && assignee !== savedAssignee\) changes\.assignedTo = assignee; \/\/ null : à personne/);
+  assert.match(list, /if \(assignMode === 'one'\) changes\.assignedTo = assignee;/);
   assert.match(list, /if \(people\.some\(\(p\) => p\.id === app\.user\.id\)\) choices\.push\(\[String\(app\.user\.id\), 'Moi'\]\);/);
-  assert.match(list, /icon\('user', 'icon--xs'\), who\.name\)/);
+  assert.match(list, /icon\(turn \? 'users' : 'user', 'icon--xs'\), who\.name\)/);
   assert.match(list, /\['person', 'users', 'Par personne', 'Tri : par personne'\]/);
   const page = read('public/js/public.js') + read('public/js/format.js');
   assert.doesNotMatch(page, /assignedTo|assign/);

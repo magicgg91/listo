@@ -23,6 +23,7 @@
 // les tâches qui me sont attribuées ; « Toutes » montre tout. Une
 // attribution ne compte que si l'option est activée pour la liste.
 
+import { assigneesOf } from './assign.js';
 import { typeOf } from './list-types.js';
 import { listOptions } from './store.js';
 import { addDays, todayKey } from './format.js';
@@ -63,9 +64,10 @@ export function listHasDeadlines(list) {
 
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 
-// Personne à qui la tâche est attribuée (null : personne, ou attribution
-// désactivée pour sa liste)
-export const assigneeOf = (item, list) => (listOptions(list).assign ? item.assignedTo ?? null : null);
+// Personnes à qui la tâche est en ce moment ([] : personne, ou attribution
+// désactivée pour sa liste) : une, plusieurs, ou celle de cette fois
+// (chacun son tour) ; assign.js
+export const assigneesFor = (item, list) => (listOptions(list).assign ? assigneesOf(item) : []);
 
 // Tâches retenues, chacune avec sa liste : [{ item, list }], triées.
 // keep(item, list) : filtre de plus, facultatif.
@@ -87,7 +89,7 @@ function collect(state, keep = () => true) {
 // query : texte cherché (nom de la tâche), facultatif ; mine : seulement les
 // tâches attribuées à me (« Les miennes »).
 export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null, now = nowTime() } = {}) {
-  const keep = mine ? (item, list) => assigneeOf(item, list) === me : undefined;
+  const keep = mine ? (item, list) => assigneesFor(item, list).includes(me) : undefined;
   const entries = collect(state, keep).filter((entry) => !query || matches(entry.item.name, query));
   return DEADLINE_GROUPS
     .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today, entry.item.dueTime, now) === key) }))
@@ -97,6 +99,6 @@ export function computeDeadlines(state, { today = todayKey(), query = '', mine =
 // Nombre de la pastille : tâches en retard et tâches du jour, les miennes et
 // celles de personne (pas celles attribuées à quelqu'un d'autre)
 export function deadlineBadge(state, today = todayKey(), me = null) {
-  const keep = (item, list) => { const who = assigneeOf(item, list); return who === null || who === me; };
+  const keep = (item, list) => { const who = assigneesFor(item, list); return who.length === 0 || who.includes(me); };
   return collect(state, keep).filter((entry) => entry.item.dueDate <= today).length;
 }

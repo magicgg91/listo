@@ -603,16 +603,20 @@ Pour arrêter : « Se répète », « Jamais » (ou effacez l'échéance, ou sup
 
 ### 5.4 Attribuer une tâche
 
-Dans une liste de tâches, le propriétaire active « Attribution » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). La fiche d'une tâche propose alors « Pour » : « Personne », « Moi », ou une autre personne qui peut modifier la liste. Une seule personne par tâche.
+Dans une liste de tâches, le propriétaire active « Attribution » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). La fiche d'une tâche propose alors « Pour » : « Personne », « Moi », une autre personne qui peut modifier la liste, ou « Plusieurs personnes… ».
 
 - Sur la ligne, une pastille dit à qui est la tâche : « Moi » (en bleu) ou le prénom.
 - « Trier la liste », « Par personne » : les tâches de « Moi » d'abord, puis celles de chacun, puis celles de « Personne ».
 - « Échéances » propose « Toutes » ou « Les miennes » ([5.11 Se déplacer, Échéances](#echeances)).
-- Une tâche qui se répète garde la même personne quand elle revient.
-- Si la personne quitte la liste, en est retirée ou passe en « Lecture seule », ses tâches reviennent à « Personne ».
+- Une tâche qui se répète garde la même personne quand elle revient (sauf « Chacun son tour… »).
+- Si la personne quitte la liste, en est retirée ou passe en « Lecture seule », ses tâches reviennent à « Personne » (à plusieurs ou à tour de rôle : elle est retirée du groupe ou du tour ; s'il ne reste qu'une personne, la tâche est à elle seule).
 - Le lien public ne montre jamais à qui est une tâche.
 
-Quand quelqu'un vous attribue une tâche, la notification « Modifications » le dit ([6. Notifications](#notifications)).
+« Plusieurs personnes… » : touchez les prénoms (au moins deux). La tâche est à chacune : elle apparaît dans « Les miennes » de chacune, compte dans son résumé de 8 h et lui envoie ses rappels. La première qui la coche la termine pour tout le monde. Sur la ligne : “Moi, Léa”, ou “Léa +2”.
+
+« Chacun son tour… », pour une tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : touchez les prénoms dans l'ordre du tour (1, 2, 3…). La tâche est à une personne à la fois (la pastille montre son prénom). Quand quelqu'un la coche, elle revient à sa date suivante pour la personne qui suit, dans l'ordre, celle qui l'a cochée : si Marc fait celle de Léa, la suivante est pour Zoé. Le message dit “Prochaine fois : lun. 17 nov. · Zoé”. « Passer cette fois » garde la même personne. Si la tâche ne se répète plus, elle reste à la personne de cette fois.
+
+Quand quelqu'un vous attribue une tâche, ou quand c'est votre tour, la notification « Modifications » le dit (“C'est votre tour dans « Maison »”) ([6. Notifications](#notifications)).
 
 <a id="quantite"></a>
 
@@ -1048,7 +1052,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.11 U
 - Cocher : “Coche le pain et le beurre.” Décocher : “Décoche le lait.”
 - Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”
 - Heure et rappel ([5.2 Heure et rappel](#heure)) : “Dentiste jeudi à 14 h, rappelle-le une heure avant.” “Plus de rappel pour le dentiste.”
-- Attribuer ([5.4 Attribuer une tâche](#attribuer)) : “Donne la tâche ampoule à Léa.” “Qu'est-ce que j'ai à faire cette semaine ?”
+- Attribuer ([5.4 Attribuer une tâche](#attribuer)) : “Donne la tâche ampoule à Léa.” “Qu'est-ce que j'ai à faire cette semaine ?” “Le garage, pour Léa et Marc.” “Les poubelles chaque lundi, chacun son tour : Léa, Marc, Zoé.”
 - Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”

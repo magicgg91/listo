@@ -611,7 +611,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.7 Rechercher
 
-- Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre. Pendant que vous écrivez dans le champ d'ajout d'une liste, la loupe se cache pour lui laisser la place.
+- Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre. Dans une liste, elle flotte au-dessus de la barre d'ajout, et se cache pendant que vous y écrivez.
 - Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d'ajout se cache pendant la recherche.
 - Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.
 - Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.
@@ -624,7 +624,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.8 Se déplacer, Échéances
 
-Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, à sa droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».
+Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».
 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
 - Chaque ligne montre la tâche, sa liste, sa priorité et sa date. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet. Touchez la ligne pour ouvrir la tâche dans sa liste.

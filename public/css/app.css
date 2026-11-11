@@ -86,6 +86,7 @@ html[data-keyboard] .addbar { padding-bottom: 12px; }
 html[data-keyboard] .addbar--glass { bottom: 12px; }
 html[data-keyboard] .addbar.addbar--glass { padding-bottom: 5px; }
 html[data-keyboard] .list-dock { bottom: 12px; }
+html[data-keyboard] .list-dock--high { bottom: 90px; }
 html[data-keyboard] .sheet,
 html[data-keyboard] .footer { padding-bottom: var(--space-3); }
 html[data-keyboard] .body:last-child,
@@ -506,8 +507,9 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .trash__row .btn { margin-left: auto; }
 
 /* Bandeau du bas du téléphone (tabbar.js, section 16.15 de listo.css) : posé
-   en bas de la colonne. Ce qui défile garde une marge pour passer dessous ;
+   en bas de la colonne, la loupe flottant au-dessus. Ce qui défile garde une
+   marge pour passer dessous (bandeau et loupe) ;
    « Se déconnecter » (Réglages) reste juste au-dessus. */
-.shell__col--tabs > .screen > .scroll, .shell__col--tabs > .screen > .body:last-child { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.shell__col--tabs > .screen > .scroll, .shell__col--tabs > .screen > .body:last-child { padding-bottom: calc(164px + env(safe-area-inset-bottom, 0px)); }
 .shell__col--tabs > .screen > .footer { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); border-top: 0; background: transparent; }
 .shell__col--tabs .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }

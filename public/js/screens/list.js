@@ -331,6 +331,8 @@ export function renderList(listId, onLeave) {
   // (téléphone : recherche ouverte ; ordinateur : curseur dans le champ)
   function showAddbar() {
     addbar.hidden = !editable() || (pc ? search.focused : search.open);
+    // La loupe garde sa place pendant la recherche (barre seulement cachée)
+    loupeDock?.classList.toggle('list-dock--high', editable());
   }
 
   // --- Dessin de la liste ---
@@ -811,8 +813,9 @@ export function renderList(listId, onLeave) {
   }
   // Ordinateur : champ d'ajout en haut de la liste (sous les outils)
   const addbar = h('div', { class: pc ? 'pc-add' : 'addbar' }, suggestBox, addForm, scanner.inputs);
-  // Téléphone : la loupe, en bas à droite (à droite de la barre d'ajout, ou
-  // seule en lecture seule et pendant la recherche)
+  // Téléphone : la loupe ronde, en bas à droite : elle flotte au-dessus de
+  // la barre d'ajout (décision du 11 novembre 2026), ou seule en bas en
+  // lecture seule (pas de barre)
   const loupeDock = pc ? null : h('div', { class: 'list-dock' }, loupe.el);
 
   // Touche Entrée : le navigateur « clique » le bouton « + » (ajout ci-dessus,
@@ -821,13 +824,12 @@ export function renderList(listId, onLeave) {
     event.preventDefault();
     addTyped(input.value);
   });
-  // Téléphone : pendant qu'on écrit dans le champ d'ajout, la loupe se cache
-  // et la barre prend toute la largeur (on voit mieux ce qu'on tape) ; elle
-  // revient quand le champ n'a plus le curseur (décision du 11 novembre 2026)
+  // Téléphone : pendant qu'on écrit dans le champ d'ajout, la loupe (qui
+  // flotte au-dessus de la barre) se cache : les suggestions prennent sa
+  // place ; elle revient quand le champ n'a plus le curseur
   const setTyping = (typing) => {
     if (pc) return;
     loupeDock.hidden = typing;
-    addbar.classList.toggle('addbar--with-loupe', !typing);
   };
   input.addEventListener('input', drawSuggestions);
   input.addEventListener('focus', () => {
@@ -1890,10 +1892,10 @@ export function renderList(listId, onLeave) {
       addbar,
       content);
   }
-  // Téléphone : barre d'ajout en verre, flottante, et loupe ronde à sa
-  // droite (16.15) ; les articles passent dessous
+  // Téléphone : barre d'ajout en verre, flottante, toute la largeur, et la
+  // loupe ronde au-dessus, à droite (16.15) ; les articles passent dessous
   replace(statusbar, syncPill(() => refreshData({ full: true })), foldAll);
-  addbar.classList.add('addbar--glass', 'glass', 'addbar--with-loupe');
+  addbar.classList.add('addbar--glass', 'glass');
   content.classList.add('scroll--under-dock');
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },

@@ -470,6 +470,10 @@ Décisions du propriétaire du 11 novembre 2026, à partir d'aperçus faits sur 
 - Liste : `.addbar.addbar--glass.glass` (pilule flottante toute la largeur : champ sans cadre, scan, « + » ronds ; anneau `--color-accent` intérieur quand le champ a le curseur ; suggestions `.suggest` sur toute sa largeur) et `.list-dock.list-dock--high` (la loupe) qui flotte au-dessus, à droite (en bas, sans `--high`, en lecture seule), caché pendant qu'on écrit dans le champ d'ajout ; `.scroll--under-dock` garde la place en bas. La recherche ouverte prend la place de `.statusbar` ; la barre d'ajout se cache.
 - « Échéances » : groupes `h2.aisle` (« En retard », « Aujourd'hui », « Demain », « Cette semaine », « Plus tard », avec leur nombre) et lignes `.item` du kit : `.check` (ou `.check--static` en lecture seule), nom, pastilles `.chip--list` (icône et nom de la liste), priorité, échéance (`.chip--late` / `.chip--accent`, icône ET texte). Ordinateur : `a.pc-nav__item.pc-side__deadlines` dans le menu de gauche, avec `.news-badge` à plat.
 
+## Ajout : choix du type en pilule (11 novembre 2026)
+
+Décision du propriétaire : dans « Nouvelle liste » / « Modifier la liste », le choix Courses / Tâches / Envies prend l'allure du bandeau du bas. Styles : section 16.17 de `listo.css`. `.choice.choice--row.choice--pill` (`role="radiogroup"`, `data-count`, `data-current`) : pilule en surface (liseré, ombre légère, pas de verre dans une fenêtre) ; `.choice__pill` (fond `--color-accent-soft`) glisse sous le type choisi avec un petit rebond ; chaque `.choice__opt` (`role="radio"`, `aria-checked`) : icône au-dessus du nom ; le type choisi en `--color-accent-ink` gras sur le fond bleu clair ; la coche `.icon-end` n'est plus affichée.
+
 ## Ajout : boutons arrondis (11 novembre 2026)
 
 Décision du propriétaire, pour accorder les fenêtres et les formulaires au bandeau du bas. Styles : section 16.16 de `listo.css`, aucune variable ni couleur nouvelle ; téléphone et ordinateur.

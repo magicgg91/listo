@@ -202,7 +202,9 @@ function form(list, users) {
   // --- Nom ---
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
 
-  // --- Type (choix en cartes, même composant qu'avant, sur une seule ligne) ---
+  // --- Type : en pilule, comme le bandeau du bas (décision du 11 novembre
+  // 2026) : icône au-dessus du nom, fond bleu clair qui glisse vers le type
+  // choisi (choice--pill, section 16.17 du kit), sur une seule ligne ---
   // Nouvelle liste : Courses, Tâches ou Envies. Liste de courses ou de
   // tâches existante : les trois aussi (changer n'efface rien : la ligne sous
   // le choix le dit avant l'enregistrement, typeChangeWarning) ; devenir une
@@ -264,7 +266,8 @@ function form(list, users) {
       ]);
   // Compte destinataire choisi à la création ou à la conversion (sinon celui de la liste)
   const beneficiaryId = () => (wishesLocked ? list.forUserId ?? null : isWishList(listType) && typeof forChoice === 'number' ? forChoice : null);
-  const typeGroup = h('div', { class: 'choice choice--row', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning' }, typeButtons);
+  const typeGroup = h('div', { class: 'choice choice--row choice--pill', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning', 'data-count': String(offered.length) },
+    h('span', { class: 'choice__pill', 'aria-hidden': 'true' }), typeButtons);
 
   // --- Icône (un bouton à gauche du titre, puis une fenêtre avec la grille) ---
   // chosenIcon : icône choisie (« » : aucune, la liste montre celle de son
@@ -582,6 +585,8 @@ function form(list, users) {
       button.querySelector('.icon-end')?.remove();
       if (on) button.append(icon('check', 'icon-end'));
     }
+    // Fond bleu clair sous le type choisi (il glisse d'un type à l'autre)
+    typeGroup.dataset.current = String(Math.max(0, offered.indexOf(listType)));
     const shopping = isShoppingList(listType);
     if (!wishesLocked) {
       // Devenir une liste d'envies : définitif ; un lien public en cours sera arrêté

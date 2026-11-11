@@ -15,13 +15,11 @@
 
 ## En images
 
-| ![« Mes listes » : quatre listes, chacune avec son icône et le compteur des restants](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) |
-| :---: | :---: | :---: |
-| Mes listes | Courses classées par rayon | « Dans le panier » |
-| ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) |
-| Tâches : priorité, échéance | Envies : réservation, cotisation | Mode scan |
-| ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Connexions Claude » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
-| Lien public, sans compte | « Connexions Claude » | Réglages |
+| ![« Mes listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
+| :---: | :---: | :---: | :---: | :---: |
+| Mes listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
+| ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Connexions Claude » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
+| Envies, réservations | Mode scan | Lien public | « Connexions Claude » | Réglages |
 
 *Instance de démonstration, données inventées.*
 

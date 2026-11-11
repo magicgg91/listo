@@ -185,7 +185,11 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
   panel.setAttribute('role', role);
   panel.setAttribute('aria-modal', 'true');
   if (label) panel.setAttribute('aria-label', label);
-  scrim.addEventListener('click', () => close());
+  // Appui en dehors : comme Retour (sous-page d'une fiche : retour à la fiche), sinon fermeture
+  scrim.addEventListener('click', () => {
+    if (backHandler?.()) return;
+    close();
+  });
   target.append(scrim, panel);
   if (onLayer) {
     pcOpen++;

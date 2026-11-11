@@ -292,6 +292,12 @@ test('fiche d\'une tâche : lignes résumées, sous-pages, Retour et Échap revi
   assert.match(list, /h\('div', \{ class: 'due-shortcuts due-shortcuts--row' \}, shortcut\("Aujourd'hui", 0\), shortcut\('Demain', 1\), weekShortcut\)\)/);
   // Le focus va au titre de la sous-page (jamais un champ), et revient à la ligne
   assert.match(list, /entry\.heading\.focus\(\);/);
+  // Sous-page : une seule ligne (« ‹ » et le titre), en-tête et pied de la fiche cachés ; pas de hauteur forcée
+  assert.match(list, /:scope > \.sheet__head, :scope > \.pc-panel__head, :scope > \.pc-panel__foot'\) \?\? \[\]\) part\.hidden = !shown;/);
+  assert.match(read('public/js/ui.js'), /scrim\.addEventListener\('click', \(\) => \{\s*if \(backHandler\?\.\(\)\) return;\s*close\(\);/);
+  assert.match(list, /currentSub = entry;\s*showSheetActions\(false\);/);
+  assert.match(list, /form\.classList\.remove\('is-sub'\);\s*showSheetActions\(true\);/);
+  assert.doesNotMatch(list, /form\.style\.minHeight/);
   assert.match(list, /const heading = h\('h3', \{ class: 'subpage__title', tabindex: '-1' \}, title\);/);
   // Retour : la fenêtre gère d'abord le retour (ui.js), le routeur remet son entrée
   const ui = read('public/js/ui.js');

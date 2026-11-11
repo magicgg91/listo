@@ -1904,8 +1904,9 @@ export function renderList(listId, onLeave) {
     // Toucher une ligne ouvre sa sous-page DANS la fiche (« ‹ » et le titre
     // en haut) ; rien n'est enregistré en revenant : la disquette enregistre
     // tout, la croix abandonne tout. Échap et le geste Retour du téléphone
-    // ramènent d'abord à la fiche (setBack, ui.js). La fiche garde sa hauteur
-    // (rien ne saute). Aucun champ ne prend le curseur : le focus va au titre.
+    // ramènent d'abord à la fiche (setBack, ui.js). La fiche prend la hauteur
+    // de la sous-page (pas de grand vide : décision du propriétaire). Aucun
+    // champ ne prend le curseur : le focus va au titre.
     const tasks = classic && !wishes;
     const subpages = [];
     let currentSub = null;
@@ -1952,9 +1953,18 @@ export function renderList(listId, onLeave) {
       }
       subRows.hidden = subpages.every((entry) => entry.row.hidden);
     }
+    // Dans une sous-page : une seule ligne en haut, « ‹ » et son titre
+    // (décision du propriétaire) : l'en-tête de la fiche (titre, corbeille,
+    // disquette, croix) et, sur ordinateur, le pied du panneau sont cachés ;
+    // on enregistre depuis la fiche. Appui en dehors, Échap, Retour : retour
+    // à la fiche (setBack, ui.js).
+    const showSheetActions = (shown) => {
+      const panel = form.closest('.sheet, .pc-panel');
+      for (const part of panel?.querySelectorAll(':scope > .sheet__head, :scope > .pc-panel__head, :scope > .pc-panel__foot') ?? []) part.hidden = !shown;
+    };
     function enterSub(entry) {
-      if (!form.classList.contains('is-sub')) form.style.minHeight = `${form.offsetHeight}px`;
       currentSub = entry;
+      showSheetActions(false);
       form.classList.add('is-sub');
       for (const other of subpages) other.page.classList.toggle('is-current', other === entry);
       form.closest('.sheet, .pc-drawer')?.scrollTo?.(0, 0);
@@ -1965,7 +1975,7 @@ export function renderList(listId, onLeave) {
       const { row } = currentSub;
       currentSub = null;
       form.classList.remove('is-sub');
-      form.style.minHeight = '';
+      showSheetActions(true);
       for (const entry of subpages) entry.page.classList.remove('is-current');
       drawSummaries();
       if (row.isConnected && !row.hidden) row.focus();

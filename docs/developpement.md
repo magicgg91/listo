@@ -393,6 +393,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Tâche du jour, heure dans 20 minutes, rappel « 15 min avant » : la notification arrive sur les deux téléphones environ 5 minutes plus tard (« Rappel : une tâche aujourd'hui à … »). Une seule fois. Attribuée à B : seulement chez B.
     4. Quand l'heure passe, la pastille devient « En retard · … » sans recharger (en moins d'une minute), et la tâche monte dans « En retard » sur « Échéances ».
     5. Sur un serveur sans `LISTO_PUSH`, « Rappel » n'apparaît pas ; l'heure, oui.
+50. **Pas de zoom par double appui** (11 novembre 2026 ; vérifié dans Chromium : la règle s'applique aux boutons de la fiche, aux jours d'une répétition et aux coches ; le zoom lui-même ne peut pas être essayé dans Chromium) : sur iPhone et sur Android, toucher deux fois vite les jours d'une répétition (Lu, Ma…), une coche ou un bouton de la fiche : la page ne s'agrandit pas. Écarter deux doigts : la page s'agrandit toujours. Balayer une ligne vers la gauche : « Supprimer » apparaît toujours.
 
 ## API des comptes (étape 2)
 

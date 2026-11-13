@@ -44,8 +44,9 @@ Notée le 13 novembre 2026.
   ordinateur »). Cette idée revient sur ce point : à confirmer au moment
   de la construire.
 - **Points à décider le moment venu :**
-  - qui peut inviter : l'Admin seulement (nouveau compte), ou aussi le
-    propriétaire d'une liste (nouveau compte + partage de la liste) ;
+  - **décidé le 13 novembre 2026 : seul l'Admin peut inviter** (le
+    propriétaire d'une liste continue de partager avec les comptes
+    existants) ;
   - l'envoi des e-mails : par le serveur de messagerie du propriétaire
     (SMTP), activé par un paramètre du compose et désactivé par défaut,
     comme `LISTO_PUSH`. Le mot de passe SMTP dans `secrets/`, jamais dans
@@ -62,3 +63,17 @@ Notée le 13 novembre 2026.
   - le contenu du message : court, en français, sans détail sur les listes.
 - **Lien avec le SSO :** si la connexion unique arrive d'abord, l'invitation
   pourrait passer par le fournisseur d'identité. À regarder ensemble.
+- **Peut-être aussi : inscription avec validation par l'Admin.** Un lien
+  « Demander un compte » sur l'écran de connexion ; la personne donne son
+  nom et choisit son mot de passe ; le compte reste en attente, sans accès
+  à rien, jusqu'à ce que l'Admin l'accepte ou le refuse dans
+  l'Administration. Points à décider :
+  - activée par un paramètre du compose, désactivée par défaut : sans lui,
+    ni le lien ni la page n'existent (l'application est sur Internet) ;
+  - limites de débit et nombre maximal de demandes en attente, pour qu'un
+    robot ne remplisse pas la base ;
+  - comment l'Admin est prévenu (pastille dans l'Administration,
+    notification, e-mail si l'envoi existe) et comment la personne apprend
+    la réponse ;
+  - une demande refusée ou jamais traitée est supprimée après quelques
+    jours.

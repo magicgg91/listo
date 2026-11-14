@@ -4,6 +4,13 @@
 // - code à 6 chiffres de la double authentification, ou code de secours ;
 // - changement de mot de passe imposé par l'Admin (pas de maquette : mêmes
 //   composants que les autres écrans de connexion).
+//
+// Trousseau iCloud et gestionnaires de mots de passe : chaque champ a un id
+// et un name fixes (username, password, new-password, one-time-code), en plus
+// de autocomplete, et l'attribut required ; c'est ce qu'ils regardent pour
+// proposer d'enregistrer, de mettre à jour ou de remplir le mot de passe.
+// Les formulaires restent en novalidate : les messages sont ceux de Listo.
+// L'identifiant n'est jamais corrigé automatiquement (autocorrect="off").
 
 import { h, icon, iconButton, field, passwordInput, errorNote, replace } from '../dom.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
@@ -66,8 +73,8 @@ export function renderLogin({ setupNeeded }) {
 
 // Connexion : identifiant + mot de passe (connexion-1)
 function passwordStep(show, info = {}) {
-  const username = h('input', { class: 'input', type: 'text', autocomplete: 'username', autocapitalize: 'off', spellcheck: 'false', value: info.username ?? '' });
-  const password = passwordInput({ autocomplete: 'current-password' });
+  const username = h('input', { class: 'input', type: 'text', id: 'identifiant', name: 'username', autocomplete: 'username', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', required: true, value: info.username ?? '' });
+  const password = passwordInput({ id: 'mot-de-passe', name: 'password', autocomplete: 'current-password', required: true });
   const error = errorNote();
   if (info.message) error.show(info.message);
 
@@ -103,7 +110,7 @@ function codeStep(show, info) {
   const recovery = Boolean(info.recovery);
   const code = recovery
     ? h('input', { class: 'input input--mono', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' })
-    : h('input', { class: 'input input--code', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '7', placeholder: '······' });
+    : h('input', { class: 'input input--code', type: 'text', id: 'code', name: 'one-time-code', inputmode: 'numeric', autocomplete: 'one-time-code', required: true, maxlength: '7', placeholder: '······' });
   const codeField = field(recovery ? 'Code de secours' : 'Code à 6 chiffres', code,
     recovery ? { hint: "Chaque code ne fonctionne qu'une seule fois." } : {});
   const error = errorNote();
@@ -150,9 +157,9 @@ function codeStep(show, info) {
 
 // Création du premier Admin (connexion-4)
 function setupStep(show) {
-  const username = h('input', { class: 'input', type: 'text', autocomplete: 'username', autocapitalize: 'off', spellcheck: 'false' });
-  const password = passwordInput({ autocomplete: 'new-password' });
-  const confirmation = h('input', { class: 'input', type: 'password', autocomplete: 'new-password' });
+  const username = h('input', { class: 'input', type: 'text', id: 'identifiant', name: 'username', autocomplete: 'username', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', required: true });
+  const password = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
+  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true });
   const code = h('input', { class: 'input input--mono', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
   const usernameField = field('Identifiant', username, { hint: '2 à 50 caractères : lettres sans accent, chiffres, . _ -' });
   const passwordField = field('Mot de passe', password.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
@@ -198,9 +205,9 @@ function setupStep(show) {
 // --- Changement de mot de passe imposé par l'Admin ---
 
 export function renderForcedChange() {
-  const current = passwordInput({ autocomplete: 'current-password' });
-  const next = passwordInput({ autocomplete: 'new-password' });
-  const confirmation = h('input', { class: 'input', type: 'password', autocomplete: 'new-password', placeholder: 'Répétez le nouveau mot de passe' });
+  const current = passwordInput({ id: 'mot-de-passe-actuel', name: 'current-password', autocomplete: 'current-password', required: true });
+  const next = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
+  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: 'Répétez le nouveau mot de passe' });
   const currentField = field('Mot de passe provisoire', current.wrap, { hint: "Celui que l'Admin vous a donné." });
   const nextField = field('Nouveau mot de passe', next.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
   const confirmField = field('Confirmation', confirmation);

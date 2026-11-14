@@ -393,7 +393,17 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
         onAction?.();
       },
     }, action) : null);
-  host.append(el);
+  // Le message passe au-dessus des fenêtres ouvertes (fiche, choix, menu) :
+  // sinon il s'affichait dessous, invisible (« Choisissez au moins deux
+  // personnes. », « Copié »…). Sur ordinateur, avec une fenêtre ouverte, il
+  // va sur toute l'application (.app), hors de la partie rendue inerte
+  // (sinon son bouton « Annuler » ne répondrait pas).
+  const layer = onPc() && pcOpen ? pcLayer : host;
+  layer.append(el);
+  const above = [...layer.querySelectorAll(':scope > .scrim, :scope > [aria-modal]')]
+    .map((node) => parseInt(getComputedStyle(node).zIndex, 10) || 0);
+  if (above.length) el.style.zIndex = String(Math.max(...above) + 1);
+  if (layer === pcLayer && layer.querySelector(':scope > .pc-drawer')) el.classList.add('toast--beside');
   currentToast = el;
   setTimeout(() => el.remove(), duration ?? (action ? (onPc() ? 8000 : 6000) : 4000));
 }

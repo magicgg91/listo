@@ -166,10 +166,11 @@ html[data-keyboard] .public-foot { padding-bottom: 0; }
 button.sync { cursor: pointer; }
 
 /* Listes de cartes (Mes listes) */
-/* En bas : la place du bouton « Nouvelle liste » (56 px + sa marge + un peu
-   d'air), plus la zone de sécurité, pour que la dernière carte ne reste pas
-   cachée derrière le bouton */
-.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) calc(112px + env(safe-area-inset-bottom, 0px)); }
+/* Pas de marge en bas : la zone qui défile garde déjà la place du bandeau
+   du bas et de la loupe (règle .shell__col--tabs plus bas). L'ancienne
+   marge de 112 px (pour l'ancien bouton « Nouvelle liste » en bas)
+   s'ajoutait à celle-ci et laissait un grand vide sous la dernière carte. */
+.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; }
 
 /* Formulaires en pleine page (nouvelle liste, mot de passe…) */
 .form-body { display: flex; flex-direction: column; gap: var(--space-3); }

@@ -31,7 +31,7 @@ test('tout ce qui est collé en bas tient compte de la zone de sécurité', () =
   for (const selector of ['.addbar', '.footer', '.sheet', '.lightbox__cap', '.lightbox__foot', '.public-foot']) {
     assert.ok(rule(kit, selector).includes(INSET), selector);
   }
-  for (const selector of ['.toast', '.toast--low', '.cards', '.body:last-child, .body:has(+ .footer[hidden])']) {
+  for (const selector of ['.toast', '.toast--low', '.body:last-child, .body:has(+ .footer[hidden])', '.shell__col--tabs > .screen > .scroll, .shell__col--tabs > .screen > .body:last-child']) {
     assert.ok(rule(app, selector).includes(INSET), selector);
   }
 });

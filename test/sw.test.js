@@ -112,3 +112,52 @@ test('service worker : lecteur de codes-barres téléchargé au premier scan, da
   assert.match(worker, /\.\.\/vendor\/zxing-wasm-3\.1\.4\/es\/reader\/index\.js/);
   assert.match(worker, /\.\.\/vendor\/zxing-wasm-3\.1\.4\/reader\/zxing_reader\.wasm/);
 });
+
+// Fait tourner sw.js comme une version installée (BUILD connu) ou en
+// développement, avec une copie gardée et un faux réseau qui compte ses appels
+function workerWithCache(build) {
+  const listeners = {};
+  const stored = new Map([['/js/app.js', 'copie'], ['/index.html', 'page gardée']]);
+  const calls = [];
+  const fakeCache = {
+    match: async (key) => (stored.has(key) ? new Response(stored.get(key)) : undefined),
+    put: async (key, response) => { stored.set(key, await response.text()); },
+    keys: async () => [], delete: async () => true, addAll: async () => {},
+  };
+  const context = {
+    self: { addEventListener: (type, fn) => { listeners[type] = fn; }, location: { origin: 'https://listo.test' } },
+    caches: { open: async () => fakeCache, keys: async () => [], delete: async () => true },
+    fetch: async (request) => { calls.push(new URL(request.url).pathname); return new Response('réseau'); },
+    indexedDB: { open: () => ({}) },
+    URL, Request, Response, setTimeout, clearTimeout, Promise,
+  };
+  const code = build ? source.replace('const BUILD = null;', `const BUILD = '${build}';`) : source;
+  vm.runInNewContext(code, context);
+  const respond = (url, mode = 'cors') => new Promise((resolve) => {
+    listeners.fetch({
+      request: { url: `https://listo.test${url}`, mode, method: 'GET' },
+      respondWith: (promise) => resolve(Promise.resolve(promise).then((r) => r.text())),
+    });
+  });
+  return { respond, calls };
+}
+
+test('service worker (version installée) : fichiers et page de l\'application pris dans la copie gardée, sans attendre le réseau', async () => {
+  const { respond, calls } = workerWithCache('abc123');
+  assert.equal(await respond('/js/app.js'), 'copie');
+  assert.equal(await respond('/', 'navigate'), 'page gardée');
+  assert.deepEqual(calls, [], 'aucun appel réseau quand la copie existe');
+  // Fichier absent de la copie : le réseau, puis gardé
+  assert.equal(await respond('/js/ui.js'), 'réseau');
+  assert.equal(await respond('/js/ui.js'), 'réseau');
+  assert.deepEqual(calls, ['/js/ui.js'], 'un seul appel : la seconde fois, la copie');
+  // Autre page (autorisation de Claude…) : toujours le serveur d'abord
+  await respond('/oauth/authorize?x=1', 'navigate');
+  assert.ok(calls.includes('/oauth/authorize'));
+});
+
+test('service worker (développement) : réseau d\'abord, pour voir chaque fichier modifié', async () => {
+  const { respond, calls } = workerWithCache(null);
+  assert.equal(await respond('/js/app.js'), 'réseau');
+  assert.deepEqual(calls, ['/js/app.js']);
+});

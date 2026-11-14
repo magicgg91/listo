@@ -1,11 +1,20 @@
 // Service worker de Listo : l'application s'ouvre même sans réseau.
 //
 // Ce qu'il fait :
-// 1. Fichiers de l'application (pages, styles, scripts, icônes) : « réseau
-//    d'abord ». Avec du réseau, on prend toujours la dernière version (et on la
-//    garde de côté) ; sans réseau, ou si le réseau met plus de 3 secondes à
-//    répondre, on sert la copie gardée. Une nouvelle version de Listo est donc
-//    prise dès qu'il y a du réseau, sans rien bloquer.
+// 1. Fichiers de l'application (page, styles, scripts, icônes) :
+//    - version installée (BUILD connu, voir plus bas) : « copie gardée
+//      d'abord ». Ils ont tous été copiés à l'installation, pour cette
+//      version précise : Listo démarre sans attendre le réseau, même quand
+//      il est faible (en magasin). Avant, chaque fichier attendait la
+//      réponse du serveur (jusqu'à 3 secondes), et les scripts se chargent
+//      les uns après les autres : le démarrage pouvait prendre plusieurs
+//      secondes. Une nouvelle version arrive par un nouveau sw.js (copie
+//      neuve), puis js/freshness.js recharge la page au bon moment ;
+//    - développement (BUILD inconnu) : « réseau d'abord », pour voir tout de
+//      suite chaque fichier modifié ; sans réseau, ou si le réseau met plus
+//      de 3 secondes à répondre, la copie gardée.
+//    Les autres pages (autorisation de Claude…) passent toujours par le
+//    serveur d'abord.
 // 2. Photos des articles déjà vues (GET /api/items/<id>/photo?v=…) : gardées
 //    dans un cache à part, 150 photos au plus (les plus anciennes partent
 //    d'abord), vidé à la déconnexion par l'application.
@@ -42,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v104-${BUILD ?? 'dev'}`;
+const VERSION = `v105-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -174,11 +183,28 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, '/index.html'));
+    const appPage = url.pathname === '/' || url.pathname === '/index.html';
+    event.respondWith(appPage ? appFile(request, '/index.html') : networkFirst(request, '/index.html'));
     return;
   }
-  if (APP_FILES.includes(url.pathname)) event.respondWith(networkFirst(request, url.pathname));
+  if (APP_FILES.includes(url.pathname)) event.respondWith(appFile(request, url.pathname));
 });
+
+// Fichier de l'application : copie gardée d'abord pour une version installée,
+// réseau d'abord en développement (voir le point 1 en haut du fichier)
+function appFile(request, key) {
+  return BUILD ? cacheFirst(request, key) : networkFirst(request, key);
+}
+
+// Copie gardée d'abord ; sinon le réseau (et la copie est complétée)
+async function cacheFirst(request, key) {
+  const cache = await caches.open(APP_CACHE);
+  const cached = await cache.match(key);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok) await cache.put(key, response.clone());
+  return response;
+}
 
 // Réseau d'abord ; copie gardée si pas de réseau ou réseau trop lent
 async function networkFirst(request, key) {

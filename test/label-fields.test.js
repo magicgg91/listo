@@ -47,7 +47,12 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
 
 test('connexion, compte, mot de passe, double authentification : inchangés', () => {
   const login = read('screens/login.js');
-  assert.match(login, /autocomplete: 'username', autocapitalize: 'off', spellcheck: 'false', value: info\.username \?\? ''/);
+  assert.match(login, /id: 'identifiant', name: 'username', autocomplete: 'username', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', required: true, value: info\.username \?\? ''/);
+  // Trousseau iCloud : id et name fixes sur les champs de connexion
+  assert.match(login, /name: 'password', autocomplete: 'current-password'/);
+  assert.match(login, /name: 'new-password', autocomplete: 'new-password'/);
+  assert.match(login, /name: 'one-time-code', inputmode: 'numeric', autocomplete: 'one-time-code'/);
+  assert.match(read('screens/settings.js'), /name: 'current-password', autocomplete: 'current-password'/);
   assert.match(login, /autocomplete: 'new-password'/);
   assert.match(login, /autocomplete: 'one-time-code'/);
   const settings = read('screens/settings.js');

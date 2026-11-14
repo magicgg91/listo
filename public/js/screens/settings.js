@@ -330,9 +330,9 @@ function projectRow() {
 // --- Mot de passe (reglages-5) ---
 
 export function renderPassword() {
-  const current = passwordInput({ autocomplete: 'current-password' });
-  const next = passwordInput({ autocomplete: 'new-password' });
-  const confirmation = h('input', { class: 'input', type: 'password', autocomplete: 'new-password', placeholder: 'Répétez le nouveau mot de passe' });
+  const current = passwordInput({ id: 'mot-de-passe-actuel', name: 'current-password', autocomplete: 'current-password', required: true });
+  const next = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
+  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: 'Répétez le nouveau mot de passe' });
   const currentField = field('Mot de passe actuel', current.wrap);
   const nextField = field('Nouveau mot de passe', next.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
   const confirmField = field('Confirmation', confirmation);

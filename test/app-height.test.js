@@ -491,9 +491,10 @@ test('panne du script : rien ne casse (100dvh s\'applique)', () => {
   assert.doesNotThrow(() => vm.runInNewContext(script, { window: {}, document: {} }));
 });
 
-test('app.css : .app posée sur l\'écran, suit var(--app-top, 0px) et var(--app-h, 100dvh), marge de sécurité du haut', () => {
+test('app.css : .app posée sur l\'écran, suit var(--app-top, 0px) et var(--app-h, 100dvh), marges de sécurité du haut et des côtés (paysage)', () => {
   const css = read('css/app.css');
-  assert.match(css, /^\.app \{\n  position: fixed;\n  top: var\(--app-top, 0px\);\n  left: 0;\n  right: 0;\n  height: var\(--app-h, 100dvh\);\n  padding-top: env\(safe-area-inset-top, 0px\);\n  overflow: hidden;\n\}$/m);
+  const rule = css.match(/^\.app \{\n([\s\S]*?)\n\}$/m)?.[1].replace(/\s*\/\*[\s\S]*?\*\//g, '');
+  assert.equal(rule, '  position: fixed;\n  top: var(--app-top, 0px);\n  left: 0;\n  right: 0;\n  height: var(--app-h, 100dvh);\n  padding-top: env(safe-area-inset-top, 0px);\n  padding-left: env(safe-area-inset-left, 0px);\n  padding-right: env(safe-area-inset-right, 0px);\n  overflow: hidden;');
   assert.doesNotMatch(css, /^\.app \{ height: 100dvh/m);
   // Les fenêtres se placent par rapport à .app (aucune position fixe ailleurs)
   for (const file of ['css/app.css', 'css/listo.css']) {

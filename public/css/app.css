@@ -102,6 +102,11 @@ html, body { background: var(--color-bg); }
   right: 0;
   height: var(--app-h, 100dvh);
   padding-top: env(safe-area-inset-top, 0px);
+  /* Téléphone tenu à l'horizontale : l'encoche ou l'îlot dynamique est sur
+     un côté ; le contenu, les fiches et les messages restent à côté (0 en
+     portrait : rien ne change) */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
   overflow: hidden;
 }
 
@@ -172,6 +177,11 @@ button.sync { cursor: pointer; }
    s'ajoutait à celle-ci et laissait un grand vide sous la dernière carte. */
 .cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; }
 
+/* Note d'un article : le champ grandit avec le texte (field-sizing, iOS 26.2
+   et après ; avant, il garde sa hauteur et défile comme aujourd'hui), de
+   88 px (vide : rien ne change) à environ 10 lignes, puis il défile */
+.input--area { field-sizing: content; max-height: 260px; }
+
 /* Formulaires en pleine page (nouvelle liste, mot de passe…) */
 .form-body { display: flex; flex-direction: column; gap: var(--space-3); }
 .choice__opt { color: inherit; }
@@ -229,6 +239,10 @@ button.sync { cursor: pointer; }
 .toast--low { bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px)); }
 html[data-keyboard] .toast { bottom: 96px; }
 html[data-keyboard] .toast--low { bottom: var(--space-3); }
+/* Ordinateur, tiroir ouvert à droite (fiche, partage) : le message se pose
+   à sa gauche, sans cacher les boutons du bas du tiroir (classe posée par
+   toast() de ui.js) */
+.app--pc > .toast--beside { right: calc(520px + var(--pc-gutter)); }
 
 /* Ordinateur : le bouton Retour vers « Mes listes » est inutile (colonne de gauche) */
 @media (min-width: 1024px) {

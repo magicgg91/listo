@@ -199,6 +199,10 @@ export function oauthConsentRoutes(ctx) {
       request: oauth.describeRequest(request),
       account: { username: req.user.username, displayName: req.user.display_name },
       twoFactor: req.user.totp_enabled === 1,
+      // Session ouverte avec Authelia : confirmation par Authelia (pas de mot
+      // de passe Listo), et déjà faite ou non pour cette demande
+      confirmWith: req.sessionMethod === 'oidc' && ctx.oidc ? 'authelia' : 'password',
+      confirmed: req.sessionMethod === 'oidc' && ctx.oidc ? ctx.oidc.confirmed(request.id, req.user.id) : false,
       lists,
     });
   });
@@ -222,6 +226,22 @@ export function oauthConsentRoutes(ctx) {
       const mine = new Set(ctx.lists.myLists(user).map((list) => list.id));
       listIds = [...new Set(lists)];
       if (!listIds.every((id) => mine.has(id))) return res.status(400).json({ error: 'Liste introuvable.' });
+    }
+    // Session ouverte avec Authelia : la confirmation vient d'Authelia
+    // (reconnexion redemandée, voir oidc.js), à la place du mot de passe et
+    // du code ; elle ne sert qu'une fois
+    if (req.sessionMethod === 'oidc') {
+      if (!ctx.oidc?.confirmed(request.id, user.id, { consume: true })) {
+        return res.status(403).json({ error: 'Confirmez d\'abord avec Authelia.' });
+      }
+      const fresh = oauth.findRequest(request.id);
+      if (!fresh) return res.status(404).json({ error: EXPIRED });
+      try {
+        return res.json({ redirect: oauth.approve(fresh, user, { scope, allLists, listIds }, req.ip) });
+      } catch (error) {
+        if (!(error instanceof OAuthError)) throw error;
+        return res.status(error.status).json({ error: error.message });
+      }
     }
     if (typeof password !== 'string' || !password || password.length > PASSWORD_MAX) {
       return res.status(400).json({ error: 'Saisissez votre mot de passe.' });

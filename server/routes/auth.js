@@ -33,8 +33,9 @@ export function publicAuthRoutes(ctx) {
   // Faut-il afficher l'écran de création du premier Admin ?
   // oidc : le bouton « Se connecter avec … » (LISTO_OIDC=on seulement), son
   // nom seul ; rien d'autre sur la configuration n'est donné
+  // localLogin : identifiant et mot de passe proposés (LISTO_LOCAL_LOGIN)
   router.get('/setup', (req, res) => {
-    res.json({ needed: countUsers(db) === 0, oidc: ctx.oidc ? { name: ctx.config.oidcName } : null });
+    res.json({ needed: countUsers(db) === 0, oidc: ctx.oidc ? { name: ctx.config.oidcName } : null, localLogin: ctx.config.localLogin !== false });
   });
 
   // Création du premier Admin. Possible seulement tant qu'aucun compte
@@ -73,11 +74,15 @@ export function publicAuthRoutes(ctx) {
     ctx.setup.code = null; // le code de démarrage ne servira plus jamais
     audit('creation_admin', { utilisateur: username, ip: req.ip });
     startSession(ctx, res, created);
-    res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created), ctx.config) });
+    res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created), ctx.config, { method: 'password' }) });
   });
 
   // Connexion avec identifiant et mot de passe
   router.post('/login', async (req, res) => {
+    // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off)
+    if (ctx.config.localLogin === false) {
+      return res.status(403).json({ error: `La connexion par mot de passe est désactivée : utilisez « Se connecter avec ${ctx.config.oidcName} ».` });
+    }
     const { username, password } = req.body ?? {};
     if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
       return res.status(400).json({ error: 'Identifiant et mot de passe requis.' });
@@ -121,7 +126,7 @@ export function publicAuthRoutes(ctx) {
     limiter.reset(keys);
     startSession(ctx, res, user.id);
     audit('connexion_reussie', { ...who, ip: req.ip });
-    res.json({ user: publicUser(user, ctx.config) });
+    res.json({ user: publicUser(user, ctx.config, { method: 'password' }) });
   });
 
   // Saisie du code 2FA (ou d'un code de secours) après le mot de passe
@@ -146,9 +151,11 @@ export function publicAuthRoutes(ctx) {
 
     ctx.pending.finish(ctx, res, pending.key);
     limiter.reset(keys);
-    startSession(ctx, res, user.id);
-    audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-    res.json({ user: publicUser(user, ctx.config) });
+    // Même méthode que le début de la connexion (mot de passe, ou Authelia
+    // quand Authelia n'a pas fait la double authentification)
+    startSession(ctx, res, user.id, { method: pending.method });
+    audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa', ...(pending.method === 'oidc' ? { methode: 'authelia' } : {}) });
+    res.json({ user: publicUser(user, ctx.config, { method: pending.method }) });
   });
 
   return router;

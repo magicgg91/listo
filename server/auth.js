@@ -72,7 +72,9 @@ export function attemptKeys(req, username) {
 // Données d'un compte renvoyées au téléphone (jamais l'empreinte ni le secret)
 // config : pour dire au téléphone si le mode scan (recherche du nom d'un
 // produit) est activé sur ce serveur (LISTO_PRODUCT_LOOKUP)
-export function publicUser(user, config) {
+// session : { method } de la session de la requête ('password' ou 'oidc'),
+// quand elle est connue
+export function publicUser(user, config, { method = null } = {}) {
   return {
     id: user.id,
     username: user.username,
@@ -86,6 +88,11 @@ export function publicUser(user, config) {
     claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
     // Notifications push activées sur le serveur (LISTO_PUSH=on)
     push: config?.push === true,
+    // Comment cette session a été ouverte : 'oidc' (Authelia : mot de passe
+    // et double authentification gérés par Authelia) ou 'password'
+    loginMethod: method,
+    // Connexion par mot de passe possible sur ce serveur (LISTO_LOCAL_LOGIN)
+    localLogin: config?.localLogin !== false,
   };
 }
 
@@ -97,12 +104,13 @@ function cookieOptions(ctx, maxAge) {
 }
 
 // Ouvre une session pour un compte et envoie le cookie au navigateur
-export function startSession(ctx, res, userId) {
+// method : 'password' (identifiant et mot de passe) ou 'oidc' (Authelia)
+export function startSession(ctx, res, userId, { method = 'password' } = {}) {
   const token = newToken();
   const now = ctx.now();
   const maxAge = ctx.config.sessionDays * DAY;
-  ctx.db.prepare('INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)')
-    .run(hashToken(token), userId, new Date(now + maxAge).toISOString(), new Date(now).toISOString());
+  ctx.db.prepare('INSERT INTO sessions (id, user_id, expires_at, created_at, method) VALUES (?, ?, ?, ?, ?)')
+    .run(hashToken(token), userId, new Date(now + maxAge).toISOString(), new Date(now).toISOString(), method);
   res.cookie(cookieNames(ctx.config).session, token, cookieOptions(ctx, maxAge));
 }
 
@@ -135,10 +143,11 @@ export function purgeExpiredSessions(ctx) {
 // écrire dans la base à chaque requête).
 export function loadSession(ctx) {
   const findSession = ctx.db.prepare(`
-    SELECT sessions.id AS session_id, sessions.expires_at, users.*
+    SELECT sessions.id AS session_id, sessions.expires_at, sessions.method AS session_method, users.*
     FROM sessions JOIN users ON users.id = sessions.user_id
     WHERE sessions.id = ? AND sessions.expires_at > ? AND users.active = 1
   `);
+  const drop = ctx.db.prepare('DELETE FROM sessions WHERE id = ?');
   const extend = ctx.db.prepare('UPDATE sessions SET expires_at = ? WHERE id = ?');
 
   return (req, res, next) => {
@@ -150,6 +159,12 @@ export function loadSession(ctx) {
     const now = ctx.now();
     const row = findSession.get(hashToken(token), new Date(now).toISOString());
     if (!row) return next();
+    // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : une session
+    // ouverte par mot de passe est fermée ; il faut passer par Authelia
+    if (ctx.config.localLogin === false && row.session_method !== 'oidc') {
+      drop.run(row.session_id);
+      return next();
+    }
 
     const maxAge = ctx.config.sessionDays * DAY;
     if (Date.parse(row.expires_at) - now < maxAge - DAY) {
@@ -157,6 +172,7 @@ export function loadSession(ctx) {
       res.cookie(cookieNames(ctx.config).session, token, cookieOptions(ctx, maxAge));
     }
     req.sessionId = row.session_id;
+    req.sessionMethod = row.session_method;
     req.user = row;
     next();
   };
@@ -232,9 +248,9 @@ export function createPendingLogins(now, config) {
 
   return {
     // Crée une connexion en attente et envoie son cookie
-    start(ctx, res, userId) {
+    start(ctx, res, userId, { method = 'password' } = {}) {
       const token = newToken();
-      pending.set(hashToken(token), { userId, expiresAt: now() + PENDING_MS });
+      pending.set(hashToken(token), { userId, method, expiresAt: now() + PENDING_MS });
       res.cookie(name, token, { ...options, maxAge: PENDING_MS });
     },
 
@@ -248,7 +264,7 @@ export function createPendingLogins(now, config) {
         pending.delete(key);
         return null;
       }
-      return { key, userId: entry.userId };
+      return { key, userId: entry.userId, method: entry.method };
     },
 
     // Termine une connexion en attente (code accepté)

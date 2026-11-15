@@ -63,6 +63,9 @@ services:
       # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
       # - LISTO_OIDC_CLIENT_ID=listo
       # - LISTO_OIDC_NAME=Authelia
+      # Connexion par mot de passe : activée par défaut ; « off » = Authelia
+      # seulement (exige LISTO_OIDC=on ; sessions par mot de passe fermées)
+      # - LISTO_LOCAL_LOGIN=off
     ports:
       - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:

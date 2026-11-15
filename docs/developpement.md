@@ -429,6 +429,10 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Un compte Authelia sans compte Listo : « Votre demande de compte est envoyée à l'Admin » ; l'Admin voit la pastille dans Réglages, la demande dans Administration › Comptes, « Accepter » ; la personne se reconnecte avec Authelia et entre.
     4. Sur l'iPhone installé (écran d'accueil) : le retour d'Authelia revient bien dans Listo installé (et non dans Safari) ; sinon, le noter.
     5. Couper Authelia : « Authelia ne répond pas » ; le mot de passe Listo marche toujours.
+58. **Session Authelia, connexion locale coupée, Claude** (15 novembre 2026 ; vérifié dans Chromium avec un faux Authelia et par des tests automatiques ; le vrai Authelia reste à essayer) :
+    1. Connecté avec Authelia : « Mon compte » montre « Connecté avec Authelia », sans « Mot de passe » ni « Double authentification ». Connecté par mot de passe : comme avant.
+    2. Avec `LISTO_LOCAL_LOGIN=off` (après `docker compose up -d`) : un appareil connecté par mot de passe revient sur l'écran de connexion ; l'écran ne montre que « Se connecter avec Authelia » ; dans Administration, « Ajouter un compte » ne demande pas de mot de passe.
+    3. Claude (LISTO_MCP=on), connecté avec Authelia : l'écran « Autoriser Claude » propose « Confirmer avec Authelia » ; Authelia redemande la connexion, puis l'écran revient avec les choix d'accès et de listes, sans mot de passe. Si Authelia ne redemande pas la connexion, l'écran dit que la confirmation n'a pas abouti : le noter.
 
 ## API des comptes (étape 2)
 

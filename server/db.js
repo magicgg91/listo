@@ -608,6 +608,15 @@ export const MIGRATIONS = [
     refused_at   TEXT
   );
   `,
+
+  // --- Migration 30 : comment chaque session a été ouverte (15 novembre 2026) ---
+  // method : 'password' (identifiant et mot de passe Listo ; toutes les
+  // sessions d'avant) ou 'oidc' (connexion avec Authelia). Une session
+  // Authelia ne change ni le mot de passe ni la double authentification de
+  // Listo ; avec LISTO_LOCAL_LOGIN=off, les sessions 'password' sont refusées.
+  `
+  ALTER TABLE sessions ADD COLUMN method TEXT NOT NULL DEFAULT 'password' CHECK (method IN ('password', 'oidc'));
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

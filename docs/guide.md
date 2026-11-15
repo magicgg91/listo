@@ -341,6 +341,8 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
       # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
       # - LISTO_OIDC_CLIENT_ID=listo
       # - LISTO_OIDC_NAME=Authelia
+      # Connexion par mot de passe : activée par défaut ; off = Authelia seulement
+      # - LISTO_LOCAL_LOGIN=off
 ```
 
 | Variable | Valeur de production | Rôle |
@@ -362,6 +364,7 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_OIDC_ISSUER` | absente | Adresse d'Authelia, en `https://` (par exemple `https://auth.exemple.fr`). |
 | `LISTO_OIDC_CLIENT_ID` | absente : `listo` | Identifiant de Listo dans la configuration d'Authelia (`client_id`). |
 | `LISTO_OIDC_NAME` | absente : `Authelia` | Nom du bouton « Se connecter avec … » (30 caractères au plus). |
+| `LISTO_LOCAL_LOGIN` | absente : activée | `off` coupe la connexion par identifiant et mot de passe : on n'entre plus que par Authelia (exige `LISTO_OIDC=on`), et les sessions ouvertes par mot de passe sont fermées ([3.10 Connexion avec Authelia (facultative)](#authelia-serveur)). |
 
 <a id="proxy"></a>
 
@@ -498,6 +501,8 @@ Avec `authorization_policy: 'two_factor'`, Authelia demande sa double authentifi
 
 Le serveur Listo doit joindre Authelia à son adresse publique (`LISTO_OIDC_ISSUER`), en HTTPS. Les adresses `/oidc/connexion` et `/oidc/retour` passent par le même hôte que Listo : rien à régler dans le proxy.
 
+Pour n'entrer QUE par Authelia, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les réglages (variables)](#variables)) : l'écran de connexion ne montre plus que « Se connecter avec Authelia », la connexion par mot de passe est refusée et les sessions ouvertes par mot de passe sont fermées ; dans l'Administration, « Ajouter un compte » ne demande plus de mot de passe (la personne entre avec Authelia, même identifiant). Si Authelia est en panne, plus personne n'entre : retirez la ligne (ou mettez `on`), puis `docker compose up -d`, pour retrouver la connexion par mot de passe.
+
 > **Attention** : Le compte Authelia ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez les comptes Authelia avec les identifiants de Listo. À la première connexion, Listo retient ce compte Authelia : un autre compte Authelia du même nom, plus tard, est refusé (l'Admin peut « Délier d'Authelia » un compte, dans Administration › Comptes).
 
 <a id="comptes"></a>
@@ -595,6 +600,8 @@ Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en chois
 ### 4.9 Se connecter avec Authelia
 
 Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec Authelia ». Touchez-le, connectez-vous chez Authelia : vous revenez dans Listo, connecté. Votre compte Authelia ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion avec Authelia.
+
+Connecté avec Authelia, « Mon compte » le dit (« Connecté avec Authelia ») : votre mot de passe et votre double authentification se changent dans Authelia, pas dans Listo. Autoriser Claude se confirme alors aussi avec Authelia ([8.7 Connecter Claude](#claude-connecter)).
 
 Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous avec Authelia. Une demande refusée ne peut pas être refaite avant 30 jours.
 
@@ -1161,6 +1168,8 @@ Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui 
 1. Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.
 2. Dans Claude (claude.ai, l'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.
 3. Claude ouvre l'écran « Autoriser Claude » de Listo. Vérifiez que c'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
+
+Connecté avec Authelia ([4.9 Se connecter avec Authelia](#authelia)) : pas de mot de passe à cette étape. L'écran demande d'abord « Confirmer avec Authelia » : Authelia vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».
 
 Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.
 

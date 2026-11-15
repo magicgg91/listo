@@ -62,6 +62,11 @@ export function loadConfig(env = process.env) {
     // adresses (/oidc/…) répondent comme une adresse inexistante (404) et
     // l'écran de connexion ne montre pas de bouton.
     oidc: String(env.LISTO_OIDC ?? '').trim().toLowerCase() === 'on',
+    // Connexion par identifiant et mot de passe Listo. Activée par défaut ;
+    // LISTO_LOCAL_LOGIN=off la coupe (avec LISTO_OIDC=on seulement) : on
+    // n'entre plus que par Authelia, et les sessions ouvertes par mot de
+    // passe sont fermées.
+    localLogin: String(env.LISTO_LOCAL_LOGIN ?? '').trim().toLowerCase() !== 'off',
     // Adresse d'Authelia (son « issuer »), par exemple https://auth.exemple.fr
     oidcIssuer: String(env.LISTO_OIDC_ISSUER ?? '').trim(),
     // Identifiant de Listo chez Authelia (client_id), « listo » par défaut
@@ -118,6 +123,9 @@ export function configProblem(config) {
   }
   if (config.production && url.protocol !== 'https:') {
     return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
+  }
+  if (config.localLogin === false && !config.oidc) {
+    return 'LISTO_LOCAL_LOGIN=off coupe la connexion par mot de passe : il faut alors LISTO_OIDC=on (connexion avec Authelia), sinon personne ne peut entrer.';
   }
   if (config.oidc) {
     let issuer;

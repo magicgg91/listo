@@ -102,7 +102,41 @@ export function renderClaudeConsent(id) {
   return container;
 }
 
-function consentForm(id, { request, account, twoFactor, lists }) {
+// Session ouverte avec Authelia, pas encore reconfirmée : Authelia doit
+// redemander la connexion avant tout choix (le retour recharge la page :
+// les choix faits avant seraient perdus). « Refuser » reste possible.
+function confirmFirst(id, request, failed) {
+  const error = errorNote();
+  if (failed) error.show('Authelia n\'a pas redemandé la connexion : la confirmation n\'a pas abouti. Réessayez.');
+  const deny = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, 'Refuser');
+  deny.addEventListener('click', async () => {
+    deny.disabled = true;
+    try {
+      const { redirect } = await post(`/api/oauth/demandes/${enc(id)}/refus`);
+      location.assign(redirect);
+    } catch (err) {
+      deny.disabled = false;
+      error.show(errorMessage(err));
+    }
+  });
+  return h('div', { class: 'screen' },
+    topbar(),
+    h('div', { class: 'body' }, h('div', { class: 'form-body' },
+      h('p', {}, 'Claude demande l\'accès à vos listes Listo. Il agira avec votre compte et vos droits, jamais plus.'),
+      h('div', { class: 'note' }, icon('alert'), h('p', {}, 'Ne continuez que si vous venez de lancer la connexion depuis Claude.')),
+      h('div', { class: 'card card--clip' }, row({ iconName: 'shield', title: request.app.host, sub: request.app.name ? `« ${request.app.name} »` : 'Application qui demande l\'accès' })),
+      h('p', {}, 'Vous êtes connecté avec Authelia : confirmez d\'abord votre identité. Authelia vous redemandera de vous connecter, puis vous reviendrez ici pour choisir l\'accès et les listes.'),
+      error.note)),
+    h('div', { class: 'footer' },
+      h('a', { class: 'btn btn--primary btn--block', href: `/oidc/connexion?confirmer=${enc(id)}` }, icon('shield'), 'Confirmer avec Authelia'),
+      deny));
+}
+
+function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'password', confirmed = false }) {
+  const viaAuthelia = confirmWith === 'authelia';
+  // Retour d'Authelia : #/autoriser/<demande>?authelia=confirme ou non-confirme
+  const back = new URLSearchParams(String(location.hash).split('?')[1] ?? '').get('authelia');
+  if (viaAuthelia && !confirmed) return confirmFirst(id, request, back === 'non-confirme');
   let scope = 'read';          // « Lecture seule » présélectionnée
   let allLists = true;         // « Toutes mes listes » par défaut
   const chosen = new Set();
@@ -151,10 +185,11 @@ function consentForm(id, { request, account, twoFactor, lists }) {
     }),
     picker);
 
-  // Mot de passe (et code 2FA), redemandés à chaque nouvelle autorisation
+  // Mot de passe (et code 2FA), redemandés à chaque nouvelle autorisation ;
+  // pas avec Authelia (déjà reconfirmé chez Authelia, voir confirmFirst)
   const password = passwordInput({ autocomplete: 'current-password' });
   const passwordField = field('Mot de passe', password.wrap);
-  const code = twoFactor ? h('input', { class: 'input input--mono', type: 'text', autocomplete: 'one-time-code', autocapitalize: 'characters', spellcheck: 'false' }) : null;
+  const code = twoFactor && !viaAuthelia ? h('input', { class: 'input input--mono', type: 'text', autocomplete: 'one-time-code', autocapitalize: 'characters', spellcheck: 'false' }) : null;
   const codeField = code ? field('Code', code, { hint: "Code à 6 chiffres de l'application, ou l'un de vos codes de secours." }) : null;
   const error = errorNote();
 
@@ -175,8 +210,9 @@ function consentForm(id, { request, account, twoFactor, lists }) {
         h('p', {}, 'La réponse ira à une application installée sur cet ordinateur (par exemple Claude Code), pas à claude.ai. Refusez si vous ne l\'avez pas lancée vous-même.')) : null,
       scopeField,
       listsField,
-      h('p', { class: 'muted' }, 'Confirmez avec votre mot de passe.'),
-      passwordField.field,
+      viaAuthelia
+        ? h('div', { class: 'note' }, icon('check'), h('p', {}, 'Identité confirmée avec Authelia (valable 5 minutes).'))
+        : [h('p', { class: 'muted' }, 'Confirmez avec votre mot de passe.'), passwordField.field],
       codeField?.field ?? null,
       error.note)),
     // Juste au-dessus d'« Autoriser », toujours visible (barre du bas)
@@ -192,12 +228,12 @@ function consentForm(id, { request, account, twoFactor, lists }) {
     passwordField.setError(null);
     codeField?.setError(null);
     if (!allLists && !chosen.size) return error.show('Choisissez au moins une liste.');
-    if (!password.input.value) return passwordField.setError('Saisissez votre mot de passe');
+    if (!viaAuthelia && !password.input.value) return passwordField.setError('Saisissez votre mot de passe');
     if (code && !code.value.trim()) return codeField.setError('Saisissez un code');
     busy(true);
     try {
       const { redirect } = await post(`/api/oauth/demandes/${enc(id)}/accord`, {
-        password: password.input.value,
+        password: viaAuthelia ? undefined : password.input.value,
         code: code ? code.value.trim() : undefined,
         scope,
         lists: allLists ? 'all' : [...chosen],

@@ -3,6 +3,7 @@
 //
 // Lancement : npm start (ou « node server/index.js »)
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, configProblem } from './config.js';
 import { openDatabase, schemaVersion } from './db.js';
@@ -55,6 +56,24 @@ try {
   process.exit(1);
 }
 
+// 2 ter. Connexion avec Authelia (LISTO_OIDC=on seulement) : la clé secrète
+//    du client est lue dans secrets/oidc-client-secret (jamais dans une
+//    variable). Absente ou vide : Listo ne démarre pas, avec un message clair.
+//    Jamais la clé elle-même dans les journaux.
+let oidcClientSecret = '';
+if (config.oidc) {
+  try {
+    oidcClientSecret = fs.readFileSync(config.oidcSecretPath, 'utf8').trim();
+  } catch {
+    oidcClientSecret = '';
+  }
+  if (!oidcClientSecret) {
+    console.error(`Listo ne démarre pas : LISTO_OIDC=on demande la clé secrète du client dans ${config.oidcSecretPath} (une seule ligne, la même que dans la configuration d'Authelia).`);
+    process.exit(1);
+  }
+  console.log(`Connexion avec ${config.oidcName} activée : ${config.oidcIssuer}`);
+}
+
 // 3. Tant qu'aucun compte n'existe : code de démarrage à usage unique, à
 //    saisir pour créer le compte Admin. Il n'est affiché qu'ici, dans les
 //    journaux du conteneur (docker logs listo). Un nouveau code est tiré à
@@ -80,7 +99,7 @@ const journalFile = createJournalFile({ path: journalPath });
 console.log(`Journal de sécurité : ${journalPath}`);
 
 // 5. Serveur web
-const app = createApp({ db, config, masterKey: key, setupCode, journalFile, vapidKeys });
+const app = createApp({ db, config, masterKey: key, setupCode, journalFile, vapidKeys, oidcClientSecret });
 const { ctx } = app.locals;
 const server = app.listen(config.port, () => {
   console.log(`Listo est démarré sur le port ${server.address().port}`);

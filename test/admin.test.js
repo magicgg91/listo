@@ -138,7 +138,7 @@ test('créer un compte : validations, mot de passe à changer à la première co
   assert.deepEqual(
     { ...res.body.user, id: 0, createdAt: '' },
     { id: 0, username: 'bob', displayName: 'Bob Martin', role: 'user', active: true, totpEnabled: false,
-      mustChangePassword: true, createdAt: '', inUse: false },
+      mustChangePassword: true, createdAt: '', inUse: false, authelia: false },
   );
   assert.ok(!res.text.includes('scrypt'), "l'empreinte du mot de passe n'est jamais renvoyée");
 

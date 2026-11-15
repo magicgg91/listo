@@ -22,8 +22,13 @@ export function meRoutes(ctx) {
   const { db, limiter, audit } = ctx;
   const reloadUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 
+  // accountRequests (Admin, connexion avec Authelia) : nombre de demandes de
+  // compte en attente, pour la pastille de Réglages › Administration
+  const pendingRequests = ctx.db.prepare("SELECT COUNT(*) FROM account_requests WHERE status = 'pending'").pluck();
   router.get('/me', (req, res) => {
-    res.json({ user: publicUser(req.user, ctx.config) });
+    const user = publicUser(req.user, ctx.config);
+    if (ctx.oidc && req.user.role === 'admin') user.accountRequests = pendingRequests.get();
+    res.json({ user });
   });
 
   // Changement de mot de passe. Toutes les sessions du compte sont fermées

@@ -154,21 +154,35 @@ function roleSwitch(role, onChange, { disabled = false } = {}) {
 const userSub = (user) => [
   user.role === 'admin' ? 'Admin' : 'Utilisateur',
   user.active ? (user.totpEnabled ? '2FA activé' : '2FA désactivé') : 'compte désactivé',
-].join(' · ');
+  user.authelia ? 'Authelia' : null,
+].filter(Boolean).join(' · ');
 
 async function loadUsers(panel, footer, alive) {
   replace(panel, loadingText());
   const reload = () => loadUsers(panel, footer, alive);
   let users;
+  let accountRequests = [];
   try {
-    ({ users } = await get('/api/admin/users'));
+    ({ users, accountRequests = [] } = await get('/api/admin/users'));
   } catch (err) {
     if (alive()) replace(panel, errorBlock(err, reload));
     return;
   }
   if (!alive()) return;
+  // Pastille de Réglages › Administration : le nombre à jour
+  if (app.user) app.user.accountRequests = accountRequests.length;
   users.sort((a, b) => compareNames(a.displayName, b.displayName));
-  replace(panel, h('div', { class: 'group' }, users.map((user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
+  // Demandes de compte (connexion avec Authelia) : en premier, quand il y en a
+  const requests = accountRequests.length
+    ? [h('p', { class: 'section-title' }, accountRequests.length === 1 ? 'Demande de compte' : 'Demandes de compte'),
+      h('div', { class: 'group' }, accountRequests.map((request) => h('div', { class: 'row' },
+        avatar(request.displayName),
+        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, request.displayName), h('span', { class: 'row__sub' }, `${request.username} · par Authelia`)),
+        h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => refuseRequest(request, reload) }, 'Refuser'),
+        h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, 'Accepter')))),
+      h('p', { class: 'section-title' }, 'Comptes')]
+    : [];
+  replace(panel, ...requests, h('div', { class: 'group' }, users.map((user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
     avatar(user.displayName, { second: i > 0 }),
     h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
     user.active ? null : h('span', { class: 'chip' }, 'Désactivé'),
@@ -229,6 +243,19 @@ function openUserSheet(user, reload) {
     }
   }
 
+  // Relié à Authelia : le délier (un compte Authelia recréé avec le même
+  // identifiant pourra de nouveau l'ouvrir)
+  if (user.authelia) {
+    actions.push(h('button', {
+      class: 'row row--menu',
+      type: 'button',
+      onClick: async () => {
+        const ok = await confirmDialog({ title: 'Délier d\'Authelia ?', text: `Le prochain compte Authelia nommé « ${user.username} » pourra ouvrir le compte de ${user.displayName}.`, confirmLabel: 'Délier' });
+        if (ok) run(() => del(`/api/admin/users/${user.id}/authelia`), 'Compte délié d\'Authelia');
+      },
+    }, icon('link-off'), h('span', { class: 'row__title' }, 'Délier d\'Authelia')));
+  }
+
   const sheet = openSheet({
     title: user.displayName,
     sub: userSub(user),
@@ -267,6 +294,57 @@ function openResetSheet(user, reload) {
       submit.disabled = false;
     }
   });
+}
+
+// Demande de compte (connexion avec Authelia) : accepter, avec
+// l'identifiant et le nom proposés, que l'Admin peut corriger ; le compte
+// est relié à ce compte Authelia (pas de mot de passe Listo)
+function openAcceptSheet(request, reload) {
+  const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: request.username });
+  const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100', value: request.displayName });
+  let role = 'user';
+  const usernameField = field('Identifiant', username, { hint: '2 à 50 caractères : lettres sans accent, chiffres, . _ -' });
+  const nameField = field('Nom affiché', displayName);
+  const error = errorNote();
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
+  const form = h('form', { class: 'stack', novalidate: true },
+    h('p', { class: 'muted' }, 'La personne se connectera avec Authelia ; elle n\'a pas de mot de passe Listo.'),
+    usernameField.field, nameField.field,
+    h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
+    error.note, submit);
+  const sheet = openSheet({ title: 'Accepter la demande', sub: request.displayName, content: form });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    error.show('');
+    usernameField.setError(null);
+    nameField.setError(null);
+    if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError('Identifiant invalide');
+    if (!displayName.value.trim()) return nameField.setError('Nom affiché obligatoire');
+    submit.disabled = true;
+    try {
+      await post(`/api/admin/account-requests/${request.id}/accept`, { username: username.value.trim(), displayName: displayName.value.trim(), role });
+      sheet.close();
+      toast('Compte créé', { low: true });
+      reload();
+    } catch (err) {
+      error.show(errorMessage(err));
+      submit.disabled = false;
+    }
+    return undefined;
+  });
+}
+
+// Demande de compte refusée (gardée 30 jours : une nouvelle connexion ne la refait pas)
+async function refuseRequest(request, reload) {
+  const ok = await confirmDialog({ title: 'Refuser la demande ?', text: `${request.displayName} (${request.username}) ne pourra pas entrer dans Listo. Une nouvelle demande sera possible dans 30 jours.`, confirmLabel: 'Refuser' });
+  if (!ok) return;
+  try {
+    await post(`/api/admin/account-requests/${request.id}/refuse`);
+    toast('Demande refusée', { low: true });
+    reload();
+  } catch (err) {
+    toast(errorMessage(err));
+  }
 }
 
 // Nouveau compte (administration-3)

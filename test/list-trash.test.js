@@ -242,7 +242,9 @@ test('synchronisation : un téléphone resté ouvert (temps réel) et un télép
   const reference = toSnapshot(open, 'x');
   const stream = rawStream(t, h, h.marie);
   await stream.ready;
-  h.app.clock.now = Date.now() + 1000;
+  // Une seconde plus tard sur l'horloge du test (jamais la date réelle : les
+  // sessions du test, ouvertes le 16 octobre 2026, expireraient)
+  h.app.clock.now += 1000;
   await h.remove(h.guillaume, h.ids.maison);
   await pause(80);
   assert.match(stream.raw, new RegExp(`"listId":"${h.ids.maison}"`), 'suppression signalée');

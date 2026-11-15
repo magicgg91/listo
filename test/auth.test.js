@@ -46,7 +46,7 @@ async function withUser(t) {
 test('/api/setup est refusé sans le bon code de démarrage', async (t) => {
   const app = await startTestApp(t);
   const client = app.client();
-  assert.deepEqual((await client.get('/api/setup')).body, { needed: true });
+  assert.deepEqual((await client.get('/api/setup')).body, { needed: true, oidc: null });
 
   for (const code of [undefined, '', 'AAAA-BBBB-CCCC']) {
     const res = await client.post('/api/setup', { code, username: 'pirate', password: 'MotDePassePirate' });
@@ -68,7 +68,7 @@ test('/api/setup est refusé dès qu\'un compte existe (même avec le bon code)'
   const app = await startTestApp(t);
   await setupAdmin(app);
   const client = app.client();
-  assert.deepEqual((await client.get('/api/setup')).body, { needed: false });
+  assert.deepEqual((await client.get('/api/setup')).body, { needed: false, oidc: null });
   const res = await client.post('/api/setup', { code: SETUP_CODE, username: 'pirate', password: 'MotDePassePirate' });
   assert.equal(res.status, 403);
   assert.equal(app.db.prepare('SELECT COUNT(*) FROM users').pluck().get(), 1);

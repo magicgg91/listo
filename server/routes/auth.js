@@ -31,8 +31,10 @@ export function publicAuthRoutes(ctx) {
   getDummyHash();
 
   // Faut-il afficher l'écran de création du premier Admin ?
+  // oidc : le bouton « Se connecter avec … » (LISTO_OIDC=on seulement), son
+  // nom seul ; rien d'autre sur la configuration n'est donné
   router.get('/setup', (req, res) => {
-    res.json({ needed: countUsers(db) === 0 });
+    res.json({ needed: countUsers(db) === 0, oidc: ctx.oidc ? { name: ctx.config.oidcName } : null });
   });
 
   // Création du premier Admin. Possible seulement tant qu'aucun compte

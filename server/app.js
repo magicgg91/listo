@@ -33,6 +33,7 @@ import { productRoutes } from './routes/products.js';
 import { referenceRoutes } from './routes/references.js';
 import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
+import { createOidc, fetchOidc } from './oidc.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
@@ -114,6 +115,9 @@ export const PERMISSIONS_POLICY = [
 //   temporaire (tests)
 // - pushRequest : envoi vers un service de push (notifications ; les tests
 //   la remplacent : aucun vrai réseau)
+// - oidcRequest : appels vers Authelia (connexion OIDC ; les tests la
+//   remplacent : aucun vrai réseau) ; oidcClientSecret : clé secrète du
+//   client (secrets/oidc-client-secret, lue par index.js), LISTO_OIDC=on seulement
 export function createApp({
   db,
   config = loadConfig({}),
@@ -130,6 +134,8 @@ export function createApp({
   clientMetadataRequest = fetchClientMetadata,
   vapidKeys = null,
   pushRequest = fetchPush,
+  oidcRequest = fetchOidc,
+  oidcClientSecret = '',
 }) {
   // « ctx » regroupe tout ce dont les routes ont besoin
   const ctx = {
@@ -170,6 +176,9 @@ export function createApp({
   ctx.pushCounters = [];
   // Qui reçoit quoi (modifications, envies, partage ; voir notify.js)
   ctx.notify = ctx.push ? createNotifier(ctx) : null;
+  // Connexion avec Authelia (voir oidc.js) : seulement avec LISTO_OIDC=on.
+  // Coupée : aucun service, aucune demande sortante, ses adresses en 404.
+  ctx.oidc = config.oidc ? createOidc(ctx, { request: oidcRequest, clientSecret: oidcClientSecret }) : null;
   // Identifiant opaque de la version installée (null en développement) : le
   // téléphone le compare à celui de son code pour savoir s'il doit recharger
   // la page (voir public/js/freshness.js). Jamais le commit lui-même.
@@ -232,6 +241,10 @@ export function createApp({
   // /mcp : serveur MCP en lecture seule (jeton Bearer seulement, voir mcp.js)
   const mcp = config.mcp ? mcpRoutes(ctx) : null;
   if (mcp) app.use(mcp.router);
+
+  // /oidc/connexion et /oidc/retour : connexion avec Authelia (navigateur,
+  // sans session). Désactivée : 404.
+  if (ctx.oidc) app.use(ctx.oidc.router);
 
   // --- API ---
   const api = express.Router();

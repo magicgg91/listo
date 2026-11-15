@@ -5,6 +5,11 @@
 //   POST   /api/admin/users/:id/password    réinitialiser le mot de passe
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
 //   DELETE /api/admin/users/:id             supprimer un compte jamais utilisé
+//   DELETE /api/admin/users/:id/authelia    délier le compte de son compte Authelia
+// Demandes de compte (connexion avec Authelia, LISTO_OIDC=on seulement) :
+//   POST   /api/admin/account-requests/:id/accept   accepter (le compte est créé)
+//   POST   /api/admin/account-requests/:id/refuse   refuser (gardée 30 jours)
+// (la liste des demandes en attente arrive avec GET /api/admin/users)
 //
 // Règles de sécurité :
 // - un Admin ne peut ni se désactiver, ni se retirer le rôle Admin, ni se
@@ -50,7 +55,14 @@ export function adminUserRoutes(ctx) {
     mustChangePassword: user.must_change_password === 1,
     createdAt: user.created_at,
     inUse: accountUsed.get({ id: user.id }) === 1,
+    // Relié à un compte Authelia (oui ou non seulement, jamais son identifiant interne)
+    authelia: user.oidc_sub != null,
   });
+
+  // Demandes de compte en attente (connexion avec Authelia) : ce que la
+  // personne a donné chez Authelia, jamais son identifiant interne
+  const pendingRequests = db.prepare("SELECT id, username, display_name, created_at FROM account_requests WHERE status = 'pending' ORDER BY created_at, id");
+  const describeRequest = (request) => ({ id: request.id, username: request.username, displayName: request.display_name, createdAt: request.created_at });
 
   // Retrouve le compte de l'adresse (:id), ou répond 404
   function target(req, res) {
@@ -66,7 +78,50 @@ export function adminUserRoutes(ctx) {
   // Liste des comptes, par identifiant
   router.get('/users', (req, res) => {
     const users = db.prepare('SELECT * FROM users ORDER BY username COLLATE NOCASE').all();
-    res.json({ users: users.map(describe) });
+    res.json({
+      users: users.map(describe),
+      oidc: Boolean(ctx.oidc),
+      accountRequests: ctx.oidc ? pendingRequests.all().map(describeRequest) : [],
+    });
+  });
+
+  // Demande acceptée : le compte est créé, relié au compte Authelia de la
+  // demande. L'Admin peut corriger l'identifiant et le nom proposés.
+  router.post('/account-requests/:id/accept', async (req, res) => {
+    if (!ctx.oidc) return res.status(404).json({ error: 'Route inconnue.' });
+    const id = parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Demande introuvable ou déjà traitée.' });
+    const { username, displayName, role = 'user' } = req.body ?? {};
+    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
+    const name = cleanName(displayName);
+    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
+    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
+    const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, role });
+    if (result.error) return res.status(result.status).json({ error: result.error });
+    audit('demande_compte_acceptee', { admin: req.user.username, utilisateur: username, role });
+    res.status(201).json({ user: describe(findUser.get(result.id)) });
+  });
+
+  // Demande refusée : gardée 30 jours, pour qu'une nouvelle connexion ne la
+  // refasse pas aussitôt (voir oidc.js)
+  router.post('/account-requests/:id/refuse', (req, res) => {
+    if (!ctx.oidc) return res.status(404).json({ error: 'Route inconnue.' });
+    const id = parseId(req.params.id);
+    const done = id && db.prepare("UPDATE account_requests SET status = 'refused', refused_at = ? WHERE id = ? AND status = 'pending'")
+      .run(new Date(ctx.now()).toISOString(), id).changes;
+    if (!done) return res.status(404).json({ error: 'Demande introuvable ou déjà traitée.' });
+    audit('demande_compte_refusee', { admin: req.user.username });
+    res.status(204).end();
+  });
+
+  // Délier un compte de son compte Authelia : le prochain compte Authelia du
+  // même identifiant pourra de nouveau l'ouvrir (compte Authelia recréé…)
+  router.delete('/users/:id/authelia', (req, res) => {
+    const user = target(req, res);
+    if (!user) return;
+    db.prepare('UPDATE users SET oidc_sub = NULL WHERE id = ?').run(user.id);
+    audit('compte_delie_authelia', { admin: req.user.username, utilisateur: user.username });
+    res.json({ user: describe(findUser.get(user.id)) });
   });
 
   // Création d'un compte. Le mot de passe initial est choisi par l'Admin :

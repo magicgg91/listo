@@ -43,6 +43,7 @@ prepareAnnouncer();
 export const app = {
   user: null,            // compte connecté (null : pas connecté)
   setupNeeded: false,    // aucun compte : proposer de créer l'Admin
+  oidc: null,            // connexion avec Authelia proposée : { name }, sinon null
   data: emptyState(),    // copie des listes, articles, rayons… (store.js)
   route: null,
   afterLogin: null,      // écran demandé avant la connexion
@@ -635,7 +636,7 @@ function show(route) {
       navigate('login', {}, { replace: true });
       return;
     }
-    mount(renderLogin({ setupNeeded: app.setupNeeded }), { withSide: false });
+    mount(renderLogin({ setupNeeded: app.setupNeeded, oidc: app.oidc }), { withSide: false });
     return;
   }
   // Mot de passe imposé par l'Admin : à changer avant tout le reste (une
@@ -701,7 +702,10 @@ function show(route) {
 
 async function start() {
   try {
-    app.setupNeeded = (await get('/api/setup', { auth: false })).needed;
+    const setup = await get('/api/setup', { auth: false });
+    app.setupNeeded = setup.needed;
+    // Connexion avec Authelia (LISTO_OIDC=on) : { name } du bouton, ou null
+    app.oidc = setup.oidc ?? null;
     if (!app.setupNeeded) {
       try {
         app.user = (await get('/api/me', { auth: false })).user;

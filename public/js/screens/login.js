@@ -13,6 +13,7 @@
 // L'identifiant n'est jamais corrigé automatiquement (autocorrect="off").
 
 import { h, icon, iconButton, field, passwordInput, errorNote, replace } from '../dom.js';
+import { announce } from '../announce.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
 import { app, loggedIn, logOut } from '../app.js';
 import { defaultDisplayName } from '../format.js';
@@ -64,11 +65,58 @@ function checkNewPassword(password, confirmation, passwordField, confirmField) {
 
 // --- Écran de connexion (avec ses étapes) ---
 
-export function renderLogin({ setupNeeded }) {
+// Retour d'Authelia (server/oidc.js) : un mot-clé dans l'adresse
+// (#/connexion?authelia=…), jamais un texte venu d'Authelia. Les demandes de
+// compte sont des informations, pas des erreurs.
+const AUTHELIA_ERRORS = {
+  annulee: 'Connexion avec {nom} annulée.',
+  erreur: 'La connexion avec {nom} n\'a pas abouti. Réessayez.',
+  expiree: 'La connexion a pris trop de temps. Réessayez.',
+  indisponible: '{nom} ne répond pas. Réessayez, ou connectez-vous avec votre mot de passe.',
+  refuse: 'Ce compte {nom} ne peut pas ouvrir Listo. Demandez à l\'Admin.',
+  refusee: 'Votre demande de compte a été refusée.',
+  complet: 'Trop de demandes de compte en attente. Réessayez plus tard.',
+};
+const AUTHELIA_NOTICES = {
+  demande: 'Votre demande de compte est envoyée à l\'Admin. Vous pourrez vous connecter quand il l\'aura acceptée.',
+  attente: 'Votre demande de compte attend encore l\'accord de l\'Admin.',
+};
+
+// Lit (et retire de l'adresse) le résultat d'un retour d'Authelia
+function autheliaOutcome() {
+  const query = String(location.hash).split('?')[1] ?? '';
+  const outcome = new URLSearchParams(query).get('authelia');
+  if (outcome) history.replaceState(history.state, '', `${location.pathname}#/connexion`);
+  return outcome;
+}
+
+export function renderLogin({ setupNeeded, oidc = null }) {
   const container = h('div', { class: 'screen' });
-  const show = (step, info) => replace(container, step(show, info));
-  show(setupNeeded ? setupStep : passwordStep);
+  const show = (step, info) => replace(container, step(show, { oidc, ...info }));
+  const outcome = setupNeeded ? null : autheliaOutcome();
+  const name = oidc?.name ?? 'Authelia';
+  const text = (template) => template.replaceAll('{nom}', name);
+  if (outcome === 'code') show(codeStep, {}); // Authelia sans double authentification : le code Listo
+  else if (setupNeeded) show(setupStep);
+  else show(passwordStep, {
+    message: AUTHELIA_ERRORS[outcome] ? text(AUTHELIA_ERRORS[outcome]) : undefined,
+    notice: AUTHELIA_NOTICES[outcome],
+  });
   return container;
+}
+
+// Bouton « Se connecter avec Authelia » (LISTO_OIDC=on) : un lien vers
+// /oidc/connexion, qui mène à la page de connexion d'Authelia
+function autheliaButton(oidc, error) {
+  return h('a', {
+    class: 'btn btn--secondary btn--block',
+    href: '/oidc/connexion',
+    onClick: (event) => {
+      if (navigator.onLine) return;
+      event.preventDefault();
+      error.show(`Connexion à Internet nécessaire pour ${oidc.name}.`);
+    },
+  }, icon('shield'), `Se connecter avec ${oidc.name}`);
 }
 
 // Connexion : identifiant + mot de passe (connexion-1)
@@ -77,14 +125,19 @@ function passwordStep(show, info = {}) {
   const password = passwordInput({ id: 'mot-de-passe', name: 'password', autocomplete: 'current-password', required: true });
   const error = errorNote();
   if (info.message) error.show(info.message);
+  // Information (demande de compte envoyée) : encadré neutre, annoncé
+  const notice = info.notice ? h('div', { class: 'note' }, icon('clock'), h('p', {}, info.notice)) : null;
+  if (info.notice) announce(info.notice);
 
   return screen({
     content: [
       brandHead('Listo', 'Connectez-vous pour retrouver vos listes.'),
+      notice,
       h('div', { class: 'welcome__fields' },
         field('Identifiant', username).field,
         field('Mot de passe', password.wrap).field,
         error.note),
+      info.oidc ? autheliaButton(info.oidc, error) : null,
     ],
     submitLabel: 'Se connecter',
     async onSubmit() {

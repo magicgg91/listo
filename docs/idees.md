@@ -5,8 +5,9 @@ un plan court et l'accord du propriétaire avant d'être construite.
 
 ## Connexion unique (SSO) avec OpenID Connect
 
-Notée le 13 novembre 2026. À reprendre quand le propriétaire aura installé
-son fournisseur d'identité à la maison.
+**Faite le 15 novembre 2026** (connexion avec Authelia, avec les demandes
+de compte validées par l'Admin) : voir le cahier des charges, « Connexion
+avec Authelia ». Notée le 13 novembre 2026 ; ce qui suit est la note d'origine.
 
 - **Idée :** se connecter à Listo avec le compte du fournisseur d'identité
   de la maison (bouton « Se connecter avec … » sur l'écran de connexion).
@@ -63,7 +64,9 @@ Notée le 13 novembre 2026.
   - le contenu du message : court, en français, sans détail sur les listes.
 - **Lien avec le SSO :** si la connexion unique arrive d'abord, l'invitation
   pourrait passer par le fournisseur d'identité. À regarder ensemble.
-- **Peut-être aussi : inscription avec validation par l'Admin.** Un lien
+- **Peut-être aussi : inscription avec validation par l'Admin.** Faite le
+  15 novembre 2026 pour les personnes qui se connectent avec Authelia ; un
+  formulaire sans Authelia n'est pas fait (porte ouverte aux robots). Un lien
   « Demander un compte » sur l'écran de connexion ; la personne donne son
   nom et choisit son mot de passe ; le compte reste en attente, sans accès
   à rien, jusqu'à ce que l'Admin l'accepte ou le refuse dans

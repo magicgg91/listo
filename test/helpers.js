@@ -51,7 +51,7 @@ const noNetwork = async () => {
   throw new Error('réseau interdit dans les tests');
 };
 
-export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {}, backupDir = tempDir(t), githubRequest = noNetwork, productRequest = noNetwork, clientMetadataRequest = noNetwork, pushRequest = noNetwork, vapidKeys = null } = {}) {
+export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, journalFile = null, photosDir = tempDir(t), eventOptions = {}, backupDir = tempDir(t), githubRequest = noNetwork, productRequest = noNetwork, clientMetadataRequest = noNetwork, pushRequest = noNetwork, vapidKeys = null, oidcRequest = noNetwork, oidcClientSecret = '' } = {}) {
   const clock = { now: Date.UTC(2026, 9, 16, 12, 0, 0) };
   const logs = [];
   const db = openDatabase(':memory:');
@@ -70,6 +70,8 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
     clientMetadataRequest,
     pushRequest,
     vapidKeys,
+    oidcRequest,
+    oidcClientSecret,
   });
   const server = app.listen(0);
   await once(server, 'listening');
@@ -87,14 +89,16 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
 export function createClient(base, { origin = ORIGIN, ip } = {}) {
   const jar = new Map();
 
-  async function request(method, url, body, extraHeaders = {}) {
+  // redirect : 'manual' pour lire une redirection sans la suivre (connexion
+  // avec Authelia : elle mène vers un autre site)
+  async function request(method, url, body, extraHeaders = {}, { redirect = 'follow' } = {}) {
     const headers = { ...extraHeaders };
     if (origin) headers.origin = origin;
     if (ip) headers['x-forwarded-for'] = ip;
     if (jar.size) headers.cookie = [...jar].map(([name, value]) => `${name}=${value}`).join('; ');
     if (body !== undefined) headers['content-type'] = 'application/json';
 
-    const res = await fetch(base + url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    const res = await fetch(base + url, { method, headers, redirect, body: body === undefined ? undefined : JSON.stringify(body) });
     const setCookies = res.headers.getSetCookie();
     for (const cookie of setCookies) {
       const [pair] = cookie.split(';');

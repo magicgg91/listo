@@ -4,6 +4,7 @@
 
 import { h, icon, iconButton, replace } from './dom.js';
 import { openOverlay } from './router.js';
+import { announce } from './announce.js';
 
 // Élément dans lequel s'affichent les fenêtres : la colonne de l'écran
 // courant (réglé par app.js à chaque écran).
@@ -130,6 +131,7 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
     if (panel.contains(document.activeElement)) releaseFocus();
     scrim.remove();
     panel.remove();
+    for (const element of madeInert) element.inert = false;
     document.removeEventListener('keydown', onKey);
     if (onLayer) {
       pcOpen = Math.max(0, pcOpen - 1);
@@ -191,6 +193,19 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
     close();
   });
   target.append(scrim, panel);
+  // Le reste de l'écran (liste, bandeau du bas, fenêtre du dessous) devient
+  // inerte tant que la fenêtre est ouverte : VoiceOver ne peut plus en
+  // sortir par un balayage et toucher ce qui est derrière. Rien ne change à
+  // l'écran. (Sur ordinateur, les fenêtres posées sur toute l'application
+  // rendent déjà .pc inerte, voir setPcInert.)
+  const madeInert = [];
+  if (!onLayer) {
+    for (const child of target.children) {
+      if (child === scrim || child === panel || child.inert) continue;
+      child.inert = true;
+      madeInert.push(child);
+    }
+  }
   if (onLayer) {
     pcOpen++;
     setPcInert(true);
@@ -379,11 +394,17 @@ export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = n
 }
 
 // Message temporaire en bas de l'écran, avec une action facultative
-// (« Annuler »). Un seul message à la fois.
+// (« Annuler »). Un seul message à la fois. Il est lu par les lecteurs
+// d'écran grâce à la zone d'annonce (js/announce.js) : un message qui
+// apparaît avec son texte n'était pas toujours lu. Il ne disparaît pas
+// tant que le focus est sur son bouton (VoiceOver, Contrôle de sélection,
+// clavier) : sinon « Annuler » partait au moment de l'atteindre ; il part
+// 2 secondes après que le focus l'a quitté.
 let currentToast = null;
+const TOAST_AFTER_FOCUS_MS = 2000;
 export function toast(text, { action, onAction, duration, low = false } = {}) {
   currentToast?.remove();
-  const el = h('div', { class: `toast${low ? ' toast--low' : ''}`, role: 'status' },
+  const el = h('div', { class: `toast${low ? ' toast--low' : ''}` },
     h('span', { class: 'toast__text' }, text),
     action ? h('button', {
       class: 'toast__action',
@@ -405,7 +426,19 @@ export function toast(text, { action, onAction, duration, low = false } = {}) {
   if (above.length) el.style.zIndex = String(Math.max(...above) + 1);
   if (layer === pcLayer && layer.querySelector(':scope > .pc-drawer')) el.classList.add('toast--beside');
   currentToast = el;
-  setTimeout(() => el.remove(), duration ?? (action ? (onPc() ? 8000 : 6000) : 4000));
+  announce(text);
+  let timer = null;
+  const leaveAfter = (ms) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (el.contains(document.activeElement)) return; // repart quand le focus sort
+      el.remove();
+    }, ms);
+  };
+  el.addEventListener('focusout', (event) => {
+    if (!el.contains(event.relatedTarget)) leaveAfter(TOAST_AFTER_FOCUS_MS);
+  });
+  leaveAfter(duration ?? (action ? (onPc() ? 8000 : 6000) : 4000));
 }
 
 // Redessine à chaque changement de données, mais jamais pendant qu'un doigt

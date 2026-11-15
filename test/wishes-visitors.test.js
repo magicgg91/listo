@@ -414,7 +414,7 @@ test('écrans : visiteurs marqués « (lien public) » et retirés par le gestio
   assert.match(page, /const NAME_KEY = `listo_prenom_\$\{token\}`;/);
   assert.match(page, /if \(!canReserve \|\| item\.checked \|\| !item\.id\) return null;/);
   for (const label of ['Je participe', 'Annuler', 'Réservé · ouvert à d\\\'autres', 'Participer', 'Réservé', 'Réserver']) assert.ok(page.includes(label), label);
-  assert.match(page, /h\('div', \{ class: 'toast', role: 'status' \}/);
+  assert.match(page, /h\('div', \{ class: 'toast' \}, h\('span', \{ class: 'toast__text' \}, text\)\);\n  root\.append\(el\);\n  speak\(text\);/);
   assert.match(page, /document\.addEventListener\('visibilitychange', \(\) => \{/);
   assert.doesNotMatch(page, /innerHTML|insertAdjacentHTML|outerHTML/);
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);

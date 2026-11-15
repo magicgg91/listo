@@ -33,7 +33,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Synchro : `.sync` + `.sync--ok | --busy | --off` (icône + texte, toujours visible sous la barre de titre).
 - Boutons : `.btn` + `--primary | --secondary | --danger | --danger-outline | --ghost`, `--sm`, `--block`, `--icon` ; `.icon-btn` ; `.fab`.
 - Listes : `.list-card` (+ `.is-selected`), `.avatars` / `.avatar`, `.chip`.
-- Articles : `.aisle` (en-tête `position: sticky`, `.is-stuck` = ombre quand collé), `.item` (+ `.is-done`), `.check` avec `aria-pressed`, `.item__body`, `.item__name`, `.item__note`, `.item__qty`.
+- Articles : `.aisle` (en-tête `position: sticky`, `.is-stuck` = ombre quand collé), `.item` (+ `.is-done`), `.check` avec `aria-pressed` (son `aria-label` est le nom de l'article seul, l'état n'est dit que par `aria-pressed` : décision du 14 novembre 2026), `.item__body`, `.item__name`, `.item__note`, `.item__qty`.
 - Ajout : `.addbar`, `.addbar__field`, `.addbar__input`, `.suggest` / `.suggest__item` (+ `--new`).
 - Surcouches : `.scrim` + `.sheet` (feuille du bas), `.dialog` (confirmation), `.menu`, `.toast`.
 - Formulaires : `.field`, `.field__label | __hint | __error`, `.input` (+ `--select | --area | --code | --mono`, `aria-invalid="true"`), `.tick-row`, `.radio-row`, `.choice`, `.segmented` (interrupteur de thème), `.switch` (`role="switch"`), `.tabs` / `.tab` (`role="tab"`).

@@ -119,7 +119,9 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   // Jamais de fiche ouverte ; une phrase annoncée (toast role="status")
   assert.doesNotMatch(several, /openItemSheet|addModeOf/);
   assert.match(several, /toast\(`\$\{countItems\(entries\.length, list\)\} ajoutés`\);/);
-  assert.match(read('public/js/ui.js'), /h\('div', \{ class: `toast\$\{low \? ' toast--low' : ''\}`, role: 'status' \}/);
+  // Message lu par la zone d'annonce (js/announce.js), plus fiable qu'un role="status" posé sur le message
+  assert.match(read('public/js/ui.js'), /h\('div', \{ class: `toast\$\{low \? ' toast--low' : ''\}` \}/);
+  assert.match(read('public/js/ui.js'), /currentToast = el;\n  announce\(text\);/);
   // Chaque élément : le même chemin qu'un ajout à la main (une opération, son propre identifiant)
   assert.match(list, /async function createItem\(name, fields = \{\}\) \{\s*if \(!editable\(\)\) return false;[^\n]*\n\s*return actions\.addItem\(\{ listId, name, \.\.\.fields \}\);/);
   assert.match(read('public/js/actions.js'), /const itemId = uuid\(\);[\s\S]*await perform\(\{ type: 'item\.create', \.\.\.fields \}, \{ hint \}\);/);

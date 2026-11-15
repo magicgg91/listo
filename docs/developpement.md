@@ -410,6 +410,12 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. **Note longue** (iOS 26.2 et après) : écrire une note de plusieurs lignes : le champ grandit jusqu'à environ 10 lignes, puis défile. Une note vide garde sa taille.
     4. **Trousseau iCloud** : se connecter : l'iPhone propose le mot de passe enregistré ; changer son mot de passe (Mon compte › Sécurité) : il propose de mettre à jour le mot de passe enregistré. L'identifiant n'est jamais corrigé automatiquement.
     5. **iPhone à l'horizontale** : dans une liste, le bouton Retour, les cases et les fiches restent à côté de l'encoche ou de l'îlot dynamique.
+54. **VoiceOver** (14 novembre 2026 ; vérifié dans Chromium : zones d'annonce, inerte, libellés, aides, titres, focus ; écrans du téléphone identiques au pixel près, y compris après un appui qui change d'écran ; le vrai VoiceOver reste à essayer) : Réglages › Accessibilité › VoiceOver activé.
+    1. Dans une liste, balayer jusqu'à un article : « Tomates, bouton, non sélectionné » ; toucher deux fois : « sélectionné » (l'état dit une seule fois).
+    2. Supprimer un article (glisser vers la gauche) : « « Tomates » supprimé » est lu ; aller sur « Annuler » en balayant, même lentement : le bouton ne disparaît pas.
+    3. Ouvrir la fiche d'un article, balayer jusqu'au bout : VoiceOver reste dans la fiche, il ne passe pas sur la liste derrière.
+    4. Se connecter avec un identifiant vide, deux fois : l'erreur est lue les deux fois. Réglages › Mot de passe : sur « Nouveau mot de passe », l'aide « Au moins 10 caractères » est lue.
+    5. Toucher une liste depuis « Mes listes » : VoiceOver annonce le nom de la liste (le titre), pas un élément au hasard ; aucun contour bleu n'apparaît autour du titre.
 
 ## API des comptes (étape 2)
 

@@ -11,6 +11,8 @@ const SVG = 'http://www.w3.org/2000/svg';
 // - les attributs « onXxx » deviennent des écouteurs d'événements ;
 // - les valeurs true ajoutent l'attribut, false/null/undefined l'omettent ;
 // - les enfants peuvent être du texte, des éléments, des tableaux ou rien.
+import { announce } from './announce.js';
+
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs ?? {})) {
@@ -96,8 +98,17 @@ export function field(label, control, { hint, aside, id } = {}) {
   const input = control.matches?.('input, textarea, select, button') ? control : control.querySelector('input, textarea, select') ?? control.querySelector('button');
   const inputId = id ?? `f-${Math.random().toString(36).slice(2, 9)}`;
   if (input && !input.id) input.id = inputId;
-  const error = h('span', { class: 'field__error', id: `${inputId}-erreur`, role: 'alert', hidden: true });
-  const hintEl = hint ? h('span', { class: 'field__hint' }, hint) : null;
+  // L'erreur n'est pas une zone d'annonce (montrée, elle ne serait pas lue
+  // à coup sûr) : elle est annoncée par js/announce.js
+  const error = h('span', { class: 'field__error', id: `${inputId}-erreur`, hidden: true });
+  // L'aide sous le champ lui est reliée : lue avec le champ (lecteur d'écran)
+  const hintEl = hint ? h('span', { class: 'field__hint', id: `${inputId}-aide` }, hint) : null;
+  const describe = (withError) => {
+    const ids = [hintEl?.id, withError ? error.id : null].filter(Boolean).join(' ');
+    if (ids) input?.setAttribute('aria-describedby', ids);
+    else input?.removeAttribute('aria-describedby');
+  };
+  describe(false);
   const title = h('label', { class: 'field__label', for: input?.id }, label,
     aside ? [' ', h('span', { class: 'field__aside' }, `(${aside})`)] : null);
   const wrapper = h('div', { class: 'field' }, title, control, hintEl, error);
@@ -110,11 +121,12 @@ export function field(label, control, { hint, aside, id } = {}) {
         // Le champ fautif est signalé (et son message lui est relié pour les
         // lecteurs d'écran), sans y mettre le curseur
         input?.setAttribute('aria-invalid', 'true');
-        input?.setAttribute('aria-describedby', error.id);
+        describe(true);
+        announce(message, { urgent: true });
       } else {
         error.hidden = true;
         input?.removeAttribute('aria-invalid');
-        input?.removeAttribute('aria-describedby');
+        describe(false);
       }
     },
   };
@@ -127,21 +139,25 @@ export function field(label, control, { hint, aside, id } = {}) {
 export function errorNote() {
   const text = h('p');
   const id = `err-${Math.random().toString(36).slice(2, 9)}`;
-  const note = h('div', { class: 'note note--danger form-error', id, role: 'alert', hidden: true }, icon('alert'), text);
+  // Pas une zone d'annonce : le message est annoncé par js/announce.js
+  const note = h('div', { class: 'note note--danger form-error', id, hidden: true }, icon('alert'), text);
   let flagged = [];
   return {
     note,
     show(message, ...fields) {
       text.textContent = message;
       note.hidden = !message;
-      for (const input of flagged) {
+      announce(message, { urgent: true });
+      // Le champ retrouve sa description d'avant (son aide, voir field())
+      for (const [input, before] of flagged) {
         input.removeAttribute('aria-invalid');
-        input.removeAttribute('aria-describedby');
+        if (before) input.setAttribute('aria-describedby', before);
+        else input.removeAttribute('aria-describedby');
       }
-      flagged = message ? fields.filter(Boolean) : [];
-      for (const input of flagged) {
+      flagged = message ? fields.filter(Boolean).map((input) => [input, input.getAttribute('aria-describedby')]) : [];
+      for (const [input, before] of flagged) {
         input.setAttribute('aria-invalid', 'true');
-        input.setAttribute('aria-describedby', id);
+        input.setAttribute('aria-describedby', before ? `${before} ${id}` : id);
       }
     },
   };

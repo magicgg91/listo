@@ -587,6 +587,27 @@ export const MIGRATIONS = [
   ALTER TABLE items ADD COLUMN assign_mode TEXT NOT NULL DEFAULT 'one' CHECK (assign_mode IN ('one', 'all', 'turn'));
   ALTER TABLE items ADD COLUMN assign_people TEXT CHECK (assign_people IS NULL OR (length(assign_people) BETWEEN 3 AND 300 AND assign_people NOT GLOB '*[^0-9,]*'));
   `,
+
+  // --- Migration 29 : connexion avec Authelia (15 novembre 2026, voir server/oidc.js) ---
+  // users.oidc_sub : identifiant interne du compte Authelia relié à ce
+  // compte Listo (retenu à la première connexion, ou à l'acceptation d'une
+  // demande) ; un compte Authelia ne peut être relié qu'à un seul compte.
+  // account_requests : demandes de compte faites en se connectant avec
+  // Authelia sans compte Listo ; l'Admin les accepte (le compte est créé)
+  // ou les refuse (gardées 30 jours, pour ne pas redemander aussitôt).
+  `
+  ALTER TABLE users ADD COLUMN oidc_sub TEXT CHECK (oidc_sub IS NULL OR length(oidc_sub) BETWEEN 1 AND 255);
+  CREATE UNIQUE INDEX users_oidc_sub ON users(oidc_sub) WHERE oidc_sub IS NOT NULL;
+  CREATE TABLE account_requests (
+    id           INTEGER PRIMARY KEY,
+    oidc_sub     TEXT    NOT NULL UNIQUE CHECK (length(oidc_sub) BETWEEN 1 AND 255),
+    username     TEXT    NOT NULL CHECK (length(username) BETWEEN 1 AND 50),
+    display_name TEXT    NOT NULL CHECK (length(display_name) BETWEEN 1 AND 100),
+    status       TEXT    NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'refused')),
+    created_at   TEXT    NOT NULL,
+    refused_at   TEXT
+  );
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

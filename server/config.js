@@ -57,6 +57,21 @@ export function loadConfig(env = process.env) {
     // LISTO_PUSH=on), dans le même dossier que la clé de chiffrement
     vapidPath: path.resolve(path.dirname(path.resolve(env.LISTO_KEY_PATH || 'secrets/secret.key')), 'vapid.json'),
 
+    // Connexion avec Authelia (OpenID Connect, voir server/oidc.js).
+    // DÉSACTIVÉE par défaut : seul LISTO_OIDC=on l'active. Désactivée, ses
+    // adresses (/oidc/…) répondent comme une adresse inexistante (404) et
+    // l'écran de connexion ne montre pas de bouton.
+    oidc: String(env.LISTO_OIDC ?? '').trim().toLowerCase() === 'on',
+    // Adresse d'Authelia (son « issuer »), par exemple https://auth.exemple.fr
+    oidcIssuer: String(env.LISTO_OIDC_ISSUER ?? '').trim(),
+    // Identifiant de Listo chez Authelia (client_id), « listo » par défaut
+    oidcClientId: String(env.LISTO_OIDC_CLIENT_ID ?? '').trim() || 'listo',
+    // Nom affiché sur le bouton (« Se connecter avec … »), « Authelia » par défaut
+    oidcName: validButtonName(env.LISTO_OIDC_NAME) ?? 'Authelia',
+    // Clé secrète du client (JAMAIS dans une variable) : fichier
+    // oidc-client-secret, dans le même dossier que la clé de chiffrement
+    oidcSecretPath: path.resolve(path.dirname(path.resolve(env.LISTO_KEY_PATH || 'secrets/secret.key')), 'oidc-client-secret'),
+
     // Contact facultatif ajouté à l'en-tête User-Agent des demandes à Open
     // Food Facts (adresse e-mail ou URL), ou null. Une valeur mal formée est
     // ignorée (voir validContact).
@@ -72,6 +87,14 @@ export function validContact(value) {
   if (typeof value !== 'string') return null;
   const contact = value.trim();
   return /^[A-Za-z0-9@.:/\-_+~ ]{1,100}$/.test(contact) ? contact : null;
+}
+
+// Nom du bouton de connexion : 1 à 30 caractères simples (lettres, chiffres,
+// espaces, . - ' ), sinon null (le nom par défaut est gardé)
+export function validButtonName(value) {
+  if (typeof value !== 'string') return null;
+  const name = value.trim();
+  return /^[\p{L}\p{N} .'-]{1,30}$/u.test(name) ? name : null;
 }
 
 // Un commit Git est exactement 40 caractères hexadécimaux. Toute autre
@@ -95,6 +118,23 @@ export function configProblem(config) {
   }
   if (config.production && url.protocol !== 'https:') {
     return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
+  }
+  if (config.oidc) {
+    let issuer;
+    try {
+      issuer = new URL(config.oidcIssuer);
+    } catch {
+      return `LISTO_OIDC=on demande LISTO_OIDC_ISSUER, l'adresse d'Authelia (actuellement « ${config.oidcIssuer} »). Exemple : https://auth.exemple.fr`;
+    }
+    if (config.production && issuer.protocol !== 'https:') {
+      return `LISTO_OIDC_ISSUER doit commencer par https:// (actuellement « ${config.oidcIssuer} »).`;
+    }
+    if (issuer.username || issuer.password || issuer.search || issuer.hash) {
+      return 'LISTO_OIDC_ISSUER : adresse simple attendue, sans identifiant, ni « ? », ni « # ».';
+    }
+    if (!/^[A-Za-z0-9._~-]{1,100}$/.test(config.oidcClientId)) {
+      return `LISTO_OIDC_CLIENT_ID invalide (« ${config.oidcClientId} ») : lettres sans accent, chiffres, . _ ~ - (100 au plus).`;
+    }
   }
   if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535) {
     return `PORT invalide (« ${config.port} ») : un nombre entre 1 et 65535 est attendu.`;

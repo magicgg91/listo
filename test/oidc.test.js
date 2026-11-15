@@ -1,0 +1,318 @@
+// Connexion avec Authelia (OpenID Connect, LISTO_OIDC=on, 15 novembre 2026).
+// Un faux Authelia (aucun vrai réseau) signe de vrais jetons RS256 ; les
+// tests suivent le parcours complet : départ, retour, échange du code,
+// vérifications du jeton, correspondance des comptes, demandes de compte,
+// double authentification, et tout ce qui doit être refusé.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import { verifyIdToken, usernameFrom, MAX_PENDING_REQUESTS } from '../server/oidc.js';
+import { configProblem, loadConfig } from '../server/config.js';
+
+const ISSUER = 'https://auth.exemple.test';
+const SECRET = 'secret-du-client-de-test';
+
+// --- Faux Authelia ---
+function fakeAuthelia({ users = {} } = {}) {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'k1', use: 'sig', alg: 'RS256' };
+  const codes = new Map(); // code -> { user, nonce, challenge, redirectUri }
+  const tokens = new Map(); // jeton d'accès -> user
+  const calls = [];
+  const fake = {
+    calls,
+    nowS: () => Math.floor(Date.UTC(2026, 9, 16, 12, 0, 0) / 1000),
+    // Réglages modifiables par un test
+    tweak: {},
+    sign(claims, { key = privateKey, alg = 'RS256', kid = 'k1' } = {}) {
+      const header = Buffer.from(JSON.stringify({ alg, kid, typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify(claims)).toString('base64url');
+      const data = `${header}.${payload}`;
+      const signature = alg === 'none' ? '' : crypto.sign('sha256', Buffer.from(data), key).toString('base64url');
+      return `${data}.${signature}`;
+    },
+    // Le navigateur arrive sur la page d'Authelia ; la personne se connecte
+    authorize(location, username) {
+      const url = new URL(location);
+      assert.equal(url.origin + url.pathname, `${ISSUER}/api/oidc/authorization`);
+      const p = url.searchParams;
+      assert.equal(p.get('response_type'), 'code');
+      assert.equal(p.get('client_id'), 'listo');
+      assert.equal(p.get('scope'), 'openid profile');
+      assert.equal(p.get('code_challenge_method'), 'S256');
+      const code = crypto.randomBytes(16).toString('hex');
+      codes.set(code, { user: users[username], nonce: p.get('nonce'), challenge: p.get('code_challenge'), redirectUri: p.get('redirect_uri') });
+      return { code, state: p.get('state'), redirectUri: p.get('redirect_uri') };
+    },
+    async request(url, { method = 'GET', headers = {}, body = null } = {}) {
+      calls.push(`${method} ${url}`);
+      if (url === `${ISSUER}/.well-known/openid-configuration`) {
+        return { status: 200, json: fake.tweak.metadata ?? {
+          issuer: ISSUER,
+          authorization_endpoint: `${ISSUER}/api/oidc/authorization`,
+          token_endpoint: `${ISSUER}/api/oidc/token`,
+          jwks_uri: `${ISSUER}/jwks.json`,
+          userinfo_endpoint: `${ISSUER}/api/oidc/userinfo`,
+        } };
+      }
+      if (url === `${ISSUER}/jwks.json`) return { status: 200, json: { keys: [jwk] } };
+      if (url === `${ISSUER}/api/oidc/token` && method === 'POST') {
+        const expected = `Basic ${Buffer.from(`listo:${encodeURIComponent(SECRET)}`).toString('base64')}`;
+        if (headers.Authorization !== expected) return { status: 401, json: { error: 'invalid_client' } };
+        const form = new URLSearchParams(body);
+        const entry = codes.get(form.get('code'));
+        codes.delete(form.get('code'));
+        if (!entry || form.get('grant_type') !== 'authorization_code' || form.get('redirect_uri') !== entry.redirectUri) return { status: 400, json: { error: 'invalid_grant' } };
+        // PKCE : le code_verifier doit correspondre au code_challenge du départ
+        if (crypto.createHash('sha256').update(form.get('code_verifier') ?? '').digest('base64url') !== entry.challenge) return { status: 400, json: { error: 'invalid_grant' } };
+        const access = crypto.randomBytes(16).toString('hex');
+        tokens.set(access, entry.user);
+        const now = fake.nowS();
+        const claims = { iss: ISSUER, aud: ['listo'], azp: 'listo', sub: entry.user.sub, nonce: entry.nonce, iat: now, exp: now + 3600, amr: entry.user.amr ?? ['pwd', 'otp', 'mfa'], ...fake.tweak.claims };
+        return { status: 200, json: { access_token: access, token_type: 'bearer', id_token: fake.tweak.idToken?.(claims) ?? fake.sign(claims) } };
+      }
+      if (url === `${ISSUER}/api/oidc/userinfo`) {
+        const user = tokens.get(String(headers.Authorization).replace(/^Bearer /, ''));
+        if (!user) return { status: 401, json: null };
+        return { status: 200, json: { sub: fake.tweak.userinfoSub ?? user.sub, preferred_username: user.username, name: user.name } };
+      }
+      return { status: 404, json: null };
+    },
+  };
+  return fake;
+}
+
+const OIDC_CONFIG = { oidc: true, oidcIssuer: ISSUER, oidcClientId: 'listo', oidcName: 'Authelia' };
+
+async function oidcApp(t, fake, config = {}) {
+  return startTestApp(t, { config: { ...OIDC_CONFIG, ...config }, oidcRequest: fake.request, oidcClientSecret: SECRET });
+}
+
+// Parcours complet dans un « navigateur » (client avec ses cookies) ;
+// renvoie l'adresse où Listo renvoie le navigateur à la fin
+async function signIn(client, fake, username, { alter } = {}) {
+  const start = await client.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  assert.equal(start.status, 303);
+  const back = fake.authorize(start.headers.get('location'), username);
+  const params = new URLSearchParams({ code: back.code, state: back.state });
+  alter?.(params);
+  const ret = await client.request('GET', `/oidc/retour?${params}`, undefined, {}, { redirect: 'manual' });
+  assert.equal(ret.status, 303);
+  return ret.headers.get('location');
+}
+
+const PEOPLE = {
+  lea: { sub: 'sub-lea', username: 'lea', name: 'Léa' },
+  LEA: { sub: 'sub-lea', username: 'Lea', name: 'Léa' },
+  imposteur: { sub: 'sub-autre', username: 'lea', name: 'Pas Léa' },
+  nouveau: { sub: 'sub-nouveau', username: 'Nouveau.Venu', name: 'Nouveau Venu' },
+  admin2fa: { sub: 'sub-admin', username: 'guillaume', name: 'Guillaume', amr: ['pwd'] },
+  adminmfa: { sub: 'sub-admin', username: 'guillaume', name: 'Guillaume', amr: ['pwd', 'otp', 'mfa'] },
+};
+
+test('désactivée (par défaut) : /oidc/… répond 404, aucun bouton, aucun appel vers Authelia', async (t) => {
+  const fake = fakeAuthelia();
+  const app = await startTestApp(t, { oidcRequest: fake.request });
+  const client = app.client();
+  for (const url of ['/oidc/connexion', '/oidc/retour?code=x&state=y']) {
+    assert.equal((await client.request('GET', url, undefined, {}, { redirect: 'manual' })).status, 404, url);
+  }
+  assert.equal((await client.get('/api/setup')).body.oidc, null);
+  assert.deepEqual(fake.calls, []);
+});
+
+test('activée : le bouton est annoncé (son nom seul) ; départ vers Authelia avec state, nonce et PKCE, cookie lié au navigateur', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const client = app.client();
+  assert.deepEqual((await client.get('/api/setup')).body.oidc, { name: 'Authelia' });
+  const start = await client.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  assert.equal(start.status, 303);
+  const url = new URL(start.headers.get('location'));
+  assert.match(url.searchParams.get('redirect_uri'), /^https?:\/\/[^/]+\/oidc\/retour$/);
+  for (const key of ['state', 'nonce', 'code_challenge']) assert.ok(url.searchParams.get(key).length >= 43, key);
+  const cookie = start.setCookies.find((c) => c.startsWith('listo_oidc='));
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /SameSite=Lax/);
+  assert.equal(start.headers.get('cache-control'), 'no-store');
+});
+
+test('même identifiant : le compte Listo s\'ouvre, relié à ce compte Authelia ; majuscules ignorées ; pas de second code si Authelia a fait la double authentification', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  await setupAdmin(app);
+  const leaId = await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'LEA'), '/');
+  const me = await browser.get('/api/me');
+  assert.equal(me.status, 200);
+  assert.equal(me.body.user.username, 'lea');
+  assert.equal(app.db.prepare('SELECT oidc_sub FROM users WHERE id = ?').pluck().get(leaId), 'sub-lea');
+  assert.ok(app.logs.some((line) => line.includes('connexion_reussie') && line.includes('authelia')));
+  // Jamais de jeton ni de secret dans le journal
+  assert.ok(!app.logs.join('\n').includes(SECRET));
+});
+
+test('un autre compte Authelia avec le même nom est refusé une fois le compte relié', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  await setupAdmin(app);
+  await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+  assert.equal(await signIn(app.client(), fake, 'lea'), '/');
+  const intruder = app.client();
+  assert.equal(await signIn(intruder, fake, 'imposteur'), '/#/connexion?authelia=refuse');
+  assert.equal((await intruder.get('/api/me')).status, 401);
+  assert.equal(app.db.prepare("SELECT COUNT(*) FROM account_requests").pluck().get(), 0);
+});
+
+test('compte désactivé : refusé', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  await setupAdmin(app);
+  await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea', active: 0 });
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'lea'), '/#/connexion?authelia=refuse');
+  assert.equal((await browser.get('/api/me')).status, 401);
+});
+
+test('double authentification Listo activée et pas faite chez Authelia : le code à 6 chiffres est demandé', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  await setupAdmin(app);
+  app.db.prepare("UPDATE users SET totp_enabled = 1, totp_secret = 'x' WHERE username = 'guillaume'").run();
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'admin2fa'), '/#/connexion?authelia=code');
+  assert.equal((await browser.get('/api/me')).status, 401, 'pas de session avant le code');
+  assert.ok([...browser.jar.keys()].some((name) => name.endsWith('listo_2fa')), 'connexion en attente du code');
+  // Faite chez Authelia (amr contient « mfa ») : pas de second code
+  const other = app.client();
+  assert.equal(await signIn(other, fake, 'adminmfa'), '/');
+  assert.equal((await other.get('/api/me')).status, 200);
+});
+
+test('personne inconnue : demande de compte à l\'Admin, une seule ; refusée, elle n\'est pas refaite avant 30 jours', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  fake.nowS = () => Math.floor(app.clock.now / 1000); // Authelia suit l'horloge du test
+  await setupAdmin(app);
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'nouveau'), '/#/connexion?authelia=demande');
+  assert.equal((await browser.get('/api/me')).status, 401);
+  assert.deepEqual(app.db.prepare('SELECT oidc_sub, username, display_name, status FROM account_requests').all(),
+    [{ oidc_sub: 'sub-nouveau', username: 'nouveau.venu', display_name: 'Nouveau Venu', status: 'pending' }]);
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=attente');
+  app.db.prepare("UPDATE account_requests SET status = 'refused', refused_at = ?").run(new Date(app.clock.now).toISOString());
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=refusee');
+  app.clock.now += 31 * 24 * 60 * 60 * 1000;
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=demande');
+});
+
+test(`au plus ${MAX_PENDING_REQUESTS} demandes en attente`, async (t) => {
+  const users = {};
+  for (let i = 0; i <= MAX_PENDING_REQUESTS; i++) users[`p${i}`] = { sub: `sub-${i}`, username: `personne${i}`, name: `Personne ${i}` };
+  const fake = fakeAuthelia({ users });
+  const app = await oidcApp(t, fake);
+  for (let i = 0; i < MAX_PENDING_REQUESTS; i++) assert.equal(await signIn(app.client(), fake, `p${i}`), '/#/connexion?authelia=demande');
+  assert.equal(await signIn(app.client(), fake, `p${MAX_PENDING_REQUESTS}`), '/#/connexion?authelia=complet');
+});
+
+test('retour refusé : sans cookie, autre state, state réutilisé, expiré, erreur d\'Authelia', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  await setupAdmin(app);
+  await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+  // Autre navigateur que celui du départ (pas de cookie) : refusé
+  const a = app.client();
+  const start = await a.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  const back = fake.authorize(start.headers.get('location'), 'lea');
+  const thief = app.client();
+  const stolen = await thief.request('GET', `/oidc/retour?code=${back.code}&state=${back.state}`, undefined, {}, { redirect: 'manual' });
+  assert.equal(stolen.headers.get('location'), '/#/connexion?authelia=erreur');
+  assert.equal((await thief.get('/api/me')).status, 401);
+  // state modifié
+  assert.equal(await signIn(app.client(), fake, 'lea', { alter: (p) => p.set('state', 'x'.repeat(43)) }), '/#/connexion?authelia=erreur');
+  // Réutilisé : le premier passage réussit, le second non
+  const b = app.client();
+  const s2 = await b.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  const back2 = fake.authorize(s2.headers.get('location'), 'lea');
+  const cookie = [...b.jar].find(([name]) => name === 'listo_oidc');
+  assert.equal((await b.request('GET', `/oidc/retour?code=${back2.code}&state=${back2.state}`, undefined, {}, { redirect: 'manual' })).headers.get('location'), '/');
+  const replay = app.client();
+  replay.jar.set(...cookie);
+  assert.equal((await replay.request('GET', `/oidc/retour?code=${back2.code}&state=${back2.state}`, undefined, {}, { redirect: 'manual' })).headers.get('location'), '/#/connexion?authelia=expiree');
+  // Plus de 10 minutes chez Authelia
+  const c = app.client();
+  const s3 = await c.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  const back3 = fake.authorize(s3.headers.get('location'), 'lea');
+  app.clock.now += 11 * 60 * 1000;
+  assert.equal((await c.request('GET', `/oidc/retour?code=${back3.code}&state=${back3.state}`, undefined, {}, { redirect: 'manual' })).headers.get('location'), '/#/connexion?authelia=expiree');
+  // Annulé chez Authelia : jamais le texte d'Authelia dans l'adresse
+  const d = app.client();
+  const s4 = await d.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  const state4 = new URL(s4.headers.get('location')).searchParams.get('state');
+  const cancelled = await d.request('GET', `/oidc/retour?error=access_denied&error_description=%3Cscript%3E&state=${state4}`, undefined, {}, { redirect: 'manual' });
+  assert.equal(cancelled.headers.get('location'), '/#/connexion?authelia=annulee');
+});
+
+test('jeton refusé : mauvaise signature, « none », autre émetteur, autre destinataire, expiré, nonce différent, userinfo d\'un autre compte', async (t) => {
+  const cases = [
+    ['signature d\'une autre clé', (fake) => { fake.tweak.idToken = (claims) => fake.sign(claims, { key: crypto.generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey }); }],
+    ['algorithme none', (fake) => { fake.tweak.idToken = (claims) => fake.sign(claims, { alg: 'none' }); }],
+    ['autre émetteur', (fake) => { fake.tweak.claims = { iss: 'https://ailleurs.test' }; }],
+    ['autre destinataire', (fake) => { fake.tweak.claims = { aud: ['autre'], azp: 'autre' }; }],
+    ['expiré', (fake) => { fake.tweak.claims = { exp: fake.nowS() - 3600 }; }],
+    ['nonce différent', (fake) => { fake.tweak.claims = { nonce: 'pas-le-bon' }; }],
+    ['userinfo d\'un autre compte', (fake) => { fake.tweak.userinfoSub = 'sub-autre'; }],
+  ];
+  for (const [label, setup] of cases) {
+    const fake = fakeAuthelia({ users: PEOPLE });
+    setup(fake);
+    const app = await oidcApp(t, fake);
+    await setupAdmin(app);
+    await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+    const browser = app.client();
+    assert.equal(await signIn(browser, fake, 'lea'), '/#/connexion?authelia=erreur', label);
+    assert.equal((await browser.get('/api/me')).status, 401, label);
+    assert.equal(app.db.prepare("SELECT oidc_sub FROM users WHERE username = 'lea'").pluck().get(), null, label);
+  }
+});
+
+test('description d\'Authelia : adresses hors de son site refusées (aucun appel vers ailleurs)', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  fake.tweak.metadata = {
+    issuer: ISSUER,
+    authorization_endpoint: `${ISSUER}/api/oidc/authorization`,
+    token_endpoint: 'https://pirate.test/token',
+    jwks_uri: `${ISSUER}/jwks.json`,
+    userinfo_endpoint: `${ISSUER}/api/oidc/userinfo`,
+  };
+  const app = await oidcApp(t, fake);
+  const start = await app.client().request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  assert.equal(start.headers.get('location'), '/#/connexion?authelia=indisponible');
+  assert.ok(fake.calls.every((call) => call.includes(ISSUER)));
+});
+
+test('verifyIdToken et usernameFrom (calculs purs)', () => {
+  assert.equal(usernameFrom(' Léa.Martin '), 'la.martin');
+  assert.equal(usernameFrom('ZOE'), 'zoe');
+  assert.throws(() => verifyIdToken('a.b', { keys: [], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /mal formé/);
+  const hs = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from('{}').toString('base64url')}.x`;
+  assert.throws(() => verifyIdToken(hs, { keys: [{}], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /algorithme/);
+});
+
+test('configuration : LISTO_OIDC=on exige l\'adresse d\'Authelia (https en production) et un client_id simple', () => {
+  const base = loadConfig({ LISTO_PUBLIC_URL: 'https://listo.test', NODE_ENV: 'production' });
+  assert.equal(base.oidc, false);
+  assert.match(configProblem({ ...base, oidc: true, oidcIssuer: '' }), /LISTO_OIDC_ISSUER/);
+  assert.match(configProblem({ ...base, oidc: true, oidcIssuer: 'http://auth.test' }), /https/);
+  assert.match(configProblem({ ...base, oidc: true, oidcIssuer: 'https://u:p@auth.test' }), /adresse simple/);
+  assert.match(configProblem({ ...base, oidc: true, oidcIssuer: 'https://auth.test', oidcClientId: 'a b' }), /CLIENT_ID/);
+  assert.equal(configProblem({ ...base, oidc: true, oidcIssuer: 'https://auth.test', oidcClientId: 'listo' }), null);
+  const full = loadConfig({ LISTO_OIDC: 'on', LISTO_OIDC_ISSUER: 'https://auth.test', LISTO_OIDC_NAME: '<script>' });
+  assert.equal(full.oidc, true);
+  assert.equal(full.oidcName, 'Authelia', 'nom invalide : nom par défaut');
+  assert.equal(full.oidcClientId, 'listo');
+  assert.match(full.oidcSecretPath, /oidc-client-secret$/);
+});

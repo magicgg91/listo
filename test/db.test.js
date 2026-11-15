@@ -22,6 +22,7 @@ const TABLES = [
   // notifications push (migration 23)
   'push_subscriptions', 'push_settings', 'push_list_mutes', 'push_digests',
   'push_reminders', // rappels des tâches à heure précise (migration 26)
+  'account_requests', // demandes de compte par Authelia (migration 29)
 ];
 
 // Base en mémoire avec un compte, une catégorie et une liste, pour les tests
@@ -34,7 +35,7 @@ function sampleDb() {
   return db;
 }
 
-test('les vingt-neuf tables du cahier des charges sont créées', () => {
+test('les trente tables du cahier des charges sont créées', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)

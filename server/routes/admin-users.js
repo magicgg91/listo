@@ -18,6 +18,7 @@
 // - il reste toujours au moins un Admin actif ;
 // - aucune de ces routes ne donne accès au contenu des listes.
 
+import crypto from 'node:crypto';
 import express from 'express';
 import { hashPassword, passwordProblem } from '../passwords.js';
 import { revokeAllSessions } from '../auth.js';
@@ -81,6 +82,7 @@ export function adminUserRoutes(ctx) {
     res.json({
       users: users.map(describe),
       oidc: Boolean(ctx.oidc),
+      localLogin: ctx.config.localLogin !== false,
       accountRequests: ctx.oidc ? pendingRequests.all().map(describeRequest) : [],
     });
   });
@@ -132,16 +134,21 @@ export function adminUserRoutes(ctx) {
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
     if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
     if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
-    const problem = passwordProblem(password);
-    if (problem) return res.status(400).json({ error: problem });
-
-    const hash = await hashPassword(password);
+    // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
+    // mot de passe provisoire ; la personne entrera avec Authelia (même
+    // identifiant), le compte a un mot de passe aléatoire que personne ne connaît
+    const local = ctx.config.localLogin !== false;
+    if (local) {
+      const problem = passwordProblem(password);
+      if (problem) return res.status(400).json({ error: problem });
+    }
+    const hash = await hashPassword(local ? password : crypto.randomBytes(32).toString('base64url'));
     // L'identifiant est unique sans tenir compte des majuscules (COLLATE
     // NOCASE dans la base) ; la vérification se fait au moment d'écrire.
     let id;
     try {
-      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, 1)')
-        .run(username, name, hash, role).lastInsertRowid;
+      id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, ?)')
+        .run(username, name, hash, role, local ? 1 : 0).lastInsertRowid;
     } catch (err) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'Cet identifiant existe déjà.' });
       throw err;
@@ -206,6 +213,7 @@ export function adminUserRoutes(ctx) {
   // Réinitialisation du mot de passe d'un autre compte : toutes ses sessions
   // sont fermées et il devra changer ce mot de passe à sa prochaine connexion.
   router.post('/users/:id/password', async (req, res) => {
+    if (ctx.config.localLogin === false) return res.status(403).json({ error: 'La connexion par mot de passe est désactivée sur ce serveur.' });
     const user = target(req, res);
     if (!user) return;
     if (user.id === req.user.id) {

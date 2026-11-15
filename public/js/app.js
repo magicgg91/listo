@@ -44,6 +44,7 @@ export const app = {
   user: null,            // compte connecté (null : pas connecté)
   setupNeeded: false,    // aucun compte : proposer de créer l'Admin
   oidc: null,            // connexion avec Authelia proposée : { name }, sinon null
+  localLogin: true,      // connexion par identifiant et mot de passe proposée
   data: emptyState(),    // copie des listes, articles, rayons… (store.js)
   route: null,
   afterLogin: null,      // écran demandé avant la connexion
@@ -645,7 +646,7 @@ function show(route) {
       navigate('login', {}, { replace: true });
       return;
     }
-    mount(renderLogin({ setupNeeded: app.setupNeeded, oidc: app.oidc }), { withSide: false });
+    mount(renderLogin({ setupNeeded: app.setupNeeded, oidc: app.oidc, localLogin: app.localLogin, returnTo: app.afterLogin }), { withSide: false });
     return;
   }
   // Mot de passe imposé par l'Admin : à changer avant tout le reste (une
@@ -687,8 +688,16 @@ function show(route) {
     case 'settings': mount(() => renderSettings()); break;
     case 'account': mount((onLeave) => renderAccount(onLeave)); break;
     case 'about': mount(() => renderAbout()); break;
-    case 'password': mount(() => renderPassword()); break;
-    case 'twoFactor': mount((onLeave) => renderTwoFactor(onLeave)); break;
+    // Session ouverte avec Authelia : mot de passe et double authentification
+    // gérés dans Authelia ; ces écrans mènent à « Mon compte »
+    case 'password':
+      if (app.user.loginMethod === 'oidc') navigate('account', {}, { replace: true });
+      else mount(() => renderPassword());
+      break;
+    case 'twoFactor':
+      if (app.user.loginMethod === 'oidc') navigate('account', {}, { replace: true });
+      else mount((onLeave) => renderTwoFactor(onLeave));
+      break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
     case 'help': mount(() => renderHelp(), { wide: true }); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
@@ -715,6 +724,8 @@ async function start() {
     app.setupNeeded = setup.needed;
     // Connexion avec Authelia (LISTO_OIDC=on) : { name } du bouton, ou null
     app.oidc = setup.oidc ?? null;
+    // Connexion par mot de passe proposée (LISTO_LOCAL_LOGIN), oui par défaut
+    app.localLogin = setup.localLogin !== false;
     if (!app.setupNeeded) {
       try {
         app.user = (await get('/api/me', { auth: false })).user;

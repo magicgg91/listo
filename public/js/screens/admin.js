@@ -162,8 +162,9 @@ async function loadUsers(panel, footer, alive) {
   const reload = () => loadUsers(panel, footer, alive);
   let users;
   let accountRequests = [];
+  let localLogin = true;
   try {
-    ({ users, accountRequests = [] } = await get('/api/admin/users'));
+    ({ users, accountRequests = [], localLogin = true } = await get('/api/admin/users'));
   } catch (err) {
     if (alive()) replace(panel, errorBlock(err, reload));
     return;
@@ -186,12 +187,14 @@ async function loadUsers(panel, footer, alive) {
     avatar(user.displayName, { second: i > 0 }),
     h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
     user.active ? null : h('span', { class: 'chip' }, 'Désactivé'),
-    iconButton('more', `Gérer le compte de ${user.displayName}`, () => openUserSheet(user, reload))))));
-  replace(footer, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => openNewUserSheet(reload) }, icon('plus'), 'Ajouter un compte'));
+    iconButton('more', `Gérer le compte de ${user.displayName}`, () => openUserSheet(user, reload, { localLogin }))))));
+  replace(footer, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), 'Ajouter un compte'));
 }
 
 // Feuille d'un compte (administration-2)
-function openUserSheet(user, reload) {
+// localLogin : connexion par mot de passe possible sur ce serveur ; coupée
+// (LISTO_LOCAL_LOGIN=off), « Réinitialiser le mot de passe » n'a plus de sens
+function openUserSheet(user, reload, { localLogin = true } = {}) {
   const self = user.id === app.user.id;
   const error = errorNote();
   const run = async (action, message) => {
@@ -208,8 +211,10 @@ function openUserSheet(user, reload) {
 
   const actions = [];
   if (!self) {
-    actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => { sheet.close(); setTimeout(() => openResetSheet(user, reload), 0); } },
-      icon('reset'), h('span', { class: 'row__title' }, 'Réinitialiser le mot de passe')));
+    if (localLogin) {
+      actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => { sheet.close(); setTimeout(() => openResetSheet(user, reload), 0); } },
+        icon('reset'), h('span', { class: 'row__title' }, 'Réinitialiser le mot de passe')));
+    }
     if (user.totpEnabled) {
       actions.push(h('button', {
         class: 'row row--menu',
@@ -348,7 +353,9 @@ async function refuseRequest(request, reload) {
 }
 
 // Nouveau compte (administration-3)
-function openNewUserSheet(reload) {
+// Connexion par mot de passe coupée (localLogin faux) : pas de mot de passe
+// provisoire, la personne entrera avec Authelia (même identifiant)
+function openNewUserSheet(reload, { localLogin = true } = {}) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100' });
   const password = passwordInput({ autocomplete: 'new-password' });
@@ -359,7 +366,8 @@ function openNewUserSheet(reload) {
   const error = errorNote();
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
   const form = h('form', { class: 'stack', novalidate: true },
-    usernameField.field, nameField.field, passwordField.field,
+    usernameField.field, nameField.field,
+    localLogin ? passwordField.field : h('p', { class: 'muted' }, 'La personne se connectera avec Authelia, avec le même identifiant.'),
     h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
   const sheet = openSheet({ title: 'Nouveau compte', content: form });
@@ -370,10 +378,10 @@ function openNewUserSheet(reload) {
     usernameField.setError(null);
     passwordField.setError(null);
     if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError('Identifiant invalide');
-    if ([...password.input.value].length < 10) return passwordField.setError('Au moins 10 caractères');
+    if (localLogin && [...password.input.value].length < 10) return passwordField.setError('Au moins 10 caractères');
     submit.disabled = true;
     try {
-      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: password.input.value, role });
+      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: localLogin ? password.input.value : undefined, role });
       sheet.close();
       toast('Compte créé', { low: true });
       reload();

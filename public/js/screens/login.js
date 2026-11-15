@@ -90,9 +90,13 @@ function autheliaOutcome() {
   return outcome;
 }
 
-export function renderLogin({ setupNeeded, oidc = null }) {
+// localLogin : identifiant et mot de passe proposés (sinon Authelia seul,
+// LISTO_LOCAL_LOGIN=off) ; returnTo : écran demandé avant la connexion (seul
+// « Autoriser Claude » est transmis à Authelia, pour y revenir après)
+export function renderLogin({ setupNeeded, oidc = null, localLogin = true, returnTo = null }) {
   const container = h('div', { class: 'screen' });
-  const show = (step, info) => replace(container, step(show, { oidc, ...info }));
+  const back = returnTo?.name === 'authorize' && returnTo.params?.id ? `autoriser/${returnTo.params.id}` : null;
+  const show = (step, info) => replace(container, step(show, { oidc, localLogin: localLogin || !oidc, back, ...info }));
   const outcome = setupNeeded ? null : autheliaOutcome();
   const name = oidc?.name ?? 'Authelia';
   const text = (template) => template.replaceAll('{nom}', name);
@@ -107,10 +111,10 @@ export function renderLogin({ setupNeeded, oidc = null }) {
 
 // Bouton « Se connecter avec Authelia » (LISTO_OIDC=on) : un lien vers
 // /oidc/connexion, qui mène à la page de connexion d'Authelia
-function autheliaButton(oidc, error) {
+function autheliaButton(oidc, error, { primary = false, back = null } = {}) {
   return h('a', {
-    class: 'btn btn--secondary btn--block',
-    href: '/oidc/connexion',
+    class: `btn ${primary ? 'btn--primary' : 'btn--secondary'} btn--block`,
+    href: back ? `/oidc/connexion?retour=${encodeURIComponent(back)}` : '/oidc/connexion',
     onClick: (event) => {
       if (navigator.onLine) return;
       event.preventDefault();
@@ -129,6 +133,17 @@ function passwordStep(show, info = {}) {
   const notice = info.notice ? h('div', { class: 'note' }, icon('clock'), h('p', {}, info.notice)) : null;
   if (info.notice) announce(info.notice);
 
+  // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : Authelia
+  // seulement, en bouton principal en bas (même place que « Se connecter »)
+  if (!info.localLogin && info.oidc) {
+    return h('div', { class: 'screen' },
+      h('div', { class: 'body' }, h('div', { class: 'welcome' },
+        brandHead('Listo', 'Connectez-vous pour retrouver vos listes.'),
+        notice,
+        error.note)),
+      h('div', { class: 'footer' }, autheliaButton(info.oidc, error, { primary: true, back: info.back })));
+  }
+
   return screen({
     content: [
       brandHead('Listo', 'Connectez-vous pour retrouver vos listes.'),
@@ -137,7 +152,7 @@ function passwordStep(show, info = {}) {
         field('Identifiant', username).field,
         field('Mot de passe', password.wrap).field,
         error.note),
-      info.oidc ? autheliaButton(info.oidc, error) : null,
+      info.oidc ? autheliaButton(info.oidc, error, { back: info.back }) : null,
     ],
     submitLabel: 'Se connecter',
     async onSubmit() {

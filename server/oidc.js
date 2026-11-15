@@ -35,7 +35,8 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import { readJson } from './http-json.js';
-import { startSession, parseCookies, hashToken, safeEqual } from './auth.js';
+import { startSession, parseCookies, hashToken, safeEqual, loadSession } from './auth.js';
+import { REQUEST_ID } from './oauth.js';
 import { hashPassword } from './passwords.js';
 import { cleanName } from './validate.js';
 
@@ -51,7 +52,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Messages de l'écran de connexion (public/js/screens/login.js) : seul ce
 // mot-clé passe dans l'adresse, jamais un texte venu d'Authelia
-export const OIDC_OUTCOMES = ['annulee', 'erreur', 'expiree', 'indisponible', 'refuse', 'demande', 'attente', 'refusee', 'complet', 'code'];
+export const OIDC_OUTCOMES = ['annulee', 'erreur', 'expiree', 'indisponible', 'refuse', 'demande', 'attente', 'refusee', 'complet', 'code', 'confirme', 'non-confirme'];
+const CONFIRM_MS = 5 * 60 * 1000;      // reconfirmation pour Claude : valable 5 minutes, une fois
 
 // --- Appels vers Authelia (les tests les remplacent : aucun vrai réseau) ---
 
@@ -160,7 +162,9 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   const redirectUri = `${withoutSlash(config.publicUrl)}/oidc/retour`;
   const cookieName = `${config.production ? '__Host-' : ''}listo_oidc`;
   const cookieOptions = { httpOnly: true, secure: config.production, sameSite: 'lax', path: '/' };
-  const flows = new Map(); // empreinte de state -> { nonce, verifier, expiresAt }
+  const flows = new Map(); // empreinte de state -> { nonce, verifier, expiresAt, startedAt, confirm, returnTo }
+  // Reconfirmations par Authelia pour autoriser Claude : « demande:compte » -> fin de validité
+  const confirmations = new Map();
   let metadata = null;     // { value, expiresAt }
   let jwks = null;         // { keys, expiresAt }
 
@@ -201,7 +205,13 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
 
   // Fin du parcours : retour à l'application, avec un mot-clé pour l'écran
   // de connexion (jamais de texte venu d'Authelia)
-  const finish = (res, outcome) => res.redirect(303, outcome ? `/#/connexion?authelia=${outcome}` : '/');
+  // returnTo : écran « Autoriser Claude » (#/autoriser/<demande>) à retrouver
+  // après la connexion, seule adresse de retour possible
+  const finish = (res, outcome, returnTo = null) => res.redirect(303, outcome ? `/#/connexion?authelia=${outcome}` : `/#/${returnTo ?? 'listes'}`);
+  const confirmKey = (requestId, userId) => `${requestId}:${userId}`;
+  const pruneConfirmations = () => {
+    for (const [key, expiresAt] of confirmations) if (expiresAt <= nowMs()) confirmations.delete(key);
+  };
 
   // Échange du code contre les jetons, puis vérifications. Renvoie
   // { sub, username, name, mfa }.
@@ -230,7 +240,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (info.json.sub !== claims.sub) throw new Error('userinfo d\'un autre compte');
     const username = info.json.preferred_username ?? claims.preferred_username;
     const name = info.json.name ?? claims.name;
-    return { sub: claims.sub, username: typeof username === 'string' ? username : '', name: typeof name === 'string' ? name : '', mfa: didMfa(claims) };
+    return { sub: claims.sub, username: typeof username === 'string' ? username : '', name: typeof name === 'string' ? name : '', mfa: didMfa(claims), authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null };
   }
 
   const q = {
@@ -273,7 +283,21 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   const failKeys = (req) => [`oidc:${req.ip}`];
   const failed = (req) => ctx.limiter.fail(failKeys(req));
 
-  router.get('/oidc/connexion', async (req, res) => {
+  // Paramètres du départ (facultatifs) :
+  // - retour=autoriser/<demande> : revenir sur l'écran « Autoriser Claude »
+  //   après la connexion (seule adresse de retour acceptée) ;
+  // - confirmer=<demande> : reconfirmation pour autoriser Claude, depuis une
+  //   session ouverte avec Authelia ; Authelia redemande la connexion
+  //   (prompt=login, max_age=0), puis l'écran d'autorisation reprend.
+  router.get('/oidc/connexion', loadSession(ctx), async (req, res) => {
+    const returnMatch = typeof req.query.retour === 'string' ? /^autoriser\/([A-Za-z0-9_-]+)$/.exec(req.query.retour) : null;
+    const returnTo = returnMatch && REQUEST_ID.test(returnMatch[1]) ? `autoriser/${returnMatch[1]}` : null;
+    let confirm = null;
+    if (req.query.confirmer !== undefined) {
+      const requestId = typeof req.query.confirmer === 'string' && REQUEST_ID.test(req.query.confirmer) ? req.query.confirmer : null;
+      if (!requestId || !req.user || req.sessionMethod !== 'oidc' || !req.user.oidc_sub) return finish(res, 'erreur');
+      confirm = { requestId, userId: req.user.id };
+    }
     if (ctx.limiter.isBlocked(failKeys(req))) {
       audit('connexion_authelia_bloquee', { ip: req.ip });
       return finish(res, 'erreur');
@@ -293,7 +317,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     const state = randomToken();
     const nonce = randomToken();
     const verifier = randomToken(48);
-    flows.set(hashToken(state), { nonce, verifier, expiresAt: nowMs() + FLOW_MS });
+    flows.set(hashToken(state), { nonce, verifier, expiresAt: nowMs() + FLOW_MS, startedAt: nowMs(), confirm, returnTo: confirm ? `autoriser/${confirm.requestId}` : returnTo });
     res.cookie(cookieName, state, { ...cookieOptions, maxAge: FLOW_MS });
     const url = new URL(meta.authorization_endpoint);
     for (const [key, value] of Object.entries({
@@ -305,6 +329,8 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       nonce,
       code_challenge: sha256url(verifier),
       code_challenge_method: 'S256',
+      // Reconfirmation : Authelia doit redemander la connexion
+      ...(confirm ? { prompt: 'login', max_age: '0' } : {}),
     })) url.searchParams.set(key, value);
     res.redirect(303, url.href);
   });
@@ -338,6 +364,23 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       failed(req);
       audit('connexion_authelia_refusee', { raison: err.message, ip: req.ip });
       return finish(res, 'erreur');
+    }
+
+    // Reconfirmation pour autoriser Claude : le même compte Authelia que la
+    // session, et une connexion faite à l'instant chez Authelia (auth_time
+    // après le départ) ; valable 5 minutes, pour cette demande seulement
+    if (flow.confirm) {
+      const owner = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(flow.confirm.userId);
+      const fresh = identity.authTime !== null && identity.authTime * 1000 >= flow.startedAt - CLOCK_SKEW_S * 1000;
+      if (!owner || owner.oidc_sub !== identity.sub || !fresh) {
+        failed(req);
+        audit('confirmation_authelia_refusee', { utilisateur: owner?.username ?? '(inconnu)', raison: !fresh ? 'connexion non redemandée par Authelia' : 'autre compte', ip: req.ip });
+        return res.redirect(303, `/#/${flow.returnTo}?authelia=non-confirme`);
+      }
+      pruneConfirmations();
+      confirmations.set(confirmKey(flow.confirm.requestId, owner.id), nowMs() + CONFIRM_MS);
+      audit('confirmation_authelia', { utilisateur: owner.username, ip: req.ip, etape: 'autorisation claude' });
+      return res.redirect(303, `/#/${flow.returnTo}?authelia=confirme`);
     }
 
     // Quel compte Listo ? D'abord celui qui est déjà relié à ce compte
@@ -376,13 +419,13 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     // Compte avec double authentification Listo, qu'Authelia n'a pas faite :
     // le code à 6 chiffres est demandé (même écran que pour le mot de passe)
     if (user.totp_enabled === 1 && !identity.mfa) {
-      ctx.pending.start(ctx, res, user.id);
+      ctx.pending.start(ctx, res, user.id, { method: 'oidc' });
       audit('connexion_code_2fa_demande', { utilisateur: user.username, ip: req.ip, methode: 'authelia' });
       return finish(res, 'code');
     }
-    startSession(ctx, res, user.id);
+    startSession(ctx, res, user.id, { method: 'oidc' });
     audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, methode: 'authelia' });
-    finish(res, null);
+    finish(res, null, flow.returnTo);
   });
 
   // Demande acceptée par l'Admin : création du compte, relié à ce compte
@@ -403,5 +446,15 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     })();
   }
 
-  return { router, acceptRequest, flowCount: () => flows.size };
+  // Reconfirmation encore valable pour cette demande et ce compte ?
+  // consume : la reconfirmation sert une seule fois (accord donné)
+  function confirmed(requestId, userId, { consume = false } = {}) {
+    pruneConfirmations();
+    const key = confirmKey(requestId, userId);
+    const ok = confirmations.has(key);
+    if (ok && consume) confirmations.delete(key);
+    return ok;
+  }
+
+  return { router, acceptRequest, confirmed, flowCount: () => flows.size };
 }

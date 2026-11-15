@@ -181,6 +181,7 @@ export function renderList(listId, onLeave) {
   let itemSort = loadItemSort(listId);
   const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
   sortButton.setAttribute('aria-haspopup', 'menu');
+  sortButton.setAttribute('aria-expanded', 'false');
   const currentList = () => app.data.lists.get(listId);
   const activeSort = () => effectiveSort(currentList(), itemSort);
   const showSort = () => replace(sortButton, icon(sortEntry(SORTS.find(([value]) => value === activeSort()))[1]));
@@ -841,7 +842,9 @@ export function renderList(listId, onLeave) {
     enterkeyhint: 'done',
     maxlength: '100',
   });
-  const suggestBox = h('div', { class: 'suggest', role: 'listbox', 'aria-label': 'Suggestions', hidden: true });
+  // Simple groupe de boutons (role="listbox" promettait les flèches et un
+  // champ « combobox » : décision du 15 novembre 2026)
+  const suggestBox = h('div', { class: 'suggest', role: 'group', 'aria-label': 'Suggestions', hidden: true });
   // Toucher d'une suggestion ou du bouton « + » (tap.js, voir plus bas)
   const taps = createTapPicker();
   // Mode scan (listes de courses) : bouton « Scanner » entre le champ et +
@@ -1106,7 +1109,7 @@ export function renderList(listId, onLeave) {
     }
     habitualOpen = false;
     suggestBox.dataset.mode = 'suggest';
-    suggestBox.setAttribute('role', 'listbox');
+    suggestBox.setAttribute('role', 'group');
     suggestBox.setAttribute('aria-label', 'Suggestions');
     const typed = input.value;
     // Liste de courses : la quantité tapée au début ou à la fin (« 6 oeu »,
@@ -1127,7 +1130,6 @@ export function renderList(listId, onLeave) {
       return h('button', {
         class: `suggest__item ${extraClass}`.trim(),
         type: 'button',
-        role: 'option',
         // Garde le clavier ouvert : le champ ne perd pas le focus
         onPointerdown: on.pointerdown,
         onMousedown: on.mousedown,

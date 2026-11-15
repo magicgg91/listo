@@ -69,7 +69,7 @@ html, body { height: 100%; margin: 0; }
 .app .menu__item { font-size: var(--text-base); }
 .app .menu__item--danger { color: var(--color-danger-ink); }
 .app .tab { color: var(--color-text-2); font-size: var(--text-base); font-weight: 600; }
-.app .tab[aria-selected="true"] { color: var(--color-text); }
+.app .tab[aria-selected="true"], .app .tab[aria-current="page"] { color: var(--color-text); }
 .app .segmented__opt { color: var(--color-text-2); font-weight: 600; }
 .app .segmented__opt[aria-checked="true"] { color: var(--color-text); }
 .app .choice__opt { font-weight: 600; }
@@ -265,6 +265,19 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 /* Le champ d'ajout a déjà son propre cadre bleu quand il est actif : pas de
    second contour autour du texte */
 .app .addbar__input:focus-visible { outline: none; }
+/* Onglets de l'Administration : une navigation (aria-current="page", voir
+   admin.js), même aspect que l'onglet choisi du kit (.tab[aria-selected]) */
+.tab[aria-current="page"] { border-bottom-color: var(--color-accent); color: var(--color-text); }
+/* « Aller au contenu » (ordinateur, app.js) : hors de l'écran tant qu'il n'a
+   pas le focus clavier, puis en haut à gauche, par-dessus le menu */
+.skip-link { position: absolute; left: -10000px; top: 12px; z-index: 30; min-height: var(--tap-min); padding: 0 16px; border: 0; border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-weight: 700; }
+.skip-link:focus { left: 12px; }
+/* Contraste élevé de Windows (ordinateur) : les ombres disparaissent, et
+   avec elles le signe du champ qui a le curseur ; un contour système le
+   remplace. Sans effet ailleurs. */
+@media (forced-colors: active) {
+  .input:focus, .addbar__field:focus-within, .searchfield:focus-within { outline: 2px solid Highlight; outline-offset: 1px; }
+}
 /* Titre d'un écran qui reçoit le focus après un changement d'écran (app.js,
    pour les lecteurs d'écran ; marqué data-screen-focus jusqu'à ce qu'il le
    perde) : ce n'est pas un bouton, aucun contour */

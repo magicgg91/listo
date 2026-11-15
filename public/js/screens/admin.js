@@ -49,14 +49,16 @@ let lastShopping = SHOPPING[0].key;
 
 // Barre d'onglets (même composant pour les onglets et les choix de
 // « Courses », ce dernier en plus petit) : choisi = souligné épais ET texte
-// plus foncé (jamais la couleur seule), aria-selected
+// plus foncé (jamais la couleur seule). Chaque onglet change d'adresse :
+// c'est une navigation (<nav>, aria-current="page"), pas des onglets au sens
+// des lecteurs d'écran (role="tab" promettait les flèches, décision du
+// 15 novembre 2026)
 function tabBar(entries, current, label, extraClass = '') {
-  return h('div', { class: `tabs${extraClass}`, role: 'tablist', 'aria-label': label },
+  return h('nav', { class: `tabs${extraClass}`, 'aria-label': label },
     entries.map((t) => h('button', {
       class: 'tab',
       type: 'button',
-      role: 'tab',
-      'aria-selected': String(t.key === current),
+      'aria-current': t.key === current ? 'page' : null,
       onClick: () => navigate('admin', { tab: t.target ?? t.key }, { replace: true }),
     }, t.label)));
 }
@@ -80,9 +82,9 @@ export function renderAdmin(tabKey, onLeave) {
 
   // Barre trop large pour l'écran (elle défile de côté) : l'onglet actif est
   // ramené en vue une fois l'écran affiché
-  requestAnimationFrame(() => tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+  requestAnimationFrame(() => tabs.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
 
-  const panel = h('div', { class: 'body admin-list', role: 'tabpanel' });
+  const panel = h('div', { class: 'body admin-list' });
   const footer = h('div', { class: 'footer', hidden: tab.key !== 'comptes' });
   let alive = true;
   onLeave(() => {

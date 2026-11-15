@@ -56,7 +56,8 @@ test('bascule : app--pc à partir de 1 024 px, même écran redessiné, menu gar
   assert.match(app, /const desktop = window\.matchMedia\('\(min-width: 1024px\)'\);/);
   assert.match(app, /const markLayout = \(\) => root\.classList\.toggle\('app--pc', isDesktop\(\)\);/);
   assert.match(app, /desktop\.addEventListener\('change', \(\) => \{[^}]*closeOverlays\(\);\s*markLayout\(\);\s*show\(app\.route\);\s*\}\);/);
-  assert.match(app, /replace\(root, h\('div', \{ class: 'pc pc--a' \}, pcSideFor\(app\.route\), h\('main', \{ class: 'pc-main' \}, col\)\)\);/);
+  // « Aller au contenu » en premier (lot 3 clavier, 15 novembre 2026), puis le menu et l'écran
+  assert.match(app, /replace\(root, h\('div', \{ class: 'pc pc--a' \}, skipLink\(col\), pcSideFor\(app\.route\), h\('main', \{ class: 'pc-main' \}, col\)\)\);/);
   // Menu refait si le compte change (autre compte, nom, rôle), retiré hors connexion
   assert.match(app, /const owner = JSON\.stringify\(\[app\.user\?\.id, app\.user\?\.displayName, app\.user\?\.role\]\);/);
   assert.match(app, /dropPcSide\(\);\s*replace\(root, h\('div', \{ class: 'shell' \}/);

@@ -566,7 +566,7 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   mountedOnPc = pc;
   mountedListId = listId;
   if (pc) {
-    replace(root, h('div', { class: 'pc pc--a' }, pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
+    replace(root, h('div', { class: 'pc pc--a' }, skipLink(col), pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
     screenShown(col);
     return;
   }
@@ -581,6 +581,22 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   dropPcSide();
   replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
   screenShown(col);
+}
+
+// Ordinateur : premier arrêt de la touche Tab, « Aller au contenu », caché
+// tant qu'il n'a pas le focus ; il saute le menu de gauche et met le focus
+// sur le titre de l'écran (jamais un champ de saisie)
+function skipLink(col) {
+  return h('button', {
+    class: 'skip-link',
+    type: 'button',
+    onClick: () => {
+      const heading = col.querySelector('h1');
+      if (!heading) return;
+      heading.setAttribute('tabindex', '-1');
+      heading.focus();
+    },
+  }, 'Aller au contenu');
 }
 
 // Nouvel écran affiché : titre de la page (onglet du navigateur, annoncé

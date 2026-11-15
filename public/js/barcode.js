@@ -18,6 +18,8 @@
 // Le lecteur (environ 1 Mo) n'est téléchargé qu'au premier scan, puis gardé
 // par le service worker : le scan marche ensuite hors ligne.
 
+import { scriptUrl } from './trusted.js';
+
 // --- Code-barres (calculs purs, testés automatiquement) ---
 
 // Clé de contrôle EAN (EAN-8, EAN-13) : en partant de la droite (sans la
@@ -102,7 +104,8 @@ const waiting = new Map(); // id -> { resolve }
 function getWorker() {
   if (worker) return worker;
   try {
-    worker = new Worker(new URL('./barcode-worker.js', import.meta.url), { type: 'module' });
+    // Adresse vérifiée par la politique Trusted Types de Listo (js/trusted.js)
+    worker = new Worker(scriptUrl(new URL('./barcode-worker.js', import.meta.url).href), { type: 'module' });
   } catch {
     throw new ReaderUnavailable();
   }

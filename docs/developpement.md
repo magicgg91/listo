@@ -422,6 +422,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Mes listes : aller sur le filtre « Toutes » avec Tab, flèche droite : « Courses » est choisi ; Fin : « Envies ».
     4. Administration : les onglets « Comptes » et « Courses » ont le même aspect qu'avant ; l'onglet choisi est souligné.
     5. Windows, contraste élevé activé (Paramètres › Accessibilité) : le champ qui a le curseur a un contour bien visible.
+56. **Trusted Types** (15 novembre 2026 ; vérifié dans Chromium, qui l'applique) : sur un iPhone à jour (iOS 26 et après), après la mise à jour, ouvrir Listo : il s'ouvre normalement (service worker) ; scanner un code-barres (Ajouter › Scanner) : il est lu comme avant. Hors ligne ensuite : Listo s'ouvre toujours.
 
 ## API des comptes (étape 2)
 
@@ -1041,7 +1042,7 @@ curl -i $U/api/public/$J
 
 | En-tête | Valeur |
 | --- | --- |
-| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'` (même domaine seulement, ni script ni style dans la page, pas de `blob:` ni `data:`) |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types listo` (même domaine seulement, ni script ni style dans la page, pas de `blob:` ni `data:` ; Trusted Types : seule la politique « listo » de `public/js/trusted.js` fournit des adresses de scripts, `/sw.js` et `/js/barcode-worker.js` seulement) |
 | `X-Content-Type-Options` | `nosniff` |
 | `Referrer-Policy` | `no-referrer` |
 | `X-Frame-Options` | `DENY` |

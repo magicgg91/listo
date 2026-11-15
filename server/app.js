@@ -61,6 +61,11 @@ export const CONTENT_SECURITY_POLICY = [
   "base-uri 'none'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+  // Trusted Types : aucune adresse de script ni aucun HTML venus d'un simple
+  // texte ; seule la politique « listo » (public/js/trusted.js) peut en
+  // fournir, et elle n'accepte que /sw.js et /js/barcode-worker.js
+  "require-trusted-types-for 'script'",
+  'trusted-types listo',
 ].join('; ');
 
 // Même politique pour les pages de l'application, avec une seule différence :

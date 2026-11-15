@@ -149,7 +149,7 @@ export function renderDeadlines(onLeave) {
     const canCheck = canEditList(list);
     return h('li', { class: 'item', 'data-item-id': item.id },
       canCheck
-        ? h('button', { class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': `Cocher ${item.name}`, onClick: () => check(item) }, h('span', { class: 'check__box' }))
+        ? h('button', { class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': item.name, onClick: () => check(item) }, h('span', { class: 'check__box' }))
         : h('span', { class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' }, h('span', { class: 'check__box' })),
       h('button', { class: 'item__body', type: 'button', 'aria-label': `Ouvrir ${item.name}, ${spoken.join(', ')}`, onClick: () => open(item) },
         h('span', { class: 'item__text' },

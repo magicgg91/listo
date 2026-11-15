@@ -2,13 +2,14 @@
 // et mise en page (une colonne sur téléphone, deux sur ordinateur).
 
 import { h, icon, replace } from './dom.js';
+import { prepareAnnouncer } from './announce.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
-import { setOverlayHost, setPcLayer, onPc, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus } from './ui.js';
+import { setOverlayHost, setPcLayer, onPc, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus, isTextField } from './ui.js';
 import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
@@ -33,6 +34,8 @@ import * as actions from './actions.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
 applyTheme(savedTheme());
+// Zones d'annonce des lecteurs d'écran, présentes avant le premier message
+prepareAnnouncer();
 
 // --- État partagé par les écrans ---
 
@@ -564,6 +567,7 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   mountedListId = listId;
   if (pc) {
     replace(root, h('div', { class: 'pc pc--a' }, pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
+    screenShown(col);
     return;
   }
   // Téléphone : bandeau du bas sur « Mes listes », « Échéances » et
@@ -576,6 +580,30 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
   }
   dropPcSide();
   replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
+  screenShown(col);
+}
+
+// Nouvel écran affiché : titre de la page (onglet du navigateur, annoncé
+// par les lecteurs d'écran) d'après son titre h1 ; une liste écrit son
+// propre titre (son nom, screens/list.js). Après un changement d'écran
+// (pas au premier affichage, ni quand le même écran est redessiné), le
+// focus va sur ce titre (tabindex="-1", jamais un champ de saisie) : le
+// bouton touché a disparu avec l'ancien écran, et VoiceOver reprend en
+// haut du nouvel écran au lieu d'un endroit imprévisible. Aucun contour ne
+// s'affiche après un appui du doigt (:focus-visible).
+let shownKey = null;
+function screenShown(col) {
+  const heading = col.querySelector('h1');
+  const name = heading?.textContent.trim();
+  if (app.route?.name !== 'list') document.title = name ? `${name} · Listo` : 'Listo';
+  const key = location.hash;
+  const changed = shownKey !== null && key !== shownKey;
+  shownKey = key;
+  if (!changed || !heading || isTextField(document.activeElement) || col.querySelector('.scrim')) return;
+  heading.setAttribute('tabindex', '-1');
+  heading.setAttribute('data-screen-focus', '');
+  heading.addEventListener('blur', () => heading.removeAttribute('data-screen-focus'), { once: true });
+  heading.focus({ preventScroll: true });
 }
 
 // Choisit l'écran à afficher pour une adresse

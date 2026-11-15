@@ -265,6 +265,10 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 /* Le champ d'ajout a déjà son propre cadre bleu quand il est actif : pas de
    second contour autour du texte */
 .app .addbar__input:focus-visible { outline: none; }
+/* Titre d'un écran qui reçoit le focus après un changement d'écran (app.js,
+   pour les lecteurs d'écran ; marqué data-screen-focus jusqu'à ce qu'il le
+   perde) : ce n'est pas un bouton, aucun contour */
+.app h1[data-screen-focus]:focus { outline: none; }
 
 /* Zone qui défile : en colonne, pour qu'un message « vide » soit centré */
 .scroll { display: flex; flex-direction: column; }

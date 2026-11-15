@@ -23,6 +23,7 @@
 //   ne reçoit ni état ni bouton.
 
 import { h, icon, replace, passwordInput } from './dom.js';
+import { prepareAnnouncer, announce as speak } from './announce.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
 import { itemWords, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
@@ -30,6 +31,7 @@ import { cleanLink, formatPrice } from './wishes.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
+prepareAnnouncer();
 const token = location.pathname.split('/')[2] ?? '';
 const apiUrl = (path = '') => `/api/public/${encodeURIComponent(token)}${path}`;
 
@@ -77,8 +79,8 @@ async function load() {
 // --- Saisie du mot de passe (page-publique-mot-de-passe-1 à 3) ---
 function showGate() {
   const { wrap, input } = passwordInput({ class: 'input input--mono', id: 'mot-de-passe', autocomplete: 'off', required: true, maxlength: '200' });
-  const fieldError = h('p', { class: 'field__error', id: 'mot-de-passe-erreur', role: 'alert', hidden: true });
-  const blocked = h('p', { class: 'note note--danger', role: 'alert', hidden: true }, icon('clock', 'icon--sm'), h('span', {}, TOO_MANY));
+  const fieldError = h('p', { class: 'field__error', id: 'mot-de-passe-erreur', hidden: true });
+  const blocked = h('p', { class: 'note note--danger', hidden: true }, icon('clock', 'icon--sm'), h('span', {}, TOO_MANY));
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Ouvrir');
   const form = h('form', { class: 'stack', novalidate: true },
     h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'mot-de-passe' }, 'Mot de passe'), wrap, fieldError),
@@ -90,6 +92,7 @@ function showGate() {
     input.removeAttribute('aria-invalid');
     input.value = '';
     blocked.hidden = false;
+    speak(TOO_MANY, { urgent: true });
     for (const el of [input, submit, ...wrap.querySelectorAll('button')]) el.disabled = true;
   };
 
@@ -97,6 +100,7 @@ function showGate() {
   const showError = (message) => {
     replace(fieldError, icon('alert', 'icon--xs'), message);
     fieldError.hidden = false;
+    speak(message, { urgent: true });
     input.setAttribute('aria-invalid', 'true');
     input.setAttribute('aria-describedby', 'mot-de-passe-erreur');
   };
@@ -202,11 +206,13 @@ function showList(data) {
   }
 }
 
-// Message temporaire en bas de l'écran, lu par les lecteurs d'écran
+// Message temporaire en bas de l'écran, lu par les lecteurs d'écran (par la
+// zone d'annonce de js/announce.js, plus fiable qu'un message qui apparaît)
 function announce(text) {
   root.querySelector('.toast')?.remove();
-  const el = h('div', { class: 'toast', role: 'status' }, h('span', { class: 'toast__text' }, text));
+  const el = h('div', { class: 'toast' }, h('span', { class: 'toast__text' }, text));
   root.append(el);
+  speak(text);
   setTimeout(() => el.remove(), 4000);
 }
 
@@ -225,7 +231,7 @@ function askName() {
   return new Promise((resolve) => {
     let done = false;
     const input = h('input', { class: 'input', id: 'prenom', type: 'text', maxlength: String(NAME_MAX), autocomplete: 'given-name', autocapitalize: 'words', enterkeyhint: 'done' });
-    const error = h('p', { class: 'field__error', id: 'prenom-erreur', role: 'alert', hidden: true });
+    const error = h('p', { class: 'field__error', id: 'prenom-erreur', hidden: true });
     const form = h('form', { class: 'stack', novalidate: true },
       h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'prenom' }, 'Votre prénom'), input, error,
         h('p', { class: 'field__hint' }, 'Les proches qui gèrent la liste le verront, jamais les autres visiteurs.')),
@@ -237,6 +243,7 @@ function askName() {
       if (!name || [...name].length > NAME_MAX) {
         replace(error, icon('alert', 'icon--xs'), `Indiquez votre prénom (1 à ${NAME_MAX} caractères).`);
         error.hidden = false;
+        speak(`Indiquez votre prénom (1 à ${NAME_MAX} caractères).`, { urgent: true });
         input.setAttribute('aria-invalid', 'true');
         input.setAttribute('aria-describedby', 'prenom-erreur');
         return;

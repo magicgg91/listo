@@ -66,6 +66,8 @@ const ALLOWED_FOCUS = new Map([
   // gestes dont le seul but est d'écrire ; S : le sommaire de l'aide
   ['public/js/shortcuts.js: field', 'EXCEPTION voulue : touche « / » (recherche) ou « A » (champ d\'ajout)'],
   // Fiche d'une tâche : sous-pages (décision du 11 novembre 2026)
+  // Changement d'écran : le titre h1 du nouvel écran (tabindex="-1")
+  ['public/js/app.js: heading', 'titre h1 du nouvel écran (tabindex="-1") après un changement d\'écran, jamais un champ'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
   ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: target', 'ordinateur : focus clavier gardé sur la même ligne après un redessin (un bouton de la ligne, jamais un champ)'],

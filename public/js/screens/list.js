@@ -657,10 +657,11 @@ export function renderList(listId, onLeave) {
     canEdit && mayCheck(view?.list) ? h('button', {
       class: 'check',
       type: 'button',
+      // Nom fixe et état dans aria-pressed (décision du 14 novembre 2026) :
+      // VoiceOver dit « Tomates, bouton, sélectionné », l'état une seule
+      // fois (avant : « Décocher Tomates, sélectionné »)
       'aria-pressed': String(item.checked),
-      'aria-label': isWishList(view?.list)
-        ? `${item.checked ? 'Marquer non reçu' : 'Marquer reçu'} : ${item.name}`
-        : `${item.checked ? 'Décocher' : 'Cocher'} ${item.name}`,
+      'aria-label': isWishList(view?.list) ? `Reçu : ${item.name}` : item.name,
       onClick: () => toggle(item),
     }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null))
       : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': isWishList(view?.list) ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },

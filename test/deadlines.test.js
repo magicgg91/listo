@@ -124,7 +124,7 @@ test('recherche dans « Échéances » : sur le nom des tâches', () => {
 test('écran : cocher seulement avec le droit, par l\'opération de la liste (file hors ligne) ; rien d\'autre écrit', () => {
   const screen = read('public/js/screens/deadlines.js');
   assert.match(screen, /const canCheck = canEditList\(list\);/);
-  assert.match(screen, /canCheck\s*\? h\('button', \{ class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': `Cocher \$\{item\.name\}`, onClick: \(\) => check\(item\) \}/);
+  assert.match(screen, /canCheck\s*\? h\('button', \{ class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': item\.name, onClick: \(\) => check\(item\) \}/);
   assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' \}/);
   // Écritures : checkItem (actions.js → perform → file d'attente), et
   // updateItem seulement pour « Annuler » d'une tâche qui se répète

@@ -43,6 +43,10 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/ui.js: opener', "retour à l'élément d'origine à la fermeture, sauf champ de saisie (isTextField)"],
   ['public/js/ui.js: first', 'piège de focus : touche Tab (geste de la personne)'],
   ['public/js/ui.js: last', 'piège de focus : Maj+Tab (geste de la personne)'],
+  // Menus au clavier (lot 3, 15 novembre 2026) : des boutons, jamais un champ
+  ['public/js/ui.js: firstChoice', 'premier choix d\'un menu ouvert au clavier (un bouton)'],
+  ['public/js/ui.js: radioTarget', 'flèches dans un choix à options (role="radiogroup"), geste de la personne'],
+  ['public/js/ui.js: nextChoice', 'flèches haut et bas, Début et Fin dans un menu (geste de la personne)'],
   // Mode scan : la feuille elle-même quand une étape remplace le bouton touché
   ['public/js/screens/scan.js: panel', 'la feuille « Scanner un produit » (tabindex="-1"), jamais un champ'],
   // Page publique : fiche d'un article et photo agrandie (openLayer)

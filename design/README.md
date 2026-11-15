@@ -36,7 +36,7 @@ Zones tactiles : `--tap-min` 44, `--tap` 48. Mouvement : `--dur-fast` 160 ms (ne
 - Articles : `.aisle` (en-tête `position: sticky`, `.is-stuck` = ombre quand collé), `.item` (+ `.is-done`), `.check` avec `aria-pressed` (son `aria-label` est le nom de l'article seul, l'état n'est dit que par `aria-pressed` : décision du 14 novembre 2026), `.item__body`, `.item__name`, `.item__note`, `.item__qty`.
 - Ajout : `.addbar`, `.addbar__field`, `.addbar__input`, `.suggest` / `.suggest__item` (+ `--new`).
 - Surcouches : `.scrim` + `.sheet` (feuille du bas), `.dialog` (confirmation), `.menu`, `.toast`.
-- Formulaires : `.field`, `.field__label | __hint | __error`, `.input` (+ `--select | --area | --code | --mono`, `aria-invalid="true"`), `.tick-row`, `.radio-row`, `.choice`, `.segmented` (interrupteur de thème), `.switch` (`role="switch"`), `.tabs` / `.tab` (`role="tab"`).
+- Formulaires : `.field`, `.field__label | __hint | __error`, `.input` (+ `--select | --area | --code | --mono`, `aria-invalid="true"`), `.tick-row`, `.radio-row`, `.choice`, `.segmented` (interrupteur de thème), `.switch` (`role="switch"`), `.tabs` / `.tab` (`role="tab"` sur les planches ; dans l'application, l'Administration en fait une navigation : `<nav>` et `aria-current="page"`, même aspect par une règle de `public/css/app.css`, décision du 15 novembre 2026).
 - Réglages et administration : `.group`, `.row`, `.section-title`, `.manage` (+ `.is-off`), `.add-inline`, `.note`, `.codes`, `.qr`.
 - Vides : `.empty`.
 - Ordinateur : `.shell`, `.shell__side`, `.shell__main`, `.shell__col`. À partir de 1024 px, la colonne des listes apparaît à gauche et le contenu est plafonné à `--content-max`.
@@ -350,7 +350,7 @@ L'onglet « Noms » s'appelle « Articles ». Balisage : « Onglet « Articles �
 Styles : `public/css/app.css` (`.tabs--sub`). Balisage : « Administration : onglet « Courses » » dans `components.html`. Aucune nouvelle icône.
 
 - Onglets principaux `.tabs` / `.tab` : « Comptes », « Catégories », « Courses ». **Depuis le 1er novembre 2026** : « Comptes » et « Courses » seulement (les catégories sont remplacées par les types de liste).
-- Sous « Courses », une seconde barre `.tabs.tabs--sub` (`role="tablist"`, `aria-label="Courses"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-selected="true"` : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
+- Sous « Courses », une seconde barre `.tabs.tabs--sub` (`<nav>`, `aria-label="Courses"`, depuis le 15 novembre 2026 ; avant : `role="tablist"`) : `.tab` « Magasins », « Rayons », « Articles », en plus petit (`--text-sm`), 44 px de haut ; choix actif `aria-current="page"` (avant : `aria-selected="true"`) : souligné de 3 px ET texte plus foncé. Le contenu de chaque choix est celui des anciens onglets, inchangé.
 
 ## Ajout : page « Aide » (le guide numéroté)
 

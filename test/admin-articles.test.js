@@ -175,5 +175,5 @@ test('onglets de l\'Administration : la barre défile de côté au lieu de débo
   const css = read('public/css/app.css');
   assert.match(css, /\.tabs \{ overflow-x: auto; scrollbar-width: none; \}/);
   assert.match(css, /\.tab \{ flex: 1 0 auto; white-space: nowrap; \}/);
-  assert.match(code('public/js/screens/admin.js'), /requestAnimationFrame\(\(\) => tabs\.querySelector\('\[aria-selected="true"\]'\)\?\.scrollIntoView\(\{ block: 'nearest', inline: 'nearest' \}\)\);/);
+  assert.match(code('public/js/screens/admin.js'), /requestAnimationFrame\(\(\) => tabs\.querySelector\('\[aria-current="page"\]'\)\?\.scrollIntoView\(\{ block: 'nearest', inline: 'nearest' \}\)\);/);
 });

@@ -26,9 +26,11 @@ test('deux onglets, plus de « Catégories » ; « Courses » propose Magasins, 
   assert.match(block('SHOPPING'), /\{ key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' \}/);
   assert.match(block('SHOPPING'), /\{ key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' \}/);
   assert.match(admin, /if \(tab\.key === 'noms'\) return loadNames\(panel, \(\) => alive\);\s*return loadReferences\(tab, panel, \(\) => alive\);/);
-  // Le sélecteur : même composant que les onglets, en plus petit, role="tablist"/"tab", aria-selected
-  assert.match(admin, /function tabBar\(entries, current, label, extraClass = ''\) \{\s*return h\('div', \{ class: `tabs\$\{extraClass\}`, role: 'tablist', 'aria-label': label \},/);
-  assert.match(admin, /role: 'tab',\s*'aria-selected': String\(t\.key === current\),/);
+  // Le sélecteur : même composant que les onglets, en plus petit ; une navigation
+  // (<nav>, aria-current="page"), plus de role="tablist"/"tab" (15 novembre 2026)
+  assert.match(admin, /function tabBar\(entries, current, label, extraClass = ''\) \{\s*return h\('nav', \{ class: `tabs\$\{extraClass\}`, 'aria-label': label \},/);
+  assert.match(admin, /'aria-current': t\.key === current \? 'page' : null,/);
+  assert.doesNotMatch(admin, /role: 'tab/);
   assert.match(admin, /const choices = shopping \? tabBar\(SHOPPING, shopping\.key, 'Courses', ' tabs--sub'\) : null;/);
   const css = read('public/css/app.css');
   assert.match(css, /\.tabs--sub \.tab \{ min-height: var\(--tap-min\); font-size: var\(--text-sm\); \}/);

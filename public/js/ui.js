@@ -352,9 +352,44 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
 // at : { x, y } (clic droit, ordinateur) : le menu s'ouvre à cet endroit.
 // item.keys : touche du raccourci (ordinateur), écrite en .keycap et
 // annoncée par aria-keyshortcuts.
+// Choix à options (role="radiogroup" : filtre des types, thème, durée du
+// lien, type de liste…) : au clavier, les flèches passent au choix suivant
+// ou précédent (en boucle) et le choisissent, Début et Fin au premier et au
+// dernier, comme les boutons radio du système. Une seule règle pour tous.
+// (Tests : un faux document sans addEventListener, d'où le « ?. »)
+document.addEventListener?.('keydown', (event) => {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  const radio = event.target?.closest?.('[role="radio"]');
+  const group = radio?.closest('[role="radiogroup"]');
+  if (!group) return;
+  const radios = [...group.querySelectorAll('[role="radio"]')]
+    .filter((r) => !r.disabled && !r.closest('[hidden]') && r.closest('[role="radiogroup"]') === group);
+  const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+  let radioTarget = null;
+  if (step) radioTarget = radios[(radios.indexOf(radio) + step + radios.length) % radios.length];
+  else if (event.key === 'Home') radioTarget = radios[0];
+  else if (event.key === 'End') radioTarget = radios.at(-1);
+  if (!radioTarget) return;
+  event.preventDefault();
+  radioTarget.focus();
+  radioTarget.click();
+});
+
+// Clavier (ordinateur) : un menu ouvert au clavier met le focus sur son
+// premier choix ; ouvert au doigt ou à la souris, sur le menu lui-même.
+let lastInputWasKeyboard = false;
+document.addEventListener?.('keydown', () => { lastInputWasKeyboard = true; }, true);
+document.addEventListener?.('pointerdown', () => { lastInputWasKeyboard = false; }, true);
+
+// Menu : flèches haut et bas (en boucle), Début et Fin pour passer d'un
+// choix à l'autre ; Tab ferme le menu (le focus revient au bouton qui l'a
+// ouvert) ; Échap aussi (voir overlay). Le bouton qui l'ouvre
+// (aria-haspopup="menu") dit s'il est ouvert (aria-expanded).
 export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = null } = {}) {
   let closeMenu;
   let panel;
+  const trigger = (anchor ?? document.activeElement)?.closest?.('[aria-haspopup="menu"]') ?? null;
+  trigger?.setAttribute('aria-expanded', 'true');
   const { close } = overlay((close) => {
     closeMenu = close;
     panel = h('div', { class: 'menu' },
@@ -373,8 +408,23 @@ export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = n
         'aria-keyshortcuts': item.keys ? item.keys.aria : null,
       }, icon(item.icon), h('span', { class: 'grow' }, item.label), item.checked ? icon('check', 'icon--check') : null,
       item.keys ? h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, item.keys.label) : null)]));
+    panel.addEventListener('keydown', (event) => {
+      const choices = [...panel.querySelectorAll('.menu__item')];
+      const index = choices.indexOf(document.activeElement);
+      const go = { ArrowDown: index + 1, ArrowUp: index < 0 ? choices.length - 1 : index - 1, Home: 0, End: choices.length - 1 }[event.key];
+      if (event.key === 'Tab') {
+        closeMenu();
+        return;
+      }
+      if (go === undefined || !choices.length) return;
+      event.preventDefault();
+      const nextChoice = choices[(go + choices.length) % choices.length];
+      nextChoice.focus();
+    });
     return panel;
-  }, { role: 'menu', label, onClose });
+  }, { role: 'menu', label, onClose: () => { trigger?.setAttribute('aria-expanded', 'false'); onClose?.(); } });
+  const firstChoice = lastInputWasKeyboard ? panel.querySelector('.menu__item') : null;
+  if (firstChoice) firstChoice.focus();
   if (at) {
     // Clic droit : sous le pointeur, sans sortir de l'écran
     const box = host.getBoundingClientRect();

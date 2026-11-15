@@ -416,6 +416,12 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. Ouvrir la fiche d'un article, balayer jusqu'au bout : VoiceOver reste dans la fiche, il ne passe pas sur la liste derrière.
     4. Se connecter avec un identifiant vide, deux fois : l'erreur est lue les deux fois. Réglages › Mot de passe : sur « Nouveau mot de passe », l'aide « Au moins 10 caractères » est lue.
     5. Toucher une liste depuis « Mes listes » : VoiceOver annonce le nom de la liste (le titre), pas un élément au hasard ; aucun contour bleu n'apparaît autour du titre.
+55. **Ordinateur au clavier** (15 novembre 2026 ; vérifié dans Chromium à 1 440 × 900 ; téléphone et ordinateur comparés au pixel près, Administration comprise) :
+    1. Ouvrir Listo, appuyer sur Tab : « Aller au contenu » apparaît en haut à gauche ; Entrée : le focus va sur le titre de l'écran.
+    2. Dans une liste, aller sur « Menu de la liste » avec Tab, Entrée : le premier choix a le focus ; flèches haut et bas, Début, Fin ; Échap ou Tab ferment le menu.
+    3. Mes listes : aller sur le filtre « Toutes » avec Tab, flèche droite : « Courses » est choisi ; Fin : « Envies ».
+    4. Administration : les onglets « Comptes » et « Courses » ont le même aspect qu'avant ; l'onglet choisi est souligné.
+    5. Windows, contraste élevé activé (Paramètres › Accessibilité) : le champ qui a le curseur a un contour bien visible.
 
 ## API des comptes (étape 2)
 

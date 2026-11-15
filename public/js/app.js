@@ -3,6 +3,7 @@
 
 import { h, icon, replace } from './dom.js';
 import { prepareAnnouncer } from './announce.js';
+import { scriptUrl } from './trusted.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
@@ -739,7 +740,8 @@ start();
 // sw.js). « updateViaCache: none » : le navigateur vérifie toujours s'il
 // existe une nouvelle version de sw.js.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
+  // Adresse vérifiée par la politique Trusted Types de Listo (js/trusted.js)
+  navigator.serviceWorker.register(scriptUrl('/sw.js'), { updateViaCache: 'none' }).catch(() => {});
 }
 
 // Notification touchée alors que Listo est déjà ouvert : le service worker

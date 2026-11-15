@@ -423,12 +423,18 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Administration : les onglets « Comptes » et « Courses » ont le même aspect qu'avant ; l'onglet choisi est souligné.
     5. Windows, contraste élevé activé (Paramètres › Accessibilité) : le champ qui a le curseur a un contour bien visible.
 56. **Trusted Types** (15 novembre 2026 ; vérifié dans Chromium, qui l'applique) : sur un iPhone à jour (iOS 26 et après), après la mise à jour, ouvrir Listo : il s'ouvre normalement (service worker) ; scanner un code-barres (Ajouter › Scanner) : il est lu comme avant. Hors ligne ensuite : Listo s'ouvre toujours.
+57. **Connexion avec Authelia** (15 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16 avec un faux Authelia local, et par 17 tests automatiques ; le vrai Authelia reste à essayer) : avec `LISTO_OIDC=on` et le client configuré dans Authelia ([guide](guide.md#authelia-serveur)) :
+    1. Écran de connexion : « Se connecter avec Authelia » sous le mot de passe. Le toucher : la page d'Authelia s'ouvre ; après connexion (et sa double authentification), retour dans Listo, sur « Mes listes ».
+    2. Un compte avec un mot de passe provisoire : pas d'écran « Nouveau mot de passe » ; le mot de passe provisoire ne marche plus.
+    3. Un compte Authelia sans compte Listo : « Votre demande de compte est envoyée à l'Admin » ; l'Admin voit la pastille dans Réglages, la demande dans Administration › Comptes, « Accepter » ; la personne se reconnecte avec Authelia et entre.
+    4. Sur l'iPhone installé (écran d'accueil) : le retour d'Authelia revient bien dans Listo installé (et non dans Safari) ; sinon, le noter.
+    5. Couper Authelia : « Authelia ne répond pas » ; le mot de passe Listo marche toujours.
 
 ## API des comptes (étape 2)
 
 | Route | Rôle |
 | --- | --- |
-| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`) |
+| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`), et le nom du bouton de connexion avec Authelia (`oidc`, ou `null`) |
 | `POST /api/setup` | Crée le premier Admin : `code` (code de démarrage), `username`, `displayName`, `password` |
 | `POST /api/login` | Connexion : `username`, `password`. Si la 2FA est active, répond `{"twoFactorRequired": true}` |
 | `POST /api/login/2fa` | Saisie du code à 6 chiffres (ou d'un code de secours) : `code` |

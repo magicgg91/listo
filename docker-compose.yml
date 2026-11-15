@@ -56,6 +56,13 @@ services:
       # ou Microsoft ne voient que l'heure, la taille et l'appareil. Clés
       # créées dans secrets/vapid.json : à sauvegarder avec secret.key.
       # - LISTO_PUSH=on
+      # Connexion avec Authelia : DÉSACTIVÉE par défaut ; voir docs/guide.md,
+      # chapitre « Installation », « Connexion avec Authelia ». Clé secrète du
+      # client dans secrets/oidc-client-secret (jamais ici).
+      # - LISTO_OIDC=on
+      # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
+      # - LISTO_OIDC_CLIENT_ID=listo
+      # - LISTO_OIDC_NAME=Authelia
     ports:
       - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
     volumes:

@@ -40,6 +40,13 @@ export function topbar(title, onBack = null) {
 
 // Ligne de réglage (icône, titre, sous-titre, élément de fin), aussi
 // utilisée par account.js
+// Nombre de demandes de compte en attente (Admin), ou rien
+function requestsBadge(count) {
+  if (!count) return null;
+  const label = count === 1 ? '1 demande de compte en attente' : `${count} demandes de compte en attente`;
+  return h('span', { class: 'news-badge', role: 'img', 'aria-label': label, title: label }, String(count));
+}
+
 export function row({ iconName, title, sub, end, onClick }) {
   const tag = onClick ? 'button' : 'div';
   return h(tag, { class: 'row', type: onClick ? 'button' : null, onClick },
@@ -94,7 +101,8 @@ function generalRows(isAdmin) {
   return [
     notificationsRow(),
     row({ iconName: 'trash', title: 'Corbeille des listes', onClick: () => navigate('trash') }),
-    isAdmin ? row({ iconName: 'shield', title: 'Administration', onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
+    // Pastille : demandes de compte en attente (connexion avec Authelia)
+    isAdmin ? row({ iconName: 'shield', title: 'Administration', end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];
 }
 

@@ -316,3 +316,89 @@ test('configuration : LISTO_OIDC=on exige l\'adresse d\'Authelia (https en produ
   assert.equal(full.oidcClientId, 'listo');
   assert.match(full.oidcSecretPath, /oidc-client-secret$/);
 });
+
+test('Administration : l\'Admin voit la demande, l\'accepte (identifiant corrigé) ; la personne entre ensuite avec Authelia ; pastille de Réglages', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const admin = await setupAdmin(app);
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=demande');
+  assert.equal((await admin.get('/api/me')).body.user.accountRequests, 1);
+  const list = (await admin.get('/api/admin/users')).body;
+  assert.equal(list.oidc, true);
+  assert.equal(list.accountRequests.length, 1);
+  const request = list.accountRequests[0];
+  assert.deepEqual(Object.keys(request).sort(), ['createdAt', 'displayName', 'id', 'username'], 'jamais l\'identifiant interne d\'Authelia');
+  // Identifiant invalide ou déjà pris : refusé
+  assert.equal((await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'a b', displayName: 'X' })).status, 400);
+  assert.equal((await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'guillaume', displayName: 'X' })).status, 409);
+  const accepted = await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'nouveau', displayName: 'Nouveau Venu' });
+  assert.equal(accepted.status, 201);
+  assert.equal(accepted.body.user.authelia, true);
+  assert.equal(accepted.body.user.role, 'user');
+  assert.equal((await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'autre', displayName: 'X' })).status, 404, 'déjà traitée');
+  // Relié par son identifiant interne : il entre, même si son nom Authelia diffère
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'nouveau'), '/');
+  assert.equal((await browser.get('/api/me')).body.user.username, 'nouveau');
+  // Pas de connexion par mot de passe : personne ne connaît le sien
+  assert.equal((await app.client().post('/api/login', { username: 'nouveau', password: 'nimporte quoi 123' })).status, 401);
+});
+
+test('Administration : refuser une demande ; délier un compte ; réservé à l\'Admin ; 404 quand la connexion Authelia est coupée', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const admin = await setupAdmin(app);
+  const leaId = await addUser(app.db, { username: 'lea', password: 'MotDePasse-lea' });
+  const lea = app.client();
+  await login(lea, 'lea', 'MotDePasse-lea');
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=demande');
+  const [request] = (await admin.get('/api/admin/users')).body.accountRequests;
+  assert.equal((await lea.post(`/api/admin/account-requests/${request.id}/refuse`)).status, 403);
+  assert.equal((await lea.get('/api/me')).body.user.accountRequests, undefined, 'pas de pastille pour un Utilisateur');
+  assert.equal((await admin.post(`/api/admin/account-requests/${request.id}/refuse`)).status, 204);
+  assert.equal((await admin.get('/api/admin/users')).body.accountRequests.length, 0);
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=refusee');
+  // Délier : un autre compte Authelia « lea » peut ensuite ouvrir le compte
+  assert.equal(await signIn(app.client(), fake, 'lea'), '/');
+  assert.equal(await signIn(app.client(), fake, 'imposteur'), '/#/connexion?authelia=refuse');
+  assert.equal((await lea.del(`/api/admin/users/${leaId}/authelia`)).status, 403);
+  const unlinked = await admin.del(`/api/admin/users/${leaId}/authelia`);
+  assert.equal(unlinked.body.user.authelia, false);
+  assert.equal(await signIn(app.client(), fake, 'imposteur'), '/');
+  // Connexion Authelia coupée : routes des demandes inconnues
+  const off = await startTestApp(t);
+  const offAdmin = await setupAdmin(off);
+  assert.equal((await offAdmin.post('/api/admin/account-requests/1/accept', { username: 'x1', displayName: 'X' })).status, 404);
+  assert.deepEqual((await offAdmin.get('/api/admin/users')).body.accountRequests, []);
+  assert.equal((await offAdmin.get('/api/me')).body.user.accountRequests, undefined);
+});
+
+test('mot de passe provisoire jamais changé : effacé à la connexion avec Authelia (pas d\'écran « Nouveau mot de passe », l\'Admin ne peut plus s\'en servir)', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const admin = await setupAdmin(app);
+  await admin.post('/api/admin/users', { username: 'lea', displayName: 'Léa', password: 'provisoire-lea-123' });
+  assert.equal(app.db.prepare("SELECT must_change_password FROM users WHERE username = 'lea'").pluck().get(), 1);
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'lea'), '/');
+  assert.equal((await browser.get('/api/me')).body.user.mustChangePassword, false);
+  assert.equal((await app.client().post('/api/login', { username: 'lea', password: 'provisoire-lea-123' })).status, 401);
+  assert.ok(app.logs.some((line) => line.includes('mot_de_passe_provisoire_efface')));
+});
+
+test('échecs répétés depuis une même adresse : connexion avec Authelia bloquée 15 minutes', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const attacker = app.client({ ip: '203.0.113.9' });
+  for (let i = 0; i < 5; i++) {
+    const res = await attacker.request('GET', `/oidc/retour?code=x&state=${'y'.repeat(43)}`, undefined, {}, { redirect: 'manual' });
+    assert.equal(res.headers.get('location'), '/#/connexion?authelia=erreur');
+  }
+  const blocked = await attacker.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  assert.equal(blocked.headers.get('location'), '/#/connexion?authelia=erreur', 'pas de départ vers Authelia');
+  // Une autre adresse n'est pas touchée
+  const other = await app.client({ ip: '203.0.113.10' }).request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' });
+  assert.match(other.headers.get('location'), /^https:\/\/auth\.exemple\.test\//);
+  app.clock.now += 16 * 60 * 1000;
+  assert.match((await attacker.request('GET', '/oidc/connexion', undefined, {}, { redirect: 'manual' })).headers.get('location'), /^https:\/\/auth\.exemple\.test\//);
+});

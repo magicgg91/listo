@@ -114,7 +114,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.ok(GUIDE.every((c) => !('adminOnly' in c)));
   // Parties du serveur : marquées (un chapitre, et des sections d'autres chapitres)
   assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation']);
-  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['secours', 'notif-serveur', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
+  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['authelia-serveur', 'secours', 'notif-serveur', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
 });
 
 test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens en https seulement', () => {
@@ -165,7 +165,7 @@ test('aucun secret ni adresse réelle : seulement des exemples inventés ; vouvo
   // Domaines : l'exemple inventé, et des sites publics connus
   const hosts = [...text.matchAll(/https?:\/\/([a-z0-9.-]+)/gi)].map((m) => m[1].toLowerCase());
   // (« ip » : le nom à remplacer de http://IP:13300 et http://IP_LOCALE:13300)
-  for (const host of hosts) assert.ok(['listo.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'platform.claude.com', 'ip'].includes(host), host);
+  for (const host of hosts) assert.ok(['listo.exemple.fr', 'auth.exemple.fr', 'securityheaders.com', 'github.com', 'world.openfoodfacts.org', 'platform.claude.com', 'ip'].includes(host), host);
   assert.doesNotMatch(text, /mondomaine/);
   // Adresses IP : seulement le réseau local d'exemple (la liste d'Anthropic est un lien vers sa page officielle, jamais une plage recopiée)
   for (const ip of text.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g) ?? []) assert.ok(/^192\.168\.1\.\d+$|^0\.0\.0\.0$/.test(ip), ip);

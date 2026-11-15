@@ -218,7 +218,8 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   const phone = code.slice(code.indexOf('export function renderSettings'), code.indexOf('function generalRows'));
   assert.match(phone, /h\('div', \{ class: 'group' \}, generalRows\(isAdmin\)\),/);
   assert.match(phone, /h\('div', \{ class: 'group' \}, helpRow\(\), aboutRow\(isAdmin\)\)/);
-  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: 'Administration', onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
+  // (pastille : demandes de compte en attente, connexion avec Authelia)
+  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: 'Administration', end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
   assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
   // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
   assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);

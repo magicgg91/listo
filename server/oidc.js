@@ -267,7 +267,17 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   });
 
   // 1. Départ vers Authelia
+  // Échecs de vérification (state, jeton…) comptés par adresse IP : au-delà
+  // de 5 en 15 minutes, la connexion avec Authelia est bloquée 15 minutes
+  // pour cette adresse (une annulation chez Authelia ne compte pas)
+  const failKeys = (req) => [`oidc:${req.ip}`];
+  const failed = (req) => ctx.limiter.fail(failKeys(req));
+
   router.get('/oidc/connexion', async (req, res) => {
+    if (ctx.limiter.isBlocked(failKeys(req))) {
+      audit('connexion_authelia_bloquee', { ip: req.ip });
+      return finish(res, 'erreur');
+    }
     pruneFlows();
     if (flows.size >= MAX_FLOWS) {
       audit('connexion_authelia_refusee', { raison: 'trop de connexions en cours', ip: req.ip });
@@ -306,6 +316,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     const state = typeof req.query.state === 'string' ? req.query.state : '';
     // state : celui de CE navigateur, et jamais déjà utilisé
     if (!fromCookie || !state || state.length > 200 || !safeEqual(fromCookie, state)) {
+      failed(req);
       audit('connexion_authelia_refusee', { raison: 'state absent ou différent', ip: req.ip });
       return finish(res, 'erreur');
     }
@@ -324,6 +335,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     try {
       identity = await identify(await discover(), code, flow);
     } catch (err) {
+      failed(req);
       audit('connexion_authelia_refusee', { raison: err.message, ip: req.ip });
       return finish(res, 'erreur');
     }
@@ -351,6 +363,15 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (user.active !== 1) {
       audit('connexion_authelia_refusee', { utilisateur: user.username, raison: 'compte désactivé', ip: req.ip });
       return finish(res, 'refuse');
+    }
+    // Mot de passe provisoire donné par l'Admin, jamais changé : avec
+    // Authelia, la personne n'en a pas besoin. Il est remplacé par un mot de
+    // passe aléatoire que personne ne connaît (l'Admin, qui connaissait le
+    // provisoire, ne peut plus s'en servir), sans écran « Nouveau mot de passe ».
+    if (user.must_change_password === 1) {
+      const hash = await hashPassword(randomToken());
+      db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ? AND must_change_password = 1').run(hash, user.id);
+      audit('mot_de_passe_provisoire_efface', { utilisateur: user.username, raison: 'connexion avec Authelia', ip: req.ip });
     }
     // Compte avec double authentification Listo, qu'Authelia n'a pas faite :
     // le code à 6 chiffres est demandé (même écran que pour le mot de passe)

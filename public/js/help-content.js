@@ -247,7 +247,7 @@ export const GUIDE = [
         blocks: [
           'Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot de passe ni de clé.',
           'La partie `environment:` du fichier, telle qu\'elle est livrée (les lignes en commentaire, commençant par `#`, sont facultatives : enlevez le `#` pour les utiliser) :',
-          { code: '    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # sauvegarde vers 3 h, résumé des échéances à 8 h\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »)\n      # Notifications push : DÉSACTIVÉES par défaut. Contenu chiffré : Apple,\n      # Google, Mozilla ou Microsoft ne voient que l\'heure, la taille et\n      # l\'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.\n      # - LISTO_PUSH=on' },
+          { code: '    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # sauvegarde vers 3 h, résumé des échéances à 8 h\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »)\n      # Notifications push : DÉSACTIVÉES par défaut. Contenu chiffré : Apple,\n      # Google, Mozilla ou Microsoft ne voient que l\'heure, la taille et\n      # l\'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.\n      # - LISTO_PUSH=on\n      # Connexion avec Authelia : DÉSACTIVÉE par défaut (chapitre « Installation »,\n      # « Connexion avec Authelia »). Clé secrète dans secrets/oidc-client-secret.\n      # - LISTO_OIDC=on\n      # - LISTO_OIDC_ISSUER=https://auth.exemple.fr\n      # - LISTO_OIDC_CLIENT_ID=listo\n      # - LISTO_OIDC_NAME=Authelia' },
           { table: {
             head: ['Variable', 'Valeur de production', 'Rôle'],
             rows: [
@@ -264,6 +264,10 @@ export const GUIDE = [
               ['`LISTO_PRODUCT_CONTACT`', 'absente', 'Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
               ['`LISTO_MCP`', 'absente : désactivé', '`on` active l\'accès depuis Claude ([[mcp-serveur]]). Toute autre valeur : désactivé.'],
               ['`LISTO_PUSH`', 'absente : désactivées', '`on` active les notifications ([[notif-serveur]]) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées.'],
+              ['`LISTO_OIDC`', 'absente : désactivée', '`on` active la connexion avec Authelia ([[authelia-serveur]]) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée.'],
+              ['`LISTO_OIDC_ISSUER`', 'absente', 'Adresse d\'Authelia, en `https://` (par exemple `https://auth.exemple.fr`).'],
+              ['`LISTO_OIDC_CLIENT_ID`', 'absente : `listo`', 'Identifiant de Listo dans la configuration d\'Authelia (`client_id`).'],
+              ['`LISTO_OIDC_NAME`', 'absente : `Authelia`', 'Nom du bouton « Se connecter avec … » (30 caractères au plus).'],
             ],
           } },
         ],
@@ -359,6 +363,24 @@ export const GUIDE = [
           'Le téléphone : installation sur l\'écran d\'accueil ([[telephone]]), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).',
         ] }],
       },
+      {
+        id: 'authelia-serveur',
+        title: 'Connexion avec Authelia (facultative)',
+        server: true,
+        blocks: [
+          'Avec un serveur Authelia à la maison, chacun peut se connecter à Listo par son compte Authelia (bouton « Se connecter avec Authelia »), en plus de l\'identifiant et du mot de passe Listo, qui restent possibles. Désactivée par défaut ; sans elle, aucun bouton et les adresses `/oidc/…` répondent 404.',
+          { ol: [
+            'Créez la clé secrète du client. Authelia la donne en clair et sous forme d\'empreinte : `docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986` (“Random Password” : la clé en clair ; “Digest” : l\'empreinte).',
+            'Mettez la clé en clair, seule sur une ligne, dans `secrets/oidc-client-secret` (à côté de `secret.key`), puis `chmod 600 secrets/oidc-client-secret`. Jamais dans `docker-compose.yml` ni dans une variable. Gardez-en une copie avec la clé secrète ([[cle]]).',
+            'Ajoutez le client « listo » dans la configuration d\'Authelia (partie `identity_providers.oidc.clients`), avec l\'empreinte dans `client_secret` et l\'adresse de Listo dans `redirect_uris` (exemple ci-dessous), puis redémarrez Authelia.',
+            'Dans `docker-compose.yml`, décommentez `LISTO_OIDC=on` et `LISTO_OIDC_ISSUER` avec l\'adresse d\'Authelia ([[variables]]), puis `docker compose up -d`. `docker logs listo` doit dire “Connexion avec Authelia activée”. Sinon, le message dit ce qui manque.',
+          ] },
+          { code: "identity_providers:\n  oidc:\n    clients:\n      - client_id: 'listo'\n        client_name: 'Listo'\n        client_secret: '$pbkdf2-sha512$…'   # l'empreinte (Digest)\n        public: false\n        authorization_policy: 'two_factor'\n        require_pkce: true\n        pkce_challenge_method: 'S256'\n        redirect_uris:\n          - 'https://listo.exemple.fr/oidc/retour'\n        scopes: ['openid', 'profile']\n        response_types: ['code']\n        grant_types: ['authorization_code']\n        token_endpoint_auth_method: 'client_secret_basic'" },
+          'Avec `authorization_policy: \'two_factor\'`, Authelia demande sa double authentification : Listo ne redemande pas son propre code. Un compte Listo qui a activé la double authentification de Listo la voit redemandée si Authelia ne l\'a pas faite.',
+          'Le serveur Listo doit joindre Authelia à son adresse publique (`LISTO_OIDC_ISSUER`), en HTTPS. Les adresses `/oidc/connexion` et `/oidc/retour` passent par le même hôte que Listo : rien à régler dans le proxy.',
+          { note: 'Le compte Authelia ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez les comptes Authelia avec les identifiants de Listo. À la première connexion, Listo retient ce compte Authelia : un autre compte Authelia du même nom, plus tard, est refusé (l\'Admin peut « Délier d\'Authelia » un compte, dans Administration › Comptes).' },
+        ],
+      },
     ],
   },
 
@@ -452,6 +474,14 @@ export const GUIDE = [
           'S\'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([[role-admin]]). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :',
           { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
           'Un mot de passe provisoire s\'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([[claude-connexions]]). Ce que l\'Admin peut faire et ne peut pas faire : [[role-admin]].',
+        ],
+      },
+      {
+        id: 'authelia',
+        title: 'Se connecter avec Authelia',
+        blocks: [
+          'Si le serveur le propose, l\'écran de connexion montre aussi « Se connecter avec Authelia ». Touchez-le, connectez-vous chez Authelia : vous revenez dans Listo, connecté. Votre compte Authelia ouvre le compte Listo qui a le même identifiant. L\'identifiant et le mot de passe Listo restent possibles. Si l\'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion avec Authelia.',
+          'Pas encore de compte Listo : « Votre demande de compte est envoyée à l\'Admin ». L\'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l\'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous avec Authelia. Une demande refusée ne peut pas être refaite avant 30 jours.',
         ],
       },
     ],

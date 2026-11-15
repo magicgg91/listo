@@ -619,8 +619,17 @@ function screenShown(col) {
   shownKey = key;
   if (!changed || !heading || isTextField(document.activeElement) || col.querySelector('.scrim')) return;
   heading.setAttribute('tabindex', '-1');
+  // Sans contour tant qu'aucun autre élément ne prend le focus. (Pas à la
+  // perte du focus : changer d'application ou verrouiller le téléphone le
+  // fait perdre un instant, puis le rend au titre, qui montrait alors un
+  // cadre bleu.)
   heading.setAttribute('data-screen-focus', '');
-  heading.addEventListener('blur', () => heading.removeAttribute('data-screen-focus'), { once: true });
+  const keepUntilElsewhere = (event) => {
+    if (event.target === heading) return;
+    heading.removeAttribute('data-screen-focus');
+    document.removeEventListener('focusin', keepUntilElsewhere, true);
+  };
+  document.addEventListener('focusin', keepUntilElsewhere, true);
   heading.focus({ preventScroll: true });
 }
 

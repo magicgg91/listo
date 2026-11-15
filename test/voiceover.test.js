@@ -92,3 +92,10 @@ test('changement d\'écran : titre de la page, focus sur le titre h1 (jamais un 
   assert.match(app, /if \(!changed \|\| !heading \|\| isTextField\(document\.activeElement\) \|\| col\.querySelector\('\.scrim'\)\) return;/);
   assert.match(read('public/css/app.css'), /\.app h1\[data-screen-focus\]:focus \{ outline: none; \}/);
 });
+
+test('titre focalisé : sans contour même après un changement d\'application (le marqueur ne part que quand un autre élément prend le focus)', () => {
+  const app = read('public/js/app.js');
+  assert.doesNotMatch(app, /addEventListener\('blur', \(\) => heading\.removeAttribute\('data-screen-focus'\)/);
+  assert.match(app, /if \(event\.target === heading\) return;\n    heading\.removeAttribute\('data-screen-focus'\);/);
+  assert.match(app, /document\.addEventListener\('focusin', keepUntilElsewhere, true\);/);
+});

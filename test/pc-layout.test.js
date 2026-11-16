@@ -105,6 +105,12 @@ test('liste : crayon et corbeille ont toujours leur place (le texte ne change pa
   assert.match(kit, /@media \(pointer: coarse\) \{\n  \.item__actions \{ visibility: visible; flex-direction: row; gap: 2px; \}\n  \.item__actions \.icon-btn \{ width: 44px; height: 44px; \}/);
   assert.match(kit, /^\.item:hover \.item__actions, \.item:focus-within \.item__actions \{ visibility: visible; \}$/m);
   assert.doesNotMatch(kit, /\.item__actions \{[^}]*display: none/);
+  // Info-bulles à gauche, dans la ligne (dessous, la ligne suivante les recouvrait)
+  assert.match(kit, /^  \.app--pc \.item__actions \[data-pc-tip\]::after \{ top: auto; right: calc\(100% \+ 6px\); \}$/m);
+  assert.match(kit, /^  \.app--pc \.item__actions \[data-action="edit"\]::after \{ top: 0; \}$/m);
+  assert.match(kit, /^  \.app--pc \.item__actions \[data-action="delete"\]::after \{ bottom: 0; \}$/m);
+  const tips = (css) => css.match(/^  \.app--pc \.item__actions[^\n]*$/gm);
+  assert.deepEqual(tips(read('design/listo.css')), tips(kit));
   // Kit de design et copie de l'application identiques sur ce point
   const block = (css) => css.slice(css.indexOf('/* Actions d\'une ligne'), css.indexOf('/* Souhait libre : bouton'));
   assert.ok(block(kit).length > 200);

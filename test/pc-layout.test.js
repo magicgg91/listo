@@ -93,6 +93,24 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   assert.doesNotMatch(list, /innerHTML/);
 });
 
+test('liste : crayon et corbeille ont toujours leur place (le texte ne change pas de ligne au survol), l\'un au-dessus de l\'autre', () => {
+  // Cachés par visibility (place gardée), jamais par display: none
+  assert.match(kit, /^\.item__actions \{ display: flex; visibility: hidden; flex-direction: column;/m);
+  // Deux boutons de 21 px : tiennent dans une ligne de 44 px (bordure de 1 px comprise)
+  assert.match(kit, /^\.item__actions \.icon-btn \{ width: 21px; height: 21px;/m);
+  // Couleurs au survol : crayon bleu, corbeille rouge
+  assert.match(kit, /^\.item__actions \[data-action="edit"\]:hover \{ background: var\(--color-accent-soft\); color: var\(--color-accent-ink\); \}$/m);
+  assert.match(kit, /^\.item__actions \[data-action="delete"\]:hover \{ background: var\(--color-danger-soft\); color: var\(--color-danger-ink\); \}$/m);
+  // Écran tactile : côte à côte, 44 px, toujours visibles
+  assert.match(kit, /@media \(pointer: coarse\) \{\n  \.item__actions \{ visibility: visible; flex-direction: row; gap: 2px; \}\n  \.item__actions \.icon-btn \{ width: 44px; height: 44px; \}/);
+  assert.match(kit, /^\.item:hover \.item__actions, \.item:focus-within \.item__actions \{ visibility: visible; \}$/m);
+  assert.doesNotMatch(kit, /\.item__actions \{[^}]*display: none/);
+  // Kit de design et copie de l'application identiques sur ce point
+  const block = (css) => css.slice(css.indexOf('/* Actions d\'une ligne'), css.indexOf('/* Souhait libre : bouton'));
+  assert.ok(block(kit).length > 200);
+  assert.equal(block(read('design/listo.css')), block(kit));
+});
+
 test('recherche ordinateur : champ toujours visible, Échap vide puis quitte, jamais de curseur mis tout seul', () => {
   const row = read('public/js/search-row.js');
   assert.match(row, /if \(toggled\) close\(\);\s*else if \(input\.value !== ''\) clear\(\);\s*else releaseFocus\(\);/);

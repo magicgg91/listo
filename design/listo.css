@@ -646,14 +646,22 @@
 .app--pc .item__meta { gap: 6px; }
 @media (pointer: coarse) { .app--pc .item { min-height: 56px; } .app--pc .check { width: 52px; } }
 
-/* Actions d'une ligne (crayon, corbeille) : au survol et au focus clavier */
-.item__actions { display: none; align-items: center; flex: none; gap: 2px; align-self: center; margin-left: var(--space-1); }
-.item:hover .item__actions, .item:focus-within .item__actions { display: flex; }
-@media (pointer: coarse) { .item__actions { display: flex; } }
-.item__actions .icon-btn { width: 32px; height: 32px; border-radius: 8px; }
-@media (pointer: coarse) { .item__actions .icon-btn { width: 44px; height: 44px; } }
-.item__actions .icon-btn:hover { background: var(--color-neutral-soft); }
-.item__actions .icon--sm { width: 18px; height: 18px; }
+/* Actions d'une ligne (crayon, corbeille) : au survol et au focus clavier.
+   Place toujours réservée (boutons seulement invisibles) : le texte ne change
+   pas de ligne quand ils apparaissent. À la souris, l'un au-dessus de l'autre
+   (peu de largeur, tiennent dans une ligne de 44 px, bordure comprise) ; crayon bleu et
+   corbeille rouge au survol. Écran tactile : côte à côte, 44 px, toujours là. */
+.item__actions { display: flex; visibility: hidden; flex-direction: column; align-items: center; flex: none; align-self: center; margin-left: var(--space-1); }
+.item:hover .item__actions, .item:focus-within .item__actions { visibility: visible; }
+.item__actions .icon-btn { width: 21px; height: 21px; border-radius: 6px; }
+.item__actions .icon--sm { width: 16px; height: 16px; }
+.item__actions [data-action="edit"]:hover { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.item__actions [data-action="delete"]:hover { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+@media (pointer: coarse) {
+  .item__actions { visibility: visible; flex-direction: row; gap: 2px; }
+  .item__actions .icon-btn { width: 44px; height: 44px; }
+  .item__actions .icon--sm { width: 18px; height: 18px; }
+}
 /* Souhait libre : bouton « Réserver » au bout de la ligne */
 .item__act { flex: none; align-self: center; margin-left: var(--space-1); }
 

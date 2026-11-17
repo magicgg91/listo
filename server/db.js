@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { normalizeItemName } from '../public/js/history.js';
+import { compareNames } from '../public/js/sorting.js';
 
 // Expression SQL qui donne l'heure actuelle au format ISO (UTC, millièmes)
 const NOW = "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))";
@@ -643,7 +644,34 @@ export const MIGRATIONS = [
     fillListTypes(db);
     db.exec('ALTER TABLE lists DROP COLUMN category_id; DROP TABLE categories;');
   },
+
+  // --- Migration 33 : ordre manuel des sous-tâches (17 novembre 2026) ---
+  // items.position : place d'une sous-tâche parmi celles de sa tâche
+  // principale (1, 2, 3… ; public/js/subtasks.js), choisie à la main ;
+  // vide pour les autres éléments. Les sous-tâches existantes gardent
+  // l'ordre où elles s'affichaient (tri par défaut : à faire puis cochées,
+  // chacune par ordre alphabétique).
+  (db) => subtaskPositionsMigration(db),
 ];
+
+// Migration 33 : positions de départ des sous-tâches existantes (supprimées
+// comprises : « Annuler » les remet à leur place). Renvoie le nombre de
+// sous-tâches numérotées.
+export function subtaskPositionsMigration(db) {
+  db.exec('ALTER TABLE items ADD COLUMN position INTEGER CHECK (position IS NULL OR position >= 1)');
+  const rows = db.prepare('SELECT id, parent_id, name, checked FROM items WHERE parent_id IS NOT NULL').all();
+  const groups = new Map();
+  for (const row of rows) {
+    if (!groups.has(row.parent_id)) groups.set(row.parent_id, []);
+    groups.get(row.parent_id).push(row);
+  }
+  const set = db.prepare('UPDATE items SET position = ? WHERE id = ?');
+  for (const children of groups.values()) {
+    children.sort((a, b) => a.checked - b.checked || compareNames(a.name, b.name));
+    children.forEach((child, index) => set.run(index + 1, child.id));
+  }
+  return rows.length;
+}
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables
 // qui pointent vers elle : listes choisies, codes, jetons) avec une nouvelle

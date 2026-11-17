@@ -269,7 +269,7 @@ test('copie locale : les mêmes gestes donnent le même résultat que sur le ser
   const view = computeListView(state, h.lists.refonte);
   const shown = view.groups.flatMap((g) => g.items.map((i) => i.id));
   assert.ok(shown.includes(h.items.authelia) && !shown.includes(h.items.lot1));
-  assert.deepEqual(view.subtasks.get(h.items.authelia).map((i) => i.name), ['Lot 3', 'Lot 1', 'Lot 2'], 'à faire, puis cochées (ordre alphabétique)');
+  assert.deepEqual(view.subtasks.get(h.items.authelia).map((i) => i.name), ['Lot 1', 'Lot 2', 'Lot 3'], 'ordre manuel (ordre d\'ajout), cochées à leur place');
 });
 
 test('copie locale : principale qui se répète, sous-tâches décochées ; option coupée, tout à plat', async () => {
@@ -306,7 +306,7 @@ test('lien public : sous-tâches rangées sous leur principale, décrites champ 
   const tops = page.groups.flatMap((g) => g.items);
   assert.deepEqual(tops.map((i) => i.name).sort(), ['Authelia', 'Beszel']);
   const authelia = tops.find((i) => i.name === 'Authelia');
-  assert.deepEqual(authelia.subtasks.map((i) => [i.name, i.checked]), [['Lot 2', false], ['Lot 1', true]], 'à faire, puis cochées');
+  assert.deepEqual(authelia.subtasks.map((i) => [i.name, i.checked]), [['Lot 1', true], ['Lot 2', false]], 'ordre manuel, cochée à sa place');
   const text = JSON.stringify(page);
   for (const secret of [...Object.values(h.items), 'parentId', 'parent_id', 'subtasksEnabled']) assert.ok(!text.includes(secret), secret);
   await op(h.guillaume, { type: 'list.update', listId: h.lists.refonte, subtasksEnabled: false });
@@ -364,6 +364,126 @@ test('Claude : read_list donne la principale de chaque sous-tâche ; add_items e
 test('« Tout déplier / Tout replier » agit aussi sur les sous-tâches (pas pendant la recherche)', async () => {
   const fs = await import('node:fs');
   const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
-  assert.match(list, /show\(inSearch \|\| openSubtasks\.has\(item\.id\)\);\n    if \(!inSearch\) foldables\.push\(foldable\);/);
+  assert.match(list, /show\(reordering \|\| inSearch \|\| openSubtasks\.has\(item\.id\)\);\n    if \(!inSearch\) foldables\.push\(foldable\);/);
   assert.match(list, /if \(inSearch\) show\(open\);\n      else foldable\.setOpen\(open\);\n      drawFoldAll\(\);/);
+});
+
+// --- Ordre manuel des sous-tâches (migration 33) ---
+
+test('ordre manuel : ajout à la fin, déplacement (après une autre, en premier), refus sans rien écrire, droits', async (t) => {
+  const { NOT_A_SUBTASK, BAD_PLACE } = await import('../public/js/subtasks.js');
+  const h = await household(t);
+  const lot3 = uuid();
+  await op(h.guillaume, { type: 'item.create', listId: h.lists.refonte, itemId: lot3, name: 'Lot 3', parentId: h.items.authelia });
+  const order = () => h.app.db.prepare('SELECT name FROM items WHERE parent_id = ? AND deleted_at IS NULL ORDER BY position').pluck().all(h.items.authelia);
+  assert.deepEqual(order(), ['Lot 1', 'Lot 2', 'Lot 3'], 'ordre d\'ajout');
+  assert.equal((await op(h.lea, { type: 'item.move', itemId: lot3, afterId: null })).status, 200);
+  assert.deepEqual(order(), ['Lot 3', 'Lot 1', 'Lot 2']);
+  await op(h.guillaume, { type: 'item.move', itemId: lot3, afterId: h.items.lot2 });
+  assert.deepEqual(order(), ['Lot 1', 'Lot 2', 'Lot 3']);
+  await op(h.guillaume, { type: 'item.move', itemId: h.items.lot1, afterId: h.items.lot2 });
+  assert.deepEqual(order(), ['Lot 2', 'Lot 1', 'Lot 3']);
+  assert.deepEqual(h.app.db.prepare('SELECT position FROM items WHERE parent_id = ? ORDER BY position').pluck().all(h.items.authelia), [1, 2, 3], 'places renumérotées');
+  // Refus : pas une sous-tâche, place d'une autre principale ou inconnue, elle-même
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: h.items.beszel, afterId: null })).error, NOT_A_SUBTASK);
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: h.items.lot1, afterId: h.items.beszel })).error, BAD_PLACE);
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: h.items.lot1, afterId: uuid() })).error, BAD_PLACE);
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: h.items.lot1, afterId: h.items.lot1 })).error, BAD_PLACE);
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: h.items.lot1 })).error, BAD_PLACE, 'afterId obligatoire (null : en premier)');
+  // Droits : lecture seule 403, non-membre 404
+  assert.equal((await op(h.paul, { type: 'item.move', itemId: lot3, afterId: null })).status, 403);
+  assert.equal((await op(h.zoe, { type: 'item.move', itemId: lot3, afterId: null })).status, 404);
+  assert.deepEqual(order(), ['Lot 2', 'Lot 1', 'Lot 3'], 'rien n\'a bougé');
+  // Rangée sous une principale : à la fin ; option coupée : plus de déplacement
+  await op(h.guillaume, { type: 'item.update', itemId: h.items.beszel, parentId: h.items.authelia });
+  assert.deepEqual(order(), ['Lot 2', 'Lot 1', 'Lot 3', 'Beszel']);
+  await op(h.guillaume, { type: 'list.update', listId: h.lists.refonte, subtasksEnabled: false });
+  assert.equal((await op(h.guillaume, { type: 'item.move', itemId: lot3, afterId: null })).error, NOT_A_SUBTASK);
+});
+
+test('ordre manuel : la copie locale fait comme le serveur, cochées à leur place ; lien public dans le même ordre', async (t) => {
+  const { emptyState, loadSync, applyOp, computeListView } = await import('../public/js/store.js');
+  const h = await household(t);
+  const state = emptyState();
+  loadSync(state, (await h.guillaume.get('/api/sync')).body);
+  const me = (await h.guillaume.get('/api/me')).body.user;
+  const lot3 = uuid();
+  const steps = [
+    { type: 'item.create', listId: h.lists.refonte, itemId: lot3, name: 'Lot 3', parentId: h.items.authelia },
+    { type: 'item.check', itemId: h.items.lot1, checked: true },
+    { type: 'item.move', itemId: lot3, afterId: null },
+    { type: 'item.move', itemId: h.items.lot1, afterId: h.items.lot2 },
+  ];
+  for (const step of steps) {
+    applyOp(state, step, { user: me, now: new Date().toISOString() });
+    assert.equal((await op(h.guillaume, step)).status, 200);
+  }
+  const local = computeListView(state, h.lists.refonte).subtasks.get(h.items.authelia).map((i) => [i.name, i.checked]);
+  assert.deepEqual(local, [['Lot 3', false], ['Lot 2', false], ['Lot 1', true]], 'la cochée reste à sa place');
+  const server = h.app.db.prepare('SELECT name FROM items WHERE parent_id = ? ORDER BY position').pluck().all(h.items.authelia);
+  assert.deepEqual(local.map(([name]) => name), server);
+  const share = await h.guillaume.request('PUT', `/api/lists/${h.lists.refonte}/share`, {});
+  const page = (await createClient(h.app.base, { ip: '203.0.113.41' }).get(`/api/public/${share.body.share.url.split('/p/')[1]}`)).body;
+  const authelia = page.groups.flatMap((g) => g.items).find((i) => i.name === 'Authelia');
+  assert.deepEqual(authelia.subtasks.map((i) => i.name), server);
+  assert.ok(!JSON.stringify(page).includes('position'), 'la place n\'est jamais envoyée');
+});
+
+test('ordre manuel : deux déplacements en même temps, le dernier arrivé l\'emporte sans rien perdre', async (t) => {
+  const h = await household(t);
+  const lot3 = uuid();
+  await op(h.guillaume, { type: 'item.create', listId: h.lists.refonte, itemId: lot3, name: 'Lot 3', parentId: h.items.authelia });
+  // Guillaume (hors ligne) met Lot 3 en premier ; Léa met Lot 1 en dernier ; les deux arrivent
+  await op(h.lea, { type: 'item.move', itemId: h.items.lot1, afterId: lot3 });
+  await op(h.guillaume, { type: 'item.move', itemId: lot3, afterId: null });
+  const order = h.app.db.prepare('SELECT name FROM items WHERE parent_id = ? ORDER BY position').pluck().all(h.items.authelia);
+  assert.deepEqual(order, ['Lot 3', 'Lot 2', 'Lot 1']);
+});
+
+test('ordre manuel : migration 33, les sous-tâches existantes gardent l\'ordre affiché (à faire puis cochées, ordre alphabétique)', async () => {
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { databaseAt } = await import('./helpers.js');
+  const { openDatabase, schemaVersion } = await import('../server/db.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'listo-ordre-'));
+  const file = path.join(dir, 'listo.db');
+  let db = databaseAt(file, 32);
+  db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
+  db.prepare("INSERT INTO lists (id, name, type, owner_id, subtasks_enabled) VALUES ('l', 'Maison', 'tasks', 1, 1)").run();
+  const add = db.prepare('INSERT INTO items (id, list_id, name, checked, parent_id, created_by) VALUES (?, ?, ?, ?, ?, 1)');
+  add.run('p', 'l', 'Principale', 0, null);
+  add.run('c', 'l', 'Zinc', 0, 'p');
+  add.run('a', 'l', 'Ardoise', 1, 'p');
+  add.run('b', 'l', 'éponge', 0, 'p');
+  db.close();
+  db = openDatabase(file);
+  assert.equal(schemaVersion(db), 33);
+  assert.deepEqual(db.prepare('SELECT id, position FROM items ORDER BY id').all(), [
+    { id: 'a', position: 3 }, { id: 'b', position: 1 }, { id: 'c', position: 2 }, { id: 'p', position: null },
+  ]);
+  db.close();
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('Claude : read_list donne les sous-tâches dans l\'ordre manuel ; update_items les réordonne (after_id), tout ou rien', async (t) => {
+  const { BAD_PLACE, NOT_A_SUBTASK } = await import('../public/js/subtasks.js');
+  const h = await mcpHousehold(t);
+  const c = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
+  const toolError = (r) => (r.body.result?.isError ? r.body.result.content[0].text : null);
+  const L = h.ids.maison;
+  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.update', listId: L, subtasksEnabled: true }] });
+  const added = data(await c.tool('add_items', { list_id: L, items: [{ name: 'Couper le courant', parent_id: h.ids.ampoule }, { name: 'Changer', parent_id: h.ids.ampoule }, { name: 'Tester', parent_id: h.ids.ampoule }] }));
+  const [couper, changer, tester] = added.results.map((r) => r.id);
+  const names = async () => data(await c.tool('read_list', { list_id: L })).items.filter((i) => i.parent_id === h.ids.ampoule).map((i) => i.name);
+  assert.deepEqual(await names(), ['Couper le courant', 'Changer', 'Tester']);
+  const moved = data(await c.tool('update_items', { list_id: L, items: [{ id: tester, after_id: null }] }));
+  assert.equal(moved.results[0].status, 'updated');
+  assert.equal(moved.results[0].position, 1);
+  assert.deepEqual(await names(), ['Tester', 'Couper le courant', 'Changer']);
+  await c.tool('update_items', { list_id: L, items: [{ id: tester, after_id: changer }] });
+  assert.deepEqual(await names(), ['Couper le courant', 'Changer', 'Tester']);
+  assert.equal(toolError(await c.tool('update_items', { list_id: L, items: [{ id: couper, name: 'Couper' }, { id: tester, after_id: h.ids.ampoule }] })), BAD_PLACE);
+  assert.equal(toolError(await c.tool('update_items', { list_id: L, items: [{ id: h.ids.ampoule, after_id: null }] })), NOT_A_SUBTASK);
+  assert.deepEqual(await names(), ['Couper le courant', 'Changer', 'Tester'], 'rien n\'est écrit');
 });

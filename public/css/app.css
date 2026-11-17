@@ -632,6 +632,22 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .subtasks, .subtasks__list { margin: 0; padding: 0; list-style: none; }
 .subtasks__list > .item, .subtasks__add { padding-left: 28px; }
 .subtasks__add { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
-.subtasks__add-btn { display: flex; align-items: center; width: 100%; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 600; text-align: left; }
+.subtasks__add-btn { display: flex; align-items: center; flex: 1; min-width: 0; width: 100%; white-space: nowrap; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 600; text-align: left; }
 .subtasks__plus { display: grid; place-items: center; flex: none; width: 52px; }
 .app--pc .subtasks__plus { width: 44px; }
+/* « Réordonner » (ordre manuel des sous-tâches) : poignée à glisser (le
+   défilement ne la prend pas ; le pincement pour agrandir reste permis :
+   pinch-zoom, jamais none), nom, « Monter » et « Descendre » de 44 px ;
+   la ligne tenue au doigt passe au-dessus des autres, avec une ombre.
+   « Réordonner » (deux flèches) et « Terminé » : à droite de la dernière
+   ligne du groupe. */
+.subtasks__add { display: flex; align-items: center; }
+.subtasks__add--done { justify-content: flex-end; padding-right: var(--space-2); min-height: var(--tap-min); }
+.subtasks__reorder-btn { display: inline-flex; align-items: center; justify-content: center; flex: none; gap: 0; margin-right: var(--space-1); color: var(--color-accent-ink); }
+.subtasks__reorder-btn .icon { margin: 0 -2px; }
+.item.reorder { align-items: center; gap: 2px; padding-right: var(--space-1); }
+.reorder__handle { display: grid; place-items: center; flex: none; align-self: stretch; width: 52px; color: var(--color-text-2); cursor: grab; touch-action: pinch-zoom; }
+.app--pc .reorder__handle { width: 44px; }
+.reorder__name { flex: 1; min-width: 0; padding: var(--space-1) 0; }
+.item.reorder.is-dragging { position: relative; z-index: 2; box-shadow: var(--shadow-pop); cursor: grabbing; }
+.item.reorder .icon-btn:disabled { opacity: 0.35; }

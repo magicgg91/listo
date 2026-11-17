@@ -10,11 +10,11 @@
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
-import { splitDone, compareNames, isMultiList, ITEM_SORTS, sortSubtasks } from './sorting.js';
+import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
 import { modeOf, turnAfterCheck } from './assign.js';
-import { nestsSubtasks, nestItems, parentOf } from './subtasks.js';
+import { nestsSubtasks, nestItems, parentOf, orderSubtasks, nextPosition, reorderedIds } from './subtasks.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -309,6 +309,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         dueTime: op.dueTime ?? null, // heure de l'échéance (« HH:MM ») et rappel (minutes avant)
         remindBefore: op.remindBefore ?? null,
         parentId: op.parentId ?? null, // tâche principale (sous-tâches, subtasks.js)
+        // Ordre manuel : une nouvelle sous-tâche va à la fin (le serveur confirme)
+        position: op.parentId ? nextPosition(itemsOf(state, op.listId).filter((it) => it.parentId === op.parentId)) : null,
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -339,6 +341,11 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (next.repeat == null && modeOf(next) === 'turn') Object.assign(next, { assignMode: 'one', assignPeople: [] });
       if (op.dueDate === null && op.dueTime === undefined) next.dueTime = null;
       if (next.dueTime == null && op.remindBefore === undefined) next.remindBefore = null;
+      // Ordre manuel (comme le serveur) : rangée sous une autre principale,
+      // à la fin de ses sous-tâches ; sortie, plus de place
+      if (op.parentId !== undefined && (op.parentId ?? null) !== (item.parentId ?? null)) {
+        next.position = op.parentId ? nextPosition(itemsOf(state, item.listId).filter((it) => it.parentId === op.parentId && it.id !== item.id)) : null;
+      }
       state.items.set(item.id, next);
       // Tâche à faire rangée sous une principale cochée : celle-ci se décoche
       if (op.parentId) reopenParent(state, next, now);
@@ -376,6 +383,21 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         reopenParent(state, state.items.get(item.id), now);
       }
       return;
+    // Ordre manuel des sous-tâches (comme le serveur) : places renumérotées
+    case 'item.move': {
+      if (!item || !nestsSubtasks(state.lists.get(item.listId))) return;
+      const byId = new Map(itemsOf(state, item.listId).map((it) => [it.id, it]));
+      const parent = parentOf(item, byId);
+      if (!parent) return;
+      const siblings = nestItems([...byId.values()], true).childrenOf.get(parent.id) ?? [];
+      const order = reorderedIds(siblings, item.id, op.afterId ?? null);
+      if (!order) return;
+      order.forEach((id, index) => {
+        const child = state.items.get(id);
+        if (child.position !== index + 1) state.items.set(id, { ...child, position: index + 1, updatedAt: now });
+      });
+      return;
+    }
     case 'item.delete':
       if (item) {
         // Sous-tâches : parties avec leur principale (deletedWith), revenues avec elle
@@ -857,7 +879,8 @@ export function computeListView(state, listId, { sort = null, me = null } = {}) 
   const { tops, childrenOf } = nestItems(items, nestsSubtasks(list));
   const chosen = effectiveSort(list, sort);
   const { groups, done } = splitDone(tops, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: chosen, people: memberNames(list), me });
-  const subtasks = new Map([...childrenOf].map(([id, children]) => [id, sortSubtasks(children, chosen)]));
+  // Sous-tâches : toujours l'ordre manuel (cochées à leur place)
+  const subtasks = new Map([...childrenOf].map(([id, children]) => [id, orderSubtasks(children)]));
   return {
     list,
     multi,

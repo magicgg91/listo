@@ -117,6 +117,10 @@ export async function updateItem(item, changes) {
   dataChanged();
 }
 
+// Ordre manuel des sous-tâches : place item juste après afterId (une autre
+// sous-tâche de la même principale), ou en premier (afterId null)
+export const moveItem = (item, afterId) => perform({ type: 'item.move', itemId: item.id, afterId });
+
 export const deleteItem = (item) => perform({ type: 'item.delete', itemId: item.id });
 export const restoreItem = (itemId) => perform({ type: 'item.restore', itemId });
 

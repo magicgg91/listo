@@ -131,18 +131,6 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
   return groupItems(items, [], false);
 }
 
-// Sous-tâches d'une principale (public/js/subtasks.js) : celles à faire
-// d'abord, puis les cochées (barrées), chaque partie dans l'ordre du tri
-// choisi pour la liste : par échéance (sans échéance à la fin), par
-// priorité (élevée d'abord), sinon par ordre alphabétique. Pas de groupes.
-export function sortSubtasks(children, sort = 'alpha') {
-  const byName = (a, b) => compareNames(a.name, b.name);
-  const order = sort === 'due'
-    ? (a, b) => (Boolean(a.dueDate) !== Boolean(b.dueDate) ? (a.dueDate ? -1 : 1) : compareDue(a.dueDate, a.dueTime, b.dueDate, b.dueTime) || byName(a, b))
-    : sort === 'priority' ? (a, b) => rankOf(a) - rankOf(b) || byName(a, b) : byName;
-  return [...children.filter((c) => !c.checked).sort(order), ...children.filter((c) => c.checked).sort(order)];
-}
-
 // Liste de courses en ordre alphabétique : tous les articles à plat, sans
 // rayon ni magasin, dans un seul groupe repliable « À acheter » (all: true).
 // Le rayon et le magasin de chaque article sont gardés : seul l'affichage

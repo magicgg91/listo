@@ -43,6 +43,7 @@ import { ASSIGN_MODES, parsePeople, formatPeople, isPeopleList, assigneesOf, tur
 import { isDueTime, isReminder } from '../public/js/due-time.js';
 import {
   usesSubtasks, SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT,
+  NOT_A_SUBTASK, BAD_PLACE, nextPosition, reorderedIds,
 } from '../public/js/subtasks.js';
 import { createReservationService } from './reservations.js';
 import { cleanName, parseId } from './validate.js';
@@ -633,6 +634,10 @@ export function createListService(ctx) {
   // Sous-tâches présentes d'une tâche principale (elle-même pas rangée sous
   // une autre)
   const childRows = (row) => (parentRow(row) ? [] : q.childItems.all(row.id, row.list_id));
+  // Ordre manuel : ce que les règles partagées lisent d'une sous-tâche
+  const asOrdered = (row) => ({ id: row.id, position: row.position, createdAt: row.created_at });
+  // Place d'une sous-tâche ajoutée (ou rangée) sous parent : à la fin
+  const lastPosition = (parent) => nextPosition(childRows(parent).map(asOrdered));
 
   // Principale demandée par une opération (parentId) : undefined (pas
   // demandé), null (aucune : la tâche redevient ordinaire) ou la ligne de
@@ -735,6 +740,8 @@ export function createListService(ctx) {
     // Tâche principale d'une sous-tâche (identifiant), ou null
     // (public/js/subtasks.js : ignorée si l'option est coupée)
     parentId: item.parent_id ?? null,
+    // Place parmi les sous-tâches de sa principale (ordre manuel), ou null
+    position: item.position ?? null,
     ean: item.ean ?? null,
     // Liste d'envies : lien web et prix indicatif (centimes)
     link: item.link ?? null,
@@ -1089,9 +1096,11 @@ export function createListService(ctx) {
         aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
       }
       const now = nowIso();
-      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, assigned_to, assign_mode, assign_people, due_time, remind_before, parent_id, created_by, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, parent?.id ?? null, user.id, now, now);
+      // Sous-tâche : à la fin des sous-tâches de sa principale
+      const position = parent ? lastPosition(parent) : null;
+      db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, ean, link, price_cents, priority, due_date, repeat, assigned_to, assign_mode, assign_people, due_time, remind_before, parent_id, position, created_by, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, list.id, name, quantity(op.quantity), note(op.note), aisleId, storeId, ean, link, priceCents, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, parent?.id ?? null, position, user.id, now, now);
       // Une nouvelle sous-tâche à faire : sa principale cochée se décoche
       reopenParent(parent, now);
       // Historique (listes de courses seulement) : magasin de l'article
@@ -1173,8 +1182,12 @@ export function createListService(ctx) {
         throw new OpError(400, 'Rien à modifier.');
       }
       const now = nowIso();
-      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, assigned_to = ?, assign_mode = ?, assign_people = ?, due_time = ?, remind_before = ?, ean = ?, link = ?, price_cents = ?, parent_id = ?, updated_at = ? WHERE id = ?')
-        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, ean, link, priceCents, parentId, now, item.id);
+      // Ordre manuel : rangée sous une autre principale, la tâche va à la fin
+      // de ses sous-tâches ; sortie, elle n'a plus de place
+      const moved = newParent !== undefined && (newParent?.id ?? null) !== (item.parent_id ?? null);
+      const position = !moved ? item.position ?? null : newParent ? lastPosition(newParent) : null;
+      db.prepare('UPDATE items SET name = ?, quantity = ?, note = ?, aisle_id = ?, store_id = ?, priority = ?, due_date = ?, repeat = ?, assigned_to = ?, assign_mode = ?, assign_people = ?, due_time = ?, remind_before = ?, ean = ?, link = ?, price_cents = ?, parent_id = ?, position = ?, updated_at = ? WHERE id = ?')
+        .run(name, qty, text, aisleId, storeId, priority, dueDate, repeat, assignedTo, assignment.mode, formatPeople(assignment.people), dueTime, remindBefore, ean, link, priceCents, parentId, position, now, item.id);
       // Tâche à faire rangée sous une principale cochée : celle-ci se décoche
       if (newParent && item.checked !== 1) reopenParent(newParent, now);
 
@@ -1258,6 +1271,30 @@ export function createListService(ctx) {
       news.log(item.list_id, user.id, op.checked ? 'check' : 'uncheck', [item.id]);
       changed(item.list_id);
       return { item: describeItem(q.item.get(item.id)), ...(children.length ? { children } : {}) };
+    },
+
+    // Ordre manuel des sous-tâches (décisions du 17 novembre 2026) :
+    // déplacer une sous-tâche juste après afterId (une autre sous-tâche de la
+    // même principale) ou en premier (afterId null). Les places de la
+    // principale sont renumérotées 1, 2, 3… à partir de l'ordre du serveur
+    // (deux déplacements en même temps : le dernier arrivé l'emporte, rien
+    // ne se perd). Pas de Nouveautés : rien n'est ajouté ni changé.
+    'item.move'(user, op) {
+      const item = itemForEditor(user, op.itemId);
+      const parent = nests(item) ? parentRow(item) : null;
+      if (!parent) throw new OpError(400, NOT_A_SUBTASK);
+      if (op.afterId !== null && !isUuid(op.afterId)) throw new OpError(400, BAD_PLACE);
+      const siblings = childRows(parent).map(asOrdered);
+      const order = reorderedIds(siblings, item.id, op.afterId);
+      if (!order) throw new OpError(400, BAD_PLACE);
+      const now = nowIso();
+      const before = new Map(siblings.map((child) => [child.id, child.position]));
+      const set = db.prepare('UPDATE items SET position = ?, updated_at = ? WHERE id = ?');
+      order.forEach((id, index) => {
+        if (before.get(id) !== index + 1) set.run(index + 1, now, id);
+      });
+      changed(item.list_id);
+      return { item: describeItem(q.item.get(item.id)) };
     },
 
     // Supprimer un article (suppression logique ; l'historique reste). Sa
@@ -1671,8 +1708,8 @@ export function createListService(ctx) {
         // Comme un ajout : la mémoire des noms (listes de courses seulement)
         if (isShoppingList(source)) remember(item.name, { storeId: source.is_multi === 1 ? item.store_id : source.store_id, aisleId: item.aisle_id, count: 1 });
       }
-      const link = db.prepare('UPDATE items SET parent_id = ? WHERE id = ?');
-      for (const item of items) if (item.parent_id && newIds.has(item.parent_id)) link.run(newIds.get(item.parent_id), newIds.get(item.id));
+      const link = db.prepare('UPDATE items SET parent_id = ?, position = ? WHERE id = ?');
+      for (const item of items) if (item.parent_id && newIds.has(item.parent_id)) link.run(newIds.get(item.parent_id), item.position ?? null, newIds.get(item.id));
     })();
     ctx.events?.notifyList(id);
     ctx.audit('liste_dupliquee', { utilisateur: user.username, liste: id, source: source.id, elements: items.length });

@@ -199,7 +199,7 @@ test('état gardé au redessin : temps réel, changement de tri, coche', () => {
   // Un changement venu de l'autre téléphone ne touche pas à l'état : seuls le
   // bouton de l'en-tête, « Tout replier » et un ajout d'ici le modifient
   assert.equal((list.match(/folded\.(add|delete)\(/g) ?? []).length, 2);
-  assert.equal((list.match(/\.setOpen\(/g) ?? []).length, 5); // en-tête, zone des cochés, sous-tâches, Tout replier, ajout
+  assert.equal((list.match(/\.setOpen\(/g) ?? []).length, 6); // en-tête, zone des cochés, sous-tâches (et fin de « Réordonner »), Tout replier, ajout
   // Le même dessin, avec un article de plus (temps réel) : mêmes groupes
   const state = household();
   const before = computeListView(state, 'courses').groups.map(groupKey);

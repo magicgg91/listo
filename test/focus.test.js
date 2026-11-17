@@ -74,6 +74,7 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/app.js: heading', 'titre h1 du nouvel écran (tabindex="-1") après un changement d\'écran, jamais un champ'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
   ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],
+  ['public/js/screens/list.js: moveTarget', '« Réordonner » des sous-tâches : après Monter, Descendre, Réordonner ou Terminé, le focus reste sur le bouton touché (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: target', 'ordinateur : focus clavier gardé sur la même ligne après un redessin (un bouton de la ligne, jamais un champ)'],
   ['public/js/shortcuts.js: link', 'touche S : une entrée du sommaire de l\'aide (un lien, jamais un champ)'],
   ['scripts/site-assets/guide.js: searchButton', 'retour à la loupe quand la barre de recherche se ferme'],

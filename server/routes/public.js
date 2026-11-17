@@ -51,8 +51,8 @@ import { verifyPassword, getDummyHash, PASSWORD_MAX } from '../passwords.js';
 import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
 import { ACCESS_COOKIE } from '../shares.js';
-import { splitDone, sortSubtasks } from '../../public/js/sorting.js';
-import { nestItems, usesSubtasks } from '../../public/js/subtasks.js';
+import { splitDone } from '../../public/js/sorting.js';
+import { nestItems, usesSubtasks, orderSubtasks } from '../../public/js/subtasks.js';
 
 const NOT_FOUND = 'Lien expiré ou inexistant.';
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
@@ -101,7 +101,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents, parent_id
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents, parent_id, position, created_at
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -190,6 +190,9 @@ export function publicRoutes(ctx, { publicDir }) {
       priceCents: row.price_cents,
       listId: share.list_id,
       parentId: row.parent_id,
+      // Ordre manuel des sous-tâches (servent à l'ordre, jamais envoyés)
+      position: row.position,
+      createdAt: row.created_at,
     }));
     // Sous-tâches (option activée, liste de tâches) : rangées sous leur
     // principale (subtasks), jamais à part ; aucun identifiant envoyé
@@ -241,9 +244,9 @@ export function publicRoutes(ctx, { publicDir }) {
         reservation: states.get(item.id)?.state ?? 'free',
         mine: states.get(item.id)?.mine ?? false,
       } : {}),
-      // Tâche principale : ses sous-tâches (à faire puis cochées), décrites
+      // Tâche principale : ses sous-tâches dans l'ordre manuel, décrites
       // champ par champ de la même façon
-      ...(childrenOf.has(item.id) ? { subtasks: sortSubtasks(childrenOf.get(item.id)).map(describe) } : {}),
+      ...(childrenOf.has(item.id) ? { subtasks: orderSubtasks(childrenOf.get(item.id)).map(describe) } : {}),
     });
     // Article coché : il a quitté son groupe, son rayon (ou son magasin dans
     // une liste « multi ») n'est donc plus donné par l'en-tête ; il est

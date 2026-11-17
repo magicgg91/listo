@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
+import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
 import {
   SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT,
   nestItems, parentOf, progressOf,
@@ -312,4 +313,48 @@ test('lien public : sous-tâches rangées sous leur principale, décrites champ 
   const flat = (await visitor.get(`/api/public/${token}`)).body;
   assert.equal(flat.groups.flatMap((g) => g.items).length + flat.done.length, 4);
   assert.ok(!JSON.stringify(flat).includes('subtasks'));
+});
+
+// --- Claude (connexion MCP) ---
+
+test('Claude : read_list donne la principale de chaque sous-tâche ; add_items et update_items rangent, tout ou rien ; jamais sans l\'option', async (t) => {
+  const h = await mcpHousehold(t);
+  const c = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
+  const toolError = (r) => (r.body.result?.isError ? r.body.result.content[0].text : null);
+  const L = h.ids.maison;
+  // Option désactivée : refus de tout l'appel, rien n'est écrit
+  assert.equal(toolError(await c.tool('add_items', { list_id: L, items: [{ name: 'Douille', parent_id: h.ids.ampoule }] })), SUBTASKS_OFF);
+  assert.equal(toolError(await c.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Beurre', parent_id: h.ids.lait }] })), SUBTASK_NOT_HERE);
+  await h.guillaume.post('/api/ops', { ops: [{ id: uuid(), type: 'list.update', listId: L, subtasksEnabled: true }] });
+  let list = data(await c.tool('read_list', { list_id: L }));
+  assert.equal(list.list.subtasks, true);
+  // Ajout : sous-tâches de l'ampoule ; même nom sous deux principales permis
+  const added = data(await c.tool('add_items', { list_id: L, items: [{ name: 'Douille', parent_id: h.ids.ampoule }, { name: 'Escabeau', parent_id: h.ids.ampoule }, { name: 'Tester' }] }));
+  assert.equal(added.created, 3);
+  assert.equal(added.results[0].parent_id, h.ids.ampoule);
+  const tester = added.results[2].id;
+  const again = data(await c.tool('add_items', { list_id: L, items: [{ name: 'Tester', parent_id: h.ids.ampoule }] }));
+  assert.equal(again.created, 1, 'pas un doublon : une autre principale');
+  // Lecture : chaque sous-tâche juste après sa principale, avec parent_id
+  list = data(await c.tool('read_list', { list_id: L }));
+  const names = list.items.map((i) => [i.name, i.parent_id ?? null]);
+  const at = names.findIndex(([n]) => n === 'Ampoule');
+  assert.deepEqual(names.slice(at, at + 4).map(([n, p]) => [n, p === h.ids.ampoule]), [['Ampoule', false], ['Douille', true], ['Escabeau', true], ['Tester', true]]);
+  // Refus, tout ou rien
+  const douille = added.results[0].id;
+  assert.equal(toolError(await c.tool('add_items', { list_id: L, items: [{ name: 'X' }, { name: 'Y', parent_id: douille }] })), PARENT_IS_SUBTASK);
+  assert.equal(toolError(await c.tool('add_items', { list_id: L, items: [{ name: 'Z', parent_id: crypto.randomUUID() }] })), BAD_PARENT);
+  assert.equal(toolError(await c.tool('add_items', { list_id: L, items: [{ name: 'Z', parent_id: h.ids.ampoule, due_date: '2030-01-07', repeat: { every: 'week', weekdays: ['monday'] } }] })), SUBTASK_NO_REPEAT);
+  assert.equal(toolError(await c.tool('update_items', { list_id: L, items: [{ id: h.ids.ampoule, parent_id: tester }] })), HAS_SUBTASKS);
+  assert.equal(toolError(await c.tool('update_items', { list_id: L, items: [{ id: tester, parent_id: tester }] })), NOT_OWN_PARENT);
+  assert.equal(toolError(await c.tool('update_items', { list_id: L, items: [{ id: douille, repeat: { every: 'week', weekdays: ['monday'] } }] })), SUBTASK_NO_REPEAT);
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM items WHERE name IN (?, ?, ?)').pluck().get('X', 'Y', 'Z'), 0);
+  // Ranger puis sortir une tâche
+  const moved = data(await c.tool('update_items', { list_id: L, items: [{ id: tester, parent_id: h.ids.ampoule }] }));
+  assert.equal(moved.results[0].parent_id, h.ids.ampoule);
+  const out = data(await c.tool('update_items', { list_id: L, items: [{ id: douille, parent_id: null }] }));
+  assert.equal(out.results[0].parent_id, null);
+  // Cocher la principale par Claude coche ses sous-tâches (règle du serveur)
+  await c.tool('set_checked', { list_id: L, item_ids: [h.ids.ampoule], checked: true });
+  assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM items WHERE parent_id = ? AND checked = 0 AND deleted_at IS NULL').pluck().get(h.ids.ampoule), 0);
 });

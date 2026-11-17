@@ -326,9 +326,9 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   // Nouvelle liste : désactivées (envies comprises, voir
   // test/wish-priority.test.js) ; liste existante : ses réglages enregistrés ;
   // visibles seulement hors courses, aussi quand on change la catégorie
-  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false, assign: list \? listOptionsOf\(list\)\.assign : false \};/);
+  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false, assign: list \? listOptionsOf\(list\)\.assign : false, subtasks: list \? listOptionsOf\(list\)\.subtasks : false \};/);
   // (la carte reste visible pour « Après l'ajout » : seuls les deux interrupteurs se cachent)
-  assert.match(form, /row\.hidden = row\.dataset\.switch === 'priority' \? !usesPriority\(listType\) : row\.dataset\.switch === 'assign' \? !usesAssign\(listType\) : !usesDue\(listType\);/);
+  assert.match(form, /row\.hidden = row\.dataset\.switch === 'priority' \? !usesPriority\(listType\)\s*: row\.dataset\.switch === 'assign' \? !usesAssign\(listType\)\s*: row\.dataset\.switch === 'subtasks' \? !usesSubtasks\(listType\) : !usesDue\(listType\);/);
   assert.match(form, /priorityEnabled: withPriority && options\.priority, dueEnabled: withDue && options\.due/);
   assert.match(form, /if \(withPriority && !convert && options\.priority !== saved\.priority\) switches\.priorityEnabled = options\.priority;/);
   // Réservé au propriétaire : le formulaire de modification renvoie un invité vers la liste

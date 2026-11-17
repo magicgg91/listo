@@ -218,7 +218,7 @@ test('fiche : mêmes champs que la fiche à consulter de l\'application, aucun o
   // « Pour » : jamais sur la page publique, pour ne pas montrer les prénoms
   // de la famille à un visiteur sans compte ; « Rappel » : propre à la tâche,
   // jamais sur la page publique non plus)
-  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel');
+  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel' && label !== 'Sous-tâche de');
   assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Se répète', 'Code-barres', 'Rayon', 'Magasin']);
   const format = read('public/js/format.js');
   const details = format.slice(format.indexOf('export function publicItemDetails'), format.indexOf('export function priorityChip'));
@@ -247,7 +247,7 @@ test('page publique : fiche sans champ ni bouton qui écrit, aucune requête à 
   // Focus rendu à la ligne touchée (jamais à un champ de saisie)
   assert.match(sheet, /if \(opener\?\.isConnected && !opener\.matches\?\.\('input, textarea'\)\) opener\.focus\(\);/);
   // La ligne est un bouton (44 px : .item__body du kit), lu « Voir … »
-  assert.match(page, /h\('button', \{ class: 'item__body', type: 'button', 'aria-label': `Voir \$\{item\.name\}\$\{spokenMeta\(item\)\}`, onClick: \(\) => showItem\(item, place, thumb\) \}/);
+  assert.match(page, /h\('button', \{ class: 'item__body', type: 'button', 'aria-label': `Voir \$\{item\.name\}\$\{spokenMeta\(item\)\}\$\{extraSpoken\}`, onClick: \(\) => showItem\(item, place, thumb\) \}/);
   // Photo de la fiche : copie de la vignette déjà chargée (canvas), sans
   // nouvelle requête ; sinon, l'adresse du lien, comme avant
   assert.match(page, /if \(thumb\?\.complete && thumb\.naturalWidth\) \{\s*const canvas = h\('canvas'/);

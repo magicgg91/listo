@@ -34,7 +34,7 @@ test('formulaire : valeur de départ de « Priorité » — désactivée pour to
 
 test('formulaire : aucune valeur forcée ni liée au type ; création sans priorité sauf choix ; seul un changement de l\'interrupteur est envoyé ; conversion avec le réglage affiché', () => {
   const form = code('public/js/screens/list-form.js');
-  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false, assign: list \? listOptionsOf\(list\)\.assign : false \};/);
+  assert.match(form, /let options = \{ priority: priorityAtStart\(list\), due: list \? listOptionsOf\(list\)\.due : false, assign: list \? listOptionsOf\(list\)\.assign : false, subtasks: list \? listOptionsOf\(list\)\.subtasks : false \};/);
   // Le type choisi ne touche plus l'interrupteur (plus de valeur posée par l'écran)
   assert.doesNotMatch(form, /optionsCard\.set\(|priorityChosen|card\.set =/);
   assert.doesNotMatch(form, /isWishList\(listType\) \|\| Boolean/);

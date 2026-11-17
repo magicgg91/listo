@@ -116,6 +116,6 @@ test('écran : « Par rayon » / « Par magasin » (liste « multi ») et en-tê
 
 test('lien public : toujours par rayon (aucun tri envoyé), réponse inchangée', () => {
   const pub = read('server/routes/public.js');
-  assert.match(pub, /const \{ groups, done \} = splitDone\(items, aisles, isShopping, \{ byStore, stores \}\);/);
+  assert.match(pub, /const \{ groups, done \} = splitDone\(tops, aisles, isShopping, \{ byStore, stores \}\);/);
   assert.doesNotMatch(pub, /sort:/);
 });

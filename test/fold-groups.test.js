@@ -73,7 +73,7 @@ test('« N\'invente pas de catégories » : ordre alphabétique et par échéanc
   }
   // À l'écran : une telle liste est dessinée sans en-tête ni bouton
   const list = read('public/js/screens/list.js');
-  assert.match(list, /: group\.label \? foldableGroup\(list, group, group\.label\)\s*\/\/ Ordre alphabétique ou par échéance : liste simple, sans en-tête\s*: h\('section', \{\}, h\('ul', \{\}, group\.items\.map\(itemRow\)\)\)/);
+  assert.match(list, /: group\.label \? foldableGroup\(list, group, group\.label\)\s*\/\/ Ordre alphabétique ou par échéance : liste simple, sans en-tête\s*: h\('section', \{\}, h\('ul', \{\}, rowsOf\(group\.items\)\)\)/);
 });
 
 test('état replié : par liste et par téléphone, déplié par défaut, stockage indisponible sans erreur', () => {

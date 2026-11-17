@@ -150,3 +150,23 @@ test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) e
   assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: 'Notifications', onClick: \(\) => navigate\('notifications'\) \}\)/);
   assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d|\d{3,})-/);
 });
+
+test('échec de l\'inscription du navigateur (ordinateur, 17 novembre 2026) : cause probable, quoi vérifier et détail du navigateur, à la place de « Une erreur inattendue »', async () => {
+  globalThis.window = globalThis.window ?? {};
+  const { pushSetupMessage, PushSetupError } = await import('../public/js/push.js');
+  const service = pushSetupMessage(new DOMException('Registration failed - push service error', 'AbortError'));
+  assert.match(service, /^Ce navigateur n'a pas réussi à s'inscrire auprès de son service de notifications/);
+  assert.match(service, /bloqueur de publicité, filtre DNS, pare-feu ou VPN/);
+  assert.match(service, /Brave/);
+  assert.match(service, /Détail donné par le navigateur : AbortError : Registration failed - push service error\.$/);
+  assert.match(pushSetupMessage(new DOMException('non', 'NotAllowedError')), /^Le navigateur a refusé les notifications pour ce site/);
+  assert.equal(pushSetupMessage(null), 'Le navigateur n\'a pas pu activer les notifications sur cet appareil.');
+  assert.ok(pushSetupMessage({ name: 'X', message: 'y'.repeat(500) }).length < 420, 'détail raccourci');
+  assert.ok(new PushSetupError('x') instanceof Error);
+  // L'inscription du navigateur est entourée ; l'écran garde l'explication sous l'interrupteur
+  const push = read('public/js/push.js');
+  assert.match(push, /try \{\n    subscription = await subscribeBrowser\(publicKey\);\n  \} catch \(error\) \{\n    throw new PushSetupError\(pushSetupMessage\(error\)\);/);
+  const screen = read('public/js/screens/notifications.js');
+  assert.match(screen, /if \(error instanceof PushSetupError\) current = \{ \.\.\.current, failure: error\.message \};/);
+  assert.match(screen, /if \(current\.failure\) \{\n      replace\(note, h\('p', \{ class: 'note note--danger' \}/);
+});

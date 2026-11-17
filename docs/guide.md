@@ -957,6 +957,7 @@ Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googl
 - La liste était déjà ouverte à l'écran : rien n'est envoyé pour ce que vous avez vu.
 - Une modification arrive environ une minute plus tard (regroupement) ; le résumé des échéances, vers 8 h seulement.
 - Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».
+- Sur un ordinateur, l'écran dit que le navigateur n'a pas réussi à s'inscrire auprès de son service de notifications : le navigateur doit pouvoir joindre ce service par Internet (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Un bloqueur de publicité, un filtre DNS (Pi-hole, AdGuard…), un pare-feu ou un VPN peut l'en empêcher. Dans Brave, il faut aussi activer “Utiliser les services Google pour la messagerie push” dans ses réglages (Confidentialité et sécurité), puis le relancer. Le message donne le détail fourni par le navigateur.
 - Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [6.7 Activer la fonction sur le serveur](#notif-serveur).
 
 <a id="roles"></a>

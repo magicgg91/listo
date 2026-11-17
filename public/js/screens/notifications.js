@@ -43,7 +43,7 @@ import { app, onDataChange } from '../app.js';
 import * as actions from '../actions.js';
 import { toast } from '../ui.js';
 import { topbar } from './settings.js';
-import { deviceState, enablePush, disablePush, sendTestPush, loadPushState, savePushSettings } from '../push.js';
+import { deviceState, enablePush, disablePush, sendTestPush, loadPushState, savePushSettings, PushSetupError } from '../push.js';
 
 // Explication de chaque état (icône, texte, ton d'alerte)
 export const STATE_NOTES = {
@@ -86,7 +86,12 @@ export function renderNotifications(onLeave = () => {}) {
     testButton.hidden = !on;
     testButton.disabled = busy;
     const spec = STATE_NOTES[state];
-    if (spec) {
+    // Échec de l'inscription du navigateur : l'explication reste affichée
+    // sous l'interrupteur (zone lue par les lecteurs d'écran) jusqu'au
+    // prochain essai
+    if (current.failure) {
+      replace(note, h('p', { class: 'note note--danger' }, icon('alert', 'icon--sm'), h('span', {}, current.failure)));
+    } else if (spec) {
       const [iconName, text, danger] = spec;
       replace(note, h('p', { class: danger ? 'note note--danger' : 'note' }, icon(iconName, 'icon--sm'), h('span', {}, text)));
     } else replace(note);
@@ -141,6 +146,7 @@ export function renderNotifications(onLeave = () => {}) {
   toggle.addEventListener('click', async () => {
     if (busy) return;
     busy = true;
+    current = { ...current, failure: null }; // nouvel essai : l'ancienne explication s'efface
     paint();
     try {
       if (current.state === 'on') {
@@ -154,8 +160,9 @@ export function renderNotifications(onLeave = () => {}) {
         if (state === 'on') toast('Notifications activées sur cet appareil');
       }
     } catch (error) {
-      toast(errorMessage(error));
+      if (!(error instanceof PushSetupError)) toast(errorMessage(error));
       current = await deviceState(app.user);
+      if (error instanceof PushSetupError) current = { ...current, failure: error.message };
     } finally {
       busy = false;
       paint();

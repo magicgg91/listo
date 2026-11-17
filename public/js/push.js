@@ -141,13 +141,39 @@ export async function deviceState(user) {
   return { state: on ? 'on' : 'off', publicKey: server.publicKey };
 }
 
+// Le navigateur n'a pas pu s'inscrire auprès de son service de
+// notifications (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla
+// pour Firefox, Apple pour Safari) : constat du 17 novembre 2026 sur un
+// ordinateur, « Une erreur inattendue est survenue » sans autre explication.
+// Le message dit maintenant la cause probable, ce qu'il faut vérifier, et
+// le détail donné par le navigateur (son nom d'erreur, son texte).
+export class PushSetupError extends Error {}
+export function pushSetupMessage(error) {
+  const name = typeof error?.name === 'string' ? error.name : '';
+  const text = typeof error?.message === 'string' ? error.message : '';
+  const detail = [name, text].filter(Boolean).join(' : ').slice(0, 160);
+  const service = name === 'AbortError' || /push service|registration failed/i.test(text);
+  const base = service
+    ? 'Ce navigateur n\'a pas réussi à s\'inscrire auprès de son service de notifications (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Il doit pouvoir le joindre par Internet : vérifiez qu\'aucun bloqueur de publicité, filtre DNS, pare-feu ou VPN ne l\'en empêche. Dans Brave : Réglages, Confidentialité et sécurité, activez « Utiliser les services Google pour la messagerie push », puis relancez Brave.'
+    : name === 'NotAllowedError'
+      ? 'Le navigateur a refusé les notifications pour ce site. Autorisez-les dans ses réglages, puis réessayez.'
+      : 'Le navigateur n\'a pas pu activer les notifications sur cet appareil.';
+  return detail ? `${base} Détail donné par le navigateur : ${detail}.` : base;
+}
+
 // Active les notifications sur cet appareil (après un appui seulement).
-// Renvoie le nouvel état ('on', 'denied' ou 'off').
+// Renvoie le nouvel état ('on', 'denied' ou 'off'). Échec de l'inscription
+// du navigateur : PushSetupError, avec un message en clair.
 export async function enablePush(user, publicKey) {
   const permission = await Notification.requestPermission();
   if (permission === 'denied') return 'denied';
   if (permission !== 'granted') return 'off'; // fenêtre fermée sans choisir
-  const subscription = await subscribeBrowser(publicKey);
+  let subscription;
+  try {
+    subscription = await subscribeBrowser(publicKey);
+  } catch (error) {
+    throw new PushSetupError(pushSetupMessage(error));
+  }
   await put('/api/push/subscription', subscription.toJSON());
   writeOwner(user.id);
   return 'on';

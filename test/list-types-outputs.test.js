@@ -85,25 +85,11 @@ test('magasin conservé : caché pour Claude et sur le lien public tant que la l
   assert.equal((await pub()).list.grouping, 'aisle');
 });
 
-test('le code du serveur ne lit plus la catégorie : seulement la traduction des anciennes opérations et les champs provisoires', () => {
-  for (const file of ['server/mcp-tools.js', 'server/mcp.js', 'server/routes/public.js', 'server/routes/oauth.js', 'server/routes/products.js',
-    'server/routes/references.js', 'server/routes/admin-names.js', 'server/routes/admin-references.js', 'server/routes/lists.js', 'server/news.js']) {
-    assert.doesNotMatch(code(file), /categor/i, file);
+test('le code du serveur ne connaît plus les catégories (ménage du 17 novembre 2026)', () => {
+  for (const file of ['server/lists.js', 'server/mcp-tools.js', 'server/mcp.js', 'server/routes/public.js', 'server/routes/oauth.js', 'server/routes/products.js',
+    'server/routes/references.js', 'server/routes/admin-names.js', 'server/routes/lists.js', 'server/news.js']) {
+    assert.doesNotMatch(code(file), /categor|is_shopping|clearChecked/i, file);
   }
-  // server/lists.js : le caractère « courses » d'une catégorie n'est lu qu'à
-  // trois endroits : le choix de la catégorie à écrire dans category_id
-  // (legacyCategoryId), la description des catégories envoyées aux anciens
-  // téléphones (champ provisoire « categories ») et la traduction d'une
-  // ancienne opération (requestedType)
-  const lists = code('server/lists.js');
-  const reads = lists.split('\n').filter((line) => /is_shopping/.test(line)).map((line) => line.trim());
-  assert.deepEqual(reads, [
-    "legacyCategory: db.prepare('SELECT id FROM categories WHERE is_shopping = ? ORDER BY id LIMIT 1').pluck(),",
-    "type = category.is_shopping === 1 ? 'shopping' : 'tasks';",
-    '...(row.is_shopping !== undefined ? { isShopping: row.is_shopping === 1 } : {}),',
-  ]);
-  assert.match(lists, /function requestedType\(op\)/);
-  assert.match(lists, /function legacyCategoryId\(type\)/);
-  // Pas de JOIN sur les catégories : le type vient de la colonne lists.type
-  assert.doesNotMatch(lists, /JOIN categories/);
+  // Le type vient de la seule colonne lists.type, demandé par listType
+  assert.match(code('server/lists.js'), /function requestedType\(op\) \{\n    if \(op\.listType === undefined\) return undefined;/);
 });

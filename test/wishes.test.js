@@ -557,8 +557,8 @@ test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idemp
   const before = { lists: db.prepare('SELECT * FROM lists ORDER BY id').all(), items: db.prepare('SELECT * FROM items ORDER BY id').all() };
   db.close();
   db = openDatabase(file); // restauration : la copie est ouverte par Listo, la migration 19 s'applique
-  assert.equal(schemaVersion(db), 31);
-  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists);
+  assert.equal(schemaVersion(db), 32);
+  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists.map(({ category_id: category, ...rest }) => rest));
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map((l) => [l.for_user_id, l.for_name]), [[null, null], [null, null]]);
   assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, ...rest }) => rest), before.items);
   assert.equal(db.prepare('SELECT COUNT(*) FROM reservations').pluck().get(), 0);

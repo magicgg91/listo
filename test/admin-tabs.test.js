@@ -75,9 +75,8 @@ test('droits inchangés : un compte non Admin n\'a pas accès ; les actions de c
   assert.equal((await admin.request('PATCH', `/api/admin/aisles/${aisle.id}`, { name: 'Épicerie en vrac' })).status, 200);
   // Articles : un nom enregistré par un ajout, puis corriger, modifier le rayon, retirer
   const listId = crypto.randomUUID();
-  const courses = app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
   await lea.post('/api/ops', { ops: [
-    { id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', categoryId: courses },
+    { id: crypto.randomUUID(), type: 'list.create', listId, name: 'Courses', listType: 'shopping' },
     { id: crypto.randomUUID(), type: 'item.create', listId, itemId: crypto.randomUUID(), name: 'Tomatte' },
   ] });
   assert.equal((await admin.post('/api/admin/names/rename', { from: 'tomatte', to: 'Tomate' })).status, 200);

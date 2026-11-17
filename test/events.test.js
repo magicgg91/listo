@@ -82,11 +82,10 @@ async function household(t, options) {
     clients[name] = app.client();
     await login(clients[name], name, `MotDePasse-${name}`);
   }
-  const courses = app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
   const listId = uuid();
-  await run(guillaume, { type: 'list.create', listId, name: 'Courses secrètes', categoryId: courses });
+  await run(guillaume, { type: 'list.create', listId, name: 'Courses secrètes', listType: 'shopping' });
   await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie], access: { [ids.marie]: 'modification' } });
-  return { app, ...clients, ids, listId, courses };
+  return { app, ...clients, ids, listId };
 }
 
 test('flux : réservé aux comptes connectés, refusé depuis un autre site', async (t) => {

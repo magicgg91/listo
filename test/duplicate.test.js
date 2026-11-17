@@ -81,7 +81,7 @@ test('propriétaire : copie privée, éléments non supprimés tous décochés, 
   assert.equal(copy.publicLink, null, 'aucun lien public');
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM public_shares WHERE list_id = ?').pluck().get(copy.id), 0);
   const row = h.app.db.prepare('SELECT * FROM lists WHERE id = ?').get(copy.id);
-  assert.deepEqual([row.category_id, row.store_id, row.owner_id, row.priority_enabled, row.due_enabled], [2, null, 1, 1, 1]);
+  assert.deepEqual([row.type, row.store_id, row.owner_id, row.priority_enabled, row.due_enabled], ['tasks', null, 1, 1, 1]);
   const items = h.app.db.prepare('SELECT * FROM items WHERE list_id = ? ORDER BY name').all(copy.id);
   assert.deepEqual(items.map((i) => i.name), ['Ampoule', 'Peinture'], 'le supprimé n\'est pas copié');
   assert.ok(items.every((i) => i.checked === 0 && i.checked_at === null && i.deleted_at === null && i.photo_at === null && i.created_by === 1));

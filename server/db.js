@@ -631,6 +631,18 @@ export const MIGRATIONS = [
   ALTER TABLE items ADD COLUMN parent_id TEXT REFERENCES items(id) ON DELETE SET NULL;
   CREATE INDEX items_parent ON items(parent_id) WHERE parent_id IS NOT NULL;
   `,
+
+  // --- Migration 32 : ménage des catégories (17 novembre 2026) ---
+  // Depuis les types de liste (migration 18), la table categories et la
+  // colonne lists.category_id n'étaient plus gardées que pour revenir à
+  // une image plus ancienne. Décision du propriétaire : elles sont
+  // effacées. Une liste encore sans type (créée par une image d'avant,
+  // après un retour en arrière) en reçoit un d'abord. Revenir ensuite à
+  // une image d'avant cette migration demande de restaurer une sauvegarde.
+  (db) => {
+    fillListTypes(db);
+    db.exec('ALTER TABLE lists DROP COLUMN category_id; DROP TABLE categories;');
+  },
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables
@@ -830,10 +842,7 @@ export function dropOrphanStates(db) {
 // colonne lists.category_id restent en place, inutilisées par le code (sauf
 // la traduction des anciennes opérations et les champs provisoires envoyés
 // aux téléphones qui n'ont pas rechargé), pour pouvoir revenir à l'image
-// précédente ; un nettoyage viendra plus tard.
-// La colonne accepte « vide » : une liste créée par l'image précédente après
-// un retour en arrière n'a pas de type ; fillListTypes la complète au
-// démarrage suivant (appelée par migrate, à chaque démarrage).
+// précédente ; effacées par la migration 32 (17 novembre 2026).
 // Le nombre de listes de chaque type est écrit dans le journal du conteneur
 // (aucun nom de liste), et renvoyé (tests).
 export function listTypesMigration(db) {
@@ -968,9 +977,6 @@ export function migrate(db) {
       db.pragma(`user_version = ${version + 1}`);
     })();
   }
-  // Types de liste : une liste créée par l'image précédente (après un retour
-  // en arrière) n'en a pas encore ; on les complète à chaque démarrage
-  if (schemaVersion(db) >= 18) fillListTypes(db);
 }
 
 // Numéro de version actuel du schéma

@@ -33,7 +33,7 @@ import {
 import { groupItems, compareNames } from '../public/js/sorting.js';
 import { isListIcon } from '../public/js/list-icons.js';
 import {
-  isListType, isShoppingList, isWishList, usesPriority, usesDue, usesAssign, typeOf, TYPE_LABELS, WISHES_FIXED, NOT_TO_WISHES,
+  isListType, isShoppingList, isWishList, usesPriority, usesDue, usesAssign, typeOf, WISHES_FIXED, NOT_TO_WISHES,
 } from '../public/js/list-types.js';
 import {
   wishListOf, beneficiaryId, mayMarkReceived, cleanLink, FOR_NAME_MAX, PRICE_MAX_CENTS,
@@ -288,15 +288,10 @@ export function createListService(ctx) {
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
-    // Catégories : plus utilisées que pour traduire une ancienne opération et
-    // remplir les champs provisoires (voir describeList)
-    category: db.prepare('SELECT * FROM categories WHERE id = ?'),
-    legacyCategory: db.prepare('SELECT id FROM categories WHERE is_shopping = ? ORDER BY id LIMIT 1').pluck(),
     store: db.prepare('SELECT * FROM stores WHERE id = ?'),
     userName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
     activeUser: db.prepare('SELECT id FROM users WHERE id = ? AND active = 1').pluck(),
     aisle: db.prepare('SELECT * FROM aisles WHERE id = ?'),
-    allCategories: db.prepare('SELECT * FROM categories'),
     allStores: db.prepare('SELECT * FROM stores'),
     allAisles: db.prepare('SELECT * FROM aisles'),
 
@@ -380,32 +375,12 @@ export function createListService(ctx) {
 
   // --- Petits outils ---
 
-  // Type demandé par une opération de liste : le champ listType (nouveau
-  // téléphone ; « type » est déjà le nom de l'opération), sinon l'identifiant de catégorie d'une ancienne opération
-  // (file d'attente hors ligne, téléphone qui n'a pas rechargé), traduit en
-  // type : catégorie « courses » -> shopping, autre -> tasks. undefined si
-  // l'opération ne demande rien.
+  // Type demandé par une opération de liste (champ listType ; « type » est
+  // déjà le nom de l'opération), ou undefined si l'opération ne demande rien
   function requestedType(op) {
-    let type;
-    if (op.listType !== undefined) {
-      if (!isListType(op.listType)) throw new OpError(400, 'Type de liste inconnu.');
-      type = op.listType;
-    } else if (op.categoryId !== undefined) {
-      const category = parseId(op.categoryId) && q.category.get(parseId(op.categoryId));
-      if (!category) throw new OpError(400, 'Type de liste inconnu.');
-      type = category.is_shopping === 1 ? 'shopping' : 'tasks';
-    } else {
-      return undefined;
-    }
-    return type;
-  }
-
-  // lists.category_id reste obligatoire en base (colonne gardée pour pouvoir
-  // revenir à l'image précédente) : on y écrit la première catégorie qui
-  // correspond au type (courses ou non). La migration 18 garantit qu'il en
-  // existe une de chaque sorte.
-  function legacyCategoryId(type) {
-    return q.legacyCategory.get(type === 'shopping' ? 1 : 0);
+    if (op.listType === undefined) return undefined;
+    if (!isListType(op.listType)) throw new OpError(400, 'Type de liste inconnu.');
+    return op.listType;
   }
 
   // Magasin actif, ou null si aucun n'est demandé
@@ -777,7 +752,6 @@ export function createListService(ctx) {
     const shopping = isShoppingList(type);
     const storeRow = list.store_id === null ? null : q.store.get(list.store_id);
     const store = storeRow && { id: storeRow.id, name: storeRow.name, active: storeRow.active === 1, isMulti: storeRow.is_multi === 1 };
-    const category = q.category.get(list.category_id);
     const rows = q.members.all(list.id);
     // access : le droit de chaque personne (le propriétaire : toujours
     // « modification ») ; canEdit : le droit du compte connecté
@@ -807,16 +781,6 @@ export function createListService(ctx) {
       // liste » le remette s'il revient à Courses (rien d'autre ne le lit).
       store: shopping ? store : null,
       ...(!shopping && store && list.owner_id === user.id ? { keptStore: store } : {}),
-      // PROVISOIRE : catégorie, pour les téléphones qui n'ont pas encore
-      // rechargé (l'ancien code lit list.category.isShopping). Le nouveau
-      // code ne la lit pas. À retirer avec le nettoyage, quand plus aucun
-      // téléphone n'a l'ancien code.
-      category: {
-        id: category?.id ?? null,
-        name: category?.name ?? TYPE_LABELS[type],
-        isShopping: shopping,
-        active: category ? category.active === 1 : true,
-      },
       ownerId: list.owner_id,
       isOwner: list.owner_id === user.id,
       canEdit: canEdit(user, { owner_id: list.owner_id, member_access: mine?.access }),
@@ -845,7 +809,6 @@ export function createListService(ctx) {
     id: row.id,
     name: row.name,
     active: row.active === 1,
-    ...(row.is_shopping !== undefined ? { isShopping: row.is_shopping === 1 } : {}),
   });
 
   // Magasins : type (simple ou « multi ») et magasins regroupés
@@ -934,8 +897,8 @@ export function createListService(ctx) {
       // de courses, « Ouvrir la fiche » pour les autres
       const addMode = addModeOf(op.addMode) ?? (isShoppingList(type) ? 'quick' : 'detail');
       const now = nowIso();
-      db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, subtasks_enabled, icon, add_mode, for_user_id, for_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .run(id, name, type, legacyCategoryId(type), store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, forUserId, forName, now, now);
+      db.prepare('INSERT INTO lists (id, name, type, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, subtasks_enabled, icon, add_mode, for_user_id, for_name, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(id, name, type, store?.id ?? null, user.id, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, forUserId, forName, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       // Le compte bénéficiaire est membre d'office, en « Peut modifier » : il
@@ -970,7 +933,7 @@ export function createListService(ctx) {
       if (op.forUserId !== undefined || op.forName !== undefined) {
         throw new OpError(400, 'La personne à qui la liste est destinée ne change pas.');
       }
-      if ([op.name, op.listType, op.categoryId, op.storeId, op.priorityEnabled, op.dueEnabled, op.assignEnabled, op.subtasksEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
+      if ([op.name, op.listType, op.storeId, op.priorityEnabled, op.dueEnabled, op.assignEnabled, op.subtasksEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
         throw new OpError(400, 'Rien à modifier.');
       }
       const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
@@ -986,16 +949,13 @@ export function createListService(ctx) {
       const before = typeOf(list);
       let type;
       if (isWishList(before)) {
-        // Un ancien téléphone envoie toujours un identifiant de catégorie
-        // (traduit en « tâches ») : il est ignoré ; seul un listType
-        // différent est refusé
+        // Seul un listType différent est refusé
         if (op.listType !== undefined && op.listType !== 'wishes') throw new OpError(400, WISHES_FIXED);
         type = before;
       } else {
         type = requestedType(op) ?? before;
         if (isWishList(type)) throw new OpError(400, NOT_TO_WISHES);
       }
-      const categoryId = type === before ? list.category_id : legacyCategoryId(type);
 
       let storeId = list.store_id;
       if (isShoppingList(type)) {
@@ -1011,8 +971,8 @@ export function createListService(ctx) {
         throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
       }
 
-      db.prepare('UPDATE lists SET name = ?, type = ?, category_id = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, assign_enabled = ?, subtasks_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
-        .run(name, type, categoryId, storeId, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, nowIso(), list.id);
+      db.prepare('UPDATE lists SET name = ?, type = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, assign_enabled = ?, subtasks_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
+        .run(name, type, storeId, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, nowIso(), list.id);
       if (isShoppingList(type) && (storeId !== list.store_id || type !== before)) completeItems(list.id);
       if (type !== before) ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: type });
       changed(list.id);
@@ -1052,12 +1012,6 @@ export function createListService(ctx) {
       news.log(list.id, user.id, 'delete', ids);
       if (changes) changed(list.id);
       return { removed: changes };
-    },
-
-    // Ancien nom de « list.removeChecked » : une modification restée en file
-    // d'attente sur un téléphone pendant la mise à jour est encore acceptée
-    'list.clearChecked'(user, op) {
-      return handlers['list.removeChecked'](user, op);
     },
 
     // Tout décocher (« Tout remettre à acheter » / « Tout rouvrir ») : une
@@ -1502,9 +1456,6 @@ export function createListService(ctx) {
       lists: lists.map((list) => describeList({ remaining: 0, last_activity: list.updated_at, ...list, ...summaries.get(list.id) }, user)),
       listIds: [...summaries.keys()],
       items: items.map(describeItem),
-      // PROVISOIRE (voir describeList) : catégories, pour les téléphones qui
-      // n'ont pas encore rechargé ; le nouveau code ne les lit pas
-      categories: q.allCategories.all().map(describeReference),
       stores: describeStores(),
       aisles: q.allAisles.all().map(describeReference),
       // (lignes utilisées, ou retirées de « Souvent ajoutés », depuis la dernière synchronisation)
@@ -1638,8 +1589,8 @@ export function createListService(ctx) {
     // Droit du destinataire avant le changement (notification « partage »)
     const accessBefore = forUserId ? db.prepare('SELECT access FROM list_members WHERE list_id = ? AND user_id = ?').pluck().get(list.id, forUserId) : undefined;
     db.transaction(() => {
-      db.prepare('UPDATE lists SET type = ?, category_id = ?, for_user_id = ?, for_name = ?, priority_enabled = ?, updated_at = ? WHERE id = ?')
-        .run('wishes', legacyCategoryId('wishes'), forUserId, forName, Number(priorityOn), now, list.id);
+      db.prepare('UPDATE lists SET type = ?, for_user_id = ?, for_name = ?, priority_enabled = ?, updated_at = ? WHERE id = ?')
+        .run('wishes', forUserId, forName, Number(priorityOn), now, list.id);
       // Le compte destinataire : membre d'office en « Peut modifier », comme
       // à la création (passé en « Peut modifier » s'il était en lecture seule)
       if (forUserId) {
@@ -1705,9 +1656,9 @@ export function createListService(ctx) {
     const now = nowIso();
     const items = withItems ? q.liveItems.all(source.id) : [];
     db.transaction(() => {
-      db.prepare(`INSERT INTO lists (id, name, type, category_id, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, subtasks_enabled, icon, add_mode, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(id, title, typeOf(source), source.category_id, source.store_id, user.id, source.priority_enabled, source.due_enabled, source.assign_enabled ?? 0, source.subtasks_enabled ?? 0, source.icon, source.add_mode, now, now);
+      db.prepare(`INSERT INTO lists (id, name, type, store_id, owner_id, priority_enabled, due_enabled, assign_enabled, subtasks_enabled, icon, add_mode, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(id, title, typeOf(source), source.store_id, user.id, source.priority_enabled, source.due_enabled, source.assign_enabled ?? 0, source.subtasks_enabled ?? 0, source.icon, source.add_mode, now, now);
       db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES (?, ?, 'modification')").run(id, user.id);
       news.startReading(id, user.id);
       const insert = db.prepare(`INSERT INTO items (id, list_id, name, quantity, note, aisle_id, store_id, priority, due_date, repeat, due_time, remind_before, ean, created_by, created_at, updated_at)

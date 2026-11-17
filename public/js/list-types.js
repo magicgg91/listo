@@ -16,12 +16,9 @@
 // (rayons, magasin, codes-barres ; priorité, échéance) restent en base,
 // cachées tant que le type ne s'en sert pas.
 //
-// Les anciens champs « catégorie » (list.category, categories, categoryId)
-// ne sont PAS lus ici ni ailleurs dans le nouveau code : le serveur les
-// envoie encore, provisoirement, pour les téléphones qui n'ont pas rechargé
-// (voir describeList dans server/lists.js), et traduit lui-même une ancienne
-// opération qui porte un identifiant de catégorie. Une copie hors ligne
-// d'avant les types est écartée et rechargée (SNAPSHOT_VERSION, store.js).
+// Les anciennes « catégories » ont disparu (migration 32, 17 novembre 2026).
+// Une copie hors ligne d'avant les types est écartée et rechargée
+// (SNAPSHOT_VERSION, store.js).
 
 export const LIST_TYPES = ['shopping', 'tasks', 'wishes'];
 

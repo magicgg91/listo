@@ -48,7 +48,6 @@ async function ok(h, client, operation, id) {
 
 async function newList(h, client, fields = {}) {
   const listId = uuid();
-  const COURSES = h.app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
   await ok(h, client, { type: 'list.create', listId, name: 'Courses', listType: 'shopping', ...fields });
   return listId;
 }
@@ -138,10 +137,12 @@ test('droits : membre (propriétaire ou invité) oui ; non-membre 404 ; visiteur
   assert.equal((await ok(h, h.paul, { type: 'list.uncheckAll', listId: h.listId })).reopened, 1);
   await ok(h, h.paul, { type: 'item.check', itemId: id, checked: true });
   assert.equal((await ok(h, h.paul, { type: 'list.removeChecked', listId: h.listId })).removed, 1);
-  // L'ancien nom de l'opération est encore accepté (file d'attente d'avant la mise à jour)
+  // L'ancien nom de l'opération (« list.clearChecked ») n'existe plus
+  // (ménage du 17 novembre 2026) : refusé, rien n'est retiré
   const id2 = await newItem(h, h.marie, h.listId, 'Beurre', { checked: true });
-  assert.equal((await ok(h, h.marie, { type: 'list.clearChecked', listId: h.listId })).removed, 1);
-  assert.ok(row(h, id2).deleted_at);
+  const old = await h.marie.post('/api/ops', { ops: [{ id: uuid(), type: 'list.clearChecked', listId: h.listId }] });
+  assert.equal(old.body.results[0].status, 400);
+  assert.equal(row(h, id2).deleted_at, null);
 });
 
 test('rejeu de la même opération (coupure réseau) : aucun effet de bord', async (t) => {

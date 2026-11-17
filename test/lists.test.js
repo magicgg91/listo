@@ -21,7 +21,7 @@ async function household(t) {
     await login(clients[name], name, `MotDePasse-${name}`);
   }
   const ref = (table, name) => app.db.prepare(`SELECT id FROM ${table} WHERE name = ?`).pluck().get(name);
-  return { app, ...clients, ids, ref, COURSES: ref('categories', 'Courses'), TACHES: ref('categories', 'Tâches') };
+  return { app, ...clients, ids, ref };
 }
 
 // Envoie un lot d'opérations (un identifiant unique est ajouté à chacune)
@@ -423,7 +423,7 @@ test('entrées invalides refusées', async (t) => {
   assert.equal((await h.marie.get('/api/sync?since=hier')).status, 400);
 });
 
-test('catégorie, magasin et changement de catégorie d\'une liste', async (t) => {
+test('type, magasin et changement de type d\'une liste', async (t) => {
   const h = await household(t);
   const lidl = h.ref('stores', 'Lidl');
   const listId = await createList(h, h.marie, { storeId: lidl });
@@ -440,7 +440,8 @@ test('catégorie, magasin et changement de catégorie d\'une liste', async (t) =
 
   // Passer à « Tâches » retire le magasin ; y ajouter un magasin est refusé
   await ok(h.marie, { type: 'list.update', listId, listType: 'tasks' });
-  assert.deepEqual([(await get()).category.name, (await get()).store], ['Tâches', null]);
+  assert.deepEqual([(await get()).type, (await get()).store], ['tasks', null]);
+  assert.equal((await get()).category, undefined, 'plus de catégorie (migration 32)');
   const [noStore] = await run(h.marie, { type: 'list.update', listId, storeId: h.ref('stores', 'E.Leclerc') });
   assert.equal(noStore.status, 400);
   // Retour en liste de courses avec un magasin actif
@@ -551,7 +552,7 @@ test('« depuis tel instant » : modifications et suppressions, seulement pour m
   const first = (await h.marie.get('/api/sync')).body;
   assert.deepEqual(first.listIds, [mine]);
   assert.equal(first.items.length, 3);
-  assert.equal(first.categories.length, 2);
+  assert.equal(first.categories, undefined, 'plus de catégories (migration 32)');
   assert.ok(first.aisles.length > 0 && first.stores.length > 0 && first.history.length >= 3);
 
   // Des changements, puis une synchro « depuis »

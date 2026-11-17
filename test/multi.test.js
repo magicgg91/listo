@@ -39,7 +39,7 @@ async function town(t) {
   assert.equal((await regroup(s.centre, [s.boucherie, s.fromagerie, s.primeur])).status, 200);
 
   const ref = (table, name) => app.db.prepare(`SELECT id FROM ${table} WHERE name = ?`).pluck().get(name);
-  return { app, guillaume, marie, marieId, s, regroup, ref, COURSES: ref('categories', 'Courses'), TACHES: ref('categories', 'Tâches') };
+  return { app, guillaume, marie, marieId, s, regroup, ref };
 }
 
 // Envoie une opération et renvoie son résultat (status, error, item…)

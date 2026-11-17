@@ -80,9 +80,9 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
-  assert.deepEqual(after.map(({ add_mode: mode, type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before, 'rien d\'autre ne change (type : migration 18)');
+  assert.deepEqual(after.map(({ add_mode: mode, type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.map(({ category_id: category, ...rest }) => rest), 'rien d\'autre ne change (type : migration 18)');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
     courses: 'quick',
     'courses-reglee': 'quick',
@@ -98,10 +98,10 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
-  db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
+  db.prepare("INSERT INTO lists (id, name, type, owner_id) VALUES ('neuve', 'Brico', 'tasks', 1)").run();
   assert.equal(db.prepare("SELECT add_mode FROM lists WHERE id = 'neuve'").pluck().get(), 'quick');
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
@@ -109,6 +109,8 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
 
 test('migration 15 sur une base sans liste : rien dans le journal, compteurs à zéro', () => {
   const db = openDatabase(':memory:');
+  // Comme une base d'avant la migration 32 : les catégories existent encore
+  db.exec("CREATE TABLE categories (id INTEGER PRIMARY KEY, name TEXT NOT NULL, is_shopping INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1); ALTER TABLE lists ADD COLUMN category_id INTEGER REFERENCES categories(id)");
   db.exec('ALTER TABLE lists DROP COLUMN add_mode');
   const lines = [];
   const log = console.log;

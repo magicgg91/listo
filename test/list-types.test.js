@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import { once } from 'node:events';
 import Database from 'better-sqlite3';
 import { startTestApp, setupAdmin, addUser, login, tempDir, createClient, ORIGIN, databaseAt } from './helpers.js';
-import { openDatabase, schemaVersion, fillListTypes } from '../server/db.js';
+import { openDatabase, schemaVersion } from '../server/db.js';
 import { loadConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
 import { loadOrCreateKey } from '../server/secrets.js';
@@ -57,43 +57,34 @@ test('migration 18 : courses → shopping, autres → tasks, rien de perdu, idem
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   const types = Object.fromEntries(db.prepare('SELECT id, type FROM lists').all().map((l) => [l.id, l.type]));
   assert.deepEqual(types, { 'l-courses': 'shopping', 'l-taches': 'tasks', 'l-bricolage': 'tasks', 'l-marche': 'shopping', 'l-supprimee': 'shopping' });
-  // Rien d'autre ne change : listes (catégorie, magasin, options, icône), articles, catégories
-  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists);
+  // Rien d'autre ne change : listes (magasin, options, icône ; la catégorie est effacée par la migration 32), articles
+  assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists.map(({ category_id: category, ...rest }) => rest));
   assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, ...rest }) => rest), before.items);
-  assert.deepEqual(db.prepare('SELECT * FROM categories ORDER BY id').all(), before.categories, 'table des catégories gardée telle quelle');
+  assert.equal(db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'categories'").pluck().get(), 0, 'catégories effacées ensuite (migration 32)');
   assert.deepEqual(lines, ['Migration 18 (types de liste) : 3 liste(s) de courses, 2 liste(s) de tâches.']);
   db.close();
   // Idempotente : un second démarrage ne change rien
   db = openDatabase(file);
   assert.deepEqual(Object.fromEntries(db.prepare('SELECT id, type FROM lists').all().map((l) => [l.id, l.type])), types);
-  assert.deepEqual(fillListTypes(db), { shopping: 0, tasks: 0 });
   db.close();
 });
 
-test('migration 18 : une catégorie « tâches » supprimée est recréée (category_id reste obligatoire)', (t) => {
+test('migration 32 : une liste sans type (créée par une image d\'avant) reçoit le sien, puis les catégories sont effacées', (t) => {
   const file = path.join(tempDir(t), 'listo.db');
-  oldDatabase(file, (db) => {
-    db.prepare("DELETE FROM categories WHERE name = 'Tâches'").run();
-    db.prepare("INSERT INTO categories (name, is_shopping) VALUES ('Tâches', 1)").run(); // nom déjà pris, mais « courses »
-  });
-  const db = openDatabase(file);
-  const tasks = db.prepare('SELECT name FROM categories WHERE is_shopping = 0').pluck().all();
-  assert.deepEqual(tasks, ['Tâches 2']);
-  db.close();
-});
-
-test('retour à l\'image précédente puis nouvelle mise à jour : une liste sans type reçoit le sien au démarrage', (t) => {
-  const file = path.join(tempDir(t), 'listo.db');
-  let db = openDatabase(file);
+  let db = databaseAt(file, 31);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('a', 'A', 'x')").run();
   // L'image précédente écrit ses listes sans type (colonne inconnue d'elle)
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('ancienne-courses', 'C', 1, 1), ('ancienne-taches', 'T', 2, 1)").run();
   db.close();
   db = openDatabase(file);
+  assert.equal(schemaVersion(db), 32);
   assert.deepEqual(db.prepare('SELECT type FROM lists ORDER BY id').pluck().all(), ['shopping', 'tasks']);
+  assert.equal(db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'categories'").pluck().get(), 0);
+  assert.ok(!db.prepare('PRAGMA table_info(lists)').all().some((c) => c.name === 'category_id'));
+  assert.deepEqual(db.pragma('foreign_key_check'), []);
   db.close();
 });
 
@@ -129,7 +120,7 @@ test('restauration d\'une ancienne sauvegarde (avant les types) : migrée au dé
   });
   const client = createClient(`http://127.0.0.1:${server.address().port}`);
   assert.equal((await login(client, 'guillaume', PASSWORD)).status, 200);
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   const lists = Object.fromEntries((await client.get('/api/lists')).body.lists.map((l) => [l.name, l]));
   assert.deepEqual(Object.keys(lists).sort(), ['Courses', 'Maison', 'Marché du samedi', 'Travaux']);
   assert.equal(lists.Courses.type, 'shopping');
@@ -245,47 +236,18 @@ test('aller-retour courses → tâches → courses : magasin, rayons, codes-barr
   assert.equal(sync.lists.find((l) => l.id === h.courses).priorityEnabled, true);
 });
 
-test('category_id suit le type (colonne obligatoire, retour à l\'image précédente cohérent)', async (t) => {
+test('ancien téléphone : un identifiant de catégorie n\'est plus compris (ménage du 17 novembre 2026), aucun champ provisoire envoyé', async (t) => {
   const h = await household(t);
-  const isShoppingCategory = () => h.app.db.prepare('SELECT categories.is_shopping FROM lists JOIN categories ON categories.id = lists.category_id WHERE lists.id = ?').pluck().get(h.courses);
-  assert.equal(isShoppingCategory(), 1);
-  await h.one(h.guillaume, { type: 'list.update', listId: h.courses, listType: 'tasks' });
-  assert.equal(isShoppingCategory(), 0);
-  await h.one(h.guillaume, { type: 'list.update', listId: h.courses, listType: 'shopping' });
-  assert.equal(isShoppingCategory(), 1);
-  // Dupliquer : même type
-  const copy = await h.guillaume.post(`/api/lists/${h.courses}/duplicate`, { name: 'Copie' });
-  assert.equal(copy.body.list.type, 'shopping');
-});
-
-test('ancien téléphone : opérations avec un identifiant de catégorie acceptées (traduites en type), champs provisoires envoyés', async (t) => {
-  const h = await household(t);
-  const bricolage = h.app.db.prepare("INSERT INTO categories (name, is_shopping, active) VALUES ('Bricolage', 0, 0)").run().lastInsertRowid;
   const fromOld = uuid();
-  const created = await h.one(h.marie, { type: 'list.create', listId: fromOld, name: 'Ancien téléphone', categoryId: 1, storeId: 2 });
-  assert.equal(created.status, 200, created.error);
-  assert.equal(created.list.type, 'shopping');
-  assert.equal(created.list.store.name, 'E.Leclerc');
-  // Catégorie désactivée ou de l'Admin : traduite aussi (plus de catégories à gérer)
-  const other = uuid();
-  assert.equal((await h.one(h.marie, { type: 'list.create', listId: other, name: 'Bricolage', categoryId: bricolage })).list.type, 'tasks');
-  assert.equal((await h.one(h.marie, { type: 'list.create', listId: uuid(), name: 'X', categoryId: 999 })).error, 'Type de liste inconnu.');
-  // Modification : categoryId traduit ; listType l'emporte s'il est là aussi
-  assert.equal((await h.one(h.marie, { type: 'list.update', listId: fromOld, categoryId: 2, storeId: null })).status, 200);
-  assert.equal(h.row(fromOld).type, 'tasks');
-  assert.equal(h.row(fromOld).store_id, 2, 'magasin conservé malgré « aucun magasin »');
-  await h.one(h.marie, { type: 'list.update', listId: fromOld, categoryId: 2, listType: 'shopping' });
-  assert.equal(h.row(fromOld).type, 'shopping');
-
-  // Synchronisation d'un téléphone qui n'a pas rechargé : il lit encore
-  // list.category.isShopping et les catégories (champs provisoires)
+  assert.equal((await h.one(h.marie, { type: 'list.create', listId: fromOld, name: 'Ancien téléphone', categoryId: 1 })).error, 'Type de liste inconnu.');
+  assert.equal(h.row(fromOld), undefined, 'rien n\'est créé');
+  // Modification qui ne donne qu'une catégorie : rien à modifier
+  assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.courses, categoryId: 2 })).error, 'Rien à modifier.');
+  assert.equal(h.row().type, 'shopping');
+  // Synchronisation : ni catégories, ni list.category
   const sync = (await h.marie.get('/api/sync')).body;
-  assert.ok(Array.isArray(sync.categories) && sync.categories.some((c) => c.isShopping));
-  for (const list of sync.lists) {
-    assert.equal(typeof list.category.id, 'number');
-    assert.equal(list.category.isShopping, list.type === 'shopping', list.name);
-    assert.ok(sync.categories.some((c) => c.id === list.category.id && c.isShopping === list.category.isShopping), 'la catégorie se retrouve par son identifiant');
-  }
+  assert.equal(sync.categories, undefined);
+  for (const list of sync.lists) assert.equal(list.category, undefined, list.name);
 });
 
 test('point unique : typeOf (jamais la catégorie), icônes par défaut, avertissement', () => {

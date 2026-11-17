@@ -28,7 +28,7 @@ async function household(t) {
   // L'horloge avance d'une seconde à chaque opération : les dates de
   // modification se suivent, comme dans la vraie vie
   const tick = () => { app.clock.now += 1000; };
-  return { app, ...clients, ids, ref, tick, COURSES: ref('categories', 'Courses'), TACHES: ref('categories', 'Tâches') };
+  return { app, ...clients, ids, ref, tick };
 }
 
 async function ok(h, client, op) {

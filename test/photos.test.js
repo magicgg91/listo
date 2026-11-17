@@ -99,10 +99,9 @@ async function household(t) {
     clients[name] = app.client();
     await login(clients[name], name, `MotDePasse-${name}`);
   }
-  const courses = app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
   const listId = uuid();
   const itemId = uuid();
-  await run(guillaume, { type: 'list.create', listId, name: 'Courses', categoryId: courses });
+  await run(guillaume, { type: 'list.create', listId, name: 'Courses', listType: 'shopping' });
   await run(guillaume, { type: 'item.create', listId, itemId, name: 'Café en grains' });
   await guillaume.request('PUT', `/api/lists/${listId}/members`, { userIds: [ids.marie], access: { [ids.marie]: 'modification' } });
   const file = path.join(app.photosDir, `${itemId}.jpg`);
@@ -269,8 +268,7 @@ test('purge : les photos des articles d\'une liste supprimée et les fichiers or
   // Un autre article, vivant, avec sa photo : il reste
   const otherList = uuid();
   const otherItem = uuid();
-  const courses = h.app.db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
-  await run(h.guillaume, { type: 'list.create', listId: otherList, name: 'Autre', categoryId: courses });
+  await run(h.guillaume, { type: 'list.create', listId: otherList, name: 'Autre', listType: 'shopping' });
   await run(h.guillaume, { type: 'item.create', listId: otherList, itemId: otherItem, name: 'Lait' });
   await upload(h.guillaume, otherItem, jpeg());
 
@@ -292,10 +290,9 @@ test('synchronisation : photoAt fait partie de l\'article ; une liste de tâches
   const sync = (await h.guillaume.get('/api/sync')).body;
   assert.equal(sync.items.find((i) => i.id === h.itemId).photoAt, res.body.item.photoAt);
 
-  const taches = h.app.db.prepare("SELECT id FROM categories WHERE name = 'Tâches'").pluck().get();
   const tasks = uuid();
   const task = uuid();
-  await run(h.marie, { type: 'list.create', listId: tasks, name: 'Bricolage', categoryId: taches });
+  await run(h.marie, { type: 'list.create', listId: tasks, name: 'Bricolage', listType: 'tasks' });
   await run(h.marie, { type: 'item.create', listId: tasks, itemId: task, name: 'Vis de 4 mm' });
   assert.equal((await upload(h.marie, task, jpeg())).status, 200);
   // Le même nom ajouté plus tard n'a pas de photo (elle appartient à l'article)

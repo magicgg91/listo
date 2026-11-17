@@ -112,7 +112,6 @@ function writeOps(h) {
     ['remettre (Annuler)', { type: 'item.restore', itemId: h.butter }],
     ['tout décocher', { type: 'list.uncheckAll', listId: h.shop }],
     ['retirer les cochés', { type: 'list.removeChecked', listId: h.shop }],
-    ['retirer les cochés (ancien nom)', { type: 'list.clearChecked', listId: h.shop }],
   ];
 }
 
@@ -242,7 +241,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.close();
   // Redémarrage : la migration 12 s'applique
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   assert.deepEqual(db.prepare('SELECT user_id, access FROM list_members ORDER BY user_id').all().map((r) => [r.user_id, r.access]), [[1, 'modification'], [2, 'modification'], [3, 'modification']]);
   db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES ('d', 'd', 'x')").run();
   db.prepare("INSERT INTO list_members (list_id, user_id) VALUES ('l1', 4)").run();
@@ -253,7 +252,7 @@ test('migration 12 : les membres existants gardent la modification ; ensuite, le
   db.prepare('DELETE FROM users WHERE id = 3').run();
   assert.equal(db.prepare('SELECT COUNT(*) FROM list_members').pluck().get(), 3);
   migrate(db); // second démarrage : rien
-  assert.equal(schemaVersion(db), 31);
+  assert.equal(schemaVersion(db), 32);
   db.close();
   fs.rmSync(dir, { recursive: true, force: true });
 });

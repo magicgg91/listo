@@ -20,11 +20,10 @@ async function withAdmin(t) {
 }
 
 // Crée directement en base une liste (et son propriétaire comme membre)
-function addList(db, ownerId, { name = 'Courses de la semaine', category = 'Courses', storeId = null } = {}) {
+function addList(db, ownerId, { name = 'Courses de la semaine', type = 'shopping', storeId = null } = {}) {
   const id = crypto.randomUUID();
-  const { id: categoryId, is_shopping: shopping } = db.prepare('SELECT id, is_shopping FROM categories WHERE name = ?').get(category);
-  db.prepare('INSERT INTO lists (id, name, type, category_id, store_id, owner_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(id, name, shopping ? 'shopping' : 'tasks', categoryId, storeId, ownerId);
+  db.prepare('INSERT INTO lists (id, name, type, store_id, owner_id) VALUES (?, ?, ?, ?, ?)')
+    .run(id, name, type, storeId, ownerId);
   db.prepare('INSERT INTO list_members (list_id, user_id) VALUES (?, ?)').run(id, ownerId);
   return id;
 }
@@ -59,7 +58,7 @@ function allAdminRoutes(targetId) {
 }
 
 // État des tables d'administration, pour vérifier que rien n'a changé
-const snapshot = (db) => ['users', 'categories', 'stores', 'aisles']
+const snapshot = (db) => ['users', 'stores', 'aisles']
   .map((table) => JSON.stringify(db.prepare(`SELECT * FROM ${table} ORDER BY id`).all())).join('\n');
 
 // --- Droits d'accès ---
@@ -358,7 +357,7 @@ test('un élément déjà utilisé peut être désactivé mais pas supprimé ; u
   const lidl = idOf(app.db, 'stores', 'Lidl');
   const boissons = idOf(app.db, 'aisles', 'Boissons');
   const fromages = idOf(app.db, 'aisles', 'Fromages');
-  const listId = addList(app.db, marieId, { category: 'Courses', storeId: lidl });
+  const listId = addList(app.db, marieId, { type: 'shopping', storeId: lidl });
   addItem(app.db, listId, marieId, { aisleId: boissons });
   // Un rayon retenu seulement par l'historique d'autocomplétion compte aussi
   app.db.prepare("INSERT INTO item_history (name_normalized, display_name, aisle_id) VALUES ('comte', 'Comté', ?)").run(fromages);
@@ -392,7 +391,6 @@ test('un élément déjà utilisé peut être désactivé mais pas supprimé ; u
 
 test('catégories retirées : leurs routes d\'administration n\'existent plus (404), rien n\'est écrit', async (t) => {
   const { app, admin } = await withAdmin(t);
-  const before = app.db.prepare('SELECT * FROM categories ORDER BY id').all();
   for (const [method, url, body] of [
     ['GET', '/api/admin/categories'],
     ['POST', '/api/admin/categories', { name: 'Bricolage', isShopping: true }],
@@ -403,7 +401,7 @@ test('catégories retirées : leurs routes d\'administration n\'existent plus (4
     assert.equal(res.status, 404, `${method} ${url}`);
     assert.equal(res.body.error, 'Route inconnue.');
   }
-  assert.deepEqual(app.db.prepare('SELECT * FROM categories ORDER BY id').all(), before, 'table gardée telle quelle');
+  assert.equal(app.db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'categories'").pluck().get(), 0, 'table effacée (migration 32)');
 });
 
 // --- Journal ---

@@ -54,8 +54,8 @@ async function household(t) {
   assert.ok(leclerc && lidl && creme && boulangerie);
   const lists = [uuid(), uuid()];
   const ops = [
-    { type: 'list.create', listId: lists[0], name: 'Liste secrète de Marie', categoryId: ref('categories', 'Courses'), storeId: lidl },
-    { type: 'list.create', listId: lists[1], name: 'Courses Leclerc', categoryId: ref('categories', 'Courses'), storeId: leclerc },
+    { type: 'list.create', listId: lists[0], name: 'Liste secrète de Marie', listType: 'shopping', storeId: lidl },
+    { type: 'list.create', listId: lists[1], name: 'Courses Leclerc', listType: 'shopping', storeId: leclerc },
     { type: 'item.create', listId: lists[0], itemId: uuid(), name: 'Lait', aisleId: creme },
     { type: 'item.create', listId: lists[1], itemId: uuid(), name: 'Lait', aisleId: creme },
     { type: 'item.create', listId: lists[1], itemId: uuid(), name: 'Pain', aisleId: boulangerie },

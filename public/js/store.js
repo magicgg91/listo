@@ -189,9 +189,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
   const item = op.itemId ? state.items.get(op.itemId) : null;
   switch (op.type) {
     case 'list.create': {
-      // Type : celui demandé (listType) ; une ancienne opération (identifiant
-      // de catégorie, jamais lu ici) compte comme une liste de tâches jusqu'à
-      // la réponse du serveur, qui la traduit
+      // Type : celui demandé (listType ; le serveur refuse tout autre valeur)
       const type = isListType(op.listType) ? op.listType : 'tasks';
       // Liste d'envies : bénéficiaire (rien de secret : les réservations ne
       // sont jamais dans la description d'une liste)
@@ -277,8 +275,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (typeof op.enabled === 'boolean') state.news.enabled = op.enabled;
       if (typeof op.checks === 'boolean') state.news.checks = op.checks;
       return;
-    case 'list.removeChecked':
-    case 'list.clearChecked': { // ancien nom (opération restée en file d'attente)
+    case 'list.removeChecked': {
       // Sous-tâches : une sous-tâche cochée sous une principale à faire
       // reste à sa place (même règle que le serveur)
       for (const it of checkedToRemove(state, op.listId)) state.items.delete(it.id);

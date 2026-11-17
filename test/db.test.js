@@ -12,7 +12,7 @@ import { tempDir } from './helpers.js';
 // fois) et store_members (étape 6 : magasins regroupés par un « multi »).
 // public_shares arrivera avec le lien public (étape 10).
 const TABLES = [
-  'users', 'recovery_codes', 'sessions', 'categories', 'stores', 'store_members',
+  'users', 'recovery_codes', 'sessions', 'stores', 'store_members',
   'aisles', 'lists', 'list_members', 'items', 'item_history', 'applied_ops', 'public_shares',
   'list_events', 'list_reads', // nouveautés (migration 16)
   // autorisation OAuth pour Claude (migration 17)
@@ -25,17 +25,15 @@ const TABLES = [
   'account_requests', // demandes de compte par Authelia (migration 29)
 ];
 
-// Base en mémoire avec un compte, une catégorie et une liste, pour les tests
+// Base en mémoire avec un compte et une liste, pour les tests
 function sampleDb() {
   const db = openDatabase(':memory:');
   db.prepare("INSERT INTO users (id, username, display_name, password_hash) VALUES (1, 'guillaume', 'Guillaume', 'x')").run();
-  // La catégorie « Courses » fait partie des données de départ
-  const courses = db.prepare("SELECT id FROM categories WHERE name = 'Courses'").pluck().get();
-  db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('liste-1', 'Courses', ?, 1)").run(courses);
+  db.prepare("INSERT INTO lists (id, name, type, owner_id) VALUES ('liste-1', 'Courses', 'shopping', 1)").run();
   return db;
 }
 
-test('les trente tables du cahier des charges sont créées', () => {
+test('les vingt-neuf tables du cahier des charges sont créées (plus de catégories : migration 32)', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)
@@ -55,9 +53,8 @@ test('les clés étrangères sont activées', () => {
   );
 });
 
-test('un élément utilisé ne peut pas être effacé (catégorie, compte)', () => {
+test('un élément utilisé ne peut pas être effacé (compte)', () => {
   const db = sampleDb();
-  assert.throws(() => db.prepare("DELETE FROM categories WHERE name = 'Courses'").run(), /FOREIGN KEY/);
   assert.throws(() => db.prepare('DELETE FROM users WHERE id = 1').run(), /FOREIGN KEY/);
 });
 
@@ -131,28 +128,23 @@ test("une base de l'étape 1 est mise à jour sans perte (migration 2)", (t) => 
 
 // --- Données de départ (migration 3) ---
 
-const seedCounts = (db) => ['categories', 'stores', 'aisles']
+const seedCounts = (db) => ['stores', 'aisles']
   .map((table) => db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get());
 
 test('les données de départ sont créées au premier démarrage', () => {
   const db = openDatabase(':memory:');
-  assert.deepEqual(db.prepare('SELECT name, is_shopping FROM categories ORDER BY name').all(), [
-    { name: 'Courses', is_shopping: 1 },
-    { name: 'Tâches', is_shopping: 0 },
-  ]);
   assert.deepEqual(db.prepare('SELECT name FROM stores ORDER BY name').pluck().all(), ['Carrefour', 'E.Leclerc', 'Lidl']);
   assert.deepEqual(db.prepare('SELECT name FROM aisles ORDER BY name').pluck().all(), [
     'Boissons', 'Boucherie', 'Boulangerie', 'Crèmerie', 'Entretien', 'Fromages', 'Fruits et légumes',
     'Hygiène', 'Poissonnerie', 'Surgelés', 'Épicerie salée', 'Épicerie sucrée',
   ]);
-  assert.equal(db.prepare('SELECT COUNT(*) FROM categories WHERE active = 0').pluck().get(), 0);
 });
 
 test("les données de départ ne sont créées qu'une fois, même après un redémarrage", (t) => {
   const file = path.join(tempDir(t), 'listo.db');
   const first = openDatabase(file);
   const counts = seedCounts(first);
-  assert.deepEqual(counts, [2, 3, 12]);
+  assert.deepEqual(counts, [3, 12]);
   // L'Admin modifie les données de départ : il supprime un magasin et renomme un rayon
   first.prepare("DELETE FROM stores WHERE name = 'Lidl'").run();
   first.prepare("UPDATE aisles SET name = 'Hygiène et beauté' WHERE name = 'Hygiène'").run();
@@ -161,7 +153,7 @@ test("les données de départ ne sont créées qu'une fois, même après un red�
   // Deux redémarrages : rien n'est recréé, les modifications sont gardées
   for (let i = 0; i < 2; i++) {
     const again = openDatabase(file);
-    assert.deepEqual(seedCounts(again), [2, 2, 12]);
+    assert.deepEqual(seedCounts(again), [2, 12]);
     assert.equal(again.prepare("SELECT COUNT(*) FROM stores WHERE name = 'Lidl'").pluck().get(), 0);
     assert.equal(again.prepare("SELECT COUNT(*) FROM aisles WHERE name = 'Hygiène'").pluck().get(), 0);
     again.close();
@@ -178,7 +170,7 @@ test("une base de l'étape 2 reçoit les données de départ lors de sa mise à 
   old.close();
 
   const db = openDatabase(file);
-  assert.deepEqual(seedCounts(db), [2, 3, 12]);
+  assert.deepEqual(seedCounts(db), [3, 12]);
   assert.deepEqual(db.prepare('SELECT username, must_change_password FROM users').get(), { username: 'guillaume', must_change_password: 0 });
   db.close();
 });

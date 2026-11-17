@@ -730,7 +730,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.9 Groupes, tri et compteur
 
-- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes.
+- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.17 Sous-tâches](#sous-taches)).
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
 - Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
@@ -852,7 +852,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.
 
-- Au bout de la ligne d'une tâche principale, “1/3” dit combien de sous-tâches sont faites. Touchez-le : les sous-tâches s'affichent juste en dessous, en retrait. Touchez-le de nouveau pour les replier. Cet appareil se souvient de ce qui est déplié.
+- Au bout de la ligne d'une tâche principale, “1/3” dit combien de sous-tâches sont faites. Touchez-le : les sous-tâches s'affichent juste en dessous, en retrait. Touchez-le de nouveau pour les replier. « Tout déplier » et « Tout replier », sous le titre de la liste, agissent sur toutes les tâches principales (et sur les groupes et les terminés). Cet appareil se souvient de ce qui est déplié.
 - Pour ajouter une sous-tâche : dépliez la tâche principale et touchez « Ajouter une sous-tâche » ; ou ouvrez la fiche d'une tâche et touchez « Ajouter une sous-tâche ». Entrée ajoute et laisse le champ prêt pour la suivante ; Entrée sur un champ vide ferme.
 - Pour ranger une tâche qui existe déjà : sa fiche, « Sous-tâche de », puis la tâche principale. « Aucune » la ressort.
 - Un seul niveau : une sous-tâche n'a pas de sous-tâches. Une tâche qui a des sous-tâches, ou qui se répète, ne peut pas devenir une sous-tâche.

@@ -358,3 +358,12 @@ test('Claude : read_list donne la principale de chaque sous-tâche ; add_items e
   await c.tool('set_checked', { list_id: L, item_ids: [h.ids.ampoule], checked: true });
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM items WHERE parent_id = ? AND checked = 0 AND deleted_at IS NULL').pluck().get(h.ids.ampoule), 0);
 });
+
+// --- « Tout déplier / Tout replier » ---
+
+test('« Tout déplier / Tout replier » agit aussi sur les sous-tâches (pas pendant la recherche)', async () => {
+  const fs = await import('node:fs');
+  const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
+  assert.match(list, /show\(inSearch \|\| openSubtasks\.has\(item\.id\)\);\n    if \(!inSearch\) foldables\.push\(foldable\);/);
+  assert.match(list, /if \(inSearch\) show\(open\);\n      else foldable\.setOpen\(open\);\n      drawFoldAll\(\);/);
+});

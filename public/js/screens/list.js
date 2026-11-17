@@ -710,17 +710,27 @@ export function renderList(listId, onLeave) {
       toggle.setAttribute('aria-expanded', String(open));
       wrap.hidden = !open;
     };
-    // Ouvrir / replier sur place : ni redessin, ni saut ; le bouton garde le focus
-    toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') !== 'true';
-      if (!inSearch) {
+    // « Tout replier / Tout déplier » agit aussi sur les sous-tâches (pas
+    // pendant la recherche : tout y est déplié, rien n'est mémorisé)
+    const foldable = {
+      isOpen: () => toggle.getAttribute('aria-expanded') === 'true',
+      setOpen: (open) => {
         if (open) openSubtasks.add(item.id);
         else openSubtasks.delete(item.id);
         saveOpenSubtasks(listId, openSubtasks);
-      }
-      show(open);
+        show(open);
+      },
+      contains: (node) => wrap.contains(node),
+    };
+    // Ouvrir / replier sur place : ni redessin, ni saut ; le bouton garde le focus
+    toggle.addEventListener('click', () => {
+      const open = !foldable.isOpen();
+      if (inSearch) show(open);
+      else foldable.setOpen(open);
+      drawFoldAll();
     });
     show(inSearch || openSubtasks.has(item.id));
+    if (!inSearch) foldables.push(foldable);
     return [itemRow(item, toggle), wrap];
   }
   // Dernière ligne d'une principale dépliée : « Ajouter une sous-tâche »

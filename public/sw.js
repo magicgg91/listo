@@ -103,6 +103,7 @@ const APP_FILES = [
   '/js/search-row.js',
   '/js/tabbar.js',
   '/js/repeat.js',
+  '/js/subtasks.js',
   '/js/due-time.js',
   '/js/assign.js',
   '/js/deadlines.js',

@@ -133,11 +133,11 @@ test('téléphone : champ, pastille et tri suivent le réglage enregistré ; cop
   const item = { id: 'I', listId: 'L', name: 'Vélo', checked: false, priority: 'high', updatedAt: '2026-11-03T10:00:00.000Z' };
   let state = loadSync(emptyState(), { lists: [list], items: [item], listIds: ['L'], stores: [], aisles: [], history: [], serverTime: '2026-11-03T10:00:00.000Z' });
   // Désactivée : ni champ ni pastille (listOptions), pas de tri « Par priorité »
-  assert.deepEqual(listOptions(state.lists.get('L')), { priority: false, due: false, assign: false });
+  assert.deepEqual(listOptions(state.lists.get('L')), { priority: false, due: false, assign: false, subtasks: false });
   assert.deepEqual(availableSorts(state.lists.get('L')), ['alpha']);
   // Activée hors ligne par le propriétaire (file d'attente) : appliquée tout de suite à la copie locale
   applyOp(state, { id: 'op1', type: 'list.update', listId: 'L', priorityEnabled: true }, { user: { id: 1 }, now: '2026-11-03T10:00:30.000Z' });
-  assert.deepEqual(listOptions(state.lists.get('L')), { priority: true, due: false, assign: false });
+  assert.deepEqual(listOptions(state.lists.get('L')), { priority: true, due: false, assign: false, subtasks: false });
   assert.deepEqual(availableSorts(state.lists.get('L')), ['alpha', 'priority']);
   // Gardée telle quelle dans la copie locale (rechargement hors ligne)
   const reloaded = fromSnapshot(toSnapshot(state, '2026-11-03T10:01:00.000Z'));

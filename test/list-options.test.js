@@ -76,11 +76,11 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 30);
+  assert.equal(schemaVersion(db), 31);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
-  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19 ; répétition : migration 24)');
+  assert.deepEqual(db.prepare('SELECT * FROM items').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, ...rest }) => rest), before, 'aucune valeur touchée (lien et prix : migration 19 ; répétition : migration 24)');
   // Nouvelle liste : désactivées (valeur par défaut de la base)
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('neuve', 'Brico', 2, 1)").run();
   assert.deepEqual(row('neuve'), { priority_enabled: 0, due_enabled: 0 });
@@ -159,7 +159,7 @@ test('valeurs conservées : désactiver puis réactiver les fait revenir ; chang
   assert.deepEqual(h.values(h.bulb), { priority: 'high', due_date: '2026-10-30' }, 'rien d\'effacé');
   // Le téléphone ne montre rien de ce qui est désactivé
   const phone = loadSync(emptyState(), (await h.lea.get('/api/sync')).body);
-  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: false, assign: false });
+  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: false, assign: false, subtasks: false });
   await run(h.guillaume, { type: 'list.update', listId: h.tasks, priorityEnabled: true, dueEnabled: true });
   const item = (await h.lea.get('/api/sync')).body.items.find((i) => i.id === h.bulb);
   assert.deepEqual([item.priority, item.dueDate], ['high', '2026-10-30'], 'réapparaissent');
@@ -168,7 +168,7 @@ test('valeurs conservées : désactiver puis réactiver les fait revenir ; chang
   assert.deepEqual(h.settings(h.tasks), { priority_enabled: 1, due_enabled: 1 });
   assert.deepEqual(h.values(h.bulb), { priority: 'high', due_date: '2026-10-30' });
   const asShopping = loadSync(emptyState(), (await h.lea.get('/api/sync')).body);
-  assert.deepEqual(listOptions(asShopping.lists.get(h.tasks)), { priority: false, due: false, assign: false }, 'courses : ignorés');
+  assert.deepEqual(listOptions(asShopping.lists.get(h.tasks)), { priority: false, due: false, assign: false, subtasks: false }, 'courses : ignorés');
   await run(h.guillaume, { type: 'list.update', listId: h.tasks, listType: 'tasks' });
   assert.deepEqual(h.settings(h.tasks), { priority_enabled: 1, due_enabled: 1 });
   assert.deepEqual(h.values(h.bulb), { priority: 'high', due_date: '2026-10-30' });
@@ -181,13 +181,13 @@ test('synchronisation : un changement de réglage prévient les téléphones et 
   const h = await household(t);
   const first = (await h.lea.get('/api/sync')).body;
   const phone = loadSync(emptyState(), first);
-  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: false, assign: false });
+  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: false, assign: false, subtasks: false });
   h.app.clock.now += 60 * 1000;
   h.notified.length = 0;
   await run(h.guillaume, { type: 'list.update', listId: h.tasks, dueEnabled: true });
   assert.deepEqual(h.notified, [h.tasks], 'temps réel');
   mergeSync(phone, (await h.lea.get(`/api/sync?since=${encodeURIComponent(first.serverTime)}`)).body);
-  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: true, assign: false });
+  assert.deepEqual(listOptions(phone.lists.get(h.tasks)), { priority: false, due: true, assign: false, subtasks: false });
   assert.deepEqual(availableSorts(phone.lists.get(h.tasks)), ['alpha', 'due']);
 });
 
@@ -254,11 +254,11 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
 
 test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponible → alphabétique', () => {
   const tasks = (priorityEnabled, dueEnabled) => ({ id: 'l', type: 'tasks', priorityEnabled, dueEnabled });
-  assert.deepEqual(listOptions(tasks(false, false)), { priority: false, due: false, assign: false });
-  assert.deepEqual(listOptions(tasks(true, false)), { priority: true, due: false, assign: false });
-  assert.deepEqual(listOptions({ type: 'shopping', priorityEnabled: true, dueEnabled: true }), { priority: false, due: false, assign: false }, 'courses : jamais');
-  assert.deepEqual(listOptions({ type: 'tasks' }), { priority: true, due: true, assign: false }, 'copie d\'avant les réglages : comme avant');
-  assert.deepEqual(listOptions(null), { priority: false, due: false, assign: false });
+  assert.deepEqual(listOptions(tasks(false, false)), { priority: false, due: false, assign: false, subtasks: false });
+  assert.deepEqual(listOptions(tasks(true, false)), { priority: true, due: false, assign: false, subtasks: false });
+  assert.deepEqual(listOptions({ type: 'shopping', priorityEnabled: true, dueEnabled: true }), { priority: false, due: false, assign: false, subtasks: false }, 'courses : jamais');
+  assert.deepEqual(listOptions({ type: 'tasks' }), { priority: true, due: true, assign: false, subtasks: false }, 'copie d\'avant les réglages : comme avant');
+  assert.deepEqual(listOptions(null), { priority: false, due: false, assign: false, subtasks: false });
   assert.deepEqual(availableSorts(tasks(false, false)), ['alpha']);
   assert.deepEqual(availableSorts(tasks(true, true)), ['alpha', 'priority', 'due']);
   assert.equal(effectiveSort(tasks(false, true), 'priority'), 'alpha');
@@ -269,7 +269,7 @@ test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponi
   state.categories = [{ id: 2, name: 'Tâches', isShopping: false, active: true }];
   const user = { id: 1, username: 'g', displayName: 'G' };
   applyOp(state, { type: 'list.create', listId: 'l', name: 'Maison', listType: 'tasks' }, { user, now: '2026-10-18T10:00:00.000Z' });
-  assert.deepEqual(listOptions(state.lists.get('l')), { priority: false, due: false, assign: false }, 'créée sur le téléphone : désactivées');
+  assert.deepEqual(listOptions(state.lists.get('l')), { priority: false, due: false, assign: false, subtasks: false }, 'créée sur le téléphone : désactivées');
   for (const [name, priority] of [['b', 'high'], ['a', 'low']]) {
     applyOp(state, { type: 'item.create', listId: 'l', itemId: name, name }, { user, now: '2026-10-18T10:00:00.000Z' });
     state.items.set(name, { ...state.items.get(name), priority });

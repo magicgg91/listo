@@ -1,0 +1,75 @@
+// Sous-tâches (décisions du 17 novembre 2026) : règles partagées par le
+// serveur (server/lists.js), la copie locale du téléphone (store.js), les
+// écrans et la page du lien public.
+//
+// - Option « Sous-tâches » d'une liste de tâches (désactivée au départ).
+// - Un seul niveau : une tâche principale a des sous-tâches, une
+//   sous-tâche n'en a pas.
+// - Option coupée, ou liste d'un autre type : le lien (parentId) reste en
+//   base mais n'est pas utilisé, les tâches s'affichent à plat ; tout se
+//   regroupe quand l'option revient.
+// - Une sous-tâche est rangée sous sa principale seulement si celle-ci est
+//   présente (non supprimée) et n'est pas elle-même rangée sous une autre :
+//   sinon elle s'affiche comme une tâche ordinaire. Le serveur empêche ces
+//   cas, cette règle les rend seulement sans danger.
+
+import { typeOf } from './list-types.js';
+
+// Le type de liste peut-il avoir des sous-tâches ? (listes de tâches seulement)
+export const usesSubtasks = (list) => typeOf(list) === 'tasks';
+
+// Les sous-tâches sont-elles regroupées dans cette liste ? (description
+// d'une liste envoyée au téléphone : subtasksEnabled)
+export const nestsSubtasks = (list) => usesSubtasks(list) && list?.subtasksEnabled === true;
+
+// Messages de refus (serveur), sans le mot « article »
+export const SUBTASK_NOT_HERE = 'Les sous-tâches n\'existent que dans une liste de tâches.';
+export const SUBTASKS_OFF = 'Les sous-tâches sont désactivées pour cette liste.';
+export const BAD_PARENT = 'Tâche principale introuvable dans cette liste.';
+export const PARENT_IS_SUBTASK = 'Une sous-tâche ne peut pas avoir de sous-tâches.';
+export const HAS_SUBTASKS = 'Cette tâche a des sous-tâches : elle ne peut pas devenir une sous-tâche.';
+export const NOT_OWN_PARENT = 'Une tâche ne peut pas être sa propre sous-tâche.';
+export const SUBTASK_NO_REPEAT = 'Une sous-tâche ne se répète pas.';
+
+// Tâche principale d'un élément, telle qu'elle s'affiche : la tâche
+// parentId si elle est dans byId (éléments présents de la même liste) et
+// n'est pas elle-même rangée sous une autre tâche présente ; sinon null.
+export function parentOf(item, byId) {
+  if (!item?.parentId) return null;
+  const parent = byId.get(item.parentId);
+  if (!parent || parent.listId !== item.listId || parent.id === item.id) return null;
+  if (parent.parentId && byId.has(parent.parentId)) return null;
+  return parent;
+}
+
+// Regroupe les éléments présents d'une liste : tops (tâches principales et
+// tâches ordinaires, dans l'ordre reçu) et childrenOf (identifiant d'une
+// principale → ses sous-tâches, dans l'ordre reçu). on : regroupement
+// actif (nestsSubtasks) ; sinon tout est à plat.
+export function nestItems(items, on) {
+  const childrenOf = new Map();
+  if (!on) return { tops: [...items], childrenOf };
+  const byId = new Map(items.map((item) => [item.id, item]));
+  const tops = [];
+  for (const item of items) {
+    const parent = parentOf(item, byId);
+    if (!parent) {
+      tops.push(item);
+      continue;
+    }
+    if (!childrenOf.has(parent.id)) childrenOf.set(parent.id, []);
+    childrenOf.get(parent.id).push(item);
+  }
+  return { tops, childrenOf };
+}
+
+// Sous-tâches d'une principale (éléments présents de la liste)
+export function childrenOf(items, parentId) {
+  const { childrenOf: groups } = nestItems(items, true);
+  return groups.get(parentId) ?? [];
+}
+
+// Compteur « 3/10 » d'une principale : sous-tâches cochées / toutes
+export function progressOf(children) {
+  return { done: children.filter((child) => child.checked).length, total: children.length };
+}

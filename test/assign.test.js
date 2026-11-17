@@ -305,7 +305,7 @@ test('copie locale : option, attribution, tri « Par personne » (Moi, les autre
   applyOp(state, { type: 'list.create', listId: 'l', name: 'Maison', listType: 'tasks', dueEnabled: true, assignEnabled: true }, { user, now });
   const list = state.lists.get('l');
   state.lists.set('l', { ...list, members: [...list.members, { id: 2, displayName: 'Léa', active: true, isOwner: false, access: 'modification' }, { id: 3, displayName: 'Paul', active: true, isOwner: false, access: 'lecture' }, { id: 4, displayName: 'Anne', active: true, isOwner: false, access: 'modification' }] });
-  assert.deepEqual(listOptions(state.lists.get('l')), { priority: false, due: true, assign: true });
+  assert.deepEqual(listOptions(state.lists.get('l')), { priority: false, due: true, assign: true, subtasks: false });
   assert.deepEqual(availableSorts(state.lists.get('l')), ['alpha', 'due', 'person']);
   assert.deepEqual(assignablePeople(state.lists.get('l')).map((p) => p.displayName), ['Anne', 'Guillaume', 'Léa'], 'pas Paul (lecture seule)');
   for (const [id, name, assignedTo] of [['a', 'Zinc', 2], ['b', 'Bois', 1], ['c', 'Clou', null], ['d', 'Ail', 4], ['e', 'Eau', 2]]) {

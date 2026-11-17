@@ -617,6 +617,20 @@ export const MIGRATIONS = [
   `
   ALTER TABLE sessions ADD COLUMN method TEXT NOT NULL DEFAULT 'password' CHECK (method IN ('password', 'oidc'));
   `,
+
+  // --- Migration 31 : sous-tâches (17 novembre 2026) ---
+  // lists.subtasks_enabled : option « Sous-tâches » de la liste (listes de
+  // tâches ; désactivée au départ, comme la priorité et l'échéance).
+  // items.parent_id : la tâche principale d'une sous-tâche (même liste, un
+  // seul niveau : vérifié par server/lists.js), ou vide. Option coupée ou
+  // liste d'un autre type : gardé en base, ignoré (tâches à plat). Si la
+  // principale est effacée pour de bon, la sous-tâche redevient une tâche
+  // (ON DELETE SET NULL).
+  `
+  ALTER TABLE lists ADD COLUMN subtasks_enabled INTEGER NOT NULL DEFAULT 0 CHECK (subtasks_enabled IN (0, 1));
+  ALTER TABLE items ADD COLUMN parent_id TEXT REFERENCES items(id) ON DELETE SET NULL;
+  CREATE INDEX items_parent ON items(parent_id) WHERE parent_id IS NOT NULL;
+  `,
 ];
 
 // Recopie des tables des connexions Claude (oauth_grants et les trois tables

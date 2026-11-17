@@ -10,10 +10,11 @@
 // Les fonctions « calculer… » sont pures : elles ne dépendent ni du réseau
 // ni de l'écran, et sont testées automatiquement (test/front.test.js).
 
-import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
+import { splitDone, compareNames, isMultiList, ITEM_SORTS, sortSubtasks } from './sorting.js';
 import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
 import { modeOf, turnAfterCheck } from './assign.js';
+import { nestsSubtasks, nestItems, parentOf } from './subtasks.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -214,6 +215,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         priorityEnabled: op.priorityEnabled === true, // désactivées sauf demande
         dueEnabled: op.dueEnabled === true,
         assignEnabled: op.assignEnabled === true,
+        subtasksEnabled: op.subtasksEnabled === true,
         addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(isShoppingList(type)),
         members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
         createdAt: now,
@@ -248,6 +250,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (typeof op.priorityEnabled === 'boolean') next.priorityEnabled = op.priorityEnabled;
       if (typeof op.dueEnabled === 'boolean') next.dueEnabled = op.dueEnabled;
       if (typeof op.assignEnabled === 'boolean') next.assignEnabled = op.assignEnabled;
+      if (typeof op.subtasksEnabled === 'boolean') next.subtasksEnabled = op.subtasksEnabled;
       if (ADD_MODES.includes(op.addMode)) next.addMode = op.addMode;
       state.lists.set(list.id, next);
       return;
@@ -275,9 +278,18 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (typeof op.checks === 'boolean') state.news.checks = op.checks;
       return;
     case 'list.removeChecked':
-    case 'list.clearChecked': // ancien nom (opération restée en file d'attente)
-      for (const [id, it] of [...state.items]) if (it.listId === op.listId && it.checked) state.items.delete(id);
+    case 'list.clearChecked': { // ancien nom (opération restée en file d'attente)
+      // Sous-tâches : une sous-tâche cochée sous une principale à faire
+      // reste à sa place (même règle que le serveur)
+      const nest = nestsSubtasks(state.lists.get(op.listId));
+      const byId = new Map(itemsOf(state, op.listId).map((it) => [it.id, it]));
+      for (const [id, it] of [...state.items]) {
+        if (it.listId !== op.listId || !it.checked) continue;
+        if (nest && parentOf(it, byId)?.checked === false) continue;
+        state.items.delete(id);
+      }
       return;
+    }
     case 'list.uncheckAll':
       for (const [id, it] of [...state.items]) {
         if (it.listId === op.listId && it.checked) state.items.set(id, { ...it, checked: false, checkedAt: null, updatedAt: now });
@@ -305,6 +317,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         assignPeople: op.assignMode && op.assignMode !== 'one' ? op.assignPeople ?? [] : [],
         dueTime: op.dueTime ?? null, // heure de l'échéance (« HH:MM ») et rappel (minutes avant)
         remindBefore: op.remindBefore ?? null,
+        parentId: op.parentId ?? null, // tâche principale (sous-tâches, subtasks.js)
         photoAt: null,
         checked: false,
         checkedAt: null,
@@ -313,13 +326,15 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         updatedAt: now,
         deletedAt: null,
       });
+      // Nouvelle sous-tâche : sa principale cochée se décoche (comme le serveur)
+      reopenParent(state, state.items.get(op.itemId), now);
       return;
     case 'item.update': {
       if (!item) return;
       const next = { ...item, updatedAt: now };
       // Seuls les champs présents changent (dueDate: null efface l'échéance,
       // ean: null le code-barres)
-      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'assignMode', 'assignPeople', 'dueTime', 'remindBefore', 'ean', 'link', 'priceCents']) if (op[field] !== undefined) next[field] = op[field];
+      for (const field of ['name', 'quantity', 'note', 'aisleId', 'storeId', 'priority', 'dueDate', 'repeat', 'assignedTo', 'assignMode', 'assignPeople', 'dueTime', 'remindBefore', 'ean', 'link', 'priceCents', 'parentId']) if (op[field] !== undefined) next[field] = op[field];
       // Attribution (mêmes règles que le serveur, assign.js) : une personne
       // demandée seule fait repasser en « une personne », sauf si c'est la
       // personne de cette fois d'un tour ; plusieurs : personne « de cette fois »
@@ -334,6 +349,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (op.dueDate === null && op.dueTime === undefined) next.dueTime = null;
       if (next.dueTime == null && op.remindBefore === undefined) next.remindBefore = null;
       state.items.set(item.id, next);
+      // Tâche à faire rangée sous une principale cochée : celle-ci se décoche
+      if (op.parentId) reopenParent(state, next, now);
       return;
     }
     // Retirer un article de « Souvent ajoutés » (même règle que le serveur)
@@ -353,24 +370,65 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         const turn = modeOf(item) === 'turn' && state.lists.get(item.listId)?.assignEnabled === true;
         const assignedTo = turn ? turnAfterCheck(item.assignPeople ?? [], item.assignedTo ?? null, user?.id) : item.assignedTo ?? null;
         state.items.set(item.id, { ...item, dueDate: op.nextDue, assignedTo, checked: false, checkedAt: null, updatedAt: now });
+        // Sous-tâches : toutes décochées pour la fois suivante
+        for (const child of subtasksOf(state, item)) if (child.checked) state.items.set(child.id, { ...child, checked: false, checkedAt: null, updatedAt: now });
         return;
       }
       // Date du coché : celle du téléphone en attendant celle du serveur
       state.items.set(item.id, { ...item, checked: op.checked, checkedAt: op.checked ? item.checkedAt ?? now : null, updatedAt: now });
+      // Sous-tâches (mêmes règles que le serveur) : cocher une principale
+      // coche ses sous-tâches à faire ; décocher une sous-tâche décoche sa
+      // principale cochée
+      if (op.checked) {
+        for (const child of subtasksOf(state, item)) if (!child.checked) state.items.set(child.id, { ...child, checked: true, checkedAt: now, updatedAt: now });
+      } else {
+        reopenParent(state, state.items.get(item.id), now);
+      }
       return;
     case 'item.delete':
       if (item) {
+        // Sous-tâches : parties avec leur principale (deletedWith), revenues avec elle
+        for (const child of subtasksOf(state, item)) {
+          state.trash.set(child.id, { ...child, deletedWith: item.id });
+          state.items.delete(child.id);
+        }
         state.trash.set(item.id, item); // pour « Annuler »
         state.items.delete(item.id);
       }
       return;
     case 'item.restore': {
       const old = state.trash.get(op.itemId);
-      if (old && state.lists.has(old.listId)) state.items.set(old.id, { ...old, updatedAt: now });
+      if (!old || !state.lists.has(old.listId)) return;
+      const { deletedWith, ...back } = old;
+      // Une sous-tâche dont la principale reste supprimée revient comme une
+      // tâche ordinaire (comme le serveur)
+      if (back.parentId && !state.items.has(back.parentId)) back.parentId = null;
+      state.items.set(back.id, { ...back, updatedAt: now });
+      for (const [id, child] of [...state.trash]) {
+        if (child.deletedWith !== old.id) continue;
+        const { deletedWith: _, ...restored } = child;
+        state.items.set(id, { ...restored, updatedAt: now });
+        state.trash.delete(id);
+      }
       return;
     }
     default:
   }
+}
+
+// Sous-tâches présentes d'une tâche, si la liste les regroupe (vide sinon,
+// ou si la tâche est elle-même une sous-tâche)
+function subtasksOf(state, item) {
+  if (!nestsSubtasks(state.lists.get(item.listId))) return [];
+  return nestItems(itemsOf(state, item.listId), true).childrenOf.get(item.id) ?? [];
+}
+
+// Une sous-tâche à faire sous une principale cochée : la principale se
+// décoche (il reste quelque chose à faire ; même règle que le serveur)
+function reopenParent(state, item, now) {
+  if (!item || item.checked || !nestsSubtasks(state.lists.get(item.listId))) return;
+  const parent = parentOf(item, new Map(itemsOf(state, item.listId).map((it) => [it.id, it])));
+  if (parent?.checked) state.items.set(parent.id, { ...parent, checked: false, checkedAt: null, updatedAt: now });
 }
 
 // Reporte un article créé ou modifié (ou le retire s'il est supprimé)
@@ -693,6 +751,8 @@ export function listOptions(list) {
     // Attribution (11 novembre 2026) : activée seulement si le réglage le dit
     // (une copie d'avant ce réglage, sans valeur : désactivée)
     assign: Boolean(list) && usesAssign(list) && list.assignEnabled === true,
+    // Sous-tâches (17 novembre 2026) : listes de tâches, réglage activé
+    subtasks: nestsSubtasks(list),
   };
 }
 
@@ -767,14 +827,21 @@ export function computeListView(state, listId, { sort = null, me = null } = {}) 
   if (!list) return null;
   const items = itemsOf(state, listId);
   const multi = isMultiList(list);
-  const { groups, done } = splitDone(items, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: effectiveSort(list, sort), people: memberNames(list), me });
+  // Sous-tâches : seules les tâches principales (et ordinaires) sont
+  // groupées et triées ; chaque principale garde ses sous-tâches à part
+  // (subtasks : identifiant -> sous-tâches, à faire puis cochées)
+  const { tops, childrenOf } = nestItems(items, nestsSubtasks(list));
+  const chosen = effectiveSort(list, sort);
+  const { groups, done } = splitDone(tops, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: chosen, people: memberNames(list), me });
+  const subtasks = new Map([...childrenOf].map(([id, children]) => [id, sortSubtasks(children, chosen)]));
   return {
     list,
     multi,
     groups,
     done,
+    subtasks,
     checked: done.length,
-    total: items.length,
+    total: tops.length,
     // Liste d'envies : réservations par souhait (Map), seulement si le
     // serveur les a envoyées pour cette liste ; sinon null (bénéficiaire,
     // ou autre type de liste)

@@ -97,7 +97,7 @@ test('annulation : les actions inverses sont les opérations habituelles (file d
   assert.equal((list.match(/const entry = \{ kind: 'update', itemId: item\.id, name: saved\.name, before, after: \{ dueDate: next \} \};/g) ?? []).length, 1);
   // Coché d'une tâche qui se répète : la date, et chacun son tour, la personne de cette fois
   assert.match(list, /const entry = \{ kind: 'update', itemId: item\.id, name: item\.name, before, after: \{ dueDate: next, \.\.\.\(nextPerson !== null \? \{ assignedTo: nextPerson \} : \{\}\) \} \};/);
-  assert.match(list, /recordUndo\(listId, \{ kind: 'check', itemId: item\.id, name: item\.name, checked: !item\.checked \}\);\s*actions\.checkItem\(item, !item\.checked\);/);
+  assert.match(list, /const entry = \{ kind: 'check', itemId: item\.id, name: item\.name, checked: !item\.checked,[^;]*\};\s*recordUndo\(listId, entry\);\s*actions\.checkItem\(item, !item\.checked\);/);
   assert.match(list, /recordUndo\(listId, \{ kind: 'update', itemId: item\.id, name: item\.name, before: beforeOf\(latest, changes\), after: changes \}\);\s*await actions\.updateItem\(item, changes\);/);
   assert.doesNotMatch(read('public/js/undo.js').replace(/\/\/.*$/gm, ''), /reserv|photo|addItem|createItem/i);
 });
@@ -134,7 +134,7 @@ test('raccourcis : ils n\'appuient que sur des boutons présents ; rien pour un 
   assert.doesNotMatch(keys, /reserv/i);
   // Ces boutons n'existent que pour qui a le droit (étape 1)
   const list = read('public/js/screens/list.js');
-  assert.match(list, /const slide = h\('div', \{ class: 'swipe__slide' \}, \.\.\.itemContent\(item, meta\), pc \? rowActions\(item\) : null\);/);
+  assert.match(list, /const slide = h\('div', \{ class: 'swipe__slide' \}, \.\.\.itemContent\(item, meta\), extra, pc \? rowActions\(item\) : null\);/);
   assert.match(list, /canEdit && mayCheck\(view\?\.list\) \? h\('button', \{\s*class: 'check',/);
   // Menu de la ligne : les mêmes boutons, sinon « Voir la fiche »
   assert.match(keys, /edit \? \{ icon: 'pencil', label: 'Modifier'/);

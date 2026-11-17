@@ -617,3 +617,21 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .shell__col--tabs > .screen > .scroll, .shell__col--tabs > .screen > .body:last-child { padding-bottom: calc(164px + env(safe-area-inset-bottom, 0px)); }
 .shell__col--tabs > .screen > .footer { padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)); border-top: 0; background: transparent; }
 .shell__col--tabs .toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+/* --- Sous-tâches (public/js/subtasks.js, décisions du 17 novembre 2026) ---
+   Une tâche principale porte au bout de sa ligne un bouton « 3/10 » et un
+   chevron (zone tactile de 44 px) qui déplie ses sous-tâches juste en
+   dessous : mêmes lignes que les autres, en retrait, puis « Ajouter une
+   sous-tâche ». Le chevron se retourne quand elles sont dépliées ; l'état
+   s'annonce par aria-expanded (jamais l'icône seule). */
+.subtasks__toggle { display: inline-flex; align-items: center; gap: 2px; flex: none; align-self: center; min-width: var(--tap-min); min-height: var(--tap-min); padding: 0 var(--space-1) 0 var(--space-2); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.subtasks__toggle .icon { flex: none; transition: transform var(--dur-fast) var(--ease); }
+.subtasks__toggle[aria-expanded="true"] { color: var(--color-accent-ink); }
+.subtasks__toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .subtasks__toggle .icon { transition: none; } }
+.subtasks, .subtasks__list { margin: 0; padding: 0; list-style: none; }
+.subtasks__list > .item, .subtasks__add { padding-left: 28px; }
+.subtasks__add { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.subtasks__add-btn { display: flex; align-items: center; width: 100%; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 600; text-align: left; }
+.subtasks__plus { display: grid; place-items: center; flex: none; width: 52px; }
+.app--pc .subtasks__plus { width: 44px; }

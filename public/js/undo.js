@@ -22,6 +22,8 @@ export const NOTHING_TO_UNDO = 'Rien à annuler dans cette liste.';
 const stacks = new Map(); // id de la liste -> actions, de la plus ancienne à la plus récente
 
 // Note une action ; entry : { kind: 'delete' | 'check' | 'update', itemId, name, … }
+// (check : children, les sous-tâches cochées avec leur principale ;
+// reopened, la principale décochée par cette sous-tâche)
 export function recordUndo(listId, entry) {
   const stack = stacks.get(listId) ?? [];
   stack.push(entry);
@@ -61,6 +63,18 @@ export async function undoLast(listId, items, act) {
   if (entry.kind === 'check') {
     if (Boolean(current.checked) !== entry.checked) return CHANGED_MEANWHILE;
     await act.check(current, !entry.checked);
+    // Sous-tâches (subtasks.js) : celles cochées avec leur principale sont
+    // décochées ; une principale décochée par une sous-tâche est recochée
+    // (ce qui recoche ses sous-tâches, comme avant)
+    if (entry.checked) {
+      for (const id of entry.children ?? []) {
+        const child = items.get(id);
+        if (child?.checked) await act.check(child, false);
+      }
+    } else if (entry.reopened) {
+      const parent = items.get(entry.reopened);
+      if (parent && !parent.checked) await act.check(parent, true);
+    }
     return `Annulé : « ${current.name} » ${entry.checked ? 'décoché' : 'coché'}.`;
   }
   if (entry.kind === 'update') {

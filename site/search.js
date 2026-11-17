@@ -103,14 +103,24 @@ export function highlightParts(text, query) {
 // note) : { groups, done, count }. Les groupes sans résultat disparaissent ;
 // les cochés trouvés restent dans « Dans le panier ». La vue d'origine
 // n'est pas modifiée.
+// Sous-tâches (view.subtasks) : une tâche principale reste si son nom ou
+// celui d'une de ses sous-tâches est trouvé ; subtasks ne garde que les
+// sous-tâches trouvées (affichées dépliées sous leur principale).
 export function filterListView(view, query) {
   const keep = (item) => matches(item.name, query);
+  const subtasks = new Map();
+  for (const [id, children] of view.subtasks ?? []) {
+    const found = children.filter(keep);
+    if (found.length) subtasks.set(id, found);
+  }
+  const keepTop = (item) => keep(item) || subtasks.has(item.id);
   const groups = view.groups
-    .map((group) => ({ ...group, items: group.items.filter(keep) }))
+    .map((group) => ({ ...group, items: group.items.filter(keepTop) }))
     .filter((group) => group.items.length > 0);
-  const done = view.done.filter(keep);
-  const count = groups.reduce((sum, group) => sum + group.items.length, 0) + done.length;
-  return { groups, done, count };
+  const done = view.done.filter(keepTop);
+  const tops = [...groups.flatMap((group) => group.items), ...done];
+  const count = tops.filter(keep).length + tops.reduce((sum, item) => sum + (subtasks.get(item.id)?.length ?? 0), 0);
+  return { groups, done, count, subtasks };
 }
 
 // Listes de « Mes listes » dont le titre contient le texte cherché

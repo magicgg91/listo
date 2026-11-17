@@ -20,6 +20,7 @@ import { LIST_ICONS } from '../list-icons.js';
 import {
   CREATABLE_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isShoppingList, isWishList, usesPriority, usesDue, usesAssign, typeChangeWarning, WISHES_LOCKED_HINT,
 } from '../list-types.js';
+import { usesSubtasks } from '../subtasks.js';
 import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
 import { hasPublicLink } from './lists.js';
 
@@ -117,7 +118,7 @@ export function accessChoice(name, value, onChange) {
 // est le titre de la ligne (aria-labelledby) ; sous le titre, seulement la
 // description, qui ne change pas (aria-describedby). Le même composant sert
 // à la création et à « Modifier la liste ».
-// values : { priority, due, assign } ; onChange(nouvelles valeurs) ; leading :
+// values : { priority, due, assign, subtasks } ; onChange(nouvelles valeurs) ; leading :
 // ligne placée avant les deux interrupteurs (« Après l'ajout »), ou rien.
 // Les deux lignes des interrupteurs portent data-switch (cachées pour une
 // liste de courses).
@@ -127,6 +128,7 @@ export function optionSwitches(values, onChange, leading = null) {
     ['priority', 'Priorité', 'Basse, normale ou élevée.'],
     ['due', 'Échéance', 'Une date limite ; retards signalés.'],
     ['assign', 'Attribution', 'Confier une tâche à une personne de la liste.'],
+    ['subtasks', 'Sous-tâches', 'Ranger des tâches sous une tâche principale.'],
   ].map(([key, label, help]) => {
     const titleId = `option-${key}-title`;
     const helpId = `option-${key}-help`;
@@ -195,7 +197,7 @@ export function addModeChoice(value, onChange) {
 
 // Réglages enregistrés d'une liste (gardés même pour une liste de courses,
 // qui les ignore). Une copie d'avant ces réglages : activés, comme avant.
-const listOptionsOf = (list) => ({ priority: list.priorityEnabled !== false, due: list.dueEnabled !== false, assign: list.assignEnabled === true });
+const listOptionsOf = (list) => ({ priority: list.priorityEnabled !== false, due: list.dueEnabled !== false, assign: list.assignEnabled === true, subtasks: list.subtasksEnabled === true });
 
 function form(list, users) {
   const me = app.user;
@@ -422,7 +424,7 @@ function form(list, users) {
   // une nouvelle liste suit son type (« Rester sur la liste » pour les
   // courses, « Ouvrir la fiche » sinon) tant qu'on ne l'a pas touché.
   // Priorité : priorityAtStart (store.js) ; échéance : le réglage enregistré
-  let options = { priority: priorityAtStart(list), due: list ? listOptionsOf(list).due : false, assign: list ? listOptionsOf(list).assign : false };
+  let options = { priority: priorityAtStart(list), due: list ? listOptionsOf(list).due : false, assign: list ? listOptionsOf(list).assign : false, subtasks: list ? listOptionsOf(list).subtasks : false };
   let addMode = list ? addModeOf(list) : defaultAddMode(true);
   let addModeChosen = Boolean(list);
   const addModeField = addModeChoice(addMode, (value) => {
@@ -612,7 +614,9 @@ function form(list, users) {
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
     // Priorité : tâches et envies ; échéance : tâches seulement
     for (const row of optionsCard.querySelectorAll('[data-switch]')) {
-      row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType) : row.dataset.switch === 'assign' ? !usesAssign(listType) : !usesDue(listType);
+      row.hidden = row.dataset.switch === 'priority' ? !usesPriority(listType)
+        : row.dataset.switch === 'assign' ? !usesAssign(listType)
+          : row.dataset.switch === 'subtasks' ? !usesSubtasks(listType) : !usesDue(listType);
     }
     optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
     if (!addModeChosen) {
@@ -674,6 +678,7 @@ function form(list, users) {
     const withPriority = usesPriority(listType);
     const withDue = usesDue(listType);
     const withAssign = usesAssign(listType);
+    const withSubtasks = usesSubtasks(listType);
     const saved = list ? listOptionsOf(list) : null;
     // Devenir une liste d'envies : d'abord, en ligne, le type et le
     // destinataire ensemble (une seule transaction sur le serveur) ; en cas
@@ -697,7 +702,7 @@ function form(list, users) {
     }
     if (!list) {
       id = await actions.createList({
-        name: cleanName, listType, storeId: chosenStore, priorityEnabled: withPriority && options.priority, dueEnabled: withDue && options.due, assignEnabled: withAssign && options.assign, addMode, icon: chosenIcon,
+        name: cleanName, listType, storeId: chosenStore, priorityEnabled: withPriority && options.priority, dueEnabled: withDue && options.due, assignEnabled: withAssign && options.assign, subtasksEnabled: withSubtasks && options.subtasks, addMode, icon: chosenIcon,
         ...(isWishList(listType) ? { forUserId: beneficiaryId() ?? undefined, forName: forName ?? undefined } : {}),
       });
     } else {
@@ -711,6 +716,7 @@ function form(list, users) {
       if (withPriority && !convert && options.priority !== saved.priority) switches.priorityEnabled = options.priority;
       if (withDue && options.due !== saved.due) switches.dueEnabled = options.due;
       if (withAssign && options.assign !== saved.assign) switches.assignEnabled = options.assign;
+      if (withSubtasks && options.subtasks !== saved.subtasks) switches.subtasksEnabled = options.subtasks;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
       if (Object.keys(switches).length) await actions.updateList(id, switches);

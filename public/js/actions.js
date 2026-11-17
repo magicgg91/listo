@@ -15,7 +15,7 @@
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
 import { uuid, photoUrl, post, patch, del } from './api.js';
-import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions } from './store.js';
+import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
 import { nextDue } from './repeat.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { todayKey } from './format.js';
@@ -39,7 +39,7 @@ async function perform(operation, { hint } = {}) {
 // Ajoute un article. aisleId / storeId : choix explicite (y compris null,
 // « Sans rayon » / « Sans magasin ») ; absent, le serveur choisira le rayon ou
 // le magasin habituel, et le téléphone affiche en attendant sa prévision.
-export async function addItem({ listId, name, quantity, note, aisleId, storeId, ean, link, priceCents }) {
+export async function addItem({ listId, name, quantity, note, aisleId, storeId, ean, link, priceCents, parentId }) {
   const list = app.data.lists.get(listId);
   if (!list) return null;
   const itemId = uuid();
@@ -51,6 +51,7 @@ export async function addItem({ listId, name, quantity, note, aisleId, storeId, 
   if (ean !== undefined) fields.ean = ean; // code-barres normalisé (listes de courses)
   if (link !== undefined) fields.link = link; // lien et prix (listes d'envies)
   if (priceCents !== undefined) fields.priceCents = priceCents;
+  if (parentId) fields.parentId = parentId; // sous-tâche de cette tâche (subtasks.js)
   const multi = isMultiList(list);
   const hint = {};
   if (multi && storeId === undefined) hint.storeId = usualStoreFor(app.data, list, name);
@@ -126,7 +127,8 @@ const checkedCount = (listId) => [...app.data.items.values()].filter((item) => i
 // « Retirer les terminés ». Une seule opération, quel que soit leur nombre.
 // Renvoie le nombre d'articles retirés.
 export async function removeChecked(listId) {
-  const count = checkedCount(listId);
+  // Sous-tâches : une sous-tâche cochée sous une principale à faire reste
+  const count = checkedToRemove(app.data, listId).length;
   if (count) await perform({ type: 'list.removeChecked', listId });
   return count;
 }
@@ -142,14 +144,14 @@ export async function uncheckAll(listId) {
 
 // --- Listes ---
 
-export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, assignEnabled = false, addMode, icon, forUserId, forName }) {
+export async function createList({ name, listType, storeId, priorityEnabled = false, dueEnabled = false, assignEnabled = false, subtasksEnabled = false, addMode, icon, forUserId, forName }) {
   const listId = uuid();
   // listType : 'shopping' ou 'tasks' (« type » est le nom de l'opération) ;
   // icon : envoyée seulement si une icône a été choisie ; addMode (« Après
   // l'ajout ») : sans valeur, le serveur choisit selon le type
   // forUserId / forName : « Pour qui ? » d'une liste d'envies (rien : « Moi »)
   await perform({
-    type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled, assignEnabled,
+    type: 'list.create', listId, name, listType, storeId, priorityEnabled, dueEnabled, assignEnabled, subtasksEnabled,
     ...(addMode ? { addMode } : {}), ...(icon ? { icon } : {}),
     ...(forUserId ? { forUserId } : {}), ...(forName ? { forName } : {}),
   });

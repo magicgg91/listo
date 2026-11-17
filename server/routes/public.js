@@ -51,7 +51,8 @@ import { verifyPassword, getDummyHash, PASSWORD_MAX } from '../passwords.js';
 import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
 import { ACCESS_COOKIE } from '../shares.js';
-import { splitDone } from '../../public/js/sorting.js';
+import { splitDone, sortSubtasks } from '../../public/js/sorting.js';
+import { nestItems, usesSubtasks } from '../../public/js/subtasks.js';
 
 const NOT_FOUND = 'Lien expiré ou inexistant.';
 const TOO_MANY = "Trop d'essais, réessayez plus tard.";
@@ -92,7 +93,7 @@ export function publicRoutes(ctx, { publicDir }) {
 
   const q = {
     list: db.prepare(`
-      SELECT name, type, store_id, priority_enabled, due_enabled, owner_id, for_user_id, for_name FROM lists WHERE id = ?
+      SELECT name, type, store_id, priority_enabled, due_enabled, subtasks_enabled, owner_id, for_user_id, for_name FROM lists WHERE id = ?
     `),
     // Prénom affiché d'un compte (destinataire d'une liste d'envies)
     displayName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
@@ -100,7 +101,7 @@ export function publicRoutes(ctx, { publicDir }) {
     allStores: db.prepare('SELECT id, name FROM stores'),
     allAisles: db.prepare('SELECT id, name FROM aisles'),
     items: db.prepare(`
-      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents
+      SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents, parent_id
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
@@ -187,14 +188,19 @@ export function publicRoutes(ctx, { publicDir }) {
       ean: row.ean,
       link: row.link,
       priceCents: row.price_cents,
+      listId: share.list_id,
+      parentId: row.parent_id,
     }));
+    // Sous-tâches (option activée, liste de tâches) : rangées sous leur
+    // principale (subtasks), jamais à part ; aucun identifiant envoyé
+    const { tops, childrenOf } = nestItems(items, usesSubtasks(list) && list.subtasks_enabled === 1);
     // Articles à acheter groupés par rayon (ou magasin) ; articles cochés à
     // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
     // « Terminés », même règle que l'application). La date du coché sert à
     // l'ordre, elle n'est pas envoyée.
     const aisles = q.allAisles.all();
     const stores = q.allStores.all();
-    const { groups, done } = splitDone(items, aisles, isShopping, { byStore, stores });
+    const { groups, done } = splitDone(tops, aisles, isShopping, { byStore, stores });
     // Liste de tâches : priorité et échéance en plus (lecture seule),
     // chacune seulement si elle est activée pour cette liste ; jamais pour
     // une liste de courses
@@ -235,6 +241,9 @@ export function publicRoutes(ctx, { publicDir }) {
         reservation: states.get(item.id)?.state ?? 'free',
         mine: states.get(item.id)?.mine ?? false,
       } : {}),
+      // Tâche principale : ses sous-tâches (à faire puis cochées), décrites
+      // champ par champ de la même façon
+      ...(childrenOf.has(item.id) ? { subtasks: sortSubtasks(childrenOf.get(item.id)).map(describe) } : {}),
     });
     // Article coché : il a quitté son groupe, son rayon (ou son magasin dans
     // une liste « multi ») n'est donc plus donné par l'en-tête ; il est

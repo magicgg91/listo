@@ -27,6 +27,7 @@ import { dueChip, dueDateLabel, priorityChip, todayKey } from '../format.js';
 import { repeatChip, repeatSentence } from '../repeat.js';
 import { listIcon } from '../list-icons.js';
 import { canEditList, listOptions, memberNames } from '../store.js';
+import { nestsSubtasks, parentOf } from '../subtasks.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
@@ -122,6 +123,12 @@ export function renderDeadlines(onLeave) {
   const row = ({ item, list }, today) => {
     const chips = [h('span', { class: 'chip chip--list' }, icon(listIcon(list), 'icon--xs'), list.name)];
     const spoken = [`dans ${list.name}`];
+    // Sous-tâche (subtasks.js) : le nom de sa tâche principale
+    const parent = nestsSubtasks(list) ? parentOf(item, app.data.items) : null;
+    if (parent) {
+      chips.push(h('span', { class: 'chip' }, icon('layers', 'icon--xs'), parent.name));
+      spoken.push(`sous-tâche de ${parent.name}`);
+    }
     const priority = listOptions(list).priority ? priorityChip(item.priority) : null;
     if (priority) {
       chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));

@@ -163,6 +163,7 @@ export const GUIDE = [
           'Une heure, et un rappel choisi tâche par tâche ([[heure]]).',
           'Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([[repeter]]).',
           'Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([[attribuer]]).',
+          'Ranger des sous-tâches sous une tâche principale ([[sous-taches]]).',
           'Tri par priorité ou par échéance ([[tri]]).',
         ] }],
       },
@@ -738,6 +739,26 @@ export const GUIDE = [
           'Ne s\'annulent pas par Ctrl+Z : un ajout (supprimez l\'article), une photo, une réservation ou une participation (« Quitter » dans la fiche), « Tout remettre à acheter » et « Retirer du panier » (déjà confirmés), la suppression d\'une liste (elle reste 30 jours dans la corbeille), les réglages de la liste et le partage.',
         ],
       },
+      {
+        id: 'sous-taches',
+        title: 'Sous-tâches',
+        blocks: [
+          'Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([[modifier]]). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.',
+          { ul: [
+            'Au bout de la ligne d\'une tâche principale, “1/3” dit combien de sous-tâches sont faites. Touchez-le : les sous-tâches s\'affichent juste en dessous, en retrait. Touchez-le de nouveau pour les replier. Cet appareil se souvient de ce qui est déplié.',
+            'Pour ajouter une sous-tâche : dépliez la tâche principale et touchez « Ajouter une sous-tâche » ; ou ouvrez la fiche d\'une tâche et touchez « Ajouter une sous-tâche ». Entrée ajoute et laisse le champ prêt pour la suivante ; Entrée sur un champ vide ferme.',
+            'Pour ranger une tâche qui existe déjà : sa fiche, « Sous-tâche de », puis la tâche principale. « Aucune » la ressort.',
+            'Un seul niveau : une sous-tâche n\'a pas de sous-tâches. Une tâche qui a des sous-tâches, ou qui se répète, ne peut pas devenir une sous-tâche.',
+            'Une sous-tâche a tout d\'une tâche (note, échéance, heure, rappel, priorité, attribution), sauf la répétition.',
+            'Cocher la tâche principale coche toutes ses sous-tâches ; le message propose « Annuler ». Elle ne se coche jamais toute seule, même quand la dernière sous-tâche est faite. Décocher une sous-tâche, ou en ajouter une, décoche la tâche principale.',
+            'Une tâche principale qui se répète ([[repeter]]) revient à sa date suivante avec toutes ses sous-tâches décochées : pratique pour une liste de vérifications à refaire.',
+            'Les sous-tâches cochées restent sous leur tâche principale, barrées, à la fin. Une tâche principale cochée va dans « Terminés » avec ses sous-tâches. « Retirer les terminés » ne retire pas les sous-tâches cochées d\'une tâche principale encore à faire.',
+            'Supprimer une tâche principale supprime aussi ses sous-tâches ; « Annuler » les ramène toutes.',
+            'La recherche trouve aussi les sous-tâches : elles s\'affichent sous leur tâche principale. Dans « Échéances » ([[echeances]]), une sous-tâche montre le nom de sa tâche principale. Le lien public montre les sous-tâches sous leur tâche principale, en lecture seule.',
+            'Désactiver « Sous-tâches » n\'efface rien : les tâches s\'affichent à plat, et se regroupent de nouveau si l\'option revient. Une liste dupliquée garde ses sous-tâches.',
+          ] },
+        ],
+      },
     ],
   },
 
@@ -891,7 +912,7 @@ export const GUIDE = [
         id: 'modifier',
         title: 'Propriétaire : modifier la liste',
         blocks: [
-          'Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l\'échéance et l\'attribution ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
+          'Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l\'échéance, l\'attribution et les sous-tâches ([[sous-taches]]) ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
           { ul: [
             'Changer le type n\'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l\'échéance. Tout revient si la liste reprend son type d\'origine. Le formulaire le rappelle avant l\'enregistrement.',
             'La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d\'envies. Tout le monde la voit. L\'échéance n\'existe que pour les listes de tâches.',
@@ -1033,6 +1054,7 @@ export const GUIDE = [
             'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
             'Ranger : “Range le lait au rayon crèmerie.”',
+            'Sous-tâches ([[sous-taches]]) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.”',
           ] },
           'Claude lit d\'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.',
         ],

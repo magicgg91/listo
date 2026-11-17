@@ -433,6 +433,15 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     1. Connecté avec Authelia : « Mon compte » montre « Connecté avec Authelia », sans « Mot de passe » ni « Double authentification ». Connecté par mot de passe : comme avant.
     2. Avec `LISTO_LOCAL_LOGIN=off` (après `docker compose up -d`) : un appareil connecté par mot de passe revient sur l'écran de connexion ; l'écran ne montre que « Se connecter avec Authelia » ; dans Administration, « Ajouter un compte » ne demande pas de mot de passe.
     3. Claude (LISTO_MCP=on), connecté avec Authelia : l'écran « Autoriser Claude » propose « Confirmer avec Authelia » ; Authelia redemande la connexion, puis l'écran revient avec les choix d'accès et de listes, sans mot de passe. Si Authelia ne redemande pas la connexion, l'écran dit que la confirmation n'a pas abouti : le noter.
+59. **Sous-tâches** (17 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16, 393 × 852, clair et sombre, et sur ordinateur, et par des tests automatiques ; le doigt et le clavier du vrai téléphone restent à essayer) : dans une liste de tâches, « Modifier la liste », activer « Sous-tâches ».
+    1. Ouvrir la fiche d'une tâche, « Ajouter une sous-tâche » : toucher le champ (aucun clavier tout seul), taper un nom, Entrée : « … ajoutée », le clavier reste ouvert pour la suivante ; Entrée sur le champ vide ferme.
+    2. Sur la ligne de la tâche, « 0/2 » et le chevron : un appui déplie, en retrait, puis « Ajouter une sous-tâche » ; un autre replie ; quitter et revenir : l'état est retenu. Le bouton se touche facilement sans cocher la tâche ni ouvrir sa fiche.
+    3. Cocher la tâche principale : ses sous-tâches se cochent, message « … et 2 sous-tâches cochées » avec « Annuler » ; « Annuler » remet tout comme avant. Décocher une sous-tâche d'une tâche terminée : la tâche principale revient dans la liste.
+    4. Glisser une tâche principale vers la gauche, « Supprimer » : message « … et 2 sous-tâches supprimées » ; « Annuler » ramène tout le groupe.
+    5. Fiche d'une autre tâche, « Sous-tâche de » : choisir la tâche principale, enregistrer : la tâche passe sous elle. « Aucune » la ressort.
+    6. Rechercher le nom d'une sous-tâche : elle s'affiche sous sa tâche principale. « Échéances » : une sous-tâche avec une date montre le nom de sa tâche principale.
+    7. Couper l'option : tout s'affiche à plat ; la remettre : tout se regroupe. Lien public de la liste : les sous-tâches sont sous leur tâche principale.
+    8. Hors ligne (mode avion) : cocher une tâche principale, ajouter une sous-tâche ; au retour du réseau, un autre appareil voit la même chose.
 
 ## API des comptes (étape 2)
 

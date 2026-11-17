@@ -80,8 +80,8 @@ test('menu de gauche : liens réels, liste ouverte repérée, Admin seulement co
 test('liste : actions de ligne seulement si modifiable ; « Réserver » seulement avec les réservations (jamais au bénéficiaire)', () => {
   const list = read('public/js/screens/list.js');
   // Ligne en lecture seule : ni crayon ni corbeille (seulement « Réserver » possible)
-  assert.match(list, /\.\.\.itemContent\(item, meta, false\), pc \? reserveButton\(item\) : null\), item, meta\);/);
-  assert.match(list, /const slide = h\('div', \{ class: 'swipe__slide' \}, \.\.\.itemContent\(item, meta\), pc \? rowActions\(item\) : null\);/);
+  assert.match(list, /\.\.\.itemContent\(item, meta, false\), extra, pc \? reserveButton\(item\) : null\), item, meta\);/);
+  assert.match(list, /const slide = h\('div', \{ class: 'swipe__slide' \}, \.\.\.itemContent\(item, meta\), extra, pc \? rowActions\(item\) : null\);/);
   // Le serveur n'envoie jamais les réservations au bénéficiaire : sans elles, aucun bouton
   assert.match(list, /if \(!view\?\.reservations \|\| item\.checked \|\| view\.reservations\.get\(item\.id\)\?\.participants\.length\) return null;/);
   // Corbeille au survol : même suppression annulable que le glissement

@@ -121,7 +121,7 @@ test('liste : groupes sans résultat masqués, cochés trouvés gardés, note ig
   assert.equal(view.groups.length, 3);
   assert.equal(view.done.length, 2);
   // Rien trouvé
-  assert.deepEqual(filterListView(view, 'sirop'), { groups: [], done: [], count: 0 });
+  assert.deepEqual(filterListView(view, 'sirop'), { groups: [], done: [], count: 0, subtasks: new Map() });
   // Recherche vide : tout
   assert.equal(filterListView(view, '').count, 6);
 });

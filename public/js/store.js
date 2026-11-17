@@ -281,13 +281,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'list.clearChecked': { // ancien nom (opération restée en file d'attente)
       // Sous-tâches : une sous-tâche cochée sous une principale à faire
       // reste à sa place (même règle que le serveur)
-      const nest = nestsSubtasks(state.lists.get(op.listId));
-      const byId = new Map(itemsOf(state, op.listId).map((it) => [it.id, it]));
-      for (const [id, it] of [...state.items]) {
-        if (it.listId !== op.listId || !it.checked) continue;
-        if (nest && parentOf(it, byId)?.checked === false) continue;
-        state.items.delete(id);
-      }
+      for (const it of checkedToRemove(state, op.listId)) state.items.delete(it.id);
       return;
     }
     case 'list.uncheckAll':
@@ -414,6 +408,16 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     }
     default:
   }
+}
+
+// Éléments retirés par « Retirer les terminés » : les cochés, sauf une
+// sous-tâche cochée sous une principale à faire (elle n'est pas dans les
+// terminés ; même règle que le serveur)
+export function checkedToRemove(state, listId) {
+  const nest = nestsSubtasks(state.lists.get(listId));
+  const items = itemsOf(state, listId);
+  const byId = new Map(items.map((it) => [it.id, it]));
+  return items.filter((it) => it.checked && !(nest && parentOf(it, byId)?.checked === false));
 }
 
 // Sous-tâches présentes d'une tâche, si la liste les regroupe (vide sinon,
@@ -570,7 +574,7 @@ export function pruneItemSorts(listIds, storage = () => globalThis.localStorage)
 // Ménage complet, à l'écran « Mes listes » : tri, groupes repliés et zone
 // des cochés des listes qui ne sont plus sur ce téléphone
 export function pruneListMemory(listIds, storage = () => globalThis.localStorage) {
-  pruneByPrefix([ITEM_SORT_PREFIX, FOLDED_PREFIX, ZONE_PREFIX], listIds, storage);
+  pruneByPrefix([ITEM_SORT_PREFIX, FOLDED_PREFIX, ZONE_PREFIX, OPEN_SUBTASKS_PREFIX], listIds, storage);
 }
 function pruneByPrefix(prefixes, listIds, storage) {
   try {
@@ -584,6 +588,29 @@ function pruneByPrefix(prefixes, listIds, storage) {
     }
   } catch {
     // sans importance
+  }
+}
+
+// --- Sous-tâches dépliées d'une liste (subtasks.js) ---
+// Repliées par défaut ; les tâches principales dépliées sont mémorisées sur
+// ce téléphone seulement, pour chaque liste (clé
+// listo-sous-taches-ouvertes-<identifiant>), jamais envoyées au serveur.
+// Une tâche disparue est oubliée au prochain dépliage.
+export const OPEN_SUBTASKS_PREFIX = 'listo-sous-taches-ouvertes-';
+export function loadOpenSubtasks(listId, storage = () => globalThis.localStorage) {
+  try {
+    const saved = JSON.parse(storage().getItem(OPEN_SUBTASKS_PREFIX + listId) ?? '[]');
+    return new Set(Array.isArray(saved) ? saved.filter((id) => typeof id === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+export function saveOpenSubtasks(listId, open, storage = () => globalThis.localStorage) {
+  try {
+    if (open.size) storage().setItem(OPEN_SUBTASKS_PREFIX + listId, JSON.stringify([...open]));
+    else storage().removeItem(OPEN_SUBTASKS_PREFIX + listId);
+  } catch {
+    // sans importance : l'état vaut pour cette visite
   }
 }
 

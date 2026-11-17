@@ -177,11 +177,11 @@ function showList(data) {
         h('h2', { class: 'cart__toggle', 'aria-label': `${zone.title}, ${countItems(done.length, kind)}` },
           h('span', {}, `${zone.title} · `, h('span', { class: 'cart__count' }, String(done.length)))))),
       // Article coché : son rayon (ou son magasin) est envoyé avec lui
-      h('ul', {}, done.map((item) => itemRow(item, item.aisle ?? item.store ?? null))))
+      h('ul', {}, done.flatMap((item) => withSubtasks(item, item.aisle ?? item.store ?? null))))
     : null;
 
   const content = groups.length || done.length
-    ? [...groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.map((item) => itemRow(item, group.name))))), doneZone]
+    ? [...groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.flatMap((item) => withSubtasks(item, group.name))))), doneZone]
     : h('div', { class: 'empty' },
       h('span', { class: 'empty__icon' }, icon(typeIcon(list.type), 'icon--lg')),
       h('h2', { class: 'empty__title' }, 'Cette liste est vide'));
@@ -353,13 +353,13 @@ function metaRow(item) {
 // reste de la ligne est un bouton qui ouvre la fiche (même balisage que la
 // fiche à consulter de l'application). place : nom du rayon (ou du magasin
 // dans une liste « multi »), ou null pour « Sans rayon » / « Sans magasin ».
-function itemRow(item, place) {
+function itemRow(item, place, extraSpoken = '') {
   // Vignette de la ligne : gardée pour la fiche (copie sans nouvelle requête)
   const thumb = item.photo ? h('img', { class: 'photo', src: item.photo, alt: '', loading: 'lazy', decoding: 'async' }) : null;
   return h('li', { class: `item${item.checked ? ' is-done' : ''}${canReserve && !item.checked ? ' item--reserve' : ''}` },
     h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': listType === 'wishes' ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
       h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
-    h('button', { class: 'item__body', type: 'button', 'aria-label': `Voir ${item.name}${spokenMeta(item)}`, onClick: () => showItem(item, place, thumb) },
+    h('button', { class: 'item__body', type: 'button', 'aria-label': `Voir ${item.name}${spokenMeta(item)}${extraSpoken}`, onClick: () => showItem(item, place, thumb) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
@@ -367,6 +367,19 @@ function itemRow(item, place) {
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
     thumb ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) }, thumb) : null,
     reservationPart(item));
+}
+
+// Tâche principale (liste de tâches, option « Sous-tâches ») : sa ligne,
+// puis ses sous-tâches juste en dessous, en retrait, toujours dépliées
+// (lecture seule) ; le nombre de sous-tâches faites est dit avec la ligne.
+function withSubtasks(item, place) {
+  const children = Array.isArray(item.subtasks) ? item.subtasks : [];
+  if (!children.length) return [itemRow(item, place)];
+  const done = children.filter((child) => child.checked).length;
+  return [
+    itemRow(item, place, `, sous-tâches : ${done} faite${done > 1 ? 's' : ''} sur ${children.length}`),
+    h('li', { class: 'subtasks' }, h('ul', { class: 'subtasks__list', 'aria-label': `Sous-tâches de ${item.name}` }, children.map((child) => itemRow(child, place)))),
+  ];
 }
 
 // Copie de la vignette déjà affichée sur la ligne, dessinée dans un canvas :

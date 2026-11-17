@@ -9,7 +9,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import {
   SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT,
   nestItems, parentOf, progressOf,
@@ -291,4 +291,25 @@ test('copie locale : principale qui se répète, sous-tâches décochées ; opti
   applyOp(state, { type: 'item.delete', itemId: 'm' }, { user, now });
   assert.ok(state.items.has('s'), 'option coupée : pas de suppression en groupe');
   assert.equal(state.items.get('s').parentId, 'm', 'le lien est gardé');
+});
+
+// --- Lien public ---
+
+test('lien public : sous-tâches rangées sous leur principale, décrites champ par champ, sans identifiant ; option coupée : à plat', async (t) => {
+  const h = await household(t);
+  await op(h.guillaume, { type: 'item.check', itemId: h.items.lot1, checked: true });
+  const share = await h.guillaume.request('PUT', `/api/lists/${h.lists.refonte}/share`, {});
+  const token = share.body.share.url.split('/p/')[1];
+  const visitor = createClient(h.app.base, { ip: '203.0.113.40' });
+  const page = (await visitor.get(`/api/public/${token}`)).body;
+  const tops = page.groups.flatMap((g) => g.items);
+  assert.deepEqual(tops.map((i) => i.name).sort(), ['Authelia', 'Beszel']);
+  const authelia = tops.find((i) => i.name === 'Authelia');
+  assert.deepEqual(authelia.subtasks.map((i) => [i.name, i.checked]), [['Lot 2', false], ['Lot 1', true]], 'à faire, puis cochées');
+  const text = JSON.stringify(page);
+  for (const secret of [...Object.values(h.items), 'parentId', 'parent_id', 'subtasksEnabled']) assert.ok(!text.includes(secret), secret);
+  await op(h.guillaume, { type: 'list.update', listId: h.lists.refonte, subtasksEnabled: false });
+  const flat = (await visitor.get(`/api/public/${token}`)).body;
+  assert.equal(flat.groups.flatMap((g) => g.items).length + flat.done.length, 4);
+  assert.ok(!JSON.stringify(flat).includes('subtasks'));
 });

@@ -45,7 +45,8 @@ import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName, HABITUAL_LIMIT_KEYBOARD } from '../history.js';
 import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
-  groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone } from '../store.js';
+  groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove } from '../store.js';
+import { progressOf, parentOf } from '../subtasks.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
@@ -269,7 +270,7 @@ export function renderList(listId, onLeave) {
     const key = groupKey(group);
     const remaining = group.items.length; // le groupe ne contient que des non cochés
     const total = group.total ?? remaining;
-    const listEl = h('ul', { id: `groupe-${listId}-${key.replace(':', '-')}` }, group.items.map(itemRow));
+    const listEl = h('ul', { id: `groupe-${listId}-${key.replace(':', '-')}` }, rowsOf(group.items));
     const counter = h('span', { class: 'aisle__count', 'aria-hidden': 'true' }, progressText(remaining, total));
     const toggle = h('button', {
       class: 'aisle__toggle',
@@ -313,7 +314,7 @@ export function renderList(listId, onLeave) {
       h('h2', { class: 'aisle' },
         h('span', { class: 'aisle__name' }, lead, name),
         h('span', { class: 'aisle__count', 'aria-label': resultsLabel(count) }, String(count))),
-      h('ul', {}, group.items.map(itemRow)));
+      h('ul', {}, rowsOf(group.items)));
   }
 
   // Aucun article trouvé : message, et « Effacer la recherche » (vide le
@@ -440,7 +441,8 @@ export function renderList(listId, onLeave) {
     // sans résultat disparaissent, les cochés trouvés restent dans « Dans le
     // panier ». Les événements temps réel redessinent ici : la saisie et le
     // curseur du champ restent.
-    const shown = searching() ? filterListView(view, search.value) : { groups, done };
+    const shown = searching() ? filterListView(view, search.value) : { groups, done, subtasks: view.subtasks };
+    shownSubtasks = shown.subtasks;
     searchMeta.textContent = searching() ? resultsLabel(shown.count) : '';
     if (searching() && shown.count === 0) {
       search.show(noResults(words));
@@ -457,7 +459,7 @@ export function renderList(listId, onLeave) {
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
           : group.label ? foldableGroup(list, group, group.label)
             // Ordre alphabétique ou par échéance : liste simple, sans en-tête
-            : h('section', {}, h('ul', {}, group.items.map(itemRow))))),
+            : h('section', {}, h('ul', {}, rowsOf(group.items))))),
     shown.done.length ? doneZone(list, shown.done) : null]);
     drawFoldAll();
   };
@@ -473,7 +475,7 @@ export function renderList(listId, onLeave) {
     const inSearch = searching();
     const zone = doneZoneWords(list);
     const counted = inSearch ? resultsLabel(done.length) : countItems(done.length, list); // « 12 articles », « 4 éléments »
-    const listEl = h('ul', { id: `zone-${listId}` }, done.map(itemRow));
+    const listEl = h('ul', { id: `zone-${listId}` }, rowsOf(done));
     const canEdit = canEditList(list); // lecture seule : pas d'actions
     const actionsRow = h('div', { class: 'cart__actions' },
       h('button', { class: 'cart__action', type: 'button', 'aria-label': `${zone.reopen}, ${counted}`, onClick: reopenAll }, zone.reopen),
@@ -625,7 +627,7 @@ export function renderList(listId, onLeave) {
   // reste la voie principale) : swipe.js. Le contenu de la ligne est dans
   // .swipe__slide, la zone rouge est un vrai bouton derrière.
   // Lecture seule : ligne simple, sans glissement ni zone rouge.
-  const itemRow = (item) => itemRowWith(item, withNews(item, metaOf(item)));
+  const itemRow = (item, extra = null) => itemRowWith(item, withNews(item, metaOf(item)), extra);
   // Nouveauté de cette visite : repère texte « Ajouté par Marie » (lu aussi
   // par les lecteurs d'écran) en plus du halo : jamais la couleur seule
   const withNews = (item, meta) => {
@@ -641,9 +643,10 @@ export function renderList(listId, onLeave) {
     for (const type of ['pointerdown', 'click']) row.addEventListener(type, () => forgetNews(item.id, row), true);
     return row;
   };
-  const itemRowWith = (item, meta) => {
-    if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false), pc ? reserveButton(item) : null), item, meta);
-    const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta), pc ? rowActions(item) : null);
+  // extra : bouton « 3/10 » d'une tâche principale (sous-tâches), au bout de la ligne
+  const itemRowWith = (item, meta, extra = null) => {
+    if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false), extra, pc ? reserveButton(item) : null), item, meta);
+    const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta), extra, pc ? rowActions(item) : null);
     const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
       swipes.close();
       deleteWithUndo(item);
@@ -680,6 +683,86 @@ export function renderList(listId, onLeave) {
     actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
       h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null,
   ];
+
+  // --- Sous-tâches (public/js/subtasks.js, décisions du 17 novembre 2026) ---
+  // Une tâche principale porte au bout de sa ligne un bouton « 3/10 » (faites
+  // sur toutes) avec un chevron : il déplie ses sous-tâches juste en dessous,
+  // en retrait, puis « Ajouter une sous-tâche ». Repliées par défaut ; les
+  // principales dépliées sont mémorisées sur ce téléphone (store.js).
+  // Recherche : seulement les sous-tâches trouvées, dépliées (rien de mémorisé).
+  const openSubtasks = loadOpenSubtasks(listId);
+  let shownSubtasks = new Map(); // principale -> sous-tâches affichées
+  const rowsOf = (items) => items.flatMap(entryRows);
+  function entryRows(item) {
+    const children = shownSubtasks.get(item.id);
+    if (!children?.length) return [itemRow(item)];
+    const inSearch = searching();
+    const { done, total } = progressOf(view.subtasks.get(item.id) ?? children);
+    const spoken = `Sous-tâches de ${item.name} : ${done} faite${done > 1 ? 's' : ''} sur ${total}`;
+    const listEl = h('ul', { class: 'subtasks__list', id: `sous-taches-${item.id}` },
+      children.map((child) => itemRow(child)),
+      !inSearch && !item.checked && canEditList(view?.list) ? addSubtaskRow(item) : null);
+    const wrap = h('li', { class: 'subtasks' }, listEl);
+    const toggle = h('button', {
+      class: 'subtasks__toggle', type: 'button', 'aria-controls': listEl.id, 'aria-label': spoken, title: spoken,
+    }, h('span', { class: 'subtasks__count', 'aria-hidden': 'true' }, `${done}/${total}`), icon('chev-d', 'icon--sm'));
+    const show = (open) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      wrap.hidden = !open;
+    };
+    // Ouvrir / replier sur place : ni redessin, ni saut ; le bouton garde le focus
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      if (!inSearch) {
+        if (open) openSubtasks.add(item.id);
+        else openSubtasks.delete(item.id);
+        saveOpenSubtasks(listId, openSubtasks);
+      }
+      show(open);
+    });
+    show(inSearch || openSubtasks.has(item.id));
+    return [itemRow(item, toggle), wrap];
+  }
+  // Dernière ligne d'une principale dépliée : « Ajouter une sous-tâche »
+  const addSubtaskRow = (parent) => h('li', { class: 'subtasks__add' },
+    h('button', { class: 'subtasks__add-btn', type: 'button', 'aria-label': `Ajouter une sous-tâche à ${parent.name}`, onClick: () => openAddSubtask(parent) },
+      h('span', { class: 'subtasks__plus', 'aria-hidden': 'true' }, icon('plus', 'icon--sm')), 'Ajouter une sous-tâche'));
+
+  // Feuille « Nouvelle sous-tâche » : le nom de la principale en sous-titre,
+  // un champ (jamais de curseur automatique : on touche le champ),
+  // « Ajouter ». Entrée ajoute et garde la feuille ouverte, champ vidé et
+  // clavier toujours ouvert, pour enchaîner plusieurs sous-tâches ; Entrée
+  // sur un champ vide ferme la feuille.
+  function openAddSubtask(parent) {
+    if (!editable()) return;
+    const subtaskInput = h('input', { class: 'input', type: 'text', maxlength: String(ITEM_NAME_MAX), autocomplete: 'off', enterkeyhint: 'done', 'aria-label': 'Nom de la sous-tâche', placeholder: 'Nom de la sous-tâche' });
+    const added = h('p', { class: 'field__hint', role: 'status' });
+    const addButton = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, icon('plus', 'icon--sm'), 'Ajouter');
+    const subtaskForm = h('form', { class: 'stack', novalidate: true }, subtaskInput, added, addButton);
+    const sheet = openSheet({ title: 'Nouvelle sous-tâche', sub: parent.name, content: subtaskForm });
+    subtaskForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = subtaskInput.value.replace(/\s+/g, ' ').trim();
+      // Champ vide : terminé (Entrée sur un champ vide ferme la feuille)
+      if (!name) {
+        sheet.close();
+        return;
+      }
+      if (!editable() || !app.data.items.has(parent.id)) {
+        sheet.close();
+        return;
+      }
+      await actions.addItem({ listId, name, parentId: parent.id });
+      // La principale se déplie pour montrer la nouvelle sous-tâche
+      if (!openSubtasks.has(parent.id)) {
+        openSubtasks.add(parent.id);
+        saveOpenSubtasks(listId, openSubtasks);
+        draw();
+      }
+      subtaskInput.value = '';
+      added.textContent = `« ${name} » ajoutée`;
+    });
+  }
 
   // Ordinateur : actions au bout de la ligne. Souhait libre (vue d'une
   // personne qui offre) : « Réserver » ; puis crayon (la fiche) et corbeille
@@ -740,10 +823,12 @@ export function renderList(listId, onLeave) {
   // reste 8 secondes et rappelle la touche.
   async function deleteWithUndo(item) {
     if (!editable()) return;
+    // Sous-tâches : elles partent avec leur principale (et reviennent avec elle)
+    const children = view?.subtasks.get(item.id)?.length ?? 0;
     await actions.deleteItem(item);
     const entry = { kind: 'delete', itemId: item.id, name: item.name };
     recordUndo(listId, entry);
-    toast(`« ${item.name} » supprimé`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+    toast(children ? `« ${item.name} » et ${children === 1 ? 'sa sous-tâche supprimées' : `${children} sous-tâches supprimées`}` : `« ${item.name} » supprimé`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
       forgetUndo(listId, (e) => e === entry);
       actions.restoreItem(item.id);
     } });
@@ -759,8 +844,26 @@ export function renderList(listId, onLeave) {
       checkRepeating(item, next);
       return;
     }
-    recordUndo(listId, { kind: 'check', itemId: item.id, name: item.name, checked: !item.checked });
+    // Sous-tâches : cocher une principale coche ses sous-tâches à faire
+    // (message avec « Annuler ») ; décocher une sous-tâche décoche sa
+    // principale cochée (Ctrl+Z la recoche)
+    const children = !item.checked ? (view?.subtasks.get(item.id) ?? []).filter((child) => !child.checked) : [];
+    const parent = item.checked && item.parentId ? app.data.items.get(item.parentId) : null;
+    const reopened = parent?.checked && view?.subtasks.get(parent.id)?.some((child) => child.id === item.id) ? parent.id : null;
+    const entry = { kind: 'check', itemId: item.id, name: item.name, checked: !item.checked,
+      ...(children.length ? { children: children.map((child) => child.id) } : {}), ...(reopened ? { reopened } : {}) };
+    recordUndo(listId, entry);
     actions.checkItem(item, !item.checked);
+    if (!children.length) return;
+    toast(`« ${item.name} » et ${children.length === 1 ? 'sa sous-tâche cochées' : `${children.length} sous-tâches cochées`}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+      forgetUndo(listId, (e) => e === entry);
+      const current = app.data.items.get(item.id);
+      if (current?.checked) actions.checkItem(current, false);
+      for (const child of children) {
+        const now = app.data.items.get(child.id);
+        if (now?.checked) actions.checkItem(now, false);
+      }
+    } });
   }
 
   // Cocher une tâche qui se répète : elle ne va pas dans « Terminés », elle
@@ -783,8 +886,10 @@ export function renderList(listId, onLeave) {
 
   // « Tout remettre à acheter » / « Tout rouvrir » : décoche tous les cochés
   // (après confirmation). Une seule opération, rejouée sans doublon hors ligne.
+  // Nombre de cochés de la liste (sous-tâches comprises)
+  const checkedInList = () => [...app.data.items.values()].filter((it) => it.listId === listId && it.checked).length;
   async function reopenAll() {
-    const count = view?.checked ?? 0;
+    const count = checkedInList();
     if (!count) return;
     const list = view.list;
     const one = count === 1;
@@ -806,7 +911,8 @@ export function renderList(listId, onLeave) {
   // « Retirer du panier » / « Retirer les terminés » : supprime les cochés
   // pour tout le monde (après confirmation)
   async function removeAll() {
-    const count = view?.checked ?? 0;
+    // Sous-tâches : une sous-tâche cochée sous une principale à faire reste
+    const count = checkedToRemove(app.data, listId).length;
     if (!count) return;
     const list = view.list;
     const one = count === 1;
@@ -1286,6 +1392,9 @@ export function renderList(listId, onLeave) {
       group.setOpen(true);
       drawFoldAll();
     }
+    // Sous-tâche repliée : sa principale se déplie (son bouton « 3/10 »)
+    const wrap = row.closest('li.subtasks');
+    if (wrap?.hidden) wrap.previousElementSibling?.querySelector('.subtasks__toggle')?.click();
   }
 
   // Fait défiler la liste jusqu'à un article tout juste ajouté (groupe
@@ -1932,6 +2041,57 @@ export function renderList(listId, onLeave) {
     const dueSub = tasks ? subpage('Échéance', 'calendar', [dueField, timeField, remindField]) : null;
     const repeatSub = tasks ? subpage('Se répète', 'repeat', [repeatField]) : null;
     const assignSub = tasks ? subpage('Pour', 'users', [assignField]) : null;
+
+    // --- Sous-tâche de… (option « Sous-tâches », subtasks.js) : ranger la
+    // tâche sous une tâche principale de la liste, ou « Aucune ». Une tâche
+    // qui a des sous-tâches, ou qui se répète, ne peut pas devenir une
+    // sous-tâche (le serveur le revérifie).
+    const ownChildren = () => view?.subtasks.get(item.id) ?? [];
+    const savedParent = [...(view?.subtasks ?? [])].find(([, children]) => children.some((child) => child.id === item.id))?.[0] ?? null;
+    let parentChoice = savedParent;
+    const parentNote = h('p', { class: 'field__hint' });
+    const parentRows = h('div', { class: 'card picker', role: 'radiogroup', 'aria-label': 'Sous-tâche de' });
+    // Tâches principales possibles : celles de premier niveau de la liste
+    // (pas elle-même), à faire d'abord, par ordre alphabétique
+    const parentChoices = () => [...(view?.groups.flatMap((group) => group.items) ?? []), ...(view?.done ?? [])]
+      .filter((other) => other.id !== item.id)
+      .sort((a, b) => Number(a.checked) - Number(b.checked) || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    function drawParent() {
+      const blocked = ownChildren().length
+        ? `Cette tâche a ${ownChildren().length === 1 ? 'une sous-tâche' : `${ownChildren().length} sous-tâches`} : elle ne peut pas devenir une sous-tâche.`
+        : repeat && parentChoice === null ? 'Une tâche qui se répète ne peut pas devenir une sous-tâche : retirez d\'abord la répétition.' : '';
+      parentNote.textContent = blocked;
+      parentNote.hidden = !blocked;
+      parentRows.hidden = Boolean(blocked);
+      if (blocked) return;
+      // Un choix ne redessine pas les lignes (le focus reste sur la ligne touchée)
+      const rowFor = (id, name) => h('button', {
+        class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false', 'data-parent': id ?? '',
+        onClick: () => {
+          parentChoice = id;
+          paintParent();
+        },
+      }, h('span', { class: 'radio' }), name);
+      replace(parentRows, rowFor(null, 'Aucune (tâche principale)'), parentChoices().map((other) => rowFor(other.id, other.name)));
+      paintParent();
+    }
+    function paintParent() {
+      for (const row of parentRows.querySelectorAll('.radio-row')) {
+        const on = row.dataset.parent === (parentChoice ?? '');
+        row.classList.toggle('is-on', on);
+        row.setAttribute('aria-checked', String(on));
+        row.querySelector('.radio').classList.toggle('is-on', on);
+        row.querySelector('.icon-end')?.remove();
+        if (on) row.append(icon('check', 'icon-end'));
+      }
+    }
+    const parentField = h('div', { class: 'field' }, parentNote, parentRows);
+    drawParent();
+    const parentSub = tasks ? subpage('Sous-tâche de', 'layers', [parentField]) : null;
+    // « Ajouter une sous-tâche » (tâche principale ou ordinaire, à faire) :
+    // la feuille d'ajout s'ouvre par-dessus la fiche
+    const addSubtaskButton = h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => openAddSubtask(item) },
+      icon('plus', 'icon--sm'), 'Ajouter une sous-tâche');
     // Dans une sous-page, son titre dit déjà de quoi il s'agit
     if (tasks) for (const fieldEl of [repeatField, assignField]) fieldEl.querySelector(':scope > .field__label').hidden = true;
     const subRows = tasks ? h('div', { class: 'group sheet-rows' }, subpages.map((entry) => entry.row)) : null;
@@ -1947,7 +2107,10 @@ export function renderList(listId, onLeave) {
       const who = assignMode === 'all' ? assignPeople.map(nameOf).join(', ') || 'Plusieurs personnes'
         : assignMode === 'turn' ? `Chacun son tour : ${assignPeople.map(nameOf).join(', ')}${turnNow != null ? ` · cette fois : ${nameOf(turnNow)}` : ''}`
           : assignee === null ? 'Personne' : nameOf(assignee);
-      for (const [entry, text, shown] of [[dueSub, due, opts.due], [repeatSub, repeat ? repeatSentence(repeat) : 'Jamais', opts.due], [assignSub, who, opts.assign]]) {
+      // Sous-tâche : jamais de répétition (ligne cachée)
+      const parentName = parentChoice === null ? null : app.data.items.get(parentChoice)?.name ?? 'Tâche supprimée';
+      const parentText = parentName ?? (ownChildren().length ? `Tâche principale · ${ownChildren().length === 1 ? '1 sous-tâche' : `${ownChildren().length} sous-tâches`}` : 'Aucune');
+      for (const [entry, text, shown] of [[dueSub, due, opts.due], [repeatSub, repeat ? repeatSentence(repeat) : 'Jamais', opts.due && !(opts.subtasks && parentChoice !== null)], [assignSub, who, opts.assign], [parentSub, parentText, opts.subtasks]]) {
         entry.summary.textContent = text;
         entry.row.setAttribute('aria-label', `${entry.title} : ${text}. Modifier`);
         entry.row.hidden = !shown;
@@ -1955,6 +2118,8 @@ export function renderList(listId, onLeave) {
         if (!shown && currentSub === entry) leaveSub();
       }
       subRows.hidden = subpages.every((entry) => entry.row.hidden);
+      addSubtaskButton.hidden = !opts.subtasks || parentChoice !== null || savedParent !== null || Boolean(app.data.items.get(item.id)?.checked);
+      drawParent();
     }
     // Dans une sous-page : une seule ligne en haut, « ‹ » et son titre
     // (décision du propriétaire) : l'en-tête de la fiche (titre, corbeille,
@@ -1987,7 +2152,7 @@ export function renderList(listId, onLeave) {
     redrawSummaries = drawSummaries;
     drawSummaries();
     const classicFields = !classic ? null
-      : tasks ? [priorityField, subRows, ...subpages.map((entry) => entry.page)]
+      : tasks ? [priorityField, subRows, addSubtaskButton, ...subpages.map((entry) => entry.page)]
         : [priorityField, dueField, timeField, remindField, repeatField, assignField];
 
     // --- Code-barres (listes de courses, facultatif) : saisi à la main, ou
@@ -2185,7 +2350,7 @@ export function renderList(listId, onLeave) {
     // Ce qui est tapé ou choisi (hors photo, envoyée tout de suite) : sert à
     // savoir s'il reste des modifications non enregistrées (ordinateur)
     function snapshot() {
-      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee, assignMode, assignPeople, dueTime, remind]);
+      return JSON.stringify([name.value, quantity.value, note.value, linkInput.value, priceInput.value, eanInput.value, aisleId ?? null, storeId ?? null, priority, dueDate, repeat, assignee, assignMode, assignPeople, dueTime, remind, parentChoice]);
     }
     let initialSnapshot = snapshot();
     const dirty = () => snapshot() !== initialSnapshot;
@@ -2273,6 +2438,14 @@ export function renderList(listId, onLeave) {
       if (enabled.due && dueTime !== savedDueTime) changes.dueTime = dueTime; // null : sans heure
       if (enabled.due && remind !== savedRemind) changes.remindBefore = remind; // null : aucun rappel
       if (shopping && newEan !== (item.ean ?? null)) changes.ean = newEan; // null : code effacé
+      // Sous-tâche de… (null : redevient une tâche principale ou ordinaire)
+      if (enabled.subtasks && parentChoice !== savedParent) {
+        if (parentChoice !== null && repeat) {
+          toast('Une sous-tâche ne se répète pas : retirez d\'abord la répétition.');
+          return;
+        }
+        changes.parentId = parentChoice;
+      }
       if (!Object.keys(changes).length) {
         sheet.forceClose();
         return;
@@ -2323,6 +2496,8 @@ export function renderList(listId, onLeave) {
         options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
         // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
         options.assign ? value('Pour', assignText(it)) : null,
+        // Sous-tâche : le nom de sa tâche principale
+        options.subtasks && parentOf(it, app.data.items) ? value('Sous-tâche de', parentOf(it, app.data.items).name) : null,
         shopping && it.ean ? value('Code-barres', it.ean) : null,
         actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
           h('div', { class: 'photo-block' },

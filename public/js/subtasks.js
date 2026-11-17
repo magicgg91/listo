@@ -30,6 +30,8 @@ export const PARENT_IS_SUBTASK = 'Une sous-tâche ne peut pas avoir de sous-tâc
 export const HAS_SUBTASKS = 'Cette tâche a des sous-tâches : elle ne peut pas devenir une sous-tâche.';
 export const NOT_OWN_PARENT = 'Une tâche ne peut pas être sa propre sous-tâche.';
 export const SUBTASK_NO_REPEAT = 'Une sous-tâche ne se répète pas.';
+export const NOT_A_SUBTASK = 'Seule une sous-tâche se déplace parmi les sous-tâches de sa tâche principale.';
+export const BAD_PLACE = 'Place inconnue : choisissez une sous-tâche de la même tâche principale.';
 
 // Tâche principale d'un élément, telle qu'elle s'affiche : la tâche
 // parentId si elle est dans byId (éléments présents de la même liste) et
@@ -67,6 +69,36 @@ export function nestItems(items, on) {
 export function childrenOf(items, parentId) {
   const { childrenOf: groups } = nestItems(items, true);
   return groups.get(parentId) ?? [];
+}
+
+// --- Ordre manuel (décisions du 17 novembre 2026) ---
+// Les sous-tâches d'une principale suivent l'ordre choisi à la main, quel
+// que soit le tri de la liste ; une sous-tâche cochée reste à sa place.
+// position : nombre entier propre à chaque sous-tâche (1, 2, 3…, parmi
+// celles de la même principale) ; une nouvelle va à la fin. À égalité (ou
+// sans position) : date d'ajout, puis identifiant.
+
+// Compare deux sous-tâches de la même principale
+export const compareSubtasks = (a, b) => (a.position ?? Infinity) - (b.position ?? Infinity)
+  || String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? ''))
+  || String(a.id).localeCompare(String(b.id));
+
+// Sous-tâches dans l'ordre manuel (copie triée)
+export const orderSubtasks = (children) => [...children].sort(compareSubtasks);
+
+// Position d'une sous-tâche ajoutée à la fin
+export const nextPosition = (siblings) => Math.max(0, ...siblings.map((child) => child.position ?? 0)) + 1;
+
+// Nouvel ordre après le déplacement de movingId juste après afterId (null :
+// en premier), parmi les sous-tâches de sa principale (moving comprise).
+// Renvoie les identifiants dans le nouvel ordre, ou null si afterId n'est
+// pas une sous-tâche de la même principale.
+export function reorderedIds(siblings, movingId, afterId) {
+  const ids = orderSubtasks(siblings).map((child) => child.id).filter((id) => id !== movingId);
+  if (afterId === null) return [movingId, ...ids];
+  const at = ids.indexOf(afterId);
+  if (at < 0) return null;
+  return [...ids.slice(0, at + 1), movingId, ...ids.slice(at + 1)];
 }
 
 // Compteur « 3/10 » d'une principale : sous-tâches cochées / toutes

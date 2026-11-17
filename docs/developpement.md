@@ -442,6 +442,12 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     6. Rechercher le nom d'une sous-tâche : elle s'affiche sous sa tâche principale. « Échéances » : une sous-tâche avec une date montre le nom de sa tâche principale.
     7. Couper l'option : tout s'affiche à plat ; la remettre : tout se regroupe. Lien public de la liste : les sous-tâches sont sous leur tâche principale.
     8. Hors ligne (mode avion) : cocher une tâche principale, ajouter une sous-tâche ; au retour du réseau, un autre appareil voit la même chose.
+60. **Ordre manuel des sous-tâches** (17 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16, clair et sombre : boutons, focus gardé ; sur ordinateur : glisser à la souris ; et par des tests automatiques ; le doigt sur un vrai téléphone reste à essayer) :
+    1. Déplier une tâche principale qui a au moins deux sous-tâches, toucher les deux flèches à droite de « Ajouter une sous-tâche » : chaque sous-tâche a une poignée (trois traits) et deux flèches.
+    2. Poser le doigt sur une poignée et glisser vers le bas : la ligne suit le doigt, la page ne défile pas, les autres lignes s'écartent ; lâcher : la sous-tâche reste à sa nouvelle place. Pincer pour agrandir marche toujours.
+    3. « Monter » et « Descendre » : un cran à chaque appui. « Terminé » : retour aux lignes normales, dans le nouvel ordre ; une sous-tâche cochée reste à sa place, barrée.
+    4. VoiceOver : la nouvelle place est dite (« … en position 2 sur 3 ») et le curseur reste sur le bouton touché.
+    5. Un autre appareil voit le nouvel ordre ; le lien public aussi.
 
 ## API des comptes (étape 2)
 

@@ -57,12 +57,12 @@ test('migration 18 : courses → shopping, autres → tasks, rien de perdu, idem
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 32);
+  assert.equal(schemaVersion(db), 33);
   const types = Object.fromEntries(db.prepare('SELECT id, type FROM lists').all().map((l) => [l.id, l.type]));
   assert.deepEqual(types, { 'l-courses': 'shopping', 'l-taches': 'tasks', 'l-bricolage': 'tasks', 'l-marche': 'shopping', 'l-supprimee': 'shopping' });
   // Rien d'autre ne change : listes (magasin, options, icône ; la catégorie est effacée par la migration 32), articles
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists.map(({ category_id: category, ...rest }) => rest));
-  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, ...rest }) => rest), before.items);
+  assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, position: pos, ...rest }) => rest), before.items);
   assert.equal(db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'categories'").pluck().get(), 0, 'catégories effacées ensuite (migration 32)');
   assert.deepEqual(lines, ['Migration 18 (types de liste) : 3 liste(s) de courses, 2 liste(s) de tâches.']);
   db.close();
@@ -80,7 +80,7 @@ test('migration 32 : une liste sans type (créée par une image d\'avant) reçoi
   db.prepare("INSERT INTO lists (id, name, category_id, owner_id) VALUES ('ancienne-courses', 'C', 1, 1), ('ancienne-taches', 'T', 2, 1)").run();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 32);
+  assert.equal(schemaVersion(db), 33);
   assert.deepEqual(db.prepare('SELECT type FROM lists ORDER BY id').pluck().all(), ['shopping', 'tasks']);
   assert.equal(db.prepare("SELECT COUNT(*) FROM sqlite_master WHERE name = 'categories'").pluck().get(), 0);
   assert.ok(!db.prepare('PRAGMA table_info(lists)').all().some((c) => c.name === 'category_id'));
@@ -120,7 +120,7 @@ test('restauration d\'une ancienne sauvegarde (avant les types) : migrée au dé
   });
   const client = createClient(`http://127.0.0.1:${server.address().port}`);
   assert.equal((await login(client, 'guillaume', PASSWORD)).status, 200);
-  assert.equal(schemaVersion(db), 32);
+  assert.equal(schemaVersion(db), 33);
   const lists = Object.fromEntries((await client.get('/api/lists')).body.lists.map((l) => [l.name, l]));
   assert.deepEqual(Object.keys(lists).sort(), ['Courses', 'Maison', 'Marché du samedi', 'Travaux']);
   assert.equal(lists.Courses.type, 'shopping');

@@ -47,6 +47,7 @@ import { normalizeItemName, HABITUAL_LIMIT_KEYBOARD } from '../history.js';
 import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
   groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove } from '../store.js';
 import { progressOf, parentOf } from '../subtasks.js';
+import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
 import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
@@ -349,7 +350,8 @@ export function renderList(listId, onLeave) {
     if (!pc) return drawList();
     const focused = document.activeElement;
     const row = content.contains(focused) ? focused.closest('li.item') : null;
-    if (!row) return drawList();
+    // « Réordonner » : le focus est remis par focusAfterDraw (Monter, Descendre)
+    if (!row || row.classList.contains('reorder')) return drawList();
     const rows = [...content.querySelectorAll('li.item')];
     const index = rows.indexOf(row);
     const id = row.dataset.itemId;
@@ -361,6 +363,10 @@ export function renderList(listId, onLeave) {
     target?.focus({ preventScroll: true });
   };
   const drawList = () => {
+    // « Réordonner » : un bouton du mode qui a le focus le garde après un
+    // nouveau dessin (réponse du serveur, temps réel), sur le téléphone aussi
+    const held = content.contains(document.activeElement) ? reorderSelector(document.activeElement) : null;
+    if (held && !focusAfterDraw) focusAfterDraw = [held];
     // Groupes repliables du nouveau dessin. « Tout replier » n'est recalculé
     // qu'après le dessin : le cacher un instant au début changeait la hauteur
     // de la zone qui défile pendant le dessin (12 px), et la liste sautait.
@@ -462,6 +468,16 @@ export function renderList(listId, onLeave) {
             : h('section', {}, h('ul', {}, rowsOf(group.items))))),
     shown.done.length ? doneZone(list, shown.done) : null]);
     drawFoldAll();
+    // La principale de « Réordonner » a disparu (supprimée ailleurs) : fin du mode
+    if (reorderParent && !view.subtasks.has(reorderParent)) reorderParent = null;
+    // Monter, Descendre, Réordonner, Terminé : le focus reste sur le bon
+    // bouton (jamais un champ) après le dessin
+    if (focusAfterDraw) {
+      const wanted = focusAfterDraw;
+      focusAfterDraw = null;
+      const moveTarget = wanted.map((selector) => content.querySelector(selector)).find((button) => button && !button.disabled);
+      moveTarget?.focus();
+    }
   };
 
   // Zone des articles cochés, sous le dernier rayon (design/components.html,
@@ -699,9 +715,12 @@ export function renderList(listId, onLeave) {
     const inSearch = searching();
     const { done, total } = progressOf(view.subtasks.get(item.id) ?? children);
     const spoken = `Sous-tâches de ${item.name} : ${done} faite${done > 1 ? 's' : ''} sur ${total}`;
+    // Mode « Réordonner » de cette principale : poignée, Monter, Descendre
+    const reordering = !inSearch && reorderParent === item.id && canEditList(view?.list);
     const listEl = h('ul', { class: 'subtasks__list', id: `sous-taches-${item.id}` },
-      children.map((child) => itemRow(child)),
-      !inSearch && !item.checked && canEditList(view?.list) ? addSubtaskRow(item) : null);
+      reordering ? children.map((child, index) => reorderRow(child, children, index)) : children.map((child) => itemRow(child)),
+      reordering ? reorderDoneRow(item)
+        : !inSearch && !item.checked && canEditList(view?.list) ? addSubtaskRow(item, children.length) : null);
     const wrap = h('li', { class: 'subtasks' }, listEl);
     const toggle = h('button', {
       class: 'subtasks__toggle', type: 'button', 'aria-controls': listEl.id, 'aria-label': spoken, title: spoken,
@@ -724,19 +743,140 @@ export function renderList(listId, onLeave) {
     };
     // Ouvrir / replier sur place : ni redessin, ni saut ; le bouton garde le focus
     toggle.addEventListener('click', () => {
+      // Replier pendant « Réordonner » : le mode se termine
+      if (reordering) {
+        reorderParent = null;
+        foldable.setOpen(false);
+        draw();
+        return;
+      }
       const open = !foldable.isOpen();
       if (inSearch) show(open);
       else foldable.setOpen(open);
       drawFoldAll();
     });
-    show(inSearch || openSubtasks.has(item.id));
+    show(reordering || inSearch || openSubtasks.has(item.id));
     if (!inSearch) foldables.push(foldable);
     return [itemRow(item, toggle), wrap];
   }
   // Dernière ligne d'une principale dépliée : « Ajouter une sous-tâche »
-  const addSubtaskRow = (parent) => h('li', { class: 'subtasks__add' },
+  // (et, dès deux sous-tâches, « Réordonner » à droite)
+  const addSubtaskRow = (parent, count) => h('li', { class: 'subtasks__add' },
     h('button', { class: 'subtasks__add-btn', type: 'button', 'aria-label': `Ajouter une sous-tâche à ${parent.name}`, onClick: () => openAddSubtask(parent) },
-      h('span', { class: 'subtasks__plus', 'aria-hidden': 'true' }, icon('plus', 'icon--sm')), 'Ajouter une sous-tâche'));
+      h('span', { class: 'subtasks__plus', 'aria-hidden': 'true' }, icon('plus', 'icon--sm')), 'Ajouter une sous-tâche'),
+    // Deux flèches (haut, bas) : le mot ne tenait pas à côté sur le téléphone
+    count >= 2 ? h('button', {
+      class: 'icon-btn subtasks__reorder-btn', type: 'button', 'aria-label': `Réordonner les sous-tâches de ${parent.name}`, 'data-reorder': parent.id, 'data-pc-tip': 'Réordonner',
+      onClick: () => {
+        reorderParent = parent.id;
+        focusAfterDraw = [`[data-move="down"][data-item="${CSS.escape(childrenIds(parent)[0] ?? '')}"]`, '[data-reorder-done]'];
+        draw();
+      },
+    }, icon('arrow-up', 'icon--xs'), icon('arrow-down', 'icon--xs')) : null);
+
+  // --- Ordre manuel des sous-tâches (« Réordonner », 17 novembre 2026) ---
+  // Une principale à la fois : chaque sous-tâche a une poignée à glisser
+  // (doigt ou souris) et deux boutons « Monter » / « Descendre » (clavier,
+  // lecture à voix haute) ; « Terminé » ferme le mode. Ni coche, ni fiche,
+  // ni glissement « Supprimer » pendant ce temps. Chaque déplacement part
+  // tout de suite (copie locale, puis file d'attente : hors ligne compris).
+  let reorderParent = null;
+  // Boutons à remettre sous le focus après le prochain dessin (sélecteurs,
+  // le premier bouton actif trouvé) : le focus reste sur le bouton touché
+  let focusAfterDraw = null;
+  // Sélecteur d'un bouton du mode (Monter, Descendre, Réordonner, Terminé), ou null
+  function reorderSelector(el) {
+    const { move, item, reorder, reorderDone } = el.dataset ?? {};
+    if (move && item) return `[data-move="${move}"][data-item="${CSS.escape(item)}"]`;
+    if (reorder) return `[data-reorder="${CSS.escape(reorder)}"]`;
+    if (reorderDone) return `[data-reorder-done="${CSS.escape(reorderDone)}"]`;
+    return null;
+  }
+  const childrenIds = (parent) => (view?.subtasks.get(parent.id) ?? []).map((child) => child.id);
+  function reorderRow(child, children, index) {
+    const label = (verb) => `${verb} ${child.name}`;
+    const move = (step) => h('button', {
+      class: 'icon-btn', type: 'button', 'aria-label': label(step < 0 ? 'Monter' : 'Descendre'),
+      'data-move': step < 0 ? 'up' : 'down', 'data-item': child.id,
+      disabled: step < 0 ? index === 0 : index === children.length - 1,
+      onClick: () => moveStep(child, children, index, step),
+    }, icon(step < 0 ? 'arrow-up' : 'arrow-down', 'icon--sm'));
+    const handle = h('span', { class: 'reorder__handle', 'aria-hidden': 'true', title: 'Glisser pour déplacer' }, icon('menu-lines', 'icon--sm'));
+    const row = h('li', { class: `item reorder${child.checked ? ' is-done' : ''}`, 'data-item-id': child.id },
+      handle, h('span', { class: 'reorder__name item__name' }, child.name), move(-1), move(1));
+    handle.addEventListener('pointerdown', (event) => startDrag(event, row, child, children));
+    return row;
+  }
+  const reorderDoneRow = (parent) => h('li', { class: 'subtasks__add subtasks__add--done' },
+    h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'data-reorder-done': parent.id, onClick: () => {
+      reorderParent = null;
+      focusAfterDraw = [`[data-reorder="${CSS.escape(parent.id)}"]`];
+      draw();
+    } }, 'Terminé'));
+  // Monter / Descendre d'un cran
+  async function moveStep(child, children, index, step) {
+    const target = index + step;
+    if (target < 0 || target >= children.length || !editable()) return;
+    const others = children.filter((other) => other.id !== child.id);
+    const id = CSS.escape(child.id);
+    focusAfterDraw = [`[data-move="${step < 0 ? 'up' : 'down'}"][data-item="${id}"]`, `[data-move="${step < 0 ? 'down' : 'up'}"][data-item="${id}"]`];
+    await actions.moveItem(child, target === 0 ? null : others[target - 1].id);
+    announce(`« ${child.name} » en position ${target + 1} sur ${children.length}`);
+  }
+  // Glisser la poignée : la ligne suit le doigt (ou la souris) et passe
+  // devant ou derrière ses voisines à mi-hauteur ; au lâcher, une seule
+  // opération « déplacer » (rien si la place n'a pas changé)
+  function startDrag(event, row, child, children) {
+    if (event.button !== 0 || !editable()) return;
+    event.preventDefault();
+    const handle = event.currentTarget;
+    handle.setPointerCapture?.(event.pointerId);
+    const list = row.parentElement;
+    const startIndex = children.findIndex((other) => other.id === child.id);
+    let originY = event.clientY;
+    row.classList.add('is-dragging');
+    const neighbour = (el) => (el?.classList.contains('reorder') ? el : null);
+    const follow = (y) => {
+      row.style.transform = `translateY(${y - originY}px)`;
+      const next = neighbour(row.nextElementSibling);
+      const prev = neighbour(row.previousElementSibling);
+      const box = row.getBoundingClientRect();
+      if (next) {
+        const nextBox = next.getBoundingClientRect();
+        if (box.bottom > nextBox.top + nextBox.height / 2) {
+          list.insertBefore(next, row);
+          originY += nextBox.height;
+          row.style.transform = `translateY(${y - originY}px)`;
+          return;
+        }
+      }
+      if (prev) {
+        const prevBox = prev.getBoundingClientRect();
+        if (box.top < prevBox.top + prevBox.height / 2) {
+          list.insertBefore(row, prev);
+          originY -= prevBox.height;
+          row.style.transform = `translateY(${y - originY}px)`;
+        }
+      }
+    };
+    const onMove = (moveEvent) => follow(moveEvent.clientY);
+    const finish = () => {
+      handle.removeEventListener('pointermove', onMove);
+      handle.removeEventListener('pointerup', finish);
+      handle.removeEventListener('pointercancel', finish);
+      row.style.transform = '';
+      row.classList.remove('is-dragging');
+      const rows = [...list.querySelectorAll(':scope > li.reorder')];
+      const index = rows.indexOf(row);
+      if (index === startIndex || index < 0) return;
+      const afterId = index === 0 ? null : rows[index - 1].dataset.itemId;
+      actions.moveItem(child, afterId);
+      announce(`« ${child.name} » en position ${index + 1} sur ${children.length}`);
+    };
+    handle.addEventListener('pointermove', onMove);
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+  }
 
   // Feuille « Nouvelle sous-tâche » : le nom de la principale en sous-titre,
   // un champ (jamais de curseur automatique : on touche le champ),

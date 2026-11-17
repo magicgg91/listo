@@ -154,7 +154,7 @@ export function pushSetupMessage(error) {
   const detail = [name, text].filter(Boolean).join(' : ').slice(0, 160);
   const service = name === 'AbortError' || /push service|registration failed/i.test(text);
   const base = service
-    ? 'Ce navigateur n\'a pas réussi à s\'inscrire auprès de son service de notifications (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Il doit pouvoir le joindre par Internet : vérifiez qu\'aucun bloqueur de publicité, filtre DNS, pare-feu ou VPN ne l\'en empêche. Dans Brave : Réglages, Confidentialité et sécurité, activez « Utiliser les services Google pour la messagerie push », puis relancez Brave.'
+    ? 'Ce navigateur n\'a pas réussi à s\'inscrire auprès de son service de notifications (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Il doit pouvoir le joindre par Internet : vérifiez qu\'aucun filtre DNS (AdGuard, Pi-hole…), bloqueur de publicité (uBlock Origin…), proxy, pare-feu ou VPN ne l\'en empêche (voir l\'aide, « Rien ne s\'affiche »). Dans Brave : Réglages, Confidentialité et sécurité, activez « Utiliser les services Google pour la messagerie push », puis relancez Brave.'
     : name === 'NotAllowedError'
       ? 'Le navigateur a refusé les notifications pour ce site. Autorisez-les dans ses réglages, puis réessayez.'
       : 'Le navigateur n\'a pas pu activer les notifications sur cet appareil.';

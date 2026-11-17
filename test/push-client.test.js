@@ -156,7 +156,7 @@ test('échec de l\'inscription du navigateur (ordinateur, 17 novembre 2026) : ca
   const { pushSetupMessage, PushSetupError } = await import('../public/js/push.js');
   const service = pushSetupMessage(new DOMException('Registration failed - push service error', 'AbortError'));
   assert.match(service, /^Ce navigateur n'a pas réussi à s'inscrire auprès de son service de notifications/);
-  assert.match(service, /bloqueur de publicité, filtre DNS, pare-feu ou VPN/);
+  assert.match(service, /filtre DNS \(AdGuard, Pi-hole…\), bloqueur de publicité \(uBlock Origin…\), proxy, pare-feu ou VPN/);
   assert.match(service, /Brave/);
   assert.match(service, /Détail donné par le navigateur : AbortError : Registration failed - push service error\.$/);
   assert.match(pushSetupMessage(new DOMException('non', 'NotAllowedError')), /^Le navigateur a refusé les notifications pour ce site/);

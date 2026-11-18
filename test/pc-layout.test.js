@@ -286,3 +286,10 @@ test('guide : section « Sur ordinateur » dans « Au quotidien » (disposition,
   // Toujours 9 chapitres, dans l'ordre demandé (Notifications ajouté le 10 novembre 2026)
   assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
 });
+
+test('photo agrandie : la zone de la photo a une hauteur définie, la photo tient dans la fenêtre sur un écran large (18 novembre 2026)', () => {
+  const app = read('public/css/app.css');
+  assert.match(app, /^\.lightbox__stage \{ grid-template-rows: minmax\(0, 1fr\); grid-template-columns: minmax\(0, 1fr\); \}$/m);
+  // La règle de la photo elle-même (kit) reste : pas plus haute que la zone, sans déformation
+  assert.match(read('public/css/listo.css'), /^\.lightbox__img \{[^}]*max-height: 100%;[^}]*object-fit: contain; \}$/m);
+});

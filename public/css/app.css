@@ -651,3 +651,11 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .reorder__name { flex: 1; min-width: 0; padding: var(--space-1) 0; }
 .item.reorder.is-dragging { position: relative; z-index: 2; box-shadow: var(--shadow-pop); cursor: grabbing; }
 .item.reorder .icon-btn:disabled { opacity: 0.35; }
+
+/* Photo agrandie (application et lien public) : la zone de la photo prend
+   toute la place restante et a donc une hauteur définie, pour que la règle
+   « pas plus haute que la zone » (max-height: 100%) s'applique. Sans cela,
+   sur un écran large, une photo en hauteur débordait sous la légende et
+   « Fermer » (constat du 18 novembre 2026 sur ordinateur). Téléphone en
+   portrait : rien ne change, la photo tenait déjà. */
+.lightbox__stage { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }

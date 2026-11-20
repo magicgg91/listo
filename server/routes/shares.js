@@ -36,7 +36,7 @@ export function shareRoutes(ctx) {
     next();
   };
 
-  const who = (req, share) => ({ utilisateur: req.user.username, liste: req.list.id, partage: share.id, ip: req.ip });
+  const who = (req, share) => ({ user: req.user.username, list: req.list.id, share: share.id, ip: req.ip });
 
   router.get('/lists/:id/share', ownList, (req, res) => {
     res.json({ share: shares.describe(shares.current(req.list.id)) });
@@ -61,7 +61,7 @@ export function shareRoutes(ctx) {
         protect: body.protect === true,
       });
       if (!created) return res.status(409).json({ error: req.t('liens.dejaActif') });
-      audit('lien_public_cree', { ...who(req, created.share), duree: created.share.expires_at ? `${durationHours ?? DEFAULT_DURATION_HOURS} h` : 'illimitée', motDePasse: created.password !== null });
+      audit('public_link_created', { ...who(req, created.share), duration: created.share.expires_at ? `${durationHours ?? DEFAULT_DURATION_HOURS} h` : 'unlimited', password_protected: created.password !== null });
       return res.status(201).json({ share: shares.describe(created.share, { password: created.password }) });
     }
 
@@ -71,15 +71,15 @@ export function shareRoutes(ctx) {
     }
     const updated = await shares.update(existing, { durationHours, password: body.password });
     if (!updated) return res.status(409).json({ error: req.t('liens.arrete') });
-    if (durationHours !== undefined) audit('lien_public_duree_changee', { ...who(req, existing), duree: durationHours === null ? 'illimitée' : `${durationHours} h` });
-    if (body.password === 'new') audit('lien_public_nouveau_mot_de_passe', who(req, existing));
-    if (body.password === 'none') audit('lien_public_mot_de_passe_retire', who(req, existing));
+    if (durationHours !== undefined) audit('public_link_duration_changed', { ...who(req, existing), duration: durationHours === null ? 'unlimited' : `${durationHours} h` });
+    if (body.password === 'new') audit('public_link_new_password', who(req, existing));
+    if (body.password === 'none') audit('public_link_password_removed', who(req, existing));
     res.json({ share: shares.describe(updated.share, { password: updated.password }) });
   });
 
   router.delete('/lists/:id/share', ownList, (req, res) => {
     const stopped = shares.stop(req.list.id);
-    if (stopped) audit('lien_public_arrete', who(req, stopped));
+    if (stopped) audit('public_link_stopped', who(req, stopped));
     res.json({ share: null });
   });
 

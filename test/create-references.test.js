@@ -61,7 +61,7 @@ test('un compte qui n\'est pas Admin crée un magasin et un rayon ; ils sont com
   const admin = (await h.guillaume.get('/api/admin/aisles')).body.items;
   assert.ok(admin.some((a) => a.name === 'Produits du monde'));
   // Journal : nom du compte et type, rien d'une liste
-  const lines = h.app.logs.filter((l) => /magasin_cree|rayon_cree/.test(l));
+  const lines = h.app.logs.filter((l) => /store_created|aisle_created/.test(l));
   assert.equal(lines.length, 2);
   assert.ok(lines.every((l) => l.includes('lea') && !l.includes('Courses')));
   // Le magasin créé sert tout de suite à une nouvelle liste

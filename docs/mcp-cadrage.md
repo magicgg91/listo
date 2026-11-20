@@ -339,7 +339,7 @@ Règles communes :
 10. « Autoriser » envoie `POST /api/oauth/demandes/<id>/accord` (cookie, même origine, mot de passe vérifié avec la limitation des tentatives existante). Listo :
     - crée la connexion ;
     - crée le code (60 s, lié au client, à la redirection, au `code_challenge`, à la ressource et aux portées accordées) ;
-    - écrit au journal `claude.connexion` (compte, hôte du client, portées, nombre de listes) ;
+    - écrit au journal `claude.connected` (compte, hôte du client, portées, nombre de listes) ;
     - renvoie l'adresse `https://claude.ai/api/mcp/auth_callback?code=…&state=…&iss=https%3A%2F%2Flisto.exemple.fr`. L'écran y va avec `location.assign()`.
 
     « Refuser » renvoie vers la même adresse avec `error=access_denied`, `state` et `iss`.
@@ -417,12 +417,12 @@ On l'ajoute avec `claude mcp add --transport http listo https://listo.exemple.fr
   - un jeton MCP n'ouvre **rien d'autre** que `/mcp` (aucune autre route ne lit `Authorization`) ;
   - un jeton dont la `resource` ne correspond pas est refusé.
 - **Journal de sécurité** (`server/audit.js`), sans jeton ni code ni contenu d'élément. Événements :
-  - `claude.connexion`, `claude.refus` ;
-  - `claude.revocation` (et par qui) ;
+  - `claude.connected`, `claude.refused` ;
+  - `claude.revoked` (et par qui) ;
   - `claude.reutilisation` (jeton de renouvellement rejoué) ;
-  - `claude.jeton_refuse` (au plus une ligne par minute et par adresse IP) ;
+  - `claude.token_refused` (au plus une ligne par minute et par adresse IP) ;
   - `claude.ajout` (compte, `listId`, nombre d'éléments, « via Claude »), `claude.coche` (idem) ;
-  - `claude.origine_refusee`.
+  - `claude.origin_refused`.
 
 ---
 
@@ -467,7 +467,7 @@ Accès : Réglages › Mon compte › section « Claude » › « Connexions Cla
 | Vol d'un jeton de renouvellement | Accès durable | Rotation à chaque usage ; la réutilisation révoque toute la connexion et est journalisée ; 30 jours glissants ; révocation |
 | Code d'autorisation intercepté | Obtention de jetons | PKCE S256 obligatoire ; usage unique, 60 s ; lié au client, à la redirection et à la ressource ; un code rejoué révoque les jetons qui en sont nés |
 | Redirection ouverte | Code ou utilisateur envoyés ailleurs | Redirections réduites à `https://claude.ai/api/mcp/auth_callback` et au bouclage local, comparées exactement (port ignoré pour le bouclage seulement) ; aucune redirection avant ces contrôles |
-| **Consentement détourné** : un tiers lance la connexion depuis *son* compte Claude et fait approuver le lien par la victime, connectée à Listo | Le Claude du tiers lit les listes de la victime | Mot de passe (et code 2FA) redemandé au consentement ; l'écran dit clairement « Ne continuez que si vous venez de lancer la connexion depuis Claude » ; demande valable 10 min ; connexion visible et révocable ; ligne `claude.connexion` au journal. **Risque résiduel** : voir les risques principaux. |
+| **Consentement détourné** : un tiers lance la connexion depuis *son* compte Claude et fait approuver le lien par la victime, connectée à Listo | Le Claude du tiers lit les listes de la victime | Mot de passe (et code 2FA) redemandé au consentement ; l'écran dit clairement « Ne continuez que si vous venez de lancer la connexion depuis Claude » ; demande valable 10 min ; connexion visible et révocable ; ligne `claude.connected` au journal. **Risque résiduel** : voir les risques principaux. |
 | Enregistrement abusif de clients (DCR) | Base remplie, faux noms sur l'écran de consentement | Redirections imposées (seulement Claude ou le bouclage) ; 50 clients au plus ; 5 par heure et par IP ; nettoyage ; nom déclaré affiché comme « fourni par l'application », après l'hôte de redirection qui fait foi |
 | Document CIMD malveillant, SSRF | Le serveur appelle une adresse interne | Liste blanche d'hôtes (claude.ai, claude.com) ; https seulement ; sans suivre de redirection ; 16 ko, 5 s ; cache d'une heure |
 | Page de consentement : CSRF, clic piégé | Accord donné à l'insu | Accord par `POST` à l'API, avec contrôle d'origine (`requireSameOrigin`) et mot de passe ; `frame-ancestors 'none'` et `X-Frame-Options: DENY` ; aucun accord par GET |

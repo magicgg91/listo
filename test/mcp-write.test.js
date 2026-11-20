@@ -245,9 +245,9 @@ test('intégration : Nouveautés des autres membres, synchronisation, temps rée
   assert.equal((await h.guillaume.get('/api/sync')).body.news.lists[h.ids.courses].count, 0);
 
   // Journal : une ligne par appel, avec les nombres, jamais un nom saisi ni un jeton
-  const lines = h.app.logs.filter((l) => /claude\.outil/.test(l));
-  assert.match(lines.find((l) => /outil="add_items"/.test(l)), /crees=1 ignores=0/);
-  assert.match(lines.find((l) => /outil="set_checked"/.test(l)), /coches=1 inchanges=0 ignores=0/);
+  const lines = h.app.logs.filter((l) => /claude\.tool/.test(l));
+  assert.match(lines.find((l) => /tool="add_items"/.test(l)), /created=1 ignored=0/);
+  assert.match(lines.find((l) => /tool="set_checked"/.test(l)), /checked=1 unchanged=0 ignored=0/);
   const journal = h.app.logs.join('\n');
   for (const secret of ['Thé vert', 'Lait', tokens.access_token, tokens.refresh_token]) assert.equal(journal.includes(secret), false, secret);
 

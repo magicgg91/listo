@@ -76,7 +76,7 @@ test('clé perdue puis recréée : 2FA refusée sans erreur interne, lien public
   assert.equal(step1.body.twoFactorRequired, true);
   const step2 = await again.post('/api/login/2fa', { code: '123456' });
   assert.equal(step2.status, 401, 'code refusé, pas d\'erreur interne');
-  assert.ok(listo.logs.some((line) => line.includes('secret_2fa_illisible')));
+  assert.ok(listo.logs.some((line) => line.includes('2fa_secret_unreadable')));
   // Le lien public marche toujours pour le visiteur
   assert.equal((await createClient(listo.base).get(`/api/public/${token}`)).status, 200);
 

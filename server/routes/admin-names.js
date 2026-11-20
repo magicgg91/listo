@@ -218,8 +218,8 @@ export function adminNameRoutes(ctx) {
 
     // 3. Après l'écriture réussie : temps réel et journal
     for (const listId of p.listIds) ctx.events?.notifyList(listId);
-    audit(p.merge ? 'admin_nom_fusionne' : 'admin_nom_corrige', {
-      admin: req.user.username, ancien: p.oldName, nouveau: p.newName, corrections: p.items.length, listes: p.listIds.length, ip: req.ip,
+    audit(p.merge ? 'admin_name_merged' : 'admin_name_corrected', {
+      admin: req.user.username, old: p.oldName, new: p.newName, corrections: p.items.length, lists: p.listIds.length, ip: req.ip,
     });
     res.json({ changed: true, items: p.items.length, lists: p.listIds.length, merge: p.merge });
   });
@@ -230,7 +230,7 @@ export function adminNameRoutes(ctx) {
     const lines = fromKey ? q.linesOf.all(fromKey) : [];
     if (!lines.length) return res.status(404).json({ error: req.t(NOT_FOUND) });
     q.removeLines.run(fromKey);
-    audit('admin_nom_retire', { admin: req.user.username, nom: displayNameOf(lines), ip: req.ip });
+    audit('admin_name_removed', { admin: req.user.username, name: displayNameOf(lines), ip: req.ip });
     res.status(204).end();
   });
 
@@ -251,7 +251,7 @@ export function adminNameRoutes(ctx) {
     })();
     // Après l'écriture : les téléphones connectés relisent la mémoire des noms
     ctx.events?.notifyReferences();
-    audit('nom_rayon_modifie', { admin: req.user.username, nom: displayNameOf(lines), rayon: aisle?.name ?? 'aucun', ip: req.ip });
+    audit('name_aisle_changed', { admin: req.user.username, name: displayNameOf(lines), aisle: aisle?.name ?? 'none', ip: req.ip });
     res.json({ aisleId: aisle?.id ?? null, aisle: aisle?.name ?? null });
   });
 

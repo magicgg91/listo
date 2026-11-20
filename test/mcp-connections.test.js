@@ -96,9 +96,9 @@ test('déconnecter UNE connexion : refusée sur /mcp tout de suite, les autres r
   // Renouvellement refusé aussi
   const refreshed = await fetch(`${h.app.base}/oauth/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: first.clientId }) });
   assert.equal((await refreshed.json()).error, 'invalid_grant');
-  const line = h.app.logs.find((l) => /claude\.revocation/.test(l) && /Connexions Claude/.test(l));
-  assert.match(line, /par="le compte"/);
-  assert.match(line, /utilisateur="guillaume"/);
+  const line = h.app.logs.find((l) => /claude\.revoked/.test(l) && /Claude connections/.test(l));
+  assert.match(line, /by="account"/);
+  assert.match(line, /user="guillaume"/);
 });
 
 test('« Tout déconnecter » : toutes mes connexions, pas celles des autres', async (t) => {

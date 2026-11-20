@@ -175,7 +175,7 @@ test('droits : seul le propriétaire change le type ; contributeur et lecture se
   assert.equal(h.row().type, 'shopping');
   assert.equal((await h.one(h.guillaume, { type: 'list.update', listId: h.courses, listType: 'tasks' })).status, 200);
   assert.equal(h.row().type, 'tasks');
-  assert.ok(h.app.logs.some((l) => /liste_type_change/.test(l) && /avant="shopping"/.test(l) && /apres="tasks"/.test(l)));
+  assert.ok(h.app.logs.some((l) => /list_type_changed/.test(l) && /before="shopping"/.test(l) && /after="tasks"/.test(l)));
 });
 
 test('types : une liste existante ne devient pas une liste d\'envies ; type inconnu refusé', async (t) => {

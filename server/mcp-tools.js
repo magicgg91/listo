@@ -635,7 +635,7 @@ export function createMcpTools(ctx) {
     addTimes.set(grant.id, recent);
     const created = results.filter((r) => r.status === 'created').length;
     const ignored = results.length - created;
-    return { data: { list_id: target.id, results, created, ignored }, count: created, log: { crees: created, ignores: ignored } };
+    return { data: { list_id: target.id, results, created, ignored }, count: created, log: { created, ignored } };
   }
 
   // set_checked : cocher ou décocher 1 à 20 éléments
@@ -692,7 +692,7 @@ export function createMcpTools(ctx) {
     return {
       data: { list_id: target.id, checked, results, changed, unchanged, ignored },
       count: changed,
-      log: { coches: changed, inchanges: unchanged, ignores: ignored },
+      log: { checked: changed, unchanged, ignored },
     };
   }
 
@@ -1082,7 +1082,7 @@ export function createMcpTools(ctx) {
     return {
       data: { list_id: target.id, results, updated, unchanged, ignored },
       count: updated,
-      log: { modifies: updated, inchanges: unchanged, ignores: ignored },
+      log: { updated, unchanged, ignored },
     };
   }
 

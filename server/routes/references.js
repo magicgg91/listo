@@ -23,7 +23,7 @@
 //   regroupés par ce « multi » (sinon il ne pourrait pas être choisi) ;
 // - 20 créations par heure et par compte (429 au-delà) ; aucun plafond du
 //   nombre total (il n'en existe pas dans l'Administration) ;
-// - journal : « magasin_cree » ou « rayon_cree », avec le nom du compte et
+// - journal : « store_created » ou « aisle_created », avec le nom du compte et
 //   le nom du magasin ou du rayon (jamais le contenu d'une liste) ;
 // - les téléphones connectés se mettent à jour (« event: refs »).
 // Un nouvel élément se range, comme ailleurs, par ordre alphabétique (il n'y
@@ -37,13 +37,13 @@ import { isShoppingList } from '../../public/js/list-types.js';
 const KINDS = {
   stores: {
     table: 'stores',
-    event: 'magasin_cree',
+    event: 'store_created',
     duplicate: 'references.magasin.existe',
     disabled: 'references.magasin.existe.desactive',
   },
   aisles: {
     table: 'aisles',
-    event: 'rayon_cree',
+    event: 'aisle_created',
     duplicate: 'references.rayon.existe',
     disabled: 'references.rayon.existe.desactive',
   },
@@ -94,7 +94,7 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
     }
     return newId;
   })();
-  ctx.audit(kind.event, { utilisateur: user.username, nom: name, ...(path === 'stores' && list?.is_multi === 1 ? { regroupe: true } : {}) });
+  ctx.audit(kind.event, { user: user.username, name, ...(path === 'stores' && list?.is_multi === 1 ? { grouped: true } : {}) });
   ctx.events?.notifyReferences();
   return { item: { id, name, active: true, ...(path === 'stores' ? { isMulti: false, storeIds: [] } : {}) } };
 }

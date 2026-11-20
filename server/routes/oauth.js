@@ -259,16 +259,16 @@ export function oauthConsentRoutes(ctx) {
     // Même limitation des tentatives que la connexion (5 échecs en 15 min)
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
-      audit('connexion_bloquee', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude' });
+      audit('login_blocked', { user: user.username, ip: req.ip, step: 'claude authorization' });
       return res.status(429).json({ error: req.t(BLOCKED) });
     }
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
     if (!(await verifyPassword(password, user.password_hash))) {
-      audit('mot_de_passe_refuse', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude' });
+      audit('password_refused', { user: user.username, ip: req.ip, step: 'claude authorization' });
       return res.status(403).json({ error: req.t('autorisation.motDePasseIncorrect') });
     }
     if (user.totp_enabled === 1 && !checkSecondFactor(ctx, user, code)) {
-      audit('connexion_echouee', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude, 2fa' });
+      audit('login_failure', { user: user.username, ip: req.ip, step: 'claude authorization, 2fa' });
       return res.status(403).json({ error: req.t('autorisation.codeIncorrect') });
     }
     limiter.reset(keys);

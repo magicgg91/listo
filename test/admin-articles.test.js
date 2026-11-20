@@ -138,7 +138,7 @@ test('rayon inexistant, désactivé ou mal écrit : refusé (400), rien ne chang
   }
 });
 
-test('journal « nom_rayon_modifie » : le compte, l\'article et le rayon, jamais une liste ; téléphones prévenus', async (t) => {
+test('journal « name_aisle_changed » : le compte, l\'article et le rayon, jamais une liste ; téléphones prévenus', async (t) => {
   const h = await household(t);
   let refs = 0;
   const notify = h.app.ctx.events.notifyReferences.bind(h.app.ctx.events);
@@ -152,7 +152,7 @@ test('journal « nom_rayon_modifie » : le compte, l\'article et le rayon, jamai
   h.app.clock.now += 1000;
   await h.setAisle(h.admin, 'lait', h.boulangerie);
   assert.equal(refs, 1, '« event: refs » : les téléphones connectés relisent la mémoire');
-  const entry = h.app.logs.find((line) => line.includes('nom_rayon_modifie'));
+  const entry = h.app.logs.find((line) => line.includes('name_aisle_changed'));
   assert.ok(entry, 'action inscrite au journal');
   assert.match(entry, /admin/);
   assert.match(entry, /Lait/);

@@ -132,7 +132,7 @@ export function publicRoutes(ctx, { publicDir }) {
     const share = shares.validShare(req.params.token);
     if (!share) {
       unknownLimiter.fail([ipKey(req)]);
-      if (unknownLimiter.isBlocked([ipKey(req)])) audit('lien_public_ip_bloquee', { ip: req.ip });
+      if (unknownLimiter.isBlocked([ipKey(req)])) audit('public_link_ip_blocked', { ip: req.ip });
       refuse(res, 404);
       return null;
     }
@@ -389,9 +389,9 @@ export function publicRoutes(ctx, { publicDir }) {
     const still = shares.validShare(req.params.token);
     if (!ok || !still || still.password_hash !== share.password_hash) {
       passwordLimiter.fail(keys);
-      audit('lien_public_mot_de_passe_refuse', { partage: share.id, ip: req.ip });
+      audit('public_link_password_refused', { share: share.id, ip: req.ip });
       if (passwordLimiter.isBlocked(keys)) {
-        audit('lien_public_saisie_bloquee', { partage: share.id, ip: req.ip });
+        audit('public_link_entry_blocked', { share: share.id, ip: req.ip });
         return res.status(429).json({ error: req.t(TOO_MANY), blocked: true });
       }
       return res.status(401).json({ error: req.t(WRONG_PASSWORD) });
@@ -407,7 +407,7 @@ export function publicRoutes(ctx, { publicDir }) {
       path: `/api/public/${req.params.token}`,
       maxAge: access.maxAge,
     });
-    audit('lien_public_ouvert', { partage: share.id, ip: req.ip });
+    audit('public_link_opened', { share: share.id, ip: req.ip });
     res.json({ ok: true });
   });
 

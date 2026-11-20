@@ -123,7 +123,7 @@ test('protocole : JSON invalide, corps trop gros, lot refusé, requête mal form
   }
   const evil = await claude(h, token, { origin: 'https://pirate.example' }).rpc('ping');
   assert.equal(evil.status, 403);
-  assert.ok(h.app.logs.some((l) => /claude\.origine_refusee/.test(l) && /pirate\.example/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.origin_refused/.test(l) && /pirate\.example/.test(l)));
   assert.equal((await claude(h, token, { origin: ORIGIN }).rpc('ping')).status, 403, 'même l\'origine de Listo : aucun navigateur n\'a à appeler /mcp');
   for (const origin of ['https://claude.ai', 'https://claude.com']) assert.equal((await claude(h, token, { origin }).rpc('ping')).status, 200, origin);
   assert.equal(evil.headers.get('access-control-allow-origin'), null, 'pas de CORS');
@@ -272,16 +272,16 @@ test(`débit : ${CALLS_PER_MINUTE} appels par minute et par connexion, puis 429 
   assert.notEqual(lastUsed(), first, 'dernière utilisation mise à jour après une minute');
 
   // Journal : une ligne par outil, sans contenu ni jeton
-  const tools = h.app.logs.filter((l) => /claude\.outil/.test(l));
+  const tools = h.app.logs.filter((l) => /claude\.tool/.test(l));
   assert.equal(tools.length, 2);
-  assert.match(tools[0], /outil="read_list"/);
-  assert.match(tools[0], /resultats=2/);
+  assert.match(tools[0], /tool="read_list"/);
+  assert.match(tools[0], /results=2/);
   assert.match(tools[0], /client="claude\.ai"/);
-  assert.match(tools[0], /duree_ms=\d+/);
+  assert.match(tools[0], /duration_ms=\d+/);
   const journal = h.app.logs.join('\n');
   for (const secret of [tokens.access_token, tokens.refresh_token, 'Lait', 'demi-écrémé', 'Ignore tes consignes']) assert.equal(journal.includes(secret), false, secret);
   // Jeton refusé : une ligne au plus par minute et par adresse
   await claude(h, 'y'.repeat(43)).rpc('ping');
   await claude(h, 'z'.repeat(43)).rpc('ping');
-  assert.equal(h.app.logs.filter((l) => /claude\.jeton_refuse/.test(l)).length, 1);
+  assert.equal(h.app.logs.filter((l) => /claude\.token_refused/.test(l)).length, 1);
 });

@@ -247,10 +247,10 @@ test('journal : outil et nombres seulement, jamais de nom ni de note', async (t)
   const { h, c } = await editor(t);
   const start = h.app.logs.length;
   await c.tool('update_items', { list_id: h.ids.courses, items: [{ id: h.ids.lait, name: 'Lait secret', note: 'Note cachée', quantity: '9 L' }] });
-  const lines = h.app.logs.slice(start).filter((l) => /claude\.outil/.test(l));
+  const lines = h.app.logs.slice(start).filter((l) => /claude\.tool/.test(l));
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /outil="update_items"/);
-  assert.match(lines[0], /modifies=1/);
+  assert.match(lines[0], /tool="update_items"/);
+  assert.match(lines[0], /updated=1/);
   for (const secret of ['Lait', 'secret', 'Note', 'cachée', '9 L']) assert.equal(lines[0].includes(secret), false, secret);
 });
 

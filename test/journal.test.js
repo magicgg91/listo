@@ -16,7 +16,7 @@ test('le fichier du journal est créé avec les droits 600', async (t) => {
   await setupAdmin(app);
   assert.equal(mode(file), 0o600);
   const content = fs.readFileSync(file, 'utf8');
-  assert.match(content, /\[journal\] creation_admin utilisateur="guillaume"/);
+  assert.match(content, /\[journal\] first_admin_created user="guillaume"/);
   // Les mêmes lignes partent aussi vers docker logs
   assert.equal(content, app.logs.map((line) => `${line}\n`).join(''));
 });
@@ -81,13 +81,13 @@ test("une erreur d'écriture ne casse pas la connexion, et elle est signalée un
 
   assert.equal(reports.length, 1, 'une seule alerte tant que le problème dure');
   assert.match(reports[0], /impossible d'écrire.*ENOENT/);
-  assert.match(app.logs.join('\n'), /connexion_reussie/, 'le journal reste dans docker logs');
+  assert.match(app.logs.join('\n'), /login_success/, 'le journal reste dans docker logs');
 
   // Le problème est réparé : l'écriture reprend et c'est signalé
   fs.mkdirSync(path.dirname(file));
   await login(app.client(), 'marie', 'MotDePasseMarie!');
   assert.match(reports[1], /rétablie/);
-  assert.match(fs.readFileSync(file, 'utf8'), /connexion_reussie/);
+  assert.match(fs.readFileSync(file, 'utf8'), /login_success/);
 });
 
 test("un journal impossible à écrire (dossier à la place du fichier) n'arrête rien", async (t) => {
@@ -98,4 +98,53 @@ test("un journal impossible à écrire (dossier à la place du fichier) n'arrêt
   const admin = await setupAdmin(app);
   assert.equal((await admin.get('/api/me')).status, 200);
   assert.equal(reports.length, 1);
+});
+
+// Journal toujours en anglais (décision du 20 novembre 2026) : relecture du
+// code du serveur. Chaque événement est en minuscules sans accent, sans
+// « authelia », et figure dans le tableau de docs/exploitation.md ; aucune
+// valeur écrite par le code sur une ligne de journal n'a d'accent (raison en
+// français oubliée).
+test('journal en anglais : noms d\'événements, raisons, et tableau de docs/exploitation.md', () => {
+  const root = path.join(import.meta.dirname, '..');
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) files.push(full);
+    }
+  };
+  walk(path.join(root, 'server'));
+  const doc = fs.readFileSync(path.join(root, 'docs/exploitation.md'), 'utf8');
+  const events = new Set();
+  for (const file of files) {
+    const source = fs.readFileSync(file, 'utf8');
+    for (const line of source.split('\n')) {
+      if (!/audit(\?\.)?\(/.test(line) || /function |createAudit|=>\s*ctx\.audit/.test(line)) continue;
+      const call = line.slice(line.search(/audit(\?\.)?\(/));
+      // Premier argument : 'nom', `admin_${type.label}_…`, ou a ? 'nom' : 'nom'
+      const first = call.slice(0, call.search(/,|\)\s*;|$/));
+      for (const [, name] of first.matchAll(/['`]([^'`]+)['`]/g)) events.add(name.replace('${type.label}', 'store'));
+      // Valeurs écrites par le code (hors commentaires) : jamais d'accent
+      const code = line.replace(/\/\/.*$/, '');
+      for (const [, value] of code.matchAll(/'((?:[^'\\]|\\.)*)'/g)) assert.doesNotMatch(value, /[À-ÿ«»]/, `${path.basename(file)} : « ${value} »`);
+    }
+    for (const [, name] of source.matchAll(/^\s*event: '([^']+)',$/gm)) events.add(name); // server/routes/references.js
+  }
+  assert.ok(events.size >= 70, `événements trouvés : ${events.size}`);
+  for (const event of events) {
+    assert.match(event, /^[a-z0-9_.]+$/, event);
+    assert.doesNotMatch(event, /authelia/, event);
+    assert.ok(doc.includes(`\`${event}\``), `${event} absent du tableau de docs/exploitation.md`);
+  }
+});
+
+test('journal : une réponse ou un jeton illisible donne un message fixe, jamais un bout du texte reçu', async () => {
+  const { readJson } = await import('../server/http-json.js');
+  const secret = 'SECRET-123{';
+  await assert.rejects(readJson(new Response(secret), 1000), (err) => err.message === 'malformed JSON response' && !err.message.includes('SECRET'));
+  const { verifyIdToken } = await import('../server/oidc.js');
+  const part = Buffer.from(secret).toString('base64url');
+  assert.throws(() => verifyIdToken(`${part}.${part}.x`, { keys: [], issuer: 'https://a.test', clientId: 'listo', nonce: 'n', nowS: 0 }), (err) => !err.message.includes('SECRET'));
 });

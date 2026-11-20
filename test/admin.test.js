@@ -427,21 +427,21 @@ test("le journal contient les actions d'administration et aucun secret", async (
 
   const journal = app.logs.join('\n');
   const expected = [
-    'admin_compte_cree admin="guillaume" utilisateur="bob" role="user"',
-    'admin_compte_renomme admin="guillaume" utilisateur="bob"',
-    'admin_role_change admin="guillaume" utilisateur="bob" ip="127.0.0.1" role="admin"',
-    'admin_compte_desactive admin="guillaume" utilisateur="bob"',
-    'admin_compte_reactive admin="guillaume" utilisateur="bob"',
-    'admin_mot_de_passe_reinitialise admin="guillaume" utilisateur="marie"',
-    'admin_2fa_desactivee admin="guillaume" utilisateur="marie"',
-    'admin_compte_supprime admin="guillaume" utilisateur="bob"',
-    'admin_magasin_ajoute admin="guillaume" nom="Biocoop"',
-    'admin_magasin_renomme admin="guillaume" nom="Biocoop Centre"',
-    'admin_magasin_desactive admin="guillaume" nom="Biocoop Centre"',
-    'admin_magasin_supprime admin="guillaume" nom="Biocoop Centre"',
-    'admin_rayon_ajoute admin="guillaume" nom="Jardin"',
-    'admin_rayon_desactive admin="guillaume" nom="Jardin"',
-    'admin_rayon_reactive admin="guillaume" nom="Jardin"',
+    'admin_account_created admin="guillaume" user="bob" role="user"',
+    'admin_account_renamed admin="guillaume" user="bob"',
+    'admin_role_changed admin="guillaume" user="bob" ip="127.0.0.1" role="admin"',
+    'admin_account_disabled admin="guillaume" user="bob"',
+    'admin_account_reactivated admin="guillaume" user="bob"',
+    'admin_password_reset admin="guillaume" user="marie"',
+    'admin_2fa_disabled admin="guillaume" user="marie"',
+    'admin_account_deleted admin="guillaume" user="bob"',
+    'admin_store_added admin="guillaume" name="Biocoop"',
+    'admin_store_renamed admin="guillaume" name="Biocoop Centre"',
+    'admin_store_disabled admin="guillaume" name="Biocoop Centre"',
+    'admin_store_deleted admin="guillaume" name="Biocoop Centre"',
+    'admin_aisle_added admin="guillaume" name="Jardin"',
+    'admin_aisle_disabled admin="guillaume" name="Jardin"',
+    'admin_aisle_reactivated admin="guillaume" name="Jardin"',
   ];
   for (const line of expected) assert.ok(journal.includes(line), `absent du journal : ${line}`);
   for (const secret of secrets) assert.ok(secret && !journal.includes(secret), `secret dans le journal : ${secret}`);

@@ -100,7 +100,7 @@ export function adminUserRoutes(ctx) {
     if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
     const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, role });
     if (result.key) return res.status(result.status).json({ error: req.t(result.key, result.params) });
-    audit('demande_compte_acceptee', { admin: req.user.username, utilisateur: username, role });
+    audit('account_request_accepted', { admin: req.user.username, user: username, role });
     res.status(201).json({ user: describe(findUser.get(result.id)) });
   });
 
@@ -112,7 +112,7 @@ export function adminUserRoutes(ctx) {
     const done = id && db.prepare("UPDATE account_requests SET status = 'refused', refused_at = ? WHERE id = ? AND status = 'pending'")
       .run(new Date(ctx.now()).toISOString(), id).changes;
     if (!done) return res.status(404).json({ error: req.t('comptes.demande.introuvable') });
-    audit('demande_compte_refusee', { admin: req.user.username });
+    audit('account_request_refused', { admin: req.user.username });
     res.status(204).end();
   });
 
@@ -122,7 +122,7 @@ export function adminUserRoutes(ctx) {
     const user = target(req, res);
     if (!user) return;
     db.prepare('UPDATE users SET oidc_sub = NULL WHERE id = ?').run(user.id);
-    audit('compte_delie_authelia', { admin: req.user.username, utilisateur: user.username });
+    audit('account_unlinked_oidc', { admin: req.user.username, user: user.username });
     res.json({ user: describe(findUser.get(user.id)) });
   });
 
@@ -153,7 +153,7 @@ export function adminUserRoutes(ctx) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: req.t('comptes.identifiant.existe') });
       throw err;
     }
-    audit('admin_compte_cree', { admin: req.user.username, utilisateur: username, role, ip: req.ip });
+    audit('admin_account_created', { admin: req.user.username, user: username, role, ip: req.ip });
     res.status(201).json({ user: describe(findUser.get(id)) });
   });
 
@@ -193,19 +193,19 @@ export function adminUserRoutes(ctx) {
       WHERE id = :id`).run({ display_name: null, role: null, active: null, ...changes, id: user.id });
 
     // Un compte désactivé est déconnecté partout, tout de suite
-    if (changes.active === 0) revokeAllSessions(ctx, user.id, 'compte désactivé');
+    if (changes.active === 0) revokeAllSessions(ctx, user.id, 'account disabled');
     // … et les liens publics de ses listes sont arrêtés
     const stoppedLinks = changes.active === 0 ? ctx.shares.stopForOwner(user.id) : 0;
 
     // Journal : une ligne par changement réel
-    const who = { admin: req.user.username, utilisateur: user.username, ip: req.ip };
+    const who = { admin: req.user.username, user: user.username, ip: req.ip };
     if (changes.display_name !== undefined && changes.display_name !== user.display_name) {
-      audit('admin_compte_renomme', { ...who, ancien: user.display_name, nouveau: changes.display_name });
+      audit('admin_account_renamed', { ...who, old: user.display_name, new: changes.display_name });
     }
-    if (changes.role !== undefined && changes.role !== user.role) audit('admin_role_change', { ...who, role: changes.role });
-    if (changes.active === 0 && user.active === 1) audit('admin_compte_desactive', who);
-    if (stoppedLinks) audit('lien_public_arrete', { ...who, nombre: stoppedLinks, raison: 'compte désactivé' });
-    if (changes.active === 1 && user.active === 0) audit('admin_compte_reactive', who);
+    if (changes.role !== undefined && changes.role !== user.role) audit('admin_role_changed', { ...who, role: changes.role });
+    if (changes.active === 0 && user.active === 1) audit('admin_account_disabled', who);
+    if (stoppedLinks) audit('public_link_stopped', { ...who, count: stoppedLinks, reason: 'account disabled' });
+    if (changes.active === 1 && user.active === 0) audit('admin_account_reactivated', who);
 
     res.json({ user: describe(findUser.get(user.id)) });
   });
@@ -224,8 +224,8 @@ export function adminUserRoutes(ctx) {
 
     const hash = await hashPassword(req.body.password);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, user.id);
-    revokeAllSessions(ctx, user.id, "mot de passe réinitialisé par l'Admin");
-    audit('admin_mot_de_passe_reinitialise', { admin: req.user.username, utilisateur: user.username, ip: req.ip });
+    revokeAllSessions(ctx, user.id, 'password reset by the admin');
+    audit('admin_password_reset', { admin: req.user.username, user: user.username, ip: req.ip });
     res.json({ user: describe(findUser.get(user.id)) });
   });
 
@@ -238,7 +238,7 @@ export function adminUserRoutes(ctx) {
       return res.status(400).json({ error: req.t('comptes.soiMeme.deuxFacteurs') });
     }
     disableTwoFactor(ctx, user.id);
-    audit('admin_2fa_desactivee', { admin: req.user.username, utilisateur: user.username, ip: req.ip });
+    audit('admin_2fa_disabled', { admin: req.user.username, user: user.username, ip: req.ip });
     res.json({ user: describe(findUser.get(user.id)) });
   });
 
@@ -254,7 +254,7 @@ export function adminUserRoutes(ctx) {
     }
     // Ses sessions et codes de secours sont effacés avec lui (ON DELETE CASCADE)
     db.prepare('DELETE FROM users WHERE id = ?').run(user.id);
-    audit('admin_compte_supprime', { admin: req.user.username, utilisateur: user.username, ip: req.ip });
+    audit('admin_account_deleted', { admin: req.user.username, user: user.username, ip: req.ip });
     res.status(204).end();
   });
 

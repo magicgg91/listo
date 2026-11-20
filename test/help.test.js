@@ -483,7 +483,7 @@ test('« MCP Claude » regroupe tout ce qui concerne Claude ; ailleurs, au plus 
   }
   // Ce qui concernait Claude n'est pas perdu
   const claudeText = claude.sections.flatMap((s) => (s.blocks ?? []).flatMap(blockTexts)).join('\n');
-  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Proxy : rien à régler', 'claude.origine_refusee', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
+  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Proxy : rien à régler', 'claude.origin_refused', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
     assert.ok(claudeText.includes(marker) || claude.sections.some((s) => s.title.includes(marker)), marker);
   }
 });

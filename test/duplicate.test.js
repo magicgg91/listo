@@ -98,7 +98,7 @@ test('propriétaire : copie privée, éléments non supprimés tous décochés, 
   assert.ok((await h.guillaume.get('/api/sync')).body.listIds.includes(copy.id));
   assert.ok(!(await h.lea.get('/api/sync')).body.listIds.includes(copy.id));
   // Journal : identifiants seulement
-  const entry = h.app.logs.find((l) => l.includes('liste_dupliquee'));
+  const entry = h.app.logs.find((l) => l.includes('list_duplicated'));
   assert.ok(entry, 'événement au journal');
   assert.doesNotMatch(entry, /Maison|Ampoule|Peinture|couloir/);
 });

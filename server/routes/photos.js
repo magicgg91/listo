@@ -38,7 +38,7 @@ export function photoRoutes(ctx) {
   // Plafond d'envois par compte et par heure (compté avant de lire le fichier)
   const uploadQuota = (req, res, next) => {
     if (!uploads.take(req.user.id)) {
-      ctx.audit('photo_plafond_atteint', { utilisateur: req.user.username, ip: req.ip });
+      ctx.audit('photo_limit_reached', { user: req.user.username, ip: req.ip });
       return res.status(429).json({ error: req.t('photos.tropDEnvois') });
     }
     next();

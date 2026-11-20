@@ -88,13 +88,13 @@ function cleanClientName(value) {
 // Vérifie un document CIMD déjà lu. Renvoie { clientName, redirectUris } ou
 // lance une erreur. Seules les adresses de retour de Claude sont gardées.
 export function checkCimdDocument(clientId, doc) {
-  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('document invalide');
-  if (doc.client_id !== clientId) throw new Error('client_id différent de l\'adresse du document');
-  if (!Array.isArray(doc.redirect_uris)) throw new Error('redirect_uris manquant');
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('invalid document');
+  if (doc.client_id !== clientId) throw new Error('client_id differs from the document address');
+  if (!Array.isArray(doc.redirect_uris)) throw new Error('missing redirect_uris');
   const method = doc.token_endpoint_auth_method;
-  if (method !== undefined && method !== 'none') throw new Error('méthode d\'authentification non prise en charge');
+  if (method !== undefined && method !== 'none') throw new Error('unsupported authentication method');
   const redirectUris = doc.redirect_uris.filter((uri) => allowedRedirect(uri)).slice(0, MAX_REDIRECTS);
-  if (!redirectUris.length) throw new Error('aucune adresse de retour de Claude');
+  if (!redirectUris.length) throw new Error('no Claude redirect address');
   return { clientName: cleanClientName(doc.client_name), redirectUris };
 }
 
@@ -102,7 +102,7 @@ export function checkCimdDocument(clientId, doc) {
 // redirection suivie, aucun cookie, 5 secondes et 16 ko au plus.
 export async function fetchClientMetadata(url, { fetchImpl = fetch, timeoutMs = CIMD_TIMEOUT_MS, maxBytes = CIMD_MAX_BYTES } = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('délai dépassé')), timeoutMs);
+  const timer = setTimeout(() => controller.abort(new Error('timeout')), timeoutMs);
   try {
     const res = await fetchImpl(url.href, {
       redirect: 'manual',
@@ -112,10 +112,13 @@ export async function fetchClientMetadata(url, { fetchImpl = fetch, timeoutMs = 
     });
     if (res.status !== 200) {
       await res.body?.cancel().catch(() => {});
-      throw new Error(`réponse HTTP ${res.status}`);
+      throw new Error(`HTTP response ${res.status}`);
     }
-    if (res.url && new URL(res.url).href !== url.href) throw new Error('réponse venue d\'une autre adresse');
-    return await readJson(res, maxBytes);
+    if (res.url && new URL(res.url).href !== url.href) throw new Error('response from another address');
+    // Message du journal en anglais (readJson parle français pour la console)
+    return await readJson(res, maxBytes).catch((error) => {
+      throw error.message === 'réponse trop grande' ? new Error('response too large') : error;
+    });
   } finally {
     clearTimeout(timer);
   }

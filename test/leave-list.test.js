@@ -70,7 +70,7 @@ test('un invité quitte : il ne voit plus la liste ; ses articles restent ; les 
   const owner = (await h.guillaume.get('/api/sync')).body.lists.find((l) => l.id === h.shop);
   assert.deepEqual(owner.members.map((m) => m.id).sort(), [1, h.ids.paul]);
   // Journal : identifiants seulement
-  const entry = h.app.logs.find((l) => l.includes('liste_quittee'));
+  const entry = h.app.logs.find((l) => l.includes('list_left'));
   assert.ok(entry);
   assert.doesNotMatch(entry, /Courses|Lait/);
   // Quitter une seconde fois : plus membre → « Liste introuvable »

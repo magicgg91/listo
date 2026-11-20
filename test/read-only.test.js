@@ -227,7 +227,7 @@ test('changer le droit : arrive par la synchronisation et le temps réel ; journ
   await h.guillaume.request('PUT', `/api/lists/${h.shop}/members`, { userIds: [h.ids.lea, h.ids.marie], access: { [h.ids.lea]: 'lecture' } });
   assert.equal((await run(h.lea, { type: 'item.check', itemId: h.milk, checked: false })).status, 403);
   const log = h.app.logs.join('\n');
-  assert.match(log, /liste_droit_change/);
+  assert.match(log, /list_access_changed/);
   assert.doesNotMatch(log, /Courses|Lait|Pain/, 'ni nom de liste ni article dans le journal');
 });
 

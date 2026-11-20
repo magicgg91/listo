@@ -129,7 +129,7 @@ export function endSession(ctx, req, res) {
 // Ferme toutes les sessions d'un compte (changement de mot de passe…)
 // Les flux temps réel du compte sont coupés aussi, et ses connexions Claude
 // révoquées (reason : raison écrite dans le journal).
-export function revokeAllSessions(ctx, userId, reason = 'sessions du compte fermées') {
+export function revokeAllSessions(ctx, userId, reason = 'account sessions closed') {
   ctx.db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
   ctx.events?.disconnectUser(userId);
   ctx.oauth?.revokeAllForUser(userId, reason);

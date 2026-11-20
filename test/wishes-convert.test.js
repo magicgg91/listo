@@ -158,8 +158,8 @@ test('conversion vers un compte : type et destinataire ensemble, destinataire pa
   // Aucune réservation n'existe
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id IN (SELECT id FROM items WHERE list_id = ?)').pluck().get(h.ids.maison), 0);
   // Journal : changement de type et lien arrêté
-  assert.ok(h.app.logs.some((l) => l.includes('liste_type_change') && l.includes('wishes')));
-  assert.ok(h.app.logs.some((l) => l.includes('lien_public_arrete')));
+  assert.ok(h.app.logs.some((l) => l.includes('list_type_changed') && l.includes('wishes')));
+  assert.ok(h.app.logs.some((l) => l.includes('public_link_stopped')));
   // Le partage se modifie ensuite comme pour toute liste d'envies : Léa reste, en « Peut modifier »
   assert.equal((await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/members`, { userIds: [h.marieId, h.paulId], access: {} })).status, 400);
   assert.equal((await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/members`, { userIds: [h.leaId, h.marieId], access: { [h.leaId]: 'modification' } })).status, 200);

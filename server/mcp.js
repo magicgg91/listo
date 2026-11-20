@@ -84,7 +84,7 @@ export function mcpRoutes(ctx) {
   router.post('/mcp', (req, res, next) => {
     const origin = req.get('origin');
     if (origin === undefined || ALLOWED_ORIGINS.includes(origin)) return next();
-    audit('claude.origine_refusee', { origine: origin.slice(0, 100), ip: req.ip });
+    audit('claude.origin_refused', { origin: origin.slice(0, 100), ip: req.ip });
     return res.status(403).json(rpcError(null, SERVER_ERROR, 'Origine refusée.'));
   });
 
@@ -103,7 +103,7 @@ export function mcpRoutes(ctx) {
           refusedLogged.delete(req.ip);
           if (refusedLogged.size >= MAX_REFUSED_IPS) refusedLogged.delete(refusedLogged.keys().next().value);
           refusedLogged.set(req.ip, ctx.now());
-          audit('claude.jeton_refuse', { ip: req.ip });
+          audit('claude.token_refused', { ip: req.ip });
         }
       }
       return res.status(401).set('WWW-Authenticate', challenge).json(rpcError(null, SERVER_ERROR, 'Authentification requise.'));
@@ -190,9 +190,9 @@ export function mcpRoutes(ctx) {
           const { result, count, log } = tools.call(req.mcp, name, args);
           // Journal : qui, quel outil, combien de résultats (créés, ignorés,
           // cochés pour les écritures) ; jamais le contenu ni un nom saisi
-          audit('claude.outil', {
-            connexion: req.mcp.grant.id, utilisateur: req.mcp.user.username, client: req.mcp.grant.clientHost,
-            outil: name, resultats: count, ...log, ...(result.isError ? { erreur: true } : {}), duree_ms: Date.now() - started,
+          audit('claude.tool', {
+            connection: req.mcp.grant.id, user: req.mcp.user.username, client: req.mcp.grant.clientHost,
+            tool: name, results: count, ...log, ...(result.isError ? { error: true } : {}), duration_ms: Date.now() - started,
           });
           return send(rpcResult(id, result));
         }

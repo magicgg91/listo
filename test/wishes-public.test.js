@@ -79,8 +79,8 @@ test('droits : seul le propriétaire crée, lit, modifie et arrête le lien ; co
   assert.equal((await h.guillaume.request('PUT', url, { durationHours: 48 })).status, 200);
   assert.equal((await h.guillaume.del(url)).status, 200);
   // Journal : création et arrêt comme pour les autres listes, sans contenu
-  assert.ok(h.app.logs.some((l) => l.includes('lien_public_cree')));
-  assert.ok(h.app.logs.some((l) => l.includes('lien_public_arrete')));
+  assert.ok(h.app.logs.some((l) => l.includes('public_link_created')));
+  assert.ok(h.app.logs.some((l) => l.includes('public_link_stopped')));
   assert.ok(!h.app.logs.some((l) => /Vélo|Noël de Léa|exemple\.fr/.test(l)), 'aucun contenu dans le journal');
   // Duplication : toujours refusée
   assert.equal((await h.guillaume.post(`/api/lists/${h.ids.noel}/duplicate`, { name: 'Copie' })).status, 400);

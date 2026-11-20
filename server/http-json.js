@@ -18,5 +18,11 @@ export async function readJson(res, maxBytes) {
     }
     chunks.push(value);
   }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  // Message fixe : celui de JSON.parse peut recopier un bout du texte reçu,
+  // qui ne doit jamais arriver dans le journal ni la console
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch {
+    throw new Error('malformed JSON response');
+  }
 }

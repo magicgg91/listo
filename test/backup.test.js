@@ -44,7 +44,7 @@ test('sauvegarde : copie créée, contrôlée, droits 600, données présentes, 
   assert.equal(copy.pragma('integrity_check', { simple: true }), 'ok');
   assert.equal(copy.prepare('SELECT name FROM lists WHERE id = ?').pluck().get(listId), 'Courses sauvegardées');
   assert.equal(copy.prepare('SELECT username FROM users').pluck().get(), 'guillaume');
-  assert.ok(app.logs.some((line) => line.includes('sauvegarde_reussie') && line.includes(path.basename(result.file))));
+  assert.ok(app.logs.some((line) => line.includes('backup_success') && line.includes(path.basename(result.file))));
 });
 
 test('rotation : 14 copies gardées, la 15e supprime la plus ancienne (horloge avancée)', async (t) => {
@@ -61,7 +61,7 @@ test('rotation : 14 copies gardées, la 15e supprime la plus ancienne (horloge a
   assert.equal(kept.length, BACKUP_KEEP);
   assert.equal(kept.includes(names[0]), false, 'la plus ancienne est supprimée');
   assert.deepEqual(kept, names.slice(1));
-  assert.ok(app.logs.at(-1).includes('supprimees=1'));
+  assert.ok(app.logs.at(-1).includes('deleted=1'));
 });
 
 test('la clé secrets/secret.key n\'est jamais copiée dans les sauvegardes', async (t) => {
@@ -90,8 +90,8 @@ test('une copie ratée est journalisée sans arrêter Listo', async (t) => {
   const backups = createBackups({ db, dir: path.join(blocker, 'backups'), audit: (event, details) => logs.push({ event, details }) });
   const result = backups.run();
   assert.equal(result.ok, false);
-  assert.equal(logs[0].event, 'sauvegarde_ratee');
-  assert.ok(logs[0].details.raison);
+  assert.equal(logs[0].event, 'backup_failure');
+  assert.ok(logs[0].details.reason);
   // Listo continue : la suivante, au bon endroit, réussit
   const ok = createBackups({ db, dir: path.join(dir, 'backups'), audit: () => {} }).run();
   assert.equal(ok.ok, true);

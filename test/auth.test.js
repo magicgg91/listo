@@ -503,8 +503,8 @@ test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton,
 
   // Le journal a bien tout noté…
   const journal = app.logs.join('\n');
-  for (const event of ['creation_admin', 'connexion_echouee', 'connexion_reussie', 'connexion_code_2fa_demande',
-    '2fa_activee', 'mot_de_passe_change', 'admin_2fa_desactivee', 'deconnexion']) {
+  for (const event of ['first_admin_created', 'login_failure', 'login_success', 'login_2fa_code_requested',
+    '2fa_enabled', 'password_changed', 'admin_2fa_disabled', 'logout']) {
     assert.match(journal, new RegExp(event), `événement ${event} absent du journal`);
   }
   // …sans jamais écrire un seul secret
@@ -513,7 +513,7 @@ test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton,
     assert.ok(!fileContent.includes(secret), `secret trouvé dans journal.log : ${secret}`);
   }
   // L'identifiant inconnu (ici un mot de passe tapé par erreur) n'est pas recopié
-  assert.match(journal, /utilisateur="\(inconnu\)"/);
+  assert.match(journal, /user="\(unknown\)"/);
 });
 
 // --- Image du QR code (étape 5) ---

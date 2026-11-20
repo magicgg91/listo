@@ -52,9 +52,9 @@ test('serveur : messages et journal neutres, identifiants internes inchangés', 
   assert.equal(fr['ops.listePersonnesInvalide'], 'Liste des personnes invalide.');
   assert.equal(fr['ops.droitsPersonnesInvalides'], 'Droits des personnes invalides.');
   assert.equal(fr['ops.droitSansPartage'], 'Droit donné à une personne avec qui la liste n\'est pas partagée.');
-  // Journal : champ « personne » (plus « invite ») ; noms d'événements inchangés
-  for (const event of ['liste_partage_ajoute', 'liste_partage_retire', 'liste_droit_change']) {
-    assert.match(lists, new RegExp(`ctx\\.audit\\('${event}', \\{ utilisateur: user\\.username, liste: list\\.id, personne: nameOf\\(id\\)`), event);
+  // Journal (toujours en anglais) : champ « member » (plus « invite »)
+  for (const event of ['list_member_added', 'list_member_removed', 'list_access_changed']) {
+    assert.match(lists, new RegExp(`ctx\\.audit\\('${event}', \\{ user: user\\.username, list: list\\.id, member: nameOf\\(id\\)`), event);
   }
   assert.doesNotMatch(lists, /invite: nameOf/);
   // Droits internes inchangés

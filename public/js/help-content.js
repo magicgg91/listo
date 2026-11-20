@@ -347,7 +347,7 @@ export const GUIDE = [
         title: 'Sauvegardes',
         blocks: [
           { ul: [
-            'Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n\'arrête pas Listo.',
+            'Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`backup_success` ou `backup_failure`, le journal étant toujours en anglais). Une copie ratée n\'arrête pas Listo.',
             'Sauvegarde à la demande, avant une mise à jour par exemple (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit) :',
           ] },
           { code: 'docker exec -u node listo node server/backup-now.js' },
@@ -361,7 +361,7 @@ export const GUIDE = [
           'HTTPS : `https://listo.exemple.fr` s\'ouvre avec le cadenas ; `http://listo.exemple.fr` redirige vers `https://`.',
           'Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.',
           'En-têtes de sécurité : passez l\'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par le proxy, voir [[proxy]]), et aucun `X-Powered-By`.',
-          'Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.',
+          'Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep backup` la ligne `backup_success`.',
           'Une restauration d\'essai, une fois, avec la copie de la nuit : [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).',
           'Le port fermé : voir [[proxy]].',
           'Le téléphone : installation sur l\'écran d\'accueil ([[telephone]]), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).',
@@ -1195,7 +1195,7 @@ export const GUIDE = [
             'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
             'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
           ] },
-          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.',
+          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.token_refused`, `claude.origin_refused`.',
         ],
       },
       {
@@ -1208,7 +1208,7 @@ export const GUIDE = [
             'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
             'Connecter Claude ([[claude-connecter]]).',
             'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
-            '`docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s\'il y en a.',
+            '`docker logs listo` : des lignes `claude.connected` et `claude.tool`, aucune erreur. Signaler les lignes `claude.origin_refused` ou `claude.client_refused` s\'il y en a.',
             'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
             'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
           ] },

@@ -63,7 +63,7 @@ export function meRoutes(ctx) {
 
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
     if (!(await verifyPassword(currentPassword, req.user.password_hash))) {
-      audit('mot_de_passe_refuse', { utilisateur: req.user.username, ip: req.ip });
+      audit('password_refused', { user: req.user.username, ip: req.ip });
       return res.status(403).json({ error: req.t('comptes.motDePasse.actuelIncorrect') });
     }
     limiter.reset(keys);
@@ -75,9 +75,9 @@ export function meRoutes(ctx) {
 
     const hash = await hashPassword(newPassword);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
-    revokeAllSessions(ctx, req.user.id, 'mot de passe changé');
+    revokeAllSessions(ctx, req.user.id, 'password changed');
     startSession(ctx, res, req.user.id);
-    audit('mot_de_passe_change', { utilisateur: req.user.username, ip: req.ip });
+    audit('password_changed', { user: req.user.username, ip: req.ip });
     res.json({ ok: true });
   });
 
@@ -124,7 +124,7 @@ export function meRoutes(ctx) {
 
     db.prepare('UPDATE users SET totp_enabled = 1 WHERE id = ?').run(user.id);
     const recoveryCodes = createRecoveryCodes(ctx, user.id);
-    audit('2fa_activee', { utilisateur: user.username, ip: req.ip });
+    audit('2fa_enabled', { user: user.username, ip: req.ip });
     res.json({ recoveryCodes });
   });
 
@@ -142,13 +142,13 @@ export function meRoutes(ctx) {
     // Le compte est relu juste avant de vérifier le code (dernier code utilisé)
     const codeOk = passwordOk && checkSecondFactor(ctx, reloadUser(req.user.id), code);
     if (!codeOk) {
-      audit('2fa_desactivation_refusee', { utilisateur: req.user.username, ip: req.ip });
+      audit('2fa_disable_refused', { user: req.user.username, ip: req.ip });
       return res.status(403).json({ error: req.t('comptes.deuxFacteurs.refus') });
     }
     limiter.reset(keys);
 
     disableTwoFactor(ctx, req.user.id);
-    audit('2fa_desactivee', { utilisateur: req.user.username, ip: req.ip });
+    audit('2fa_disabled', { user: req.user.username, ip: req.ip });
     res.json({ ok: true });
   });
 

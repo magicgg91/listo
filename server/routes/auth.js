@@ -60,7 +60,7 @@ export function publicAuthRoutes(ctx) {
     if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
     if (!safeEqual(normalizeCode(code), normalizeCode(ctx.setup.code))) {
       limiter.fail(keys);
-      audit('creation_admin_refusee', { raison: 'code de démarrage incorrect', ip: req.ip });
+      audit('first_admin_creation_refused', { reason: 'wrong setup code', ip: req.ip });
       return res.status(403).json({ error: req.t('comptes.codeDemarrage.incorrect') });
     }
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
@@ -82,7 +82,7 @@ export function publicAuthRoutes(ctx) {
     if (!created) return res.status(403).json({ error: req.t('comptes.dejaConfigure'), code: 'comptes.dejaConfigure' });
 
     ctx.setup.code = null; // le code de démarrage ne servira plus jamais
-    audit('creation_admin', { utilisateur: username, ip: req.ip });
+    audit('first_admin_created', { user: username, ip: req.ip });
     startSession(ctx, res, created);
     res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created), ctx.config, { method: 'password' }) });
   });
@@ -101,10 +101,10 @@ export function publicAuthRoutes(ctx) {
     const user = findUser.get(username);
     // Dans le journal, on ne recopie l'identifiant que s'il existe : s'il
     // n'existe pas, c'est peut-être un mot de passe tapé dans le mauvais champ.
-    const who = user ? { utilisateur: user.username } : { utilisateur: '(inconnu)' };
+    const who = user ? { user: user.username } : { user: '(unknown)' };
 
     if (limiter.isBlocked(keys)) {
-      audit('connexion_bloquee', { ...who, ip: req.ip });
+      audit('login_blocked', { ...who, ip: req.ip });
       return res.status(429).json({ error: req.t(BLOCKED) });
     }
 
@@ -118,7 +118,7 @@ export function publicAuthRoutes(ctx) {
     // factice), pour que la durée de la réponse ne trahisse rien.
     const passwordOk = await verifyPassword(password, user?.password_hash ?? (await getDummyHash()));
     if (!user || !passwordOk || user.active !== 1) {
-      audit('connexion_echouee', { ...who, ip: req.ip });
+      audit('login_failure', { ...who, ip: req.ip });
       return res.status(401).json({ error: req.t(BAD_LOGIN) });
     }
 
@@ -129,13 +129,13 @@ export function publicAuthRoutes(ctx) {
     if (user.totp_enabled === 1) {
       limiter.forgive(keys);
       ctx.pending.start(ctx, res, user.id);
-      audit('connexion_code_2fa_demande', { ...who, ip: req.ip });
+      audit('login_2fa_code_requested', { ...who, ip: req.ip });
       return res.json({ twoFactorRequired: true });
     }
 
     limiter.reset(keys);
     startSession(ctx, res, user.id);
-    audit('connexion_reussie', { ...who, ip: req.ip });
+    audit('login_success', { ...who, ip: req.ip });
     res.json({ user: publicUser(user, ctx.config, { method: 'password' }) });
   });
 
@@ -150,12 +150,12 @@ export function publicAuthRoutes(ctx) {
 
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
-      audit('connexion_bloquee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
+      audit('login_blocked', { user: user.username, ip: req.ip, step: '2fa' });
       return res.status(429).json({ error: req.t(BLOCKED) });
     }
     if (!checkSecondFactor(ctx, user, req.body?.code)) {
       limiter.fail(keys);
-      audit('connexion_echouee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
+      audit('login_failure', { user: user.username, ip: req.ip, step: '2fa' });
       return res.status(401).json({ error: req.t('comptes.code.incorrect') });
     }
 
@@ -164,7 +164,7 @@ export function publicAuthRoutes(ctx) {
     // Même méthode que le début de la connexion (mot de passe, ou fournisseur d'identité
     // quand le fournisseur d'identité n'a pas fait la double authentification)
     startSession(ctx, res, user.id, { method: pending.method });
-    audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa', ...(pending.method === 'oidc' ? { methode: 'authelia' } : {}) });
+    audit('login_success', { user: user.username, ip: req.ip, step: '2fa', ...(pending.method === 'oidc' ? { method: 'oidc' } : {}) });
     res.json({ user: publicUser(user, ctx.config, { method: pending.method }) });
   });
 
@@ -175,7 +175,7 @@ export function logoutRoute(ctx) {
   const router = express.Router();
   router.post('/logout', requireAuth, (req, res) => {
     endSession(ctx, req, res);
-    ctx.audit('deconnexion', { utilisateur: req.user.username, ip: req.ip });
+    ctx.audit('logout', { user: req.user.username, ip: req.ip });
     res.status(204).end();
   });
   return router;

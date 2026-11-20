@@ -157,6 +157,9 @@ export function itemOptionsError(type, { priorityEnabled, dueEnabled }, { priori
   return null;
 }
 export const ACCESS = ['modification', 'lecture'];
+// Droit écrit dans le journal de sécurité, toujours en anglais
+const JOURNAL_ACCESS = { modification: 'edit', lecture: 'read' };
+const journalAccess = (access) => JOURNAL_ACCESS[access] ?? access;
 
 // Droit d'écriture d'un compte sur une liste : LE seul contrôle, utilisé par
 // toutes les écritures (opérations, photos, mode scan) et par la description
@@ -929,7 +932,7 @@ export function createListService(ctx) {
       changed(id);
       // Notification « partage » au compte destinataire (ajouté à la liste)
       if (forUserId) ctx.notify?.sharing({ listId: id, userId: forUserId, actorId: user.id, kind: 'added' });
-      ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
+      ctx.audit('list_created', { user: user.username, list: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
 
@@ -993,7 +996,7 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET name = ?, type = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, assign_enabled = ?, subtasks_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
         .run(name, type, storeId, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, nowIso(), list.id);
       if (isShoppingList(type) && (storeId !== list.store_id || type !== before)) completeItems(list.id);
-      if (type !== before) ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: type });
+      if (type !== before) ctx.audit('list_type_changed', { user: user.username, list: list.id, before, after: type });
       changed(list.id);
       return {};
     },
@@ -1006,10 +1009,10 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, list.id);
       news.dropList(list.id); // son journal disparaît avec elle
       changed(list.id);
-      ctx.audit('liste_supprimee', { utilisateur: user.username, liste: list.id });
+      ctx.audit('list_deleted', { user: user.username, list: list.id });
       // Son lien public s'arrête avec elle
       const share = ctx.shares?.stopForList(list.id);
-      if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste supprimée' });
+      if (share) ctx.audit('public_link_stopped', { user: user.username, list: list.id, share: share.id, reason: 'list deleted' });
       return {};
     },
 
@@ -1602,9 +1605,9 @@ export function createListService(ctx) {
     // Temps réel : membres actuels, et personnes retirées (leur téléphone
     // apprend ainsi qu'il n'a plus accès à la liste)
     if (added.length || removed.length || changedRights.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
-    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: rights.get(id) ?? 'lecture' });
-    for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, personne: nameOf(id) });
-    for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: value });
+    for (const id of added) ctx.audit('list_member_added', { user: user.username, list: list.id, member: nameOf(id), access: journalAccess(rights.get(id) ?? 'lecture') });
+    for (const id of removed) ctx.audit('list_member_removed', { user: user.username, list: list.id, member: nameOf(id) });
+    for (const [id, value] of changedRights) ctx.audit('list_access_changed', { user: user.username, list: list.id, member: nameOf(id), access: journalAccess(value) });
     // Notifications « partage » : ajoutés, droits changés
     for (const id of added) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'added' });
     for (const [id] of changedRights) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'access' });
@@ -1662,8 +1665,8 @@ export function createListService(ctx) {
     if (forUserId && accessBefore !== 'modification') {
       ctx.notify?.sharing({ listId: list.id, userId: forUserId, actorId: user.id, kind: accessBefore === undefined ? 'added' : 'access' });
     }
-    ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: 'wishes' });
-    if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste devenue liste d\'envies' });
+    ctx.audit('list_type_changed', { user: user.username, list: list.id, before, after: 'wishes' });
+    if (share) ctx.audit('public_link_stopped', { user: user.username, list: list.id, share: share.id, reason: 'list converted to a wish list' });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
   }
 
@@ -1687,7 +1690,7 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
-    ctx.audit('liste_quittee', { utilisateur: user.username, liste: list.id });
+    ctx.audit('list_left', { user: user.username, list: list.id });
     return {};
   }
 
@@ -1733,7 +1736,7 @@ export function createListService(ctx) {
       for (const item of items) if (item.parent_id && newIds.has(item.parent_id)) link.run(newIds.get(item.parent_id), item.position ?? null, newIds.get(item.id));
     })();
     ctx.events?.notifyList(id);
-    ctx.audit('liste_dupliquee', { utilisateur: user.username, liste: id, source: source.id, elements: items.length });
+    ctx.audit('list_duplicated', { user: user.username, list: id, source: source.id, items: items.length });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user), copied: items.length };
   }
 
@@ -1875,7 +1878,7 @@ export function createListService(ctx) {
       }
     })();
     ctx.events?.notifyList(list.id);
-    ctx.audit('liste_restauree', { utilisateur: user.username, liste: list.id });
+    ctx.audit('list_restored', { user: user.username, list: list.id });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
   }
 

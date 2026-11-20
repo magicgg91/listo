@@ -155,7 +155,7 @@ test('corbeille : seul le propriétaire voit et restaure ses listes supprimées 
   assert.equal(ok.status, 200, ok.text);
   assert.equal(ok.body.list.id, h.ids.maison);
   assert.deepEqual(await h.trash(h.guillaume), []);
-  assert.ok(h.app.logs.some((l) => /liste_restauree/.test(l) && l.includes(h.ids.maison) && !l.includes('Maison')), h.app.logs.join('\n'));
+  assert.ok(h.app.logs.some((l) => /list_restored/.test(l) && l.includes(h.ids.maison) && !l.includes('Maison')), h.app.logs.join('\n'));
   // Double restauration : refusée proprement, rien ne change
   const again = await h.restore(h.guillaume, h.ids.maison);
   assert.deepEqual([again.status, again.text], [unknown.status, unknown.text]);

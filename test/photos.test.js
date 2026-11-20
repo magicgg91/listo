@@ -222,7 +222,7 @@ test('plafond : 60 envois par compte et par heure', async (t) => {
   assert.equal((await upload(h.guillaume, h.itemId, PNG)).status, 429);
   // Marie a son propre compteur
   assert.equal((await upload(h.marie, h.itemId, small)).status, 200);
-  assert.ok(h.app.logs.some((line) => line.includes('photo_plafond_atteint')));
+  assert.ok(h.app.logs.some((line) => line.includes('photo_limit_reached')));
   // Une heure plus tard, c'est reparti
   h.app.clock.now += 60 * 60 * 1000;
   assert.equal((await upload(h.guillaume, h.itemId, small)).status, 200);

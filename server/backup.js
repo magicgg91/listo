@@ -67,14 +67,14 @@ export function createBackups({ db, dir, now = Date.now, audit = () => {}, keep 
       } finally {
         copy.close();
       }
-      if (check !== 'ok') throw new Error(`copie abîmée (${check})`);
+      if (check !== 'ok') throw new Error(`damaged copy (${check})`);
 
       // Rotation : on ne garde que les 14 plus récentes
       const all = list();
       const removed = all.slice(0, Math.max(0, all.length - keep));
       for (const old of removed) fs.rmSync(path.join(dir, old), { force: true });
 
-      audit('sauvegarde_reussie', { fichier: name, taille: fs.statSync(file).size, conservees: all.length - removed.length, supprimees: removed.length });
+      audit('backup_success', { file: name, size: fs.statSync(file).size, kept: all.length - removed.length, deleted: removed.length });
       return { ok: true, file };
     } catch (err) {
       try {
@@ -82,7 +82,7 @@ export function createBackups({ db, dir, now = Date.now, audit = () => {}, keep 
       } catch {
         // dossier inaccessible : rien à effacer
       }
-      audit('sauvegarde_ratee', { fichier: name, raison: err.message });
+      audit('backup_failure', { file: name, reason: err.message });
       return { ok: false, error: err.message };
     }
   }

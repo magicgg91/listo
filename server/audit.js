@@ -5,6 +5,12 @@
 // - dans le fichier data/journal.log (droits 600), conservé et sauvegardé
 //   avec la base.
 //
+// Le journal est toujours écrit en anglais (décision du 20 novembre 2026),
+// quelle que soit la langue de l'installation : noms d'événements, noms des
+// détails et raisons écrites par le code (ex. « login_failure user="bob"
+// ip="203.0.113.7" »). La liste des événements, avec leur signification, est
+// dans docs/exploitation.md.
+//
 // Règle absolue : on n'y écrit jamais de mot de passe, de jeton de session ni
 // de code (2FA, secours, démarrage). Seuls des identifiants de compte et des
 // adresses IP y figurent.

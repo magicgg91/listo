@@ -32,7 +32,7 @@ import { cleanName, comparableName, parseId } from '../validate.js';
 const TYPES = {
   stores: {
     table: 'stores',
-    label: 'magasin',
+    label: 'store',
     notFound: 'references.magasin.introuvable',
     duplicate: 'references.magasin.doublon',
     hasMultiFlag: true,
@@ -43,7 +43,7 @@ const TYPES = {
   },
   aisles: {
     table: 'aisles',
-    label: 'rayon',
+    label: 'aisle',
     notFound: 'references.rayon.introuvable',
     duplicate: 'references.rayon.doublon',
     usedBy: `SELECT EXISTS (SELECT 1 FROM items WHERE aisle_id = :id)
@@ -126,7 +126,7 @@ function referenceRouter(ctx, type) {
     } else {
       id = db.prepare(`INSERT INTO ${table} (name) VALUES (?)`).run(name).lastInsertRowid;
     }
-    audit(`admin_${type.label}_ajoute`, { admin: req.user.username, nom: name, ...(type.hasMultiFlag && isMulti ? { multi: true } : {}), ip: req.ip });
+    audit(`admin_${type.label}_added`, { admin: req.user.username, name, ...(type.hasMultiFlag && isMulti ? { multi: true } : {}), ip: req.ip });
     ctx.events?.notifyReferences(); // les téléphones connectés se mettent à jour
     res.status(201).json({ item: describe(find.get(id)) });
   });
@@ -170,12 +170,12 @@ function referenceRouter(ctx, type) {
     }
 
     // Journal : une ligne par changement réel
-    const who = { admin: req.user.username, nom: name, ip: req.ip };
-    if (name !== row.name) audit(`admin_${type.label}_renomme`, { ...who, ancien: row.name });
-    if (newActive === 0 && row.active === 1) audit(`admin_${type.label}_desactive`, who);
-    if (newActive === 1 && row.active === 0) audit(`admin_${type.label}_reactive`, who);
+    const who = { admin: req.user.username, name, ip: req.ip };
+    if (name !== row.name) audit(`admin_${type.label}_renamed`, { ...who, old: row.name });
+    if (newActive === 0 && row.active === 1) audit(`admin_${type.label}_disabled`, who);
+    if (newActive === 1 && row.active === 0) audit(`admin_${type.label}_reactivated`, who);
     if (members && [...members].sort().join() !== [...previousMembers].sort().join()) {
-      audit(`admin_${type.label}_regroupement_change`, { ...who, magasins: members.length });
+      audit(`admin_${type.label}_grouping_changed`, { ...who, stores: members.length });
     }
 
     // Renommage, (dés)activation… : les listes et les articles ne gardent que
@@ -201,7 +201,7 @@ function referenceRouter(ctx, type) {
       }
       throw err;
     }
-    audit(`admin_${type.label}_supprime`, { admin: req.user.username, nom: row.name, ip: req.ip });
+    audit(`admin_${type.label}_deleted`, { admin: req.user.username, name: row.name, ip: req.ip });
     ctx.events?.notifyReferences();
     res.status(204).end();
   });

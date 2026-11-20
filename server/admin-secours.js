@@ -64,8 +64,8 @@ db.transaction(() => {
   }
 })();
 db.close();
-audit('secours_mot_de_passe_provisoire', { utilisateur: user.username });
-if (option === '--retirer-2fa') audit('secours_2fa_retiree', { utilisateur: user.username });
+audit('rescue_temporary_password', { user: user.username });
+if (option === '--retirer-2fa') audit('rescue_2fa_removed', { user: user.username });
 
 console.log(`Compte « ${user.username} » : mot de passe provisoire (à changer à la connexion) :`);
 console.log('');

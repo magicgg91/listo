@@ -11,6 +11,7 @@ import { readQuantity, quantityFor, isUnit, QUANTITY_MAX } from '../public/js/qu
 import { splitItems, planBulkAdd } from '../public/js/bulk-add.js';
 import { emptyState, rememberItem, computeSuggestions, usualAisleFor, isKnownItem } from '../public/js/store.js';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -174,7 +175,9 @@ test('écran : la quantité n\'est lue que par quantityFor (courses seulement) ;
   assert.match(list, /const read = quantityFor\(view\?\.list, typed\);\s*const suggestions = read\.name\.length >= 2 \? computeSuggestions\(app\.data, read\.name\) : \[\];/);
   assert.match(list, /addTyped\(s\.name, \{ whole: true, quantity: read\.quantity \}\)/);
   // La fiche d'un article reste la façon de corriger (champ « Quantité » inchangé)
-  assert.match(list, /field\('Quantité', quantity, \{ aside: 'par exemple 2 ou 500 g' \}\)/);
+  assert.match(list, /field\(t\('liste\.fiche\.quantite'\), quantity, \{ aside: t\('liste\.fiche\.quantite\.exemple'\) \}\)/);
+  assert.equal(fr['liste.fiche.quantite'], 'Quantité');
+  assert.equal(fr['liste.fiche.quantite.exemple'], 'par exemple 2 ou 500 g');
   // Module simple, gardé hors ligne
   const module = read('public/js/quantity.js');
   assert.doesNotMatch(module, /\(\?<[=!]|innerHTML/);

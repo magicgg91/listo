@@ -28,6 +28,20 @@ const MIGRATED = [
   'public/js/screens/login.js',
   'public/js/screens/notifications.js',
   'public/js/screens/settings.js',
+  // Lot 2 : listes et formulaires
+  'public/js/screens/list.js',
+  'public/js/screens/list-form.js',
+  'public/js/screens/list-actions.js',
+  'public/js/screens/lists.js',
+  'public/js/tabbar.js',
+  'public/js/screens/pc-side.js',
+  'public/js/screens/scan.js',
+  'public/js/shortcuts.js',
+  'public/js/list-icons.js',
+  'public/js/undo.js',
+  'public/js/create-reference.js',
+  'public/js/bulk-add.js',
+  'public/js/search-row.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {

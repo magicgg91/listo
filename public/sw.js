@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v124-${BUILD ?? 'dev'}`;
+const VERSION = `v125-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -102,6 +102,28 @@ const APP_FILES = [
   '/js/i18n/en/notifications.js',
   '/js/i18n/fr/reglages.js',
   '/js/i18n/en/reglages.js',
+  '/js/i18n/fr/ajout.js',
+  '/js/i18n/en/ajout.js',
+  '/js/i18n/fr/annulation.js',
+  '/js/i18n/en/annulation.js',
+  '/js/i18n/fr/formulaire.js',
+  '/js/i18n/en/formulaire.js',
+  '/js/i18n/fr/icones.js',
+  '/js/i18n/en/icones.js',
+  '/js/i18n/fr/liste.js',
+  '/js/i18n/en/liste.js',
+  '/js/i18n/fr/listes.js',
+  '/js/i18n/en/listes.js',
+  '/js/i18n/fr/menu.js',
+  '/js/i18n/en/menu.js',
+  '/js/i18n/fr/navigation.js',
+  '/js/i18n/en/navigation.js',
+  '/js/i18n/fr/raccourcis.js',
+  '/js/i18n/en/raccourcis.js',
+  '/js/i18n/fr/reference.js',
+  '/js/i18n/en/reference.js',
+  '/js/i18n/fr/scan.js',
+  '/js/i18n/en/scan.js',
   '/js/live.js',
   '/js/localdb.js',
   '/js/photo.js',

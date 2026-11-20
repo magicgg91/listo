@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { isImageFile, readBarcode, ImageUnreadable } from '../public/js/barcode.js';
+import fr from '../public/js/i18n/fr.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -71,15 +72,21 @@ test('tous les points d\'entrée utilisent le même composant', () => {
   const list = read('public/js/screens/list.js');
   const scan = read('public/js/screens/scan.js');
   // Feuille de l'article : photo (« Ajouter une photo » / « Changer la photo ») et code-barres
-  assert.match(list, /const photoPicker = createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: `Photo \$\{words\.of\}` \}\);/);
-  assert.match(list, /pick\('btn--secondary btn--block', 'Ajouter une photo'\)/);
-  assert.match(list, /pick\('btn--secondary btn--sm', 'Changer la photo'\)/);
-  assert.match(list, /const eanPicker = createImagePicker\(\(file\) => readEan\(file\), \{ title: 'Scanner un code-barres' \}\);/);
-  assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' \}, icon\('barcode'\)\);/);
+  assert.match(list, /const photoPicker = createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: t\('liste\.photo\.titre', \{ of: words\.of \}\) \}\);/);
+  assert.equal(fr['liste.photo.titre'], 'Photo {of}');
+  assert.match(list, /pick\('btn--secondary btn--block', t\('liste\.photo\.ajouter'\)\)/);
+  assert.equal(fr['liste.photo.ajouter'], 'Ajouter une photo');
+  assert.match(list, /pick\('btn--secondary btn--sm', t\('liste\.photo\.changer'\)\)/);
+  assert.equal(fr['liste.photo.changer'], 'Changer la photo');
+  assert.match(list, /const eanPicker = createImagePicker\(\(file\) => readEan\(file\), \{ title: t\('liste\.fiche\.codeBarres\.scanner'\) \}\);/);
+  assert.match(list, /eanPicker\.button\(\{ class: 'btn btn--secondary btn--icon', 'aria-label': t\('liste\.fiche\.codeBarres\.scanner'\) \}, icon\('barcode'\)\);/);
+  assert.equal(fr['liste.fiche.codeBarres.scanner'], 'Scanner un code-barres');
   // Barre d'ajout et « Réessayer » du mode scan : le même sélecteur
   assert.match(scan, /const picker = createImagePicker\(\(file\) => \{\s*session \?\?= openSession\(\);\s*session\.scan\(file\);/);
-  assert.match(scan, /const button = picker\.button\(\{\s*class: 'btn btn--secondary btn--icon',\s*'aria-label': 'Scanner un produit',/);
-  assert.match(scan, /const retake = \(\) => picker\.button\(\{ class: 'btn btn--primary btn--block' \}, icon\('camera', 'icon--sm'\), 'Réessayer'\);/);
+  assert.match(scan, /const button = picker\.button\(\{\s*class: 'btn btn--secondary btn--icon',\s*'aria-label': t\('scan\.titre'\),/);
+  assert.equal(fr['scan.titre'], 'Scanner un produit');
+  assert.match(scan, /const retake = \(\) => picker\.button\(\{ class: 'btn btn--primary btn--block' \}, icon\('camera', 'icon--sm'\), t\('scan\.reessayer'\)\);/);
+  assert.equal(fr['scan.reessayer'], 'Réessayer');
   // Les champs cachés sont dans la page (exigé par l'iPhone)
   assert.match(list, /photoArea, photoNote, photoPicker\.input\)/);
   assert.match(list, /eanStatus, eanTwin, eanPicker\.input\)/);

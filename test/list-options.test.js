@@ -17,6 +17,7 @@ import { PRIORITY_OFF, DUE_OFF } from '../server/lists.js';
 import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync, applyOp, listOptions, availableSorts, effectiveSort, computeListView } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -299,7 +300,9 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
   assert.match(list, /const stopWatching = onDataChange\(\(\) => \{\s*reservation\?\.paint\(\);[^\n]*\n\s*showOptions\(\);/);
   assert.match(list, /const enabled = options\(\);\s*if \(enabled\.priority && priority !== \(item\.priority \?\? 'normal'\)\) changes\.priority = priority;\s*if \(enabled\.due && dueDate !== savedDue\) changes\.dueDate = dueDate; \/\/ null : échéance effacée\s*if \(enabled\.due && repeat !== savedRepeat\) changes\.repeat = repeat;/);
   // Fiche à consulter (lecture seule) : même règle
-  assert.match(list, /options\.priority \? value\('Priorité', [^\n]*\) : null,\s*options\.due \? value\('Échéance', [^\n]*\) : null,/);
+  assert.match(list, /options\.priority \? value\(t\('liste\.fiche\.priorite'\), [^\n]*\) : null,\s*options\.due \? value\(t\('liste\.fiche\.echeance'\), [^\n]*\) : null,/);
+  assert.equal(fr['liste.fiche.priorite'], 'Priorité');
+  assert.equal(fr['liste.fiche.echeance'], 'Échéance');
   // Tri : seulement les choix proposés ; pas de bouton sans choix
   assert.match(list, /const offered = availableSorts\(currentList\(\)\);\s*openMenu\(SORTS\.filter\(\(\[value\]\) => offered\.includes\(value\)\)/);
   assert.match(list, /sortButton\.hidden = availableSorts\(list\)\.length < 2;/);
@@ -310,18 +313,25 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   const form = read('public/js/screens/list-form.js');
   assert.match(form, /export function optionSwitches\(values, onChange, leading = null\) \{/);
   assert.equal((form.match(/optionSwitches\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois, dans le formulaire commun');
-  assert.match(form, /\['priority', 'Priorité', /);
-  assert.match(form, /\['due', 'Échéance', /);
+  assert.match(form, /\['priority', t\('formulaire\.option\.priorite'\), /);
+  assert.match(form, /\['due', t\('formulaire\.option\.echeance'\), /);
+  assert.equal(fr['formulaire.option.priorite'], 'Priorité');
+  assert.equal(fr['formulaire.option.echeance'], 'Échéance');
   // Vrai interrupteur : nom = titre de la ligne, description reliée, état dans aria-checked
   assert.match(form, /const toggle = h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId \}\);/);
   assert.match(form, /h\('span', \{ class: 'row__title', id: titleId \}, label\), h\('span', \{ class: 'row__sub', id: helpId \}, help\)/);
   assert.match(form, /toggle\.setAttribute\('aria-checked', String\(current\[key\]\)\);/);
   // Description seule, fixe : ni « Activée · » / « Désactivée · » (la position du
   // bouton montre l'état), ni mention du tri (sous-entendue quand l'option est activée)
-  assert.match(form, /\['priority', 'Priorité', 'Basse, normale ou élevée\.'\],/);
-  assert.match(form, /\['due', 'Échéance', 'Une date limite ; retards signalés\.'\],/);
+  assert.match(form, /\['priority', t\('formulaire\.option\.priorite'\), t\('formulaire\.option\.priorite\.detail'\)\],/);
+  assert.match(form, /\['due', t\('formulaire\.option\.echeance'\), t\('formulaire\.option\.echeance\.detail'\)\],/);
+  assert.equal(fr['formulaire.option.priorite.detail'], 'Basse, normale ou élevée.');
+  assert.equal(fr['formulaire.option.echeance.detail'], 'Une date limite ; retards signalés.');
   const block = form.slice(form.indexOf('export function optionSwitches('), form.indexOf('export function addModeChoice('));
   for (const gone of ['Activée', 'Désactivée', 'textContent', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
+  for (const key of ['formulaire.option.priorite.detail', 'formulaire.option.echeance.detail', 'formulaire.option.attribution.detail', 'formulaire.option.sousTaches.detail']) {
+    assert.doesNotMatch(fr[key], /Activée|Désactivée|\btri\b|par priorité|par échéance/, key);
+  }
   assert.doesNotMatch(block, /\btri\b|par priorité|par échéance/);
   // Nouvelle liste : désactivées (envies comprises, voir
   // test/wish-priority.test.js) ; liste existante : ses réglages enregistrés ;

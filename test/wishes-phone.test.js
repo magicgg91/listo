@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, computeListView, SNAPSHOT_VERSION } from '../public/js/store.js';
 import { beneficiaryId, seesReservations, isManager, mayMarkReceived, wishForLabel } from '../public/js/wishes.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
@@ -58,7 +59,8 @@ test('règles partagées : bénéficiaire, gestionnaire, « reçu »', () => {
 test('écran : réservation montrée seulement si la copie en contient ; lien sûr ; boutons de 44 px ; aucun innerHTML', () => {
   const list = code('public/js/screens/list.js');
   assert.match(list, /const reservation = item\.checked \? null : view\?\.reservations\?\.get\(item\.id\);/, 'souhait reçu : plus de réservation affichée');
-  assert.match(list, /const reservationText = \(reservation\) => `Réservé par \$\{namesList\(participantNames\(reservation\)\)\}`;/);
+  assert.match(list, /const reservationText = \(reservation\) => t\('liste\.envies\.reservePar', \{ names: namesList\(participantNames\(reservation\)\) \}\);/);
+  assert.equal(fr['liste.envies.reservePar'], 'Réservé par {names}');
   assert.match(list, /el\.hidden = !reservations \|\| latest\.checked;/);
   assert.match(list, /function reservationBlock\(item\) \{\s*if \(!view\?\.reservations\) return null;/);
   assert.match(list, /h\('a', \{ class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer' \}/);
@@ -76,7 +78,8 @@ test('écran : réservation montrée seulement si la copie en contient ; lien s�
   // Formulaire : « Pour qui ? » seulement pour les envies, fixé ensuite
   const form = code('public/js/screens/list-form.js');
   assert.match(form, /forField\.hidden = !isWishList\(listType\);/);
-  assert.match(form, /if \(isLockedBeneficiary\(person\)\) return lockedRow\(person, person\.displayName, 'Destinataire · Peut modifier'\);/);
+  assert.match(form, /if \(isLockedBeneficiary\(person\)\) return lockedRow\(person, person\.displayName, t\('formulaire\.partage\.destinataire'\)\);/);
+  assert.equal(fr['formulaire.partage.destinataire'], 'Destinataire · Peut modifier');
   assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus\.';/);
   assert.doesNotMatch(read('public/js/list-types.js').match(/WISHES_LOCKED_HINT = '[^']*'/)[0], /réserv/i, 'la phrase ne parle pas des réservations');
   // Service worker : nouveau fichier gardé hors ligne
@@ -91,9 +94,11 @@ test('formulaire : une liste de courses ou de tâches peut devenir une liste d\'
   // « Pour qui ? » comme à la création ; prénom obligatoire ; destinataire verrouillé dans le partage
   assert.match(form, /const beneficiaryId = \(\) => \(wishesLocked \? list\.forUserId \?\? null : isWishList\(listType\) && typeof forChoice === 'number' \? forChoice : null\);/);
   assert.match(form, /const forName = \(!list \|\| converting\(\)\) && isWishList\(listType\) && forChoice === 'name' \?/);
-  assert.match(form, /forNameField\.setError\(forName === '' \? 'Le prénom est obligatoire' : null\);/);
+  assert.match(form, /forNameField\.setError\(forName === '' \? t\('formulaire\.pourQui\.prenom\.obligatoire'\) : null\);/);
+  assert.equal(fr['formulaire.pourQui.prenom.obligatoire'], 'Le prénom est obligatoire');
   // Phrase avant l'enregistrement, avec le lien public s'il y en a un
-  assert.match(form, /converting\(\) && hasPublicLink\(list\) \? ' Son lien public sera arrêté\.' : ''/);
+  assert.match(form, /converting\(\) && hasPublicLink\(list\) \? ` \$\{t\('formulaire\.type\.lienArrete'\)\}` : ''/);
+  assert.equal(fr['formulaire.type.lienArrete'], 'Son lien public sera arrêté.');
   const types = read('public/js/list-types.js');
   assert.match(types, /if \(to === 'wishes'\) return CONVERT_TO_WISHES_WARNING;/);
   const warning = types.match(/CONVERT_TO_WISHES_WARNING = '(\\'|[^'])*'/)[0];
@@ -103,12 +108,14 @@ test('formulaire : une liste de courses ou de tâches peut devenir une liste d\'
   // En ligne seulement : bouton inactif hors ligne, avec une phrase ; d'abord la conversion, puis le reste
   assert.match(form, /const blocked = converting\(\) && !navigator\.onLine;\s*convertNote\.hidden = !blocked;\s*save\.disabled = busy \|\| blocked;/);
   assert.match(form, /h\('div', \{ class: 'footer' \}, convertNote, save\)/);
-  assert.match(form, /if \(pendingCount\(\) \|\| !navigator\.onLine\) throw new Error\('Devenir une liste d\\'envies demande une connexion\.'\);\s*await actions\.convertToWishes\(id, \{/);
+  assert.match(form, /if \(pendingCount\(\) \|\| !navigator\.onLine\) throw new Error\(t\('formulaire\.conversion\.connexion'\)\);\s*await actions\.convertToWishes\(id, \{/);
+  assert.equal(fr['formulaire.conversion.connexion'], 'Devenir une liste d\'envies demande une connexion.');
   assert.match(form, /error\.show\(errorMessage\(err\)\);\s*busy = false;\s*paintConvert\(\);\s*return;/);
   assert.match(form, /if \(listType !== savedType && !convert\) switches\.listType = listType;/);
   assert.match(read('public/js/actions.js'), /export async function convertToWishes\(listId, body\) \{\s*await post\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/wishes`, body\);\s*await refreshData\(\{ quiet: true \}\);/);
   // Liste d'envies : pas de quantité affichée (gardée en base)
   const list = code('public/js/screens/list.js');
   assert.match(list, /item\.quantity && !isWishList\(view\?\.list\) \? h\('span', \{ class: 'item__qty' \}, item\.quantity\) : null\)/);
-  assert.match(list, /it\.quantity && !wishes \? value\('Quantité', it\.quantity\) : null,/);
+  assert.match(list, /it\.quantity && !wishes \? value\(t\('liste\.fiche\.quantite'\), it\.quantity\) : null,/);
+  assert.equal(fr['liste.fiche.quantite'], 'Quantité');
 });

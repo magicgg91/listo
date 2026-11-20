@@ -112,7 +112,12 @@ test('pastille : tâches en retard + tâches du jour (comme le résumé de 8 h)'
   assert.equal(deadlineBadge(emptyState(), TODAY), 0);
   // Libellé lu, et pastille cachée à zéro (tabbar.js et menu de l'ordinateur)
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /return `Échéances, \$\{count\} \$\{count > 1 \? 'tâches' : 'tâche'\} en retard ou pour aujourd'hui`;/);
+  assert.match(tabbar, /if \(!count\) return t\('navigation\.echeances'\);\s*return t\('navigation\.echeances\.pastille', \{ count \}\);/);
+  assert.equal(fr['navigation.echeances'], 'Échéances');
+  assert.deepEqual(fr['navigation.echeances.pastille'], {
+    '=1': 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
+    other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
+  });
   assert.match(tabbar, /badge\.hidden = count === 0;/);
   assert.match(read('public/js/screens/pc-side.js'), /deadlinesCount\.hidden = count === 0;/);
 });
@@ -147,7 +152,10 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
 
 test('bandeau du bas : trois boutons, même place partout, loupe seulement là où l\'écran la branche', () => {
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /\['lists', 'tasks', 'Mes listes'\],\s*\['deadlines', 'calendar', 'Échéances'\],\s*\['settings', 'sliders', 'Réglages'\],/);
+  assert.match(tabbar, /\['lists', 'tasks', \(\) => t\('navigation\.mesListes'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
+  assert.equal(fr['navigation.mesListes'], 'Mes listes');
+  assert.equal(fr['navigation.echeances'], 'Échéances');
+  assert.equal(fr['navigation.reglages'], 'Réglages');
   // Retour vers « Mes listes » : un retour en arrière ; entre les autres, un écran remplace l'autre
   assert.match(tabbar, /if \(name === 'lists'\) \{\s*goBack\('lists'\);\s*return;\s*\}\s*navigate\(name, \{\}, \{ replace: current !== 'lists' \}\);/);
   // La loupe est retirée à chaque écran ; « Mes listes » et « Échéances » la rebranchent, pas « Réglages »

@@ -19,6 +19,7 @@ import {
   weekdayOf, repeatSentence, repeatChip, REPEAT_RULE_MAX,
 } from '../public/js/repeat.js';
 import { publicItemDetails } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
@@ -339,7 +340,8 @@ test('écran : « Se répète » seulement avec l\'échéance, règle avec la da
   assert.match(list, /button\.setAttribute\('aria-pressed', String\(repeatDays\.includes\(Number\(button\.dataset\.day\)\)\)\)/);
   // Cocher : « Prochaine fois : … » et « Annuler » qui remet l'ancienne date (Ctrl+Z aussi)
   assert.match(list, /const next = item\.checked \? null : actions\.nextDueOf\(item\);\s*if \(next\) \{\s*checkRepeating\(item, next\);/);
-  assert.match(list, /toast\(`Prochaine fois : \$\{dueDateLabel\(next\)\}`/);
+  assert.match(list, /toast\(`\$\{t\('liste\.prochaineFois', \{ date: dueDateLabel\(next\) \}\)\}\$\{who\}`/);
+  assert.equal(fr['liste.prochaineFois'], 'Prochaine fois : {date}');
   assert.match(list, /if \(current && current\.dueDate === next\) actions\.updateItem\(current, before\);/);
   // « Passer cette fois » : seulement sur la règle et la date enregistrées, même calcul
   assert.match(list, /skipRow\.hidden = !\(saved && !saved\.checked && actions\.repeatsNow\(saved\) && repeat === savedRepeat && repeat === saved\.repeat && dueDate === savedDue\);/);

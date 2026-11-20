@@ -67,7 +67,7 @@ export function stringsOf(source) {
 // Noms des icônes du sprite (public/index.html, id="i-…") : « plus »,
 // « check »… ne sont pas des mots affichés
 const ICONS = [...fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8').matchAll(/id="i-([a-z0-9-]+)"/g)].map((m) => m[1]);
-const NOT_TEXT = new Set([...ICONS, 'Listo', 'Escape', 'Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete', 'Content-Type', 'Bearer', 'Basic']);
+const NOT_TEXT = new Set([...ICONS, 'Listo', 'Escape', 'Enter', 'Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete', 'Space', 'Content-Type', 'Bearer', 'Basic']);
 const FRENCH_WORDS = /(^|\s)(le|la|les|l'|de|des|du|d'|un|une|et|ou|pour|avec|sans|est|vous|votre|vos|ce|cet|cette|à|au|aux|en|sur|pas|plus|ne|n'|se|s'|qui|que|par|dans)(\s|$)/i;
 
 // Une chaîne ressemble-t-elle à un texte affiché ?
@@ -77,6 +77,7 @@ export function looksLikeText(value) {
   if (/^[a-z0-9]+(\.[a-zA-Z0-9]+)+$/.test(text)) return false; // nom d'un texte : « compte.langue.titre »
   if (/[À-ÖØ-öø-ÿŒœ]/.test(text)) return true; // lettre accentuée
   if (FRENCH_WORDS.test(text)) return true; // petit mot français
-  if (/^[A-Z][a-z]+(\s|[.,:!?]|$)/.test(text)) return true; // mot qui commence par une majuscule
+  if (/^[A-Z][a-z]+(\s|[.,:!?…]|$)/.test(text)) return true; // mot qui commence par une majuscule (« Chargement… »)
+  if (text === 'OK') return true;
   return false;
 }

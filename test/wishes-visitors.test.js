@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { emptyState, loadSync, toSnapshot } from '../public/js/store.js';
 import { dropOrphanStates } from '../server/db.js';
+import fr from '../public/js/i18n/fr.js';
 import { ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, BAD_FIRST_NAME, VISITOR_LIMIT, ITEM_FULL, LINK_FULL } from '../server/reservations.js';
 
 const uuid = () => crypto.randomUUID();
@@ -406,7 +407,8 @@ test('TEST FORT : ce que reçoit la destinataire (lecture, synchronisation, temp
 
 test('écrans : visiteurs marqués « (lien public) » et retirés par le gestionnaire ; page publique : boutons, prénom gardé pour ce lien, annonces ; avertissement sur le destinataire', () => {
   const list = code('public/js/screens/list.js');
-  assert.match(list, /const participantLabel = \(p\) => \(p\.viaLink \? `\$\{p\.displayName\} \(lien public\)` : p\.displayName\);/);
+  assert.match(list, /const participantLabel = \(p\) => \(p\.viaLink \? t\('liste\.envies\.visiteur', \{ name: p\.displayName \}\) : p\.displayName\);/);
+  assert.equal(fr['liste.envies.visiteur'], '{name} (lien public)');
   assert.match(list, /p\.viaLink \? actions\.removeWishVisitor\(item\.id, p\.visitorId\) : actions\.removeWishParticipant\(item\.id, p\.userId\)/);
   assert.match(list, /mine \|\| manager \? openSwitch\(current\.open/);
   assert.match(read('public/js/actions.js'), /await del\(reservationUrl\(itemId, `\/visitors\/\$\{encodeURIComponent\(visitorId\)\}`\)\);/);

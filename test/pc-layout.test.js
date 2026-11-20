@@ -71,8 +71,10 @@ test('bascule : app--pc à partir de 1 024 px, même écran redessiné, menu gar
 test('menu de gauche : liens réels, liste ouverte repérée, Admin seulement comme rôle de compte, aucun focus forcé', () => {
   const side = read('public/js/screens/pc-side.js');
   assert.match(side, /href: pathFor\('list', \{ id: list\.id \}\),\s*'aria-current': current \? 'page' : null,/);
-  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, 'Admin'\) : null/);
-  assert.match(side, /'aria-label': 'Rechercher une liste'/);
+  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, t\('navigation\.role\.admin'\)\) : null/);
+  assert.equal(fr['navigation.role.admin'], 'Admin');
+  assert.match(side, /'aria-label': t\('navigation\.recherche\.libelle'\)/);
+  assert.equal(fr['navigation.recherche.libelle'], 'Rechercher une liste');
   // Compteur lu « 3 articles restants sur 8 », pas seulement « 3/8 »
   assert.match(side, /h\('span', \{ class: 'pc-nav__count', role: 'img', 'aria-label': text, title: text \}/);
   assert.doesNotMatch(side, /\.focus\(|innerHTML|\.style\b|style:/);
@@ -86,11 +88,16 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   // Le serveur n'envoie jamais les réservations au bénéficiaire : sans elles, aucun bouton
   assert.match(list, /if \(!view\?\.reservations \|\| item\.checked \|\| view\.reservations\.get\(item\.id\)\?\.participants\.length\) return null;/);
   // Corbeille au survol : même suppression annulable que le glissement
-  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: \(\) => deleteWithUndo\(item\) \}/);
+  assert.match(list, /'aria-label': t\('liste\.supprimer\.nom', \{ name: item\.name \}\), 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': t\('liste\.pc\.supprimer\.astuce'\), onClick: \(\) => deleteWithUndo\(item\) \}/);
+  assert.equal(fr['liste.supprimer.nom'], 'Supprimer {name}');
+  assert.equal(fr['liste.pc.supprimer.astuce'], 'Supprimer · Suppr');
   // « Partager » (propriétaire) ou « Personnes » (les autres) : le tiroir du partage
-  assert.match(list, /list\.isOwner \? 'Partager' : 'Personnes', people\)\);/);
+  assert.match(list, /list\.isOwner \? t\('liste\.pc\.partager'\) : t\('liste\.pc\.personnes'\), people\)\);/);
+  assert.equal(fr['liste.pc.partager'], 'Partager');
+  assert.equal(fr['liste.pc.personnes'], 'Personnes');
   // Bandeau du bénéficiaire : il ne voit jamais les réservations
-  assert.match(list, /list\.isBeneficiary\s*\? \[icon\('eye-off', 'icon--sm'\), h\('span', \{\}, 'Vous ne voyez jamais les réservations : la surprise reste entière\.'\)\]/);
+  assert.match(list, /list\.isBeneficiary\s*\? \[icon\('eye-off', 'icon--sm'\), h\('span', \{\}, t\('liste\.envies\.beneficiaire'\)\)\]/);
+  assert.equal(fr['liste.envies.beneficiaire'], 'Vous ne voyez jamais les réservations : la surprise reste entière.');
   assert.doesNotMatch(list, /innerHTML/);
 });
 
@@ -127,7 +134,8 @@ test('recherche ordinateur : champ toujours visible, Échap vide puis quitte, ja
   assert.equal(row.match(/\.focus\(/g).length, 1);
   assert.match(row, /function open\(\) \{\s*if \(!toggled \|\| isOpen\) return;[\s\S]*?input\.focus\(\);\s*\}/);
   assert.match(read('public/js/screens/list.js'), /docked: pc,/);
-  assert.match(read('public/js/screens/lists.js'), /createSearchRow\(content, \{ label: 'Rechercher une liste', onChange: \(\) => draw\(\), docked: true \}\);/);
+  assert.match(read('public/js/screens/lists.js'), /createSearchRow\(content, \{ label: t\('listes\.recherche\.libelle'\), onChange: \(\) => draw\(\), docked: true \}\);/);
+  assert.equal(fr['listes.recherche.libelle'], 'Rechercher une liste');
 });
 
 test('icônes de l\'interface ordinateur : dans les deux sprites, sans doublon', () => {
@@ -167,10 +175,13 @@ test('fenêtres de l\'ordinateur : tiroir ou fenêtre centrée, role dialog et a
 
 test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer / Annuler / Enregistrer, confirmation avant d\'abandonner des changements', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, 'Annuler'\), save\] : null,/);
-  assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: 'Abandonner les modifications \?',/);
+  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, t\('liste\.annuler'\)\), save\] : null,/);
+  assert.equal(fr['liste.annuler'], 'Annuler');
+  assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: t\('liste\.fiche\.abandonner\.question'\),/);
+  assert.equal(fr['liste.fiche.abandonner.question'], 'Abandonner les modifications ?');
   assert.match(list, /focusCancel: true,\s*\}\) : null,/);
-  assert.match(list, /const dirtyNote = h\('p', \{ class: 'pc-meta' \}, 'Modifications non enregistrées'\);/);
+  assert.match(list, /const dirtyNote = h\('p', \{ class: 'pc-meta' \}, t\('liste\.fiche\.nonEnregistre'\)\);/);
+  assert.equal(fr['liste.fiche.nonEnregistre'], 'Modifications non enregistrées');
   // Enregistrer et supprimer ferment sans demander
   assert.match(list, /await actions\.updateItem\(item, changes\);\s*sheet\.forceClose\(\);/);
   // Fiche à consulter (lecture seule) : tiroir aussi, sans bouton qui écrit
@@ -270,7 +281,8 @@ test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après un
   assert.match(ui, /banner\.hidden = state !== 'off';/);
   assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: 'Réessayer', onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, 'Astuce : appuyez sur '/);
+  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, `\$\{t\('liste\.vide\.astuce\.debut'\)\} `/);
+  assert.equal(fr['liste.vide.astuce.debut'], 'Astuce : appuyez sur');
   // Le bandeau n'est posé que dans les écrans de l'ordinateur
   const phone = list.slice(list.lastIndexOf("  return h('div', { class: 'screen' },"));
   assert.doesNotMatch(phone, /offlineBanner/);

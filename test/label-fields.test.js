@@ -37,10 +37,14 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
   }
   assert.match(read('screens/list.js'), /const nameField = field\(capitalized\(words\.one\), name\);/);
   assert.match(read('screens/list.js'), /value\(capitalized\(words\.one\), it\.name\),/);
-  assert.match(read('screens/list-form.js'), /field\('Titre de la liste', h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\)/);
+  assert.match(read('screens/list-form.js'), /field\(t\('formulaire\.titreListe'\), h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\)/);
+  assert.equal(fr['formulaire.titreListe'], 'Titre de la liste');
+  assert.match(read('screens/list-actions.js'), /field\(t\('menu\.dupliquer\.titre'\), name\)/);
+  assert.equal(fr['menu.dupliquer.titre'], 'Titre de la liste');
   // Le libellé désigne le champ, même avec un bouton avant lui sur la ligne
   assert.match(read('dom.js'), /control\.querySelector\('input, textarea, select'\) \?\? control\.querySelector\('button'\)/);
-  assert.match(read('screens/scan.js'), /field\('Article', nameInput\)/);
+  assert.match(read('screens/scan.js'), /field\(t\('scan\.fiche\.champNom'\), nameInput\)/);
+  assert.equal(fr['scan.fiche.champNom'], 'Article');
   const admin = read('screens/admin.js');
   assert.match(admin, /'aria-label': t\('administration\.renommer', \{ label: item\.name \}\)/);
   assert.match(admin, /'aria-label': t\('administration\.noms\.orthographe', \{ label: entry\.name \}\)/);

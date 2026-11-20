@@ -103,7 +103,9 @@ test('confirmation : nombre d\'éléments, partage, restauration possible 30 jou
   const actions = code('public/js/screens/list-actions.js');
   assert.match(actions, /const itemCount = \[\.\.\.app\.data\.items\.values\(\)\]\.filter\(\(item\) => item\.listId === list\.id\)\.length;/);
   assert.match(actions, /const sharedWith = \(list\.members \?\? \[\]\)\.filter\(\(m\) => !m\.isOwner\)\.length;/);
-  assert.match(actions, /title: `Supprimer la liste « \$\{list\.name\} » \?`,\s*text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: 'Supprimer',\s*focusCancel: true,/);
+  assert.match(actions, /title: t\('menu\.supprimer\.question', \{ name: list\.name \}\),\s*text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: t\('menu\.supprimer\.confirmer'\),\s*focusCancel: true,/);
+  assert.equal(fr['menu.supprimer.question'], 'Supprimer la liste « {name} » ?');
+  assert.equal(fr['menu.supprimer.confirmer'], 'Supprimer');
   // Boîte : « Supprimer » rouge (btn--danger), focus de départ sur « Annuler », texte relié au titre pour les lecteurs d'écran
   const ui = code('public/js/ui.js');
   assert.match(ui, /h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: closeFn, 'data-initial-focus': focusCancel \? true : null \}, cancelLabel\)/);

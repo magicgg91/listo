@@ -13,6 +13,7 @@ import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync, applyOp, canEditList, computeSummaries } from '../public/js/store.js';
 import { READ_ONLY } from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -26,9 +27,12 @@ test('un seul composant : accessChoice, dans le formulaire commun à la créatio
   // modifier) puis « Lire » (Lecture seule) ; le choix actif est en relief
   // (bord, fond, ombre du kit) et s'annonce par aria-checked
   assert.match(form, /export function accessChoice\(name, value, onChange\) \{/);
-  assert.match(form, /\[\['modification', 'Modifier'\], \['lecture', 'Lire'\]\]/);
+  assert.match(form, /\[\['modification', t\('formulaire\.droit\.modifier'\)\], \['lecture', t\('formulaire\.droit\.lire'\)\]\]/);
+  assert.equal(fr['formulaire.droit.modifier'], 'Modifier');
+  assert.equal(fr['formulaire.droit.lire'], 'Lire');
   assert.match(form, /for \(const option of options\) option\.setAttribute\('aria-checked', String\(option\.dataset\.value === current\)\);/);
-  assert.match(form, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': `Droit de \$\{name\} sur la liste` \}, options\)/);
+  assert.match(form, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': t\('formulaire\.droit\.choix', \{ name \}\) \}, options\)/);
+  assert.equal(fr['formulaire.droit.choix'], 'Droit de {name} sur la liste');
   assert.match(read('public/css/listo.css'), /\.segmented__opt\[aria-checked="true"\] \{ border-color: var\(--color-border\); background: var\(--color-surface\); color: var\(--color-text\); box-shadow: var\(--shadow-1\); \}/);
   // Chaque personne (pas le propriétaire) : son choix, caché (place gardée) tant qu'elle n'est pas cochée ;
   // une personne ajoutée commence en lecture seule
@@ -37,11 +41,15 @@ test('un seul composant : accessChoice, dans le formulaire commun à la créatio
   assert.match(read('public/css/app.css'), /\.share__access\.is-off \{ visibility: hidden; \}/);
   assert.equal((form.match(/accessChoice\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois (pour les deux écrans)');
   // Moi : ligne verrouillée « Propriétaire » ; le destinataire d'une liste d'envies aussi
-  assert.match(form, /lockedRow\(me, `\$\{me\.displayName\} \(vous\)`, 'Propriétaire'\)/);
+  assert.match(form, /lockedRow\(me, t\('formulaire\.partage\.vous', \{ name: me\.displayName \}\), t\('formulaire\.partage\.proprietaire'\)\)/);
+  assert.equal(fr['formulaire.partage.vous'], '{name} (vous)');
+  assert.equal(fr['formulaire.partage.proprietaire'], 'Propriétaire');
   // Le partage s'ouvre dans une fenêtre depuis une ligne de résumé ; « OK » dans l'en-tête
   assert.match(form, /class: 'input input--select share__summary', type: 'button', 'aria-haspopup': 'dialog', 'aria-labelledby': 'share-label share-summary',/);
-  assert.match(form, /title: 'Partager avec',\s*tools: ok,\s*content: shareList,\s*scroll: true,\s*returnTo: shareButton,/);
-  assert.match(form, /summaryText\.textContent = !names\.length \? 'Personne'/);
+  assert.match(form, /title: t\('formulaire\.partage'\),\s*tools: ok,\s*content: shareList,\s*scroll: true,\s*returnTo: shareButton,/);
+  assert.equal(fr['formulaire.partage'], 'Partager avec');
+  assert.match(form, /summaryText\.textContent = !names\.length \? t\('formulaire\.partage\.personne'\)/);
+  assert.equal(fr['formulaire.partage.personne'], 'Personne');
   // Envoyé au serveur avec la liste des invités, seulement si quelque chose a changé
   assert.match(form, /const access = Object\.fromEntries\(\[\.\.\.guests\]\.map\(\(id\) => \[id, rights\.get\(id\) \?\? 'lecture'\]\)\);/);
   assert.match(form, /\[\.\.\.guests\]\.some\(\(id\) => before\.get\(id\) !== access\[id\]\)/);
@@ -71,22 +79,28 @@ test('copie locale : canEditList (une seule règle sur le téléphone), liste cr
 
 test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni glissement, cases inactives, fiche à consulter', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /const readOnlyBanner = h\('p', \{ class: 'readonly-banner', hidden: true \}, icon\('eye', 'icon--sm'\), 'Lecture seule'\);/);
+  assert.match(list, /const readOnlyBanner = h\('p', \{ class: 'readonly-banner', hidden: true \}, icon\('eye', 'icon--sm'\), t\('liste\.lectureSeule'\)\);/);
+  assert.equal(fr['liste.lectureSeule'], 'Lecture seule');
   assert.match(list, /readOnlyBanner\.hidden = canEdit;\s*showAddbar\(\); \/\/ lecture seule : aucun ajout/);
   assert.match(list, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| \(pc \? search\.focused : search\.open\);/);
   assert.match(list, /scanner\.button\.hidden = !canEdit \|\| !scanAvailable\(list\);/);
   // Ligne sans glissement ni zone rouge (retour avant swipes.attach)
   assert.match(list, /if \(!canEditList\(view\?\.list\)\) return markNews\(h\('li', \{ class: `item\$\{item\.checked \? ' is-done' : ''\}`, 'data-item-id': item\.id \}, \.\.\.itemContent\(item, meta, false\), extra, pc \? reserveButton\(item\) : null\), item, meta\);\s*const slide/);
   // Case visible mais inactive (comme la page publique) ; cochée = remplie ET barrée (.is-done)
-  assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': isWishList\(view\?\.list\) \? \(item\.checked \? 'Reçu' : 'Pas encore reçu'\) : item\.checked \? 'Coché' : 'Non coché' \}/);
-  assert.match(list, /'aria-label': `\$\{canEdit \? 'Modifier' : 'Voir'\} \$\{item\.name\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);
+  assert.match(list, /h\('span', \{ class: `check check--static\$\{item\.checked \? ' is-on' : ''\}`, role: 'img', 'aria-label': isWishList\(view\?\.list\) \? \(item\.checked \? t\('liste\.etat\.recu'\) : t\('liste\.etat\.pasRecu'\)\) : item\.checked \? t\('liste\.etat\.coche'\) : t\('liste\.etat\.nonCoche'\) \}/);
+  assert.deepEqual(['liste.etat.recu', 'liste.etat.pasRecu', 'liste.etat.coche', 'liste.etat.nonCoche'].map((key) => fr[key]), ['Reçu', 'Pas encore reçu', 'Coché', 'Non coché']);
+  assert.match(list, /'aria-label': `\$\{canEdit \? t\('liste\.modifier\.nom', \{ name: item\.name \}\) : t\('liste\.voir\.nom', \{ name: item\.name \}\)\}\$\{meta\.spoken\}`, onClick: \(\) => \(canEdit \? openItemSheet\(item\) : openItemView\(item\)\)/);
+  assert.equal(fr['liste.modifier.nom'], 'Modifier {name}');
+  assert.equal(fr['liste.voir.nom'], 'Voir {name}');
   // Pas d'actions sur les cochés
   assert.match(list, /actionsRow\.hidden = !open \|\| !canEdit \|\| !mayCheck\(list\) \|\| inSearch;/);
   // Fiche à consulter : aucun champ, aucun bouton qui écrit, photo qui s'agrandit
   const view = list.slice(list.indexOf('function openItemView'), list.indexOf('// Feuille de choix du rayon'));
   assert.doesNotMatch(view, /h\('input'|h\('textarea'|type: 'submit'|tools:|actions\.(update|delete|check|set|remove)/);
-  assert.match(view, /'aria-label': `Agrandir la photo de \$\{it\.name\}`, onClick: \(\) => showPhoto\(it\)/);
-  assert.match(view, /title: `Détail \$\{words\.of\}`/);
+  assert.match(view, /'aria-label': t\('liste\.photo\.agrandir', \{ name: it\.name \}\), onClick: \(\) => showPhoto\(it\)/);
+  assert.equal(fr['liste.photo.agrandir'], 'Agrandir la photo de {name}');
+  assert.match(view, /title: t\('liste\.detail\.titre', \{ of: words\.of \}\)/);
+  assert.equal(fr['liste.detail.titre'], 'Détail {of}');
   // Tri, repli des groupes : inchangés (aucune condition sur le droit)
   assert.doesNotMatch(list.slice(list.indexOf('function foldableGroup'), list.indexOf('// --- Dessin de la liste')), /canEdit/);
   assert.doesNotMatch(list.slice(list.indexOf('const SORTS'), list.indexOf('let view = null')), /canEdit/);
@@ -104,7 +118,8 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   assert.equal((list.match(/if \(!ok \|\| !editable\(\)\) return;/g) ?? []).length, 3, 'tout décocher, retirer les cochés, retirer la photo');
   // Carte de « Mes listes » : pastille (icône ET texte) ; le menu « ⋯ » reste au propriétaire
   const lists = read('public/js/screens/lists.js');
-  assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), 'Lecture seule'\)/);
+  assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), t\('listes\.carte\.lectureSeule'\)\)/);
+  assert.equal(fr['listes.carte.lectureSeule'], 'Lecture seule');
   // Invité en lecture seule : seulement « Quitter la liste » (« Dupliquer la liste » est réservé au propriétaire et à « Peut modifier »)
   assert.match(read('public/js/screens/list-actions.js'), /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   assert.doesNotMatch(list, /innerHTML/);
@@ -115,9 +130,12 @@ test('le droit change pendant que la liste est ouverte : fenêtres fermées, cla
   assert.match(list, /let couldEdit = app\.data\.lists\.has\(listId\) \? editable\(\) : null;\s*onLeave\(onDataChange\(\(\) => \{/);
   // Arrivée de la liste au premier chargement : pas un changement de droit (aucun message)
   assert.match(list, /if \(couldEdit === null\) couldEdit = now;\s*if \(now === couldEdit\) return;/);
-  const watcher = list.slice(list.indexOf('let couldEdit'), list.indexOf("toast(now ? 'Vous pouvez"));
+  assert.ok(list.includes("toast(now ? t('liste.droit.modification')"));
+  const watcher = list.slice(list.indexOf('let couldEdit'), list.indexOf("toast(now ? t('liste.droit.modification')"));
   for (const step of ['releaseFocus();', 'suggestBox.hidden = true;', 'swipes.close();', 'closeOverlays();', 'showAddbar();', 'readOnlyBanner.hidden = now;']) assert.ok(watcher.includes(step), step);
-  assert.match(list, /toast\(now \? 'Vous pouvez maintenant modifier cette liste\.' : 'Cette liste est maintenant en lecture seule\.'\);/);
+  assert.match(list, /toast\(now \? t\('liste\.droit\.modification'\) : t\('liste\.droit\.lectureSeule'\)\);/);
+  assert.equal(fr['liste.droit.modification'], 'Vous pouvez maintenant modifier cette liste.');
+  assert.equal(fr['liste.droit.lectureSeule'], 'Cette liste est maintenant en lecture seule.');
   // Fermer toutes les fenêtres en un seul retour dans l'historique
   const router = read('public/js/router.js');
   assert.match(router, /export function closeOverlays\(\) \{\s*const pushed = overlays\.filter\(\(entry\) => entry\.pushed\)\.length;\s*closeAllOverlays\(\);\s*if \(!pushed\) return;\s*ignoredPops\+\+;/);

@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { publicItemDetails } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 
 const HOUR = 60 * 60 * 1000;
 const uuid = () => crypto.randomUUID();
@@ -218,7 +219,8 @@ test('fiche : mêmes champs que la fiche à consulter de l\'application, aucun o
   // « Pour » : jamais sur la page publique, pour ne pas montrer les prénoms
   // de la famille à un visiteur sans compte ; « Rappel » : propre à la tâche,
   // jamais sur la page publique non plus)
-  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel' && label !== 'Sous-tâche de');
+  // (libellés lus dans les textes français : value(t('liste.…'), …))
+  const labels = [...view.matchAll(/value\(t\('([^']+)'\)/g)].map((m) => fr[m[1]]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel' && label !== 'Sous-tâche de');
   assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Se répète', 'Code-barres', 'Rayon', 'Magasin']);
   const format = read('public/js/format.js');
   const details = format.slice(format.indexOf('export function publicItemDetails'), format.indexOf('export function priorityChip'));

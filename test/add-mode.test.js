@@ -15,6 +15,7 @@ import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.
 import { openDatabase, schemaVersion, addModeMigration } from '../server/db.js';
 import { ADD_MODES } from '../server/lists.js';
 import { emptyState, applyOp, addModeOf, defaultAddMode } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -241,7 +242,13 @@ test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.se
   const form = read('public/js/screens/list-form.js');
   // Compact : une ligne de deux choix au libellé court (nom complet pour les
   // lecteurs d'écran), et une ligne d'aide sur le choix actif, reliée au groupe
-  assert.match(form, /\['quick', 'Rester', 'Rester sur la liste', 'On enchaîne les ajouts sur la liste\.'\],\s*\['detail', 'Ouvrir', 'Ouvrir la fiche', 'La fiche s\\'ouvre pour compléter\.'\],/);
+  assert.match(form, /\['quick', t\('formulaire\.apresAjout\.rester'\), t\('formulaire\.apresAjout\.rester\.nom'\), t\('formulaire\.apresAjout\.rester\.detail'\)\],\s*\['detail', t\('formulaire\.apresAjout\.ouvrir'\), t\('formulaire\.apresAjout\.ouvrir\.nom'\), t\('formulaire\.apresAjout\.ouvrir\.detail'\)\],/);
+  assert.equal(fr['formulaire.apresAjout.rester'], 'Rester');
+  assert.equal(fr['formulaire.apresAjout.rester.nom'], 'Rester sur la liste');
+  assert.equal(fr['formulaire.apresAjout.rester.detail'], 'On enchaîne les ajouts sur la liste.');
+  assert.equal(fr['formulaire.apresAjout.ouvrir'], 'Ouvrir');
+  assert.equal(fr['formulaire.apresAjout.ouvrir.nom'], 'Ouvrir la fiche');
+  assert.equal(fr['formulaire.apresAjout.ouvrir.detail'], 'La fiche s\'ouvre pour compléter.');
   assert.match(form, /role: 'radio', 'aria-label': name,/);
   assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label', 'aria-describedby': 'add-mode-help' \}, options\),\s*help\);/);
   assert.match(form, /help\.textContent = ADD_MODES\.find\(\(\[choice\]\) => choice === current\)\?\.\[3\] \?\? '';/);

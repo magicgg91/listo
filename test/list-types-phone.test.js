@@ -11,6 +11,7 @@ import { emptyState, loadSync, applyOp, computeListView, availableSorts, listOpt
 import { isMultiList } from '../public/js/sorting.js';
 import { itemWords } from '../public/js/words.js';
 import { listIcon } from '../public/js/list-icons.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 // Code sans les commentaires
@@ -98,14 +99,16 @@ test('copie locale : création selon listType ; ancienne opération (catégorie)
 
 test('formulaire : « Type » (Courses, Tâches, Envies à la création ; Envies figé), avertissement avant l\'enregistrement, magasin gardé', () => {
   const form = code('public/js/screens/list-form.js');
-  assert.match(form, /h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\)/);
+  assert.match(form, /h\('span', \{ class: 'field__label', id: 'type-label' \}, t\('formulaire\.type'\)\), typeGroup, typeWarning\)/);
+  assert.equal(fr['formulaire.type'], 'Type');
   assert.match(form, /const offered = wishesLocked \? \['wishes'\] : CREATABLE_TYPES;/);
   assert.match(form, /const typeButtons = offered\.map\(\(type\) => \{/);
   // Même composant qu'avant (choix en cartes du kit), avec coche ET texte,
   // trois cartes de même largeur sur une seule ligne (choice--row), même à 320 px
   assert.match(form, /h\('div', \{ class: 'choice choice--row choice--pill', role: 'radiogroup', 'aria-labelledby': 'type-label', 'aria-describedby': 'type-warning', 'data-count': String\(offered\.length\) \},\s*h\('span', \{ class: 'choice__pill', 'aria-hidden': 'true' \}\), typeButtons\)/);
   assert.match(form, /const typeWarning = h\('p', \{ class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked \}, wishesLocked \? WISHES_LOCKED_HINT : ''\);/);
-  assert.match(form, /const warning = list \? `\$\{typeChangeWarning\(savedType, listType\)\}\$\{converting\(\) && hasPublicLink\(list\) \? ' Son lien public sera arrêté\.' : ''\}` : '';/);
+  assert.match(form, /const warning = list \? `\$\{typeChangeWarning\(savedType, listType\)\}\$\{converting\(\) && hasPublicLink\(list\) \? ` \$\{t\('formulaire\.type\.lienArrete'\)\}` : ''\}` : '';/);
+  assert.equal(fr['formulaire.type.lienArrete'], 'Son lien public sera arrêté.');
   // Envoyé seulement s'il change (devenir une liste d'envies passe par une
   // route à part, jamais par la file d'attente) ; magasin conservé repris,
   // renvoyé seulement s'il change

@@ -23,6 +23,7 @@ import {
 import { usesSubtasks } from '../subtasks.js';
 import { FOR_NAME_MAX, wishForLabel } from '../wishes.js';
 import { hasPublicLink } from './lists.js';
+import { t } from '../i18n.js';
 
 // Ordinateur (design/maquettes/pc-A, capture 17) : le même formulaire dans
 // une fenêtre centrée, posée sur l'écran en cours ; l'adresse reste
@@ -34,8 +35,8 @@ export function openListFormPanel(listId) {
   const hash = location.hash;
   const content = renderListForm(listId, (fn) => leaving.push(fn));
   return openSheet({
-    title: listId ? 'Modifier la liste' : 'Nouvelle liste',
-    sub: listId ? null : 'Courses, tâches ou envies',
+    title: listId ? t('formulaire.titre.modifier') : t('formulaire.titre.nouvelle'),
+    sub: listId ? null : t('formulaire.titre.nouvelle.detail'),
     content,
     pc: 'modal',
     size: 'lg',
@@ -57,7 +58,7 @@ export function renderListForm(listId, onLeave) {
 
   // Il faut les magasins et les comptes (copie locale, rafraîchie à
   // l'ouverture pour proposer un magasin ajouté entre-temps)
-  replace(container, h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
+  replace(container, h('p', { class: 'empty muted', role: 'status' }, t('formulaire.chargement')));
   let cancelled = false;
   onLeave(() => {
     cancelled = true;
@@ -82,7 +83,7 @@ export function renderListForm(listId, onLeave) {
       if (cancelled) return;
       replace(container, h('div', { class: 'empty' },
         h('p', { class: 'empty__text' }, errorMessage(error)),
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => goBack('lists') }, 'Retour')));
+        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => goBack('lists') }, t('formulaire.retour'))));
     });
   return container;
 }
@@ -96,7 +97,7 @@ export function renderListForm(listId, onLeave) {
 // écrans). onChange(valeur) reçoit 'modification' ou 'lecture'.
 export function accessChoice(name, value, onChange) {
   let current = value;
-  const options = [['modification', 'Modifier'], ['lecture', 'Lire']].map(([choice, label]) => {
+  const options = [['modification', t('formulaire.droit.modifier')], ['lecture', t('formulaire.droit.lire')]].map(([choice, label]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
       current = choice;
       paint();
@@ -109,7 +110,7 @@ export function accessChoice(name, value, onChange) {
     for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === current));
   };
   paint();
-  return h('div', { class: 'segmented share__access', role: 'radiogroup', 'aria-label': `Droit de ${name} sur la liste` }, options);
+  return h('div', { class: 'segmented share__access', role: 'radiogroup', 'aria-label': t('formulaire.droit.choix', { name }) }, options);
 }
 
 // Priorité et échéance d'une liste autre que les courses : deux
@@ -125,10 +126,10 @@ export function accessChoice(name, value, onChange) {
 export function optionSwitches(values, onChange, leading = null) {
   const current = { ...values };
   const rows = [
-    ['priority', 'Priorité', 'Basse, normale ou élevée.'],
-    ['due', 'Échéance', 'Une date limite ; retards signalés.'],
-    ['assign', 'Attribution', 'Confier une tâche à une personne de la liste.'],
-    ['subtasks', 'Sous-tâches', 'Ranger des tâches sous une tâche principale.'],
+    ['priority', t('formulaire.option.priorite'), t('formulaire.option.priorite.detail')],
+    ['due', t('formulaire.option.echeance'), t('formulaire.option.echeance.detail')],
+    ['assign', t('formulaire.option.attribution'), t('formulaire.option.attribution.detail')],
+    ['subtasks', t('formulaire.option.sousTaches'), t('formulaire.option.sousTaches.detail')],
   ].map(([key, label, help]) => {
     const titleId = `option-${key}-title`;
     const helpId = `option-${key}-help`;
@@ -156,12 +157,14 @@ export function optionSwitches(values, onChange, leading = null) {
 // « Rester sur la liste » (rapide, comme avant) ; 'detail' : « Ouvrir la
 // fiche » de l'élément ajouté (détaillé). onChange(valeur). Renvoie
 // { row, set(valeur) }.
-const ADD_MODES = [
-  ['quick', 'Rester', 'Rester sur la liste', 'On enchaîne les ajouts sur la liste.'],
-  ['detail', 'Ouvrir', 'Ouvrir la fiche', 'La fiche s\'ouvre pour compléter.'],
+// Les deux choix (fonction : les textes sont lus dans la langue choisie)
+const addModes = () => [
+  ['quick', t('formulaire.apresAjout.rester'), t('formulaire.apresAjout.rester.nom'), t('formulaire.apresAjout.rester.detail')],
+  ['detail', t('formulaire.apresAjout.ouvrir'), t('formulaire.apresAjout.ouvrir.nom'), t('formulaire.apresAjout.ouvrir.detail')],
 ];
 export function addModeChoice(value, onChange) {
   let current = value;
+  const ADD_MODES = addModes();
   const help = h('span', { class: 'row__sub', id: 'add-mode-help' });
   const options = ADD_MODES.map(([choice, label, name]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', 'aria-label': name, onClick: () => {
@@ -183,7 +186,7 @@ export function addModeChoice(value, onChange) {
   };
   paint();
   const row = h('div', { class: 'toggle-row toggle-row--stack' },
-    h('span', { class: 'row__title', id: 'add-mode-label' }, "Après l'ajout"),
+    h('span', { class: 'row__title', id: 'add-mode-label' }, t('formulaire.apresAjout')),
     h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label', 'aria-describedby': 'add-mode-help' }, options),
     help);
   return {
@@ -203,7 +206,7 @@ function form(list, users) {
   const me = app.user;
 
   // --- Nom ---
-  const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: 'Ex. Courses de la semaine', value: list?.name ?? '' });
+  const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: t('formulaire.titreListe.exemple'), value: list?.name ?? '' });
 
   // --- Type : en pilule, comme le bandeau du bas (décision du 11 novembre
   // 2026) : icône au-dessus du nom, fond bleu clair qui glisse vers le type
@@ -239,8 +242,8 @@ function form(list, users) {
   // personne sans compte » (prénom libre, 80 caractères au plus). Fixé à la
   // création : une liste d'envies existante l'affiche seulement.
   let forChoice = 'me'; // 'me', identifiant d'un compte, ou 'name'
-  const forNameInput = h('input', { class: 'input', type: 'text', maxlength: String(FOR_NAME_MAX), autocomplete: 'off', placeholder: 'Ex. Lucas' });
-  const forNameField = field('Prénom', forNameInput);
+  const forNameInput = h('input', { class: 'input', type: 'text', maxlength: String(FOR_NAME_MAX), autocomplete: 'off', placeholder: t('formulaire.pourQui.prenom.exemple') });
+  const forNameField = field(t('formulaire.pourQui.prenom'), forNameInput);
   const forRows = [];
   const forRow = (value, title, sub) => {
     const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' },
@@ -257,14 +260,14 @@ function form(list, users) {
   };
   const forOthers = users.filter((u) => u.id !== me.id).sort((a, b) => compareNames(a.displayName, b.displayName));
   const forField = h('div', { class: 'field' },
-    h('span', { class: 'field__label', id: 'for-label' }, 'Pour qui ?'),
+    h('span', { class: 'field__label', id: 'for-label' }, t('formulaire.pourQui')),
     wishesLocked
       ? h('p', { class: 'field__value' }, wishForLabel(list))
       : [
         h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'for-label' },
-          forRow('me', 'Moi'),
+          forRow('me', t('formulaire.pourQui.moi')),
           forOthers.map((u) => forRow(u.id, u.displayName)),
-          forRow('name', 'Une personne sans compte', 'Par exemple un enfant')),
+          forRow('name', t('formulaire.pourQui.sansCompte'), t('formulaire.pourQui.sansCompte.detail'))),
         forNameField.field,
       ]);
   // Compte destinataire choisi à la création ou à la conversion (sinon celui de la liste)
@@ -279,14 +282,14 @@ function form(list, users) {
   let chosenIcon = list?.icon ?? '';
   // Le formulaire montre seulement l'icône affichée, dans un bouton
   const iconPicker = h('button', {
-    class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',
+    class: 'icon-grid__opt', type: 'button', 'aria-label': t('formulaire.icone.choisir'), 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',
   });
   const iconCurrent = h('span', { class: 'visually-hidden', id: 'icon-current' });
   iconPicker.addEventListener('click', () => openIconPicker());
   // Titre de la liste : le bouton de l'icône à gauche, sur la même ligne que
   // le champ (qui prend toute la largeur restante) ; le libellé « Titre de la
   // liste » reste au-dessus et désigne le champ (jamais « Nom » : voir LABEL_INPUT)
-  const nameField = field('Titre de la liste', h('div', { class: 'field__row' }, iconPicker, name, iconCurrent));
+  const nameField = field(t('formulaire.titreListe'), h('div', { class: 'field__row' }, iconPicker, name, iconCurrent));
 
   // Fenêtre de choix (feuille du bas, comme les autres choix) : première
   // case « Par défaut » (l'icône du type, rien de choisi), puis la grille.
@@ -310,11 +313,11 @@ function form(list, users) {
       return button;
     };
     const typeName = TYPE_LABELS[listType];
-    const grid = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-label': 'Icônes' },
-      option('', `Par défaut : icône du type ${typeName}`, [icon(TYPE_ICONS[listType]), h('span', {}, 'Par défaut')]),
+    const grid = h('div', { class: 'icon-grid', role: 'radiogroup', 'aria-label': t('formulaire.icone.grille') },
+      option('', t('formulaire.icone.parDefaut.nom', { type: typeName }), [icon(TYPE_ICONS[listType]), h('span', {}, t('formulaire.icone.parDefaut'))]),
       LIST_ICONS.map((choice) => option(choice.id, choice.label, icon(choice.id))));
     const sheet = openSheet({
-      title: 'Choisir une icône',
+      title: t('formulaire.icone.choisir'),
       content: grid,
       scroll: true,
       // Retour du focus sur le bouton à la fermeture (même sur un téléphone,
@@ -335,14 +338,14 @@ function form(list, users) {
   const storeHint = h('span', { class: 'field__hint' });
   const storeButton = h('button', { class: 'input input--select', type: 'button', 'aria-labelledby': 'store-label', onClick: () => chooseStore() }, storeLabel, icon('chev-d'));
   const storeField = h('div', { class: 'field' },
-    h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'),
+    h('span', { class: 'field__label', id: 'store-label' }, t('formulaire.magasin')),
     storeButton,
     storeHint);
 
   // Nombre de magasins regroupés par un « multi », en toutes lettres
   const membersLabel = (store) => {
     const count = store.storeIds?.length ?? 0;
-    return `${count} magasin${count > 1 ? 's' : ''}`;
+    return t('formulaire.magasin.multi.nombre', { count });
   };
 
   // Feuille de choix (formulaire-liste-multi-2) : magasins simples (classés
@@ -375,10 +378,10 @@ function form(list, users) {
     };
     const simples = stores.filter((store) => !store.isMulti);
     const multis = stores.filter((store) => store.isMulti);
-    const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Choisir');
+    const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, t('formulaire.magasin.choisir'));
     const singleCard = h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'single-stores' },
-      radio({ id: null, name: 'Aucun magasin' }, 'Classé par rayon'),
-      simples.map((store) => radio(store, 'Classé par rayon')));
+      radio({ id: null, name: t('formulaire.magasin.aucun') }, t('formulaire.magasin.parRayon')),
+      simples.map((store) => radio(store, t('formulaire.magasin.parRayon'))));
     // Dernière ligne : « Nouveau magasin… » (create-reference.js, en ligne) ;
     // le magasin créé rejoint les choix et il est sélectionné. Pas de liste
     // envoyée : c'est le magasin de la liste elle-même (jamais ajouté à un
@@ -389,22 +392,22 @@ function form(list, users) {
       if (!stores.some((store) => store.id === made.id)) {
         const store = { id: made.id, name: made.name, active: true, isMulti: false, storeIds: [] };
         stores.push(store);
-        singleCard.append(radio(store, 'Classé par rayon'));
+        singleCard.append(radio(store, t('formulaire.magasin.parRayon')));
       }
       selected = made.id;
       paintRows();
       rows.find((row) => row.dataset.id === String(selected))?.scrollIntoView({ block: 'nearest' });
-    } }, icon('plus'), 'Nouveau magasin…');
+    } }, icon('plus'), t('formulaire.magasin.nouveau'));
     const content = h('div', { class: 'picker stack' },
-      h('span', { class: 'field__label', id: 'single-stores' }, 'Un seul magasin'),
+      h('span', { class: 'field__label', id: 'single-stores' }, t('formulaire.magasin.unSeul')),
       singleCard,
       multis.length ? [
-        h('span', { class: 'field__label', id: 'multi-stores' }, 'Plusieurs magasins'),
+        h('span', { class: 'field__label', id: 'multi-stores' }, t('formulaire.magasin.plusieurs')),
         h('div', { class: 'card', role: 'radiogroup', 'aria-labelledby': 'multi-stores' }, multis.map((store) => radio(store, membersLabel(store)))),
       ] : null,
       h('div', { class: 'card' }, addRow));
     paintRows();
-    const sheet = openSheet({ title: 'Magasin', content: [content, confirm] });
+    const sheet = openSheet({ title: t('formulaire.magasin'), content: [content, confirm] });
     // Le magasin déjà choisi est visible même s'il est bas dans la liste
     rows.find((row) => row.dataset.id === String(selected))?.scrollIntoView({ block: 'nearest' });
     confirm.addEventListener('click', () => {
@@ -431,7 +434,7 @@ function form(list, users) {
     addMode = value;
     addModeChosen = true;
   });
-  const optionsLabel = h('span', { class: 'field__label' }, 'Options des éléments');
+  const optionsLabel = h('span', { class: 'field__label' }, t('formulaire.options.elements'));
   const optionsCard = optionSwitches(options, (values) => {
     options = values;
   }, addModeField.row);
@@ -472,13 +475,13 @@ function form(list, users) {
       h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, title), h('span', { class: 'row__sub' }, sub))));
   // Une personne : sa case, sa pastille, son prénom, puis son droit
   const personRow = (person) => {
-    if (isLockedBeneficiary(person)) return lockedRow(person, person.displayName, 'Destinataire · Peut modifier');
+    if (isLockedBeneficiary(person)) return lockedRow(person, person.displayName, t('formulaire.partage.destinataire'));
     const box = h('span', { class: 'tick' });
     const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox' },
       box,
       avatar(person.displayName, { second: true }),
       h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
-        !person.active ? h('span', { class: 'row__sub' }, 'Compte désactivé') : null));
+        !person.active ? h('span', { class: 'row__sub' }, t('formulaire.partage.desactive')) : null));
     const access = accessChoice(person.displayName, rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value));
     // Mise à jour sur place (la case garde le focus) ; personne non cochée :
     // son droit est caché (place réservée, hors lecteurs d'écran)
@@ -511,7 +514,7 @@ function form(list, users) {
     replace(summaryAvatars, shown.map((p) => avatar(p.displayName, { second: true })),
       shared.length > shown.length ? h('span', { class: 'avatar avatar--b' }, `+${shared.length - shown.length}`) : null);
     const names = shared.map((p) => p.displayName);
-    summaryText.textContent = !names.length ? 'Personne'
+    summaryText.textContent = !names.length ? t('formulaire.partage.personne')
       : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ` (+${names.length - 2})` : ''}`;
   }
   drawShare();
@@ -523,12 +526,12 @@ function form(list, users) {
   let shareList = null;
   function openShareSheet() {
     shareList = h('div', { class: 'share share--sheet' },
-      lockedRow(me, `${me.displayName} (vous)`, 'Propriétaire'),
+      lockedRow(me, t('formulaire.partage.vous', { name: me.displayName }), t('formulaire.partage.proprietaire')),
       people.map((person) => personRow(person)));
     shareList.querySelector('button.tick-row')?.setAttribute('data-initial-focus', 'true');
-    const ok = h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => sheet.close() }, 'OK');
+    const ok = h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => sheet.close() }, t('formulaire.partage.ok'));
     const sheet = openSheet({
-      title: 'Partager avec',
+      title: t('formulaire.partage'),
       tools: ok,
       content: shareList,
       scroll: true,
@@ -542,13 +545,13 @@ function form(list, users) {
   }
 
   // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
-  const shareNote = h('p', { class: 'field__hint', hidden: true }, 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.');
+  const shareNote = h('p', { class: 'field__hint', hidden: true }, t('formulaire.partage.horsLigne'));
   // Conversion en liste d'envies : en ligne seulement (elle dépend du
   // destinataire et arrête un éventuel lien public) ; hors ligne, le bouton
   // « Enregistrer » est inactif, avec une phrase
   let busy = false;
-  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
-  const convertNote = h('p', { class: 'field__hint', id: 'convert-offline', hidden: true }, 'Devenir une liste d\'envies demande une connexion : enregistrez quand le réseau sera revenu.');
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('formulaire.enregistrer'));
+  const convertNote = h('p', { class: 'field__hint', id: 'convert-offline', hidden: true }, t('formulaire.conversion.horsLigne'));
   const paintConvert = () => {
     const blocked = converting() && !navigator.onLine;
     convertNote.hidden = !blocked;
@@ -593,7 +596,7 @@ function form(list, users) {
     const shopping = isShoppingList(listType);
     if (!wishesLocked) {
       // Devenir une liste d'envies : définitif ; un lien public en cours sera arrêté
-      const warning = list ? `${typeChangeWarning(savedType, listType)}${converting() && hasPublicLink(list) ? ' Son lien public sera arrêté.' : ''}` : '';
+      const warning = list ? `${typeChangeWarning(savedType, listType)}${converting() && hasPublicLink(list) ? ` ${t('formulaire.type.lienArrete')}` : ''}` : '';
       typeWarning.textContent = warning;
       typeWarning.hidden = !warning;
     }
@@ -609,7 +612,7 @@ function form(list, users) {
     // Bouton de l'icône : celle choisie, sinon celle du type (elle suit alors le type)
     const shownIcon = chosenIcon || TYPE_ICONS[listType];
     replace(iconPicker, icon(shownIcon));
-    iconCurrent.textContent = chosenIcon ? `Icône actuelle : ${LIST_ICONS.find((c) => c.id === chosenIcon)?.label ?? ''}` : `Icône actuelle : par défaut (${TYPE_LABELS[listType]})`;
+    iconCurrent.textContent = chosenIcon ? t('formulaire.icone.actuelle', { name: LIST_ICONS.find((c) => c.id === chosenIcon)?.label ?? '' }) : t('formulaire.icone.actuelle.parDefaut', { type: TYPE_LABELS[listType] });
     storeField.hidden = !shopping;
     // Courses : ni priorité ni échéance, seulement « Après l'ajout »
     // Priorité : tâches et envies ; échéance : tâches seulement
@@ -618,14 +621,14 @@ function form(list, users) {
         : row.dataset.switch === 'assign' ? !usesAssign(listType)
           : row.dataset.switch === 'subtasks' ? !usesSubtasks(listType) : !usesDue(listType);
     }
-    optionsLabel.textContent = `Options des ${itemWords(listType === 'tasks' ? false : { type: listType }).many}`;
+    optionsLabel.textContent = t('formulaire.options', { items: itemWords(listType === 'tasks' ? false : { type: listType }).many });
     if (!addModeChosen) {
       addMode = defaultAddMode(shopping);
       addModeField.set(addMode);
     }
     const store = stores.find((s) => s.id === storeId);
-    replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? 'Aucun magasin', store?.isMulti ? multiBadge() : null);
-    storeHint.textContent = store?.isMulti ? 'Les articles seront classés par magasin, sans rayons.' : 'Les articles seront classés par rayon.';
+    replace(storeLabel, icon('store', 'icon--sm'), store?.name ?? t('formulaire.magasin.aucun'), store?.isMulti ? multiBadge() : null);
+    storeHint.textContent = store?.isMulti ? t('formulaire.magasin.multi.detail') : t('formulaire.magasin.simple.detail');
     paintConvert();
   }
   paint();
@@ -638,20 +641,20 @@ function form(list, users) {
     onClick: async () => {
       if (await deleteListWithConfirm(list)) navigate('lists', {}, { replace: true });
     },
-  }, icon('trash', 'icon--sm'), 'Supprimer la liste') : null;
+  }, icon('trash', 'icon--sm'), t('formulaire.supprimer')) : null;
 
   // --- Enregistrement ---
   const formEl = h('form', { novalidate: true },
     h('header', { class: 'topbar' },
-      iconButton('close', 'Fermer sans enregistrer', () => goBack(list ? 'list' : 'lists', list ? { id: list.id } : {})),
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, list ? 'Modifier la liste' : 'Nouvelle liste'))),
+      iconButton('close', t('formulaire.fermer'), () => goBack(list ? 'list' : 'lists', list ? { id: list.id } : {})),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, list ? t('formulaire.titre.modifier') : t('formulaire.titre.nouvelle')))),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       nameField.field,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, 'Type'), typeGroup, typeWarning),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'type-label' }, t('formulaire.type')), typeGroup, typeWarning),
       forField,
       storeField,
       optionsField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'share-label' }, 'Partager avec'), shareButton, shareNote),
+      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'share-label' }, t('formulaire.partage')), shareButton, shareNote),
       error.note,
       deleteButton)),
     h('div', { class: 'footer' }, convertNote, save));
@@ -661,10 +664,10 @@ function form(list, users) {
     error.show('');
     const cleanName = name.value.replace(/\s+/g, ' ').trim();
     // Nom vide : le champ est signalé sous lui-même, sans y mettre le curseur
-    nameField.setError(cleanName ? null : 'Le nom est obligatoire');
+    nameField.setError(cleanName ? null : t('formulaire.titreListe.obligatoire'));
     // Liste d'envies pour une personne sans compte : son prénom est obligatoire
     const forName = (!list || converting()) && isWishList(listType) && forChoice === 'name' ? forNameInput.value.replace(/\s+/g, ' ').trim() : null;
-    forNameField.setError(forName === '' ? 'Le prénom est obligatoire' : null);
+    forNameField.setError(forName === '' ? t('formulaire.pourQui.prenom.obligatoire') : null);
     if (!cleanName || forName === '') return;
     const shopping = isShoppingList(listType);
     const chosenStore = shopping ? storeId : null;
@@ -687,7 +690,7 @@ function form(list, users) {
     if (convert) {
       try {
         await refreshData({ quiet: true }); // envoie d'abord la file d'attente
-        if (pendingCount() || !navigator.onLine) throw new Error('Devenir une liste d\'envies demande une connexion.');
+        if (pendingCount() || !navigator.onLine) throw new Error(t('formulaire.conversion.connexion'));
         await actions.convertToWishes(id, {
           ...(beneficiaryId() ? { forUserId: beneficiaryId() } : {}),
           ...(forName ? { forName } : {}),
@@ -739,13 +742,13 @@ function form(list, users) {
         await put(`/api/lists/${id}/members`, { userIds: [...guests], access });
         await refreshData({ quiet: true });
       } catch (err) {
-        toast(`Le partage n'a pas pu être enregistré : ${pendingCount() ? 'indisponible hors ligne' : errorMessage(err)}. La liste, elle, est enregistrée.`);
+        toast(t('formulaire.partage.echec', { reason: pendingCount() ? t('formulaire.partage.echec.horsLigne') : errorMessage(err) }));
       }
     }
     if (!list) {
       navigate('list', { id }, { replace: true });
-      toast('Liste créée', {
-        action: 'Annuler',
+      toast(t('formulaire.creee'), {
+        action: t('formulaire.creee.annuler'),
         onAction: async () => {
           await actions.deleteList(id);
           navigate('lists', {}, { replace: true });

@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { publicItemDetails } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const HOUR = 60 * 60 * 1000;
@@ -225,5 +226,6 @@ test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », p
   assert.equal((share.match(/wishNotes\(\),/g) ?? []).length, 2, 'à la création et pour un lien actif');
   // Menu : « Partager par lien » proposé aussi pour une liste d'envies ; pas de duplication
   const actions = code('public/js/screens/list-actions.js');
-  assert.match(actions, /wishes \? null : duplicate,\s*\{ icon: 'link', label: 'Partager par lien'/);
+  assert.match(actions, /wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\)/);
+  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
 });

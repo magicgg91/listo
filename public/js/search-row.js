@@ -20,6 +20,7 @@ import { h, icon } from './dom.js';
 import { keepFieldFocus } from './tap.js';
 import { releaseFocus } from './ui.js';
 import { openOverlay } from './router.js';
+import { t } from './i18n.js';
 
 // content : la zone .scroll ; label : « Rechercher dans la liste »… ;
 // onChange(texte) : le texte cherché a changé ; onActive(actif) : le champ
@@ -44,11 +45,11 @@ export function createSearchRow(content, { label, onChange, onActive = () => {},
   // curseur du champ). Téléphone : croix « Fermer la recherche », toujours
   // là (elle vide le texte et referme).
   const clearButton = toggled
-    ? h('button', { class: 'icon-btn searchfield__close', type: 'button', 'aria-label': 'Fermer la recherche', onClick: () => close() }, icon('close'))
+    ? h('button', { class: 'icon-btn searchfield__close', type: 'button', 'aria-label': t('ajout.recherche.fermer'), onClick: () => close() }, icon('close'))
     : h('button', {
       class: 'icon-btn',
       type: 'button',
-      'aria-label': 'Effacer la saisie',
+      'aria-label': t('ajout.recherche.effacer'),
       hidden: true,
       onPointerdown: keepFieldFocus.pointerdown,
       onMousedown: keepFieldFocus.mousedown,

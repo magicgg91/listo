@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { SWIPE, swipeIntent, swipeOffset, swipeRelease, createSwipeController } from '../public/js/swipe.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -153,11 +154,16 @@ test('la zone rouge d\'une ligne ouverte répond tout de suite ; fin de glisseme
 test('écran : chaque ligne glisse, zone rouge = vrai bouton « Supprimer <nom> », suppression avec « Annuler »', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /const swipes = createSwipeController\(content\);\s*onLeave\(\(\) => swipes\.stop\(\)\);/);
-  assert.match(list, /const remove = h\('button', \{ class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer \$\{item\.name\}`, onClick: \(\) => \{\s*swipes\.close\(\);\s*deleteWithUndo\(item\);/);
-  assert.match(list, /icon\('trash'\), h\('span', \{\}, 'Supprimer'\)\);/);
+  assert.match(list, /const remove = h\('button', \{ class: 'swipe__delete', type: 'button', 'aria-label': t\('liste\.supprimer\.nom', \{ name: item\.name \}\), onClick: \(\) => \{\s*swipes\.close\(\);\s*deleteWithUndo\(item\);/);
+  assert.equal(fr['liste.supprimer.nom'], 'Supprimer {name}');
+  assert.match(list, /icon\('trash'\), h\('span', \{\}, t\('liste\.supprimer'\)\)\);/);
+  assert.equal(fr['liste.supprimer'], 'Supprimer');
   assert.match(list, /swipes\.attach\(row, slide, remove\);/);
   // Même chemin que la poubelle de la fiche : file d'attente, puis « Annuler »
-  assert.match(list, /await actions\.deleteItem\(item\);[\s\S]{0,200}toast\(children \? [^\n]* : `« \$\{item\.name\} » supprimé`, \{ action: pc \? 'Annuler \(Ctrl\+Z\)' : 'Annuler', onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);/);
+  assert.match(list, /await actions\.deleteItem\(item\);[\s\S]{0,200}toast\(children \? [^\n]* : t\('liste\.supprime', \{ name: item\.name \}\), \{ action: pc \? t\('liste\.annuler\.pc'\) : t\('liste\.annuler'\), onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);/);
+  assert.equal(fr['liste.supprime'], '« {name} » supprimé');
+  assert.equal(fr['liste.annuler.pc'], 'Annuler (Ctrl+Z)');
+  assert.equal(fr['liste.annuler'], 'Annuler');
   const actionsJs = read('public/js/actions.js');
   assert.match(actionsJs, /export const deleteItem = \(item\) => perform\(\{ type: 'item\.delete', itemId: item\.id \}\);/);
   assert.match(actionsJs, /export const restoreItem = \(itemId\) => perform\(\{ type: 'item\.restore', itemId \}\);/);

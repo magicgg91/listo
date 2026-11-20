@@ -16,6 +16,7 @@ import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
+import { t } from '../i18n.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
 // propriétaire seulement ; l'expiration est revérifiée avec l'heure du téléphone)
@@ -35,9 +36,9 @@ export function listCard(list, { selected = false, query = '' } = {}) {
   const card = cardLink(list, { selected, query });
   const actions = listActions(list);
   if (!actions.length) return card;
-  const menuButton = iconButton('more', `Actions de la liste ${list.name}`, () => {
+  const menuButton = iconButton('more', t('listes.carte.actions', { name: list.name }), () => {
     menuButton.setAttribute('aria-expanded', 'true');
-    openMenu(actions, { label: `Actions de la liste ${list.name}`, anchor: menuButton, onClose: () => menuButton.setAttribute('aria-expanded', 'false') });
+    openMenu(actions, { label: t('listes.carte.actions', { name: list.name }), anchor: menuButton, onClose: () => menuButton.setAttribute('aria-expanded', 'false') });
   }, 'list-card__menu');
   menuButton.setAttribute('aria-haspopup', 'menu');
   menuButton.setAttribute('aria-expanded', 'false');
@@ -76,11 +77,11 @@ function cardLink(list, { selected, query }) {
     h('div', { class: 'list-card__left' },
       cardCount(list),
       // Liste partagée avec moi en lecture seule : pastille (icône ET texte)
-      canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), 'Lecture seule')),
+      canEditList(list) ? null : h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), t('listes.carte.lectureSeule'))),
     h('div', { class: 'list-card__people' },
       // Lien public en cours (propriétaire seulement) : juste avant les pastilles
-      hasPublicLink(list) ? h('span', { class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' }, icon('link', 'icon--xs')) : null,
-      h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
+      hasPublicLink(list) ? h('span', { class: 'list-card__link', role: 'img', 'aria-label': t('listes.carte.lienPublic'), title: t('listes.carte.lienPublic') }, icon('link', 'icon--xs')) : null,
+      h('div', { class: 'avatars', role: 'img', 'aria-label': t('listes.carte.partagee', { names: namesList(members.map((m) => m.displayName)) }) },
         members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))))));
 }
 
@@ -108,9 +109,10 @@ function newsPill(list) {
 // quand tout est coché (jamais la couleur seule). Lecteurs d'écran et
 // infobulle : « 3 articles restants sur 8 ».
 export function cardCount(list) {
-  if (list.total === 0) return h('p', { class: 'list-card__count' }, 'Liste vide');
+  if (list.total === 0) return h('p', { class: 'list-card__count' }, t('listes.carte.vide'));
   const done = list.remaining === 0;
-  const label = `${progressLabel(list.remaining, list.total, list)}${done ? ', tout est coché' : ''}`;
+  const progress = progressLabel(list.remaining, list.total, list);
+  const label = done ? t('listes.carte.toutCoche', { progress }) : progress;
   return h('p', {
     class: `list-card__count list-card__count--progress${done ? ' list-card__count--done' : ''}`,
     role: 'img',
@@ -123,11 +125,11 @@ export function cardCount(list) {
 function emptyLists() {
   return h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('tasks', 'icon--lg')),
-    h('h2', { class: 'empty__title' }, 'Aucune liste pour le moment'),
-    h('p', { class: 'empty__text' }, 'Créez une première liste pour commencer à y ajouter des éléments.'));
+    h('h2', { class: 'empty__title' }, t('listes.vide.titre')),
+    h('p', { class: 'empty__text' }, t('listes.vide.texte')));
 }
 
-const loading = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');
+const loading = () => h('p', { class: 'empty muted', role: 'status' }, t('listes.chargement'));
 
 // --- Tri des listes ---
 
@@ -174,7 +176,7 @@ function sortControl(onChange) {
 
 // Filtre des types : un choix exclusif (radiogroup), du kit (.segmented)
 function typeFilter(current, onPick) {
-  const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
+  const filters = [['all', t('listes.filtre.toutes')], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
   const buttons = filters.map(([value, label]) => h('button', {
     class: 'segmented__opt',
     type: 'button',
@@ -182,7 +184,7 @@ function typeFilter(current, onPick) {
     'data-value': value,
     onClick: () => onPick(value),
   }, label));
-  const bar = h('div', { class: 'segmented glass', role: 'radiogroup', 'aria-label': 'Afficher' }, buttons);
+  const bar = h('div', { class: 'segmented glass', role: 'radiogroup', 'aria-label': t('listes.filtre.libelle') }, buttons);
   const mark = (value) => {
     for (const button of buttons) button.setAttribute('aria-checked', String(button.dataset.value === value));
   };
@@ -192,8 +194,8 @@ function typeFilter(current, onPick) {
 
 // Aucune liste du type choisi
 const noListOfType = () => h('div', { class: 'empty' },
-  h('h2', { class: 'empty__title' }, 'Aucune liste de ce type'),
-  h('p', { class: 'empty__text' }, 'Choisissez « Toutes » pour voir toutes vos listes.'));
+  h('h2', { class: 'empty__title' }, t('listes.filtre.aucune.titre')),
+  h('p', { class: 'empty__text' }, t('listes.filtre.aucune.texte')));
 
 export function renderLists(onLeave) {
   if (isDesktop()) return renderListsPc(onLeave);
@@ -211,7 +213,7 @@ export function renderLists(onLeave) {
   // Nombre de listes trouvées, au-dessus des résultats (annoncé) ; vide hors recherche
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, {
-    label: 'Rechercher une liste',
+    label: t('listes.recherche.libelle'),
     onChange: () => draw(),
     status: searchMeta,
     // Recherche ouverte : le champ prend la place du filtre
@@ -253,15 +255,17 @@ export function renderLists(onLeave) {
   // champ sans lui retirer le curseur)
   const noLists = (query) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
-    h('h2', { class: 'empty__title' }, 'Aucun résultat'),
-    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} »${type === 'all' ? '' : ` dans « ${TYPE_LABELS[type]} »`}.`),
+    h('h2', { class: 'empty__title' }, t('listes.recherche.aucunResultat')),
+    h('p', { class: 'empty__text' }, type === 'all'
+      ? t('listes.recherche.aucune', { query: query.trim() })
+      : t('listes.recherche.aucune.type', { query: query.trim(), type: TYPE_LABELS[type] })),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',
       onPointerdown: search.keepFocus.pointerdown,
       onMousedown: search.keepFocus.mousedown,
       onClick: () => search.clear(),
-    }, 'Effacer la recherche'));
+    }, t('listes.recherche.effacer')));
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
@@ -272,10 +276,10 @@ export function renderLists(onLeave) {
     // Barre du haut sur une ligne : titre, pastille d'état (réduite à
     // l'icône si la place manque), tri des listes, « + » (Nouvelle liste)
     h('header', { class: 'topbar topbar--plain topbar--status' },
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Mes listes')),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('listes.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
       sorter.button,
-      iconButton('plus', 'Nouvelle liste', () => navigate('newList'), 'icon-btn--accent')),
+      iconButton('plus', t('listes.nouvelle'), () => navigate('newList'), 'icon-btn--accent')),
     sorter.status,
     filter.el,
     search.bar,
@@ -295,12 +299,12 @@ function renderListsPc(onLeave) {
   const sorter = sortControl(() => draw());
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
-  const search = createSearchRow(content, { label: 'Rechercher une liste', onChange: () => draw(), docked: true });
+  const search = createSearchRow(content, { label: t('listes.recherche.libelle'), onChange: () => draw(), docked: true });
   search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
   search.field.append(keycap('/'));
 
   // Filtre par type : un choix exclusif (radiogroup), « Toutes » au départ
-  const filters = [['all', 'Toutes'], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
+  const filters = [['all', t('listes.filtre.toutes')], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
   const filterButtons = filters.map(([value, label]) => h('button', {
     class: 'segmented__opt',
     type: 'button',
@@ -311,7 +315,7 @@ function renderListsPc(onLeave) {
       draw();
     },
   }, label));
-  const filterBar = h('div', { class: 'segmented pc-filter', role: 'radiogroup', 'aria-label': 'Afficher' }, filterButtons);
+  const filterBar = h('div', { class: 'segmented pc-filter', role: 'radiogroup', 'aria-label': t('listes.filtre.libelle') }, filterButtons);
 
   const draw = () => {
     for (const button of filterButtons) button.setAttribute('aria-checked', String(button.dataset.value === pcFilter));
@@ -323,7 +327,7 @@ function renderListsPc(onLeave) {
     sorter.setCount(lists.length);
     pruneListMemory(lists.map((list) => list.id));
     const shared = lists.filter((list) => list.members.filter((m) => m.active || m.isOwner).length > 1).length;
-    sub.textContent = lists.length ? `${listsLabel(lists.length)} · ${shared} ${shared > 1 ? 'partagées' : 'partagée'}` : '';
+    sub.textContent = lists.length ? t('listes.pc.resume', { lists: listsLabel(lists.length), count: shared }) : '';
     if (!lists.length) {
       searchMeta.textContent = '';
       search.show(emptyLists());
@@ -335,8 +339,8 @@ function renderListsPc(onLeave) {
     searchMeta.textContent = searching ? listsLabel(found.length) : '';
     if (!found.length) {
       search.show(searching ? noListsPc(query, search) : h('div', { class: 'empty' },
-        h('h2', { class: 'empty__title' }, 'Aucune liste de ce type'),
-        h('p', { class: 'empty__text' }, 'Choisissez « Toutes » pour voir toutes vos listes.')));
+        h('h2', { class: 'empty__title' }, t('listes.filtre.aucune.titre')),
+        h('p', { class: 'empty__text' }, t('listes.filtre.aucune.texte'))));
       return;
     }
     search.show(LIST_TYPES.map((type) => {
@@ -355,7 +359,7 @@ function renderListsPc(onLeave) {
 
   return h('div', { class: 'screen' },
     h('header', { class: 'pc-head' },
-      h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, 'Mes listes'), sub),
+      h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('listes.titre')), sub),
       search.field),
     h('div', { class: 'pc-tools' },
       filterBar,
@@ -370,13 +374,13 @@ function renderListsPc(onLeave) {
 function noListsPc(query, search) {
   return h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
-    h('h2', { class: 'empty__title' }, 'Aucun résultat'),
-    h('p', { class: 'empty__text' }, `Aucune liste ne correspond à « ${query.trim()} ».`),
+    h('h2', { class: 'empty__title' }, t('listes.recherche.aucunResultat')),
+    h('p', { class: 'empty__text' }, t('listes.recherche.aucune', { query: query.trim() })),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',
       onPointerdown: search.keepFocus.pointerdown,
       onMousedown: search.keepFocus.mousedown,
       onClick: () => search.clear(),
-    }, 'Effacer la recherche'));
+    }, t('listes.recherche.effacer')));
 }

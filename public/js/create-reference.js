@@ -18,10 +18,12 @@ import { h, field, errorNote, replace, LABEL_INPUT } from './dom.js';
 import { post, errorMessage, ApiError } from './api.js';
 import { refreshData } from './app.js';
 import { openSheet, toast } from './ui.js';
+import { t } from './i18n.js';
 
+// Textes lus au moment de l'affichage (dans la langue choisie)
 export const REFERENCE_KINDS = {
-  store: { path: '/api/stores', title: 'Nouveau magasin', label: 'Libellé du magasin', placeholder: 'Ex. Marché du samedi', offline: 'Connexion nécessaire pour créer un magasin' },
-  aisle: { path: '/api/aisles', title: 'Nouveau rayon', label: 'Libellé du rayon', placeholder: 'Ex. Surgelés', offline: 'Connexion nécessaire pour créer un rayon' },
+  store: { path: '/api/stores', get title() { return t('reference.magasin.titre'); }, get label() { return t('reference.magasin.libelle'); }, get placeholder() { return t('reference.magasin.exemple'); }, get offline() { return t('reference.magasin.horsLigne'); } },
+  aisle: { path: '/api/aisles', get title() { return t('reference.rayon.titre'); }, get label() { return t('reference.rayon.libelle'); }, get placeholder() { return t('reference.rayon.exemple'); }, get offline() { return t('reference.rayon.horsLigne'); } },
 };
 
 export function openCreateReference(kindName, { listId } = {}) {
@@ -36,7 +38,7 @@ export function openCreateReference(kindName, { listId } = {}) {
     const nameField = field(kind.label, input);
     const error = errorNote();
     const useExisting = h('div', { hidden: true });
-    const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer');
+    const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('reference.creer'));
     const form = h('form', { class: 'stack', novalidate: true }, nameField.field, error.note, useExisting, submit);
     const sheet = openSheet({ title: kind.title, content: form, onClose: () => resolve(result) });
     const done = (item) => {
@@ -48,7 +50,7 @@ export function openCreateReference(kindName, { listId } = {}) {
       error.show('');
       useExisting.hidden = true;
       const name = input.value.replace(/\s+/g, ' ').trim();
-      nameField.setError(name ? null : 'Le libellé est obligatoire');
+      nameField.setError(name ? null : t('reference.libelleObligatoire'));
       if (!name) return;
       if (!navigator.onLine) {
         error.show(kind.offline);
@@ -65,7 +67,7 @@ export function openCreateReference(kindName, { listId } = {}) {
         // Déjà là (actif) : un bouton pour le choisir
         const existing = err instanceof ApiError ? err.data?.existing : null;
         if (existing) {
-          replace(useExisting, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => done(existing) }, `Choisir « ${existing.name} »`));
+          replace(useExisting, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => done(existing) }, t('reference.choisirExistant', { name: existing.name })));
           useExisting.hidden = false;
         }
       }

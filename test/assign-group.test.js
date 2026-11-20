@@ -17,6 +17,7 @@ import { nextInTurn, turnAfterCheck, withoutPerson, isPeopleList, assigneesOf, p
 import { emptyState, applyOp } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
 import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -269,10 +270,14 @@ test('Claude : together et turn en lecture et en écriture ; refus de tout l\'ap
 
 test('écran : « Plusieurs personnes… » et « Chacun son tour… » (tâche qui se répète), au moins deux, pastilles et message du tour', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /choices\.push\(\['all', 'Plusieurs personnes…'\]\);\s*if \(repeat \|\| assignMode === 'turn'\) choices\.push\(\['turn', 'Chacun son tour…'\]\);/);
-  assert.match(list, /if \(enabled\.assign && assignMode !== 'one' && assignPeople\.length < 2\) \{\s*toast\('Choisissez au moins deux personnes\.'\);\s*return;\s*\}/);
+  assert.match(list, /choices\.push\(\['all', t\('liste\.fiche\.pour\.plusieurs\.choix'\)\]\);\s*if \(repeat \|\| assignMode === 'turn'\) choices\.push\(\['turn', t\('liste\.fiche\.pour\.tour\.choix'\)\]\);/);
+  assert.equal(fr['liste.fiche.pour.plusieurs.choix'], 'Plusieurs personnes…');
+  assert.equal(fr['liste.fiche.pour.tour.choix'], 'Chacun son tour…');
+  assert.match(list, /if \(enabled\.assign && assignMode !== 'one' && assignPeople\.length < 2\) \{\s*toast\(t\('liste\.fiche\.erreur\.deuxPersonnes'\)\);\s*return;\s*\}/);
+  assert.equal(fr['liste.fiche.erreur.deuxPersonnes'], 'Choisissez au moins deux personnes.');
   assert.match(list, /const text = assignMode === 'turn' && on \? `\$\{rank \+ 1\} · \$\{nameOf\(id\)\}` : nameOf\(id\);/);
-  assert.match(list, /toast\(`Prochaine fois : \$\{dueDateLabel\(next\)\}\$\{who\}`/);
+  assert.match(list, /toast\(`\$\{t\('liste\.prochaineFois', \{ date: dueDateLabel\(next\) \}\)\}\$\{who\}`/);
+  assert.equal(fr['liste.prochaineFois'], 'Prochaine fois : {date}');
   assert.match(read('public/js/actions.js'), /return turnAfterCheck\(item\.assignPeople \?\? \[\], item\.assignedTo \?\? null, app\.user\?\.id\);/);
   assert.match(read('public/sw.js'), /'\/js\/assign\.js',/);
   for (const file of ['public/js/assign.js', 'public/js/screens/list.js', 'public/js/screens/deadlines.js']) {
@@ -284,12 +289,17 @@ test('écran : « Plusieurs personnes… » et « Chacun son tour… » (tâche 
 
 test('fiche d\'une tâche : lignes résumées, sous-pages, Retour et Échap reviennent à la fiche, pas de quantité', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /const dueSub = tasks \? subpage\('Échéance', 'calendar', \[dueField, timeField, remindField\]\) : null;/);
-  assert.match(list, /const repeatSub = tasks \? subpage\('Se répète', 'repeat', \[repeatField\]\) : null;/);
-  assert.match(list, /const assignSub = tasks \? subpage\('Pour', 'users', \[assignField\]\) : null;/);
+  assert.match(list, /const dueSub = tasks \? subpage\(t\('liste\.fiche\.echeance'\), 'calendar', \[dueField, timeField, remindField\]\) : null;/);
+  assert.match(list, /const repeatSub = tasks \? subpage\(t\('liste\.fiche\.repete'\), 'repeat', \[repeatField\]\) : null;/);
+  assert.match(list, /const assignSub = tasks \? subpage\(t\('liste\.fiche\.pour'\), 'users', \[assignField\]\) : null;/);
+  assert.equal(fr['liste.fiche.echeance'], 'Échéance');
+  assert.equal(fr['liste.fiche.repete'], 'Se répète');
+  assert.equal(fr['liste.fiche.pour'], 'Pour');
   assert.match(list, /sheet\.setBack\(\(\) => leaveSub\(\)\);/);
   assert.match(list, /: tasks && !item\.quantity \? null/);
-  assert.match(list, /h\('div', \{ class: 'due-shortcuts due-shortcuts--row' \}, shortcut\("Aujourd'hui", 0\), shortcut\('Demain', 1\), weekShortcut\)\)/);
+  assert.match(list, /h\('div', \{ class: 'due-shortcuts due-shortcuts--row' \}, shortcut\(t\('liste\.fiche\.date\.aujourdhui'\), 0\), shortcut\(t\('liste\.fiche\.date\.demain'\), 1\), weekShortcut\)\)/);
+  assert.equal(fr['liste.fiche.date.aujourdhui'], 'Aujourd\'hui');
+  assert.equal(fr['liste.fiche.date.demain'], 'Demain');
   // Le focus va au titre de la sous-page (jamais un champ), et revient à la ligne
   assert.match(list, /entry\.heading\.focus\(\);/);
   // Sous-page : une seule ligne (« ‹ » et le titre), en-tête et pied de la fiche cachés ; pas de hauteur forcée

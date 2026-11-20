@@ -31,7 +31,7 @@ import { renderNotifications } from './screens/notifications.js';
 import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
 import { startShortcuts } from './shortcuts.js';
-import { undoLast, NOTHING_TO_UNDO } from './undo.js';
+import { undoLast, nothingToUndo } from './undo.js';
 import * as actions from './actions.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
@@ -541,7 +541,7 @@ startShortcuts({
   onUndo: async () => {
     const listId = app.route?.name === 'list' ? app.route.params.id : null;
     if (!listId) {
-      toast(NOTHING_TO_UNDO);
+      toast(nothingToUndo());
       return;
     }
     if (!canEditList(app.data.lists.get(listId))) {

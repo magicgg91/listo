@@ -13,6 +13,7 @@ import {
   pruneFoldedGroups, pruneListMemory, isZoneOpen, rememberZone, FOLDED_PREFIX,
 } from '../public/js/store.js';
 import { progressText, progressLabel } from '../public/js/words.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -159,8 +160,10 @@ test('en-tête de groupe : vrai bouton, aria-expanded, aria-controls, replié li
   assert.equal(progressLabel(2, 5, { type: 'shopping' }), '2 articles restants sur 5');
   assert.equal(progressLabel(3, 3, { type: 'tasks' }), '3 éléments restants sur 3');
   // Les trois sortes de groupes passent par le même en-tête
-  assert.match(list, /view\.multi \? foldableGroup\(list, group, group\.store\?\.name \?\? 'Sans magasin', icon\('store', 'icon--xs'\)\)/);
-  assert.match(list, /: isShoppingList\(list\) \? foldableGroup\(list, group, group\.aisle\?\.name \?\? 'Sans rayon'\)/);
+  assert.match(list, /view\.multi \? foldableGroup\(list, group, group\.store\?\.name \?\? t\('liste\.sansMagasin'\), icon\('store', 'icon--xs'\)\)/);
+  assert.match(list, /: isShoppingList\(list\) \? foldableGroup\(list, group, group\.aisle\?\.name \?\? t\('liste\.sansRayon'\)\)/);
+  assert.equal(fr['liste.sansMagasin'], 'Sans magasin');
+  assert.equal(fr['liste.sansRayon'], 'Sans rayon');
   // Textes posés en texte, jamais en HTML
   assert.doesNotMatch(list, /innerHTML|insertAdjacentHTML|outerHTML/);
   // 48 px de haut, chevron qui tourne, kit et application identiques
@@ -175,7 +178,9 @@ test('en-tête de groupe : vrai bouton, aria-expanded, aria-controls, replié li
 test('« Tout replier / Tout déplier » : au moins deux groupes, zone des cochés comprise', () => {
   const list = read('public/js/screens/list.js');
   assert.match(list, /foldAll\.hidden = foldables\.length < 2 \|\| search\.active;/);
-  assert.match(list, /anyOpen \? 'Tout replier' : 'Tout déplier'/);
+  assert.match(list, /anyOpen \? t\('liste\.toutReplier'\) : t\('liste\.toutDeplier'\)/);
+  assert.equal(fr['liste.toutReplier'], 'Tout replier');
+  assert.equal(fr['liste.toutDeplier'], 'Tout déplier');
   assert.match(list, /const open = !foldables\.some\(\(f\) => f\.isOpen\(\)\);\s*for \(const f of foldables\) f\.setOpen\(open\);/);
   assert.match(list, /if \(!inSearch\) foldables\.push\(foldable\); \/\/ « Tout replier » la replie aussi/);
   assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\);/);

@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const lists = read('public/js/screens/lists.js');
@@ -15,12 +16,15 @@ const ui = read('public/js/ui.js');
 test('barre de l\'accueil : titre, pastille, tri, « + », sur une ligne ; plus de ligne d\'état dessous', () => {
   const screen = lists.slice(lists.indexOf('export function renderLists'), lists.indexOf('// --- Colonne de gauche'));
   const bar = screen.slice(screen.indexOf("h('header', { class: 'topbar topbar--plain topbar--status' }"));
-  const order = ["h('h1', { class: 'topbar__title' }, 'Mes listes')", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', 'Nouvelle liste', () => navigate('newList'), 'icon-btn--accent')"];
+  const order = ["h('h1', { class: 'topbar__title' }, t('listes.titre'))", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', t('listes.nouvelle'), () => navigate('newList'), 'icon-btn--accent')"];
+  assert.equal(fr['listes.titre'], 'Mes listes');
+  assert.equal(fr['listes.nouvelle'], 'Nouvelle liste');
   const at = order.map((text) => bar.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(at[i] >= 0, text);
   assert.deepEqual([...at].sort((a, b) => a - b), at, 'ordre de la barre');
   assert.equal(screen.includes("class: 'statusbar'"), false, 'la ligne sous la barre a disparu');
   assert.equal(screen.includes("'Réglages'"), false, 'Réglages : dans le bandeau du bas');
+  assert.equal(screen.includes("t('navigation.reglages')"), false, 'Réglages : dans le bandeau du bas');
 });
 
 test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seulement si la place manque', () => {

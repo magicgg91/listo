@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createTapPicker, keepFieldFocus } from '../public/js/tap.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
@@ -135,7 +136,8 @@ test('écran : « + » branché sur tap.js, Entrée sans doublon, champ vide san
   }
   // Le bouton reste le bouton d'envoi du formulaire (Entrée le « clique ») ;
   // l'envoi lui-même n'est qu'un secours qui passe par la même fonction
-  assert.match(list, /type: 'submit',\s*'aria-label': 'Ajouter',/);
+  assert.match(list, /type: 'submit',\s*'aria-label': t\('liste\.ajouter'\),/);
+  assert.equal(fr['liste.ajouter'], 'Ajouter');
   assert.match(list, /addForm\.addEventListener\('submit', \(event\) => \{\s*event\.preventDefault\(\);\s*addTyped\(input\.value\);/);
   // Champ vide ou espaces seulement : rien n'est ajouté (liste de courses : « + » ouvre « Souvent ajoutés »)
   assert.match(list, /let name = text\.replace\(\/\\s\+\/g, ' '\)\.trim\(\);/);

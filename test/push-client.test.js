@@ -151,12 +151,19 @@ test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) e
   // Menu ⋮ : seulement si la fonction est activée sur le serveur
   const menu = read('public/js/screens/list-actions.js');
   assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
-  assert.match(menu, /label: 'Couper les notifications de cette liste'/);
-  assert.match(menu, /label: 'Réactiver les notifications de cette liste'/);
+  assert.match(menu, /label: t\('menu\.notifications\.couper'\)/);
+  assert.match(menu, /label: t\('menu\.notifications\.reactiver'\)/);
+  assert.equal(fr['menu.notifications.couper'], 'Couper les notifications de cette liste');
+  assert.equal(fr['menu.notifications.reactiver'], 'Réactiver les notifications de cette liste');
   // Deux options distinctes et indépendantes (décision du 10 novembre 2026)
-  assert.match(menu, /label: 'Masquer les nouveautés de cette liste'/);
-  assert.match(menu, /label: 'Afficher les nouveautés de cette liste'/);
+  assert.match(menu, /label: t\('menu\.nouveautes\.masquer'\)/);
+  assert.match(menu, /label: t\('menu\.nouveautes\.afficher'\)/);
+  assert.equal(fr['menu.nouveautes.masquer'], 'Masquer les nouveautés de cette liste');
+  assert.equal(fr['menu.nouveautes.afficher'], 'Afficher les nouveautés de cette liste');
   assert.doesNotMatch(menu, /'Silencer cette liste'|'Ne plus me signaler cette liste'|'Signaler cette liste'/);
+  for (const key of Object.keys(fr).filter((k) => k.startsWith('menu.'))) {
+    assert.doesNotMatch(fr[key], /^(Silencer cette liste|Ne plus me signaler cette liste|Signaler cette liste)$/, key);
+  }
   assert.match(screen, /t\('notifications\.parListe\.note'\)/);
   assert.equal(fr['notifications.parListe.note'], 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».');
   assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: t\('reglages\.notifications'\), onClick: \(\) => navigate\('notifications'\) \}\)/);

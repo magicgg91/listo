@@ -8,7 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { recordUndo, undoLast, undoCount, clearUndo, forgetUndo, beforeOf, UNDO_MAX, CHANGED_MEANWHILE, NOTHING_TO_UNDO } from '../public/js/undo.js';
+import { recordUndo, undoLast, undoCount, clearUndo, forgetUndo, beforeOf, UNDO_MAX, changedMeanwhile, nothingToUndo } from '../public/js/undo.js';
 import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -41,7 +41,9 @@ test('annulation : suppression, cochage, modification, dans l\'ordre inverse, li
   assert.equal(map.get('a').quantity, '1 L');
   assert.equal(await undoLast('L1', map, act), 'Annulé : « Lait » décoché.');
   assert.equal(map.get('a').checked, false);
-  assert.equal(await undoLast('L1', map, act), NOTHING_TO_UNDO);
+  assert.equal(await undoLast('L1', map, act), nothingToUndo());
+  assert.equal(nothingToUndo(), 'Rien à annuler dans cette liste.');
+  assert.equal(changedMeanwhile(), 'Modifié entre-temps : rien n\'est annulé.');
   assert.deepEqual(done.map((d) => d[0]), ['restore', 'update', 'check']);
   assert.equal(undoCount('L2'), 1, 'l\'autre liste garde son action');
 });
@@ -52,16 +54,16 @@ test('annulation : rien n\'est écrasé si l\'article a changé entre-temps (tem
   // Modifié par moi, puis renommé par quelqu'un d'autre
   recordUndo('L', { kind: 'update', itemId: 'a', name: 'Café', before: { name: 'Café' }, after: { name: 'Café moulu' } });
   map.get('a').name = 'Café de Léa';
-  assert.equal(await undoLast('L', map, act), CHANGED_MEANWHILE);
+  assert.equal(await undoLast('L', map, act), changedMeanwhile());
   // Coché par moi, décoché par quelqu'un d'autre
   recordUndo('L', { kind: 'check', itemId: 'a', name: 'Café', checked: true });
-  assert.equal(await undoLast('L', map, act), CHANGED_MEANWHILE);
+  assert.equal(await undoLast('L', map, act), changedMeanwhile());
   // Supprimé par moi, déjà remis ailleurs
   recordUndo('L', { kind: 'delete', itemId: 'a', name: 'Café' });
-  assert.equal(await undoLast('L', map, act), CHANGED_MEANWHILE);
+  assert.equal(await undoLast('L', map, act), changedMeanwhile());
   // Modifié par moi, supprimé par quelqu'un d'autre
   recordUndo('L', { kind: 'check', itemId: 'x', name: 'Disparu', checked: true });
-  assert.equal(await undoLast('L', map, act), CHANGED_MEANWHILE);
+  assert.equal(await undoLast('L', map, act), changedMeanwhile());
   assert.deepEqual(done, [], 'aucune écriture');
 });
 
@@ -115,8 +117,14 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   // Seulement sur ordinateur
   assert.match(keys, /if \(event\.defaultPrevented \|\| !onPc\(\)\) return;/);
   // Les 17 raccourcis de la maquette, ni plus ni moins (fenêtre « ? »)
-  const listed = [...keys.matchAll(/\[\[((?:'[^']*'(?:, )?)+)\], '/g)].map((m) => m[1]);
-  assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "'Échap'", "'[', ']'", "'Ctrl', 'Z'", "'Ctrl', 'Entrée'", "'P'", "'A'", "'↓', '↑'", "'Espace'", "'Entrée'", "'E'", "'Suppr'", "'Menu'", "'S'"]);
+  const listed = [...keys.matchAll(/\[\[((?:(?:'[^']*'|t\('[^']+'\))(?:, )?)+)\], t\('/g)].map((m) => m[1]);
+  assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "t('raccourcis.touche.echap')", "'[', ']'", "t('raccourcis.touche.ctrl'), 'Z'", "t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')", "'P'", "'A'", "'↓', '↑'", "t('raccourcis.touche.espace')", "t('raccourcis.touche.entree')", "'E'", "t('raccourcis.touche.suppr')", "t('raccourcis.touche.menu')", "'S'"]);
+  assert.equal(fr['raccourcis.touche.echap'], 'Échap');
+  assert.equal(fr['raccourcis.touche.ctrl'], 'Ctrl');
+  assert.equal(fr['raccourcis.touche.entree'], 'Entrée');
+  assert.equal(fr['raccourcis.touche.espace'], 'Espace');
+  assert.equal(fr['raccourcis.touche.suppr'], 'Suppr');
+  assert.equal(fr['raccourcis.touche.menu'], 'Menu');
   // Réglages : l'interrupteur, sur ordinateur
   const settings = read('public/js/screens/settings.js');
   assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
@@ -140,10 +148,13 @@ test('raccourcis : ils n\'appuient que sur des boutons présents ; rien pour un 
   assert.match(list, /const slide = h\('div', \{ class: 'swipe__slide' \}, \.\.\.itemContent\(item, meta\), extra, pc \? rowActions\(item\) : null\);/);
   assert.match(list, /canEdit && mayCheck\(view\?\.list\) \? h\('button', \{\s*class: 'check',/);
   // Menu de la ligne : les mêmes boutons, sinon « Voir la fiche »
-  assert.match(keys, /edit \? \{ icon: 'pencil', label: 'Modifier'/);
-  assert.match(keys, /: \{ icon: 'eye', label: 'Voir la fiche'/);
+  assert.match(keys, /edit \? \{ icon: 'pencil', label: t\('raccourcis\.menu\.modifier'\)/);
+  assert.equal(fr['raccourcis.menu.modifier'], 'Modifier');
+  assert.match(keys, /: \{ icon: 'eye', label: t\('raccourcis\.menu\.voir'\)/);
+  assert.equal(fr['raccourcis.menu.voir'], 'Voir la fiche');
   assert.match(keys, /check \? \{ icon: 'check'/);
-  assert.match(keys, /trash \? \{ icon: 'trash', label: 'Supprimer'/);
+  assert.match(keys, /trash \? \{ icon: 'trash', label: t\('raccourcis\.menu\.supprimer'\)/);
+  assert.equal(fr['raccourcis.menu.supprimer'], 'Supprimer');
 });
 
 test('Espace (cocher) : son relâchement ne clique jamais en plus, quel que soit le bouton de la ligne (Firefox)', () => {

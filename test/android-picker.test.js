@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createImagePicker, isAndroid } from '../public/js/photo.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -156,9 +157,12 @@ test('Android : la feuille propose les deux choix, chacun ouvre le bon champ ; A
 test('les trois usages passent par le même composant, avec un titre ; textes en texte, jamais en HTML', () => {
   const list = read('public/js/screens/list.js');
   const scan = read('public/js/screens/scan.js');
-  assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: 'Scanner un code-barres' \}\)/);
-  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: `Photo \$\{words\.of\}` \}\)/);
-  assert.match(scan, /\}, \{ title: 'Scanner un produit' \}\);/);
+  assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: t\('liste\.fiche\.codeBarres\.scanner'\) \}\)/);
+  assert.equal(fr['liste.fiche.codeBarres.scanner'], 'Scanner un code-barres');
+  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: t\('liste\.photo\.titre', \{ of: words\.of \}\) \}\)/);
+  assert.equal(fr['liste.photo.titre'], 'Photo {of}');
+  assert.match(scan, /\}, \{ title: t\('scan\.titre'\) \}\);/);
+  assert.equal(fr['scan.titre'], 'Scanner un produit');
   const photo = read('public/js/photo.js');
   assert.doesNotMatch(photo, /innerHTML|insertAdjacentHTML|outerHTML|getUserMedia/);
   // La feuille : celle de ui.js (par-dessus la fiche, fond grisé), sans

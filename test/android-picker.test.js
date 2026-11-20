@@ -82,7 +82,8 @@ test('détection d\'Android : navigateurs Android, iPhone, iPad, ordinateurs', (
   // Détection isolée dans une seule petite fonction, utilisée par défaut
   const source = read('public/js/photo.js');
   assert.match(source, /export function isAndroid\(userAgent = globalThis\.navigator\?\.userAgent \?\? ''\) \{\s*return \/\\bAndroid\\b\/i\.test\(String\(userAgent\)\);\s*\}/);
-  assert.match(source, /export function createImagePicker\(onFile, \{ title = 'Choisir une image', android = isAndroid\(\), sheet = null \} = \{\}\)/);
+  assert.match(source, /export function createImagePicker\(onFile, \{ title = t\('photo\.choisir'\), android = isAndroid\(\), sheet = null \} = \{\}\)/);
+  assert.equal(fr['photo.choisir'], 'Choisir une image');
   assert.equal((source.match(/isAndroid\(/g) ?? []).length, 2, 'définie une fois, appelée une fois');
 });
 

@@ -249,8 +249,8 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
   const appJs = read('public/js/app.js');
   assert.match(appJs, /const OPTION_OFF = \['La priorité est désactivée pour cette liste\.', "L'échéance est désactivée pour cette liste\."\];/);
   assert.deepEqual([PRIORITY_OFF, DUE_OFF], ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."]);
-  assert.match(appJs, /const OPTION_OFF_MESSAGE = 'Cette option est désactivée pour cette liste\.';/);
-  assert.match(appJs, /if \(readOnlyRefused\) toast\(READ_ONLY_OFFLINE\);\s*else if \(optionRefused\) toast\(OPTION_OFF_MESSAGE\);/);
+  assert.equal(fr['application.optionDesactivee'], 'Cette option est désactivée pour cette liste.');
+  assert.match(appJs, /if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);\s*else if \(optionRefused\) toast\(t\('application\.optionDesactivee'\)\);/);
 });
 
 test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponible → alphabétique', () => {

@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v125-${BUILD ?? 'dev'}`;
+const VERSION = `v126-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -124,6 +124,38 @@ const APP_FILES = [
   '/js/i18n/en/reference.js',
   '/js/i18n/fr/scan.js',
   '/js/i18n/en/scan.js',
+  '/js/i18n/fr/aide.js',
+  '/js/i18n/en/aide.js',
+  '/js/i18n/fr/application.js',
+  '/js/i18n/en/application.js',
+  '/js/i18n/fr/claude.js',
+  '/js/i18n/en/claude.js',
+  '/js/i18n/fr/corbeille.js',
+  '/js/i18n/en/corbeille.js',
+  '/js/i18n/fr/donnees.js',
+  '/js/i18n/en/donnees.js',
+  '/js/i18n/fr/echeances.js',
+  '/js/i18n/en/echeances.js',
+  '/js/i18n/fr/format.js',
+  '/js/i18n/en/format.js',
+  '/js/i18n/fr/fenetres.js',
+  '/js/i18n/en/fenetres.js',
+  '/js/i18n/fr/mots.js',
+  '/js/i18n/en/mots.js',
+  '/js/i18n/fr/partage.js',
+  '/js/i18n/en/partage.js',
+  '/js/i18n/fr/photo.js',
+  '/js/i18n/en/photo.js',
+  '/js/i18n/fr/lienpublic.js',
+  '/js/i18n/en/lienpublic.js',
+  '/js/i18n/fr/push.js',
+  '/js/i18n/en/push.js',
+  '/js/i18n/fr/recherche.js',
+  '/js/i18n/en/recherche.js',
+  '/js/i18n/fr/reseau.js',
+  '/js/i18n/en/reseau.js',
+  '/js/i18n/fr/version.js',
+  '/js/i18n/en/version.js',
   '/js/live.js',
   '/js/localdb.js',
   '/js/photo.js',

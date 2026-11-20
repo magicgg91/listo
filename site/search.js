@@ -10,9 +10,19 @@
 //   des caractères).
 // - Le texte trouvé est rendu en morceaux (surlignés ou non) : l'écran les
 //   pose comme texte simple dans <mark class="hit">, jamais comme du HTML.
+//
+// Ce fichier n'importe rien : le site du guide le copie tel quel
+// (scripts/guide.js). La fonction t de public/js/i18n.js (textes dans la
+// langue choisie) lui est donnée par app.js (setTranslator).
+
+// Textes dans la langue choisie (t de public/js/i18n.js), donnée par app.js
+let t = null;
+export function setTranslator(translator) {
+  t = translator;
+}
 
 // Lettres que la décomposition Unicode ne sépare pas de leur accent
-const LIGATURES = { 'œ': 'oe', 'æ': 'ae', 'ß': 'ss' };
+const LIGATURES = { 'œ': 'oe', 'æ': 'ae', 'ß': 'ss' }; // technique : caractères à comparer
 
 // Forme « pliée » d'un caractère : minuscule, sans accent ni ligature
 // (peut faire 0, 1 ou plusieurs caractères)
@@ -129,6 +139,7 @@ export function filterLists(lists, query) {
 }
 
 // « 0 résultat », « 1 résultat », « 4 résultats »
-export const resultsLabel = (count) => `${count} ${count > 1 ? 'résultats' : 'résultat'}`;
+// Sans traduction donnée (site du guide, en français seulement), le texte français
+export const resultsLabel = (count) => (t ? t('recherche.resultats', { count }) : `${count} ${count > 1 ? 'résultats' : 'résultat'}`); // technique : copie du site du guide, sans import
 // « 0 liste », « 1 liste », « 2 listes »
 export const listsLabel = (count) => `${count} ${count > 1 ? 'listes' : 'liste'}`;

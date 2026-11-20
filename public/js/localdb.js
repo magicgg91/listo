@@ -33,7 +33,7 @@ export async function openLocal(userId) {
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
-      request.onblocked = () => reject(new Error('Base locale bloquée'));
+      request.onblocked = () => reject(new Error('Base locale bloquée')); // technique : erreur jamais affichée (copie en mémoire à la place)
     });
   } catch {
     return memoryLocal();

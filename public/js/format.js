@@ -7,6 +7,7 @@ import { countItems, itemWords } from './words.js';
 import { formatPrice } from './wishes.js';
 import { repeatSentence } from './repeat.js';
 import { isDueTime, isLate, nowTime, timeLabel } from './due-time.js';
+import { t } from './i18n.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -18,13 +19,13 @@ export function relativeTime(iso, now = Date.now()) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   const diff = now - date.getTime();
-  if (diff < MINUTE) return "à l'instant";
-  if (diff < HOUR) return `il y a ${Math.floor(diff / MINUTE)} min`;
+  if (diff < MINUTE) return t('format.relatif.instant');
+  if (diff < HOUR) return t('format.relatif.minutes', { minutes: Math.floor(diff / MINUTE) });
 
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
-  if (date >= startOfToday) return `il y a ${Math.floor(diff / HOUR)} h`;
-  if (date >= new Date(startOfToday.getTime() - DAY)) return 'hier';
+  if (date >= startOfToday) return t('format.relatif.heures', { hours: Math.floor(diff / HOUR) });
+  if (date >= new Date(startOfToday.getTime() - DAY)) return t('format.relatif.hier');
   if (date >= new Date(startOfToday.getTime() - 6 * DAY)) {
     return date.toLocaleDateString('fr-FR', { weekday: 'short' });
   }
@@ -50,7 +51,7 @@ export function splitPrefix(name, typed) {
 // Liste des prénoms pour les lecteurs d'écran : « Guillaume et Léa »
 export function namesList(names) {
   if (names.length <= 1) return names.join('');
-  return `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}`;
+  return t('format.prenoms.et', { first: names.slice(0, -1).join(', '), last: names[names.length - 1] });
 }
 
 // Nom affiché proposé quand aucun n'est donné : l'identifiant avec une
@@ -75,20 +76,22 @@ export function defaultDisplayName(username) {
 //   version ; label : son libellé pour les lecteurs d'écran), ou null ;
 // - button : bouton « Vérifier maintenant » affiché ; busy : il tourne.
 const isCommitSha = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value);
+// Version inconnue, envoyée telle quelle par le serveur (GET /api/about)
+const UNSPECIFIED = 'non précisé'; // technique : valeur reçue du serveur, comparée, jamais affichée
 
 export function aboutVersion({ commit, isAdmin = false, result = null, busy = false, online = true, now = Date.now() }) {
   let version;
   if (isCommitSha(commit)) version = { text: commit.slice(0, 7), commit };
-  else if (commit === 'non précisé') version = { text: 'non précisée' };
-  else version = { text: online ? '…' : 'indisponible hors ligne' };
+  else if (commit === UNSPECIFIED) version = { text: t('format.version.nonPrecisee') };
+  else version = { text: online ? '…' : t('format.version.horsLigne') };
 
   // Ni état ni bouton : autre compte, développement, vérification
   // désactivée sur le serveur (LISTO_UPDATE_CHECK=off)
-  const hidden = !isAdmin || commit === 'non précisé'
+  const hidden = !isAdmin || commit === UNSPECIFIED
     || result?.state === 'desactive' || result?.state === 'developpement';
   if (hidden) return { version, upToDate: false, checked: null, chip: null, update: null, button: false, busy: false };
 
-  if (!online) return { version, upToDate: false, checked: null, chip: { tone: 'neutral', text: 'Hors ligne' }, update: null, button: true, busy: false };
+  if (!online) return { version, upToDate: false, checked: null, chip: { tone: 'neutral', text: t('format.version.pastille.horsLigne') }, update: null, button: true, busy: false };
 
   // Ligne du haut : « Vérifié il y a 15 min », ou, à jour, « À jour · il y a
   // 15 min » (upToDate : la place manque sur un téléphone pour une pastille
@@ -102,12 +105,12 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
     // rien de plus : « À jour » est écrit dans la ligne du haut
   } else if (result?.state === 'ok' && isCommitSha(result.latest)) {
     const short = result.latest.slice(0, 7);
-    update = { tone: 'accent', icon: 'alert', text: `Nouvelle version : ${short}`, commit: result.latest, label: `Nouvelle version disponible : ${short}, ouvrir sur GitHub` };
+    update = { tone: 'accent', icon: 'alert', text: t('format.version.nouvelle', { short }), commit: result.latest, label: t('format.version.nouvelle.label', { short }) };
   } else if (result) {
-    chip = { tone: 'neutral', text: 'Vérification impossible' };
+    chip = { tone: 'neutral', text: t('format.version.impossible') };
   }
   const when = result?.checkedAt ? relativeTime(result.checkedAt, now) : '';
-  const checked = when ? (upToDate ? when : `Vérifié ${when}`) : null;
+  const checked = when ? (upToDate ? when : t('format.version.verifie', { when })) : null;
   return { version, upToDate, checked, chip, update, button: true, busy };
 }
 
@@ -115,8 +118,8 @@ export function aboutVersion({ commit, isAdmin = false, result = null, busy = fa
 // lecteurs d'écran (tri actuel et effet d'un appui), message après un appui
 export function listSortButton(sort) {
   return sort === 'alpha'
-    ? { icon: 'az', label: 'Tri : ordre alphabétique. Appuyer pour trier par plus récentes', message: 'Tri : ordre alphabétique' }
-    : { icon: 'clock', label: 'Tri : plus récentes d\'abord. Appuyer pour trier par ordre alphabétique', message: 'Tri : plus récentes d\'abord' };
+    ? { icon: 'az', label: t('format.tri.alpha.label'), message: t('format.tri.alpha') }
+    : { icon: 'clock', label: t('format.tri.recentes.label'), message: t('format.tri.recentes') };
 }
 
 // --- Priorité et échéance d'un élément (listes autres que les courses) ---
@@ -157,38 +160,47 @@ export function dueDateLabel(key, today = todayKey()) {
 export function dueChip(dueDate, checked, today = todayKey(), dueTime = null, now = nowTime()) {
   if (!dueDate) return null;
   const time = isDueTime(dueTime) ? timeLabel(dueTime) : '';
-  const at = time ? ` · ${time}` : '';
-  const spokenAt = time ? ` à ${time}` : '';
+  // Le jour, suivi de l'heure s'il y en a une : « Demain · 18:30 » (texte),
+  // « demain à 18:30 » (lecteurs d'écran)
+  const at = (day) => (time ? t('format.echeance.jourHeure', { day, time }) : day);
+  const spokenAt = (day) => (time ? t('format.jourAHeure', { day, time }) : day);
   const date = dueDateLabel(dueDate, today);
-  if (checked) return { state: 'done', text: `${date}${at}`, label: `Échéance : ${date}${spokenAt}` };
+  if (checked) return { state: 'done', text: at(date), label: t('format.echeance.label', { when: spokenAt(date) }) };
   if (isLate(dueDate, dueTime, today, now)) {
     return dueDate === today
-      ? { state: 'late', text: `En retard · ${time}`, label: `Échéance : aujourd'hui${spokenAt}, en retard` }
-      : { state: 'late', text: `En retard · ${date}${at}`, label: `Échéance : ${date}${spokenAt}, en retard` };
+      ? { state: 'late', text: t('format.echeance.retard', { when: time }), label: t('format.echeance.label.retard', { when: spokenAt(t('format.echeance.aujourdhui.parle')) }) }
+      : { state: 'late', text: t('format.echeance.retard', { when: at(date) }), label: t('format.echeance.label.retard', { when: spokenAt(date) }) };
   }
-  if (dueDate === today) return { state: 'today', text: `Aujourd'hui${at}`, label: `Échéance : aujourd'hui${spokenAt}` };
-  if (dueDate === addDays(today, 1)) return { state: 'tomorrow', text: `Demain${at}`, label: `Échéance : demain${spokenAt}` };
-  return { state: 'later', text: `${date}${at}`, label: `Échéance : ${date}${spokenAt}` };
+  if (dueDate === today) return { state: 'today', text: at(t('format.echeance.aujourdhui')), label: t('format.echeance.label', { when: spokenAt(t('format.echeance.aujourdhui.parle')) }) };
+  if (dueDate === addDays(today, 1)) return { state: 'tomorrow', text: at(t('format.echeance.demain')), label: t('format.echeance.label', { when: spokenAt(t('format.echeance.demain.parle')) }) };
+  return { state: 'later', text: at(date), label: t('format.echeance.label', { when: spokenAt(date) }) };
 }
 
 // Pastille de priorité : élevée et basse seulement (normale : rien)
 // Nouveautés : repère texte d'une ligne en halo (jamais la couleur seule) :
 // « Ajouté par Marie », « Modifié par Marie », « Coché par Marie »,
 // « Décoché par Marie ». kind : 'added', 'updated', 'checked', 'unchecked'.
-const NEWS_VERBS = { added: 'Ajouté', updated: 'Modifié', checked: 'Coché', unchecked: 'Décoché' };
 export function newsMark(kind, by) {
-  return `${NEWS_VERBS[kind] ?? 'Modifié'} par ${by}`;
+  if (kind === 'added') return t('format.nouveaute.ajoute', { name: by });
+  if (kind === 'checked') return t('format.nouveaute.coche', { name: by });
+  if (kind === 'unchecked') return t('format.nouveaute.decoche', { name: by });
+  return t('format.nouveaute.modifie', { name: by }); // 'updated' et tout autre cas
 }
 
 // Pastille de « Mes listes » lue par un lecteur d'écran : « 1 nouveauté »,
 // « 3 nouveautés », « plus de 30 nouveautés »
 export function newsBadgeLabel(text) {
-  if (text === '30+') return 'plus de 30 nouveautés';
-  return `${text} ${text === '1' ? 'nouveauté' : 'nouveautés'}`;
+  if (text === '30+') return t('format.nouveautes.plusDe30');
+  return text === '1' ? t('format.nouveautes.une', { text }) : t('format.nouveautes.plusieurs', { text });
 }
 
-// Libellé d'une priorité, en toutes lettres (fiches à consulter)
-export const PRIORITY_LABELS = { low: 'Basse', normal: 'Normale', high: 'Élevée' };
+// Libellé d'une priorité, en toutes lettres (fiches à consulter), lu au
+// moment de l'affichage (get), dans la langue choisie
+export const PRIORITY_LABELS = {
+  get low() { return t('format.priorite.basse'); },
+  get normal() { return t('format.priorite.normale'); },
+  get high() { return t('format.priorite.elevee'); },
+};
 
 // Fiche d'un article sur la page du lien public (lecture seule) : les
 // lignes de texte { label, text }, dans l'ordre de la fiche à consulter de
@@ -202,27 +214,33 @@ export function publicItemDetails(item, { grouping, place = null, today = todayK
   const wishes = type === 'wishes'; // liste d'envies : « Souhait », « Reçu », prix
   const one = itemWords(wishes ? { type } : shopping).one;
   const state = wishes
-    ? (item.checked ? 'Reçu' : 'Pas encore reçu')
-    : item.checked ? (shopping ? 'Coché, dans le panier' : 'Coché, terminé') : (shopping ? 'À acheter' : 'À faire');
+    ? (item.checked ? t('format.fiche.etat.recu') : t('format.fiche.etat.pasRecu'))
+    : item.checked ? (shopping ? t('format.fiche.etat.panier') : t('format.fiche.etat.termine')) : (shopping ? t('format.fiche.etat.acheter') : t('format.fiche.etat.faire'));
   const rows = [
     [one.charAt(0).toUpperCase() + one.slice(1), item.name], // « Article », « Élément » ou « Souhait »
-    ['État', state],
-    item.quantity ? ['Quantité', item.quantity] : null,
-    wishes && Number.isInteger(item.priceCents) ? ['Prix indicatif', formatPrice(item.priceCents)] : null,
-    item.note ? ['Note', item.note] : null,
-    'priority' in item ? ['Priorité', PRIORITY_LABELS[item.priority ?? 'normal'] ?? 'Normale'] : null,
-    'dueDate' in item ? ['Échéance', item.dueDate ? `${dueDateLabel(item.dueDate, today)}${isDueTime(item.dueTime) ? ` à ${timeLabel(item.dueTime)}` : ''}` : 'Aucune échéance'] : null,
-    item.dueDate && item.repeat ? ['Se répète', repeatSentence(item.repeat)] : null,
-    item.ean ? ['Code-barres', item.ean] : null,
-    grouping === 'aisle' ? ['Rayon', place ?? 'Sans rayon'] : null,
-    grouping === 'store' ? ['Magasin', place ?? 'Sans magasin'] : null,
+    [t('format.fiche.etat'), state],
+    item.quantity ? [t('format.fiche.quantite'), item.quantity] : null,
+    wishes && Number.isInteger(item.priceCents) ? [t('format.fiche.prix'), formatPrice(item.priceCents)] : null,
+    item.note ? [t('format.fiche.note'), item.note] : null,
+    'priority' in item ? [t('format.fiche.priorite'), PRIORITY_LABELS[item.priority ?? 'normal'] ?? PRIORITY_LABELS.normal] : null,
+    'dueDate' in item ? [t('format.fiche.echeance'), item.dueDate ? publicDueText(item, today) : t('format.fiche.echeance.aucune')] : null,
+    item.dueDate && item.repeat ? [t('format.fiche.repetition'), repeatSentence(item.repeat)] : null,
+    item.ean ? [t('format.fiche.codeBarres'), item.ean] : null,
+    grouping === 'aisle' ? [t('format.fiche.rayon'), place ?? t('format.fiche.rayon.aucun')] : null,
+    grouping === 'store' ? [t('format.fiche.magasin'), place ?? t('format.fiche.magasin.aucun')] : null,
   ];
   return rows.filter(Boolean).map(([label, text]) => ({ label, text }));
 }
 
+// Échéance de la fiche publique : « ven. 24 oct. », ou « ven. 24 oct. à 18:30 »
+function publicDueText(item, today) {
+  const day = dueDateLabel(item.dueDate, today);
+  return isDueTime(item.dueTime) ? t('format.jourAHeure', { day, time: timeLabel(item.dueTime) }) : day;
+}
+
 export function priorityChip(priority) {
-  if (priority === 'high') return { icon: 'arrow-up', text: 'Élevée', label: 'Priorité élevée' };
-  if (priority === 'low') return { icon: 'arrow-down', text: 'Basse', label: 'Priorité basse' };
+  if (priority === 'high') return { icon: 'arrow-up', text: t('format.priorite.elevee'), label: t('format.priorite.elevee.label') };
+  if (priority === 'low') return { icon: 'arrow-down', text: t('format.priorite.basse'), label: t('format.priorite.basse.label') };
   return null;
 }
 
@@ -232,7 +250,7 @@ export function dateTimeLabel(iso) {
   if (Number.isNaN(date.getTime())) return '';
   const day = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
   const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  return `${day} à ${time}`;
+  return t('format.jourAHeure', { day, time });
 }
 
 // Temps restant avant une date : « Il reste 7 jours », « Il reste 5 heures »,
@@ -241,13 +259,13 @@ export function dateTimeLabel(iso) {
 export function timeLeftLabel(iso, now = Date.now()) {
   const left = new Date(iso).getTime() - now;
   if (Number.isNaN(left)) return '';
-  if (left <= 0) return 'Expiré';
+  if (left <= 0) return t('format.reste.expire');
   const hours = Math.round(left / HOUR);
-  if (hours >= 48) return `Il reste ${Math.round(left / DAY)} jours`;
-  if (hours >= 2) return `Il reste ${hours} heures`;
+  if (hours >= 48) return t('format.reste.jours', { days: Math.round(left / DAY) });
+  if (hours >= 2) return t('format.reste.heures', { hours });
   const minutes = Math.ceil(left / MINUTE);
-  if (minutes >= 2) return `Il reste ${minutes} minutes`;
-  return "Il reste moins d'une minute";
+  if (minutes >= 2) return t('format.reste.minutes', { minutes });
+  return t('format.reste.moinsUneMinute');
 }
 
 // --- Administration, onglet « Articles » ---
@@ -255,8 +273,7 @@ export function timeLeftLabel(iso, now = Date.now()) {
 // 2026) : ces textes parlent donc d'« articles », par le module de mots
 // (countItems(n, true) : « 1 article », « 3 articles »).
 
-const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
-const listsOfShopping = (count) => `${count} ${count === 1 ? 'liste' : 'listes'} de courses`;
+const listsOfShopping = (count) => t('format.noms.listesCourses', { count });
 
 // Sous-titre d'un nom : « Crèmerie · 12 utilisations · 3 articles en liste »
 // (le rayon habituel seulement s'il y en a un). Dans chaque morceau, les
@@ -264,30 +281,36 @@ const listsOfShopping = (count) => `${count} ${count === 1 ? 'liste' : 'listes'}
 export function savedNameSub({ aisle, uses, inLists }) {
   return [
     aisle,
-    plural(uses, 'utilisation', 'utilisations'),
-    inLists ? `${countItems(inLists, true)} en liste` : `aucun ${itemWords(true).one} en liste`,
+    t('format.noms.utilisations', { count: uses }),
+    inLists ? t('format.noms.enListe', { items: countItems(inLists, true) }) : t('format.noms.aucunEnListe', { item: itemWords(true).one }),
   ].filter(Boolean).map((part) => part.replaceAll(' ', '\u00a0')).join(' · ');
 }
 
 // Texte de la confirmation d'une correction (réponse de /api/admin/names/impact)
 export function renameImpactText({ oldName, newName, merge, items, lists }) {
   const what = merge
-    ? `« ${oldName} » sera fusionné avec « ${newName} », déjà enregistré.`
-    : `« ${oldName} » deviendra « ${newName} ».`;
+    ? t('format.correction.fusion', { oldName, newName })
+    : t('format.correction.renommage', { oldName, newName });
   const where = items
-    ? `${countItems(items, true)} ${items === 1 ? 'sera corrigé' : 'seront corrigés'}, dans ${listsOfShopping(lists)}.`
-    : `Aucun ${itemWords(true).one} en liste ne porte ce nom : seules les suggestions changent.`;
+    ? (items === 1
+      ? t('format.correction.impact.un', { items: countItems(items, true), lists: listsOfShopping(lists) })
+      : t('format.correction.impact.plusieurs', { items: countItems(items, true), lists: listsOfShopping(lists) }))
+    : t('format.correction.impact.aucun', { item: itemWords(true).one });
   return `${what} ${where}`;
 }
 
 // Message affiché après une correction (réponse de /api/admin/names/rename)
 export function renameDoneText({ items, lists }) {
-  return items ? `${countItems(items, true)} ${items === 1 ? 'corrigé' : 'corrigés'}, dans ${listsOfShopping(lists)}` : 'Nom corrigé dans les suggestions';
+  if (!items) return t('format.correction.faite.suggestions');
+  return items === 1
+    ? t('format.correction.faite.un', { items: countItems(items, true), lists: listsOfShopping(lists) })
+    : t('format.correction.faite.plusieurs', { items: countItems(items, true), lists: listsOfShopping(lists) });
 }
 
 // « Dupliquer la liste » : nom proposé pour la copie, « <nom> (copie) », dans
-// la limite des noms de liste (100 caractères)
+// la limite des noms de liste (100 caractères). La place prise par
+// « (copie) » est mesurée sur le texte avec un nom vide.
 export function copyName(name, max = 100) {
-  const suffix = ' (copie)';
-  return `${String(name).slice(0, max - suffix.length).trimEnd()}${suffix}`;
+  const suffix = t('format.copie', { name: '' });
+  return t('format.copie', { name: String(name).slice(0, max - suffix.length).trimEnd() });
 }

@@ -42,6 +42,32 @@ const MIGRATED = [
   'public/js/create-reference.js',
   'public/js/bulk-add.js',
   'public/js/search-row.js',
+  // Lot 3 : partage, envies, échéances, corbeille, Claude, page publique, modules communs du téléphone
+  'public/js/screens/share.js',
+  'public/js/screens/share-panel.js',
+  'public/js/screens/trash.js',
+  'public/js/screens/deadlines.js',
+  'public/js/deadlines.js',
+  'public/js/screens/claude-connections.js',
+  'public/js/screens/claude-consent.js',
+  'public/js/screens/help.js',
+  'public/js/public.js',
+  'public/js/format.js',
+  'public/js/words.js',
+  'public/js/app.js',
+  'public/js/ui.js',
+  'public/js/dom.js',
+  'public/js/api.js',
+  'public/js/queue.js',
+  'public/js/localdb.js',
+  'public/js/push.js',
+  'public/js/photo.js',
+  'public/js/barcode.js',
+  'public/js/store.js',
+  'public/js/search.js',
+  'public/js/freshness.js',
+  'public/js/router.js',
+  'public/js/trusted.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {
@@ -49,6 +75,8 @@ test('lecture des chaînes et repérage du texte : exemples', () => {
   assert.deepEqual(stringsOf(sample), ['p', 'row row--menu', 'aria-label', 'compte.titre', 'Bonjour ', ', à ', 'x.y', '', 'Réessayer']);
   const texts = stringsOf(sample).filter(looksLikeText);
   assert.deepEqual(texts, ['Bonjour ', ', à ', 'Réessayer']);
+  // Message technique, jamais affiché : marqué, il n'est pas lu
+  assert.deepEqual(stringsOf("console.warn('Base locale bloquée'); // technique : console\nconst b = 'Réessayer';"), ['Réessayer']);
   for (const value of ['btn btn--primary btn--block', 'aria-checked', '/api/me/locale', 'Escape', 'compte.langue.titre', 'icon--sm', '#/reglages', 'true']) assert.ok(!looksLikeText(value), value);
   for (const value of ['Annuler', 'Mot de passe', 'Admin', 'Se connecter', 'à jour', ' · par ']) assert.ok(looksLikeText(value), value);
 });

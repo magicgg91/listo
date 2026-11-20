@@ -21,15 +21,16 @@ import { toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { TYPE_LABELS, TYPE_ICONS } from '../list-types.js';
 import { countItems, trashDaysText } from '../words.js';
+import { t } from '../i18n.js';
 
-export const OFFLINE_RESTORE = 'Restaurer une liste demande une connexion. Les boutons reviendront avec le réseau.';
+export const offlineRestore = () => t('corbeille.horsLigne.restaurer');
 
 // Date de suppression : « 3 nov. 2026 »
 const dayLabel = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export function renderTrash(onLeave) {
-  const offlineNote = h('div', { class: 'note', role: 'status', hidden: true }, icon('cloud-off'), h('p', {}, OFFLINE_RESTORE));
-  const panel = h('div', {}, h('p', { class: 'muted' }, 'Chargement…'));
+  const offlineNote = h('div', { class: 'note', role: 'status', hidden: true }, icon('cloud-off'), h('p', {}, offlineRestore()));
+  const panel = h('div', {}, h('p', { class: 'muted' }, t('corbeille.chargement')));
   let lists = [];
   let busy = false;
 
@@ -50,7 +51,7 @@ export function renderTrash(onLeave) {
       lists = lists.filter((l) => l.id !== list.id);
       busy = false;
       paint();
-      toast(`Liste « ${list.name} » restaurée`, { action: 'Ouvrir', onAction: () => navigate('list', { id: list.id }) });
+      toast(t('corbeille.restauree', { name: list.name }), { action: t('corbeille.ouvrir'), onAction: () => navigate('list', { id: list.id }) });
     } catch (err) {
       busy = false;
       paintOnline();
@@ -60,14 +61,14 @@ export function renderTrash(onLeave) {
   }
 
   function line(list) {
-    const label = `Restaurer la liste « ${list.name} »`;
+    const label = t('corbeille.restaurer.label', { name: list.name });
     const button = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'data-restore': list.id, 'aria-label': label, onClick: () => restore(list) },
-      icon('reset', 'icon--sm'), 'Restaurer');
+      icon('reset', 'icon--sm'), t('corbeille.restaurer'));
     return h('div', { class: 'row trash__row' },
       h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(list.icon || TYPE_ICONS[list.type] || 'tasks')),
       h('span', { class: 'row__body' },
         h('span', { class: 'row__title' }, list.name),
-        h('span', { class: 'row__sub' }, `${TYPE_LABELS[list.type] ?? ''} · ${countItems(list.itemCount, { type: list.type })} · supprimée le ${dayLabel(list.deletedAt)}`),
+        h('span', { class: 'row__sub' }, t('corbeille.ligne', { type: TYPE_LABELS[list.type] ?? '', items: countItems(list.itemCount, { type: list.type }), date: dayLabel(list.deletedAt) })),
         h('span', { class: 'row__sub trash__left' }, trashDaysText(list.daysLeft))),
       button);
   }
@@ -76,8 +77,8 @@ export function renderTrash(onLeave) {
     if (!lists.length) {
       replace(panel, h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon('trash', 'icon--lg')),
-        h('h2', { class: 'empty__title' }, 'Aucune liste supprimée.'),
-        h('p', { class: 'empty__text' }, 'Une liste que vous supprimez reste ici 30 jours : vous pouvez la restaurer pendant ce temps.')));
+        h('h2', { class: 'empty__title' }, t('corbeille.vide.titre')),
+        h('p', { class: 'empty__text' }, t('corbeille.vide.texte'))));
     } else {
       replace(panel, h('div', { class: 'group' }, lists.map(line)));
     }
@@ -91,8 +92,8 @@ export function renderTrash(onLeave) {
     } catch (err) {
       replace(panel, h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon('cloud-off', 'icon--lg')),
-        h('h2', { class: 'empty__title' }, 'Indisponible hors ligne'),
-        h('p', { class: 'empty__text' }, navigator.onLine ? errorMessage(err) : 'La corbeille a besoin du réseau. Elle s\'affichera dès son retour.')));
+        h('h2', { class: 'empty__title' }, t('corbeille.horsLigne.titre')),
+        h('p', { class: 'empty__text' }, navigator.onLine ? errorMessage(err) : t('corbeille.horsLigne.texte'))));
       paintOnline();
     }
   }
@@ -108,9 +109,9 @@ export function renderTrash(onLeave) {
   load();
 
   return h('div', { class: 'screen trash' },
-    topbar('Corbeille des listes', () => goBack('settings')),
+    topbar(t('corbeille.titre'), () => goBack('settings')),
     h('div', { class: 'body' },
-      h('p', { class: 'trash__intro' }, 'Vos listes supprimées restent ici 30 jours, puis elles sont effacées pour de bon. Seul le propriétaire d\'une liste la voit ici et peut la restaurer, avec ses éléments, ses partages et ses réglages.'),
+      h('p', { class: 'trash__intro' }, t('corbeille.intro')),
       offlineNote,
       panel));
 }

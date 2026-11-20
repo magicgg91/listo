@@ -87,7 +87,8 @@ test('annulation : les actions inverses sont les opérations habituelles (file d
   const app = read('public/js/app.js');
   assert.match(app, /restore: \(itemId\) => actions\.restoreItem\(itemId\),\s*check: \(item, checked\) => actions\.checkItem\(item, checked\),\s*update: \(item, changes\) => actions\.updateItem\(item, changes\),/);
   // Liste en lecture seule : rien n'est tenté (le serveur refuserait de toute façon)
-  assert.match(app, /if \(!canEditList\(app\.data\.lists\.get\(listId\)\)\) \{\s*toast\('Liste en lecture seule : rien n\\'est annulé\.'\);/);
+  assert.match(app, /if \(!canEditList\(app\.data\.lists\.get\(listId\)\)\) \{\s*toast\(t\('application\.annulation\.lectureSeule'\)\);/);
+  assert.equal(fr['application.annulation.lectureSeule'], 'Liste en lecture seule : rien n\'est annulé.');
   const actions = read('public/js/actions.js');
   assert.match(actions, /export const restoreItem = \(itemId\) => perform\(\{ type: 'item\.restore', itemId \}\);/);
   assert.match(actions, /export function checkItem\(item, checked\) \{\s*const next = checked \? nextDueOf\(item\) : null;\s*return perform\(\{ type: 'item\.check', itemId: item\.id, checked, \.\.\.\(next \? \{ nextDue: next \} : \{\}\) \}\);\s*\}/);

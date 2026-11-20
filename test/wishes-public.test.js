@@ -216,12 +216,19 @@ test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », p
   const page = code('public/js/public.js');
   assert.match(page, /words = isWishList\(list\) \? itemWords\(list\) : itemWords\(list\.grouping !== 'none'\);/);
   assert.match(page, /const kind = isWishList\(list\) \? list : shopping;\s*const zone = doneZoneWords\(kind\);/);
-  assert.match(page, /isWishList\(list\) && list\.forName \? `Pour \$\{list\.forName\}` : typeLabel\(list\.type\)/);
-  assert.match(page, /'aria-label': listType === 'wishes' \? \(item\.checked \? 'Reçu' : 'Pas encore reçu'\)/);
+  assert.match(page, /isWishList\(list\) && list\.forName \? t\('lienpublic\.pour', \{ name: list\.forName \}\) : typeLabel\(list\.type\)/);
+  assert.equal(fr['lienpublic.pour'], 'Pour {name}');
+  assert.match(page, /'aria-label': listType === 'wishes' \? \(item\.checked \? t\('lienpublic\.recu'\) : t\('lienpublic\.pasEncoreRecu'\)\)/);
+  assert.equal(fr['lienpublic.recu'], 'Reçu');
+  assert.equal(fr['lienpublic.pasEncoreRecu'], 'Pas encore reçu');
   // Écran du lien : la phrase pour une liste d'envies, et la place (vide) d'un futur avertissement
   const share = read('public/js/screens/share.js');
-  assert.match(share, /export const WISH_SHARE_NOTE = 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, et peuvent réserver un souhait ou participer à un cadeau, sans compte\. Elles ne voient jamais qui a réservé\.';/);
-  assert.match(share, /export const WISH_SHARE_WARNING = 'Si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\.';/);
+  assert.match(share, /export const wishShareNote = \(\) => t\('partage\.envies\.note'\);/);
+  assert.equal(fr['partage.envies.note'], 'Les personnes qui ont ce lien voient les souhaits, leurs liens et leurs prix, et peuvent réserver un souhait ou participer à un cadeau, sans compte. Elles ne voient jamais qui a réservé.');
+  assert.match(share, /export const wishShareWarning = \(\) => t\('partage\.envies\.avertissement'\);/);
+  assert.equal(fr['partage.envies.avertissement'], 'Si la personne à qui la liste est destinée ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés (jamais par qui). Ne le lui donnez pas.');
+  assert.match(share, /h\('span', \{\}, wishShareNote\(\)\)/);
+  assert.match(share, /h\('span', \{\}, wishShareWarning\(\)\)/);
   assert.match(share, /h\('p', \{ class: 'note note--danger', id: 'share-wish-warning', role: 'note' \}/);
   assert.equal((share.match(/wishNotes\(\),/g) ?? []).length, 2, 'à la création et pour un lien actif');
   // Menu : « Partager par lien » proposé aussi pour une liste d'envies ; pas de duplication

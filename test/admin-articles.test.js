@@ -21,7 +21,7 @@ const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*
 test('libellé : onglet « Articles », plus aucun « Noms » à l\'écran', () => {
   const admin = code('public/js/screens/admin.js');
   // L'onglet : le mot des listes de courses, avec une majuscule
-  assert.match(admin, /\{ key: 'noms', label: ITEM\.many\.charAt\(0\)\.toUpperCase\(\) \+ ITEM\.many\.slice\(1\) \}/);
+  assert.match(admin, /\{ key: 'noms', get label\(\) \{ return ITEM\.many\.charAt\(0\)\.toUpperCase\(\) \+ ITEM\.many\.slice\(1\); \} \}/);
   const many = itemWords(true).many;
   assert.equal(many.charAt(0).toUpperCase() + many.slice(1), 'Articles');
   // Ni « Noms », ni « Noms enregistrés », ni « un nom » comme désignation d'une entrée

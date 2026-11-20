@@ -7,7 +7,8 @@ import { scriptUrl } from './trusted.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
-import { setLocale, setCurrency, resolveLocale } from './i18n.js';
+import { setLocale, setCurrency, resolveLocale, t } from './i18n.js';
+import { setTranslator } from './search.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
@@ -36,6 +37,8 @@ import * as actions from './actions.js';
 import { createFreshness, reloadBlocker, CHECK_EVERY_MS } from './freshness.js';
 
 applyTheme(savedTheme());
+// Recherche (search.js, qui n'importe rien) : « 4 résultats » dans la langue choisie
+setTranslator(t);
 // Zones d'annonce des lecteurs d'écran, présentes avant le premier message
 prepareAnnouncer();
 
@@ -225,14 +228,13 @@ let refreshing = null;
 let again = null;
 let refusals = [];         // raisons des modifications refusées par le serveur
 // Refus du serveur pour une personne en lecture seule (même texte que
-// server/lists.js), et le message montré quand des modifications faites hors
-// ligne ont été refusées pour cette raison
-const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
-const READ_ONLY_OFFLINE = "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.";
+// server/lists.js) ; le message montré quand des modifications faites hors
+// ligne ont été refusées pour cette raison est « application.lectureSeule.horsLigne »
+const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.'; // technique : texte du serveur à reconnaître
 // Refus du serveur pour une priorité ou une échéance désactivée dans la liste
-// (mêmes textes que server/lists.js), et le message court montré alors
-const OPTION_OFF = ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."];
-const OPTION_OFF_MESSAGE = 'Cette option est désactivée pour cette liste.';
+// (mêmes textes que server/lists.js) ; le message court montré alors est
+// « application.optionDesactivee »
+const OPTION_OFF = ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."]; // technique : textes du serveur à reconnaître
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -267,7 +269,7 @@ export function refreshData({ quiet = false, full = false } = {}) {
         const [first, ...others] = refusals.filter((message) => message !== READ_ONLY && !OPTION_OFF.includes(message));
         refusals = [];
         full = true;
-        if (first) toast(`Une modification n'a pas pu être enregistrée : ${first}${others.length ? ` (et ${others.length} autre${others.length > 1 ? 's' : ''})` : ''}`);
+        if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
       }
       // 3. Puis récupérer les changements des autres. Copie trop ancienne
       //    (plus de 25 jours) : tout recharger.
@@ -280,14 +282,14 @@ export function refreshData({ quiet = false, full = false } = {}) {
       replayQueue();
       setSyncState('ok');
       dataChanged();
-      if (readOnlyRefused) toast(READ_ONLY_OFFLINE);
-      else if (optionRefused) toast(OPTION_OFF_MESSAGE);
+      if (readOnlyRefused) toast(t('application.lectureSeule.horsLigne'));
+      else if (optionRefused) toast(t('application.optionDesactivee'));
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
       setSyncState(error instanceof NetworkError || (error instanceof ApiError && error.status >= 500) ? 'off' : 'ok');
       // Ordinateur : le message propose « Réessayer » (maquette pc-A, état « erreur »)
-      if (!quiet && !unauthorized) toast(errorMessage(error), onPc() ? { action: 'Réessayer', onAction: () => refreshData({ full: true }) } : {});
+      if (!quiet && !unauthorized) toast(errorMessage(error), onPc() ? { action: t('application.reessayer'), onAction: () => refreshData({ full: true }) } : {});
     } finally {
       clearTimeout(busy);
       refreshing = null;
@@ -398,8 +400,8 @@ function placeBanner() {
   if (!bannerWanted || !currentCol || currentCol.querySelector('.update-banner')) return;
   currentCol.prepend(h('div', { class: 'note update-banner', role: 'status' },
     icon('sync'),
-    h('span', { class: 'grow' }, 'Nouvelle version disponible'),
-    h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => freshness.reloadNow() }, 'Recharger')));
+    h('span', { class: 'grow' }, t('application.nouvelleVersion')),
+    h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => freshness.reloadNow() }, t('application.nouvelleVersion.recharger'))));
 }
 
 // Mémoire de l'onglet (un seul rechargement automatique par version)
@@ -488,10 +490,10 @@ export async function logOut() {
   const left = pendingCount();
   if (left) {
     const ok = await confirmDialog({
-      title: 'Se déconnecter ?',
-      text: `${left === 1 ? '1 modification n\'est' : `${left} modifications ne sont`} pas encore envoyée${left === 1 ? '' : 's'}. Si vous vous déconnectez maintenant, ${left === 1 ? 'elle sera perdue' : 'elles seront perdues'}.`,
-      confirmLabel: 'Se déconnecter quand même',
-      cancelLabel: 'Rester connecté',
+      title: t('application.deconnexion.question'),
+      text: t('application.deconnexion.texte', { count: left }),
+      confirmLabel: t('application.deconnexion.confirmer'),
+      cancelLabel: t('application.deconnexion.annuler'),
     });
     if (!ok) return;
   }
@@ -511,7 +513,7 @@ onSessionProblem({
     if (!app.user) return;
     app.afterLogin = app.route;
     loggedOut();
-    toast('Votre session a expiré : reconnectez-vous.', { low: true });
+    toast(t('application.sessionExpiree'), { low: true });
   },
   mustChangePassword: () => {
     if (app.user) app.user.mustChangePassword = true;
@@ -545,7 +547,7 @@ startShortcuts({
       return;
     }
     if (!canEditList(app.data.lists.get(listId))) {
-      toast('Liste en lecture seule : rien n\'est annulé.');
+      toast(t('application.annulation.lectureSeule'));
       return;
     }
     toast(await undoLast(listId, app.data.items, {
@@ -641,7 +643,7 @@ function skipLink(col) {
       heading.setAttribute('tabindex', '-1');
       heading.focus();
     },
-  }, 'Aller au contenu');
+  }, t('application.allerAuContenu'));
 }
 
 // Nouvel écran affiché : titre de la page (onglet du navigateur, annoncé
@@ -793,9 +795,9 @@ async function start() {
     } else {
       // Serveur injoignable : message et bouton pour réessayer
       replace(root, h('div', { class: 'empty' },
-        h('p', { class: 'empty__title' }, 'Listo est injoignable'),
+        h('p', { class: 'empty__title' }, t('application.injoignable')),
         h('p', { class: 'empty__text' }, errorMessage(error)),
-        h('button', { class: 'btn btn--primary', type: 'button', onClick: () => location.reload() }, 'Réessayer')));
+        h('button', { class: 'btn btn--primary', type: 'button', onClick: () => location.reload() }, t('application.reessayer'))));
       return;
     }
   }

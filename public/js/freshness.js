@@ -30,6 +30,8 @@
 // Ce module ne touche pas directement à l'écran : app.js lui fournit ce qu'il
 // faut (testé automatiquement avec de fausses fonctions, test/freshness.test.js).
 
+import { t } from './i18n.js';
+
 export const CHECK_EVERY_MS = 60 * 60 * 1000; // vérification au premier plan : toutes les heures
 export const NOTICE_MS = 1200;                // durée du message avant le rechargement
 export const BUSY_WAIT_MS = 1000;             // envoi en cours : nouvel essai une seconde plus tard…
@@ -109,7 +111,7 @@ export function createFreshness({
   async function attempt() {
     if (!target || reloading) return;
     if (alreadyReloaded(target)) {
-      if (!logged) log('Listo : le code affiché est toujours ancien après un rechargement ; bouton « Recharger » proposé.');
+      if (!logged) log('Listo : le code affiché est toujours ancien après un rechargement ; bouton « Recharger » proposé.'); // technique : console
       logged = true;
       showBanner();
       return;
@@ -126,7 +128,7 @@ export function createFreshness({
       showBanner();
       return;
     }
-    notify('Mise à jour de Listo…');
+    notify(t('version.miseAJour'));
     await wait(NOTICE_MS);
     // Entre-temps, on a pu ouvrir une fenêtre ou toucher un champ
     if (blocker() || !rememberReload(target)) {

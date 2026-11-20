@@ -8,6 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const ui = read('public/js/ui.js');
@@ -19,8 +20,13 @@ test('pastille cliquable : un vrai <button> (pas role="status"), avec aria-live'
 });
 
 test('nom du bouton : l\'état et l\'action, mis à jour à chaque changement', () => {
-  assert.match(ui, /if \(pill\.tagName === 'BUTTON'\) pill\.setAttribute\('aria-label', `\$\{text\}, synchroniser maintenant`\);/);
-  for (const state of ["'À jour'", "'Synchronisation…'", '`Hors ligne · ${pendingCount} en attente`', "'Hors ligne'"]) assert.ok(ui.includes(state), state);
+  assert.match(ui, /if \(pill\.tagName === 'BUTTON'\) pill\.setAttribute\('aria-label', t\('fenetres\.sync\.bouton', \{ state: text \}\)\);/);
+  assert.equal(fr['fenetres.sync.bouton'], '{state}, synchroniser maintenant');
+  for (const state of ["t('fenetres.sync.aJour')", "t('fenetres.sync.enCours')", "t('fenetres.sync.horsLigne.enAttente', { count: pendingCount })", "t('fenetres.sync.horsLigne')"]) assert.ok(ui.includes(state), state);
+  assert.equal(fr['fenetres.sync.aJour'], 'À jour');
+  assert.equal(fr['fenetres.sync.enCours'], 'Synchronisation…');
+  assert.equal(fr['fenetres.sync.horsLigne.enAttente'], 'Hors ligne · {count} en attente');
+  assert.equal(fr['fenetres.sync.horsLigne'], 'Hors ligne');
 });
 
 test('annonce sans répétition : rien n\'est redessiné si l\'état affiché ne change pas', () => {

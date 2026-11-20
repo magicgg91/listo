@@ -14,6 +14,7 @@ import { openTotpSecret } from '../server/twofactor.js';
 import { allowedRedirect, redirectMatches, cimdUrl } from '../server/oauth-clients.js';
 import { MAX_GRANTS } from '../server/oauth.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const SECOND = 1000;
@@ -622,13 +623,19 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   const screen = read('public/js/screens/claude-consent.js');
   assert.match(screen, /let scope = 'read';\s+\/\/ « Lecture seule » présélectionnée/);
   assert.match(screen, /let allLists = true;\s+\/\/ « Toutes mes listes » par défaut/);
-  assert.match(screen, /'Ne continuez que si vous venez de lancer la connexion depuis Claude\.'/);
-  assert.match(screen, /'une application sur cet ordinateur \(localhost\)'/);
+  assert.match(screen, /t\('claude\.autoriser\.attention'\)/);
+  assert.equal(fr['claude.autoriser.attention'], 'Ne continuez que si vous venez de lancer la connexion depuis Claude.');
+  assert.match(screen, /t\('claude\.local'\)/);
+  assert.equal(fr['claude.local'], 'une application sur cet ordinateur (localhost)');
   // Nom déclaré par l'application elle-même (DCR) : « non vérifié »
-  assert.match(screen, /const named = request\.app\.nameFromApp \? 'nom donné par l\\'application, non vérifié' : 'nom fourni par l\\'application';/);
-  assert.match(screen, /const appSub = request\.app\.name \? `« \$\{request\.app\.name\} » \(\$\{named\}\)`/);
+  assert.match(screen, /const named = request\.app\.nameFromApp \? t\('claude\.application\.nonVerifie'\) : t\('claude\.application\.fourni'\);/);
+  assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
+  assert.equal(fr['claude.application.fourni'], 'nom fourni par l\'application');
+  assert.match(screen, /const appSub = request\.app\.name \? t\('claude\.application\.nom', \{ name: request\.app\.name, detail: named \}\)/);
+  assert.equal(fr['claude.application.nom'], '« {name} » ({detail})');
   // Phrase de confirmation juste au-dessus d'« Autoriser », dans la barre du bas
-  assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, 'Vous venez de lancer cette connexion depuis Claude \? Si ce n\\'est pas le cas, refusez\.'\),\s*allow, deny\)/);
+  assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, t\('claude\.autoriser\.question'\)\),\s*allow, deny\)/);
+  assert.equal(fr['claude.autoriser.question'], 'Vous venez de lancer cette connexion depuis Claude ? Si ce n\'est pas le cas, refusez.');
   assert.match(screen, /post\(`\/api\/oauth\/demandes\/\$\{enc\(id\)\}\/accord`/);
   assert.match(screen, /location\.assign\(redirect\)/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|style=|<script/);

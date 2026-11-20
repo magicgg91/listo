@@ -48,8 +48,12 @@ test('plus de bouton « Appareil photo » ni « Galerie » ; le seul menu de cho
     for (const gone of ["'Appareil photo'", "'Galerie'", 'Choisir une photo', 'openPhotoChoice', 'photoChoiceButtons', 'photoInputs']) {
       assert.ok(!text.includes(gone), `${file} : « ${gone} » doit avoir disparu`);
     }
-    if (!file.endsWith('public/js/photo.js')) {
+    // Textes du choix : dans le composant partagé et son dictionnaire seulement
+    if (!file.endsWith('public/js/photo.js') && !file.endsWith('public/js/i18n/fr/photo.js')) {
       assert.ok(!text.includes('Prendre une photo') && !text.includes('Choisir dans la galerie'), `${file} : choix réservé au composant partagé`);
+    }
+    if (!file.endsWith('public/js/photo.js')) {
+      assert.ok(!text.includes("t('photo.prendre')") && !text.includes("t('photo.galerie')"), `${file} : choix réservé au composant partagé`);
     }
   }
 });

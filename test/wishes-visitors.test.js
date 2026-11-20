@@ -415,13 +415,18 @@ test('écrans : visiteurs marqués « (lien public) » et retirés par le gestio
   const page = code('public/js/public.js');
   assert.match(page, /const NAME_KEY = `listo_prenom_\$\{token\}`;/);
   assert.match(page, /if \(!canReserve \|\| item\.checked \|\| !item\.id\) return null;/);
-  for (const label of ['Je participe', 'Annuler', 'Réservé · ouvert à d\\\'autres', 'Participer', 'Réservé', 'Réserver']) assert.ok(page.includes(label), label);
+  const labels = { 'lienpublic.jeParticipe': 'Je participe', 'lienpublic.annuler': 'Annuler', 'lienpublic.reserveOuvert': 'Réservé · ouvert à d\'autres', 'lienpublic.participer': 'Participer', 'lienpublic.reserve': 'Réservé', 'lienpublic.reserver': 'Réserver' };
+  for (const [key, label] of Object.entries(labels)) {
+    assert.ok(page.includes(`t('${key}')`), key);
+    assert.equal(fr[key], label);
+  }
   assert.match(page, /h\('div', \{ class: 'toast' \}, h\('span', \{ class: 'toast__text' \}, text\)\);\n  root\.append\(el\);\n  speak\(text\);/);
   assert.match(page, /document\.addEventListener\('visibilitychange', \(\) => \{/);
   assert.doesNotMatch(page, /innerHTML|insertAdjacentHTML|outerHTML/);
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);
   const share = read('public/js/screens/share.js');
-  assert.match(share, /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
+  assert.match(share, /h\('span', \{\}, wishShareWarning\(\)\)/);
+  assert.match(fr['partage.envies.avertissement'], /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
   assert.match(read('public/sw.js'), /const VERSION = `v(6[0-9]|[7-9]\d|\d{3,})-/);
 });
 

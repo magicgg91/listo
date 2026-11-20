@@ -38,7 +38,7 @@ const ITEM = itemWords(true);
 const SHOPPING = [
   { key: 'magasins', get label() { return t('administration.magasins'); }, api: 'stores', get placeholder() { return t('administration.magasins.nouveau'); } },
   { key: 'rayons', get label() { return t('administration.rayons'); }, api: 'aisles', get placeholder() { return t('administration.rayons.nouveau'); } },
-  { key: 'noms', label: ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1) },
+  { key: 'noms', get label() { return ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1); } },
 ];
 const TABS = [
   { key: 'comptes', get label() { return t('administration.onglets.comptes'); } },

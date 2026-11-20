@@ -23,6 +23,7 @@
 // et les réactions lui sont donnés (tests automatiques sans navigateur).
 
 import { reconnectDelay } from './live.js';
+import { t } from './i18n.js';
 
 export const OPS_PER_BATCH = 20;
 
@@ -122,7 +123,7 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
       const result = results?.[index];
       if (!result) return halt(null); // réponse incomplète : on réessaiera
       await remove(entry.seq);
-      if (result.status !== 200) emit('refused', entry, result.error || 'modification refusée');
+      if (result.status !== 200) emit('refused', entry, result.error || t('reseau.modificationRefusee'));
     }
     return null;
   }

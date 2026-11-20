@@ -277,13 +277,17 @@ test('synchronisation : un téléphone resté ouvert (temps réel) et un télép
 
 test('hors ligne : « Restaurer » inactif avec une phrase ; pas de restauration par la file d\'attente', () => {
   const screen = code('public/js/screens/trash.js');
-  assert.match(screen, /export const OFFLINE_RESTORE = 'Restaurer une liste demande une connexion\. Les boutons reviendront avec le réseau\.';/);
+  assert.match(screen, /export const offlineRestore = \(\) => t\('corbeille\.horsLigne\.restaurer'\);/);
+  assert.equal(fr['corbeille.horsLigne.restaurer'], 'Restaurer une liste demande une connexion. Les boutons reviendront avec le réseau.');
   assert.match(screen, /for \(const button of panel\.querySelectorAll\('button\[data-restore\]'\)\) button\.disabled = !online \|\| busy;/);
   assert.match(screen, /if \(!navigator\.onLine \|\| busy\) return;/);
   assert.match(screen, /window\.addEventListener\('online', onOnline\);\s*window\.addEventListener\('offline', onOffline\);/);
   assert.match(screen, /await post\(`\/api\/lists\/\$\{encodeURIComponent\(list\.id\)\}\/restore`\);\s*await refreshData\(\{ quiet: true \}\);/);
-  assert.match(screen, /toast\(`Liste « \$\{list\.name\} » restaurée`, \{ action: 'Ouvrir', onAction: \(\) => navigate\('list', \{ id: list\.id \}\) \}\);/);
-  assert.match(screen, /'Aucune liste supprimée\.'/);
+  assert.match(screen, /toast\(t\('corbeille\.restauree', \{ name: list\.name \}\), \{ action: t\('corbeille\.ouvrir'\), onAction: \(\) => navigate\('list', \{ id: list\.id \}\) \}\);/);
+  assert.equal(fr['corbeille.restauree'], 'Liste « {name} » restaurée');
+  assert.equal(fr['corbeille.ouvrir'], 'Ouvrir');
+  assert.match(screen, /t\('corbeille\.vide\.titre'\)/);
+  assert.equal(fr['corbeille.vide.titre'], 'Aucune liste supprimée.');
   assert.doesNotMatch(screen, /innerHTML|insertAdjacentHTML|\.focus\(/);
   // Aucune opération « restaurer » dans la file d'attente (/api/ops)
   assert.doesNotMatch(read('server/lists.js'), /'list\.restore'/);

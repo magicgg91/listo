@@ -36,7 +36,11 @@ test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seuleme
   // Réduite seulement si le texte dépasse la place laissée
   assert.match(ui, /if \(pill\.scrollWidth > slot\.clientWidth \+ 0\.5\) \{\s*pill\.classList\.add\('sync--compact'\);/);
   // Textes d'état inchangés
-  for (const text of ["'À jour'", "'Synchronisation…'", '`Hors ligne · ${pendingCount} en attente`', "'Hors ligne'"]) assert.ok(ui.includes(text), text);
+  for (const text of ["t('fenetres.sync.aJour')", "t('fenetres.sync.enCours')", "t('fenetres.sync.horsLigne.enAttente', { count: pendingCount })", "t('fenetres.sync.horsLigne')"]) assert.ok(ui.includes(text), text);
+  assert.equal(fr['fenetres.sync.aJour'], 'À jour');
+  assert.equal(fr['fenetres.sync.enCours'], 'Synchronisation…');
+  assert.equal(fr['fenetres.sync.horsLigne.enAttente'], 'Hors ligne · {count} en attente');
+  assert.equal(fr['fenetres.sync.horsLigne'], 'Hors ligne');
   // Réduite : texte masqué visuellement (pas display: none), donc toujours lu
   const css = read('public/css/listo.css');
   const rule = css.match(/\.sync--compact \.sync__text \{([^}]*)\}/)[1];

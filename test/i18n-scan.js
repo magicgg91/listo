@@ -8,7 +8,11 @@ import fs from 'node:fs';
 // '…', "…" et des parties fixes des `…` (le code des ${…} est lu comme du
 // code). Lecture simple, suffisante pour le code de Listo (pas d'expression
 // régulière contenant un guillemet seul).
-export function stringsOf(source) {
+// Une ligne qui porte le commentaire « // technique » (message jamais
+// affiché à l'écran : console, erreur interne, caractères à comparer) n'est
+// pas lue : son texte reste dans le code, en français.
+export function stringsOf(code) {
+  const source = code.split('\n').filter((line) => !/\/\/ technique\b/.test(line)).join('\n');
   const found = [];
   let i = 0;
   const stack = []; // profondeur des ${ } de chaque modèle `…` ouvert

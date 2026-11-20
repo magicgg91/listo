@@ -247,9 +247,9 @@ test('champ : curseur seulement après la loupe ; touche « rechercher », croix
   // Ordinateur : croix « Effacer la saisie », l'appui ne retire pas le curseur du champ
   assert.equal(fr['ajout.recherche.effacer'], 'Effacer la saisie');
   assert.match(row, /'aria-label': t\('ajout\.recherche\.effacer'\),\s*hidden: true,\s*onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,/);
-  for (const file of ['public/js/screens/deadlines.js']) {
-    assert.match(read(file), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, 'Effacer la recherche'\)/, file);
-  }
+  // Échéances : texte du dictionnaire
+  assert.match(read('public/js/screens/deadlines.js'), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, t\('echeances\.recherche\.effacer'\)\)/);
+  assert.equal(fr['echeances.recherche.effacer'], 'Effacer la recherche');
   // Liste : texte du dictionnaire
   assert.match(read('public/js/screens/list.js'), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, t\('liste\.recherche\.effacer'\)\)/);
   assert.equal(fr['liste.recherche.effacer'], 'Effacer la recherche');

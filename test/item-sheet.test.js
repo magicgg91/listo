@@ -37,7 +37,8 @@ test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, av
   assert.doesNotMatch(list, /'aria-label': (?:'Enregistrer'|t\('liste\.enregistrer'\)) \}, icon\('check'\)/);
   assert.match(list, /tools: pc \? null : \[remove, save\],/);
   // La croix (« Fermer ») vient toujours après les boutons de la fiche
-  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', 'Fermer', \(\) => close\(\)\)\)/);
+  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', t\('fenetres\.fermer'\), \(\) => close\(\)\)\)/);
+  assert.equal(fr['fenetres.fermer'], 'Fermer');
   // Un espace visible entre la poubelle et la disquette ; couleurs du kit
   const css = read('public/css/app.css');
   assert.match(css, /\.sheet__delete \{ margin-right: var\(--space-2\); \}/);

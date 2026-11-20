@@ -195,9 +195,12 @@ test('partage (ordinateur) : le propriétaire gère personnes et lien ; les autr
   assert.match(panel, /else if \(!owner\) right = h\('span', \{ class: 'pc-meta' \}, levelLabel\(person\.access\)\);/);
   assert.match(panel, /if \(owner\) \{\s*const candidates/);
   assert.match(panel, /const link = owner \? linkPart\(start, \(\) => panel\.close\(\)\) : null;/);
-  assert.match(panel, /title: owner \? 'Partager la liste' : 'Personnes',/);
+  assert.match(panel, /title: owner \? t\('partage\.panneau\.titre'\) : t\('partage\.panneau\.personnes'\),/);
+  assert.equal(fr['partage.panneau.titre'], 'Partager la liste');
+  assert.equal(fr['partage.panneau.personnes'], 'Personnes');
   // Destinataire d'une liste d'envies : « Peut modifier », sans choix
-  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, 'Destinataire · Peut modifier'\);/);
+  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, t\('partage\.panneau\.destinataire'\)\);/);
+  assert.equal(fr['partage.panneau.destinataire'], 'Destinataire · Peut modifier');
   // Même route que le formulaire, en ligne seulement ; jamais d'e-mail
   assert.match(panel, /await put\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`, \{/);
   assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
@@ -279,7 +282,8 @@ test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après un
   const ui = read('public/js/ui.js');
   assert.match(ui, /export function offlineBanner\(\) \{/);
   assert.match(ui, /banner\.hidden = state !== 'off';/);
-  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: 'Réessayer', onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: t\('application\.reessayer'\), onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  assert.equal(fr['application.reessayer'], 'Réessayer');
   const list = read('public/js/screens/list.js');
   assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, `\$\{t\('liste\.vide\.astuce\.debut'\)\} `/);
   assert.equal(fr['liste.vide.astuce.debut'], 'Astuce : appuyez sur');

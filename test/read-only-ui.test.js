@@ -217,9 +217,9 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
   const appJs = read('public/js/app.js');
   assert.match(appJs, /const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste\.';/);
   assert.equal(READ_ONLY, 'Vous avez un accès en lecture seule à cette liste.', 'même texte que le serveur');
-  assert.match(appJs, /const READ_ONLY_OFFLINE = "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées\.";/);
+  assert.equal(fr['application.lectureSeule.horsLigne'], "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.");
   assert.match(appJs, /readOnlyRefused = refusals\.includes\(READ_ONLY\);[\s\S]*?const \[first, \.\.\.others\] = refusals\.filter\(\(message\) => message !== READ_ONLY && !OPTION_OFF\.includes\(message\)\);\s*refusals = \[\];\s*full = true;/);
-  assert.match(appJs, /dataChanged\(\);\s*if \(readOnlyRefused\) toast\(READ_ONLY_OFFLINE\);/);
+  assert.match(appJs, /dataChanged\(\);\s*if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);/);
 });
 
 test('page publique : inchangée (aucun droit, aucun compte)', () => {

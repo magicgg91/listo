@@ -19,17 +19,18 @@ import { get, post, errorMessage, ApiError } from '../api.js';
 import { row } from './settings.js';
 import { providerName } from '../app.js';
 import { listIcon } from '../list-icons.js';
+import { t } from '../i18n.js';
 
 const enc = encodeURIComponent;
 
 // Ce que Claude pourra faire, pour chacun des deux niveaux d'accord (écran
 // d'autorisation ; mêmes niveaux que server/oauth.js)
 export const SCOPE_TEXTS = {
-  read: 'Claude pourra lire vos listes, sans rien y changer.',
-  write: 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Jamais supprimer d\'élément ni de liste, ni partager.',
+  get read() { return t('claude.autoriser.lecture.texte'); },
+  get write() { return t('claude.autoriser.ecriture.texte'); },
 };
 // Avertissement du niveau « Lecture et écriture »
-export const EDIT_WARNING = 'Une liste partagée peut contenir un texte piégé, écrit pour tromper Claude et lui faire changer vos éléments. C\'est pourquoi ce niveau demande plus de confiance : choisissez-le seulement si vous en avez besoin.';
+export const editWarningText = () => t('claude.autoriser.ecriture.avertissement');
 
 // Choix exclusif du kit (.radio-row dans une carte) : rond plein ET texte
 // en gras sur le choix actif (jamais la couleur seule). Une ligne par choix :
@@ -87,18 +88,18 @@ function message(title, text) {
 
 function topbar() {
   return h('header', { class: 'topbar' },
-    h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Autoriser Claude')));
+    h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('claude.autoriser.titre'))));
 }
 
 export function renderClaudeConsent(id) {
-  const container = h('div', { class: 'screen' }, topbar(), h('div', { class: 'body' }, h('p', { class: 'muted' }, 'Chargement…')));
+  const container = h('div', { class: 'screen' }, topbar(), h('div', { class: 'body' }, h('p', { class: 'muted' }, t('claude.chargement'))));
   get(`/api/oauth/demandes/${enc(id)}`).then(
     (data) => replace(container, consentForm(id, data)),
     (err) => {
       const expired = err instanceof ApiError && err.status === 404;
       replace(container, topbar(), h('div', { class: 'body' },
-        expired ? message('Demande introuvable ou expirée', 'Relancez la connexion depuis Claude.')
-          : message('Demande impossible à afficher', errorMessage(err))));
+        expired ? message(t('claude.autoriser.expiree'), t('claude.autoriser.expiree.texte'))
+          : message(t('claude.autoriser.impossible'), errorMessage(err))));
     });
   return container;
 }
@@ -108,8 +109,8 @@ export function renderClaudeConsent(id) {
 // les choix faits avant seraient perdus). « Refuser » reste possible.
 function confirmFirst(id, request, failed) {
   const error = errorNote();
-  if (failed) error.show(`${providerName()} n'a pas redemandé la connexion : la confirmation n'a pas abouti. Réessayez.`);
-  const deny = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, 'Refuser');
+  if (failed) error.show(t('claude.autoriser.fournisseur.echec', { provider: providerName() }));
+  const deny = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, t('claude.autoriser.refuser'));
   deny.addEventListener('click', async () => {
     deny.disabled = true;
     try {
@@ -123,13 +124,13 @@ function confirmFirst(id, request, failed) {
   return h('div', { class: 'screen' },
     topbar(),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
-      h('p', {}, 'Claude demande l\'accès à vos listes Listo. Il agira avec votre compte et vos droits, jamais plus.'),
-      h('div', { class: 'note' }, icon('alert'), h('p', {}, 'Ne continuez que si vous venez de lancer la connexion depuis Claude.')),
-      h('div', { class: 'card card--clip' }, row({ iconName: 'shield', title: request.app.host, sub: request.app.name ? `« ${request.app.name} »` : 'Application qui demande l\'accès' })),
-      h('p', {}, `Vous êtes connecté avec ${providerName()} : confirmez d'abord votre identité. ${providerName()} vous redemandera de vous connecter, puis vous reviendrez ici pour choisir l'accès et les listes.`),
+      h('p', {}, t('claude.autoriser.intro')),
+      h('div', { class: 'note' }, icon('alert'), h('p', {}, t('claude.autoriser.attention'))),
+      h('div', { class: 'card card--clip' }, row({ iconName: 'shield', title: request.app.host, sub: request.app.name ? t('claude.autoriser.nomSeul', { name: request.app.name }) : t('claude.autoriser.application') })),
+      h('p', {}, t('claude.autoriser.fournisseur.texte', { provider: providerName() })),
       error.note)),
     h('div', { class: 'footer' },
-      h('a', { class: 'btn btn--primary btn--block', href: `/oidc/connexion?confirmer=${enc(id)}` }, icon('shield'), `Confirmer avec ${providerName()}`), // « Confirmer avec … »
+      h('a', { class: 'btn btn--primary btn--block', href: `/oidc/connexion?confirmer=${enc(id)}` }, icon('shield'), t('claude.autoriser.fournisseur.confirmer', { provider: providerName() })), // « Confirmer avec … »
       deny));
 }
 
@@ -147,40 +148,40 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
   // Nom de l'application : déclaré par l'application elle-même
   // (enregistrement automatique) → signalé comme non vérifié ; lu dans le
   // document d'identification publié sur claude.ai → nom fourni par l'application
-  const named = request.app.nameFromApp ? 'nom donné par l\'application, non vérifié' : 'nom fourni par l\'application';
-  const appSub = request.app.name ? `« ${request.app.name} » (${named})` : 'Application qui demande l\'accès';
+  const named = request.app.nameFromApp ? t('claude.application.nonVerifie') : t('claude.application.fourni');
+  const appSub = request.app.name ? t('claude.application.nom', { name: request.app.name, detail: named }) : t('claude.autoriser.application');
   const who = h('div', { class: 'card card--clip' },
     row({ iconName: 'shield', title: request.app.host, sub: appSub }),
-    row({ iconName: 'link', title: local ? 'une application sur cet ordinateur (localhost)' : request.redirect.host, sub: 'La réponse sera envoyée ici' }),
-    row({ iconName: 'lock', title: account.displayName, sub: `Votre compte Listo (${account.username})` }));
+    row({ iconName: 'link', title: local ? t('claude.local') : request.redirect.host, sub: t('claude.autoriser.retour') }),
+    row({ iconName: 'lock', title: account.displayName, sub: t('claude.autoriser.compte', { username: account.username }) }));
 
   // Accès : « Lecture et écriture » seulement si l'application l'a demandé ;
-  // ce niveau est signalé : il demande de la confiance (EDIT_WARNING)
+  // ce niveau est signalé : il demande de la confiance (editWarningText)
   const scopeHint = h('p', { class: 'field__hint', id: 'consent-scope-hint' });
-  const editWarning = h('div', { class: 'note note--danger', id: 'consent-edit-warning', hidden: true }, icon('alert'), h('p', {}, EDIT_WARNING));
+  const editWarning = h('div', { class: 'note note--danger', id: 'consent-edit-warning', hidden: true }, icon('alert'), h('p', {}, editWarningText()));
   const paintScopeHint = () => {
     scopeHint.textContent = SCOPE_TEXTS[scope];
     editWarning.hidden = scope !== 'write';
   };
   paintScopeHint();
-  const levels = [['read', 'Lecture seule'], ['write', 'Lecture et écriture']];
+  const levels = [['read', t('claude.acces.lecture')], ['write', t('claude.acces.ecriture')]];
   const scopeField = h('div', { class: 'field' },
-    h('span', { class: 'field__label', id: 'consent-scope' }, 'Accès'),
+    h('span', { class: 'field__label', id: 'consent-scope' }, t('claude.autoriser.niveau')),
     request.write
       ? radioGroup('consent-scope', levels, scope, (value) => {
         scope = value;
         paintScopeHint();
       })
-      : h('p', {}, 'Lecture seule'),
+      : h('p', {}, t('claude.acces.lecture')),
     scopeHint,
     editWarning);
 
   // Listes : toutes, ou une sélection
   const picker = h('div', { class: 'card card--clip', hidden: true },
-    lists.length ? lists.map((list) => listTick(list, chosen)) : h('p', { class: 'muted' }, 'Vous n\'avez encore aucune liste.'));
+    lists.length ? lists.map((list) => listTick(list, chosen)) : h('p', { class: 'muted' }, t('claude.autoriser.aucuneListe')));
   const listsField = h('div', { class: 'field' },
-    h('span', { class: 'field__label', id: 'consent-lists' }, 'Listes'),
-    radioGroup('consent-lists', [['all', 'Toutes mes listes'], ['some', 'Certaines listes']], 'all', (value) => {
+    h('span', { class: 'field__label', id: 'consent-lists' }, t('claude.autoriser.listes')),
+    radioGroup('consent-lists', [['all', t('claude.toutesMesListes')], ['some', t('claude.autoriser.certainesListes')]], 'all', (value) => {
       allLists = value === 'all';
       picker.hidden = allLists;
     }),
@@ -189,13 +190,13 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
   // Mot de passe (et code 2FA), redemandés à chaque nouvelle autorisation ;
   // pas avec le fournisseur d'identité (déjà reconfirmé chez le fournisseur d'identité, voir confirmFirst)
   const password = passwordInput({ autocomplete: 'current-password' });
-  const passwordField = field('Mot de passe', password.wrap);
+  const passwordField = field(t('claude.autoriser.motDePasse'), password.wrap);
   const code = twoFactor && !viaProvider ? h('input', { class: 'input input--mono', type: 'text', autocomplete: 'one-time-code', autocapitalize: 'characters', spellcheck: 'false' }) : null;
-  const codeField = code ? field('Code', code, { hint: "Code à 6 chiffres de l'application, ou l'un de vos codes de secours." }) : null;
+  const codeField = code ? field(t('claude.autoriser.code'), code, { hint: t('claude.autoriser.code.aide') }) : null;
   const error = errorNote();
 
-  const allow = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Autoriser');
-  const deny = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, 'Refuser');
+  const allow = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('claude.autoriser.autoriser'));
+  const deny = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, t('claude.autoriser.refuser'));
   const busy = (on) => {
     allow.disabled = on;
     deny.disabled = on;
@@ -204,21 +205,21 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
   const form = h('form', { novalidate: true },
     topbar(),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
-      h('p', {}, 'Claude demande l\'accès à vos listes Listo. Il agira avec votre compte et vos droits, jamais plus.'),
-      h('div', { class: 'note' }, icon('alert'), h('p', {}, 'Ne continuez que si vous venez de lancer la connexion depuis Claude.')),
+      h('p', {}, t('claude.autoriser.intro')),
+      h('div', { class: 'note' }, icon('alert'), h('p', {}, t('claude.autoriser.attention'))),
       who,
       local ? h('div', { class: 'note note--danger' }, icon('alert'),
-        h('p', {}, 'La réponse ira à une application installée sur cet ordinateur (par exemple Claude Code), pas à claude.ai. Refusez si vous ne l\'avez pas lancée vous-même.')) : null,
+        h('p', {}, t('claude.autoriser.local'))) : null,
       scopeField,
       listsField,
       viaProvider
-        ? h('div', { class: 'note' }, icon('check'), h('p', {}, `Identité confirmée avec ${providerName()} (valable 5 minutes).`))
-        : [h('p', { class: 'muted' }, 'Confirmez avec votre mot de passe.'), passwordField.field],
+        ? h('div', { class: 'note' }, icon('check'), h('p', {}, t('claude.autoriser.fournisseur.confirme', { provider: providerName() })))
+        : [h('p', { class: 'muted' }, t('claude.autoriser.motDePasse.confirmer')), passwordField.field],
       codeField?.field ?? null,
       error.note)),
     // Juste au-dessus d'« Autoriser », toujours visible (barre du bas)
     h('div', { class: 'footer' },
-      h('p', {}, 'Vous venez de lancer cette connexion depuis Claude ? Si ce n\'est pas le cas, refusez.'),
+      h('p', {}, t('claude.autoriser.question')),
       allow, deny));
 
   // Autoriser : vérifications sur le téléphone, puis le serveur décide
@@ -228,9 +229,9 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
     error.show('');
     passwordField.setError(null);
     codeField?.setError(null);
-    if (!allLists && !chosen.size) return error.show('Choisissez au moins une liste.');
-    if (!viaProvider && !password.input.value) return passwordField.setError('Saisissez votre mot de passe');
-    if (code && !code.value.trim()) return codeField.setError('Saisissez un code');
+    if (!allLists && !chosen.size) return error.show(t('claude.autoriser.choisirListe'));
+    if (!viaProvider && !password.input.value) return passwordField.setError(t('claude.autoriser.motDePasse.manquant'));
+    if (code && !code.value.trim()) return codeField.setError(t('claude.autoriser.code.manquant'));
     busy(true);
     try {
       const { redirect } = await post(`/api/oauth/demandes/${enc(id)}/accord`, {

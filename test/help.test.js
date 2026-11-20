@@ -293,18 +293,22 @@ test('tableaux en blocs empilés (320 px) ; commandes en bloc de code ; encadré
 
 test('sommaire : feuille du kit (openSheet), section en cours repérée sans la couleur seule, « Haut de page », focus rendu', () => {
   const screen = code('public/js/screens/help.js');
-  assert.match(screen, /openSheet\(\{\s*title: 'Sommaire',/);
+  assert.match(screen, /openSheet\(\{\s*title: t\('aide\.sommaire'\),/);
+  assert.equal(fr['aide.sommaire'], 'Sommaire');
   assert.match(screen, /returnTo: tocButton,/);
   assert.match(screen, /'aria-current': current \? 'location' : null/);
   assert.match(screen, /tocContent\(\{ entries, here, hereChapter, onChoose: choose \}\)/);
   assert.match(screen, /current \? icon\('chev-r', 'icon--sm'\) : null/);
-  assert.match(screen, /\(section en cours\)/);
-  assert.match(screen, /'Haut de page'/);
+  assert.match(screen, /t\('aide\.sommaire\.enCours'\)/);
+  assert.equal(fr['aide.sommaire.enCours'], '(section en cours)');
+  assert.match(screen, /t\('aide\.sommaire\.haut'\)/);
+  assert.equal(fr['aide.sommaire.haut'], 'Haut de page');
   assert.match(screen, /tocButton\.setAttribute\('aria-expanded', 'false'\)/);
   // La fenêtre (ui.js) se ferme par Échap, par la croix « Fermer » et rend le focus
   const ui = code('public/js/ui.js');
   assert.match(ui, /if \(event\.key === 'Escape'\) close\(\);/);
-  assert.match(ui, /iconButton\('close', 'Fermer', \(\) => close\(\)\)/);
+  assert.match(ui, /iconButton\('close', t\('fenetres\.fermer'\), \(\) => close\(\)\)/);
+  assert.equal(fr['fenetres.fermer'], 'Fermer');
   assert.match(ui, /opener\.focus\(\)/);
 });
 

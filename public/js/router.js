@@ -63,7 +63,7 @@ export function matchRoute(hash) {
 // Fabrique l'adresse d'un écran : pathFor('list', { id: 'abc' }) → « #/listes/abc »
 export function pathFor(name, params = {}) {
   const route = ROUTES.find((r) => r.name === name);
-  if (!route) throw new Error(`Écran inconnu : ${name}`);
+  if (!route) throw new Error(`Écran inconnu : ${name}`); // technique : erreur interne, jamais affichée
   const path = route.path.replace(/:(\w+)/g, (_, key) => encodeURIComponent(params[key] ?? ''));
   return `#${path}`;
 }

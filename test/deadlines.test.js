@@ -10,7 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { emptyState, loadTypeFilter, saveTypeFilter, TYPE_FILTER_KEY } from '../public/js/store.js';
-import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, DEADLINE_GROUPS } from '../public/js/deadlines.js';
+import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, deadlineGroups } from '../public/js/deadlines.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
 import fr from '../public/js/i18n/fr.js';
 
@@ -54,7 +54,7 @@ function state() {
 const ids = (groups) => groups.map((g) => [g.key, g.entries.map((e) => e.item.id)]);
 
 test('groupes : En retard, Aujourd\'hui, Demain, Cette semaine (jusqu\'au dimanche), Plus tard', () => {
-  assert.deepEqual(DEADLINE_GROUPS.map(([, title]) => title), ['En retard', "Aujourd'hui", 'Demain', 'Cette semaine', 'Plus tard']);
+  assert.deepEqual(deadlineGroups().map(([, title]) => title), ['En retard', "Aujourd'hui", 'Demain', 'Cette semaine', 'Plus tard']);
   assert.equal(endOfWeek(TODAY), '2026-11-15');
   assert.equal(endOfWeek('2026-11-15'), '2026-11-15', 'dimanche : la semaine finit aujourd\'hui');
   assert.equal(endOfWeek('2026-11-16'), '2026-11-22', 'lundi');
@@ -131,7 +131,8 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   const screen = read('public/js/screens/deadlines.js');
   assert.match(screen, /const canCheck = canEditList\(list\);/);
   assert.match(screen, /canCheck\s*\? h\('button', \{ class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': item\.name, onClick: \(\) => check\(item\) \}/);
-  assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' \}/);
+  assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': t\('echeances\.lectureSeule'\) \}/);
+  assert.equal(fr['echeances.lectureSeule'], 'Non coché, lecture seule');
   // Écritures : checkItem (actions.js → perform → file d'attente), et
   // updateItem seulement pour « Annuler » d'une tâche qui se répète
   // (l'ancienne date revient, et chacun son tour, la personne de cette

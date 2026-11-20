@@ -10,6 +10,7 @@ import { createClient, ORIGIN } from './helpers.js';
 import { PASSWORD, MARIE_PASSWORD, household, connect, claude } from './mcp-helpers.js';
 import { GUIDE } from '../public/js/help-content.js';
 import { matchRoute } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const ping = async (h, token) => (await claude(h, token).rpc('ping')).status;
@@ -138,10 +139,14 @@ test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\
   const screen = read('public/js/screens/claude-connections.js');
   assert.match(screen, /del\(`\/api\/me\/claude\/\$\{encodeURIComponent\(connection\.id\)\}`\)/);
   assert.match(screen, /del\('\/api\/me\/claude'\)/);
-  assert.match(screen, /confirmDialog\(\{\s*title: `Déconnecter/);
-  assert.match(screen, /confirmDialog\(\{\s*title: 'Tout déconnecter \?'/);
-  assert.match(screen, /'aria-label': `Déconnecter \$\{titleOf\(connection\)\}`/);
-  assert.match(screen, /nom donné par l\\'application, non vérifié/);
+  assert.match(screen, /confirmDialog\(\{\s*title: t\('claude\.connexions\.deconnecter\.question', \{ name: titleOf\(connection\) \}\)/);
+  assert.equal(fr['claude.connexions.deconnecter.question'], 'Déconnecter {name} ?');
+  assert.match(screen, /confirmDialog\(\{\s*title: t\('claude\.connexions\.tout\.question'\)/);
+  assert.equal(fr['claude.connexions.tout.question'], 'Tout déconnecter ?');
+  assert.match(screen, /'aria-label': t\('claude\.connexions\.deconnecter\.nom', \{ name: titleOf\(connection\) \}\)/);
+  assert.equal(fr['claude.connexions.deconnecter.nom'], 'Déconnecter {name}');
+  assert.match(screen, /t\('claude\.application\.nonVerifie'\)/);
+  assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|https:\/\//);
   assert.ok(read('public/sw.js').includes("'/js/screens/claude-connections.js'"));
   // Aide : le chapitre « Claude et Listo » du guide, le même pour tous ; il

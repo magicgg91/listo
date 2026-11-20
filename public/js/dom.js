@@ -4,6 +4,8 @@
 // innerHTML. Un nom d'article comme « <script>… » s'affiche donc tel quel,
 // sans jamais être exécuté.
 
+import { t } from './i18n.js';
+
 const SVG = 'http://www.w3.org/2000/svg';
 
 // Crée un élément HTML.
@@ -66,10 +68,10 @@ export function iconButton(name, label, onClick, extraClass = '') {
 // Champ de mot de passe avec le bouton « œil » pour l'afficher
 export function passwordInput(attrs = {}) {
   const input = h('input', { class: 'input', type: 'password', autocapitalize: 'off', spellcheck: 'false', ...attrs });
-  const toggle = iconButton('eye', 'Afficher le mot de passe', () => {
+  const toggle = iconButton('eye', t('fenetres.motDePasse.afficher'), () => {
     const shown = input.type === 'text';
     input.type = shown ? 'password' : 'text';
-    toggle.setAttribute('aria-label', shown ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+    toggle.setAttribute('aria-label', shown ? t('fenetres.motDePasse.afficher') : t('fenetres.motDePasse.masquer'));
     toggle.setAttribute('aria-pressed', String(!shown));
   });
   toggle.setAttribute('aria-pressed', 'false');
@@ -175,5 +177,5 @@ export function initial(name) {
 
 // Pastille « Multi » : magasin qui en regroupe plusieurs (kit, section 16.2)
 export function multiBadge() {
-  return h('span', { class: 'badge-multi' }, icon('layers', 'icon--xs'), 'Multi');
+  return h('span', { class: 'badge-multi' }, icon('layers', 'icon--xs'), t('fenetres.multi'));
 }

@@ -20,45 +20,46 @@ import { navigate, goBack } from '../router.js';
 import { confirmDialog, toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { relativeTime, dateTimeLabel, namesList } from '../format.js';
+import { t } from '../i18n.js';
 
 // Niveau d'accord de chaque connexion (mêmes niveaux que server/oauth.js)
-export const ACCESS_LABELS = { read: 'Lecture seule', write: 'Lecture et écriture' };
+export const ACCESS_LABELS = { get read() { return t('claude.acces.lecture'); }, get write() { return t('claude.acces.ecriture'); } };
 
 // Nom de l'application, comme sur l'écran « Autoriser Claude »
 function appName(connection) {
   if (!connection.app.name) return null;
-  return `« ${connection.app.name} » (${connection.app.nameFromApp ? 'nom donné par l\'application, non vérifié' : 'nom fourni par l\'application'})`;
+  return t('claude.application.nom', { name: connection.app.name, detail: connection.app.nameFromApp ? t('claude.application.nonVerifie') : t('claude.application.fourni') });
 }
 
 // Titre court d'une connexion (confirmation, aria-label)
-const titleOf = (connection) => (connection.redirect.local ? `${connection.app.host} (cet ordinateur)` : connection.app.host);
+const titleOf = (connection) => (connection.redirect.local ? t('claude.connexions.titreLocal', { host: connection.app.host }) : connection.app.host);
 
 async function copyAddress(url) {
   try {
     await navigator.clipboard.writeText(url);
-    toast('Adresse copiée', { low: true });
+    toast(t('claude.connexions.copiee'), { low: true });
   } catch {
-    toast('Copie impossible : sélectionnez l\'adresse à la main.');
+    toast(t('claude.connexions.copieImpossible'));
   }
 }
 
 export function renderClaudeConnections() {
   const url = app.user?.claudeUrl ?? '';
-  const list = h('div', {}, h('p', { class: 'muted' }, 'Chargement…'));
+  const list = h('div', {}, h('p', { class: 'muted' }, t('claude.chargement')));
   const screen = h('div', { class: 'screen claude-connections' },
-    topbar('Connexions Claude', () => goBack('account')),
+    topbar(t('claude.connexions.titre'), () => goBack('account')),
     h('div', { class: 'body' },
-      h('p', { class: 'claude-connections__intro' }, 'Claude (claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous lui avez accordé « Lecture et écriture », y ajouter des éléments, les cocher et les modifier (nom, quantité, note, priorité, échéance), au nom de votre compte. Chaque connexion que vous avez autorisée apparaît ici.'),
-      h('h2', { class: 'section-title' }, 'Adresse à saisir dans Claude'),
+      h('p', { class: 'claude-connections__intro' }, t('claude.connexions.intro')),
+      h('h2', { class: 'section-title' }, t('claude.connexions.adresse')),
       h('div', { class: 'group' },
         // L'adresse sur sa propre ligne (elle peut être longue), puis « Copier »
         h('div', { class: 'claude-connections__address' },
-          h('p', { class: 'row__sub' }, 'À ajouter comme connecteur personnalisé dans Claude :'),
+          h('p', { class: 'row__sub' }, t('claude.connexions.adresse.detail')),
           h('p', { class: 'claude-connections__url' }, url),
-          h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => copyAddress(url) }, icon('copy', 'icon--sm'), 'Copier l\'adresse')),
+          h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => copyAddress(url) }, icon('copy', 'icon--sm'), t('claude.connexions.copier'))),
         h('button', { class: 'row', type: 'button', onClick: () => navigate('helpSection', { section: 'claude' }) },
           h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('book')),
-          h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, 'Utiliser Listo avec Claude'), h('span', { class: 'row__sub' }, 'Aide : se connecter, ce que Claude peut faire')),
+          h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, t('claude.connexions.aide')), h('span', { class: 'row__sub' }, t('claude.connexions.aide.detail'))),
           icon('chev-r'))),
       list));
   load(list);
@@ -68,14 +69,14 @@ export function renderClaudeConnections() {
 // Connexions du compte (relues après chaque déconnexion)
 async function load(container) {
   if (!navigator.onLine) {
-    replace(container, emptyState('Connexion nécessaire', 'Il faut du réseau pour voir et déconnecter les connexions Claude.'));
+    replace(container, emptyState(t('claude.connexions.reseau'), t('claude.connexions.reseau.texte')));
     return;
   }
   try {
     const { connections } = await get('/api/me/claude');
     replace(container, connectionsView(container, connections));
   } catch (err) {
-    replace(container, emptyState('Connexions indisponibles', errorMessage(err)));
+    replace(container, emptyState(t('claude.connexions.indisponibles'), errorMessage(err)));
   }
 }
 
@@ -88,19 +89,19 @@ function emptyState(title, text) {
 
 function connectionsView(container, connections) {
   if (!connections.length) {
-    return [h('h2', { class: 'section-title' }, 'Connexions'),
-      emptyState('Aucune connexion', 'Ajoutez Listo dans Claude avec l\'adresse ci-dessus, puis autorisez-le.')];
+    return [h('h2', { class: 'section-title' }, t('claude.connexions.section')),
+      emptyState(t('claude.connexions.aucune'), t('claude.connexions.aucune.texte'))];
   }
   const disconnectOne = async (connection) => {
     const ok = await confirmDialog({
-      title: `Déconnecter ${titleOf(connection)} ?`,
-      text: 'Claude ne pourra plus lire ni modifier vos listes avec cette connexion. Pour le reconnecter, il faudra l\'autoriser de nouveau.',
-      confirmLabel: 'Déconnecter',
+      title: t('claude.connexions.deconnecter.question', { name: titleOf(connection) }),
+      text: t('claude.connexions.deconnecter.texte'),
+      confirmLabel: t('claude.connexions.deconnecter'),
     });
     if (!ok) return;
     try {
       await del(`/api/me/claude/${encodeURIComponent(connection.id)}`);
-      toast('Connexion déconnectée', { low: true });
+      toast(t('claude.connexions.deconnectee'), { low: true });
     } catch (err) {
       toast(errorMessage(err));
     }
@@ -108,14 +109,14 @@ function connectionsView(container, connections) {
   };
   const disconnectAll = async () => {
     const ok = await confirmDialog({
-      title: 'Tout déconnecter ?',
-      text: 'Toutes vos connexions Claude sont coupées tout de suite. Pour reconnecter Claude, il faudra l\'autoriser de nouveau.',
-      confirmLabel: 'Tout déconnecter',
+      title: t('claude.connexions.tout.question'),
+      text: t('claude.connexions.tout.texte'),
+      confirmLabel: t('claude.connexions.tout'),
     });
     if (!ok) return;
     try {
       await del('/api/me/claude');
-      toast('Toutes les connexions sont déconnectées', { low: true });
+      toast(t('claude.connexions.tout.fait'), { low: true });
     } catch (err) {
       toast(errorMessage(err));
     }
@@ -123,34 +124,34 @@ function connectionsView(container, connections) {
   };
 
   return [
-    h('h2', { class: 'section-title' }, `Connexions (${connections.length})`),
+    h('h2', { class: 'section-title' }, t('claude.connexions.section.nombre', { count: connections.length })),
     h('div', { class: 'group' }, connections.map((connection) => connectionRow(connection, disconnectOne))),
     h('div', { class: 'claude-connections__all' },
-      h('button', { class: 'btn btn--danger btn--block', type: 'button', onClick: disconnectAll }, 'Tout déconnecter')),
+      h('button', { class: 'btn btn--danger btn--block', type: 'button', onClick: disconnectAll }, t('claude.connexions.tout'))),
   ];
 }
 
 // Une connexion : application, retour, droit, listes, dates, « Déconnecter »
 function connectionRow(connection, onDisconnect) {
   const name = appName(connection);
-  const lists = connection.allLists ? 'Toutes mes listes'
-    : connection.lists.length ? namesList(connection.lists) : 'Aucune liste (supprimées ou quittées)';
-  const used = connection.lastUsedAt ? relativeTime(connection.lastUsedAt) : 'jamais';
+  const lists = connection.allLists ? t('claude.toutesMesListes')
+    : connection.lists.length ? namesList(connection.lists) : t('claude.connexions.aucuneListe');
+  const used = connection.lastUsedAt ? relativeTime(connection.lastUsedAt) : t('claude.connexions.jamais');
   return h('div', { class: 'row' },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('shield')),
     h('span', { class: 'row__body' },
       h('span', { class: 'row__title' }, connection.app.host),
       name ? h('span', { class: 'row__sub' }, name) : null,
-      h('span', { class: 'row__sub' }, `Réponse envoyée à : ${connection.redirect.local ? 'une application sur cet ordinateur (localhost)' : connection.redirect.host}`),
+      h('span', { class: 'row__sub' }, t('claude.connexions.reponse', { host: connection.redirect.local ? t('claude.local') : connection.redirect.host })),
       h('span', { class: 'claude-connections__chips' },
         h('span', { class: `chip${connection.access === 'read' ? '' : ' chip--accent'}` }, ACCESS_LABELS[connection.access] ?? ACCESS_LABELS.read)),
-      h('span', { class: 'row__sub' }, `Listes : ${lists}`),
-      h('span', { class: 'row__sub' }, `Connectée le ${dateTimeLabel(connection.createdAt)}`),
-      h('span', { class: 'row__sub' }, `Dernière utilisation : ${used}`),
+      h('span', { class: 'row__sub' }, t('claude.connexions.listes', { lists })),
+      h('span', { class: 'row__sub' }, t('claude.connexions.date', { date: dateTimeLabel(connection.createdAt) })),
+      h('span', { class: 'row__sub' }, t('claude.connexions.utilisation', { used })),
       h('button', {
         class: 'btn btn--danger-outline btn--sm claude-connections__button',
         type: 'button',
-        'aria-label': `Déconnecter ${titleOf(connection)}`,
+        'aria-label': t('claude.connexions.deconnecter.nom', { name: titleOf(connection) }),
         onClick: () => onDisconnect(connection),
-      }, 'Déconnecter')));
+      }, t('claude.connexions.deconnecter'))));
 }

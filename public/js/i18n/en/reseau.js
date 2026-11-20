@@ -14,4 +14,12 @@ export default {
 
   // File d'attente : refus sans message du serveur (queue.js)
   'reseau.modificationRefusee': 'change refused',
+
+  // Réponses générales du serveur (server/app.js), dans la langue de la requête
+  'reseau.routeInconnue': 'Unknown route.',
+  'reseau.requeteMalFormee': 'Malformed request.',
+  'reseau.requeteTropVolumineuse': 'Request too large.',
+  'reseau.requeteInvalide': 'Invalid request.',
+  'reseau.erreurInterne': 'Internal server error.',
+  'reseau.pageIntrouvable': 'Page not found.',
 };

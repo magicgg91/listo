@@ -53,7 +53,7 @@ export default {
       blocks: [{ ul: [
         'Phone changed or lost: sign in with one of your “Recovery codes” (“Use a recovery code”), then turn two-factor authentication back on with the new phone ([[double-auth]]).',
         'No phone and no recovery codes left: the Admin chooses “Disable two-factor authentication” on your account (“Administration”, “Accounts”, ⋮ button). You sign in with just your password, then turn it back on.',
-        'It\'s the Admin who is locked out: see [[secours]] (recovery command with `--retirer-2fa`).',
+        'It\'s the Admin who is locked out: see [[secours]] (recovery command with `--remove-2fa`).',
         'The 6-digit code is always refused: the phone\'s clock may be wrong; set it to automatic.',
         'Nobody can get their codes accepted anymore after a server failure: the secret key may have been lost ([[cle-perdue]]).',
       ] }],
@@ -65,7 +65,7 @@ export default {
       blocks: [
         'Without a copy of `secrets/secret.key`, Listo creates a new key at startup. Lists, items, photos and passwords aren\'t affected, but:',
         { ul: [
-          'two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--retirer-2fa` ([[secours]]), then everyone turns it back on;',
+          'two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--remove-2fa` ([[secours]]), then everyone turns it back on;',
           'public links already created still work, but their address can no longer be shown again: stop them and create new ones;',
           'this time, keep a copy of the new key ([[cle]]).',
         ] },

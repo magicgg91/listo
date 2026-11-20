@@ -63,7 +63,7 @@ export default {
   'demarrage.push.refuse': 'Notifications: sending refused by the push service (HTTP {status}).',
 
   // Secours (server/admin-secours.js)
-  'demarrage.secours.utilisation': 'Usage: node server/admin-secours.js {argument} [--retirer-2fa]',
+  'demarrage.secours.utilisation': 'Usage: node server/admin-secours.js {argument} [--remove-2fa]',
   'demarrage.secours.argument': 'username',
   'demarrage.secours.utilisateur': 'Run this command with “-u node”:',
   'demarrage.secours.baseIntrouvable': 'Database not found ({path}).',

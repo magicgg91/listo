@@ -15,6 +15,7 @@ import { loadConfig } from '../server/config.js';
 import { createApp } from '../server/app.js';
 import { totpCode, totpStep } from '../server/totp.js';
 import { openTotpSecret } from '../server/twofactor.js';
+import { translate } from '../public/js/i18n.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
@@ -102,6 +103,12 @@ test('clé perdue puis recréée : 2FA refusée sans erreur interne, lien public
   assert.equal((await createClient(listo.base).get(`/api/public/${token}`)).status, 404);
   const fresh = await rescued.request('PUT', `/api/lists/${listId}/share`, {});
   assert.match(fresh.body.share.url, /\/p\//);
+  // Nom anglais de l'option (--remove-2fa) et messages selon LISTO_LANG
+  const english = await run(process.execPath, ['server/admin-secours.js', 'guillaume', '--remove-2fa'], {
+    cwd: ROOT, env: { PATH: process.env.PATH, LISTO_DB_PATH: dbPath, LISTO_LANG: 'en' },
+  });
+  assert.match(english.stdout, /^ {4}\S{16}$/m);
+  assert.ok(english.stdout.includes(translate('en', 'demarrage.secours.sans2fa')), 'message en anglais');
 });
 
 test('commande de secours : identifiant inconnu ou mauvaise option refusés', async (t) => {

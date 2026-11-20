@@ -294,16 +294,16 @@ export function createApp({
   api.use('/admin', adminRoutes(ctx));
 
   // Route inconnue
-  api.use((req, res) => res.status(404).json({ error: 'Route inconnue.' }));
+  api.use((req, res) => res.status(404).json({ error: req.t('reseau.routeInconnue') }));
 
   // Erreurs : JSON mal formé, ou problème inattendu (sans détail technique
   // dans la réponse ; le détail va dans les journaux du serveur)
   api.use((err, req, res, next) => {
-    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
-    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
-    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
+    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: req.t('reseau.requeteMalFormee') });
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: req.t('reseau.requeteTropVolumineuse') });
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: req.t('reseau.requeteInvalide') }); // adresse mal formée…
     console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
-    res.status(500).json({ error: 'Erreur interne du serveur.' });
+    res.status(500).json({ error: req.t('reseau.erreurInterne') });
   });
 
   app.use('/api', api);
@@ -341,7 +341,7 @@ export function createApp({
   app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
 
   // Adresse inconnue (hors API) : réponse courte en français
-  app.use((req, res) => res.status(404).type('text').send('Page introuvable.'));
+  app.use((req, res) => res.status(404).type('text').send(req.t('reseau.pageIntrouvable')));
 
   // Erreur hors API (adresse mal formée, problème inattendu) : jamais de
   // trace ni de chemin de fichier dans la réponse ; le détail d'une erreur
@@ -349,7 +349,9 @@ export function createApp({
   app.use((err, req, res, next) => {
     const status = err.status >= 400 && err.status < 500 ? err.status : 500;
     if (status === 500) console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
-    res.status(status).type('text').send(status === 500 ? 'Erreur interne du serveur.' : 'Requête invalide.');
+    // req.t existe dès la première étape ; par prudence, le français sinon
+    const say = req.t ?? ((key) => translate('fr', key));
+    res.status(status).type('text').send(status === 500 ? say('reseau.erreurInterne') : say('reseau.requeteInvalide'));
   });
 
   // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois

@@ -87,7 +87,7 @@ export default {
       blocks: [
         "If there's another Admin, they use “Reset password” ([[role-admin]]). Otherwise, on the server (replace `identifiant` with the account's username):",
         { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
-        "A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--retirer-2fa` at the end of the command. The account's Claude connections are cut off ([[claude-connexions]]). What the Admin can and can't do: [[role-admin]].",
+        "A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's Claude connections are cut off ([[claude-connexions]]). What the Admin can and can't do: [[role-admin]].",
       ],
     },
     {

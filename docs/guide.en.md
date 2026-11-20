@@ -610,7 +610,7 @@ If there's another Admin, they use “Reset password” ([7.1 Admin](#role-admin
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--retirer-2fa` at the end of the command. The account's Claude connections are cut off ([8.8 See and disconnect Claude](#claude-connexions)). What the Admin can and can't do: [7.1 Admin](#role-admin).
+A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's Claude connections are cut off ([8.8 See and disconnect Claude](#claude-connexions)). What the Admin can and can't do: [7.1 Admin](#role-admin).
 
 <a id="sso"></a>
 
@@ -1359,7 +1359,7 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 - Phone changed or lost: sign in with one of your “Recovery codes” (“Use a recovery code”), then turn two-factor authentication back on with the new phone ([4.6 Two-factor authentication and recovery codes](#double-auth)).
 - No phone and no recovery codes left: the Admin chooses “Disable two-factor authentication” on your account (“Administration”, “Accounts”, ⋮ button). You sign in with just your password, then turn it back on.
-- It's the Admin who is locked out: see [4.8 Lost Admin account](#secours) (recovery command with `--retirer-2fa`).
+- It's the Admin who is locked out: see [4.8 Lost Admin account](#secours) (recovery command with `--remove-2fa`).
 - The 6-digit code is always refused: the phone's clock may be wrong; set it to automatic.
 - Nobody can get their codes accepted anymore after a server failure: the secret key may have been lost ([9.8 The secret key was lost](#cle-perdue)).
 
@@ -1371,7 +1371,7 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 Without a copy of `secrets/secret.key`, Listo creates a new key at startup. Lists, items, photos and passwords aren't affected, but:
 
-- two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--retirer-2fa` ([4.8 Lost Admin account](#secours)), then everyone turns it back on;
+- two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--remove-2fa` ([4.8 Lost Admin account](#secours)), then everyone turns it back on;
 - public links already created still work, but their address can no longer be shown again: stop them and create new ones;
 - this time, keep a copy of the new key ([3.7 Keep the secret key safe](#cle)).
 

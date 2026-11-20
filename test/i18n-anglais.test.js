@@ -94,3 +94,13 @@ test('installation neuve en anglais : magasins et rayons de départ en anglais ;
   assert.match(index, /const freshDatabase = !fs\.existsSync\(config\.dbPath\);/);
   assert.match(index, /if \(freshDatabase\) localizeStartingData\(db, config\.lang\);/);
 });
+
+test('réponses générales du serveur : adresse inconnue, requête mal formée, page introuvable, dans la langue de la requête', async (t) => {
+  const app = await startTestApp(t);
+  const admin = await setupAdmin(app); // compte en « Automatique » : la langue du navigateur
+  const ask = (method, url, language, body) => app.client().request(method, url, body, { 'accept-language': language });
+  assert.equal((await admin.request('GET', '/api/nexiste-pas', undefined, { 'accept-language': 'en-US' })).body.error, 'Unknown route.');
+  assert.equal((await admin.request('GET', '/api/nexiste-pas', undefined, { 'accept-language': 'fr' })).body.error, 'Route inconnue.');
+  assert.equal((await ask('GET', '/nexiste-pas.txt', 'en-US')).text, 'Page not found.');
+  assert.equal((await ask('GET', '/nexiste-pas.txt', 'fr')).text, 'Page introuvable.');
+});

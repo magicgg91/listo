@@ -34,7 +34,7 @@ import { referenceRoutes } from './routes/references.js';
 import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
 import { createOidc, fetchOidc } from './oidc.js';
-import { localeMiddleware } from './locale.js';
+import { localeMiddleware, requestLocale } from './locale.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
@@ -323,6 +323,16 @@ export function createApp({
   for (const [url, source] of Object.entries(builtFiles)) {
     app.get(url, (req, res) => res.type('js').set('Cache-Control', 'no-cache').send(source));
   }
+
+  // Manifeste de l'application (nom et description à l'installation sur le
+  // téléphone) dans la langue du navigateur : description et « lang »
+  // traduites, le reste identique (public/manifest.webmanifest)
+  const manifest = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'manifest.webmanifest'), 'utf8'));
+  const MANIFEST_TEXTS = { fr: { description: manifest.description, lang: 'fr' }, en: { description: 'Shared lists: shopping, tasks…', lang: 'en' } };
+  app.get('/manifest.webmanifest', (req, res) => {
+    const texts = MANIFEST_TEXTS[requestLocale(req, config)] ?? MANIFEST_TEXTS.fr;
+    res.type('application/manifest+json').set('Cache-Control', 'no-cache').set('Vary', 'Accept-Language').send(JSON.stringify({ ...manifest, ...texts }, null, 2));
+  });
 
   // Fichiers de l'interface. Ils sont revalidés à chaque chargement (le
   // navigateur demande « ai-je la dernière version ? »), pour qu'une mise à

@@ -984,6 +984,37 @@ export function pruneHistory(db) {
   return removed;
 }
 
+// Magasins et rayons créés par la migration 3 (en français), et leurs noms
+// dans les autres langues. Seulement pour une base toute neuve (index.js),
+// jamais pour une base existante : ses noms sont des données saisies.
+const STARTING_DATA = {
+  en: {
+    stores: { Carrefour: 'Supermarket', 'E.Leclerc': 'Market', Lidl: 'Drugstore' },
+    aisles: {
+      Boissons: 'Beverages', Boucherie: 'Meat', Boulangerie: 'Bakery', 'Crèmerie': 'Dairy',
+      Entretien: 'Household', 'Épicerie salée': 'Pantry', 'Épicerie sucrée': 'Snacks and sweets',
+      Fromages: 'Cheese', 'Fruits et légumes': 'Produce', 'Hygiène': 'Personal care',
+      Poissonnerie: 'Seafood', 'Surgelés': 'Frozen',
+    },
+  },
+};
+
+// Renomme les magasins et rayons de départ dans la langue de l'installation
+// (rien pour le français, ni pour une langue sans traduction). Renvoie le
+// nombre de noms changés.
+export function localizeStartingData(db, locale) {
+  const names = STARTING_DATA[locale];
+  if (!names) return 0;
+  let changed = 0;
+  db.transaction(() => {
+    for (const [table, map] of [['stores', names.stores], ['aisles', names.aisles]]) {
+      const rename = db.prepare(`UPDATE ${table} SET name = ? WHERE name = ?`);
+      for (const [before, after] of Object.entries(map)) changed += rename.run(after, before).changes;
+    }
+  })();
+  return changed;
+}
+
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.
 // dbPath peut valoir ':memory:' pour une base temporaire (tests).
 export function openDatabase(dbPath) {

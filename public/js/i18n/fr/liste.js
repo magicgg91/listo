@@ -136,6 +136,8 @@ export default {
   'liste.supprime': '« {name} » supprimé',
   'liste.annuler.pc': 'Annuler (Ctrl+Z)',
   'liste.annuler': 'Annuler',
+  // Bouton « Annuler » de la fiche sur ordinateur (fermer sans enregistrer)
+  'liste.fiche.annuler': 'Annuler',
   'liste.coche.avecSousTaches': {
     one:'« {name} » et sa sous-tâche cochées',
     other: '« {name} » et {count} sous-tâches cochées',
@@ -251,7 +253,8 @@ export default {
   'liste.fiche.repete.rang.changer': 'Rang dans le mois : {label}. Changer',
   'liste.fiche.repete.jourSemaine.changer': 'Jour de la semaine : {label}. Changer',
   'liste.fiche.repete.chaqueMois.premier': 'Le 1er de chaque mois',
-  'liste.fiche.repete.chaqueMois': 'Le {day} de chaque mois',
+  // Ordinal (forme exacte pour le 1er ; en anglais, aussi « 2nd », « 3rd »…)
+  'liste.fiche.repete.chaqueMois': { '=1': 'Le 1er de chaque mois', other: 'Le {count} de chaque mois' },
   'liste.fiche.repete.jourMois.changer': 'Jour du mois : {label}. Changer',
 
   // Fiche : heure et rappel

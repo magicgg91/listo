@@ -8,6 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import fr from '../public/js/i18n/fr.js';
+import en from '../public/js/i18n/en.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -175,8 +176,12 @@ test('fenêtres de l\'ordinateur : tiroir ou fenêtre centrée, role dialog et a
 
 test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer / Annuler / Enregistrer, confirmation avant d\'abandonner des changements', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, t\('liste\.annuler'\)\), save\] : null,/);
-  assert.equal(fr['liste.annuler'], 'Annuler');
+  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, t\('liste\.fiche\.annuler'\)\), save\] : null,/);
+  // « Annuler » fermer sans enregistrer (anglais : Cancel), distinct de
+  // l'annulation d'une action (anglais : Undo)
+  assert.equal(fr['liste.fiche.annuler'], 'Annuler');
+  assert.equal(en['liste.fiche.annuler'], 'Cancel');
+  assert.equal(en['liste.annuler'], 'Undo');
   assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: t\('liste\.fiche\.abandonner\.question'\),/);
   assert.equal(fr['liste.fiche.abandonner.question'], 'Abandonner les modifications ?');
   assert.match(list, /focusCancel: true,\s*\}\) : null,/);

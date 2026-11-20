@@ -32,10 +32,9 @@ import en from './i18n/en.js';
 // Langues connues (réglage du compte, LISTO_LANG)
 export const LOCALES = ['fr', 'en'];
 // Langues complètes, proposées dans « Mon compte » et réellement affichées.
-// L'anglais est ajouté quand sa traduction est terminée (étape 4) : en
-// attendant, un compte ou une installation réglés en anglais restent en
-// français.
-export const READY_LOCALES = ['fr'];
+// Une nouvelle langue n'est ajoutée ici qu'une fois sa traduction complète
+// (l'anglais : étape 4, 20 novembre 2026) ; avant, elle reste en français.
+export const READY_LOCALES = ['fr', 'en'];
 // Langue de référence (et langue par défaut d'une installation)
 export const DEFAULT_LOCALE = 'fr';
 // Nom de chaque langue, écrit dans cette langue (ainsi chacun reconnaît la sienne)
@@ -104,6 +103,14 @@ function pluralForm(locale, forms, count) {
   if (exact !== undefined) return exact;
   const form = new Intl.PluralRules(intlTag(locale)).select(number);
   return forms[form] ?? forms.other;
+}
+
+// Première lettre en minuscule, le reste tel quel (« Chaque lundi » →
+// « chaque lundi » ; “Every Monday” → “every Monday”, le nom du jour garde
+// sa majuscule en anglais)
+export function lowerFirst(text, { locale = current } = {}) {
+  const value = String(text ?? '');
+  return value.charAt(0).toLocaleLowerCase(intlTag(locale)) + value.slice(1);
 }
 
 // --- Côté téléphone : langue et monnaie de cet écran ---

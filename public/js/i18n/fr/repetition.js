@@ -38,7 +38,8 @@ export default {
   'repetition.phrase.annee': 'Chaque année',
   'repetition.phrase.moisSemaine': 'Le {rang} {jour} de chaque mois',
   'repetition.phrase.mois': { '=1': 'Le 1er de chaque mois', other: 'Le {count} de chaque mois' },
-  'repetition.phrase.moisFin': 'Le {count} de chaque mois (ou le dernier jour du mois)',
+  // Du 29 au 31 (ordinal en anglais : « 29th », « 31st »)
+  'repetition.phrase.moisFin': { one: 'Le {count} de chaque mois (ou le dernier jour du mois)', other: 'Le {count} de chaque mois (ou le dernier jour du mois)' },
   'repetition.phrase.semaine': 'Chaque {jours}',
   'repetition.phrase.deuxSemaines': 'Toutes les 2 semaines, le {jours}',
 

@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig, configProblem } from './config.js';
-import { openDatabase, schemaVersion } from './db.js';
+import { openDatabase, schemaVersion, localizeStartingData } from './db.js';
 import { loadOrCreateKey } from './secrets.js';
 import { createApp } from './app.js';
 import { createJournalFile } from './audit.js';
@@ -27,8 +27,12 @@ if (process.env.LISTO_PRODUCT_CONTACT?.trim() && !config.productContact) {
   console.warn('LISTO_PRODUCT_CONTACT ignorée : caractères non permis (lettres sans accent, chiffres, @ . : / - _ + ~ seulement).');
 }
 
-// 1. Base de données (créée au premier démarrage, mise à jour ensuite)
+// 1. Base de données (créée au premier démarrage, mise à jour ensuite).
+// Base toute neuve : magasins et rayons de départ dans la langue de
+// l'installation (LISTO_LANG) ; une base existante ne change jamais.
+const freshDatabase = !fs.existsSync(config.dbPath);
 const db = openDatabase(config.dbPath);
+if (freshDatabase) localizeStartingData(db, config.lang);
 console.log(`Base de données : ${config.dbPath} (schéma version ${schemaVersion(db)})`);
 
 // 2. Clé de chiffrement des secrets 2FA (créée au premier démarrage)

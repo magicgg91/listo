@@ -28,7 +28,7 @@ import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } fro
 import { itemWords, wordKind, byKind, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
-import { setLocale, setCurrency, resolveLocale, t, formatTime } from './i18n.js';
+import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
@@ -410,7 +410,7 @@ function spokenMeta(item) {
   if (priority) spoken.push(priority.label.toLowerCase());
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) spoken.push(due.label.toLowerCase());
-  if (due && item.repeat) spoken.push(t('lienpublic.repetition', { rule: repeatSentence(item.repeat).toLowerCase() }));
+  if (due && item.repeat) spoken.push(t('lienpublic.repetition', { rule: lowerFirst(repeatSentence(item.repeat)) }));
   const price = formatPrice(item.priceCents);
   if (price) spoken.push(price);
   return spoken.length ? `, ${spoken.join(', ')}` : '';

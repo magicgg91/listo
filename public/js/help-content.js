@@ -259,7 +259,7 @@ export const GUIDE = [
               ['`LISTO_DB_PATH`', '`/data/listo.db`', 'Base de données (dossier `data/`).'],
               ['`LISTO_KEY_PATH`', '`/secrets/secret.key`', 'Clé de chiffrement, créée au premier démarrage (dossier `secrets/`).'],
               ['`LISTO_SESSION_DAYS`', '`30`', 'Durée d\'une session sans se reconnecter, en jours.'],
-              ['`LISTO_LANG`', 'absente : `fr`', 'Langue par défaut, `fr` ou `en` : elle sert quand ni le compte (« Mon compte ») ni le navigateur ne donnent une langue connue, et pour les notifications d\'un compte en automatique. L\'anglais arrive avec sa traduction : en attendant, tout reste en français. Une autre valeur : Listo ne démarre pas et l\'explique dans `docker logs`.'],
+              ['`LISTO_LANG`', 'absente : `fr`', 'Langue par défaut, `fr` ou `en` : celle d\'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d\'un tel compte. Une installation neuve réglée sur `en` crée ses magasins et rayons de départ en anglais. Une autre valeur : Listo ne démarre pas et l\'explique dans `docker logs`.'],
               ['`LISTO_CURRENCY`', 'absente : `EUR`', 'Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l\'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l\'explique dans `docker logs`.'],
               ['`LISTO_COMMIT`', 'posée par l\'image', 'Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir.'],
               ['`LISTO_UPDATE_CHECK`', 'absente : activée', '`off` coupe la vérification de mise à jour sur GitHub ([[version]]).'],
@@ -706,6 +706,14 @@ export const GUIDE = [
         id: 'theme',
         title: 'Thème clair ou sombre',
         blocks: ['Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c\'est au même endroit : Réglages, « Mon compte », « Apparence ».'],
+      },
+      {
+        id: 'langue',
+        title: 'Langue : français ou anglais',
+        blocks: [
+          'Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l\'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.',
+          'Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide, elle, reste en français pour l\'instant.',
+        ],
       },
       {
         id: 'ordinateur',

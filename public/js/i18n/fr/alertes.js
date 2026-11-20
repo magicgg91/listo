@@ -70,7 +70,7 @@ export default {
   'alertes.abonnementRefuse': 'Abonnement refusé : ce service de notification n\'est pas reconnu.',
   'alertes.autreCompte': 'Cet appareil reçoit déjà les notifications d\'un autre compte. Déconnectez ce compte sur cet appareil, puis réessayez.',
   'alertes.reglageInvalide': 'Réglage des notifications invalide.',
-  'alertes.silencerInvalide': 'Valeur « silencer » invalide (true ou false).',
+  'alertes.silencerInvalide': 'Valeur « muted » invalide (true ou false).',
   'alertes.listeIntrouvable': 'Liste introuvable.',
   'alertes.tropDeDemandes': 'Trop de demandes. Réessayez dans quelques minutes.',
   // Résultat de la notification test

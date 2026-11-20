@@ -62,18 +62,20 @@ test('formatList : utilisé pour les jours, les prénoms et les notifications (p
 test('pluriels : la règle de la langue, formes exactes seulement pour un vrai cas particulier', () => {
   const exact = Object.entries(fr).filter(([, v]) => typeof v === 'object' && Object.keys(v).some((form) => form.startsWith('='))).map(([key]) => key).sort();
   // « Le 1er » : un ordinal, pas une règle de grammaire du pluriel
-  assert.deepEqual(exact, ['liste.fiche.repete.leJour', 'repetition.pastille.mois', 'repetition.phrase.mois']);
+  assert.deepEqual(exact, ['liste.fiche.repete.chaqueMois', 'liste.fiche.repete.leJour', 'repetition.pastille.mois', 'repetition.phrase.mois']);
   for (const key of exact) assert.deepEqual(Object.keys(fr[key]), ['=1', 'other'], key);
   // Toutes les autres formes : one et other (cas du français)
   for (const [key, value] of Object.entries(fr)) {
     if (typeof value !== 'object' || exact.includes(key)) continue;
     assert.deepEqual(Object.keys(value), ['one', 'other'], key);
   }
-  // Français : 0 au singulier ; anglais : 0 au pluriel (formes françaises
-  // en attendant la traduction, règle de la langue demandée)
+  // Français : 0 au singulier ; anglais : 0 au pluriel
   assert.equal(translate('fr', 'mots.courses.nombre', { count: 0 }), '0 article');
-  assert.equal(translate('en', 'mots.courses.nombre', { count: 0 }), '0 articles');
-  assert.equal(translate('en', 'mots.courses.nombre', { count: 1 }), '1 article');
+  assert.equal(translate('en', 'mots.courses.nombre', { count: 0 }), '0 items');
+  assert.equal(translate('en', 'mots.courses.nombre', { count: 1 }), '1 item');
+  // Ordinaux anglais
+  assert.equal(translate('en', 'liste.fiche.repete.chaqueMois', { count: 22 }), 'The 22nd of every month');
+  assert.equal(translate('en', 'repetition.phrase.moisFin', { count: 31 }), 'The 31st of every month (or the last day of the month)');
   assert.equal(translate('fr', 'liste.fiche.repete.leJour', { count: 1 }), 'Le 1er');
   assert.equal(translate('fr', 'liste.fiche.repete.leJour', { count: 21 }), 'Le 21');
 });

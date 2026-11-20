@@ -83,8 +83,9 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.13 Nouveautés](#nouveautes)
 - [5.14 Hors ligne et synchronisation](#hors-ligne)
 - [5.15 Thème clair ou sombre](#theme)
-- [5.16 Sur ordinateur](#ordinateur)
-- [5.17 Sous-tâches](#sous-taches)
+- [5.16 Langue : français ou anglais](#langue)
+- [5.17 Sur ordinateur](#ordinateur)
+- [5.18 Sous-tâches](#sous-taches)
 
 </details>
 
@@ -239,7 +240,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Une heure, et un rappel choisi tâche par tâche ([5.2 Heure et rappel](#heure)).
 - Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.3 Tâches qui se répètent](#repeter)).
 - Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.4 Attribuer une tâche](#attribuer)).
-- Ranger des sous-tâches sous une tâche principale ([5.17 Sous-tâches](#sous-taches)).
+- Ranger des sous-tâches sous une tâche principale ([5.18 Sous-tâches](#sous-taches)).
 - Tri par priorité ou par échéance ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
@@ -360,7 +361,7 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dossier `data/`). |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dossier `secrets/`). |
 | `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours. |
-| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : elle sert quand ni le compte (« Mon compte ») ni le navigateur ne donnent une langue connue, et pour les notifications d'un compte en automatique. L'anglais arrive avec sa traduction : en attendant, tout reste en français. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
+| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : celle d'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d'un tel compte. Une installation neuve réglée sur `en` crée ses magasins et rayons de départ en anglais. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_CURRENCY` | absente : `EUR` | Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_COMMIT` | posée par l'image | Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir. |
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([9.9 Savoir qu'une nouvelle version existe](#version)). |
@@ -744,7 +745,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.9 Groupes, tri et compteur
 
-- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.17 Sous-tâches](#sous-taches)).
+- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.18 Sous-tâches](#sous-taches)).
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
 - Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
@@ -817,9 +818,17 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
+<a id="langue"></a>
+
+### 5.16 Langue : français ou anglais
+
+Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.
+
+Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide, elle, reste en français pour l'instant.
+
 <a id="ordinateur"></a>
 
-### 5.16 Sur ordinateur
+### 5.17 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
@@ -862,7 +871,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 <a id="sous-taches"></a>
 
-### 5.17 Sous-tâches
+### 5.18 Sous-tâches
 
 Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.
 
@@ -1037,7 +1046,7 @@ Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nou
 
 ### 7.3 Propriétaire : modifier la liste
 
-Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.17 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
+Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.18 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
 - La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d'envies. Tout le monde la voit. L'échéance n'existe que pour les listes de tâches.
@@ -1157,7 +1166,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.11 U
 - Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
-- Sous-tâches ([5.17 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
+- Sous-tâches ([5.18 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
 
 Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.
 

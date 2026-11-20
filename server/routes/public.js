@@ -72,18 +72,25 @@ const YEAR = 365 * 24 * 60 * 60 * 1000;
 
 const PAGES = new URL('../pages/', import.meta.url);
 
-// Les deux pages HTML, lues une fois au démarrage. Les icônes (sprite) sont
-// reprises de la page de l'application, pour n'avoir qu'un seul exemplaire.
+// Les deux pages HTML, lues une fois au démarrage, dans chaque langue
+// (server/pages/ en français, server/pages/en/ en anglais). Les icônes
+// (sprite) sont reprises de la page de l'application, pour n'avoir qu'un
+// seul exemplaire.
 function loadPages(publicDir) {
   const index = fs.readFileSync(`${publicDir}/index.html`, 'utf8');
   const sprite = index.slice(index.indexOf('<svg class="sprite"'), index.indexOf('</defs></svg>') + '</defs></svg>'.length);
-  const page = (name) => Buffer.from(fs.readFileSync(new URL(name, PAGES), 'utf8').replace('<!-- sprite -->', sprite));
-  return { list: page('lien-public.html'), invalid: page('lien-invalide.html') };
+  const page = (name, folder) => Buffer.from(fs.readFileSync(new URL(`${folder}${name}`, PAGES), 'utf8').replace('<!-- sprite -->', sprite));
+  return Object.fromEntries(Object.entries({ fr: '', en: 'en/' })
+    .map(([locale, folder]) => [locale, { list: page('lien-public.html', folder), invalid: page('lien-invalide.html', folder) }]));
 }
 
 export function publicRoutes(ctx, { publicDir }) {
   const { db, shares, publicAccess, audit } = ctx;
-  const pages = loadPages(publicDir);
+  const allPages = loadPages(publicDir);
+  // Pages dans la langue de la requête (navigateur, sinon LISTO_LANG). La
+  // page « lien invalide » reste la même, au caractère près, quelle que soit
+  // la raison : seule la langue la change.
+  const pagesFor = (req) => allPages[requestLocale(req, ctx.config)] ?? allPages.fr;
 
   // Mots de passe faux : 5 en 15 minutes, par lien ou par adresse IP
   const passwordLimiter = createLimiter({ now: ctx.now });
@@ -141,7 +148,7 @@ export function publicRoutes(ctx, { publicDir }) {
     return share;
   }
 
-  const refusePage = (res, status) => res.status(status).type('html').send(pages.invalid);
+  const refusePage = (res, status) => res.status(status).type('html').send(pagesFor(res.req).invalid);
   // (res.req : la requête, pour le message dans la langue du visiteur)
   const refuseJson = (res, status) => res.status(status).json({ error: res.req.t(status === 429 ? TOO_MANY : NOT_FOUND) });
 
@@ -298,7 +305,7 @@ export function publicRoutes(ctx, { publicDir }) {
   pageRouter.use(publicHeaders);
   pageRouter.get('/:token', (req, res) => {
     if (!findShare(req, res, refusePage)) return;
-    res.type('html').send(pages.list);
+    res.type('html').send(pagesFor(req).list);
   });
   // Toute autre adresse sous /p/ : même réponse qu'un lien inconnu
   pageRouter.use((req, res) => {

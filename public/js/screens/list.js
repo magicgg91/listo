@@ -53,7 +53,7 @@ import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, open
 import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
-import { t, compareText, currencyName } from '../i18n.js';
+import { t, compareText, currencyName, lowerFirst } from '../i18n.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -554,7 +554,7 @@ export function renderList(listId, onLeave) {
       // Tâche qui se répète : « ↻ Lu, Me » (phrase entière pour la lecture)
       if (item.repeat) {
         chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
-        spoken.push(t('liste.lecture.repete', { rule: repeatSentence(item.repeat).toLowerCase() }));
+        spoken.push(t('liste.lecture.repete', { rule: lowerFirst(repeatSentence(item.repeat)) }));
       }
     }
     // Tâche attribuée (après la date) : « Moi » (en bleu) ou le prénom, avec
@@ -1950,7 +1950,7 @@ export function renderList(listId, onLeave) {
       weekdaySelect.setAttribute('aria-label', t('liste.fiche.repete.jourSemaine.changer', { label: weekdayPicker.text.textContent }));
       monthPicker.el.hidden = repeatKind !== 'month' || monthMode !== 'day';
       monthSelect.value = String(monthDay ?? 1);
-      monthPicker.text.textContent = monthDay === 1 || !monthDay ? t('liste.fiche.repete.chaqueMois.premier') : t('liste.fiche.repete.chaqueMois', { day: monthDay });
+      monthPicker.text.textContent = monthDay === 1 || !monthDay ? t('liste.fiche.repete.chaqueMois.premier') : t('liste.fiche.repete.chaqueMois', { count: monthDay });
       monthSelect.setAttribute('aria-label', t('liste.fiche.repete.jourMois.changer', { label: monthPicker.text.textContent }));
       repeatNote.textContent = repeat ? repeatSentence(repeat) : '';
       repeatNote.hidden = !repeat;
@@ -2520,7 +2520,7 @@ export function renderList(listId, onLeave) {
       tools: pc ? null : [remove, save],
       scroll: true,
       pc: 'drawer',
-      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, t('liste.annuler')), save] : null,
+      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, t('liste.fiche.annuler')), save] : null,
       // Ordinateur : fermer sans enregistrer demande confirmation (rien ne se perd par erreur)
       beforeClose: pc ? async () => !dirty() || confirmDialog({
         title: t('liste.fiche.abandonner.question'),

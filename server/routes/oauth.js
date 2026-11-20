@@ -28,6 +28,7 @@ import { verifyPassword, PASSWORD_MAX } from '../passwords.js';
 import { attemptKeys } from '../auth.js';
 import { checkSecondFactor } from '../twofactor.js';
 import { OAuthError, SCOPES, PKCE_CHALLENGE, parseScope, withParams, REQUEST_ID } from '../oauth.js';
+import { requestLocale } from '../locale.js';
 
 const PAGES = new URL('../pages/', import.meta.url);
 // Noms des messages de l'écran « Autoriser Claude »
@@ -45,18 +46,20 @@ function sendError(res, error) {
   res.status(error.status ?? 400).json({ error: error.error ?? 'invalid_request', error_description: error.message });
 }
 
-// Page « Demande d'autorisation invalide », avec le sprite d'icônes
-function invalidPage(publicDir) {
+// Page « Demande d'autorisation invalide », avec le sprite d'icônes, dans
+// chaque langue (server/pages/, server/pages/en/)
+function invalidPages(publicDir) {
   const index = fs.readFileSync(`${publicDir}/index.html`, 'utf8');
   const sprite = index.slice(index.indexOf('<svg class="sprite"'), index.indexOf('</defs></svg>') + '</defs></svg>'.length);
-  return Buffer.from(fs.readFileSync(new URL('autorisation-invalide.html', PAGES), 'utf8').replace('<!-- sprite -->', sprite));
+  const page = (folder) => Buffer.from(fs.readFileSync(new URL(`${folder}autorisation-invalide.html`, PAGES), 'utf8').replace('<!-- sprite -->', sprite));
+  return { fr: page(''), en: page('en/') };
 }
 
 // --- Routes sans session ---
 export function oauthRoutes(ctx, { publicDir }) {
   const router = express.Router();
   const { oauth } = ctx;
-  const invalid = invalidPage(publicDir);
+  const invalidByLocale = invalidPages(publicDir);
   const noStore = (req, res, next) => {
     res.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' });
     next();
@@ -108,7 +111,7 @@ export function oauthRoutes(ctx, { publicDir }) {
       const redirectUri = one(params.redirect_uri);
       const client = await oauth.resolveClient(one(params.client_id));
       if (!client || !redirectUri || !oauth.clientRedirect(client, redirectUri)) {
-        return res.status(400).type('html').send(invalid);
+        return res.status(400).type('html').send(invalidByLocale[requestLocale(req, ctx.config)] ?? invalidByLocale.fr);
       }
       const state = one(params.state);
       const back = (error, description) => res.redirect(302, withParams(redirectUri, {

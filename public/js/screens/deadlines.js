@@ -36,7 +36,7 @@ import { computeDeadlines, assigneesFor } from '../deadlines.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
-import { t } from '../i18n.js';
+import { t, lowerFirst } from '../i18n.js';
 
 export function renderDeadlines(onLeave) {
   const pc = isDesktop();
@@ -142,7 +142,7 @@ export function renderDeadlines(onLeave) {
     spoken.push(due.label.toLowerCase());
     if (item.repeat) {
       chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
-      spoken.push(t('echeances.lu.repetition', { repeat: repeatSentence(item.repeat).toLowerCase() }));
+      spoken.push(t('echeances.lu.repetition', { repeat: lowerFirst(repeatSentence(item.repeat)) }));
     }
     // À qui est la tâche (attribution activée) : « Moi » ou le prénom ;
     // plusieurs personnes : « Moi, Léa », « Léa +2 » (assign.js)

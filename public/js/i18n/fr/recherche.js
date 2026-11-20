@@ -4,8 +4,12 @@
 export default {
   // Nombre de résultats : « 0 résultat », « 1 résultat », « 4 résultats »
   'recherche.resultats': {
-    '=0': '{count} résultat',
-    '=1': '{count} résultat',
+    one: '{count} résultat',
     other: '{count} résultats',
+  },
+  // Nombre de listes trouvées : « 0 liste », « 1 liste », « 2 listes »
+  'recherche.listes': {
+    one: '{count} liste',
+    other: '{count} listes',
   },
 };

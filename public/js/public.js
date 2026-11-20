@@ -25,10 +25,10 @@
 import { h, icon, replace, passwordInput } from './dom.js';
 import { prepareAnnouncer, announce as speak } from './announce.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
-import { itemWords, countItems, doneZoneWords } from './words.js';
+import { itemWords, wordKind, byKind, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
-import { setLocale, setCurrency, resolveLocale, t } from './i18n.js';
+import { setLocale, setCurrency, resolveLocale, t, formatTime } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
@@ -44,8 +44,10 @@ let canReserve = false;
 let announcement = null; // phrase à annoncer au prochain affichage
 
 // « article » (liste de courses) ou « élément » (autre liste) : déduit du
-// regroupement envoyé par le serveur (« none » = pas une liste de courses)
+// regroupement envoyé par le serveur (« none » = pas une liste de courses) ;
+// textKind : sorte de liste des phrases entières (byKind, words.js)
 let words = itemWords(true);
+let textKind = wordKind(true);
 // Regroupement de la liste affichée : « aisle », « store » ou « none »
 let grouping = 'aisle';
 // Type de la liste affichée (« shopping », « tasks » ou « wishes »)
@@ -151,9 +153,11 @@ function showList(data) {
   canReserve = Boolean(list.canReserve);
   // Liste d'envies : « souhait » ; sinon déduit du regroupement, comme avant
   words = isWishList(list) ? itemWords(list) : itemWords(list.grouping !== 'none');
+  textKind = isWishList(list) ? wordKind(list) : wordKind(list.grouping !== 'none');
   grouping = list.grouping;
   document.title = `${list.name} · Listo`;
-  const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  // « 09:05 » en français, « 9:05 AM » en anglais
+  const time = formatTime(new Date(), { twoDigits: true });
 
   const refresh = h('button', { class: 'btn btn--secondary btn--sm', type: 'button' }, icon('sync', 'icon--sm'), t('lienpublic.actualiser'));
   refresh.addEventListener('click', () => {
@@ -495,10 +499,10 @@ function showItem(item, place, thumb) {
   const panel = h('div', { class: 'sheet sheet--fixed-head', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: 'sheet__head' },
-      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, t('lienpublic.fiche.titre', { of: words.of })),
+      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, byKind(textKind, { shopping: t('lienpublic.fiche.titre.courses'), tasks: t('lienpublic.fiche.titre.taches'), wishes: t('lienpublic.fiche.titre.envies') })),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('lienpublic.fermer'), onClick: () => close() }, icon('close'))),
     h('div', { class: 'stack sheet__scroll' },
-      h('div', { class: 'note' }, icon('eye'), h('p', {}, t('lienpublic.fiche.lectureSeule', { what: words.this }))),
+      h('div', { class: 'note' }, icon('eye'), h('p', {}, byKind(textKind, { shopping: t('lienpublic.fiche.lectureSeule.courses'), tasks: t('lienpublic.fiche.lectureSeule.taches'), wishes: t('lienpublic.fiche.lectureSeule.envies') }))),
       rows.slice(0, rows.length - placeRows),
       linkButton,
       item.photo ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('lienpublic.fiche.photo')),
@@ -515,7 +519,7 @@ function showPhoto(item) {
   const panel = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'photo-titre' },
     h('div', { class: 'lightbox__bar' }, h('h2', { class: 'lightbox__title', id: 'photo-titre' }, item.name),
       h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('lienpublic.photo.fermer'), 'data-initial-focus': true, onClick: () => close() }, icon('close'))),
-    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: t('lienpublic.photo.alt', { of: words.of, name: item.name }) })),
+    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: byKind(textKind, { shopping: t('lienpublic.photo.alt.courses', { name: item.name }), tasks: t('lienpublic.photo.alt.taches', { name: item.name }), wishes: t('lienpublic.photo.alt.envies', { name: item.name }) }) })),
     h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => close() }, t('lienpublic.fermer'))));
   close = openLayer(panel);
 }

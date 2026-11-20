@@ -47,16 +47,17 @@ export default {
   'liste.introuvable': 'Liste introuvable',
   'liste.introuvable.texte': 'Cette liste a été supprimée, ou elle n\'est plus partagée avec vous.',
   'liste.retourMesListes': 'Retour à mes listes',
-  'liste.ajout.placeholder': 'Ajouter un {word}',
-  // Sous-titre de l'ordinateur : « Envies · pour Léa » (au lieu de « Pour »)
-  'liste.pc.pour': 'pour',
+  // Champ d'ajout (courses, tâches, envies)
+  'liste.ajout.placeholder.courses': 'Ajouter un article',
+  'liste.ajout.placeholder.taches': 'Ajouter un élément',
+  'liste.ajout.placeholder.envies': 'Ajouter un souhait',
   'liste.vide': 'Cette liste est vide',
   'liste.vide.ajouter.pc': 'Ajoutez un premier {word} avec le champ ci-dessus.',
   'liste.vide.ajouter': 'Ajoutez un premier {word} avec le champ ci-dessous.',
   'liste.vide.lectureSeule': 'Rien à afficher pour le moment.',
-  // « Astuce : appuyez sur [A] pour aller au champ d'ajout. » (touche au milieu)
-  'liste.vide.astuce.debut': 'Astuce : appuyez sur',
-  'liste.vide.astuce.fin': 'pour aller au champ d\'ajout.',
+  // « Astuce : appuyez sur [A] pour aller au champ d'ajout. » : une phrase
+  // entière ; {key} marque la place de la touche, dessinée par l'écran
+  'liste.vide.astuce': 'Astuce : appuyez sur {key} pour aller au champ d\'ajout.',
   'liste.sansMagasin': 'Sans magasin',
   'liste.sansRayon': 'Sans rayon',
 
@@ -93,8 +94,7 @@ export default {
 
   // Sous-tâches
   'liste.sousTaches.progression': {
-    '=0': 'Sous-tâches de {name} : {count} faite sur {total}',
-    '=1': 'Sous-tâches de {name} : {count} faite sur {total}',
+    one: 'Sous-tâches de {name} : {count} faite sur {total}',
     other: 'Sous-tâches de {name} : {count} faites sur {total}',
   },
   'liste.sousTaches.ajouter.nom': 'Ajouter une sous-tâche à {name}',
@@ -123,19 +123,21 @@ export default {
   'liste.envies.reserve': 'Souhait réservé',
   'liste.envies.reserver': 'Réserver',
 
-  // Photo en plein écran
-  'liste.photo.alt': 'Photo {of} {name}',
+  // Photo en plein écran (courses, tâches, envies)
+  'liste.photo.alt.courses': 'Photo de l\'article {name}',
+  'liste.photo.alt.taches': 'Photo de l\'élément {name}',
+  'liste.photo.alt.envies': 'Photo du souhait {name}',
 
   // Supprimer, cocher (messages avec « Annuler »)
   'liste.supprime.avecSousTaches': {
-    '=1': '« {name} » et sa sous-tâche supprimées',
+    one:'« {name} » et sa sous-tâche supprimées',
     other: '« {name} » et {count} sous-tâches supprimées',
   },
   'liste.supprime': '« {name} » supprimé',
   'liste.annuler.pc': 'Annuler (Ctrl+Z)',
   'liste.annuler': 'Annuler',
   'liste.coche.avecSousTaches': {
-    '=1': '« {name} » et sa sous-tâche cochées',
+    one:'« {name} » et sa sous-tâche cochées',
     other: '« {name} » et {count} sous-tâches cochées',
   },
   'liste.prochaineFois': 'Prochaine fois : {date}',
@@ -144,37 +146,37 @@ export default {
   'liste.rouvrir.courses.titre': 'Remettre {items} à acheter ?',
   'liste.rouvrir.titre': 'Rouvrir {items} ?',
   'liste.rouvrir.courses.texte.magasin': {
-    '=1': 'Il reviendra dans son magasin, décoché.',
+    one:'Il reviendra dans son magasin, décoché.',
     other: 'Ils reviendront dans leur magasin, décochés.',
   },
   'liste.rouvrir.courses.texte.rayon': {
-    '=1': 'Il reviendra dans son rayon, décoché.',
+    one:'Il reviendra dans son rayon, décoché.',
     other: 'Ils reviendront dans leur rayon, décochés.',
   },
   'liste.rouvrir.texte': {
-    '=1': 'Il reviendra dans la liste, décoché.',
+    one:'Il reviendra dans la liste, décoché.',
     other: 'Ils reviendront dans la liste, décochés.',
   },
   'liste.confirmer': 'Confirmer',
   'liste.rouvrir.courses.fait': '{items} remis à acheter',
   'liste.rouvrir.fait': {
-    '=1': '{items} rouvert',
+    one:'{items} rouvert',
     other: '{items} rouverts',
   },
 
   // « Retirer du panier » / « Retirer les terminés »
   'liste.retirerCoches.titre': 'Retirer {items} de la liste ?',
   'liste.retirerCoches.texte': {
-    '=1': 'Il sera supprimé pour tout le monde.',
+    one:'Il sera supprimé pour tout le monde.',
     other: 'Ils seront supprimés pour tout le monde.',
   },
   'liste.retirerCoches.avertissement': {
-    '=1': 'C\'est définitif : impossible de le récupérer.',
+    one:'C\'est définitif : impossible de le récupérer.',
     other: 'C\'est définitif : impossible de les récupérer.',
   },
   'liste.retirer': 'Retirer',
   'liste.retirerCoches.fait': {
-    '=1': '{items} retiré',
+    one:'{items} retiré',
     other: '{items} retirés',
   },
 
@@ -191,13 +193,13 @@ export default {
   'liste.ajout.etape': '{index} sur {total}',
   'liste.ajout.plusieurs': '{items} ajoutés',
 
-  // Rayon ou magasin d'un nouvel article ({aNew} : « un nouvel article »)
+  // Rayon ou magasin d'un nouvel article (listes de courses seulement)
   'liste.place.magasin.connu': '« {name} » n\'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.',
-  'liste.place.magasin.nouveau': '« {name} » est {aNew}. Son magasin sera retenu pour la prochaine fois.',
+  'liste.place.magasin.nouveau': '« {name} » est un nouvel article. Son magasin sera retenu pour la prochaine fois.',
   'liste.place.magasin.titre': 'Dans quel magasin ?',
   'liste.place.ajouter': 'Ajouter à la liste',
   'liste.place.rayon.titre': 'Dans quel rayon ?',
-  'liste.place.rayon.nouveau': '« {name} » est {aNew}. Son rayon sera retenu pour la prochaine fois.',
+  'liste.place.rayon.nouveau': '« {name} » est un nouvel article. Son rayon sera retenu pour la prochaine fois.',
 
   // Réservation d'un souhait
   'liste.envies.ouvert.detail': 'D\'autres proches peuvent participer au cadeau.',
@@ -218,7 +220,7 @@ export default {
   'liste.fiche.lien': 'Lien (facultatif)',
   'liste.fiche.prix.exemple': 'ex. 24,90',
   'liste.fiche.prix': 'Prix indicatif (facultatif)',
-  'liste.fiche.prix.unite': 'en euros',
+  'liste.fiche.prix.unite': 'en {currency}',
   'liste.rayon': 'Rayon',
   'liste.choisir': 'Choisir',
   'liste.magasin': 'Magasin',
@@ -233,8 +235,9 @@ export default {
 
   // Fiche : se répète
   'liste.fiche.repete.jours': 'Jours de la semaine',
-  'liste.fiche.repete.leJour.premier': 'Le 1er',
-  'liste.fiche.repete.leJour': 'Le {day}',
+  // Jour du mois : forme exacte pour le 1er (ordinal ; en anglais, aussi
+  // « 2nd », « 3rd », « 21st »…)
+  'liste.fiche.repete.leJour': { '=1': 'Le 1er', other: 'Le {count}' },
   'liste.fiche.repete.mode.jourMois.choix': 'Un jour du mois (le 5)',
   'liste.fiche.repete.mode.jourSemaine.choix': 'Un jour de la semaine (le 1er lundi)',
   // « Le 1er », « Le dernier » ({rank} vient de repeat.js)
@@ -288,7 +291,7 @@ export default {
   'liste.fiche.echeance': 'Échéance',
   'liste.fiche.sousTacheDe': 'Sous-tâche de',
   'liste.fiche.parent.aDesSousTaches': {
-    '=1': 'Cette tâche a une sous-tâche : elle ne peut pas devenir une sous-tâche.',
+    one:'Cette tâche a une sous-tâche : elle ne peut pas devenir une sous-tâche.',
     other: 'Cette tâche a {count} sous-tâches : elle ne peut pas devenir une sous-tâche.',
   },
   'liste.fiche.parent.repete': 'Une tâche qui se répète ne peut pas devenir une sous-tâche : retirez d\'abord la répétition.',
@@ -300,7 +303,7 @@ export default {
   'liste.fiche.resume.tour': 'Chacun son tour : {names}',
   'liste.fiche.resume.tacheSupprimee': 'Tâche supprimée',
   'liste.fiche.resume.principale': {
-    '=1': 'Tâche principale · 1 sous-tâche',
+    one: 'Tâche principale · {count} sous-tâche',
     other: 'Tâche principale · {count} sous-tâches',
   },
   'liste.fiche.resume.aucune': 'Aucune',
@@ -317,8 +320,10 @@ export default {
   'liste.fiche.codeBarres.illisible': 'Ce fichier n\'est pas une image lisible. Réessayez avec une photo, ou saisissez le code.',
   'liste.fiche.codeBarres.indisponible': 'La lecture des codes-barres n\'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.',
 
-  // Fiche : photo ({of} : « de l'article »)
-  'liste.photo.titre': 'Photo {of}',
+  // Fiche : photo (une phrase par sorte de liste : courses, tâches, envies)
+  'liste.photo.titre.courses': 'Photo de l\'article',
+  'liste.photo.titre.taches': 'Photo de l\'élément',
+  'liste.photo.titre.envies': 'Photo du souhait',
   'liste.photo.changer': 'Changer la photo',
   'liste.photo.retirer': 'Retirer la photo',
   'liste.photo.ajouter': 'Ajouter une photo',
@@ -327,12 +332,18 @@ export default {
   'liste.photo.retirer.question': 'Retirer la photo ?',
   'liste.photo.retirer.texte': 'La photo sera supprimée pour toutes les personnes de la liste.',
 
-  // Fiche : modifiée ou supprimée par une autre personne ({item} : « Cet article »)
-  'liste.fiche.conflit.supprime': '{item} a été supprimé par une autre personne.',
-  'liste.fiche.conflit.modifie': '{item} vient d\'être modifié par une autre personne. Seuls vos changements seront enregistrés.',
+  // Fiche : modifiée ou supprimée par une autre personne (courses, tâches, envies)
+  'liste.fiche.conflit.supprime.courses': 'Cet article a été supprimé par une autre personne.',
+  'liste.fiche.conflit.supprime.taches': 'Cet élément a été supprimé par une autre personne.',
+  'liste.fiche.conflit.supprime.envies': 'Ce souhait a été supprimé par une autre personne.',
+  'liste.fiche.conflit.modifie.courses': 'Cet article vient d\'être modifié par une autre personne. Seuls vos changements seront enregistrés.',
+  'liste.fiche.conflit.modifie.taches': 'Cet élément vient d\'être modifié par une autre personne. Seuls vos changements seront enregistrés.',
+  'liste.fiche.conflit.modifie.envies': 'Ce souhait vient d\'être modifié par une autre personne. Seuls vos changements seront enregistrés.',
 
-  // Fiche : en-tête, pied et champs ({the} : « l'article »)
-  'liste.fiche.supprimer': 'Supprimer {the}',
+  // Fiche : en-tête, pied et champs (titre et suppression : courses, tâches, envies)
+  'liste.fiche.supprimer.courses': 'Supprimer l\'article',
+  'liste.fiche.supprimer.taches': 'Supprimer l\'élément',
+  'liste.fiche.supprimer.envies': 'Supprimer le souhait',
   'liste.enregistrer': 'Enregistrer',
   // Touche du clavier écrite sur le bouton « Enregistrer » (ordinateur)
   'liste.fiche.touche.ctrl': 'Ctrl',
@@ -341,7 +352,9 @@ export default {
   'liste.fiche.quantite.exemple': 'par exemple 2 ou 500 g',
   'liste.fiche.note': 'Note (facultative)',
   'liste.fiche.photo': 'Photo (facultative)',
-  'liste.fiche.titre': 'Modifier {the}',
+  'liste.fiche.titre.courses': 'Modifier l\'article',
+  'liste.fiche.titre.taches': 'Modifier l\'élément',
+  'liste.fiche.titre.envies': 'Modifier le souhait',
   'liste.fiche.abandonner.question': 'Abandonner les modifications ?',
   'liste.fiche.abandonner.texte': 'Ce que vous avez changé dans cette fiche ne sera pas enregistré.',
   'liste.fiche.abandonner': 'Abandonner',
@@ -355,13 +368,17 @@ export default {
   'liste.fiche.erreur.deuxPersonnes': 'Choisissez au moins deux personnes.',
   'liste.fiche.erreur.sousTacheRepete': 'Une sous-tâche ne se répète pas : retirez d\'abord la répétition.',
 
-  // Fiche à consulter (lecture seule) ({item} : « cet article »)
-  'liste.detail.lectureSeule': 'Liste en lecture seule : {item} ne peut pas être modifié.',
+  // Fiche à consulter (lecture seule) ; avertissement et titre : courses, tâches, envies
+  'liste.detail.lectureSeule.courses': 'Liste en lecture seule : cet article ne peut pas être modifié.',
+  'liste.detail.lectureSeule.taches': 'Liste en lecture seule : cet élément ne peut pas être modifié.',
+  'liste.detail.lectureSeule.envies': 'Liste en lecture seule : ce souhait ne peut pas être modifié.',
   'liste.detail.prix': 'Prix indicatif',
   'liste.detail.note': 'Note',
   'liste.detail.echeance.heure': '{date} à {time}',
   'liste.detail.photo': 'Photo',
-  'liste.detail.titre': 'Détail {of}',
+  'liste.detail.titre.courses': 'Détail de l\'article',
+  'liste.detail.titre.taches': 'Détail de l\'élément',
+  'liste.detail.titre.envies': 'Détail du souhait',
 
   // Choix du rayon ou du magasin
   'liste.choix.nouveauRayon': 'Nouveau rayon…',

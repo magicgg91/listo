@@ -8,9 +8,6 @@ export default {
   'format.relatif.heures': 'il y a {hours} h',
   'format.relatif.hier': 'hier',
 
-  // Liste des prénoms : « Guillaume, Léa et Marie »
-  'format.prenoms.et': '{first} et {last}',
-
   // Réglages › À propos : version et mise à jour
   'format.version.nonPrecisee': 'non précisée',
   'format.version.horsLigne': 'indisponible hors ligne',
@@ -45,8 +42,7 @@ export default {
 
   // Pastille de « Mes listes » (lecteurs d'écran)
   'format.nouveautes.plusDe30': 'plus de 30 nouveautés',
-  'format.nouveautes.une': '{text} nouveauté',
-  'format.nouveautes.plusieurs': '{text} nouveautés',
+  'format.nouveautes': { one: '{count} nouveauté', other: '{count} nouveautés' },
 
   // Priorité
   'format.priorite.basse': 'Basse',
@@ -85,19 +81,18 @@ export default {
   'format.reste.minutes': 'Il reste {minutes} minutes',
   'format.reste.moinsUneMinute': 'Il reste moins d\'une minute',
 
-  // Administration, onglet « Articles »
-  'format.noms.listesCourses': { '=1': '{count} liste de courses', other: '{count} listes de courses' },
-  'format.noms.utilisations': { '=1': '{count} utilisation', other: '{count} utilisations' },
-  'format.noms.enListe': '{items} en liste',
-  'format.noms.aucunEnListe': 'aucun {item} en liste',
+  // Administration, onglet « Articles » (seules les listes de courses
+  // mémorisent des noms : toujours « article » ; {lists} : « 2 listes de courses »)
+  'format.noms.listesCourses': { one: '{count} liste de courses', other: '{count} listes de courses' },
+  'format.noms.utilisations': { one: '{count} utilisation', other: '{count} utilisations' },
+  'format.noms.enListe': { one: '{count} article en liste', other: '{count} articles en liste' },
+  'format.noms.aucunEnListe': 'aucun article en liste',
   'format.correction.fusion': '« {oldName} » sera fusionné avec « {newName} », déjà enregistré.',
   'format.correction.renommage': '« {oldName} » deviendra « {newName} ».',
-  'format.correction.impact.un': '{items} sera corrigé, dans {lists}.',
-  'format.correction.impact.plusieurs': '{items} seront corrigés, dans {lists}.',
-  'format.correction.impact.aucun': 'Aucun {item} en liste ne porte ce nom : seules les suggestions changent.',
+  'format.correction.impact': { one: '{count} article sera corrigé, dans {lists}.', other: '{count} articles seront corrigés, dans {lists}.' },
+  'format.correction.impact.aucun': 'Aucun article en liste ne porte ce nom : seules les suggestions changent.',
   'format.correction.faite.suggestions': 'Nom corrigé dans les suggestions',
-  'format.correction.faite.un': '{items} corrigé, dans {lists}',
-  'format.correction.faite.plusieurs': '{items} corrigés, dans {lists}',
+  'format.correction.faite': { one: '{count} article corrigé, dans {lists}', other: '{count} articles corrigés, dans {lists}' },
 
   // « Dupliquer la liste » : nom proposé pour la copie
   'format.copie': '{name} (copie)',

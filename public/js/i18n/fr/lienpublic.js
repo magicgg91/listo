@@ -68,18 +68,24 @@ export default {
   'lienpublic.voir': 'Voir {name}',
   'lienpublic.photo.agrandir': 'Agrandir la photo de {name}',
   'lienpublic.sousTaches.faites': {
-    '=0': 'sous-tâches : {count} faite sur {total}',
-    '=1': 'sous-tâches : {count} faite sur {total}',
+    one: 'sous-tâches : {count} faite sur {total}',
     other: 'sous-tâches : {count} faites sur {total}',
   },
   'lienpublic.sousTaches.de': 'Sous-tâches de {name}',
   'lienpublic.repetition': 'se répète : {rule}',
 
-  // Fiche d'un élément et photo agrandie
-  'lienpublic.fiche.titre': 'Détail {of}',
-  'lienpublic.fiche.lectureSeule': 'Liste en lecture seule : {what} ne peut pas être modifié.',
+  // Fiche d'un élément et photo agrandie (titre, avertissement et photo :
+  // une phrase par sorte de liste, courses, tâches, envies)
+  'lienpublic.fiche.titre.courses': 'Détail de l\'article',
+  'lienpublic.fiche.titre.taches': 'Détail de l\'élément',
+  'lienpublic.fiche.titre.envies': 'Détail du souhait',
+  'lienpublic.fiche.lectureSeule.courses': 'Liste en lecture seule : cet article ne peut pas être modifié.',
+  'lienpublic.fiche.lectureSeule.taches': 'Liste en lecture seule : cet élément ne peut pas être modifié.',
+  'lienpublic.fiche.lectureSeule.envies': 'Liste en lecture seule : ce souhait ne peut pas être modifié.',
   'lienpublic.fiche.lien': 'Ouvrir le lien',
   'lienpublic.fiche.photo': 'Photo',
   'lienpublic.photo.fermer': 'Fermer la photo',
-  'lienpublic.photo.alt': 'Photo {of} {name}',
+  'lienpublic.photo.alt.courses': 'Photo de l\'article {name}',
+  'lienpublic.photo.alt.taches': 'Photo de l\'élément {name}',
+  'lienpublic.photo.alt.envies': 'Photo du souhait {name}',
 };

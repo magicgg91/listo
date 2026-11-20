@@ -676,7 +676,8 @@ export function subtaskPositionsMigration(db) {
   }
   const set = db.prepare('UPDATE items SET position = ? WHERE id = ?');
   for (const children of groups.values()) {
-    children.sort((a, b) => a.checked - b.checked || compareNames(a.name, b.name));
+    // Ordre enregistré en base, le même pour tous les lecteurs : français
+    children.sort((a, b) => a.checked - b.checked || compareNames(a.name, b.name, 'fr'));
     children.forEach((child, index) => set.run(index + 1, child.id));
   }
   return rows.length;

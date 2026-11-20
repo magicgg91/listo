@@ -5,7 +5,7 @@ export default {
   // Synchronisation : modifications refusées par le serveur
   'application.refus': 'Une modification n\'a pas pu être enregistrée : {message}',
   'application.refus.etAutres': {
-    '=1': 'Une modification n\'a pas pu être enregistrée : {message} (et {count} autre)',
+    one: 'Une modification n\'a pas pu être enregistrée : {message} (et {count} autre)',
     other: 'Une modification n\'a pas pu être enregistrée : {message} (et {count} autres)',
   },
   'application.lectureSeule.horsLigne': 'Cette liste est maintenant en lecture seule : vos modifications hors ligne n\'ont pas été envoyées.',
@@ -19,7 +19,7 @@ export default {
   // Déconnexion avec des modifications pas encore envoyées
   'application.deconnexion.question': 'Se déconnecter ?',
   'application.deconnexion.texte': {
-    '=1': '1 modification n\'est pas encore envoyée. Si vous vous déconnectez maintenant, elle sera perdue.',
+    one: '{count} modification n\'est pas encore envoyée. Si vous vous déconnectez maintenant, elle sera perdue.',
     other: '{count} modifications ne sont pas encore envoyées. Si vous vous déconnectez maintenant, elles seront perdues.',
   },
   'application.deconnexion.confirmer': 'Se déconnecter quand même',

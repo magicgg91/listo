@@ -24,6 +24,7 @@
 
 import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
+import { requestLocale } from '../locale.js';
 
 // Résultat d'une opération pour le téléphone : un refus (code : nom de son
 // texte) est dit dans la langue de la requête ; ses valeurs (params) restent
@@ -61,7 +62,7 @@ export function listRoutes(ctx) {
   });
 
   router.get('/lists/:id', (req, res) => {
-    const result = service.readList(req.user, req.params.id);
+    const result = service.readList(req.user, req.params.id, requestLocale(req, ctx.config));
     if (!result) return res.status(404).json({ error: req.t('ops.listeIntrouvable') });
     res.json(result);
   });
@@ -117,7 +118,7 @@ export function listRoutes(ctx) {
     const typed = typeof req.query.q === 'string' ? req.query.q.slice(0, 100) : '';
     const listId = typeof req.query.listId === 'string' ? req.query.listId : undefined;
     try {
-      res.json({ suggestions: service.suggestions(typed, { user: req.user, listId }) });
+      res.json({ suggestions: service.suggestions(typed, { user: req.user, listId, locale: requestLocale(req, ctx.config) }) });
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;

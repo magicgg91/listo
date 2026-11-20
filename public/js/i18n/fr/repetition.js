@@ -33,10 +33,6 @@ export default {
   'repetition.rang.quatrieme': '4e',
   'repetition.rang.dernier': 'dernier',
 
-  // Plusieurs jours : « lundi, mardi et mercredi » (debut : les premiers,
-  // séparés par une virgule ; fin : le dernier)
-  'repetition.liste': '{debut} et {fin}',
-
   // Phrase sous le choix (fiche)
   'repetition.phrase.jour': 'Chaque jour',
   'repetition.phrase.annee': 'Chaque année',

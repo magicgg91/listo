@@ -5,7 +5,7 @@ export default {
   // Barre de titre, pastilles (aussi utilisées par account.js)
   'reglages.retour': 'Retour',
   'reglages.demandesCompte': {
-    '=1': '1 demande de compte en attente',
+    one: '{count} demande de compte en attente',
     other: '{count} demandes de compte en attente',
   },
   'reglages.role.admin': 'Admin',

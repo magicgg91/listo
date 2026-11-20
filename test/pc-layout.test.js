@@ -285,8 +285,10 @@ test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après un
   assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: t\('application\.reessayer'\), onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
   assert.equal(fr['application.reessayer'], 'Réessayer');
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, `\$\{t\('liste\.vide\.astuce\.debut'\)\} `/);
-  assert.equal(fr['liste.vide.astuce.debut'], 'Astuce : appuyez sur');
+  // Une phrase entière : la touche prend la place de {key}
+  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, \.\.\.t\('liste\.vide\.astuce'\)\.split\('\{key\}'\)\.flatMap\(\(part, i\) => \(i \? \[h\('kbd', \{ class: 'keycap' \}, 'A'\), part\] : \[part\]\)\)\)/);
+  assert.equal(fr['liste.vide.astuce'], 'Astuce : appuyez sur {key} pour aller au champ d\'ajout.');
+  assert.deepEqual(fr['liste.vide.astuce'].split('{key}'), ['Astuce : appuyez sur ', ' pour aller au champ d\'ajout.'], 'mêmes textes qu\'avant autour de la touche');
   // Le bandeau n'est posé que dans les écrans de l'ordinateur
   const phone = list.slice(list.lastIndexOf("  return h('div', { class: 'screen' },"));
   assert.doesNotMatch(phone, /offlineBanner/);

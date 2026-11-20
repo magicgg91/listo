@@ -4,14 +4,15 @@
 // - Liste d'envies (type « wishes ») : « souhait ».
 // - Liste de tâches : « élément ».
 //
-// Les trois mots sont masculins ; « souhait » commence par une consonne, d'où
-// les formes complètes ci-dessous (the : « l'article » / « le souhait » ;
-// this : « cet article » / « ce souhait » ; aNew : « un nouvel article » /
-// « un nouveau souhait » ; New : « Nouvel article » / « Nouveau souhait » ;
-// of : « de l'article » / « du souhait »).
-// Tous les textes affichés passent par ce module : aucun mot recopié à la
-// main dans les écrans. Les mots eux-mêmes sont dans le dictionnaire
-// (public/js/i18n/fr/mots.js).
+// Grammaire (décisions du 20 novembre 2026, pour l'anglais) : ce module ne
+// donne que des mots seuls (one : « article », many : « articles », New :
+// « Nouvel article »), pour un libellé ou une place où toutes les langues
+// les acceptent tels quels (« Aucun {word} ne correspond… »). Une phrase
+// qui a besoin d'un article ou d'un accord (« Modifier l'article »,
+// « Photo du souhait », « Ajouter un élément ») est écrite en entier, une
+// par sorte de liste, et choisie avec byKind ; un nombre d'éléments passe
+// par countItems (pluriel de la langue : « 0 article », « 3 articles »).
+// Les mots et les phrases sont dans le dictionnaire (public/js/i18n/fr/).
 
 import { isShoppingList, isWishList } from './list-types.js';
 import { t } from './i18n.js';
@@ -23,29 +24,17 @@ const WORDS = {
   shopping: {
     get one() { return t('mots.courses.un'); },
     get many() { return t('mots.courses.plusieurs'); },
-    get the() { return t('mots.courses.le'); },
-    get this() { return t('mots.courses.ce'); },
-    get aNew() { return t('mots.courses.unNouveau'); },
     get New() { return t('mots.courses.nouveau'); },
-    get of() { return t('mots.courses.de'); },
   },
   tasks: {
     get one() { return t('mots.taches.un'); },
     get many() { return t('mots.taches.plusieurs'); },
-    get the() { return t('mots.taches.le'); },
-    get this() { return t('mots.taches.ce'); },
-    get aNew() { return t('mots.taches.unNouveau'); },
     get New() { return t('mots.taches.nouveau'); },
-    get of() { return t('mots.taches.de'); },
   },
   wishes: {
     get one() { return t('mots.envies.un'); },
     get many() { return t('mots.envies.plusieurs'); },
-    get the() { return t('mots.envies.le'); },
-    get this() { return t('mots.envies.ce'); },
-    get aNew() { return t('mots.envies.unNouveau'); },
     get New() { return t('mots.envies.nouveau'); },
-    get of() { return t('mots.envies.de'); },
   },
 };
 
@@ -56,17 +45,33 @@ export function isShopping(listOrFlag) {
   return isShoppingList(listOrFlag);
 }
 
-// Le mot au singulier (one) et au pluriel (many), et ses formes complètes,
-// selon la liste (un booléen : courses ou tâches)
-export function itemWords(listOrFlag) {
-  if (typeof listOrFlag !== 'boolean' && isWishList(listOrFlag)) return WORDS.wishes;
-  return isShopping(listOrFlag) ? WORDS.shopping : WORDS.tasks;
+// Sorte de liste pour le vocabulaire : 'shopping' (courses), 'tasks'
+// (tâches) ou 'wishes' (envies). Un booléen : courses (true) ou tâches ;
+// une sorte déjà connue (« wishes ») est rendue telle quelle.
+export function wordKind(listOrFlag) {
+  if (Object.hasOwn(WORDS, listOrFlag)) return listOrFlag;
+  if (typeof listOrFlag !== 'boolean' && isWishList(listOrFlag)) return 'wishes';
+  return isShopping(listOrFlag) ? 'shopping' : 'tasks';
 }
 
-// « 1 article », « 3 éléments »… (singulier pour 1 seulement)
+// La phrase entière de cette sorte de liste, parmi les trois :
+// byKind(list, { shopping: t('…courses'), tasks: t('…taches'), wishes: t('…envies') })
+export const byKind = (listOrFlag, texts) => texts[wordKind(listOrFlag)];
+
+// Le mot au singulier (one) et au pluriel (many), et le titre d'un nouvel
+// élément (New), selon la liste (un booléen : courses ou tâches)
+export function itemWords(listOrFlag) {
+  return WORDS[wordKind(listOrFlag)];
+}
+
+// « 1 article », « 3 éléments », « 0 souhait » (pluriel de la langue : en
+// français, 0 et 1 au singulier)
 export function countItems(count, listOrFlag) {
-  const words = itemWords(listOrFlag);
-  return `${count} ${count === 1 ? words.one : words.many}`;
+  return byKind(listOrFlag, {
+    shopping: t('mots.courses.nombre', { count }),
+    tasks: t('mots.taches.nombre', { count }),
+    wishes: t('mots.envies.nombre', { count }),
+  });
 }
 
 // Confirmation « Supprimer la liste » : ce qu'elle contient, avec qui elle
@@ -118,10 +123,11 @@ export function progressText(remaining, total) {
 
 // Le même compteur pour les lecteurs d'écran et l'infobulle :
 // « 3 articles restants sur 8 », « 1 élément restant sur 4 »,
-// « 0 article restant sur 5 » (singulier pour 0 et 1)
+// « 0 article restant sur 5 » (pluriel de la langue, selon les restants)
 export function progressLabel(remaining, total, listOrFlag) {
-  const words = itemWords(listOrFlag);
-  return remaining <= 1
-    ? t('mots.progression.singulier', { remaining, item: words.one, total })
-    : t('mots.progression.pluriel', { remaining, item: words.many, total });
+  return byKind(listOrFlag, {
+    shopping: t('mots.courses.progression', { count: remaining, total }),
+    tasks: t('mots.taches.progression', { count: remaining, total }),
+    wishes: t('mots.envies.progression', { count: remaining, total }),
+  });
 }

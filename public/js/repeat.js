@@ -27,7 +27,7 @@
 // Textes : public/js/i18n/fr/repetition.js. Les tableaux ci-dessous donnent
 // les noms des textes ; l'écran les affiche avec t().
 
-import { t } from './i18n.js';
+import { t, translate, getLocale, formatList } from './i18n.js';
 
 export const REPEAT_KINDS = ['day', 'week', '2week', 'month', 'year'];
 
@@ -169,24 +169,29 @@ export function nextDue(rule, dueDate, today) {
 
 // --- Textes ---
 
-const dayName = (d) => t(WEEKDAYS.find(([n]) => n === d)[2]);
+// locale : langue du texte (sans elle : celle des écrans)
+const dayName = (d, locale = getLocale()) => translate(locale, WEEKDAYS.find(([n]) => n === d)[2]);
 const shortDay = (d) => t(WEEKDAYS.find(([n]) => n === d)[1]);
-const monthWeekLabel = (nth) => t(MONTH_WEEKS.find(([n]) => n === nth)[1]);
-// « lundi », « lundi et mardi », « lundi, mardi et mercredi »
-const andList = (words) => (words.length < 2 ? words.join('') : t('repetition.liste', { debut: words.slice(0, -1).join(', '), fin: words.at(-1) }));
+const monthWeekLabel = (nth, locale = getLocale()) => translate(locale, MONTH_WEEKS.find(([n]) => n === nth)[1]);
+// « lundi », « lundi et mardi », « lundi, mardi et mercredi » (en anglais :
+// « Monday, Tuesday, and Wednesday »), dans la grammaire de la langue
+const andList = (words, locale = getLocale()) => formatList(words, { locale });
 
 // Phrase sous le choix (fiche) : « Chaque lundi et mercredi »,
 // « Toutes les 2 semaines, le lundi », « Le 5 de chaque mois »…
-export function repeatSentence(rule) {
+// locale : langue de la phrase (sans elle : celle des écrans ; Claude, sur
+// le serveur : le français)
+export function repeatSentence(rule, { locale = getLocale() } = {}) {
   const r = parseRepeat(rule);
   if (!r) return '';
-  if (r.kind === 'day') return t('repetition.phrase.jour');
-  if (r.kind === 'year') return t('repetition.phrase.annee');
-  if (r.kind === 'month' && r.nth) return t('repetition.phrase.moisSemaine', { rang: monthWeekLabel(r.nth), jour: dayName(r.weekday) });
-  if (r.kind === 'month') return r.monthDay > 28 ? t('repetition.phrase.moisFin', { count: r.monthDay }) : t('repetition.phrase.mois', { count: r.monthDay });
-  const names = r.days.map(dayName);
-  if (r.kind === 'week') return r.days.length === 7 ? t('repetition.phrase.jour') : t('repetition.phrase.semaine', { jours: andList(names) });
-  return t('repetition.phrase.deuxSemaines', { jours: andList(names) });
+  const say = (key, params) => translate(locale, key, params);
+  if (r.kind === 'day') return say('repetition.phrase.jour');
+  if (r.kind === 'year') return say('repetition.phrase.annee');
+  if (r.kind === 'month' && r.nth) return say('repetition.phrase.moisSemaine', { rang: monthWeekLabel(r.nth, locale), jour: dayName(r.weekday, locale) });
+  if (r.kind === 'month') return r.monthDay > 28 ? say('repetition.phrase.moisFin', { count: r.monthDay }) : say('repetition.phrase.mois', { count: r.monthDay });
+  const names = r.days.map((d) => dayName(d, locale));
+  if (r.kind === 'week') return r.days.length === 7 ? say('repetition.phrase.jour') : say('repetition.phrase.semaine', { jours: andList(names, locale) });
+  return say('repetition.phrase.deuxSemaines', { jours: andList(names, locale) });
 }
 
 // Pastille de la ligne : « Lu, Me », « Chaque jour », « 2 sem. · Lu »,

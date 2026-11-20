@@ -41,7 +41,7 @@ export default {
   'echeances.vide.miennes': 'Aucune tâche à faire ne vous est attribuée. « Toutes » montre aussi celles des autres et celles de personne.',
   'echeances.vide.texte': 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues. Pour en donner une, activez l\'option « Échéance » dans « Modifier la liste ».',
   // Nombre de tâches d'un groupe (lecteur d'écran)
-  'echeances.groupe.nombre': { '=0': '{count} tâche', '=1': '{count} tâche', other: '{count} tâches' },
+  'echeances.groupe.nombre': { one: '{count} tâche', other: '{count} tâches' },
 
   // Aucun résultat
   'echeances.recherche.aucun': 'Aucun résultat',

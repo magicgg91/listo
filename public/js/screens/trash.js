@@ -21,12 +21,12 @@ import { toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { TYPE_LABELS, TYPE_ICONS } from '../list-types.js';
 import { countItems, trashDaysText } from '../words.js';
-import { t } from '../i18n.js';
+import { t, formatDate } from '../i18n.js';
 
 export const offlineRestore = () => t('corbeille.horsLigne.restaurer');
 
-// Date de suppression : « 3 nov. 2026 »
-const dayLabel = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+// Date de suppression : « 3 nov. 2026 » (« Nov 3, 2026 » en anglais)
+const dayLabel = (iso) => formatDate(iso, { day: 'numeric', month: 'short', year: 'numeric' });
 
 export function renderTrash(onLeave) {
   const offlineNote = h('div', { class: 'note', role: 'status', hidden: true }, icon('cloud-off'), h('p', {}, offlineRestore()));

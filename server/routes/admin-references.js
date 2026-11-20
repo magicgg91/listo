@@ -25,6 +25,8 @@
 
 import express from 'express';
 import { cleanName, comparableName, parseId } from '../validate.js';
+import { compareText } from '../../public/js/i18n.js';
+import { requestLocale } from '../locale.js';
 
 // Les deux sortes de données de référence. Les noms de tables et de colonnes
 // sont fixés ici, dans le code : ils ne viennent jamais de la requête.
@@ -105,9 +107,11 @@ function referenceRouter(ctx, type) {
     return row || null;
   }
 
-  // Liste par ordre alphabétique français (« Épicerie » avec les « E »)
+  // Liste par ordre alphabétique de la langue de l'Admin (en français,
+  // « Épicerie » avec les « E »)
   router.get('/', (req, res) => {
-    const rows = all.all().sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+    const locale = requestLocale(req, ctx.config);
+    const rows = all.all().sort((a, b) => compareText(a.name, b.name, { locale, sensitivity: 'base' }));
     res.json({ items: rows.map(describe) });
   });
 

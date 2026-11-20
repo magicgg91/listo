@@ -7,7 +7,7 @@ export default {
   'navigation.echeances': 'Échéances',
   'navigation.reglages': 'Réglages',
   'navigation.echeances.pastille': {
-    '=1': 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
+    one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
     other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
   },
   'navigation.libelle': 'Navigation',

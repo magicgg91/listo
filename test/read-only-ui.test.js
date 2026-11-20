@@ -99,8 +99,8 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   assert.doesNotMatch(view, /h\('input'|h\('textarea'|type: 'submit'|tools:|actions\.(update|delete|check|set|remove)/);
   assert.match(view, /'aria-label': t\('liste\.photo\.agrandir', \{ name: it\.name \}\), onClick: \(\) => showPhoto\(it\)/);
   assert.equal(fr['liste.photo.agrandir'], 'Agrandir la photo de {name}');
-  assert.match(view, /title: t\('liste\.detail\.titre', \{ of: words\.of \}\)/);
-  assert.equal(fr['liste.detail.titre'], 'Détail {of}');
+  assert.match(view, /title: byKind\(kind, \{ shopping: t\('liste\.detail\.titre\.courses'\), tasks: t\('liste\.detail\.titre\.taches'\), wishes: t\('liste\.detail\.titre\.envies'\) \}\)/);
+  assert.deepEqual([fr['liste.detail.titre.courses'], fr['liste.detail.titre.taches'], fr['liste.detail.titre.envies']], ['Détail de l\'article', 'Détail de l\'élément', 'Détail du souhait']);
   // Tri, repli des groupes : inchangés (aucune condition sur le droit)
   assert.doesNotMatch(list.slice(list.indexOf('function foldableGroup'), list.indexOf('// --- Dessin de la liste')), /canEdit/);
   assert.doesNotMatch(list.slice(list.indexOf('const SORTS'), list.indexOf('let view = null')), /canEdit/);

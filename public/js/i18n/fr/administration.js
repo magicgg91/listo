@@ -29,7 +29,7 @@ export default {
   'administration.compte.deuxFacteurs.desactive': '2FA désactivé',
   'administration.compte.desactive': 'compte désactivé',
   'administration.demande.titre': {
-    '=1': 'Demande de compte',
+    one: 'Demande de compte',
     other: 'Demandes de compte',
   },
   'administration.demande.detail': '{username} · par {provider}',
@@ -118,8 +118,7 @@ export default {
   'administration.etat.desactivee': 'Désactivée',
   'administration.etat.desactive': 'Désactivé',
   'administration.etat.multi': {
-    '=0': '{count} magasin · {state}',
-    '=1': '{count} magasin · {state}',
+    one: '{count} magasin · {state}',
     other: '{count} magasins · {state}',
   },
   'administration.etat.simple': 'Simple · {state}',
@@ -140,13 +139,14 @@ export default {
   'administration.supprimee': '« {name} » supprimée',
 
   // Articles enregistrés (mémoire des noms) : recherche, tri, pages
-  'administration.noms.rechercher': 'Rechercher un {item}',
+  // (seules les listes de courses mémorisent des noms : toujours « article »)
+  'administration.noms.rechercher': 'Rechercher un article',
   'administration.noms.trier': 'Trier',
   'administration.noms.trier.nom': 'Par nom',
   'administration.noms.trier.utilisation': 'Par utilisation',
-  'administration.noms.aucunResultat': 'Aucun {item} ne correspond à cette recherche.',
-  'administration.noms.vide': 'Aucun {item} enregistré pour le moment.',
-  'administration.noms.plus': 'Afficher plus ({count} restants)',
+  'administration.noms.aucunResultat': 'Aucun article ne correspond à cette recherche.',
+  'administration.noms.vide': 'Aucun article enregistré pour le moment.',
+  'administration.noms.plus': { one: 'Afficher plus ({count} restant)', other: 'Afficher plus ({count} restants)' },
 
   // Ligne d'un article enregistré : corriger, rayon, retirer
   'administration.noms.corriger': 'Corriger {name}',
@@ -167,7 +167,7 @@ export default {
 
   // Retirer un article des suggestions
   'administration.noms.retirer.question': 'Retirer « {name} » des suggestions ?',
-  'administration.noms.retirer.texte': 'Il ne sera plus proposé pendant la saisie d\'un {item}. Les listes ne changent pas. S\'il est saisi de nouveau dans une liste de courses, il sera de nouveau enregistré.',
+  'administration.noms.retirer.texte': 'Il ne sera plus proposé pendant la saisie d\'un article. Les listes ne changent pas. S\'il est saisi de nouveau dans une liste de courses, il sera de nouveau enregistré.',
   'administration.noms.retirer.bouton': 'Retirer',
   'administration.noms.retire': '« {name} » retiré des suggestions',
 };

@@ -2,12 +2,9 @@
 // Chaque nom commence par « alertes. ».
 
 export default {
-  // Listes de noms (notifications) : « Lait, Pain et 3 autres »
-  'alertes.noms.etAutres': { '=1': '{names} et {count} autre', other: '{names} et {count} autres' },
-  // Personnes : « Léa et Marc », « Léa, Marc et Zoé », « Léa, Marc et 2 autres »
-  'alertes.personnes.deux': '{first} et {second}',
-  'alertes.personnes.trois': '{first}, {second} et {third}',
-  'alertes.personnes.plus': '{first}, {second} et {count} autres',
+  // Dernier élément d'une énumération trop longue (formatList, server/notify.js) :
+  // « Lait, Pain et 3 autres », « Léa, Marc et 2 autres »
+  'alertes.noms.autres': { one: '{count} autre', other: '{count} autres' },
   // Auteur inconnu ou disparu
   'alertes.quelquun': 'Quelqu\'un',
   'alertes.ancienMembre': 'Un ancien membre',
@@ -17,12 +14,13 @@ export default {
   // a) Modifications des autres (titre)
   'alertes.tour.detail': 'C\'est votre tour : {names}',
   'alertes.tour': 'C\'est votre tour dans « {list} »',
-  'alertes.attribue.un': { '=1': '{people} vous a attribué une tâche dans « {list} »', other: '{people} vous a attribué {count} tâches dans « {list} »' },
-  'alertes.attribue.plusieurs': { '=1': '{people} vous ont attribué une tâche dans « {list} »', other: '{people} vous ont attribué {count} tâches dans « {list} »' },
+  // Une personne (un) ou plusieurs (plusieurs) ; count : nombre de tâches
+  'alertes.attribue.un': { one: '{people} vous a attribué une tâche dans « {list} »', other: '{people} vous a attribué {count} tâches dans « {list} »' },
+  'alertes.attribue.plusieurs': { one: '{people} vous ont attribué une tâche dans « {list} »', other: '{people} vous ont attribué {count} tâches dans « {list} »' },
   // count : nombre de personnes qui ont modifié la liste
-  'alertes.modifie': { '=0': '{people} a modifié « {list} »', '=1': '{people} a modifié « {list} »', other: '{people} ont modifié « {list} »' },
+  'alertes.modifie': { one: '{people} a modifié « {list} »', other: '{people} ont modifié « {list} »' },
   // a) Modifications des autres (texte)
-  'alertes.changements': { '=0': '{count} changement', '=1': '{count} changement', other: '{count} changements' },
+  'alertes.changements': { one: '{count} changement', other: '{count} changements' },
   'alertes.detail.pourVous': 'Pour vous : {names}',
   'alertes.detail.ajoute': 'Ajouté : {names}',
   'alertes.detail.modifie': 'Modifié : {names}',
@@ -45,11 +43,11 @@ export default {
   'alertes.partage.droit.lecture': 'Elle est maintenant en lecture seule pour vous.',
 
   // b) Résumé quotidien des échéances
-  'alertes.echeances.aujourdhui': { '=0': '{count} tâche à faire aujourd\'hui', '=1': '{count} tâche à faire aujourd\'hui', other: '{count} tâches à faire aujourd\'hui' },
+  'alertes.echeances.aujourdhui': { one: '{count} tâche à faire aujourd\'hui', other: '{count} tâches à faire aujourd\'hui' },
   // En retard, après « … à faire aujourd'hui »
   'alertes.echeances.retard': '{count} en retard',
   // En retard, seules
-  'alertes.echeances.retard.seules': { '=0': '{count} tâche en retard', '=1': '{count} tâche en retard', other: '{count} tâches en retard' },
+  'alertes.echeances.retard.seules': { one: '{count} tâche en retard', other: '{count} tâches en retard' },
   // Tâche à heure précise (détail) : « Plombier (14:00) »
   'alertes.echeances.heure': '{name} ({time})',
   'alertes.dans': 'Dans « {list} »',

@@ -13,7 +13,7 @@
 //
 // Textes : public/js/i18n/fr/repetition.js.
 
-import { t } from './i18n.js';
+import { t, getLocale, formatTime } from './i18n.js';
 
 export const DUE_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const isDueTime = (value) => typeof value === 'string' && DUE_TIME_RE.test(value);
@@ -38,8 +38,10 @@ const two = (n) => String(n).padStart(2, '0');
 // Heure actuelle « HH:MM » (heure locale de l'appareil ou du serveur)
 export const nowTime = (date = new Date()) => `${two(date.getHours())}:${two(date.getMinutes())}`;
 
-// Heure lisible : « 9:05 », « 18:30 »
-export const timeLabel = (time) => (isDueTime(time) ? `${Number(time.slice(0, 2))}:${time.slice(3)}` : '');
+// Heure lisible, dans la langue « locale » (sans elle : celle des écrans ;
+// le serveur donne celle du destinataire) : « 9:05 », « 18:30 » en
+// français, « 9:05 AM », « 6:30 PM » en anglais
+export const timeLabel = (time, { locale = getLocale() } = {}) => (isDueTime(time) ? formatTime(time, { locale }) : '');
 
 // En retard ? Date passée, ou date du jour et heure dépassée
 export function isLate(dueDate, dueTime, today, now) {

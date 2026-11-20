@@ -34,8 +34,7 @@ export default {
 
   // Ordinateur : « 6 listes · 4 partagées »
   'listes.pc.resume': {
-    '=0': '{lists} · {count} partagée',
-    '=1': '{lists} · {count} partagée',
+    one: '{lists} · {count} partagée',
     other: '{lists} · {count} partagées',
   },
 };

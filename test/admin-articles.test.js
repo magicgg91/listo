@@ -26,11 +26,13 @@ test('libellé : onglet « Articles », plus aucun « Noms » à l\'écran', () 
   assert.equal(many.charAt(0).toUpperCase() + many.slice(1), 'Articles');
   // Ni « Noms », ni « Noms enregistrés », ni « un nom » comme désignation d'une entrée
   assert.doesNotMatch(admin, /Noms|Rechercher un nom|Aucun nom/);
-  assert.match(admin, /placeholder: t\('administration\.noms\.rechercher', \{ item: ITEM\.one \}\), 'aria-label': t\('administration\.noms\.rechercher', \{ item: ITEM\.one \}\)/);
-  assert.equal(fr['administration.noms.rechercher'], 'Rechercher un {item}');
-  assert.match(admin, /t\('administration\.noms\.aucunResultat', \{ item: ITEM\.one \}\) : t\('administration\.noms\.vide', \{ item: ITEM\.one \}\)/);
-  assert.equal(fr['administration.noms.aucunResultat'], 'Aucun {item} ne correspond à cette recherche.');
-  assert.equal(fr['administration.noms.vide'], 'Aucun {item} enregistré pour le moment.');
+  // Seules les listes de courses mémorisent des noms : « article » écrit
+  // dans la phrase entière (grammaire de chaque langue)
+  assert.match(admin, /placeholder: t\('administration\.noms\.rechercher'\), 'aria-label': t\('administration\.noms\.rechercher'\)/);
+  assert.equal(fr['administration.noms.rechercher'], 'Rechercher un article');
+  assert.match(admin, /t\('administration\.noms\.aucunResultat'\) : t\('administration\.noms\.vide'\)/);
+  assert.equal(fr['administration.noms.aucunResultat'], 'Aucun article ne correspond à cette recherche.');
+  assert.equal(fr['administration.noms.vide'], 'Aucun article enregistré pour le moment.');
   // Ni « Noms » ni « un nom » dans les textes de l'écran non plus
   for (const [key, value] of Object.entries(fr)) {
     if (!key.startsWith('administration.')) continue;

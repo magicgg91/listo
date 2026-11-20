@@ -4,7 +4,7 @@
 // innerHTML. Un nom d'article comme « <script>… » s'affiche donc tel quel,
 // sans jamais être exécuté.
 
-import { t } from './i18n.js';
+import { t, getLocale } from './i18n.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
 
@@ -172,7 +172,7 @@ export function avatar(name, { second = false, large = false } = {}) {
 }
 
 export function initial(name) {
-  return (String(name ?? '').trim()[0] ?? '?').toLocaleUpperCase('fr');
+  return (String(name ?? '').trim()[0] ?? '?').toLocaleUpperCase(getLocale());
 }
 
 // Pastille « Multi » : magasin qui en regroupe plusieurs (kit, section 16.2)

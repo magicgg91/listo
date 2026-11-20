@@ -434,7 +434,7 @@ export function createMcpTools(ctx) {
             if (item.remindBefore !== null && item.remindBefore !== undefined) out.remind = remindToken(item.remindBefore);
           }
           // Tâche qui se répète : la règle en clair (« Chaque lundi et mercredi »)
-          if (usesDue(list) && list.dueEnabled && item.dueDate && item.repeat) out.repeat = repeatSentence(item.repeat);
+          if (usesDue(list) && list.dueEnabled && item.dueDate && item.repeat) out.repeat = repeatSentence(item.repeat, { locale: 'fr' });
           // Tâche attribuée : le prénom de la personne ; plusieurs personnes
           // (together) ; chacun son tour (turn, et assigned_to : celle de cette fois)
           Object.assign(out, assignOut(list, item));
@@ -620,7 +620,7 @@ export function createMcpTools(ctx) {
         Object.assign(slot, {
           name: clip(outcome.item.name, MAX.name), status: 'created', id: outcome.item.id, ...placeOut(target.read, outcome.item),
           // Tâche qui se répète : sa première échéance et la règle en clair
-          ...(outcome.item.repeat ? { due_date: outcome.item.dueDate, repeat: repeatSentence(outcome.item.repeat) } : {}),
+          ...(outcome.item.repeat ? { due_date: outcome.item.dueDate, repeat: repeatSentence(outcome.item.repeat, { locale: 'fr' }) } : {}),
           ...(outcome.item.dueTime ? { due_date: outcome.item.dueDate, due_time: outcome.item.dueTime, remind: remindToken(outcome.item.remindBefore) } : {}),
           // Tâche attribuée : le prénom obtenu (plusieurs : together ; chacun son tour : turn)
           ...assignOut(target.read.list, outcome.item),
@@ -1064,7 +1064,7 @@ export function createMcpTools(ctx) {
           ...(isWishList(list) ? {} : { quantity: clip(after.quantity, MAX.quantity) }),
           note: clip(after.note, MAX.note),
           ...(usesPriority(list) && list.priorityEnabled ? { priority: after.priority } : {}),
-          ...(usesDue(list) && list.dueEnabled ? { due_date: after.dueDate ?? null, due_time: after.dueTime ?? null, remind: remindToken(after.remindBefore ?? null), repeat: after.repeat ? repeatSentence(after.repeat) : null } : {}),
+          ...(usesDue(list) && list.dueEnabled ? { due_date: after.dueDate ?? null, due_time: after.dueTime ?? null, remind: remindToken(after.remindBefore ?? null), repeat: after.repeat ? repeatSentence(after.repeat, { locale: 'fr' }) : null } : {}),
           ...(assigns(list) ? { assigned_to: assigneeName(list, after.assignedTo), ...assignOut(list, after) } : {}),
           // Sous-tâches : la principale obtenue (null : aucune)
           ...(nestsSubtasks(list) ? { parent_id: after.parentId ?? null, ...(after.parentId ? { position: after.position ?? null } : {}) } : {}),

@@ -26,7 +26,7 @@
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
 import { createNewsService } from './news.js';
-import { translate } from '../public/js/i18n.js';
+import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse, hideHabitual,
@@ -415,11 +415,12 @@ export function createListService(ctx) {
   }
 
   // Rayons actifs, { id, name }, dans l'ordre de l'application (ordre
-  // alphabétique des noms) : ceux qu'on peut choisir pour un article
+  // alphabétique des noms) : ceux qu'on peut choisir pour un article.
+  // Seul Claude (MCP) les lit : ordre français, comme ses réponses.
   function activeAisles() {
     return q.allAisles.all().filter((a) => a.active === 1)
       .map((a) => ({ id: a.id, name: a.name }))
-      .sort((a, b) => compareNames(a.name, b.name));
+      .sort((a, b) => compareNames(a.name, b.name, 'fr'));
   }
 
   // Magasins proposés pour les articles d'une liste « multi » : ceux que
@@ -430,11 +431,12 @@ export function createListService(ctx) {
 
   // Les mêmes magasins, { id, name }, dans l'ordre de l'application (ordre
   // alphabétique des noms, comme storeChoices du téléphone) : ceux qu'on peut
-  // choisir pour un article de cette liste « multi »
+  // choisir pour un article de cette liste « multi » (Claude seulement :
+  // ordre français)
   function activeStoreChoices(multiStoreId) {
     return storeChoices(multiStoreId).map((id) => q.store.get(id))
       .map((row) => ({ id: row.id, name: row.name }))
-      .sort((a, b) => compareNames(a.name, b.name));
+      .sort((a, b) => compareNames(a.name, b.name, 'fr'));
   }
 
   // Magasin choisi pour un article d'une liste « multi » : vide (« Sans
@@ -1451,8 +1453,10 @@ export function createListService(ctx) {
       .map((list) => describeList(list, user));
   }
 
-  // Une liste avec ses articles groupés et triés ; null si pas membre
-  function readList(user, listId) {
+  // Une liste avec ses articles groupés et triés ; null si pas membre.
+  // locale : langue de l'ordre alphabétique (celle de la requête ; Claude :
+  // le français)
+  function readList(user, listId, locale = 'fr') {
     if (!isUuid(listId)) return null;
     const list = q.myLists.all(user.id).find((l) => l.id === listId.toLowerCase());
     if (!list) return null;
@@ -1460,7 +1464,7 @@ export function createListService(ctx) {
     const aisles = q.allAisles.all();
     const items = q.liveItems.all(list.id).map(describeItem);
     const byStore = shopping && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
-    const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all() });
+    const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all(), locale });
     // Réservations : seulement pour ceux qui ont le droit de les voir ; pour
     // le bénéficiaire, le champ n'existe pas
     const booked = reservations.forList(user, list);
@@ -1471,10 +1475,11 @@ export function createListService(ctx) {
   // proposé n'est donné que s'il est encore actif. Avec une liste (listId) :
   // aucune suggestion si ce n'est pas une liste de courses (la liste doit
   // être une des miennes).
-  function suggestions(typed, { user, listId } = {}) {
+  // locale : langue de la requête (ordre alphabétique, à égalité)
+  function suggestions(typed, { user, listId, locale = 'fr' } = {}) {
     if (listId !== undefined && !isShoppingList(listForMember(user, listId))) return [];
     const activeAisles = new Set(q.allAisles.all().filter((a) => a.active === 1).map((a) => a.id));
-    return suggest(q.allHistory.all().map(describeHistory), typed).map((entry) => ({
+    return suggest(q.allHistory.all().map(describeHistory), typed, undefined, { locale }).map((entry) => ({
       name: entry.name,
       aisleId: activeAisles.has(entry.aisleId) ? entry.aisleId : null,
       useCount: entry.useCount,
@@ -1808,11 +1813,13 @@ export function createListService(ctx) {
     return describeItem(item);
   }
 
-  // Comptes actifs, pour choisir avec qui partager une liste
+  // Comptes actifs, pour choisir avec qui partager une liste. Ordre de
+  // départ, toujours le même (synchronisation) : chaque écran les range
+  // ensuite dans sa langue (compareNames).
   function activeUsers() {
     return db.prepare('SELECT id, username, display_name FROM users WHERE active = 1').all()
       .map((u) => ({ id: u.id, username: u.username, displayName: u.display_name }))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'));
+      .sort((a, b) => compareText(a.displayName, b.displayName, { locale: 'fr' }));
   }
 
   // --- Corbeille des listes (GET /api/lists/deleted, POST /api/lists/:id/restore) ---

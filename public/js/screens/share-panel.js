@@ -19,12 +19,12 @@ import { app, onDataChange, refreshData } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { isWishList } from '../list-types.js';
 import { linkPart } from './share.js';
-import { t } from '../i18n.js';
+import { t, compareText } from '../i18n.js';
 
 // Droits proposés (fonction : les textes sont lus dans la langue choisie)
 const levels = () => [['modification', t('partage.panneau.peutModifier')], ['lecture', t('partage.panneau.lectureSeule')]];
 const levelLabel = (access) => (access === 'lecture' ? t('partage.panneau.lectureSeule') : t('partage.panneau.peutModifier'));
-const compare = (a, b) => a.displayName.localeCompare(b.displayName, 'fr', { sensitivity: 'base' });
+const compare = (a, b) => compareText(a.displayName, b.displayName, { sensitivity: 'base' });
 
 export function openSharePanel(listId) {
   const current = () => app.data.lists.get(listId);

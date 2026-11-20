@@ -24,7 +24,7 @@ export function cleanName(value, max = 100) {
 // ont la même forme comparable sont considérés comme des doublons
 // (« Épicerie », « épicerie » et « EPICERIE » ne font qu'un).
 export function comparableName(name) {
-  return name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr');
+  return name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr'); // technique : comparaison (doublons, jamais affiché)
 }
 
 // Numéro (id) passé dans l'adresse : entier positif, ou null s'il est invalide

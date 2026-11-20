@@ -2,44 +2,40 @@
 // Chaque nom commence par « mots. ».
 
 export default {
-  // Le mot d'une ligne de liste de courses, et ses formes complètes
+  // Le mot d'une ligne de liste de courses (mot seul : libellé, place où
+  // toutes les langues l'acceptent tel quel), le titre d'un nouvel article,
+  // un nombre d'articles et le compteur des lecteurs d'écran
   'mots.courses.un': 'article',
   'mots.courses.plusieurs': 'articles',
-  'mots.courses.le': 'l\'article',
-  'mots.courses.ce': 'cet article',
-  'mots.courses.unNouveau': 'un nouvel article',
   'mots.courses.nouveau': 'Nouvel article',
-  'mots.courses.de': 'de l\'article',
+  'mots.courses.nombre': { one: '{count} article', other: '{count} articles' },
+  'mots.courses.progression': { one: '{count} article restant sur {total}', other: '{count} articles restants sur {total}' },
 
   // Liste de tâches
   'mots.taches.un': 'élément',
   'mots.taches.plusieurs': 'éléments',
-  'mots.taches.le': 'l\'élément',
-  'mots.taches.ce': 'cet élément',
-  'mots.taches.unNouveau': 'un nouvel élément',
   'mots.taches.nouveau': 'Nouvel élément',
-  'mots.taches.de': 'de l\'élément',
+  'mots.taches.nombre': { one: '{count} élément', other: '{count} éléments' },
+  'mots.taches.progression': { one: '{count} élément restant sur {total}', other: '{count} éléments restants sur {total}' },
 
   // Liste d'envies
   'mots.envies.un': 'souhait',
   'mots.envies.plusieurs': 'souhaits',
-  'mots.envies.le': 'le souhait',
-  'mots.envies.ce': 'ce souhait',
-  'mots.envies.unNouveau': 'un nouveau souhait',
   'mots.envies.nouveau': 'Nouveau souhait',
-  'mots.envies.de': 'du souhait',
+  'mots.envies.nombre': { one: '{count} souhait', other: '{count} souhaits' },
+  'mots.envies.progression': { one: '{count} souhait restant sur {total}', other: '{count} souhaits restants sur {total}' },
 
-  // Confirmation « Supprimer la liste »
-  'mots.suppression.contientPartagee': { '=1': 'Elle contient {items} et elle est partagée avec {count} personne.', other: 'Elle contient {items} et elle est partagée avec {count} personnes.' },
+  // Confirmation « Supprimer la liste » ({items} : « 3 articles »)
+  'mots.suppression.contientPartagee': { one: 'Elle contient {items} et elle est partagée avec {count} personne.', other: 'Elle contient {items} et elle est partagée avec {count} personnes.' },
   'mots.suppression.contient': 'Elle contient {items}.',
-  'mots.suppression.videPartagee': { '=1': 'Elle est vide et elle est partagée avec {count} personne.', other: 'Elle est vide et elle est partagée avec {count} personnes.' },
+  'mots.suppression.videPartagee': { one: 'Elle est vide et elle est partagée avec {count} personne.', other: 'Elle est vide et elle est partagée avec {count} personnes.' },
   'mots.suppression.vide': 'Elle est vide.',
   'mots.suppression.chemin.reglages': 'Réglages',
   'mots.suppression.chemin.corbeille': 'Corbeille des listes',
   'mots.suppression.suite': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis {path}.',
 
   // Corbeille des listes
-  'mots.corbeille.jours': { '=1': 'Suppression définitive dans {count} jour', other: 'Suppression définitive dans {count} jours' },
+  'mots.corbeille.jours': { one: 'Suppression définitive dans {count} jour', other: 'Suppression définitive dans {count} jours' },
 
   // Zone des cochés, en bas de la liste
   'mots.coches.envies.titre': 'Reçus',
@@ -51,8 +47,4 @@ export default {
   'mots.coches.taches.titre': 'Terminés',
   'mots.coches.taches.rouvrir': 'Tout rouvrir',
   'mots.coches.taches.retirer': 'Retirer les terminés',
-
-  // Compteur pour les lecteurs d'écran (singulier pour 0 et 1)
-  'mots.progression.singulier': '{remaining} {item} restant sur {total}',
-  'mots.progression.pluriel': '{remaining} {item} restants sur {total}',
 };

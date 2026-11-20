@@ -7,7 +7,9 @@
 //
 // Ce module sert aux deux côtés :
 // - le téléphone (écrans) : t('nom', { valeurs }) dans la langue choisie
-//   (setLocale), formatMoney pour le prix des envies ;
+//   (setLocale), formatMoney pour le prix des envies, formatDate,
+//   formatTime et compareText pour les dates, les heures et l'ordre
+//   alphabétique, formatList pour les énumérations ;
 // - le serveur : translate(langue, 'nom', { valeurs }), la langue venant de
 //   la requête (server/locale.js) ; aucun état partagé entre deux requêtes.
 //
@@ -16,8 +18,12 @@
 //   données : 'Bonjour {name}' ;
 // - ou, quand un nombre change la phrase, une forme par cas du pluriel de
 //   la langue (Intl.PluralRules : one, other…), choisie avec { count } :
-//   { one: '{count} article', other: '{count} articles' } ; une forme
-//   exacte (« =1 », « =0 ») passe avant : { '=1': '1 jour', other: '{count} jours' }.
+//   { one: '{count} article', other: '{count} articles' } (en français, 0
+//   et 1 sont au singulier : « 0 article ») ; une forme exacte (« =1 »)
+//   passe avant, seulement pour un vrai cas particulier, jamais pour
+//   refaire une règle de grammaire : { '=1': 'Le 1er', other: 'Le {count}' }.
+// Une phrase entière par texte : jamais de morceaux de phrase assemblés par
+// le code ; une énumération (« Léa, Marc et Zoé ») passe par formatList.
 // Jamais de HTML : les écrans posent les textes avec textContent.
 
 import fr from './i18n/fr.js';
@@ -37,8 +43,10 @@ export const LOCALE_NAMES = { fr: 'Français', en: 'English' };
 
 const DICTIONARIES = { fr, en };
 
-// Langue → réglage régional d'Intl (dates, nombres, prix)
-const INTL_TAGS = { fr: 'fr-FR', en: 'en' };
+// Langue → réglage régional d'Intl (dates, heures, nombres, prix, ordre
+// alphabétique). L'anglais de Listo est américain (décision du 20 novembre
+// 2026) : « Nov 20, 2026 », « 7:30 PM ».
+const INTL_TAGS = { fr: 'fr-FR', en: 'en-US' };
 export const intlTag = (locale) => INTL_TAGS[locale] ?? INTL_TAGS[DEFAULT_LOCALE];
 
 export const isLocale = (value) => LOCALES.includes(value);
@@ -85,11 +93,11 @@ export function translate(locale, key, params = {}) {
   return text.replace(/\{(\w+)\}/g, (all, name) => (params[name] === undefined ? all : String(params[name])));
 }
 
-// Forme du pluriel pour ce nombre : d'abord une forme exacte (« =1 »,
-// « =0 »), puis le cas du pluriel de la langue (one, other…), sinon other.
-// La forme exacte reprend telle quelle une ancienne règle du code
-// (« 1 jour », « 0 jours ») ; Intl.PluralRules suit la grammaire (en
-// français, 0 et 1 sont au singulier).
+// Forme du pluriel pour ce nombre : d'abord une forme exacte (« =1 »), puis
+// le cas du pluriel de la langue (one, other…), sinon other.
+// Intl.PluralRules suit la grammaire (en français, 0 et 1 sont au
+// singulier ; en anglais, 1 seulement) ; la forme exacte sert aux vrais cas
+// particuliers (« le 1er », ou en anglais « the 2nd »).
 function pluralForm(locale, forms, count) {
   const number = Number(count) || 0;
   const exact = forms[`=${number}`];
@@ -123,6 +131,71 @@ export function setCurrency(code) {
 export function formatMoney(cents, { locale = current, currency: code = currency } = {}) {
   if (!Number.isInteger(cents)) return '';
   return new Intl.NumberFormat(intlTag(locale), { style: 'currency', currency: code }).format(cents / 100);
+}
+
+// Énumération dans la grammaire de la langue (Intl.ListFormat) :
+// formatList(['Léa', 'Marc', 'Zoé']) → « Léa, Marc et Zoé » en français,
+// « Léa, Marc, and Zoé » en anglais américain ; un seul : « Léa » ; aucun :
+// rien. type : 'conjunction' (« et », par défaut) ou 'disjunction' (« ou »).
+// Sert aussi au serveur, avec la langue donnée.
+export function formatList(items, { locale = current, type = 'conjunction' } = {}) {
+  const words = [...items].map(String);
+  return new Intl.ListFormat(intlTag(locale), { type, style: 'long' }).format(words);
+}
+
+// --- Dates, heures et ordre alphabétique, dans une langue ---
+// Ces fonctions servent aux deux côtés : sur le téléphone, sans « locale »,
+// la langue des écrans ; sur le serveur, toujours une langue donnée (celle
+// de la requête ou du destinataire, voir server/locale.js).
+
+// Date mise en forme par Intl : formatDate(date, { day: 'numeric', month:
+// 'short' }) → « 18 nov. » en français, « Nov 18 » en anglais.
+// date : un objet Date, ou une date ISO ; rien si elle n'est pas valable.
+export function formatDate(date, options = {}, { locale = current } = {}) {
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  return new Intl.DateTimeFormat(intlTag(locale), options).format(value);
+}
+
+// Heure lisible : « 19:30 », « 9:05 » en français, « 7:30 PM », « 9:05 AM »
+// en anglais. value : une heure « HH:MM » (heure d'une échéance, sans
+// fuseau) ou un objet Date (heure locale de l'appareil). twoDigits : heure
+// sur deux chiffres (« 09:05 ») dans une langue qui compte sur 24 heures ;
+// une langue sur 12 heures n'en met jamais (« 9:05 AM »). Rien si l'heure
+// n'est pas valable.
+export function formatTime(value, { locale = current, twoDigits = false } = {}) {
+  let date = value;
+  let timeZone;
+  if (typeof value === 'string') {
+    const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+    if (!match) return '';
+    // Heure seule : posée sur un jour fixe, en temps universel (aucun
+    // changement d'heure ne la décale)
+    date = new Date(Date.UTC(2000, 0, 1, Number(match[1]), Number(match[2])));
+    timeZone = 'UTC';
+  }
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  const tag = intlTag(locale);
+  const twelveHours = new Intl.DateTimeFormat(tag, { hour: 'numeric' }).resolvedOptions().hour12 === true;
+  const hour = twoDigits && !twelveHours ? '2-digit' : 'numeric';
+  return new Intl.DateTimeFormat(tag, { hour, minute: '2-digit', ...(timeZone ? { timeZone } : {}) }).format(date);
+}
+
+// Ordre alphabétique d'une langue : compareText(a, b) < 0 si a vient avant
+// b. options : celles d'Intl.Collator (sensitivity, numeric…). Les
+// comparateurs sont gardés (un tri en fait des milliers).
+const collators = new Map();
+export function compareText(a, b, { locale = current, ...options } = {}) {
+  const key = `${intlTag(locale)} ${JSON.stringify(options)}`;
+  if (!collators.has(key)) collators.set(key, new Intl.Collator(intlTag(locale), options));
+  return collators.get(key).compare(String(a ?? ''), String(b ?? ''));
+}
+
+// Nom de la monnaie, au pluriel, dans la langue : « euros », « francs
+// suisses », “US dollars” (pour « Prix indicatif, en euros »)
+export function currencyName({ locale = current, currency: code = currency } = {}) {
+  const parts = new Intl.NumberFormat(intlTag(locale), { style: 'currency', currency: code, currencyDisplay: 'name' }).formatToParts(2);
+  return parts.find((part) => part.type === 'currency')?.value ?? code;
 }
 
 // Code de monnaie accepté (LISTO_CURRENCY) : trois lettres majuscules

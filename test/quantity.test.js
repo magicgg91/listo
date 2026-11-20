@@ -63,6 +63,62 @@ test('dans le doute, rien n\'est lu : tout le texte reste le nom', () => {
   assert.equal(QUANTITY_MAX, 30);
 });
 
+// Anglais (langue donnée explicitement : l'anglais n'est pas encore proposé
+// dans « Mon compte », READY_LOCALES)
+const en = (text) => readQuantity(text, 'en');
+
+test('anglais : nombre, unité métrique ou américaine, conditionnement, « of » retiré', () => {
+  assert.deepEqual(en('6 eggs'), { name: 'eggs', quantity: '6' });
+  assert.deepEqual(en('2 kg apples'), { name: 'apples', quantity: '2 kg' });
+  assert.deepEqual(en('2 kg of apples'), { name: 'apples', quantity: '2 kg' });
+  assert.deepEqual(en('2 KG Of apples'), { name: 'apples', quantity: '2 KG' }, 'majuscules');
+  assert.deepEqual(en('1.5 l milk'), { name: 'milk', quantity: '1.5 l' });
+  assert.deepEqual(en('1,5 L milk'), { name: 'milk', quantity: '1,5 L' }, 'virgule aussi');
+  assert.deepEqual(en('500g flour'), { name: 'flour', quantity: '500g' }, 'unité de mesure collée');
+  assert.deepEqual(en('12 oz cheese'), { name: 'cheese', quantity: '12 oz' });
+  assert.deepEqual(en('12oz cheese'), { name: 'cheese', quantity: '12oz' });
+  assert.deepEqual(en('2 lbs ground beef'), { name: 'ground beef', quantity: '2 lbs' });
+  assert.deepEqual(en('1 lb of butter'), { name: 'butter', quantity: '1 lb' });
+  assert.deepEqual(en('1 gal milk'), { name: 'milk', quantity: '1 gal' });
+  assert.deepEqual(en('2 pt cream'), { name: 'cream', quantity: '2 pt' });
+  assert.deepEqual(en('2 pounds beef'), { name: 'beef', quantity: '2 pounds' }, 'mesure écrite en entier');
+  // « dozen » : lu comme un conditionnement, gardé dans la quantité
+  assert.deepEqual(en('1 dozen eggs'), { name: 'eggs', quantity: '1 dozen' });
+  assert.deepEqual(en('2 dozen eggs'), { name: 'eggs', quantity: '2 dozen' });
+  assert.deepEqual(en('1 dozen of eggs'), { name: 'eggs', quantity: '1 dozen' });
+  assert.deepEqual(en('3 boxes eggs'), { name: 'eggs', quantity: '3 boxes' });
+  assert.deepEqual(en('3 boxes of cereal'), { name: 'cereal', quantity: '3 boxes' });
+  assert.deepEqual(en('2 bunches of bananas'), { name: 'bananas', quantity: '2 bunches' });
+  assert.deepEqual(en('2 loaves bread'), { name: 'bread', quantity: '2 loaves' });
+  assert.deepEqual(en('4 rolls paper towels'), { name: 'paper towels', quantity: '4 rolls' });
+  assert.deepEqual(en('6 cans of tuna'), { name: 'tuna', quantity: '6 cans' });
+  assert.deepEqual(en('2 kg offal'), { name: 'offal', quantity: '2 kg' }, '« of » seulement comme mot entier');
+  for (const unit of ['mg', 'g', 'kg', 'ml', 'cl', 'dl', 'l', 'L', 'lb', 'lbs', 'oz', 'pt', 'gal', 'dozen', 'pack', 'packs', 'box', 'boxes', 'bag', 'bags', 'bottle', 'bottles', 'can', 'cans', 'jar', 'jars', 'carton', 'cartons', 'bunch', 'bunches', 'roll', 'rolls', 'tin', 'tins', 'tub', 'tubs', 'packet', 'packets', 'slice', 'slices', 'loaf', 'loaves']) {
+    assert.equal(isUnit(unit, 'en'), true, unit);
+  }
+  for (const word of ['slices', 'boxes', 'oz', 'lbs', 'dozen']) assert.equal(isUnit(word, 'fr'), false, `${word} : pas une unité en français`);
+  assert.equal(isUnit('boîtes', 'en'), false, 'boîtes : pas une unité en anglais');
+});
+
+test('anglais : quantité à la fin, et dans le doute rien n\'est lu', () => {
+  assert.deepEqual(en('apples x6'), { name: 'apples', quantity: '6' });
+  assert.deepEqual(en('apples ×6'), { name: 'apples', quantity: '6' });
+  assert.deepEqual(en('plain yogurt X 12'), { name: 'plain yogurt', quantity: '12' });
+  for (const text of ['6', '2 kg', '2 kg of', '7up', '7 up', '7up zero', '2 in 1 shampoo', '3 for 2 detergent', '2 for 1 pizza', '1 a day vitamins', '2 x 4 lumber', '3 times a day', 'pie 6 slices', 'vitamin C 1000', 'shampoo 2 in 1', 'milk', '6 !!']) {
+    assert.deepEqual(en(text), { name: text, quantity: '' }, text);
+  }
+  // Les mots d'une langue ne valent pas dans l'autre
+  assert.deepEqual(readQuantity('2 kg of apples', 'fr'), { name: 'of apples', quantity: '2 kg' });
+  assert.deepEqual(en('2 kg de pommes'), { name: 'de pommes', quantity: '2 kg' });
+  assert.deepEqual(en('3 boîtes de thon'), { name: 'boîtes de thon', quantity: '3' });
+  assert.deepEqual(en('2 en 1 shampoing'), { name: 'en 1 shampoing', quantity: '2' });
+  assert.deepEqual(readQuantity('2 in 1 shampoo', 'fr'), { name: 'in 1 shampoo', quantity: '2' });
+  // Langue absente ou inconnue : langue des écrans (le français ici)
+  assert.deepEqual(readQuantity('2 kg de pommes'), { name: 'pommes', quantity: '2 kg' });
+  assert.deepEqual(readQuantity('2 kg de pommes', 'xx'), { name: 'pommes', quantity: '2 kg' });
+  assert.deepEqual(['2 kg de pommes'].map(readQuantity), [{ name: 'pommes', quantity: '2 kg' }], 'map : le numéro du texte n\'est pas une langue');
+});
+
 test('saisie multiple : chaque morceau est lu après le découpage', () => {
   const entries = splitItems('6 oeufs, 2 kg pommes ; lait\n1,5 L de lait').map(readQuantity);
   assert.deepEqual(entries, [
@@ -181,6 +237,6 @@ test('écran : la quantité n\'est lue que par quantityFor (courses seulement) ;
   // Module simple, gardé hors ligne
   const module = read('public/js/quantity.js');
   assert.doesNotMatch(module, /\(\?<[=!]|innerHTML/);
-  assert.deepEqual(module.match(/^import .*$/gm), ["import { isShoppingList } from './list-types.js';"]);
+  assert.deepEqual(module.match(/^import .*$/gm), ["import { isShoppingList } from './list-types.js';", "import { getLocale } from './i18n.js';"]);
   assert.ok(read('public/sw.js').includes("'/js/quantity.js'"));
 });

@@ -29,6 +29,9 @@ export default {
   // Liste d'envies : sous-titre (à qui elle est destinée)
   'regles.envies.pourVous': 'Pour vous',
   'regles.envies.pour': 'Pour {name}',
+  // Après le type, sur l'ordinateur : « Envies · pour Léa »
+  'regles.envies.pourVous.suite': 'pour vous',
+  'regles.envies.pour.suite': 'pour {name}',
   'regles.envies.sansDestinataire': 'Envies',
 
   // Tris : en-têtes des groupes

@@ -21,8 +21,8 @@ test('plus de boutons « Enregistrer » / « Supprimer » en bas de la fiche', (
 
 test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
   // Téléphone (l'ordinateur a ses boutons écrits au pied du tiroir)
-  assert.match(list, /: iconButton\('trash', t\('liste\.fiche\.supprimer', \{ the: words\.the \}\), null, 'icon-btn--danger sheet__delete'\);/);
-  assert.equal(fr['liste.fiche.supprimer'], 'Supprimer {the}');
+  assert.match(list, /: iconButton\('trash', byKind\(kind, \{ shopping: t\('liste\.fiche\.supprimer\.courses'\), tasks: t\('liste\.fiche\.supprimer\.taches'\), wishes: t\('liste\.fiche\.supprimer\.envies'\) \}\), null, 'icon-btn--danger sheet__delete'\);/);
+  assert.deepEqual([fr['liste.fiche.supprimer.courses'], fr['liste.fiche.supprimer.taches'], fr['liste.fiche.supprimer.envies']], ['Supprimer l\'article', 'Supprimer l\'élément', 'Supprimer le souhait']);
   assert.match(list, /: h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': t\('liste\.enregistrer'\) \}, icon\('disquette'\)\);/);
   assert.equal(fr['liste.enregistrer'], 'Enregistrer');
   // Disquette : dans le sprite (kit, application, components.html), même

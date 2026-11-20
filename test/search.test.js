@@ -10,8 +10,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  foldText, foldQuery, isSearching, findHits, matches, highlightParts, filterListView, filterLists, resultsLabel, listsLabel,
+  foldText, foldQuery, isSearching, findHits, matches, highlightParts, filterListView, filterLists, resultsLabel, listsLabel, setTranslator,
 } from '../public/js/search.js';
+import { t } from '../public/js/i18n.js';
 import { emptyState, computeListView, canEditList, loadFoldedGroups, saveFoldedGroups } from '../public/js/store.js';
 import fr from '../public/js/i18n/fr.js';
 
@@ -167,10 +168,15 @@ test('repli mémorisé intact : la recherche ouvre les groupes sans rien enregis
 });
 
 test('nombre de résultats : singulier et pluriel', () => {
+  // Sans traduction (site du guide) : le texte français
   assert.equal(resultsLabel(0), '0 résultat');
   assert.equal(resultsLabel(1), '1 résultat');
   assert.equal(resultsLabel(2), '2 résultats');
   assert.equal(resultsLabel(12), '12 résultats');
+  // Dans l'application, avec la traduction donnée par app.js (setTranslator)
+  setTranslator(t);
+  assert.equal(resultsLabel(0), '0 résultat');
+  assert.equal(resultsLabel(2), '2 résultats');
   assert.equal(listsLabel(0), '0 liste');
   assert.equal(listsLabel(1), '1 liste');
   assert.equal(listsLabel(3), '3 listes');

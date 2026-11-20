@@ -115,7 +115,7 @@ test('pastille : tâches en retard + tâches du jour (comme le résumé de 8 h)'
   assert.match(tabbar, /if \(!count\) return t\('navigation\.echeances'\);\s*return t\('navigation\.echeances\.pastille', \{ count \}\);/);
   assert.equal(fr['navigation.echeances'], 'Échéances');
   assert.deepEqual(fr['navigation.echeances.pastille'], {
-    '=1': 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
+    one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
     other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
   });
   assert.match(tabbar, /badge\.hidden = count === 0;/);

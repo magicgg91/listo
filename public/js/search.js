@@ -141,5 +141,6 @@ export function filterLists(lists, query) {
 // « 0 résultat », « 1 résultat », « 4 résultats »
 // Sans traduction donnée (site du guide, en français seulement), le texte français
 export const resultsLabel = (count) => (t ? t('recherche.resultats', { count }) : `${count} ${count > 1 ? 'résultats' : 'résultat'}`); // technique : copie du site du guide, sans import
-// « 0 liste », « 1 liste », « 2 listes »
-export const listsLabel = (count) => `${count} ${count > 1 ? 'listes' : 'liste'}`;
+// « 0 liste », « 1 liste », « 2 listes » (seulement dans l'application, qui
+// donne la traduction : le site du guide ne compte pas de listes)
+export const listsLabel = (count) => t('recherche.listes', { count });

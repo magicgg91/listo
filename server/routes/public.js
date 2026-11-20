@@ -52,6 +52,8 @@ import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
 import { ACCESS_COOKIE } from '../shares.js';
 import { splitDone } from '../../public/js/sorting.js';
+import { DEFAULT_LOCALE } from '../../public/js/i18n.js';
+import { requestLocale } from '../locale.js';
 import { nestItems, usesSubtasks, orderSubtasks } from '../../public/js/subtasks.js';
 
 // Noms des messages (public/js/i18n/fr/liens.js), traduits par req.t dans
@@ -167,7 +169,8 @@ export function publicRoutes(ctx, { publicDir }) {
   // Ce que voit le visiteur : liste blanche, champ par champ.
   // visitor : null (pas de réservation montrée : autre type de liste, ou
   // bénéficiaire reconnu), ou { tokenHash } pour un visiteur d'une liste d'envies.
-  function publicView(share, token, visitor = null) {
+  // locale : langue du visiteur (ordre alphabétique des rayons et des articles)
+  function publicView(share, token, visitor = null, locale = DEFAULT_LOCALE) {
     const list = q.list.get(share.list_id);
     const isShopping = isShoppingList(list);
     // Magasin : seulement pour une liste de courses (une liste de tâches qui
@@ -206,7 +209,7 @@ export function publicRoutes(ctx, { publicDir }) {
     // l'ordre, elle n'est pas envoyée.
     const aisles = q.allAisles.all();
     const stores = q.allStores.all();
-    const { groups, done } = splitDone(tops, aisles, isShopping, { byStore, stores });
+    const { groups, done } = splitDone(tops, aisles, isShopping, { byStore, stores, locale });
     // Liste de tâches : priorité et échéance en plus (lecture seule),
     // chacune seulement si elle est activée pour cette liste ; jamais pour
     // une liste de courses
@@ -317,7 +320,7 @@ export function publicRoutes(ctx, { publicDir }) {
     // Liste d'envies : un visiteur voit l'état des réservations ; le
     // bénéficiaire reconnu par sa session, jamais (réponse de la lecture seule)
     const visitor = isWishList(list) && !isBeneficiary(req, list) ? { tokenHash: visitorHash(req, share) } : null;
-    res.json(publicView(share, req.params.token, visitor));
+    res.json(publicView(share, req.params.token, visitor, requestLocale(req, ctx.config)));
   });
 
   // --- Actions d'un visiteur sur une liste d'envies (sans compte) ---

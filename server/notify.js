@@ -59,7 +59,7 @@ import { buildMessage } from './push.js';
 import { wishListOf, beneficiaryId, seesReservations } from '../public/js/wishes.js';
 import { reminderAt, timeLabel } from '../public/js/due-time.js';
 import { assigneesOf, parsePeople } from '../public/js/assign.js';
-import { translate } from '../public/js/i18n.js';
+import { translate, formatDate, formatList } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
@@ -84,19 +84,19 @@ const ACTIVITY = { add: 'added', update: 'updated', check: 'checked' };
 // Textes : dans la langue de chaque destinataire (locale), jamais une
 // seule fois pour tout le monde (public/js/i18n/fr/alertes.js)
 
-// « Lait, Pain et 3 autres »
+// « Lait, Pain, Œufs » ; trop de noms : « Lait, Pain et 3 autres » (énumération
+// dans la grammaire de la langue, formatList)
 function nameList(locale, names) {
   const shown = names.slice(0, NAMES_MAX);
   const rest = names.length - shown.length;
-  return rest > 0 ? translate(locale, 'alertes.noms.etAutres', { names: shown.join(', '), count: rest }) : shown.join(', ');
+  return rest > 0 ? formatList([...shown, translate(locale, 'alertes.noms.autres', { count: rest })], { locale }) : shown.join(', ');
 }
 
 // « Léa », « Léa et Marc », « Léa, Marc et Zoé », « Léa, Marc et 2 autres »
 function peopleList(locale, names) {
   if (names.length <= 1) return names[0] ?? translate(locale, 'alertes.quelquun');
-  if (names.length === 2) return translate(locale, 'alertes.personnes.deux', { first: names[0], second: names[1] });
-  if (names.length === 3) return translate(locale, 'alertes.personnes.trois', { first: names[0], second: names[1], third: names[2] });
-  return translate(locale, 'alertes.personnes.plus', { first: names[0], second: names[1], count: names.length - 2 });
+  if (names.length <= 3) return formatList(names, { locale });
+  return formatList([names[0], names[1], translate(locale, 'alertes.noms.autres', { count: names.length - 2 })], { locale });
 }
 
 export function createNotifier(ctx, { push = ctx.push } = {}) {
@@ -374,7 +374,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     if (late) parts.push(translate(locale, dueToday ? 'alertes.echeances.retard' : 'alertes.echeances.retard.seules', { count: late }));
     const lists = [...new Map(tasks.map((t) => [t.list_id, t.list_name])).entries()];
     const body = detail
-      ? nameList(locale, tasks.map((t) => (t.due_time ? translate(locale, 'alertes.echeances.heure', { name: t.name, time: timeLabel(t.due_time) }) : t.name))) // les plus en retard d'abord
+      ? nameList(locale, tasks.map((t) => (t.due_time ? translate(locale, 'alertes.echeances.heure', { name: t.name, time: timeLabel(t.due_time, { locale }) }) : t.name))) // les plus en retard d'abord
       : (lists.length === 1 ? translate(locale, 'alertes.dans', { list: lists[0][1] }) : translate(locale, 'alertes.dansListes', { count: lists.length }));
     // Une seule liste : on l'ouvre ; plusieurs : « Mes listes »
     const navigate = lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
@@ -410,10 +410,13 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     return localDay(new Date(y, m - 1, d + n));
   };
   function reminderMessage(task, list, detail, today, locale) {
-    const time = timeLabel(task.due_time);
-    // Quand : aujourd'hui, demain, ou le 12/11/2026
+    const time = timeLabel(task.due_time, { locale });
+    // Quand : aujourd'hui, demain, ou le 12/11/2026 (11/12/2026 en anglais
+    // américain : la date dans la langue du destinataire)
     const when = task.due_date === today ? 'aujourdhui' : task.due_date === dayShift(today, 1) ? 'demain' : 'date';
-    const values = { time, date: task.due_date.split('-').reverse().join('/'), list: list.name };
+    const [y, m, d] = task.due_date.split('-').map(Number);
+    const date = formatDate(new Date(Date.UTC(y, m - 1, d)), { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }, { locale });
+    const values = { time, date, list: list.name };
     const keys = {
       aujourdhui: ['alertes.rappel.aujourdhui', 'alertes.rappel.detail.aujourdhui'],
       demain: ['alertes.rappel.demain', 'alertes.rappel.detail.demain'],

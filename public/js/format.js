@@ -3,11 +3,11 @@
 // l'écran : elles sont testées automatiquement (test/front.test.js).
 
 import { normalizeItemName } from './history.js';
-import { countItems, itemWords } from './words.js';
+import { itemWords } from './words.js';
 import { formatPrice } from './wishes.js';
 import { repeatSentence } from './repeat.js';
 import { isDueTime, isLate, nowTime, timeLabel } from './due-time.js';
-import { t } from './i18n.js';
+import { t, formatDate, formatTime, formatList } from './i18n.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -27,10 +27,10 @@ export function relativeTime(iso, now = Date.now()) {
   if (date >= startOfToday) return t('format.relatif.heures', { hours: Math.floor(diff / HOUR) });
   if (date >= new Date(startOfToday.getTime() - DAY)) return t('format.relatif.hier');
   if (date >= new Date(startOfToday.getTime() - 6 * DAY)) {
-    return date.toLocaleDateString('fr-FR', { weekday: 'short' });
+    return formatDate(date, { weekday: 'short' });
   }
   const sameYear = date.getFullYear() === new Date(now).getFullYear();
-  return date.toLocaleDateString('fr-FR', sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
+  return formatDate(date, sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 // Partie tapée d'une suggestion, à mettre en gras : renvoie [début, reste] si
@@ -48,11 +48,9 @@ export function splitPrefix(name, typed) {
   return ['', name];
 }
 
-// Liste des prénoms pour les lecteurs d'écran : « Guillaume et Léa »
-export function namesList(names) {
-  if (names.length <= 1) return names.join('');
-  return t('format.prenoms.et', { first: names.slice(0, -1).join(', '), last: names[names.length - 1] });
-}
+// Liste des prénoms pour les lecteurs d'écran : « Guillaume et Léa »,
+// « Guillaume, Léa et Marie » (dans la grammaire de la langue, formatList)
+export const namesList = (names) => formatList(names);
 
 // Nom affiché proposé quand aucun n'est donné : l'identifiant avec une
 // majuscule au début (« guillaume » devient « Guillaume »).
@@ -142,11 +140,12 @@ export function addDays(key, n) {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
-// « ven. 24 oct. » (et l'année si ce n'est pas l'année en cours)
+// « ven. 24 oct. » (et l'année si ce n'est pas l'année en cours), dans la
+// langue des écrans (« Fri, Oct 24 » en anglais)
 export function dueDateLabel(key, today = todayKey()) {
   const [y, m, d] = key.split('-').map(Number);
   const sameYear = key.slice(0, 4) === today.slice(0, 4);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('fr-FR', {
+  return formatDate(new Date(Date.UTC(y, m - 1, d)), {
     weekday: 'short', day: 'numeric', month: 'short', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'UTC',
   });
 }
@@ -191,7 +190,7 @@ export function newsMark(kind, by) {
 // « 3 nouveautés », « plus de 30 nouveautés »
 export function newsBadgeLabel(text) {
   if (text === '30+') return t('format.nouveautes.plusDe30');
-  return text === '1' ? t('format.nouveautes.une', { text }) : t('format.nouveautes.plusieurs', { text });
+  return t('format.nouveautes', { count: Number(text) });
 }
 
 // Libellé d'une priorité, en toutes lettres (fiches à consulter), lu au
@@ -248,8 +247,8 @@ export function priorityChip(priority) {
 export function dateTimeLabel(iso) {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
-  const day = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-  const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const day = formatDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
+  const time = formatTime(date, { twoDigits: true }); // « 09:05 » ; « 9:05 AM » en anglais
   return t('format.jourAHeure', { day, time });
 }
 
@@ -270,8 +269,8 @@ export function timeLeftLabel(iso, now = Date.now()) {
 
 // --- Administration, onglet « Articles » ---
 // Seules les listes de courses mémorisent des noms (décision du 17 octobre
-// 2026) : ces textes parlent donc d'« articles », par le module de mots
-// (countItems(n, true) : « 1 article », « 3 articles »).
+// 2026) : ces textes parlent donc d'« articles », écrits en entier dans le
+// dictionnaire (« 1 article sera corrigé », « 3 articles seront corrigés »).
 
 const listsOfShopping = (count) => t('format.noms.listesCourses', { count });
 
@@ -282,7 +281,7 @@ export function savedNameSub({ aisle, uses, inLists }) {
   return [
     aisle,
     t('format.noms.utilisations', { count: uses }),
-    inLists ? t('format.noms.enListe', { items: countItems(inLists, true) }) : t('format.noms.aucunEnListe', { item: itemWords(true).one }),
+    inLists ? t('format.noms.enListe', { count: inLists }) : t('format.noms.aucunEnListe'),
   ].filter(Boolean).map((part) => part.replaceAll(' ', '\u00a0')).join(' · ');
 }
 
@@ -292,19 +291,15 @@ export function renameImpactText({ oldName, newName, merge, items, lists }) {
     ? t('format.correction.fusion', { oldName, newName })
     : t('format.correction.renommage', { oldName, newName });
   const where = items
-    ? (items === 1
-      ? t('format.correction.impact.un', { items: countItems(items, true), lists: listsOfShopping(lists) })
-      : t('format.correction.impact.plusieurs', { items: countItems(items, true), lists: listsOfShopping(lists) }))
-    : t('format.correction.impact.aucun', { item: itemWords(true).one });
+    ? t('format.correction.impact', { count: items, lists: listsOfShopping(lists) })
+    : t('format.correction.impact.aucun');
   return `${what} ${where}`;
 }
 
 // Message affiché après une correction (réponse de /api/admin/names/rename)
 export function renameDoneText({ items, lists }) {
   if (!items) return t('format.correction.faite.suggestions');
-  return items === 1
-    ? t('format.correction.faite.un', { items: countItems(items, true), lists: listsOfShopping(lists) })
-    : t('format.correction.faite.plusieurs', { items: countItems(items, true), lists: listsOfShopping(lists) });
+  return t('format.correction.faite', { count: items, lists: listsOfShopping(lists) });
 }
 
 // « Dupliquer la liste » : nom proposé pour la copie, « <nom> (copie) », dans

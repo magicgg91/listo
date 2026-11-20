@@ -36,7 +36,7 @@
 //   mêmes actions, mêmes droits (revérifiés par le serveur).
 
 import { isShoppingList, isWishList, typeLabel, typeIcon } from '../list-types.js';
-import { wishForLabel, formatPrice, parsePrice, cleanLink, LINK_MAX } from '../wishes.js';
+import { wishForLabel, formatPrice, parsePrice, priceInputText, cleanLink, LINK_MAX } from '../wishes.js';
 import { h, icon, iconButton, avatar, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
@@ -50,10 +50,10 @@ import { progressOf, parentOf } from '../subtasks.js';
 import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
-import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
+import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
-import { t } from '../i18n.js';
+import { t, compareText, currencyName } from '../i18n.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -400,8 +400,9 @@ export function renderList(listId, onLeave) {
     const canEdit = canEditList(list);
     // « article » pour une liste de courses, « élément » sinon (words.js)
     const words = itemWords(list);
-    input.placeholder = t('liste.ajout.placeholder', { word: words.one });
-    input.setAttribute('aria-label', t('liste.ajout.placeholder', { word: words.one }));
+    const placeholder = byKind(list, { shopping: t('liste.ajout.placeholder.courses'), tasks: t('liste.ajout.placeholder.taches'), wishes: t('liste.ajout.placeholder.envies') });
+    input.placeholder = placeholder;
+    input.setAttribute('aria-label', placeholder);
     // Courses et tâches : plusieurs éléments d'un coup (bulk-add.js), donc un
     // champ plus long ; liste d'envies : un seul, 100 caractères comme avant
     input.maxLength = isWishList(list) ? ITEM_NAME_MAX : BULK_INPUT_MAX;
@@ -412,7 +413,7 @@ export function renderList(listId, onLeave) {
       // Ordinateur : « Carrefour Market · Courses », « Tâches », « Envies · pour vous »
       replace(sub, list.store
         ? [icon('store', 'icon--xs'), `${list.store.name} · ${typeLabel(list)}`, view.multi ? multiBadge() : null]
-        : [icon(typeIcon(list), 'icon--xs'), isWishList(list) ? `${typeLabel(list)} · ${wishForLabel(list).replace(/^Pour /, `${t('liste.pc.pour')} `)}` : typeLabel(list)]);
+        : [icon(typeIcon(list), 'icon--xs'), isWishList(list) ? `${typeLabel(list)} · ${wishForLabel(list, { inline: true })}` : typeLabel(list)]);
       drawPcHead(list);
     } else {
       replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : isWishList(list) ? wishForLabel(list) : typeLabel(list));
@@ -437,7 +438,8 @@ export function renderList(listId, onLeave) {
         h('h2', { class: 'empty__title' }, t('liste.vide')),
         h('p', { class: 'empty__text' }, canEdit ? (pc ? t('liste.vide.ajouter.pc', { word: words.one }) : t('liste.vide.ajouter', { word: words.one })) : t('liste.vide.lectureSeule')),
         // Ordinateur : l'astuce du raccourci (si les raccourcis à une touche sont actifs)
-        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, `${t('liste.vide.astuce.debut')} `, h('kbd', { class: 'keycap' }, 'A'), ` ${t('liste.vide.astuce.fin')}`) : null), { available: false });
+        // (une phrase entière : la touche prend la place de {key})
+        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, ...t('liste.vide.astuce').split('{key}').flatMap((part, i) => (i ? [h('kbd', { class: 'keycap' }, 'A'), part] : [part]))) : null), { available: false });
       drawFoldAll();
       searchMeta.textContent = '';
       return;
@@ -958,7 +960,7 @@ export function renderList(listId, onLeave) {
     openLightbox({
       title: item.name,
       src: actions.photoSrc(item),
-      alt: t('liste.photo.alt', { of: itemWords(view?.list).of, name: item.name }),
+      alt: byKind(view?.list, { shopping: t('liste.photo.alt.courses', { name: item.name }), tasks: t('liste.photo.alt.taches', { name: item.name }), wishes: t('liste.photo.alt.envies', { name: item.name }) }),
       caption: [view?.list.name, group].filter(Boolean).join(' · '),
     });
   }
@@ -1569,13 +1571,13 @@ export function renderList(listId, onLeave) {
       if (usualStoreFor(app.data, view.list, name) !== null) return {}; // le serveur le choisira (le téléphone l'affiche déjà)
       const sub = isKnownItem(app.data, name)
         ? t('liste.place.magasin.connu', { name })
-        : t('liste.place.magasin.nouveau', { name, aNew: itemWords(view.list).aNew });
+        : t('liste.place.magasin.nouveau', { name });
       const storeId = await pickStore({ title: `${t('liste.place.magasin.titre')}${suffix}`, sub, confirmLabel: t('liste.place.ajouter') });
       return storeId === undefined ? undefined : { storeId };
     }
     if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
-      const aisleId = await pickAisle({ title: `${t('liste.place.rayon.titre')}${suffix}`, sub: t('liste.place.rayon.nouveau', { name, aNew: itemWords(view.list).aNew }), confirmLabel: t('liste.place.ajouter') });
+      const aisleId = await pickAisle({ title: `${t('liste.place.rayon.titre')}${suffix}`, sub: t('liste.place.rayon.nouveau', { name }), confirmLabel: t('liste.place.ajouter') });
       return aisleId === undefined ? undefined : { aisleId };
     }
     return {};
@@ -1712,13 +1714,14 @@ export function renderList(listId, onLeave) {
     const multi = Boolean(view?.multi);
     const isShopping = isShoppingList(view?.list) && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article », « élément » ou « souhait »
+    const kind = wordKind(view?.list); // phrases entières de cette sorte de liste (byKind)
     const wishes = isWishList(view?.list);
     const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
     // Souhait : lien web (http ou https) et prix indicatif, facultatifs
     const linkInput = h('input', { class: 'input', type: 'url', inputmode: 'url', value: item.link ?? '', maxlength: String(LINK_MAX), autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'https://…' });
     const linkField = field(t('liste.fiche.lien'), linkInput);
-    const priceInput = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: Number.isInteger(item.priceCents) ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '', maxlength: '12', autocomplete: 'off', placeholder: t('liste.fiche.prix.exemple') });
-    const priceField = field(t('liste.fiche.prix'), priceInput, { aside: t('liste.fiche.prix.unite') });
+    const priceInput = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: priceInputText(item.priceCents), maxlength: '12', autocomplete: 'off', placeholder: t('liste.fiche.prix.exemple') });
+    const priceField = field(t('liste.fiche.prix'), priceInput, { aside: t('liste.fiche.prix.unite', { currency: currencyName() }) });
     const reservation = wishes ? reservationBlock(item) : null;
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
@@ -1876,7 +1879,7 @@ export function renderList(listId, onLeave) {
     });
     const daysRow = h('div', { class: 'weekdays', role: 'group', 'aria-label': t('liste.fiche.repete.jours') }, dayButtons);
     const monthSelect = h('select', { class: 'due-picker__input' },
-      Array.from({ length: 31 }, (_, i) => h('option', { value: String(i + 1) }, i === 0 ? t('liste.fiche.repete.leJour.premier') : t('liste.fiche.repete.leJour', { day: i + 1 }))));
+      Array.from({ length: 31 }, (_, i) => h('option', { value: String(i + 1) }, t('liste.fiche.repete.leJour', { count: i + 1 }))));
     const monthPicker = nativePicker(monthSelect);
     monthSelect.addEventListener('change', () => {
       monthDay = Number(monthSelect.value);
@@ -2204,7 +2207,7 @@ export function renderList(listId, onLeave) {
     // (pas elle-même), à faire d'abord, par ordre alphabétique
     const parentChoices = () => [...(view?.groups.flatMap((group) => group.items) ?? []), ...(view?.done ?? [])]
       .filter((other) => other.id !== item.id)
-      .sort((a, b) => Number(a.checked) - Number(b.checked) || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+      .sort((a, b) => Number(a.checked) - Number(b.checked) || compareText(a.name, b.name, { sensitivity: 'base' }));
     function drawParent() {
       const blocked = ownChildren().length
         ? t('liste.fiche.parent.aDesSousTaches', { count: ownChildren().length })
@@ -2367,7 +2370,7 @@ export function renderList(listId, onLeave) {
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
     // l'appareil photo ou la photothèque). La photo reste facultative.
-    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: t('liste.photo.titre', { of: words.of }) });
+    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: byKind(kind, { shopping: t('liste.photo.titre.courses'), tasks: t('liste.photo.titre.taches'), wishes: t('liste.photo.titre.envies') }) });
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {
@@ -2436,7 +2439,7 @@ export function renderList(listId, onLeave) {
       if (!latest) {
         if (gone) return;
         gone = true;
-        conflictText.textContent = t('liste.fiche.conflit.supprime', { item: capitalized(words.this) });
+        conflictText.textContent = byKind(kind, { shopping: t('liste.fiche.conflit.supprime.courses'), tasks: t('liste.fiche.conflit.supprime.taches'), wishes: t('liste.fiche.conflit.supprime.envies') });
       } else {
         const changedElsewhere = gone || contentOf(latest) !== seen;
         gone = false;
@@ -2444,7 +2447,7 @@ export function renderList(listId, onLeave) {
         seen = contentOf(latest);
         drawPhoto();
         if (!changedElsewhere) return;
-        conflictText.textContent = t('liste.fiche.conflit.modifie', { item: capitalized(words.this) });
+        conflictText.textContent = byKind(kind, { shopping: t('liste.fiche.conflit.modifie.courses'), tasks: t('liste.fiche.conflit.modifie.taches'), wishes: t('liste.fiche.conflit.modifie.envies') });
       }
       conflict.hidden = false;
       save.disabled = gone;
@@ -2465,7 +2468,7 @@ export function renderList(listId, onLeave) {
     const pc = onPc();
     const remove = pc
       ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), t('liste.supprimer'))
-      : iconButton('trash', t('liste.fiche.supprimer', { the: words.the }), null, 'icon-btn--danger sheet__delete');
+      : iconButton('trash', byKind(kind, { shopping: t('liste.fiche.supprimer.courses'), tasks: t('liste.fiche.supprimer.taches'), wishes: t('liste.fiche.supprimer.envies') }), null, 'icon-btn--danger sheet__delete');
     const save = pc
       ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId, 'aria-keyshortcuts': 'Control+Enter' }, t('liste.enregistrer'), keycap(t('liste.fiche.touche.ctrl')), keycap('↵'))
       : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': t('liste.enregistrer') }, icon('disquette'));
@@ -2512,7 +2515,7 @@ export function renderList(listId, onLeave) {
     }
 
     const sheet = openSheet({
-      title: t('liste.fiche.titre', { the: words.the }),
+      title: byKind(kind, { shopping: t('liste.fiche.titre.courses'), tasks: t('liste.fiche.titre.taches'), wishes: t('liste.fiche.titre.envies') }),
       content: form,
       tools: pc ? null : [remove, save],
       scroll: true,
@@ -2623,6 +2626,7 @@ export function renderList(listId, onLeave) {
   // supprimé.
   function openItemView(item) {
     const words = itemWords(view?.list);
+    const kind = wordKind(view?.list); // phrases entières de cette sorte de liste (byKind)
     const body = h('div', { class: 'stack' });
     const wishes = isWishList(view?.list);
     const reservation = wishes ? reservationBlock(item) : null;
@@ -2632,7 +2636,7 @@ export function renderList(listId, onLeave) {
       const shopping = isShoppingList(view?.list);
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
-        h('div', { class: 'note' }, icon('eye'), h('p', {}, t('liste.detail.lectureSeule', { item: words.this }))),
+        h('div', { class: 'note' }, icon('eye'), h('p', {}, byKind(kind, { shopping: t('liste.detail.lectureSeule.courses'), tasks: t('liste.detail.lectureSeule.taches'), wishes: t('liste.detail.lectureSeule.envies') }))),
         value(capitalized(words.one), it.name),
         it.quantity && !wishes ? value(t('liste.fiche.quantite'), it.quantity) : null,
         wishes && Number.isInteger(it.priceCents) ? value(t('liste.detail.prix'), formatPrice(it.priceCents)) : null,
@@ -2660,7 +2664,7 @@ export function renderList(listId, onLeave) {
     paint(item);
     let stopWatching = () => {};
     const sheet = openSheet({
-      title: t('liste.detail.titre', { of: words.of }),
+      title: byKind(kind, { shopping: t('liste.detail.titre.courses'), tasks: t('liste.detail.titre.taches'), wishes: t('liste.detail.titre.envies') }),
       content: body,
       scroll: true,
       pc: 'drawer', // ordinateur : tiroir à droite, comme la fiche à modifier

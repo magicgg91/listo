@@ -56,8 +56,7 @@ export default {
   // Magasin (listes de courses)
   'formulaire.magasin': 'Magasin',
   'formulaire.magasin.multi.nombre': {
-    '=0': '{count} magasin',
-    '=1': '{count} magasin',
+    one: '{count} magasin',
     other: '{count} magasins',
   },
   'formulaire.magasin.choisir': 'Choisir',

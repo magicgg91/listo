@@ -45,7 +45,7 @@ export default {
   'compte.appareil.pc.reinitialiser.texte': 'Les listes gardées sur cet appareil seront rechargées depuis le serveur.',
   'compte.appareil.reinitialiser.detail': 'Recharger les listes depuis le serveur',
   'compte.appareil.reinitialiser.enAttente': {
-    '=1': 'Les 1 modification en attente est gardée et sera envoyée.',
+    one: 'La modification en attente est gardée et sera envoyée.',
     other: 'Les {count} modifications en attente sont gardées et seront envoyées.',
   },
   'compte.appareil.reinitialiser': 'Réinitialiser',

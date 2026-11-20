@@ -76,8 +76,8 @@ test('tous les points d\'entrée utilisent le même composant', () => {
   const list = read('public/js/screens/list.js');
   const scan = read('public/js/screens/scan.js');
   // Feuille de l'article : photo (« Ajouter une photo » / « Changer la photo ») et code-barres
-  assert.match(list, /const photoPicker = createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: t\('liste\.photo\.titre', \{ of: words\.of \}\) \}\);/);
-  assert.equal(fr['liste.photo.titre'], 'Photo {of}');
+  assert.match(list, /const photoPicker = createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: byKind\(kind, \{ shopping: t\('liste\.photo\.titre\.courses'\), tasks: t\('liste\.photo\.titre\.taches'\), wishes: t\('liste\.photo\.titre\.envies'\) \}\) \}\);/);
+  assert.equal(fr['liste.photo.titre.courses'], 'Photo de l\'article');
   assert.match(list, /pick\('btn--secondary btn--block', t\('liste\.photo\.ajouter'\)\)/);
   assert.equal(fr['liste.photo.ajouter'], 'Ajouter une photo');
   assert.match(list, /pick\('btn--secondary btn--sm', t\('liste\.photo\.changer'\)\)/);

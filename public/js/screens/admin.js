@@ -628,7 +628,7 @@ async function loadNames(panel, alive) {
   const reload = () => loadNames(panel, alive);
   const input = h('input', {
     class: 'input', type: 'search', maxlength: '100', autocomplete: 'off', spellcheck: 'false',
-    placeholder: t('administration.noms.rechercher', { item: ITEM.one }), 'aria-label': t('administration.noms.rechercher', { item: ITEM.one }), value: namesView.query,
+    placeholder: t('administration.noms.rechercher'), 'aria-label': t('administration.noms.rechercher'), value: namesView.query,
   });
   const sorting = segmented(t('administration.noms.trier'), [['name', null, t('administration.noms.trier.nom')], ['uses', null, t('administration.noms.trier.utilisation')]], namesView.sort, (value) => {
     namesView.sort = value;
@@ -658,7 +658,7 @@ async function loadNames(panel, alive) {
     }
     if (!alive() || mine !== request) return;
     if (!page.total) {
-      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? t('administration.noms.aucunResultat', { item: ITEM.one }) : t('administration.noms.vide', { item: ITEM.one })));
+      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? t('administration.noms.aucunResultat') : t('administration.noms.vide')));
       return;
     }
     const group = h('div', { class: 'group' });
@@ -825,7 +825,7 @@ function chooseAisle(entry, reload) {
 async function removeName(entry, reload) {
   const ok = await confirmDialog({
     title: t('administration.noms.retirer.question', { name: entry.name }),
-    text: t('administration.noms.retirer.texte', { item: itemWords(true).one }),
+    text: t('administration.noms.retirer.texte'),
     confirmLabel: t('administration.noms.retirer.bouton'),
   });
   if (!ok) return;

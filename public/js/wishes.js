@@ -19,7 +19,7 @@
 // list : { ownerId, forUserId, forName } (forme du téléphone), voir
 // wishListOf() pour une ligne de la base.
 
-import { formatMoney, t } from './i18n.js';
+import { formatMoney, t, getLocale, intlTag } from './i18n.js';
 
 export const FOR_NAME_MAX = 80;
 export const LINK_MAX = 500;
@@ -64,10 +64,16 @@ export function cleanLink(value) {
 }
 
 // Prix saisi (« 25 », « 25,5 », « 25,50 », « 1 234,90 », « 12.99 € ») en
-// centimes ; null si vide ; NaN si invalide
-export function parsePrice(text) {
+// centimes ; null si vide ; NaN si invalide. En anglais (langue des écrans,
+// ou « locale »), la virgule sépare aussi les milliers : « $1,234.90 ».
+export function parsePrice(text, { locale = getLocale() } = {}) {
   if (text === undefined || text === null) return null;
-  const clean = String(text).replace(/[\s  €]/g, '').replace(',', '.');
+  let clean = String(text).replace(/[\s  €]/g, '').replace(/[$£]/g, '');
+  // Langue au point décimal (anglais) : « 1,234.90 », virgules des
+  // milliers retirées
+  const decimal = new Intl.NumberFormat(intlTag(locale)).formatToParts(1.5).find((part) => part.type === 'decimal')?.value;
+  if (decimal === '.' && /^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(clean)) clean = clean.replaceAll(',', '');
+  clean = clean.replace(',', '.');
   if (!clean) return null;
   if (!/^\d{1,6}(\.\d{1,2})?$/.test(clean)) return Number.NaN;
   const cents = Math.round(Number(clean) * 100);
@@ -80,10 +86,21 @@ export function formatPrice(cents) {
   return formatMoney(cents);
 }
 
+// Prix déjà enregistré, écrit dans le champ de saisie (sans monnaie ni
+// séparateur des milliers) : « 24,90 » en français, « 24.90 » en anglais ;
+// vide sans prix
+export function priceInputText(cents, { locale = getLocale() } = {}) {
+  if (!Number.isInteger(cents)) return '';
+  return new Intl.NumberFormat(intlTag(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false }).format(cents / 100);
+}
+
 // Sous-titre d'une liste d'envies (telle que décrite par le serveur) : à qui
-// elle est destinée, « Pour vous » pour le bénéficiaire lui-même
-export function wishForLabel(list) {
-  if (list.isBeneficiary) return t('regles.envies.pourVous');
+// elle est destinée, « Pour vous » pour le bénéficiaire lui-même.
+// inline : la forme placée après un autre mot (« Envies · pour Léa »,
+// sous-titre de l'ordinateur), écrite en entier dans le dictionnaire
+export function wishForLabel(list, { inline = false } = {}) {
+  if (list.isBeneficiary) return inline ? t('regles.envies.pourVous.suite') : t('regles.envies.pourVous');
   const name = list.forDisplayName ?? list.forName ?? list.members?.find((m) => m.isOwner)?.displayName;
-  return name ? t('regles.envies.pour', { name }) : t('regles.envies.sansDestinataire');
+  if (!name) return t('regles.envies.sansDestinataire');
+  return inline ? t('regles.envies.pour.suite', { name }) : t('regles.envies.pour', { name });
 }

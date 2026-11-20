@@ -160,8 +160,10 @@ test('les trois usages passent par le même composant, avec un titre ; textes en
   const scan = read('public/js/screens/scan.js');
   assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: t\('liste\.fiche\.codeBarres\.scanner'\) \}\)/);
   assert.equal(fr['liste.fiche.codeBarres.scanner'], 'Scanner un code-barres');
-  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: t\('liste\.photo\.titre', \{ of: words\.of \}\) \}\)/);
-  assert.equal(fr['liste.photo.titre'], 'Photo {of}');
+  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: byKind\(kind, \{ shopping: t\('liste\.photo\.titre\.courses'\), tasks: t\('liste\.photo\.titre\.taches'\), wishes: t\('liste\.photo\.titre\.envies'\) \}\) \}\)/);
+  assert.equal(fr['liste.photo.titre.courses'], 'Photo de l\'article');
+  assert.equal(fr['liste.photo.titre.taches'], 'Photo de l\'élément');
+  assert.equal(fr['liste.photo.titre.envies'], 'Photo du souhait');
   assert.match(scan, /\}, \{ title: t\('scan\.titre'\) \}\);/);
   assert.equal(fr['scan.titre'], 'Scanner un produit');
   const photo = read('public/js/photo.js');

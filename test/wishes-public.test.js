@@ -93,7 +93,7 @@ test('page publique d\'une liste d\'envies : champs exacts d\'un souhait, « Pou
   // Bénéficiaire reconnu par sa session : la lecture seule, sans aucune réservation ni identifiant
   const res = await h.lea.get(`/api/public/${token}`);
   assert.equal(res.status, 200);
-  assert.deepEqual(res.body.list, { name: 'Noël de Léa', type: 'wishes', forName: 'Lea', store: null, grouping: 'none' });
+  assert.deepEqual(res.body.list, { name: 'Noël de Léa', type: 'wishes', forName: 'Lea', currency: 'EUR', store: null, grouping: 'none' });
   assert.equal(res.body.groups.length, 1);
   const [velo, lampe] = [...res.body.groups[0].items].sort((a, b) => a.name.localeCompare(b.name, 'fr')).reverse();
   assert.deepEqual(velo, { name: 'Vélo', note: 'Rouge', checked: false, photo: null, priority: 'high', link: 'https://exemple.fr/velo', priceCents: 24990 });

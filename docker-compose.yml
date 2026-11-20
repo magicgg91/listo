@@ -34,6 +34,10 @@ services:
       - LISTO_DB_PATH=/data/listo.db                # base (dans le volume data)
       - LISTO_KEY_PATH=/secrets/secret.key          # clé de chiffrement 2FA, créée au 1er démarrage (volume secrets)
       - LISTO_SESSION_DAYS=30        # durée d'une session sans se reconnecter, en jours
+      # Langue par défaut (fr ou en, le français sans réglage) et monnaie du
+      # prix des envies (EUR sans réglage ; USD, CHF, GBP…). Voir docs/guide.md.
+      # - LISTO_LANG=fr
+      # - LISTO_CURRENCY=EUR
       # Vérification de mise à jour (Réglages › À propos, Admin) : au plus une
       # fois par heure, le conteneur demande à api.github.com (sans compte ni
       # jeton) s'il existe une image plus récente. Rien ne s'installe tout seul.

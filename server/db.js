@@ -652,6 +652,15 @@ export const MIGRATIONS = [
   // l'ordre où elles s'affichaient (tri par défaut : à faire puis cochées,
   // chacune par ordre alphabétique).
   (db) => subtaskPositionsMigration(db),
+
+  // --- Migration 34 : langue de chaque compte (20 novembre 2026) ---
+  // users.locale : langue choisie dans « Mon compte » (public/js/i18n.js :
+  // « fr » ou « en ») ; vide : automatique (langue du navigateur, sinon
+  // celle de l'installation, LISTO_LANG). Les comptes existants sont en
+  // automatique : rien ne change pour eux.
+  `
+  ALTER TABLE users ADD COLUMN locale TEXT CHECK (locale IS NULL OR locale IN ('fr', 'en'));
+  `,
 ];
 
 // Migration 33 : positions de départ des sous-tâches existantes (supprimées

@@ -5,11 +5,13 @@
 //   GET  /api/me/2fa/qr.png   image du QR code de l'activation en cours
 //   POST /api/me/2fa/verify   confirmer l'activation avec un premier code
 //   POST /api/me/2fa/disable  désactiver sa 2FA (mot de passe + code)
+//   PUT  /api/me/locale       choisir sa langue (« fr », « en », ou null : automatique)
 
 import express from 'express';
 import QRCode from 'qrcode';
 import { hashPassword, verifyPassword, passwordProblem } from '../passwords.js';
 import { startSession, revokeAllSessions, attemptKeys, publicUser } from '../auth.js';
+import { isLocale } from '../../public/js/i18n.js';
 import { generateTotpSecret, toBase32, otpauthUri } from '../totp.js';
 import {
   sealTotpSecret, openTotpSecret, useTotpCode, createRecoveryCodes, checkSecondFactor, disableTwoFactor,
@@ -29,6 +31,15 @@ export function meRoutes(ctx) {
     const user = publicUser(req.user, ctx.config, { method: req.sessionMethod });
     if (ctx.oidc && req.user.role === 'admin') user.accountRequests = pendingRequests.get();
     res.json({ user });
+  });
+
+  // Langue du compte (Mon compte › Langue) : « fr », « en », ou null pour
+  // automatique. Enregistrée sur le compte : la même sur tous ses appareils.
+  router.put('/me/locale', (req, res) => {
+    const { locale } = req.body ?? {};
+    if (locale !== null && !isLocale(locale)) return res.status(400).json({ error: 'Langue inconnue.' });
+    db.prepare('UPDATE users SET locale = ? WHERE id = ?').run(locale, req.user.id);
+    res.json({ locale });
   });
 
   // Changement de mot de passe. Toutes les sessions du compte sont fermées

@@ -29,6 +29,10 @@ services:
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+      # Langue par défaut (fr ou en, le français sans réglage) et monnaie du
+      # prix des envies (EUR sans réglage ; USD, CHF, GBP…). Voir docs/guide.md.
+      # - LISTO_LANG=fr
+      # - LISTO_CURRENCY=EUR
       # Facultatifs (comme dans docker-compose.yml, voir docs/guide.md,
       # « Les réglages (variables) ») :
       # - LISTO_UPDATE_CHECK=off

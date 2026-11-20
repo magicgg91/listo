@@ -7,6 +7,7 @@ import { scriptUrl } from './trusted.js';
 import { get, post, putPhoto, deletePhoto, onSessionProblem, ApiError, NetworkError, errorMessage } from './api.js';
 import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
+import { setLocale, setCurrency, resolveLocale } from './i18n.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
@@ -47,6 +48,8 @@ export const providerName = () => app.oidc?.name ?? 'SSO';
 export const app = {
   user: null,            // compte connecté (null : pas connecté)
   setupNeeded: false,    // aucun compte : proposer de créer l'Admin
+  lang: 'fr',            // langue par défaut de l'installation (LISTO_LANG)
+  currency: 'EUR',       // monnaie du prix des envies (LISTO_CURRENCY)
   oidc: null,            // connexion avec le fournisseur d'identité proposée : { name }, sinon null
   localLogin: true,      // connexion par identifiant et mot de passe proposée
   data: emptyState(),    // copie des listes, articles, rayons… (store.js)
@@ -102,8 +105,8 @@ function readLastUser() {
 }
 function writeLastUser(user) {
   try {
-    const { id, username, displayName, role, totpEnabled } = user;
-    localStorage.setItem(LAST_USER_KEY, JSON.stringify({ id, username, displayName, role, totpEnabled }));
+    const { id, username, displayName, role, totpEnabled, locale = null } = user;
+    localStorage.setItem(LAST_USER_KEY, JSON.stringify({ id, username, displayName, role, totpEnabled, locale }));
   } catch {
     // stockage indisponible : l'application marche, mais pas sans réseau
   }
@@ -114,6 +117,40 @@ function forgetLastUser() {
   } catch {
     // rien à faire
   }
+}
+
+// --- Langue et monnaie (public/js/i18n.js) ---
+
+// Langue par défaut et monnaie de l'installation (LISTO_LANG,
+// LISTO_CURRENCY), données par /api/setup et gardées sur ce téléphone pour
+// ouvrir l'application sans réseau
+const INSTALLATION_KEY = 'listo-installation';
+function readInstallation() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INSTALLATION_KEY));
+    return saved && typeof saved === 'object' ? saved : {};
+  } catch {
+    return {};
+  }
+}
+function writeInstallation({ lang, currency }) {
+  try {
+    localStorage.setItem(INSTALLATION_KEY, JSON.stringify({ lang, currency }));
+  } catch {
+    // stockage indisponible : réglages par défaut sans réseau
+  }
+}
+
+// Langue des écrans : celle choisie par le compte, sinon celle du
+// navigateur, sinon celle de l'installation (une langue complète, sinon le
+// français) ; posée aussi sur <html lang> pour les lecteurs d'écran.
+// À appeler avant d'afficher un écran.
+export function applyLanguage() {
+  const browser = navigator.languages?.length ? navigator.languages : [navigator.language];
+  const locale = setLocale(resolveLocale([app.user?.locale, ...browser, app.lang]));
+  document.documentElement.lang = locale;
+  setCurrency(app.currency);
+  return locale;
 }
 
 // Photos déjà vues (cache du service worker) : vidées à la déconnexion et
@@ -404,6 +441,7 @@ setInterval(() => {
 export function loggedIn(user) {
   app.user = user;
   app.setupNeeded = false;
+  applyLanguage(); // la langue du compte remplace celle du navigateur
   if (user.mustChangePassword) {
     show(app.route);
     return;
@@ -723,9 +761,17 @@ function show(route) {
 // --- Démarrage ---
 
 async function start() {
+  // Réglages de l'installation gardés (sans réseau, /api/setup ne répond pas)
+  const saved = readInstallation();
+  if (typeof saved.lang === 'string') app.lang = saved.lang;
+  if (typeof saved.currency === 'string') app.currency = saved.currency;
   try {
     const setup = await get('/api/setup', { auth: false });
     app.setupNeeded = setup.needed;
+    // Langue par défaut et monnaie de l'installation (gardées pour le hors-ligne)
+    app.lang = setup.lang ?? 'fr';
+    app.currency = setup.currency ?? 'EUR';
+    writeInstallation(app);
     // Connexion avec le fournisseur d'identité (LISTO_OIDC=on) : { name } du bouton, ou null
     app.oidc = setup.oidc ?? null;
     // Connexion par mot de passe proposée (LISTO_LOCAL_LOGIN), oui par défaut
@@ -753,6 +799,7 @@ async function start() {
       return;
     }
   }
+  applyLanguage();
   if (app.user && !app.user.mustChangePassword) {
     await openAccount(app.user);
     refreshData({ quiet: true, full: true });

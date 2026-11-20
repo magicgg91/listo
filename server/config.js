@@ -5,6 +5,7 @@
 // Aucune de ces variables ne contient de mot de passe ni de clé.
 
 import path from 'node:path';
+import { isLocale, validCurrency, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 export function loadConfig(env = process.env) {
   return {
@@ -82,6 +83,16 @@ export function loadConfig(env = process.env) {
     // Food Facts (adresse e-mail ou URL), ou null. Une valeur mal formée est
     // ignorée (voir validContact).
     productContact: validContact(env.LISTO_PRODUCT_CONTACT),
+
+    // Langue par défaut de l'installation (public/js/i18n.js) : « fr » ou
+    // « en », le français sans réglage. Elle sert quand ni le compte ni le
+    // navigateur ne donnent une langue connue (notifications comprises).
+    // Une autre valeur empêche Listo de démarrer (voir configProblem).
+    lang: String(env.LISTO_LANG ?? '').trim().toLowerCase() || DEFAULT_LOCALE,
+    // Monnaie du prix des envies (code ISO 4217 : EUR, USD, CHF…), l'euro
+    // sans réglage. Seule la présentation change (« 25,50 € », « $25.50 ») :
+    // les prix gardés en base ne sont pas convertis.
+    currency: String(env.LISTO_CURRENCY ?? '').trim().toUpperCase() || 'EUR',
   };
 }
 
@@ -124,6 +135,12 @@ export function configProblem(config) {
   }
   if (config.production && url.protocol !== 'https:') {
     return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
+  }
+  if (config.lang !== undefined && !isLocale(config.lang)) {
+    return `LISTO_LANG doit valoir fr ou en (actuellement « ${config.lang} »).`;
+  }
+  if (config.currency !== undefined && !validCurrency(config.currency)) {
+    return `LISTO_CURRENCY doit être le code d'une monnaie à deux décimales, en trois lettres (EUR, USD, CHF…) ; actuellement « ${config.currency} ».`;
   }
   if (config.localLogin === false && !config.oidc) {
     return 'LISTO_LOCAL_LOGIN=off coupe la connexion par mot de passe : il faut alors LISTO_OIDC=on (connexion avec un fournisseur d\'identité), sinon personne ne peut entrer.';

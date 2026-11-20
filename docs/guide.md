@@ -329,6 +329,9 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+      # Langue par défaut (fr ou en) et monnaie des envies (EUR, USD, CHF…)
+      # - LISTO_LANG=fr
+      # - LISTO_CURRENCY=EUR
       # - LISTO_UPDATE_CHECK=off
       # - LISTO_PRODUCT_LOOKUP=off
       # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
@@ -357,6 +360,8 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dossier `data/`). |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dossier `secrets/`). |
 | `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours. |
+| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : elle sert quand ni le compte (« Mon compte ») ni le navigateur ne donnent une langue connue, et pour les notifications d'un compte en automatique. L'anglais arrive avec sa traduction : en attendant, tout reste en français. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
+| `LISTO_CURRENCY` | absente : `EUR` | Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_COMMIT` | posée par l'image | Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir. |
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([9.9 Savoir qu'une nouvelle version existe](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |

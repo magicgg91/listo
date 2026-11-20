@@ -28,6 +28,7 @@ import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } fro
 import { itemWords, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
+import { setLocale, setCurrency, resolveLocale } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
@@ -144,6 +145,8 @@ function showGate() {
 // --- La liste en lecture seule (page-publique-1 et 2) ---
 function showList(data) {
   const { list, groups, done = [], expiresAt } = data;
+  // Liste d'envies : monnaie des prix (LISTO_CURRENCY), donnée avec la liste
+  setCurrency(list.currency);
   listType = list.type;
   canReserve = Boolean(list.canReserve);
   // Liste d'envies : « souhait » ; sinon déduit du regroupement, comme avant
@@ -517,4 +520,7 @@ function showPhoto(item) {
   close = openLayer(panel);
 }
 
+// Langue du visiteur (sans compte) : celle de son navigateur (une langue
+// complète, sinon le français), posée avant tout affichage
+document.documentElement.lang = setLocale(resolveLocale(navigator.languages?.length ? navigator.languages : [navigator.language]));
 load();

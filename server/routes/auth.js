@@ -32,10 +32,19 @@ export function publicAuthRoutes(ctx) {
 
   // Faut-il afficher l'écran de création du premier Admin ?
   // oidc : le bouton « Se connecter avec … » (LISTO_OIDC=on seulement), son
-  // nom seul ; rien d'autre sur la configuration n'est donné
+  // nom seul
   // localLogin : identifiant et mot de passe proposés (LISTO_LOCAL_LOGIN)
+  // lang : langue par défaut de l'installation (LISTO_LANG), utilisée quand
+  // ni le compte ni le navigateur n'en donnent une ; currency : monnaie du
+  // prix des envies (LISTO_CURRENCY)
   router.get('/setup', (req, res) => {
-    res.json({ needed: countUsers(db) === 0, oidc: ctx.oidc ? { name: ctx.config.oidcName } : null, localLogin: ctx.config.localLogin !== false });
+    res.json({
+      needed: countUsers(db) === 0,
+      oidc: ctx.oidc ? { name: ctx.config.oidcName } : null,
+      localLogin: ctx.config.localLogin !== false,
+      lang: ctx.config.lang ?? 'fr',
+      currency: ctx.config.currency ?? 'EUR',
+    });
   });
 
   // Création du premier Admin. Possible seulement tant qu'aucun compte

@@ -266,6 +266,8 @@ export function publicRoutes(ctx, { publicDir }) {
         ...(wishes ? { forName: forNameOf(list) } : {}),
         // Visiteur d'une liste d'envies : il peut réserver (jamais le bénéficiaire reconnu)
         ...(states ? { canReserve: true } : {}),
+        // Liste d'envies : la monnaie des prix (LISTO_CURRENCY)
+        ...(wishes ? { currency: ctx.config.currency ?? 'EUR' } : {}),
         store: store ? store.name : null,
         grouping: !isShopping ? 'none' : byStore ? 'store' : 'aisle',
       },

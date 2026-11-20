@@ -1,6 +1,6 @@
 # Listo
 
-Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité, auto-hébergée. Utilisée par une famille de six ou sept personnes, presque uniquement depuis un téléphone. Interface en français uniquement.
+Application web de listes partagées (courses, tâches…), mobile-first, gratuite, sans publicité, auto-hébergée. Utilisée par une famille de six ou sept personnes, presque uniquement depuis un téléphone. Interface en français, bientôt aussi en anglais (internationalisation en cours, décisions du 20 novembre 2026).
 
 ## Documents de référence (à lire avant de coder)
 
@@ -64,6 +64,7 @@ Contexte et historique : `docs/passation-2026-11.md` (passation d'une conversati
 - Service worker : incrémenter la version (`public/sw.js`) à chaque changement de fichier servi ; ajouter les nouveaux fichiers à `APP_FILES`.
 - Ne jamais annoncer un test ou une vérification non faite ; dire ce qui exige de vrais appareils. Annonces de nouveautés pour les proches : courtes, phrases simples, sans détail technique.
 - Résumé demandé par le propriétaire (« fais-moi un résumé ») : un petit paragraphe de quelques phrases simples, compréhensibles par tout le monde, sans liste à puces, sans chiffres ni jargon technique (décision du 15 novembre 2026).
+- Langues (20 novembre 2026) : français (référence) et anglais ; textes dans `public/js/i18n/fr.js` et `en.js`, par nom, lus par `t()` (écrans) ou `translate()` (serveur) de `public/js/i18n.js` ; pluriels par `Intl.PluralRules`, jamais de morceaux de phrase assemblés, jamais de HTML. Langue du compte (« Mon compte », `users.locale`), sinon du navigateur, sinon `LISTO_LANG` ; monnaie des envies `LISTO_CURRENCY`. Une langue n'est proposée qu'une fois complète (`READY_LOCALES`). Plan en cinq étapes (cahier des charges, « Langues ») : fondations, textes sortis du code en français (captures identiques au pixel près), grammaire et formats, interface en anglais, puis aide, guide, site, README, compose et messages du serveur. Le journal de sécurité est toujours en anglais. Restent en français : documents techniques, consignes à Claude. Le propriétaire relit et valide l'anglais.
 - Relecture de sécurité : Claude Code relit lui-même chaque PR sous l'angle de la sécurité avant de la proposer, et dit au propriétaire ce qu'il a trouvé et quoi en faire (décision du 10 novembre 2026).
 
 ## Dépôt

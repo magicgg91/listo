@@ -19,6 +19,8 @@
 // list : { ownerId, forUserId, forName } (forme du téléphone), voir
 // wishListOf() pour une ligne de la base.
 
+import { formatMoney } from './i18n.js';
+
 export const FOR_NAME_MAX = 80;
 export const LINK_MAX = 500;
 export const PRICE_MAX_CENTS = 10000000; // 100 000 €
@@ -72,10 +74,10 @@ export function parsePrice(text) {
   return cents <= PRICE_MAX_CENTS ? cents : Number.NaN;
 }
 
-// Prix en centimes -> « 25,50 € » (espaces insécables français)
+// Prix en centimes -> « 25,50 € » (espaces insécables français), dans la
+// langue des écrans et la monnaie de l'installation (public/js/i18n.js)
 export function formatPrice(cents) {
-  if (!Number.isInteger(cents)) return '';
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+  return formatMoney(cents);
 }
 
 // Sous-titre d'une liste d'envies (telle que décrite par le serveur) : à qui

@@ -1,6 +1,7 @@
 // Écran « Mon compte » (ouvert depuis la carte du compte, en haut des
 // Réglages) : identité, puis les blocs Sécurité (mot de passe, double
-// authentification), Apparence (thème), Claude (si l'accès est activé), Ce
+// authentification), Apparence (thème), Langue (dès qu'une deuxième langue
+// est complète, voir public/js/i18n.js), Claude (si l'accès est activé), Ce
 // téléphone (réinitialisation), et tout en bas « Se déconnecter » (déplacé
 // des Réglages, où il était fixé au-dessus du bandeau du bas : décision du
 // propriétaire du 11 novembre 2026 ; il défile avec le reste). Les réglages des Nouveautés sont dans
@@ -13,7 +14,9 @@
 import { h, icon, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount, logOut, providerName } from '../app.js';
+import { app, resetLocalCopy, pendingCount, logOut, providerName, applyLanguage } from '../app.js';
+import { put, errorMessage } from '../api.js';
+import { t, getLocale, READY_LOCALES, LOCALE_NAMES } from '../i18n.js';
 import { toast, confirmDialog, onPc } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
@@ -66,6 +69,7 @@ export function renderAccount(onLeave = () => {}) {
           twoFactorRow),
       h('h2', { class: 'section-title' }, 'Apparence'),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
+      languageBlock(),
       // Accès depuis Claude : seulement s'il est activé sur le serveur
       user.claudeUrl ? [
         h('h2', { class: 'section-title' }, 'Claude'),
@@ -128,4 +132,40 @@ async function resetPhone() {
   if (!ok) return;
   await resetLocalCopy();
   toast('Données rechargées depuis le serveur', { low: true });
+}
+
+// Langue (Mon compte) : « Automatique » (langue du navigateur, sinon celle de
+// l'installation) ou une langue complète. Le choix est enregistré sur le
+// compte (même langue sur tous ses appareils). Si la langue affichée change,
+// l'application se recharge pour réafficher tous les textes. Rien tant
+// qu'une seule langue est complète.
+function languageBlock() {
+  if (READY_LOCALES.length < 2) return null;
+  const choices = [[null, t('compte.langue.auto')], ...READY_LOCALES.map((locale) => [locale, LOCALE_NAMES[locale]])];
+  const buttons = choices.map(([locale, label]) => h('button', {
+    class: 'segmented__opt',
+    type: 'button',
+    role: 'radio',
+    // Nom d'une langue écrit dans cette langue : lu avec la bonne prononciation
+    ...(locale ? { lang: locale } : {}),
+    'aria-checked': String((app.user.locale ?? null) === locale),
+    onClick: async () => {
+      if ((app.user.locale ?? null) === locale) return;
+      try {
+        await put('/api/me/locale', { locale });
+      } catch (error) {
+        toast(errorMessage(error));
+        return;
+      }
+      app.user.locale = locale;
+      buttons.forEach((button, i) => button.setAttribute('aria-checked', String(choices[i][0] === locale)));
+      const before = getLocale();
+      if (applyLanguage() !== before) location.reload();
+      else toast(t('compte.langue.enregistree'), { low: true });
+    },
+  }, label));
+  return [
+    h('h2', { class: 'section-title' }, t('compte.langue.titre')),
+    h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('compte.langue.titre') }, buttons)),
+  ];
 }

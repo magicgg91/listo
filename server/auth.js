@@ -93,6 +93,9 @@ export function publicUser(user, config, { method = null } = {}) {
     loginMethod: method,
     // Connexion par mot de passe possible sur ce serveur (LISTO_LOCAL_LOGIN)
     localLogin: config?.localLogin !== false,
+    // Langue choisie dans « Mon compte » (« fr », « en »), ou null :
+    // automatique (navigateur, sinon langue de l'installation)
+    locale: user.locale ?? null,
   };
 }
 

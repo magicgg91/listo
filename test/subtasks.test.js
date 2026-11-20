@@ -458,7 +458,7 @@ test('ordre manuel : migration 33, les sous-tâches existantes gardent l\'ordre 
   add.run('b', 'l', 'éponge', 0, 'p');
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   assert.deepEqual(db.prepare('SELECT id, position FROM items ORDER BY id').all(), [
     { id: 'a', position: 3 }, { id: 'b', position: 1 }, { id: 'c', position: 2 }, { id: 'p', position: null },
   ]);

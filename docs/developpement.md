@@ -449,12 +449,13 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. VoiceOver : la nouvelle place est dite (« … en position 2 sur 3 ») et le curseur reste sur le bouton touché.
     5. Un autre appareil voit le nouvel ordre ; le lien public aussi.
 61. **Tout fournisseur OpenID Connect** (20 novembre 2026 ; vérifié par des tests automatiques ; Authentik et Pocket ID n'ont pas été essayés) : avec `LISTO_OIDC_NAME` réglé (par exemple `Authelia`), l'écran de connexion, « Mon compte », Administration › Comptes et « Autoriser Claude » disent ce nom ; sans `LISTO_OIDC_NAME`, ils disent « SSO ». Avec Authentik ou Pocket ID : se connecter, se faire accepter une demande de compte, autoriser Claude depuis cette session (le fournisseur doit redemander la connexion).
+62. **Langues, étape 1 : fondations** (20 novembre 2026 ; vérifié par des tests automatiques et dans Chromium : écrans du téléphone identiques) : rien ne change à l'écran tant que l'anglais n'est pas complet. Après la mise à jour : l'application s'ouvre normalement, en français ; avec `LISTO_CURRENCY=CHF` (puis `docker compose up -d`), le prix d'un souhait s'affiche en francs suisses, dans l'application et sur le lien public ; avec `LISTO_LANG=de`, Listo refuse de démarrer et l'explique dans `docker logs`.
 
 ## API des comptes (étape 2)
 
 | Route | Rôle |
 | --- | --- |
-| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`), et le nom du fournisseur d'identité à afficher (`oidc` : `{ name }`, « SSO » par défaut, ou `null`) |
+| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`), et le nom du fournisseur d'identité à afficher (`oidc` : `{ name }`, « SSO » par défaut, ou `null`), la langue par défaut (`lang`, LISTO_LANG) et la monnaie des envies (`currency`, LISTO_CURRENCY) |
 | `POST /api/setup` | Crée le premier Admin : `code` (code de démarrage), `username`, `displayName`, `password` |
 | `POST /api/login` | Connexion : `username`, `password`. Si la 2FA est active, répond `{"twoFactorRequired": true}` |
 | `POST /api/login/2fa` | Saisie du code à 6 chiffres (ou d'un code de secours) : `code` |
@@ -467,6 +468,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
 | `GET /api/admin/update-check` | Vérification de mise à jour (Réglages › À propos, Admin seulement, voir `server/update-check.js`) : `{ current, latest, upToDate, checkedAt, state }`, `state` valant `ok`, `indisponible`, `desactive` (`LISTO_UPDATE_CHECK=off`) ou `developpement` (commit non précisé). `?force=1` : « Vérifier maintenant ». Le serveur demande à l'API publique de GitHub le dernier passage réussi du workflow « Image Docker » sur `main` (sans jeton, délai de 5 s, 256 ko au plus, aucune redirection suivie, commit de 40 caractères hexadécimaux exigé). Résultat gardé une heure ; `force` accepté une fois par minute ; une panne donne `indisponible`, jamais une erreur. Dans les tests, GitHub est simulé (`githubRequest` de `createApp`) |
 | `POST /api/me/2fa/verify` | Confirmer avec un premier code : `code`. Renvoie les 10 codes de secours |
 | `POST /api/me/2fa/disable` | Désactiver sa 2FA : `password`, `code` |
+| `PUT /api/me/locale` | Choisir sa langue : `locale` vaut `fr`, `en`, ou `null` (automatique) |
 
 Règles : mot de passe de 10 caractères minimum ; 5 échecs en 15 minutes (même identifiant ou même adresse IP) bloquent 15 minutes ; toute requête de modification doit porter l'en-tête `Origin` égal à `LISTO_PUBLIC_URL`.
 

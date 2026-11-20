@@ -131,7 +131,7 @@ test('refus sans session et depuis une autre origine', async (t) => {
 test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\'accès est activé ; adresse jamais écrite en dur', () => {
   assert.deepEqual(matchRoute('#/reglages/claude'), { name: 'claudeConnections', params: {} });
   const account = read('public/js/screens/account.js');
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
+  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   assert.match(account, /navigate\('claudeConnections'\)/);
   const app = read('public/js/app.js');
   assert.match(app, /case 'claudeConnections':\s*if \(app\.user\.claudeUrl\) mount\(\(\) => renderClaudeConnections\(\)\);\s*else navigate\('account', \{\}, \{ replace: true \}\);/);

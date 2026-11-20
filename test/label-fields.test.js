@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { LABEL_INPUT } from '../public/js/dom.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
@@ -41,8 +42,12 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
   assert.match(read('dom.js'), /control\.querySelector\('input, textarea, select'\) \?\? control\.querySelector\('button'\)/);
   assert.match(read('screens/scan.js'), /field\('Article', nameInput\)/);
   const admin = read('screens/admin.js');
-  assert.match(admin, /'aria-label': `Renommer « \$\{item\.name\} »`/);
-  assert.match(admin, /'aria-label': `Orthographe corrigée de « \$\{entry\.name\} »`/);
+  assert.match(admin, /'aria-label': t\('administration\.renommer', \{ label: item\.name \}\)/);
+  assert.match(admin, /'aria-label': t\('administration\.noms\.orthographe', \{ label: entry\.name \}\)/);
+  // Textes de ces aria-label (dictionnaire) : toujours sans « nom »
+  assert.equal(fr['administration.renommer'], 'Renommer « {label} »');
+  assert.equal(fr['administration.noms.orthographe'], 'Orthographe corrigée de « {label} »');
+  for (const key of ['administration.renommer', 'administration.noms.orthographe']) assert.doesNotMatch(fr[key], /\b[Nn]om\b/);
 });
 
 test('connexion, compte, mot de passe, double authentification : inchangés', () => {

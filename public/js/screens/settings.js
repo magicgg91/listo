@@ -14,6 +14,7 @@ import { app } from '../app.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
+import { t } from '../i18n.js';
 
 const MIN_PASSWORD = 10;
 
@@ -34,7 +35,7 @@ const isCommit = (value) => typeof value === 'string' && /^[0-9a-f]{40}$/.test(v
 // onBack absent : pas de bouton Retour (écran du bandeau du bas)
 export function topbar(title, onBack = null) {
   return h('header', { class: onBack ? 'topbar' : 'topbar topbar--plain' },
-    onBack ? iconButton('chev-l', 'Retour', onBack) : null,
+    onBack ? iconButton('chev-l', t('reglages.retour'), onBack) : null,
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, title)));
 }
 
@@ -43,7 +44,7 @@ export function topbar(title, onBack = null) {
 // Nombre de demandes de compte en attente (Admin), ou rien
 function requestsBadge(count) {
   if (!count) return null;
-  const label = count === 1 ? '1 demande de compte en attente' : `${count} demandes de compte en attente`;
+  const label = t('reglages.demandesCompte', { count });
   return h('span', { class: 'news-badge', role: 'img', 'aria-label': label, title: label }, String(count));
 }
 
@@ -60,8 +61,8 @@ export function row({ iconName, title, sub, end, onClick }) {
 // Pastille du rôle : « Admin » ou « Utilisateur » (aussi utilisée par account.js)
 export function roleChip(user) {
   return user.role === 'admin'
-    ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), 'Admin')
-    : h('span', { class: 'chip' }, 'Utilisateur');
+    ? h('span', { class: 'chip chip--strong' }, icon('shield', 'icon--xs'), t('reglages.role.admin'))
+    : h('span', { class: 'chip' }, t('reglages.role.utilisateur'));
 }
 
 export function renderSettings() {
@@ -75,23 +76,23 @@ export function renderSettings() {
   // dessous) ; « À propos » est une ligne qui ouvre sa propre page.
   return h('div', { class: 'screen' },
     // Écran du bandeau du bas (tabbar.js) : pas de bouton Retour
-    topbar('Réglages'),
+    topbar(t('reglages.titre')),
     h('div', { class: 'body' },
       // Carte du compte : un bouton sur toute sa surface, qui ouvre « Mon
       // compte » (sécurité, apparence, ce téléphone, déconnexion)
       h('button', {
         class: 'card account account--link',
         type: 'button',
-        'aria-label': `Mon compte : ${user.displayName}`,
+        'aria-label': t('reglages.compte.lien', { name: user.displayName }),
         onClick: () => navigate('account'),
       },
       avatar(user.displayName, { large: true }),
-      h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte')),
+      h('span', { class: 'grow' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, t('reglages.compte'))),
       roleChip(user),
       icon('chev-r')),
-      h('h2', { class: 'section-title' }, 'Général'),
+      h('h2', { class: 'section-title' }, t('reglages.general')),
       h('div', { class: 'group' }, generalRows(isAdmin)),
-      h('h2', { class: 'section-title' }, 'Informations'),
+      h('h2', { class: 'section-title' }, t('reglages.informations')),
       h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin))));
 }
 
@@ -100,14 +101,14 @@ export function renderSettings() {
 function generalRows(isAdmin) {
   return [
     notificationsRow(),
-    row({ iconName: 'trash', title: 'Corbeille des listes', onClick: () => navigate('trash') }),
+    row({ iconName: 'trash', title: t('reglages.corbeille'), onClick: () => navigate('trash') }),
     // Pastille : demandes de compte en attente (connexion avec le fournisseur d'identité)
-    isAdmin ? row({ iconName: 'shield', title: 'Administration', end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
+    isAdmin ? row({ iconName: 'shield', title: t('reglages.administration'), end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];
 }
 
 // Aide : mode d'emploi, selon le rôle (help.js, help-content.js)
-const helpRow = () => row({ iconName: 'book', title: 'Aide', onClick: () => navigate('help') });
+const helpRow = () => row({ iconName: 'book', title: t('reglages.aide'), onClick: () => navigate('help') });
 
 // Ligne « À propos » : ouvre la page « À propos » ; à droite, la version
 // installée (dernière connue sur cet appareil, puis celle du serveur) ou,
@@ -123,7 +124,7 @@ function aboutRow(isAdmin) {
   let result = null;
   const paint = () => {
     const line = aboutVersion({ commit: isCommit(commit) ? commit : null, isAdmin, result, online: navigator.onLine });
-    replace(value, line.update ? h('span', { class: 'chip chip--accent' }, 'Mise à jour') : line.version.commit ? `Version ${line.version.text}` : null);
+    replace(value, line.update ? h('span', { class: 'chip chip--accent' }, t('reglages.miseAJour')) : line.version.commit ? t('reglages.version', { version: line.version.text }) : null);
   };
   paint();
   get('/api/about').then((about) => {
@@ -136,7 +137,7 @@ function aboutRow(isAdmin) {
     paint();
   }, () => {});
   if (isAdmin && navigator.onLine) get('/api/admin/update-check').then((answer) => { result = answer; paint(); }, () => {});
-  return row({ iconName: 'help', title: 'À propos', end: h('span', { class: 'row__end' }, value, icon('chev-r')), onClick: () => navigate('about') });
+  return row({ iconName: 'help', title: t('reglages.aPropos.titre'), end: h('span', { class: 'row__end' }, value, icon('chev-r')), onClick: () => navigate('about') });
 }
 
 // Page « À propos » (#/reglages/a-propos, téléphone et ordinateur) : ce
@@ -146,7 +147,7 @@ function aboutRow(isAdmin) {
 export function renderAbout() {
   const isAdmin = app.user.role === 'admin';
   return h('div', { class: 'screen' },
-    topbar('À propos', () => goBack('settings')),
+    topbar(t('reglages.aPropos.titre'), () => goBack('settings')),
     h('div', { class: 'body' }, aboutGroup(isAdmin)));
 }
 
@@ -163,26 +164,26 @@ function renderSettingsPc() {
   const section = (title, ...content) => h('section', { class: 'pc-settings__section' }, h('h2', { class: 'pc-settings__title' }, title), content);
   return h('div', { class: 'screen' },
     h('header', { class: 'pc-head' }, h('div', { class: 'pc-head__main' },
-      h('h1', { class: 'pc-head__title' }, 'Réglages'),
-      h('p', { class: 'pc-head__sub' }, isAdmin ? 'Compte Admin' : 'Mon compte'))),
+      h('h1', { class: 'pc-head__title' }, t('reglages.titre')),
+      h('p', { class: 'pc-head__sub' }, isAdmin ? t('reglages.pc.compteAdmin') : t('reglages.compte')))),
     h('div', { class: 'scroll' }, h('div', { class: 'pc-settings' },
-      section('Compte', h('div', { class: 'group' }, h('button', {
-        class: 'row', type: 'button', 'aria-label': `Mon compte : ${user.displayName}`, onClick: () => navigate('account'),
+      section(t('reglages.pc.compte'), h('div', { class: 'group' }, h('button', {
+        class: 'row', type: 'button', 'aria-label': t('reglages.compte.lien', { name: user.displayName }), onClick: () => navigate('account'),
       },
       avatar(user.displayName),
-      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, 'Mon compte : mot de passe, double authentification, thème, déconnexion')),
+      h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, t('reglages.pc.compte.detail'))),
       roleChip(user), icon('chev-r')))),
-      section('Général', h('div', { class: 'group' }, keysRow(), generalRows(isAdmin))),
-      section('Informations', h('div', { class: 'group' },
+      section(t('reglages.general'), h('div', { class: 'group' }, keysRow(), generalRows(isAdmin))),
+      section(t('reglages.informations'), h('div', { class: 'group' },
         helpRow(),
-        row({ iconName: 'keyboard', title: 'Raccourcis clavier', sub: 'Touche ?', onClick: () => openShortcuts() }),
+        row({ iconName: 'keyboard', title: t('reglages.pc.raccourcis'), sub: t('reglages.pc.raccourcis.detail'), onClick: () => openShortcuts() }),
         aboutRow(isAdmin))))));
 }
 
 // Ligne « Notifications » (téléphone et ordinateur) : ouvre l'écran des
 // notifications de cet appareil (notifications.js)
 function notificationsRow() {
-  return row({ iconName: 'bell', title: 'Notifications', onClick: () => navigate('notifications') });
+  return row({ iconName: 'bell', title: t('reglages.notifications'), onClick: () => navigate('notifications') });
 }
 
 // Interrupteur « Raccourcis à une touche » (ordinateur) : désactivés, il ne
@@ -194,13 +195,13 @@ export function keysRow() {
     const on = toggle.getAttribute('aria-checked') !== 'true';
     setSingleKeys(on);
     toggle.setAttribute('aria-checked', String(on));
-    toast(on ? 'Raccourcis à une touche activés' : 'Raccourcis à une touche désactivés');
+    toast(on ? t('reglages.touches.activees') : t('reglages.touches.desactivees'));
   });
   return h('div', { class: 'row' },
     h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon('keyboard')),
     h('span', { class: 'row__body' },
-      h('span', { class: 'row__title', id: 'reglage-touches' }, 'Raccourcis à une touche'),
-      h('span', { class: 'row__sub', id: 'reglage-touches-aide' }, 'Désactivez-les si vous utilisez une commande vocale. Sur cet appareil seulement.')),
+      h('span', { class: 'row__title', id: 'reglage-touches' }, t('reglages.touches.titre')),
+      h('span', { class: 'row__sub', id: 'reglage-touches-aide' }, t('reglages.touches.detail'))),
     toggle);
 }
 
@@ -221,8 +222,8 @@ function aboutGroup(isAdmin) {
 // Zone 3 : « Données : Open Food Facts » (noms des produits scannés)
 function dataRow() {
   return h('div', { class: 'row' }, h('span', { class: 'row__body' },
-    h('span', { class: 'row__title' }, 'Mode scan'),
-    h('span', { class: 'row__sub' }, 'Données : Open Food Facts (licence ODbL)')));
+    h('span', { class: 'row__title' }, t('reglages.aPropos.scan.titre')),
+    h('span', { class: 'row__sub' }, t('reglages.aPropos.scan.detail'))));
 }
 
 // Lien vers un autre site, ouvert dans un nouvel onglet, sans transmettre
@@ -245,7 +246,7 @@ function versionRow(isAdmin) {
   const button = h('button', {
     class: 'icon-btn about__check',
     type: 'button',
-    'aria-label': 'Vérifier maintenant',
+    'aria-label': t('reglages.aPropos.verifier'),
     onClick: () => check(true),
   }, icon('sync'));
   const actions = h('span', { class: 'about__actions', hidden: true }, state, h('span', { class: 'about__checked' }, checked, button));
@@ -266,11 +267,11 @@ function versionRow(isAdmin) {
 
   const render = () => {
     const line = aboutVersion({ commit, isAdmin, result, busy, online: navigator.onLine });
-    replace(title, 'Version : ', line.version.commit
-      ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': `Version ${line.version.text} sur GitHub` }, line.version.text)
+    replace(title, `${t('reglages.aPropos.version')} `, line.version.commit
+      ? outLink({ class: 'about__link', href: commitUrl(line.version.commit), 'aria-label': t('reglages.aPropos.version.lien', { version: line.version.text }) }, line.version.text)
       : line.version.text);
     // Textes posés comme texte (replace), jamais comme HTML
-    replace(checked, line.upToDate ? [h('span', { class: 'about__ok' }, 'À jour'), line.checked ? ` · ${line.checked}` : null] : line.checked);
+    replace(checked, line.upToDate ? [h('span', { class: 'about__ok' }, t('reglages.aPropos.aJour')), line.checked ? ` · ${line.checked}` : null] : line.checked);
     checked.hidden = !line.upToDate && !line.checked;
     replace(state, line.chip ? chipFor(line.chip) : null);
     state.hidden = !line.chip; // vide : ne prend aucune place sur la ligne
@@ -328,11 +329,11 @@ function chipFor({ tone, text, icon: iconName, commit, label }) {
 // Zone 2 : développeur et projet, deux liens séparés par un trait fin
 function projectRow() {
   return h('div', { class: 'row about-links' },
-    outLink({ class: 'about-links__link', href: GITHUB.ownerUrl, 'aria-label': `Développeur : ${GITHUB.owner} sur GitHub` },
+    outLink({ class: 'about-links__link', href: GITHUB.ownerUrl, 'aria-label': t('reglages.aPropos.developpeur', { owner: GITHUB.owner }) },
       icon('pencil', 'icon--sm'), GITHUB.owner),
     h('span', { class: 'about-links__sep', 'aria-hidden': 'true' }),
-    outLink({ class: 'about-links__link', href: GITHUB.repoUrl, 'aria-label': 'Projet Listo sur GitHub' },
-      icon('link', 'icon--sm'), 'Projet GitHub'));
+    outLink({ class: 'about-links__link', href: GITHUB.repoUrl, 'aria-label': t('reglages.aPropos.projet.lien') },
+      icon('link', 'icon--sm'), t('reglages.aPropos.projet')));
 }
 
 // --- Mot de passe (reglages-5) ---
@@ -340,15 +341,15 @@ function projectRow() {
 export function renderPassword() {
   const current = passwordInput({ id: 'mot-de-passe-actuel', name: 'current-password', autocomplete: 'current-password', required: true });
   const next = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
-  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: 'Répétez le nouveau mot de passe' });
-  const currentField = field('Mot de passe actuel', current.wrap);
-  const nextField = field('Nouveau mot de passe', next.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
-  const confirmField = field('Confirmation', confirmation);
+  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: t('reglages.motDePasse.confirmation.exemple') });
+  const currentField = field(t('reglages.motDePasse.actuel'), current.wrap);
+  const nextField = field(t('reglages.motDePasse.nouveau'), next.wrap, { hint: t('reglages.motDePasse.longueur', { min: MIN_PASSWORD }) });
+  const confirmField = field(t('reglages.motDePasse.confirmation'), confirmation);
   const error = errorNote();
-  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Enregistrer');
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('reglages.enregistrer'));
 
   const form = h('form', { novalidate: true },
-    topbar('Mot de passe', () => goBack('account')),
+    topbar(t('reglages.motDePasse.titre'), () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' }, currentField.field, nextField.field, confirmField.field, error.note)),
     h('div', { class: 'footer' }, save));
 
@@ -356,13 +357,13 @@ export function renderPassword() {
     event.preventDefault();
     error.show('');
     for (const f of [currentField, nextField, confirmField]) f.setError(null);
-    if (!current.input.value) return currentField.setError('Saisissez votre mot de passe actuel');
-    if ([...next.input.value].length < MIN_PASSWORD) return nextField.setError(`Au moins ${MIN_PASSWORD} caractères`);
-    if (next.input.value !== confirmation.value) return confirmField.setError('Les deux mots de passe ne correspondent pas');
+    if (!current.input.value) return currentField.setError(t('reglages.motDePasse.actuel.manquant'));
+    if ([...next.input.value].length < MIN_PASSWORD) return nextField.setError(t('reglages.motDePasse.longueur', { min: MIN_PASSWORD }));
+    if (next.input.value !== confirmation.value) return confirmField.setError(t('reglages.motDePasse.differents'));
     save.disabled = true;
     try {
       await post('/api/me/password', { currentPassword: current.input.value, newPassword: next.input.value });
-      toast('Mot de passe modifié. Vos autres appareils sont déconnectés.', { low: true });
+      toast(t('reglages.motDePasse.modifie'), { low: true });
       goBack('account');
     } catch (err) {
       error.show(errorMessage(err));
@@ -382,12 +383,12 @@ export function renderTwoFactor() {
 // Activation, étape 1 (reglages-3) : QR code, clé à recopier, premier code
 function enableScreen() {
   const container = h('div', { class: 'screen' });
-  replace(container, topbar('Double authentification', () => goBack('account')),
-    h('p', { class: 'empty muted', role: 'status' }, 'Préparation…'));
+  replace(container, topbar(t('reglages.deuxFacteurs.titre'), () => goBack('account')),
+    h('p', { class: 'empty muted', role: 'status' }, t('reglages.deuxFacteurs.preparation')));
 
   post('/api/me/2fa/enable')
     .then(({ secret }) => replace(container, enableForm(secret)))
-    .catch((err) => replace(container, topbar('Double authentification', () => goBack('account')),
+    .catch((err) => replace(container, topbar(t('reglages.deuxFacteurs.titre'), () => goBack('account')),
       h('div', { class: 'empty' }, h('p', { class: 'empty__text' }, errorMessage(err)))));
   return container;
 }
@@ -396,29 +397,29 @@ function enableForm(secret) {
   // Clé en groupes de 4 lettres, plus facile à recopier
   const grouped = secret.match(/.{1,4}/g).join(' ');
   const code = h('input', { class: 'input input--code', type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', maxlength: '7', placeholder: '······' });
-  const codeField = field('Code à 6 chiffres', code);
+  const codeField = field(t('reglages.deuxFacteurs.code'), code);
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Vérifier et activer');
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('reglages.deuxFacteurs.activer'));
 
-  const copy = iconButton('copy', 'Copier la clé', async () => {
+  const copy = iconButton('copy', t('reglages.deuxFacteurs.copierCle'), async () => {
     try {
       await navigator.clipboard.writeText(secret);
-      toast('Clé copiée');
+      toast(t('reglages.deuxFacteurs.cleCopiee'));
     } catch {
-      toast('Copie impossible : recopiez la clé à la main.');
+      toast(t('reglages.deuxFacteurs.copieImpossible'));
     }
   });
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('account')),
+    topbar(t('reglages.deuxFacteurs.titre'), () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
-      h('p', { class: 'step' }, 'Étape 1 sur 2'),
-      h('p', {}, "Scannez ce QR code avec votre application d'authentification."),
+      h('p', { class: 'step' }, t('reglages.deuxFacteurs.etape1')),
+      h('p', {}, t('reglages.deuxFacteurs.scanner')),
       h('div', { class: 'center' }, h('div', { class: 'qr' },
         // L'image vient du serveur (même adresse) : la CSP reste stricte
-        h('img', { src: `/api/me/2fa/qr.png?v=${Date.now()}`, alt: 'QR code à scanner avec votre application', width: '160', height: '160' }))),
+        h('img', { src: `/api/me/2fa/qr.png?v=${Date.now()}`, alt: t('reglages.deuxFacteurs.qr'), width: '160', height: '160' }))),
       h('div', { class: 'card secret-key' },
-        h('div', { class: 'grow' }, h('p', { class: 'field__hint' }, 'Ou saisissez cette clé'), h('p', { class: 'secret-key__value' }, grouped)),
+        h('div', { class: 'grow' }, h('p', { class: 'field__hint' }, t('reglages.deuxFacteurs.cle')), h('p', { class: 'secret-key__value' }, grouped)),
         copy),
       codeField.field,
       error.note)),
@@ -429,7 +430,7 @@ function enableForm(secret) {
     error.show('');
     const value = code.value.replace(/\s/g, '');
     if (!/^\d{6}$/.test(value)) {
-      codeField.setError('Saisissez les 6 chiffres affichés par votre application');
+      codeField.setError(t('reglages.deuxFacteurs.code.manquant'));
       return;
     }
     codeField.setError(null);
@@ -455,24 +456,24 @@ function recoveryScreen(codes) {
     onClick: async () => {
       try {
         await navigator.clipboard.writeText(codes.join('\n'));
-        toast('Codes copiés');
+        toast(t('reglages.secours.copies'));
       } catch {
-        toast('Copie impossible : notez les codes à la main.');
+        toast(t('reglages.secours.copieImpossible'));
       }
     },
-  }, icon('copy', 'icon--sm'), 'Copier les codes');
+  }, icon('copy', 'icon--sm'), t('reglages.secours.copier'));
 
   return [
     h('header', { class: 'topbar' },
-      iconButton('chev-l', 'Retour aux réglages', finish),
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Codes de secours'))),
+      iconButton('chev-l', t('reglages.secours.retour'), finish),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('reglages.secours.titre')))),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
-      h('p', { class: 'step' }, 'Étape 2 sur 2'),
+      h('p', { class: 'step' }, t('reglages.secours.etape2')),
       h('div', { class: 'note' }, icon('alert'),
-        h('p', {}, "Ces codes ne seront plus affichés. Conservez-les dans un endroit sûr : chacun ne fonctionne qu'une fois.")),
+        h('p', {}, t('reglages.secours.avertissement'))),
       h('div', { class: 'codes' }, codes.map((c) => h('p', { class: 'code' }, c.toUpperCase()))),
       copy)),
-    h('div', { class: 'footer' }, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: finish }, "J'ai conservé mes codes")),
+    h('div', { class: 'footer' }, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: finish }, t('reglages.secours.conserves'))),
   ];
 }
 
@@ -480,17 +481,17 @@ function recoveryScreen(codes) {
 function disableScreen() {
   const password = passwordInput({ autocomplete: 'current-password' });
   const code = h('input', { class: 'input input--mono', type: 'text', autocomplete: 'one-time-code', autocapitalize: 'characters', spellcheck: 'false' });
-  const passwordField = field('Mot de passe', password.wrap);
-  const codeField = field('Code', code, { hint: "Code à 6 chiffres de l'application, ou l'un de vos codes de secours." });
+  const passwordField = field(t('reglages.desactivation.motDePasse'), password.wrap);
+  const codeField = field(t('reglages.desactivation.code'), code, { hint: t('reglages.desactivation.code.aide') });
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--danger btn--block', type: 'submit' }, 'Désactiver la double authentification');
+  const submit = h('button', { class: 'btn btn--danger btn--block', type: 'submit' }, t('reglages.desactivation.bouton'));
 
   const form = h('form', { novalidate: true },
-    topbar('Double authentification', () => goBack('account')),
+    topbar(t('reglages.deuxFacteurs.titre'), () => goBack('account')),
     h('div', { class: 'body' }, h('div', { class: 'form-body' },
       h('div', { class: 'note' }, icon('shield'),
-        h('p', {}, 'La double authentification est activée : un code à 6 chiffres est demandé à chaque connexion.')),
-      h('p', { class: 'muted' }, 'Pour la désactiver, confirmez avec votre mot de passe et un code.'),
+        h('p', {}, t('reglages.desactivation.active'))),
+      h('p', { class: 'muted' }, t('reglages.desactivation.consigne')),
       passwordField.field, codeField.field, error.note)),
     h('div', { class: 'footer' }, submit));
 
@@ -498,14 +499,14 @@ function disableScreen() {
     event.preventDefault();
     error.show('');
     if (!password.input.value || !code.value.trim()) {
-      error.show('Saisissez votre mot de passe et un code.');
+      error.show(t('reglages.desactivation.manquant'));
       return;
     }
     submit.disabled = true;
     try {
       await post('/api/me/2fa/disable', { password: password.input.value, code: code.value.trim() });
       app.user = (await get('/api/me')).user;
-      toast('Double authentification désactivée', { low: true });
+      toast(t('reglages.desactivation.faite'), { low: true });
       navigate('account', {}, { replace: true });
     } catch (err) {
       error.show(errorMessage(err));

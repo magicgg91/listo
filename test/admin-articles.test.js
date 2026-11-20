@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { itemWords } from '../public/js/words.js';
 import { usualAisle } from '../public/js/history.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 
@@ -25,8 +26,17 @@ test('libellé : onglet « Articles », plus aucun « Noms » à l\'écran', () 
   assert.equal(many.charAt(0).toUpperCase() + many.slice(1), 'Articles');
   // Ni « Noms », ni « Noms enregistrés », ni « un nom » comme désignation d'une entrée
   assert.doesNotMatch(admin, /Noms|Rechercher un nom|Aucun nom/);
-  assert.match(admin, /placeholder: `Rechercher un \$\{ITEM\.one\}`, 'aria-label': `Rechercher un \$\{ITEM\.one\}`/);
-  assert.match(admin, /`Aucun \$\{ITEM\.one\} ne correspond à cette recherche\.` : `Aucun \$\{ITEM\.one\} enregistré pour le moment\.`/);
+  assert.match(admin, /placeholder: t\('administration\.noms\.rechercher', \{ item: ITEM\.one \}\), 'aria-label': t\('administration\.noms\.rechercher', \{ item: ITEM\.one \}\)/);
+  assert.equal(fr['administration.noms.rechercher'], 'Rechercher un {item}');
+  assert.match(admin, /t\('administration\.noms\.aucunResultat', \{ item: ITEM\.one \}\) : t\('administration\.noms\.vide', \{ item: ITEM\.one \}\)/);
+  assert.equal(fr['administration.noms.aucunResultat'], 'Aucun {item} ne correspond à cette recherche.');
+  assert.equal(fr['administration.noms.vide'], 'Aucun {item} enregistré pour le moment.');
+  // Ni « Noms » ni « un nom » dans les textes de l'écran non plus
+  for (const [key, value] of Object.entries(fr)) {
+    if (!key.startsWith('administration.')) continue;
+    const forms = typeof value === 'object' ? Object.values(value) : [value];
+    assert.doesNotMatch(forms.join('\n'), /Noms|Rechercher un nom|Aucun nom/, key);
+  }
   assert.match(admin, /h\('p', \{ class: 'section-title' \}, countItems\(page\.total, true\)\)/);
   // Message d'une entrée qui n'existe plus
   assert.match(read('server/routes/admin-names.js'), /const NOT_FOUND = 'Cet article n\\'est plus enregistré \(déjà corrigé ou retiré \?\)\.';/);
@@ -160,13 +170,17 @@ test('journal « nom_rayon_modifie » : le compte, l\'article et le rayon, jamai
 
 test('écran : « Modifier le rayon » à côté de « Corriger » et « Retirer », feuille de choix sans champ de saisie', () => {
   const admin = code('public/js/screens/admin.js');
-  assert.match(admin, /iconButton\('pencil', `Corriger \$\{entry\.name\}`, showEdit\),\s*iconButton\('store', `Modifier le rayon de \$\{entry\.name\}`, \(\) => chooseAisle\(entry, reload\)\),\s*iconButton\('trash',/);
+  assert.match(admin, /iconButton\('pencil', t\('administration\.noms\.corriger', \{ name: entry\.name \}\), showEdit\),\s*iconButton\('store', t\('administration\.noms\.modifierRayon', \{ name: entry\.name \}\), \(\) => chooseAisle\(entry, reload\)\),\s*iconButton\('trash',/);
+  assert.equal(fr['administration.noms.corriger'], 'Corriger {name}');
+  assert.equal(fr['administration.noms.modifierRayon'], 'Modifier le rayon de {name}');
   const sheet = admin.slice(admin.indexOf('function chooseAisle('), admin.indexOf('async function removeName('));
   assert.match(sheet, /activeOnly\(app\.data\.aisles\)/);
-  assert.match(sheet, /\{ id: null, name: 'Aucun rayon' \}/);
+  assert.match(sheet, /\{ id: null, name: t\('administration\.noms\.aucunRayon'\) \}/);
+  assert.equal(fr['administration.noms.aucunRayon'], 'Aucun rayon');
   assert.match(sheet, /h\('button', \{ class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' \}/);
   assert.match(sheet, /if \(on\) row\.append\(icon\('check', 'icon-end'\)\);/);
-  assert.match(sheet, /h\('div', \{ role: 'radiogroup', 'aria-label': 'Rayon' \}, rows\)/);
+  assert.match(sheet, /h\('div', \{ role: 'radiogroup', 'aria-label': t\('administration\.noms\.rayon'\) \}, rows\)/);
+  assert.equal(fr['administration.noms.rayon'], 'Rayon');
   assert.match(sheet, /post\('\/api\/admin\/names\/aisle', \{ from: entry\.key, aisleId: selected \}\)/);
   assert.doesNotMatch(sheet, /h\('input'|\.focus\(|openCreateReference|innerHTML/);
 });

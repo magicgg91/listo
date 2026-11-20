@@ -14,6 +14,7 @@ import path from 'node:path';
 import { matchRoute, ROUTES } from '../public/js/router.js';
 import { GUIDE, PERMISSIONS, PERMISSIONS_NOTE, ROLES, SERVER_NOTE, outline, numbered, parseInline, refLabel, blockTexts, searchGuide, plainText } from '../public/js/help-content.js';
 import { resultsLabel } from '../public/js/search.js';
+import fr from '../public/js/i18n/fr.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -76,7 +77,8 @@ async function render(t, section) {
 const toggles = (screen) => screen.findAll((n) => hasClass(n, 'aisle__toggle'));
 
 test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; « Connexions Claude » renvoie au chapitre Claude', () => {
-  assert.match(code('public/js/screens/settings.js'), /const helpRow = \(\) => row\(\{ iconName: 'book', title: 'Aide', onClick: \(\) => navigate\('help'\) \}\);/);
+  assert.match(code('public/js/screens/settings.js'), /const helpRow = \(\) => row\(\{ iconName: 'book', title: t\('reglages\.aide'\), onClick: \(\) => navigate\('help'\) \}\);/);
+  assert.equal(fr['reglages.aide'], 'Aide');
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
   assert.deepEqual(matchRoute('#/aide/sauvegardes'), { name: 'helpSection', params: { section: 'sauvegardes' } });
   assert.ok(ROUTES.some((r) => r.name === 'help' && r.path === '/aide'));

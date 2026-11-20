@@ -13,6 +13,7 @@ import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
 import { emptyState, loadSync, mergeSync, toSnapshot } from '../public/js/store.js';
 import { deleteListText, trashDaysText } from '../public/js/words.js';
 import { PURGE_AFTER_DAYS } from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
 import { uuid as mcpUuid, PASSWORD, household as mcpHousehold, connect, claude, data } from './mcp-helpers.js';
 
 const uuid = () => crypto.randomUUID();
@@ -285,7 +286,8 @@ test('hors ligne : « Restaurer » inactif avec une phrase ; pas de restauration
   // Aucune opération « restaurer » dans la file d'attente (/api/ops)
   assert.doesNotMatch(read('server/lists.js'), /'list\.restore'/);
   assert.match(read('public/js/router.js'), /\{ name: 'trash', path: '\/reglages\/corbeille' \}/);
-  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: 'Corbeille des listes', onClick: \(\) => navigate\('trash'\) \}\)/);
+  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: t\('reglages\.corbeille'\), onClick: \(\) => navigate\('trash'\) \}\)/);
+  assert.equal(fr['reglages.corbeille'], 'Corbeille des listes');
   assert.match(read('public/sw.js'), /'\/js\/screens\/trash\.js',/);
   assert.match(read('public/sw.js'), /const VERSION = `v(6[3-9]|[7-9]\d|\d{3,})-/);
 });

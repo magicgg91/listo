@@ -17,6 +17,7 @@ import { announce } from '../announce.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
 import { app, loggedIn, logOut, providerName } from '../app.js';
 import { defaultDisplayName } from '../format.js';
+import { t } from '../i18n.js';
 
 const MIN_PASSWORD = 10;
 
@@ -53,11 +54,11 @@ function checkNewPassword(password, confirmation, passwordField, confirmField) {
   passwordField.setError(null);
   confirmField.setError(null);
   if ([...password].length < MIN_PASSWORD) {
-    passwordField.setError(`Au moins ${MIN_PASSWORD} caractères`);
+    passwordField.setError(t('connexion.motDePasse.minimum', { min: MIN_PASSWORD }));
     return false;
   }
   if (password !== confirmation) {
-    confirmField.setError('Les deux mots de passe ne correspondent pas');
+    confirmField.setError(t('connexion.motDePasse.differents'));
     return false;
   }
   return true;
@@ -67,20 +68,27 @@ function checkNewPassword(password, confirmation, passwordField, confirmField) {
 
 // Retour du fournisseur d'identité (server/oidc.js) : un mot-clé dans l'adresse
 // (#/connexion?authelia=…), jamais un texte venu du fournisseur d'identité. Les demandes de
-// compte sont des informations, pas des erreurs.
-const AUTHELIA_ERRORS = {
-  annulee: 'Connexion avec {nom} annulée.',
-  erreur: 'La connexion avec {nom} n\'a pas abouti. Réessayez.',
-  expiree: 'La connexion a pris trop de temps. Réessayez.',
-  indisponible: '{nom} ne répond pas. Réessayez, ou connectez-vous avec votre mot de passe.',
-  refuse: 'Ce compte {nom} ne peut pas ouvrir Listo. Demandez à l\'Admin.',
-  refusee: 'Votre demande de compte a été refusée.',
-  complet: 'Trop de demandes de compte en attente. Réessayez plus tard.',
-};
-const AUTHELIA_NOTICES = {
-  demande: 'Votre demande de compte est envoyée à l\'Admin. Vous pourrez vous connecter quand il l\'aura acceptée.',
-  attente: 'Votre demande de compte attend encore l\'accord de l\'Admin.',
-};
+// compte sont des informations, pas des erreurs. Textes lus au moment de
+// l'affichage (la langue est alors connue) ; name : nom du fournisseur.
+function autheliaError(outcome, name) {
+  switch (outcome) {
+    case 'annulee': return t('connexion.oidc.annulee', { name });
+    case 'erreur': return t('connexion.oidc.erreur', { name });
+    case 'expiree': return t('connexion.oidc.expiree');
+    case 'indisponible': return t('connexion.oidc.indisponible', { name });
+    case 'refuse': return t('connexion.oidc.refuse', { name });
+    case 'refusee': return t('connexion.oidc.refusee');
+    case 'complet': return t('connexion.oidc.complet');
+    default: return undefined;
+  }
+}
+function autheliaNotice(outcome) {
+  switch (outcome) {
+    case 'demande': return t('connexion.oidc.demande');
+    case 'attente': return t('connexion.oidc.attente');
+    default: return undefined;
+  }
+}
 
 // Lit (et retire de l'adresse) le résultat d'un retour du fournisseur d'identité
 function autheliaOutcome() {
@@ -99,12 +107,11 @@ export function renderLogin({ setupNeeded, oidc = null, localLogin = true, retur
   const show = (step, info) => replace(container, step(show, { oidc, localLogin: localLogin || !oidc, back, ...info }));
   const outcome = setupNeeded ? null : autheliaOutcome();
   const name = oidc?.name ?? providerName();
-  const text = (template) => template.replaceAll('{nom}', name);
   if (outcome === 'code') show(codeStep, {}); // Le fournisseur d'identité sans double authentification : le code Listo
   else if (setupNeeded) show(setupStep);
   else show(passwordStep, {
-    message: AUTHELIA_ERRORS[outcome] ? text(AUTHELIA_ERRORS[outcome]) : undefined,
-    notice: AUTHELIA_NOTICES[outcome],
+    message: autheliaError(outcome, name),
+    notice: autheliaNotice(outcome),
   });
   return container;
 }
@@ -118,9 +125,9 @@ function autheliaButton(oidc, error, { primary = false, back = null } = {}) {
     onClick: (event) => {
       if (navigator.onLine) return;
       event.preventDefault();
-      error.show(`Connexion à Internet nécessaire pour ${oidc.name}.`);
+      error.show(t('connexion.oidc.horsLigne', { name: oidc.name }));
     },
-  }, icon('shield'), `Se connecter avec ${oidc.name}`);
+  }, icon('shield'), t('connexion.oidc.bouton', { name: oidc.name }));
 }
 
 // Connexion : identifiant + mot de passe (connexion-1)
@@ -138,7 +145,7 @@ function passwordStep(show, info = {}) {
   if (!info.localLogin && info.oidc) {
     return h('div', { class: 'screen' },
       h('div', { class: 'body' }, h('div', { class: 'welcome' },
-        brandHead('Listo', 'Connectez-vous pour retrouver vos listes.'),
+        brandHead('Listo', t('connexion.texte')),
         notice,
         error.note)),
       h('div', { class: 'footer' }, autheliaButton(info.oidc, error, { primary: true, back: info.back })));
@@ -146,19 +153,19 @@ function passwordStep(show, info = {}) {
 
   return screen({
     content: [
-      brandHead('Listo', 'Connectez-vous pour retrouver vos listes.'),
+      brandHead('Listo', t('connexion.texte')),
       notice,
       h('div', { class: 'welcome__fields' },
-        field('Identifiant', username).field,
-        field('Mot de passe', password.wrap).field,
+        field(t('connexion.identifiant'), username).field,
+        field(t('connexion.motDePasse'), password.wrap).field,
         error.note),
       info.oidc ? autheliaButton(info.oidc, error, { back: info.back }) : null,
     ],
-    submitLabel: 'Se connecter',
+    submitLabel: t('connexion.seConnecter'),
     async onSubmit() {
       error.show('');
       if (!username.value.trim() || !password.input.value) {
-        error.show("Saisissez votre identifiant et votre mot de passe.");
+        error.show(t('connexion.erreurVide'));
         return;
       }
       try {
@@ -179,33 +186,33 @@ function codeStep(show, info) {
   const code = recovery
     ? h('input', { class: 'input input--mono', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' })
     : h('input', { class: 'input input--code', type: 'text', id: 'code', name: 'one-time-code', inputmode: 'numeric', autocomplete: 'one-time-code', required: true, maxlength: '7', placeholder: '······' });
-  const codeField = field(recovery ? 'Code de secours' : 'Code à 6 chiffres', code,
-    recovery ? { hint: "Chaque code ne fonctionne qu'une seule fois." } : {});
+  const codeField = field(recovery ? t('connexion.code.secours') : t('connexion.code.sixChiffres'), code,
+    recovery ? { hint: t('connexion.code.secours.aide') } : {});
   const error = errorNote();
 
   const back = h('header', { class: 'topbar' },
-    iconButton('chev-l', 'Retour', () => show(passwordStep, { username: info.username })));
+    iconButton('chev-l', t('connexion.code.retour'), () => show(passwordStep, { username: info.username })));
   const switchMode = h('button', {
     class: 'btn btn--ghost',
     type: 'button',
     onClick: () => show(codeStep, { ...info, recovery: !recovery }),
-  }, recovery ? "Utiliser le code de l'application" : 'Utiliser un code de secours');
+  }, recovery ? t('connexion.code.utiliserApplication') : t('connexion.code.utiliserSecours'));
 
   return screen({
     top: back,
     content: [
-      brandHead(recovery ? 'Code de secours' : 'Vérification en deux étapes',
-        recovery ? "Saisissez l'un de vos codes de secours pour vous connecter."
-          : "Saisissez le code à 6 chiffres affiché par votre application d'authentification.", { logo: false }),
+      brandHead(recovery ? t('connexion.code.secours') : t('connexion.code.titre'),
+        recovery ? t('connexion.code.secours.texte')
+          : t('connexion.code.texte'), { logo: false }),
       h('div', { class: 'welcome__fields' }, codeField.field, error.note),
       switchMode,
     ],
-    submitLabel: 'Vérifier',
+    submitLabel: t('connexion.code.verifier'),
     async onSubmit() {
       error.show('');
       const value = code.value.trim();
       if (!value) {
-        error.show(recovery ? 'Saisissez un code de secours.' : 'Saisissez le code à 6 chiffres.');
+        error.show(recovery ? t('connexion.code.secours.erreurVide') : t('connexion.code.erreurVide'));
         return;
       }
       try {
@@ -229,29 +236,29 @@ function setupStep(show) {
   const password = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
   const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true });
   const code = h('input', { class: 'input input--mono', type: 'text', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
-  const usernameField = field('Identifiant', username, { hint: '2 à 50 caractères : lettres sans accent, chiffres, . _ -' });
-  const passwordField = field('Mot de passe', password.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
-  const confirmField = field('Confirmation du mot de passe', confirmation);
-  const codeField = field('Code de démarrage', code, { hint: 'Code indiqué au démarrage du serveur (docker logs listo).' });
+  const usernameField = field(t('connexion.identifiant'), username, { hint: t('connexion.admin.identifiant.aide') });
+  const passwordField = field(t('connexion.motDePasse'), password.wrap, { hint: t('connexion.motDePasse.minimum', { min: MIN_PASSWORD }) });
+  const confirmField = field(t('connexion.admin.confirmation'), confirmation);
+  const codeField = field(t('connexion.admin.code'), code, { hint: t('connexion.admin.code.aide') });
   const error = errorNote();
 
   return screen({
     content: [
-      brandHead('Bienvenue sur Listo', 'Créez le compte Admin pour démarrer.'),
+      brandHead(t('connexion.admin.titre'), t('connexion.admin.texte')),
       h('div', { class: 'welcome__fields' }, usernameField.field, passwordField.field, confirmField.field, codeField.field, error.note),
     ],
-    submitLabel: 'Créer le compte Admin',
+    submitLabel: t('connexion.admin.creer'),
     async onSubmit() {
       error.show('');
       usernameField.setError(null);
       codeField.setError(null);
       if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) {
-        usernameField.setError('Identifiant invalide');
+        usernameField.setError(t('connexion.admin.identifiant.invalide'));
         return;
       }
       if (!checkNewPassword(password.input.value, confirmation.value, passwordField, confirmField)) return;
       if (!code.value.trim()) {
-        codeField.setError('Saisissez le code de démarrage');
+        codeField.setError(t('connexion.admin.code.erreurVide'));
         return;
       }
       try {
@@ -261,7 +268,7 @@ function setupStep(show) {
         // Un compte existe déjà (créé entre-temps) : retour à la connexion
         if (err instanceof ApiError && err.status === 403 && /déjà configuré/.test(err.message)) {
           app.setupNeeded = false;
-          show(passwordStep, { message: 'Listo est déjà configuré : connectez-vous.' });
+          show(passwordStep, { message: t('connexion.admin.dejaConfigure') });
           return;
         }
         error.show(errorMessage(err));
@@ -275,30 +282,30 @@ function setupStep(show) {
 export function renderForcedChange() {
   const current = passwordInput({ id: 'mot-de-passe-actuel', name: 'current-password', autocomplete: 'current-password', required: true });
   const next = passwordInput({ id: 'nouveau-mot-de-passe', name: 'new-password', autocomplete: 'new-password', required: true });
-  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: 'Répétez le nouveau mot de passe' });
-  const currentField = field('Mot de passe provisoire', current.wrap, { hint: "Celui que l'Admin vous a donné." });
-  const nextField = field('Nouveau mot de passe', next.wrap, { hint: `Au moins ${MIN_PASSWORD} caractères` });
-  const confirmField = field('Confirmation', confirmation);
+  const confirmation = h('input', { class: 'input', type: 'password', id: 'confirmation', name: 'confirm-password', autocomplete: 'new-password', required: true, placeholder: t('connexion.impose.confirmation.exemple') });
+  const currentField = field(t('connexion.impose.provisoire'), current.wrap, { hint: t('connexion.impose.provisoire.aide') });
+  const nextField = field(t('connexion.impose.nouveau'), next.wrap, { hint: t('connexion.motDePasse.minimum', { min: MIN_PASSWORD }) });
+  const confirmField = field(t('connexion.impose.confirmation'), confirmation);
   const error = errorNote();
 
   const logout = h('button', {
     class: 'btn btn--ghost',
     type: 'button',
     onClick: () => logOut(),
-  }, 'Se déconnecter');
+  }, t('connexion.impose.deconnexion'));
 
   return screen({
     content: [
-      brandHead('Nouveau mot de passe', "Votre mot de passe a été choisi par l'Admin. Choisissez-en un nouveau pour continuer."),
+      brandHead(t('connexion.impose.nouveau'), t('connexion.impose.texte')),
       h('div', { class: 'welcome__fields' }, currentField.field, nextField.field, confirmField.field, error.note),
       logout,
     ],
-    submitLabel: 'Enregistrer',
+    submitLabel: t('connexion.impose.enregistrer'),
     async onSubmit() {
       error.show('');
       if (!checkNewPassword(next.input.value, confirmation.value, nextField, confirmField)) return;
       if (next.input.value === current.input.value) {
-        nextField.setError("Choisissez un mot de passe différent de celui donné par l'Admin");
+        nextField.setError(t('connexion.impose.different'));
         return;
       }
       try {

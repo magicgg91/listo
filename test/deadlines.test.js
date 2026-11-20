@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import { emptyState, loadTypeFilter, saveTypeFilter, TYPE_FILTER_KEY } from '../public/js/store.js';
 import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, DEADLINE_GROUPS } from '../public/js/deadlines.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -164,7 +165,8 @@ test('bandeau du bas : trois boutons, même place partout, loupe seulement là o
   // Bouton de l'écran affiché : aria-current ET pastille (jamais la couleur seule)
   assert.match(tabbar, /if \(tab === name\) button\.setAttribute\('aria-current', 'page'\);/);
   // Réglages sur téléphone : plus de bouton Retour
-  assert.match(read('public/js/screens/settings.js'), /topbar\('Réglages'\),/);
+  assert.match(read('public/js/screens/settings.js'), /topbar\(t\('reglages\.titre'\)\),/);
+  assert.equal(fr['reglages.titre'], 'Réglages');
   // Adresse de l'écran
   assert.deepEqual(matchRoute('#/echeances'), { name: 'deadlines', params: {} });
   assert.equal(pathFor('deadlines'), '#/echeances');

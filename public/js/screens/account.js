@@ -27,7 +27,7 @@ export function renderAccount(onLeave = () => {}) {
 
   // Interrupteur de thème : écrit simplement data-theme sur <html> (effet
   // immédiat, choix mémorisé sur ce téléphone, voir theme.js)
-  const themes = [['light', 'sun', 'Clair'], ['dark', 'moon', 'Sombre'], ['auto', 'auto', 'Auto']];
+  const themes = [['light', 'sun', t('compte.theme.clair')], ['dark', 'moon', t('compte.theme.sombre')], ['auto', 'auto', t('compte.theme.auto')]];
   const options = themes.map(([value, iconName, label]) => h('button', {
     class: 'segmented__opt',
     type: 'button',
@@ -43,38 +43,38 @@ export function renderAccount(onLeave = () => {}) {
   const twoFactorRow = user.totpEnabled
     ? row({
       iconName: 'shield',
-      title: 'Double authentification',
-      sub: 'Code à 6 chiffres à chaque connexion',
-      end: h('span', { class: 'chip chip--strong' }, icon('check', 'icon--xs'), 'Activée'),
+      title: t('compte.deuxFacteurs.titre'),
+      sub: t('compte.deuxFacteurs.active.detail'),
+      end: h('span', { class: 'chip chip--strong' }, icon('check', 'icon--xs'), t('compte.deuxFacteurs.active')),
       onClick: () => navigate('twoFactor'),
     })
-    : row({ iconName: 'shield', title: 'Double authentification', sub: 'Désactivée', onClick: () => navigate('twoFactor') });
+    : row({ iconName: 'shield', title: t('compte.deuxFacteurs.titre'), sub: t('compte.deuxFacteurs.desactivee'), onClick: () => navigate('twoFactor') });
 
   return h('div', { class: 'screen' },
-    topbar('Mon compte', () => goBack('settings')),
+    topbar(t('compte.titre'), () => goBack('settings')),
     h('div', { class: 'body' },
       h('div', { class: 'card account' },
         avatar(user.displayName, { large: true }),
-        h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, user.username ? `Identifiant : ${user.username}` : 'Compte connecté')),
+        h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, user.username ? t('compte.identifiant', { username: user.username }) : t('compte.connecte'))),
         roleChip(user)),
-      h('h2', { class: 'section-title' }, 'Sécurité'),
+      h('h2', { class: 'section-title' }, t('compte.securite')),
       // Session ouverte avec le fournisseur d'identité (« Connecté avec … ») : le mot de passe et la double
       // authentification se gèrent chez le fournisseur d'identité (le serveur refuse aussi de
       // les changer depuis cette session) ; sinon, comme avant
       user.loginMethod === 'oidc'
         ? h('div', { class: 'group' },
-          row({ iconName: 'shield', title: `Connecté avec ${provider}`, sub: `Mot de passe et double authentification : dans ${provider}` }))
+          row({ iconName: 'shield', title: t('compte.fournisseur.connecte', { provider }), sub: t('compte.fournisseur.detail', { provider }) }))
         : h('div', { class: 'group' },
-          row({ iconName: 'lock', title: 'Mot de passe', sub: 'Modifier mon mot de passe', onClick: () => navigate('password') }),
+          row({ iconName: 'lock', title: t('compte.motDePasse.titre'), sub: t('compte.motDePasse.detail'), onClick: () => navigate('password') }),
           twoFactorRow),
-      h('h2', { class: 'section-title' }, 'Apparence'),
-      h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Thème' }, options)),
+      h('h2', { class: 'section-title' }, t('compte.apparence')),
+      h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('compte.theme') }, options)),
       languageBlock(),
       // Accès depuis Claude : seulement s'il est activé sur le serveur
       user.claudeUrl ? [
-        h('h2', { class: 'section-title' }, 'Claude'),
+        h('h2', { class: 'section-title' }, t('compte.claude')),
         h('div', { class: 'group' },
-          row({ iconName: 'link', title: 'Connexions Claude', sub: 'Voir et déconnecter Claude', onClick: () => navigate('claudeConnections') })),
+          row({ iconName: 'link', title: t('compte.claude.connexions'), sub: t('compte.claude.connexions.detail'), onClick: () => navigate('claudeConnections') })),
       ] : null,
       // Données gardées sur ce téléphone : remise à zéro si elles semblent
       // abîmées (tout est rechargé depuis le serveur). Sur ordinateur, « Cet
@@ -82,10 +82,10 @@ export function renderAccount(onLeave = () => {}) {
       // téléphone garde « Ce téléphone ».
       h('h2', { class: 'section-title' }, device().section),
       h('div', { class: 'group' },
-        row({ iconName: 'sync', title: device().reset, sub: 'Recharger les listes depuis le serveur', onClick: resetPhone })),
+        row({ iconName: 'sync', title: device().reset, sub: t('compte.appareil.reinitialiser.detail'), onClick: resetPhone })),
       // Se déconnecter : tout en bas, à part du reste
       h('div', { class: 'account__logout' },
-        h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => confirmLogOut() }, icon('logout', 'icon--sm'), 'Se déconnecter'))));
+        h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => confirmLogOut() }, icon('logout', 'icon--sm'), t('compte.deconnexion')))));
 }
 
 // « Se déconnecter » : sur le téléphone, une confirmation d'abord (décision
@@ -96,10 +96,10 @@ export function renderAccount(onLeave = () => {}) {
 async function confirmLogOut() {
   if (!onPc() && !pendingCount()) {
     const ok = await confirmDialog({
-      title: 'Se déconnecter ?',
-      text: 'Pour revenir, il faudra votre identifiant et votre mot de passe (et le code de double authentification s\'il est activé).',
-      confirmLabel: 'Se déconnecter',
-      cancelLabel: 'Rester connecté',
+      title: t('compte.deconnexion.question'),
+      text: t('compte.deconnexion.texte'),
+      confirmLabel: t('compte.deconnexion'),
+      cancelLabel: t('compte.deconnexion.rester'),
       focusCancel: true,
     });
     if (!ok) return;
@@ -111,27 +111,27 @@ async function confirmLogOut() {
 // « cet appareil »
 function device() {
   return onPc()
-    ? { section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' }
-    : { section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' };
+    ? { section: t('compte.appareil.pc'), reset: t('compte.appareil.pc.reinitialiser'), question: t('compte.appareil.pc.reinitialiser.question'), text: t('compte.appareil.pc.reinitialiser.texte') }
+    : { section: t('compte.appareil.telephone'), reset: t('compte.appareil.telephone.reinitialiser'), question: t('compte.appareil.telephone.reinitialiser.question'), text: t('compte.appareil.telephone.reinitialiser.texte') };
 }
 
 // Remise à zéro de la copie locale (avec confirmation). Les modifications
 // pas encore envoyées sont gardées : elles repartiront ensuite.
 async function resetPhone() {
   if (!navigator.onLine) {
-    toast('Indisponible hors ligne : il faut du réseau pour tout recharger.');
+    toast(t('compte.appareil.horsLigne'));
     return;
   }
   const waiting = pendingCount();
   const ok = await confirmDialog({
-    title: `${device().reset} ?`,
-    text: `Les listes gardées ${device().on} seront rechargées depuis le serveur.${waiting ? ` Les ${waiting} modification${waiting > 1 ? 's' : ''} en attente ${waiting > 1 ? 'sont gardées et seront envoyées' : 'est gardée et sera envoyée'}.` : ''}`,
-    confirmLabel: 'Réinitialiser',
+    title: device().question,
+    text: [device().text, waiting ? t('compte.appareil.reinitialiser.enAttente', { count: waiting }) : null].filter(Boolean).join(' '),
+    confirmLabel: t('compte.appareil.reinitialiser'),
     danger: false,
   });
   if (!ok) return;
   await resetLocalCopy();
-  toast('Données rechargées depuis le serveur', { low: true });
+  toast(t('compte.appareil.recharge'), { low: true });
 }
 
 // Langue (Mon compte) : « Automatique » (langue du navigateur, sinon celle de

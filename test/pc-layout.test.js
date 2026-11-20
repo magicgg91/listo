@@ -7,6 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -233,30 +234,32 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   // Ordre des cartes (rangement allégé du 11 novembre 2026) : Compte,
   // Général (« Raccourcis à une touche » d'abord, puis les lignes du
   // téléphone), Informations (Aide, Raccourcis clavier, À propos)
-  const order = [...pc.matchAll(/section\('([^']+)'/g)].map((m) => m[1]);
+  const order = [...pc.matchAll(/section\(t\('([^']+)'\)/g)].map((m) => fr[m[1]]);
   assert.deepEqual(order, ['Compte', 'Général', 'Informations']);
-  assert.match(pc, /section\('Général', h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
-  assert.match(pc, /section\('Informations', h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: 'Raccourcis clavier'/);
+  assert.match(pc, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(pc, /section\(t\('reglages\.informations'\), h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: t\('reglages\.pc\.raccourcis'\)/);
+  assert.equal(fr['reglages.pc.raccourcis'], 'Raccourcis clavier');
   assert.match(pc, /aboutRow\(isAdmin\)/);
   // Mêmes lignes que le téléphone (une seule définition)
   const phone = code.slice(code.indexOf('export function renderSettings'), code.indexOf('function generalRows'));
   assert.match(phone, /h\('div', \{ class: 'group' \}, generalRows\(isAdmin\)\),/);
   assert.match(phone, /h\('div', \{ class: 'group' \}, helpRow\(\), aboutRow\(isAdmin\)\)/);
   // (pastille : demandes de compte en attente, connexion avec Authelia)
-  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: 'Administration', end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
+  assert.equal(fr['reglages.administration'], 'Administration');
+  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: t\('reglages\.administration'\), end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
   assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
   // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
   assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');
-  assert.match(account, /h\('h2', \{ class: 'section-title' \}, 'Apparence'\),/);
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
+  assert.match(account, /h\('h2', \{ class: 'section-title' \}, t\('compte\.apparence'\)\),/);
+  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
   // Deux différences seulement : « Cet appareil », et la confirmation de
   // « Se déconnecter », sur le téléphone seulement (décision du 11 novembre 2026)
   assert.equal((account.match(/onPc\(\)/g) ?? []).length, 2);
   assert.match(account, /if \(!onPc\(\) && !pendingCount\(\)\) \{/);
-  assert.match(account, /return onPc\(\)\s*\? \{ section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' \}\s*: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
+  assert.match(account, /return onPc\(\)\s*\? \{ section: t\('compte\.appareil\.pc'\), reset: t\('compte\.appareil\.pc\.reinitialiser'\), question: t\('compte\.appareil\.pc\.reinitialiser\.question'\), text: t\('compte\.appareil\.pc\.reinitialiser\.texte'\) \}\s*: \{ section: t\('compte\.appareil\.telephone'\)/);
   // Téléphone : plus de section « Clavier » (rien de nouveau)
   assert.doesNotMatch(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
 });

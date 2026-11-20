@@ -23,6 +23,7 @@ import { app, refreshData, providerName } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
+import { t } from '../i18n.js';
 
 // Mot des listes de courses (words.js) : « article », « articles »
 const ITEM = itemWords(true);
@@ -33,14 +34,15 @@ const ITEM = itemWords(true);
 // choix (magasins, rayons et articles ne concernent que les listes de
 // courses), chacun avec son adresse d'avant (#/administration/magasins,
 // /rayons, /noms) : un lien ou un rafraîchissement retombe sur le bon choix.
+// Libellés lus au moment de l'affichage (get), dans la langue choisie
 const SHOPPING = [
-  { key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' },
-  { key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' },
+  { key: 'magasins', get label() { return t('administration.magasins'); }, api: 'stores', get placeholder() { return t('administration.magasins.nouveau'); } },
+  { key: 'rayons', get label() { return t('administration.rayons'); }, api: 'aisles', get placeholder() { return t('administration.rayons.nouveau'); } },
   { key: 'noms', label: ITEM.many.charAt(0).toUpperCase() + ITEM.many.slice(1) },
 ];
 const TABS = [
-  { key: 'comptes', label: 'Comptes' },
-  { key: 'courses', label: 'Courses' },
+  { key: 'comptes', get label() { return t('administration.onglets.comptes'); } },
+  { key: 'courses', get label() { return t('administration.onglets.courses'); } },
 ];
 
 // Dernier choix de « Courses », retrouvé en revenant sur l'onglet pendant la
@@ -77,8 +79,8 @@ export function renderAdmin(tabKey, onLeave) {
     return h('div', { class: 'screen' });
   }
 
-  const tabs = tabBar(TABS.map((t) => (t.key === 'courses' ? { ...t, target: lastShopping } : t)), shopping ? 'courses' : tab.key, 'Rubriques');
-  const choices = shopping ? tabBar(SHOPPING, shopping.key, 'Courses', ' tabs--sub') : null;
+  const tabs = tabBar(TABS.map((t) => (t.key === 'courses' ? { ...t, target: lastShopping } : t)), shopping ? 'courses' : tab.key, t('administration.rubriques'));
+  const choices = shopping ? tabBar(SHOPPING, shopping.key, t('administration.onglets.courses'), ' tabs--sub') : null;
 
   // Barre trop large pour l'écran (elle défile de côté) : l'onglet actif est
   // ramené en vue une fois l'écran affiché
@@ -105,8 +107,8 @@ export function renderAdmin(tabKey, onLeave) {
     footer.hidden = true;
     replace(panel, h('div', { class: 'empty' },
       h('div', { class: 'empty__icon' }, icon('cloud-off', 'icon--lg')),
-      h('h2', { class: 'empty__title' }, 'Indisponible hors ligne'),
-      h('p', { class: 'empty__text' }, "L'administration a besoin du réseau. Elle s'affichera dès son retour.")));
+      h('h2', { class: 'empty__title' }, t('administration.horsLigne.titre')),
+      h('p', { class: 'empty__text' }, t('administration.horsLigne.texte'))));
   };
   const onOnline = () => {
     if (alive) {
@@ -120,19 +122,19 @@ export function renderAdmin(tabKey, onLeave) {
 
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
-      iconButton('chev-l', 'Retour aux réglages', () => goBack('settings')),
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Administration'))),
+      iconButton('chev-l', t('administration.retour'), () => goBack('settings')),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('administration.titre')))),
     tabs, choices, panel, footer);
 }
 
-const loadingText = () => h('p', { class: 'empty muted', role: 'status' }, 'Chargement…');
+const loadingText = () => h('p', { class: 'empty muted', role: 'status' }, t('administration.chargement'));
 const errorBlock = (err, retry) => h('div', { class: 'empty' },
   h('p', { class: 'empty__text' }, errorMessage(err)),
-  h('button', { class: 'btn btn--secondary', type: 'button', onClick: retry }, 'Réessayer'));
+  h('button', { class: 'btn btn--secondary', type: 'button', onClick: retry }, t('administration.reessayer')));
 
 // Segmenté « Utilisateur / Admin » (même composant que le thème)
 function roleSwitch(role, onChange, { disabled = false } = {}) {
-  const options = [['user', 'Utilisateur'], ['admin', 'Admin']].map(([value, label]) => {
+  const options = [['user', t('administration.role.utilisateur')], ['admin', t('administration.role.admin')]].map(([value, label]) => {
     const option = h('button', {
       class: 'segmented__opt',
       type: 'button',
@@ -146,14 +148,14 @@ function roleSwitch(role, onChange, { disabled = false } = {}) {
     });
     return option;
   });
-  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Rôle' }, options);
+  return h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('administration.role') }, options);
 }
 
 // ======================= Comptes =======================
 
 const userSub = (user) => [
-  user.role === 'admin' ? 'Admin' : 'Utilisateur',
-  user.active ? (user.totpEnabled ? '2FA activé' : '2FA désactivé') : 'compte désactivé',
+  user.role === 'admin' ? t('administration.role.admin') : t('administration.role.utilisateur'),
+  user.active ? (user.totpEnabled ? t('administration.compte.deuxFacteurs.active') : t('administration.compte.deuxFacteurs.desactive')) : t('administration.compte.desactive'),
   user.authelia ? providerName() : null,
 ].filter(Boolean).join(' · ');
 
@@ -175,20 +177,20 @@ async function loadUsers(panel, footer, alive) {
   users.sort((a, b) => compareNames(a.displayName, b.displayName));
   // Demandes de compte (connexion avec le fournisseur d'identité) : en premier, quand il y en a
   const requests = accountRequests.length
-    ? [h('p', { class: 'section-title' }, accountRequests.length === 1 ? 'Demande de compte' : 'Demandes de compte'),
+    ? [h('p', { class: 'section-title' }, t('administration.demande.titre', { count: accountRequests.length })),
       h('div', { class: 'group' }, accountRequests.map((request) => h('div', { class: 'row' },
         avatar(request.displayName),
-        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, request.displayName), h('span', { class: 'row__sub' }, `${request.username} · par ${providerName()}`)),
-        h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => refuseRequest(request, reload) }, 'Refuser'),
-        h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, 'Accepter')))),
-      h('p', { class: 'section-title' }, 'Comptes')]
+        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, request.displayName), h('span', { class: 'row__sub' }, t('administration.demande.detail', { username: request.username, provider: providerName() }))),
+        h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => refuseRequest(request, reload) }, t('administration.demande.refuser')),
+        h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, t('administration.demande.accepter'))))),
+      h('p', { class: 'section-title' }, t('administration.onglets.comptes'))]
     : [];
   replace(panel, ...requests, h('div', { class: 'group' }, users.map((user, i) => h('div', { class: `row${user.active ? '' : ' is-off'}` },
     avatar(user.displayName, { second: i > 0 }),
     h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, userSub(user))),
-    user.active ? null : h('span', { class: 'chip' }, 'Désactivé'),
-    iconButton('more', `Gérer le compte de ${user.displayName}`, () => openUserSheet(user, reload, { localLogin }))))));
-  replace(footer, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), 'Ajouter un compte'));
+    user.active ? null : h('span', { class: 'chip' }, t('administration.compte.desactive.puce')),
+    iconButton('more', t('administration.compte.gerer', { name: user.displayName }), () => openUserSheet(user, reload, { localLogin }))))));
+  replace(footer, h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => openNewUserSheet(reload, { localLogin }) }, icon('plus'), t('administration.compte.ajouter')));
 }
 
 // Feuille d'un compte (administration-2)
@@ -213,38 +215,38 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
   if (!self) {
     if (localLogin) {
       actions.push(h('button', { class: 'row row--menu', type: 'button', onClick: () => { sheet.close(); setTimeout(() => openResetSheet(user, reload), 0); } },
-        icon('reset'), h('span', { class: 'row__title' }, 'Réinitialiser le mot de passe')));
+        icon('reset'), h('span', { class: 'row__title' }, t('administration.motDePasse.reinitialiser.titre'))));
     }
     if (user.totpEnabled) {
       actions.push(h('button', {
         class: 'row row--menu',
         type: 'button',
         onClick: async () => {
-          const ok = await confirmDialog({ title: 'Désactiver la double authentification ?', text: `${user.displayName} pourra se connecter avec son seul mot de passe, puis réactiver la 2FA dans ses réglages.`, confirmLabel: 'Désactiver' });
-          if (ok) run(() => del(`/api/admin/users/${user.id}/2fa`), 'Double authentification désactivée');
+          const ok = await confirmDialog({ title: t('administration.compte.deuxFacteurs.question'), text: t('administration.compte.deuxFacteurs.texte', { name: user.displayName }), confirmLabel: t('administration.compte.desactiver') });
+          if (ok) run(() => del(`/api/admin/users/${user.id}/2fa`), t('administration.compte.deuxFacteurs.desactivee'));
         },
-      }, icon('shield'), h('span', { class: 'row__title' }, 'Désactiver la double authentification')));
+      }, icon('shield'), h('span', { class: 'row__title' }, t('administration.compte.deuxFacteurs.desactiver'))));
     }
     actions.push(user.active
       ? h('button', {
         class: 'row row--menu menu__item--danger',
         type: 'button',
         onClick: async () => {
-          const ok = await confirmDialog({ title: 'Désactiver le compte ?', text: `${user.displayName} sera déconnecté tout de suite et ne pourra plus se connecter. Ses listes sont conservées.`, confirmLabel: 'Désactiver' });
-          if (ok) run(() => patch(`/api/admin/users/${user.id}`, { active: false }), 'Compte désactivé');
+          const ok = await confirmDialog({ title: t('administration.compte.desactiver.question'), text: t('administration.compte.desactiver.texte', { name: user.displayName }), confirmLabel: t('administration.compte.desactiver') });
+          if (ok) run(() => patch(`/api/admin/users/${user.id}`, { active: false }), t('administration.compte.desactive.fait'));
         },
-      }, icon('power'), h('span', { class: 'row__title' }, 'Désactiver le compte'))
-      : h('button', { class: 'row row--menu', type: 'button', onClick: () => run(() => patch(`/api/admin/users/${user.id}`, { active: true }), 'Compte réactivé') },
-        icon('power'), h('span', { class: 'row__title' }, 'Réactiver le compte')));
+      }, icon('power'), h('span', { class: 'row__title' }, t('administration.compte.desactiver.titre')))
+      : h('button', { class: 'row row--menu', type: 'button', onClick: () => run(() => patch(`/api/admin/users/${user.id}`, { active: true }), t('administration.compte.reactive')) },
+        icon('power'), h('span', { class: 'row__title' }, t('administration.compte.reactiver'))));
     if (!user.inUse) {
       actions.push(h('button', {
         class: 'row row--menu menu__item--danger',
         type: 'button',
         onClick: async () => {
-          const ok = await confirmDialog({ title: 'Supprimer le compte ?', text: `Le compte de ${user.displayName} n'a jamais servi : il sera supprimé définitivement.`, confirmLabel: 'Supprimer' });
-          if (ok) run(() => del(`/api/admin/users/${user.id}`), 'Compte supprimé');
+          const ok = await confirmDialog({ title: t('administration.compte.supprimer.question'), text: t('administration.compte.supprimer.texte', { name: user.displayName }), confirmLabel: t('administration.supprimer') });
+          if (ok) run(() => del(`/api/admin/users/${user.id}`), t('administration.compte.supprime'));
         },
-      }, icon('trash'), h('span', { class: 'row__title' }, 'Supprimer le compte')));
+      }, icon('trash'), h('span', { class: 'row__title' }, t('administration.compte.supprimer'))));
     }
   }
 
@@ -256,20 +258,20 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
       class: 'row row--menu',
       type: 'button',
       onClick: async () => {
-        const ok = await confirmDialog({ title: `Délier le compte ${providerName()} ?`, text: `Le prochain compte ${providerName()} nommé « ${user.username} » pourra ouvrir le compte de ${user.displayName}.`, confirmLabel: 'Délier' });
-        if (ok) run(() => del(`/api/admin/users/${user.id}/authelia`), `Compte ${providerName()} délié`);
+        const ok = await confirmDialog({ title: t('administration.compte.delier.question', { provider: providerName() }), text: t('administration.compte.delier.texte', { provider: providerName(), username: user.username, name: user.displayName }), confirmLabel: t('administration.compte.delier') });
+        if (ok) run(() => del(`/api/admin/users/${user.id}/authelia`), t('administration.compte.delie', { provider: providerName() }));
       },
-    }, icon('link-off'), h('span', { class: 'row__title' }, `Délier le compte ${providerName()}`)));
+    }, icon('link-off'), h('span', { class: 'row__title' }, t('administration.compte.delier.titre', { provider: providerName() }))));
   }
 
   const sheet = openSheet({
     title: user.displayName,
     sub: userSub(user),
     content: [
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'),
-        roleSwitch(user.role, (role) => run(() => patch(`/api/admin/users/${user.id}`, { role }), role === 'admin' ? 'Rôle Admin donné' : 'Rôle Utilisateur donné'), { disabled: self }),
-        self ? h('span', { class: 'field__hint' }, 'Vous ne pouvez pas changer votre propre rôle.') : null),
-      actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'muted' }, 'Votre mot de passe et votre 2FA se gèrent dans vos réglages.'),
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')),
+        roleSwitch(user.role, (role) => run(() => patch(`/api/admin/users/${user.id}`, { role }), role === 'admin' ? t('administration.compte.role.admin') : t('administration.compte.role.utilisateur')), { disabled: self }),
+        self ? h('span', { class: 'field__hint' }, t('administration.compte.role.soiMeme')) : null),
+      actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'muted' }, t('administration.compte.soiMeme')),
       error.note,
     ],
   });
@@ -278,22 +280,22 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
 // Réinitialisation du mot de passe d'un compte
 function openResetSheet(user, reload) {
   const password = passwordInput({ autocomplete: 'new-password' });
-  const passwordField = field('Mot de passe provisoire', password.wrap, { hint: `${user.displayName} devra le changer à sa prochaine connexion. Toutes ses sessions sont fermées.` });
+  const passwordField = field(t('administration.motDePasse.provisoire'), password.wrap, { hint: t('administration.motDePasse.reinitialiser.aide', { name: user.displayName }) });
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Réinitialiser');
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.motDePasse.reinitialiser'));
   const form = h('form', { class: 'stack', novalidate: true }, passwordField.field, error.note, submit);
-  const sheet = openSheet({ title: 'Réinitialiser le mot de passe', sub: user.displayName, content: form });
+  const sheet = openSheet({ title: t('administration.motDePasse.reinitialiser.titre'), sub: user.displayName, content: form });
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if ([...password.input.value].length < 10) {
-      passwordField.setError('Au moins 10 caractères');
+      passwordField.setError(t('administration.motDePasse.court'));
       return;
     }
     submit.disabled = true;
     try {
       await post(`/api/admin/users/${user.id}/password`, { password: password.input.value });
       sheet.close();
-      toast('Mot de passe réinitialisé', { low: true });
+      toast(t('administration.motDePasse.reinitialise'), { low: true });
       reload();
     } catch (err) {
       error.show(errorMessage(err));
@@ -309,28 +311,28 @@ function openAcceptSheet(request, reload) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: request.username });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100', value: request.displayName });
   let role = 'user';
-  const usernameField = field('Identifiant', username, { hint: '2 à 50 caractères : lettres sans accent, chiffres, . _ -' });
-  const nameField = field('Nom affiché', displayName);
+  const usernameField = field(t('administration.identifiant'), username, { hint: t('administration.identifiant.aide') });
+  const nameField = field(t('administration.nomAffiche'), displayName);
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.compte.creer'));
   const form = h('form', { class: 'stack', novalidate: true },
-    h('p', { class: 'muted' }, `La personne se connectera avec ${providerName()} ; elle n'a pas de mot de passe Listo.`),
+    h('p', { class: 'muted' }, t('administration.demande.fournisseur', { provider: providerName() })),
     usernameField.field, nameField.field,
-    h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
+    h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
-  const sheet = openSheet({ title: 'Accepter la demande', sub: request.displayName, content: form });
+  const sheet = openSheet({ title: t('administration.demande.accepter.titre'), sub: request.displayName, content: form });
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.show('');
     usernameField.setError(null);
     nameField.setError(null);
-    if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError('Identifiant invalide');
-    if (!displayName.value.trim()) return nameField.setError('Nom affiché obligatoire');
+    if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError(t('administration.identifiant.invalide'));
+    if (!displayName.value.trim()) return nameField.setError(t('administration.nomAffiche.obligatoire'));
     submit.disabled = true;
     try {
       await post(`/api/admin/account-requests/${request.id}/accept`, { username: username.value.trim(), displayName: displayName.value.trim(), role });
       sheet.close();
-      toast('Compte créé', { low: true });
+      toast(t('administration.compte.cree'), { low: true });
       reload();
     } catch (err) {
       error.show(errorMessage(err));
@@ -342,11 +344,11 @@ function openAcceptSheet(request, reload) {
 
 // Demande de compte refusée (gardée 30 jours : une nouvelle connexion ne la refait pas)
 async function refuseRequest(request, reload) {
-  const ok = await confirmDialog({ title: 'Refuser la demande ?', text: `${request.displayName} (${request.username}) ne pourra pas entrer dans Listo. Une nouvelle demande sera possible dans 30 jours.`, confirmLabel: 'Refuser' });
+  const ok = await confirmDialog({ title: t('administration.demande.refuser.question'), text: t('administration.demande.refuser.texte', { name: request.displayName, username: request.username }), confirmLabel: t('administration.demande.refuser') });
   if (!ok) return;
   try {
     await post(`/api/admin/account-requests/${request.id}/refuse`);
-    toast('Demande refusée', { low: true });
+    toast(t('administration.demande.refusee'), { low: true });
     reload();
   } catch (err) {
     toast(errorMessage(err));
@@ -361,30 +363,30 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100' });
   const password = passwordInput({ autocomplete: 'new-password' });
   let role = 'user';
-  const usernameField = field('Identifiant', username, { hint: '2 à 50 caractères : lettres sans accent, chiffres, . _ -' });
-  const nameField = field('Nom affiché (facultatif)', displayName);
-  const passwordField = field('Mot de passe provisoire', password.wrap, { hint: 'À changer par la personne à sa première connexion.' });
+  const usernameField = field(t('administration.identifiant'), username, { hint: t('administration.identifiant.aide') });
+  const nameField = field(t('administration.nomAffiche.facultatif'), displayName);
+  const passwordField = field(t('administration.motDePasse.provisoire'), password.wrap, { hint: t('administration.motDePasse.provisoire.aide') });
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.compte.creer'));
   const form = h('form', { class: 'stack', novalidate: true },
     usernameField.field, nameField.field,
-    localLogin ? passwordField.field : h('p', { class: 'muted' }, `La personne se connectera avec ${providerName()}, avec le même identifiant.`),
-    h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
+    localLogin ? passwordField.field : h('p', { class: 'muted' }, t('administration.nouveauCompte.fournisseur', { provider: providerName() })),
+    h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.role')), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
-  const sheet = openSheet({ title: 'Nouveau compte', content: form });
+  const sheet = openSheet({ title: t('administration.nouveauCompte.titre'), content: form });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.show('');
     usernameField.setError(null);
     passwordField.setError(null);
-    if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError('Identifiant invalide');
-    if (localLogin && [...password.input.value].length < 10) return passwordField.setError('Au moins 10 caractères');
+    if (!/^[A-Za-z0-9._-]{2,50}$/.test(username.value.trim())) return usernameField.setError(t('administration.identifiant.invalide'));
+    if (localLogin && [...password.input.value].length < 10) return passwordField.setError(t('administration.motDePasse.court'));
     submit.disabled = true;
     try {
       await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: localLogin ? password.input.value : undefined, role });
       sheet.close();
-      toast('Compte créé', { low: true });
+      toast(t('administration.compte.cree'), { low: true });
       reload();
     } catch (err) {
       error.show(errorMessage(err));
@@ -412,12 +414,12 @@ async function loadReferences(tab, panel, alive) {
 
   // Ajout (add-inline ; pour un magasin, add-block avec le choix Simple / Multi)
   const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
-  const addButton = h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, 'Ajouter');
+  const addButton = h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, t('administration.ajouter'));
   let isMulti = false;
   let addForm;
   if (isStores) {
-    const hint = h('p', { class: 'field__hint', hidden: true }, 'Un magasin multi regroupe plusieurs magasins : les articles sont classés par magasin, sans rayons.');
-    const kinds = segmented('Type de magasin', [['simple', 'store', 'Simple'], ['multi', 'layers', 'Multi']], 'simple', (value) => {
+    const hint = h('p', { class: 'field__hint', hidden: true }, t('administration.magasins.multi.aide'));
+    const kinds = segmented(t('administration.magasins.type'), [['simple', 'store', t('administration.magasins.type.simple')], ['multi', 'layers', t('administration.magasins.type.multi')]], 'simple', (value) => {
       isMulti = value === 'multi';
       hint.hidden = !isMulti;
     });
@@ -433,7 +435,7 @@ async function loadReferences(tab, panel, alive) {
     if (!name) return;
     try {
       await post(`/api/admin/${tab.api}`, isStores ? { name, isMulti } : { name });
-      toast(`« ${name} » ajouté${tab.feminine ? 'e' : ''}`, { low: true });
+      toast(tab.feminine ? t('administration.ajoutee', { name }) : t('administration.ajoute', { name }), { low: true });
       afterChange(reload);
     } catch (err) {
       toast(errorMessage(err), { low: true });
@@ -449,7 +451,7 @@ async function loadReferences(tab, panel, alive) {
   } else {
     rows = items.map((item) => manageRow(tab, item, reload));
   }
-  replace(panel, addForm, items.length ? h('div', { class: 'group' }, rows) : h('p', { class: 'muted empty__text' }, 'Aucun élément pour le moment.'));
+  replace(panel, addForm, items.length ? h('div', { class: 'group' }, rows) : h('p', { class: 'muted empty__text' }, t('administration.vide')));
 }
 
 // Segmenté à choix unique (icône + libellé), comme pour le thème
@@ -475,7 +477,7 @@ function storeRows(tab, store, simples, reload) {
   if (!store.isMulti) return [manageRow(tab, store, reload)];
 
   const detail = h('div', { class: 'manage-detail', id: `regroupes-${store.id}`, hidden: !openedMulti.has(store.id) });
-  const toggle = iconButton('chev-d', `Magasins regroupés de ${store.name}`, () => {
+  const toggle = iconButton('chev-d', t('administration.magasins.regroupes.voir', { name: store.name }), () => {
     const open = detail.hidden;
     detail.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
@@ -490,7 +492,7 @@ function storeRows(tab, store, simples, reload) {
   const ticks = simples.map((simple) => {
     const tick = h('span', { class: `tick${chosen.has(simple.id) ? ' is-on' : ''}` }, chosen.has(simple.id) ? icon('check') : null);
     const rowEl = h('button', { class: 'tick-row', type: 'button', role: 'checkbox', 'aria-checked': String(chosen.has(simple.id)) },
-      tick, h('span', { class: 'grow' }, simple.name, simple.active ? null : h('span', { class: 'muted' }, ' (désactivé)')));
+      tick, h('span', { class: 'grow' }, simple.name, simple.active ? null : h('span', { class: 'muted' }, ` ${t('administration.magasins.desactive')}`)));
     rowEl.addEventListener('click', async () => {
       const on = !chosen.has(simple.id);
       if (on) chosen.add(simple.id);
@@ -512,11 +514,11 @@ function storeRows(tab, store, simples, reload) {
   // pas la place pour une corbeille en plus)
   const removeButton = store.inUse ? null : h('div', { class: 'manage-detail__note' },
     h('button', { class: 'btn btn--danger-outline btn--sm', type: 'button', onClick: () => removeReference(tab, store, reload) },
-      icon('trash', 'icon--sm'), 'Supprimer ce magasin'));
+      icon('trash', 'icon--sm'), t('administration.magasins.supprimer')));
   replace(detail,
-    h('p', { class: 'manage-detail__title' }, 'Magasins regroupés'),
-    ticks.length ? ticks : h('p', { class: 'manage-detail__note' }, 'Ajoutez d\'abord des magasins simples.'),
-    h('p', { class: 'manage-detail__note' }, 'Les articles sans magasin passent en dernier, sous « Sans magasin ».'),
+    h('p', { class: 'manage-detail__title' }, t('administration.magasins.regroupes')),
+    ticks.length ? ticks : h('p', { class: 'manage-detail__note' }, t('administration.magasins.aucunSimple')),
+    h('p', { class: 'manage-detail__note' }, t('administration.magasins.sansMagasin')),
     removeButton);
 
   return [manageRow(tab, store, reload, { extra: toggle, canDelete: false }), detail];
@@ -530,9 +532,9 @@ function afterChange(reload) {
 }
 
 const stateLabel = (tab, item) => {
-  const word = item.active ? (tab.feminine ? 'Active' : 'Actif') : (tab.feminine ? 'Désactivée' : 'Désactivé');
-  if (item.isMulti) return `${item.storeIds.length} magasin${item.storeIds.length > 1 ? 's' : ''} · ${word}`;
-  if (item.isMulti === false) return `Simple · ${word}`;
+  const word = item.active ? (tab.feminine ? t('administration.etat.active') : t('administration.etat.actif')) : (tab.feminine ? t('administration.etat.desactivee') : t('administration.etat.desactive'));
+  if (item.isMulti) return t('administration.etat.multi', { count: item.storeIds.length, state: word });
+  if (item.isMulti === false) return t('administration.etat.simple', { state: word });
   return word;
 };
 
@@ -547,15 +549,17 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
       h('div', { class: 'grow' },
         h('p', { class: 'manage__name' }, item.name, item.isMulti ? [' ', multiBadge()] : null),
         h('p', { class: 'manage__sub' }, stateLabel(tab, item))),
-      iconButton('pencil', `Modifier ${item.name}`, showEdit),
-      canDelete ? iconButton('trash', `Supprimer ${item.name}`, () => removeReference(tab, item, reload)) : null,
+      iconButton('pencil', t('administration.modifier', { name: item.name }), showEdit),
+      canDelete ? iconButton('trash', t('administration.supprimer.element', { name: item.name }), () => removeReference(tab, item, reload)) : null,
       extra,
       h('button', {
         class: 'switch',
         type: 'button',
         role: 'switch',
         'aria-checked': String(item.active),
-        'aria-label': `${item.name} ${item.active ? (tab.feminine ? 'active' : 'actif') : (tab.feminine ? 'désactivée' : 'désactivé')}`,
+        'aria-label': item.active
+          ? (tab.feminine ? t('administration.interrupteur.active', { name: item.name }) : t('administration.interrupteur.actif', { name: item.name }))
+          : (tab.feminine ? t('administration.interrupteur.desactivee', { name: item.name }) : t('administration.interrupteur.desactive', { name: item.name })),
         onClick: async () => {
           try {
             await patch(`/api/admin/${tab.api}/${item.id}`, { active: !item.active });
@@ -569,10 +573,10 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
 
   // Renommage sur place (administration-6)
   const showEdit = () => {
-    const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', value: item.name, 'aria-label': `Renommer « ${item.name} »` });
+    const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', value: item.name, 'aria-label': t('administration.renommer', { label: item.name }) });
     const form = h('form', { class: 'manage__edit grow', novalidate: true }, input,
-      h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': 'Enregistrer le nouveau nom' }, icon('check')),
-      iconButton('close', 'Annuler', showView));
+      h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': t('administration.renommer.enregistrer') }, icon('check')),
+      iconButton('close', t('administration.annuler'), showView));
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const name = input.value.trim();
@@ -599,11 +603,11 @@ function manageRow(tab, item, reload, { extra = null, canDelete = !item.inUse } 
 
 // Supprime un élément jamais utilisé, après confirmation
 async function removeReference(tab, item, reload) {
-  const ok = await confirmDialog({ title: `Supprimer « ${item.name} » ?`, text: "Cet élément n'a jamais servi : il sera supprimé définitivement.", confirmLabel: 'Supprimer' });
+  const ok = await confirmDialog({ title: t('administration.supprimer.question', { name: item.name }), text: t('administration.supprimer.texte'), confirmLabel: t('administration.supprimer') });
   if (!ok) return;
   try {
     await del(`/api/admin/${tab.api}/${item.id}`);
-    toast(`« ${item.name} » supprimé${tab.feminine ? 'e' : ''}`, { low: true });
+    toast(tab.feminine ? t('administration.supprimee', { name: item.name }) : t('administration.supprime', { name: item.name }), { low: true });
     afterChange(reload);
   } catch (err) {
     toast(errorMessage(err), { low: true });
@@ -624,9 +628,9 @@ async function loadNames(panel, alive) {
   const reload = () => loadNames(panel, alive);
   const input = h('input', {
     class: 'input', type: 'search', maxlength: '100', autocomplete: 'off', spellcheck: 'false',
-    placeholder: `Rechercher un ${ITEM.one}`, 'aria-label': `Rechercher un ${ITEM.one}`, value: namesView.query,
+    placeholder: t('administration.noms.rechercher', { item: ITEM.one }), 'aria-label': t('administration.noms.rechercher', { item: ITEM.one }), value: namesView.query,
   });
-  const sorting = segmented('Trier', [['name', null, 'Par nom'], ['uses', null, 'Par utilisation']], namesView.sort, (value) => {
+  const sorting = segmented(t('administration.noms.trier'), [['name', null, t('administration.noms.trier.nom')], ['uses', null, t('administration.noms.trier.utilisation')]], namesView.sort, (value) => {
     namesView.sort = value;
     showFirstPage();
   });
@@ -654,7 +658,7 @@ async function loadNames(panel, alive) {
     }
     if (!alive() || mine !== request) return;
     if (!page.total) {
-      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? `Aucun ${ITEM.one} ne correspond à cette recherche.` : `Aucun ${ITEM.one} enregistré pour le moment.`));
+      replace(results, h('p', { class: 'muted empty__text' }, namesView.query ? t('administration.noms.aucunResultat', { item: ITEM.one }) : t('administration.noms.vide', { item: ITEM.one })));
       return;
     }
     const group = h('div', { class: 'group' });
@@ -667,7 +671,7 @@ async function loadNames(panel, alive) {
         replace(more);
         return;
       }
-      const button = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, `Afficher plus (${p.total - shown} restants)`);
+      const button = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, t('administration.noms.plus', { count: p.total - shown }));
       button.addEventListener('click', async () => {
         button.disabled = true;
         try {
@@ -721,16 +725,16 @@ function nameRow(entry, reload) {
       h('div', { class: 'grow' },
         h('p', { class: 'manage__name' }, entry.name),
         h('p', { class: 'manage__sub' }, savedNameSub(entry))),
-      iconButton('pencil', `Corriger ${entry.name}`, showEdit),
-      iconButton('store', `Modifier le rayon de ${entry.name}`, () => chooseAisle(entry, reload)),
-      iconButton('trash', `Retirer ${entry.name} des suggestions`, () => removeName(entry, reload)));
+      iconButton('pencil', t('administration.noms.corriger', { name: entry.name }), showEdit),
+      iconButton('store', t('administration.noms.modifierRayon', { name: entry.name }), () => chooseAisle(entry, reload)),
+      iconButton('trash', t('administration.noms.retirer', { name: entry.name }), () => removeName(entry, reload)));
   };
 
   const showEdit = () => {
-    const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', value: entry.name, 'aria-label': `Orthographe corrigée de « ${entry.name} »` });
+    const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', value: entry.name, 'aria-label': t('administration.noms.orthographe', { label: entry.name }) });
     const form = h('form', { class: 'manage__edit grow', novalidate: true }, input,
-      h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': 'Corriger le nom' }, icon('check')),
-      iconButton('close', 'Annuler', showView));
+      h('button', { class: 'btn btn--primary btn--icon btn--edit', type: 'submit', 'aria-label': t('administration.noms.corriger.valider') }, icon('check')),
+      iconButton('close', t('administration.annuler'), showView));
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const name = input.value.trim();
@@ -745,7 +749,7 @@ function nameRow(entry, reload) {
           showView();
           return;
         }
-        const ok = await confirmDialog({ title: 'Corriger ce nom ?', text: renameImpactText(impact), confirmLabel: 'Corriger', danger: false });
+        const ok = await confirmDialog({ title: t('administration.noms.corriger.question'), text: renameImpactText(impact), confirmLabel: t('administration.noms.corriger.bouton'), danger: false });
         if (!ok) return;
         const done = await post('/api/admin/names/rename', { from: entry.key, to: name });
         toast(renameDoneText(done), { low: true });
@@ -770,10 +774,10 @@ function nameRow(entry, reload) {
 // générale et par magasin) ; les articles déjà dans les listes gardent le
 // leur. Aucun champ de saisie, donc aucun clavier.
 function chooseAisle(entry, reload) {
-  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisle.name })), { id: null, name: 'Aucun rayon' }];
+  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisle.name })), { id: null, name: t('administration.noms.aucunRayon') }];
   // Rayon actuel : coché seulement s'il est encore proposé
   let selected = choices.some((c) => c.id === (entry.aisleId ?? null)) ? (entry.aisleId ?? null) : undefined;
-  const save = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, 'Enregistrer');
+  const save = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, t('administration.noms.enregistrer'));
   const rows = choices.map((choice) => {
     const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' }, h('span', { class: 'radio' }), choice.name);
     row.dataset.id = String(choice.id);
@@ -796,8 +800,8 @@ function chooseAisle(entry, reload) {
   };
   paint();
   const sheet = openSheet({
-    title: `Rayon de « ${entry.name} »`,
-    content: [h('div', { class: 'card picker' }, h('div', { role: 'radiogroup', 'aria-label': 'Rayon' }, rows)), save],
+    title: t('administration.noms.rayon.titre', { name: entry.name }),
+    content: [h('div', { class: 'card picker' }, h('div', { role: 'radiogroup', 'aria-label': t('administration.noms.rayon') }, rows)), save],
   });
   save.addEventListener('click', async () => {
     if (selected === (entry.aisleId ?? null)) {
@@ -808,7 +812,7 @@ function chooseAisle(entry, reload) {
     try {
       const done = await post('/api/admin/names/aisle', { from: entry.key, aisleId: selected });
       sheet.close();
-      toast(done.aisle ? `Rayon de « ${entry.name} » : ${done.aisle}` : `« ${entry.name} » n'a plus de rayon habituel`, { low: true });
+      toast(done.aisle ? t('administration.noms.rayon.fait', { name: entry.name, aisle: done.aisle }) : t('administration.noms.rayon.aucun', { name: entry.name }), { low: true });
       afterNameChange(reload);
     } catch (err) {
       save.disabled = false;
@@ -820,14 +824,14 @@ function chooseAisle(entry, reload) {
 // Retire un nom des suggestions (l'historique seulement), après confirmation
 async function removeName(entry, reload) {
   const ok = await confirmDialog({
-    title: `Retirer « ${entry.name} » des suggestions ?`,
-    text: `Il ne sera plus proposé pendant la saisie d'un ${itemWords(true).one}. Les listes ne changent pas. S'il est saisi de nouveau dans une liste de courses, il sera de nouveau enregistré.`,
-    confirmLabel: 'Retirer',
+    title: t('administration.noms.retirer.question', { name: entry.name }),
+    text: t('administration.noms.retirer.texte', { item: itemWords(true).one }),
+    confirmLabel: t('administration.noms.retirer.bouton'),
   });
   if (!ok) return;
   try {
     await post('/api/admin/names/remove', { from: entry.key });
-    toast(`« ${entry.name} » retiré des suggestions`, { low: true });
+    toast(t('administration.noms.retire', { name: entry.name }), { low: true });
     afterNameChange(reload);
   } catch (err) {
     toast(errorMessage(err), { low: true });

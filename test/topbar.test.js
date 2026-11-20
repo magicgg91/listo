@@ -38,7 +38,8 @@ test('chaque écran : la barre du haut n\'est jamais dans une zone qui défile',
   let bars = 0;
   for (const name of SCREENS) {
     const source = read(`js/screens/${name}.js`);
-    bars += (source.match(/class: 'topbar[ ']|topbar\('/g) ?? []).length;
+    // topbar('Titre') ou, texte sorti du code, topbar(t('nom'))
+    bars += (source.match(/class: 'topbar[ ']|topbar\((?:'|t\(')/g) ?? []).length;
     // Les zones qui défilent : leur contenu ne contient jamais de barre du haut
     for (const match of source.matchAll(/h\('div', \{ class: '(body|scroll)[ ']/g)) {
       assert.doesNotMatch(callAt(source, match.index), /topbar/, `${name}.js : barre du haut dans .${match[1]}`);

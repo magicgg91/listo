@@ -9,6 +9,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { recordUndo, undoLast, undoCount, clearUndo, forgetUndo, beforeOf, UNDO_MAX, CHANGED_MEANWHILE, NOTHING_TO_UNDO } from '../public/js/undo.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -118,8 +119,10 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "'Échap'", "'[', ']'", "'Ctrl', 'Z'", "'Ctrl', 'Entrée'", "'P'", "'A'", "'↓', '↑'", "'Espace'", "'Entrée'", "'E'", "'Suppr'", "'Menu'", "'S'"]);
   // Réglages : l'interrupteur, sur ordinateur
   const settings = read('public/js/screens/settings.js');
-  assert.match(settings, /section\('Général', h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
-  assert.match(settings, /'Raccourcis à une touche'/);
+  assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.equal(fr['reglages.general'], 'Général');
+  assert.match(settings, /t\('reglages\.touches\.titre'\)/);
+  assert.equal(fr['reglages.touches.titre'], 'Raccourcis à une touche');
   assert.match(read('public/sw.js'), /'\/js\/shortcuts\.js',\s*'\/js\/undo\.js',/);
 });
 

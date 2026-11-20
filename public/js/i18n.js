@@ -16,7 +16,8 @@
 //   données : 'Bonjour {name}' ;
 // - ou, quand un nombre change la phrase, une forme par cas du pluriel de
 //   la langue (Intl.PluralRules : one, other…), choisie avec { count } :
-//   { one: '{count} article', other: '{count} articles' }.
+//   { one: '{count} article', other: '{count} articles' } ; une forme
+//   exacte (« =1 », « =0 ») passe avant : { '=1': '1 jour', other: '{count} jours' }.
 // Jamais de HTML : les écrans posent les textes avec textContent.
 
 import fr from './i18n/fr.js';
@@ -84,9 +85,16 @@ export function translate(locale, key, params = {}) {
   return text.replace(/\{(\w+)\}/g, (all, name) => (params[name] === undefined ? all : String(params[name])));
 }
 
-// Forme du pluriel pour ce nombre (other si la langue n'a pas ce cas)
+// Forme du pluriel pour ce nombre : d'abord une forme exacte (« =1 »,
+// « =0 »), puis le cas du pluriel de la langue (one, other…), sinon other.
+// La forme exacte reprend telle quelle une ancienne règle du code
+// (« 1 jour », « 0 jours ») ; Intl.PluralRules suit la grammaire (en
+// français, 0 et 1 sont au singulier).
 function pluralForm(locale, forms, count) {
-  const form = new Intl.PluralRules(intlTag(locale)).select(Number(count) || 0);
+  const number = Number(count) || 0;
+  const exact = forms[`=${number}`];
+  if (exact !== undefined) return exact;
+  const form = new Intl.PluralRules(intlTag(locale)).select(number);
   return forms[form] ?? forms.other;
 }
 

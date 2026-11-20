@@ -19,6 +19,7 @@ import { GROUP_MS, localDay } from '../server/notify.js';
 import { emptyState, applyOp, listOptions, availableSorts, computeListView, assignablePeople } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
 import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -350,5 +351,6 @@ test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prén
   assert.match(form, /\['assign', 'Attribution', 'Confier une tâche à une personne de la liste\.'\],/);
   assert.match(form, /if \(withAssign && options\.assign !== saved\.assign\) switches\.assignEnabled = options\.assign;/);
   // Notifications : la catégorie s'appelle « Modifications »
-  assert.match(read('public/js/screens/notifications.js'), /\['changes', 'Modifications', /);
+  assert.match(read('public/js/screens/notifications.js'), /\['changes', t\('notifications.sujet.modifications'\), /);
+  assert.equal(fr['notifications.sujet.modifications'], 'Modifications');
 });

@@ -26,18 +26,22 @@ const slots = (value) => new Set([...(typeof value === 'object' ? Object.values(
 // avant, le français
 const ENGLISH = READY_LOCALES.includes('en') ? 'en' : 'fr';
 
-test('dictionnaires : mêmes noms dans chaque langue, mêmes emplacements, formes du pluriel complètes, jamais de HTML', () => {
+test('dictionnaires : mêmes noms dans chaque langue complète, mêmes emplacements, formes du pluriel complètes, jamais de HTML', () => {
   assert.deepEqual(LOCALES, ['fr', 'en']);
   assert.equal(DEFAULT_LOCALE, 'fr');
   assert.ok(READY_LOCALES.includes('fr'));
   assert.ok(READY_LOCALES.every(isLocale));
   for (const locale of LOCALES) {
     assert.ok(LOCALE_NAMES[locale], `nom de la langue ${locale}`);
-    assert.deepEqual(Object.keys(DICTIONARIES[locale]).sort(), Object.keys(fr).sort(), `${locale} : mêmes noms que le français`);
+    // Langue complète : tous les noms du français ; en cours : une partie
+    // seulement (le reste s'affiche en français), jamais un nom inconnu
+    if (READY_LOCALES.includes(locale)) assert.deepEqual(Object.keys(DICTIONARIES[locale]).sort(), Object.keys(fr).sort(), `${locale} : mêmes noms que le français`);
+    else assert.ok(Object.keys(DICTIONARIES[locale]).every((key) => key in fr), `${locale} : seulement des noms du français`);
   }
   for (const [key, value] of Object.entries(fr)) {
     for (const locale of LOCALES) {
       const other = DICTIONARIES[locale][key];
+      if (other === undefined && !READY_LOCALES.includes(locale)) continue;
       assert.equal(typeof other, typeof value, `${locale} ${key} : même forme`);
       assert.deepEqual(slots(other), slots(value), `${locale} ${key} : mêmes emplacements`);
       for (const text of typeof other === 'object' ? Object.values(other) : [other]) {

@@ -34,6 +34,7 @@ import path from 'node:path';
 import {
   encryptMessage, fromB64url, toB64url, isP256PublicKey, generateVapidKeys, vapidKeyObject, vapidAuthorization, MAX_PLAINTEXT_BYTES,
 } from './webpush.js';
+import { translate, intlTag, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 // --- Services de push autorisés ---
 // Sources (documentation officielle, relevée le 10 novembre 2026) :
@@ -129,10 +130,12 @@ export function loadOrCreateVapidKeys(file) {
 // l'affiche lui-même ; les autres navigateurs le passent au service worker
 // (public/sw.js), qui lit le même JSON. title et navigate sont obligatoires.
 // - navigate : adresse de Listo à ouvrir quand on touche la notification ;
-// - tag : une nouvelle notification de même tag remplace la précédente.
+// - tag : une nouvelle notification de même tag remplace la précédente ;
+// - locale : langue du destinataire (server/locale.js, userLocale), qui
+//   donne la balise « lang » (« fr-FR »).
 // Le texte est raccourci au besoin : le message reste sous 4 ko chiffré.
-export function buildMessage({ title, body = '', navigate, tag = null }) {
-  const notification = { title: String(title).slice(0, 120), lang: 'fr-FR', dir: 'ltr', navigate };
+export function buildMessage({ title, body = '', navigate, tag = null, locale = DEFAULT_LOCALE }) {
+  const notification = { title: String(title).slice(0, 120), lang: intlTag(locale), dir: 'ltr', navigate };
   if (body) notification.body = String(body);
   if (tag) notification.tag = String(tag);
   let text = JSON.stringify({ web_push: 8030, notification });
@@ -328,15 +331,17 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
       return Boolean(q.mine.get(sessionId));
     },
 
-    // Notification test, vers l'appareil de cette session seulement
-    async sendTest(sessionId) {
+    // Notification test, vers l'appareil de cette session seulement, dans
+    // la langue de son compte (locale, server/locale.js : userLocale)
+    async sendTest(sessionId, locale = DEFAULT_LOCALE) {
       const sub = q.mine.get(sessionId);
       if (!sub) return 'none';
       const message = buildMessage({
         title: 'Listo',
-        body: 'Notification test : les notifications arrivent bien sur cet appareil.',
+        body: translate(locale, 'alertes.test.corps'),
         navigate: `${subject}/#/reglages/notifications`,
         tag: 'listo-test',
+        locale,
       });
       return enqueue(() => deliver(sub.id, message, { ttl: 300 }));
     },

@@ -33,8 +33,8 @@ const TYPES = {
   stores: {
     table: 'stores',
     label: 'magasin',
-    notFound: 'Magasin introuvable.',
-    duplicate: 'Un magasin porte déjà ce nom.',
+    notFound: 'references.magasin.introuvable',
+    duplicate: 'references.magasin.doublon',
     hasMultiFlag: true,
     usedBy: `SELECT EXISTS (SELECT 1 FROM lists WHERE store_id = :id)
                  OR EXISTS (SELECT 1 FROM items WHERE store_id = :id)
@@ -44,8 +44,8 @@ const TYPES = {
   aisles: {
     table: 'aisles',
     label: 'rayon',
-    notFound: 'Rayon introuvable.',
-    duplicate: 'Un rayon porte déjà ce nom.',
+    notFound: 'references.rayon.introuvable',
+    duplicate: 'references.rayon.doublon',
     usedBy: `SELECT EXISTS (SELECT 1 FROM items WHERE aisle_id = :id)
                  OR EXISTS (SELECT 1 FROM item_history WHERE aisle_id = :id)`,
   },
@@ -101,7 +101,7 @@ function referenceRouter(ctx, type) {
   function target(req, res) {
     const id = parseId(req.params.id);
     const row = id && find.get(id);
-    if (!row) res.status(404).json({ error: type.notFound });
+    if (!row) res.status(404).json({ error: req.t(type.notFound) });
     return row || null;
   }
 
@@ -113,12 +113,12 @@ function referenceRouter(ctx, type) {
 
   router.post('/', (req, res) => {
     const name = cleanName(req.body?.name);
-    if (!name) return res.status(400).json({ error: 'Nom invalide (1 à 100 caractères).' });
+    if (!name) return res.status(400).json({ error: req.t('references.nomInvalide') });
     const isMulti = req.body?.isMulti ?? false;
     if (type.hasMultiFlag && typeof isMulti !== 'boolean') {
-      return res.status(400).json({ error: 'Valeur « isMulti » invalide (true ou false).' });
+      return res.status(400).json({ error: req.t('references.isMultiInvalide') });
     }
-    if (nameTaken(name)) return res.status(409).json({ error: type.duplicate });
+    if (nameTaken(name)) return res.status(409).json({ error: req.t(type.duplicate) });
 
     let id;
     if (type.hasMultiFlag) {
@@ -136,26 +136,26 @@ function referenceRouter(ctx, type) {
     if (!row) return;
     const { name: rawName, active, isMulti, storeIds } = req.body ?? {};
     if (rawName === undefined && active === undefined && (storeIds === undefined || !type.hasMultiFlag)) {
-      return res.status(400).json({ error: 'Rien à modifier.' });
+      return res.status(400).json({ error: req.t('references.rienAModifier') });
     }
     if (type.hasMultiFlag && isMulti !== undefined && isMulti !== (row.is_multi === 1)) {
-      return res.status(400).json({ error: 'Le type d\'un magasin (simple ou multi) ne change pas après sa création.' });
+      return res.status(400).json({ error: req.t('references.magasin.typeFixe') });
     }
     let members = null;
     if (type.hasMultiFlag && storeIds !== undefined) {
-      if (row.is_multi !== 1) return res.status(400).json({ error: 'Seul un magasin « multi » regroupe d\'autres magasins.' });
+      if (row.is_multi !== 1) return res.status(400).json({ error: req.t('references.regroupement.seulMulti') });
       members = memberIds(storeIds, row.id);
-      if (!members) return res.status(400).json({ error: 'Magasins regroupés invalides (magasins simples existants uniquement).' });
+      if (!members) return res.status(400).json({ error: req.t('references.regroupement.invalide') });
     }
 
     let name = row.name;
     if (rawName !== undefined) {
       name = cleanName(rawName);
-      if (!name) return res.status(400).json({ error: 'Nom invalide (1 à 100 caractères).' });
-      if (nameTaken(name, row.id)) return res.status(409).json({ error: type.duplicate });
+      if (!name) return res.status(400).json({ error: req.t('references.nomInvalide') });
+      if (nameTaken(name, row.id)) return res.status(409).json({ error: req.t(type.duplicate) });
     }
     if (active !== undefined && typeof active !== 'boolean') {
-      return res.status(400).json({ error: 'Valeur « active » invalide (true ou false).' });
+      return res.status(400).json({ error: req.t('references.activeInvalide') });
     }
 
     const newActive = active === undefined ? row.active : active ? 1 : 0;
@@ -190,14 +190,14 @@ function referenceRouter(ctx, type) {
     const row = target(req, res);
     if (!row) return;
     if (used.get({ id: row.id }) === 1) {
-      return res.status(409).json({ error: 'Cet élément est déjà utilisé : il peut être désactivé, pas supprimé.' });
+      return res.status(409).json({ error: req.t('references.dejaUtilise') });
     }
     try {
       db.prepare(`DELETE FROM ${table} WHERE id = ?`).run(row.id);
     } catch (err) {
       // Filet de sécurité : la base refuse aussi d'effacer un élément utilisé
       if (err.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
-        return res.status(409).json({ error: 'Cet élément est déjà utilisé : il peut être désactivé, pas supprimé.' });
+        return res.status(409).json({ error: req.t('references.dejaUtilise') });
       }
       throw err;
     }

@@ -25,6 +25,14 @@
 import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
 
+// Résultat d'une opération pour le téléphone : un refus (code : nom de son
+// texte) est dit dans la langue de la requête ; ses valeurs (params) restent
+// sur le serveur. Un refus enregistré avant les langues (sans code) est
+// renvoyé tel quel.
+function localized(req, { params, ...result }) {
+  return result.code ? { ...result, error: req.t(result.code, params) } : result;
+}
+
 // Date ISO envoyée par le téléphone pour « since » (heure donnée par le serveur)
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -47,14 +55,14 @@ export function listRoutes(ctx) {
     try {
       res.json(service.restoreList(req.user, req.params.id));
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
 
   router.get('/lists/:id', (req, res) => {
     const result = service.readList(req.user, req.params.id);
-    if (!result) return res.status(404).json({ error: 'Liste introuvable.' });
+    if (!result) return res.status(404).json({ error: req.t('ops.listeIntrouvable') });
     res.json(result);
   });
 
@@ -62,7 +70,7 @@ export function listRoutes(ctx) {
     try {
       res.json({ list: service.setMembers(req.user, req.params.id, req.body?.userIds, req.body?.access ?? {}) });
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
@@ -71,7 +79,7 @@ export function listRoutes(ctx) {
     try {
       res.json(service.convertToWishes(req.user, req.params.id, req.body ?? {}));
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
@@ -80,7 +88,7 @@ export function listRoutes(ctx) {
     try {
       res.json(service.leaveList(req.user, req.params.id));
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
@@ -90,13 +98,13 @@ export function listRoutes(ctx) {
       // Droit vérifié d'abord (un non-membre reçoit « Liste introuvable »),
       // puis le plafond de duplications du compte
       const source = service.listForEditor(req.user, req.params.id);
-      if (source.type === 'wishes') return res.status(400).json({ error: 'Une liste d\'envies ne se duplique pas.' });
+      if (source.type === 'wishes') return res.status(400).json({ error: req.t('ops.enviesNonDupliquees') });
       if (!ctx.duplicates.take(req.user.id)) {
-        return res.status(429).json({ error: 'Trop de duplications pour le moment. Réessayez dans un moment.' });
+        return res.status(429).json({ error: req.t('ops.tropDeDuplications') });
       }
       res.status(201).json(service.duplicateList(req.user, req.params.id, { name: req.body?.name, withItems: req.body?.withItems ?? true }));
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
@@ -111,7 +119,7 @@ export function listRoutes(ctx) {
     try {
       res.json({ suggestions: service.suggestions(typed, { user: req.user, listId }) });
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   });
@@ -119,7 +127,7 @@ export function listRoutes(ctx) {
   router.get('/sync', (req, res) => {
     const { since } = req.query;
     if (since !== undefined && (typeof since !== 'string' || !ISO_DATE.test(since))) {
-      return res.status(400).json({ error: 'Paramètre « since » invalide.' });
+      return res.status(400).json({ error: req.t('ops.parametreSinceInvalide') });
     }
     res.json(service.changesSince(req.user, since));
   });
@@ -127,9 +135,9 @@ export function listRoutes(ctx) {
   router.post('/ops', (req, res) => {
     const ops = req.body?.ops;
     if (!Array.isArray(ops) || ops.length === 0 || ops.length > MAX_OPS_PER_BATCH) {
-      return res.status(400).json({ error: `Lot d'opérations invalide (1 à ${MAX_OPS_PER_BATCH} opérations).` });
+      return res.status(400).json({ error: req.t('ops.lotInvalide', { max: MAX_OPS_PER_BATCH }) });
     }
-    res.json({ results: service.applyOps(req.user, ops) });
+    res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });
 
   return router;

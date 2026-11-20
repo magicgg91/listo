@@ -1857,7 +1857,7 @@ export function renderList(listId, onLeave) {
       const text = h('span', { class: 'input__value' });
       return { text, el: h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, text, icon('chev-d')), select) };
     };
-    const kindSelect = h('select', { class: 'due-picker__input' }, REPEAT_CHOICES.map(([value, label]) => h('option', { value }, label)));
+    const kindSelect = h('select', { class: 'due-picker__input' }, REPEAT_CHOICES.map(([value, label]) => h('option', { value }, t(label))));
     const kindPicker = nativePicker(kindSelect);
     kindSelect.addEventListener('change', () => {
       repeatKind = kindSelect.value;
@@ -1865,12 +1865,12 @@ export function renderList(listId, onLeave) {
     });
     // Jours de la semaine : pastilles Lu … Di, appuyées ou non
     const dayButtons = WEEKDAYS.map(([day, short, long]) => {
-      const button = h('button', { class: 'weekdays__opt', type: 'button', 'aria-label': long, onClick: () => {
+      const button = h('button', { class: 'weekdays__opt', type: 'button', 'aria-label': t(long), onClick: () => {
         const on = repeatDays.includes(day);
         if (on && repeatDays.length === 1) return; // au moins un jour
         repeatDays = on ? repeatDays.filter((d) => d !== day) : [...repeatDays, day];
         applyRepeat();
-      } }, short);
+      } }, t(short));
       button.dataset.day = String(day);
       return button;
     });
@@ -1890,13 +1890,13 @@ export function renderList(listId, onLeave) {
       monthMode = modeSelect.value;
       applyRepeat();
     });
-    const nthSelect = h('select', { class: 'due-picker__input' }, MONTH_WEEKS.map(([n, label]) => h('option', { value: String(n) }, t('liste.fiche.repete.leRang', { rank: label }))));
+    const nthSelect = h('select', { class: 'due-picker__input' }, MONTH_WEEKS.map(([n, label]) => h('option', { value: String(n) }, t('liste.fiche.repete.leRang', { rank: t(label) }))));
     const nthPicker = nativePicker(nthSelect);
     nthSelect.addEventListener('change', () => {
       monthNth = Number(nthSelect.value);
       applyRepeat();
     });
-    const weekdaySelect = h('select', { class: 'due-picker__input' }, WEEKDAYS.map(([day, , long]) => h('option', { value: String(day) }, long)));
+    const weekdaySelect = h('select', { class: 'due-picker__input' }, WEEKDAYS.map(([day, , long]) => h('option', { value: String(day) }, t(long))));
     const weekdayPicker = nativePicker(weekdaySelect);
     weekdaySelect.addEventListener('change', () => {
       monthWeekday = Number(weekdaySelect.value);
@@ -1928,7 +1928,8 @@ export function renderList(listId, onLeave) {
     };
     function drawRepeat() {
       kindSelect.value = repeatKind;
-      const label = REPEAT_CHOICES.find(([value]) => value === repeatKind)?.[1] ?? t('liste.fiche.jamais');
+      const choice = REPEAT_CHOICES.find(([value]) => value === repeatKind);
+      const label = choice ? t(choice[1]) : t('liste.fiche.jamais');
       replace(kindPicker.text, icon('repeat', 'icon--sm'), label);
       kindSelect.setAttribute('aria-label', t('liste.fiche.repete.changer', { label }));
       daysRow.hidden = repeatKind !== 'week' && repeatKind !== '2week';
@@ -1939,10 +1940,10 @@ export function renderList(listId, onLeave) {
       modeSelect.setAttribute('aria-label', t('liste.fiche.repete.mode.changer', { label: modePicker.text.textContent }));
       monthWeekRow.hidden = repeatKind !== 'month' || monthMode !== 'week';
       nthSelect.value = String(monthNth ?? 1);
-      nthPicker.text.textContent = t('liste.fiche.repete.leRang', { rank: MONTH_WEEKS.find(([n]) => n === (monthNth ?? 1))[1] });
+      nthPicker.text.textContent = t('liste.fiche.repete.leRang', { rank: t(MONTH_WEEKS.find(([n]) => n === (monthNth ?? 1))[1]) });
       nthSelect.setAttribute('aria-label', t('liste.fiche.repete.rang.changer', { label: nthPicker.text.textContent }));
       weekdaySelect.value = String(monthWeekday ?? 1);
-      weekdayPicker.text.textContent = WEEKDAYS.find(([d]) => d === (monthWeekday ?? 1))[2];
+      weekdayPicker.text.textContent = t(WEEKDAYS.find(([d]) => d === (monthWeekday ?? 1))[2]);
       weekdaySelect.setAttribute('aria-label', t('liste.fiche.repete.jourSemaine.changer', { label: weekdayPicker.text.textContent }));
       monthPicker.el.hidden = repeatKind !== 'month' || monthMode !== 'day';
       monthSelect.value = String(monthDay ?? 1);
@@ -2014,7 +2015,7 @@ export function renderList(listId, onLeave) {
     const timeRow = h('div', { class: 'time-row' },
       h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, timeText, icon('chev-d')), timeInput),
       clearTime);
-    const remindSelect = h('select', { class: 'due-picker__input' }, REMINDERS.map(([minutes, label]) => h('option', { value: minutes === null ? '' : String(minutes) }, label)));
+    const remindSelect = h('select', { class: 'due-picker__input' }, REMINDERS.map(([minutes, label]) => h('option', { value: minutes === null ? '' : String(minutes) }, t(label))));
     const remindPicker = nativePicker(remindSelect);
     remindSelect.addEventListener('change', () => {
       remind = remindSelect.value === '' ? null : Number(remindSelect.value);

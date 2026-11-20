@@ -14,12 +14,15 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { fakeDevice, fakePushService } from './push-helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { ASSIGN_NOT_HERE, ASSIGN_OFF, BAD_ASSIGNEE } from '../server/lists.js';
+import { ASSIGN_NOT_HERE as ASSIGN_NOT_HERE_KEY, ASSIGN_OFF as ASSIGN_OFF_KEY, BAD_ASSIGNEE as BAD_ASSIGNEE_KEY } from '../server/lists.js';
 import { GROUP_MS, localDay } from '../server/notify.js';
 import { emptyState, applyOp, listOptions, availableSorts, computeListView, assignablePeople } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
 import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
 import fr from '../public/js/i18n/fr.js';
+
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [ASSIGN_NOT_HERE, ASSIGN_OFF, BAD_ASSIGNEE] = [ASSIGN_NOT_HERE_KEY, ASSIGN_OFF_KEY, BAD_ASSIGNEE_KEY].map((key) => fr[key]);
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');

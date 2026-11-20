@@ -30,8 +30,10 @@ import { checkSecondFactor } from '../twofactor.js';
 import { OAuthError, SCOPES, PKCE_CHALLENGE, parseScope, withParams, REQUEST_ID } from '../oauth.js';
 
 const PAGES = new URL('../pages/', import.meta.url);
-const BLOCKED = 'Trop de tentatives. Réessayez dans 15 minutes.';
-const EXPIRED = 'Demande introuvable ou expirée. Relancez la connexion depuis Claude.';
+// Noms des messages de l'écran « Autoriser Claude »
+// (public/js/i18n/fr/autorisation.js), traduits par req.t
+const BLOCKED = 'autorisation.tropDeTentatives';
+const EXPIRED = 'autorisation.demandeExpiree';
 const MAX_STATE = 500;
 const MAX_LISTS = 200;
 
@@ -176,6 +178,10 @@ export function oauthRoutes(ctx, { publicDir }) {
   return router;
 }
 
+// Message d'une erreur de l'accord (oauth.approve) pour l'écran : son texte
+// dans la langue de la requête s'il porte un nom, sinon son explication
+const consentError = (req, error) => (error.key ? req.t(error.key, error.params) : error.message);
+
 // --- Écran « Autoriser Claude » (session exigée, montée dans /api) ---
 export function oauthConsentRoutes(ctx) {
   const router = express.Router();
@@ -183,7 +189,7 @@ export function oauthConsentRoutes(ctx) {
 
   const findRequest = (req, res) => {
     const request = REQUEST_ID.test(req.params.id) ? oauth.findRequest(req.params.id) : null;
-    if (!request) res.status(404).json({ error: EXPIRED });
+    if (!request) res.status(404).json({ error: req.t(EXPIRED) });
     return request;
   };
 
@@ -215,66 +221,66 @@ export function oauthConsentRoutes(ctx) {
     const user = req.user;
     const described = oauth.describeRequest(request);
 
-    if (scope !== 'read' && scope !== 'write') return res.status(400).json({ error: 'Choisissez « Lecture seule » ou « Lecture et écriture ».' });
-    if (scope === 'write' && !described.write) return res.status(400).json({ error: "Cette application n'a demandé que la lecture." });
+    if (scope !== 'read' && scope !== 'write') return res.status(400).json({ error: req.t('autorisation.choisirNiveau') });
+    if (scope === 'write' && !described.write) return res.status(400).json({ error: req.t('autorisation.lectureSeulementDemandee') });
     const allLists = lists === 'all';
     let listIds = [];
     if (!allLists) {
       if (!Array.isArray(lists) || !lists.length || lists.length > MAX_LISTS || !lists.every((id) => typeof id === 'string')) {
-        return res.status(400).json({ error: 'Choisissez au moins une liste.' });
+        return res.status(400).json({ error: req.t('autorisation.choisirListe') });
       }
       const mine = new Set(ctx.lists.myLists(user).map((list) => list.id));
       listIds = [...new Set(lists)];
-      if (!listIds.every((id) => mine.has(id))) return res.status(400).json({ error: 'Liste introuvable.' });
+      if (!listIds.every((id) => mine.has(id))) return res.status(400).json({ error: req.t('autorisation.listeIntrouvable') });
     }
     // Session ouverte avec le fournisseur d'identité : la confirmation vient du fournisseur d'identité
     // (reconnexion redemandée, voir oidc.js), à la place du mot de passe et
     // du code ; elle ne sert qu'une fois
     if (req.sessionMethod === 'oidc') {
       if (!ctx.oidc?.confirmed(request.id, user.id, { consume: true })) {
-        return res.status(403).json({ error: `Confirmez d'abord avec ${ctx.config.oidcName}.` });
+        return res.status(403).json({ error: req.t('autorisation.confirmerAvecFournisseur', { provider: ctx.config.oidcName }) });
       }
       const fresh = oauth.findRequest(request.id);
-      if (!fresh) return res.status(404).json({ error: EXPIRED });
+      if (!fresh) return res.status(404).json({ error: req.t(EXPIRED) });
       try {
         return res.json({ redirect: oauth.approve(fresh, user, { scope, allLists, listIds }, req.ip) });
       } catch (error) {
         if (!(error instanceof OAuthError)) throw error;
-        return res.status(error.status).json({ error: error.message });
+        return res.status(error.status).json({ error: consentError(req, error) });
       }
     }
     if (typeof password !== 'string' || !password || password.length > PASSWORD_MAX) {
-      return res.status(400).json({ error: 'Saisissez votre mot de passe.' });
+      return res.status(400).json({ error: req.t('autorisation.saisirMotDePasse') });
     }
     if (user.totp_enabled === 1 && (typeof code !== 'string' || !code.trim())) {
-      return res.status(400).json({ error: 'Saisissez le code à 6 chiffres, ou un code de secours.' });
+      return res.status(400).json({ error: req.t('autorisation.saisirCode') });
     }
 
     // Même limitation des tentatives que la connexion (5 échecs en 15 min)
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
       audit('connexion_bloquee', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude' });
-      return res.status(429).json({ error: BLOCKED });
+      return res.status(429).json({ error: req.t(BLOCKED) });
     }
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
     if (!(await verifyPassword(password, user.password_hash))) {
       audit('mot_de_passe_refuse', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude' });
-      return res.status(403).json({ error: 'Mot de passe incorrect.' });
+      return res.status(403).json({ error: req.t('autorisation.motDePasseIncorrect') });
     }
     if (user.totp_enabled === 1 && !checkSecondFactor(ctx, user, code)) {
       audit('connexion_echouee', { utilisateur: user.username, ip: req.ip, etape: 'autorisation claude, 2fa' });
-      return res.status(403).json({ error: 'Code incorrect.' });
+      return res.status(403).json({ error: req.t('autorisation.codeIncorrect') });
     }
     limiter.reset(keys);
 
     // La demande a pu expirer pendant la vérification du mot de passe
     const still = oauth.findRequest(request.id);
-    if (!still) return res.status(404).json({ error: EXPIRED });
+    if (!still) return res.status(404).json({ error: req.t(EXPIRED) });
     try {
       res.json({ redirect: oauth.approve(still, user, { scope, allLists, listIds }, req.ip) });
     } catch (error) {
       if (!(error instanceof OAuthError)) throw error;
-      res.status(error.status).json({ error: error.message });
+      res.status(error.status).json({ error: consentError(req, error) });
     }
   });
 
@@ -295,7 +301,7 @@ export function oauthConsentRoutes(ctx) {
 
   router.delete('/me/claude/:id', (req, res) => {
     const id = /^\d{1,15}$/.test(req.params.id) ? Number(req.params.id) : null;
-    if (id === null || !oauth.revokeOwnGrant(req.user, id)) return res.status(404).json({ error: 'Connexion introuvable.' });
+    if (id === null || !oauth.revokeOwnGrant(req.user, id)) return res.status(404).json({ error: req.t('autorisation.connexionIntrouvable') });
     return res.json({ ok: true });
   });
 

@@ -52,8 +52,9 @@ async function household(t) {
   return { app, guillaume, ...clients, ids, tasks, shopping, notified, modeOf };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 

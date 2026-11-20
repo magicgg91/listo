@@ -16,20 +16,23 @@
 import express from 'express';
 import { createUploadCounter } from '../photos.js';
 import { isUuid } from '../lists.js';
+import { userLocale } from '../locale.js';
 
-export const BAD_SUBSCRIPTION = 'Abonnement refusé : ce service de notification n\'est pas reconnu.';
-export const TAKEN = 'Cet appareil reçoit déjà les notifications d\'un autre compte. Déconnectez ce compte sur cet appareil, puis réessayez.';
-export const BAD_SETTINGS = 'Réglage des notifications invalide.';
-export const BAD_MUTE = 'Valeur « silencer » invalide (true ou false).';
-export const LIST_NOT_FOUND = 'Liste introuvable.';
-export const TOO_MANY = 'Trop de demandes. Réessayez dans quelques minutes.';
+// Messages : noms des textes (public/js/i18n/fr/alertes.js), écrits dans
+// la langue de la requête (req.t)
+export const BAD_SUBSCRIPTION = 'alertes.abonnementRefuse';
+export const TAKEN = 'alertes.autreCompte';
+export const BAD_SETTINGS = 'alertes.reglageInvalide';
+export const BAD_MUTE = 'alertes.silencerInvalide';
+export const LIST_NOT_FOUND = 'alertes.listeIntrouvable';
+export const TOO_MANY = 'alertes.tropDeDemandes';
 export const TEST_RESULTS = {
   sent: null,
-  none: 'Les notifications ne sont pas activées sur cet appareil.',
-  expired: 'L\'abonnement de cet appareil a expiré. Désactivez puis réactivez les notifications.',
-  gone: 'Les notifications ne sont pas activées sur cet appareil.',
-  refused: 'Le service de notification a refusé l\'envoi. Réessayez plus tard.',
-  failed: 'Le service de notification n\'a pas répondu. Réessayez plus tard.',
+  none: 'alertes.test.inactif',
+  expired: 'alertes.test.expire',
+  gone: 'alertes.test.inactif',
+  refused: 'alertes.test.refuse',
+  failed: 'alertes.test.sansReponse',
 };
 
 export function pushRoutes(ctx) {
@@ -53,41 +56,42 @@ export function pushRoutes(ctx) {
   router.get('/push', (req, res) => res.json(state(req)));
 
   router.put('/push/subscription', (req, res) => {
-    if (!changes.take(req.user.id)) return res.status(429).json({ error: TOO_MANY });
+    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
     const result = push.subscribe(req.user, req.sessionId, req.body);
-    if (!result) return res.status(400).json({ error: BAD_SUBSCRIPTION });
-    if (result === 'taken') return res.status(409).json({ error: TAKEN });
+    if (!result) return res.status(400).json({ error: req.t(BAD_SUBSCRIPTION) });
+    if (result === 'taken') return res.status(409).json({ error: req.t(TAKEN) });
     res.json(state(req));
   });
 
   router.delete('/push/subscription', (req, res) => {
-    if (!changes.take(req.user.id)) return res.status(429).json({ error: TOO_MANY });
+    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
     push.unsubscribe(req.sessionId);
     res.json(state(req));
   });
 
   router.put('/push/settings', (req, res) => {
-    if (!prefs.take(req.user.id)) return res.status(429).json({ error: TOO_MANY });
+    if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
     const settings = notify.setSettings(req.user.id, req.body);
-    if (!settings) return res.status(400).json({ error: BAD_SETTINGS });
+    if (!settings) return res.status(400).json({ error: req.t(BAD_SETTINGS) });
     res.json({ settings });
   });
 
   router.put('/push/mutes/:listId', (req, res) => {
-    if (!prefs.take(req.user.id)) return res.status(429).json({ error: TOO_MANY });
+    if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
     const listId = String(req.params.listId).toLowerCase();
     // Non-membre, liste inconnue ou supprimée : la même réponse
-    if (!isUuid(listId) || !notify.isMember(req.user.id, listId)) return res.status(404).json({ error: LIST_NOT_FOUND });
-    if (typeof req.body?.muted !== 'boolean') return res.status(400).json({ error: BAD_MUTE });
+    if (!isUuid(listId) || !notify.isMember(req.user.id, listId)) return res.status(404).json({ error: req.t(LIST_NOT_FOUND) });
+    if (typeof req.body?.muted !== 'boolean') return res.status(400).json({ error: req.t(BAD_MUTE) });
     notify.setMuted(req.user.id, listId, req.body.muted);
     res.json({ mutedLists: notify.mutedLists(req.user.id) });
   });
 
   router.post('/push/test', async (req, res) => {
-    if (!tests.take(req.user.id)) return res.status(429).json({ error: TOO_MANY });
-    const result = await push.sendTest(req.sessionId);
+    if (!tests.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
+    // Dans la langue des notifications de ce compte (celle de son compte, sinon de l'installation)
+    const result = await push.sendTest(req.sessionId, userLocale(req.user, ctx.config));
     if (result === 'sent') return res.json({ ok: true });
-    res.status(result === 'none' || result === 'gone' || result === 'expired' ? 409 : 502).json({ error: TEST_RESULTS[result] ?? TEST_RESULTS.failed });
+    res.status(result === 'none' || result === 'gone' || result === 'expired' ? 409 : 502).json({ error: req.t(TEST_RESULTS[result] ?? TEST_RESULTS.failed) });
   });
 
   return router;

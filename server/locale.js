@@ -8,7 +8,7 @@
 // Une langue pas encore complète est remplacée par le français
 // (resolveLocale).
 
-import { resolveLocale, parseAcceptLanguage } from '../public/js/i18n.js';
+import { resolveLocale, parseAcceptLanguage, translate } from '../public/js/i18n.js';
 
 export function requestLocale(req, config) {
   return resolveLocale([req.user?.locale, ...parseAcceptLanguage(req.headers?.['accept-language']), config?.lang]);
@@ -16,4 +16,16 @@ export function requestLocale(req, config) {
 
 export function userLocale(user, config) {
   return resolveLocale([user?.locale, config?.lang]);
+}
+
+// Pose req.t(nom, valeurs) sur chaque requête : le texte dans la langue de
+// la requête (requestLocale), calculée au moment de l'appel (le compte est
+// connu une fois la session lue). Les réponses lues à l'écran (erreurs
+// JSON) passent par req.t ; le journal, la console et Claude (MCP) restent
+// hors de ce mécanisme.
+export function localeMiddleware(config) {
+  return (req, res, next) => {
+    req.t = (key, params) => translate(requestLocale(req, config), key, params);
+    next();
+  };
 }

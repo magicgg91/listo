@@ -80,8 +80,9 @@ test('écran : réservation montrée seulement si la copie en contient ; lien s�
   assert.match(form, /forField\.hidden = !isWishList\(listType\);/);
   assert.match(form, /if \(isLockedBeneficiary\(person\)\) return lockedRow\(person, person\.displayName, t\('formulaire\.partage\.destinataire'\)\);/);
   assert.equal(fr['formulaire.partage.destinataire'], 'Destinataire · Peut modifier');
-  assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus\.';/);
-  assert.doesNotMatch(read('public/js/list-types.js').match(/WISHES_LOCKED_HINT = '[^']*'/)[0], /réserv/i, 'la phrase ne parle pas des réservations');
+  assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'regles\.envies\.verrouillee';/);
+  assert.equal(fr['regles.envies.verrouillee'], 'Le type et la personne à qui la liste est destinée ne changent plus.');
+  assert.doesNotMatch(fr['regles.envies.verrouillee'], /réserv/i, 'la phrase ne parle pas des réservations');
   // Service worker : nouveau fichier gardé hors ligne
   assert.ok(read('public/sw.js').includes("'/js/wishes.js'"));
 });
@@ -100,10 +101,11 @@ test('formulaire : une liste de courses ou de tâches peut devenir une liste d\'
   assert.match(form, /converting\(\) && hasPublicLink\(list\) \? ` \$\{t\('formulaire\.type\.lienArrete'\)\}` : ''/);
   assert.equal(fr['formulaire.type.lienArrete'], 'Son lien public sera arrêté.');
   const types = read('public/js/list-types.js');
-  assert.match(types, /if \(to === 'wishes'\) return CONVERT_TO_WISHES_WARNING;/);
-  const warning = types.match(/CONVERT_TO_WISHES_WARNING = '(\\'|[^'])*'/)[0];
+  assert.match(types, /if \(to === 'wishes'\) return t\(CONVERT_TO_WISHES_WARNING\);/);
+  assert.match(types, /export const CONVERT_TO_WISHES_WARNING = 'regles\.envies\.avertissementConversion';/);
+  const warning = fr['regles.envies.avertissementConversion'];
   assert.match(warning, /ne pourra plus changer de type ni de destinataire/);
-  assert.match(warning, /Rien n\\'est effacé/);
+  assert.match(warning, /Rien n'est effacé/);
   assert.doesNotMatch(warning, /réserv/i);
   // En ligne seulement : bouton inactif hors ligne, avec une phrase ; d'abord la conversion, puis le reste
   assert.match(form, /const blocked = converting\(\) && !navigator\.onLine;\s*convertNote\.hidden = !blocked;\s*save\.disabled = busy \|\| blocked;/);

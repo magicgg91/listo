@@ -15,6 +15,8 @@ import { addUser, login } from './helpers.js';
 import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, household, connect, claude, data } from './mcp-helpers.js';
 import { TOOLS } from '../server/mcp-tools.js';
 import { PRIORITY_OFF, DUE_OFF, PRIORITY_NOT_HERE, DUE_NOT_HERE, BAD_PRIORITY, BAD_DUE, itemOptionsError } from '../server/lists.js';
+// Refus : itemOptionsError donne le nom du texte, Claude reçoit le texte en français
+import fr from '../public/js/i18n/fr.js';
 
 const MINUTE = 60 * SECOND;
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -82,7 +84,7 @@ test('add_items : priorité et échéance enregistrées si la liste les active ;
   ];
   for (const [listId, items, message] of cases) {
     const before = countItems(h, listId);
-    assert.equal(toolError(await c.tool('add_items', { list_id: listId, items })), message, JSON.stringify(items));
+    assert.equal(toolError(await c.tool('add_items', { list_id: listId, items })), fr[message], JSON.stringify(items));
     assert.equal(countItems(h, listId), before, 'rien n\'est ajouté');
   }
   // Mauvais type de valeur : erreur d'arguments (-32602)

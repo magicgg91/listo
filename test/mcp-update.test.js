@@ -21,12 +21,14 @@ import { TOOLS, UPDATE_MAX, UPDATES_PER_HOUR, READ_ONLY_GRANT, LIST_NOT_FOUND } 
 import { INSTRUCTIONS } from '../server/mcp.js';
 import { SCOPES, GRANT_SCOPES, parseScope } from '../server/oauth.js';
 import { MIGRATIONS, schemaVersion } from '../server/db.js';
-import { READ_ONLY, PRIORITY_OFF, DUE_NOT_HERE, BAD_DUE } from '../server/lists.js';
+import * as refusals from '../server/lists.js';
 import { normalizeItemName } from '../public/js/history.js';
 import fr from '../public/js/i18n/fr.js';
 
 const MINUTE = 60 * SECOND;
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+// Refus : noms des textes ; Claude les reçoit en français
+const [READ_ONLY, PRIORITY_OFF, DUE_NOT_HERE, BAD_DUE] = ['READ_ONLY', 'PRIORITY_OFF', 'DUE_NOT_HERE', 'BAD_DUE'].map((name) => fr[refusals[name]]);
 const toolError = (res) => (res.body.result?.isError ? res.body.result.content[0].text : null);
 const rpcError = (res) => res.body.error ?? null;
 const row = (h, id) => h.app.db.prepare('SELECT name, quantity, note, link, price_cents, checked, deleted_at, priority, due_date, updated_at FROM items WHERE id = ?').get(id);

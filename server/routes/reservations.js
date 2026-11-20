@@ -24,7 +24,7 @@ export function reservationRoutes(ctx) {
     try {
       res.json(action(req));
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
   };

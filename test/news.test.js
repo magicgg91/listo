@@ -14,6 +14,7 @@ import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login, createClient, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { MAX_EVENTS_PER_LIST, FORMER_MEMBER } from '../server/news.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, applyOp, mergeSync, toSnapshot, fromSnapshot, listNews, newsBadge, newsTotal, seenTarget, isListMuted } from '../public/js/store.js';
 import { newsMark, newsBadgeLabel } from '../public/js/format.js';
 
@@ -46,8 +47,9 @@ async function household(t) {
   return { app, ...clients, ids, listId, newsOf, listNewsOf, add };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -276,8 +278,8 @@ test('auteur désactivé : « un ancien membre » ; photo ajoutée : une modific
   const h = await household(t);
   const lait = await h.add(h.marie, 'Lait');
   h.app.db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(h.ids.marie);
-  assert.deepEqual((await h.listNewsOf(h.guillaume)).items, [{ itemId: lait, kind: 'added', by: FORMER_MEMBER }]);
-  assert.equal(FORMER_MEMBER, 'un ancien membre');
+  assert.deepEqual((await h.listNewsOf(h.guillaume)).items, [{ itemId: lait, kind: 'added', by: 'un ancien membre' }]);
+  assert.equal(fr[FORMER_MEMBER], 'un ancien membre');
   // Photo : passe par setPhotoDate avec la personne qui l'envoie
   const riz = await h.add(h.guillaume, 'Riz');
   h.app.ctx.lists.setPhotoDate(riz, new Date(h.app.clock.now).toISOString(), { id: h.ids.paul });

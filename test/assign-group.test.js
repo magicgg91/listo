@@ -11,13 +11,16 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { fakeDevice, fakePushService } from './push-helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { BAD_PEOPLE, TURN_NEEDS_REPEAT, BAD_ASSIGN_MODE } from '../server/lists.js';
+import { BAD_PEOPLE as BAD_PEOPLE_KEY, TURN_NEEDS_REPEAT as TURN_NEEDS_REPEAT_KEY, BAD_ASSIGN_MODE as BAD_ASSIGN_MODE_KEY } from '../server/lists.js';
 import { GROUP_MS } from '../server/notify.js';
 import { nextInTurn, turnAfterCheck, withoutPerson, isPeopleList, assigneesOf, parsePeople, formatPeople } from '../public/js/assign.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
 import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
 import fr from '../public/js/i18n/fr.js';
+
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [BAD_PEOPLE, TURN_NEEDS_REPEAT, BAD_ASSIGN_MODE] = [BAD_PEOPLE_KEY, TURN_NEEDS_REPEAT_KEY, BAD_ASSIGN_MODE_KEY].map((key) => fr[key]);
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');

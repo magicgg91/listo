@@ -59,6 +59,8 @@ import { buildMessage } from './push.js';
 import { wishListOf, beneficiaryId, seesReservations } from '../public/js/wishes.js';
 import { reminderAt, timeLabel } from '../public/js/due-time.js';
 import { assigneesOf, parsePeople } from '../public/js/assign.js';
+import { translate } from '../public/js/i18n.js';
+import { userLocale } from './locale.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -79,19 +81,22 @@ export const localDay = (date) => `${date.getFullYear()}-${two(date.getMonth() +
 // Types du journal qui donnent une notification « modifications »
 const ACTIVITY = { add: 'added', update: 'updated', check: 'checked' };
 
+// Textes : dans la langue de chaque destinataire (locale), jamais une
+// seule fois pour tout le monde (public/js/i18n/fr/alertes.js)
+
 // « Lait, Pain et 3 autres »
-function nameList(names) {
+function nameList(locale, names) {
   const shown = names.slice(0, NAMES_MAX);
   const rest = names.length - shown.length;
-  return rest > 0 ? `${shown.join(', ')} et ${rest} autre${rest > 1 ? 's' : ''}` : shown.join(', ');
+  return rest > 0 ? translate(locale, 'alertes.noms.etAutres', { names: shown.join(', '), count: rest }) : shown.join(', ');
 }
 
 // « Léa », « Léa et Marc », « Léa, Marc et Zoé », « Léa, Marc et 2 autres »
-function peopleList(names) {
-  if (names.length <= 1) return names[0] ?? 'Quelqu\'un';
-  if (names.length === 2) return `${names[0]} et ${names[1]}`;
-  if (names.length === 3) return `${names[0]}, ${names[1]} et ${names[2]}`;
-  return `${names[0]}, ${names[1]} et ${names.length - 2} autres`;
+function peopleList(locale, names) {
+  if (names.length <= 1) return names[0] ?? translate(locale, 'alertes.quelquun');
+  if (names.length === 2) return translate(locale, 'alertes.personnes.deux', { first: names[0], second: names[1] });
+  if (names.length === 3) return translate(locale, 'alertes.personnes.trois', { first: names[0], second: names[1], third: names[2] });
+  return translate(locale, 'alertes.personnes.plus', { first: names[0], second: names[1], count: names.length - 2 });
 }
 
 export function createNotifier(ctx, { push = ctx.push } = {}) {
@@ -120,6 +125,8 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     members: db.prepare(`SELECT list_members.user_id FROM list_members JOIN users ON users.id = list_members.user_id
       WHERE list_members.list_id = ? AND users.active = 1`).pluck(),
     name: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
+    // Langue choisie par le destinataire (« Mon compte »)
+    locale: db.prepare('SELECT locale FROM users WHERE id = ?').pluck(),
     itemName: db.prepare('SELECT name FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL').pluck(),
     // Tâche encore attribuée à cette personne, non cochée, non supprimée, dans
     // une liste de tâches dont l'attribution est activée
@@ -160,6 +167,10 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       ON CONFLICT(item_id) DO UPDATE SET sent_key = :key WHERE push_reminders.sent_key <> :key`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
   };
+
+  // Langue des notifications d'une personne : celle de son compte, sinon
+  // celle de l'installation (server/locale.js)
+  const localeOf = (userId) => userLocale({ locale: q.locale.get(userId) }, ctx.config);
 
   // --- Préférences ---
   function settingsOf(userId) {
@@ -269,31 +280,32 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   }
 
   function changesMessage(group, list, detail) {
-    const actors = group.actors.map((id) => q.name.get(id) ?? 'Un ancien membre');
+    const locale = localeOf(group.userId);
+    const actors = group.actors.map((id) => q.name.get(id) ?? translate(locale, 'alertes.ancienMembre'));
     // Tâches qui me sont attribuées (toujours à moi, encore à faire)
     const stillMine = (id) => q.stillMine.get({ itemId: id, listId: list.id, userId: group.userId });
     const mine = group.assigned.filter(stillMine);
     // Chacun son tour : la tâche m'est revenue (toujours à moi, encore à faire)
     const turns = group.turns.filter(stillMine);
     const turnNames = turns.map((id) => q.itemName.get(id, list.id)).filter(Boolean);
-    const verb = actors.length > 1 ? 'ont modifié' : 'a modifié';
+    const people = peopleList(locale, actors);
     const title = turns.length
-      ? (detail && turnNames.length ? `C'est votre tour : ${nameList(turnNames)}` : `C'est votre tour dans « ${list.name} »`)
+      ? (detail && turnNames.length ? translate(locale, 'alertes.tour.detail', { names: nameList(locale, turnNames) }) : translate(locale, 'alertes.tour', { list: list.name }))
       : mine.length
-        ? `${peopleList(actors)} vous ${actors.length > 1 ? 'ont' : 'a'} attribué ${mine.length > 1 ? `${mine.length} tâches` : 'une tâche'} dans « ${list.name} »`
-        : `${peopleList(actors)} ${verb} « ${list.name} »`;
-    let body = `${group.count} changement${group.count > 1 ? 's' : ''}`;
+        ? translate(locale, actors.length > 1 ? 'alertes.attribue.plusieurs' : 'alertes.attribue.un', { people, count: mine.length, list: list.name })
+        : translate(locale, 'alertes.modifie', { people, count: actors.length, list: list.name });
+    let body = translate(locale, 'alertes.changements', { count: group.count });
     if (detail) {
       const parts = [];
       const assignedNames = mine.map((id) => q.itemName.get(id, list.id)).filter(Boolean);
-      if (assignedNames.length) parts.push(`Pour vous : ${nameList(assignedNames)}`);
-      for (const [kind, label] of [['added', 'Ajouté'], ['updated', 'Modifié'], ['checked', 'Coché']]) {
+      if (assignedNames.length) parts.push(translate(locale, 'alertes.detail.pourVous', { names: nameList(locale, assignedNames) }));
+      for (const [kind, key] of [['added', 'alertes.detail.ajoute'], ['updated', 'alertes.detail.modifie'], ['checked', 'alertes.detail.coche']]) {
         const names = group.items[kind].map((id) => q.itemName.get(id, list.id)).filter(Boolean);
-        if (names.length) parts.push(`${label} : ${nameList(names)}`);
+        if (names.length) parts.push(translate(locale, key, { names: nameList(locale, names) }));
       }
       if (parts.length) body = parts.join(' · ');
     }
-    return buildMessage({ title, body, navigate: listUrl(list.id), tag: `liste-${list.id}` });
+    return buildMessage({ title, body, navigate: listUrl(list.id), tag: `liste-${list.id}`, locale });
   }
 
   // Envoie les groupes dont la fenêtre de 60 s est passée
@@ -315,16 +327,19 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   // recipients : membres qui voient les réservations (calculés par
   // server/reservations.js) ; actor : { userId } ou { visitorName }
   function wish({ listId, itemId, kind, actor, recipients }) {
-    const actorName = actor.userId ? (q.name.get(actor.userId) ?? 'Quelqu\'un') : `${actor.visitorName} (lien public)`;
     for (const userId of new Set(recipients)) {
       const list = allowed(userId, listId, 'wishes', actor.userId ?? null);
       if (!list) continue;
+      const locale = localeOf(userId);
+      const actorName = actor.userId
+        ? (q.name.get(actor.userId) ?? translate(locale, 'alertes.quelquun'))
+        : translate(locale, 'alertes.envie.visiteur', { name: actor.visitorName });
       const detail = settingsOf(userId).detail;
       const itemName = detail ? q.itemName.get(itemId, listId) : null;
-      const what = kind === 'join'
-        ? (itemName ? `participe à « ${itemName} »` : 'participe à un cadeau')
-        : (itemName ? `a réservé « ${itemName} »` : 'a réservé un souhait');
-      const message = buildMessage({ title: `${actorName} ${what}`, body: `Liste « ${list.name} »`, navigate: listUrl(listId), tag: `envies-${listId}` });
+      const title = kind === 'join'
+        ? (itemName ? translate(locale, 'alertes.envie.participe.nom', { actor: actorName, item: itemName }) : translate(locale, 'alertes.envie.participe', { actor: actorName }))
+        : (itemName ? translate(locale, 'alertes.envie.reserve.nom', { actor: actorName, item: itemName }) : translate(locale, 'alertes.envie.reserve', { actor: actorName }));
+      const message = buildMessage({ title, body: translate(locale, 'alertes.envie.liste', { list: list.name }), navigate: listUrl(listId), tag: `envies-${listId}`, locale });
       send(userId, message, { queue: 'wishes' });
     }
   }
@@ -333,29 +348,37 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   function sharing({ listId, userId, actorId, kind }) {
     const list = allowed(userId, listId, 'sharing', actorId);
     if (!list) return;
-    const actor = q.name.get(actorId) ?? 'Quelqu\'un';
+    const locale = localeOf(userId);
+    const actor = q.name.get(actorId) ?? translate(locale, 'alertes.quelquun');
     const canEdit = q.access.get(listId, userId) === 'modification';
     const message = kind === 'added'
-      ? buildMessage({ title: `${actor} vous a ajouté à « ${list.name} »`, body: canEdit ? 'Vous pouvez la modifier.' : 'En lecture seule.', navigate: listUrl(listId), tag: `partage-${listId}` })
-      : buildMessage({ title: `Votre droit sur « ${list.name} » a changé`, body: canEdit ? 'Vous pouvez maintenant la modifier.' : 'Elle est maintenant en lecture seule pour vous.', navigate: listUrl(listId), tag: `partage-${listId}` });
+      ? buildMessage({
+        title: translate(locale, 'alertes.partage.ajoute', { actor, list: list.name }),
+        body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+      })
+      : buildMessage({
+        title: translate(locale, 'alertes.partage.droit', { list: list.name }),
+        body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+      });
     send(userId, message);
   }
 
   // --- b) Résumé quotidien des échéances ---
-  const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
-  function digestMessage(tasks, today, detail) {
+  function digestMessage(tasks, today, detail, locale) {
     const dueToday = tasks.filter((t) => t.due_date === today).length;
     const late = tasks.length - dueToday;
     const parts = [];
-    if (dueToday) parts.push(`${plural(dueToday, 'tâche')} à faire aujourd'hui`);
-    if (late) parts.push(dueToday ? `${late} en retard` : `${plural(late, 'tâche')} en retard`);
+    if (dueToday) parts.push(translate(locale, 'alertes.echeances.aujourdhui', { count: dueToday }));
+    if (late) parts.push(translate(locale, dueToday ? 'alertes.echeances.retard' : 'alertes.echeances.retard.seules', { count: late }));
     const lists = [...new Map(tasks.map((t) => [t.list_id, t.list_name])).entries()];
     const body = detail
-      ? nameList(tasks.map((t) => (t.due_time ? `${t.name} (${timeLabel(t.due_time)})` : t.name))) // les plus en retard d'abord
-      : (lists.length === 1 ? `Dans « ${lists[0][1]} »` : `Dans ${lists.length} listes`);
+      ? nameList(locale, tasks.map((t) => (t.due_time ? translate(locale, 'alertes.echeances.heure', { name: t.name, time: timeLabel(t.due_time) }) : t.name))) // les plus en retard d'abord
+      : (lists.length === 1 ? translate(locale, 'alertes.dans', { list: lists[0][1] }) : translate(locale, 'alertes.dansListes', { count: lists.length }));
     // Une seule liste : on l'ouvre ; plusieurs : « Mes listes »
     const navigate = lists.length === 1 ? listUrl(lists[0][0]) : `${origin}/#/listes`;
-    return buildMessage({ title: parts.join(' · '), body, navigate, tag: 'echeances' });
+    return buildMessage({ title: parts.join(' · '), body, navigate, tag: 'echeances', locale });
   }
 
   // Appelé chaque minute (et une fois au démarrage) : entre 8 h et midi,
@@ -376,7 +399,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       if (!settings.due || !push.hasDevices(userId)) continue;
       const tasks = q.dueTasks.all({ userId, today });
       if (!tasks.length) continue;
-      work.push(push.sendToUser(userId, digestMessage(tasks, today, settings.detail), { ttl }));
+      work.push(push.sendToUser(userId, digestMessage(tasks, today, settings.detail, localeOf(userId)), { ttl }));
     }
     await Promise.all(work);
   }
@@ -386,13 +409,20 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     const [y, m, d] = day.split('-').map(Number);
     return localDay(new Date(y, m - 1, d + n));
   };
-  function reminderMessage(task, list, detail, today) {
+  function reminderMessage(task, list, detail, today, locale) {
     const time = timeLabel(task.due_time);
-    const when = task.due_date === today ? `aujourd'hui à ${time}` : task.due_date === dayShift(today, 1) ? `demain à ${time}` : `le ${task.due_date.split('-').reverse().join('/')} à ${time}`;
+    // Quand : aujourd'hui, demain, ou le 12/11/2026
+    const when = task.due_date === today ? 'aujourdhui' : task.due_date === dayShift(today, 1) ? 'demain' : 'date';
+    const values = { time, date: task.due_date.split('-').reverse().join('/'), list: list.name };
+    const keys = {
+      aujourdhui: ['alertes.rappel.aujourdhui', 'alertes.rappel.detail.aujourdhui'],
+      demain: ['alertes.rappel.demain', 'alertes.rappel.detail.demain'],
+      date: ['alertes.rappel.date', 'alertes.rappel.detail.date'],
+    }[when];
     const message = detail
-      ? { title: `Rappel : ${task.name}`, body: `${when.charAt(0).toUpperCase()}${when.slice(1)} · « ${list.name} »` }
-      : { title: `Rappel : une tâche ${when}`, body: `Dans « ${list.name} »` };
-    return buildMessage({ ...message, navigate: listUrl(list.id), tag: `rappel-${task.id}` });
+      ? { title: translate(locale, 'alertes.rappel.detail', { name: task.name }), body: translate(locale, keys[1], values) }
+      : { title: translate(locale, keys[0], values), body: translate(locale, 'alertes.dans', { list: list.name }) };
+    return buildMessage({ ...message, navigate: listUrl(list.id), tag: `rappel-${task.id}`, locale });
   }
   // Appelé chaque minute (et une fois au démarrage)
   async function runReminders() {
@@ -412,7 +442,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       for (const userId of recipients) {
         const list = allowed(userId, task.list_id, 'due');
         if (!list) continue;
-        work.push(send(userId, reminderMessage(task, list, settingsOf(userId).detail, today)));
+        work.push(send(userId, reminderMessage(task, list, settingsOf(userId).detail, today, localeOf(userId))));
       }
     }
     await Promise.all(work);

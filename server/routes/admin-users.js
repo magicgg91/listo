@@ -25,7 +25,7 @@ import { revokeAllSessions } from '../auth.js';
 import { disableTwoFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName, parseId } from '../validate.js';
 
-const LAST_ADMIN = 'Il doit toujours rester au moins un Admin actif.';
+const LAST_ADMIN = 'comptes.dernierAdmin'; // nom du texte
 
 export function adminUserRoutes(ctx) {
   const router = express.Router();
@@ -69,7 +69,7 @@ export function adminUserRoutes(ctx) {
   function target(req, res) {
     const id = parseId(req.params.id);
     const user = id && findUser.get(id);
-    if (!user) res.status(404).json({ error: 'Compte introuvable.' });
+    if (!user) res.status(404).json({ error: req.t('comptes.introuvable') });
     return user || null;
   }
 
@@ -90,16 +90,16 @@ export function adminUserRoutes(ctx) {
   // Demande acceptée : le compte est créé, relié au compte chez le fournisseur d'identité de la
   // demande. L'Admin peut corriger l'identifiant et le nom proposés.
   router.post('/account-requests/:id/accept', async (req, res) => {
-    if (!ctx.oidc) return res.status(404).json({ error: 'Route inconnue.' });
+    if (!ctx.oidc) return res.status(404).json({ error: req.t('comptes.routeInconnue') });
     const id = parseId(req.params.id);
-    if (!id) return res.status(404).json({ error: 'Demande introuvable ou déjà traitée.' });
+    if (!id) return res.status(404).json({ error: req.t('comptes.demande.introuvable') });
     const { username, displayName, role = 'user' } = req.body ?? {};
-    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
+    if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = cleanName(displayName);
-    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
-    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
+    if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
+    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
     const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, role });
-    if (result.error) return res.status(result.status).json({ error: result.error });
+    if (result.key) return res.status(result.status).json({ error: req.t(result.key, result.params) });
     audit('demande_compte_acceptee', { admin: req.user.username, utilisateur: username, role });
     res.status(201).json({ user: describe(findUser.get(result.id)) });
   });
@@ -107,11 +107,11 @@ export function adminUserRoutes(ctx) {
   // Demande refusée : gardée 30 jours, pour qu'une nouvelle connexion ne la
   // refasse pas aussitôt (voir oidc.js)
   router.post('/account-requests/:id/refuse', (req, res) => {
-    if (!ctx.oidc) return res.status(404).json({ error: 'Route inconnue.' });
+    if (!ctx.oidc) return res.status(404).json({ error: req.t('comptes.routeInconnue') });
     const id = parseId(req.params.id);
     const done = id && db.prepare("UPDATE account_requests SET status = 'refused', refused_at = ? WHERE id = ? AND status = 'pending'")
       .run(new Date(ctx.now()).toISOString(), id).changes;
-    if (!done) return res.status(404).json({ error: 'Demande introuvable ou déjà traitée.' });
+    if (!done) return res.status(404).json({ error: req.t('comptes.demande.introuvable') });
     audit('demande_compte_refusee', { admin: req.user.username });
     res.status(204).end();
   });
@@ -130,17 +130,17 @@ export function adminUserRoutes(ctx) {
   // l'utilisateur devra le changer à sa première connexion.
   router.post('/users', async (req, res) => {
     const { username, displayName, role = 'user', password } = req.body ?? {};
-    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
+    if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
-    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
-    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
+    if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
+    if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
     // mot de passe provisoire ; la personne entrera avec le fournisseur d'identité (même
     // identifiant), le compte a un mot de passe aléatoire que personne ne connaît
     const local = ctx.config.localLogin !== false;
     if (local) {
       const problem = passwordProblem(password);
-      if (problem) return res.status(400).json({ error: problem });
+      if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
     }
     const hash = await hashPassword(local ? password : crypto.randomBytes(32).toString('base64url'));
     // L'identifiant est unique sans tenir compte des majuscules (COLLATE
@@ -150,7 +150,7 @@ export function adminUserRoutes(ctx) {
       id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, ?)')
         .run(username, name, hash, role, local ? 1 : 0).lastInsertRowid;
     } catch (err) {
-      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'Cet identifiant existe déjà.' });
+      if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: req.t('comptes.identifiant.existe') });
       throw err;
     }
     audit('admin_compte_cree', { admin: req.user.username, utilisateur: username, role, ip: req.ip });
@@ -163,28 +163,28 @@ export function adminUserRoutes(ctx) {
     if (!user) return;
     const { displayName, role, active } = req.body ?? {};
     if (displayName === undefined && role === undefined && active === undefined) {
-      return res.status(400).json({ error: 'Rien à modifier.' });
+      return res.status(400).json({ error: req.t('comptes.rienAModifier') });
     }
 
     const changes = {};
     if (displayName !== undefined) {
       changes.display_name = cleanName(displayName);
-      if (!changes.display_name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
+      if (!changes.display_name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
     }
     if (role !== undefined) {
-      if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
+      if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
       changes.role = role;
     }
     if (active !== undefined) {
-      if (typeof active !== 'boolean') return res.status(400).json({ error: 'Valeur « active » invalide (true ou false).' });
+      if (typeof active !== 'boolean') return res.status(400).json({ error: req.t('comptes.actif.invalide') });
       changes.active = active ? 1 : 0;
     }
 
     const losesAdmin = changes.role === 'user' || changes.active === 0;
     if (losesAdmin && user.id === req.user.id) {
-      return res.status(400).json({ error: 'Vous ne pouvez pas vous désactiver ni vous retirer le rôle Admin.' });
+      return res.status(400).json({ error: req.t('comptes.soiMeme.desactiver') });
     }
-    if (losesAdmin && isLastActiveAdmin(user)) return res.status(409).json({ error: LAST_ADMIN });
+    if (losesAdmin && isLastActiveAdmin(user)) return res.status(409).json({ error: req.t(LAST_ADMIN) });
 
     db.prepare(`UPDATE users SET
         display_name = COALESCE(:display_name, display_name),
@@ -213,14 +213,14 @@ export function adminUserRoutes(ctx) {
   // Réinitialisation du mot de passe d'un autre compte : toutes ses sessions
   // sont fermées et il devra changer ce mot de passe à sa prochaine connexion.
   router.post('/users/:id/password', async (req, res) => {
-    if (ctx.config.localLogin === false) return res.status(403).json({ error: 'La connexion par mot de passe est désactivée sur ce serveur.' });
+    if (ctx.config.localLogin === false) return res.status(403).json({ error: req.t('comptes.motDePasse.desactiveServeur') });
     const user = target(req, res);
     if (!user) return;
     if (user.id === req.user.id) {
-      return res.status(400).json({ error: 'Changez votre propre mot de passe depuis vos réglages.' });
+      return res.status(400).json({ error: req.t('comptes.soiMeme.motDePasse') });
     }
     const problem = passwordProblem(req.body?.password);
-    if (problem) return res.status(400).json({ error: problem });
+    if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
 
     const hash = await hashPassword(req.body.password);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, user.id);
@@ -235,7 +235,7 @@ export function adminUserRoutes(ctx) {
     if (!user) return;
     if (user.id === req.user.id) {
       // Pour soi-même, on passe par ses réglages (mot de passe et code demandés)
-      return res.status(400).json({ error: 'Désactivez votre propre 2FA depuis vos réglages.' });
+      return res.status(400).json({ error: req.t('comptes.soiMeme.deuxFacteurs') });
     }
     disableTwoFactor(ctx, user.id);
     audit('admin_2fa_desactivee', { admin: req.user.username, utilisateur: user.username, ip: req.ip });
@@ -247,10 +247,10 @@ export function adminUserRoutes(ctx) {
   router.delete('/users/:id', (req, res) => {
     const user = target(req, res);
     if (!user) return;
-    if (user.id === req.user.id) return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
-    if (isLastActiveAdmin(user)) return res.status(409).json({ error: LAST_ADMIN });
+    if (user.id === req.user.id) return res.status(400).json({ error: req.t('comptes.soiMeme.supprimer') });
+    if (isLastActiveAdmin(user)) return res.status(409).json({ error: req.t(LAST_ADMIN) });
     if (accountUsed.get({ id: user.id }) === 1) {
-      return res.status(409).json({ error: 'Ce compte a déjà servi : il peut être désactivé, pas supprimé.' });
+      return res.status(409).json({ error: req.t('comptes.dejaServi') });
     }
     // Ses sessions et codes de secours sont effacés avec lui (ON DELETE CASCADE)
     db.prepare('DELETE FROM users WHERE id = ?').run(user.id);

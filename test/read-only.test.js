@@ -115,9 +115,9 @@ function writeOps(h) {
   ];
 }
 
-// Résultat d'une opération, sans son identifiant
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -135,8 +135,9 @@ test('lecture seule : chaque opération d\'écriture est refusée (403) et la ba
   assert.equal((await h.lea.request('PUT', `/api/lists/${h.shop}/members`, { userIds: [] })).status, 403);
   assert.equal((await h.lea.request('PUT', `/api/lists/${h.shop}/share`, {})).status, 404);
   // Photo : envoyer, retirer
-  assert.deepEqual(await raw(h.lea, 'PUT', `/api/items/${h.milk}/photo`, JPEG, 'image/jpeg'), { status: 403, body: { error: READ_ONLY } });
-  assert.deepEqual(await raw(h.lea, 'DELETE', `/api/items/${h.milk}/photo`), { status: 403, body: { error: READ_ONLY } });
+  // (code : nom du texte de refus, reconnu par le téléphone, voir app.js)
+  assert.deepEqual(await raw(h.lea, 'PUT', `/api/items/${h.milk}/photo`, JPEG, 'image/jpeg'), { status: 403, body: { error: READ_ONLY, code: 'ops.lectureSeule' } });
+  assert.deepEqual(await raw(h.lea, 'DELETE', `/api/items/${h.milk}/photo`), { status: 403, body: { error: READ_ONLY, code: 'ops.lectureSeule' } });
   // Mode scan (recherche de produit pour ajouter ou cocher)
   assert.deepEqual(await raw(h.lea, 'POST', `/api/lists/${h.shop}/products`, JSON.stringify({ code: '3017620422003' }), 'application/json'), { status: 403, body: { error: READ_ONLY } });
   assert.deepEqual(h.asked, [], 'aucune demande à Open Food Facts');
@@ -265,7 +266,7 @@ test('une seule fonction décide : canEdit, utilisée par les opérations, les p
   for (const op of ['item.update', 'item.check', 'item.delete']) assert.match(lists, new RegExp(`'${op.replace('.', '\\.')}'\\(user, op\\) \\{\\s*const item = itemForEditor\\(`), op);
   assert.match(lists, /if \(!item\) throw new OpError\(404, ITEM_NOT_FOUND\);\s*requireEdit\(user, item\);/);
   const photos = fs.readFileSync(new URL('../server/routes/photos.js', import.meta.url), 'utf8');
-  assert.match(photos, /if \(!canEdit\(req\.user, req\.item\)\) return res\.status\(403\)\.json\(\{ error: READ_ONLY \}\);/);
+  assert.match(photos, /if \(!canEdit\(req\.user, req\.item\)\) return res\.status\(403\)\.json\(\{ error: req\.t\(READ_ONLY\), code: READ_ONLY \}\);/);
   assert.match(photos, /router\.put\('\/items\/:id\/photo', findItem, mayEdit,/);
   assert.match(photos, /router\.delete\('\/items\/:id\/photo', findItem, mayEdit,/);
   assert.match(fs.readFileSync(new URL('../server/routes/products.js', import.meta.url), 'utf8'), /list = ctx\.lists\.listForEditor\(req\.user, req\.params\.id\);/);

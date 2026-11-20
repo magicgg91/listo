@@ -54,12 +54,14 @@ import { ACCESS_COOKIE } from '../shares.js';
 import { splitDone } from '../../public/js/sorting.js';
 import { nestItems, usesSubtasks, orderSubtasks } from '../../public/js/subtasks.js';
 
-const NOT_FOUND = 'Lien expiré ou inexistant.';
-const TOO_MANY = "Trop d'essais, réessayez plus tard.";
-const WRONG_PASSWORD = 'Mot de passe incorrect.';
-const PASSWORD_REQUIRED = 'Mot de passe requis.';
-const TOO_MANY_ACTIONS = 'Trop d\'actions en peu de temps. Réessayez dans quelques minutes.';
-const JSON_ONLY = 'Requête invalide.';
+// Noms des messages (public/js/i18n/fr/liens.js), traduits par req.t dans
+// la langue du visiteur (son navigateur, sinon celle de l'installation)
+const NOT_FOUND = 'liens.public.invalide';
+const TOO_MANY = 'liens.public.tropDEssais';
+const WRONG_PASSWORD = 'liens.public.motDePasse.incorrect';
+const PASSWORD_REQUIRED = 'liens.public.motDePasse.requis';
+const TOO_MANY_ACTIONS = 'liens.public.tropDActions';
+const JSON_ONLY = 'liens.public.requeteInvalide';
 // Actions des visiteurs (réserver, participer, annuler) : 30 en 15 minutes par adresse IP
 const VISITOR_ACTIONS_PER_IP = 30;
 // Jeton d'un visiteur : 128 bits aléatoires, en base64url (22 caractères)
@@ -138,7 +140,8 @@ export function publicRoutes(ctx, { publicDir }) {
   }
 
   const refusePage = (res, status) => res.status(status).type('html').send(pages.invalid);
-  const refuseJson = (res, status) => res.status(status).json({ error: status === 429 ? TOO_MANY : NOT_FOUND });
+  // (res.req : la requête, pour le message dans la langue du visiteur)
+  const refuseJson = (res, status) => res.status(status).json({ error: res.req.t(status === 429 ? TOO_MANY : NOT_FOUND) });
 
   // Le visiteur peut-il voir ce lien ? (pas de mot de passe, ou cookie valable)
   function hasAccess(req, share) {
@@ -309,7 +312,7 @@ export function publicRoutes(ctx, { publicDir }) {
   apiRouter.get('/:token', (req, res) => {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
-    if (!hasAccess(req, share)) return res.status(401).json({ error: PASSWORD_REQUIRED, passwordRequired: true });
+    if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
     const list = q.list.get(share.list_id);
     // Liste d'envies : un visiteur voit l'état des réservations ; le
     // bénéficiaire reconnu par sa session, jamais (réponse de la lecture seule)
@@ -327,15 +330,15 @@ export function publicRoutes(ctx, { publicDir }) {
     return (req, res) => {
       const share = findShare(req, res, refuseJson);
       if (!share) return;
-      if (!hasAccess(req, share)) return res.status(401).json({ error: PASSWORD_REQUIRED, passwordRequired: true });
+      if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
       const list = q.list.get(share.list_id);
       if (!isWishList(list) || isBeneficiary(req, list)) return refuseJson(res, 404);
-      if (actionLimiter.isBlocked([ipKey(req)])) return res.status(429).json({ error: TOO_MANY_ACTIONS });
+      if (actionLimiter.isBlocked([ipKey(req)])) return res.status(429).json({ error: req.t(TOO_MANY_ACTIONS) });
       actionLimiter.fail([ipKey(req)]); // chaque action compte
       try {
         handler(req, res, share);
       } catch (err) {
-        if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+        if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
         throw err;
       }
     };
@@ -346,7 +349,7 @@ export function publicRoutes(ctx, { publicDir }) {
   // créé et posé dans le cookie du visiteur pour ce lien ; seule son
   // empreinte est enregistrée.
   apiRouter.post('/:token/souhaits/:itemId', visitorAction((req, res, share) => {
-    if (!req.is('application/json')) return res.status(415).json({ error: JSON_ONLY });
+    if (!req.is('application/json')) return res.status(415).json({ error: req.t(JSON_ONLY) });
     let tokenHash = visitorHash(req, share);
     let fresh = null;
     if (!tokenHash) {
@@ -366,7 +369,7 @@ export function publicRoutes(ctx, { publicDir }) {
   // cookie, ou avec celui d'un autre, rien n'est trouvé)
   apiRouter.delete('/:token/souhaits/:itemId', visitorAction((req, res, share) => {
     const tokenHash = visitorHash(req, share);
-    if (!tokenHash) throw new OpError(404, 'Vous ne participez pas à ce cadeau.');
+    if (!tokenHash) throw new OpError(404, 'liens.envies.nonParticipant');
     reservations().visitorLeave(share.list_id, tokenHash, String(req.params.itemId));
     res.json({ ok: true });
   }));
@@ -376,7 +379,7 @@ export function publicRoutes(ctx, { publicDir }) {
     if (!share) return;
     if (share.password_hash === null) return res.json({ ok: true }); // rien à saisir
     const keys = [`lien:${share.id}`, ipKey(req)];
-    if (passwordLimiter.isBlocked(keys)) return res.status(429).json({ error: TOO_MANY, blocked: true });
+    if (passwordLimiter.isBlocked(keys)) return res.status(429).json({ error: req.t(TOO_MANY), blocked: true });
 
     const typed = req.body?.password;
     const usable = typeof typed === 'string' && typed.length <= PASSWORD_MAX;
@@ -389,9 +392,9 @@ export function publicRoutes(ctx, { publicDir }) {
       audit('lien_public_mot_de_passe_refuse', { partage: share.id, ip: req.ip });
       if (passwordLimiter.isBlocked(keys)) {
         audit('lien_public_saisie_bloquee', { partage: share.id, ip: req.ip });
-        return res.status(429).json({ error: TOO_MANY, blocked: true });
+        return res.status(429).json({ error: req.t(TOO_MANY), blocked: true });
       }
-      return res.status(401).json({ error: WRONG_PASSWORD });
+      return res.status(401).json({ error: req.t(WRONG_PASSWORD) });
     }
 
     // Cookie de consultation : ce lien seulement (chemin), 12 heures au plus,
@@ -411,22 +414,22 @@ export function publicRoutes(ctx, { publicDir }) {
   apiRouter.get('/:token/photos/:itemId', (req, res) => {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
-    if (!hasAccess(req, share)) return res.status(401).json({ error: PASSWORD_REQUIRED, passwordRequired: true });
+    if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
     const itemId = String(req.params.itemId).toLowerCase();
     const item = q.photo.get(itemId, share.list_id); // un article de CETTE liste seulement
-    if (!item) return res.status(404).json({ error: 'Photo introuvable.' });
+    if (!item) return res.status(404).json({ error: req.t('liens.public.photoIntrouvable') });
     sendPhoto(res, ctx.photos, item.id, { cache: 'no-store' });
   });
 
   // Toute autre route ou méthode (modification…) : refusée
-  apiRouter.use((req, res) => res.status(404).json({ error: NOT_FOUND }));
+  apiRouter.use((req, res) => res.status(404).json({ error: req.t(NOT_FOUND) }));
   // Erreurs (JSON mal formé…) : sans détail technique
   apiRouter.use((err, req, res, next) => {
-    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
-    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
-    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
+    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: req.t('liens.public.requeteMalFormee') });
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: req.t('liens.public.requeteTropVolumineuse') });
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: req.t('liens.public.requeteInvalide') }); // adresse mal formée…
     console.error('Erreur inattendue (lien public) :', err.message);
-    res.status(500).json({ error: 'Erreur interne du serveur.' });
+    res.status(500).json({ error: req.t('liens.public.erreurInterne') });
   });
 
   return { pageRouter, apiRouter };

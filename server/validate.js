@@ -4,7 +4,8 @@
 
 // Identifiant : 2 à 50 caractères parmi lettres sans accent, chiffres, . _ -
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,50}$/;
-export const USERNAME_RULE = 'Identifiant invalide : 2 à 50 caractères (lettres sans accent, chiffres, . _ -).';
+// (nom du texte, à traduire avec req.t au moment de répondre)
+export const USERNAME_RULE = 'comptes.identifiant.invalide';
 
 export function isValidUsername(value) {
   return typeof value === 'string' && USERNAME_PATTERN.test(value);

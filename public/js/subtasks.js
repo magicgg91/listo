@@ -22,16 +22,18 @@ export const usesSubtasks = (list) => typeOf(list) === 'tasks';
 // d'une liste envoyée au téléphone : subtasksEnabled)
 export const nestsSubtasks = (list) => usesSubtasks(list) && list?.subtasksEnabled === true;
 
-// Messages de refus (serveur), sans le mot « article »
-export const SUBTASK_NOT_HERE = 'Les sous-tâches n\'existent que dans une liste de tâches.';
-export const SUBTASKS_OFF = 'Les sous-tâches sont désactivées pour cette liste.';
-export const BAD_PARENT = 'Tâche principale introuvable dans cette liste.';
-export const PARENT_IS_SUBTASK = 'Une sous-tâche ne peut pas avoir de sous-tâches.';
-export const HAS_SUBTASKS = 'Cette tâche a des sous-tâches : elle ne peut pas devenir une sous-tâche.';
-export const NOT_OWN_PARENT = 'Une tâche ne peut pas être sa propre sous-tâche.';
-export const SUBTASK_NO_REPEAT = 'Une sous-tâche ne se répète pas.';
-export const NOT_A_SUBTASK = 'Seule une sous-tâche se déplace parmi les sous-tâches de sa tâche principale.';
-export const BAD_PLACE = 'Place inconnue : choisissez une sous-tâche de la même tâche principale.';
+// Messages de refus (serveur), sans le mot « article » : noms des textes
+// (public/js/i18n/fr/regles.js), traduits là où la réponse est écrite
+// (Claude les reçoit en français)
+export const SUBTASK_NOT_HERE = 'regles.sousTaches.pasIci';
+export const SUBTASKS_OFF = 'regles.sousTaches.desactivees';
+export const BAD_PARENT = 'regles.sousTaches.principaleIntrouvable';
+export const PARENT_IS_SUBTASK = 'regles.sousTaches.pasDeSousNiveau';
+export const HAS_SUBTASKS = 'regles.sousTaches.aDesSousTaches';
+export const NOT_OWN_PARENT = 'regles.sousTaches.pasSaPropre';
+export const SUBTASK_NO_REPEAT = 'regles.sousTaches.pasDeRepetition';
+export const NOT_A_SUBTASK = 'regles.sousTaches.deplacement';
+export const BAD_PLACE = 'regles.sousTaches.placeInconnue';
 
 // Tâche principale d'un élément, telle qu'elle s'affiche : la tâche
 // parentId si elle est dans byId (éléments présents de la même liste) et

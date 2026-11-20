@@ -181,10 +181,11 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
     calls.push(url);
     const res = await fetch(`${app.base}${url}`, { method, headers: { cookie: cookie(), origin: ORIGIN, ...(type ? { 'content-type': type } : {}) }, body });
     const data = await res.json().catch(() => null);
-    if (!res.ok) throw Object.assign(new Error(data?.error ?? 'refus'), { status: res.status });
+    if (!res.ok) throw Object.assign(new Error(data?.error ?? 'refus'), { status: res.status, data });
     return data;
   };
   const refused = [];
+  const codes = []; // noms des textes de refus (reconnus par app.js)
   const queue = createQueue({
     storage: memoryLocal(),
     transport: {
@@ -193,7 +194,7 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
       deletePhoto: (itemId) => call('DELETE', `/api/items/${itemId}/photo`),
     },
     timers: { setTimeout: () => 0, clearTimeout: () => {} },
-    events: { refused: (entry, message) => refused.push(message) },
+    events: { refused: (entry, message, code) => { refused.push(message); codes.push(code); } },
   });
   const beurre = uuid();
   await queue.add({ kind: 'op', op: { id: uuid(), type: 'item.check', itemId: milk, checked: true } });
@@ -206,7 +207,9 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
   assert.equal(await queue.flush(), 'done');
   assert.equal(queue.count(), 0);
   assert.ok(refused.length >= 3, refused.join(' | '));
-  assert.ok(refused.includes(READ_ONLY));
+  assert.ok(refused.includes(fr[READ_ONLY]));
+  assert.ok(codes.includes(READ_ONLY), 'le nom du texte accompagne le refus');
+  assert.equal(codes.at(-1), READ_ONLY, 'photo : le même nom');
   const items = app.db.prepare('SELECT name, checked FROM items WHERE list_id = ? AND deleted_at IS NULL').all(listId);
   assert.deepEqual(items.map((i) => ({ ...i })), [{ name: 'Lait', checked: 0 }]);
   // Pas de boucle : rien n'est renvoyé
@@ -215,10 +218,12 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
   assert.deepEqual(calls, []);
   // app.js : un seul message dédié, après la synchronisation complète
   const appJs = read('public/js/app.js');
-  assert.match(appJs, /const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste\.';/);
-  assert.equal(READ_ONLY, 'Vous avez un accès en lecture seule à cette liste.', 'même texte que le serveur');
+  assert.match(appJs, /const READ_ONLY = 'ops\.lectureSeule';/);
+  assert.equal(READ_ONLY, 'ops.lectureSeule', 'même nom que le serveur');
+  assert.equal(fr[READ_ONLY], 'Vous avez un accès en lecture seule à cette liste.');
   assert.equal(fr['application.lectureSeule.horsLigne'], "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.");
-  assert.match(appJs, /readOnlyRefused = refusals\.includes\(READ_ONLY\);[\s\S]*?const \[first, \.\.\.others\] = refusals\.filter\(\(message\) => message !== READ_ONLY && !OPTION_OFF\.includes\(message\)\);\s*refusals = \[\];\s*full = true;/);
+  assert.match(appJs, /readOnlyRefused = refusals\.some\(\(\{ code \}\) => code === READ_ONLY\);[\s\S]*?const \[first, \.\.\.others\] = refusals\.filter\(\(\{ code \}\) => code !== READ_ONLY && !OPTION_OFF\.includes\(code\)\)\.map\(\(\{ message \}\) => message\);\s*refusals = \[\];\s*full = true;/);
+  assert.match(appJs, /refused: \(entry, message, code\) => refusals\.push\(\{ message, code \}\),/);
   assert.match(appJs, /dataChanged\(\);\s*if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);/);
 });
 

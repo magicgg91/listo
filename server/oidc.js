@@ -432,14 +432,15 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   // Demande acceptée par l'Admin : création du compte, relié à ce compte du
   // fournisseur d'identité, avec un mot de passe aléatoire que personne ne connaît (la
   // connexion par mot de passe reste fermée tant que l'Admin n'en donne pas
-  // un provisoire). Renvoie l'identifiant du compte, ou une erreur.
+  // un provisoire). Renvoie l'identifiant du compte, ou une erreur
+  // { key, params, status } (texte traduit par la route avec req.t).
   async function acceptRequest(requestId, { username, displayName, role }) {
     const hash = await hashPassword(randomToken());
     return db.transaction(() => {
       const pending = db.prepare("SELECT * FROM account_requests WHERE id = ? AND status = 'pending'").get(requestId);
-      if (!pending) return { error: 'Demande introuvable ou déjà traitée.', status: 404 };
-      if (q.byName.get(username)) return { error: 'Cet identifiant est déjà pris.', status: 409 };
-      if (q.bySub.get(pending.oidc_sub)) return { error: `Ce compte ${config.oidcName} est déjà relié à un compte Listo.`, status: 409 };
+      if (!pending) return { key: 'comptes.demande.introuvable', status: 404 };
+      if (q.byName.get(username)) return { key: 'comptes.identifiant.pris', status: 409 };
+      if (q.bySub.get(pending.oidc_sub)) return { key: 'comptes.fournisseur.dejaRelie', params: { provider: config.oidcName }, status: 409 };
       const id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, oidc_sub) VALUES (?, ?, ?, ?, ?)')
         .run(username, displayName, hash, role, pending.oidc_sub).lastInsertRowid;
       db.prepare('DELETE FROM account_requests WHERE id = ?').run(requestId);

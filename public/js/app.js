@@ -226,15 +226,16 @@ export const pendingCount = () => queue?.count() ?? 0;
 // (Étape 9 : copie gardée sur le téléphone, hors ligne.)
 let refreshing = null;
 let again = null;
-let refusals = [];         // raisons des modifications refusées par le serveur
-// Refus du serveur pour une personne en lecture seule (même texte que
-// server/lists.js) ; le message montré quand des modifications faites hors
-// ligne ont été refusées pour cette raison est « application.lectureSeule.horsLigne »
-const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.'; // technique : texte du serveur à reconnaître
-// Refus du serveur pour une priorité ou une échéance désactivée dans la liste
-// (mêmes textes que server/lists.js) ; le message court montré alors est
-// « application.optionDesactivee »
-const OPTION_OFF = ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."]; // technique : textes du serveur à reconnaître
+let refusals = [];         // modifications refusées par le serveur : { message, code }
+// Les refus se reconnaissent à leur code (nom du texte de refus, donné par
+// le serveur avec le message), quelle que soit la langue :
+// - lecture seule (READ_ONLY de server/lists.js) ; le message montré quand
+//   des modifications faites hors ligne ont été refusées pour cette raison
+//   est « application.lectureSeule.horsLigne » ;
+// - priorité ou échéance désactivée dans la liste (PRIORITY_OFF, DUE_OFF) ;
+//   le message court montré alors est « application.optionDesactivee ».
+const READ_ONLY = 'ops.lectureSeule';
+const OPTION_OFF = ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'];
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -264,9 +265,9 @@ export function refreshData({ quiet = false, full = false } = {}) {
       let readOnlyRefused = false;
       let optionRefused = false;
       if (refusals.length) {
-        readOnlyRefused = refusals.includes(READ_ONLY);
-        optionRefused = refusals.some((message) => OPTION_OFF.includes(message));
-        const [first, ...others] = refusals.filter((message) => message !== READ_ONLY && !OPTION_OFF.includes(message));
+        readOnlyRefused = refusals.some(({ code }) => code === READ_ONLY);
+        optionRefused = refusals.some(({ code }) => OPTION_OFF.includes(code));
+        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && !OPTION_OFF.includes(code)).map(({ message }) => message);
         refusals = [];
         full = true;
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
@@ -317,7 +318,7 @@ function makeQueue() {
     },
     events: {
       changed: () => setPendingCount(queue?.count() ?? 0),
-      refused: (entry, message) => refusals.push(message),
+      refused: (entry, message, code) => refusals.push({ message, code }),
       dropped: () => {},
       offline: () => setSyncState('off'),
     },

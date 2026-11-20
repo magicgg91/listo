@@ -235,7 +235,7 @@ function form(list, users) {
     button.dataset.type = type;
     return button;
   });
-  const typeWarning = h('p', { class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked }, wishesLocked ? WISHES_LOCKED_HINT : '');
+  const typeWarning = h('p', { class: 'field__hint', id: 'type-warning', 'aria-live': 'polite', hidden: !wishesLocked }, wishesLocked ? t(WISHES_LOCKED_HINT) : '');
 
   // --- Pour qui ? (listes d'envies) ---
   // Nouvelle liste : « Moi » (par défaut), un autre compte actif, ou « Une

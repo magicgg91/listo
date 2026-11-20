@@ -34,6 +34,7 @@ import { referenceRoutes } from './routes/references.js';
 import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
 import { createOidc, fetchOidc } from './oidc.js';
+import { localeMiddleware } from './locale.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
@@ -191,6 +192,8 @@ export function createApp({
   app.disable('x-powered-by');
 
   // En-têtes de sécurité sur toutes les réponses
+  // Langue des réponses : req.t(nom, valeurs) (server/locale.js)
+  app.use(localeMiddleware(config));
   app.use((req, res, next) => {
     res.set({
       'Content-Security-Policy': isPublicLinkPath(req.path) ? CONTENT_SECURITY_POLICY : APP_CONTENT_SECURITY_POLICY,

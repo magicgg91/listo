@@ -16,8 +16,14 @@ import Database from 'better-sqlite3';
 import { startTestApp, setupAdmin, addUser, login, databaseAt, tempDir } from './helpers.js';
 import { openDatabase, schemaVersion, wishesMigration } from '../server/db.js';
 import { emptyState, loadSync, mergeSync, toSnapshot } from '../public/js/store.js';
-import { BENEFICIARY, ALREADY, ALREADY_IN, NOT_IN, PARTICIPANTS_ONLY, MANAGER_ONLY, RECEIVED } from '../server/reservations.js';
+import * as reservationTexts from '../server/reservations.js';
+import { translate } from '../public/js/i18n.js';
 import { cleanLink, parsePrice, formatPrice } from '../public/js/wishes.js';
+
+// Messages attendus, en français (server/reservations.js exporte leurs noms)
+const [BENEFICIARY, ALREADY, ALREADY_IN, NOT_IN, PARTICIPANTS_ONLY, MANAGER_ONLY, RECEIVED] = [
+  'BENEFICIARY', 'ALREADY', 'ALREADY_IN', 'NOT_IN', 'PARTICIPANTS_ONLY', 'MANAGER_ONLY', 'RECEIVED',
+].map((name) => translate('fr', reservationTexts[name]));
 
 const uuid = () => crypto.randomUUID();
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

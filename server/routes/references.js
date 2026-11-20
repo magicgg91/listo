@@ -38,14 +38,14 @@ const KINDS = {
   stores: {
     table: 'stores',
     event: 'magasin_cree',
-    duplicate: (name) => `Le magasin « ${name} » existe déjà : choisissez-le dans la liste.`,
-    disabled: (name) => `Le magasin « ${name} » existe déjà mais il est désactivé : demandez à l'Admin de le réactiver.`,
+    duplicate: 'references.magasin.existe',
+    disabled: 'references.magasin.existe.desactive',
   },
   aisles: {
     table: 'aisles',
     event: 'rayon_cree',
-    duplicate: (name) => `Le rayon « ${name} » existe déjà : choisissez-le dans la liste.`,
-    disabled: (name) => `Le rayon « ${name} » existe déjà mais il est désactivé : demandez à l'Admin de le réactiver.`,
+    duplicate: 'references.rayon.existe',
+    disabled: 'references.rayon.existe.desactive',
   },
 };
 
@@ -56,7 +56,8 @@ export function referenceRoutes(ctx) {
       try {
         res.status(201).json(create(ctx, path, kind, req.user, req.body ?? {}));
       } catch (err) {
-        if (err instanceof OpError) return res.status(err.status).json({ error: err.message, ...(err.existing ? { existing: err.existing } : {}) });
+        // Message dans la langue de la requête (nom et valeurs portés par l'erreur)
+        if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params), ...(err.existing ? { existing: err.existing } : {}) });
         throw err;
       }
     });
@@ -70,20 +71,20 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
   let list = null;
   if (path === 'aisles' || listId !== undefined) list = ctx.lists.listForEditor(user, listId);
   if (path === 'aisles' && (!isShoppingList(list) || list.is_multi === 1)) {
-    throw new OpError(400, 'Un rayon ne se choisit que dans une liste de courses sans magasin « multi ».');
+    throw new OpError(400, 'references.rayon.horsCourses');
   }
   const name = cleanName(rawName);
-  if (!name) throw new OpError(400, 'Nom invalide (1 à 100 caractères).');
+  if (!name) throw new OpError(400, 'references.nomInvalide');
   // Doublon (même désactivé) : majuscules, accents et espaces ignorés
   const wanted = comparableName(name);
   const twin = db.prepare(`SELECT id, name, active FROM ${kind.table}`).all().find((row) => comparableName(cleanName(row.name) ?? row.name) === wanted);
   if (twin) {
-    const error = new OpError(409, twin.active === 1 ? kind.duplicate(twin.name) : kind.disabled(twin.name));
+    const error = new OpError(409, twin.active === 1 ? kind.duplicate : kind.disabled, { name: twin.name });
     if (twin.active === 1) error.existing = { id: twin.id, name: twin.name };
     throw error;
   }
   if (!ctx.referenceCreations.take(user.id)) {
-    throw new OpError(429, 'Trop de créations pour le moment. Réessayez dans un moment.');
+    throw new OpError(429, 'references.tropDeCreations');
   }
   const id = db.transaction(() => {
     const newId = Number(db.prepare(`INSERT INTO ${kind.table} (name) VALUES (?)`).run(name).lastInsertRowid);

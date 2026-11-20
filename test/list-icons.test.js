@@ -20,8 +20,9 @@ const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -99,7 +100,8 @@ test('icône hors liste blanche refusée (400) à la création comme à la modif
   assert.equal((await run(h.guillaume, { type: 'list.create', listId: plain, name: 'Simple', listType: 'shopping' })).list.icon, '');
   // Requête paramétrée, et contrôle à chaque écriture
   const source = read('server/lists.js');
-  assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'Icône inconnue\.'\);/);
+  assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'ops\.iconeInconnue'\);/);
+  assert.equal(fr['ops.iconeInconnue'], 'Icône inconnue.');
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? '';/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? list\.icon;/);
   assert.match(source, /UPDATE lists SET name = \?, type = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, assign_enabled = \?, subtasks_enabled = \?, icon = \?, add_mode = \?, updated_at = \? WHERE id = \?/);

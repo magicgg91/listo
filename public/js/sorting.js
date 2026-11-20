@@ -13,6 +13,7 @@
 
 import { isShoppingList } from './list-types.js';
 import { compareDue } from './due-time.js';
+import { t } from './i18n.js';
 
 // Comparaison alphabétique française : « Épicerie » se range avec les « E »,
 // et les majuscules ne comptent pas.
@@ -88,7 +89,8 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
 // Renvoie des groupes comme groupItems : [{ aisle: null, items }] ou, par
 // priorité, [{ aisle: null, priority, label, items }].
 export const ITEM_SORTS = ['alpha', 'priority', 'due', 'person', 'aisle'];
-const PRIORITY_GROUPS = [['high', 'Priorité élevée'], ['normal', 'Priorité normale'], ['low', 'Priorité basse']];
+// Groupes par priorité : [priorité, nom du texte de l'en-tête]
+const PRIORITY_GROUPS = [['high', 'regles.tri.prioriteElevee'], ['normal', 'regles.tri.prioriteNormale'], ['low', 'regles.tri.prioriteBasse']];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
 
@@ -106,7 +108,7 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
     return ids.map((id) => ({
       aisle: null,
       person: id,
-      label: id === null ? 'Personne' : id === me ? 'Moi' : id === 'all' ? 'À plusieurs' : people.get(id),
+      label: id === null ? t('regles.tri.personne') : id === me ? t('regles.tri.moi') : id === 'all' ? t('regles.tri.aPlusieurs') : people.get(id),
       items: items.filter((item) => owner(item) === id).sort((a, b) => compareNames(a.name, b.name)),
     }));
   }
@@ -115,7 +117,7 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
       .map(([priority, label]) => ({
         aisle: null,
         priority,
-        label,
+        label: t(label),
         items: items.filter((item) => (PRIORITY_RANK[item.priority] === undefined ? 'normal' : item.priority) === priority)
           .sort((a, b) => compareNames(a.name, b.name)),
       }))
@@ -136,7 +138,7 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
 // Le rayon et le magasin de chaque article sont gardés : seul l'affichage
 // change. Ordre alphabétique français (majuscules et accents ignorés).
 export function sortShopping(items) {
-  return items.length ? [{ aisle: null, all: true, label: 'À acheter', items: [...items].sort((a, b) => compareNames(a.name, b.name)) }] : [];
+  return items.length ? [{ aisle: null, all: true, label: t('regles.tri.aAcheter'), items: [...items].sort((a, b) => compareNames(a.name, b.name)) }] : [];
 }
 
 // Zone des articles cochés (« Dans le panier » / « Terminés ») : les cochés

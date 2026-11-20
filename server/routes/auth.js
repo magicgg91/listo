@@ -14,9 +14,9 @@ import {
 import { checkSecondFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName } from '../validate.js';
 
-// Réponses identiques que l'identifiant existe ou non
-const BAD_LOGIN = 'Identifiant ou mot de passe incorrect.';
-const BLOCKED = 'Trop de tentatives. Réessayez dans 15 minutes.';
+// Réponses identiques que l'identifiant existe ou non (noms des textes)
+const BAD_LOGIN = 'comptes.connexion.incorrecte';
+const BLOCKED = 'comptes.tropDeTentatives';
 
 
 const countUsers = (db) => db.prepare('SELECT COUNT(*) FROM users').pluck().get();
@@ -53,20 +53,21 @@ export function publicAuthRoutes(ctx) {
     const { code, username, displayName, password } = req.body ?? {};
     const keys = [`setup:${req.ip}`];
 
+    // code : reconnu par l'écran de création (retour à la connexion), quelle que soit la langue
     if (countUsers(db) > 0 || !ctx.setup.code) {
-      return res.status(403).json({ error: 'Listo est déjà configuré.' });
+      return res.status(403).json({ error: req.t('comptes.dejaConfigure'), code: 'comptes.dejaConfigure' });
     }
-    if (limiter.isBlocked(keys)) return res.status(429).json({ error: BLOCKED });
+    if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
     if (!safeEqual(normalizeCode(code), normalizeCode(ctx.setup.code))) {
       limiter.fail(keys);
       audit('creation_admin_refusee', { raison: 'code de démarrage incorrect', ip: req.ip });
-      return res.status(403).json({ error: 'Code de démarrage incorrect.' });
+      return res.status(403).json({ error: req.t('comptes.codeDemarrage.incorrect') });
     }
-    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
+    if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const problem = passwordProblem(password);
-    if (problem) return res.status(400).json({ error: problem });
+    if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
-    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
+    if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
 
     const hash = await hashPassword(password);
 
@@ -78,7 +79,7 @@ export function publicAuthRoutes(ctx) {
       return db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, 'admin')")
         .run(username, name, hash).lastInsertRowid;
     })();
-    if (!created) return res.status(403).json({ error: 'Listo est déjà configuré.' });
+    if (!created) return res.status(403).json({ error: req.t('comptes.dejaConfigure'), code: 'comptes.dejaConfigure' });
 
     ctx.setup.code = null; // le code de démarrage ne servira plus jamais
     audit('creation_admin', { utilisateur: username, ip: req.ip });
@@ -90,11 +91,11 @@ export function publicAuthRoutes(ctx) {
   router.post('/login', async (req, res) => {
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off)
     if (ctx.config.localLogin === false) {
-      return res.status(403).json({ error: `La connexion par mot de passe est désactivée : utilisez « Se connecter avec ${ctx.config.oidcName} ».` });
+      return res.status(403).json({ error: req.t('comptes.connexion.motDePasseDesactive', { provider: ctx.config.oidcName }) });
     }
     const { username, password } = req.body ?? {};
     if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
-      return res.status(400).json({ error: 'Identifiant et mot de passe requis.' });
+      return res.status(400).json({ error: req.t('comptes.connexion.requis') });
     }
     const keys = attemptKeys(req, username);
     const user = findUser.get(username);
@@ -104,7 +105,7 @@ export function publicAuthRoutes(ctx) {
 
     if (limiter.isBlocked(keys)) {
       audit('connexion_bloquee', { ...who, ip: req.ip });
-      return res.status(429).json({ error: BLOCKED });
+      return res.status(429).json({ error: req.t(BLOCKED) });
     }
 
     // La tentative est comptée comme un échec AVANT la vérification (qui prend
@@ -118,7 +119,7 @@ export function publicAuthRoutes(ctx) {
     const passwordOk = await verifyPassword(password, user?.password_hash ?? (await getDummyHash()));
     if (!user || !passwordOk || user.active !== 1) {
       audit('connexion_echouee', { ...who, ip: req.ip });
-      return res.status(401).json({ error: BAD_LOGIN });
+      return res.status(401).json({ error: req.t(BAD_LOGIN) });
     }
 
     // Compte avec 2FA : pas de session tant que le code n'est pas donné.
@@ -141,21 +142,21 @@ export function publicAuthRoutes(ctx) {
   // Saisie du code 2FA (ou d'un code de secours) après le mot de passe
   router.post('/login/2fa', (req, res) => {
     const pending = ctx.pending.find(req);
-    if (!pending) return res.status(401).json({ error: 'Connexion expirée : saisissez de nouveau votre mot de passe.' });
+    if (!pending) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
 
     // Relu au dernier moment : le compte a pu changer entre-temps
     const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1 AND totp_enabled = 1').get(pending.userId);
-    if (!user) return res.status(401).json({ error: 'Connexion expirée : saisissez de nouveau votre mot de passe.' });
+    if (!user) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
 
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
       audit('connexion_bloquee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-      return res.status(429).json({ error: BLOCKED });
+      return res.status(429).json({ error: req.t(BLOCKED) });
     }
     if (!checkSecondFactor(ctx, user, req.body?.code)) {
       limiter.fail(keys);
       audit('connexion_echouee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-      return res.status(401).json({ error: 'Code incorrect.' });
+      return res.status(401).json({ error: req.t('comptes.code.incorrect') });
     }
 
     ctx.pending.finish(ctx, res, pending.key);

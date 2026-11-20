@@ -19,7 +19,7 @@
 // list : { ownerId, forUserId, forName } (forme du téléphone), voir
 // wishListOf() pour une ligne de la base.
 
-import { formatMoney } from './i18n.js';
+import { formatMoney, t } from './i18n.js';
 
 export const FOR_NAME_MAX = 80;
 export const LINK_MAX = 500;
@@ -83,7 +83,7 @@ export function formatPrice(cents) {
 // Sous-titre d'une liste d'envies (telle que décrite par le serveur) : à qui
 // elle est destinée, « Pour vous » pour le bénéficiaire lui-même
 export function wishForLabel(list) {
-  if (list.isBeneficiary) return 'Pour vous';
+  if (list.isBeneficiary) return t('regles.envies.pourVous');
   const name = list.forDisplayName ?? list.forName ?? list.members?.find((m) => m.isOwner)?.displayName;
-  return name ? `Pour ${name}` : 'Envies';
+  return name ? t('regles.envies.pour', { name }) : t('regles.envies.sansDestinataire');
 }

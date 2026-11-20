@@ -12,7 +12,8 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { fakeDevice, fakePushService } from './push-helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { BAD_TIME, BAD_REMINDER, TIME_NEEDS_DUE, REMIND_NEEDS_TIME, DUE_NOT_HERE } from '../server/lists.js';
+import * as refusals from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
 import { localDay, REMIND_LATE_MS } from '../server/notify.js';
 import { isDueTime, isReminder, isLate, compareDue, reminderAt, timeLabel, nowTime, REMINDERS } from '../public/js/due-time.js';
 import { dueChip } from '../public/js/format.js';
@@ -22,6 +23,8 @@ import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [BAD_TIME, BAD_REMINDER, TIME_NEEDS_DUE, REMIND_NEEDS_TIME, DUE_NOT_HERE] = ['BAD_TIME', 'BAD_REMINDER', 'TIME_NEEDS_DUE', 'REMIND_NEEDS_TIME', 'DUE_NOT_HERE'].map((name) => fr[refusals[name]]);
 
 // --- Module partagé ---
 

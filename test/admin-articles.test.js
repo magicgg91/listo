@@ -39,7 +39,8 @@ test('libellé : onglet « Articles », plus aucun « Noms » à l\'écran', () 
   }
   assert.match(admin, /h\('p', \{ class: 'section-title' \}, countItems\(page\.total, true\)\)/);
   // Message d'une entrée qui n'existe plus
-  assert.match(read('server/routes/admin-names.js'), /const NOT_FOUND = 'Cet article n\\'est plus enregistré \(déjà corrigé ou retiré \?\)\.';/);
+  assert.match(read('server/routes/admin-names.js'), /const NOT_FOUND = 'references\.historique\.introuvable';/);
+  assert.equal(fr['references.historique.introuvable'], 'Cet article n\'est plus enregistré (déjà corrigé ou retiré ?).');
   // Les routes ne changent pas
   assert.match(admin, /get\(`\/api\/admin\/names\?\$\{params\}`\)/);
   // Documentation : le nouveau libellé

@@ -68,6 +68,16 @@ const MIGRATED = [
   'public/js/freshness.js',
   'public/js/router.js',
   'public/js/trusted.js',
+  // Lot 4 : règles communes au téléphone et au serveur
+  'public/js/subtasks.js',
+  'public/js/assign.js',
+  'public/js/wishes.js',
+  'public/js/list-types.js',
+  'public/js/history.js',
+  'public/js/sorting.js',
+  'public/js/repeat.js',
+  'public/js/due-time.js',
+  'public/js/quantity.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {

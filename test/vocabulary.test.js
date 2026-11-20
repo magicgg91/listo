@@ -44,9 +44,14 @@ test('interface : « invité » ne désigne jamais une personne qui peut modifie
 test('serveur : messages et journal neutres, identifiants internes inchangés', () => {
   const lists = code('server/lists.js');
   assert.doesNotMatch(lists, /OpError\([^)]*invit/i);
-  assert.match(lists, /'Liste des personnes invalide\.'/);
-  assert.match(lists, /'Droits des personnes invalides\.'/);
-  assert.match(lists, /'Droit donné à une personne avec qui la liste n\\'est pas partagée\.'/);
+  // Textes des refus : public/js/i18n/fr/ops.js (noms dans server/lists.js)
+  assert.ok(Object.entries(fr).filter(([key]) => key.startsWith('ops.')).every(([, text]) => !/invit/i.test(text)));
+  assert.match(lists, /'ops\.listePersonnesInvalide'/);
+  assert.match(lists, /'ops\.droitsPersonnesInvalides'/);
+  assert.match(lists, /'ops\.droitSansPartage'/);
+  assert.equal(fr['ops.listePersonnesInvalide'], 'Liste des personnes invalide.');
+  assert.equal(fr['ops.droitsPersonnesInvalides'], 'Droits des personnes invalides.');
+  assert.equal(fr['ops.droitSansPartage'], 'Droit donné à une personne avec qui la liste n\'est pas partagée.');
   // Journal : champ « personne » (plus « invite ») ; noms d'événements inchangés
   for (const event of ['liste_partage_ajoute', 'liste_partage_retire', 'liste_droit_change']) {
     assert.match(lists, new RegExp(`ctx\\.audit\\('${event}', \\{ utilisateur: user\\.username, liste: list\\.id, personne: nameOf\\(id\\)`), event);

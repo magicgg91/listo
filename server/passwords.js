@@ -24,13 +24,14 @@ const MAX_MEMORY = 64 * 1024 * 1024;
 export const PASSWORD_MIN = 10;
 export const PASSWORD_MAX = 200;
 
-// Vérifie la longueur d'un nouveau mot de passe. Renvoie un message d'erreur,
-// ou null si le mot de passe convient.
+// Vérifie la longueur d'un nouveau mot de passe. Renvoie le message d'erreur
+// sous forme { key, params } (traduit par la route avec req.t), ou null si
+// le mot de passe convient.
 export function passwordProblem(password) {
-  if (typeof password !== 'string') return 'Mot de passe manquant.';
+  if (typeof password !== 'string') return { key: 'comptes.motDePasse.manquant' };
   const length = [...password].length; // compte les caractères, accents compris
-  if (length < PASSWORD_MIN) return `Le mot de passe doit faire au moins ${PASSWORD_MIN} caractères.`;
-  if (length > PASSWORD_MAX) return `Le mot de passe doit faire au plus ${PASSWORD_MAX} caractères.`;
+  if (length < PASSWORD_MIN) return { key: 'comptes.motDePasse.tropCourt', params: { min: PASSWORD_MIN } };
+  if (length > PASSWORD_MAX) return { key: 'comptes.motDePasse.tropLong', params: { max: PASSWORD_MAX } };
   return null;
 }
 

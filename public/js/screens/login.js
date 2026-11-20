@@ -266,7 +266,7 @@ function setupStep(show) {
         loggedIn(result.user);
       } catch (err) {
         // Un compte existe déjà (créé entre-temps) : retour à la connexion
-        if (err instanceof ApiError && err.status === 403 && /déjà configuré/.test(err.message)) {
+        if (err instanceof ApiError && err.status === 403 && err.data?.code === 'comptes.dejaConfigure') {
           app.setupNeeded = false;
           show(passwordStep, { message: t('connexion.admin.dejaConfigure') });
           return;

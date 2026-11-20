@@ -11,12 +11,13 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import {
-  SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT,
-  nestItems, parentOf, progressOf,
-} from '../public/js/subtasks.js';
+import * as refusals from '../public/js/subtasks.js';
+import { nestItems, parentOf, progressOf } from '../public/js/subtasks.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT] = ['SUBTASK_NOT_HERE', 'SUBTASKS_OFF', 'BAD_PARENT', 'PARENT_IS_SUBTASK', 'HAS_SUBTASKS', 'NOT_OWN_PARENT', 'SUBTASK_NO_REPEAT'].map((name) => fr[refusals[name]]);
 
 // Foyer : Guillaume (propriétaire), Léa (« Peut modifier »), Paul (lecture
 // seule), Zoé (pas membre) ; « Refonte » (tâches, échéance et sous-tâches
@@ -371,7 +372,7 @@ test('« Tout déplier / Tout replier » agit aussi sur les sous-tâches (pas pe
 // --- Ordre manuel des sous-tâches (migration 33) ---
 
 test('ordre manuel : ajout à la fin, déplacement (après une autre, en premier), refus sans rien écrire, droits', async (t) => {
-  const { NOT_A_SUBTASK, BAD_PLACE } = await import('../public/js/subtasks.js');
+  const [NOT_A_SUBTASK, BAD_PLACE] = [refusals.NOT_A_SUBTASK, refusals.BAD_PLACE].map((key) => fr[key]);
   const h = await household(t);
   const lot3 = uuid();
   await op(h.guillaume, { type: 'item.create', listId: h.lists.refonte, itemId: lot3, name: 'Lot 3', parentId: h.items.authelia });
@@ -467,7 +468,7 @@ test('ordre manuel : migration 33, les sous-tâches existantes gardent l\'ordre 
 });
 
 test('Claude : read_list donne les sous-tâches dans l\'ordre manuel ; update_items les réordonne (after_id), tout ou rien', async (t) => {
-  const { BAD_PLACE, NOT_A_SUBTASK } = await import('../public/js/subtasks.js');
+  const [BAD_PLACE, NOT_A_SUBTASK] = [refusals.BAD_PLACE, refusals.NOT_A_SUBTASK].map((key) => fr[key]);
   const h = await mcpHousehold(t);
   const c = claude(h, (await connect(h, h.guillaume, PASSWORD, { scope: 'write' })).access_token);
   const toolError = (r) => (r.body.result?.isError ? r.body.result.content[0].text : null);

@@ -13,9 +13,12 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, computeListView } from '../public/js/store.js';
-import { WISHES_FIXED } from '../public/js/list-types.js';
+import { WISHES_FIXED as WISHES_FIXED_KEY } from '../public/js/list-types.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
+// Refus : nom du texte ; la réponse le donne en français
+const WISHES_FIXED = fr[WISHES_FIXED_KEY];
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function household(t, options = {}) {

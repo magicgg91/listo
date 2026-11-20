@@ -29,6 +29,7 @@
 
 import crypto from 'node:crypto';
 import { hashToken } from './auth.js';
+import { translate } from '../public/js/i18n.js';
 import {
   cimdUrl, checkCimdDocument, fetchClientMetadata, checkRegistration, redirectMatches, redirectHost,
 } from './oauth-clients.js';
@@ -68,7 +69,9 @@ export const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;          // BASE64URL(SHA25
 const PKCE_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;    // RFC 7636, §4.1
 export const REQUEST_ID = /^[A-Za-z0-9_-]{22}$/;
 
-// Erreur à renvoyer telle quelle : status HTTP, code OAuth, explication
+// Erreur à renvoyer telle quelle : status HTTP, code OAuth, explication.
+// Une erreur montrée sur l'écran « Autoriser Claude » porte aussi le nom de
+// son texte (key) et ses valeurs (params), traduits par la route.
 export class OAuthError extends Error {
   constructor(status, error, description) {
     super(description);
@@ -291,7 +294,10 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       // application : la réautoriser remplace son ancienne connexion
       const active = q.activeGrants.all(user.id, iso(time - REFRESH_TTL));
       if (active.filter((grant) => grant.app_key !== appKey).length >= MAX_GRANTS) {
-        throw new OAuthError(409, 'too_many_grants', `Vous avez déjà ${MAX_GRANTS} connexions Claude actives (le maximum). Une connexion inutilisée pendant 30 jours se libère d'elle-même.`);
+        const error = new OAuthError(409, 'too_many_grants', translate('fr', 'autorisation.tropDeConnexions', { max: MAX_GRANTS }));
+        error.key = 'autorisation.tropDeConnexions';
+        error.params = { max: MAX_GRANTS };
+        throw error;
       }
       for (const grant of active) {
         if (grant.app_key === appKey) revokeGrant(grant.id, { reason: 'remplacée par une nouvelle autorisation', user });

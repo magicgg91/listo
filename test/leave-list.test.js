@@ -12,8 +12,11 @@ import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
 import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync } from '../public/js/store.js';
-import { OWNER_CANNOT_LEAVE } from '../server/lists.js';
+import { OWNER_CANNOT_LEAVE as OWNER_CANNOT_LEAVE_KEY } from '../server/lists.js';
 import fr from '../public/js/i18n/fr.js';
+
+// Refus : nom du texte ; la réponse le donne en français
+const OWNER_CANNOT_LEAVE = fr[OWNER_CANNOT_LEAVE_KEY];
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');

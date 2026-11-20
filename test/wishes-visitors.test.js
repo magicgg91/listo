@@ -14,7 +14,14 @@ import { startTestApp, setupAdmin, addUser, login, createClient } from './helper
 import { emptyState, loadSync, toSnapshot } from '../public/js/store.js';
 import { dropOrphanStates } from '../server/db.js';
 import fr from '../public/js/i18n/fr.js';
-import { ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, BAD_FIRST_NAME, VISITOR_LIMIT, ITEM_FULL, LINK_FULL } from '../server/reservations.js';
+import * as reservationTexts from '../server/reservations.js';
+import { translate } from '../public/js/i18n.js';
+
+// Messages attendus, en français (server/reservations.js exporte leurs noms)
+const [ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, VISITOR_LIMIT, ITEM_FULL, LINK_FULL] = [
+  'ALREADY', 'ALREADY_IN', 'RECEIVED', 'NOT_FOUND', 'NOT_IN', 'VISITOR_LIMIT', 'ITEM_FULL', 'LINK_FULL',
+].map((name) => translate('fr', reservationTexts[name]));
+const BAD_FIRST_NAME = translate('fr', reservationTexts.BAD_FIRST_NAME, { max: reservationTexts.VISITOR_NAME_MAX });
 
 const uuid = () => crypto.randomUUID();
 const HOUR = 60 * 60 * 1000;

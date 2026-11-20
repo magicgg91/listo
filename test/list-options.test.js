@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login, createClient, ORIGIN, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
-import { PRIORITY_OFF, DUE_OFF } from '../server/lists.js';
+import { PRIORITY_OFF as PRIORITY_OFF_KEY, DUE_OFF as DUE_OFF_KEY } from '../server/lists.js';
 import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync, applyOp, listOptions, availableSorts, effectiveSort, computeListView } from '../public/js/store.js';
@@ -22,6 +22,8 @@ import fr from '../public/js/i18n/fr.js';
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [PRIORITY_OFF, DUE_OFF] = [PRIORITY_OFF_KEY, DUE_OFF_KEY].map((key) => fr[key]);
 
 // Guillaume (propriétaire) ; Léa « Peut modifier » ; Paul « Lecture seule ».
 // Une liste de tâches toute neuve (réglages désactivés par défaut) avec un
@@ -60,8 +62,9 @@ async function household(t) {
   return { app, guillaume, ...clients, ids, tasks, shopping, bulb, milk, notified, settings, values };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -229,7 +232,7 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
       deletePhoto: async () => {},
     },
     timers: { setTimeout: () => 0, clearTimeout: () => {} },
-    events: { refused: (entry, message) => refused.push(message) },
+    events: { refused: (entry, message, code) => refused.push([message, code]) },
   });
   // Léa, hors ligne : priorité, puis une note, puis une échéance
   await queue.add({ kind: 'op', op: { id: uuid(), type: 'item.update', itemId: h.bulb, priority: 'high' } });
@@ -239,7 +242,7 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
   await run(h.guillaume, { type: 'list.update', listId: h.tasks, priorityEnabled: false });
   assert.equal(await queue.flush(), 'done');
   assert.equal(queue.count(), 0);
-  assert.deepEqual(refused, [PRIORITY_OFF]);
+  assert.deepEqual(refused, [[PRIORITY_OFF, PRIORITY_OFF_KEY]], 'le message, et le nom de son texte (reconnu par app.js)');
   assert.deepEqual(h.values(h.bulb), { priority: 'normal', due_date: '2026-10-30' }, 'la suite est passée');
   assert.equal(h.app.db.prepare('SELECT note FROM items WHERE id = ?').pluck().get(h.bulb), 'couloir');
   calls.length = 0;
@@ -247,8 +250,10 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
   assert.deepEqual(calls, [], 'pas de boucle');
   // app.js : un seul message court, après la synchronisation
   const appJs = read('public/js/app.js');
-  assert.match(appJs, /const OPTION_OFF = \['La priorité est désactivée pour cette liste\.', "L'échéance est désactivée pour cette liste\."\];/);
+  assert.match(appJs, /const OPTION_OFF = \['ops\.prioriteDesactivee', 'ops\.echeanceDesactivee'\];/);
+  assert.deepEqual([PRIORITY_OFF_KEY, DUE_OFF_KEY], ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'], 'mêmes noms que le serveur');
   assert.deepEqual([PRIORITY_OFF, DUE_OFF], ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."]);
+  assert.match(appJs, /optionRefused = refusals\.some\(\(\{ code \}\) => OPTION_OFF\.includes\(code\)\);/);
   assert.equal(fr['application.optionDesactivee'], 'Cette option est désactivée pour cette liste.');
   assert.match(appJs, /if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);\s*else if \(optionRefused\) toast\(t\('application\.optionDesactivee'\)\);/);
 });

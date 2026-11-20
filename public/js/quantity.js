@@ -27,12 +27,12 @@ import { isShoppingList } from './list-types.js';
 export const QUANTITY_MAX = 30; // serveur : quantity (optionalText, 30)
 
 // Unités de mesure (collées au nombre ou non) : majuscules ou minuscules
-const MEASURES = ['mg', 'g', 'kg', 'ml', 'cl', 'dl', 'l'];
+const MEASURES = ['mg', 'g', 'kg', 'ml', 'cl', 'dl', 'l']; // technique : mots reconnus à la saisie (étape 3)
 // Contenants et conditionnements (singulier ou pluriel)
-const PACKS = ['boîte', 'boite', 'paquet', 'sachet', 'bouteille', 'pot', 'barquette', 'lot', 'pack', 'tranche', 'brique', 'canette', 'rouleau'];
+const PACKS = ['boîte', 'boite', 'paquet', 'sachet', 'bouteille', 'pot', 'barquette', 'lot', 'pack', 'tranche', 'brique', 'canette', 'rouleau']; // technique : mots reconnus à la saisie (étape 3)
 // Petits mots qui, juste après un nombre, montrent que le nombre fait partie
 // du nom (« 2 en 1 shampoing », « 3 pour 2 ») : rien n'est lu
-const SMALL_WORDS = ['en', 'à', 'a', 'au', 'aux', 'pour', 'par', 'et', 'ou', 'sur', 'sous', 'sans', 'avec', 'fois', 'de', 'du', 'des', 'd', 'x', '×'];
+const SMALL_WORDS = ['en', 'à', 'a', 'au', 'aux', 'pour', 'par', 'et', 'ou', 'sur', 'sous', 'sans', 'avec', 'fois', 'de', 'du', 'des', 'd', 'x', '×']; // technique : mots reconnus à la saisie (étape 3)
 
 const NUMBER = '(\\d+(?:[.,]\\d+)?)';
 const AT_START = new RegExp(`^${NUMBER}(\\S*) (.+)$`);

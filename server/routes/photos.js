@@ -14,7 +14,7 @@ import express from 'express';
 import { cleanJpeg, sendPhoto, MAX_PHOTO_BYTES } from '../photos.js';
 import { canEdit, READ_ONLY } from '../lists.js';
 
-const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.'; // sans « article » (voir lists.js)
+const ITEM_NOT_FOUND = 'photos.elementIntrouvable'; // sans « article » (voir lists.js)
 
 export function photoRoutes(ctx) {
   const router = express.Router();
@@ -24,14 +24,14 @@ export function photoRoutes(ctx) {
   // Trouve l'article et vérifie que le compte est membre de sa liste
   const findItem = (req, res, next) => {
     const item = service.photoItem(req.user, req.params.id);
-    if (!item) return res.status(404).json({ error: ITEM_NOT_FOUND });
+    if (!item) return res.status(404).json({ error: req.t(ITEM_NOT_FOUND) });
     req.item = item;
     next();
   };
 
   // Envoyer ou retirer : droit de modification sur la liste (après findItem)
   const mayEdit = (req, res, next) => {
-    if (!canEdit(req.user, req.item)) return res.status(403).json({ error: READ_ONLY });
+    if (!canEdit(req.user, req.item)) return res.status(403).json({ error: req.t(READ_ONLY), code: READ_ONLY });
     next();
   };
 
@@ -39,7 +39,7 @@ export function photoRoutes(ctx) {
   const uploadQuota = (req, res, next) => {
     if (!uploads.take(req.user.id)) {
       ctx.audit('photo_plafond_atteint', { utilisateur: req.user.username, ip: req.ip });
-      return res.status(429).json({ error: "Trop de photos envoyées. Réessayez dans une heure." });
+      return res.status(429).json({ error: req.t('photos.tropDEnvois') });
     }
     next();
   };
@@ -50,19 +50,19 @@ export function photoRoutes(ctx) {
 
   router.put('/items/:id/photo', findItem, mayEdit, uploadQuota, rawBody, async (req, res) => {
     const checked = cleanJpeg(Buffer.isBuffer(req.body) ? req.body : null);
-    if (!checked.ok) return res.status(400).json({ error: checked.error });
+    if (!checked.ok) return res.status(400).json({ error: req.t(checked.error, checked.params) });
 
     await photos.save(req.item.id, checked.jpeg);
     // L'article a pu être supprimé pendant l'envoi : la suppression l'emporte
     if (!service.photoItem(req.user, req.item.id)) {
       photos.remove(req.item.id);
-      return res.status(404).json({ error: ITEM_NOT_FOUND });
+      return res.status(404).json({ error: req.t(ITEM_NOT_FOUND) });
     }
     res.json({ item: service.setPhotoDate(req.item.id, service.nowIso(), req.user) });
   });
 
   router.get('/items/:id/photo', findItem, (req, res) => {
-    if (!req.item.photo_at) return res.status(404).json({ error: 'Photo introuvable.' });
+    if (!req.item.photo_at) return res.status(404).json({ error: req.t('photos.introuvable') });
     sendPhoto(res, photos, req.item.id);
   });
 

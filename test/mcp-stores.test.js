@@ -20,7 +20,11 @@ import assert from 'node:assert/strict';
 import { uuid, PASSWORD, household, connect, claude, data } from './mcp-helpers.js';
 import { READ_ONLY_GRANT, STORE_NOT_HERE, SIMPLE_NO_STORE, TOOLS } from '../server/mcp-tools.js';
 import { INSTRUCTIONS } from '../server/mcp.js';
-import { MULTI_NO_AISLE } from '../server/lists.js';
+import { MULTI_NO_AISLE as MULTI_NO_AISLE_KEY } from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
+
+// Refus : nom du texte ; Claude le reçoit en français
+const MULTI_NO_AISLE = fr[MULTI_NO_AISLE_KEY];
 import { normalizeItemName } from '../public/js/history.js';
 
 const MINUTE = 60 * 1000;

@@ -20,8 +20,9 @@
 import express from 'express';
 import { checkDuration, DEFAULT_DURATION_HOURS } from '../shares.js';
 
-const LIST_NOT_FOUND = 'Liste introuvable.';
-const BAD_DURATION = 'Durée invalide : de 1 heure à 365 jours, ou illimitée.';
+// Noms des messages (public/js/i18n/fr/liens.js), traduits par req.t
+const LIST_NOT_FOUND = 'liens.listeIntrouvable';
+const BAD_DURATION = 'liens.dureeInvalide';
 
 export function shareRoutes(ctx) {
   const router = express.Router();
@@ -30,7 +31,7 @@ export function shareRoutes(ctx) {
   // Trouve la liste et vérifie que le compte en est le propriétaire
   const ownList = (req, res, next) => {
     const list = shares.ownedList(req.user, req.params.id);
-    if (!list) return res.status(404).json({ error: LIST_NOT_FOUND });
+    if (!list) return res.status(404).json({ error: req.t(LIST_NOT_FOUND) });
     req.list = list;
     next();
   };
@@ -46,10 +47,10 @@ export function shareRoutes(ctx) {
     // ne lit jamais les réservations, voir routes/public.js)
     const body = req.body ?? {};
     const durationHours = body.durationHours === undefined ? undefined : checkDuration(body.durationHours);
-    if (body.durationHours !== undefined && durationHours === undefined) return res.status(400).json({ error: BAD_DURATION });
-    if (body.protect !== undefined && typeof body.protect !== 'boolean') return res.status(400).json({ error: 'Valeur « protect » invalide.' });
+    if (body.durationHours !== undefined && durationHours === undefined) return res.status(400).json({ error: req.t(BAD_DURATION) });
+    if (body.protect !== undefined && typeof body.protect !== 'boolean') return res.status(400).json({ error: req.t('liens.protectInvalide') });
     if (body.password !== undefined && !['new', 'none'].includes(body.password)) {
-      return res.status(400).json({ error: 'Valeur « password » invalide (« new » ou « none »).' });
+      return res.status(400).json({ error: req.t('liens.passwordInvalide') });
     }
 
     const existing = shares.current(req.list.id);
@@ -59,17 +60,17 @@ export function shareRoutes(ctx) {
         durationHours: durationHours === undefined ? DEFAULT_DURATION_HOURS : durationHours,
         protect: body.protect === true,
       });
-      if (!created) return res.status(409).json({ error: 'Un lien est déjà actif pour cette liste.' });
+      if (!created) return res.status(409).json({ error: req.t('liens.dejaActif') });
       audit('lien_public_cree', { ...who(req, created.share), duree: created.share.expires_at ? `${durationHours ?? DEFAULT_DURATION_HOURS} h` : 'illimitée', motDePasse: created.password !== null });
       return res.status(201).json({ share: shares.describe(created.share, { password: created.password }) });
     }
 
     // Modification d'un lien actif
     if (body.password === 'none' && existing.password_hash === null) {
-      return res.status(400).json({ error: "Ce lien n'a pas de mot de passe." });
+      return res.status(400).json({ error: req.t('liens.sansMotDePasse') });
     }
     const updated = await shares.update(existing, { durationHours, password: body.password });
-    if (!updated) return res.status(409).json({ error: 'Ce lien vient d\'être arrêté.' });
+    if (!updated) return res.status(409).json({ error: req.t('liens.arrete') });
     if (durationHours !== undefined) audit('lien_public_duree_changee', { ...who(req, existing), duree: durationHours === null ? 'illimitée' : `${durationHours} h` });
     if (body.password === 'new') audit('lien_public_nouveau_mot_de_passe', who(req, existing));
     if (body.password === 'none') audit('lien_public_mot_de_passe_retire', who(req, existing));

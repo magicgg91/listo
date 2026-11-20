@@ -7,7 +7,7 @@ export default {
   'claude.acces.ecriture': 'Lecture et écriture',
   'claude.application.nom': '« {name} » ({detail})',
   'claude.application.nonVerifie': 'nom donné par l\'application, non vérifié',
-  'claude.application.fourni': 'nom fourni par l\'application',
+  'claude.application.fourni': 'nom publié par le site de l\'application',
   'claude.local': 'une application sur cet ordinateur (localhost)',
   'claude.chargement': 'Chargement…',
   'claude.toutesMesListes': 'Toutes mes listes',

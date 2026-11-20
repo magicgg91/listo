@@ -243,7 +243,7 @@ test('sourdine et réglage « Nouveautés » : plus rien à signaler ; valeurs i
   assert.deepEqual(await run(h.guillaume, { type: 'account.news', enabled: 'non' }), { status: 400, error: 'Réglage « Nouveautés » invalide.' });
   assert.deepEqual(await run(h.guillaume, { type: 'account.news', checks: 1 }), { status: 400, error: 'Réglage « Signaler les éléments cochés » invalide.' });
   assert.deepEqual(await run(h.guillaume, { type: 'account.news' }), { status: 400, error: 'Rien à modifier.' });
-  assert.deepEqual(await run(h.guillaume, { type: 'list.mute', listId: h.listId, muted: 'oui' }), { status: 400, error: 'Réglage « Ne plus me signaler cette liste » invalide.' });
+  assert.deepEqual(await run(h.guillaume, { type: 'list.mute', listId: h.listId, muted: 'oui' }), { status: 400, error: 'Réglage « Masquer les nouveautés de cette liste » invalide.' });
 });
 
 test('temps réel : « vu », sourdine et réglages préviennent mes autres appareils (moi seul) ; un ajout prévient les membres', async (t) => {

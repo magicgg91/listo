@@ -7,7 +7,7 @@ export default {
   'claude.acces.ecriture': 'Read and write',
   'claude.application.nom': '“{name}” ({detail})',
   'claude.application.nonVerifie': 'name given by the app, not verified',
-  'claude.application.fourni': 'name provided by the app',
+  'claude.application.fourni': 'name published by the app\'s website',
   'claude.local': 'an app on this computer (localhost)',
   'claude.chargement': 'Loading…',
   'claude.toutesMesListes': 'All my lists',

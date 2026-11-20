@@ -5,7 +5,7 @@ export default {
   // Messages plein écran
   'lienpublic.tropEssais.texte': 'Trop d\'essais, réessayez plus tard.',
   'lienpublic.invalide': 'Lien expiré ou inexistant',
-  'lienpublic.invalide.texte': 'Ce lien n\'est plus valide. Demander un nouveau lien à la personne qui l\'a envoyé.',
+  'lienpublic.invalide.texte': 'Ce lien n\'est plus valide. Demandez un nouveau lien à la personne qui l\'a envoyé.',
   'lienpublic.reseau': 'Liste indisponible',
   'lienpublic.reseau.texte': 'Impossible de joindre Listo. Vérifiez la connexion, puis rechargez la page.',
   'lienpublic.tropEssais': 'Trop d\'essais',
@@ -13,11 +13,11 @@ export default {
   // Saisie du mot de passe
   'lienpublic.ouvrir': 'Ouvrir',
   'lienpublic.motDePasse': 'Mot de passe',
-  'lienpublic.motDePasse.manquant': 'Saisir le mot de passe.',
+  'lienpublic.motDePasse.manquant': 'Saisissez le mot de passe.',
   'lienpublic.injoignable': 'Impossible de joindre Listo. Réessayez.',
   'lienpublic.motDePasse.incorrect': 'Mot de passe incorrect',
   'lienpublic.protegee': 'Liste protégée',
-  'lienpublic.protegee.texte': 'Saisir le mot de passe reçu avec le lien.',
+  'lienpublic.protegee.texte': 'Saisissez le mot de passe reçu avec le lien.',
 
   // La liste en lecture seule
   'lienpublic.actualiser': 'Actualiser',

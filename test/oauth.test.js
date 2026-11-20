@@ -630,7 +630,7 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   // Nom déclaré par l'application elle-même (DCR) : « non vérifié »
   assert.match(screen, /const named = request\.app\.nameFromApp \? t\('claude\.application\.nonVerifie'\) : t\('claude\.application\.fourni'\);/);
   assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
-  assert.equal(fr['claude.application.fourni'], 'nom fourni par l\'application');
+  assert.equal(fr['claude.application.fourni'], 'nom publié par le site de l\'application');
   assert.match(screen, /const appSub = request\.app\.name \? t\('claude\.application\.nom', \{ name: request\.app\.name, detail: named \}\)/);
   assert.equal(fr['claude.application.nom'], '« {name} » ({detail})');
   // Phrase de confirmation juste au-dessus d'« Autoriser », dans la barre du bas

@@ -157,7 +157,7 @@ test('souhaits : lien http/https seulement (jamais appelé), prix en centimes, p
     assert.deepEqual([res.status, res.error], [400, 'Lien invalide : une adresse web en http ou https, 500 caractères au plus.'], String(link));
   }
   for (const priceCents of [-1, 10000001, 12.5, '1200', true]) {
-    assert.deepEqual((await add({ priceCents })).error, 'Prix invalide (de 0 à 100 000 €).', String(priceCents));
+    assert.deepEqual((await add({ priceCents })).error, 'Prix invalide (de 0 à 100 000).', String(priceCents));
   }
   assert.equal((await add({ quantity: '2' })).error, 'Pas de quantité dans une liste d\'envies.');
   const ok = await add({ link: ' http://exemple.fr/Lampe?couleur=bleu ', priceCents: 0 });

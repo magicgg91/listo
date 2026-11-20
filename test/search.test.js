@@ -10,9 +10,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
-  foldText, foldQuery, isSearching, findHits, matches, highlightParts, filterListView, filterLists, resultsLabel, listsLabel,
+  foldText, foldQuery, isSearching, findHits, matches, highlightParts, filterListView, filterLists, resultsLabel, listsLabel, setTranslator,
 } from '../public/js/search.js';
+import { t } from '../public/js/i18n.js';
 import { emptyState, computeListView, canEditList, loadFoldedGroups, saveFoldedGroups } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 // Morceaux surlignés seulement
@@ -166,10 +168,15 @@ test('repli mémorisé intact : la recherche ouvre les groupes sans rien enregis
 });
 
 test('nombre de résultats : singulier et pluriel', () => {
+  // Sans traduction (site du guide) : le texte français
   assert.equal(resultsLabel(0), '0 résultat');
   assert.equal(resultsLabel(1), '1 résultat');
   assert.equal(resultsLabel(2), '2 résultats');
   assert.equal(resultsLabel(12), '12 résultats');
+  // Dans l'application, avec la traduction donnée par app.js (setTranslator)
+  setTranslator(t);
+  assert.equal(resultsLabel(0), '0 résultat');
+  assert.equal(resultsLabel(2), '2 résultats');
   assert.equal(listsLabel(0), '0 liste');
   assert.equal(listsLabel(1), '1 liste');
   assert.equal(listsLabel(3), '3 listes');
@@ -200,7 +207,8 @@ test('droits inchangés : un invité en lecture seule peut chercher ; rien n\'es
   assert.equal(filterListView(computeListView(state, 'c'), 'lait').count, 4, 'même résultat en lecture seule');
   // Le champ ne dépend pas du droit (seul « rien à chercher » le masque)
   const screen = read('public/js/screens/list.js');
-  assert.match(screen, /const search = createSearchRow\(content, \{\s*label: 'Rechercher dans la liste',/);
+  assert.match(screen, /const search = createSearchRow\(content, \{\s*label: t\('liste\.recherche\.label'\),/);
+  assert.equal(fr['liste.recherche.label'], 'Rechercher dans la liste');
   assert.doesNotMatch(screen.slice(screen.indexOf('const search = createSearchRow('), screen.indexOf('const menuButton')), /canEdit|editable/);
   // Barre d'ajout : toujours masquée en lecture seule, et pendant la recherche
   assert.match(screen, /function showAddbar\(\) \{\s*addbar\.hidden = !editable\(\) \|\| \(pc \? search\.focused : search\.open\);/);
@@ -239,13 +247,22 @@ test('champ : curseur seulement après la loupe ; touche « rechercher », croix
   assert.match(row, /enterkeyhint: 'search'/);
   assert.match(row, /if \(event\.key !== 'Enter'\) return;\s*event\.preventDefault\(\);\s*releaseFocus\(\);/, 'Entrée : clavier fermé, texte gardé');
   // Téléphone : la croix referme (texte vidé, clavier replié) ; Échap aussi
-  assert.match(row, /'aria-label': 'Fermer la recherche', onClick: \(\) => close\(\) \}, icon\('close'\)\)/);
+  assert.match(row, /'aria-label': t\('ajout\.recherche\.fermer'\), onClick: \(\) => close\(\) \}, icon\('close'\)\)/);
+  assert.equal(fr['ajout.recherche.fermer'], 'Fermer la recherche');
   assert.match(row, /function hide\(\) \{\s*if \(!isOpen\) return;\s*isOpen = false;\s*closeOverlay = null;\s*if \(document\.activeElement === input\) input\.blur\(\);[^\n]*\s*bar\.hidden = true;\s*clear\(\);/);
   // Ordinateur : croix « Effacer la saisie », l'appui ne retire pas le curseur du champ
-  assert.match(row, /'aria-label': 'Effacer la saisie',\s*hidden: true,\s*onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,/);
-  for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js']) {
-    assert.match(read(file), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, 'Effacer la recherche'\)/, file);
-  }
+  assert.equal(fr['ajout.recherche.effacer'], 'Effacer la saisie');
+  assert.match(row, /'aria-label': t\('ajout\.recherche\.effacer'\),\s*hidden: true,\s*onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,/);
+  // Échéances : texte du dictionnaire
+  assert.match(read('public/js/screens/deadlines.js'), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, t\('echeances\.recherche\.effacer'\)\)/);
+  assert.equal(fr['echeances.recherche.effacer'], 'Effacer la recherche');
+  // Liste : texte du dictionnaire
+  assert.match(read('public/js/screens/list.js'), /onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, t\('liste\.recherche\.effacer'\)\)/);
+  assert.equal(fr['liste.recherche.effacer'], 'Effacer la recherche');
+  // « Mes listes » : téléphone et ordinateur, texte du dictionnaire
+  const lists = read('public/js/screens/lists.js');
+  assert.equal(lists.match(/onPointerdown: search\.keepFocus\.pointerdown,\s*onMousedown: search\.keepFocus\.mousedown,\s*onClick: \(\) => search\.clear\(\),\s*\}, t\('listes\.recherche\.effacer'\)\)/g).length, 2);
+  assert.equal(fr['listes.recherche.effacer'], 'Effacer la recherche');
   // Aucune loupe dans les barres du haut : la loupe est en bas à droite
   for (const file of ['public/js/screens/list.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js']) assert.doesNotMatch(read(file), /iconButton\('search'/, file);
   assert.match(read('public/js/screens/list.js'), /const loupe = pc \? null : loupeButton\(\);/);

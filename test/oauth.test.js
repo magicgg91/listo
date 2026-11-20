@@ -14,6 +14,7 @@ import { openTotpSecret } from '../server/twofactor.js';
 import { allowedRedirect, redirectMatches, cimdUrl } from '../server/oauth-clients.js';
 import { MAX_GRANTS } from '../server/oauth.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const SECOND = 1000;
@@ -36,7 +37,7 @@ function fakeMetadata() {
     }
     if (/^https:\/\/claude\.ai\/app-\d+$/.test(url.href)) return { client_id: url.href, client_name: 'App', redirect_uris: [CALLBACK] };
     if (url.href === 'https://claude.ai/mauvais') return { client_id: 'https://claude.ai/autre', redirect_uris: [CALLBACK] };
-    throw new Error('réponse HTTP 404');
+    throw new Error('HTTP response 404');
   };
   return { calls, request };
 }
@@ -180,7 +181,7 @@ test('flux complet (DCR) : autorisation, écran, accord avec mot de passe, code,
   assert.equal(granted.user.username, 'guillaume');
   assert.deepEqual(granted.grant.scope, ['lists:read', 'lists:write']);
   assert.equal(granted.grant.allLists, true);
-  assert.ok(h.app.logs.some((l) => /claude\.connexion/.test(l) && /client="claude\.ai"/.test(l) && /portees="lists:read lists:write"/.test(l) && /listes="toutes"/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.connected/.test(l) && /client="claude\.ai"/.test(l) && /scopes="lists:read lists:write"/.test(l) && /lists="all"/.test(l)));
   assert.equal((await h.guillaume.get(`/api/oauth/demandes/${start.requestId}`)).status, 404, 'demande à usage unique');
 });
 
@@ -227,7 +228,7 @@ test('CIMD hors liste blanche ou document incohérent : refusé, sans appel rés
   assert.equal(h.metadata.calls.length, 0, 'aucun appel réseau');
   const wrong = await (await fakeClaude(h, { clientId: 'https://claude.ai/mauvais' })).authorize();
   assert.equal(wrong.status, 400, 'client_id du document différent de son adresse');
-  assert.ok(h.app.logs.some((l) => /claude\.client_refuse/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.client_refused/.test(l)));
 });
 
 test('redirection non autorisée : DCR refusée, autorisation sans aucune redirection', async (t) => {
@@ -304,7 +305,7 @@ test('code rejoué : refusé, et les jetons nés de ce code sont révoqués', as
   assert.equal(replay.body.error, 'invalid_grant');
   assert.equal(access(h, tokens.access_token), null, 'jeton d\'accès révoqué');
   assert.equal((await claude.refresh(tokens.refresh_token)).body.error, 'invalid_grant', 'renouvellement révoqué');
-  assert.ok(h.app.logs.some((l) => /claude\.revocation/.test(l) && /code d'autorisation rejoué/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.revoked/.test(l) && /authorization code replayed/.test(l)));
 });
 
 test('portée accordée respectée : lecture seule par défaut, écriture seulement si demandée ; sélection de listes', async (t) => {
@@ -379,8 +380,8 @@ test('tolérance de 60 s : le même jeton rejoué donne les MÊMES jetons ; au-d
   assert.equal(reuse.body.error, 'invalid_grant');
   assert.equal(access(h, second.body.access_token), null, 'connexion entière révoquée');
   assert.equal((await claude.refresh(second.body.refresh_token)).body.error, 'invalid_grant');
-  const line = h.app.logs.find((l) => /claude\.renouvellement/.test(l));
-  assert.match(line, /reutilisation=true/);
+  const line = h.app.logs.find((l) => /claude\.refresh/.test(l));
+  assert.match(line, /reuse=true/);
   assert.match(line, /client="claude\.ai"/);
 });
 
@@ -399,7 +400,7 @@ test(`${MAX_GRANTS} connexions au plus ; réautoriser la même application rempl
   assert.ok(access(h, renewed.access_token));
   assert.equal(access(h, tokens[0].access_token), null, 'ancienne connexion révoquée');
   assert.ok(access(h, tokens[1].access_token), 'les autres restent');
-  assert.ok(h.app.logs.some((l) => /claude\.revocation/.test(l) && /remplacée/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.revoked/.test(l) && /replaced by a new authorization/.test(l)));
   // Une connexion inutilisée 30 jours se libère d'elle-même
   h.app.clock.now += 31 * DAY;
   await login(h.guillaume, 'guillaume', PASSWORD);
@@ -430,7 +431,7 @@ test('mot de passe erroné au consentement : refusé, limitation des tentatives 
   const wrong = await claude.consent(h.guillaume, start.requestId, { password: 'pas le bon' });
   assert.equal(wrong.status, 403);
   assert.equal(wrong.body.error, 'Mot de passe incorrect.');
-  assert.ok(h.app.logs.some((l) => /mot_de_passe_refuse/.test(l) && /autorisation claude/.test(l)));
+  assert.ok(h.app.logs.some((l) => /password_refused/.test(l) && /step="claude authorization"/.test(l)));
   for (let i = 0; i < 4; i++) await claude.consent(h.guillaume, start.requestId, { password: 'pas le bon' });
   const blocked = await claude.consent(h.guillaume, start.requestId);
   assert.equal(blocked.status, 429, 'bloqué même avec le bon mot de passe');
@@ -457,7 +458,7 @@ test('mot de passe changé, compte désactivé, mot de passe réinitialisé par 
   await h.guillaume.post('/api/me/password', { currentPassword: PASSWORD, newPassword: 'NouveauMotDePasse!' });
   assert.equal(access(h, mine.access_token), null);
   assert.equal((await claude.refresh(mine.refresh_token)).body.error, 'invalid_grant');
-  assert.ok(h.app.logs.some((l) => /claude\.revocation/.test(l) && /mot de passe changé/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.revoked/.test(l) && /reason="password changed"/.test(l)));
 
   const marieId = await addUser(h.app.db, { username: 'marie', password: PASSWORD });
   const marie = h.app.client();
@@ -465,7 +466,7 @@ test('mot de passe changé, compte désactivé, mot de passe réinitialisé par 
   const hers = await claude.connect(marie);
   await h.guillaume.request('PATCH', `/api/admin/users/${marieId}`, { active: false });
   assert.equal(access(h, hers.access_token), null, 'compte désactivé');
-  assert.ok(h.app.logs.some((l) => /claude\.revocation/.test(l) && /compte désactivé/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.revoked/.test(l) && /reason="account disabled"/.test(l)));
   // Réactivée : l'ancienne connexion reste révoquée
   await h.guillaume.request('PATCH', `/api/admin/users/${marieId}`, { active: true });
   assert.equal(access(h, hers.access_token), null);
@@ -491,7 +492,7 @@ test('compte qui doit changer son mot de passe : aucun accord possible avant', a
   assert.equal((await claude.consent(marie, start.requestId)).status, 403);
 });
 
-test('refus : retour à Claude avec access_denied, state et iss ; journal claude.refus ; demande effacée', async (t) => {
+test('refus : retour à Claude avec access_denied, state et iss ; journal claude.refused ; demande effacée', async (t) => {
   const h = await setup(t);
   const claude = await fakeClaude(h);
   const start = await claude.authorize();
@@ -501,7 +502,7 @@ test('refus : retour à Claude avec access_denied, state et iss ; journal claude
   assert.equal(back.searchParams.get('state'), start.state);
   assert.equal(back.searchParams.get('iss'), ORIGIN);
   assert.equal(back.searchParams.get('code'), null);
-  assert.ok(h.app.logs.some((l) => /claude\.refus/.test(l) && /client="claude\.ai"/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.refused/.test(l) && /client="claude\.ai"/.test(l)));
   assert.equal((await h.guillaume.post(`/api/oauth/demandes/${start.requestId}/refus`)).status, 404);
 });
 
@@ -528,7 +529,7 @@ test('révocation par l\'application (RFC 7009) : toujours 200 ; le jeton prése
   assert.ok(access(h, tokens.access_token), 'jeton d\'une autre application : rien ne change');
   assert.equal((await raw(h.app, 'POST', '/oauth/revoke', { form: { token: tokens.refresh_token, client_id: claude.clientId } })).status, 200);
   assert.equal(access(h, tokens.access_token), null);
-  assert.ok(h.app.logs.some((l) => /claude\.revocation/.test(l) && /demandée par l'application/.test(l)));
+  assert.ok(h.app.logs.some((l) => /claude\.revoked/.test(l) && /requested by the application/.test(l)));
 });
 
 test('point d\'échange : formulaire seulement, paramètre répété refusé, type inconnu, cookie de session ignoré', async (t) => {
@@ -622,13 +623,19 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   const screen = read('public/js/screens/claude-consent.js');
   assert.match(screen, /let scope = 'read';\s+\/\/ « Lecture seule » présélectionnée/);
   assert.match(screen, /let allLists = true;\s+\/\/ « Toutes mes listes » par défaut/);
-  assert.match(screen, /'Ne continuez que si vous venez de lancer la connexion depuis Claude\.'/);
-  assert.match(screen, /'une application sur cet ordinateur \(localhost\)'/);
+  assert.match(screen, /t\('claude\.autoriser\.attention'\)/);
+  assert.equal(fr['claude.autoriser.attention'], 'Ne continuez que si vous venez de lancer la connexion depuis Claude.');
+  assert.match(screen, /t\('claude\.local'\)/);
+  assert.equal(fr['claude.local'], 'une application sur cet ordinateur (localhost)');
   // Nom déclaré par l'application elle-même (DCR) : « non vérifié »
-  assert.match(screen, /const named = request\.app\.nameFromApp \? 'nom donné par l\\'application, non vérifié' : 'nom fourni par l\\'application';/);
-  assert.match(screen, /const appSub = request\.app\.name \? `« \$\{request\.app\.name\} » \(\$\{named\}\)`/);
+  assert.match(screen, /const named = request\.app\.nameFromApp \? t\('claude\.application\.nonVerifie'\) : t\('claude\.application\.fourni'\);/);
+  assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
+  assert.equal(fr['claude.application.fourni'], 'nom publié par le site de l\'application');
+  assert.match(screen, /const appSub = request\.app\.name \? t\('claude\.application\.nom', \{ name: request\.app\.name, detail: named \}\)/);
+  assert.equal(fr['claude.application.nom'], '« {name} » ({detail})');
   // Phrase de confirmation juste au-dessus d'« Autoriser », dans la barre du bas
-  assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, 'Vous venez de lancer cette connexion depuis Claude \? Si ce n\\'est pas le cas, refusez\.'\),\s*allow, deny\)/);
+  assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, t\('claude\.autoriser\.question'\)\),\s*allow, deny\)/);
+  assert.equal(fr['claude.autoriser.question'], 'Vous venez de lancer cette connexion depuis Claude ? Si ce n\'est pas le cas, refusez.');
   assert.match(screen, /post\(`\/api\/oauth\/demandes\/\$\{enc\(id\)\}\/accord`/);
   assert.match(screen, /location\.assign\(redirect\)/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|style=|<script/);

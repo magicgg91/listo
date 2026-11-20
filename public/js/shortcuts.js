@@ -28,6 +28,7 @@
 import { h, icon } from './dom.js';
 import { navigate } from './router.js';
 import { openSheet, openMenu, toast, isTextField } from './ui.js';
+import { t } from './i18n.js';
 
 const KEY = 'listo-raccourcis';
 const appRoot = () => document.getElementById('app');
@@ -61,32 +62,35 @@ export function keycap(label) {
   return h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, label);
 }
 
-// Liste des raccourcis (fenêtre « ? », aide)
-export const SHORTCUTS = [
-  { group: 'Partout', keys: [
-    [['?'], 'Afficher les raccourcis'],
-    [['N'], 'Nouvelle liste'],
-    [['/'], 'Rechercher'],
-    [[','], 'Réglages'],
-    [['Échap'], 'Fermer la fenêtre, effacer la recherche'],
-    [['[', ']'], 'Liste précédente, suivante'],
-    [['Ctrl', 'Z'], 'Annuler la dernière action'],
-    [['Ctrl', 'Entrée'], 'Enregistrer (fiche, formulaire)'],
-  ] },
-  { group: 'Dans une liste', keys: [
-    [['P'], 'Partager la liste'],
-    [['A'], 'Ajouter un article'],
-    [['↓', '↑'], 'Article suivant, précédent'],
-    [['Espace'], 'Cocher ou décocher'],
-    [['Entrée'], 'Ouvrir la fiche'],
-    [['E'], 'Modifier'],
-    [['Suppr'], 'Supprimer (annulable)'],
-    [['Menu'], 'Menu de la ligne (ou Maj+F10, clic droit)'],
-  ] },
-  { group: 'Dans l\'aide', keys: [
-    [['S'], 'Aller au sommaire'],
-  ] },
-];
+// Liste des raccourcis (fenêtre « ? », aide), lue à l'ouverture (dans la
+// langue choisie)
+export function shortcuts() {
+  return [
+    { group: t('raccourcis.partout'), keys: [
+      [['?'], t('raccourcis.partout.afficher')],
+      [['N'], t('raccourcis.partout.nouvelleListe')],
+      [['/'], t('raccourcis.partout.rechercher')],
+      [[','], t('raccourcis.partout.reglages')],
+      [[t('raccourcis.touche.echap')], t('raccourcis.partout.fermer')],
+      [['[', ']'], t('raccourcis.partout.listeVoisine')],
+      [[t('raccourcis.touche.ctrl'), 'Z'], t('raccourcis.partout.annuler')],
+      [[t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')], t('raccourcis.partout.enregistrer')],
+    ] },
+    { group: t('raccourcis.liste'), keys: [
+      [['P'], t('raccourcis.liste.partager')],
+      [['A'], t('raccourcis.liste.ajouter')],
+      [['↓', '↑'], t('raccourcis.liste.suivant')],
+      [[t('raccourcis.touche.espace')], t('raccourcis.liste.cocher')],
+      [[t('raccourcis.touche.entree')], t('raccourcis.liste.ouvrir')],
+      [['E'], t('raccourcis.liste.modifier')],
+      [[t('raccourcis.touche.suppr')], t('raccourcis.liste.supprimer')],
+      [[t('raccourcis.touche.menu')], t('raccourcis.liste.menu')],
+    ] },
+    { group: t('raccourcis.aide'), keys: [
+      [['S'], t('raccourcis.aide.sommaire')],
+    ] },
+  ];
+}
 
 // Fenêtre « Raccourcis clavier »
 let shortcutsOpen = null;
@@ -95,22 +99,22 @@ export function openShortcuts() {
   const on = singleKeysOn();
   const content = [
     on ? null : h('p', { class: 'note', role: 'status' }, icon('keyboard', 'icon--sm'),
-      h('span', {}, 'Les raccourcis à une touche sont désactivés sur cet appareil (Réglages). Flèches, Entrée et les raccourcis avec Ctrl restent actifs.')),
-    h('div', { class: 'keys' }, SHORTCUTS.map(({ group, keys }) => h('section', {},
+      h('span', {}, t('raccourcis.fenetre.desactives'))),
+    h('div', { class: 'keys' }, shortcuts().map(({ group, keys }) => h('section', {},
       h('h3', { class: 'keys__title' }, group),
       h('dl', { class: 'keys__list' }, keys.map(([combo, label]) => h('div', { class: 'keys__row' },
         h('dt', { class: 'keys__label' }, label),
         h('dd', { class: 'keys__keys' }, combo.map((k) => h('kbd', { class: 'keycap' }, k))))))))),
-    h('p', { class: 'pc-meta' }, 'Aucun raccourci à une touche pendant la saisie dans un champ. Ils se désactivent dans Réglages, « Raccourcis à une touche ».'),
+    h('p', { class: 'pc-meta' }, t('raccourcis.fenetre.saisie')),
   ];
   shortcutsOpen = openSheet({
-    title: 'Raccourcis clavier',
+    title: t('raccourcis.fenetre.titre'),
     content,
     pc: 'modal',
     size: 'lg',
-    footer: [h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => { shortcutsOpen?.close(); navigate('help'); } }, icon('book', 'icon--sm'), 'Ouvrir l\'aide'),
+    footer: [h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => { shortcutsOpen?.close(); navigate('help'); } }, icon('book', 'icon--sm'), t('raccourcis.fenetre.aide')),
       h('span', { class: 'grow' }),
-      h('button', { class: 'btn btn--primary', type: 'button', onClick: () => shortcutsOpen?.close() }, 'Fermer')],
+      h('button', { class: 'btn btn--primary', type: 'button', onClick: () => shortcutsOpen?.close() }, t('raccourcis.fenetre.fermer'))],
     onClose: () => { shortcutsOpen = null; },
   });
 }
@@ -200,12 +204,12 @@ export function openRowMenu(row, at = null) {
   const trash = row.querySelector('[data-action="delete"]');
   const body = row.querySelector('.item__body');
   const items = [
-    edit ? { icon: 'pencil', label: 'Modifier', keys: { label: 'E', aria: 'E' }, onSelect: () => edit.click() } : { icon: 'eye', label: 'Voir la fiche', keys: { label: 'Entrée', aria: 'Enter' }, onSelect: () => body?.click() },
-    check ? { icon: 'check', label: check.getAttribute('aria-pressed') === 'true' ? 'Décocher' : 'Cocher', keys: { label: 'Espace', aria: 'Space' }, onSelect: () => check.click() } : null,
-    trash ? { icon: 'trash', label: 'Supprimer', danger: true, separated: true, keys: { label: 'Suppr', aria: 'Delete' }, onSelect: () => trash.click() } : null,
+    edit ? { icon: 'pencil', label: t('raccourcis.menu.modifier'), keys: { label: 'E', aria: 'E' }, onSelect: () => edit.click() } : { icon: 'eye', label: t('raccourcis.menu.voir'), keys: { label: t('raccourcis.touche.entree'), aria: 'Enter' }, onSelect: () => body?.click() },
+    check ? { icon: 'check', label: check.getAttribute('aria-pressed') === 'true' ? t('raccourcis.menu.decocher') : t('raccourcis.menu.cocher'), keys: { label: t('raccourcis.touche.espace'), aria: 'Space' }, onSelect: () => check.click() } : null,
+    trash ? { icon: 'trash', label: t('raccourcis.menu.supprimer'), danger: true, separated: true, keys: { label: t('raccourcis.touche.suppr'), aria: 'Delete' }, onSelect: () => trash.click() } : null,
   ].filter(Boolean);
   const rect = row.getBoundingClientRect();
-  openMenu(items, { label: `Actions de ${name}`, at: at ?? { x: rect.left + 48, y: rect.bottom } });
+  openMenu(items, { label: t('raccourcis.menu.titre', { name }), at: at ?? { x: rect.left + 48, y: rect.bottom } });
 }
 
 // Espace traitée par un raccourci : son relâchement est bloqué (voir keyup)

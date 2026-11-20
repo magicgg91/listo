@@ -61,7 +61,7 @@ const CONFIRM_MS = 5 * 60 * 1000;      // reconfirmation pour Claude : valable 5
 // Renvoie { status, json } ; jamais de redirection suivie
 export async function fetchOidc(url, { method = 'GET', headers = {}, body = null, fetchImpl = fetch } = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('délai dépassé')), HTTP_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(new Error('timeout')), HTTP_TIMEOUT_MS);
   try {
     const res = await fetchImpl(url, {
       method,
@@ -97,8 +97,14 @@ function sameOriginUrl(value, issuer) {
   }
 }
 
+// Message fixe en cas d'échec : celui de JSON.parse peut recopier un bout du
+// jeton reçu, qui finirait dans le journal (reason)
 function decodePart(part) {
-  return JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
+  try {
+    return JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
+  } catch {
+    throw new Error('malformed token');
+  }
 }
 
 // Algorithmes de signature acceptés (jamais « none » ni les HS*, qui
@@ -112,15 +118,15 @@ const ALGORITHMS = {
 // Vérifie un jeton d'identité (JWT signé). Renvoie ses informations
 // (claims), ou lance une erreur. keys : clés publiques du fournisseur d'identité (JWKS).
 export function verifyIdToken(token, { keys, issuer, clientId, nonce, nowS }) {
-  if (typeof token !== 'string' || token.length > 16384) throw new Error('jeton absent ou trop long');
+  if (typeof token !== 'string' || token.length > 16384) throw new Error('token missing or too long');
   const parts = token.split('.');
-  if (parts.length !== 3) throw new Error('jeton mal formé');
+  if (parts.length !== 3) throw new Error('malformed token');
   const header = decodePart(parts[0]);
   const claims = decodePart(parts[1]);
   const options = ALGORITHMS[header?.alg];
-  if (!options) throw new Error('algorithme de signature refusé');
+  if (!options) throw new Error('signature algorithm refused');
   const candidates = keys.filter((jwk) => (!header.kid || jwk.kid === header.kid) && (!jwk.use || jwk.use === 'sig') && (!jwk.alg || jwk.alg === header.alg));
-  if (!candidates.length) throw new Error('clé de signature inconnue');
+  if (!candidates.length) throw new Error('unknown signing key');
   const data = Buffer.from(`${parts[0]}.${parts[1]}`);
   const signature = Buffer.from(parts[2], 'base64url');
   const valid = candidates.some((jwk) => {
@@ -131,16 +137,16 @@ export function verifyIdToken(token, { keys, issuer, clientId, nonce, nowS }) {
       return false;
     }
   });
-  if (!valid) throw new Error('signature invalide');
-  if (!claims || typeof claims !== 'object') throw new Error('contenu illisible');
-  if (withoutSlash(claims.iss) !== withoutSlash(issuer)) throw new Error('émetteur inattendu');
+  if (!valid) throw new Error('invalid signature');
+  if (!claims || typeof claims !== 'object') throw new Error('unreadable claims');
+  if (withoutSlash(claims.iss) !== withoutSlash(issuer)) throw new Error('unexpected issuer');
   const audience = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-  if (!audience.includes(clientId)) throw new Error('destinataire inattendu');
-  if (audience.length > 1 && claims.azp !== clientId) throw new Error('destinataire inattendu');
-  if (typeof claims.exp !== 'number' || claims.exp + CLOCK_SKEW_S < nowS) throw new Error('jeton expiré');
-  if (typeof claims.iat === 'number' && claims.iat - CLOCK_SKEW_S > nowS) throw new Error('jeton daté du futur');
-  if (typeof claims.nonce !== 'string' || !safeEqual(claims.nonce, nonce)) throw new Error('nonce inattendu');
-  if (typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 255) throw new Error('sujet invalide');
+  if (!audience.includes(clientId)) throw new Error('unexpected audience');
+  if (audience.length > 1 && claims.azp !== clientId) throw new Error('unexpected audience');
+  if (typeof claims.exp !== 'number' || claims.exp + CLOCK_SKEW_S < nowS) throw new Error('token expired');
+  if (typeof claims.iat === 'number' && claims.iat - CLOCK_SKEW_S > nowS) throw new Error('token issued in the future');
+  if (typeof claims.nonce !== 'string' || !safeEqual(claims.nonce, nonce)) throw new Error('unexpected nonce');
+  if (typeof claims.sub !== 'string' || !claims.sub || claims.sub.length > 255) throw new Error('invalid subject');
   return claims;
 }
 
@@ -175,12 +181,12 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   async function discover() {
     if (metadata && metadata.expiresAt > nowMs()) return metadata.value;
     const { status, json } = await request(`${issuer}/.well-known/openid-configuration`);
-    if (status !== 200 || !json || typeof json !== 'object') throw new Error(`description du fournisseur d'identité illisible (HTTP ${status})`);
-    if (withoutSlash(json.issuer) !== issuer) throw new Error('émetteur différent de LISTO_OIDC_ISSUER');
+    if (status !== 200 || !json || typeof json !== 'object') throw new Error(`unreadable identity provider metadata (HTTP ${status})`);
+    if (withoutSlash(json.issuer) !== issuer) throw new Error('issuer differs from LISTO_OIDC_ISSUER');
     const value = {};
     for (const key of ['authorization_endpoint', 'token_endpoint', 'jwks_uri', 'userinfo_endpoint']) {
       const url = sameOriginUrl(json[key], issuer);
-      if (!url) throw new Error(`${key} absent ou hors du site du fournisseur d'identité`);
+      if (!url) throw new Error(`${key} missing or outside the identity provider site`);
       value[key] = url.href;
     }
     metadata = { value, expiresAt: nowMs() + METADATA_MS };
@@ -195,7 +201,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (refresh && nowMs() - lastKeyRefresh < 60 * 1000 && jwks) return jwks.keys;
     lastKeyRefresh = nowMs();
     const { status, json } = await request(meta.jwks_uri);
-    if (status !== 200 || !Array.isArray(json?.keys)) throw new Error(`clés du fournisseur d'identité illisibles (HTTP ${status})`);
+    if (status !== 200 || !Array.isArray(json?.keys)) throw new Error(`unreadable identity provider keys (HTTP ${status})`);
     jwks = { keys: json.keys.filter((key) => key && typeof key === 'object').slice(0, 20), expiresAt: nowMs() + METADATA_MS };
     return jwks.keys;
   }
@@ -225,20 +231,20 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       body,
     });
     if (tokens.status !== 200 || typeof tokens.json?.id_token !== 'string' || typeof tokens.json?.access_token !== 'string') {
-      throw new Error(`échange du code refusé (HTTP ${tokens.status})`);
+      throw new Error(`code exchange refused (HTTP ${tokens.status})`);
     }
-    if (String(tokens.json.token_type ?? 'Bearer').toLowerCase() !== 'bearer') throw new Error('type de jeton inattendu');
+    if (String(tokens.json.token_type ?? 'Bearer').toLowerCase() !== 'bearer') throw new Error('unexpected token type');
     const check = (keys) => verifyIdToken(tokens.json.id_token, { keys, issuer, clientId: config.oidcClientId, nonce: flow.nonce, nowS: Math.floor(nowMs() / 1000) });
     let claims;
     try {
       claims = check(await signingKeys(meta));
     } catch (err) {
-      if (err.message !== 'clé de signature inconnue') throw err;
+      if (err.message !== 'unknown signing key') throw err;
       claims = check(await signingKeys(meta, { refresh: true })); // Le fournisseur d'identité a changé de clé
     }
     const info = await request(meta.userinfo_endpoint, { headers: { Authorization: `Bearer ${tokens.json.access_token}` } });
-    if (info.status !== 200 || !info.json || typeof info.json !== 'object') throw new Error(`userinfo illisible (HTTP ${info.status})`);
-    if (info.json.sub !== claims.sub) throw new Error('userinfo d\'un autre compte');
+    if (info.status !== 200 || !info.json || typeof info.json !== 'object') throw new Error(`unreadable userinfo (HTTP ${info.status})`);
+    if (info.json.sub !== claims.sub) throw new Error('userinfo for another account');
     const username = info.json.preferred_username ?? claims.preferred_username;
     const name = info.json.name ?? claims.name;
     return { sub: claims.sub, username: typeof username === 'string' ? username : '', name: typeof name === 'string' ? name : '', mfa: didMfa(claims), authTime: typeof claims.auth_time === 'number' ? claims.auth_time : null };
@@ -261,13 +267,13 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (existing?.status === 'pending') return 'attente';
     if (existing?.status === 'refused') return 'refusee';
     if (q.pendingCount.get() >= MAX_PENDING_REQUESTS) {
-      audit('demande_compte_refusee', { raison: 'trop de demandes en attente', ip });
+      audit('account_request_refused', { reason: 'too many pending requests', ip });
       return 'complet';
     }
     const username = usernameFrom(identity.username) || 'compte';
     const name = cleanName(identity.name) || username;
     q.addRequest.run(identity.sub, username, name, new Date(nowMs()).toISOString());
-    audit('demande_compte', { identifiant: username, ip });
+    audit('account_request', { username, ip });
     return 'demande';
   }
 
@@ -300,19 +306,19 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       confirm = { requestId, userId: req.user.id };
     }
     if (ctx.limiter.isBlocked(failKeys(req))) {
-      audit('connexion_authelia_bloquee', { ip: req.ip });
+      audit('oidc_login_blocked', { ip: req.ip });
       return finish(res, 'erreur');
     }
     pruneFlows();
     if (flows.size >= MAX_FLOWS) {
-      audit('connexion_authelia_refusee', { raison: 'trop de connexions en cours', ip: req.ip });
+      audit('oidc_login_refused', { reason: 'too many logins in progress', ip: req.ip });
       return finish(res, 'erreur');
     }
     let meta;
     try {
       meta = await discover();
     } catch (err) {
-      audit('connexion_authelia_impossible', { raison: err.message, ip: req.ip });
+      audit('oidc_login_unavailable', { reason: err.message, ip: req.ip });
       return finish(res, 'indisponible');
     }
     const state = randomToken();
@@ -344,7 +350,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     // state : celui de CE navigateur, et jamais déjà utilisé
     if (!fromCookie || !state || state.length > 200 || !safeEqual(fromCookie, state)) {
       failed(req);
-      audit('connexion_authelia_refusee', { raison: 'state absent ou différent', ip: req.ip });
+      audit('oidc_login_refused', { reason: 'state missing or mismatched', ip: req.ip });
       return finish(res, 'erreur');
     }
     const key = hashToken(state);
@@ -352,7 +358,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     flows.delete(key);
     if (!flow || flow.expiresAt <= nowMs()) return finish(res, 'expiree');
     if (typeof req.query.error === 'string') {
-      audit('connexion_authelia_refusee', { raison: 'refus ou annulation chez le fournisseur d\'identité', ip: req.ip });
+      audit('oidc_login_refused', { reason: 'denied or cancelled at the identity provider', ip: req.ip });
       return finish(res, req.query.error === 'access_denied' ? 'annulee' : 'erreur');
     }
     const code = typeof req.query.code === 'string' ? req.query.code : '';
@@ -363,7 +369,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       identity = await identify(await discover(), code, flow);
     } catch (err) {
       failed(req);
-      audit('connexion_authelia_refusee', { raison: err.message, ip: req.ip });
+      audit('oidc_login_refused', { reason: err.message, ip: req.ip });
       return finish(res, 'erreur');
     }
 
@@ -375,12 +381,12 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       const fresh = identity.authTime !== null && identity.authTime * 1000 >= flow.startedAt - CLOCK_SKEW_S * 1000;
       if (!owner || owner.oidc_sub !== identity.sub || !fresh) {
         failed(req);
-        audit('confirmation_authelia_refusee', { utilisateur: owner?.username ?? '(inconnu)', raison: !fresh ? 'connexion non redemandée par le fournisseur d\'identité' : 'autre compte', ip: req.ip });
+        audit('oidc_confirmation_refused', { user: owner?.username ?? '(unknown)', reason: !fresh ? 'identity provider did not ask to log in again' : 'other account', ip: req.ip });
         return res.redirect(303, `/#/${flow.returnTo}?authelia=non-confirme`);
       }
       pruneConfirmations();
       confirmations.set(confirmKey(flow.confirm.requestId, owner.id), nowMs() + CONFIRM_MS);
-      audit('confirmation_authelia', { utilisateur: owner.username, ip: req.ip, etape: 'autorisation claude' });
+      audit('oidc_confirmation', { user: owner.username, ip: req.ip, step: 'claude authorization' });
       return res.redirect(303, `/#/${flow.returnTo}?authelia=confirme`);
     }
 
@@ -394,18 +400,18 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       const wanted = identity.username.trim().toLowerCase();
       const sameName = wanted && usernameFrom(wanted) === wanted ? q.byName.get(wanted) : null;
       if (sameName && sameName.oidc_sub && sameName.oidc_sub !== identity.sub) {
-        audit('connexion_authelia_refusee', { utilisateur: sameName.username, raison: 'compte relié à un autre compte du fournisseur d\'identité', ip: req.ip });
+        audit('oidc_login_refused', { user: sameName.username, reason: 'account linked to another identity provider account', ip: req.ip });
         return finish(res, 'refuse');
       }
       if (sameName) {
         q.bind.run(identity.sub, sameName.id);
         user = q.bySub.get(identity.sub);
-        if (user) audit('compte_relie_authelia', { utilisateur: user.username, ip: req.ip });
+        if (user) audit('account_linked_oidc', { user: user.username, ip: req.ip });
       }
     }
     if (!user) return finish(res, accountRequest(identity, req.ip));
     if (user.active !== 1) {
-      audit('connexion_authelia_refusee', { utilisateur: user.username, raison: 'compte désactivé', ip: req.ip });
+      audit('oidc_login_refused', { user: user.username, reason: 'account disabled', ip: req.ip });
       return finish(res, 'refuse');
     }
     // Mot de passe provisoire donné par l'Admin, jamais changé : avec le
@@ -415,31 +421,32 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (user.must_change_password === 1) {
       const hash = await hashPassword(randomToken());
       db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ? AND must_change_password = 1').run(hash, user.id);
-      audit('mot_de_passe_provisoire_efface', { utilisateur: user.username, raison: 'connexion avec le fournisseur d\'identité', ip: req.ip });
+      audit('temporary_password_cleared', { user: user.username, reason: 'login with the identity provider', ip: req.ip });
     }
     // Compte avec double authentification Listo, que le fournisseur d'identité n'a pas faite :
     // le code à 6 chiffres est demandé (même écran que pour le mot de passe)
     if (user.totp_enabled === 1 && !identity.mfa) {
       ctx.pending.start(ctx, res, user.id, { method: 'oidc' });
-      audit('connexion_code_2fa_demande', { utilisateur: user.username, ip: req.ip, methode: 'authelia' });
+      audit('login_2fa_code_requested', { user: user.username, ip: req.ip, method: 'oidc' });
       return finish(res, 'code');
     }
     startSession(ctx, res, user.id, { method: 'oidc' });
-    audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, methode: 'authelia' });
+    audit('login_success', { user: user.username, ip: req.ip, method: 'oidc' });
     finish(res, null, flow.returnTo);
   });
 
   // Demande acceptée par l'Admin : création du compte, relié à ce compte du
   // fournisseur d'identité, avec un mot de passe aléatoire que personne ne connaît (la
   // connexion par mot de passe reste fermée tant que l'Admin n'en donne pas
-  // un provisoire). Renvoie l'identifiant du compte, ou une erreur.
+  // un provisoire). Renvoie l'identifiant du compte, ou une erreur
+  // { key, params, status } (texte traduit par la route avec req.t).
   async function acceptRequest(requestId, { username, displayName, role }) {
     const hash = await hashPassword(randomToken());
     return db.transaction(() => {
       const pending = db.prepare("SELECT * FROM account_requests WHERE id = ? AND status = 'pending'").get(requestId);
-      if (!pending) return { error: 'Demande introuvable ou déjà traitée.', status: 404 };
-      if (q.byName.get(username)) return { error: 'Cet identifiant est déjà pris.', status: 409 };
-      if (q.bySub.get(pending.oidc_sub)) return { error: `Ce compte ${config.oidcName} est déjà relié à un compte Listo.`, status: 409 };
+      if (!pending) return { key: 'comptes.demande.introuvable', status: 404 };
+      if (q.byName.get(username)) return { key: 'comptes.identifiant.pris', status: 409 };
+      if (q.bySub.get(pending.oidc_sub)) return { key: 'comptes.fournisseur.dejaRelie', params: { provider: config.oidcName }, status: 409 };
       const id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, oidc_sub) VALUES (?, ?, ?, ?, ?)')
         .run(username, displayName, hash, role, pending.oidc_sub).lastInsertRowid;
       db.prepare('DELETE FROM account_requests WHERE id = ?').run(requestId);

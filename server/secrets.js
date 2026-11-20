@@ -12,14 +12,16 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 const KEY_BYTES = 32; // 256 bits, taille de clé d'AES-256-GCM
 
 // Renvoie la clé (32 octets), en la créant si elle n'existe pas encore.
 // `created` vaut true si la clé vient d'être générée.
-export function loadOrCreateKey(keyPath) {
+// locale : langue du message d'une clé abîmée (console, LISTO_LANG).
+export function loadOrCreateKey(keyPath, { locale = DEFAULT_LOCALE } = {}) {
   if (fs.existsSync(keyPath)) {
-    return { key: readKey(keyPath), created: false };
+    return { key: readKey(keyPath, locale), created: false };
   }
 
   // Dossier réservé à Listo (droits 700), puis fichier en droits 600.
@@ -33,14 +35,11 @@ export function loadOrCreateKey(keyPath) {
 // Lit et vérifie une clé existante. Une clé abîmée arrête le démarrage avec
 // un message clair, plutôt que de la remplacer en silence (ce qui rendrait
 // illisibles les 2FA déjà activées).
-function readKey(keyPath) {
+function readKey(keyPath, locale) {
   const text = fs.readFileSync(keyPath, 'utf8').trim();
   const key = Buffer.from(text, 'base64');
   if (key.length !== KEY_BYTES || key.toString('base64') !== text) {
-    throw new Error(
-      `La clé ${keyPath} est invalide (256 bits en base64 attendus). ` +
-        'Restaurez la copie de sauvegarde de ce fichier.'
-    );
+    throw new Error(translate(locale, 'demarrage.cle.invalide', { path: keyPath }));
   }
   return key;
 }

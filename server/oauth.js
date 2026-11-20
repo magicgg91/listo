@@ -29,6 +29,7 @@
 
 import crypto from 'node:crypto';
 import { hashToken } from './auth.js';
+import { translate } from '../public/js/i18n.js';
 import {
   cimdUrl, checkCimdDocument, fetchClientMetadata, checkRegistration, redirectMatches, redirectHost,
 } from './oauth-clients.js';
@@ -68,7 +69,9 @@ export const PKCE_CHALLENGE = /^[A-Za-z0-9_-]{43}$/;          // BASE64URL(SHA25
 const PKCE_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;    // RFC 7636, §4.1
 export const REQUEST_ID = /^[A-Za-z0-9_-]{22}$/;
 
-// Erreur à renvoyer telle quelle : status HTTP, code OAuth, explication
+// Erreur à renvoyer telle quelle : status HTTP, code OAuth, explication.
+// Une erreur montrée sur l'écran « Autoriser Claude » porte aussi le nom de
+// son texte (key) et ses valeurs (params), traduits par la route.
 export class OAuthError extends Error {
   constructor(status, error, description) {
     super(description);
@@ -187,7 +190,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     try {
       doc = checkCimdDocument(clientId, await fetchMetadata(url));
     } catch (error) {
-      audit('claude.client_refuse', { client: url.hostname, raison: error.message });
+      audit('claude.client_refused', { client: url.hostname, reason: error.message });
       return null;
     }
     const now = iso();
@@ -209,7 +212,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     dcrByIp.set(ip, entry);
     const clientId = `dcr_${newId(16)}`;
     q.insertClient.run({ clientId, kind: 'dcr', clientName: checked.clientName, redirectUris: JSON.stringify(checked.redirectUris), ip, now: iso(time), fetchedAt: null });
-    audit('claude.enregistrement', { client: redirectHost(checked.redirectUris[0]), ip });
+    audit('claude.registered', { client: redirectHost(checked.redirectUris[0]), ip });
     return {
       client_id: clientId,
       client_id_issued_at: Math.floor(time / 1000),
@@ -272,7 +275,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   function refuse(request, user, ip) {
     q.deleteRequest.run(request.id);
     const host = describeRequest(request).app.host;
-    audit('claude.refus', { utilisateur: user.username, client: host, ip });
+    audit('claude.refused', { user: user.username, client: host, ip });
     return answer(request, { error: 'access_denied' });
   }
 
@@ -291,10 +294,13 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       // application : la réautoriser remplace son ancienne connexion
       const active = q.activeGrants.all(user.id, iso(time - REFRESH_TTL));
       if (active.filter((grant) => grant.app_key !== appKey).length >= MAX_GRANTS) {
-        throw new OAuthError(409, 'too_many_grants', `Vous avez déjà ${MAX_GRANTS} connexions Claude actives (le maximum). Une connexion inutilisée pendant 30 jours se libère d'elle-même.`);
+        const error = new OAuthError(409, 'too_many_grants', translate('fr', 'autorisation.tropDeConnexions', { max: MAX_GRANTS }));
+        error.key = 'autorisation.tropDeConnexions';
+        error.params = { max: MAX_GRANTS };
+        throw error;
       }
       for (const grant of active) {
-        if (grant.app_key === appKey) revokeGrant(grant.id, { reason: 'remplacée par une nouvelle autorisation', user });
+        if (grant.app_key === appKey) revokeGrant(grant.id, { reason: 'replaced by a new authorization', user });
       }
       const grantId = Number(q.insertGrant.run({
         userId: user.id, clientId: request.client_id, appKey, clientHost: host, redirectHost: redirectHostName,
@@ -308,9 +314,9 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       q.deleteRequest.run(request.id);
       q.useClient.run(iso(time), request.client_id);
     })();
-    audit('claude.connexion', {
-      utilisateur: user.username, client: host, retour: redirectHostName, portees: granted,
-      listes: allLists ? 'toutes' : listIds.length, ip,
+    audit('claude.connected', {
+      user: user.username, client: host, redirect: redirectHostName, scopes: granted,
+      lists: allLists ? 'all' : listIds.length, ip,
     });
     return answer(request, { code });
   }
@@ -357,7 +363,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       if (!row) return { error: invalidGrant('Code inconnu.') };
       if (row.used_at) {
         // Code rejoué : la connexion et tous les jetons nés de ce code tombent
-        revokeGrant(row.grant_id, { reason: 'code d\'autorisation rejoué' });
+        revokeGrant(row.grant_id, { reason: 'authorization code replayed' });
         return { error: invalidGrant('Code déjà utilisé.') };
       }
       if (Date.parse(row.expires_at) <= time) return { error: invalidGrant('Code expiré.') };
@@ -402,8 +408,8 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
           return { error: invalidGrant('Renouvellement déjà effectué : recommencez la connexion.') };
         }
         const user = q.user.get(grant.user_id);
-        revokeGrant(grant.id, { reason: 'jeton de renouvellement réutilisé', silent: true });
-        audit('claude.renouvellement', { reutilisation: true, utilisateur: user?.username ?? null, client: grant.client_host, portees: grant.scope });
+        revokeGrant(grant.id, { reason: 'refresh token reused', silent: true });
+        audit('claude.refresh', { reuse: true, user: user?.username ?? null, client: grant.client_host, scopes: grant.scope });
         return { error: invalidGrant('Jeton de renouvellement déjà utilisé : connexion révoquée.') };
       }
       if (Date.parse(row.expires_at) <= time) return { error: invalidGrant('Jeton de renouvellement expiré.') };
@@ -431,7 +437,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     q.revokeGrantTokens.run(time, grantId);
     if (changed && !silent) {
       const owner = user ?? q.user.get(grant.user_id);
-      audit('claude.revocation', { utilisateur: owner?.username ?? null, client: grant.client_host, portees: grant.scope, raison: reason, par: by });
+      audit('claude.revoked', { user: owner?.username ?? null, client: grant.client_host, scopes: grant.scope, reason, by });
     }
     return changed;
   }
@@ -460,14 +466,14 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   function revokeOwnGrant(user, grantId) {
     const grant = Number.isSafeInteger(grantId) ? q.grant.get(grantId) : null;
     if (!grant || grant.user_id !== user.id || grant.revoked_at) return false;
-    return revokeGrant(grant.id, { reason: 'déconnectée depuis « Connexions Claude »', user, by: 'le compte' });
+    return revokeGrant(grant.id, { reason: 'disconnected from Claude connections', user, by: 'account' });
   }
 
   // « Tout déconnecter » : renvoie le nombre de connexions révoquées
   function revokeAllOwn(user) {
     let count = 0;
     for (const grantId of q.userGrants.all(user.id)) {
-      if (revokeGrant(grantId, { reason: 'déconnectée depuis « Connexions Claude » (tout déconnecter)', user, by: 'le compte' })) count += 1;
+      if (revokeGrant(grantId, { reason: 'disconnected from Claude connections (disconnect all)', user, by: 'account' })) count += 1;
     }
     return count;
   }
@@ -488,7 +494,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     if (!row) return;
     const grant = q.grant.get(row.grant_id);
     if (!grant || (clientId !== undefined && grant.client_id !== clientId)) return;
-    revokeGrant(grant.id, { reason: 'demandée par l\'application' });
+    revokeGrant(grant.id, { reason: 'requested by the application' });
   }
 
   // Vérifie un jeton d'accès (pour /mcp, étape B). Renvoie { user, grant }
@@ -534,7 +540,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       db.prepare('DELETE FROM oauth_tokens WHERE expires_at <= ?').run(iso(time - DAY));
       // Connexion inutilisée depuis 30 jours : ses jetons sont expirés, elle se libère
       const idle = db.prepare('SELECT id FROM oauth_grants WHERE revoked_at IS NULL AND COALESCE(last_used_at, created_at) <= ?').pluck().all(iso(time - REFRESH_TTL));
-      for (const grantId of idle) revokeGrant(grantId, { reason: 'inutilisée depuis 30 jours', silent: true });
+      for (const grantId of idle) revokeGrant(grantId, { reason: 'unused for 30 days', silent: true });
       db.prepare('DELETE FROM oauth_grants WHERE revoked_at IS NOT NULL AND revoked_at <= ?').run(iso(time - REFRESH_TTL));
       // Applications sans connexion : DCR jamais utilisée après 24 h, ou toute
       // application inutilisée depuis 30 jours (un document CIMD sera relu)

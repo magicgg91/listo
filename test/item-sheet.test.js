@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const list = read('public/js/screens/list.js');
@@ -20,8 +21,10 @@ test('plus de boutons « Enregistrer » / « Supprimer » en bas de la fiche', (
 
 test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, avec leurs aria-label ; poubelle jamais collée à la croix', () => {
   // Téléphone (l'ordinateur a ses boutons écrits au pied du tiroir)
-  assert.match(list, /: iconButton\('trash', `Supprimer \$\{words\.the\}`, null, 'icon-btn--danger sheet__delete'\);/);
-  assert.match(list, /: h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' \}, icon\('disquette'\)\);/);
+  assert.match(list, /: iconButton\('trash', byKind\(kind, \{ shopping: t\('liste\.fiche\.supprimer\.courses'\), tasks: t\('liste\.fiche\.supprimer\.taches'\), wishes: t\('liste\.fiche\.supprimer\.envies'\) \}\), null, 'icon-btn--danger sheet__delete'\);/);
+  assert.deepEqual([fr['liste.fiche.supprimer.courses'], fr['liste.fiche.supprimer.taches'], fr['liste.fiche.supprimer.envies']], ['Supprimer l\'article', 'Supprimer l\'élément', 'Supprimer le souhait']);
+  assert.match(list, /: h\('button', \{ class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': t\('liste\.enregistrer'\) \}, icon\('disquette'\)\);/);
+  assert.equal(fr['liste.enregistrer'], 'Enregistrer');
   // Disquette : dans le sprite (kit, application, components.html), même
   // style que les autres icônes, et en fichier séparé dans design/icones/
   const symbol = (file) => read(file).match(/<symbol id="i-disquette"[^\n]*<\/symbol>/)?.[0];
@@ -31,10 +34,11 @@ test('en-tête : poubelle, disquette « Enregistrer », croix dans cet ordre, av
   assert.equal(symbol('design/components.html'), symbol('design/icons-sprite.html'));
   assert.match(read('design/icones/i-disquette.svg'), /stroke="currentColor" stroke-width="2"/);
   // Plus aucune coche sur le bouton « Enregistrer » d'une fiche
-  assert.doesNotMatch(list, /'aria-label': 'Enregistrer' \}, icon\('check'\)/);
+  assert.doesNotMatch(list, /'aria-label': (?:'Enregistrer'|t\('liste\.enregistrer'\)) \}, icon\('check'\)/);
   assert.match(list, /tools: pc \? null : \[remove, save\],/);
   // La croix (« Fermer ») vient toujours après les boutons de la fiche
-  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', 'Fermer', \(\) => close\(\)\)\)/);
+  assert.match(ui, /tools \? h\('div', \{ class: 'sheet__tools' \}, tools, iconButton\('close', t\('fenetres\.fermer'\), \(\) => close\(\)\)\)/);
+  assert.equal(fr['fenetres.fermer'], 'Fermer');
   // Un espace visible entre la poubelle et la disquette ; couleurs du kit
   const css = read('public/css/app.css');
   assert.match(css, /\.sheet__delete \{ margin-right: var\(--space-2\); \}/);
@@ -53,7 +57,10 @@ test('la coche enregistre (formulaire relié), Entrée aussi ; la poubelle suppr
   assert.match(list, /form\.addEventListener\('submit', async \(event\) => \{/);
   // Poubelle : la fiche se ferme, puis la même suppression que le glissement
   assert.match(list, /remove\.addEventListener\('click', async \(\) => \{\s*mine = true;\s*sheet\.forceClose\(\);\s*await deleteWithUndo\(item\);\s*\}\);/);
-  assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*\/\/ [^\n]*\s*const children = view\?\.subtasks\.get\(item\.id\)\?\.length \?\? 0;\s*await actions\.deleteItem\(item\);\s*const entry = \{ kind: 'delete', itemId: item\.id, name: item\.name \};\s*recordUndo\(listId, entry\);\s*toast\(children \? [^\n]* : `« \$\{item\.name\} » supprimé`, \{ action: pc \? 'Annuler \(Ctrl\+Z\)' : 'Annuler', onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);\s*\} \}\);\s*\}/);
+  assert.match(list, /async function deleteWithUndo\(item\) \{\s*if \(!editable\(\)\) return;\s*\/\/ [^\n]*\s*const children = view\?\.subtasks\.get\(item\.id\)\?\.length \?\? 0;\s*await actions\.deleteItem\(item\);\s*const entry = \{ kind: 'delete', itemId: item\.id, name: item\.name \};\s*recordUndo\(listId, entry\);\s*toast\(children \? [^\n]* : t\('liste\.supprime', \{ name: item\.name \}\), \{ action: pc \? t\('liste\.annuler\.pc'\) : t\('liste\.annuler'\), onAction: \(\) => \{\s*forgetUndo\(listId, \(e\) => e === entry\);\s*actions\.restoreItem\(item\.id\);\s*\} \}\);\s*\}/);
+  assert.equal(fr['liste.supprime'], '« {name} » supprimé');
+  assert.equal(fr['liste.annuler.pc'], 'Annuler (Ctrl+Z)');
+  assert.equal(fr['liste.annuler'], 'Annuler');
   // Enregistrement impossible pendant qu'un autre téléphone supprime l'article
   assert.match(list, /save\.disabled = gone;\s*remove\.disabled = gone;/);
 });

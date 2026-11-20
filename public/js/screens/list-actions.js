@@ -36,11 +36,12 @@ import { itemWords, deleteListText } from '../words.js';
 import { copyName } from '../format.js';
 import { openShareSheet } from './share.js';
 import { isListPushMuted, setListPushMuted } from '../push.js';
+import { t } from '../i18n.js';
 
 // Éléments de menu (pour openMenu de ui.js). onDeleted : appelé après la
 // suppression ou le départ (la liste ouverte retourne alors à « Mes listes »).
 export function listActions(list, { onDeleted } = {}) {
-  const duplicate = { icon: 'copy', label: 'Dupliquer la liste', onSelect: () => openDuplicateSheet(list) };
+  const duplicate = { icon: 'copy', label: t('menu.dupliquer'), onSelect: () => openDuplicateSheet(list) };
   const wishes = isWishList(list);
   // Nouveautés : « Masquer les nouveautés de cette liste » / « Signaler cette
   // liste », pour chaque membre, invité en lecture seule compris (ce n'est
@@ -49,9 +50,9 @@ export function listActions(list, { onDeleted } = {}) {
   const pushMute = pushMuteAction(list);
   if (!list.isOwner) {
     const canEdit = canEditList(list);
-    const leave = { icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async () => {
+    const leave = { icon: 'logout', label: t('menu.quitter'), danger: true, separated: canEdit, onSelect: async () => {
       if (!(await leaveListWithConfirm(list))) return;
-      const message = `Vous avez quitté la liste « ${list.name} »`;
+      const message = t('menu.quitter.fait', { name: list.name });
       if (!onDeleted) {
         toast(message, { low: true });
         return;
@@ -63,13 +64,13 @@ export function listActions(list, { onDeleted } = {}) {
     return (canEdit && !wishes ? [duplicate, mute, pushMute, leave] : [mute, pushMute, leave]).filter(Boolean);
   }
   return [
-    { icon: 'pencil', label: 'Modifier la liste', onSelect: () => navigate('editList', { id: list.id }) },
+    { icon: 'pencil', label: t('menu.modifier'), onSelect: () => navigate('editList', { id: list.id }) },
     // Liste d'envies : pas de duplication (refusée aussi par le serveur) ; lien public permis, sans réservations
     wishes ? null : duplicate,
-    { icon: 'link', label: 'Partager par lien', onSelect: () => openShareSheet(list) },
+    { icon: 'link', label: t('menu.partagerLien'), onSelect: () => openShareSheet(list) },
     mute,
     pushMute,
-    { icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async () => {
+    { icon: 'trash', label: t('menu.supprimer'), danger: true, separated: true, onSelect: async () => {
       if (await deleteListWithConfirm(list)) onDeleted?.();
     } },
   ].filter(Boolean);
@@ -81,13 +82,13 @@ export function listActions(list, { onDeleted } = {}) {
 // réglages séparés, en base comme à l'écran ; libellés du 10 novembre 2026).
 function newsMuteAction(list) {
   return isListMuted(app.data, list.id)
-    ? { icon: 'eye', label: 'Afficher les nouveautés de cette liste', onSelect: () => {
+    ? { icon: 'eye', label: t('menu.nouveautes.afficher'), onSelect: () => {
       actions.setListMuted(list.id, false);
-      toast('Les nouveautés de cette liste sont de nouveau affichées', { low: true });
+      toast(t('menu.nouveautes.affichees'), { low: true });
     } }
-    : { icon: 'eye-off', label: 'Masquer les nouveautés de cette liste', onSelect: () => {
+    : { icon: 'eye-off', label: t('menu.nouveautes.masquer'), onSelect: () => {
       actions.setListMuted(list.id, true);
-      toast('Les nouveautés de cette liste sont masquées', { low: true });
+      toast(t('menu.nouveautes.masquees'), { low: true });
     } };
 }
 
@@ -101,14 +102,14 @@ function pushMuteAction(list) {
   const run = async () => {
     try {
       await setListPushMuted(list.id, !muted);
-      toast(muted ? 'Les notifications de cette liste sont réactivées' : 'Les notifications de cette liste sont coupées', { low: true });
+      toast(muted ? t('menu.notifications.reactivees') : t('menu.notifications.coupees'), { low: true });
     } catch (error) {
       toast(errorMessage(error));
     }
   };
   return muted
-    ? { icon: 'bell', label: 'Réactiver les notifications de cette liste', onSelect: run }
-    : { icon: 'bell', label: 'Couper les notifications de cette liste', onSelect: run };
+    ? { icon: 'bell', label: t('menu.notifications.reactiver'), onSelect: run }
+    : { icon: 'bell', label: t('menu.notifications.couper'), onSelect: run };
 }
 
 // Renvoie true si la liste a été supprimée, false si la confirmation a été
@@ -121,14 +122,14 @@ export async function deleteListWithConfirm(list) {
   const itemCount = [...app.data.items.values()].filter((item) => item.listId === list.id).length;
   const sharedWith = (list.members ?? []).filter((m) => !m.isOwner).length;
   const ok = await confirmDialog({
-    title: `Supprimer la liste « ${list.name} » ?`,
+    title: t('menu.supprimer.question', { name: list.name }),
     text: deleteListText(list, itemCount, sharedWith),
-    confirmLabel: 'Supprimer',
+    confirmLabel: t('menu.supprimer.confirmer'),
     focusCancel: true,
   });
   if (!ok) return false;
   await actions.deleteList(list.id);
-  toast('Liste supprimée', { low: true });
+  toast(t('menu.supprimer.fait'), { low: true });
   return true;
 }
 
@@ -140,7 +141,7 @@ export async function deleteListWithConfirm(list) {
 // personnes avec qui la liste est partagée, ni le lien public, ni les photos. On reste où l'on est : un
 // message propose « Ouvrir » ; sur « Mes listes », la nouvelle carte est
 // brièvement mise en évidence.
-const OFFLINE_DUPLICATE = 'Connexion nécessaire pour dupliquer une liste';
+const offlineDuplicate = () => t('menu.dupliquer.horsLigne');
 const NAME_MAX = 100; // comme tout nom de liste
 
 // Liste tout juste créée par une duplication : mise en évidence sur sa carte
@@ -150,18 +151,18 @@ export const isFreshList = (listId, now = Date.now()) => fresh.id === listId && 
 
 export function openDuplicateSheet(list) {
   if (!navigator.onLine) {
-    toast(OFFLINE_DUPLICATE);
+    toast(offlineDuplicate());
     return;
   }
   const words = itemWords(list);
   const name = h('input', { class: 'input', ...LABEL_INPUT, maxlength: String(NAME_MAX), value: copyName(list.name) });
-  const nameField = field('Titre de la liste', name);
+  const nameField = field(t('menu.dupliquer.titre'), name);
   let withItems = true;
   const state = h('span', { class: 'row__sub' });
-  const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': `Copier les ${words.many}` });
+  const toggle = h('button', { class: 'switch', type: 'button', role: 'switch', 'aria-label': t('menu.dupliquer.copier', { items: words.many }) });
   const paint = () => {
     toggle.setAttribute('aria-checked', String(withItems));
-    state.textContent = withItems ? `Activé · tous les ${words.many}, décochés` : `Désactivé · liste vide`;
+    state.textContent = withItems ? t('menu.dupliquer.copier.active', { items: words.many }) : t('menu.dupliquer.copier.desactive');
   };
   toggle.addEventListener('click', () => {
     withItems = !withItems;
@@ -169,25 +170,25 @@ export function openDuplicateSheet(list) {
   });
   paint();
   const error = errorNote();
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Dupliquer');
-  const cancel = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, 'Annuler');
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('menu.dupliquer.valider'));
+  const cancel = h('button', { class: 'btn btn--secondary btn--block', type: 'button' }, t('menu.dupliquer.annuler'));
   const form = h('form', { class: 'stack', novalidate: true },
     nameField.field,
     h('div', { class: 'card list-options' },
-      h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, `Copier les ${words.many}`), state), toggle)),
-    h('p', { class: 'field__hint' }, 'La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.'),
+      h('div', { class: 'toggle-row' }, h('div', { class: 'grow' }, h('span', { class: 'row__title' }, t('menu.dupliquer.copier', { items: words.many })), state), toggle)),
+    h('p', { class: 'field__hint' }, t('menu.dupliquer.prive')),
     error.note,
     h('div', { class: 'sheet__actions' }, submit, cancel));
-  const sheet = openSheet({ title: 'Dupliquer la liste', content: form });
+  const sheet = openSheet({ title: t('menu.dupliquer'), content: form });
   cancel.addEventListener('click', () => sheet.close());
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.show('');
     const title = name.value.replace(/\s+/g, ' ').trim();
-    nameField.setError(title ? null : 'Le titre est obligatoire');
+    nameField.setError(title ? null : t('menu.dupliquer.titre.obligatoire'));
     if (!title) return;
     if (!navigator.onLine) {
-      error.show(OFFLINE_DUPLICATE);
+      error.show(offlineDuplicate());
       return;
     }
     submit.disabled = true;
@@ -196,7 +197,7 @@ export function openDuplicateSheet(list) {
       fresh = { id: created.id, until: Date.now() + 4000 };
       sheet.close();
       await refreshData({ quiet: true });
-      toast(`Liste « ${created.name} » créée`, { action: 'Ouvrir', onAction: () => navigate('list', { id: created.id }) });
+      toast(t('menu.dupliquer.fait', { name: created.name }), { action: t('menu.dupliquer.ouvrir'), onAction: () => navigate('list', { id: created.id }) });
     } catch (err) {
       submit.disabled = false;
       error.show(errorMessage(err));
@@ -210,24 +211,24 @@ export function openDuplicateSheet(list) {
 // attendait dans la file est envoyé avant. La liste disparaît ensuite de ce
 // téléphone (et des autres, par le temps réel). Renvoie true si la liste a
 // été quittée.
-const OFFLINE_LEAVE = 'Connexion nécessaire pour quitter une liste';
+const offlineLeave = () => t('menu.quitter.horsLigne');
 
 export async function leaveListWithConfirm(list) {
   if (!navigator.onLine) {
-    toast(OFFLINE_LEAVE);
+    toast(offlineLeave());
     return false;
   }
   const ok = await confirmDialog({
-    title: `Quitter la liste « ${list.name} » ?`,
-    text: 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.',
-    confirmLabel: 'Quitter',
+    title: t('menu.quitter.question', { name: list.name }),
+    text: t('menu.quitter.texte'),
+    confirmLabel: t('menu.quitter.confirmer'),
   });
   if (!ok) return false;
   try {
     await refreshData({ quiet: true }); // envoie d'abord ce qui attend
     await post(`/api/lists/${list.id}/leave`);
   } catch (err) {
-    toast(navigator.onLine ? errorMessage(err) : OFFLINE_LEAVE);
+    toast(navigator.onLine ? errorMessage(err) : offlineLeave());
     return false;
   }
   refreshData({ quiet: true, full: true }); // la liste disparaît de la copie locale

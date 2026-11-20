@@ -44,28 +44,32 @@ import * as actions from '../actions.js';
 import { toast } from '../ui.js';
 import { topbar } from './settings.js';
 import { deviceState, enablePush, disablePush, sendTestPush, loadPushState, savePushSettings, PushSetupError } from '../push.js';
+import { t } from '../i18n.js';
+
+// Les textes sont lus par t() au moment de l'affichage (jamais au chargement
+// du module : la langue n'est pas encore choisie), d'où des fonctions.
 
 // Explication de chaque état (icône, texte, ton d'alerte)
-export const STATE_NOTES = {
-  'server-off': ['bell', 'Les notifications sont désactivées sur ce serveur Listo. La personne qui l\'administre peut les activer.'],
-  unsupported: ['alert', 'Ce navigateur ne sait pas recevoir de notifications. Essayez avec un navigateur à jour.'],
-  'ios-install': ['alert', 'Sur iPhone : ajoutez d\'abord Listo à l\'écran d\'accueil, puis ouvrez-le depuis son icône.'],
-  denied: ['alert', 'Les notifications ont été refusées pour Listo sur cet appareil. Pour les rétablir, autorisez-les dans les réglages du navigateur ou du téléphone (notifications de ce site ou de l\'application Listo), puis revenez ici.', true],
-  offline: ['cloud-off', 'Hors ligne : ce réglage demande une connexion.'],
-  on: ['check', 'Activées sur cet appareil.'],
+export const stateNotes = () => ({
+  'server-off': ['bell', t('notifications.etat.serveurCoupe')],
+  unsupported: ['alert', t('notifications.etat.incompatible')],
+  'ios-install': ['alert', t('notifications.etat.iphone')],
+  denied: ['alert', t('notifications.etat.refusees'), true],
+  offline: ['cloud-off', t('notifications.etat.horsLigne')],
+  on: ['check', t('notifications.etat.activees')],
   off: null,
-};
+});
 // Réglages du compte : [clé, titre, description]
-export const KIND_ROWS = [
-  ['changes', 'Modifications', 'Ce que les autres ajoutent, modifient, cochent ou vous attribuent dans vos listes partagées, regroupé.'],
-  ['wishes', 'Envies', 'Une réservation ou une participation à un cadeau, dans les listes d\'envies que vous voyez.'],
-  ['sharing', 'Partage', 'On vous ajoute à une liste, ou votre droit change.'],
-  ['due', 'Échéances', 'Chaque matin vers 8 h : les tâches à faire aujourd\'hui et celles en retard.'],
+export const kindRows = () => [
+  ['changes', t('notifications.sujet.modifications'), t('notifications.sujet.modifications.detail')],
+  ['wishes', t('notifications.sujet.envies'), t('notifications.sujet.envies.detail')],
+  ['sharing', t('notifications.sujet.partage'), t('notifications.sujet.partage.detail')],
+  ['due', t('notifications.sujet.echeances'), t('notifications.sujet.echeances.detail')],
 ];
-export const DETAIL_ROW = ['detail', 'Afficher le détail dans la notification', 'Le nom des éléments, par exemple « Ajouté : Lait, Pain ». Désactivé : seulement qui a modifié quelle liste.'];
-export const ACCOUNT_NOTE = 'Ces réglages valent pour tous vos appareils.';
-export const PER_LIST_NOTE = 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».';
-export const PRIVACY_NOTE = 'Le contenu des notifications est chiffré : seul votre appareil peut le lire. Le service de notification de votre appareil (Apple, Google, Mozilla ou Microsoft) voit seulement l\'heure, la taille du message et l\'appareil qui le reçoit.';
+export const detailRow = () => ['detail', t('notifications.contenu.detail'), t('notifications.contenu.detail.texte')];
+export const accountNote = () => t('notifications.compte.note');
+export const perListNote = () => t('notifications.parListe.note');
+export const privacyNote = () => t('notifications.confidentialite');
 
 export function renderNotifications(onLeave = () => {}) {
   let current = { state: 'loading' };
@@ -76,7 +80,7 @@ export function renderNotifications(onLeave = () => {}) {
     'aria-labelledby': 'notif-appareil-titre', 'aria-describedby': 'notif-appareil-aide',
   });
   const note = h('div', { class: 'stack', role: 'status' });
-  const testButton = h('button', { class: 'btn btn--secondary btn--block', type: 'button', hidden: true }, icon('bell', 'icon--sm'), 'Envoyer une notification test');
+  const testButton = h('button', { class: 'btn btn--secondary btn--block', type: 'button', hidden: true }, icon('bell', 'icon--sm'), t('notifications.test.bouton'));
 
   function paint() {
     const { state } = current;
@@ -85,7 +89,7 @@ export function renderNotifications(onLeave = () => {}) {
     toggle.disabled = busy || !['on', 'off'].includes(state);
     testButton.hidden = !on;
     testButton.disabled = busy;
-    const spec = STATE_NOTES[state];
+    const spec = stateNotes()[state];
     // Échec de l'inscription du navigateur : l'explication reste affichée
     // sous l'interrupteur (zone lue par les lecteurs d'écran) jusqu'au
     // prochain essai
@@ -99,7 +103,7 @@ export function renderNotifications(onLeave = () => {}) {
 
   // --- Réglages du compte (catégories, détail) ---
   let settings = null;
-  const switches = [...KIND_ROWS, DETAIL_ROW].map(([key, label, help]) => {
+  const switches = [...kindRows(), detailRow()].map(([key, label, help]) => {
     const toggle = h('button', {
       class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,
       'aria-labelledby': `notif-${key}-titre`, 'aria-describedby': `notif-${key}-aide`,
@@ -122,11 +126,11 @@ export function renderNotifications(onLeave = () => {}) {
     return { key, toggle, row };
   });
   const accountPart = h('div', { hidden: true },
-    h('h2', { class: 'section-title' }, 'Notifications reçues'),
+    h('h2', { class: 'section-title' }, t('notifications.recues.titre')),
     h('div', { class: 'group list-options' }, switches.filter((s) => s.key !== 'detail').map((s) => s.row)),
-    h('h2', { class: 'section-title' }, 'Contenu'),
+    h('h2', { class: 'section-title' }, t('notifications.contenu.titre')),
     h('div', { class: 'group list-options' }, switches.filter((s) => s.key === 'detail').map((s) => s.row)),
-    h('div', { class: 'group-after' }, h('p', { class: 'muted' }, ACCOUNT_NOTE)));
+    h('div', { class: 'group-after' }, h('p', { class: 'muted' }, accountNote())));
   function paintSettings() {
     accountPart.hidden = !app.user.push;
     for (const { key, toggle } of switches) {
@@ -152,12 +156,12 @@ export function renderNotifications(onLeave = () => {}) {
       if (current.state === 'on') {
         await disablePush();
         current = { ...current, state: 'off' };
-        toast('Notifications désactivées sur cet appareil');
+        toast(t('notifications.appareil.desactivees'));
       } else {
         // Seul endroit où le navigateur demande l'autorisation
         const state = await enablePush(app.user, current.publicKey);
         current = { ...current, state };
-        if (state === 'on') toast('Notifications activées sur cet appareil');
+        if (state === 'on') toast(t('notifications.appareil.activees'));
       }
     } catch (error) {
       if (!(error instanceof PushSetupError)) toast(errorMessage(error));
@@ -175,7 +179,7 @@ export function renderNotifications(onLeave = () => {}) {
     paint();
     try {
       await sendTestPush();
-      toast('Notification test envoyée : elle arrive dans quelques secondes.');
+      toast(t('notifications.test.envoyee'));
     } catch (error) {
       toast(errorMessage(error));
       current = await deviceState(app.user);
@@ -196,22 +200,22 @@ export function renderNotifications(onLeave = () => {}) {
   load();
 
   return h('div', { class: 'screen' },
-    topbar('Notifications', () => goBack('settings')),
+    topbar(t('notifications.titre'), () => goBack('settings')),
     h('div', { class: 'body' },
-      h('h2', { class: 'section-title' }, 'Dans l\'application'),
+      h('h2', { class: 'section-title' }, t('notifications.application.titre')),
       newsSwitches(onLeave),
-      h('h2', { class: 'section-title' }, 'Sur cet appareil'),
+      h('h2', { class: 'section-title' }, t('notifications.appareil.titre')),
       h('div', { class: 'group list-options' },
         h('div', { class: 'toggle-row' },
           h('div', { class: 'grow' },
-            h('span', { class: 'row__title', id: 'notif-appareil-titre' }, 'Recevoir les notifications sur cet appareil'),
-            h('span', { class: 'row__sub', id: 'notif-appareil-aide' }, 'Sur ce téléphone ou cet ordinateur seulement.')),
+            h('span', { class: 'row__title', id: 'notif-appareil-titre' }, t('notifications.appareil.recevoir')),
+            h('span', { class: 'row__sub', id: 'notif-appareil-aide' }, t('notifications.appareil.recevoir.detail'))),
           toggle)),
       // Sous la carte : état expliqué, notification test, confidentialité
-      h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, PRIVACY_NOTE)),
+      h('div', { class: 'stack group-after' }, note, testButton, h('p', { class: 'muted' }, privacyNote())),
       accountPart,
       // Réglages d'une seule liste : dans son menu ⋮ (list-actions.js)
-      h('div', { class: 'group-after' }, h('p', { class: 'muted' }, PER_LIST_NOTE))));
+      h('div', { class: 'group-after' }, h('p', { class: 'muted' }, perListNote()))));
 }
 
 // Nouveautés (réglages du compte, valables sur tous mes appareils) :
@@ -229,8 +233,8 @@ export function renderNotifications(onLeave = () => {}) {
 // aria-describedby). Passent par la file d'attente : hors ligne compris.
 export function newsSwitches(onLeave) {
   const rows = [
-    ['enabled', 'Nouveautés', 'Ce que les autres ont ajouté ou modifié depuis votre dernière visite.'],
-    ['checks', 'Signaler les éléments cochés', 'Ce que les autres cochent ou décochent.'],
+    ['enabled', t('notifications.nouveautes.titre'), t('notifications.nouveautes.detail')],
+    ['checks', t('notifications.nouveautes.cochees'), t('notifications.nouveautes.cochees.detail')],
   ].map(([key, label, help]) => {
     const titleId = `news-${key}-title`;
     const helpId = `news-${key}-help`;

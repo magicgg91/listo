@@ -13,16 +13,20 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { REPEAT_NOT_HERE, REPEAT_OFF, BAD_REPEAT, REPEAT_NEEDS_DUE, BAD_NEXT_DUE, BAD_DUE, serverToday } from '../server/lists.js';
+import * as refusals from '../server/lists.js';
+import { serverToday } from '../server/lists.js';
 import {
   parseRepeat, isRepeatRule, makeRepeat, isOccurrence, occurrenceAfter, firstOccurrence, nextDue,
   weekdayOf, repeatSentence, repeatChip, REPEAT_RULE_MAX,
 } from '../public/js/repeat.js';
 import { publicItemDetails } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [REPEAT_NOT_HERE, REPEAT_OFF, BAD_REPEAT, REPEAT_NEEDS_DUE, BAD_NEXT_DUE, BAD_DUE] = ['REPEAT_NOT_HERE', 'REPEAT_OFF', 'BAD_REPEAT', 'REPEAT_NEEDS_DUE', 'BAD_NEXT_DUE', 'BAD_DUE'].map((name) => fr[refusals[name]]);
 
 // --- La règle (repeat.js) ---
 
@@ -335,11 +339,12 @@ test('écran : « Se répète » seulement avec l\'échéance, règle avec la da
   assert.match(list, /if \(repeat && \(!dueDate \|\| !isOccurrence\(repeat, dueDate, dueDate\)\)\) \{/);
   // Au moins un jour ; jours annoncés par leur nom entier, état par aria-pressed
   assert.match(list, /if \(on && repeatDays\.length === 1\) return; \/\/ au moins un jour/);
-  assert.match(list, /h\('button', \{ class: 'weekdays__opt', type: 'button', 'aria-label': long,/);
+  assert.match(list, /h\('button', \{ class: 'weekdays__opt', type: 'button', 'aria-label': t\(long\),/);
   assert.match(list, /button\.setAttribute\('aria-pressed', String\(repeatDays\.includes\(Number\(button\.dataset\.day\)\)\)\)/);
   // Cocher : « Prochaine fois : … » et « Annuler » qui remet l'ancienne date (Ctrl+Z aussi)
   assert.match(list, /const next = item\.checked \? null : actions\.nextDueOf\(item\);\s*if \(next\) \{\s*checkRepeating\(item, next\);/);
-  assert.match(list, /toast\(`Prochaine fois : \$\{dueDateLabel\(next\)\}`/);
+  assert.match(list, /toast\(`\$\{t\('liste\.prochaineFois', \{ date: dueDateLabel\(next\) \}\)\}\$\{who\}`/);
+  assert.equal(fr['liste.prochaineFois'], 'Prochaine fois : {date}');
   assert.match(list, /if \(current && current\.dueDate === next\) actions\.updateItem\(current, before\);/);
   // « Passer cette fois » : seulement sur la règle et la date enregistrées, même calcul
   assert.match(list, /skipRow\.hidden = !\(saved && !saved\.checked && actions\.repeatsNow\(saved\) && repeat === savedRepeat && repeat === saved\.repeat && dueDate === savedDue\);/);

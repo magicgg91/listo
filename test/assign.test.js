@@ -14,11 +14,15 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { fakeDevice, fakePushService } from './push-helpers.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
-import { ASSIGN_NOT_HERE, ASSIGN_OFF, BAD_ASSIGNEE } from '../server/lists.js';
+import { ASSIGN_NOT_HERE as ASSIGN_NOT_HERE_KEY, ASSIGN_OFF as ASSIGN_OFF_KEY, BAD_ASSIGNEE as BAD_ASSIGNEE_KEY } from '../server/lists.js';
 import { GROUP_MS, localDay } from '../server/notify.js';
 import { emptyState, applyOp, listOptions, availableSorts, computeListView, assignablePeople } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
 import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
+import fr from '../public/js/i18n/fr.js';
+
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [ASSIGN_NOT_HERE, ASSIGN_OFF, BAD_ASSIGNEE] = [ASSIGN_NOT_HERE_KEY, ASSIGN_OFF_KEY, BAD_ASSIGNEE_KEY].map((key) => fr[key]);
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -333,9 +337,12 @@ test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prén
   const list = read('public/js/screens/list.js');
   assert.match(list, /\[assignField, options\(\)\.assign\]/);
   assert.match(list, /if \(assignMode === 'one'\) changes\.assignedTo = assignee;/);
-  assert.match(list, /if \(people\.some\(\(p\) => p\.id === app\.user\.id\)\) choices\.push\(\[String\(app\.user\.id\), 'Moi'\]\);/);
+  assert.match(list, /if \(people\.some\(\(p\) => p\.id === app\.user\.id\)\) choices\.push\(\[String\(app\.user\.id\), t\('liste\.moi'\)\]\);/);
+  assert.equal(fr['liste.moi'], 'Moi');
   assert.match(list, /icon\(turn \? 'users' : 'user', 'icon--xs'\), who\.name\)/);
-  assert.match(list, /\['person', 'users', 'Par personne', 'Tri : par personne'\]/);
+  assert.match(list, /\['person', 'users', t\('liste\.tri\.personne'\), t\('liste\.tri\.personne\.message'\)\]/);
+  assert.equal(fr['liste.tri.personne'], 'Par personne');
+  assert.equal(fr['liste.tri.personne.message'], 'Tri : par personne');
   const page = read('public/js/public.js') + read('public/js/format.js');
   assert.doesNotMatch(page, /assignedTo|assign/);
   assert.doesNotMatch(read('server/routes/public.js'), /assigned_to|assignedTo|assign_enabled/);
@@ -347,8 +354,11 @@ test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prén
   }
   // Formulaire de la liste : l'interrupteur, pour les listes de tâches seulement
   const form = read('public/js/screens/list-form.js');
-  assert.match(form, /\['assign', 'Attribution', 'Confier une tâche à une personne de la liste\.'\],/);
+  assert.match(form, /\['assign', t\('formulaire\.option\.attribution'\), t\('formulaire\.option\.attribution\.detail'\)\],/);
+  assert.equal(fr['formulaire.option.attribution'], 'Attribution');
+  assert.equal(fr['formulaire.option.attribution.detail'], 'Confier une tâche à une personne de la liste.');
   assert.match(form, /if \(withAssign && options\.assign !== saved\.assign\) switches\.assignEnabled = options\.assign;/);
   // Notifications : la catégorie s'appelle « Modifications »
-  assert.match(read('public/js/screens/notifications.js'), /\['changes', 'Modifications', /);
+  assert.match(read('public/js/screens/notifications.js'), /\['changes', t\('notifications.sujet.modifications'\), /);
+  assert.equal(fr['notifications.sujet.modifications'], 'Modifications');
 });

@@ -25,9 +25,10 @@
 import { h, icon, replace, passwordInput } from './dom.js';
 import { prepareAnnouncer, announce as speak } from './announce.js';
 import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } from './format.js';
-import { itemWords, countItems, doneZoneWords } from './words.js';
+import { itemWords, wordKind, byKind, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
+import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 
 const root = document.getElementById('app');
@@ -35,7 +36,7 @@ prepareAnnouncer();
 const token = location.pathname.split('/')[2] ?? '';
 const apiUrl = (path = '') => `/api/public/${encodeURIComponent(token)}${path}`;
 
-const TOO_MANY = "Trop d'essais, réessayez plus tard.";
+const tooMany = () => t('lienpublic.tropEssais.texte');
 // Prénom du visiteur, gardé sur cet appareil pour ce lien seulement
 const NAME_KEY = `listo_prenom_${token}`;
 const NAME_MAX = 40;
@@ -43,8 +44,10 @@ let canReserve = false;
 let announcement = null; // phrase à annoncer au prochain affichage
 
 // « article » (liste de courses) ou « élément » (autre liste) : déduit du
-// regroupement envoyé par le serveur (« none » = pas une liste de courses)
+// regroupement envoyé par le serveur (« none » = pas une liste de courses) ;
+// textKind : sorte de liste des phrases entières (byKind, words.js)
 let words = itemWords(true);
+let textKind = wordKind(true);
 // Regroupement de la liste affichée : « aisle », « store » ou « none »
 let grouping = 'aisle';
 // Type de la liste affichée (« shopping », « tasks » ou « wishes »)
@@ -58,8 +61,8 @@ function message(iconName, title, text) {
     h('p', { class: 'empty__text' }, text)));
 }
 
-const showInvalid = () => message('link-off', 'Lien expiré ou inexistant', "Ce lien n'est plus valide. Demander un nouveau lien à la personne qui l'a envoyé.");
-const showNetwork = () => message('cloud-off', 'Liste indisponible', 'Impossible de joindre Listo. Vérifiez la connexion, puis rechargez la page.');
+const showInvalid = () => message('link-off', t('lienpublic.invalide'), t('lienpublic.invalide.texte'));
+const showNetwork = () => message('cloud-off', t('lienpublic.reseau'), t('lienpublic.reseau.texte'));
 
 // Charge la liste (une requête) et affiche le résultat
 async function load() {
@@ -72,7 +75,7 @@ async function load() {
   }
   if (res.status === 200) return showList(await res.json());
   if (res.status === 401) return showGate();
-  if (res.status === 429) return message('clock', 'Trop d\'essais', TOO_MANY);
+  if (res.status === 429) return message('clock', t('lienpublic.tropEssais'), tooMany());
   return showInvalid(); // lien inconnu, expiré, arrêté… : toujours le même message
 }
 
@@ -80,10 +83,10 @@ async function load() {
 function showGate() {
   const { wrap, input } = passwordInput({ class: 'input input--mono', id: 'mot-de-passe', autocomplete: 'off', required: true, maxlength: '200' });
   const fieldError = h('p', { class: 'field__error', id: 'mot-de-passe-erreur', hidden: true });
-  const blocked = h('p', { class: 'note note--danger', hidden: true }, icon('clock', 'icon--sm'), h('span', {}, TOO_MANY));
-  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Ouvrir');
+  const blocked = h('p', { class: 'note note--danger', hidden: true }, icon('clock', 'icon--sm'), h('span', {}, tooMany()));
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('lienpublic.ouvrir'));
   const form = h('form', { class: 'stack', novalidate: true },
-    h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'mot-de-passe' }, 'Mot de passe'), wrap, fieldError),
+    h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'mot-de-passe' }, t('lienpublic.motDePasse')), wrap, fieldError),
     blocked,
     submit);
 
@@ -92,7 +95,7 @@ function showGate() {
     input.removeAttribute('aria-invalid');
     input.value = '';
     blocked.hidden = false;
-    speak(TOO_MANY, { urgent: true });
+    speak(tooMany(), { urgent: true });
     for (const el of [input, submit, ...wrap.querySelectorAll('button')]) el.disabled = true;
   };
 
@@ -107,7 +110,7 @@ function showGate() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!input.value) return showError('Saisir le mot de passe.');
+    if (!input.value) return showError(t('lienpublic.motDePasse.manquant'));
     submit.disabled = true;
     let res;
     try {
@@ -119,14 +122,14 @@ function showGate() {
       });
     } catch {
       submit.disabled = false;
-      showError('Impossible de joindre Listo. Réessayez.');
+      showError(t('lienpublic.injoignable'));
       return;
     }
     if (res.status === 200) return load();
     if (res.status === 429) return block();
     if (res.status === 401) {
       submit.disabled = false;
-      showError('Mot de passe incorrect');
+      showError(t('lienpublic.motDePasse.incorrect'));
       return;
     }
     showInvalid();
@@ -135,8 +138,8 @@ function showGate() {
   replace(root, h('div', { class: 'gate' },
     h('div', { class: 'gate__head' },
       h('span', { class: 'empty__icon' }, icon('lock', 'icon--lg')),
-      h('h1', { class: 'empty__title' }, 'Liste protégée'),
-      h('p', { class: 'empty__text' }, 'Saisir le mot de passe reçu avec le lien.')),
+      h('h1', { class: 'empty__title' }, t('lienpublic.protegee')),
+      h('p', { class: 'empty__text' }, t('lienpublic.protegee.texte'))),
     form));
   // Pas de curseur automatique : le clavier s'ouvre quand on touche le champ
 }
@@ -144,24 +147,28 @@ function showGate() {
 // --- La liste en lecture seule (page-publique-1 et 2) ---
 function showList(data) {
   const { list, groups, done = [], expiresAt } = data;
+  // Liste d'envies : monnaie des prix (LISTO_CURRENCY), donnée avec la liste
+  setCurrency(list.currency);
   listType = list.type;
   canReserve = Boolean(list.canReserve);
   // Liste d'envies : « souhait » ; sinon déduit du regroupement, comme avant
   words = isWishList(list) ? itemWords(list) : itemWords(list.grouping !== 'none');
+  textKind = isWishList(list) ? wordKind(list) : wordKind(list.grouping !== 'none');
   grouping = list.grouping;
   document.title = `${list.name} · Listo`;
-  const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  // « 09:05 » en français, « 9:05 AM » en anglais
+  const time = formatTime(new Date(), { twoDigits: true });
 
-  const refresh = h('button', { class: 'btn btn--secondary btn--sm', type: 'button' }, icon('sync', 'icon--sm'), 'Actualiser');
+  const refresh = h('button', { class: 'btn btn--secondary btn--sm', type: 'button' }, icon('sync', 'icon--sm'), t('lienpublic.actualiser'));
   refresh.addEventListener('click', () => {
     refresh.disabled = true;
     load();
   });
 
-  const count = (group) => h('span', { class: 'aisle__count', 'aria-label': `${words.many} restants` }, String(group.items.filter((i) => !i.checked).length));
+  const count = (group) => h('span', { class: 'aisle__count', 'aria-label': t('lienpublic.groupe.restants', { many: words.many }) }, String(group.items.filter((i) => !i.checked).length));
   const header = (group) => {
-    if (list.grouping === 'store') return h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.name ?? 'Sans magasin'), count(group));
-    if (list.grouping === 'aisle') return h('h2', { class: 'aisle' }, group.name ?? 'Sans rayon', count(group));
+    if (list.grouping === 'store') return h('h2', { class: 'aisle' }, h('span', { class: 'aisle__name' }, icon('store', 'icon--xs'), group.name ?? t('lienpublic.sansMagasin')), count(group));
+    if (list.grouping === 'aisle') return h('h2', { class: 'aisle' }, group.name ?? t('lienpublic.sansRayon'), count(group));
     return null;
   };
 
@@ -184,22 +191,22 @@ function showList(data) {
     ? [...groups.map((group) => h('section', {}, header(group), h('ul', {}, group.items.flatMap((item) => withSubtasks(item, group.name))))), doneZone]
     : h('div', { class: 'empty' },
       h('span', { class: 'empty__icon' }, icon(typeIcon(list.type), 'icon--lg')),
-      h('h2', { class: 'empty__title' }, 'Cette liste est vide'));
+      h('h2', { class: 'empty__title' }, t('lienpublic.vide')));
 
   replace(root, h('div', { class: 'screen' },
-    h('p', { class: 'readonly-banner' }, icon('eye', 'icon--sm'), 'Lecture seule'),
+    h('p', { class: 'readonly-banner' }, icon('eye', 'icon--sm'), t('lienpublic.lectureSeule')),
     h('header', { class: 'public-head' },
       h('div', { class: 'public-head__main' },
         h('h1', { class: 'public-head__title' }, list.name),
         list.store
           ? h('p', { class: 'public-head__sub' }, icon('store', 'icon--xs'), list.store)
           // Liste d'envies : « Pour Léa » (le prénom de la personne à qui elle est destinée)
-          : h('p', { class: 'public-head__sub' }, icon(typeIcon(list.type), 'icon--xs'), isWishList(list) && list.forName ? `Pour ${list.forName}` : typeLabel(list.type)),
-        h('p', { class: 'public-head__sub' }, icon('sync', 'icon--xs'), `Mis à jour à ${time}`)),
+          : h('p', { class: 'public-head__sub' }, icon(typeIcon(list.type), 'icon--xs'), isWishList(list) && list.forName ? t('lienpublic.pour', { name: list.forName }) : typeLabel(list.type)),
+        h('p', { class: 'public-head__sub' }, icon('sync', 'icon--xs'), t('lienpublic.misAJour', { time }))),
       refresh),
     h('div', { class: `scroll${shopping ? '' : ' scroll--flat'}` }, content),
     h('footer', { class: 'public-foot' }, icon('clock', 'icon--sm'),
-      expiresAt ? `Ce lien expire le ${dateTimeLabel(expiresAt)}` : "Ce lien n'a pas de date d'expiration")));
+      expiresAt ? t('lienpublic.expire', { date: dateTimeLabel(expiresAt) }) : t('lienpublic.sansExpiration'))));
   if (announcement) {
     announce(announcement);
     announcement = null;
@@ -233,17 +240,17 @@ function askName() {
     const input = h('input', { class: 'input', id: 'prenom', type: 'text', maxlength: String(NAME_MAX), autocomplete: 'given-name', autocapitalize: 'words', enterkeyhint: 'done' });
     const error = h('p', { class: 'field__error', id: 'prenom-erreur', hidden: true });
     const form = h('form', { class: 'stack', novalidate: true },
-      h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'prenom' }, 'Votre prénom'), input, error,
-        h('p', { class: 'field__hint' }, 'Les proches qui gèrent la liste le verront, jamais les autres visiteurs.')),
-      h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Continuer'));
+      h('div', { class: 'field' }, h('label', { class: 'field__label', for: 'prenom' }, t('lienpublic.prenom')), input, error,
+        h('p', { class: 'field__hint' }, t('lienpublic.prenom.aide'))),
+      h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('lienpublic.continuer')));
     let close = () => {};
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const name = input.value.replace(/\s+/g, ' ').trim();
       if (!name || [...name].length > NAME_MAX) {
-        replace(error, icon('alert', 'icon--xs'), `Indiquez votre prénom (1 à ${NAME_MAX} caractères).`);
+        replace(error, icon('alert', 'icon--xs'), t('lienpublic.prenom.erreur', { max: NAME_MAX }));
         error.hidden = false;
-        speak(`Indiquez votre prénom (1 à ${NAME_MAX} caractères).`, { urgent: true });
+        speak(t('lienpublic.prenom.erreur', { max: NAME_MAX }), { urgent: true });
         input.setAttribute('aria-invalid', 'true');
         input.setAttribute('aria-describedby', 'prenom-erreur');
         return;
@@ -260,8 +267,8 @@ function askName() {
     const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'prenom-titre' },
       h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
       h('div', { class: 'sheet__head' },
-        h('h2', { class: 'sheet__title', id: 'prenom-titre' }, 'Qui réserve ?'),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => close() }, icon('close'))),
+        h('h2', { class: 'sheet__title', id: 'prenom-titre' }, t('lienpublic.prenom.titre')),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('lienpublic.fermer'), onClick: () => close() }, icon('close'))),
       form);
     close = openLayer(panel, h('div', { class: 'scrim' }), () => {
       if (!done) resolve(null);
@@ -288,13 +295,13 @@ async function visitorAction(item, method) {
       body,
     });
   } catch {
-    announce('Impossible de joindre Listo. Réessayez.');
+    announce(t('lienpublic.injoignable'));
     return;
   }
   if (res.status === 200) {
     announcement = method === 'POST'
-      ? (item.reservation === 'open' ? `Vous participez : ${item.name}` : `Réservé : ${item.name}`)
-      : `Vous ne participez plus : ${item.name}`;
+      ? (item.reservation === 'open' ? t('lienpublic.annonce.participe', { name: item.name }) : t('lienpublic.annonce.reserve', { name: item.name }))
+      : t('lienpublic.annonce.neParticipePlus', { name: item.name });
   } else if (res.status === 401) {
     return showGate();
   } else {
@@ -307,7 +314,7 @@ async function visitorAction(item, method) {
         // rien à faire
       }
     }
-    announcement = typeof data.error === 'string' ? data.error : 'Action impossible pour le moment.';
+    announcement = typeof data.error === 'string' ? data.error : t('lienpublic.annonce.impossible');
   }
   load();
 }
@@ -316,12 +323,12 @@ async function visitorAction(item, method) {
 function reservationPart(item) {
   if (!canReserve || item.checked || !item.id) return null;
   const action = (label, method, kind = 'btn--secondary') => h('button', {
-    class: `btn ${kind} btn--sm`, type: 'button', 'aria-label': `${label} : ${item.name}`, onClick: () => visitorAction(item, method),
+    class: `btn ${kind} btn--sm`, type: 'button', 'aria-label': t('lienpublic.action.libelle', { label, name: item.name }), onClick: () => visitorAction(item, method),
   }, label);
-  if (item.mine) return h('div', { class: 'item__reserve' }, h('span', { class: 'chip chip--accent' }, icon('gift', 'icon--xs'), 'Je participe'), action('Annuler', 'DELETE'));
-  if (item.reservation === 'open') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), 'Réservé · ouvert à d\'autres'), action('Participer', 'POST', 'btn--primary'));
-  if (item.reservation === 'reserved') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), 'Réservé'));
-  return h('div', { class: 'item__reserve' }, action('Réserver', 'POST', 'btn--primary'));
+  if (item.mine) return h('div', { class: 'item__reserve' }, h('span', { class: 'chip chip--accent' }, icon('gift', 'icon--xs'), t('lienpublic.jeParticipe')), action(t('lienpublic.annuler'), 'DELETE'));
+  if (item.reservation === 'open') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), t('lienpublic.reserveOuvert')), action(t('lienpublic.participer'), 'POST', 'btn--primary'));
+  if (item.reservation === 'reserved') return h('div', { class: 'item__reserve' }, h('span', { class: 'chip' }, icon('gift', 'icon--xs'), t('lienpublic.reserve')));
+  return h('div', { class: 'item__reserve' }, action(t('lienpublic.reserver'), 'POST', 'btn--primary'));
 }
 
 // Retour au premier plan : la liste est relue (pas de temps réel)
@@ -336,15 +343,15 @@ document.addEventListener('visibilitychange', () => {
 function metaRow(item) {
   const chips = [];
   const priority = priorityChip(item.priority);
-  if (priority) chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Priorité '), priority.text));
+  if (priority) chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.priorite')} `), priority.text));
   // Liste d'envies : le prix indicatif
   const price = formatPrice(item.priceCents);
-  if (price) chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Prix indicatif : '), price));
+  if (price) chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.prix')} `), price));
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
-    chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Échéance : '), due.text));
-    if (item.repeat) chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), h('span', { class: 'visually-hidden' }, 'Se répète : '), repeatChip(item.repeat)));
+    chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.echeance')} `), due.text));
+    if (item.repeat) chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.repetition')} `), repeatChip(item.repeat)));
   }
   return chips.length ? h('span', { class: 'item__meta' }, chips) : null;
 }
@@ -357,15 +364,15 @@ function itemRow(item, place, extraSpoken = '') {
   // Vignette de la ligne : gardée pour la fiche (copie sans nouvelle requête)
   const thumb = item.photo ? h('img', { class: 'photo', src: item.photo, alt: '', loading: 'lazy', decoding: 'async' }) : null;
   return h('li', { class: `item${item.checked ? ' is-done' : ''}${canReserve && !item.checked ? ' item--reserve' : ''}` },
-    h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': listType === 'wishes' ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
+    h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': listType === 'wishes' ? (item.checked ? t('lienpublic.recu') : t('lienpublic.pasEncoreRecu')) : item.checked ? t('lienpublic.coche') : t('lienpublic.nonCoche') },
       h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
-    h('button', { class: 'item__body', type: 'button', 'aria-label': `Voir ${item.name}${spokenMeta(item)}${extraSpoken}`, onClick: () => showItem(item, place, thumb) },
+    h('button', { class: 'item__body', type: 'button', 'aria-label': `${t('lienpublic.voir', { name: item.name })}${spokenMeta(item)}${extraSpoken}`, onClick: () => showItem(item, place, thumb) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, item.name),
         item.note ? h('span', { class: 'item__note' }, item.note) : null,
         metaRow(item)),
       item.quantity ? h('span', { class: 'item__qty' }, item.quantity) : null),
-    thumb ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) }, thumb) : null,
+    thumb ? h('button', { class: 'item__photo', type: 'button', 'aria-label': t('lienpublic.photo.agrandir', { name: item.name }), onClick: () => showPhoto(item) }, thumb) : null,
     reservationPart(item));
 }
 
@@ -377,8 +384,8 @@ function withSubtasks(item, place) {
   if (!children.length) return [itemRow(item, place)];
   const done = children.filter((child) => child.checked).length;
   return [
-    itemRow(item, place, `, sous-tâches : ${done} faite${done > 1 ? 's' : ''} sur ${children.length}`),
-    h('li', { class: 'subtasks' }, h('ul', { class: 'subtasks__list', 'aria-label': `Sous-tâches de ${item.name}` }, children.map((child) => itemRow(child, place)))),
+    itemRow(item, place, `, ${t('lienpublic.sousTaches.faites', { count: done, total: children.length })}`),
+    h('li', { class: 'subtasks' }, h('ul', { class: 'subtasks__list', 'aria-label': t('lienpublic.sousTaches.de', { name: item.name }) }, children.map((child) => itemRow(child, place)))),
   ];
 }
 
@@ -403,7 +410,7 @@ function spokenMeta(item) {
   if (priority) spoken.push(priority.label.toLowerCase());
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) spoken.push(due.label.toLowerCase());
-  if (due && item.repeat) spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
+  if (due && item.repeat) spoken.push(t('lienpublic.repetition', { rule: lowerFirst(repeatSentence(item.repeat)) }));
   const price = formatPrice(item.priceCents);
   if (price) spoken.push(price);
   return spoken.length ? `, ${spoken.join(', ')}` : '';
@@ -482,7 +489,7 @@ function showItem(item, place, thumb) {
   // Liste d'envies : « Ouvrir le lien » (vérifié encore ici ; nouvel onglet,
   // sans « referrer », sans suivi)
   const safe = listType === 'wishes' ? cleanLink(item.link ?? '') : null;
-  const linkButton = safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer nofollow' }, icon('link', 'icon--sm'), 'Ouvrir le lien') : null;
+  const linkButton = safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer nofollow' }, icon('link', 'icon--sm'), t('lienpublic.fiche.lien')) : null;
   // La photo s'insère avant le rayon (ou le magasin), comme dans l'application
   const placeRows = grouping === 'none' ? 0 : 1;
   let close = () => {};
@@ -492,15 +499,15 @@ function showItem(item, place, thumb) {
   const panel = h('div', { class: 'sheet sheet--fixed-head', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'fiche-titre' },
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: 'sheet__head' },
-      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, `Détail ${words.of}`),
-      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => close() }, icon('close'))),
+      h('h2', { class: 'sheet__title', id: 'fiche-titre' }, byKind(textKind, { shopping: t('lienpublic.fiche.titre.courses'), tasks: t('lienpublic.fiche.titre.taches'), wishes: t('lienpublic.fiche.titre.envies') })),
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('lienpublic.fermer'), onClick: () => close() }, icon('close'))),
     h('div', { class: 'stack sheet__scroll' },
-      h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : ${words.this} ne peut pas être modifié.`)),
+      h('div', { class: 'note' }, icon('eye'), h('p', {}, byKind(textKind, { shopping: t('lienpublic.fiche.lectureSeule.courses'), tasks: t('lienpublic.fiche.lectureSeule.taches'), wishes: t('lienpublic.fiche.lectureSeule.envies') }))),
       rows.slice(0, rows.length - placeRows),
       linkButton,
-      item.photo ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
+      item.photo ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('lienpublic.fiche.photo')),
         h('div', { class: 'photo-block' },
-          h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
+          h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': t('lienpublic.photo.agrandir', { name: item.name }), onClick: () => showPhoto(item) },
             photoCopy(item, thumb)))) : null,
       rows.slice(rows.length - placeRows)));
   close = openLayer(panel, h('div', { class: 'scrim' }));
@@ -511,10 +518,13 @@ function showPhoto(item) {
   let close = () => {};
   const panel = h('div', { class: 'lightbox', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'photo-titre' },
     h('div', { class: 'lightbox__bar' }, h('h2', { class: 'lightbox__title', id: 'photo-titre' }, item.name),
-      h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer la photo', 'data-initial-focus': true, onClick: () => close() }, icon('close'))),
-    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: `Photo ${words.of} ${item.name}` })),
-    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => close() }, 'Fermer')));
+      h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('lienpublic.photo.fermer'), 'data-initial-focus': true, onClick: () => close() }, icon('close'))),
+    h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src: item.photo, alt: byKind(textKind, { shopping: t('lienpublic.photo.alt.courses', { name: item.name }), tasks: t('lienpublic.photo.alt.taches', { name: item.name }), wishes: t('lienpublic.photo.alt.envies', { name: item.name }) }) })),
+    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => close() }, t('lienpublic.fermer'))));
   close = openLayer(panel);
 }
 
+// Langue du visiteur (sans compte) : celle de son navigateur (une langue
+// complète, sinon le français), posée avant tout affichage
+document.documentElement.lang = setLocale(resolveLocale(navigator.languages?.length ? navigator.languages : [navigator.language]));
 load();

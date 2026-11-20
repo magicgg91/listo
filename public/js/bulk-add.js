@@ -7,16 +7,20 @@
 // de lait » reste un seul élément. Les espaces en trop sont retirés et les
 // morceaux vides ignorés (« lait,, pain, » donne deux éléments).
 //
-// Module sans dépendance, testé à part (test/bulk-add.test.js). Le
-// découpage parcourt le texte caractère par caractère, sans syntaxe récente
-// d'expression régulière (les anciens iPhone ne la comprennent pas).
+// Module sans autre dépendance que les textes (i18n.js), testé à part
+// (test/bulk-add.test.js). Le découpage parcourt le texte caractère par
+// caractère, sans syntaxe récente d'expression régulière (les anciens iPhone
+// ne la comprennent pas).
+
+import { t } from './i18n.js';
 
 export const BULK_MAX = 20; // éléments au plus par saisie
 export const ITEM_NAME_MAX = 100; // même longueur maximale qu'un ajout à la main (serveur : itemName)
 // Longueur du champ d'ajout quand on peut y saisir plusieurs éléments (20 noms
 // de 100 caractères et leurs séparateurs) ; une liste d'envies garde 100
 export const BULK_INPUT_MAX = BULK_MAX * (ITEM_NAME_MAX + 2);
-export const TOO_MANY = '20 éléments au plus à la fois. Rien n\'a été ajouté.';
+// Message lu au moment de l'afficher (dans la langue choisie)
+export const tooMany = () => t('ajout.tropNombreux');
 
 const isDigit = (char) => char >= '0' && char <= '9';
 
@@ -61,13 +65,15 @@ export function splitItems(text) {
 // chacun.
 export function planBulkAdd(text, { max = BULK_MAX, nameMax = ITEM_NAME_MAX } = {}) {
   const names = splitItems(text);
-  if (names.length > max) return { error: TOO_MANY };
+  if (names.length > max) return { error: tooMany() };
   const index = names.findIndex((name) => name.length > nameMax);
   if (index !== -1) {
     const name = names[index];
     const start = name.length > 30 ? `${name.slice(0, 30)}…` : name;
-    const which = names.length > 1 ? `L'élément ${index + 1} (« ${start} »)` : `« ${start} »`;
-    return { error: `${which} est trop long : ${nameMax} caractères au plus. Rien n'a été ajouté.` };
+    const error = names.length > 1
+      ? t('ajout.tropLong.plusieurs', { position: index + 1, start, max: nameMax })
+      : t('ajout.tropLong.seul', { start, max: nameMax });
+    return { error };
   }
   return { names };
 }

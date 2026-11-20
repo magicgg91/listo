@@ -6,6 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -74,7 +75,8 @@ test('fenêtre ouverte : le reste de l\'écran est inerte, rendu à la fermeture
 
 test('rond à cocher : nom fixe, l\'état dans aria-pressed seulement (dit une fois)', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /'aria-pressed': String\(item\.checked\),\n      'aria-label': isWishList\(view\?\.list\) \? `Reçu : \$\{item\.name\}` : item\.name,/);
+  assert.match(list, /'aria-pressed': String\(item\.checked\),\n      'aria-label': isWishList\(view\?\.list\) \? t\('liste\.envies\.recu\.nom', \{ name: item\.name \}\) : item\.name,/);
+  assert.equal(fr['liste.envies.recu.nom'], 'Reçu : {name}');
   assert.match(read('public/js/screens/deadlines.js'), /'aria-pressed': 'false', 'aria-label': item\.name,/);
   // Balisage de référence du kit aligné
   assert.doesNotMatch(read('design/components.html'), /class="check"[^>]*aria-label="(Cocher|Décocher) /);

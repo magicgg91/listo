@@ -20,6 +20,8 @@
 // Une copie hors ligne d'avant les types est écartée et rechargée
 // (SNAPSHOT_VERSION, store.js).
 
+import { t } from './i18n.js';
+
 export const LIST_TYPES = ['shopping', 'tasks', 'wishes'];
 
 // Types qu'on peut choisir à la création
@@ -27,19 +29,27 @@ export const CREATABLE_TYPES = ['shopping', 'tasks', 'wishes'];
 // Types entre lesquels une liste existante peut passer (jamais les envies)
 export const CHANGEABLE_TYPES = ['shopping', 'tasks'];
 
-export const TYPE_LABELS = { shopping: 'Courses', tasks: 'Tâches', wishes: 'Envies' };
+// Nom affiché de chaque type (TYPE_LABELS.tasks : « Tâches »), dans la
+// langue des écrans : le texte est lu au moment où l'écran le demande
+export const TYPE_LABELS = {
+  get shopping() { return t('regles.type.courses'); },
+  get tasks() { return t('regles.type.taches'); },
+  get wishes() { return t('regles.type.envies'); },
+};
 
 // Icône par défaut de chaque type (sprite design/icons-sprite.html)
 export const TYPE_ICONS = { shopping: 'cart', tasks: 'tasks', wishes: 'gift' };
 
-// Refus d'un changement de type (serveur)
-export const WISHES_FIXED = 'Une liste d\'envies ne change pas de type.';
-export const NOT_TO_WISHES = 'Une liste devient une liste d\'envies seulement depuis « Modifier la liste », avec du réseau.';
+// Refus d'un changement de type (serveur) : noms des textes
+// (public/js/i18n/fr/regles.js), traduits là où la réponse est écrite
+export const WISHES_FIXED = 'regles.envies.typeFixe';
+export const NOT_TO_WISHES = 'regles.envies.conversionEnLigne';
 // Phrase du formulaire « Modifier la liste » quand une liste de courses ou
 // de tâches devient une liste d'envies (avant l'enregistrement)
-export const CONVERT_TO_WISHES_WARNING = 'Une fois enregistrée, la liste d\'envies ne pourra plus changer de type ni de destinataire. Rien n\'est effacé : quantités et échéances sont gardées sans être affichées, et les éléments cochés deviennent « Reçus ».';
-// Phrase du formulaire « Modifier la liste » d'une liste d'envies
-export const WISHES_LOCKED_HINT = 'Le type et la personne à qui la liste est destinée ne changent plus.';
+export const CONVERT_TO_WISHES_WARNING = 'regles.envies.avertissementConversion';
+// Phrase du formulaire « Modifier la liste » d'une liste d'envies (nom du
+// texte : l'écran l'affiche avec t())
+export const WISHES_LOCKED_HINT = 'regles.envies.verrouillee';
 
 export function isListType(value) {
   return typeof value === 'string' && LIST_TYPES.includes(value);
@@ -71,8 +81,8 @@ export const typeIcon = (list) => TYPE_ICONS[typeOf(list)];
 // liste existante : ce qui ne s'affichera plus, et qui reste conservé
 export function typeChangeWarning(from, to) {
   if (from === to) return '';
-  if (to === 'wishes') return CONVERT_TO_WISHES_WARNING;
-  if (from === 'shopping') return 'Les rayons, magasins et codes-barres ne s\'affichent plus pour ce type ; ils sont conservés si vous revenez à Courses.';
-  if (from === 'tasks') return 'La priorité et l\'échéance ne s\'affichent plus pour ce type ; elles sont conservées si vous revenez à Tâches.';
+  if (to === 'wishes') return t(CONVERT_TO_WISHES_WARNING);
+  if (from === 'shopping') return t('regles.type.changement.depuisCourses');
+  if (from === 'tasks') return t('regles.type.changement.depuisTaches');
   return '';
 }

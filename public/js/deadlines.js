@@ -30,13 +30,16 @@ import { addDays, todayKey } from './format.js';
 import { compareNames } from './sorting.js';
 import { matches } from './search.js';
 import { compareDue, isLate, nowTime } from './due-time.js';
+import { t } from './i18n.js';
 
-export const DEADLINE_GROUPS = [
-  ['late', 'En retard'],
-  ['today', "Aujourd'hui"],
-  ['tomorrow', 'Demain'],
-  ['week', 'Cette semaine'],
-  ['later', 'Plus tard'],
+// Groupes, dans l'ordre : [clé, titre] (fonction : les titres sont lus dans
+// la langue choisie)
+export const deadlineGroups = () => [
+  ['late', t('echeances.groupe.retard')],
+  ['today', t('echeances.groupe.aujourdhui')],
+  ['tomorrow', t('echeances.groupe.demain')],
+  ['week', t('echeances.groupe.semaine')],
+  ['later', t('echeances.groupe.plusTard')],
 ];
 
 // Dimanche de la semaine de « today » (semaine du lundi au dimanche)
@@ -91,7 +94,7 @@ function collect(state, keep = () => true) {
 export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null, now = nowTime() } = {}) {
   const keep = mine ? (item, list) => assigneesFor(item, list).includes(me) : undefined;
   const entries = collect(state, keep).filter((entry) => !query || matches(entry.item.name, query));
-  return DEADLINE_GROUPS
+  return deadlineGroups()
     .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today, entry.item.dueTime, now) === key) }))
     .filter((group) => group.entries.length > 0);
 }

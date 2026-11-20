@@ -23,6 +23,7 @@ import { deadlinesLabel } from '../tabbar.js';
 import { keepFieldFocus } from '../tap.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 import { openShortcuts, keycap } from '../shortcuts.js';
+import { t } from '../i18n.js';
 
 // Crée le menu. Renvoie { el, select(route), dispose() }.
 export function createPcSide() {
@@ -36,14 +37,14 @@ export function createPcSide() {
     autocapitalize: 'off',
     spellcheck: 'false',
     maxlength: '100',
-    placeholder: 'Rechercher',
-    'aria-label': 'Rechercher une liste',
+    placeholder: t('navigation.recherche.placeholder'),
+    'aria-label': t('navigation.recherche.libelle'),
     'aria-keyshortcuts': '/',
   });
   const clearButton = h('button', {
     class: 'icon-btn',
     type: 'button',
-    'aria-label': 'Effacer la saisie',
+    'aria-label': t('navigation.recherche.effacer'),
     hidden: true,
     onPointerdown: keepFieldFocus.pointerdown,
     onMousedown: keepFieldFocus.mousedown,
@@ -66,7 +67,7 @@ export function createPcSide() {
   });
 
   // --- Listes groupées par type ---
-  const nav = h('nav', { class: 'pc-nav', 'aria-label': 'Mes listes' });
+  const nav = h('nav', { class: 'pc-nav', 'aria-label': t('navigation.mesListes') });
 
   // Une entrée : icône (avec la pastille des nouveautés), nom, « 5/8 »
   const entry = (list, query) => {
@@ -98,7 +99,7 @@ export function createPcSide() {
       event.preventDefault();
       navigate('deadlines', {}, { replace: selected.name === 'deadlines' });
     },
-  }, h('span', { class: 'pc-nav__icon' }, icon('calendar', 'icon--sm')), h('span', { class: 'pc-nav__name' }, 'Échéances'), deadlinesCount);
+  }, h('span', { class: 'pc-nav__icon' }, icon('calendar', 'icon--sm')), h('span', { class: 'pc-nav__name' }, t('navigation.echeances')), deadlinesCount);
   const drawDeadlines = () => {
     const count = app.data.loaded ? deadlineBadge(app.data, undefined, app.user?.id ?? null) : 0;
     deadlinesCount.hidden = count === 0;
@@ -112,7 +113,7 @@ export function createPcSide() {
   const draw = () => {
     drawDeadlines();
     if (!app.data.loaded) {
-      replace(nav, h('p', { class: 'pc-nav__empty', role: 'status' }, 'Chargement…'));
+      replace(nav, h('p', { class: 'pc-nav__empty', role: 'status' }, t('navigation.chargement')));
       return;
     }
     const all = computeSummaries(app.data, { sort: loadListSort() });
@@ -120,7 +121,7 @@ export function createPcSide() {
     const lists = isSearching(query) ? filterLists(all, query) : all;
     status.textContent = isSearching(query) ? listsLabel(lists.length) : '';
     if (!lists.length) {
-      replace(nav, h('p', { class: 'pc-nav__empty' }, isSearching(query) ? 'Aucune liste trouvée.' : 'Aucune liste pour le moment.'));
+      replace(nav, h('p', { class: 'pc-nav__empty' }, isSearching(query) ? t('navigation.recherche.aucune') : t('navigation.listes.aucune')));
       return;
     }
     replace(nav, LIST_TYPES.map((type) => {
@@ -145,26 +146,26 @@ export function createPcSide() {
       navigate('lists');
     },
   }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, icon('logo')), h('span', { class: 'pc-brand__name' }, 'Listo'),
-  h('span', { class: 'visually-hidden' }, ' : Mes listes'));
+  h('span', { class: 'visually-hidden' }, ` ${t('navigation.marque.accueil')}`));
   const user = app.user ?? {};
-  const el = h('aside', { class: 'pc-side', 'aria-label': 'Navigation' },
+  const el = h('aside', { class: 'pc-side', 'aria-label': t('navigation.libelle') },
     // « ? » : la fenêtre des raccourcis (elle mène aussi à l'aide)
     h('div', { class: 'pc-brand' }, home, h('button', {
-      class: 'icon-btn', type: 'button', 'aria-label': 'Raccourcis clavier', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '?', 'data-pc-tip': 'Raccourcis clavier · ?', onClick: () => openShortcuts(),
+      class: 'icon-btn', type: 'button', 'aria-label': t('navigation.raccourcis'), 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '?', 'data-pc-tip': t('navigation.raccourcis.infobulle'), onClick: () => openShortcuts(),
     }, icon('help'))),
     h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/')),
     status,
     deadlinesLink,
     nav,
     h('div', { class: 'pc-side__foot' },
-      h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), 'Nouvelle liste', keycap('N')),
+      h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), t('navigation.nouvelleListe'), keycap('N')),
       h('div', { class: 'pc-user' },
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },
           h('span', { class: 'pc-user__name' }, user.displayName ?? ''),
           // Rôle du compte (pas un droit sur une liste) : « Admin » seulement
-          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, 'Admin') : null),
-        iconButton('sliders', 'Réglages', () => navigate('settings')))));
+          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, t('navigation.role.admin')) : null),
+        iconButton('sliders', t('navigation.reglages'), () => navigate('settings')))));
   draw();
 
   return {

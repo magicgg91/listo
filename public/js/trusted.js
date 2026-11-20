@@ -19,7 +19,7 @@ let policy = null;
 function checkScriptUrl(value) {
   const url = new URL(value, location.origin);
   if (url.origin !== location.origin || !ALLOWED_SCRIPTS.has(url.pathname)) {
-    throw new TypeError(`Adresse de script refusée : ${url.pathname}`);
+    throw new TypeError(`Adresse de script refusée : ${url.pathname}`); // technique : erreur interne, jamais affichée
   }
   return url.href;
 }

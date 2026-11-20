@@ -14,6 +14,7 @@ import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login, createClient, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { MAX_EVENTS_PER_LIST, FORMER_MEMBER } from '../server/news.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, applyOp, mergeSync, toSnapshot, fromSnapshot, listNews, newsBadge, newsTotal, seenTarget, isListMuted } from '../public/js/store.js';
 import { newsMark, newsBadgeLabel } from '../public/js/format.js';
 
@@ -46,8 +47,9 @@ async function household(t) {
   return { app, ...clients, ids, listId, newsOf, listNewsOf, add };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -188,7 +190,7 @@ test('migration 16 : tables du journal et des repères, repère de chaque membre
   db.prepare("INSERT INTO list_members (list_id, user_id, access) VALUES ('l1', 1, 'modification'), ('l1', 2, 'lecture'), ('l2', 2, 'modification')").run();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   assert.deepEqual(db.prepare('SELECT list_id, user_id, last_seen, behind, muted FROM list_reads ORDER BY list_id, user_id').all().map((r) => ({ ...r })), [
     { list_id: 'l1', user_id: 1, last_seen: 0, behind: 0, muted: 0 },
     { list_id: 'l1', user_id: 2, last_seen: 0, behind: 0, muted: 0 },
@@ -241,7 +243,7 @@ test('sourdine et réglage « Nouveautés » : plus rien à signaler ; valeurs i
   assert.deepEqual(await run(h.guillaume, { type: 'account.news', enabled: 'non' }), { status: 400, error: 'Réglage « Nouveautés » invalide.' });
   assert.deepEqual(await run(h.guillaume, { type: 'account.news', checks: 1 }), { status: 400, error: 'Réglage « Signaler les éléments cochés » invalide.' });
   assert.deepEqual(await run(h.guillaume, { type: 'account.news' }), { status: 400, error: 'Rien à modifier.' });
-  assert.deepEqual(await run(h.guillaume, { type: 'list.mute', listId: h.listId, muted: 'oui' }), { status: 400, error: 'Réglage « Ne plus me signaler cette liste » invalide.' });
+  assert.deepEqual(await run(h.guillaume, { type: 'list.mute', listId: h.listId, muted: 'oui' }), { status: 400, error: 'Réglage « Masquer les nouveautés de cette liste » invalide.' });
 });
 
 test('temps réel : « vu », sourdine et réglages préviennent mes autres appareils (moi seul) ; un ajout prévient les membres', async (t) => {
@@ -276,8 +278,8 @@ test('auteur désactivé : « un ancien membre » ; photo ajoutée : une modific
   const h = await household(t);
   const lait = await h.add(h.marie, 'Lait');
   h.app.db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(h.ids.marie);
-  assert.deepEqual((await h.listNewsOf(h.guillaume)).items, [{ itemId: lait, kind: 'added', by: FORMER_MEMBER }]);
-  assert.equal(FORMER_MEMBER, 'un ancien membre');
+  assert.deepEqual((await h.listNewsOf(h.guillaume)).items, [{ itemId: lait, kind: 'added', by: 'un ancien membre' }]);
+  assert.equal(fr[FORMER_MEMBER], 'un ancien membre');
   // Photo : passe par setPhotoDate avec la personne qui l'envoie
   const riz = await h.add(h.guillaume, 'Riz');
   h.app.ctx.lists.setPhotoDate(riz, new Date(h.app.clock.now).toISOString(), { id: h.ids.paul });

@@ -3,7 +3,8 @@
 //
 // Règles du cahier des charges :
 // - liste de courses : articles groupés par rayon, rayons par ordre
-//   alphabétique français, « Sans rayon » en dernier, rayon vide non affiché ;
+//   alphabétique (de la langue de la personne), « Sans rayon » en dernier,
+//   rayon vide non affiché ;
 // - dans chaque rayon : ordre alphabétique, les articles cochés en bas ;
 // - liste « multi » : même chose, groupée par magasin au lieu du rayon,
 //   « Sans magasin » en dernier ;
@@ -13,11 +14,14 @@
 
 import { isShoppingList } from './list-types.js';
 import { compareDue } from './due-time.js';
+import { translate, getLocale, compareText } from './i18n.js';
 
-// Comparaison alphabétique française : « Épicerie » se range avec les « E »,
-// et les majuscules ne comptent pas.
-export function compareNames(a, b) {
-  return a.localeCompare(b, 'fr', { sensitivity: 'base', numeric: true }) || a.localeCompare(b, 'fr');
+// Ordre alphabétique de la langue (« locale » ; sans elle, la langue des
+// écrans) : en français, « Épicerie » se range avec les « E », et les
+// majuscules ne comptent pas. Le serveur donne toujours la langue de la
+// personne qui lira l'ordre (page du lien public : celle du visiteur).
+export function compareNames(a, b, locale = getLocale()) {
+  return compareText(a, b, { locale, sensitivity: 'base', numeric: true }) || compareText(a, b, { locale });
 }
 
 // Vrai si la liste est « multi » : liste de courses dont le magasin est de
@@ -30,8 +34,8 @@ export function isMultiList(list) {
 // Range des articles par groupe (rayon ou magasin), « sans » en dernier.
 // refs : rayons ou magasins connus { id, name } (actifs ou non) ;
 // keyOf(item) : identifiant du rayon ou du magasin de l'article.
-function groupBy(items, refs, keyOf, field) {
-  const byItem = (a, b) => (a.checked === b.checked ? compareNames(a.name, b.name) : a.checked ? 1 : -1);
+function groupBy(items, refs, keyOf, field, locale) {
+  const byItem = (a, b) => (a.checked === b.checked ? compareNames(a.name, b.name, locale) : a.checked ? 1 : -1);
   const refById = new Map(refs.map((ref) => [ref.id, ref]));
   const groups = new Map(); // id du rayon ou du magasin (ou null) -> articles
   for (const item of items) {
@@ -47,7 +51,7 @@ function groupBy(items, refs, keyOf, field) {
     .sort((a, b) => {
       if (a[field] === null) return 1;  // « Sans rayon » / « Sans magasin » toujours en dernier
       if (b[field] === null) return -1;
-      return compareNames(a[field].name, b[field].name);
+      return compareNames(a[field].name, b[field].name, locale);
     });
 }
 
@@ -55,16 +59,17 @@ function groupBy(items, refs, keyOf, field) {
 // aisles : rayons connus { id, name } (actifs ou non)
 // isShopping : vrai pour une liste de courses
 // options.stores : magasins connus, pour une liste « multi » (options.byStore)
+// options.locale : langue de l'ordre alphabétique (sans elle : celle des écrans)
 // Renvoie [{ aisle: { id, name } ou null (« Sans rayon »), items: [...] }],
 // ou, pour une liste « multi », [{ store: { id, name } ou null (« Sans
 // magasin »), items: [...] }].
-export function groupItems(items, aisles, isShopping, { byStore = false, stores = [] } = {}) {
+export function groupItems(items, aisles, isShopping, { byStore = false, stores = [], locale = getLocale() } = {}) {
   if (!isShopping) {
-    const byItem = (a, b) => (a.checked === b.checked ? compareNames(a.name, b.name) : a.checked ? 1 : -1);
+    const byItem = (a, b) => (a.checked === b.checked ? compareNames(a.name, b.name, locale) : a.checked ? 1 : -1);
     return items.length ? [{ aisle: null, items: [...items].sort(byItem) }] : [];
   }
-  if (byStore) return groupBy(items, stores, (item) => item.storeId, 'store');
-  return groupBy(items, aisles, (item) => item.aisleId, 'aisle');
+  if (byStore) return groupBy(items, stores, (item) => item.storeId, 'store', locale);
+  return groupBy(items, aisles, (item) => item.aisleId, 'aisle', locale);
 }
 
 // Tri d'une liste (choix de chaque téléphone, par liste) : seulement les
@@ -88,11 +93,15 @@ export function groupItems(items, aisles, isShopping, { byStore = false, stores 
 // Renvoie des groupes comme groupItems : [{ aisle: null, items }] ou, par
 // priorité, [{ aisle: null, priority, label, items }].
 export const ITEM_SORTS = ['alpha', 'priority', 'due', 'person', 'aisle'];
-const PRIORITY_GROUPS = [['high', 'Priorité élevée'], ['normal', 'Priorité normale'], ['low', 'Priorité basse']];
+// Groupes par priorité : [priorité, nom du texte de l'en-tête]
+const PRIORITY_GROUPS = [['high', 'regles.tri.prioriteElevee'], ['normal', 'regles.tri.prioriteNormale'], ['low', 'regles.tri.prioriteBasse']];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 const rankOf = (item) => PRIORITY_RANK[item.priority] ?? PRIORITY_RANK.normal;
 
-export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null } = {}) {
+// options.locale : langue des en-têtes et de l'ordre alphabétique (sans
+// elle : celle des écrans)
+export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null, locale = getLocale() } = {}) {
+  const byName = (a, b) => compareNames(a.name, b.name, locale);
   if (sort === 'person') {
     // Plusieurs personnes : dans « Moi » si j'en fais partie, sinon dans « À
     // plusieurs » ; chacun son tour : la personne de cette fois
@@ -102,12 +111,12 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
     };
     const ids = [...new Set(items.map(owner))];
     const rank = (id) => (id === me ? 0 : id === null ? 3 : id === 'all' ? 2 : 1);
-    ids.sort((a, b) => rank(a) - rank(b) || compareNames(people.get(a) ?? '', people.get(b) ?? ''));
+    ids.sort((a, b) => rank(a) - rank(b) || compareNames(people.get(a) ?? '', people.get(b) ?? '', locale));
     return ids.map((id) => ({
       aisle: null,
       person: id,
-      label: id === null ? 'Personne' : id === me ? 'Moi' : id === 'all' ? 'À plusieurs' : people.get(id),
-      items: items.filter((item) => owner(item) === id).sort((a, b) => compareNames(a.name, b.name)),
+      label: id === null ? translate(locale, 'regles.tri.personne') : id === me ? translate(locale, 'regles.tri.moi') : id === 'all' ? translate(locale, 'regles.tri.aPlusieurs') : people.get(id),
+      items: items.filter((item) => owner(item) === id).sort(byName),
     }));
   }
   if (sort === 'priority') {
@@ -115,28 +124,29 @@ export function sortTasks(items, sort = 'alpha', { people = new Map(), me = null
       .map(([priority, label]) => ({
         aisle: null,
         priority,
-        label,
+        label: translate(locale, label),
         items: items.filter((item) => (PRIORITY_RANK[item.priority] === undefined ? 'normal' : item.priority) === priority)
-          .sort((a, b) => compareNames(a.name, b.name)),
+          .sort(byName),
       }))
       .filter((group) => group.items.length);
   }
   if (sort === 'due') {
     const byDue = (a, b) => {
       if (Boolean(a.dueDate) !== Boolean(b.dueDate)) return a.dueDate ? -1 : 1; // sans échéance à la fin
-      return compareDue(a.dueDate, a.dueTime, b.dueDate, b.dueTime) || rankOf(a) - rankOf(b) || compareNames(a.name, b.name);
+      return compareDue(a.dueDate, a.dueTime, b.dueDate, b.dueTime) || rankOf(a) - rankOf(b) || byName(a, b);
     };
     return items.length ? [{ aisle: null, items: [...items].sort(byDue) }] : [];
   }
-  return groupItems(items, [], false);
+  return groupItems(items, [], false, { locale });
 }
 
 // Liste de courses en ordre alphabétique : tous les articles à plat, sans
 // rayon ni magasin, dans un seul groupe repliable « À acheter » (all: true).
 // Le rayon et le magasin de chaque article sont gardés : seul l'affichage
-// change. Ordre alphabétique français (majuscules et accents ignorés).
-export function sortShopping(items) {
-  return items.length ? [{ aisle: null, all: true, label: 'À acheter', items: [...items].sort((a, b) => compareNames(a.name, b.name)) }] : [];
+// change. Ordre alphabétique de la langue (en français : majuscules et
+// accents ignorés).
+export function sortShopping(items, { locale = getLocale() } = {}) {
+  return items.length ? [{ aisle: null, all: true, label: translate(locale, 'regles.tri.aAcheter'), items: [...items].sort((a, b) => compareNames(a.name, b.name, locale)) }] : [];
 }
 
 // Zone des articles cochés (« Dans le panier » / « Terminés ») : les cochés
@@ -150,15 +160,17 @@ export function sortShopping(items) {
 // la zone }.
 // options.sort : tri choisi (sortTasks pour une liste autre que les courses ;
 // 'alpha' pour une liste de courses : sortShopping ; sinon par rayon ou par
-// magasin)
+// magasin) ; options.locale : langue des en-têtes et de l'ordre
+// alphabétique (sans elle : celle des écrans)
 export function splitDone(items, aisles, isShopping, options = {}) {
+  const locale = options.locale ?? getLocale();
   const done = items.filter((item) => item.checked)
-    .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name));
+    .sort((a, b) => String(b.checkedAt ?? '').localeCompare(String(a.checkedAt ?? '')) || compareNames(a.name, b.name, locale));
   const toDo = items.filter((item) => !item.checked);
   const arrange = (list) => {
-    if (!isShopping && options.sort) return sortTasks(list, options.sort, options);
-    if (isShopping && options.sort === 'alpha') return sortShopping(list);
-    return groupItems(list, aisles, isShopping, options);
+    if (!isShopping && options.sort) return sortTasks(list, options.sort, { ...options, locale });
+    if (isShopping && options.sort === 'alpha') return sortShopping(list, { locale });
+    return groupItems(list, aisles, isShopping, { ...options, locale });
   };
   const groups = arrange(toDo);
   // Les mêmes groupes avec les cochés : un coché compte dans le groupe

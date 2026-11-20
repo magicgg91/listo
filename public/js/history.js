@@ -3,7 +3,8 @@
 // Ce fichier est partagé : le serveur et le téléphone l'utilisent tel quel
 // (le téléphone sur sa copie locale de l'historique, pour que les
 // suggestions, le rayon et le magasin automatiques marchent aussi hors ligne).
-// Il ne dépend de rien : pas d'accès au réseau, ni à la base, ni à l'écran.
+// Il ne dépend que du module des langues (ordre alphabétique) : pas d'accès
+// au réseau, ni à la base, ni à l'écran.
 //
 // Une entrée d'historique : { name, nameNormalized, storeId, aisleId,
 // useCount, lastUsedAt }. Pour chaque article, il y a une ligne générale
@@ -12,13 +13,15 @@
 // - une ligne de magasin donne le rayon habituel dans ce magasin (liste à
 //   magasin simple) et le nombre d'achats dans ce magasin (liste « multi »).
 
+import { compareText } from './i18n.js';
+
 // Nom normalisé : minuscules, sans accents, sans espaces superflus.
 // « Lait », « lait », « LAIT » et « Lait  » donnent tous « lait ».
 export function normalizeItemName(name) {
   return String(name)
     .normalize('NFD')
     .replace(/\p{M}/gu, '')      // retire les accents
-    .toLocaleLowerCase('fr')
+    .toLocaleLowerCase('fr') // technique : comparaison (la même forme quelle que soit la langue : la base en dépend)
     .replace(/\s+/g, ' ')        // un seul espace entre les mots
     .trim();
 }
@@ -31,7 +34,9 @@ export const SUGGEST_MIN_LENGTH = 2;
 // plus fréquents d'abord, puis les plus récents.
 //
 // Seules les lignes générales comptent (une suggestion par article).
-export function suggest(history, typed, limit = 8) {
+// À égalité, ordre alphabétique de la langue « locale » (sans elle : celle
+// des écrans ; le serveur donne celle de la requête).
+export function suggest(history, typed, limit = 8, { locale } = {}) {
   const query = normalizeItemName(typed ?? '');
   if (query.length < SUGGEST_MIN_LENGTH) return [];
 
@@ -44,7 +49,7 @@ export function suggest(history, typed, limit = 8) {
     .sort((a, b) =>
       b.useCount - a.useCount
       || String(b.lastUsedAt).localeCompare(String(a.lastUsedAt))
-      || a.name.localeCompare(b.name, 'fr'))
+      || compareText(a.name, b.name, locale ? { locale } : {}))
     .slice(0, limit);
 }
 
@@ -78,7 +83,7 @@ export function habitual(history, { storeIds = [], exclude = new Set(), now, day
     totals.set(key, total);
   }
   return [...totals.values()]
-    .sort((a, b) => b.useCount - a.useCount || b.lastUsedAt.localeCompare(a.lastUsedAt) || a.name.localeCompare(b.name, 'fr'))
+    .sort((a, b) => b.useCount - a.useCount || b.lastUsedAt.localeCompare(a.lastUsedAt) || compareText(a.name, b.name))
     .slice(0, limit);
 }
 

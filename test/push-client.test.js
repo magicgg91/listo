@@ -6,6 +6,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const ORIGIN = 'https://listo.exemple.fr';
@@ -108,10 +109,12 @@ test('autorisation : demandée seulement par enablePush, appelé seulement par l
 
 test('écran Notifications : états expliqués en clair, interrupteur accessible, notification test, ligne des Réglages', () => {
   const screen = read('public/js/screens/notifications.js');
-  assert.match(screen, /'Sur iPhone : ajoutez d\\'abord Listo à l\\'écran d\\'accueil, puis ouvrez-le depuis son icône\.'/);
+  assert.match(screen, /'ios-install': \['alert', t\('notifications\.etat\.iphone'\)\],/);
+  assert.equal(fr['notifications.etat.iphone'], 'Sur iPhone : ajoutez d\'abord Listo à l\'écran d\'accueil, puis ouvrez-le depuis son icône.');
   for (const state of ['server-off', 'unsupported', 'ios-install', 'denied', 'offline', 'on']) assert.match(screen, new RegExp(`'?${state}'?: \\[`));
   assert.match(screen, /class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,\s*'aria-labelledby': 'notif-appareil-titre', 'aria-describedby': 'notif-appareil-aide',/);
-  assert.match(screen, /'Envoyer une notification test'/);
+  assert.match(screen, /t\('notifications\.test\.bouton'\)/);
+  assert.equal(fr['notifications.test.bouton'], 'Envoyer une notification test');
   assert.match(screen, /role: 'status'/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(/);
   const settings = read('public/js/screens/settings.js');
@@ -128,26 +131,43 @@ test('écran Notifications : états expliqués en clair, interrupteur accessible
 
 test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) et « Silencer cette liste » dans le menu', () => {
   const screen = read('public/js/screens/notifications.js');
-  assert.match(screen, /\['changes', 'Modifications', 'Ce que les autres ajoutent, modifient, cochent ou vous attribuent/);
-  assert.match(screen, /\['wishes', 'Envies', /);
-  assert.match(screen, /\['sharing', 'Partage', /);
-  assert.match(screen, /\['detail', 'Afficher le détail dans la notification', /);
-  assert.match(screen, /\['due', 'Échéances', 'Chaque matin vers 8 h : les tâches à faire aujourd\\'hui et celles en retard\.'\],/);
-  assert.match(screen, /'Ces réglages valent pour tous vos appareils\.'/);
+  assert.match(screen, /\['changes', t\('notifications.sujet.modifications'\), t\('notifications.sujet.modifications\.detail'\)\],/);
+  assert.equal(fr['notifications.sujet.modifications'], 'Modifications');
+  assert.match(fr['notifications.sujet.modifications.detail'], /^Ce que les autres ajoutent, modifient, cochent ou vous attribuent/);
+  assert.match(screen, /\['wishes', t\('notifications.sujet.envies'\), /);
+  assert.equal(fr['notifications.sujet.envies'], 'Envies');
+  assert.match(screen, /\['sharing', t\('notifications.sujet.partage'\), /);
+  assert.equal(fr['notifications.sujet.partage'], 'Partage');
+  assert.match(screen, /\['detail', t\('notifications\.contenu\.detail'\), /);
+  assert.equal(fr['notifications.contenu.detail'], 'Afficher le détail dans la notification');
+  assert.match(screen, /\['due', t\('notifications.sujet.echeances'\), t\('notifications.sujet.echeances\.detail'\)\],/);
+  assert.equal(fr['notifications.sujet.echeances'], 'Échéances');
+  assert.equal(fr['notifications.sujet.echeances.detail'], 'Chaque matin vers 8 h : les tâches à faire aujourd\'hui et celles en retard.');
+  assert.match(screen, /t\('notifications\.compte\.note'\)/);
+  assert.equal(fr['notifications.compte.note'], 'Ces réglages valent pour tous vos appareils.');
   // Interrupteurs accessibles ; inactifs hors ligne ou avant la lecture du serveur
   assert.match(screen, /class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,\s*'aria-labelledby': `notif-\$\{key\}-titre`, 'aria-describedby': `notif-\$\{key\}-aide`,/);
   assert.match(screen, /toggle\.disabled = !settings \|\| !navigator\.onLine;/);
   // Menu ⋮ : seulement si la fonction est activée sur le serveur
   const menu = read('public/js/screens/list-actions.js');
   assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
-  assert.match(menu, /label: 'Couper les notifications de cette liste'/);
-  assert.match(menu, /label: 'Réactiver les notifications de cette liste'/);
+  assert.match(menu, /label: t\('menu\.notifications\.couper'\)/);
+  assert.match(menu, /label: t\('menu\.notifications\.reactiver'\)/);
+  assert.equal(fr['menu.notifications.couper'], 'Couper les notifications de cette liste');
+  assert.equal(fr['menu.notifications.reactiver'], 'Réactiver les notifications de cette liste');
   // Deux options distinctes et indépendantes (décision du 10 novembre 2026)
-  assert.match(menu, /label: 'Masquer les nouveautés de cette liste'/);
-  assert.match(menu, /label: 'Afficher les nouveautés de cette liste'/);
+  assert.match(menu, /label: t\('menu\.nouveautes\.masquer'\)/);
+  assert.match(menu, /label: t\('menu\.nouveautes\.afficher'\)/);
+  assert.equal(fr['menu.nouveautes.masquer'], 'Masquer les nouveautés de cette liste');
+  assert.equal(fr['menu.nouveautes.afficher'], 'Afficher les nouveautés de cette liste');
   assert.doesNotMatch(menu, /'Silencer cette liste'|'Ne plus me signaler cette liste'|'Signaler cette liste'/);
-  assert.match(screen, /'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste »\.'/);
-  assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: 'Notifications', onClick: \(\) => navigate\('notifications'\) \}\)/);
+  for (const key of Object.keys(fr).filter((k) => k.startsWith('menu.'))) {
+    assert.doesNotMatch(fr[key], /^(Silencer cette liste|Ne plus me signaler cette liste|Signaler cette liste)$/, key);
+  }
+  assert.match(screen, /t\('notifications\.parListe\.note'\)/);
+  assert.equal(fr['notifications.parListe.note'], 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».');
+  assert.match(read('public/js/screens/settings.js'), /row\(\{ iconName: 'bell', title: t\('reglages\.notifications'\), onClick: \(\) => navigate\('notifications'\) \}\)/);
+  assert.equal(fr['reglages.notifications'], 'Notifications');
   assert.match(read('public/sw.js'), /const VERSION = `v(7[6-9]|[89]\d|\d{3,})-/);
 });
 

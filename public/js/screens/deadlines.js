@@ -36,15 +36,16 @@ import { computeDeadlines, assigneesFor } from '../deadlines.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
+import { t, lowerFirst } from '../i18n.js';
 
 export function renderDeadlines(onLeave) {
   const pc = isDesktop();
   const content = h('div', { class: 'scroll scroll--deadlines' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, {
-    label: 'Rechercher une tâche',
+    label: t('echeances.recherche.label'),
     docked: pc,
-    placeholder: pc ? 'Rechercher' : 'Rechercher une tâche',
+    placeholder: pc ? t('echeances.recherche.placeholder.pc') : t('echeances.recherche.label'),
     status: pc ? null : searchMeta,
     onChange: () => draw(),
     onOpen: () => tabBar().loupe.sync(),
@@ -54,7 +55,7 @@ export function renderDeadlines(onLeave) {
   // « Toutes / Les miennes » : seulement si une de mes listes de tâches a
   // l'attribution activée ; le choix est retenu sur cet appareil
   let mine = loadScope();
-  const scopeButtons = [['all', 'Toutes'], ['mine', 'Les miennes']].map(([value, label]) => {
+  const scopeButtons = [['all', t('echeances.filtre.toutes')], ['mine', t('echeances.filtre.miennes')]].map(([value, label]) => {
     const button = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
       mine = value === 'mine';
       saveScope(mine);
@@ -65,7 +66,7 @@ export function renderDeadlines(onLeave) {
     button.dataset.label = label;
     return button;
   });
-  const scope = h('div', { class: 'segmented deadlines-scope', role: 'radiogroup', 'aria-label': 'Tâches affichées' }, scopeButtons);
+  const scope = h('div', { class: 'segmented deadlines-scope', role: 'radiogroup', 'aria-label': t('echeances.filtre.label') }, scopeButtons);
   const paintScope = () => {
     const offered = [...app.data.lists.values()].some((list) => listOptions(list).assign);
     scope.hidden = !offered;
@@ -92,10 +93,11 @@ export function renderDeadlines(onLeave) {
       const before = actions.undoOfRepeat(item);
       const nextPerson = actions.nextTurnOf(item);
       const list = app.data.lists.get(item.listId);
-      const who = nextPerson === null ? '' : ` · ${nextPerson === app.user.id ? 'Moi' : (list?.members ?? []).find((m) => m.id === nextPerson)?.displayName ?? ''}`;
+      const who = nextPerson === null ? null : nextPerson === app.user.id ? t('echeances.moi') : (list?.members ?? []).find((m) => m.id === nextPerson)?.displayName ?? '';
       actions.checkItem(item, true);
-      toast(`Prochaine fois : ${dueDateLabel(next)}${who}`, {
-        action: 'Annuler',
+      const date = dueDateLabel(next);
+      toast(who === null ? t('echeances.prochaineFois', { date }) : t('echeances.prochaineFois.personne', { date, name: who }), {
+        action: t('echeances.annuler'),
         onAction: () => {
           const current = app.data.items.get(item.id);
           if (current && current.dueDate === next) actions.updateItem(current, before);
@@ -104,8 +106,8 @@ export function renderDeadlines(onLeave) {
       return;
     }
     actions.checkItem(item, true);
-    toast(`Coché : ${item.name}`, {
-      action: 'Annuler',
+    toast(t('echeances.coche', { name: item.name }), {
+      action: t('echeances.annuler'),
       onAction: () => {
         const current = app.data.items.get(item.id);
         if (current?.checked) actions.checkItem(current, false);
@@ -122,12 +124,12 @@ export function renderDeadlines(onLeave) {
   // la liste, la priorité et la date (texte ET icône, jamais la couleur seule)
   const row = ({ item, list }, today) => {
     const chips = [h('span', { class: 'chip chip--list' }, icon(listIcon(list), 'icon--xs'), list.name)];
-    const spoken = [`dans ${list.name}`];
+    const spoken = [t('echeances.lu.dans', { name: list.name })];
     // Sous-tâche (subtasks.js) : le nom de sa tâche principale
     const parent = nestsSubtasks(list) ? parentOf(item, app.data.items) : null;
     if (parent) {
       chips.push(h('span', { class: 'chip' }, icon('layers', 'icon--xs'), parent.name));
-      spoken.push(`sous-tâche de ${parent.name}`);
+      spoken.push(t('echeances.lu.sousTache', { name: parent.name }));
     }
     const priority = listOptions(list).priority ? priorityChip(item.priority) : null;
     if (priority) {
@@ -140,25 +142,25 @@ export function renderDeadlines(onLeave) {
     spoken.push(due.label.toLowerCase());
     if (item.repeat) {
       chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
-      spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
+      spoken.push(t('echeances.lu.repetition', { repeat: lowerFirst(repeatSentence(item.repeat)) }));
     }
     // À qui est la tâche (attribution activée) : « Moi » ou le prénom ;
     // plusieurs personnes : « Moi, Léa », « Léa +2 » (assign.js)
     const names = memberNames(list);
     const who = assigneesFor(item, list)
-      .map((id) => (id === app.user.id ? { name: 'Moi', me: true } : names.has(id) ? { name: names.get(id), me: false } : null))
+      .map((id) => (id === app.user.id ? { name: t('echeances.moi'), me: true } : names.has(id) ? { name: names.get(id), me: false } : null))
       .filter(Boolean).sort((a, b) => Number(b.me) - Number(a.me));
     if (who.length) {
-      const text = who.length <= 2 ? who.map((p) => p.name).join(', ') : `${who[0].name} +${who.length - 1}`;
+      const text = who.length <= 2 ? who.map((p) => p.name).join(', ') : t('echeances.personnes.plus', { name: who[0].name, more: who.length - 1 });
       chips.push(h('span', { class: `chip${who.some((p) => p.me) ? ' chip--accent' : ''}` }, icon(who.length > 1 || item.assignMode === 'turn' ? 'users' : 'user', 'icon--xs'), text));
-      spoken.push(`pour ${who.map((p) => (p.me ? 'moi' : p.name)).join(', ')}`);
+      spoken.push(t('echeances.lu.pour', { names: who.map((p) => (p.me ? t('echeances.lu.moi') : p.name)).join(', ') }));
     }
     const canCheck = canEditList(list);
     return h('li', { class: 'item', 'data-item-id': item.id },
       canCheck
         ? h('button', { class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': item.name, onClick: () => check(item) }, h('span', { class: 'check__box' }))
-        : h('span', { class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' }, h('span', { class: 'check__box' })),
-      h('button', { class: 'item__body', type: 'button', 'aria-label': `Ouvrir ${item.name}, ${spoken.join(', ')}`, onClick: () => open(item) },
+        : h('span', { class: 'check check--static', role: 'img', 'aria-label': t('echeances.lectureSeule') }, h('span', { class: 'check__box' })),
+      h('button', { class: 'item__body', type: 'button', 'aria-label': t('echeances.ouvrir', { name: item.name, details: spoken.join(', ') }), onClick: () => open(item) },
         h('span', { class: 'item__text' },
           h('span', { class: 'item__name' }, nameOf(item.name)),
           h('span', { class: 'item__meta' }, chips))));
@@ -167,7 +169,7 @@ export function renderDeadlines(onLeave) {
   const draw = () => {
     if (!app.data.loaded) {
       searchMeta.textContent = '';
-      search.show(h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'));
+      search.show(h('p', { class: 'empty muted', role: 'status' }, t('echeances.chargement')));
       return;
     }
     const today = todayKey();
@@ -180,30 +182,30 @@ export function renderDeadlines(onLeave) {
     if (!count) {
       search.show(isSearching(query) ? noResults(query) : h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon('calendar', 'icon--lg')),
-        h('h2', { class: 'empty__title' }, 'Aucune échéance'),
+        h('h2', { class: 'empty__title' }, t('echeances.vide.titre')),
         h('p', { class: 'empty__text' }, mine
-          ? 'Aucune tâche à faire ne vous est attribuée. « Toutes » montre aussi celles des autres et celles de personne.'
-          : 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues. Pour en donner une, activez l\'option « Échéance » dans « Modifier la liste ».')));
+          ? t('echeances.vide.miennes')
+          : t('echeances.vide.texte'))));
       return;
     }
     search.show(groups.map((group) => h('section', {},
       h('h2', { class: 'aisle' },
         h('span', { class: 'aisle__name' }, group.title),
-        h('span', { class: 'aisle__count', 'aria-label': `${group.entries.length} ${group.entries.length > 1 ? 'tâches' : 'tâche'}` }, String(group.entries.length))),
+        h('span', { class: 'aisle__count', 'aria-label': t('echeances.groupe.nombre', { count: group.entries.length }) }, String(group.entries.length))),
       h('ul', {}, group.entries.map((entry) => row(entry, today))))));
   };
   // Aucune tâche trouvée : message, et « Effacer la recherche »
   const noResults = (query) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
-    h('h2', { class: 'empty__title' }, 'Aucun résultat'),
-    h('p', { class: 'empty__text' }, `Aucune tâche ne correspond à « ${query.trim()} ».`),
+    h('h2', { class: 'empty__title' }, t('echeances.recherche.aucun')),
+    h('p', { class: 'empty__text' }, t('echeances.recherche.aucun.texte', { query: query.trim() })),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',
       onPointerdown: search.keepFocus.pointerdown,
       onMousedown: search.keepFocus.mousedown,
       onClick: () => search.clear(),
-    }, 'Effacer la recherche'));
+    }, t('echeances.recherche.effacer')));
 
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
@@ -220,8 +222,8 @@ export function renderDeadlines(onLeave) {
     search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
       h('header', { class: 'pc-head' },
-        h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, 'Échéances'),
-          h('p', { class: 'pc-head__sub' }, 'Les tâches à faire de toutes vos listes')),
+        h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('echeances.titre')),
+          h('p', { class: 'pc-head__sub' }, t('echeances.pc.sousTitre'))),
         search.field),
       h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), scope, searchMeta),
       offlineBanner(),
@@ -229,7 +231,7 @@ export function renderDeadlines(onLeave) {
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar topbar--plain topbar--status' },
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, 'Échéances')),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('echeances.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true })),
     search.bar,
     scope,

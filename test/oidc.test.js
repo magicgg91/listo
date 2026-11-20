@@ -150,7 +150,9 @@ test('même identifiant : le compte Listo s\'ouvre, relié à ce compte Authelia
   assert.equal(me.status, 200);
   assert.equal(me.body.user.username, 'lea');
   assert.equal(app.db.prepare('SELECT oidc_sub FROM users WHERE id = ?').pluck().get(leaId), 'sub-lea');
-  assert.ok(app.logs.some((line) => line.includes('connexion_reussie') && line.includes('authelia')));
+  assert.ok(app.logs.some((line) => line.includes('login_success') && line.includes('method="oidc"')));
+  // Journal toujours en anglais, sans nom de fournisseur écrit en dur
+  assert.ok(!app.logs.filter((line) => line.includes('[journal]')).some((line) => /authelia/i.test(line)));
   // Jamais de jeton ni de secret dans le journal
   assert.ok(!app.logs.join('\n').includes(SECRET));
 });
@@ -297,9 +299,9 @@ test('description d\'Authelia : adresses hors de son site refusées (aucun appel
 test('verifyIdToken et usernameFrom (calculs purs)', () => {
   assert.equal(usernameFrom(' Léa.Martin '), 'la.martin');
   assert.equal(usernameFrom('ZOE'), 'zoe');
-  assert.throws(() => verifyIdToken('a.b', { keys: [], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /mal formé/);
+  assert.throws(() => verifyIdToken('a.b', { keys: [], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /malformed token/);
   const hs = `${Buffer.from('{"alg":"HS256"}').toString('base64url')}.${Buffer.from('{}').toString('base64url')}.x`;
-  assert.throws(() => verifyIdToken(hs, { keys: [{}], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /algorithme/);
+  assert.throws(() => verifyIdToken(hs, { keys: [{}], issuer: ISSUER, clientId: 'listo', nonce: 'n', nowS: 0 }), /signature algorithm refused/);
 });
 
 test('configuration : LISTO_OIDC=on exige l\'adresse d\'Authelia (https en production) et un client_id simple', () => {
@@ -383,7 +385,7 @@ test('mot de passe provisoire jamais changé : effacé à la connexion avec Auth
   assert.equal(await signIn(browser, fake, 'lea'), '/#/listes');
   assert.equal((await browser.get('/api/me')).body.user.mustChangePassword, false);
   assert.equal((await app.client().post('/api/login', { username: 'lea', password: 'provisoire-lea-123' })).status, 401);
-  assert.ok(app.logs.some((line) => line.includes('mot_de_passe_provisoire_efface')));
+  assert.ok(app.logs.some((line) => line.includes('temporary_password_cleared')));
 });
 
 test('échecs répétés depuis une même adresse : connexion avec Authelia bloquée 15 minutes', async (t) => {
@@ -552,8 +554,10 @@ test('aucun écran ni message du serveur n\'écrit « Authelia » en dur (seulem
   const root = path.resolve(import.meta.dirname, '..');
   const files = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true })
     .flatMap((entry) => (entry.isDirectory() ? files(path.join(dir, entry.name)) : entry.name.endsWith('.js') ? [path.join(dir, entry.name)] : []));
-  // L'aide (help-content.js) cite Authelia comme exemple, avec Authentik et Pocket ID
-  for (const file of [...files('server'), ...files('public/js')].filter((f) => !f.endsWith('help-content.js'))) {
+  // L'aide (help-content.js, et en anglais help-content-en.js et help-en/)
+  // cite Authelia comme exemple, avec Authentik et Pocket ID
+  const guideFile = (f) => /(^|\/)help-content(-en)?\.js$|(^|\/)help-en\//.test(f);
+  for (const file of [...files('server'), ...files('public/js')].filter((f) => !guideFile(f))) {
     const code = fs.readFileSync(path.join(root, file), 'utf8').split('\n').filter((line) => !line.trim().startsWith('//'));
     assert.ok(!code.some((line) => line.includes('Authelia')), `${file} : « Authelia » en dur`);
   }

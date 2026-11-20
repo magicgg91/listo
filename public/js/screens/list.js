@@ -36,7 +36,7 @@
 //   mêmes actions, mêmes droits (revérifiés par le serveur).
 
 import { isShoppingList, isWishList, typeLabel, typeIcon } from '../list-types.js';
-import { wishForLabel, formatPrice, parsePrice, cleanLink, LINK_MAX } from '../wishes.js';
+import { wishForLabel, formatPrice, parsePrice, priceInputText, cleanLink, LINK_MAX } from '../wishes.js';
 import { h, icon, iconButton, avatar, field, replace, errorNote, multiBadge, LABEL_INPUT } from '../dom.js';
 import { errorMessage } from '../api.js';
 import * as actions from '../actions.js';
@@ -50,9 +50,10 @@ import { progressOf, parentOf } from '../subtasks.js';
 import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
-import { itemWords, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
+import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
+import { t, compareText, currencyName, lowerFirst } from '../i18n.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -136,9 +137,9 @@ export function renderList(listId, onLeave) {
   const statusbar = h('div', { class: 'statusbar' });
   const loupe = pc ? null : loupeButton();
   const search = createSearchRow(content, {
-    label: 'Rechercher dans la liste',
+    label: t('liste.recherche.label'),
     docked: pc,
-    placeholder: pc ? 'Rechercher' : 'Rechercher dans la liste',
+    placeholder: pc ? t('liste.recherche.placeholder.pc') : t('liste.recherche.label'),
     status: pc ? null : searchMeta,
     onChange: () => draw(),
     // Champ utilisé : « Tout replier » masqué
@@ -158,7 +159,7 @@ export function renderList(listId, onLeave) {
     ? highlightParts(name, search.value).map((part) => (part.hit ? h('mark', { class: 'hit' }, part.text) : part.text))
     : name);
 
-  const menuButton = iconButton('more', 'Menu de la liste', () => openListMenu());
+  const menuButton = iconButton('more', t('liste.menu'), () => openListMenu());
 
   // Tri de la liste : choix gardé sur ce téléphone pour cette liste (un
   // réglage d'affichage propre à chaque personne, permis aussi en lecture
@@ -171,17 +172,17 @@ export function renderList(listId, onLeave) {
   //   de la liste (priorité, échéance, attribution) est activé ; un choix gardé devenu indisponible laisse place au tri par
   //   défaut (sans être effacé : il revient avec le réglage).
   const SORTS = [
-    ['aisle', 'layers', 'Par rayon', 'Tri : par rayon'],
-    ['alpha', 'az', 'Ordre alphabétique', 'Tri : ordre alphabétique'],
-    ['priority', 'arrow-up', 'Par priorité', 'Tri : par priorité'],
-    ['due', 'calendar', 'Par échéance', 'Tri : par échéance'],
-    ['person', 'users', 'Par personne', 'Tri : par personne'],
+    ['aisle', 'layers', t('liste.tri.rayon'), t('liste.tri.rayon.message')],
+    ['alpha', 'az', t('liste.tri.alpha'), t('liste.tri.alpha.message')],
+    ['priority', 'arrow-up', t('liste.tri.priorite'), t('liste.tri.priorite.message')],
+    ['due', 'calendar', t('liste.tri.echeance'), t('liste.tri.echeance.message')],
+    ['person', 'users', t('liste.tri.personne'), t('liste.tri.personne.message')],
   ];
   // Liste « multi » : le premier choix groupe par magasin, il le dit
   const sortEntry = ([value, iconName, label, message]) => (value === 'aisle' && isMultiList(currentList())
-    ? [value, 'store', 'Par magasin', 'Tri : par magasin'] : [value, iconName, label, message]);
+    ? [value, 'store', t('liste.tri.magasin'), t('liste.tri.magasin.message')] : [value, iconName, label, message]);
   let itemSort = loadItemSort(listId);
-  const sortButton = iconButton('az', 'Trier la liste', () => openSortMenu());
+  const sortButton = iconButton('az', t('liste.tri.bouton'), () => openSortMenu());
   sortButton.setAttribute('aria-haspopup', 'menu');
   sortButton.setAttribute('aria-expanded', 'false');
   const currentList = () => app.data.lists.get(listId);
@@ -201,7 +202,7 @@ export function renderList(listId, onLeave) {
         draw();
         toast(message, { duration: 2000 });
       },
-    })), { label: 'Trier la liste', anchor: pc ? sortButton : null }); // ordinateur : sous le bouton
+    })), { label: t('liste.tri.bouton'), anchor: pc ? sortButton : null }); // ordinateur : sous le bouton
   }
 
   // --- En-tête de l'ordinateur ---
@@ -215,10 +216,10 @@ export function renderList(listId, onLeave) {
   function drawPcHead(list) {
     const members = list.members.filter((m) => m.active || m.isOwner);
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
-    const people = h('div', { class: 'avatars', role: 'img', 'aria-label': `Partagée avec ${namesList(members.map((m) => m.displayName))}` },
+    const people = h('div', { class: 'avatars', role: 'img', 'aria-label': t('liste.pc.partageeAvec', { names: namesList(members.map((m) => m.displayName)) }) },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? 'Partager' : 'Personnes'} · P`, onClick: () => openSharePanel(list.id) },
-      icon('users', 'icon--sm'), list.isOwner ? 'Partager' : 'Personnes', people));
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes')} · P`, onClick: () => openSharePanel(list.id) },
+      icon('users', 'icon--sm'), list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes'), people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
     // ne les envoie pas) ; les autres membres les voient
@@ -228,8 +229,8 @@ export function renderList(listId, onLeave) {
     }
     const hidden = list.forName ? null : list.forDisplayName ?? list.members?.find((m) => m.isOwner)?.displayName;
     replace(wishNote, list.isBeneficiary
-      ? [icon('eye-off', 'icon--sm'), h('span', {}, 'Vous ne voyez jamais les réservations : la surprise reste entière.')]
-      : [icon('eye', 'icon--sm'), h('span', {}, hidden ? `Réservations visibles. ${hidden}, à qui la liste est destinée, ne les voit pas.` : 'Réservations visibles par les personnes qui partagent la liste.')]);
+      ? [icon('eye-off', 'icon--sm'), h('span', {}, t('liste.envies.beneficiaire'))]
+      : [icon('eye', 'icon--sm'), h('span', {}, hidden ? t('liste.envies.visibles.cache', { name: hidden }) : t('liste.envies.visibles'))]);
     wishNote.hidden = false;
   }
 
@@ -237,7 +238,7 @@ export function renderList(listId, onLeave) {
   // La liste peut-elle être modifiée depuis ce téléphone (copie locale à jour) ?
   const editable = () => canEditList(app.data.lists.get(listId));
   // Bandeau discret sous la barre du haut (même composant que la page publique)
-  const readOnlyBanner = h('p', { class: 'readonly-banner', hidden: true }, icon('eye', 'icon--sm'), 'Lecture seule');
+  const readOnlyBanner = h('p', { class: 'readonly-banner', hidden: true }, icon('eye', 'icon--sm'), t('liste.lectureSeule'));
 
   // --- Groupes repliables (rayons, magasins, priorités, zone des cochés) ---
   // Repliés ou dépliés sur ce téléphone, pour cette liste (store.js) ; tout
@@ -257,7 +258,7 @@ export function renderList(listId, onLeave) {
     const anyOpen = foldables.some((f) => f.isOpen());
     foldAll.hidden = foldables.length < 2 || search.active; // masqué pendant la recherche
     foldAll.classList.toggle('fold-all--open', anyOpen);
-    replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? 'Tout replier' : 'Tout déplier');
+    replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? t('liste.toutReplier') : t('liste.toutDeplier'));
   }
 
   // En-tête de groupe repliable (design : section 16.11) : un vrai bouton
@@ -323,15 +324,15 @@ export function renderList(listId, onLeave) {
   function noResults(words) {
     return h('div', { class: 'empty' },
       h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
-      h('h2', { class: 'empty__title' }, 'Aucun résultat'),
-      h('p', { class: 'empty__text' }, `Aucun ${words.one} ne correspond à « ${search.value.trim()} ».`),
+      h('h2', { class: 'empty__title' }, t('liste.recherche.aucunResultat')),
+      h('p', { class: 'empty__text' }, t('liste.recherche.aucun', { word: words.one, query: search.value.trim() })),
       h('button', {
         class: 'btn btn--secondary',
         type: 'button',
         onPointerdown: search.keepFocus.pointerdown,
         onMousedown: search.keepFocus.mousedown,
         onClick: () => search.clear(),
-      }, 'Effacer la recherche'));
+      }, t('liste.recherche.effacer')));
   }
 
   // Barre d'ajout : jamais en lecture seule ; masquée pendant la recherche
@@ -372,13 +373,13 @@ export function renderList(listId, onLeave) {
     // de la zone qui défile pendant le dessin (12 px), et la liste sautait.
     foldables = [];
     if (!app.data.loaded) {
-      search.show(h('p', { class: 'empty muted', role: 'status' }, 'Chargement…'), { available: false });
+      search.show(h('p', { class: 'empty muted', role: 'status' }, t('liste.chargement')), { available: false });
       drawFoldAll();
       return;
     }
     view = computeListView(app.data, listId, { sort: itemSort, me: app.user.id });
     if (!view) {
-      title.textContent = 'Liste introuvable';
+      title.textContent = t('liste.introuvable');
       replace(titleIcon);
       replace(sub);
       menuButton.hidden = true;
@@ -386,9 +387,9 @@ export function renderList(listId, onLeave) {
       shareSlot.hidden = true;
       wishNote.hidden = true;
       search.show(h('div', { class: 'empty' },
-        h('h2', { class: 'empty__title' }, 'Liste introuvable'),
-        h('p', { class: 'empty__text' }, "Cette liste a été supprimée, ou elle n'est plus partagée avec vous."),
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, 'Retour à mes listes')), { available: false });
+        h('h2', { class: 'empty__title' }, t('liste.introuvable')),
+        h('p', { class: 'empty__text' }, t('liste.introuvable.texte')),
+        h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('lists', {}, { replace: true }) }, t('liste.retourMesListes'))), { available: false });
       drawFoldAll();
       searchMeta.textContent = '';
       addbar.hidden = true;
@@ -399,8 +400,9 @@ export function renderList(listId, onLeave) {
     const canEdit = canEditList(list);
     // « article » pour une liste de courses, « élément » sinon (words.js)
     const words = itemWords(list);
-    input.placeholder = `Ajouter un ${words.one}`;
-    input.setAttribute('aria-label', `Ajouter un ${words.one}`);
+    const placeholder = byKind(list, { shopping: t('liste.ajout.placeholder.courses'), tasks: t('liste.ajout.placeholder.taches'), wishes: t('liste.ajout.placeholder.envies') });
+    input.placeholder = placeholder;
+    input.setAttribute('aria-label', placeholder);
     // Courses et tâches : plusieurs éléments d'un coup (bulk-add.js), donc un
     // champ plus long ; liste d'envies : un seul, 100 caractères comme avant
     input.maxLength = isWishList(list) ? ITEM_NAME_MAX : BULK_INPUT_MAX;
@@ -411,7 +413,7 @@ export function renderList(listId, onLeave) {
       // Ordinateur : « Carrefour Market · Courses », « Tâches », « Envies · pour vous »
       replace(sub, list.store
         ? [icon('store', 'icon--xs'), `${list.store.name} · ${typeLabel(list)}`, view.multi ? multiBadge() : null]
-        : [icon(typeIcon(list), 'icon--xs'), isWishList(list) ? `${typeLabel(list)} · ${wishForLabel(list).replace(/^Pour /, 'pour ')}` : typeLabel(list)]);
+        : [icon(typeIcon(list), 'icon--xs'), isWishList(list) ? `${typeLabel(list)} · ${wishForLabel(list, { inline: true })}` : typeLabel(list)]);
       drawPcHead(list);
     } else {
       replace(sub, list.store ? [icon('store', 'icon--xs'), list.store.name, view.multi ? multiBadge() : null] : isWishList(list) ? wishForLabel(list) : typeLabel(list));
@@ -433,10 +435,11 @@ export function renderList(listId, onLeave) {
       // Rien à chercher : le champ de recherche est masqué
       search.show(h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon(typeIcon(list), 'icon--lg')),
-        h('h2', { class: 'empty__title' }, 'Cette liste est vide'),
-        h('p', { class: 'empty__text' }, canEdit ? `Ajoutez un premier ${words.one} avec le champ ${pc ? 'ci-dessus' : 'ci-dessous'}.` : 'Rien à afficher pour le moment.'),
+        h('h2', { class: 'empty__title' }, t('liste.vide')),
+        h('p', { class: 'empty__text' }, canEdit ? (pc ? t('liste.vide.ajouter.pc', { word: words.one }) : t('liste.vide.ajouter', { word: words.one })) : t('liste.vide.lectureSeule')),
         // Ordinateur : l'astuce du raccourci (si les raccourcis à une touche sont actifs)
-        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, 'Astuce : appuyez sur ', h('kbd', { class: 'keycap' }, 'A'), ` pour aller au champ d'ajout.`) : null), { available: false });
+        // (une phrase entière : la touche prend la place de {key})
+        pc && canEdit && singleKeysOn() ? h('p', { class: 'empty__text' }, ...t('liste.vide.astuce').split('{key}').flatMap((part, i) => (i ? [h('kbd', { class: 'keycap' }, 'A'), part] : [part]))) : null), { available: false });
       drawFoldAll();
       searchMeta.textContent = '';
       return;
@@ -460,8 +463,8 @@ export function renderList(listId, onLeave) {
       // dans une liste « multi »
       // Liste de courses en ordre alphabétique : un seul en-tête « À acheter »
       group.all ? foldableGroup(list, group, group.label)
-      : view.multi ? foldableGroup(list, group, group.store?.name ?? 'Sans magasin', icon('store', 'icon--xs'))
-        : isShoppingList(list) ? foldableGroup(list, group, group.aisle?.name ?? 'Sans rayon')
+      : view.multi ? foldableGroup(list, group, group.store?.name ?? t('liste.sansMagasin'), icon('store', 'icon--xs'))
+        : isShoppingList(list) ? foldableGroup(list, group, group.aisle?.name ?? t('liste.sansRayon'))
           // Tri par priorité : un en-tête par groupe (« Priorité élevée »…)
           : group.label ? foldableGroup(list, group, group.label)
             // Ordre alphabétique ou par échéance : liste simple, sans en-tête
@@ -551,7 +554,7 @@ export function renderList(listId, onLeave) {
       // Tâche qui se répète : « ↻ Lu, Me » (phrase entière pour la lecture)
       if (item.repeat) {
         chips.push(h('span', { class: 'chip' }, icon('repeat', 'icon--xs'), repeatChip(item.repeat)));
-        spoken.push(`se répète : ${repeatSentence(item.repeat).toLowerCase()}`);
+        spoken.push(t('liste.lecture.repete', { rule: lowerFirst(repeatSentence(item.repeat)) }));
       }
     }
     // Tâche attribuée (après la date) : « Moi » (en bleu) ou le prénom, avec
@@ -562,14 +565,14 @@ export function renderList(listId, onLeave) {
       if (people.length) {
         const text = people.length <= 2 ? people.map((p) => p.name).join(', ') : `${people[0].name} +${people.length - 1}`;
         chips.push(h('span', { class: `chip${people.some((p) => p.me) ? ' chip--accent' : ''}` }, icon('users', 'icon--xs'), text));
-        spoken.push(`pour ${people.map((p) => (p.me ? 'moi' : p.name)).join(', ')}`);
+        spoken.push(t('liste.lecture.pour', { names: people.map((p) => (p.me ? t('liste.lecture.moi') : p.name)).join(', ') }));
       }
     } else {
       const who = options.assign ? personOf(view?.list, item.assignedTo) : null;
       if (who) {
         const turn = modeOf(item) === 'turn';
         chips.push(h('span', { class: `chip${who.me ? ' chip--accent' : ''}` }, icon(turn ? 'users' : 'user', 'icon--xs'), who.name));
-        spoken.push(turn ? `chacun son tour, cette fois ${who.me ? 'moi' : who.name}` : who.me ? 'pour moi' : `pour ${who.name}`);
+        spoken.push(turn ? t('liste.lecture.tour', { name: who.me ? t('liste.lecture.moi') : who.name }) : t('liste.lecture.pour', { names: who.me ? t('liste.lecture.moi') : who.name }));
       }
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
@@ -579,16 +582,16 @@ export function renderList(listId, onLeave) {
   // tour : Léa → Marc → Zoé (cette fois : Léa) »
   function assignText(it) {
     const name = (id) => personOf(view?.list, id)?.name;
-    if (modeOf(it) === 'all') return peopleOf(it).map(name).filter(Boolean).join(', ') || 'Personne';
-    if (modeOf(it) === 'turn') return `Chacun son tour : ${peopleOf(it).map(name).filter(Boolean).join(' → ')} (cette fois : ${name(it.assignedTo) ?? 'personne'})`;
-    return name(it.assignedTo) ?? 'Personne';
+    if (modeOf(it) === 'all') return peopleOf(it).map(name).filter(Boolean).join(', ') || t('liste.personne');
+    if (modeOf(it) === 'turn') return t('liste.pour.tour.detail', { names: peopleOf(it).map(name).filter(Boolean).join(' → '), name: name(it.assignedTo) ?? t('liste.pour.personneMinuscule') });
+    return name(it.assignedTo) ?? t('liste.personne');
   }
 
   // Personne à qui une tâche est attribuée : { name, me } (« Moi » pour
   // soi), ou null (personne, ou plus membre de la liste)
   function personOf(list, userId) {
     if (userId == null) return null;
-    if (userId === app.user.id) return { name: 'Moi', me: true };
+    if (userId === app.user.id) return { name: t('liste.moi'), me: true };
     const name = memberNames(list).get(userId);
     return name ? { name, me: false } : null;
   }
@@ -619,20 +622,20 @@ export function renderList(listId, onLeave) {
       chips.push(h('span', { class: `chip${mine ? ' chip--accent' : ''}` }, icon('gift', 'icon--xs'), text));
       spoken.push(text.toLowerCase());
       if (reservation.open) {
-        chips.push(h('span', { class: 'chip' }, icon('plus', 'icon--xs'), 'Ouvert à d\'autres'));
-        spoken.push('ouvert à d\'autres');
+        chips.push(h('span', { class: 'chip' }, icon('plus', 'icon--xs'), t('liste.envies.ouvert')));
+        spoken.push(t('liste.envies.ouvert.lecture'));
       }
     }
     return { chips, spoken: spoken.length ? `, ${spoken.join(', ')}` : '' };
   };
   // « Marie », « Marie et Paul », « vous et Marie »… (soi en premier) ; un
   // visiteur du lien public : « Jo (lien public) »
-  const participantLabel = (p) => (p.viaLink ? `${p.displayName} (lien public)` : p.displayName);
+  const participantLabel = (p) => (p.viaLink ? t('liste.envies.visiteur', { name: p.displayName }) : p.displayName);
   const participantNames = (reservation) => {
-    const me = reservation.participants.filter((p) => p.userId === app.user.id).map(() => 'vous');
+    const me = reservation.participants.filter((p) => p.userId === app.user.id).map(() => t('liste.envies.vous'));
     return [...me, ...reservation.participants.filter((p) => p.userId !== app.user.id).map(participantLabel)];
   };
-  const reservationText = (reservation) => `Réservé par ${namesList(participantNames(reservation))}`;
+  const reservationText = (reservation) => t('liste.envies.reservePar', { names: namesList(participantNames(reservation)) });
   // « Reçu » (le coché d'une liste d'envies) : le bénéficiaire ou le
   // propriétaire seulement (le serveur refuse les autres)
   const mayCheck = (list) => !isWishList(list) || Boolean(list?.isOwner || list?.isBeneficiary);
@@ -663,10 +666,10 @@ export function renderList(listId, onLeave) {
   const itemRowWith = (item, meta, extra = null) => {
     if (!canEditList(view?.list)) return markNews(h('li', { class: `item${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, ...itemContent(item, meta, false), extra, pc ? reserveButton(item) : null), item, meta);
     const slide = h('div', { class: 'swipe__slide' }, ...itemContent(item, meta), extra, pc ? rowActions(item) : null);
-    const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': `Supprimer ${item.name}`, onClick: () => {
+    const remove = h('button', { class: 'swipe__delete', type: 'button', 'aria-label': t('liste.supprimer.nom', { name: item.name }), onClick: () => {
       swipes.close();
       deleteWithUndo(item);
-    } }, icon('trash'), h('span', {}, 'Supprimer'));
+    } }, icon('trash'), h('span', {}, t('liste.supprimer')));
     const row = h('li', { class: `item swipe${item.checked ? ' is-done' : ''}`, 'data-item-id': item.id }, slide, remove);
     swipes.attach(row, slide, remove);
     return markNews(row, item, meta);
@@ -681,12 +684,12 @@ export function renderList(listId, onLeave) {
       // VoiceOver dit « Tomates, bouton, sélectionné », l'état une seule
       // fois (avant : « Décocher Tomates, sélectionné »)
       'aria-pressed': String(item.checked),
-      'aria-label': isWishList(view?.list) ? `Reçu : ${item.name}` : item.name,
+      'aria-label': isWishList(view?.list) ? t('liste.envies.recu.nom', { name: item.name }) : item.name,
       onClick: () => toggle(item),
     }, h('span', { class: 'check__box' }, item.checked ? icon('check') : null))
-      : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': isWishList(view?.list) ? (item.checked ? 'Reçu' : 'Pas encore reçu') : item.checked ? 'Coché' : 'Non coché' },
+      : h('span', { class: `check check--static${item.checked ? ' is-on' : ''}`, role: 'img', 'aria-label': isWishList(view?.list) ? (item.checked ? t('liste.etat.recu') : t('liste.etat.pasRecu')) : item.checked ? t('liste.etat.coche') : t('liste.etat.nonCoche') },
         h('span', { class: 'check__box' }, item.checked ? icon('check') : null)),
-    h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? 'Modifier' : 'Voir'} ${item.name}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
+    h('button', { class: 'item__body', type: 'button', 'aria-label': `${canEdit ? t('liste.modifier.nom', { name: item.name }) : t('liste.voir.nom', { name: item.name })}${meta.spoken}`, onClick: () => (canEdit ? openItemSheet(item) : openItemView(item)) },
       h('span', { class: 'item__text' },
         h('span', { class: 'item__name' }, itemName(item.name)),
         meta.news ? h('span', { class: 'item__news' }, meta.news) : null,
@@ -696,7 +699,7 @@ export function renderList(listId, onLeave) {
       // en base, cachée)
       item.quantity && !isWishList(view?.list) ? h('span', { class: 'item__qty' }, item.quantity) : null),
     // Vignette de la photo : un appui l'agrandit
-    actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': `Agrandir la photo de ${item.name}`, onClick: () => showPhoto(item) },
+    actions.hasPhoto(item) ? h('button', { class: 'item__photo', type: 'button', 'aria-label': t('liste.photo.agrandir', { name: item.name }), onClick: () => showPhoto(item) },
       h('img', { class: 'photo', src: actions.photoSrc(item), alt: '', loading: 'lazy', decoding: 'async' })) : null,
   ];
 
@@ -714,7 +717,7 @@ export function renderList(listId, onLeave) {
     if (!children?.length) return [itemRow(item)];
     const inSearch = searching();
     const { done, total } = progressOf(view.subtasks.get(item.id) ?? children);
-    const spoken = `Sous-tâches de ${item.name} : ${done} faite${done > 1 ? 's' : ''} sur ${total}`;
+    const spoken = t('liste.sousTaches.progression', { name: item.name, count: done, total });
     // Mode « Réordonner » de cette principale : poignée, Monter, Descendre
     const reordering = !inSearch && reorderParent === item.id && canEditList(view?.list);
     const listEl = h('ul', { class: 'subtasks__list', id: `sous-taches-${item.id}` },
@@ -762,11 +765,11 @@ export function renderList(listId, onLeave) {
   // Dernière ligne d'une principale dépliée : « Ajouter une sous-tâche »
   // (et, dès deux sous-tâches, « Réordonner » à droite)
   const addSubtaskRow = (parent, count) => h('li', { class: 'subtasks__add' },
-    h('button', { class: 'subtasks__add-btn', type: 'button', 'aria-label': `Ajouter une sous-tâche à ${parent.name}`, onClick: () => openAddSubtask(parent) },
-      h('span', { class: 'subtasks__plus', 'aria-hidden': 'true' }, icon('plus', 'icon--sm')), 'Ajouter une sous-tâche'),
+    h('button', { class: 'subtasks__add-btn', type: 'button', 'aria-label': t('liste.sousTaches.ajouter.nom', { name: parent.name }), onClick: () => openAddSubtask(parent) },
+      h('span', { class: 'subtasks__plus', 'aria-hidden': 'true' }, icon('plus', 'icon--sm')), t('liste.sousTaches.ajouter')),
     // Deux flèches (haut, bas) : le mot ne tenait pas à côté sur le téléphone
     count >= 2 ? h('button', {
-      class: 'icon-btn subtasks__reorder-btn', type: 'button', 'aria-label': `Réordonner les sous-tâches de ${parent.name}`, 'data-reorder': parent.id, 'data-pc-tip': 'Réordonner',
+      class: 'icon-btn subtasks__reorder-btn', type: 'button', 'aria-label': t('liste.sousTaches.reordonner.nom', { name: parent.name }), 'data-reorder': parent.id, 'data-pc-tip': t('liste.sousTaches.reordonner'),
       onClick: () => {
         reorderParent = parent.id;
         focusAfterDraw = [`[data-move="down"][data-item="${CSS.escape(childrenIds(parent)[0] ?? '')}"]`, '[data-reorder-done]'];
@@ -794,14 +797,14 @@ export function renderList(listId, onLeave) {
   }
   const childrenIds = (parent) => (view?.subtasks.get(parent.id) ?? []).map((child) => child.id);
   function reorderRow(child, children, index) {
-    const label = (verb) => `${verb} ${child.name}`;
+    const label = (up) => (up ? t('liste.reordonner.monter', { name: child.name }) : t('liste.reordonner.descendre', { name: child.name }));
     const move = (step) => h('button', {
-      class: 'icon-btn', type: 'button', 'aria-label': label(step < 0 ? 'Monter' : 'Descendre'),
+      class: 'icon-btn', type: 'button', 'aria-label': label(step < 0),
       'data-move': step < 0 ? 'up' : 'down', 'data-item': child.id,
       disabled: step < 0 ? index === 0 : index === children.length - 1,
       onClick: () => moveStep(child, children, index, step),
     }, icon(step < 0 ? 'arrow-up' : 'arrow-down', 'icon--sm'));
-    const handle = h('span', { class: 'reorder__handle', 'aria-hidden': 'true', title: 'Glisser pour déplacer' }, icon('menu-lines', 'icon--sm'));
+    const handle = h('span', { class: 'reorder__handle', 'aria-hidden': 'true', title: t('liste.reordonner.glisser') }, icon('menu-lines', 'icon--sm'));
     const row = h('li', { class: `item reorder${child.checked ? ' is-done' : ''}`, 'data-item-id': child.id },
       handle, h('span', { class: 'reorder__name item__name' }, child.name), move(-1), move(1));
     handle.addEventListener('pointerdown', (event) => startDrag(event, row, child, children));
@@ -812,7 +815,7 @@ export function renderList(listId, onLeave) {
       reorderParent = null;
       focusAfterDraw = [`[data-reorder="${CSS.escape(parent.id)}"]`];
       draw();
-    } }, 'Terminé'));
+    } }, t('liste.reordonner.termine')));
   // Monter / Descendre d'un cran
   async function moveStep(child, children, index, step) {
     const target = index + step;
@@ -821,7 +824,7 @@ export function renderList(listId, onLeave) {
     const id = CSS.escape(child.id);
     focusAfterDraw = [`[data-move="${step < 0 ? 'up' : 'down'}"][data-item="${id}"]`, `[data-move="${step < 0 ? 'down' : 'up'}"][data-item="${id}"]`];
     await actions.moveItem(child, target === 0 ? null : others[target - 1].id);
-    announce(`« ${child.name} » en position ${target + 1} sur ${children.length}`);
+    announce(t('liste.reordonner.position', { name: child.name, position: target + 1, total: children.length }));
   }
   // Glisser la poignée : la ligne suit le doigt (ou la souris) et passe
   // devant ou derrière ses voisines à mi-hauteur ; au lâcher, une seule
@@ -871,7 +874,7 @@ export function renderList(listId, onLeave) {
       if (index === startIndex || index < 0) return;
       const afterId = index === 0 ? null : rows[index - 1].dataset.itemId;
       actions.moveItem(child, afterId);
-      announce(`« ${child.name} » en position ${index + 1} sur ${children.length}`);
+      announce(t('liste.reordonner.position', { name: child.name, position: index + 1, total: children.length }));
     };
     handle.addEventListener('pointermove', onMove);
     handle.addEventListener('pointerup', finish);
@@ -885,11 +888,11 @@ export function renderList(listId, onLeave) {
   // sur un champ vide ferme la feuille.
   function openAddSubtask(parent) {
     if (!editable()) return;
-    const subtaskInput = h('input', { class: 'input', type: 'text', maxlength: String(ITEM_NAME_MAX), autocomplete: 'off', enterkeyhint: 'done', 'aria-label': 'Nom de la sous-tâche', placeholder: 'Nom de la sous-tâche' });
+    const subtaskInput = h('input', { class: 'input', type: 'text', maxlength: String(ITEM_NAME_MAX), autocomplete: 'off', enterkeyhint: 'done', 'aria-label': t('liste.sousTaches.champ'), placeholder: t('liste.sousTaches.champ') });
     const added = h('p', { class: 'field__hint', role: 'status' });
-    const addButton = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, icon('plus', 'icon--sm'), 'Ajouter');
+    const addButton = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, icon('plus', 'icon--sm'), t('liste.ajouter'));
     const subtaskForm = h('form', { class: 'stack', novalidate: true }, subtaskInput, added, addButton);
-    const sheet = openSheet({ title: 'Nouvelle sous-tâche', sub: parent.name, content: subtaskForm });
+    const sheet = openSheet({ title: t('liste.sousTaches.nouvelle'), sub: parent.name, content: subtaskForm });
     subtaskForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const name = subtaskInput.value.replace(/\s+/g, ' ').trim();
@@ -910,7 +913,7 @@ export function renderList(listId, onLeave) {
         draw();
       }
       subtaskInput.value = '';
-      added.textContent = `« ${name} » ajoutée`;
+      added.textContent = t('liste.sousTaches.ajoutee', { name });
     });
   }
 
@@ -922,8 +925,8 @@ export function renderList(listId, onLeave) {
     return [
       reserveButton(item),
       h('span', { class: 'item__actions' },
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Modifier ${item.name}`, 'aria-keyshortcuts': 'E', 'data-action': 'edit', 'data-pc-tip': 'Modifier · E', onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
-        h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Supprimer ${item.name}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('liste.modifier.nom', { name: item.name }), 'aria-keyshortcuts': 'E', 'data-action': 'edit', 'data-pc-tip': t('liste.pc.modifier.astuce'), onClick: () => openItemSheet(item) }, icon('pencil', 'icon--sm')),
+        h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('liste.supprimer.nom', { name: item.name }), 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': t('liste.pc.supprimer.astuce'), onClick: () => deleteWithUndo(item) }, icon('trash', 'icon--sm'))),
     ];
   }
   // « Réserver » : seulement si le serveur a envoyé les réservations de la
@@ -934,21 +937,21 @@ export function renderList(listId, onLeave) {
     return h('button', {
       class: 'btn btn--secondary btn--sm item__act',
       type: 'button',
-      'aria-label': `Réserver ${item.name}`,
+      'aria-label': t('liste.envies.reserver.nom', { name: item.name }),
       onClick: async () => {
         if (!navigator.onLine) {
-          toast('Réserver, participer ou quitter demande une connexion.');
+          toast(t('liste.envies.horsLigne'));
           return;
         }
         try {
           await actions.reserveWish(item.id, false);
-          toast('Souhait réservé');
+          toast(t('liste.envies.reserve'));
         } catch (err) {
           toast(errorMessage(err));
           refreshData({ quiet: true });
         }
       },
-    }, icon('gift', 'icon--sm'), 'Réserver');
+    }, icon('gift', 'icon--sm'), t('liste.envies.reserver'));
   }
 
   // Photo en plein écran, avec en légende la liste et le rayon (ou le magasin)
@@ -957,7 +960,7 @@ export function renderList(listId, onLeave) {
     openLightbox({
       title: item.name,
       src: actions.photoSrc(item),
-      alt: `Photo ${itemWords(view?.list).of} ${item.name}`,
+      alt: byKind(view?.list, { shopping: t('liste.photo.alt.courses', { name: item.name }), tasks: t('liste.photo.alt.taches', { name: item.name }), wishes: t('liste.photo.alt.envies', { name: item.name }) }),
       caption: [view?.list.name, group].filter(Boolean).join(' · '),
     });
   }
@@ -978,7 +981,7 @@ export function renderList(listId, onLeave) {
     await actions.deleteItem(item);
     const entry = { kind: 'delete', itemId: item.id, name: item.name };
     recordUndo(listId, entry);
-    toast(children ? `« ${item.name} » et ${children === 1 ? 'sa sous-tâche supprimées' : `${children} sous-tâches supprimées`}` : `« ${item.name} » supprimé`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+    toast(children ? t('liste.supprime.avecSousTaches', { name: item.name, count: children }) : t('liste.supprime', { name: item.name }), { action: pc ? t('liste.annuler.pc') : t('liste.annuler'), onAction: () => {
       forgetUndo(listId, (e) => e === entry);
       actions.restoreItem(item.id);
     } });
@@ -1005,7 +1008,7 @@ export function renderList(listId, onLeave) {
     recordUndo(listId, entry);
     actions.checkItem(item, !item.checked);
     if (!children.length) return;
-    toast(`« ${item.name} » et ${children.length === 1 ? 'sa sous-tâche cochées' : `${children.length} sous-tâches cochées`}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+    toast(t('liste.coche.avecSousTaches', { name: item.name, count: children.length }), { action: pc ? t('liste.annuler.pc') : t('liste.annuler'), onAction: () => {
       forgetUndo(listId, (e) => e === entry);
       const current = app.data.items.get(item.id);
       if (current?.checked) actions.checkItem(current, false);
@@ -1023,11 +1026,11 @@ export function renderList(listId, onLeave) {
     const before = actions.undoOfRepeat(item);
     // Chacun son tour : le message dit aussi pour qui est la fois suivante
     const nextPerson = actions.nextTurnOf(item);
-    const who = nextPerson === null ? '' : ` · ${nextPerson === app.user.id ? 'Moi' : memberNames(view?.list).get(nextPerson) ?? ''}`;
+    const who = nextPerson === null ? '' : ` · ${nextPerson === app.user.id ? t('liste.moi') : memberNames(view?.list).get(nextPerson) ?? ''}`;
     const entry = { kind: 'update', itemId: item.id, name: item.name, before, after: { dueDate: next, ...(nextPerson !== null ? { assignedTo: nextPerson } : {}) } };
     recordUndo(listId, entry);
     actions.checkItem(item, true);
-    toast(`Prochaine fois : ${dueDateLabel(next)}${who}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: () => {
+    toast(`${t('liste.prochaineFois', { date: dueDateLabel(next) })}${who}`, { action: pc ? t('liste.annuler.pc') : t('liste.annuler'), onAction: () => {
       forgetUndo(listId, (e) => e === entry);
       const current = app.data.items.get(item.id);
       if (current && current.dueDate === next) actions.updateItem(current, before);
@@ -1042,20 +1045,18 @@ export function renderList(listId, onLeave) {
     const count = checkedInList();
     if (!count) return;
     const list = view.list;
-    const one = count === 1;
-    const place = view.multi ? 'magasin' : 'rayon';
     const ok = await confirmSheet({
-      title: isShoppingList(list) ? `Remettre ${countItems(count, list)} à acheter ?` : `Rouvrir ${countItems(count, list)} ?`,
+      title: isShoppingList(list) ? t('liste.rouvrir.courses.titre', { items: countItems(count, list) }) : t('liste.rouvrir.titre', { items: countItems(count, list) }),
       text: isShoppingList(list)
-        ? (one ? `Il reviendra dans son ${place}, décoché.` : `Ils reviendront dans leur ${place}, décochés.`)
-        : (one ? 'Il reviendra dans la liste, décoché.' : 'Ils reviendront dans la liste, décochés.'),
-      confirmLabel: 'Confirmer',
+        ? (view.multi ? t('liste.rouvrir.courses.texte.magasin', { count }) : t('liste.rouvrir.courses.texte.rayon', { count }))
+        : t('liste.rouvrir.texte', { count }),
+      confirmLabel: t('liste.confirmer'),
     });
     if (!ok || !editable()) return;
     const reopened = await actions.uncheckAll(listId);
     toast(isShoppingList(list)
-      ? `${countItems(reopened, list)} remis à acheter`
-      : `${countItems(reopened, list)} ${reopened === 1 ? 'rouvert' : 'rouverts'}`);
+      ? t('liste.rouvrir.courses.fait', { items: countItems(reopened, list) })
+      : t('liste.rouvrir.fait', { items: countItems(reopened, list), count: reopened }));
   }
 
   // « Retirer du panier » / « Retirer les terminés » : supprime les cochés
@@ -1065,17 +1066,16 @@ export function renderList(listId, onLeave) {
     const count = checkedToRemove(app.data, listId).length;
     if (!count) return;
     const list = view.list;
-    const one = count === 1;
     const ok = await confirmSheet({
-      title: `Retirer ${countItems(count, list)} de la liste ?`,
-      text: one ? 'Il sera supprimé pour tout le monde.' : 'Ils seront supprimés pour tout le monde.',
-      warning: one ? "C'est définitif : impossible de le récupérer." : "C'est définitif : impossible de les récupérer.",
-      confirmLabel: 'Retirer',
+      title: t('liste.retirerCoches.titre', { items: countItems(count, list) }),
+      text: t('liste.retirerCoches.texte', { count }),
+      warning: t('liste.retirerCoches.avertissement', { count }),
+      confirmLabel: t('liste.retirer'),
       danger: true,
     });
     if (!ok || !editable()) return;
     const removed = await actions.removeChecked(listId);
-    toast(`${countItems(removed, list)} ${removed === 1 ? 'retiré' : 'retirés'}`);
+    toast(t('liste.retirerCoches.fait', { items: countItems(removed, list), count: removed }));
   }
 
   // Menu ⋮ : les mêmes actions que le menu « ⋯ » d'une carte de « Mes
@@ -1083,7 +1083,7 @@ export function renderList(listId, onLeave) {
   const menuActions = () => (view ? listActions(view.list, { onDeleted: () => navigate('lists', {}, { replace: true }) }) : []);
   function openListMenu() {
     const items = menuActions();
-    if (items.length) openMenu(items, { label: 'Menu de la liste' });
+    if (items.length) openMenu(items, { label: t('liste.menu') });
   }
 
   // --- Ajout d'un article (ou d'un élément) ---
@@ -1100,7 +1100,7 @@ export function renderList(listId, onLeave) {
   });
   // Simple groupe de boutons (role="listbox" promettait les flèches et un
   // champ « combobox » : décision du 15 novembre 2026)
-  const suggestBox = h('div', { class: 'suggest', role: 'group', 'aria-label': 'Suggestions', hidden: true });
+  const suggestBox = h('div', { class: 'suggest', role: 'group', 'aria-label': t('liste.suggestions'), hidden: true });
   // Toucher d'une suggestion ou du bouton « + » (tap.js, voir plus bas)
   const taps = createTapPicker();
   // Mode scan (listes de courses) : bouton « Scanner » entre le champ et +
@@ -1129,13 +1129,13 @@ export function renderList(listId, onLeave) {
     h('button', {
       class: 'btn btn--primary btn--icon',
       type: 'submit',
-      'aria-label': 'Ajouter',
+      'aria-label': t('liste.ajouter'),
       onPointerdown: plus.pointerdown,
       onMousedown: plus.mousedown,
       onPointerup: plus.pointerup,
       onPointercancel: plus.pointercancel,
       onClick: plus.click,
-    }, icon('plus', pc ? 'icon--sm' : ''), pc ? 'Ajouter' : null));
+    }, icon('plus', pc ? 'icon--sm' : ''), pc ? t('liste.ajouter') : null));
   // Ordinateur : bouton écrit « Ajouter » (plus de libellé caché)
   if (pc) {
     const submit = addForm.querySelector('[type=submit]');
@@ -1245,11 +1245,11 @@ export function renderList(listId, onLeave) {
     const inCart = checkedNamed(app.data, listId, name);
     if (inCart) {
       await actions.checkItem(inCart, false); // copie locale d'abord (hors ligne compris)
-      toast(`Remis dans la liste : ${inCart.name}`, { low: true });
+      toast(t('liste.souvent.remis', { name: inCart.name }), { low: true });
     } else {
       const item = await addNamed(name);
       if (!item) return;
-      toast(`Ajouté : ${item.name}`, { low: true });
+      toast(t('liste.souvent.ajoute', { name: item.name }), { low: true });
     }
     drawSuggestions();
   }
@@ -1283,17 +1283,17 @@ export function renderList(listId, onLeave) {
       onPointercancel: on.pointercancel,
       onClick: on.click,
     }, h('span', {}, entry.name), entry.hint ? h('span', { class: 'suggest__aisle' }, entry.hint) : null);
-    const label = `Retirer ${entry.name} de « Souvent ajoutés »`;
+    const label = t('liste.souvent.retirer.nom', { name: entry.name });
     const remove = h('button', {
       class: pc ? 'icon-btn' : 'swipe__delete',
       type: 'button',
       'aria-label': label,
-      ...(pc ? { 'data-pc-tip': 'Retirer' } : {}),
+      ...(pc ? { 'data-pc-tip': t('liste.retirer') } : {}),
       // Le champ garde le curseur (clavier ouvert) pendant l'appui
       onPointerdown: keepFieldFocus.pointerdown,
       onMousedown: keepFieldFocus.mousedown,
       onClick: () => removeHabitual(entry.name),
-    }, icon('eye-off', pc ? 'icon--sm' : ''), pc ? null : h('span', {}, 'Retirer'));
+    }, icon('eye-off', pc ? 'icon--sm' : ''), pc ? null : h('span', {}, t('liste.retirer')));
     const row = pc
       ? h('div', { class: 'suggest__row' }, add, h('span', { class: 'suggest__actions' }, remove))
       : h('div', { class: 'suggest__row swipe' }, add, remove);
@@ -1308,7 +1308,7 @@ export function renderList(listId, onLeave) {
     if (!editable() || !view) return;
     habitualSwipes?.close();
     await actions.hideHabitual(view.list, name);
-    toast(`Retiré de « Souvent ajoutés » : ${name}`, { low: true });
+    toast(t('liste.souvent.retire', { name }), { low: true });
     drawSuggestions();
   }
 
@@ -1321,14 +1321,14 @@ export function renderList(listId, onLeave) {
       habitualOpen = false;
       return;
     }
-    const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: () => closeHabitual() }, icon('close'));
+    const close = h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('liste.fermer'), onClick: () => closeHabitual() }, icon('close'));
     replace(suggestBox,
-      h('div', { class: 'suggest__head' }, h('span', { class: 'suggest__title' }, 'Souvent ajoutés'), close),
+      h('div', { class: 'suggest__head' }, h('span', { class: 'suggest__title' }, t('liste.souvent.titre')), close),
       entries.map(habitualRow));
     // Un groupe de boutons (pas une liste de choix : il a sa croix)
     suggestBox.dataset.mode = 'habitual';
     suggestBox.setAttribute('role', 'group');
-    suggestBox.setAttribute('aria-label', 'Souvent ajoutés');
+    suggestBox.setAttribute('aria-label', t('liste.souvent.titre'));
     suggestBox.hidden = false;
   }
   // Collage d'une liste sur plusieurs lignes (courses et tâches) : le champ
@@ -1366,7 +1366,7 @@ export function renderList(listId, onLeave) {
     habitualOpen = false;
     suggestBox.dataset.mode = 'suggest';
     suggestBox.setAttribute('role', 'group');
-    suggestBox.setAttribute('aria-label', 'Suggestions');
+    suggestBox.setAttribute('aria-label', t('liste.suggestions'));
     const typed = input.value;
     // Liste de courses : la quantité tapée au début ou à la fin (« 6 oeu »,
     // « oeufs x6 ») est lue d'abord ; les suggestions cherchent le nom seul
@@ -1406,7 +1406,7 @@ export function renderList(listId, onLeave) {
         // Suggestion choisie : son nom tel quel, avec la quantité tapée s'il y en a une
         return option(h('span', {}, h('strong', {}, start), rest), hintFor(s), () => addTyped(s.name, { whole: true, quantity: read.quantity }));
       }),
-      exact ? null : option([icon('plus'), h('span', {}, `Ajouter « ${typed.trim()} »`)], itemWords(view?.list).New, () => addTyped(typed), 'suggest__item--new'));
+      exact ? null : option([icon('plus'), h('span', {}, t('liste.ajout.nouveau', { text: typed.trim() }))], itemWords(view?.list).New, () => addTyped(typed), 'suggest__item--new'));
     suggestBox.hidden = false;
   }
 
@@ -1478,7 +1478,7 @@ export function renderList(listId, onLeave) {
     for (const [index, { name }] of entries.entries()) {
       const key = normalizeItemName(name);
       if (!chosen.has(key)) {
-        const place = await placeFor(name, `${index + 1} sur ${entries.length}`);
+        const place = await placeFor(name, t('liste.ajout.etape', { index: index + 1, total: entries.length }));
         if (place === undefined) return; // fenêtre fermée sans choisir : rien n'est ajouté
         chosen.set(key, place);
       }
@@ -1493,7 +1493,7 @@ export function renderList(listId, onLeave) {
     }
     releaseFocus();
     if (last) revealItem(last.id);
-    toast(`${countItems(entries.length, list)} ajoutés`);
+    toast(t('liste.ajout.plusieurs', { items: countItems(entries.length, list) }));
   }
 
   // Clavier en train de se replier (le champ vient de perdre le curseur) :
@@ -1570,14 +1570,14 @@ export function renderList(listId, onLeave) {
       // Liste « multi » : magasin habituel, sinon on le demande une fois
       if (usualStoreFor(app.data, view.list, name) !== null) return {}; // le serveur le choisira (le téléphone l'affiche déjà)
       const sub = isKnownItem(app.data, name)
-        ? `« ${name} » n'a encore jamais été acheté dans ces magasins. Son magasin sera retenu pour la prochaine fois.`
-        : `« ${name} » est ${itemWords(view.list).aNew}. Son magasin sera retenu pour la prochaine fois.`;
-      const storeId = await pickStore({ title: `Dans quel magasin ?${suffix}`, sub, confirmLabel: 'Ajouter à la liste' });
+        ? t('liste.place.magasin.connu', { name })
+        : t('liste.place.magasin.nouveau', { name });
+      const storeId = await pickStore({ title: `${t('liste.place.magasin.titre')}${suffix}`, sub, confirmLabel: t('liste.place.ajouter') });
       return storeId === undefined ? undefined : { storeId };
     }
     if (isShoppingList(view.list) && !isKnownItem(app.data, name)) {
       // Article inconnu sur une liste de courses : on demande son rayon une fois
-      const aisleId = await pickAisle({ title: `Dans quel rayon ?${suffix}`, sub: `« ${name} » est ${itemWords(view.list).aNew}. Son rayon sera retenu pour la prochaine fois.`, confirmLabel: 'Ajouter à la liste' });
+      const aisleId = await pickAisle({ title: `${t('liste.place.rayon.titre')}${suffix}`, sub: t('liste.place.rayon.nouveau', { name }), confirmLabel: t('liste.place.ajouter') });
       return aisleId === undefined ? undefined : { aisleId };
     }
     return {};
@@ -1637,8 +1637,8 @@ export function renderList(listId, onLeave) {
     }, icon(iconName, 'icon--sm'), label);
     const openSwitch = (checked, onToggle) => h('div', { class: 'card' }, h('div', { class: 'toggle-row' },
       h('div', { class: 'grow' },
-        h('span', { class: 'row__title', id: `open-${item.id}` }, 'Ouvert à d\'autres'),
-        h('span', { class: 'row__sub' }, 'D\'autres proches peuvent participer au cadeau.')),
+        h('span', { class: 'row__title', id: `open-${item.id}` }, t('liste.envies.ouvert')),
+        h('span', { class: 'row__sub' }, t('liste.envies.ouvert.detail'))),
       h('button', {
         class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(checked), 'aria-labelledby': `open-${item.id}`,
         disabled: busy || !navigator.onLine, onClick: onToggle,
@@ -1657,34 +1657,34 @@ export function renderList(listId, onLeave) {
       let content;
       if (!participants.length) {
         content = [
-          h('p', { class: 'field__value' }, 'Pas encore réservé'),
+          h('p', { class: 'field__value' }, t('liste.envies.pasReserve')),
           openSwitch(openWanted, () => {
             openWanted = !openWanted;
             paint();
           }),
-          button('btn--primary btn--block', 'gift', 'Réserver', () => run(() => actions.reserveWish(item.id, openWanted), 'Souhait réservé')),
+          button('btn--primary btn--block', 'gift', t('liste.envies.reserver'), () => run(() => actions.reserveWish(item.id, openWanted), t('liste.envies.reserve'))),
         ];
       } else {
         content = [
-          h('p', { class: 'field__value' }, reservationText(current), current.open ? ' · Ouvert à d\'autres' : ''),
+          h('p', { class: 'field__value' }, reservationText(current), current.open ? ` · ${t('liste.envies.ouvert')}` : ''),
           // Ouvrir ou fermer : les participants, et le gestionnaire (même s'il n'y a que des visiteurs)
           mine || manager ? openSwitch(current.open, () => run(() => actions.setWishOpen(item.id, !current.open))) : null,
-          !mine && current.open ? button('btn--primary btn--block', 'plus', 'Participer', () => run(() => actions.reserveWish(item.id), 'Vous participez')) : null,
-          mine ? button('btn--secondary btn--block', 'close', 'Quitter', () => run(() => actions.leaveWish(item.id), 'Vous ne participez plus')) : null,
+          !mine && current.open ? button('btn--primary btn--block', 'plus', t('liste.envies.participer'), () => run(() => actions.reserveWish(item.id), t('liste.envies.participez'))) : null,
+          mine ? button('btn--secondary btn--block', 'close', t('liste.envies.quitter'), () => run(() => actions.leaveWish(item.id), t('liste.envies.neParticipezPlus'))) : null,
           // Gestionnaire : retirer un participant, ou libérer tout le souhait
           manager ? h('div', { class: 'stack stack--sm' },
             participants.some((p) => p.userId !== app.user.id) ? h('div', { class: 'card list-options' }, participants.filter((p) => p.userId !== app.user.id).map((p) => h('div', { class: 'toggle-row' },
               h('span', { class: 'grow' }, participantLabel(p)),
               // Un visiteur du lien public : retiré par son identifiant opaque (v<numéro>)
-              button('btn--danger-outline btn--sm', 'close', 'Retirer', () => run(() => (p.viaLink ? actions.removeWishVisitor(item.id, p.visitorId) : actions.removeWishParticipant(item.id, p.userId)), `${p.displayName} ne participe plus`), { 'aria-label': `Retirer ${participantLabel(p)}` })))) : null,
-            button('btn--danger-outline btn--block', 'close', 'Libérer', () => run(() => actions.releaseWish(item.id), 'Réservation libérée'))) : null,
+              button('btn--danger-outline btn--sm', 'close', t('liste.retirer'), () => run(() => (p.viaLink ? actions.removeWishVisitor(item.id, p.visitorId) : actions.removeWishParticipant(item.id, p.userId)), t('liste.envies.neParticipePlus', { name: p.displayName })), { 'aria-label': t('liste.envies.retirer.nom', { name: participantLabel(p) }) })))) : null,
+            button('btn--danger-outline btn--block', 'close', t('liste.envies.liberer'), () => run(() => actions.releaseWish(item.id), t('liste.envies.liberee')))) : null,
         ];
       }
       replace(el,
-        h('span', { class: 'field__label' }, 'Réservation'),
+        h('span', { class: 'field__label' }, t('liste.envies.reservation')),
         content,
-        !navigator.onLine ? h('p', { class: 'field__hint' }, 'Réserver, participer ou quitter demande une connexion.') : null,
-        hidden ? h('p', { class: 'field__hint' }, `Les réservations ne sont jamais montrées à ${hidden}.`) : null);
+        !navigator.onLine ? h('p', { class: 'field__hint' }, t('liste.envies.horsLigne')) : null,
+        hidden ? h('p', { class: 'field__hint' }, t('liste.envies.jamaisMontrees', { name: hidden })) : null);
     }
     window.addEventListener('online', paint);
     window.addEventListener('offline', paint);
@@ -1703,7 +1703,7 @@ export function renderList(listId, onLeave) {
   // transmettre d'où l'on vient ; seulement une adresse http ou https
   const linkButton = (link) => {
     const safe = cleanLink(link ?? '');
-    return safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 'icon--sm'), 'Ouvrir le lien') : null;
+    return safe ? h('a', { class: 'btn btn--secondary btn--sm', href: safe, target: '_blank', rel: 'noopener noreferrer' }, icon('link', 'icon--sm'), t('liste.envies.ouvrirLien')) : null;
   };
 
   // --- Feuille « Article » : nom, quantité, note, rayon (ou magasin) ---
@@ -1714,13 +1714,14 @@ export function renderList(listId, onLeave) {
     const multi = Boolean(view?.multi);
     const isShopping = isShoppingList(view?.list) && !multi; // rayon seulement hors « multi »
     const words = itemWords(view?.list); // « article », « élément » ou « souhait »
+    const kind = wordKind(view?.list); // phrases entières de cette sorte de liste (byKind)
     const wishes = isWishList(view?.list);
     const name = h('input', { class: 'input', ...LABEL_INPUT, value: item.name, maxlength: '100' });
     // Souhait : lien web (http ou https) et prix indicatif, facultatifs
     const linkInput = h('input', { class: 'input', type: 'url', inputmode: 'url', value: item.link ?? '', maxlength: String(LINK_MAX), autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', placeholder: 'https://…' });
-    const linkField = field('Lien (facultatif)', linkInput);
-    const priceInput = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: Number.isInteger(item.priceCents) ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '', maxlength: '12', autocomplete: 'off', placeholder: 'ex. 24,90' });
-    const priceField = field('Prix indicatif (facultatif)', priceInput, { aside: 'en euros' });
+    const linkField = field(t('liste.fiche.lien'), linkInput);
+    const priceInput = h('input', { class: 'input', type: 'text', inputmode: 'decimal', value: priceInputText(item.priceCents), maxlength: '12', autocomplete: 'off', placeholder: t('liste.fiche.prix.exemple') });
+    const priceField = field(t('liste.fiche.prix'), priceInput, { aside: t('liste.fiche.prix.unite', { currency: currencyName() }) });
     const reservation = wishes ? reservationBlock(item) : null;
     const quantity = h('input', { class: 'input', type: 'text', value: item.quantity, maxlength: '30', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off' });
     const note = h('textarea', { class: 'input input--area', rows: '2', maxlength: '500', autocomplete: 'off', autocapitalize: 'sentences' });
@@ -1728,14 +1729,14 @@ export function renderList(listId, onLeave) {
     let aisleId = item.aisleId;
     const aisleLabel = h('span');
     const showAisle = () => {
-      aisleLabel.textContent = app.data.aisles.find((a) => a.id === aisleId)?.name ?? 'Sans rayon';
+      aisleLabel.textContent = app.data.aisles.find((a) => a.id === aisleId)?.name ?? t('liste.sansRayon');
     };
     showAisle();
     const aisleButton = h('button', {
       class: 'input input--select',
       type: 'button',
       onClick: async () => {
-        const chosen = await pickAisle({ title: 'Rayon', current: aisleId, keep: aisleId, confirmLabel: 'Choisir' });
+        const chosen = await pickAisle({ title: t('liste.rayon'), current: aisleId, keep: aisleId, confirmLabel: t('liste.choisir') });
         if (chosen !== undefined) {
           aisleId = chosen;
           showAisle();
@@ -1745,14 +1746,14 @@ export function renderList(listId, onLeave) {
     // Magasin de l'article (liste « multi »)
     let storeId = item.storeId ?? null;
     const storeLabel = h('span', { class: 'input__value' });
-    const showStore = () => replace(storeLabel, icon('store', 'icon--sm'), storeName(storeId) ?? 'Sans magasin');
+    const showStore = () => replace(storeLabel, icon('store', 'icon--sm'), storeName(storeId) ?? t('liste.sansMagasin'));
     showStore();
     const storeButton = h('button', {
       class: 'input input--select',
       type: 'button',
       'aria-labelledby': 'store-label',
       onClick: async () => {
-        const chosen = await pickStore({ title: 'Magasin', current: storeId, keep: storeId, confirmLabel: 'Choisir' });
+        const chosen = await pickStore({ title: t('liste.magasin'), current: storeId, keep: storeId, confirmLabel: t('liste.choisir') });
         if (chosen !== undefined) {
           storeId = chosen;
           showStore();
@@ -1776,7 +1777,7 @@ export function renderList(listId, onLeave) {
     // par « Passer cette fois », qui s'enregistre tout de suite)
     let savedDue = item.dueDate ?? null;
     // Priorité : trois choix ; le choix actif a une coche ET son texte
-    const priorityOptions = [['low', 'Basse'], ['normal', 'Normale'], ['high', 'Élevée']].map(([value, label]) => {
+    const priorityOptions = [['low', t('liste.fiche.priorite.basse')], ['normal', t('liste.fiche.priorite.normale')], ['high', t('liste.fiche.priorite.elevee')]].map(([value, label]) => {
       const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
         priority = value;
         drawPriority();
@@ -1813,14 +1814,14 @@ export function renderList(listId, onLeave) {
     const clearDue = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
       dueDate = null;
       drawDue();
-    } }, 'Effacer');
+    } }, t('liste.effacer'));
     let redrawAssign = null; // « Pour » (plus bas) : « Chacun son tour » suit la répétition
     let redrawSummaries = null; // lignes résumées des sous-pages (plus bas)
     const drawDue = () => {
-      const label = dueDate ? dueDateLabel(dueDate) : 'Aucune échéance';
+      const label = dueDate ? dueDateLabel(dueDate) : t('liste.fiche.aucuneEcheance');
       replace(dueText, icon('calendar', 'icon--sm'), label);
       dateInput.value = dueDate ?? '';
-      dateInput.setAttribute('aria-label', `Échéance : ${label}. Choisir une date`);
+      dateInput.setAttribute('aria-label', t('liste.fiche.echeance.choisir', { label }));
       clearDue.disabled = !dueDate;
       // Plus d'échéance : plus de répétition (une répétition en demande une)
       if (!dueDate && repeatKind) {
@@ -1859,7 +1860,7 @@ export function renderList(listId, onLeave) {
       const text = h('span', { class: 'input__value' });
       return { text, el: h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, text, icon('chev-d')), select) };
     };
-    const kindSelect = h('select', { class: 'due-picker__input' }, REPEAT_CHOICES.map(([value, label]) => h('option', { value }, label)));
+    const kindSelect = h('select', { class: 'due-picker__input' }, REPEAT_CHOICES.map(([value, label]) => h('option', { value }, t(label))));
     const kindPicker = nativePicker(kindSelect);
     kindSelect.addEventListener('change', () => {
       repeatKind = kindSelect.value;
@@ -1867,38 +1868,38 @@ export function renderList(listId, onLeave) {
     });
     // Jours de la semaine : pastilles Lu … Di, appuyées ou non
     const dayButtons = WEEKDAYS.map(([day, short, long]) => {
-      const button = h('button', { class: 'weekdays__opt', type: 'button', 'aria-label': long, onClick: () => {
+      const button = h('button', { class: 'weekdays__opt', type: 'button', 'aria-label': t(long), onClick: () => {
         const on = repeatDays.includes(day);
         if (on && repeatDays.length === 1) return; // au moins un jour
         repeatDays = on ? repeatDays.filter((d) => d !== day) : [...repeatDays, day];
         applyRepeat();
-      } }, short);
+      } }, t(short));
       button.dataset.day = String(day);
       return button;
     });
-    const daysRow = h('div', { class: 'weekdays', role: 'group', 'aria-label': 'Jours de la semaine' }, dayButtons);
+    const daysRow = h('div', { class: 'weekdays', role: 'group', 'aria-label': t('liste.fiche.repete.jours') }, dayButtons);
     const monthSelect = h('select', { class: 'due-picker__input' },
-      Array.from({ length: 31 }, (_, i) => h('option', { value: String(i + 1) }, `Le ${i === 0 ? '1er' : i + 1}`)));
+      Array.from({ length: 31 }, (_, i) => h('option', { value: String(i + 1) }, t('liste.fiche.repete.leJour', { count: i + 1 }))));
     const monthPicker = nativePicker(monthSelect);
     monthSelect.addEventListener('change', () => {
       monthDay = Number(monthSelect.value);
       applyRepeat();
     });
     const modeSelect = h('select', { class: 'due-picker__input' },
-      h('option', { value: 'day' }, 'Un jour du mois (le 5)'),
-      h('option', { value: 'week' }, 'Un jour de la semaine (le 1er lundi)'));
+      h('option', { value: 'day' }, t('liste.fiche.repete.mode.jourMois.choix')),
+      h('option', { value: 'week' }, t('liste.fiche.repete.mode.jourSemaine.choix')));
     const modePicker = nativePicker(modeSelect);
     modeSelect.addEventListener('change', () => {
       monthMode = modeSelect.value;
       applyRepeat();
     });
-    const nthSelect = h('select', { class: 'due-picker__input' }, MONTH_WEEKS.map(([n, label]) => h('option', { value: String(n) }, `Le ${label}`)));
+    const nthSelect = h('select', { class: 'due-picker__input' }, MONTH_WEEKS.map(([n, label]) => h('option', { value: String(n) }, t('liste.fiche.repete.leRang', { rank: t(label) }))));
     const nthPicker = nativePicker(nthSelect);
     nthSelect.addEventListener('change', () => {
       monthNth = Number(nthSelect.value);
       applyRepeat();
     });
-    const weekdaySelect = h('select', { class: 'due-picker__input' }, WEEKDAYS.map(([day, , long]) => h('option', { value: String(day) }, long)));
+    const weekdaySelect = h('select', { class: 'due-picker__input' }, WEEKDAYS.map(([day, , long]) => h('option', { value: String(day) }, t(long))));
     const weekdayPicker = nativePicker(weekdaySelect);
     weekdaySelect.addEventListener('change', () => {
       monthWeekday = Number(weekdaySelect.value);
@@ -1907,7 +1908,7 @@ export function renderList(listId, onLeave) {
     const monthWeekRow = h('div', { class: 'time-row' }, nthPicker.el, weekdayPicker.el);
     const repeatNote = h('p', { class: 'field__hint' });
     // « Passer cette fois » : seulement sur la règle et la date ENREGISTRÉES
-    const skipButton = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => skipOnce() }, 'Passer cette fois');
+    const skipButton = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => skipOnce() }, t('liste.fiche.passer'));
     const skipRow = h('div', { class: 'due-shortcuts' }, skipButton);
     // Règle choisie -> repeat ; date posée si besoin
     const applyRepeat = () => {
@@ -1930,26 +1931,27 @@ export function renderList(listId, onLeave) {
     };
     function drawRepeat() {
       kindSelect.value = repeatKind;
-      const label = REPEAT_CHOICES.find(([value]) => value === repeatKind)?.[1] ?? 'Jamais';
+      const choice = REPEAT_CHOICES.find(([value]) => value === repeatKind);
+      const label = choice ? t(choice[1]) : t('liste.fiche.jamais');
       replace(kindPicker.text, icon('repeat', 'icon--sm'), label);
-      kindSelect.setAttribute('aria-label', `Se répète : ${label}. Changer`);
+      kindSelect.setAttribute('aria-label', t('liste.fiche.repete.changer', { label }));
       daysRow.hidden = repeatKind !== 'week' && repeatKind !== '2week';
       for (const button of dayButtons) button.setAttribute('aria-pressed', String(repeatDays.includes(Number(button.dataset.day))));
       modePicker.el.hidden = repeatKind !== 'month';
       modeSelect.value = monthMode;
-      modePicker.text.textContent = monthMode === 'week' ? 'Un jour de la semaine' : 'Un jour du mois';
-      modeSelect.setAttribute('aria-label', `Chaque mois : ${modePicker.text.textContent}. Changer`);
+      modePicker.text.textContent = monthMode === 'week' ? t('liste.fiche.repete.mode.jourSemaine') : t('liste.fiche.repete.mode.jourMois');
+      modeSelect.setAttribute('aria-label', t('liste.fiche.repete.mode.changer', { label: modePicker.text.textContent }));
       monthWeekRow.hidden = repeatKind !== 'month' || monthMode !== 'week';
       nthSelect.value = String(monthNth ?? 1);
-      nthPicker.text.textContent = `Le ${MONTH_WEEKS.find(([n]) => n === (monthNth ?? 1))[1]}`;
-      nthSelect.setAttribute('aria-label', `Rang dans le mois : ${nthPicker.text.textContent}. Changer`);
+      nthPicker.text.textContent = t('liste.fiche.repete.leRang', { rank: t(MONTH_WEEKS.find(([n]) => n === (monthNth ?? 1))[1]) });
+      nthSelect.setAttribute('aria-label', t('liste.fiche.repete.rang.changer', { label: nthPicker.text.textContent }));
       weekdaySelect.value = String(monthWeekday ?? 1);
-      weekdayPicker.text.textContent = WEEKDAYS.find(([d]) => d === (monthWeekday ?? 1))[2];
-      weekdaySelect.setAttribute('aria-label', `Jour de la semaine : ${weekdayPicker.text.textContent}. Changer`);
+      weekdayPicker.text.textContent = t(WEEKDAYS.find(([d]) => d === (monthWeekday ?? 1))[2]);
+      weekdaySelect.setAttribute('aria-label', t('liste.fiche.repete.jourSemaine.changer', { label: weekdayPicker.text.textContent }));
       monthPicker.el.hidden = repeatKind !== 'month' || monthMode !== 'day';
       monthSelect.value = String(monthDay ?? 1);
-      monthPicker.text.textContent = `Le ${monthDay === 1 || !monthDay ? '1er' : monthDay} de chaque mois`;
-      monthSelect.setAttribute('aria-label', `Jour du mois : ${monthPicker.text.textContent}. Changer`);
+      monthPicker.text.textContent = monthDay === 1 || !monthDay ? t('liste.fiche.repete.chaqueMois.premier') : t('liste.fiche.repete.chaqueMois', { count: monthDay });
+      monthSelect.setAttribute('aria-label', t('liste.fiche.repete.jourMois.changer', { label: monthPicker.text.textContent }));
       repeatNote.textContent = repeat ? repeatSentence(repeat) : '';
       repeatNote.hidden = !repeat;
       const saved = app.data.items.get(item.id);
@@ -1976,7 +1978,7 @@ export function renderList(listId, onLeave) {
       mine = false;
       seen = contentOf(app.data.items.get(item.id) ?? saved);
       moveSaved(before.dueDate, next);
-      toast(`Prochaine fois : ${dueDateLabel(next)}`, { action: pc ? 'Annuler (Ctrl+Z)' : 'Annuler', onAction: async () => {
+      toast(t('liste.prochaineFois', { date: dueDateLabel(next) }), { action: pc ? t('liste.annuler.pc') : t('liste.annuler'), onAction: async () => {
         forgetUndo(listId, (e) => e === entry);
         const current = app.data.items.get(item.id);
         if (!current || current.dueDate !== next) return;
@@ -2012,35 +2014,35 @@ export function renderList(listId, onLeave) {
     const clearTime = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => {
       dueTime = null;
       drawTime();
-    } }, 'Effacer');
+    } }, t('liste.effacer'));
     const timeRow = h('div', { class: 'time-row' },
       h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, timeText, icon('chev-d')), timeInput),
       clearTime);
-    const remindSelect = h('select', { class: 'due-picker__input' }, REMINDERS.map(([minutes, label]) => h('option', { value: minutes === null ? '' : String(minutes) }, label)));
+    const remindSelect = h('select', { class: 'due-picker__input' }, REMINDERS.map(([minutes, label]) => h('option', { value: minutes === null ? '' : String(minutes) }, t(label))));
     const remindPicker = nativePicker(remindSelect);
     remindSelect.addEventListener('change', () => {
       remind = remindSelect.value === '' ? null : Number(remindSelect.value);
       drawTime();
     });
-    const timeField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Heure (facultative)'), timeRow);
+    const timeField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, t('liste.fiche.heure')), timeRow);
     // Texte d'aide : à qui part le rappel (voir server/notify.js)
     const remindHint = h('p', { class: 'field__hint' });
-    const remindField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Rappel'), remindPicker.el, remindHint);
+    const remindField = h('div', { class: 'field' }, h('span', { class: 'field__label', 'aria-hidden': 'true' }, t('liste.fiche.rappel')), remindPicker.el, remindHint);
     function drawTime() {
       if (!dueDate) dueTime = null;
       if (!dueTime) remind = null;
-      const label = dueTime ? timeLabel(dueTime) : 'Aucune heure';
+      const label = dueTime ? timeLabel(dueTime) : t('liste.fiche.aucuneHeure');
       replace(timeText, icon('clock', 'icon--sm'), label);
       timeInput.value = dueTime ?? '';
-      timeInput.setAttribute('aria-label', `Heure : ${label}. Choisir une heure`);
+      timeInput.setAttribute('aria-label', t('liste.fiche.heure.choisir', { label }));
       clearTime.disabled = !dueTime;
       remindSelect.value = remind === null ? '' : String(remind);
       replace(remindPicker.text, icon('bell', 'icon--sm'), reminderLabel(remind));
-      remindSelect.setAttribute('aria-label', `Rappel : ${reminderLabel(remind)}. Changer`);
+      remindSelect.setAttribute('aria-label', t('liste.fiche.rappel.changer', { label: reminderLabel(remind) }));
       const withDue = options().due;
       remindHint.textContent = options().assign
-        ? 'Une notification à la personne choisie dans « Pour », sinon à tous les membres, si leurs notifications sont activées.'
-        : 'Une notification à tous les membres de la liste, si leurs notifications sont activées.';
+        ? t('liste.fiche.rappel.aide.pour')
+        : t('liste.fiche.rappel.aide');
       timeField.hidden = !withDue || !dueDate;
       // Pas de rappel proposé si les notifications sont coupées sur le serveur
       remindField.hidden = !withDue || !dueDate || !dueTime || !app.user?.push;
@@ -2048,16 +2050,16 @@ export function renderList(listId, onLeave) {
 
     drawDue();
     const priorityField = h('div', { class: 'field' },
-      h('span', { class: 'field__label', id: 'priority-label' }, 'Priorité'),
+      h('span', { class: 'field__label', id: 'priority-label' }, t('liste.fiche.priorite')),
       h('div', { class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'priority-label' }, priorityOptions));
     // Date (sous-page « Échéance ») : « Effacer » à droite du champ, comme
     // l'heure ; trois raccourcis de même largeur, sur une ligne
-    const weekShortcut = shortcut('Dans 1 sem.', 7);
-    weekShortcut.setAttribute('aria-label', 'Dans une semaine');
+    const weekShortcut = shortcut(t('liste.fiche.date.semaine'), 7);
+    weekShortcut.setAttribute('aria-label', t('liste.fiche.date.semaine.lecture'));
     const dueField = h('div', { class: 'field' },
-      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Date'),
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, t('liste.fiche.date')),
       h('div', { class: 'time-row' }, h('div', { class: 'due-picker' }, h('span', { class: 'input input--select', 'aria-hidden': 'true' }, dueText, icon('chev-d')), dateInput), clearDue),
-      h('div', { class: 'due-shortcuts due-shortcuts--row' }, shortcut("Aujourd'hui", 0), shortcut('Demain', 1), weekShortcut));
+      h('div', { class: 'due-shortcuts due-shortcuts--row' }, shortcut(t('liste.fiche.date.aujourdhui'), 0), shortcut(t('liste.fiche.date.demain'), 1), weekShortcut));
     // --- Pour (attribution, décisions du 11 novembre 2026) : seulement si
     // l'option « Attribution » de la liste est activée. « Personne », « Moi »
     // (si je peux modifier la liste), les autres personnes qui peuvent la
@@ -2083,21 +2085,21 @@ export function renderList(listId, onLeave) {
       }
       drawAssign();
     });
-    const peopleRow = h('div', { class: 'people-picker', role: 'group', 'aria-label': 'Personnes' });
+    const peopleRow = h('div', { class: 'people-picker', role: 'group', 'aria-label': t('liste.fiche.pour.personnes') });
     const peopleHint = h('p', { class: 'field__hint' });
     function drawAssign() {
       const list = app.data.lists.get(listId);
       const people = assignablePeople(list);
       const names = memberNames(list);
-      const nameOf = (id) => (id === app.user.id ? 'Moi' : names.get(id) ?? 'Ancien membre');
+      const nameOf = (id) => (id === app.user.id ? t('liste.moi') : names.get(id) ?? t('liste.fiche.ancienMembre'));
       // Plus de répétition : « chacun son tour » redevient la personne de cette fois
       if (assignMode === 'turn' && !repeat) {
         assignMode = 'one';
         assignee = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0] ?? null;
         assignPeople = [];
       }
-      const choices = [['', 'Personne']];
-      if (people.some((p) => p.id === app.user.id)) choices.push([String(app.user.id), 'Moi']);
+      const choices = [['', t('liste.personne')]];
+      if (people.some((p) => p.id === app.user.id)) choices.push([String(app.user.id), t('liste.moi')]);
       for (const person of people) if (person.id !== app.user.id) choices.push([String(person.id), person.displayName]);
       // Personne déjà attribuée qui ne serait plus dans les choix : gardée,
       // pour ne rien changer sans le vouloir
@@ -2105,15 +2107,15 @@ export function renderList(listId, onLeave) {
         choices.push([String(assignee), nameOf(assignee)]);
       }
       if (people.length >= 2) {
-        choices.push(['all', 'Plusieurs personnes…']);
-        if (repeat || assignMode === 'turn') choices.push(['turn', 'Chacun son tour…']);
+        choices.push(['all', t('liste.fiche.pour.plusieurs.choix')]);
+        if (repeat || assignMode === 'turn') choices.push(['turn', t('liste.fiche.pour.tour.choix')]);
       }
       assignSelect.replaceChildren(...choices.map(([value, label]) => h('option', { value }, label)));
       assignSelect.value = assignMode === 'one' ? (assignee === null ? '' : String(assignee)) : assignMode;
-      const label = assignMode === 'all' ? 'Plusieurs personnes' : assignMode === 'turn' ? 'Chacun son tour'
-        : choices.find(([value]) => value === assignSelect.value)?.[1] ?? 'Personne';
+      const label = assignMode === 'all' ? t('liste.fiche.pour.plusieurs') : assignMode === 'turn' ? t('liste.fiche.pour.tour')
+        : choices.find(([value]) => value === assignSelect.value)?.[1] ?? t('liste.personne');
       replace(assignPicker.text, icon(assignMode === 'turn' ? 'repeat' : assignMode === 'all' ? 'users' : 'user', 'icon--sm'), label);
-      assignSelect.setAttribute('aria-label', `Pour : ${label}. Changer`);
+      assignSelect.setAttribute('aria-label', t('liste.fiche.pour.changer', { label }));
       // Pastilles des personnes (plusieurs, ou chacun son tour : numéro dans le tour)
       peopleRow.hidden = assignMode === 'one';
       peopleHint.hidden = assignMode === 'one';
@@ -2126,7 +2128,7 @@ export function renderList(listId, onLeave) {
         const text = assignMode === 'turn' && on ? `${rank + 1} · ${nameOf(id)}` : nameOf(id);
         return h('button', {
           class: 'weekdays__opt', type: 'button', 'aria-pressed': String(on),
-          'aria-label': assignMode === 'turn' && on ? `${nameOf(id)}, numéro ${rank + 1} dans le tour` : nameOf(id),
+          'aria-label': assignMode === 'turn' && on ? t('liste.fiche.pour.rang', { name: nameOf(id), rank: rank + 1 }) : nameOf(id),
           onClick: () => {
             assignPeople = on ? assignPeople.filter((p) => p !== id) : [...assignPeople, id];
             drawAssign();
@@ -2136,17 +2138,17 @@ export function renderList(listId, onLeave) {
       // Chacun son tour : la personne de cette fois (l'actuelle si elle reste dans le tour, sinon la première)
       const current = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0] ?? null;
       peopleHint.textContent = assignMode === 'all'
-        ? 'La tâche est à chacune des personnes choisies (au moins deux) ; la première qui la coche la termine.'
-        : `Touchez les personnes dans l'ordre du tour (au moins deux).${current !== null ? ` Cette fois : ${nameOf(current)}.` : ''}`;
+        ? t('liste.fiche.pour.plusieurs.aide')
+        : current !== null ? t('liste.fiche.pour.tour.aide.cetteFois', { name: nameOf(current) }) : t('liste.fiche.pour.tour.aide');
     }
     drawAssign();
     redrawAssign = drawAssign;
     const assignField = h('div', { class: 'field' },
-      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Pour'),
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, t('liste.fiche.pour')),
       assignPicker.el, peopleRow, peopleHint);
 
     const repeatField = h('div', { class: 'field' },
-      h('span', { class: 'field__label', 'aria-hidden': 'true' }, 'Se répète'),
+      h('span', { class: 'field__label', 'aria-hidden': 'true' }, t('liste.fiche.repete')),
       kindPicker.el, daysRow, modePicker.el, monthPicker.el, monthWeekRow, repeatNote, skipRow);
     const showOptions = () => {
       const { priority: withPriority, due: withDue } = options();
@@ -2176,7 +2178,7 @@ export function renderList(listId, onLeave) {
       const heading = h('h3', { class: 'subpage__title', tabindex: '-1' }, title);
       const page = h('div', { class: 'subpage stack' },
         h('div', { class: 'subpage__bar' },
-          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Retour à la fiche', onClick: () => leaveSub() }, icon('chev-l')),
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': t('liste.fiche.retour'), onClick: () => leaveSub() }, icon('chev-l')),
           heading),
         children);
       const summary = h('span', { class: 'row__sub' });
@@ -2188,9 +2190,9 @@ export function renderList(listId, onLeave) {
       subpages.push(entry);
       return entry;
     };
-    const dueSub = tasks ? subpage('Échéance', 'calendar', [dueField, timeField, remindField]) : null;
-    const repeatSub = tasks ? subpage('Se répète', 'repeat', [repeatField]) : null;
-    const assignSub = tasks ? subpage('Pour', 'users', [assignField]) : null;
+    const dueSub = tasks ? subpage(t('liste.fiche.echeance'), 'calendar', [dueField, timeField, remindField]) : null;
+    const repeatSub = tasks ? subpage(t('liste.fiche.repete'), 'repeat', [repeatField]) : null;
+    const assignSub = tasks ? subpage(t('liste.fiche.pour'), 'users', [assignField]) : null;
 
     // --- Sous-tâche de… (option « Sous-tâches », subtasks.js) : ranger la
     // tâche sous une tâche principale de la liste, ou « Aucune ». Une tâche
@@ -2200,16 +2202,16 @@ export function renderList(listId, onLeave) {
     const savedParent = [...(view?.subtasks ?? [])].find(([, children]) => children.some((child) => child.id === item.id))?.[0] ?? null;
     let parentChoice = savedParent;
     const parentNote = h('p', { class: 'field__hint' });
-    const parentRows = h('div', { class: 'card picker', role: 'radiogroup', 'aria-label': 'Sous-tâche de' });
+    const parentRows = h('div', { class: 'card picker', role: 'radiogroup', 'aria-label': t('liste.fiche.sousTacheDe') });
     // Tâches principales possibles : celles de premier niveau de la liste
     // (pas elle-même), à faire d'abord, par ordre alphabétique
     const parentChoices = () => [...(view?.groups.flatMap((group) => group.items) ?? []), ...(view?.done ?? [])]
       .filter((other) => other.id !== item.id)
-      .sort((a, b) => Number(a.checked) - Number(b.checked) || a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+      .sort((a, b) => Number(a.checked) - Number(b.checked) || compareText(a.name, b.name, { sensitivity: 'base' }));
     function drawParent() {
       const blocked = ownChildren().length
-        ? `Cette tâche a ${ownChildren().length === 1 ? 'une sous-tâche' : `${ownChildren().length} sous-tâches`} : elle ne peut pas devenir une sous-tâche.`
-        : repeat && parentChoice === null ? 'Une tâche qui se répète ne peut pas devenir une sous-tâche : retirez d\'abord la répétition.' : '';
+        ? t('liste.fiche.parent.aDesSousTaches', { count: ownChildren().length })
+        : repeat && parentChoice === null ? t('liste.fiche.parent.repete') : '';
       parentNote.textContent = blocked;
       parentNote.hidden = !blocked;
       parentRows.hidden = Boolean(blocked);
@@ -2222,7 +2224,7 @@ export function renderList(listId, onLeave) {
           paintParent();
         },
       }, h('span', { class: 'radio' }), name);
-      replace(parentRows, rowFor(null, 'Aucune (tâche principale)'), parentChoices().map((other) => rowFor(other.id, other.name)));
+      replace(parentRows, rowFor(null, t('liste.fiche.parent.aucune')), parentChoices().map((other) => rowFor(other.id, other.name)));
       paintParent();
     }
     function paintParent() {
@@ -2237,11 +2239,11 @@ export function renderList(listId, onLeave) {
     }
     const parentField = h('div', { class: 'field' }, parentNote, parentRows);
     drawParent();
-    const parentSub = tasks ? subpage('Sous-tâche de', 'layers', [parentField]) : null;
+    const parentSub = tasks ? subpage(t('liste.fiche.sousTacheDe'), 'layers', [parentField]) : null;
     // « Ajouter une sous-tâche » (tâche principale ou ordinaire, à faire) :
     // la feuille d'ajout s'ouvre par-dessus la fiche
     const addSubtaskButton = h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: () => openAddSubtask(item) },
-      icon('plus', 'icon--sm'), 'Ajouter une sous-tâche');
+      icon('plus', 'icon--sm'), t('liste.sousTaches.ajouter'));
     // Dans une sous-page, son titre dit déjà de quoi il s'agit
     if (tasks) for (const fieldEl of [repeatField, assignField]) fieldEl.querySelector(':scope > .field__label').hidden = true;
     const subRows = tasks ? h('div', { class: 'group sheet-rows' }, subpages.map((entry) => entry.row)) : null;
@@ -2250,19 +2252,19 @@ export function renderList(listId, onLeave) {
       if (!tasks) return;
       const opts = options();
       const names = memberNames(app.data.lists.get(listId));
-      const nameOf = (id) => (id === app.user.id ? 'Moi' : names.get(id) ?? 'Ancien membre');
-      const due = !dueDate ? 'Aucune échéance' : [dueDateLabel(dueDate), dueTime ? timeLabel(dueTime) : null,
-        dueTime && remind !== null && app.user?.push ? `rappel ${reminderLabel(remind).charAt(0).toLowerCase()}${reminderLabel(remind).slice(1)}` : null].filter(Boolean).join(' · ');
+      const nameOf = (id) => (id === app.user.id ? t('liste.moi') : names.get(id) ?? t('liste.fiche.ancienMembre'));
+      const due = !dueDate ? t('liste.fiche.aucuneEcheance') : [dueDateLabel(dueDate), dueTime ? timeLabel(dueTime) : null,
+        dueTime && remind !== null && app.user?.push ? t('liste.fiche.resume.rappel', { label: `${reminderLabel(remind).charAt(0).toLowerCase()}${reminderLabel(remind).slice(1)}` }) : null].filter(Boolean).join(' · ');
       const turnNow = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0];
-      const who = assignMode === 'all' ? assignPeople.map(nameOf).join(', ') || 'Plusieurs personnes'
-        : assignMode === 'turn' ? `Chacun son tour : ${assignPeople.map(nameOf).join(', ')}${turnNow != null ? ` · cette fois : ${nameOf(turnNow)}` : ''}`
-          : assignee === null ? 'Personne' : nameOf(assignee);
+      const who = assignMode === 'all' ? assignPeople.map(nameOf).join(', ') || t('liste.fiche.pour.plusieurs')
+        : assignMode === 'turn' ? (turnNow != null ? t('liste.fiche.resume.tour.cetteFois', { names: assignPeople.map(nameOf).join(', '), name: nameOf(turnNow) }) : t('liste.fiche.resume.tour', { names: assignPeople.map(nameOf).join(', ') }))
+          : assignee === null ? t('liste.personne') : nameOf(assignee);
       // Sous-tâche : jamais de répétition (ligne cachée)
-      const parentName = parentChoice === null ? null : app.data.items.get(parentChoice)?.name ?? 'Tâche supprimée';
-      const parentText = parentName ?? (ownChildren().length ? `Tâche principale · ${ownChildren().length === 1 ? '1 sous-tâche' : `${ownChildren().length} sous-tâches`}` : 'Aucune');
-      for (const [entry, text, shown] of [[dueSub, due, opts.due], [repeatSub, repeat ? repeatSentence(repeat) : 'Jamais', opts.due && !(opts.subtasks && parentChoice !== null)], [assignSub, who, opts.assign], [parentSub, parentText, opts.subtasks]]) {
+      const parentName = parentChoice === null ? null : app.data.items.get(parentChoice)?.name ?? t('liste.fiche.resume.tacheSupprimee');
+      const parentText = parentName ?? (ownChildren().length ? t('liste.fiche.resume.principale', { count: ownChildren().length }) : t('liste.fiche.resume.aucune'));
+      for (const [entry, text, shown] of [[dueSub, due, opts.due], [repeatSub, repeat ? repeatSentence(repeat) : t('liste.fiche.jamais'), opts.due && !(opts.subtasks && parentChoice !== null)], [assignSub, who, opts.assign], [parentSub, parentText, opts.subtasks]]) {
         entry.summary.textContent = text;
-        entry.row.setAttribute('aria-label', `${entry.title} : ${text}. Modifier`);
+        entry.row.setAttribute('aria-label', t('liste.fiche.sousPage.modifier', { title: entry.title, text }));
         entry.row.hidden = !shown;
         // Option désactivée pendant qu'on est dans sa sous-page : retour à la fiche
         if (!shown && currentSub === entry) leaveSub();
@@ -2313,14 +2315,14 @@ export function renderList(listId, onLeave) {
     const shopping = isShoppingList(view?.list);
     const eanInput = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'done', value: item.ean ?? '' });
     // Croix « Effacer » dans le champ, visible seulement s'il contient quelque chose
-    const eanClear = iconButton('close', 'Effacer le code-barres', () => {
+    const eanClear = iconButton('close', t('liste.fiche.codeBarres.effacer'), () => {
       eanInput.value = '';
       drawEan();
     });
-    const eanPicker = createImagePicker((file) => readEan(file), { title: 'Scanner un code-barres' });
-    const eanScan = eanPicker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': 'Scanner un code-barres' }, icon('barcode'));
-    const eanField = field('Code-barres', h('div', { class: 'field__row' }, h('div', { class: 'input-wrap' }, eanInput, eanClear), eanScan),
-      { aside: '8, 12 ou 13 chiffres' });
+    const eanPicker = createImagePicker((file) => readEan(file), { title: t('liste.fiche.codeBarres.scanner') });
+    const eanScan = eanPicker.button({ class: 'btn btn--secondary btn--icon', 'aria-label': t('liste.fiche.codeBarres.scanner') }, icon('barcode'));
+    const eanField = field(t('liste.fiche.codeBarres'), h('div', { class: 'field__row' }, h('div', { class: 'input-wrap' }, eanInput, eanClear), eanScan),
+      { aside: t('liste.fiche.codeBarres.format') });
     const eanStatus = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un autre article de la liste porte déjà ce code : on prévient, sans interdire
     const eanTwin = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
@@ -2330,24 +2332,24 @@ export function renderList(listId, onLeave) {
       const code = normalizeBarcode(eanInput.value);
       const twin = code ? [...app.data.items.values()].find((other) => other.listId === item.listId && other.id !== item.id && other.ean === code) : null;
       eanTwin.hidden = !twin;
-      eanTwin.querySelector('p').textContent = twin ? `« ${twin.name} » a déjà ce code-barres dans la liste.` : '';
+      eanTwin.querySelector('p').textContent = twin ? t('liste.fiche.codeBarres.double', { name: twin.name }) : '';
     };
     eanInput.addEventListener('input', drawEan);
     // Photo prise ou choisie : le code lu remplit le champ
     async function readEan(file) {
       eanField.setError(null);
-      eanStatus.textContent = 'Lecture du code-barres…';
+      eanStatus.textContent = t('liste.fiche.codeBarres.lecture');
       eanStatus.hidden = false;
       eanScan.disabled = true;
       let message = null;
       try {
         const code = await readBarcode(file);
         if (code) eanInput.value = code;
-        else message = 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.';
+        else message = t('liste.fiche.codeBarres.nonLu');
       } catch (err) {
         message = err instanceof ImageUnreadable
-          ? "Ce fichier n'est pas une image lisible. Réessayez avec une photo, ou saisissez le code."
-          : "La lecture des codes-barres n'est pas disponible pour le moment (au premier scan, il faut du réseau). Vous pouvez saisir le code.";
+          ? t('liste.fiche.codeBarres.illisible')
+          : t('liste.fiche.codeBarres.indisponible');
       }
       eanStatus.hidden = true;
       eanScan.disabled = false;
@@ -2368,7 +2370,7 @@ export function renderList(listId, onLeave) {
     const photoNote = h('p', { class: 'field__hint', role: 'status', hidden: true });
     // Un seul bouton : le sélecteur d'images du téléphone (son menu propose
     // l'appareil photo ou la photothèque). La photo reste facultative.
-    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: `Photo ${words.of}` });
+    const photoPicker = createImagePicker((file) => sendPhoto(file), { title: byKind(kind, { shopping: t('liste.photo.titre.courses'), tasks: t('liste.photo.titre.taches'), wishes: t('liste.photo.titre.envies') }) });
 
     const drawPhoto = () => {
       const button = (classes, iconName, text, label, onClick) => h('button', {
@@ -2377,15 +2379,15 @@ export function renderList(listId, onLeave) {
       const pick = (classes, text) => photoPicker.button({ class: `btn ${classes}`, 'aria-label': text, disabled: busy || gone }, icon('camera', 'icon--sm'), text);
       if (actions.hasPhoto(current)) {
         replace(photoArea, h('div', { class: 'photo-block' },
-          h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${current.name}`, onClick: () => showPhoto(current) },
+          h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': t('liste.photo.agrandir', { name: current.name }), onClick: () => showPhoto(current) },
             h('img', { class: 'photo', src: actions.photoSrc(current), alt: '' })),
           h('div', { class: 'photo-block__actions' },
-            pick('btn--secondary btn--sm', 'Changer la photo'),
-            button('btn--danger-outline btn--sm', 'trash', 'Retirer', 'Retirer la photo', removePhoto))));
+            pick('btn--secondary btn--sm', t('liste.photo.changer')),
+            button('btn--danger-outline btn--sm', 'trash', t('liste.retirer'), t('liste.photo.retirer'), removePhoto))));
       } else {
-        replace(photoArea, pick('btn--secondary btn--block', 'Ajouter une photo'));
+        replace(photoArea, pick('btn--secondary btn--block', t('liste.photo.ajouter')));
       }
-      photoNote.textContent = busy ? 'Préparation de la photo…' : current.localPhoto ? 'Photo en attente d\'envoi : elle partira dès que possible.' : '';
+      photoNote.textContent = busy ? t('liste.photo.preparation') : current.localPhoto ? t('liste.photo.enAttente') : '';
       photoNote.hidden = !photoNote.textContent;
     };
 
@@ -2407,7 +2409,7 @@ export function renderList(listId, onLeave) {
     }
 
     async function removePhoto() {
-      const ok = await confirmDialog({ title: 'Retirer la photo ?', text: 'La photo sera supprimée pour toutes les personnes de la liste.', confirmLabel: 'Retirer' });
+      const ok = await confirmDialog({ title: t('liste.photo.retirer.question'), text: t('liste.photo.retirer.texte'), confirmLabel: t('liste.retirer') });
       if (!ok || !editable()) return;
       await actions.removePhoto(current);
       current = app.data.items.get(item.id) ?? current;
@@ -2437,7 +2439,7 @@ export function renderList(listId, onLeave) {
       if (!latest) {
         if (gone) return;
         gone = true;
-        conflictText.textContent = `${capitalized(words.this)} a été supprimé par une autre personne.`;
+        conflictText.textContent = byKind(kind, { shopping: t('liste.fiche.conflit.supprime.courses'), tasks: t('liste.fiche.conflit.supprime.taches'), wishes: t('liste.fiche.conflit.supprime.envies') });
       } else {
         const changedElsewhere = gone || contentOf(latest) !== seen;
         gone = false;
@@ -2445,7 +2447,7 @@ export function renderList(listId, onLeave) {
         seen = contentOf(latest);
         drawPhoto();
         if (!changedElsewhere) return;
-        conflictText.textContent = `${capitalized(words.this)} vient d'être modifié par une autre personne. Seuls vos changements seront enregistrés.`;
+        conflictText.textContent = byKind(kind, { shopping: t('liste.fiche.conflit.modifie.courses'), tasks: t('liste.fiche.conflit.modifie.taches'), wishes: t('liste.fiche.conflit.modifie.envies') });
       }
       conflict.hidden = false;
       save.disabled = gone;
@@ -2465,16 +2467,16 @@ export function renderList(listId, onLeave) {
     // et une confirmation avant de fermer sans enregistrer
     const pc = onPc();
     const remove = pc
-      ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), 'Supprimer')
-      : iconButton('trash', `Supprimer ${words.the}`, null, 'icon-btn--danger sheet__delete');
+      ? h('button', { class: 'btn btn--danger-outline', type: 'button' }, icon('trash', 'icon--sm'), t('liste.supprimer'))
+      : iconButton('trash', byKind(kind, { shopping: t('liste.fiche.supprimer.courses'), tasks: t('liste.fiche.supprimer.taches'), wishes: t('liste.fiche.supprimer.envies') }), null, 'icon-btn--danger sheet__delete');
     const save = pc
-      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId, 'aria-keyshortcuts': 'Control+Enter' }, 'Enregistrer', keycap('Ctrl'), keycap('↵'))
-      : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': 'Enregistrer' }, icon('disquette'));
+      ? h('button', { class: 'btn btn--primary', type: 'submit', form: formId, 'aria-keyshortcuts': 'Control+Enter' }, t('liste.enregistrer'), keycap(t('liste.fiche.touche.ctrl')), keycap('↵'))
+      : h('button', { class: 'icon-btn icon-btn--primary', type: 'submit', form: formId, 'aria-label': t('liste.enregistrer') }, icon('disquette'));
     const half = (el) => {
       if (pc) el.classList.add('pc-half');
       return el;
     };
-    const dirtyNote = h('p', { class: 'pc-meta' }, 'Modifications non enregistrées');
+    const dirtyNote = h('p', { class: 'pc-meta' }, t('liste.fiche.nonEnregistre'));
     dirtyNote.hidden = true;
     const form = h('form', { class: pc ? 'pc-form' : 'stack', id: formId, novalidate: true },
       conflict,
@@ -2482,16 +2484,16 @@ export function renderList(listId, onLeave) {
       wishes ? [linkField.field, linkButton(item.link), priceField.field]
         // Liste de tâches : pas de quantité (gardée seulement si une avait été saisie)
         : tasks && !item.quantity ? null
-          : half(field('Quantité', quantity, { aside: 'par exemple 2 ou 500 g' }).field),
+          : half(field(t('liste.fiche.quantite'), quantity, { aside: t('liste.fiche.quantite.exemple') }).field),
       // Ordinateur : le rayon (ou le magasin) juste à côté de la quantité
-      pc && isShopping ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton)) : null,
-      pc && multi ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton)) : null,
-      field('Note (facultative)', note).field,
+      pc && isShopping ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, t('liste.rayon')), aisleButton)) : null,
+      pc && multi ? half(h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, t('liste.magasin')), storeButton)) : null,
+      field(t('liste.fiche.note'), note).field,
       classicFields,
       eanFields,
-      h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo (facultative)'), photoArea, photoNote, photoPicker.input),
-      !pc && isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, 'Rayon'), aisleButton) : null,
-      !pc && multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, 'Magasin'), storeButton) : null,
+      h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('liste.fiche.photo')), photoArea, photoNote, photoPicker.input),
+      !pc && isShopping ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'aisle-label' }, t('liste.rayon')), aisleButton) : null,
+      !pc && multi ? h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'store-label' }, t('liste.magasin')), storeButton) : null,
       reservation?.el,
       error.note,
       pc ? dirtyNote : null);
@@ -2513,18 +2515,18 @@ export function renderList(listId, onLeave) {
     }
 
     const sheet = openSheet({
-      title: `Modifier ${words.the}`,
+      title: byKind(kind, { shopping: t('liste.fiche.titre.courses'), tasks: t('liste.fiche.titre.taches'), wishes: t('liste.fiche.titre.envies') }),
       content: form,
       tools: pc ? null : [remove, save],
       scroll: true,
       pc: 'drawer',
-      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, 'Annuler'), save] : null,
+      footer: pc ? [remove, h('span', { class: 'grow' }), h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, t('liste.fiche.annuler')), save] : null,
       // Ordinateur : fermer sans enregistrer demande confirmation (rien ne se perd par erreur)
       beforeClose: pc ? async () => !dirty() || confirmDialog({
-        title: 'Abandonner les modifications ?',
-        text: 'Ce que vous avez changé dans cette fiche ne sera pas enregistré.',
-        confirmLabel: 'Abandonner',
-        cancelLabel: 'Continuer',
+        title: t('liste.fiche.abandonner.question'),
+        text: t('liste.fiche.abandonner.texte'),
+        confirmLabel: t('liste.fiche.abandonner'),
+        cancelLabel: t('liste.fiche.continuer'),
         focusCancel: true,
       }) : null,
       onClose: () => {
@@ -2542,20 +2544,20 @@ export function renderList(listId, onLeave) {
         return;
       }
       const newName = name.value.replace(/\s+/g, ' ').trim();
-      nameField.setError(newName ? null : 'Le nom est obligatoire');
+      nameField.setError(newName ? null : t('liste.fiche.erreur.nom'));
       // Code-barres : vide = pas de code ; sinon vérifié (clé de contrôle) et
       // gardé sous sa forme normalisée (un UPC-A devient un EAN-13)
       const typedEan = eanInput.value.trim();
       const newEan = typedEan ? normalizeBarcode(typedEan) : null;
-      if (shopping) eanField.setError(typedEan && !newEan ? 'Code invalide : vérifiez les chiffres' : null);
+      if (shopping) eanField.setError(typedEan && !newEan ? t('liste.fiche.erreur.codeBarres') : null);
       // Souhait : lien (http ou https) et prix (euros -> centimes), vérifiés ici
       // et de nouveau par le serveur
       const typedLink = linkInput.value.trim();
       const newLink = typedLink ? cleanLink(typedLink) : null;
       const newPrice = parsePrice(priceInput.value);
       if (wishes) {
-        linkField.setError(typedLink && !newLink ? 'Adresse web invalide (http ou https)' : null);
-        priceField.setError(Number.isNaN(newPrice) ? 'Prix invalide (par exemple 24,90)' : null);
+        linkField.setError(typedLink && !newLink ? t('liste.fiche.erreur.lien') : null);
+        priceField.setError(Number.isNaN(newPrice) ? t('liste.fiche.erreur.prix') : null);
       }
       if (!newName || (shopping && typedEan && !newEan) || (wishes && ((typedLink && !newLink) || Number.isNaN(newPrice)))) return;
       const changes = {};
@@ -2574,7 +2576,7 @@ export function renderList(listId, onLeave) {
       // Attribution : une personne (null : à personne), plusieurs, ou chacun
       // son tour (au moins deux personnes ; assign.js)
       if (enabled.assign && assignMode !== 'one' && assignPeople.length < 2) {
-        toast('Choisissez au moins deux personnes.');
+        toast(t('liste.fiche.erreur.deuxPersonnes'));
         return;
       }
       const turnNow = assignMode === 'turn' ? (assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0]) : null;
@@ -2591,7 +2593,7 @@ export function renderList(listId, onLeave) {
       // Sous-tâche de… (null : redevient une tâche principale ou ordinaire)
       if (enabled.subtasks && parentChoice !== savedParent) {
         if (parentChoice !== null && repeat) {
-          toast('Une sous-tâche ne se répète pas : retirez d\'abord la répétition.');
+          toast(t('liste.fiche.erreur.sousTacheRepete'));
           return;
         }
         changes.parentId = parentChoice;
@@ -2624,6 +2626,7 @@ export function renderList(listId, onLeave) {
   // supprimé.
   function openItemView(item) {
     const words = itemWords(view?.list);
+    const kind = wordKind(view?.list); // phrases entières de cette sorte de liste (byKind)
     const body = h('div', { class: 'stack' });
     const wishes = isWishList(view?.list);
     const reservation = wishes ? reservationBlock(item) : null;
@@ -2633,35 +2636,35 @@ export function renderList(listId, onLeave) {
       const shopping = isShoppingList(view?.list);
       const options = listOptions(app.data.lists.get(listId)); // seulement ce qui est activé
       replace(body,
-        h('div', { class: 'note' }, icon('eye'), h('p', {}, `Liste en lecture seule : ${words.this} ne peut pas être modifié.`)),
+        h('div', { class: 'note' }, icon('eye'), h('p', {}, byKind(kind, { shopping: t('liste.detail.lectureSeule.courses'), tasks: t('liste.detail.lectureSeule.taches'), wishes: t('liste.detail.lectureSeule.envies') }))),
         value(capitalized(words.one), it.name),
-        it.quantity && !wishes ? value('Quantité', it.quantity) : null,
-        wishes && Number.isInteger(it.priceCents) ? value('Prix indicatif', formatPrice(it.priceCents)) : null,
+        it.quantity && !wishes ? value(t('liste.fiche.quantite'), it.quantity) : null,
+        wishes && Number.isInteger(it.priceCents) ? value(t('liste.detail.prix'), formatPrice(it.priceCents)) : null,
         wishes ? linkButton(it.link) : null,
-        it.note ? value('Note', it.note) : null,
-        options.priority ? value('Priorité', PRIORITY_LABELS[it.priority ?? 'normal'] ?? 'Normale') : null,
-        options.due ? value('Échéance', it.dueDate ? `${dueDateLabel(it.dueDate)}${it.dueTime ? ` à ${timeLabel(it.dueTime)}` : ''}` : 'Aucune échéance') : null,
+        it.note ? value(t('liste.detail.note'), it.note) : null,
+        options.priority ? value(t('liste.fiche.priorite'), PRIORITY_LABELS[it.priority ?? 'normal'] ?? t('liste.fiche.priorite.normale')) : null,
+        options.due ? value(t('liste.fiche.echeance'), it.dueDate ? (it.dueTime ? t('liste.detail.echeance.heure', { date: dueDateLabel(it.dueDate), time: timeLabel(it.dueTime) }) : dueDateLabel(it.dueDate)) : t('liste.fiche.aucuneEcheance')) : null,
         // Rappel : propre à cette tâche, jamais sur la page publique
-        options.due && it.dueDate && it.dueTime && it.remindBefore != null && app.user?.push ? value('Rappel', reminderLabel(it.remindBefore)) : null,
-        options.due && it.dueDate && it.repeat ? value('Se répète', repeatSentence(it.repeat)) : null,
+        options.due && it.dueDate && it.dueTime && it.remindBefore != null && app.user?.push ? value(t('liste.fiche.rappel'), reminderLabel(it.remindBefore)) : null,
+        options.due && it.dueDate && it.repeat ? value(t('liste.fiche.repete'), repeatSentence(it.repeat)) : null,
         // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
-        options.assign ? value('Pour', assignText(it)) : null,
+        options.assign ? value(t('liste.fiche.pour'), assignText(it)) : null,
         // Sous-tâche : le nom de sa tâche principale
-        options.subtasks && parentOf(it, app.data.items) ? value('Sous-tâche de', parentOf(it, app.data.items).name) : null,
-        shopping && it.ean ? value('Code-barres', it.ean) : null,
-        actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Photo'),
+        options.subtasks && parentOf(it, app.data.items) ? value(t('liste.fiche.sousTacheDe'), parentOf(it, app.data.items).name) : null,
+        shopping && it.ean ? value(t('liste.fiche.codeBarres'), it.ean) : null,
+        actions.hasPhoto(it) ? h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('liste.detail.photo')),
           h('div', { class: 'photo-block' },
-            h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de ${it.name}`, onClick: () => showPhoto(it) },
+            h('button', { class: 'photo-block__thumb', type: 'button', 'aria-label': t('liste.photo.agrandir', { name: it.name }), onClick: () => showPhoto(it) },
               h('img', { class: 'photo', src: actions.photoSrc(it), alt: '' })))) : null,
-        shopping && !multi ? value('Rayon', app.data.aisles.find((a) => a.id === it.aisleId)?.name ?? 'Sans rayon') : null,
-        multi ? value('Magasin', storeName(it.storeId) ?? 'Sans magasin') : null,
+        shopping && !multi ? value(t('liste.rayon'), app.data.aisles.find((a) => a.id === it.aisleId)?.name ?? t('liste.sansRayon')) : null,
+        multi ? value(t('liste.magasin'), storeName(it.storeId) ?? t('liste.sansMagasin')) : null,
         reservation?.el);
       reservation?.paint();
     };
     paint(item);
     let stopWatching = () => {};
     const sheet = openSheet({
-      title: `Détail ${words.of}`,
+      title: byKind(kind, { shopping: t('liste.detail.titre.courses'), tasks: t('liste.detail.titre.taches'), wishes: t('liste.detail.titre.envies') }),
       content: body,
       scroll: true,
       pc: 'drawer', // ordinateur : tiroir à droite, comme la fiche à modifier
@@ -2686,8 +2689,8 @@ export function renderList(listId, onLeave) {
       const old = app.data.aisles.find((a) => a.id === keep);
       if (old) aisles.unshift(old);
     }
-    const choices = [...aisles.map((a) => ({ id: a.id, name: a.name })), { id: null, name: 'Sans rayon' }];
-    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Rayon', create: { kind: 'aisle', text: 'Nouveau rayon…' } });
+    const choices = [...aisles.map((a) => ({ id: a.id, name: a.name })), { id: null, name: t('liste.sansRayon') }];
+    return pickChoice({ title, sub, current, confirmLabel, choices, label: t('liste.rayon'), create: { kind: 'aisle', text: t('liste.choix.nouveauRayon') } });
   }
 
   // Feuille de choix du magasin d'un article dans une liste « multi »
@@ -2700,8 +2703,8 @@ export function renderList(listId, onLeave) {
       const old = app.data.stores.find((s) => s.id === keep);
       if (old) stores.unshift(old);
     }
-    const choices = [...stores.map((s) => ({ id: s.id, name: s.name })), { id: null, name: 'Sans magasin' }];
-    return pickChoice({ title, sub, current, confirmLabel, choices, label: 'Magasin', create: { kind: 'store', text: 'Nouveau magasin…' } });
+    const choices = [...stores.map((s) => ({ id: s.id, name: s.name })), { id: null, name: t('liste.sansMagasin') }];
+    return pickChoice({ title, sub, current, confirmLabel, choices, label: t('liste.magasin'), create: { kind: 'store', text: t('liste.choix.nouveauMagasin') } });
   }
 
   // Feuille de choix unique (lignes radio + bouton de confirmation)
@@ -2811,7 +2814,7 @@ export function renderList(listId, onLeave) {
     closeOverlays();
     showAddbar();
     readOnlyBanner.hidden = now;
-    toast(now ? 'Vous pouvez maintenant modifier cette liste.' : 'Cette liste est maintenant en lecture seule.');
+    toast(now ? t('liste.droit.modification') : t('liste.droit.lectureSeule'));
   }));
   onLeave(idle.stop);
   onLeave(() => {
@@ -2884,7 +2887,7 @@ export function renderList(listId, onLeave) {
   content.classList.add('scroll--under-dock');
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
-      iconButton('chev-l', 'Retour à mes listes', () => goBack('lists'), 'mobile-only'),
+      iconButton('chev-l', t('liste.retourMesListes'), () => goBack('lists'), 'mobile-only'),
       h('div', { class: 'topbar__main' }, h('div', { class: 'topbar__head' }, titleIcon, title), sub),
       sortButton,
       menuButton),

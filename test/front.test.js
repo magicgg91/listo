@@ -403,7 +403,7 @@ test('lien public : date d\'expiration et temps restant (feuille et page publiqu
 });
 
 test('vocabulaire : « article » pour les courses, « élément » pour les autres listes', async () => {
-  const { isShopping, itemWords, countItems } = await import('../public/js/words.js');
+  const { isShopping, itemWords, countItems, wordKind, byKind } = await import('../public/js/words.js');
   const courses = { type: 'shopping' };
   const taches = { type: 'tasks' };
   assert.equal(isShopping(courses), true);
@@ -413,19 +413,23 @@ test('vocabulaire : « article » pour les courses, « élément » pour les aut
   const pick = ({ one, many }) => ({ one, many });
   assert.deepEqual(pick(itemWords(courses)), { one: 'article', many: 'articles' });
   assert.deepEqual(pick(itemWords(taches)), { one: 'élément', many: 'éléments' });
-  // Liste d'envies : « souhait », mot qui commence par une consonne (formes complètes)
+  // Liste d'envies : « souhait » ; seulement des mots seuls (les phrases avec
+  // un article, « Modifier le souhait », sont écrites en entier)
   const envies = itemWords({ type: 'wishes' });
-  assert.deepEqual([envies.one, envies.many, envies.the, envies.this, envies.aNew, envies.New, envies.of], ['souhait', 'souhaits', 'le souhait', 'ce souhait', 'un nouveau souhait', 'Nouveau souhait', 'du souhait']);
-  assert.deepEqual([itemWords(taches).the, itemWords(taches).New, itemWords(courses).of], ["l'élément", 'Nouvel élément', "de l'article"]);
+  assert.deepEqual([envies.one, envies.many, envies.New], ['souhait', 'souhaits', 'Nouveau souhait']);
+  assert.deepEqual([itemWords(taches).New, itemWords(courses).New], ['Nouvel élément', 'Nouvel article']);
+  for (const words of [envies, itemWords(taches), itemWords(courses)]) {
+    for (const form of ['the', 'this', 'aNew', 'of']) assert.equal(words[form], undefined, `plus de forme « ${form} » à glisser dans une phrase`);
+  }
   assert.equal(countItems(1, taches), '1 élément');
   assert.equal(countItems(2, taches), '2 éléments');
   assert.equal(countItems(1, courses), '1 article');
-  // Les phrases de l'application, avec chacun des deux mots
-  const { one } = itemWords(taches);
-  assert.equal(`L'${one} barré sera retiré`, "L'élément barré sera retiré");
-  assert.equal(`Nouvel ${one}`, 'Nouvel élément');
-  assert.equal(`Modifier l'${one}`, "Modifier l'élément");
-  assert.equal(`Cet ${one} a été supprimé par une autre personne.`, 'Cet élément a été supprimé par une autre personne.');
+  assert.equal(countItems(0, courses), '0 article', 'pluriel du français : 0 au singulier');
+  assert.equal(countItems(3, { type: 'wishes' }), '3 souhaits');
+  // Sorte de liste, et phrase entière choisie parmi les trois
+  assert.deepEqual([wordKind(courses), wordKind(taches), wordKind({ type: 'wishes' }), wordKind(true), wordKind(false), wordKind(undefined), wordKind('wishes')], ['shopping', 'tasks', 'wishes', 'shopping', 'tasks', 'tasks', 'wishes']);
+  const texts = { shopping: "Modifier l'article", tasks: "Modifier l'élément", wishes: 'Modifier le souhait' };
+  assert.deepEqual([byKind(courses, texts), byKind(taches, texts), byKind({ type: 'wishes' }, texts), byKind(false, texts)], ["Modifier l'article", "Modifier l'élément", 'Modifier le souhait', "Modifier l'élément"]);
 });
 
 test('vocabulaire : aucun « article » écrit en dur dans les écrans (tout passe par words.js)', async () => {

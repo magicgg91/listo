@@ -41,14 +41,14 @@ export function productRoutes(ctx) {
     try {
       list = ctx.lists.listForEditor(req.user, req.params.id);
     } catch (err) {
-      if (err instanceof OpError) return res.status(err.status).json({ error: err.message });
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;
     }
-    if (!isShoppingList(list)) return res.status(404).json({ error: 'Le scan existe seulement dans les listes de courses.' });
+    if (!isShoppingList(list)) return res.status(404).json({ error: req.t('references.scan.coursesSeulement') });
     if (!products.enabled()) return res.json({ status: 'disabled' });
-    if (!products.allow(req.user.id)) return res.status(429).json({ error: 'Trop de recherches. Réessayez dans une minute.' });
+    if (!products.allow(req.user.id)) return res.status(429).json({ error: req.t('references.scan.tropDeRecherches') });
     const code = normalizeBarcode(req.body?.code);
-    if (!code) return res.status(400).json({ error: 'Code-barres invalide.' });
+    if (!code) return res.status(400).json({ error: req.t('references.scan.codeInvalide') });
     // Mes produits d'abord : mon nom gagne, Open Food Facts n'est pas appelé
     // (rien dans le compteur des demandes sortantes)
     const known = ctx.lists.knownProduct(req.user, code);

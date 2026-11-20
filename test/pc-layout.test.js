@@ -7,6 +7,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
+import en from '../public/js/i18n/en.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -70,8 +72,10 @@ test('bascule : app--pc à partir de 1 024 px, même écran redessiné, menu gar
 test('menu de gauche : liens réels, liste ouverte repérée, Admin seulement comme rôle de compte, aucun focus forcé', () => {
   const side = read('public/js/screens/pc-side.js');
   assert.match(side, /href: pathFor\('list', \{ id: list\.id \}\),\s*'aria-current': current \? 'page' : null,/);
-  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, 'Admin'\) : null/);
-  assert.match(side, /'aria-label': 'Rechercher une liste'/);
+  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, t\('navigation\.role\.admin'\)\) : null/);
+  assert.equal(fr['navigation.role.admin'], 'Admin');
+  assert.match(side, /'aria-label': t\('navigation\.recherche\.libelle'\)/);
+  assert.equal(fr['navigation.recherche.libelle'], 'Rechercher une liste');
   // Compteur lu « 3 articles restants sur 8 », pas seulement « 3/8 »
   assert.match(side, /h\('span', \{ class: 'pc-nav__count', role: 'img', 'aria-label': text, title: text \}/);
   assert.doesNotMatch(side, /\.focus\(|innerHTML|\.style\b|style:/);
@@ -85,11 +89,16 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   // Le serveur n'envoie jamais les réservations au bénéficiaire : sans elles, aucun bouton
   assert.match(list, /if \(!view\?\.reservations \|\| item\.checked \|\| view\.reservations\.get\(item\.id\)\?\.participants\.length\) return null;/);
   // Corbeille au survol : même suppression annulable que le glissement
-  assert.match(list, /'aria-label': `Supprimer \$\{item\.name\}`, 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': 'Supprimer · Suppr', onClick: \(\) => deleteWithUndo\(item\) \}/);
+  assert.match(list, /'aria-label': t\('liste\.supprimer\.nom', \{ name: item\.name \}\), 'aria-keyshortcuts': 'Delete', 'data-action': 'delete', 'data-pc-tip': t\('liste\.pc\.supprimer\.astuce'\), onClick: \(\) => deleteWithUndo\(item\) \}/);
+  assert.equal(fr['liste.supprimer.nom'], 'Supprimer {name}');
+  assert.equal(fr['liste.pc.supprimer.astuce'], 'Supprimer · Suppr');
   // « Partager » (propriétaire) ou « Personnes » (les autres) : le tiroir du partage
-  assert.match(list, /list\.isOwner \? 'Partager' : 'Personnes', people\)\);/);
+  assert.match(list, /list\.isOwner \? t\('liste\.pc\.partager'\) : t\('liste\.pc\.personnes'\), people\)\);/);
+  assert.equal(fr['liste.pc.partager'], 'Partager');
+  assert.equal(fr['liste.pc.personnes'], 'Personnes');
   // Bandeau du bénéficiaire : il ne voit jamais les réservations
-  assert.match(list, /list\.isBeneficiary\s*\? \[icon\('eye-off', 'icon--sm'\), h\('span', \{\}, 'Vous ne voyez jamais les réservations : la surprise reste entière\.'\)\]/);
+  assert.match(list, /list\.isBeneficiary\s*\? \[icon\('eye-off', 'icon--sm'\), h\('span', \{\}, t\('liste\.envies\.beneficiaire'\)\)\]/);
+  assert.equal(fr['liste.envies.beneficiaire'], 'Vous ne voyez jamais les réservations : la surprise reste entière.');
   assert.doesNotMatch(list, /innerHTML/);
 });
 
@@ -126,7 +135,8 @@ test('recherche ordinateur : champ toujours visible, Échap vide puis quitte, ja
   assert.equal(row.match(/\.focus\(/g).length, 1);
   assert.match(row, /function open\(\) \{\s*if \(!toggled \|\| isOpen\) return;[\s\S]*?input\.focus\(\);\s*\}/);
   assert.match(read('public/js/screens/list.js'), /docked: pc,/);
-  assert.match(read('public/js/screens/lists.js'), /createSearchRow\(content, \{ label: 'Rechercher une liste', onChange: \(\) => draw\(\), docked: true \}\);/);
+  assert.match(read('public/js/screens/lists.js'), /createSearchRow\(content, \{ label: t\('listes\.recherche\.libelle'\), onChange: \(\) => draw\(\), docked: true \}\);/);
+  assert.equal(fr['listes.recherche.libelle'], 'Rechercher une liste');
 });
 
 test('icônes de l\'interface ordinateur : dans les deux sprites, sans doublon', () => {
@@ -166,10 +176,17 @@ test('fenêtres de l\'ordinateur : tiroir ou fenêtre centrée, role dialog et a
 
 test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer / Annuler / Enregistrer, confirmation avant d\'abandonner des changements', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, 'Annuler'\), save\] : null,/);
-  assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: 'Abandonner les modifications \?',/);
+  assert.match(list, /pc: 'drawer',\s*footer: pc \? \[remove, h\('span', \{ class: 'grow' \}\), h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: \(\) => sheet\.close\(\) \}, t\('liste\.fiche\.annuler'\)\), save\] : null,/);
+  // « Annuler » fermer sans enregistrer (anglais : Cancel), distinct de
+  // l'annulation d'une action (anglais : Undo)
+  assert.equal(fr['liste.fiche.annuler'], 'Annuler');
+  assert.equal(en['liste.fiche.annuler'], 'Cancel');
+  assert.equal(en['liste.annuler'], 'Undo');
+  assert.match(list, /beforeClose: pc \? async \(\) => !dirty\(\) \|\| confirmDialog\(\{\s*title: t\('liste\.fiche\.abandonner\.question'\),/);
+  assert.equal(fr['liste.fiche.abandonner.question'], 'Abandonner les modifications ?');
   assert.match(list, /focusCancel: true,\s*\}\) : null,/);
-  assert.match(list, /const dirtyNote = h\('p', \{ class: 'pc-meta' \}, 'Modifications non enregistrées'\);/);
+  assert.match(list, /const dirtyNote = h\('p', \{ class: 'pc-meta' \}, t\('liste\.fiche\.nonEnregistre'\)\);/);
+  assert.equal(fr['liste.fiche.nonEnregistre'], 'Modifications non enregistrées');
   // Enregistrer et supprimer ferment sans demander
   assert.match(list, /await actions\.updateItem\(item, changes\);\s*sheet\.forceClose\(\);/);
   // Fiche à consulter (lecture seule) : tiroir aussi, sans bouton qui écrit
@@ -183,9 +200,12 @@ test('partage (ordinateur) : le propriétaire gère personnes et lien ; les autr
   assert.match(panel, /else if \(!owner\) right = h\('span', \{ class: 'pc-meta' \}, levelLabel\(person\.access\)\);/);
   assert.match(panel, /if \(owner\) \{\s*const candidates/);
   assert.match(panel, /const link = owner \? linkPart\(start, \(\) => panel\.close\(\)\) : null;/);
-  assert.match(panel, /title: owner \? 'Partager la liste' : 'Personnes',/);
+  assert.match(panel, /title: owner \? t\('partage\.panneau\.titre'\) : t\('partage\.panneau\.personnes'\),/);
+  assert.equal(fr['partage.panneau.titre'], 'Partager la liste');
+  assert.equal(fr['partage.panneau.personnes'], 'Personnes');
   // Destinataire d'une liste d'envies : « Peut modifier », sans choix
-  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, 'Destinataire · Peut modifier'\);/);
+  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, t\('partage\.panneau\.destinataire'\)\);/);
+  assert.equal(fr['partage.panneau.destinataire'], 'Destinataire · Peut modifier');
   // Même route que le formulaire, en ligne seulement ; jamais d'e-mail
   assert.match(panel, /await put\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`, \{/);
   assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
@@ -233,30 +253,32 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   // Ordre des cartes (rangement allégé du 11 novembre 2026) : Compte,
   // Général (« Raccourcis à une touche » d'abord, puis les lignes du
   // téléphone), Informations (Aide, Raccourcis clavier, À propos)
-  const order = [...pc.matchAll(/section\('([^']+)'/g)].map((m) => m[1]);
+  const order = [...pc.matchAll(/section\(t\('([^']+)'\)/g)].map((m) => fr[m[1]]);
   assert.deepEqual(order, ['Compte', 'Général', 'Informations']);
-  assert.match(pc, /section\('Général', h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
-  assert.match(pc, /section\('Informations', h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: 'Raccourcis clavier'/);
+  assert.match(pc, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(pc, /section\(t\('reglages\.informations'\), h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: t\('reglages\.pc\.raccourcis'\)/);
+  assert.equal(fr['reglages.pc.raccourcis'], 'Raccourcis clavier');
   assert.match(pc, /aboutRow\(isAdmin\)/);
   // Mêmes lignes que le téléphone (une seule définition)
   const phone = code.slice(code.indexOf('export function renderSettings'), code.indexOf('function generalRows'));
   assert.match(phone, /h\('div', \{ class: 'group' \}, generalRows\(isAdmin\)\),/);
   assert.match(phone, /h\('div', \{ class: 'group' \}, helpRow\(\), aboutRow\(isAdmin\)\)/);
   // (pastille : demandes de compte en attente, connexion avec Authelia)
-  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: 'Administration', end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
+  assert.equal(fr['reglages.administration'], 'Administration');
+  assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: t\('reglages\.administration'\), end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
   assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
   // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
   assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');
-  assert.match(account, /h\('h2', \{ class: 'section-title' \}, 'Apparence'\),/);
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
+  assert.match(account, /h\('h2', \{ class: 'section-title' \}, t\('compte\.apparence'\)\),/);
+  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
   // Deux différences seulement : « Cet appareil », et la confirmation de
   // « Se déconnecter », sur le téléphone seulement (décision du 11 novembre 2026)
   assert.equal((account.match(/onPc\(\)/g) ?? []).length, 2);
   assert.match(account, /if \(!onPc\(\) && !pendingCount\(\)\) \{/);
-  assert.match(account, /return onPc\(\)\s*\? \{ section: 'Cet appareil', reset: 'Réinitialiser les données de cet appareil', on: 'sur cet appareil' \}\s*: \{ section: 'Ce téléphone', reset: 'Réinitialiser les données de ce téléphone', on: 'sur ce téléphone' \};/);
+  assert.match(account, /return onPc\(\)\s*\? \{ section: t\('compte\.appareil\.pc'\), reset: t\('compte\.appareil\.pc\.reinitialiser'\), question: t\('compte\.appareil\.pc\.reinitialiser\.question'\), text: t\('compte\.appareil\.pc\.reinitialiser\.texte'\) \}\s*: \{ section: t\('compte\.appareil\.telephone'\)/);
   // Téléphone : plus de section « Clavier » (rien de nouveau)
   assert.doesNotMatch(code.slice(code.indexOf('export function renderSettings'), code.indexOf('function renderSettingsPc')), /keysRow|Clavier/);
 });
@@ -265,9 +287,13 @@ test('états (ordinateur) : bandeau « Hors ligne », « Réessayer » après un
   const ui = read('public/js/ui.js');
   assert.match(ui, /export function offlineBanner\(\) \{/);
   assert.match(ui, /banner\.hidden = state !== 'off';/);
-  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: 'Réessayer', onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  assert.match(read('public/js/app.js'), /toast\(errorMessage\(error\), onPc\(\) \? \{ action: t\('application\.reessayer'\), onAction: \(\) => refreshData\(\{ full: true \}\) \} : \{\}\);/);
+  assert.equal(fr['application.reessayer'], 'Réessayer');
   const list = read('public/js/screens/list.js');
-  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, 'Astuce : appuyez sur '/);
+  // Une phrase entière : la touche prend la place de {key}
+  assert.match(list, /pc && canEdit && singleKeysOn\(\) \? h\('p', \{ class: 'empty__text' \}, \.\.\.t\('liste\.vide\.astuce'\)\.split\('\{key\}'\)\.flatMap\(\(part, i\) => \(i \? \[h\('kbd', \{ class: 'keycap' \}, 'A'\), part\] : \[part\]\)\)\)/);
+  assert.equal(fr['liste.vide.astuce'], 'Astuce : appuyez sur {key} pour aller au champ d\'ajout.');
+  assert.deepEqual(fr['liste.vide.astuce'].split('{key}'), ['Astuce : appuyez sur ', ' pour aller au champ d\'ajout.'], 'mêmes textes qu\'avant autour de la touche');
   // Le bandeau n'est posé que dans les écrans de l'ordinateur
   const phone = list.slice(list.lastIndexOf("  return h('div', { class: 'screen' },"));
   assert.doesNotMatch(phone, /offlineBanner/);

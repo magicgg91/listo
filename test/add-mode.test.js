@@ -15,6 +15,7 @@ import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.
 import { openDatabase, schemaVersion, addModeMigration } from '../server/db.js';
 import { ADD_MODES } from '../server/lists.js';
 import { emptyState, applyOp, addModeOf, defaultAddMode } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -51,8 +52,9 @@ async function household(t) {
   return { app, guillaume, ...clients, ids, tasks, shopping, notified, modeOf };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -80,7 +82,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   } finally {
     console.log = log;
   }
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
   assert.deepEqual(after.map(({ add_mode: mode, type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.map(({ category_id: category, ...rest }) => rest), 'rien d\'autre ne change (type : migration 18)');
   assert.deepEqual(Object.fromEntries(after.map((l) => [l.id, l.add_mode])), {
@@ -98,7 +100,7 @@ test('migration 15 : courses → rester ; autre liste avec priorité ou échéan
   // Une seule fois : un second démarrage ne refait rien
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   // Contrainte : 'quick' ou 'detail' seulement ; nouvelle ligne sans valeur : 'quick'
   for (const bad of ['rapide', 'QUICK', '', 1]) assert.throws(() => db.prepare("UPDATE lists SET add_mode = ? WHERE id = 'courses'").run(bad), /CHECK/);
   db.prepare("INSERT INTO lists (id, name, type, owner_id) VALUES ('neuve', 'Brico', 'tasks', 1)").run();
@@ -241,7 +243,13 @@ test('formulaire : « Après l\'ajout » pour toutes les listes, deux choix (.se
   const form = read('public/js/screens/list-form.js');
   // Compact : une ligne de deux choix au libellé court (nom complet pour les
   // lecteurs d'écran), et une ligne d'aide sur le choix actif, reliée au groupe
-  assert.match(form, /\['quick', 'Rester', 'Rester sur la liste', 'On enchaîne les ajouts sur la liste\.'\],\s*\['detail', 'Ouvrir', 'Ouvrir la fiche', 'La fiche s\\'ouvre pour compléter\.'\],/);
+  assert.match(form, /\['quick', t\('formulaire\.apresAjout\.rester'\), t\('formulaire\.apresAjout\.rester\.nom'\), t\('formulaire\.apresAjout\.rester\.detail'\)\],\s*\['detail', t\('formulaire\.apresAjout\.ouvrir'\), t\('formulaire\.apresAjout\.ouvrir\.nom'\), t\('formulaire\.apresAjout\.ouvrir\.detail'\)\],/);
+  assert.equal(fr['formulaire.apresAjout.rester'], 'Rester');
+  assert.equal(fr['formulaire.apresAjout.rester.nom'], 'Rester sur la liste');
+  assert.equal(fr['formulaire.apresAjout.rester.detail'], 'On enchaîne les ajouts sur la liste.');
+  assert.equal(fr['formulaire.apresAjout.ouvrir'], 'Ouvrir');
+  assert.equal(fr['formulaire.apresAjout.ouvrir.nom'], 'Ouvrir la fiche');
+  assert.equal(fr['formulaire.apresAjout.ouvrir.detail'], 'La fiche s\'ouvre pour compléter.');
   assert.match(form, /role: 'radio', 'aria-label': name,/);
   assert.match(form, /h\('div', \{ class: 'segmented', role: 'radiogroup', 'aria-labelledby': 'add-mode-label', 'aria-describedby': 'add-mode-help' \}, options\),\s*help\);/);
   assert.match(form, /help\.textContent = ADD_MODES\.find\(\(\[choice\]\) => choice === current\)\?\.\[3\] \?\? '';/);

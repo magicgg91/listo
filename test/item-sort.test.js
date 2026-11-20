@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { sortTasks, groupItems, splitDone, compareNames } from '../public/js/sorting.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, computeListView, loadItemSort, saveItemSort, pruneItemSorts, itemSortFrom } from '../public/js/store.js';
 
 const item = (name, priority = 'normal', dueDate = null, extra = {}) => ({ id: name, name, priority, dueDate, checked: false, ...extra });
@@ -103,7 +104,8 @@ test('choix gardé par liste (listo-tri-liste-<id>) ; rien ou valeur invalide �
 
 test('écran d\'une liste : bouton « Trier la liste » dès qu\'il y a un choix (toujours pour les courses), choix exclusif coché', () => {
   const source = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
-  assert.match(source, /iconButton\('az', 'Trier la liste', \(\) => openSortMenu\(\)\)/);
+  assert.match(source, /iconButton\('az', t\('liste\.tri\.bouton'\), \(\) => openSortMenu\(\)\)/);
+  assert.equal(fr['liste.tri.bouton'], 'Trier la liste');
   // Courses : toujours (par rayon / alphabétique) ; ailleurs : seulement s'il y a un choix
   assert.match(source, /sortButton\.hidden = availableSorts\(list\)\.length < 2;/);
   assert.match(source, /checked: value === activeSort\(\),/);

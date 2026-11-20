@@ -15,6 +15,7 @@ import { isListIcon } from './list-icons.js';
 import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { nestsSubtasks, nestItems, parentOf, orderSubtasks, nextPosition, reorderedIds } from './subtasks.js';
+import { t, compareText } from './i18n.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 
 // --- État vide ---
@@ -711,8 +712,8 @@ export function rememberZone(listId, open, storage = () => globalThis.localStora
   }
 }
 
-const nameCollator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
-const byName = (a, b) => nameCollator.compare(a.name, b.name);
+// Ordre alphabétique de la langue des écrans (majuscules et accents ignorés)
+const byName = (a, b) => compareText(a.name, b.name, { sensitivity: 'base', numeric: true });
 const byRecent = (a, b) => b.lastActivity.localeCompare(a.lastActivity);
 // Dernier recours, pour un ordre toujours le même : majuscules, puis numéro
 const byExactName = (a, b) => compareNames(a.name, b.name) || String(a.id).localeCompare(String(b.id));
@@ -1005,8 +1006,9 @@ export function duplicateOf(view, name, ean = null) {
 
 // Texte de l'avertissement « Déjà dans la liste »
 export function duplicateText(duplicate) {
-  const place = duplicate.where === 'cart' ? 'Déjà dans le panier (coché)' : 'Déjà dans la liste';
-  return duplicate.by === 'code' ? `${place} : « ${duplicate.name} » a ce code-barres.` : `${place}.`;
+  const cart = duplicate.where === 'cart';
+  if (duplicate.by === 'code') return cart ? t('donnees.doublon.panier.code', { name: duplicate.name }) : t('donnees.doublon.liste.code', { name: duplicate.name });
+  return cart ? t('donnees.doublon.panier') : t('donnees.doublon.liste');
 }
 
 // Scan pour cocher : article de la liste ouverte qui porte ce code-barres,

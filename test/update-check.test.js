@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { loadConfig } from '../server/config.js';
 import { createUpdateCheck, fetchGithub, latestCommitFrom, RUNS_PATH, CACHE_MS, FORCE_MS } from '../server/update-check.js';
+import fr from '../public/js/i18n/fr.js';
 
 const INSTALLED = '3a1b2c4d5e6f708192a3b4c5d6e7f8091a2b3c4d';
 const NEWER = '9f8e7d6c5b4a39281706f5e4d3c2b1a098765432';
@@ -245,7 +246,8 @@ test('À propos : ligne du haut (version, « Vérifié… », bouton groupés), 
   assert.match(source, /const actions = h\('span', \{ class: 'about__actions', hidden: true \}, state, h\('span', \{ class: 'about__checked' \}, checked, button\)\);/);
   assert.match(source, /const row = h\('div', \{ class: 'row about' \}, title, actions, update\);/);
   // « À jour » écrit en texte ; ligne de la nouvelle version absente sinon
-  assert.match(source, /replace\(checked, line\.upToDate \? \[h\('span', \{ class: 'about__ok' \}, 'À jour'\), line\.checked \? ` · \$\{line\.checked\}` : null\] : line\.checked\);/);
+  assert.match(source, /replace\(checked, line\.upToDate \? \[h\('span', \{ class: 'about__ok' \}, t\('reglages\.aPropos\.aJour'\)\), line\.checked \? ` · \$\{line\.checked\}` : null\] : line\.checked\);/);
+  assert.equal(fr['reglages.aPropos.aJour'], 'À jour');
   assert.match(source, /replace\(update, line\.update \? chipFor\(line\.update\) : null\);\s*update\.hidden = !line\.update;/);
   assert.doesNotMatch(source, /innerHTML/);
   // Texte et bouton jamais séparés ; ligne de la nouvelle version : toute la largeur
@@ -259,9 +261,12 @@ test('À propos : liens vers GitHub ouverts à part (noopener noreferrer), libel
   const source = fs.readFileSync(new URL('../public/js/screens/settings.js', import.meta.url), 'utf8');
   assert.match(source, /const outLink = \(attrs, \.\.\.children\) => h\('a', \{ target: '_blank', rel: 'noopener noreferrer', \.\.\.attrs \}/);
   assert.equal(/h\('a'/.test(source.replace("h('a', { target: '_blank', rel: 'noopener noreferrer', ...attrs }", '')), false, 'tout lien passe par outLink');
-  assert.ok(source.includes("'aria-label': `Développeur : ${GITHUB.owner} sur GitHub`"));
-  assert.ok(source.includes("'aria-label': 'Projet Listo sur GitHub'"));
-  assert.ok(source.includes("'aria-label': 'Vérifier maintenant'"));
+  assert.ok(source.includes("'aria-label': t('reglages.aPropos.developpeur', { owner: GITHUB.owner })"));
+  assert.equal(fr['reglages.aPropos.developpeur'], 'Développeur : {owner} sur GitHub');
+  assert.ok(source.includes("'aria-label': t('reglages.aPropos.projet.lien')"));
+  assert.equal(fr['reglages.aPropos.projet.lien'], 'Projet Listo sur GitHub');
+  assert.ok(source.includes("'aria-label': t('reglages.aPropos.verifier')"));
+  assert.equal(fr['reglages.aPropos.verifier'], 'Vérifier maintenant');
   assert.ok(source.includes("class: 'icon-btn about__check'"));
   // Aucune commande de serveur dans l'interface (elle reste dans docs/exploitation.md)
   for (const file of ['public/js/format.js', 'public/js/screens/settings.js', 'public/js/app.js', 'design/components.html']) {

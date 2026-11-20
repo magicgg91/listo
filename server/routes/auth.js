@@ -14,9 +14,9 @@ import {
 import { checkSecondFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName } from '../validate.js';
 
-// Réponses identiques que l'identifiant existe ou non
-const BAD_LOGIN = 'Identifiant ou mot de passe incorrect.';
-const BLOCKED = 'Trop de tentatives. Réessayez dans 15 minutes.';
+// Réponses identiques que l'identifiant existe ou non (noms des textes)
+const BAD_LOGIN = 'comptes.connexion.incorrecte';
+const BLOCKED = 'comptes.tropDeTentatives';
 
 
 const countUsers = (db) => db.prepare('SELECT COUNT(*) FROM users').pluck().get();
@@ -32,10 +32,19 @@ export function publicAuthRoutes(ctx) {
 
   // Faut-il afficher l'écran de création du premier Admin ?
   // oidc : le bouton « Se connecter avec … » (LISTO_OIDC=on seulement), son
-  // nom seul ; rien d'autre sur la configuration n'est donné
+  // nom seul
   // localLogin : identifiant et mot de passe proposés (LISTO_LOCAL_LOGIN)
+  // lang : langue par défaut de l'installation (LISTO_LANG), utilisée quand
+  // ni le compte ni le navigateur n'en donnent une ; currency : monnaie du
+  // prix des envies (LISTO_CURRENCY)
   router.get('/setup', (req, res) => {
-    res.json({ needed: countUsers(db) === 0, oidc: ctx.oidc ? { name: ctx.config.oidcName } : null, localLogin: ctx.config.localLogin !== false });
+    res.json({
+      needed: countUsers(db) === 0,
+      oidc: ctx.oidc ? { name: ctx.config.oidcName } : null,
+      localLogin: ctx.config.localLogin !== false,
+      lang: ctx.config.lang ?? 'fr',
+      currency: ctx.config.currency ?? 'EUR',
+    });
   });
 
   // Création du premier Admin. Possible seulement tant qu'aucun compte
@@ -44,20 +53,21 @@ export function publicAuthRoutes(ctx) {
     const { code, username, displayName, password } = req.body ?? {};
     const keys = [`setup:${req.ip}`];
 
+    // code : reconnu par l'écran de création (retour à la connexion), quelle que soit la langue
     if (countUsers(db) > 0 || !ctx.setup.code) {
-      return res.status(403).json({ error: 'Listo est déjà configuré.' });
+      return res.status(403).json({ error: req.t('comptes.dejaConfigure'), code: 'comptes.dejaConfigure' });
     }
-    if (limiter.isBlocked(keys)) return res.status(429).json({ error: BLOCKED });
+    if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
     if (!safeEqual(normalizeCode(code), normalizeCode(ctx.setup.code))) {
       limiter.fail(keys);
-      audit('creation_admin_refusee', { raison: 'code de démarrage incorrect', ip: req.ip });
-      return res.status(403).json({ error: 'Code de démarrage incorrect.' });
+      audit('first_admin_creation_refused', { reason: 'wrong setup code', ip: req.ip });
+      return res.status(403).json({ error: req.t('comptes.codeDemarrage.incorrect') });
     }
-    if (!isValidUsername(username)) return res.status(400).json({ error: USERNAME_RULE });
+    if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const problem = passwordProblem(password);
-    if (problem) return res.status(400).json({ error: problem });
+    if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
-    if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
+    if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
 
     const hash = await hashPassword(password);
 
@@ -69,10 +79,10 @@ export function publicAuthRoutes(ctx) {
       return db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES (?, ?, ?, 'admin')")
         .run(username, name, hash).lastInsertRowid;
     })();
-    if (!created) return res.status(403).json({ error: 'Listo est déjà configuré.' });
+    if (!created) return res.status(403).json({ error: req.t('comptes.dejaConfigure'), code: 'comptes.dejaConfigure' });
 
     ctx.setup.code = null; // le code de démarrage ne servira plus jamais
-    audit('creation_admin', { utilisateur: username, ip: req.ip });
+    audit('first_admin_created', { user: username, ip: req.ip });
     startSession(ctx, res, created);
     res.status(201).json({ user: publicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(created), ctx.config, { method: 'password' }) });
   });
@@ -81,21 +91,21 @@ export function publicAuthRoutes(ctx) {
   router.post('/login', async (req, res) => {
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off)
     if (ctx.config.localLogin === false) {
-      return res.status(403).json({ error: `La connexion par mot de passe est désactivée : utilisez « Se connecter avec ${ctx.config.oidcName} ».` });
+      return res.status(403).json({ error: req.t('comptes.connexion.motDePasseDesactive', { provider: ctx.config.oidcName }) });
     }
     const { username, password } = req.body ?? {};
     if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
-      return res.status(400).json({ error: 'Identifiant et mot de passe requis.' });
+      return res.status(400).json({ error: req.t('comptes.connexion.requis') });
     }
     const keys = attemptKeys(req, username);
     const user = findUser.get(username);
     // Dans le journal, on ne recopie l'identifiant que s'il existe : s'il
     // n'existe pas, c'est peut-être un mot de passe tapé dans le mauvais champ.
-    const who = user ? { utilisateur: user.username } : { utilisateur: '(inconnu)' };
+    const who = user ? { user: user.username } : { user: '(unknown)' };
 
     if (limiter.isBlocked(keys)) {
-      audit('connexion_bloquee', { ...who, ip: req.ip });
-      return res.status(429).json({ error: BLOCKED });
+      audit('login_blocked', { ...who, ip: req.ip });
+      return res.status(429).json({ error: req.t(BLOCKED) });
     }
 
     // La tentative est comptée comme un échec AVANT la vérification (qui prend
@@ -108,8 +118,8 @@ export function publicAuthRoutes(ctx) {
     // factice), pour que la durée de la réponse ne trahisse rien.
     const passwordOk = await verifyPassword(password, user?.password_hash ?? (await getDummyHash()));
     if (!user || !passwordOk || user.active !== 1) {
-      audit('connexion_echouee', { ...who, ip: req.ip });
-      return res.status(401).json({ error: BAD_LOGIN });
+      audit('login_failure', { ...who, ip: req.ip });
+      return res.status(401).json({ error: req.t(BAD_LOGIN) });
     }
 
     // Compte avec 2FA : pas de session tant que le code n'est pas donné.
@@ -119,34 +129,34 @@ export function publicAuthRoutes(ctx) {
     if (user.totp_enabled === 1) {
       limiter.forgive(keys);
       ctx.pending.start(ctx, res, user.id);
-      audit('connexion_code_2fa_demande', { ...who, ip: req.ip });
+      audit('login_2fa_code_requested', { ...who, ip: req.ip });
       return res.json({ twoFactorRequired: true });
     }
 
     limiter.reset(keys);
     startSession(ctx, res, user.id);
-    audit('connexion_reussie', { ...who, ip: req.ip });
+    audit('login_success', { ...who, ip: req.ip });
     res.json({ user: publicUser(user, ctx.config, { method: 'password' }) });
   });
 
   // Saisie du code 2FA (ou d'un code de secours) après le mot de passe
   router.post('/login/2fa', (req, res) => {
     const pending = ctx.pending.find(req);
-    if (!pending) return res.status(401).json({ error: 'Connexion expirée : saisissez de nouveau votre mot de passe.' });
+    if (!pending) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
 
     // Relu au dernier moment : le compte a pu changer entre-temps
     const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1 AND totp_enabled = 1').get(pending.userId);
-    if (!user) return res.status(401).json({ error: 'Connexion expirée : saisissez de nouveau votre mot de passe.' });
+    if (!user) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
 
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
-      audit('connexion_bloquee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-      return res.status(429).json({ error: BLOCKED });
+      audit('login_blocked', { user: user.username, ip: req.ip, step: '2fa' });
+      return res.status(429).json({ error: req.t(BLOCKED) });
     }
     if (!checkSecondFactor(ctx, user, req.body?.code)) {
       limiter.fail(keys);
-      audit('connexion_echouee', { utilisateur: user.username, ip: req.ip, etape: '2fa' });
-      return res.status(401).json({ error: 'Code incorrect.' });
+      audit('login_failure', { user: user.username, ip: req.ip, step: '2fa' });
+      return res.status(401).json({ error: req.t('comptes.code.incorrect') });
     }
 
     ctx.pending.finish(ctx, res, pending.key);
@@ -154,7 +164,7 @@ export function publicAuthRoutes(ctx) {
     // Même méthode que le début de la connexion (mot de passe, ou fournisseur d'identité
     // quand le fournisseur d'identité n'a pas fait la double authentification)
     startSession(ctx, res, user.id, { method: pending.method });
-    audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa', ...(pending.method === 'oidc' ? { methode: 'authelia' } : {}) });
+    audit('login_success', { user: user.username, ip: req.ip, step: '2fa', ...(pending.method === 'oidc' ? { method: 'oidc' } : {}) });
     res.json({ user: publicUser(user, ctx.config, { method: pending.method }) });
   });
 
@@ -165,7 +175,7 @@ export function logoutRoute(ctx) {
   const router = express.Router();
   router.post('/logout', requireAuth, (req, res) => {
     endSession(ctx, req, res);
-    ctx.audit('deconnexion', { utilisateur: req.user.username, ip: req.ip });
+    ctx.audit('logout', { user: req.user.username, ip: req.ip });
     res.status(204).end();
   });
   return router;

@@ -14,13 +14,15 @@ import { startTestApp, setupAdmin, addUser, login, databaseAt } from './helpers.
 import { openDatabase, schemaVersion } from '../server/db.js';
 import { LIST_ICONS, isListIcon, listIcon } from '../public/js/list-icons.js';
 import { emptyState, applyOp } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -98,7 +100,8 @@ test('icône hors liste blanche refusée (400) à la création comme à la modif
   assert.equal((await run(h.guillaume, { type: 'list.create', listId: plain, name: 'Simple', listType: 'shopping' })).list.icon, '');
   // Requête paramétrée, et contrôle à chaque écriture
   const source = read('server/lists.js');
-  assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'Icône inconnue\.'\);/);
+  assert.match(source, /function listIconOf\(value\) \{\s*if \(value === undefined\) return undefined;\s*if \(value === '' \|\| isListIcon\(value\)\) return value;\s*throw new OpError\(400, 'ops\.iconeInconnue'\);/);
+  assert.equal(fr['ops.iconeInconnue'], 'Icône inconnue.');
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? '';/);
   assert.match(source, /const icon = listIconOf\(op\.icon\) \?\? list\.icon;/);
   assert.match(source, /UPDATE lists SET name = \?, type = \?, store_id = \?, priority_enabled = \?, due_enabled = \?, assign_enabled = \?, subtasks_enabled = \?, icon = \?, add_mode = \?, updated_at = \? WHERE id = \?/);
@@ -184,9 +187,11 @@ test('hors ligne : l\'icône passe par la file d\'attente, comme le titre (copie
 test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre avec la grille ; « Par défaut » d\'abord ; choix entouré ET coché ; 44 px', () => {
   const form = read('public/js/screens/list-form.js');
   // Formulaire : seulement l'icône affichée, dans un bouton de 44 px
-  assert.match(form, /const iconPicker = h\('button', \{\s*class: 'icon-grid__opt', type: 'button', 'aria-label': 'Choisir une icône', 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',/);
+  assert.match(form, /const iconPicker = h\('button', \{\s*class: 'icon-grid__opt', type: 'button', 'aria-label': t\('formulaire\.icone\.choisir'\), 'aria-haspopup': 'dialog', 'aria-describedby': 'icon-current',/);
+  assert.equal(fr['formulaire.icone.choisir'], 'Choisir une icône');
   // … à gauche du champ « Titre de la liste », sur la même ligne (plus de rubrique « Icône »)
-  assert.match(form, /const nameField = field\('Titre de la liste', h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\);/);
+  assert.match(form, /const nameField = field\(t\('formulaire\.titreListe'\), h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\);/);
+  assert.equal(fr['formulaire.titreListe'], 'Titre de la liste');
   assert.doesNotMatch(form, /'Icône'\)|icon-label/, 'plus de libellé « Icône »');
   assert.doesNotMatch(form, /iconGroup|iconButtons/, 'plus de grille dans le formulaire');
   // Au départ : l'icône du type (rien de choisi), qui suit le type
@@ -194,21 +199,25 @@ test('« Icône » : un bouton (« Choisir une icône »), puis une fenêtre ave
   assert.match(form, /const shownIcon = chosenIcon \|\| TYPE_ICONS\[listType\];\s*replace\(iconPicker, icon\(shownIcon\)\);/);
   // Fenêtre : même feuille que les autres choix, grille en radiogroup,
   // « Par défaut » (valeur vide) en premier, puis les icônes de la liste blanche
-  assert.match(form, /const grid = h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-label': 'Icônes' \},\s*option\('', `Par défaut : icône du type \$\{typeName\}`, \[icon\(TYPE_ICONS\[listType\]\), h\('span', \{\}, 'Par défaut'\)\]\),\s*LIST_ICONS\.map\(\(choice\) => option\(choice\.id, choice\.label, icon\(choice\.id\)\)\)\);/);
+  assert.match(form, /const grid = h\('div', \{ class: 'icon-grid', role: 'radiogroup', 'aria-label': t\('formulaire\.icone\.grille'\) \},\s*option\('', t\('formulaire\.icone\.parDefaut\.nom', \{ type: typeName \}\), \[icon\(TYPE_ICONS\[listType\]\), h\('span', \{\}, t\('formulaire\.icone\.parDefaut'\)\)\]\),\s*LIST_ICONS\.map\(\(choice\) => option\(choice\.id, choice\.label, icon\(choice\.id\)\)\)\);/);
+  assert.equal(fr['formulaire.icone.grille'], 'Icônes');
+  assert.equal(fr['formulaire.icone.parDefaut.nom'], 'Par défaut : icône du type {type}');
+  assert.equal(fr['formulaire.icone.parDefaut'], 'Par défaut');
   assert.match(form, /class: `icon-grid__opt\$\{id \? '' : ' icon-grid__opt--default'\}`, type: 'button', role: 'radio', 'aria-checked': String\(on\), 'aria-label': label, title: label,/);
   // Choix actuel : entouré ET coché, focus dessus à l'ouverture
   assert.match(form, /\.\.\.\(on \? \{ 'data-initial-focus': true \} : \{\}\), \.\.\.extra,\s*\}, content, on \? h\('span', \{ class: 'icon-grid__check' \}, icon\('check', 'icon--xs'\)\) : null\);/);
   // Toucher une case : choisie, fenêtre fermée ; fermer autrement ne change rien
   assert.match(form, /button\.addEventListener\('click', \(\) => \{\s*chosenIcon = id;\s*paint\(\);\s*sheet\.close\(\);\s*\}\);/);
   assert.equal((form.match(/^\s*chosenIcon = /gm) || []).length, 1, 'seul le toucher d\'une case change l\'icône');
-  assert.match(form, /const sheet = openSheet\(\{\s*title: 'Choisir une icône',\s*content: grid,\s*scroll: true,[^}]*returnTo: iconPicker,\s*\}\);/);
+  assert.match(form, /const sheet = openSheet\(\{\s*title: t\('formulaire\.icone\.choisir'\),\s*content: grid,\s*scroll: true,[^}]*returnTo: iconPicker,\s*\}\);/);
   // Focus rendu au bouton à la fermeture (ui.js : returnTo, jamais un champ)
   const ui = read('public/js/ui.js');
   assert.match(ui, /const opener = returnTo \?\? document\.activeElement;/);
   assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
   assert.match(ui, /\), \{ onClose, returnTo, beforeClose \}\);/);
   // Ordre du formulaire : titre (avec l'icône), type, « Pour qui ? », magasin
-  assert.match(form, /nameField\.field,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'type-label' \}, 'Type'\), typeGroup, typeWarning\),\s*forField,\s*storeField,/);
+  assert.match(form, /nameField\.field,\s*h\('div', \{ class: 'field' \}, h\('span', \{ class: 'field__label', id: 'type-label' \}, t\('formulaire\.type'\)\), typeGroup, typeWarning\),\s*forField,\s*storeField,/);
+  assert.equal(fr['formulaire.type'], 'Type');
   const css = read('public/css/app.css');
   assert.match(css, /\.icon-grid__opt \{[^}]*min-width: var\(--tap-min\); min-height: var\(--tap-min\);/);
   assert.match(css, /\.icon-grid__opt\[aria-checked="true"\] \{ border: 2px solid var\(--color-accent\);/);
@@ -230,7 +239,7 @@ test('migration 14 : base existante, les listes gardent l\'icône de leur catég
   const before = db.prepare('SELECT * FROM lists ORDER BY id').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   const after = db.prepare('SELECT * FROM lists ORDER BY id').all();
   assert.deepEqual(after.map(({ icon, add_mode: addMode, type, for_user_id: forUser, for_name: forName, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.map(({ category_id: category, ...rest }) => rest), 'rien d\'autre ne change (« Après l\'ajout » : migration 15 ; type : migration 18)');
   assert.deepEqual(after.map((l) => l.icon), ['', ''], 'icône de la catégorie');

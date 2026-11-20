@@ -98,7 +98,7 @@ test('admin : un magasin est simple ou « multi », un « multi » ne regroupe q
   assert.equal((await h.marie.request('PATCH', `/api/admin/stores/${h.s.centre}`, { storeIds: [] })).status, 403);
 
   // Journal
-  assert.ok(h.app.logs.some((line) => line.includes('admin_magasin_regroupement_change')));
+  assert.ok(h.app.logs.some((line) => line.includes('admin_store_grouping_changed')));
 });
 
 test('admin : un magasin regroupé ne peut pas être supprimé, seulement désactivé', async (t) => {

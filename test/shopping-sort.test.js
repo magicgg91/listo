@@ -8,6 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { splitDone } from '../public/js/sorting.js';
+import fr from '../public/js/i18n/fr.js';
 import { emptyState, computeListView, availableSorts, defaultSort, effectiveSort, loadItemSort, saveItemSort, groupKey, possibleGroupKeys } from '../public/js/store.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -107,8 +108,9 @@ test('tri propre à chaque téléphone (localStorage) ; aucun droit en jeu, lect
 
 test('écran : « Par rayon » / « Par magasin » (liste « multi ») et en-tête « À acheter »', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /\['aisle', 'layers', 'Par rayon', 'Tri : par rayon'\],/);
-  assert.match(list, /value === 'aisle' && isMultiList\(currentList\(\)\)\s*\? \[value, 'store', 'Par magasin', 'Tri : par magasin'\]/);
+  assert.match(list, /\['aisle', 'layers', t\('liste\.tri\.rayon'\), t\('liste\.tri\.rayon\.message'\)\],/);
+  assert.match(list, /value === 'aisle' && isMultiList\(currentList\(\)\)\s*\? \[value, 'store', t\('liste\.tri\.magasin'\), t\('liste\.tri\.magasin\.message'\)\]/);
+  assert.deepEqual(['liste.tri.rayon', 'liste.tri.rayon.message', 'liste.tri.magasin', 'liste.tri.magasin.message'].map((key) => fr[key]), ['Par rayon', 'Tri : par rayon', 'Par magasin', 'Tri : par magasin']);
   assert.match(list, /group\.all \? foldableGroup\(list, group, group\.label\)/);
   // Le choix gardé n'est jamais effacé ; un tri indisponible laisse place au tri par défaut
   assert.match(read('public/js/store.js'), /return availableSorts\(list\)\.includes\(wanted\) \? wanted : defaultSort\(list\);/);
@@ -116,6 +118,7 @@ test('écran : « Par rayon » / « Par magasin » (liste « multi ») et en-tê
 
 test('lien public : toujours par rayon (aucun tri envoyé), réponse inchangée', () => {
   const pub = read('server/routes/public.js');
-  assert.match(pub, /const \{ groups, done \} = splitDone\(tops, aisles, isShopping, \{ byStore, stores \}\);/);
+  // (locale : langue du visiteur, pour l'ordre alphabétique seulement)
+  assert.match(pub, /const \{ groups, done \} = splitDone\(tops, aisles, isShopping, \{ byStore, stores, locale \}\);/);
   assert.doesNotMatch(pub, /sort:/);
 });

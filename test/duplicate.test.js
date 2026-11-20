@@ -11,6 +11,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
 import { copyName } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -97,7 +98,7 @@ test('propriétaire : copie privée, éléments non supprimés tous décochés, 
   assert.ok((await h.guillaume.get('/api/sync')).body.listIds.includes(copy.id));
   assert.ok(!(await h.lea.get('/api/sync')).body.listIds.includes(copy.id));
   // Journal : identifiants seulement
-  const entry = h.app.logs.find((l) => l.includes('liste_dupliquee'));
+  const entry = h.app.logs.find((l) => l.includes('list_duplicated'));
   assert.ok(entry, 'événement au journal');
   assert.doesNotMatch(entry, /Maison|Ampoule|Peinture|couloir/);
 });
@@ -181,12 +182,17 @@ test('téléphone : feuille, nom proposé, hors ligne, aucun focus', () => {
   assert.equal(copyName('x'.repeat(100)).length, 100);
   assert.ok(copyName('x'.repeat(100)).endsWith(' (copie)'));
   const source = read('public/js/screens/list-actions.js');
-  assert.match(source, /const OFFLINE_DUPLICATE = 'Connexion nécessaire pour dupliquer une liste';/);
-  assert.match(source, /if \(!navigator\.onLine\) \{\s*toast\(OFFLINE_DUPLICATE\);/);
-  assert.match(source, /const nameField = field\('Titre de la liste', name\);/);
-  assert.match(source, /'aria-label': `Copier les \$\{words\.many\}`/);
+  assert.match(source, /const offlineDuplicate = \(\) => t\('menu\.dupliquer\.horsLigne'\);/);
+  assert.equal(fr['menu.dupliquer.horsLigne'], 'Connexion nécessaire pour dupliquer une liste');
+  assert.match(source, /if \(!navigator\.onLine\) \{\s*toast\(offlineDuplicate\(\)\);/);
+  assert.match(source, /const nameField = field\(t\('menu\.dupliquer\.titre'\), name\);/);
+  assert.equal(fr['menu.dupliquer.titre'], 'Titre de la liste');
+  assert.match(source, /'aria-label': t\('menu\.dupliquer\.copier', \{ items: words\.many \}\)/);
+  assert.equal(fr['menu.dupliquer.copier'], 'Copier les {items}');
   assert.match(source, /let withItems = true;/);
-  assert.match(source, /toast\(`Liste « \$\{created\.name\} » créée`, \{ action: 'Ouvrir', onAction: \(\) => navigate\('list', \{ id: created\.id \}\) \}\);/);
+  assert.match(source, /toast\(t\('menu\.dupliquer\.fait', \{ name: created\.name \}\), \{ action: t\('menu\.dupliquer\.ouvrir'\), onAction: \(\) => navigate\('list', \{ id: created\.id \}\) \}\);/);
+  assert.equal(fr['menu.dupliquer.fait'], 'Liste « {name} » créée');
+  assert.equal(fr['menu.dupliquer.ouvrir'], 'Ouvrir');
   assert.doesNotMatch(source, /innerHTML|\.focus\(/);
   assert.match(read('public/js/screens/lists.js'), /isFreshList\(list\.id\) \? ' list-card--fresh' : ''/);
 });

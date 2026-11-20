@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { matchRoute } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
@@ -17,21 +18,28 @@ const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*
 test('deux onglets, plus de « Catégories » ; « Courses » propose Magasins, Rayons, Articles, chacun avec son contenu d\'avant', () => {
   const admin = code('public/js/screens/admin.js');
   const block = (name) => admin.slice(admin.indexOf(`const ${name} = [`), admin.indexOf('];', admin.indexOf(`const ${name} = [`)));
-  const keys = (text) => [...text.matchAll(/\{ key: '([a-z]+)', label: ([^,}]+)/g)].map((m) => [m[1], m[2].trim()]);
-  assert.deepEqual(keys(block('TABS')), [['comptes', "'Comptes'"], ['courses', "'Courses'"]]);
+  // Libellé : « label: … », ou lu au moment de l'affichage (« get label() { return …; } »)
+  const keys = (text) => [...text.matchAll(/\{ key: '([a-z]+)', (?:get label\(\) \{ return |label: )([^,;}]+)/g)].map((m) => [m[1], m[2].trim()]);
+  assert.deepEqual(keys(block('TABS')), [['comptes', "t('administration.onglets.comptes')"], ['courses', "t('administration.onglets.courses')"]]);
+  assert.equal(fr['administration.onglets.comptes'], 'Comptes');
+  assert.equal(fr['administration.onglets.courses'], 'Courses');
   assert.doesNotMatch(admin, /categor|Catégor/i, 'aucune trace des catégories dans l\'écran');
   assert.doesNotMatch(code('public/js/screens/settings.js'), /catégories/);
   assert.deepEqual(keys(block('SHOPPING')).map(([key]) => key), ['magasins', 'rayons', 'noms']);
   // Même contenu qu'avant : magasins et rayons par loadReferences (mêmes routes), articles par loadNames
-  assert.match(block('SHOPPING'), /\{ key: 'magasins', label: 'Magasins', api: 'stores', placeholder: 'Nouveau magasin' \}/);
-  assert.match(block('SHOPPING'), /\{ key: 'rayons', label: 'Rayons', api: 'aisles', placeholder: 'Nouveau rayon' \}/);
+  assert.match(block('SHOPPING'), /\{ key: 'magasins', get label\(\) \{ return t\('administration\.magasins'\); \}, api: 'stores', get placeholder\(\) \{ return t\('administration\.magasins\.nouveau'\); \} \}/);
+  assert.match(block('SHOPPING'), /\{ key: 'rayons', get label\(\) \{ return t\('administration\.rayons'\); \}, api: 'aisles', get placeholder\(\) \{ return t\('administration\.rayons\.nouveau'\); \} \}/);
+  assert.equal(fr['administration.magasins'], 'Magasins');
+  assert.equal(fr['administration.magasins.nouveau'], 'Nouveau magasin');
+  assert.equal(fr['administration.rayons'], 'Rayons');
+  assert.equal(fr['administration.rayons.nouveau'], 'Nouveau rayon');
   assert.match(admin, /if \(tab\.key === 'noms'\) return loadNames\(panel, \(\) => alive\);\s*return loadReferences\(tab, panel, \(\) => alive\);/);
   // Le sélecteur : même composant que les onglets, en plus petit ; une navigation
   // (<nav>, aria-current="page"), plus de role="tablist"/"tab" (15 novembre 2026)
   assert.match(admin, /function tabBar\(entries, current, label, extraClass = ''\) \{\s*return h\('nav', \{ class: `tabs\$\{extraClass\}`, 'aria-label': label \},/);
   assert.match(admin, /'aria-current': t\.key === current \? 'page' : null,/);
   assert.doesNotMatch(admin, /role: 'tab/);
-  assert.match(admin, /const choices = shopping \? tabBar\(SHOPPING, shopping\.key, 'Courses', ' tabs--sub'\) : null;/);
+  assert.match(admin, /const choices = shopping \? tabBar\(SHOPPING, shopping\.key, t\('administration\.onglets\.courses'\), ' tabs--sub'\) : null;/);
   const css = read('public/css/app.css');
   assert.match(css, /\.tabs--sub \.tab \{ min-height: var\(--tap-min\); font-size: var\(--text-sm\); \}/);
   // Choisi : souligné épais ET texte plus foncé (kit), pas la couleur seule
@@ -49,7 +57,8 @@ test('adresses : les anciennes (magasins, rayons, noms) mènent au bon choix de 
   assert.match(admin, /let lastShopping = SHOPPING\[0\]\.key;/);
   assert.match(admin, /if \(tabKey === 'courses'\) tabKey = lastShopping;\s*const shopping = SHOPPING\.find\(\(t\) => t\.key === tabKey\);\s*if \(shopping\) lastShopping = shopping\.key;/);
   // L'onglet « Courses » mène au dernier choix ; il est actif pour chacun des trois
-  assert.match(admin, /TABS\.map\(\(t\) => \(t\.key === 'courses' \? \{ \.\.\.t, target: lastShopping \} : t\)\), shopping \? 'courses' : tab\.key, 'Rubriques'\)/);
+  assert.match(admin, /TABS\.map\(\(t\) => \(t\.key === 'courses' \? \{ \.\.\.t, target: lastShopping \} : t\)\), shopping \? 'courses' : tab\.key, t\('administration\.rubriques'\)\)/);
+  assert.equal(fr['administration.rubriques'], 'Rubriques');
   // Adresse inconnue : « Comptes », sans écran d'erreur
   assert.match(admin, /if \(!tab\) \{\s*queueMicrotask\(\(\) => navigate\('admin', \{ tab: 'comptes' \}, \{ replace: true \}\)\);/);
   // Rien gardé après la fermeture (pas de stockage)

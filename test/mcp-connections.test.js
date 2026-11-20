@@ -10,6 +10,7 @@ import { createClient, ORIGIN } from './helpers.js';
 import { PASSWORD, MARIE_PASSWORD, household, connect, claude } from './mcp-helpers.js';
 import { GUIDE } from '../public/js/help-content.js';
 import { matchRoute } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const ping = async (h, token) => (await claude(h, token).rpc('ping')).status;
@@ -95,9 +96,9 @@ test('déconnecter UNE connexion : refusée sur /mcp tout de suite, les autres r
   // Renouvellement refusé aussi
   const refreshed = await fetch(`${h.app.base}/oauth/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: first.clientId }) });
   assert.equal((await refreshed.json()).error, 'invalid_grant');
-  const line = h.app.logs.find((l) => /claude\.revocation/.test(l) && /Connexions Claude/.test(l));
-  assert.match(line, /par="le compte"/);
-  assert.match(line, /utilisateur="guillaume"/);
+  const line = h.app.logs.find((l) => /claude\.revoked/.test(l) && /Claude connections/.test(l));
+  assert.match(line, /by="account"/);
+  assert.match(line, /user="guillaume"/);
 });
 
 test('« Tout déconnecter » : toutes mes connexions, pas celles des autres', async (t) => {
@@ -131,17 +132,21 @@ test('refus sans session et depuis une autre origine', async (t) => {
 test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\'accès est activé ; adresse jamais écrite en dur', () => {
   assert.deepEqual(matchRoute('#/reglages/claude'), { name: 'claudeConnections', params: {} });
   const account = read('public/js/screens/account.js');
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, 'Claude'\),/);
+  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   assert.match(account, /navigate\('claudeConnections'\)/);
   const app = read('public/js/app.js');
   assert.match(app, /case 'claudeConnections':\s*if \(app\.user\.claudeUrl\) mount\(\(\) => renderClaudeConnections\(\)\);\s*else navigate\('account', \{\}, \{ replace: true \}\);/);
   const screen = read('public/js/screens/claude-connections.js');
   assert.match(screen, /del\(`\/api\/me\/claude\/\$\{encodeURIComponent\(connection\.id\)\}`\)/);
   assert.match(screen, /del\('\/api\/me\/claude'\)/);
-  assert.match(screen, /confirmDialog\(\{\s*title: `Déconnecter/);
-  assert.match(screen, /confirmDialog\(\{\s*title: 'Tout déconnecter \?'/);
-  assert.match(screen, /'aria-label': `Déconnecter \$\{titleOf\(connection\)\}`/);
-  assert.match(screen, /nom donné par l\\'application, non vérifié/);
+  assert.match(screen, /confirmDialog\(\{\s*title: t\('claude\.connexions\.deconnecter\.question', \{ name: titleOf\(connection\) \}\)/);
+  assert.equal(fr['claude.connexions.deconnecter.question'], 'Déconnecter {name} ?');
+  assert.match(screen, /confirmDialog\(\{\s*title: t\('claude\.connexions\.tout\.question'\)/);
+  assert.equal(fr['claude.connexions.tout.question'], 'Tout déconnecter ?');
+  assert.match(screen, /'aria-label': t\('claude\.connexions\.deconnecter\.nom', \{ name: titleOf\(connection\) \}\)/);
+  assert.equal(fr['claude.connexions.deconnecter.nom'], 'Déconnecter {name}');
+  assert.match(screen, /t\('claude\.application\.nonVerifie'\)/);
+  assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|https:\/\//);
   assert.ok(read('public/sw.js').includes("'/js/screens/claude-connections.js'"));
   // Aide : le chapitre « Claude et Listo » du guide, le même pour tous ; il

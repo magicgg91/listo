@@ -19,10 +19,12 @@ import { app, onDataChange, refreshData } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { isWishList } from '../list-types.js';
 import { linkPart } from './share.js';
+import { t, compareText } from '../i18n.js';
 
-const LEVELS = [['modification', 'Peut modifier'], ['lecture', 'Lecture seule']];
-const levelLabel = (access) => (access === 'lecture' ? 'Lecture seule' : 'Peut modifier');
-const compare = (a, b) => a.displayName.localeCompare(b.displayName, 'fr', { sensitivity: 'base' });
+// Droits proposés (fonction : les textes sont lus dans la langue choisie)
+const levels = () => [['modification', t('partage.panneau.peutModifier')], ['lecture', t('partage.panneau.lectureSeule')]];
+const levelLabel = (access) => (access === 'lecture' ? t('partage.panneau.lectureSeule') : t('partage.panneau.peutModifier'));
+const compare = (a, b) => compareText(a.displayName, b.displayName, { sensitivity: 'base' });
 
 export function openSharePanel(listId) {
   const current = () => app.data.lists.get(listId);
@@ -32,7 +34,7 @@ export function openSharePanel(listId) {
   let busy = false;
   const people = h('ul', { class: 'pc-share__people', 'aria-labelledby': 'pc-share-people' });
   const addRow = h('div', { class: 'share-row share-row--add' });
-  const offlineNote = h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, 'Indisponible hors ligne : reconnectez-vous pour changer le partage.'));
+  const offlineNote = h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, t('partage.panneau.horsLigne')));
 
   // Le destinataire d'une liste d'envies : membre d'office, sans choix
   const beneficiary = (list, person) => isWishList(list) && list.forUserId === person.id;
@@ -50,7 +52,7 @@ export function openSharePanel(listId) {
       });
       await refreshData({ quiet: true });
     } catch (error) {
-      toast(`Le partage n'a pas pu être changé : ${errorMessage(error)}`);
+      toast(t('partage.panneau.echec', { message: errorMessage(error) }));
     } finally {
       busy = false;
       draw();
@@ -68,16 +70,16 @@ export function openSharePanel(listId) {
     const members = list.members.filter((m) => m.active || m.isOwner).sort((a, b) => Number(b.isOwner) - Number(a.isOwner) || compare(a, b));
     replace(people, members.map((person, index) => {
       const me = person.id === app.user.id;
-      const name = `${person.displayName}${me ? ' (vous)' : ''}`;
+      const name = me ? t('partage.panneau.vous', { name: person.displayName }) : person.displayName;
       let right;
-      if (person.isOwner) right = h('span', { class: 'chip' }, 'Propriétaire');
-      else if (beneficiary(list, person)) right = h('span', { class: 'chip' }, 'Destinataire · Peut modifier');
+      if (person.isOwner) right = h('span', { class: 'chip' }, t('partage.panneau.proprietaire'));
+      else if (beneficiary(list, person)) right = h('span', { class: 'chip' }, t('partage.panneau.destinataire'));
       else if (!owner) right = h('span', { class: 'pc-meta' }, levelLabel(person.access));
       else {
-        const select = h('select', { class: 'input select--sm', 'aria-label': `Droit de ${person.displayName}`, disabled: off },
-          LEVELS.map(([value, label]) => h('option', { value, selected: (person.access ?? 'modification') === value }, label)));
+        const select = h('select', { class: 'input select--sm', 'aria-label': t('partage.panneau.droitDe', { name: person.displayName }), disabled: off },
+          levels().map(([value, label]) => h('option', { value, selected: (person.access ?? 'modification') === value }, label)));
         select.addEventListener('change', () => send(members.map((m) => (m.id === person.id ? { ...m, access: select.value } : m))));
-        const remove = iconButton('close', `Retirer ${person.displayName}`, () => send(members.filter((m) => m.id !== person.id)));
+        const remove = iconButton('close', t('partage.panneau.retirer', { name: person.displayName }), () => send(members.filter((m) => m.id !== person.id)));
         remove.disabled = off;
         right = [select, remove];
       }
@@ -90,16 +92,16 @@ export function openSharePanel(listId) {
     if (owner) {
       const candidates = (app.data.users ?? []).filter((u) => !members.some((m) => m.id === u.id)).sort(compare);
       if (!candidates.length) {
-        replace(addRow, h('p', { class: 'pc-meta' }, 'Tous les comptes ont déjà accès à cette liste.'));
+        replace(addRow, h('p', { class: 'pc-meta' }, t('partage.panneau.tousLesComptes')));
       } else {
-        const who = h('select', { class: 'input grow', 'aria-label': 'Personne à ajouter', disabled: off },
+        const who = h('select', { class: 'input grow', 'aria-label': t('partage.panneau.ajout.personne'), disabled: off },
           candidates.map((u) => h('option', { value: String(u.id) }, u.displayName)));
-        const level = h('select', { class: 'input select--sm', 'aria-label': 'Droit de la personne ajoutée', disabled: off },
-          LEVELS.map(([value, label]) => h('option', { value, selected: value === 'lecture' }, label)));
+        const level = h('select', { class: 'input select--sm', 'aria-label': t('partage.panneau.ajout.droit'), disabled: off },
+          levels().map(([value, label]) => h('option', { value, selected: value === 'lecture' }, label)));
         const add = h('button', { class: 'btn btn--primary', type: 'button', disabled: off, onClick: () => {
           const user = candidates.find((u) => String(u.id) === who.value);
           if (user) send([...members, { id: user.id, displayName: user.displayName, access: level.value }]);
-        } }, 'Ajouter');
+        } }, t('partage.panneau.ajouter'));
         replace(addRow, who, level, add);
       }
     }
@@ -108,11 +110,11 @@ export function openSharePanel(listId) {
 
   const link = owner ? linkPart(start, () => panel.close()) : null;
   const content = [
-    h('h3', { class: 'pc-share__title', id: 'pc-share-people' }, 'Personnes'),
+    h('h3', { class: 'pc-share__title', id: 'pc-share-people' }, t('partage.panneau.personnes')),
     offlineNote,
     people,
-    owner ? addRow : h('p', { class: 'pc-meta' }, 'Seul le propriétaire choisit les personnes, leur droit et le lien public.'),
-    link ? [h('h3', { class: 'pc-share__title' }, 'Lien public'), link.body] : null,
+    owner ? addRow : h('p', { class: 'pc-meta' }, t('partage.panneau.proprietaireSeul')),
+    link ? [h('h3', { class: 'pc-share__title' }, t('partage.panneau.lienPublic')), link.body] : null,
   ];
   const stop = onDataChange(() => {
     if (!busy) draw();
@@ -121,11 +123,11 @@ export function openSharePanel(listId) {
   window.addEventListener('online', onNetwork);
   window.addEventListener('offline', onNetwork);
   const panel = openSheet({
-    title: owner ? 'Partager la liste' : 'Personnes',
+    title: owner ? t('partage.panneau.titre') : t('partage.panneau.personnes'),
     sub: start.name,
     content,
     pc: 'drawer',
-    footer: [h('span', { class: 'grow' }), h('button', { class: 'btn btn--primary', type: 'button', onClick: () => panel.close() }, 'Terminé')],
+    footer: [h('span', { class: 'grow' }), h('button', { class: 'btn btn--primary', type: 'button', onClick: () => panel.close() }, t('partage.panneau.termine'))],
     onClose: () => {
       stop();
       link?.dispose();

@@ -13,6 +13,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { publicItemDetails } from '../public/js/format.js';
+import fr from '../public/js/i18n/fr.js';
 
 const HOUR = 60 * 60 * 1000;
 const uuid = () => crypto.randomUUID();
@@ -218,15 +219,19 @@ test('fiche : mêmes champs que la fiche à consulter de l\'application, aucun o
   // « Pour » : jamais sur la page publique, pour ne pas montrer les prénoms
   // de la famille à un visiteur sans compte ; « Rappel » : propre à la tâche,
   // jamais sur la page publique non plus)
-  const labels = [...view.matchAll(/value\('([^']+)'/g)].map((m) => m[1]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel' && label !== 'Sous-tâche de');
+  // (libellés lus dans les textes français : value(t('liste.…'), …))
+  const labels = [...view.matchAll(/value\(t\('([^']+)'\)/g)].map((m) => fr[m[1]]).filter((label) => label !== 'Prix indicatif' && label !== 'Pour' && label !== 'Rappel' && label !== 'Sous-tâche de');
   assert.deepEqual(labels, ['Quantité', 'Note', 'Priorité', 'Échéance', 'Se répète', 'Code-barres', 'Rayon', 'Magasin']);
   const format = read('public/js/format.js');
   const details = format.slice(format.indexOf('export function publicItemDetails'), format.indexOf('export function priorityChip'));
-  for (const label of labels) assert.ok(details.includes(`'${label}'`), `« ${label} » manque sur la fiche publique`);
-  assert.ok(details.includes("'État'"), 'état coché écrit en toutes lettres');
+  // (libellés de la fiche publique lus dans les textes français : t('format.fiche.…'))
+  const publicLabels = [...details.matchAll(/t\('(format\.fiche\.[^']+)'\)/g)].map((m) => fr[m[1]]);
+  for (const label of labels) assert.ok(publicLabels.includes(label), `« ${label} » manque sur la fiche publique`);
+  assert.ok(publicLabels.includes('État'), 'état coché écrit en toutes lettres');
   // Photo agrandissable, avec le même balisage
   const page = read('public/js/public.js');
-  assert.match(page, /h\('button', \{ class: 'photo-block__thumb', type: 'button', 'aria-label': `Agrandir la photo de \$\{item\.name\}`, onClick: \(\) => showPhoto\(item\) \}/);
+  assert.match(page, /h\('button', \{ class: 'photo-block__thumb', type: 'button', 'aria-label': t\('lienpublic\.photo\.agrandir', \{ name: item\.name \}\), onClick: \(\) => showPhoto\(item\) \}/);
+  assert.equal(fr['lienpublic.photo.agrandir'], 'Agrandir la photo de {name}');
 });
 
 test('page publique : fiche sans champ ni bouton qui écrit, aucune requête à l\'ouverture, retour et focus', () => {
@@ -247,13 +252,15 @@ test('page publique : fiche sans champ ni bouton qui écrit, aucune requête à 
   // Focus rendu à la ligne touchée (jamais à un champ de saisie)
   assert.match(sheet, /if \(opener\?\.isConnected && !opener\.matches\?\.\('input, textarea'\)\) opener\.focus\(\);/);
   // La ligne est un bouton (44 px : .item__body du kit), lu « Voir … »
-  assert.match(page, /h\('button', \{ class: 'item__body', type: 'button', 'aria-label': `Voir \$\{item\.name\}\$\{spokenMeta\(item\)\}\$\{extraSpoken\}`, onClick: \(\) => showItem\(item, place, thumb\) \}/);
+  assert.match(page, /h\('button', \{ class: 'item__body', type: 'button', 'aria-label': `\$\{t\('lienpublic\.voir', \{ name: item\.name \}\)\}\$\{spokenMeta\(item\)\}\$\{extraSpoken\}`, onClick: \(\) => showItem\(item, place, thumb\) \}/);
+  assert.equal(fr['lienpublic.voir'], 'Voir {name}');
   // Photo de la fiche : copie de la vignette déjà chargée (canvas), sans
   // nouvelle requête ; sinon, l'adresse du lien, comme avant
   assert.match(page, /if \(thumb\?\.complete && thumb\.naturalWidth\) \{\s*const canvas = h\('canvas'/);
   assert.match(page, /canvas\.getContext\('2d'\)\.drawImage\(thumb, 0, 0\);/);
   // La page publique ne passe toujours pas par le service worker
-  assert.doesNotMatch(read('public/sw.js').match(/const APP_FILES = \[[\s\S]*?\];/)[0], /public\.js/);
+  // (« /js/i18n/fr/lienpublic.js », les textes de la page, y est : seul le script de la page compte)
+  assert.doesNotMatch(read('public/sw.js').match(/const APP_FILES = \[[\s\S]*?\];/)[0], /'\/js\/public\.js'/);
 });
 
 // Correction du 20 octobre 2026 : sur Android (Chrome, barre de navigation à

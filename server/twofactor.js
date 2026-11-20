@@ -86,7 +86,7 @@ export function checkSecondFactor(ctx, user, code) {
     try {
       secret = openTotpSecret(ctx, user);
     } catch {
-      ctx.audit?.('secret_2fa_illisible', { utilisateur: user.username });
+      ctx.audit?.('2fa_secret_unreadable', { user: user.username });
       return false;
     }
     return useTotpCode(ctx, user.id, secret, user.totp_last_step, code);

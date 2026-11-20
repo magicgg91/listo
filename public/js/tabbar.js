@@ -20,12 +20,14 @@ import { navigate, goBack } from './router.js';
 import { app, onDataChange } from './app.js';
 import { deadlineBadge } from './deadlines.js';
 import { watchNewDay } from './ui.js';
+import { t } from './i18n.js';
 
-// [écran, icône, libellé]
+// [écran, icône, libellé] (le libellé est une fonction : il est lu dans la
+// langue choisie au moment de dessiner le bandeau)
 export const TABS = [
-  ['lists', 'tasks', 'Mes listes'],
-  ['deadlines', 'calendar', 'Échéances'],
-  ['settings', 'sliders', 'Réglages'],
+  ['lists', 'tasks', () => t('navigation.mesListes')],
+  ['deadlines', 'calendar', () => t('navigation.echeances')],
+  ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 
 // L'écran a-t-il le bandeau ?
@@ -47,8 +49,8 @@ export function goToTab(name) {
 
 // Libellé lu de « Échéances » avec sa pastille
 export function deadlinesLabel(count) {
-  if (!count) return 'Échéances';
-  return `Échéances, ${count} ${count > 1 ? 'tâches' : 'tâche'} en retard ou pour aujourd'hui`;
+  if (!count) return t('navigation.echeances');
+  return t('navigation.echeances.pastille', { count });
 }
 
 // Loupe ronde en verre (bandeau, et barre d'ajout d'une liste).
@@ -94,9 +96,9 @@ function createTabBar() {
       type: 'button',
       'data-tab': name,
       onClick: () => goToTab(name),
-    }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? badge : null), h('span', { class: 'tabbar__label' }, label)));
+    }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? badge : null), h('span', { class: 'tabbar__label' }, label())));
   }
-  const nav = h('nav', { class: 'tabbar glass', 'aria-label': 'Navigation' }, pill, ...buttons.values());
+  const nav = h('nav', { class: 'tabbar glass', 'aria-label': t('navigation.libelle') }, pill, ...buttons.values());
   const loupe = loupeButton();
   const el = h('div', { class: 'tabdock' }, nav, loupe.el);
 

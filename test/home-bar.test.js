@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const lists = read('public/js/screens/lists.js');
@@ -15,12 +16,15 @@ const ui = read('public/js/ui.js');
 test('barre de l\'accueil : titre, pastille, tri, « + », sur une ligne ; plus de ligne d\'état dessous', () => {
   const screen = lists.slice(lists.indexOf('export function renderLists'), lists.indexOf('// --- Colonne de gauche'));
   const bar = screen.slice(screen.indexOf("h('header', { class: 'topbar topbar--plain topbar--status' }"));
-  const order = ["h('h1', { class: 'topbar__title' }, 'Mes listes')", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', 'Nouvelle liste', () => navigate('newList'), 'icon-btn--accent')"];
+  const order = ["h('h1', { class: 'topbar__title' }, t('listes.titre'))", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', t('listes.nouvelle'), () => navigate('newList'), 'icon-btn--accent')"];
+  assert.equal(fr['listes.titre'], 'Mes listes');
+  assert.equal(fr['listes.nouvelle'], 'Nouvelle liste');
   const at = order.map((text) => bar.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(at[i] >= 0, text);
   assert.deepEqual([...at].sort((a, b) => a - b), at, 'ordre de la barre');
   assert.equal(screen.includes("class: 'statusbar'"), false, 'la ligne sous la barre a disparu');
   assert.equal(screen.includes("'Réglages'"), false, 'Réglages : dans le bandeau du bas');
+  assert.equal(screen.includes("t('navigation.reglages')"), false, 'Réglages : dans le bandeau du bas');
 });
 
 test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seulement si la place manque', () => {
@@ -32,7 +36,11 @@ test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seuleme
   // Réduite seulement si le texte dépasse la place laissée
   assert.match(ui, /if \(pill\.scrollWidth > slot\.clientWidth \+ 0\.5\) \{\s*pill\.classList\.add\('sync--compact'\);/);
   // Textes d'état inchangés
-  for (const text of ["'À jour'", "'Synchronisation…'", '`Hors ligne · ${pendingCount} en attente`', "'Hors ligne'"]) assert.ok(ui.includes(text), text);
+  for (const text of ["t('fenetres.sync.aJour')", "t('fenetres.sync.enCours')", "t('fenetres.sync.horsLigne.enAttente', { count: pendingCount })", "t('fenetres.sync.horsLigne')"]) assert.ok(ui.includes(text), text);
+  assert.equal(fr['fenetres.sync.aJour'], 'À jour');
+  assert.equal(fr['fenetres.sync.enCours'], 'Synchronisation…');
+  assert.equal(fr['fenetres.sync.horsLigne.enAttente'], 'Hors ligne · {count} en attente');
+  assert.equal(fr['fenetres.sync.horsLigne'], 'Hors ligne');
   // Réduite : texte masqué visuellement (pas display: none), donc toujours lu
   const css = read('public/css/listo.css');
   const rule = css.match(/\.sync--compact \.sync__text \{([^}]*)\}/)[1];

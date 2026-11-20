@@ -430,7 +430,7 @@ test('5 mots de passe faux bloquent la saisie (par lien, et par adresse IP)', as
   await ip.post(`/api/public/${other.token}/acces`, { password: 'faux' });
   assert.equal((await ip.post(`/api/public/${other.token}/acces`, { password: 'faux' })).status, 429);
   assert.equal((await ip.post(`/api/public/${other.token}/acces`, { password: other.share.password })).status, 429);
-  assert.ok(h.app.logs.some((line) => line.includes('lien_public_saisie_bloquee')));
+  assert.ok(h.app.logs.some((line) => line.includes('public_link_entry_blocked')));
 });
 
 test('plafond de liens invalides essayés par adresse IP', async (t) => {
@@ -444,7 +444,7 @@ test('plafond de liens invalides essayés par adresse IP', async (t) => {
   assert.equal((await scanner.request('GET', `/p/${token}`)).status, 429);
   // Les autres adresses ne sont pas touchées
   assert.equal((await visitor(h, '203.0.113.71').get(`/api/public/${token}`)).status, 200);
-  assert.ok(h.app.logs.some((line) => line.includes('lien_public_ip_bloquee')));
+  assert.ok(h.app.logs.some((line) => line.includes('public_link_ip_blocked')));
 });
 
 test('« Nouveau mot de passe » et « Retirer » : l\'ancien mot de passe et les cookies ne marchent plus', async (t) => {
@@ -506,8 +506,8 @@ test('ni le jeton ni le mot de passe en clair dans la base ou le journal', async
   assert.match(row.token_hash, /^[0-9a-f]{64}$/);
   assert.match(row.token_sealed, /^v1:/);
   // Le journal cite le partage par son numéro
-  for (const event of ['lien_public_cree', 'lien_public_nouveau_mot_de_passe', 'lien_public_mot_de_passe_refuse', 'lien_public_ouvert', 'lien_public_duree_changee', 'lien_public_arrete']) {
-    assert.ok(h.app.logs.some((line) => line.includes(event) && line.includes(`partage=${row.id}`)), event);
+  for (const event of ['public_link_created', 'public_link_new_password', 'public_link_password_refused', 'public_link_opened', 'public_link_duration_changed', 'public_link_stopped']) {
+    assert.ok(h.app.logs.some((line) => line.includes(event) && line.includes(`share=${row.id}`)), event);
   }
 });
 

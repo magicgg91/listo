@@ -23,6 +23,7 @@
 // et les réactions lui sont donnés (tests automatiques sans navigateur).
 
 import { reconnectDelay } from './live.js';
+import { t } from './i18n.js';
 
 export const OPS_PER_BATCH = 20;
 
@@ -37,7 +38,9 @@ export function isTemporary(error) {
 // transport : { sendOps(ops) → résultats, putPhoto(itemId, jpeg), deletePhoto(itemId) }
 // events : réactions (toutes facultatives) :
 //   changed()                 la file a changé (nombre en attente)
-//   refused(entry, message)   un élément a été refusé et retiré
+//   refused(entry, message, code)   un élément a été refusé et retiré
+//                             (code : nom du texte de refus donné par le
+//                             serveur, par exemple 'ops.lectureSeule', s'il y en a un)
 //   dropped(entry)            photo abandonnée (article supprimé entre-temps)
 //   offline(error)            arrêt : pas de réseau ou serveur indisponible
 //   unauthorized()            arrêt : session expirée (la file est gardée)
@@ -122,7 +125,7 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
       const result = results?.[index];
       if (!result) return halt(null); // réponse incomplète : on réessaiera
       await remove(entry.seq);
-      if (result.status !== 200) emit('refused', entry, result.error || 'modification refusée');
+      if (result.status !== 200) emit('refused', entry, result.error || t('reseau.modificationRefusee'), result.code);
     }
     return null;
   }
@@ -141,7 +144,7 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
       await remove(entry.seq);
       // Article supprimé ailleurs : la suppression l'emporte, photo abandonnée
       if (error.status === 404) emit('dropped', entry);
-      else emit('refused', entry, error.message);
+      else emit('refused', entry, error.message, error.data?.code);
       return null;
     }
     await remove(entry.seq);

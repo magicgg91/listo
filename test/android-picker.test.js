@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createImagePicker, isAndroid } from '../public/js/photo.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -81,7 +82,8 @@ test('détection d\'Android : navigateurs Android, iPhone, iPad, ordinateurs', (
   // Détection isolée dans une seule petite fonction, utilisée par défaut
   const source = read('public/js/photo.js');
   assert.match(source, /export function isAndroid\(userAgent = globalThis\.navigator\?\.userAgent \?\? ''\) \{\s*return \/\\bAndroid\\b\/i\.test\(String\(userAgent\)\);\s*\}/);
-  assert.match(source, /export function createImagePicker\(onFile, \{ title = 'Choisir une image', android = isAndroid\(\), sheet = null \} = \{\}\)/);
+  assert.match(source, /export function createImagePicker\(onFile, \{ title = t\('photo\.choisir'\), android = isAndroid\(\), sheet = null \} = \{\}\)/);
+  assert.equal(fr['photo.choisir'], 'Choisir une image');
   assert.equal((source.match(/isAndroid\(/g) ?? []).length, 2, 'définie une fois, appelée une fois');
 });
 
@@ -156,9 +158,14 @@ test('Android : la feuille propose les deux choix, chacun ouvre le bon champ ; A
 test('les trois usages passent par le même composant, avec un titre ; textes en texte, jamais en HTML', () => {
   const list = read('public/js/screens/list.js');
   const scan = read('public/js/screens/scan.js');
-  assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: 'Scanner un code-barres' \}\)/);
-  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: `Photo \$\{words\.of\}` \}\)/);
-  assert.match(scan, /\}, \{ title: 'Scanner un produit' \}\);/);
+  assert.match(list, /createImagePicker\(\(file\) => readEan\(file\), \{ title: t\('liste\.fiche\.codeBarres\.scanner'\) \}\)/);
+  assert.equal(fr['liste.fiche.codeBarres.scanner'], 'Scanner un code-barres');
+  assert.match(list, /createImagePicker\(\(file\) => sendPhoto\(file\), \{ title: byKind\(kind, \{ shopping: t\('liste\.photo\.titre\.courses'\), tasks: t\('liste\.photo\.titre\.taches'\), wishes: t\('liste\.photo\.titre\.envies'\) \}\) \}\)/);
+  assert.equal(fr['liste.photo.titre.courses'], 'Photo de l\'article');
+  assert.equal(fr['liste.photo.titre.taches'], 'Photo de l\'élément');
+  assert.equal(fr['liste.photo.titre.envies'], 'Photo du souhait');
+  assert.match(scan, /\}, \{ title: t\('scan\.titre'\) \}\);/);
+  assert.equal(fr['scan.titre'], 'Scanner un produit');
   const photo = read('public/js/photo.js');
   assert.doesNotMatch(photo, /innerHTML|insertAdjacentHTML|outerHTML|getUserMedia/);
   // La feuille : celle de ui.js (par-dessus la fiche, fond grisé), sans

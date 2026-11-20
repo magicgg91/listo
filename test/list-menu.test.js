@@ -12,21 +12,26 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
 test('actions d\'une liste : Modifier la liste, Dupliquer la liste, Partager par lien, Supprimer la liste, dans cet ordre, pour le propriétaire', () => {
   const source = read('public/js/screens/list-actions.js');
-  assert.match(source, /const duplicate = \{ icon: 'copy', label: 'Dupliquer la liste', onSelect: \(\) => openDuplicateSheet\(list\) \};/);
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste', onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: 'Partager par lien', onSelect: \(\) => openShareSheet\(list\) \},\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
+  assert.match(source, /const duplicate = \{ icon: 'copy', label: t\('menu\.dupliquer'\), onSelect: \(\) => openDuplicateSheet\(list\) \};/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\), onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\), onSelect: \(\) => openShareSheet\(list\) \},\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
+  assert.equal(fr['menu.dupliquer'], 'Dupliquer la liste');
+  assert.equal(fr['menu.modifier'], 'Modifier la liste');
+  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
+  assert.equal(fr['menu.supprimer'], 'Supprimer la liste');
   // Les deux menus utilisent cette même fonction (mêmes écrans, même ordre)
   const lists = read('public/js/screens/lists.js');
   const list = read('public/js/screens/list.js');
   assert.match(lists, /const actions = listActions\(list\);/);
   assert.match(list, /const menuActions = \(\) => \(view \? listActions\(view\.list, \{ onDeleted: \(\) => navigate\('lists', \{\}, \{ replace: true \}\) \}\) : \[\]\);/);
   for (const [file, source] of [['lists.js', lists], ['list.js', list]]) {
-    assert.doesNotMatch(source, /label: 'Modifier la liste'|label: 'Partager par lien'|label: 'Supprimer la liste'/, `${file} : pas de seconde liste d'actions`);
+    assert.doesNotMatch(source, /label: 'Modifier la liste'|label: 'Partager par lien'|label: 'Supprimer la liste'|label: t\('menu\.(modifier|partagerLien|supprimer)'\)/, `${file} : pas de seconde liste d'actions`);
   }
 });
 
@@ -46,7 +51,8 @@ test('menu ⋮ de la liste : plus d\'« Actualiser » ; la pastille d\'état rel
 test('carte : bouton « ⋯ » à côté du lien (jamais dedans), aria-label, aria-haspopup, aria-expanded, menu sous le bouton', () => {
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /return h\('div', \{ class: 'list-card-wrap' \}, card, menuButton\);/);
-  assert.match(lists, /const menuButton = iconButton\('more', `Actions de la liste \$\{list\.name\}`, \(\) => \{\s*menuButton\.setAttribute\('aria-expanded', 'true'\);\s*openMenu\(actions, \{ label: `Actions de la liste \$\{list\.name\}`, anchor: menuButton, onClose: \(\) => menuButton\.setAttribute\('aria-expanded', 'false'\) \}\);/);
+  assert.match(lists, /const menuButton = iconButton\('more', t\('listes\.carte\.actions', \{ name: list\.name \}\), \(\) => \{\s*menuButton\.setAttribute\('aria-expanded', 'true'\);\s*openMenu\(actions, \{ label: t\('listes\.carte\.actions', \{ name: list\.name \}\), anchor: menuButton, onClose: \(\) => menuButton\.setAttribute\('aria-expanded', 'false'\) \}\);/);
+  assert.equal(fr['listes.carte.actions'], 'Actions de la liste {name}');
   assert.match(lists, /menuButton\.setAttribute\('aria-haspopup', 'menu'\);\s*menuButton\.setAttribute\('aria-expanded', 'false'\);/);
   const ui = read('public/js/ui.js');
   assert.match(ui, /panel\.style\.top = `\$\{Math\.max\(8, Math\.min\(below, room\)\)\}px`;/);
@@ -56,16 +62,19 @@ test('carte : bouton « ⋯ » à côté du lien (jamais dedans), aria-label, ar
 
 test('retour : « Modifier la liste » ouverte depuis l\'accueil revient à l\'accueil (retour arrière de l\'historique)', () => {
   const form = read('public/js/screens/list-form.js');
-  assert.match(form, /iconButton\('close', 'Fermer sans enregistrer', \(\) => goBack\(list \? 'list' : 'lists', list \? \{ id: list\.id \} : \{\}\)\)/);
+  assert.match(form, /iconButton\('close', t\('formulaire\.fermer'\), \(\) => goBack\(list \? 'list' : 'lists', list \? \{ id: list\.id \} : \{\}\)\)/);
+  assert.equal(fr['formulaire.fermer'], 'Fermer sans enregistrer');
   assert.match(form, /\} else \{\s*goBack\('list', \{ id \}\);\s*\}/);
   assert.match(read('public/js/router.js'), /export function goBack\(fallback = 'lists', params = \{\}\) \{\s*if \(depth\(\) > 0\) history\.back\(\);/);
 });
 
 test('suppression : une seule logique et la même confirmation pour les trois chemins', () => {
   const source = read('public/js/screens/list-actions.js');
-  assert.match(source, /title: `Supprimer la liste « \$\{list\.name\} » \?`,/);
+  assert.match(source, /title: t\('menu\.supprimer\.question', \{ name: list\.name \}\),/);
+  assert.equal(fr['menu.supprimer.question'], 'Supprimer la liste « {name} » ?');
   // Texte précis et restauration possible (corbeille) ; focus sur « Annuler »
-  assert.match(source, /text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: 'Supprimer',\s*focusCancel: true,/);
+  assert.match(source, /text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: t\('menu\.supprimer\.confirmer'\),\s*focusCancel: true,/);
+  assert.equal(fr['menu.supprimer.confirmer'], 'Supprimer');
   assert.doesNotMatch(source, /ne pourra pas être récupérée/);
   assert.match(source, /if \(!ok\) return false;\s*await actions\.deleteList\(list\.id\);/);
   assert.match(read('public/js/screens/list-form.js'), /if \(await deleteListWithConfirm\(list\)\) navigate\('lists', \{\}, \{ replace: true \}\);/);

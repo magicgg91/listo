@@ -23,28 +23,34 @@
 // jamais déjà en retard). « Passer cette fois » fait le même calcul.
 //
 // Les dates sont des « AAAA-MM-JJ », sans heure ni fuseau (comme les échéances).
+//
+// Textes : public/js/i18n/fr/repetition.js. Les tableaux ci-dessous donnent
+// les noms des textes ; l'écran les affiche avec t().
+
+import { t, translate, getLocale, formatList } from './i18n.js';
 
 export const REPEAT_KINDS = ['day', 'week', '2week', 'month', 'year'];
 
-// Libellés du choix « Se répète » (la valeur '' : Jamais)
+// Libellés du choix « Se répète » (la valeur '' : Jamais) : [valeur, nom du texte]
 export const REPEAT_CHOICES = [
-  ['', 'Jamais'],
-  ['day', 'Chaque jour'],
-  ['week', 'Chaque semaine'],
-  ['2week', 'Toutes les 2 semaines'],
-  ['month', 'Chaque mois'],
-  ['year', 'Chaque année'],
+  ['', 'repetition.choix.jamais'],
+  ['day', 'repetition.choix.jour'],
+  ['week', 'repetition.choix.semaine'],
+  ['2week', 'repetition.choix.deuxSemaines'],
+  ['month', 'repetition.choix.mois'],
+  ['year', 'repetition.choix.annee'],
 ];
 
-// Jours de la semaine (1 = lundi … 7 = dimanche) : nom court et nom entier
+// Jours de la semaine (1 = lundi … 7 = dimanche) : noms des textes du nom
+// court (« Lu ») et du nom entier (« lundi »)
 export const WEEKDAYS = [
-  [1, 'Lu', 'lundi'],
-  [2, 'Ma', 'mardi'],
-  [3, 'Me', 'mercredi'],
-  [4, 'Je', 'jeudi'],
-  [5, 'Ve', 'vendredi'],
-  [6, 'Sa', 'samedi'],
-  [7, 'Di', 'dimanche'],
+  [1, 'repetition.jour.court.lundi', 'repetition.jour.lundi'],
+  [2, 'repetition.jour.court.mardi', 'repetition.jour.mardi'],
+  [3, 'repetition.jour.court.mercredi', 'repetition.jour.mercredi'],
+  [4, 'repetition.jour.court.jeudi', 'repetition.jour.jeudi'],
+  [5, 'repetition.jour.court.vendredi', 'repetition.jour.vendredi'],
+  [6, 'repetition.jour.court.samedi', 'repetition.jour.samedi'],
+  [7, 'repetition.jour.court.dimanche', 'repetition.jour.dimanche'],
 ];
 
 export const REPEAT_RULE_MAX = 20;
@@ -89,8 +95,8 @@ export function parseRepeat(rule) {
   return null;
 }
 
-// Rangs proposés pour « le … lundi du mois » : [rang, libellé]
-export const MONTH_WEEKS = [[1, '1er'], [2, '2e'], [3, '3e'], [4, '4e'], [-1, 'dernier']];
+// Rangs proposés pour « le … lundi du mois » : [rang, nom du texte du libellé]
+export const MONTH_WEEKS = [[1, 'repetition.rang.premier'], [2, 'repetition.rang.deuxieme'], [3, 'repetition.rang.troisieme'], [4, 'repetition.rang.quatrieme'], [-1, 'repetition.rang.dernier']];
 
 // Rang d'une date dans son mois, pour proposer « le même » par défaut :
 // 1 à 4, ou -1 (le dernier) pour un 5e jour de la semaine du mois
@@ -163,23 +169,29 @@ export function nextDue(rule, dueDate, today) {
 
 // --- Textes ---
 
-const dayName = (d) => WEEKDAYS.find(([n]) => n === d)[2];
-const shortDay = (d) => WEEKDAYS.find(([n]) => n === d)[1];
-const monthWeekLabel = (nth) => MONTH_WEEKS.find(([n]) => n === nth)[1];
-const andList = (words) => (words.length < 2 ? words.join('') : `${words.slice(0, -1).join(', ')} et ${words.at(-1)}`);
+// locale : langue du texte (sans elle : celle des écrans)
+const dayName = (d, locale = getLocale()) => translate(locale, WEEKDAYS.find(([n]) => n === d)[2]);
+const shortDay = (d) => t(WEEKDAYS.find(([n]) => n === d)[1]);
+const monthWeekLabel = (nth, locale = getLocale()) => translate(locale, MONTH_WEEKS.find(([n]) => n === nth)[1]);
+// « lundi », « lundi et mardi », « lundi, mardi et mercredi » (en anglais :
+// « Monday, Tuesday, and Wednesday »), dans la grammaire de la langue
+const andList = (words, locale = getLocale()) => formatList(words, { locale });
 
 // Phrase sous le choix (fiche) : « Chaque lundi et mercredi »,
 // « Toutes les 2 semaines, le lundi », « Le 5 de chaque mois »…
-export function repeatSentence(rule) {
+// locale : langue de la phrase (sans elle : celle des écrans ; Claude, sur
+// le serveur : le français)
+export function repeatSentence(rule, { locale = getLocale() } = {}) {
   const r = parseRepeat(rule);
   if (!r) return '';
-  if (r.kind === 'day') return 'Chaque jour';
-  if (r.kind === 'year') return 'Chaque année';
-  if (r.kind === 'month' && r.nth) return `Le ${monthWeekLabel(r.nth)} ${dayName(r.weekday)} de chaque mois`;
-  if (r.kind === 'month') return `Le ${r.monthDay === 1 ? '1er' : r.monthDay} de chaque mois${r.monthDay > 28 ? ' (ou le dernier jour du mois)' : ''}`;
-  const names = r.days.map(dayName);
-  if (r.kind === 'week') return r.days.length === 7 ? 'Chaque jour' : `Chaque ${andList(names)}`;
-  return `Toutes les 2 semaines, le ${andList(names)}`;
+  const say = (key, params) => translate(locale, key, params);
+  if (r.kind === 'day') return say('repetition.phrase.jour');
+  if (r.kind === 'year') return say('repetition.phrase.annee');
+  if (r.kind === 'month' && r.nth) return say('repetition.phrase.moisSemaine', { rang: monthWeekLabel(r.nth, locale), jour: dayName(r.weekday, locale) });
+  if (r.kind === 'month') return r.monthDay > 28 ? say('repetition.phrase.moisFin', { count: r.monthDay }) : say('repetition.phrase.mois', { count: r.monthDay });
+  const names = r.days.map((d) => dayName(d, locale));
+  if (r.kind === 'week') return r.days.length === 7 ? say('repetition.phrase.jour') : say('repetition.phrase.semaine', { jours: andList(names, locale) });
+  return say('repetition.phrase.deuxSemaines', { jours: andList(names, locale) });
 }
 
 // Pastille de la ligne : « Lu, Me », « Chaque jour », « 2 sem. · Lu »,
@@ -187,10 +199,10 @@ export function repeatSentence(rule) {
 export function repeatChip(rule) {
   const r = parseRepeat(rule);
   if (!r) return '';
-  if (r.kind === 'day') return 'Chaque jour';
-  if (r.kind === 'year') return 'Chaque année';
-  if (r.kind === 'month' && r.nth) return `${r.nth === -1 ? 'Dernier' : monthWeekLabel(r.nth)} ${shortDay(r.weekday)}`;
-  if (r.kind === 'month') return `Le ${r.monthDay === 1 ? '1er' : r.monthDay}`;
+  if (r.kind === 'day') return t('repetition.pastille.jour');
+  if (r.kind === 'year') return t('repetition.pastille.annee');
+  if (r.kind === 'month' && r.nth) return t('repetition.pastille.moisSemaine', { rang: r.nth === -1 ? t('repetition.pastille.dernier') : monthWeekLabel(r.nth), jour: shortDay(r.weekday) });
+  if (r.kind === 'month') return t('repetition.pastille.mois', { count: r.monthDay });
   const days = r.days.map(shortDay).join(', ');
-  return r.kind === 'week' ? (r.days.length === 7 ? 'Chaque jour' : days) : `2 sem. · ${days}`;
+  return r.kind === 'week' ? (r.days.length === 7 ? t('repetition.pastille.jour') : days) : t('repetition.pastille.deuxSemaines', { jours: days });
 }

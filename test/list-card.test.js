@@ -12,6 +12,7 @@ import { startTestApp, setupAdmin } from './helpers.js';
 import { emptyState, loadSync, computeSummaries, computeListView } from '../public/js/store.js';
 import { splitDone } from '../public/js/sorting.js';
 import { progressText, progressLabel } from '../public/js/words.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -70,7 +71,10 @@ test('carte : X = restants, Y = non supprimés cochés compris ; liste vide ; to
   assert.equal(progressLabel(3, 8, false), '3 éléments restants sur 8');
   // Affichage : « Liste vide », « 0/Y » avec la coche (jamais la couleur seule)
   const lists = read('public/js/screens/lists.js');
-  assert.match(lists, /if \(list\.total === 0\) return h\('p', \{ class: 'list-card__count' \}, 'Liste vide'\);/);
+  assert.match(lists, /if \(list\.total === 0\) return h\('p', \{ class: 'list-card__count' \}, t\('listes\.carte\.vide'\)\);/);
+  assert.equal(fr['listes.carte.vide'], 'Liste vide');
+  assert.match(lists, /const label = done \? t\('listes\.carte\.toutCoche', \{ progress \}\) : progress;/);
+  assert.equal(fr['listes.carte.toutCoche'], '{progress}, tout est coché');
   assert.match(lists, /progressText\(list\.remaining, list\.total\)\), done \? icon\('check', 'icon--sm'\) : null\);/);
   assert.match(lists, /role: 'img',\s*'aria-label': label,\s*title: label,/);
   assert.match(read('public/css/app.css'), /\.list-card__count--progress \{[^}]*font-variant-numeric: tabular-nums;/);
@@ -134,7 +138,8 @@ test('carte compacte : ni catégorie, ni magasin, ni badge « Multi » ; lien pu
   // L'en-tête d'une liste garde le magasin, avec « Multi » pour un magasin multi
   assert.match(read('public/js/screens/list.js'), /replace\(sub, list\.store \? \[icon\('store', 'icon--xs'\), list\.store\.name, view\.multi \? multiBadge\(\) : null\] : isWishList\(list\) \? wishForLabel\(list\) : typeLabel\(list\)\);/);
   // Ligne 2 à droite : le lien public juste avant les pastilles, seulement s'il y en a un
-  assert.match(card, /h\('div', \{ class: 'list-card__people' \},\s*\/\/[^\n]*\n\s*hasPublicLink\(list\) \? h\('span', \{ class: 'list-card__link', role: 'img', 'aria-label': 'Lien public actif', title: 'Lien public actif' \}, icon\('link', 'icon--xs'\)\) : null,\s*h\('div', \{ class: 'avatars'/);
+  assert.match(card, /h\('div', \{ class: 'list-card__people' \},\s*\/\/[^\n]*\n\s*hasPublicLink\(list\) \? h\('span', \{ class: 'list-card__link', role: 'img', 'aria-label': t\('listes\.carte\.lienPublic'\), title: t\('listes\.carte\.lienPublic'\) \}, icon\('link', 'icon--xs'\)\) : null,\s*h\('div', \{ class: 'avatars'/);
+  assert.equal(fr['listes.carte.lienPublic'], 'Lien public actif');
   assert.equal((card.match(/icon\('link'/g) ?? []).length, 1, 'le symbole du lien n\'apparaît qu\'une fois');
   // Deux lignes au plus (trois si le titre passe sur deux lignes)
   assert.equal((card.match(/class: 'list-card__(head|foot)'/g) ?? []).length, 2);

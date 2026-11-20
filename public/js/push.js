@@ -21,6 +21,7 @@
 // notifications de cette liste » sans attendre le réseau.
 
 import { get, put, post, del } from './api.js';
+import { t } from './i18n.js';
 
 // Dernier état connu du serveur (préférences, listes silencées)
 const known = { settings: null, muted: new Set() };
@@ -84,7 +85,7 @@ export function isInstalled(win = window) {
 
 // Le navigateur sait-il recevoir des notifications push ?
 export function browserSupportsPush(win = window) {
-  return Boolean(win.isSecureContext && 'serviceWorker' in win.navigator && 'PushManager' in win && 'Notification' in win);
+  return Boolean(win.isSecureContext && 'serviceWorker' in win.navigator && 'PushManager' in win && 'Notification' in win); // technique : noms d'API du navigateur
 }
 
 // Clé publique du serveur (base64url) -> octets, comme l'attend subscribe()
@@ -154,11 +155,11 @@ export function pushSetupMessage(error) {
   const detail = [name, text].filter(Boolean).join(' : ').slice(0, 160);
   const service = name === 'AbortError' || /push service|registration failed/i.test(text);
   const base = service
-    ? 'Ce navigateur n\'a pas réussi à s\'inscrire auprès de son service de notifications (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Il doit pouvoir le joindre par Internet : vérifiez qu\'aucun filtre DNS (AdGuard, Pi-hole…), bloqueur de publicité (uBlock Origin…), proxy, pare-feu ou VPN ne l\'en empêche (voir l\'aide, « Rien ne s\'affiche »). Dans Brave : Réglages, Confidentialité et sécurité, activez « Utiliser les services Google pour la messagerie push », puis relancez Brave.'
+    ? t('push.erreur.service')
     : name === 'NotAllowedError'
-      ? 'Le navigateur a refusé les notifications pour ce site. Autorisez-les dans ses réglages, puis réessayez.'
-      : 'Le navigateur n\'a pas pu activer les notifications sur cet appareil.';
-  return detail ? `${base} Détail donné par le navigateur : ${detail}.` : base;
+      ? t('push.erreur.refusees')
+      : t('push.erreur.autre');
+  return detail ? t('push.erreur.detail', { message: base, detail }) : base;
 }
 
 // Active les notifications sur cet appareil (après un appui seulement).

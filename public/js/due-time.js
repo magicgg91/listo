@@ -10,30 +10,38 @@
 // - Le rappel se choisit tâche par tâche, parmi une liste fermée : minutes
 //   avant l'heure (0 : à l'heure ; 1440 : la veille, 24 h pile avant). Il
 //   demande une heure. Sans choix : aucun rappel.
+//
+// Textes : public/js/i18n/fr/repetition.js.
+
+import { t, getLocale, formatTime } from './i18n.js';
 
 export const DUE_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const isDueTime = (value) => typeof value === 'string' && DUE_TIME_RE.test(value);
 
-// Rappels proposés : [minutes avant l'heure, libellé] (null : aucun)
+// Rappels proposés : [minutes avant l'heure, nom du texte du libellé]
+// (null : aucun) ; l'écran affiche le libellé avec t()
 export const REMINDERS = [
-  [null, 'Aucun'],
-  [0, 'À l\'heure'],
-  [15, '15 min avant'],
-  [30, '30 min avant'],
-  [60, '1 h avant'],
-  [120, '2 h avant'],
-  [1440, 'La veille (24 h avant)'],
+  [null, 'repetition.rappel.aucun'],
+  [0, 'repetition.rappel.aLHeure'],
+  [15, 'repetition.rappel.quinzeMinutes'],
+  [30, 'repetition.rappel.trenteMinutes'],
+  [60, 'repetition.rappel.uneHeure'],
+  [120, 'repetition.rappel.deuxHeures'],
+  [1440, 'repetition.rappel.veille'],
 ];
 export const isReminder = (value) => Number.isInteger(value) && REMINDERS.some(([minutes]) => minutes === value);
-export const reminderLabel = (minutes) => REMINDERS.find(([value]) => value === minutes)?.[1] ?? 'Aucun';
+// Libellé d'un rappel, dans la langue des écrans
+export const reminderLabel = (minutes) => t(REMINDERS.find(([value]) => value === minutes)?.[1] ?? 'repetition.rappel.aucun');
 
 const two = (n) => String(n).padStart(2, '0');
 
 // Heure actuelle « HH:MM » (heure locale de l'appareil ou du serveur)
 export const nowTime = (date = new Date()) => `${two(date.getHours())}:${two(date.getMinutes())}`;
 
-// Heure lisible : « 9:05 », « 18:30 »
-export const timeLabel = (time) => (isDueTime(time) ? `${Number(time.slice(0, 2))}:${time.slice(3)}` : '');
+// Heure lisible, dans la langue « locale » (sans elle : celle des écrans ;
+// le serveur donne celle du destinataire) : « 9:05 », « 18:30 » en
+// français, « 9:05 AM », « 6:30 PM » en anglais
+export const timeLabel = (time, { locale = getLocale() } = {}) => (isDueTime(time) ? formatTime(time, { locale }) : '');
 
 // En retard ? Date passée, ou date du jour et heure dépassée
 export function isLate(dueDate, dueTime, today, now) {

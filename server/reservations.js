@@ -48,24 +48,27 @@
 import { OpError, isUuid } from './lists.js';
 import { wishListOf, seesReservations, isManager } from '../public/js/wishes.js';
 
-export const NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
-export const NOT_WISHES = 'La réservation n\'existe que dans les listes d\'envies.';
+// Noms des messages (public/js/i18n/fr/liens.js) : l'erreur porte le nom,
+// la route le traduit dans la langue de la requête
+export const NOT_FOUND = 'liens.envies.introuvable';
+export const NOT_WISHES = 'liens.envies.horsEnvies';
 // Seule réponse donnée au bénéficiaire, quoi qu'il demande
-export const BENEFICIARY = 'Vous ne réservez pas les souhaits de votre propre liste.';
-export const ALREADY = 'Déjà réservé.';
-export const ALREADY_IN = 'Vous participez déjà à ce cadeau.';
-export const RECEIVED = 'Ce souhait est déjà reçu.';
-export const NOT_RESERVED = 'Ce souhait n\'est pas réservé.';
-export const NOT_IN = 'Vous ne participez pas à ce cadeau.';
-export const PARTICIPANTS_ONLY = 'Seuls les participants peuvent ouvrir ou fermer la réservation.';
-export const MANAGER_ONLY = 'Seul le gestionnaire de la liste peut faire cela.';
-export const BAD_OPEN = 'Valeur « ouvert à d\'autres » invalide (true ou false).';
+export const BENEFICIARY = 'liens.envies.beneficiaire';
+export const ALREADY = 'liens.envies.dejaReserve';
+export const ALREADY_IN = 'liens.envies.dejaParticipant';
+export const RECEIVED = 'liens.envies.recu';
+export const NOT_RESERVED = 'liens.envies.nonReserve';
+export const NOT_IN = 'liens.envies.nonParticipant';
+export const PARTICIPANTS_ONLY = 'liens.envies.participantsSeulement';
+export const MANAGER_ONLY = 'liens.envies.gestionnaireSeulement';
+export const BAD_OPEN = 'liens.envies.ouvertInvalide';
 // Visiteurs du lien public
 export const VISITOR_NAME_MAX = 40;
-export const BAD_FIRST_NAME = `Indiquez votre prénom (1 à ${VISITOR_NAME_MAX} caractères).`;
-export const VISITOR_LIMIT = 'Vous avez déjà réservé beaucoup de souhaits sur ce lien. Annulez-en un pour en réserver un autre.';
-export const ITEM_FULL = 'Ce souhait ne peut plus recevoir de participation par le lien. Demandez à la personne qui vous l\'a envoyé.';
-export const LINK_FULL = 'Ce lien a atteint son nombre de réservations. Demandez à la personne qui vous l\'a envoyé.';
+// Valeur : { max: VISITOR_NAME_MAX }
+export const BAD_FIRST_NAME = 'liens.envies.prenomInvalide';
+export const VISITOR_LIMIT = 'liens.envies.limiteVisiteur';
+export const ITEM_FULL = 'liens.envies.souhaitComplet';
+export const LINK_FULL = 'liens.envies.lienComplet';
 // Limites des visiteurs (voir le cahier des charges)
 export const VISITOR_LIMITS = { perVisitor: 20, perItem: 10, perLink: 100 };
 
@@ -331,7 +334,7 @@ export function createReservationService(ctx) {
     // forme (par exemple l'inversion du sens du texte, qui pourrait cacher la
     // mention « (lien public) » et faire passer un visiteur pour un proche).
     // Seul le liant des émojis composés (U+200D) est permis.
-    if (!name || [...name].length > VISITOR_NAME_MAX || /[\p{Cc}\p{Co}\p{Cs}]|(?!\u200d)\p{Cf}/u.test(name)) throw new OpError(400, BAD_FIRST_NAME);
+    if (!name || [...name].length > VISITOR_NAME_MAX || /[\p{Cc}\p{Co}\p{Cs}]|(?!\u200d)\p{Cf}/u.test(name)) throw new OpError(400, BAD_FIRST_NAME, { max: VISITOR_NAME_MAX });
     return name;
   }
 

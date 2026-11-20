@@ -16,8 +16,14 @@ import Database from 'better-sqlite3';
 import { startTestApp, setupAdmin, addUser, login, databaseAt, tempDir } from './helpers.js';
 import { openDatabase, schemaVersion, wishesMigration } from '../server/db.js';
 import { emptyState, loadSync, mergeSync, toSnapshot } from '../public/js/store.js';
-import { BENEFICIARY, ALREADY, ALREADY_IN, NOT_IN, PARTICIPANTS_ONLY, MANAGER_ONLY, RECEIVED } from '../server/reservations.js';
+import * as reservationTexts from '../server/reservations.js';
+import { translate } from '../public/js/i18n.js';
 import { cleanLink, parsePrice, formatPrice } from '../public/js/wishes.js';
+
+// Messages attendus, en français (server/reservations.js exporte leurs noms)
+const [BENEFICIARY, ALREADY, ALREADY_IN, NOT_IN, PARTICIPANTS_ONLY, MANAGER_ONLY, RECEIVED] = [
+  'BENEFICIARY', 'ALREADY', 'ALREADY_IN', 'NOT_IN', 'PARTICIPANTS_ONLY', 'MANAGER_ONLY', 'RECEIVED',
+].map((name) => translate('fr', reservationTexts[name]));
 
 const uuid = () => crypto.randomUUID();
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -151,7 +157,7 @@ test('souhaits : lien http/https seulement (jamais appelé), prix en centimes, p
     assert.deepEqual([res.status, res.error], [400, 'Lien invalide : une adresse web en http ou https, 500 caractères au plus.'], String(link));
   }
   for (const priceCents of [-1, 10000001, 12.5, '1200', true]) {
-    assert.deepEqual((await add({ priceCents })).error, 'Prix invalide (de 0 à 100 000 €).', String(priceCents));
+    assert.deepEqual((await add({ priceCents })).error, 'Prix invalide (de 0 à 100 000).', String(priceCents));
   }
   assert.equal((await add({ quantity: '2' })).error, 'Pas de quantité dans une liste d\'envies.');
   const ok = await add({ link: ' http://exemple.fr/Lampe?couleur=bleu ', priceCents: 0 });
@@ -557,7 +563,7 @@ test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idemp
   const before = { lists: db.prepare('SELECT * FROM lists ORDER BY id').all(), items: db.prepare('SELECT * FROM items ORDER BY id').all() };
   db.close();
   db = openDatabase(file); // restauration : la copie est ouverte par Listo, la migration 19 s'applique
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists.map(({ category_id: category, ...rest }) => rest));
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map((l) => [l.for_user_id, l.for_name]), [[null, null], [null, null]]);
   assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, position: pos, ...rest }) => rest), before.items);

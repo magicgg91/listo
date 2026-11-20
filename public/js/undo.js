@@ -15,9 +15,12 @@
 // l'article entre-temps (temps réel), rien n'est écrasé : « Modifié
 // entre-temps : rien n'est annulé ».
 
+import { t } from './i18n.js';
+
 export const UNDO_MAX = 20;
-export const CHANGED_MEANWHILE = 'Modifié entre-temps : rien n\'est annulé.';
-export const NOTHING_TO_UNDO = 'Rien à annuler dans cette liste.';
+// Messages lus au moment de l'annonce (dans la langue choisie)
+export const changedMeanwhile = () => t('annulation.modifieEntreTemps');
+export const nothingToUndo = () => t('annulation.rien');
 
 const stacks = new Map(); // id de la liste -> actions, de la plus ancienne à la plus récente
 
@@ -51,17 +54,17 @@ export function clearUndo() {
 export async function undoLast(listId, items, act) {
   const stack = stacks.get(listId);
   const entry = stack?.pop();
-  if (!entry) return NOTHING_TO_UNDO;
+  if (!entry) return nothingToUndo();
   const current = items.get(entry.itemId);
   if (entry.kind === 'delete') {
     // Revenu entre-temps (« Annuler » ailleurs, autre appareil) : rien à faire
-    if (current) return CHANGED_MEANWHILE;
+    if (current) return changedMeanwhile();
     await act.restore(entry.itemId);
-    return `Annulé : « ${entry.name} » est de retour.`;
+    return t('annulation.supprime', { name: entry.name });
   }
-  if (!current) return CHANGED_MEANWHILE; // supprimé entre-temps
+  if (!current) return changedMeanwhile(); // supprimé entre-temps
   if (entry.kind === 'check') {
-    if (Boolean(current.checked) !== entry.checked) return CHANGED_MEANWHILE;
+    if (Boolean(current.checked) !== entry.checked) return changedMeanwhile();
     await act.check(current, !entry.checked);
     // Sous-tâches (subtasks.js) : celles cochées avec leur principale sont
     // décochées ; une principale décochée par une sous-tâche est recochée
@@ -75,16 +78,16 @@ export async function undoLast(listId, items, act) {
       const parent = items.get(entry.reopened);
       if (parent && !parent.checked) await act.check(parent, true);
     }
-    return `Annulé : « ${current.name} » ${entry.checked ? 'décoché' : 'coché'}.`;
+    return entry.checked ? t('annulation.decoche', { name: current.name }) : t('annulation.coche', { name: current.name });
   }
   if (entry.kind === 'update') {
     // Chaque champ modifié doit encore avoir la valeur que j'ai mise
     const same = Object.entries(entry.after).every(([key, value]) => sameValue(current[key], value));
-    if (!same) return CHANGED_MEANWHILE;
+    if (!same) return changedMeanwhile();
     await act.update(current, entry.before);
-    return `Annulé : modification de « ${entry.before.name ?? current.name} ».`;
+    return t('annulation.modification', { name: entry.before.name ?? current.name });
   }
-  return NOTHING_TO_UNDO;
+  return nothingToUndo();
 }
 
 // Valeurs « vides » équivalentes (champ effacé : null, '' ou absent)

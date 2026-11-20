@@ -23,10 +23,15 @@
 // - Confidentialité : seuls les membres reçoivent les nouveautés d'une liste
 //   (et le nom des auteurs) ; le lien public n'en reçoit rien.
 
+import { translate } from '../public/js/i18n.js';
+import { userLocale } from './locale.js';
+
 export const EVENT_TYPES = ['add', 'update', 'check', 'uncheck', 'delete'];
 export const MAX_EVENTS_PER_LIST = 500;
 export const KEEP_DAYS = 30;
-export const FORMER_MEMBER = 'un ancien membre';
+// Auteur dont le compte n'existe plus : nom du texte (« un ancien membre »,
+// public/js/i18n/fr/alertes.js)
+export const FORMER_MEMBER = 'alertes.nouveautes.ancienMembre';
 
 export function createNewsService(ctx) {
   const { db } = ctx;
@@ -159,7 +164,8 @@ export function createNewsService(ctx) {
   //   lastEventId, items: [{ itemId, kind: 'added'|'updated'|'checked'|'unchecked', by }] } } }
   // Un élément compte une fois : « ajouté » l'emporte (avec la personne qui
   // l'a ajouté) ; sinon, le dernier changement et son auteur.
-  function newsFor(user) {
+  // locale : langue des textes (« un ancien membre »), celle du compte par défaut
+  function newsFor(user, locale = userLocale(user, ctx.config)) {
     q.ensureMine.run(user.id); // repère manquant (liste partagée avant la mise à jour…) : posé maintenant
     const settings = q.settings.get(user.id);
     const enabled = settings?.news_enabled === 1;
@@ -179,7 +185,7 @@ export function createNewsService(ctx) {
       const byItem = new Map();
       for (const event of q.myEvents.all({ me: user.id })) {
         if (!checks && (event.type === 'check' || event.type === 'uncheck')) continue;
-        const by = event.user_id === null || event.active !== 1 ? FORMER_MEMBER : event.display_name;
+        const by = event.user_id === null || event.active !== 1 ? translate(locale, FORMER_MEMBER) : event.display_name;
         const key = `${event.list_id}/${event.item_id}`;
         const entry = byItem.get(key);
         if (event.type === 'add') {

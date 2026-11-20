@@ -20,6 +20,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { normalizeItemName } from '../public/js/history.js';
 import { compareNames } from '../public/js/sorting.js';
+import { translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 // Expression SQL qui donne l'heure actuelle au format ISO (UTC, millièmes)
 const NOW = "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))";
@@ -346,7 +347,7 @@ export const MIGRATIONS = [
   // --- Migration 15 : « Après l'ajout », liste par liste ---
   // 'quick' (« Rester sur la liste », comme avant) ou 'detail' (« Ouvrir la
   // fiche » de l'élément ajouté). Voir addModeMigration.
-  (db) => addModeMigration(db),
+  (db, options) => addModeMigration(db, options),
 
   // --- Migration 16 : nouveautés (journal d'activité et repères de lecture) ---
   // list_events : ce qui s'est passé dans une liste (qui, quoi, sur quel
@@ -467,7 +468,7 @@ export const MIGRATIONS = [
 
   // --- Migration 18 : types de liste (courses, tâches, envies) ---
   // Remplace la catégorie. Voir listTypesMigration.
-  (db) => listTypesMigration(db),
+  (db, options) => listTypesMigration(db, options),
 
   // --- Migration 19 : listes d'envies (bénéficiaire, souhaits, réservations) ---
   // Voir wishesMigration.
@@ -652,6 +653,15 @@ export const MIGRATIONS = [
   // l'ordre où elles s'affichaient (tri par défaut : à faire puis cochées,
   // chacune par ordre alphabétique).
   (db) => subtaskPositionsMigration(db),
+
+  // --- Migration 34 : langue de chaque compte (20 novembre 2026) ---
+  // users.locale : langue choisie dans « Mon compte » (public/js/i18n.js :
+  // « fr » ou « en ») ; vide : automatique (langue du navigateur, sinon
+  // celle de l'installation, LISTO_LANG). Les comptes existants sont en
+  // automatique : rien ne change pour eux.
+  `
+  ALTER TABLE users ADD COLUMN locale TEXT CHECK (locale IS NULL OR locale IN ('fr', 'en'));
+  `,
 ];
 
 // Migration 33 : positions de départ des sous-tâches existantes (supprimées
@@ -667,7 +677,8 @@ export function subtaskPositionsMigration(db) {
   }
   const set = db.prepare('UPDATE items SET position = ? WHERE id = ?');
   for (const children of groups.values()) {
-    children.sort((a, b) => a.checked - b.checked || compareNames(a.name, b.name));
+    // Ordre enregistré en base, le même pour tous les lecteurs : français
+    children.sort((a, b) => a.checked - b.checked || compareNames(a.name, b.name, 'fr'));
     children.forEach((child, index) => set.run(index + 1, child.id));
   }
   return rows.length;
@@ -872,12 +883,13 @@ export function dropOrphanStates(db) {
 // aux téléphones qui n'ont pas rechargé), pour pouvoir revenir à l'image
 // précédente ; effacées par la migration 32 (17 novembre 2026).
 // Le nombre de listes de chaque type est écrit dans le journal du conteneur
-// (aucun nom de liste), et renvoyé (tests).
-export function listTypesMigration(db) {
+// (aucun nom de liste), dans la langue de la console (locale), et renvoyé
+// (tests).
+export function listTypesMigration(db, { locale = DEFAULT_LOCALE } = {}) {
   db.exec("ALTER TABLE lists ADD COLUMN type TEXT CHECK (type IS NULL OR type IN ('shopping', 'tasks', 'wishes'))");
   ensureLegacyCategories(db);
   const counts = fillListTypes(db);
-  console.log(`Migration 18 (types de liste) : ${counts.shopping} liste(s) de courses, ${counts.tasks} liste(s) de tâches.`);
+  console.log(translate(locale, 'demarrage.migration18', counts));
   return counts;
 }
 
@@ -915,8 +927,9 @@ export function ensureLegacyCategories(db) {
 // - autre liste sans ni l'une ni l'autre : 'quick'.
 // Les listes supprimées depuis moins de 30 jours sont traitées de la même
 // façon. Le nombre de listes de chaque sorte est écrit dans le journal du
-// conteneur (aucun nom de liste), et renvoyé (tests).
-export function addModeMigration(db) {
+// conteneur (aucun nom de liste), dans la langue de la console (locale),
+// et renvoyé (tests).
+export function addModeMigration(db, { locale = DEFAULT_LOCALE } = {}) {
   db.exec("ALTER TABLE lists ADD COLUMN add_mode TEXT NOT NULL DEFAULT 'quick' CHECK (add_mode IN ('quick', 'detail'))");
   const counts = db.prepare(`
     SELECT
@@ -930,9 +943,7 @@ export function addModeMigration(db) {
     WHERE category_id IN (SELECT id FROM categories WHERE is_shopping = 0) AND (priority_enabled = 1 OR due_enabled = 1)
   `).run();
   if (counts.shopping + counts.detail + counts.quick > 0) {
-    console.log(`Migration 15 (« Après l'ajout ») : ${counts.shopping} liste(s) de courses → « Rester sur la liste » ; `
-      + `${counts.detail} autre(s) liste(s) avec priorité ou échéance → « Ouvrir la fiche » ; `
-      + `${counts.quick} autre(s) liste(s) sans priorité ni échéance → « Rester sur la liste ».`);
+    console.log(translate(locale, 'demarrage.migration15', counts));
   }
   return counts;
 }
@@ -974,9 +985,42 @@ export function pruneHistory(db) {
   return removed;
 }
 
+// Magasins et rayons créés par la migration 3 (en français), et leurs noms
+// dans les autres langues. Seulement pour une base toute neuve (index.js),
+// jamais pour une base existante : ses noms sont des données saisies.
+const STARTING_DATA = {
+  en: {
+    stores: { Carrefour: 'Supermarket', 'E.Leclerc': 'Market', Lidl: 'Drugstore' },
+    aisles: {
+      Boissons: 'Beverages', Boucherie: 'Meat', Boulangerie: 'Bakery', 'Crèmerie': 'Dairy',
+      Entretien: 'Household', 'Épicerie salée': 'Pantry', 'Épicerie sucrée': 'Snacks and sweets',
+      Fromages: 'Cheese', 'Fruits et légumes': 'Produce', 'Hygiène': 'Personal care',
+      Poissonnerie: 'Seafood', 'Surgelés': 'Frozen',
+    },
+  },
+};
+
+// Renomme les magasins et rayons de départ dans la langue de l'installation
+// (rien pour le français, ni pour une langue sans traduction). Renvoie le
+// nombre de noms changés.
+export function localizeStartingData(db, locale) {
+  const names = STARTING_DATA[locale];
+  if (!names) return 0;
+  let changed = 0;
+  db.transaction(() => {
+    for (const [table, map] of [['stores', names.stores], ['aisles', names.aisles]]) {
+      const rename = db.prepare(`UPDATE ${table} SET name = ? WHERE name = ?`);
+      for (const [before, after] of Object.entries(map)) changed += rename.run(after, before).changes;
+    }
+  })();
+  return changed;
+}
+
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.
 // dbPath peut valoir ':memory:' pour une base temporaire (tests).
-export function openDatabase(dbPath) {
+// locale : langue des messages des migrations dans la console (LISTO_LANG,
+// voir consoleLocale dans server/config.js), le français par défaut.
+export function openDatabase(dbPath, { locale = DEFAULT_LOCALE } = {}) {
   if (dbPath !== ':memory:') {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   }
@@ -989,18 +1033,19 @@ export function openDatabase(dbPath) {
   // Si la base est occupée, attendre jusqu'à 5 secondes au lieu d'échouer
   db.pragma('busy_timeout = 5000');
 
-  migrate(db);
+  migrate(db, { locale });
   return db;
 }
 
 // Applique, dans l'ordre, les migrations pas encore appliquées.
 // Chaque migration est faite d'un bloc : tout passe, ou rien ne change.
-export function migrate(db) {
+// options.locale : langue des messages écrits dans la console.
+export function migrate(db, options = {}) {
   const current = db.pragma('user_version', { simple: true });
   for (let version = current; version < MIGRATIONS.length; version++) {
     db.transaction(() => {
       const migration = MIGRATIONS[version];
-      if (typeof migration === 'function') migration(db);
+      if (typeof migration === 'function') migration(db, options);
       else db.exec(migration);
       db.pragma(`user_version = ${version + 1}`);
     })();

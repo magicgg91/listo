@@ -7,6 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { listItemForEan } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const item = (name, ean, checked = false, checkedAt = null) => ({ id: name, name, ean, checked, checkedAt });
 
@@ -41,11 +42,19 @@ test('fiche : « Cocher (je l\'ai pris) », « Ajouter quand même », « Annule
   const scan = fs.readFileSync(new URL('../public/js/screens/scan.js', import.meta.url), 'utf8');
   // Code lu ou tapé : d'abord la liste ouverte, sur le téléphone, sans appel
   assert.match(scan, /function handleCode\(code\) \{\s*const item = listItemForEan\(getView\(\), code\);\s*if \(item\) inList\(item, code\);\s*else lookup\(code\);/);
-  assert.match(scan, /'Cocher \(je l\\'ai pris\)'/);
-  assert.match(scan, /'Le remettre dans la liste'/);
-  assert.match(scan, /check\(item, true\);\s*done\(`Coché : \$\{item\.name\}`\);/);
-  assert.match(scan, /check\(item, false\);\s*done\(`Remis dans la liste : \$\{item\.name\}`\);/);
-  assert.match(scan, /\$\{item\.checked \? 'Déjà coché' : 'Déjà dans la liste'\} : \$\{item\.name\}/);
+  assert.match(scan, /t\('scan\.liste\.cocher'\)/);
+  assert.equal(fr['scan.liste.cocher'], 'Cocher (je l\'ai pris)');
+  assert.match(scan, /t\('scan\.liste\.remettre'\)/);
+  assert.equal(fr['scan.liste.remettre'], 'Le remettre dans la liste');
+  assert.match(scan, /t\('scan\.ajouterQuandMeme'\)/);
+  assert.equal(fr['scan.ajouterQuandMeme'], 'Ajouter quand même');
+  assert.match(scan, /check\(item, true\);\s*done\(t\('scan\.liste\.coche', \{ name: item\.name \}\)\);/);
+  assert.equal(fr['scan.liste.coche'], 'Coché : {name}');
+  assert.match(scan, /check\(item, false\);\s*done\(t\('scan\.liste\.remis', \{ name: item\.name \}\)\);/);
+  assert.equal(fr['scan.liste.remis'], 'Remis dans la liste : {name}');
+  assert.match(scan, /item\.checked \? t\('scan\.liste\.dejaCoche', \{ name: item\.name \}\) : t\('scan\.liste\.dejaPresent', \{ name: item\.name \}\)/);
+  assert.equal(fr['scan.liste.dejaCoche'], 'Déjà coché : {name}');
+  assert.equal(fr['scan.liste.dejaPresent'], 'Déjà dans la liste : {name}');
   // Cocher passe par l'opération habituelle (file d'attente, zone des cochés)
   const list = fs.readFileSync(new URL('../public/js/screens/list.js', import.meta.url), 'utf8');
   assert.match(list, /check: \(item, checked\) => editable\(\) && actions\.checkItem\(item, checked\),/); // jamais en lecture seule

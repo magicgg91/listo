@@ -304,7 +304,7 @@ test('la correction est tout ou rien : une erreur au milieu ne modifie rien', as
   const res = await rename(h.admin, 'tomatte', 'Tomate');
   assert.equal(res.status, 500);
   assert.equal(snapshot(h.app.db), before, 'ni historique ni éléments modifiés');
-  assert.ok(!h.app.logs.join('\n').includes('admin_nom_corrige'));
+  assert.ok(!h.app.logs.join('\n').includes('admin_name_corrected'));
   h.app.db.exec('DROP TRIGGER panne');
 });
 
@@ -370,9 +370,9 @@ test('le journal note chaque correction, fusion et retrait', async (t) => {
   await h.admin.post('/api/admin/names/remove', { from: 'fraises' });
   const journal = h.app.logs.join('\n');
   for (const line of [
-    'admin_nom_corrige admin="admin" ancien="Tomatte" nouveau="Tomate" corrections=2 listes=2',
-    'admin_nom_fusionne admin="admin" ancien="Poivronn" nouveau="Poivron" corrections=1 listes=1',
-    'admin_nom_retire admin="admin" nom="Fraises"',
+    'admin_name_corrected admin="admin" old="Tomatte" new="Tomate" corrections=2 lists=2',
+    'admin_name_merged admin="admin" old="Poivronn" new="Poivron" corrections=1 lists=1',
+    'admin_name_removed admin="admin" name="Fraises"',
   ]) assert.ok(journal.includes(line), `absent du journal : ${line}\n${journal}`);
 });
 

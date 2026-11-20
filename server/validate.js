@@ -4,7 +4,8 @@
 
 // Identifiant : 2 à 50 caractères parmi lettres sans accent, chiffres, . _ -
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,50}$/;
-export const USERNAME_RULE = 'Identifiant invalide : 2 à 50 caractères (lettres sans accent, chiffres, . _ -).';
+// (nom du texte, à traduire avec req.t au moment de répondre)
+export const USERNAME_RULE = 'comptes.identifiant.invalide';
 
 export function isValidUsername(value) {
   return typeof value === 'string' && USERNAME_PATTERN.test(value);
@@ -23,7 +24,7 @@ export function cleanName(value, max = 100) {
 // ont la même forme comparable sont considérés comme des doublons
 // (« Épicerie », « épicerie » et « EPICERIE » ne font qu'un).
 export function comparableName(name) {
-  return name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr');
+  return name.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('fr'); // technique : comparaison (doublons, jamais affiché)
 }
 
 // Numéro (id) passé dans l'adresse : entier positif, ou null s'il est invalide

@@ -34,6 +34,8 @@ import path from 'node:path';
 import {
   encryptMessage, fromB64url, toB64url, isP256PublicKey, generateVapidKeys, vapidKeyObject, vapidAuthorization, MAX_PLAINTEXT_BYTES,
 } from './webpush.js';
+import { translate, intlTag, DEFAULT_LOCALE } from '../public/js/i18n.js';
+import { consoleLocale } from './config.js';
 
 // --- Services de push autorisés ---
 // Sources (documentation officielle, relevée le 10 novembre 2026) :
@@ -100,10 +102,11 @@ export function checkKeys(keys) {
 // lu ni créé, renvoie null. Sinon renvoie { keys, created }.
 export function preparePushKeys(config) {
   if (!config.push) return null;
-  return loadOrCreateVapidKeys(config.vapidPath);
+  return loadOrCreateVapidKeys(config.vapidPath, { locale: consoleLocale(config) });
 }
 
-export function loadOrCreateVapidKeys(file) {
+// locale : langue du message d'un fichier abîmé (console, LISTO_LANG)
+export function loadOrCreateVapidKeys(file, { locale = DEFAULT_LOCALE } = {}) {
   if (fs.existsSync(file)) {
     let keys;
     try {
@@ -112,7 +115,7 @@ export function loadOrCreateVapidKeys(file) {
       vapidKeyObject(keys); // vérifie la paire
     } catch {
       // Fichier abîmé : on s'arrête plutôt que de le remplacer en silence
-      throw new Error(`Le fichier ${file} est invalide. Restaurez sa copie de sauvegarde, ou effacez-le pour créer de nouvelles clés (chaque appareil devra alors réactiver les notifications, ou se réabonnera tout seul à la prochaine ouverture de Listo).`);
+      throw new Error(translate(locale, 'demarrage.push.fichierInvalide', { path: file }));
     }
     return { keys, created: false };
   }
@@ -129,10 +132,12 @@ export function loadOrCreateVapidKeys(file) {
 // l'affiche lui-même ; les autres navigateurs le passent au service worker
 // (public/sw.js), qui lit le même JSON. title et navigate sont obligatoires.
 // - navigate : adresse de Listo à ouvrir quand on touche la notification ;
-// - tag : une nouvelle notification de même tag remplace la précédente.
+// - tag : une nouvelle notification de même tag remplace la précédente ;
+// - locale : langue du destinataire (server/locale.js, userLocale), qui
+//   donne la balise « lang » (« fr-FR »).
 // Le texte est raccourci au besoin : le message reste sous 4 ko chiffré.
-export function buildMessage({ title, body = '', navigate, tag = null }) {
-  const notification = { title: String(title).slice(0, 120), lang: 'fr-FR', dir: 'ltr', navigate };
+export function buildMessage({ title, body = '', navigate, tag = null, locale = DEFAULT_LOCALE }) {
+  const notification = { title: String(title).slice(0, 120), lang: intlTag(locale), dir: 'ltr', navigate };
   if (body) notification.body = String(body);
   if (tag) notification.tag = String(tag);
   let text = JSON.stringify({ web_push: 8030, notification });
@@ -182,6 +187,7 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
   const { db } = ctx;
   const signingKey = vapidKeyObject(keys);
   const subject = new URL(ctx.config.publicUrl).origin; // jamais une adresse e-mail
+  const lang = consoleLocale(ctx.config); // langue des lignes de la console
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -280,7 +286,7 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
         body,
       }));
     } catch {
-      log('Notifications : un service de push n\'a pas répondu.');
+      log(translate(lang, 'demarrage.push.sansReponse'));
       return 'failed';
     }
     if (status >= 200 && status < 300) {
@@ -289,10 +295,10 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
     }
     if (status === 404 || status === 410) {
       q.drop.run(sub.id);
-      log(`Notifications : abonnement expiré retiré (HTTP ${status}).`);
+      log(translate(lang, 'demarrage.push.expire', { status }));
       return 'expired';
     }
-    log(`Notifications : envoi refusé par le service de push (HTTP ${status}).`);
+    log(translate(lang, 'demarrage.push.refuse', { status }));
     return 'refused';
   }
 
@@ -328,15 +334,17 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
       return Boolean(q.mine.get(sessionId));
     },
 
-    // Notification test, vers l'appareil de cette session seulement
-    async sendTest(sessionId) {
+    // Notification test, vers l'appareil de cette session seulement, dans
+    // la langue de son compte (locale, server/locale.js : userLocale)
+    async sendTest(sessionId, locale = DEFAULT_LOCALE) {
       const sub = q.mine.get(sessionId);
       if (!sub) return 'none';
       const message = buildMessage({
         title: 'Listo',
-        body: 'Notification test : les notifications arrivent bien sur cet appareil.',
+        body: translate(locale, 'alertes.test.corps'),
         navigate: `${subject}/#/reglages/notifications`,
         tag: 'listo-test',
+        locale,
       });
       return enqueue(() => deliver(sub.id, message, { ttl: 300 }));
     },

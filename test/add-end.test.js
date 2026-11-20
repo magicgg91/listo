@@ -8,6 +8,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import fr from '../public/js/i18n/fr.js';
+import scanTexts from '../public/js/i18n/fr/scan.js';
 
 const read = (file) => fs.readFileSync(new URL(`../public/${file}`, import.meta.url), 'utf8');
 const ui = read('js/ui.js');
@@ -36,10 +38,13 @@ test('saisie à la main (toutes les listes) : curseur retiré, élément montré
 });
 
 test('mode scan : feuille fermée après l\'ajout, toast « Ajouté : … », ancien enchaînement supprimé', () => {
-  assert.match(scan, /sheet\.close\(\);\s*releaseFocus\(\);\s*toast\(`Ajouté : \$\{finalName\}`/);
+  assert.match(scan, /sheet\.close\(\);\s*releaseFocus\(\);\s*toast\(t\('scan\.fiche\.ajoute', \{ name: finalName \}\)/);
+  assert.equal(fr['scan.fiche.ajoute'], 'Ajouté : {name}');
   for (const gone of ['Scanner un autre produit', 'Terminé', 'addedCount', 'showNext', 'ajoutés']) {
     assert.ok(!scan.includes(gone), `« ${gone} » doit avoir disparu de scan.js`);
+    assert.ok(!Object.values(scanTexts).some((text) => String(text).includes(gone)), `« ${gone} » doit avoir disparu des textes du scan`);
   }
   // « Annuler » ferme la feuille
-  assert.match(scan, /const cancel = \(\) => btn\('btn--secondary btn--block', \['Annuler'\], \(\) => sheet\.close\(\)\);/);
+  assert.match(scan, /const cancel = \(\) => btn\('btn--secondary btn--block', \[t\('scan\.annuler'\)\], \(\) => sheet\.close\(\)\);/);
+  assert.equal(fr['scan.annuler'], 'Annuler');
 });

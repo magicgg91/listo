@@ -13,6 +13,7 @@ import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
 import { emptyState, loadSync, mergeSync, toSnapshot } from '../public/js/store.js';
 import { deleteListText, trashDaysText } from '../public/js/words.js';
 import { PURGE_AFTER_DAYS } from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
 import { uuid as mcpUuid, PASSWORD, household as mcpHousehold, connect, claude, data } from './mcp-helpers.js';
 
 const uuid = () => crypto.randomUUID();
@@ -102,7 +103,9 @@ test('confirmation : nombre d\'éléments, partage, restauration possible 30 jou
   const actions = code('public/js/screens/list-actions.js');
   assert.match(actions, /const itemCount = \[\.\.\.app\.data\.items\.values\(\)\]\.filter\(\(item\) => item\.listId === list\.id\)\.length;/);
   assert.match(actions, /const sharedWith = \(list\.members \?\? \[\]\)\.filter\(\(m\) => !m\.isOwner\)\.length;/);
-  assert.match(actions, /title: `Supprimer la liste « \$\{list\.name\} » \?`,\s*text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: 'Supprimer',\s*focusCancel: true,/);
+  assert.match(actions, /title: t\('menu\.supprimer\.question', \{ name: list\.name \}\),\s*text: deleteListText\(list, itemCount, sharedWith\),\s*confirmLabel: t\('menu\.supprimer\.confirmer'\),\s*focusCancel: true,/);
+  assert.equal(fr['menu.supprimer.question'], 'Supprimer la liste « {name} » ?');
+  assert.equal(fr['menu.supprimer.confirmer'], 'Supprimer');
   // Boîte : « Supprimer » rouge (btn--danger), focus de départ sur « Annuler », texte relié au titre pour les lecteurs d'écran
   const ui = code('public/js/ui.js');
   assert.match(ui, /h\('button', \{ class: 'btn btn--secondary', type: 'button', onClick: closeFn, 'data-initial-focus': focusCancel \? true : null \}, cancelLabel\)/);
@@ -152,7 +155,7 @@ test('corbeille : seul le propriétaire voit et restaure ses listes supprimées 
   assert.equal(ok.status, 200, ok.text);
   assert.equal(ok.body.list.id, h.ids.maison);
   assert.deepEqual(await h.trash(h.guillaume), []);
-  assert.ok(h.app.logs.some((l) => /liste_restauree/.test(l) && l.includes(h.ids.maison) && !l.includes('Maison')), h.app.logs.join('\n'));
+  assert.ok(h.app.logs.some((l) => /list_restored/.test(l) && l.includes(h.ids.maison) && !l.includes('Maison')), h.app.logs.join('\n'));
   // Double restauration : refusée proprement, rien ne change
   const again = await h.restore(h.guillaume, h.ids.maison);
   assert.deepEqual([again.status, again.text], [unknown.status, unknown.text]);
@@ -274,18 +277,23 @@ test('synchronisation : un téléphone resté ouvert (temps réel) et un télép
 
 test('hors ligne : « Restaurer » inactif avec une phrase ; pas de restauration par la file d\'attente', () => {
   const screen = code('public/js/screens/trash.js');
-  assert.match(screen, /export const OFFLINE_RESTORE = 'Restaurer une liste demande une connexion\. Les boutons reviendront avec le réseau\.';/);
+  assert.match(screen, /export const offlineRestore = \(\) => t\('corbeille\.horsLigne\.restaurer'\);/);
+  assert.equal(fr['corbeille.horsLigne.restaurer'], 'Restaurer une liste demande une connexion. Les boutons reviendront avec le réseau.');
   assert.match(screen, /for \(const button of panel\.querySelectorAll\('button\[data-restore\]'\)\) button\.disabled = !online \|\| busy;/);
   assert.match(screen, /if \(!navigator\.onLine \|\| busy\) return;/);
   assert.match(screen, /window\.addEventListener\('online', onOnline\);\s*window\.addEventListener\('offline', onOffline\);/);
   assert.match(screen, /await post\(`\/api\/lists\/\$\{encodeURIComponent\(list\.id\)\}\/restore`\);\s*await refreshData\(\{ quiet: true \}\);/);
-  assert.match(screen, /toast\(`Liste « \$\{list\.name\} » restaurée`, \{ action: 'Ouvrir', onAction: \(\) => navigate\('list', \{ id: list\.id \}\) \}\);/);
-  assert.match(screen, /'Aucune liste supprimée\.'/);
+  assert.match(screen, /toast\(t\('corbeille\.restauree', \{ name: list\.name \}\), \{ action: t\('corbeille\.ouvrir'\), onAction: \(\) => navigate\('list', \{ id: list\.id \}\) \}\);/);
+  assert.equal(fr['corbeille.restauree'], 'Liste « {name} » restaurée');
+  assert.equal(fr['corbeille.ouvrir'], 'Ouvrir');
+  assert.match(screen, /t\('corbeille\.vide\.titre'\)/);
+  assert.equal(fr['corbeille.vide.titre'], 'Aucune liste supprimée.');
   assert.doesNotMatch(screen, /innerHTML|insertAdjacentHTML|\.focus\(/);
   // Aucune opération « restaurer » dans la file d'attente (/api/ops)
   assert.doesNotMatch(read('server/lists.js'), /'list\.restore'/);
   assert.match(read('public/js/router.js'), /\{ name: 'trash', path: '\/reglages\/corbeille' \}/);
-  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: 'Corbeille des listes', onClick: \(\) => navigate\('trash'\) \}\)/);
+  assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: t\('reglages\.corbeille'\), onClick: \(\) => navigate\('trash'\) \}\)/);
+  assert.equal(fr['reglages.corbeille'], 'Corbeille des listes');
   assert.match(read('public/sw.js'), /'\/js\/screens\/trash\.js',/);
   assert.match(read('public/sw.js'), /const VERSION = `v(6[3-9]|[7-9]\d|\d{3,})-/);
 });

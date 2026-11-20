@@ -43,6 +43,7 @@ import { openSheet, toast, releaseFocus } from '../ui.js';
 import { createImagePicker } from '../photo.js';
 import { keepFieldFocus } from '../tap.js';
 import { app } from '../app.js';
+import { t } from '../i18n.js';
 
 // Bouton visible : liste de courses, et recherche activée sur le serveur
 // (LISTO_PRODUCT_LOOKUP). Un ancien compte gardé hors ligne, sans
@@ -52,12 +53,13 @@ export const scanAvailable = (list) => isShoppingList(list) && app.user?.product
 // Note proposée pour l'article : « Lactel · 1 L » (marque · format)
 export const productNote = (product) => [product.brand, product.quantity].filter(Boolean).join(' · ');
 
-// Messages quand le nom n'a pas été trouvé (jamais de détail technique)
-const NO_NAME = {
-  unknown: "Produit inconnu d'Open Food Facts. Vous pouvez taper son nom.",
-  unavailable: "Le nom du produit n'a pas pu être trouvé pour le moment. Vous pouvez le taper.",
-  offline: 'Hors ligne : le nom du produit est indisponible. Vous pouvez le taper.',
-};
+// Messages quand le nom n'a pas été trouvé (jamais de détail technique).
+// Une fonction : les textes sont lus dans la langue choisie au moment voulu.
+const noNameMessages = () => ({
+  unknown: t('scan.sansNom.inconnu'),
+  unavailable: t('scan.sansNom.indisponible'),
+  offline: t('scan.sansNom.horsLigne'),
+});
 
 // Options :
 // - listId : la liste ouverte
@@ -75,14 +77,14 @@ export function createScanner({ listId, getView, add, check }) {
   const picker = createImagePicker((file) => {
     session ??= openSession();
     session.scan(file);
-  }, { title: 'Scanner un produit' });
+  }, { title: t('scan.titre') });
   // Clavier ouvert : l'appui sur « Scanner » ne retire pas le curseur du
   // champ d'ajout (keepFieldFocus de tap.js), sinon la barre d'ajout bougeait
   // et le click tombait à côté (deux appuis nécessaires). Le click arrivé,
   // le champ perd le curseur (clavier replié) puis le sélecteur s'ouvre.
   const button = picker.button({
     class: 'btn btn--secondary btn--icon',
-    'aria-label': 'Scanner un produit',
+    'aria-label': t('scan.titre'),
     onPointerdown: keepFieldFocus.pointerdown,
     onMousedown: keepFieldFocus.mousedown,
   }, icon('barcode'));
@@ -94,7 +96,7 @@ export function createScanner({ listId, getView, add, check }) {
     let current = 0; // numéro de l'étape en cours (une réponse en retard est ignorée)
 
     const sheet = openSheet({
-      title: 'Scanner un produit',
+      title: t('scan.titre'),
       content: body,
       scroll: true,
       onClose: () => {
@@ -113,16 +115,16 @@ export function createScanner({ listId, getView, add, check }) {
     const message = (iconName, text, danger = false) => h('div', { class: `note${danger ? ' note--danger' : ''}`, role: 'status' }, icon(iconName), h('p', {}, text));
     const btn = (classes, content, onClick) => h('button', { class: `btn ${classes}`, type: 'button', onClick }, ...content);
     // Réessayer : un seul bouton, le même sélecteur
-    const retake = () => picker.button({ class: 'btn btn--primary btn--block' }, icon('camera', 'icon--sm'), 'Réessayer');
+    const retake = () => picker.button({ class: 'btn btn--primary btn--block' }, icon('camera', 'icon--sm'), t('scan.reessayer'));
     // « Annuler » : la feuille se ferme (un champ qui avait le curseur le perd)
-    const cancel = () => btn('btn--secondary btn--block', ['Annuler'], () => sheet.close());
+    const cancel = () => btn('btn--secondary btn--block', [t('scan.annuler')], () => sheet.close());
 
     // Saisie du code à la main : le champ n'apparaît que sur appui
     function manualCode(intro) {
       const step = ++current;
       const input = h('input', { class: 'input', type: 'text', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', enterkeyhint: 'search' });
-      const codeField = field('Code-barres', input, { aside: '8, 12 ou 13 chiffres' });
-      const search = btn('btn--primary btn--block', ['Rechercher'], submit);
+      const codeField = field(t('scan.code.libelle'), input, { aside: t('scan.code.aide') });
+      const search = btn('btn--primary btn--block', [t('scan.code.rechercher')], submit);
       const form = h('form', { class: 'stack', novalidate: true, hidden: true }, codeField.field, search);
       form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -135,7 +137,7 @@ export function createScanner({ listId, getView, add, check }) {
         releaseFocus(); // code validé : le clavier se replie
         handleCode(normalizeBarcode(input.value));
       }
-      const reveal = btn('btn--secondary btn--block', ['Saisir le code à la main'], () => {
+      const reveal = btn('btn--secondary btn--block', [t('scan.code.saisir')], () => {
         reveal.hidden = true;
         form.hidden = false;
       });
@@ -145,24 +147,24 @@ export function createScanner({ listId, getView, add, check }) {
     // 1. Lecture du code sur la photo
     async function scan(file) {
       const step = ++current;
-      show(status('Lecture du code-barres…'));
+      show(status(t('scan.lecture')));
       let code = null;
       try {
         code = await readBarcode(file);
       } catch (err) {
         if (step !== current) return;
         if (err instanceof ImageUnreadable) {
-          manualCode(message('alert', "Ce fichier n'est pas une image lisible. Réessayez avec une photo, ou saisissez le code.", true));
+          manualCode(message('alert', t('scan.lecture.illisible'), true));
         } else {
           // Lecteur indisponible (pas encore téléchargé et hors ligne, mode
           // Isolement de l'iPhone…) : saisie à la main
-          manualCode(message('alert', "La lecture des codes-barres n'est pas disponible pour le moment sur ce téléphone (au premier scan, il faut du réseau). Vous pouvez saisir le code à la main.", true));
+          manualCode(message('alert', t('scan.lecture.indisponible'), true));
         }
         return;
       }
       if (step !== current) return;
       if (!code) {
-        manualCode(message('alert', 'Code non lu, réessayez plus près et bien à plat, ou saisissez-le.', true));
+        manualCode(message('alert', t('scan.lecture.nonLu'), true));
         return;
       }
       handleCode(code);
@@ -186,16 +188,16 @@ export function createScanner({ listId, getView, add, check }) {
         toast(text, { duration: 2500 });
       };
       const tick = item.checked
-        ? btn('btn--primary btn--block', ['Le remettre dans la liste'], () => {
+        ? btn('btn--primary btn--block', [t('scan.liste.remettre')], () => {
           check(item, false);
-          done(`Remis dans la liste : ${item.name}`);
+          done(t('scan.liste.remis', { name: item.name }));
         })
-        : btn('btn--primary btn--block', [icon('check', 'icon--sm'), 'Cocher (je l\'ai pris)'], () => {
+        : btn('btn--primary btn--block', [icon('check', 'icon--sm'), t('scan.liste.cocher')], () => {
           check(item, true);
-          done(`Coché : ${item.name}`);
+          done(t('scan.liste.coche', { name: item.name }));
         });
-      const again = btn('btn--secondary btn--block', ['Ajouter quand même'], () => productSheet({ name: item.name, note: item.note ?? '', source: 'known', code }));
-      show(message(item.checked ? 'check' : 'alert', `${item.checked ? 'Déjà coché' : 'Déjà dans la liste'} : ${item.name}`),
+      const again = btn('btn--secondary btn--block', [t('scan.ajouterQuandMeme')], () => productSheet({ name: item.name, note: item.note ?? '', source: 'known', code }));
+      show(message(item.checked ? 'check' : 'alert', item.checked ? t('scan.liste.dejaCoche', { name: item.name }) : t('scan.liste.dejaPresent', { name: item.name })),
         h('div', { class: 'sheet__actions' }, tick, again, cancel()));
     }
 
@@ -210,7 +212,7 @@ export function createScanner({ listId, getView, add, check }) {
         productSheet({ name: mine.name, note: mine.note ?? '', source: 'known', code });
         return;
       }
-      show(status('Recherche du produit…'));
+      show(status(t('scan.recherche')));
       let answer;
       try {
         answer = await post(`/api/lists/${listId}/products`, { code });
@@ -223,14 +225,15 @@ export function createScanner({ listId, getView, add, check }) {
       } else if (answer?.status === 'found' && typeof answer.name === 'string' && answer.name) {
         productSheet({ name: answer.name, note: productNote(answer), source: 'off', code });
       } else {
-        typeName(NO_NAME[answer?.status] ?? NO_NAME.unavailable, code);
+        const messages = noNameMessages();
+        typeName(messages[answer?.status] ?? messages.unavailable, code);
       }
     }
 
     // 3a. Nom inconnu : « Taper le nom » fait apparaître le champ
     function typeName(text, code) {
       ++current;
-      const reveal = btn('btn--primary btn--block', ['Taper le nom'], () => productSheet({ name: '', note: '', source: 'typed', code }));
+      const reveal = btn('btn--primary btn--block', [t('scan.taperNom')], () => productSheet({ name: '', note: '', source: 'typed', code }));
       show(message('alert', text), h('div', { class: 'sheet__actions' }, reveal, cancel()));
     }
 
@@ -242,30 +245,30 @@ export function createScanner({ listId, getView, add, check }) {
       const step = ++current;
       const nameInput = h('input', { class: 'input', ...LABEL_INPUT, value: name, maxlength: '100' });
       const noteInput = h('input', { class: 'input', type: 'text', value: note, maxlength: '500', autocomplete: 'off' });
-      const nameField = field('Article', nameInput); // jamais « Nom » (voir LABEL_INPUT)
+      const nameField = field(t('scan.fiche.champNom'), nameInput); // jamais « Nom » (voir LABEL_INPUT)
       const warning = h('div', { class: 'note', role: 'status', hidden: true }, icon('alert'), h('p'));
-      const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Ajouter à la liste');
+      const save = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('scan.fiche.ajouter'));
       // Déjà dans la liste (même nom) : prévenir, et « Ajouter quand même »
       const checkDuplicate = () => {
         const duplicate = duplicateOf(getView(), nameInput.value, code);
         warning.hidden = !duplicate;
         warning.querySelector('p').textContent = duplicate ? duplicateText(duplicate) : '';
-        save.textContent = duplicate ? 'Ajouter quand même' : 'Ajouter à la liste';
+        save.textContent = duplicate ? t('scan.ajouterQuandMeme') : t('scan.fiche.ajouter');
       };
       nameInput.addEventListener('input', checkDuplicate);
       checkDuplicate();
       const form = h('form', { class: 'stack', novalidate: true },
-        found ? message('check', 'Produit trouvé. Vous pouvez corriger le nom avant de l\'ajouter.') : null,
-        source === 'known' ? message('check', `Produit connu : ${name}. Vous pouvez corriger le nom avant de l'ajouter.`) : null,
+        found ? message('check', t('scan.fiche.trouve')) : null,
+        source === 'known' ? message('check', t('scan.fiche.connu', { name })) : null,
         nameField.field,
-        field(found ? 'Note' : 'Note (facultative)', noteInput, { aside: found ? 'facultative : marque et format' : undefined }).field,
+        field(found ? t('scan.fiche.note') : t('scan.fiche.noteFacultative'), noteInput, { aside: found ? t('scan.fiche.note.aide') : undefined }).field,
         warning,
-        found ? h('p', { class: 'field__hint' }, 'Données : Open Food Facts') : null,
+        found ? h('p', { class: 'field__hint' }, t('scan.fiche.source')) : null,
         h('div', { class: 'sheet__actions' }, save, cancel()));
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         const finalName = nameInput.value.replace(/\s+/g, ' ').trim();
-        nameField.setError(finalName ? null : 'Le nom est obligatoire');
+        nameField.setError(finalName ? null : t('scan.fiche.champNom.obligatoire'));
         if (!finalName || step !== current) return;
         releaseFocus(); // nom validé : le clavier se replie
         save.disabled = true;
@@ -275,7 +278,7 @@ export function createScanner({ listId, getView, add, check }) {
         // L'ajout se termine : retour sur la liste, aucun champ actif
         sheet.close();
         releaseFocus();
-        toast(`Ajouté : ${finalName}`, { duration: 2500 });
+        toast(t('scan.fiche.ajoute', { name: finalName }), { duration: 2500 });
       });
       show(form);
     }

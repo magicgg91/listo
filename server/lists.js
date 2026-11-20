@@ -26,6 +26,7 @@
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
 import { createNewsService } from './news.js';
+import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
   normalizeItemName, suggest, usualAisle as sharedUsualAisle, usualStore as sharedUsualStore, recordUse, moveUse, hideHabitual,
@@ -72,50 +73,57 @@ export const MAX_OPS_PER_BATCH = 100;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isUuid = (value) => typeof value === 'string' && UUID.test(value);
 
-// Erreur « métier » d'une opération : code (400, 403, 404, 409) et message
+// Erreur « métier » d'une opération : code (400, 403, 404, 409), nom du
+// texte de refus (public/js/i18n/fr/ops.js…) et ses valeurs. message : ce
+// texte en français (journal, connexion Claude) ; la réponse HTTP le
+// traduit dans la langue de la requête : req.t(err.key, err.params).
 class OpError extends Error {
-  constructor(status, message) {
-    super(message);
+  constructor(status, key, params = {}) {
+    super(translate('fr', key, params));
     this.status = status;
+    this.key = key;
+    this.params = params;
   }
 }
 
-const LIST_NOT_FOUND = 'Liste introuvable.';
+// Refus : noms des textes (public/js/i18n/fr/ops.js). Ceux qui sont
+// exportés servent aussi à la connexion Claude (en français) et aux tests.
+const LIST_NOT_FOUND = 'ops.listeIntrouvable';
 // Messages sans le mot « article » : selon la liste, on dit « article »
 // (courses) ou « élément » (autres listes), et ici la liste n'est pas connue
 // (l'élément n'existe plus, ou la requête est mal formée).
-const ITEM_NOT_FOUND = 'Introuvable, peut-être supprimé entre-temps.';
-const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
-export const READ_ONLY = 'Vous avez un accès en lecture seule à cette liste.';
-export const OWNER_CANNOT_LEAVE = 'Le propriétaire ne peut pas quitter sa liste. Supprimez-la à la place.';
+const ITEM_NOT_FOUND = 'ops.introuvable';
+const OWNER_ONLY = 'ops.proprietaireSeulement';
+export const READ_ONLY = 'ops.lectureSeule';
+export const OWNER_CANNOT_LEAVE = 'ops.proprietaireNePeutPasQuitter';
 // Priorité ou échéance désactivée par le propriétaire pour cette liste
 // (migration 13) : refus avant toute écriture
-export const PRIORITY_OFF = 'La priorité est désactivée pour cette liste.';
-export const DUE_OFF = "L'échéance est désactivée pour cette liste.";
+export const PRIORITY_OFF = 'ops.prioriteDesactivee';
+export const DUE_OFF = 'ops.echeanceDesactivee';
 // Rayon demandé dans une liste « multi » (un magasin par article, pas de rayon)
-export const MULTI_NO_AISLE = "Pas de rayon dans une liste « multi » : choisissez le magasin de l'article.";
-export const PRIORITY_NOT_HERE = 'La priorité ne se choisit que dans une liste de tâches ou d\'envies.';
-export const DUE_NOT_HERE = 'L\'échéance ne se choisit que dans une liste de tâches.';
-export const BAD_PRIORITY = 'Priorité inconnue (basse, normale ou élevée).';
-export const BAD_DUE = 'Échéance invalide (une date AAAA-MM-JJ entre 2000 et 2100, sans heure).';
+export const MULTI_NO_AISLE = 'ops.multiSansRayon';
+export const PRIORITY_NOT_HERE = 'ops.prioritePasIci';
+export const DUE_NOT_HERE = 'ops.echeancePasIci';
+export const BAD_PRIORITY = 'ops.prioriteInconnue';
+export const BAD_DUE = 'ops.echeanceInvalide';
 // Tâches qui se répètent (public/js/repeat.js)
-export const REPEAT_NOT_HERE = 'La répétition ne se choisit que dans une liste de tâches.';
-export const REPEAT_OFF = "La répétition demande l'échéance, désactivée pour cette liste.";
-export const BAD_REPEAT = 'Répétition invalide.';
-export const REPEAT_NEEDS_DUE = "Une tâche qui se répète a besoin d'une échéance.";
-export const BAD_NEXT_DUE = 'Date suivante invalide.';
+export const REPEAT_NOT_HERE = 'ops.repetitionPasIci';
+export const REPEAT_OFF = 'ops.repetitionDesactivee';
+export const BAD_REPEAT = 'ops.repetitionInvalide';
+export const REPEAT_NEEDS_DUE = 'ops.repetitionSansEcheance';
+export const BAD_NEXT_DUE = 'ops.dateSuivanteInvalide';
 // Heure d'échéance et rappel (public/js/due-time.js)
-export const BAD_TIME = 'Heure invalide (HH:MM, par exemple 09:30).';
-export const BAD_REMINDER = 'Rappel invalide.';
-export const TIME_NEEDS_DUE = "Une heure demande une date d'échéance.";
-export const REMIND_NEEDS_TIME = 'Un rappel demande une heure.';
+export const BAD_TIME = 'ops.heureInvalide';
+export const BAD_REMINDER = 'ops.rappelInvalide';
+export const TIME_NEEDS_DUE = 'ops.heureSansDate';
+export const REMIND_NEEDS_TIME = 'ops.rappelSansHeure';
 // Attribuer une tâche (décisions du 11 novembre 2026)
-export const ASSIGN_NOT_HERE = "L'attribution ne se choisit que dans une liste de tâches.";
-export const ASSIGN_OFF = "L'attribution est désactivée pour cette liste.";
-export const BAD_ASSIGNEE = 'Cette personne ne peut pas recevoir de tâche dans cette liste (le propriétaire ou une personne qui peut la modifier).';
-export const BAD_ASSIGN_MODE = 'Façon d\'attribuer inconnue (une personne, plusieurs, ou chacun son tour).';
-export const BAD_PEOPLE = 'Choisissez au moins deux personnes (vingt au plus), sans doublon, parmi celles qui peuvent modifier la liste.';
-export const TURN_NEEDS_REPEAT = '« Chacun son tour » demande une tâche qui se répète.';
+export const ASSIGN_NOT_HERE = 'ops.attributionPasIci';
+export const ASSIGN_OFF = 'ops.attributionDesactivee';
+export const BAD_ASSIGNEE = 'ops.personneNonAttribuable';
+export const BAD_ASSIGN_MODE = 'ops.facondAttribuerInconnue';
+export const BAD_PEOPLE = 'ops.personnesInvalides';
+export const TURN_NEEDS_REPEAT = 'ops.tourSansRepetition';
 
 // Date du jour sur le serveur (AAAA-MM-JJ, fuseau du serveur : variable TZ)
 export const serverToday = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -123,7 +131,8 @@ export const serverToday = (date = new Date()) => `${date.getFullYear()}-${Strin
 // LA règle de la priorité et de l'échéance d'un élément, partagée par
 // l'application (opérations item.create et item.update) et par la connexion
 // Claude (add_items et update_items, qui s'en servent pour refuser un
-// appel entier AVANT toute écriture). Renvoie le message de refus, ou null.
+// appel entier AVANT toute écriture). Renvoie le nom du texte de refus
+// (public/js/i18n/fr/ops.js ; Claude le reçoit en français), ou null.
 // type : type de la liste ; enabled : { priorityEnabled, dueEnabled }
 // (réglages enregistrés de la liste) ; fields : { priority, dueDate, repeat }
 // (undefined : non demandé ; dueDate null : effacer l'échéance ; repeat
@@ -148,6 +157,9 @@ export function itemOptionsError(type, { priorityEnabled, dueEnabled }, { priori
   return null;
 }
 export const ACCESS = ['modification', 'lecture'];
+// Droit écrit dans le journal de sécurité, toujours en anglais
+const JOURNAL_ACCESS = { modification: 'edit', lecture: 'read' };
+const journalAccess = (access) => JOURNAL_ACCESS[access] ?? access;
 
 // Droit d'écriture d'un compte sur une liste : LE seul contrôle, utilisé par
 // toutes les écritures (opérations, photos, mode scan) et par la description
@@ -162,30 +174,32 @@ export function canEdit(user, row) {
 
 // --- Vérification des champs envoyés par le téléphone ---
 
-// what : « de liste », ou rien (élément d'une liste : mot neutre)
-function requireUuid(value, what) {
-  if (!isUuid(value)) throw new OpError(400, what ? `Identifiant ${what} invalide.` : 'Identifiant invalide.');
+// key : refus « Identifiant de liste invalide. » ('ops.identifiantListeInvalide'),
+// ou rien (élément d'une liste : mot neutre)
+function requireUuid(value, key = 'ops.identifiantInvalide') {
+  if (!isUuid(value)) throw new OpError(400, key);
   return value.toLowerCase();
 }
 
 function listName(value) {
   const name = cleanName(value);
-  if (!name) throw new OpError(400, 'Nom de liste invalide (1 à 100 caractères).');
+  if (!name) throw new OpError(400, 'ops.nomListeInvalide');
   return name;
 }
 
 function itemName(value) {
   const name = cleanName(value);
-  if (!name) throw new OpError(400, 'Nom invalide (1 à 100 caractères).');
+  if (!name) throw new OpError(400, 'ops.nomInvalide');
   return name;
 }
 
-// Texte facultatif (quantité, note) : absent ou null = vide
-function optionalText(value, max, label) {
+// Texte facultatif (quantité, note) : absent ou null = vide. invalid,
+// tooLong : noms des deux refus (texte invalide, trop long)
+function optionalText(value, max, invalid, tooLong) {
   if (value === undefined || value === null) return '';
-  if (typeof value !== 'string') throw new OpError(400, `${label} invalide.`);
+  if (typeof value !== 'string') throw new OpError(400, invalid);
   const text = value.normalize('NFC').trim();
-  if (text.length > max) throw new OpError(400, `${label} trop longue (${max} caractères au plus).`);
+  if (text.length > max) throw new OpError(400, tooLong, { max });
   return text;
 }
 
@@ -197,7 +211,7 @@ function optionalText(value, max, label) {
 export const ADD_MODES = ['quick', 'detail'];
 function addModeOf(value) {
   if (value === undefined) return undefined;
-  if (!ADD_MODES.includes(value)) throw new OpError(400, 'Réglage « Après l\'ajout » invalide.');
+  if (!ADD_MODES.includes(value)) throw new OpError(400, 'ops.reglageApresAjoutInvalide');
   return value;
 }
 
@@ -207,7 +221,7 @@ function linkOf(value) {
   if (value === undefined) return undefined;
   if (value === null || value === '') return null;
   const link = cleanLink(value);
-  if (!link) throw new OpError(400, 'Lien invalide : une adresse web en http ou https, 500 caractères au plus.');
+  if (!link) throw new OpError(400, 'ops.lienInvalide');
   return link;
 }
 
@@ -216,7 +230,7 @@ function linkOf(value) {
 function priceOf(value) {
   if (value === undefined) return undefined;
   if (value === null) return null;
-  if (!Number.isInteger(value) || value < 0 || value > PRICE_MAX_CENTS) throw new OpError(400, 'Prix invalide (de 0 à 100 000 €).');
+  if (!Number.isInteger(value) || value < 0 || value > PRICE_MAX_CENTS) throw new OpError(400, 'ops.prixInvalide');
   return value;
 }
 
@@ -224,7 +238,7 @@ function priceOf(value) {
 function forNameOf(value) {
   const name = typeof value === 'string' ? value.normalize('NFC').replace(/\s+/g, ' ').trim() : '';
   if (!name || [...name].length > FOR_NAME_MAX || /[\u0000-\u001f\u007f]/.test(name)) {
-    throw new OpError(400, `Prénom invalide (1 à ${FOR_NAME_MAX} caractères).`);
+    throw new OpError(400, 'ops.prenomInvalide', { max: FOR_NAME_MAX });
   }
   return name;
 }
@@ -232,20 +246,20 @@ function forNameOf(value) {
 function listIconOf(value) {
   if (value === undefined) return undefined;
   if (value === '' || isListIcon(value)) return value;
-  throw new OpError(400, 'Icône inconnue.');
+  throw new OpError(400, 'ops.iconeInconnue');
 }
 
-const quantity = (value) => optionalText(value, 30, 'Quantité');
-const note = (value) => optionalText(value, 500, 'Note');
+const quantity = (value) => optionalText(value, 30, 'ops.quantiteInvalide', 'ops.quantiteTropLongue');
+const note = (value) => optionalText(value, 500, 'ops.noteInvalide', 'ops.noteTropLongue');
 
 // Lien et prix : listes d'envies seulement ; une liste d'envies n'a pas
 // de quantité. Vérifié avant toute écriture.
 function checkWishFields(wishes, op) {
   if (!wishes && (op.link !== undefined || op.priceCents !== undefined)) {
-    throw new OpError(400, 'Le lien et le prix ne se choisissent que dans une liste d\'envies.');
+    throw new OpError(400, 'ops.lienPrixPasIci');
   }
   if (wishes && typeof op.quantity === 'string' && op.quantity.trim() !== '') {
-    throw new OpError(400, 'Pas de quantité dans une liste d\'envies.');
+    throw new OpError(400, 'ops.quantitePasIci');
   }
 }
 
@@ -253,7 +267,7 @@ function checkWishFields(wishes, op) {
 // MÊMES règles que l'opération item.update de l'application (nom, quantité,
 // note, quantité refusée dans une liste d'envies, priorité et échéance avec
 // itemOptionsError), pour tout vérifier AVANT d'écrire. Renvoie { error }
-// (message de l'application) ou { fields } : les valeurs telles que
+// (message de l'application, en français : connexion Claude) ou { fields } : les valeurs telles que
 // l'application les enregistrera (nom et textes nettoyés), seulement pour
 // les champs demandés. type : type de la liste ; enabled : ses réglages.
 export function checkItemEdit(type, enabled, op) {
@@ -264,7 +278,7 @@ export function checkItemEdit(type, enabled, op) {
     if (op.note !== undefined) fields.note = note(op.note);
     checkWishFields(isWishList(type), op);
     const error = itemOptionsError(type, enabled, op);
-    if (error) return { error };
+    if (error) return { error: translate('fr', error) };
     if (op.priority !== undefined) fields.priority = op.priority;
     if (op.dueDate !== undefined) fields.dueDate = op.dueDate;
     if (op.repeat !== undefined) fields.repeat = op.repeat;
@@ -380,7 +394,7 @@ export function createListService(ctx) {
   // déjà le nom de l'opération), ou undefined si l'opération ne demande rien
   function requestedType(op) {
     if (op.listType === undefined) return undefined;
-    if (!isListType(op.listType)) throw new OpError(400, 'Type de liste inconnu.');
+    if (!isListType(op.listType)) throw new OpError(400, 'ops.typeInconnu');
     return op.listType;
   }
 
@@ -388,7 +402,7 @@ export function createListService(ctx) {
   function activeStoreOrNull(id) {
     if (id === undefined || id === null) return null;
     const store = parseId(id) && q.store.get(parseId(id));
-    if (!store || store.active !== 1) throw new OpError(400, 'Magasin inconnu ou désactivé.');
+    if (!store || store.active !== 1) throw new OpError(400, 'ops.magasinInconnu');
     return store;
   }
 
@@ -396,16 +410,17 @@ export function createListService(ctx) {
   function activeAisleOrNull(id) {
     if (id === null) return null;
     const aisle = parseId(id) && q.aisle.get(parseId(id));
-    if (!aisle || aisle.active !== 1) throw new OpError(400, 'Rayon inconnu ou désactivé.');
+    if (!aisle || aisle.active !== 1) throw new OpError(400, 'ops.rayonInconnu');
     return aisle;
   }
 
   // Rayons actifs, { id, name }, dans l'ordre de l'application (ordre
-  // alphabétique des noms) : ceux qu'on peut choisir pour un article
+  // alphabétique des noms) : ceux qu'on peut choisir pour un article.
+  // Seul Claude (MCP) les lit : ordre français, comme ses réponses.
   function activeAisles() {
     return q.allAisles.all().filter((a) => a.active === 1)
       .map((a) => ({ id: a.id, name: a.name }))
-      .sort((a, b) => compareNames(a.name, b.name));
+      .sort((a, b) => compareNames(a.name, b.name, 'fr'));
   }
 
   // Magasins proposés pour les articles d'une liste « multi » : ceux que
@@ -416,11 +431,12 @@ export function createListService(ctx) {
 
   // Les mêmes magasins, { id, name }, dans l'ordre de l'application (ordre
   // alphabétique des noms, comme storeChoices du téléphone) : ceux qu'on peut
-  // choisir pour un article de cette liste « multi »
+  // choisir pour un article de cette liste « multi » (Claude seulement :
+  // ordre français)
   function activeStoreChoices(multiStoreId) {
     return storeChoices(multiStoreId).map((id) => q.store.get(id))
       .map((row) => ({ id: row.id, name: row.name }))
-      .sort((a, b) => compareNames(a.name, b.name));
+      .sort((a, b) => compareNames(a.name, b.name, 'fr'));
   }
 
   // Magasin choisi pour un article d'une liste « multi » : vide (« Sans
@@ -429,14 +445,14 @@ export function createListService(ctx) {
     if (value === null) return null;
     const id = parseId(value);
     if (!id || !storeChoices(multiStoreId).includes(id)) {
-      throw new OpError(400, "Ce magasin n'est pas proposé pour cette liste (inconnu, désactivé ou non regroupé).");
+      throw new OpError(400, 'ops.magasinNonPropose');
     }
     return id;
   }
 
   // La liste, si le compte en est membre ; sinon 404 (comme si elle n'existait pas)
   function listForMember(user, listId) {
-    const list = q.memberList.get({ userId: user.id, listId: requireUuid(listId, 'de liste') });
+    const list = q.memberList.get({ userId: user.id, listId: requireUuid(listId, 'ops.identifiantListeInvalide') });
     if (!list) throw new OpError(404, LIST_NOT_FOUND);
     return list;
   }
@@ -527,10 +543,11 @@ export function createListService(ctx) {
   // magasin par article. Le téléphone qui enverrait le mauvais champ est refusé.
   // Priorité : une des trois valeurs, rien d'autre
   // Réglage « Priorité » ou « Échéance » d'une liste : vrai, faux, ou
-  // undefined s'il n'est pas envoyé (rien ne change)
-  function optionOf(value, label) {
+  // undefined s'il n'est pas envoyé (rien ne change). key : nom du refus
+  // (« Réglage « Priorité » invalide. »…)
+  function optionOf(value, key) {
     if (value === undefined) return undefined;
-    if (typeof value !== 'boolean') throw new OpError(400, `Réglage « ${label} » invalide.`);
+    if (typeof value !== 'boolean') throw new OpError(400, key);
     return value;
   }
 
@@ -552,7 +569,7 @@ export function createListService(ctx) {
   function eanOf(value) {
     if (value === null) return null;
     const code = normalizeBarcode(value);
-    if (!code) throw new OpError(400, 'Code-barres invalide : vérifiez les chiffres (8, 12 ou 13 chiffres).');
+    if (!code) throw new OpError(400, 'ops.codeBarresInvalide');
     return code;
   }
   // Attribution demandée (opération) : undefined (non demandée), null
@@ -690,7 +707,7 @@ export function createListService(ctx) {
   // avant toute écriture
   function checkEanForList(isShopping, op) {
     if (!isShopping && op.ean !== undefined) {
-      throw new OpError(400, 'Le code-barres ne se choisit que dans une liste de courses.');
+      throw new OpError(400, 'ops.codeBarresPasIci');
     }
   }
 
@@ -700,7 +717,7 @@ export function createListService(ctx) {
     if (!isWishList(row.type ?? row.list_type)) return;
     const list = { ownerId, forUserId: row.for_user_id ?? row.list_for_user_id ?? null, forName: row.for_name ?? row.list_for_name ?? null };
     if (!mayMarkReceived(user.id, list)) {
-      throw new OpError(403, 'Seul le bénéficiaire ou le propriétaire de la liste marque un souhait comme reçu.');
+      throw new OpError(403, 'ops.recuInterdit');
     }
   }
 
@@ -709,7 +726,7 @@ export function createListService(ctx) {
       throw new OpError(400, MULTI_NO_AISLE);
     }
     if (!multi && op.storeId !== undefined && op.storeId !== null) {
-      throw new OpError(400, 'Le magasin ne se choisit que dans une liste « multi ».');
+      throw new OpError(400, 'ops.magasinMultiSeulement');
     }
   }
 
@@ -867,14 +884,14 @@ export function createListService(ctx) {
   const handlers = {
     // Créer une liste : le créateur en est le propriétaire et le premier membre
     'list.create'(user, op) {
-      const id = requireUuid(op.listId, 'de liste');
-      if (q.anyList.get(id)) throw new OpError(409, 'Cette liste existe déjà.');
+      const id = requireUuid(op.listId, 'ops.identifiantListeInvalide');
+      if (q.anyList.get(id)) throw new OpError(409, 'ops.listeExisteDeja');
       const name = listName(op.name);
       const type = requestedType(op);
-      if (type === undefined) throw new OpError(400, 'Type de liste inconnu.');
+      if (type === undefined) throw new OpError(400, 'ops.typeInconnu');
       const store = activeStoreOrNull(op.storeId);
       if (store && !isShoppingList(type)) {
-        throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
+        throw new OpError(400, 'ops.magasinCoursesSeulement');
       }
       // Liste d'envies : « Pour qui ? », fixé ici pour toujours. Un autre
       // compte actif (forUserId), une personne sans compte (forName), ou ni
@@ -882,23 +899,23 @@ export function createListService(ctx) {
       let forUserId = null;
       let forName = null;
       if (op.forUserId !== undefined && op.forUserId !== null) {
-        if (!isWishList(type)) throw new OpError(400, '« Pour qui ? » ne se choisit que pour une liste d\'envies.');
+        if (!isWishList(type)) throw new OpError(400, 'ops.pourQuiPasIci');
         forUserId = parseId(op.forUserId);
-        if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'Utilisateur inconnu ou désactivé.');
+        if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'ops.utilisateurInconnu');
         if (forUserId === user.id) forUserId = null; // « Moi »
       }
       if (op.forName !== undefined && op.forName !== null) {
-        if (!isWishList(type)) throw new OpError(400, '« Pour qui ? » ne se choisit que pour une liste d\'envies.');
-        if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
+        if (!isWishList(type)) throw new OpError(400, 'ops.pourQuiPasIci');
+        if (forUserId) throw new OpError(400, 'ops.compteOuPersonne');
         forName = forNameOf(op.forName);
       }
       // Priorité et échéance : désactivées sauf demande explicite, pour tous
       // les types (liste d'envies comprise : le propriétaire l'active ensuite
       // dans « Modifier la liste », comme pour une liste de tâches)
-      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? false;
-      const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? false;
-      const assignOn = optionOf(op.assignEnabled, 'Attribution') ?? false;
-      const subtasksOn = optionOf(op.subtasksEnabled, 'Sous-tâches') ?? false;
+      const priorityOn = optionOf(op.priorityEnabled, 'ops.reglagePrioriteInvalide') ?? false;
+      const dueOn = optionOf(op.dueEnabled, 'ops.reglageEcheanceInvalide') ?? false;
+      const assignOn = optionOf(op.assignEnabled, 'ops.reglageAttributionInvalide') ?? false;
+      const subtasksOn = optionOf(op.subtasksEnabled, 'ops.reglageSousTachesInvalide') ?? false;
       const icon = listIconOf(op.icon) ?? ''; // rien de choisi : icône du type
       // « Après l'ajout » : sans choix, « Rester sur la liste » pour une liste
       // de courses, « Ouvrir la fiche » pour les autres
@@ -917,7 +934,7 @@ export function createListService(ctx) {
       changed(id);
       // Notification « partage » au compte destinataire (ajouté à la liste)
       if (forUserId) ctx.notify?.sharing({ listId: id, userId: forUserId, actorId: user.id, kind: 'added' });
-      ctx.audit('liste_creee', { utilisateur: user.username, liste: id });
+      ctx.audit('list_created', { user: user.username, list: id });
       return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user) };
     },
 
@@ -938,17 +955,17 @@ export function createListService(ctx) {
     'list.update'(user, op) {
       const list = listForOwner(user, op.listId);
       if (op.forUserId !== undefined || op.forName !== undefined) {
-        throw new OpError(400, 'La personne à qui la liste est destinée ne change pas.');
+        throw new OpError(400, 'ops.destinataireFixe');
       }
       if ([op.name, op.listType, op.storeId, op.priorityEnabled, op.dueEnabled, op.assignEnabled, op.subtasksEnabled, op.icon, op.addMode].every((value) => value === undefined)) {
-        throw new OpError(400, 'Rien à modifier.');
+        throw new OpError(400, 'ops.rienAModifier');
       }
-      const priorityOn = optionOf(op.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
-      const dueOn = optionOf(op.dueEnabled, 'Échéance') ?? list.due_enabled === 1;
-      const assignOn = optionOf(op.assignEnabled, 'Attribution') ?? list.assign_enabled === 1;
+      const priorityOn = optionOf(op.priorityEnabled, 'ops.reglagePrioriteInvalide') ?? list.priority_enabled === 1;
+      const dueOn = optionOf(op.dueEnabled, 'ops.reglageEcheanceInvalide') ?? list.due_enabled === 1;
+      const assignOn = optionOf(op.assignEnabled, 'ops.reglageAttributionInvalide') ?? list.assign_enabled === 1;
       // Sous-tâches : couper l'option n'efface rien (les tâches s'affichent
       // à plat, et se regroupent quand elle revient)
-      const subtasksOn = optionOf(op.subtasksEnabled, 'Sous-tâches') ?? list.subtasks_enabled === 1;
+      const subtasksOn = optionOf(op.subtasksEnabled, 'ops.reglageSousTachesInvalide') ?? list.subtasks_enabled === 1;
       const name = op.name === undefined ? list.name : listName(op.name);
       const icon = listIconOf(op.icon) ?? list.icon;
       const addMode = addModeOf(op.addMode) ?? list.add_mode;
@@ -967,7 +984,7 @@ export function createListService(ctx) {
       let storeId = list.store_id;
       if (isShoppingList(type)) {
         if (op.storeId !== undefined) {
-          if (op.storeId !== null && !parseId(op.storeId)) throw new OpError(400, 'Magasin inconnu ou désactivé.');
+          if (op.storeId !== null && !parseId(op.storeId)) throw new OpError(400, 'ops.magasinInconnu');
           const wanted = op.storeId === null ? null : parseId(op.storeId);
           if (wanted !== list.store_id) storeId = activeStoreOrNull(wanted)?.id ?? null;
         }
@@ -975,13 +992,13 @@ export function createListService(ctx) {
         // Pas de magasin à choisir pour une liste qui n'est pas de courses ;
         // « aucun magasin » (envoyé par un ancien téléphone) est ignoré : le
         // magasin conservé n'est pas effacé
-        throw new OpError(400, 'Un magasin ne se choisit que pour une liste de courses.');
+        throw new OpError(400, 'ops.magasinCoursesSeulement');
       }
 
       db.prepare('UPDATE lists SET name = ?, type = ?, store_id = ?, priority_enabled = ?, due_enabled = ?, assign_enabled = ?, subtasks_enabled = ?, icon = ?, add_mode = ?, updated_at = ? WHERE id = ?')
         .run(name, type, storeId, Number(priorityOn), Number(dueOn), Number(assignOn), Number(subtasksOn), icon, addMode, nowIso(), list.id);
       if (isShoppingList(type) && (storeId !== list.store_id || type !== before)) completeItems(list.id);
-      if (type !== before) ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: type });
+      if (type !== before) ctx.audit('list_type_changed', { user: user.username, list: list.id, before, after: type });
       changed(list.id);
       return {};
     },
@@ -994,10 +1011,10 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET deleted_at = ?, updated_at = ? WHERE id = ?').run(now, now, list.id);
       news.dropList(list.id); // son journal disparaît avec elle
       changed(list.id);
-      ctx.audit('liste_supprimee', { utilisateur: user.username, liste: list.id });
+      ctx.audit('list_deleted', { user: user.username, list: list.id });
       // Son lien public s'arrête avec elle
       const share = ctx.shares?.stopForList(list.id);
-      if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste supprimée' });
+      if (share) ctx.audit('public_link_stopped', { user: user.username, list: list.id, share: share.id, reason: 'list deleted' });
       return {};
     },
 
@@ -1049,7 +1066,7 @@ export function createListService(ctx) {
     // modifier la liste.
     'habitual.hide'(user, op) {
       const list = listForEditor(user, op.listId);
-      if (!isShoppingList(list)) throw new OpError(400, '« Souvent ajoutés » n\'existe que dans les listes de courses.');
+      if (!isShoppingList(list)) throw new OpError(400, 'ops.souventAjoutesPasIci');
       const name = itemName(op.name);
       const storeIds = !list.store_id ? [] : list.is_multi === 1 ? storeChoices(list.store_id) : [list.store_id];
       if (list.is_multi === 1 && !storeIds.length) return {};
@@ -1061,7 +1078,7 @@ export function createListService(ctx) {
     'item.create'(user, op) {
       const list = listForEditor(user, op.listId);
       const id = requireUuid(op.itemId);
-      if (q.anyItem.get(id)) throw new OpError(409, 'Cet identifiant est déjà utilisé.');
+      if (q.anyItem.get(id)) throw new OpError(409, 'ops.identifiantDejaUtilise');
       const name = itemName(op.name);
       checkFieldsForList(list.is_multi === 1, op);
       checkEanForList(isShoppingList(list), op);
@@ -1167,7 +1184,7 @@ export function createListService(ctx) {
       const priceCents = op.priceCents === undefined ? item.price_cents : priceOf(op.priceCents);
       let aisleId = item.aisle_id;
       if (op.aisleId !== undefined && isShoppingList(item.list_type) && !multi) {
-        if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'Rayon inconnu ou désactivé.');
+        if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'ops.rayonInconnu');
         // Un rayon désactivé peut être gardé, pas choisi
         const wanted = op.aisleId === null ? null : parseId(op.aisleId);
         if (wanted !== item.aisle_id) aisleId = activeAisleOrNull(wanted)?.id ?? null;
@@ -1179,7 +1196,7 @@ export function createListService(ctx) {
         if (wanted !== item.store_id) storeId = chosenStore(op.storeId, item.list_store_id);
       }
       if ([op.name, op.quantity, op.note, op.aisleId, op.storeId, op.priority, op.dueDate, op.repeat, op.assignedTo, op.assignMode, op.assignPeople, op.dueTime, op.remindBefore, op.ean, op.link, op.priceCents, op.parentId].every((value) => value === undefined)) {
-        throw new OpError(400, 'Rien à modifier.');
+        throw new OpError(400, 'ops.rienAModifier');
       }
       const now = nowIso();
       // Ordre manuel : rangée sous une autre principale, la tâche va à la fin
@@ -1212,7 +1229,7 @@ export function createListService(ctx) {
     // Cocher ou décocher un article
     'item.check'(user, op) {
       const item = itemForEditor(user, op.itemId);
-      if (typeof op.checked !== 'boolean') throw new OpError(400, 'Valeur « checked » invalide (true ou false).');
+      if (typeof op.checked !== 'boolean') throw new OpError(400, 'ops.valeurCocheeInvalide');
       checkReceived(user, item, item.list_owner_id);
       // Tâche qui se répète (liste de tâches, échéance activée) : cochée, elle
       // revient décochée à la date suivante, au lieu d'aller dans « Terminés ».
@@ -1344,7 +1361,7 @@ export function createListService(ctx) {
     // effet (file d'attente hors ligne)
     'list.seen'(user, op) {
       const list = listForMember(user, op.listId);
-      if (!Number.isSafeInteger(op.upTo) || op.upTo < 0) throw new OpError(400, 'Repère de lecture invalide.');
+      if (!Number.isSafeInteger(op.upTo) || op.upTo < 0) throw new OpError(400, 'ops.repereLectureInvalide');
       if (news.markSeen(list.id, user.id, op.upTo)) changedForMe(list.id);
       return {};
     },
@@ -1352,7 +1369,7 @@ export function createListService(ctx) {
     // « Ne plus me signaler cette liste » (muted: true) / « Signaler cette liste »
     'list.mute'(user, op) {
       const list = listForMember(user, op.listId);
-      if (typeof op.muted !== 'boolean') throw new OpError(400, 'Réglage « Ne plus me signaler cette liste » invalide.');
+      if (typeof op.muted !== 'boolean') throw new OpError(400, 'ops.reglageSourdineInvalide');
       if (news.setMuted(list.id, user.id, op.muted)) changedForMe(list.id);
       return {};
     },
@@ -1360,10 +1377,10 @@ export function createListService(ctx) {
     // Réglages du compte : « Nouveautés » (enabled), « Signaler les éléments
     // cochés » (checks)
     'account.news'(user, op) {
-      for (const [value, label] of [[op.enabled, 'Nouveautés'], [op.checks, 'Signaler les éléments cochés']]) {
-        if (value !== undefined && typeof value !== 'boolean') throw new OpError(400, `Réglage « ${label} » invalide.`);
+      for (const [value, key] of [[op.enabled, 'ops.reglageNouveautesInvalide'], [op.checks, 'ops.reglageSignalerCochesInvalide']]) {
+        if (value !== undefined && typeof value !== 'boolean') throw new OpError(400, key);
       }
-      if (op.enabled === undefined && op.checks === undefined) throw new OpError(400, 'Rien à modifier.');
+      if (op.enabled === undefined && op.checks === undefined) throw new OpError(400, 'ops.rienAModifier');
       if (news.setSettings(user.id, { enabled: op.enabled, checks: op.checks })) changedForMe(null);
       return {};
     },
@@ -1379,14 +1396,23 @@ export function createListService(ctx) {
   const findApplied = db.prepare('SELECT * FROM applied_ops WHERE id = ?');
   const saveApplied = db.prepare('INSERT INTO applied_ops (id, user_id, result, applied_at) VALUES (?, ?, ?, ?)');
 
+  // Résultat d'une opération refusée : error, le texte en français (tel que
+  // le reçoit Claude) ; code, le nom de ce texte (le téléphone reconnaît
+  // ainsi un refus, quelle que soit la langue) ; params, ses valeurs s'il en
+  // a. La route POST /api/ops traduit error dans la langue de la requête et
+  // retire params (voir server/routes/lists.js).
+  function refusal(id, status, key, params = {}) {
+    return { id, status, error: translate('fr', key, params), code: key, ...(Object.keys(params).length ? { params } : {}) };
+  }
+
   function applyOne(user, op) {
     if (!op || typeof op !== 'object' || Array.isArray(op) || !isUuid(op.id)) {
-      return { id: op?.id ?? null, status: 400, error: "Identifiant d'opération invalide." };
+      return refusal(op?.id ?? null, 400, 'ops.identifiantOperationInvalide');
     }
     const opId = op.id.toLowerCase();
     const previous = findApplied.get(opId);
     if (previous) {
-      if (previous.user_id !== user.id) return { id: opId, status: 409, error: "Identifiant d'opération déjà utilisé." };
+      if (previous.user_id !== user.id) return refusal(opId, 409, 'ops.identifiantOperationDejaUtilise');
       return { ...JSON.parse(previous.result), duplicate: true };
     }
 
@@ -1396,7 +1422,7 @@ export function createListService(ctx) {
     touchedMine.clear();
     try {
       result = db.transaction(() => {
-        if (!handler) throw new OpError(400, "Type d'opération inconnu.");
+        if (!handler) throw new OpError(400, 'ops.operationInconnue');
         const value = { id: opId, status: 200, ...handler(user, op) };
         saveApplied.run(opId, user.id, JSON.stringify(value), nowIso());
         return value;
@@ -1408,7 +1434,7 @@ export function createListService(ctx) {
       if (!(err instanceof OpError)) throw err; // vraie panne : erreur 500
       // Un refus est lui aussi mémorisé : renvoyée, l'opération donnera le
       // même refus (sans rien modifier).
-      result = { id: opId, status: err.status, error: err.message };
+      result = refusal(opId, err.status, err.key, err.params);
       saveApplied.run(opId, user.id, JSON.stringify(result), nowIso());
     }
     return result;
@@ -1427,8 +1453,10 @@ export function createListService(ctx) {
       .map((list) => describeList(list, user));
   }
 
-  // Une liste avec ses articles groupés et triés ; null si pas membre
-  function readList(user, listId) {
+  // Une liste avec ses articles groupés et triés ; null si pas membre.
+  // locale : langue de l'ordre alphabétique (celle de la requête ; Claude :
+  // le français)
+  function readList(user, listId, locale = 'fr') {
     if (!isUuid(listId)) return null;
     const list = q.myLists.all(user.id).find((l) => l.id === listId.toLowerCase());
     if (!list) return null;
@@ -1436,7 +1464,7 @@ export function createListService(ctx) {
     const aisles = q.allAisles.all();
     const items = q.liveItems.all(list.id).map(describeItem);
     const byStore = shopping && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
-    const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all() });
+    const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all(), locale });
     // Réservations : seulement pour ceux qui ont le droit de les voir ; pour
     // le bénéficiaire, le champ n'existe pas
     const booked = reservations.forList(user, list);
@@ -1447,10 +1475,11 @@ export function createListService(ctx) {
   // proposé n'est donné que s'il est encore actif. Avec une liste (listId) :
   // aucune suggestion si ce n'est pas une liste de courses (la liste doit
   // être une des miennes).
-  function suggestions(typed, { user, listId } = {}) {
+  // locale : langue de la requête (ordre alphabétique, à égalité)
+  function suggestions(typed, { user, listId, locale = 'fr' } = {}) {
     if (listId !== undefined && !isShoppingList(listForMember(user, listId))) return [];
     const activeAisles = new Set(q.allAisles.all().filter((a) => a.active === 1).map((a) => a.id));
-    return suggest(q.allHistory.all().map(describeHistory), typed).map((entry) => ({
+    return suggest(q.allHistory.all().map(describeHistory), typed, undefined, { locale }).map((entry) => ({
       name: entry.name,
       aisleId: activeAisles.has(entry.aisleId) ? entry.aisleId : null,
       useCount: entry.useCount,
@@ -1521,17 +1550,17 @@ export function createListService(ctx) {
   function setMembers(user, listId, userIds, access = {}) {
     const list = listForOwner(user, listId);
     if (!Array.isArray(userIds) || userIds.length > 50 || !userIds.every((id) => parseId(id))) {
-      throw new OpError(400, 'Liste des personnes invalide.');
+      throw new OpError(400, 'ops.listePersonnesInvalide');
     }
-    if (access === null || typeof access !== 'object' || Array.isArray(access)) throw new OpError(400, 'Droits des personnes invalides.');
+    if (access === null || typeof access !== 'object' || Array.isArray(access)) throw new OpError(400, 'ops.droitsPersonnesInvalides');
     const wanted = new Set(userIds.map(Number));
     wanted.delete(list.owner_id);
     const rights = new Map();
     for (const [key, value] of Object.entries(access)) {
       const id = parseId(key);
-      if (!id || !ACCESS.includes(value)) throw new OpError(400, 'Droits des personnes invalides.');
-      if (id === list.owner_id) throw new OpError(400, 'Le propriétaire a tous les droits sur sa liste.');
-      if (!wanted.has(id)) throw new OpError(400, 'Droit donné à une personne avec qui la liste n\'est pas partagée.');
+      if (!id || !ACCESS.includes(value)) throw new OpError(400, 'ops.droitsPersonnesInvalides');
+      if (id === list.owner_id) throw new OpError(400, 'ops.proprietaireTousDroits');
+      if (!wanted.has(id)) throw new OpError(400, 'ops.droitSansPartage');
       rights.set(id, value);
     }
     const before = new Map(q.members.all(list.id).filter((m) => m.id !== list.owner_id).map((m) => [m.id, m.access]));
@@ -1542,15 +1571,15 @@ export function createListService(ctx) {
     // c'est toujours en « Peut modifier ».
     const beneficiary = list.for_user_id ?? null;
     if (beneficiary) {
-      if (current.has(beneficiary) && !wanted.has(beneficiary)) throw new OpError(400, 'La personne à qui la liste est destinée ne peut pas en être retirée.');
-      if (rights.has(beneficiary) && rights.get(beneficiary) !== 'modification') throw new OpError(400, 'La personne à qui la liste est destinée garde le droit « Peut modifier ».');
+      if (current.has(beneficiary) && !wanted.has(beneficiary)) throw new OpError(400, 'ops.destinataireNonRetirable');
+      if (rights.has(beneficiary) && rights.get(beneficiary) !== 'modification') throw new OpError(400, 'ops.destinataireGardeModifier');
       if (wanted.has(beneficiary)) rights.set(beneficiary, 'modification');
     }
 
     for (const id of wanted) {
       if (current.has(id)) continue;
       const guest = db.prepare('SELECT id, active FROM users WHERE id = ?').get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'Utilisateur inconnu ou désactivé.');
+      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
     }
 
     const added = [...wanted].filter((id) => !current.has(id));
@@ -1581,9 +1610,9 @@ export function createListService(ctx) {
     // Temps réel : membres actuels, et personnes retirées (leur téléphone
     // apprend ainsi qu'il n'a plus accès à la liste)
     if (added.length || removed.length || changedRights.length) ctx.events?.notifyList(list.id, { alsoUsers: removed });
-    for (const id of added) ctx.audit('liste_partage_ajoute', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: rights.get(id) ?? 'lecture' });
-    for (const id of removed) ctx.audit('liste_partage_retire', { utilisateur: user.username, liste: list.id, personne: nameOf(id) });
-    for (const [id, value] of changedRights) ctx.audit('liste_droit_change', { utilisateur: user.username, liste: list.id, personne: nameOf(id), droit: value });
+    for (const id of added) ctx.audit('list_member_added', { user: user.username, list: list.id, member: nameOf(id), access: journalAccess(rights.get(id) ?? 'lecture') });
+    for (const id of removed) ctx.audit('list_member_removed', { user: user.username, list: list.id, member: nameOf(id) });
+    for (const [id, value] of changedRights) ctx.audit('list_access_changed', { user: user.username, list: list.id, member: nameOf(id), access: journalAccess(value) });
     // Notifications « partage » : ajoutés, droits changés
     for (const id of added) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'added' });
     for (const [id] of changedRights) ctx.notify?.sharing({ listId: list.id, userId: id, actorId: user.id, kind: 'access' });
@@ -1606,20 +1635,20 @@ export function createListService(ctx) {
   // n'en a jamais). Aucune réservation n'existe encore.
   function convertToWishes(user, listId, body = {}) {
     const list = listForOwner(user, listId);
-    if (isWishList(typeOf(list))) throw new OpError(400, 'Cette liste est déjà une liste d\'envies.');
-    if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new OpError(400, 'Demande invalide.');
+    if (isWishList(typeOf(list))) throw new OpError(400, 'ops.dejaEnvies');
+    if (body === null || typeof body !== 'object' || Array.isArray(body)) throw new OpError(400, 'ops.demandeInvalide');
     let forUserId = null;
     let forName = null;
     if (body.forUserId !== undefined && body.forUserId !== null) {
       forUserId = parseId(body.forUserId);
-      if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'Utilisateur inconnu ou désactivé.');
-      if (forUserId === user.id) throw new OpError(400, 'Pour vous-même, choisissez « Moi ».');
+      if (!forUserId || !q.activeUser.get(forUserId)) throw new OpError(400, 'ops.utilisateurInconnu');
+      if (forUserId === user.id) throw new OpError(400, 'ops.pourSoiChoisirMoi');
     }
     if (body.forName !== undefined && body.forName !== null) {
-      if (forUserId) throw new OpError(400, 'Choisissez un compte ou une personne sans compte, pas les deux.');
+      if (forUserId) throw new OpError(400, 'ops.compteOuPersonne');
       forName = forNameOf(body.forName);
     }
-    const priorityOn = optionOf(body.priorityEnabled, 'Priorité') ?? list.priority_enabled === 1;
+    const priorityOn = optionOf(body.priorityEnabled, 'ops.reglagePrioriteInvalide') ?? list.priority_enabled === 1;
     const before = typeOf(list);
     const now = nowIso();
     let share = null;
@@ -1641,8 +1670,8 @@ export function createListService(ctx) {
     if (forUserId && accessBefore !== 'modification') {
       ctx.notify?.sharing({ listId: list.id, userId: forUserId, actorId: user.id, kind: accessBefore === undefined ? 'added' : 'access' });
     }
-    ctx.audit('liste_type_change', { utilisateur: user.username, liste: list.id, avant: before, apres: 'wishes' });
-    if (share) ctx.audit('lien_public_arrete', { utilisateur: user.username, liste: list.id, partage: share.id, raison: 'liste devenue liste d\'envies' });
+    ctx.audit('list_type_changed', { user: user.username, list: list.id, before, after: 'wishes' });
+    if (share) ctx.audit('public_link_stopped', { user: user.username, list: list.id, share: share.id, reason: 'list converted to a wish list' });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
   }
 
@@ -1666,7 +1695,7 @@ export function createListService(ctx) {
       db.prepare('UPDATE lists SET updated_at = ? WHERE id = ?').run(nowIso(), list.id);
     })();
     ctx.events?.notifyList(list.id, { alsoUsers: [user.id] });
-    ctx.audit('liste_quittee', { utilisateur: user.username, liste: list.id });
+    ctx.audit('list_left', { user: user.username, list: list.id });
     return {};
   }
 
@@ -1686,9 +1715,9 @@ export function createListService(ctx) {
   // Journal : identifiants seulement, jamais de nom de liste ni de contenu.
   function duplicateList(user, listId, { name, withItems = true } = {}) {
     const source = listForEditor(user, listId);
-    if (isWishList(source)) throw new OpError(400, 'Une liste d\'envies ne se duplique pas.');
+    if (isWishList(source)) throw new OpError(400, 'ops.enviesNonDupliquees');
     const title = listName(name);
-    if (typeof withItems !== 'boolean') throw new OpError(400, 'Réglage « Copier les éléments » invalide.');
+    if (typeof withItems !== 'boolean') throw new OpError(400, 'ops.reglageCopierInvalide');
     const id = crypto.randomUUID();
     const now = nowIso();
     const items = withItems ? q.liveItems.all(source.id) : [];
@@ -1712,7 +1741,7 @@ export function createListService(ctx) {
       for (const item of items) if (item.parent_id && newIds.has(item.parent_id)) link.run(newIds.get(item.parent_id), item.position ?? null, newIds.get(item.id));
     })();
     ctx.events?.notifyList(id);
-    ctx.audit('liste_dupliquee', { utilisateur: user.username, liste: id, source: source.id, elements: items.length });
+    ctx.audit('list_duplicated', { user: user.username, list: id, source: source.id, items: items.length });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === id), user), copied: items.length };
   }
 
@@ -1784,11 +1813,13 @@ export function createListService(ctx) {
     return describeItem(item);
   }
 
-  // Comptes actifs, pour choisir avec qui partager une liste
+  // Comptes actifs, pour choisir avec qui partager une liste. Ordre de
+  // départ, toujours le même (synchronisation) : chaque écran les range
+  // ensuite dans sa langue (compareNames).
   function activeUsers() {
     return db.prepare('SELECT id, username, display_name FROM users WHERE active = 1').all()
       .map((u) => ({ id: u.id, username: u.username, displayName: u.display_name }))
-      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'fr'));
+      .sort((a, b) => compareText(a.displayName, b.displayName, { locale: 'fr' }));
   }
 
   // --- Corbeille des listes (GET /api/lists/deleted, POST /api/lists/:id/restore) ---
@@ -1854,7 +1885,7 @@ export function createListService(ctx) {
       }
     })();
     ctx.events?.notifyList(list.id);
-    ctx.audit('liste_restauree', { utilisateur: user.username, liste: list.id });
+    ctx.audit('list_restored', { user: user.username, list: list.id });
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
   }
 

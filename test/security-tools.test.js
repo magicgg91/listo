@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword, passwordProblem } from '../server/passwor
 import { totpCode, verifyTotp, totpStep, toBase32 } from '../server/totp.js';
 import { createLimiter } from '../server/limiter.js';
 import { deriveKeys, encryptSecret, decryptSecret } from '../server/secrets.js';
+import { translate } from '../public/js/i18n.js';
 
 test('mot de passe : scrypt, empreinte salée, vérification', async () => {
   const hash = await hashPassword('correct horse battery');
@@ -20,10 +21,16 @@ test('mot de passe : scrypt, empreinte salée, vérification', async () => {
 });
 
 test('mot de passe : 10 caractères minimum (accents comptés comme un caractère)', () => {
-  assert.match(passwordProblem('court'), /au moins 10/);
-  assert.match(passwordProblem('éééééééé'), /au moins 10/); // 8 caractères, 16 octets
-  assert.equal(passwordProblem('dixcaracts'), null);
-  assert.match(passwordProblem(undefined), /manquant/);
+  // Le problème est rendu sous forme { key, params }, traduit par la route
+  const message = (password) => {
+    const problem = passwordProblem(password);
+    return problem && translate('fr', problem.key, problem.params);
+  };
+  assert.equal(message('court'), 'Le mot de passe doit faire au moins 10 caractères.');
+  assert.match(message('éééééééé'), /au moins 10/); // 8 caractères, 16 octets
+  assert.equal(message('dixcaracts'), null);
+  assert.equal(message('x'.repeat(201)), 'Le mot de passe doit faire au plus 200 caractères.');
+  assert.equal(message(undefined), 'Mot de passe manquant.');
 });
 
 test('TOTP : codes de référence de la norme RFC 6238', () => {

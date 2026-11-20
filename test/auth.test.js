@@ -46,7 +46,7 @@ async function withUser(t) {
 test('/api/setup est refusé sans le bon code de démarrage', async (t) => {
   const app = await startTestApp(t);
   const client = app.client();
-  assert.deepEqual((await client.get('/api/setup')).body, { needed: true, oidc: null, localLogin: true });
+  assert.deepEqual((await client.get('/api/setup')).body, { needed: true, oidc: null, localLogin: true, lang: 'fr', currency: 'EUR' });
 
   for (const code of [undefined, '', 'AAAA-BBBB-CCCC']) {
     const res = await client.post('/api/setup', { code, username: 'pirate', password: 'MotDePassePirate' });
@@ -68,7 +68,7 @@ test('/api/setup est refusé dès qu\'un compte existe (même avec le bon code)'
   const app = await startTestApp(t);
   await setupAdmin(app);
   const client = app.client();
-  assert.deepEqual((await client.get('/api/setup')).body, { needed: false, oidc: null, localLogin: true });
+  assert.deepEqual((await client.get('/api/setup')).body, { needed: false, oidc: null, localLogin: true, lang: 'fr', currency: 'EUR' });
   const res = await client.post('/api/setup', { code: SETUP_CODE, username: 'pirate', password: 'MotDePassePirate' });
   assert.equal(res.status, 403);
   assert.equal(app.db.prepare('SELECT COUNT(*) FROM users').pluck().get(), 1);
@@ -503,8 +503,8 @@ test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton,
 
   // Le journal a bien tout noté…
   const journal = app.logs.join('\n');
-  for (const event of ['creation_admin', 'connexion_echouee', 'connexion_reussie', 'connexion_code_2fa_demande',
-    '2fa_activee', 'mot_de_passe_change', 'admin_2fa_desactivee', 'deconnexion']) {
+  for (const event of ['first_admin_created', 'login_failure', 'login_success', 'login_2fa_code_requested',
+    '2fa_enabled', 'password_changed', 'admin_2fa_disabled', 'logout']) {
     assert.match(journal, new RegExp(event), `événement ${event} absent du journal`);
   }
   // …sans jamais écrire un seul secret
@@ -513,7 +513,7 @@ test('le journal (docker logs et fichier) ne contient ni mot de passe, ni jeton,
     assert.ok(!fileContent.includes(secret), `secret trouvé dans journal.log : ${secret}`);
   }
   // L'identifiant inconnu (ici un mot de passe tapé par erreur) n'est pas recopié
-  assert.match(journal, /utilisateur="\(inconnu\)"/);
+  assert.match(journal, /user="\(unknown\)"/);
 });
 
 // --- Image du QR code (étape 5) ---

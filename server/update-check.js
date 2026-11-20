@@ -20,7 +20,8 @@
 // - LISTO_UPDATE_CHECK=off : aucune demande, jamais ;
 // - Listo ne se met jamais à jour tout seul : il affiche seulement l'info.
 
-import { validCommit } from './config.js';
+import { validCommit, consoleLocale } from './config.js';
+import { translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 import { readJson } from './http-json.js';
 
 // Projet sur GitHub : défini ici seulement (côté serveur)
@@ -37,27 +38,28 @@ const MAX_BYTES = 256 * 1024;
 // Demande à GitHub et renvoie le JSON reçu. Toute réponse autre que 200
 // (redirection comprise : elle n'est jamais suivie) est une erreur.
 // fetchImpl : la fonction fetch (les tests la remplacent : aucun vrai réseau)
-export async function fetchGithub(path, { fetchImpl = fetch, timeoutMs = TIMEOUT_MS, maxBytes = MAX_BYTES } = {}) {
+// locale : langue de la raison d'un échec (écrite dans la console)
+export async function fetchGithub(path, { fetchImpl = fetch, timeoutMs = TIMEOUT_MS, maxBytes = MAX_BYTES, locale = DEFAULT_LOCALE } = {}) {
   const url = new URL(path, API_ORIGIN);
   // Délai : la demande (lecture de la réponse comprise) est abandonnée après
   // 5 secondes
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('délai dépassé')), timeoutMs);
+  const timer = setTimeout(() => controller.abort(new Error(translate(locale, 'demarrage.raison.delai'))), timeoutMs);
   try {
-    return await download(url, { fetchImpl, signal: controller.signal, maxBytes });
+    return await download(url, { fetchImpl, signal: controller.signal, maxBytes, locale });
   } finally {
     clearTimeout(timer);
   }
 }
 
-async function download(url, { fetchImpl, signal, maxBytes }) {
+async function download(url, { fetchImpl, signal, maxBytes, locale }) {
   const res = await fetchImpl(url.href, {
     redirect: 'manual',
     signal,
     headers: { 'User-Agent': 'Listo', Accept: 'application/vnd.github+json' },
   });
-  if (res.status !== 200) throw new Error(`réponse HTTP ${res.status}`);
-  if (res.url && new URL(res.url).origin !== API_ORIGIN) throw new Error('réponse venue d\'un autre site');
+  if (res.status !== 200) throw new Error(translate(locale, 'demarrage.raison.http', { status: res.status }));
+  if (res.url && new URL(res.url).origin !== API_ORIGIN) throw new Error(translate(locale, 'demarrage.raison.autreSite'));
   // Lecture limitée en taille (voir http-json.js)
   return readJson(res, maxBytes);
 }
@@ -78,15 +80,16 @@ export function latestCommitFrom(data) {
 export function createUpdateCheck({ config, now = Date.now, request = fetchGithub, log = (line) => console.warn(line) }) {
   let last = null;      // dernier résultat : { latest, state, at }
   let running = null;   // demande en cours (partagée par les appels simultanés)
+  const lang = consoleLocale(config); // langue de la ligne écrite en cas d'échec
 
   async function ask() {
     const at = now();
     try {
-      const latest = latestCommitFrom(await request(RUNS_PATH));
-      if (!latest) throw new Error('réponse inattendue');
+      const latest = latestCommitFrom(await request(RUNS_PATH, { locale: lang }));
+      if (!latest) throw new Error(translate(lang, 'demarrage.raison.inattendue'));
       return { latest, state: 'ok', at };
     } catch (err) {
-      log(`Vérification de mise à jour impossible : ${err?.message ?? err}`);
+      log(translate(lang, 'demarrage.majImpossible', { reason: err?.message ?? err }));
       return { latest: null, state: 'indisponible', at };
     }
   }

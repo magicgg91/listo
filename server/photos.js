@@ -41,13 +41,14 @@ function keepMetadataBlock(marker, data) {
 
 // Vérifie un fichier JPEG et en retire les métadonnées.
 // Renvoie { ok: true, jpeg, width, height } avec le fichier nettoyé,
-// ou { ok: false, error } avec un message simple.
+// ou { ok: false, error, params } avec le nom d'un message simple
+// (public/js/i18n/fr/photos.js) et ses valeurs, traduit par la route.
 export function cleanJpeg(buffer, { maxSide = MAX_PHOTO_SIDE } = {}) {
-  const refuse = (error) => ({ ok: false, error });
+  const refuse = (error, params) => ({ ok: false, error, ...(params ? { params } : {}) });
   if (!Buffer.isBuffer(buffer) || buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
-    return refuse("Ce fichier n'est pas une photo JPEG.");
+    return refuse('photos.pasJpeg');
   }
-  const damaged = refuse('Photo JPEG incomplète ou abîmée.');
+  const damaged = refuse('photos.abimee');
   const parts = [buffer.subarray(0, 2)]; // FF D8 : début de l'image
   let pos = 2;
   let size = null;
@@ -63,7 +64,7 @@ export function cleanJpeg(buffer, { maxSide = MAX_PHOTO_SIDE } = {}) {
 
     // Fin de l'image : elle doit être le tout dernier élément du fichier
     if (marker === 0xd9) {
-      if (pos + 2 !== buffer.length) return refuse('Données inattendues après la fin de la photo.');
+      if (pos + 2 !== buffer.length) return refuse('photos.donneesApresFin');
       if (!size || scans === 0) return damaged;
       parts.push(buffer.subarray(pos, pos + 2));
       return { ok: true, jpeg: Buffer.concat(parts), width: size.width, height: size.height };
@@ -85,7 +86,7 @@ export function cleanJpeg(buffer, { maxSide = MAX_PHOTO_SIDE } = {}) {
       const height = data.readUInt16BE(1);
       const width = data.readUInt16BE(3);
       if (!width || !height) return damaged;
-      if (width > maxSide || height > maxSide) return refuse(`Photo trop grande (${maxSide} pixels de côté au plus).`);
+      if (width > maxSide || height > maxSide) return refuse('photos.tropGrande', { max: maxSide });
       size = { width, height };
     }
 
@@ -191,7 +192,8 @@ export function createPhotoStore(dir) {
 // cache : en-tête Cache-Control à envoyer.
 export function sendPhoto(res, store, itemId, { cache = 'private, max-age=604800' } = {}) {
   const file = store.fileOf(itemId);
-  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Photo introuvable.' });
+  // (res.req : la requête, pour le message dans sa langue)
+  if (!fs.existsSync(file)) return res.status(404).json({ error: res.req.t('photos.introuvable') });
   res.set({
     'Content-Type': 'image/jpeg',
     'X-Content-Type-Options': 'nosniff',

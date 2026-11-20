@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { LABEL_INPUT } from '../public/js/dom.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../public/js/${file}`, import.meta.url), 'utf8');
 
@@ -36,13 +37,21 @@ test('chaque champ de nom de produit ou de libellé utilise LABEL_INPUT, sans «
   }
   assert.match(read('screens/list.js'), /const nameField = field\(capitalized\(words\.one\), name\);/);
   assert.match(read('screens/list.js'), /value\(capitalized\(words\.one\), it\.name\),/);
-  assert.match(read('screens/list-form.js'), /field\('Titre de la liste', h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\)/);
+  assert.match(read('screens/list-form.js'), /field\(t\('formulaire\.titreListe'\), h\('div', \{ class: 'field__row' \}, iconPicker, name, iconCurrent\)\)/);
+  assert.equal(fr['formulaire.titreListe'], 'Titre de la liste');
+  assert.match(read('screens/list-actions.js'), /field\(t\('menu\.dupliquer\.titre'\), name\)/);
+  assert.equal(fr['menu.dupliquer.titre'], 'Titre de la liste');
   // Le libellé désigne le champ, même avec un bouton avant lui sur la ligne
   assert.match(read('dom.js'), /control\.querySelector\('input, textarea, select'\) \?\? control\.querySelector\('button'\)/);
-  assert.match(read('screens/scan.js'), /field\('Article', nameInput\)/);
+  assert.match(read('screens/scan.js'), /field\(t\('scan\.fiche\.champNom'\), nameInput\)/);
+  assert.equal(fr['scan.fiche.champNom'], 'Article');
   const admin = read('screens/admin.js');
-  assert.match(admin, /'aria-label': `Renommer « \$\{item\.name\} »`/);
-  assert.match(admin, /'aria-label': `Orthographe corrigée de « \$\{entry\.name\} »`/);
+  assert.match(admin, /'aria-label': t\('administration\.renommer', \{ label: item\.name \}\)/);
+  assert.match(admin, /'aria-label': t\('administration\.noms\.orthographe', \{ label: entry\.name \}\)/);
+  // Textes de ces aria-label (dictionnaire) : toujours sans « nom »
+  assert.equal(fr['administration.renommer'], 'Renommer « {label} »');
+  assert.equal(fr['administration.noms.orthographe'], 'Orthographe corrigée de « {label} »');
+  for (const key of ['administration.renommer', 'administration.noms.orthographe']) assert.doesNotMatch(fr[key], /\b[Nn]om\b/);
 });
 
 test('connexion, compte, mot de passe, double authentification : inchangés', () => {

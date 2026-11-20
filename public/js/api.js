@@ -8,6 +8,8 @@
 // - NetworkError : le serveur n'a pas pu être joint (pas de réseau…) ;
 // - ApiError : le serveur a répondu par un refus (message en français).
 
+import { t } from './i18n.js';
+
 export class ApiError extends Error {
   constructor(status, message, data = null) {
     super(message);
@@ -18,7 +20,7 @@ export class ApiError extends Error {
 
 export class NetworkError extends Error {
   constructor() {
-    super('Impossible de joindre Listo. Vérifiez la connexion et réessayez.');
+    super(t('reseau.injoignable'));
   }
 }
 
@@ -69,10 +71,10 @@ export async function request(method, url, body, { auth = true, raw = null } = {
 
 // Message par défaut quand le serveur n'en donne pas (sans détail technique)
 function messageFor(status) {
-  if (status === 413) return 'Photo trop lourde.';
-  if (status === 429) return 'Trop de tentatives. Réessayez dans 15 minutes.';
-  if (status >= 500) return 'Listo a rencontré un problème. Réessayez dans un instant.';
-  return 'La demande a été refusée.';
+  if (status === 413) return t('reseau.photoTropLourde');
+  if (status === 429) return t('reseau.tropDeTentatives');
+  if (status >= 500) return t('reseau.probleme');
+  return t('reseau.refusee');
 }
 
 export const get = (url, options) => request('GET', url, undefined, options);
@@ -111,5 +113,5 @@ export function uuid() {
 // Texte d'erreur à montrer à l'utilisateur, quelle que soit l'erreur
 export function errorMessage(error) {
   if (error instanceof ApiError || error instanceof NetworkError) return error.message;
-  return 'Une erreur inattendue est survenue. Réessayez.';
+  return t('reseau.inattendue');
 }

@@ -50,9 +50,11 @@ import { normalizeItemName } from '../../public/js/history.js';
 
 export const PAGE_SIZE = 50;
 const KEY_MAX = 200;           // longueur maximale d'un nom normalisé reçu
-const NOT_FOUND = 'Cet article n\'est plus enregistré (déjà corrigé ou retiré ?).';
-const BAD_NAME = 'Nom invalide (1 à 100 caractères, sans caractère de contrôle).';
-const BAD_AISLE = 'Rayon inconnu ou désactivé.';
+// Noms des messages (public/js/i18n/fr/references.js), traduits au moment
+// de la réponse (req.t)
+const NOT_FOUND = 'references.historique.introuvable';
+const BAD_NAME = 'references.historique.nomInvalide';
+const BAD_AISLE = 'references.historique.rayonInconnu';
 
 // Nom corrigé : mêmes règles que le nom d'un article d'une liste (espaces
 // nettoyés, 1 à 100 caractères), et en plus aucun caractère de contrôle
@@ -152,7 +154,7 @@ export function adminNameRoutes(ctx) {
   });
 
   // Prépare une correction : vérifie les deux noms et calcule ce qui changera.
-  // Renvoie { error, status } ou le détail de la correction.
+  // Renvoie { error, status } (error : nom du message) ou le détail de la correction.
   function plan(rawFrom, rawTo) {
     const fromKey = keyFrom(rawFrom);
     const fromLines = fromKey ? q.linesOf.all(fromKey) : [];
@@ -178,14 +180,14 @@ export function adminNameRoutes(ctx) {
   // Ce que changerait une correction (pour la confirmation) : nombres seulement
   router.get('/names/impact', (req, res) => {
     const p = plan(req.query.from, req.query.to);
-    if (p.error) return res.status(p.status).json({ error: p.error });
+    if (p.error) return res.status(p.status).json({ error: req.t(p.error) });
     res.json({ oldName: p.oldName, newName: p.newName, unchanged: p.unchanged, merge: p.merge, items: p.items.length, lists: p.listIds.length });
   });
 
   // Corriger un nom partout, en une seule transaction
   router.post('/names/rename', (req, res) => {
     const p = plan(req.body?.from, req.body?.to);
-    if (p.error) return res.status(p.status).json({ error: p.error });
+    if (p.error) return res.status(p.status).json({ error: req.t(p.error) });
     if (p.unchanged) return res.json({ changed: false, items: 0, lists: 0, merge: false });
 
     const now = nowIso();
@@ -216,8 +218,8 @@ export function adminNameRoutes(ctx) {
 
     // 3. Après l'écriture réussie : temps réel et journal
     for (const listId of p.listIds) ctx.events?.notifyList(listId);
-    audit(p.merge ? 'admin_nom_fusionne' : 'admin_nom_corrige', {
-      admin: req.user.username, ancien: p.oldName, nouveau: p.newName, corrections: p.items.length, listes: p.listIds.length, ip: req.ip,
+    audit(p.merge ? 'admin_name_merged' : 'admin_name_corrected', {
+      admin: req.user.username, old: p.oldName, new: p.newName, corrections: p.items.length, lists: p.listIds.length, ip: req.ip,
     });
     res.json({ changed: true, items: p.items.length, lists: p.listIds.length, merge: p.merge });
   });
@@ -226,9 +228,9 @@ export function adminNameRoutes(ctx) {
   router.post('/names/remove', (req, res) => {
     const fromKey = keyFrom(req.body?.from);
     const lines = fromKey ? q.linesOf.all(fromKey) : [];
-    if (!lines.length) return res.status(404).json({ error: NOT_FOUND });
+    if (!lines.length) return res.status(404).json({ error: req.t(NOT_FOUND) });
     q.removeLines.run(fromKey);
-    audit('admin_nom_retire', { admin: req.user.username, nom: displayNameOf(lines), ip: req.ip });
+    audit('admin_name_removed', { admin: req.user.username, name: displayNameOf(lines), ip: req.ip });
     res.status(204).end();
   });
 
@@ -236,20 +238,20 @@ export function adminNameRoutes(ctx) {
   router.post('/names/aisle', (req, res) => {
     const fromKey = keyFrom(req.body?.from);
     const lines = fromKey ? q.linesOf.all(fromKey) : [];
-    if (!lines.length) return res.status(404).json({ error: NOT_FOUND });
+    if (!lines.length) return res.status(404).json({ error: req.t(NOT_FOUND) });
     const raw = req.body?.aisleId;
     let aisle = null;
     if (raw !== null) {
       // Un identifiant de rayon existant ET actif (un nombre entier), sinon 400
       aisle = Number.isInteger(raw) && parseId(raw) ? q.activeAisle.get(raw) : null;
-      if (!aisle) return res.status(400).json({ error: BAD_AISLE });
+      if (!aisle) return res.status(400).json({ error: req.t(BAD_AISLE) });
     }
     db.transaction(() => {
       q.setAisle.run(aisle?.id ?? null, nowIso(), fromKey);
     })();
     // Après l'écriture : les téléphones connectés relisent la mémoire des noms
     ctx.events?.notifyReferences();
-    audit('nom_rayon_modifie', { admin: req.user.username, nom: displayNameOf(lines), rayon: aisle?.name ?? 'aucun', ip: req.ip });
+    audit('name_aisle_changed', { admin: req.user.username, name: displayNameOf(lines), aisle: aisle?.name ?? 'none', ip: req.ip });
     res.json({ aisleId: aisle?.id ?? null, aisle: aisle?.name ?? null });
   });
 

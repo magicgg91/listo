@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { habitual, HABITUAL_DAYS, HABITUAL_LIMIT, HABITUAL_LIMIT_KEYBOARD, normalizeItemName } from '../public/js/history.js';
 import { emptyState, computeHabitual, checkedNamed } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const NOW = '2026-11-11T10:00:00.000Z';
@@ -78,7 +79,8 @@ test('écran : « + » champ vide ouvre l\'encart sans curseur ; croix, toucher 
   // Téléphone, clavier ouvert : 4 ; « + » (sans clavier) et ordinateur : 6
   assert.match(body('drawHabitual'), /const keyboard = !pc && document\.activeElement === input;\s*const entries = computeHabitual\(app\.data, view\?\.list, keyboard \? \{ limit: HABITUAL_LIMIT_KEYBOARD \} : \{\}\);/);
   // Croix « Fermer » : ferme aussi le clavier
-  assert.match(list, /h\('button', \{ class: 'icon-btn', type: 'button', 'aria-label': 'Fermer', onClick: \(\) => closeHabitual\(\) \}, icon\('close'\)\)/);
+  assert.match(list, /h\('button', \{ class: 'icon-btn', type: 'button', 'aria-label': t\('liste\.fermer'\), onClick: \(\) => closeHabitual\(\) \}, icon\('close'\)\)/);
+  assert.equal(fr['liste.fermer'], 'Fermer');
   assert.match(body('closeHabitual'), /if \(document\.activeElement === input\) releaseFocus\(\);/);
   assert.match(list, /if \(habitualOpen && !addbar\.contains\(event\.target\)\) closeHabitual\(\);/);
   // Appui : panier -> remis dans la liste ; sinon ajout ; jamais de fiche ouverte, l'encart se redessine
@@ -175,7 +177,8 @@ test('écran : « Retirer » derrière la ligne (glissement, téléphone) ou au 
   assert.match(row, /if \(blocked \|\| row\.classList\.contains\('is-open'\) \|\| row\.classList\.contains\('is-swiping'\)\) return;/);
   assert.match(row, /if \(startX !== null && Math\.abs\(event\.clientX - startX\) > SWIPE\.slop\) blocked = true;/);
   assert.match(row, /'aria-label': label,/);
-  assert.match(row, /const label = `Retirer \$\{entry\.name\} de « Souvent ajoutés »`;/);
+  assert.match(row, /const label = t\('liste\.souvent\.retirer\.nom', \{ name: entry\.name \}\);/);
+  assert.equal(fr['liste.souvent.retirer.nom'], 'Retirer {name} de « Souvent ajoutés »');
   assert.match(row, /onPointerdown: keepFieldFocus\.pointerdown,\s*onMousedown: keepFieldFocus\.mousedown,\s*onClick: \(\) => removeHabitual\(entry\.name\),/);
   assert.match(row, /if \(!pc\) habitualSwipes\.attach\(row, add, remove\);/);
   assert.match(body('removeHabitual'), /await actions\.hideHabitual\(view\.list, name\);/);

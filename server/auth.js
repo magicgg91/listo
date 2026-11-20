@@ -93,6 +93,9 @@ export function publicUser(user, config, { method = null } = {}) {
     loginMethod: method,
     // Connexion par mot de passe possible sur ce serveur (LISTO_LOCAL_LOGIN)
     localLogin: config?.localLogin !== false,
+    // Langue choisie dans « Mon compte » (« fr », « en »), ou null :
+    // automatique (navigateur, sinon langue de l'installation)
+    locale: user.locale ?? null,
   };
 }
 
@@ -126,7 +129,7 @@ export function endSession(ctx, req, res) {
 // Ferme toutes les sessions d'un compte (changement de mot de passe…)
 // Les flux temps réel du compte sont coupés aussi, et ses connexions Claude
 // révoquées (reason : raison écrite dans le journal).
-export function revokeAllSessions(ctx, userId, reason = 'sessions du compte fermées') {
+export function revokeAllSessions(ctx, userId, reason = 'account sessions closed') {
   ctx.db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
   ctx.events?.disconnectUser(userId);
   ctx.oauth?.revokeAllForUser(userId, reason);
@@ -197,7 +200,7 @@ export function createSessionPeek(ctx) {
 
 // Refuse un visiteur non connecté (401)
 export function requireAuth(req, res, next) {
-  if (!req.user) return res.status(401).json({ error: 'Connexion requise.' });
+  if (!req.user) return res.status(401).json({ error: req.t('comptes.connexionRequise') });
   next();
 }
 
@@ -207,14 +210,14 @@ export function requireAuth(req, res, next) {
 const ALLOWED_BEFORE_CHANGE = new Set(['GET /me', 'POST /me/password', 'POST /logout']);
 export function requirePasswordChanged(req, res, next) {
   if (req.user.must_change_password === 1 && !ALLOWED_BEFORE_CHANGE.has(`${req.method} ${req.path}`)) {
-    return res.status(403).json({ error: 'Changez votre mot de passe avant de continuer.', mustChangePassword: true });
+    return res.status(403).json({ error: req.t('comptes.motDePasse.aChanger'), mustChangePassword: true });
   }
   next();
 }
 
 // Refuse un compte qui n'est pas Admin (403)
 export function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ error: 'Réservé aux administrateurs.' });
+  if (req.user?.role !== 'admin') return res.status(403).json({ error: req.t('comptes.reserveAdmin') });
   next();
 }
 
@@ -227,7 +230,7 @@ export function requireSameOrigin(publicUrl) {
   return (req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     if (req.get('origin') !== allowed) {
-      return res.status(403).json({ error: 'Requête refusée : origine inconnue.' });
+      return res.status(403).json({ error: req.t('comptes.origineInconnue') });
     }
     next();
   };

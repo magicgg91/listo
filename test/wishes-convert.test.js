@@ -13,9 +13,12 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, computeListView } from '../public/js/store.js';
-import { WISHES_FIXED } from '../public/js/list-types.js';
+import { WISHES_FIXED as WISHES_FIXED_KEY } from '../public/js/list-types.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
+// Refus : nom du texte ; la réponse le donne en français
+const WISHES_FIXED = fr[WISHES_FIXED_KEY];
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function household(t, options = {}) {
@@ -155,8 +158,8 @@ test('conversion vers un compte : type et destinataire ensemble, destinataire pa
   // Aucune réservation n'existe
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM reservations WHERE item_id IN (SELECT id FROM items WHERE list_id = ?)').pluck().get(h.ids.maison), 0);
   // Journal : changement de type et lien arrêté
-  assert.ok(h.app.logs.some((l) => l.includes('liste_type_change') && l.includes('wishes')));
-  assert.ok(h.app.logs.some((l) => l.includes('lien_public_arrete')));
+  assert.ok(h.app.logs.some((l) => l.includes('list_type_changed') && l.includes('wishes')));
+  assert.ok(h.app.logs.some((l) => l.includes('public_link_stopped')));
   // Le partage se modifie ensuite comme pour toute liste d'envies : Léa reste, en « Peut modifier »
   assert.equal((await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/members`, { userIds: [h.marieId, h.paulId], access: {} })).status, 400);
   assert.equal((await h.guillaume.request('PUT', `/api/lists/${h.ids.maison}/members`, { userIds: [h.leaId, h.marieId], access: { [h.leaId]: 'modification' } })).status, 200);

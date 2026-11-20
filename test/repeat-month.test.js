@@ -9,6 +9,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { parseRepeat, isRepeatRule, makeRepeat, isOccurrence, nextDue, monthWeekOf, repeatSentence, repeatChip, MONTH_WEEKS } from '../public/js/repeat.js';
 import { startTestApp, setupAdmin } from './helpers.js';
+import fr from '../public/js/i18n/fr.js';
 import { household as mcpHousehold, connect, claude, data, PASSWORD } from './mcp-helpers.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -77,7 +78,9 @@ test('Claude : month_week (first … last) avec un jour ; refus des formes inval
 
 test('écran : « Un jour du mois » ou « Un jour de la semaine », rang et jour proposés depuis l\'échéance', () => {
   const list = read('public/js/screens/list.js');
-  assert.match(list, /h\('option', \{ value: 'day' \}, 'Un jour du mois \(le 5\)'\),\s*h\('option', \{ value: 'week' \}, 'Un jour de la semaine \(le 1er lundi\)'\)\);/);
+  assert.match(list, /h\('option', \{ value: 'day' \}, t\('liste\.fiche\.repete\.mode\.jourMois\.choix'\)\),\s*h\('option', \{ value: 'week' \}, t\('liste\.fiche\.repete\.mode\.jourSemaine\.choix'\)\)\);/);
+  assert.equal(fr['liste.fiche.repete.mode.jourMois.choix'], 'Un jour du mois (le 5)');
+  assert.equal(fr['liste.fiche.repete.mode.jourSemaine.choix'], 'Un jour de la semaine (le 1er lundi)');
   assert.match(list, /if \(!monthNth\) monthNth = monthWeekOf\(base\);\s*if \(!monthWeekday\) monthWeekday = weekdayOf\(base\);/);
   assert.match(list, /monthPicker\.el\.hidden = repeatKind !== 'month' \|\| monthMode !== 'day';/);
   assert.match(list, /monthWeekRow\.hidden = repeatKind !== 'month' \|\| monthMode !== 'week';/);

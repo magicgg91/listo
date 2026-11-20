@@ -5,17 +5,19 @@
 //   GET  /api/me/2fa/qr.png   image du QR code de l'activation en cours
 //   POST /api/me/2fa/verify   confirmer l'activation avec un premier code
 //   POST /api/me/2fa/disable  désactiver sa 2FA (mot de passe + code)
+//   PUT  /api/me/locale       choisir sa langue (« fr », « en », ou null : automatique)
 
 import express from 'express';
 import QRCode from 'qrcode';
 import { hashPassword, verifyPassword, passwordProblem } from '../passwords.js';
 import { startSession, revokeAllSessions, attemptKeys, publicUser } from '../auth.js';
+import { isLocale } from '../../public/js/i18n.js';
 import { generateTotpSecret, toBase32, otpauthUri } from '../totp.js';
 import {
   sealTotpSecret, openTotpSecret, useTotpCode, createRecoveryCodes, checkSecondFactor, disableTwoFactor,
 } from '../twofactor.js';
 
-const BLOCKED = 'Trop de tentatives. Réessayez dans 15 minutes.';
+const BLOCKED = 'comptes.tropDeTentatives'; // nom du texte
 
 export function meRoutes(ctx) {
   const router = express.Router();
@@ -31,43 +33,51 @@ export function meRoutes(ctx) {
     res.json({ user });
   });
 
+  // Langue du compte (Mon compte › Langue) : « fr », « en », ou null pour
+  // automatique. Enregistrée sur le compte : la même sur tous ses appareils.
+  router.put('/me/locale', (req, res) => {
+    const { locale } = req.body ?? {};
+    if (locale !== null && !isLocale(locale)) return res.status(400).json({ error: req.t('comptes.langue.inconnue') });
+    db.prepare('UPDATE users SET locale = ? WHERE id = ?').run(locale, req.user.id);
+    res.json({ locale });
+  });
+
   // Changement de mot de passe. Toutes les sessions du compte sont fermées
   // (les autres appareils devront se reconnecter), puis une nouvelle session
   // est ouverte pour l'appareil qui a fait le changement.
   // Session ouverte avec le fournisseur d'identité : le mot de passe et la double
   // authentification se gèrent chez le fournisseur d'identité, pas ici (décision du
   // 15 novembre 2026) ; refusé aussi par le serveur, pas seulement masqué
-  const LOCAL_ONLY = `Connecté avec ${ctx.config.oidcName} : votre mot de passe et votre double authentification se gèrent dans ${ctx.config.oidcName}.`;
   router.use(['/me/password', '/me/2fa'], (req, res, next) => {
-    if (req.sessionMethod === 'oidc') return res.status(403).json({ error: LOCAL_ONLY });
+    if (req.sessionMethod === 'oidc') return res.status(403).json({ error: req.t('comptes.fournisseur.gere', { provider: ctx.config.oidcName }) });
     next();
   });
 
   router.post('/me/password', async (req, res) => {
     const { currentPassword, newPassword } = req.body ?? {};
     const keys = attemptKeys(req, req.user.username);
-    if (limiter.isBlocked(keys)) return res.status(429).json({ error: BLOCKED });
+    if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
 
     const problem = passwordProblem(newPassword);
-    if (problem) return res.status(400).json({ error: problem });
+    if (problem) return res.status(400).json({ error: req.t(problem.key, problem.params) });
 
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
     if (!(await verifyPassword(currentPassword, req.user.password_hash))) {
-      audit('mot_de_passe_refuse', { utilisateur: req.user.username, ip: req.ip });
-      return res.status(403).json({ error: 'Mot de passe actuel incorrect.' });
+      audit('password_refused', { user: req.user.username, ip: req.ip });
+      return res.status(403).json({ error: req.t('comptes.motDePasse.actuelIncorrect') });
     }
     limiter.reset(keys);
 
     // Mot de passe donné par un Admin : il faut vraiment en choisir un autre
     if (req.user.must_change_password === 1 && newPassword === currentPassword) {
-      return res.status(400).json({ error: "Choisissez un mot de passe différent de celui donné par l'Admin." });
+      return res.status(400).json({ error: req.t('comptes.motDePasse.different') });
     }
 
     const hash = await hashPassword(newPassword);
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
-    revokeAllSessions(ctx, req.user.id, 'mot de passe changé');
+    revokeAllSessions(ctx, req.user.id, 'password changed');
     startSession(ctx, res, req.user.id);
-    audit('mot_de_passe_change', { utilisateur: req.user.username, ip: req.ip });
+    audit('password_changed', { user: req.user.username, ip: req.ip });
     res.json({ ok: true });
   });
 
@@ -75,7 +85,7 @@ export function meRoutes(ctx) {
   // et renvoyé en texte, pour une saisie à la main dans l'application
   // d'authentification. Le QR code à scanner est l'image /api/me/2fa/qr.png.
   router.post('/me/2fa/enable', async (req, res) => {
-    if (req.user.totp_enabled === 1) return res.status(409).json({ error: 'La double authentification est déjà active.' });
+    if (req.user.totp_enabled === 1) return res.status(409).json({ error: req.t('comptes.deuxFacteurs.dejaActive') });
     const secret = generateTotpSecret();
     db.prepare('UPDATE users SET totp_secret = ?, totp_last_step = NULL WHERE id = ?')
       .run(sealTotpSecret(ctx, req.user.id, secret), req.user.id);
@@ -89,7 +99,7 @@ export function meRoutes(ctx) {
   router.get('/me/2fa/qr.png', async (req, res) => {
     const user = reloadUser(req.user.id);
     if (user.totp_enabled === 1 || !user.totp_secret) {
-      return res.status(404).json({ error: "Aucune activation de la double authentification en cours." });
+      return res.status(404).json({ error: req.t('comptes.deuxFacteurs.aucuneActivation') });
     }
     const uri = otpauthUri(openTotpSecret(ctx, user), user.username);
     const png = await QRCode.toBuffer(uri, { type: 'png', margin: 1, width: 320 });
@@ -101,20 +111,20 @@ export function meRoutes(ctx) {
   // créés et affichés, une seule fois.
   router.post('/me/2fa/verify', (req, res) => {
     const user = reloadUser(req.user.id);
-    if (user.totp_enabled === 1) return res.status(409).json({ error: 'La double authentification est déjà active.' });
-    if (!user.totp_secret) return res.status(400).json({ error: "Commencez par demander le QR code d'activation." });
+    if (user.totp_enabled === 1) return res.status(409).json({ error: req.t('comptes.deuxFacteurs.dejaActive') });
+    if (!user.totp_secret) return res.status(400).json({ error: req.t('comptes.deuxFacteurs.demanderQr') });
 
     const keys = attemptKeys(req, user.username);
-    if (limiter.isBlocked(keys)) return res.status(429).json({ error: BLOCKED });
+    if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
     if (!useTotpCode(ctx, user.id, openTotpSecret(ctx, user), user.totp_last_step, req.body?.code)) {
       limiter.fail(keys);
-      return res.status(400).json({ error: 'Code incorrect. Vérifiez l\'heure du téléphone et réessayez.' });
+      return res.status(400).json({ error: req.t('comptes.deuxFacteurs.codeIncorrect') });
     }
     limiter.reset(keys);
 
     db.prepare('UPDATE users SET totp_enabled = 1 WHERE id = ?').run(user.id);
     const recoveryCodes = createRecoveryCodes(ctx, user.id);
-    audit('2fa_activee', { utilisateur: user.username, ip: req.ip });
+    audit('2fa_enabled', { user: user.username, ip: req.ip });
     res.json({ recoveryCodes });
   });
 
@@ -122,23 +132,23 @@ export function meRoutes(ctx) {
   // ou de secours) demandés.
   router.post('/me/2fa/disable', async (req, res) => {
     const { password, code } = req.body ?? {};
-    if (req.user.totp_enabled !== 1) return res.status(409).json({ error: "La double authentification n'est pas active." });
+    if (req.user.totp_enabled !== 1) return res.status(409).json({ error: req.t('comptes.deuxFacteurs.inactive') });
 
     const keys = attemptKeys(req, req.user.username);
-    if (limiter.isBlocked(keys)) return res.status(429).json({ error: BLOCKED });
+    if (limiter.isBlocked(keys)) return res.status(429).json({ error: req.t(BLOCKED) });
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
 
     const passwordOk = await verifyPassword(password, req.user.password_hash);
     // Le compte est relu juste avant de vérifier le code (dernier code utilisé)
     const codeOk = passwordOk && checkSecondFactor(ctx, reloadUser(req.user.id), code);
     if (!codeOk) {
-      audit('2fa_desactivation_refusee', { utilisateur: req.user.username, ip: req.ip });
-      return res.status(403).json({ error: 'Mot de passe ou code incorrect.' });
+      audit('2fa_disable_refused', { user: req.user.username, ip: req.ip });
+      return res.status(403).json({ error: req.t('comptes.deuxFacteurs.refus') });
     }
     limiter.reset(keys);
 
     disableTwoFactor(ctx, req.user.id);
-    audit('2fa_desactivee', { utilisateur: req.user.username, ip: req.ip });
+    audit('2fa_disabled', { user: req.user.username, ip: req.ip });
     res.json({ ok: true });
   });
 

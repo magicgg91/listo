@@ -5,6 +5,7 @@
 import { h, icon, iconButton, replace } from './dom.js';
 import { openOverlay } from './router.js';
 import { announce } from './announce.js';
+import { t } from './i18n.js';
 
 // Élément dans lequel s'affichent les fenêtres : la colonne de l'écran
 // courant (réglé par app.js à chaque écran).
@@ -256,7 +257,7 @@ export function openSheet({ title, sub, content, onClose, scroll = false, tools 
     h('div', { class: 'pc-panel__head' },
       h('div', { class: 'pc-panel__heading' }, h('h2', { class: 'pc-panel__title', id: titleId }, title), sub ? h('p', { class: 'pc-panel__sub' }, sub) : null),
       tools,
-      iconButton('close', 'Fermer', () => close())),
+      iconButton('close', t('fenetres.fermer'), () => close())),
     h('div', { class: 'pc-panel__body' }, content),
     footer ? h('div', { class: 'pc-panel__foot' }, footer) : null,
     ), { onClose, returnTo, pc: true, beforeClose, history });
@@ -265,7 +266,7 @@ export function openSheet({ title, sub, content, onClose, scroll = false, tools 
     h('div', { class: 'sheet__grab', 'aria-hidden': 'true' }),
     h('div', { class: `sheet__head${tools ? ' sheet__head--tools' : ''}` },
       h('div', { class: tools ? 'sheet__heading' : null }, h('h2', { class: 'sheet__title', id: titleId }, title), sub ? h('p', { class: 'sheet__sub' }, sub) : null),
-      tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', 'Fermer', () => close())) : iconButton('close', 'Fermer', () => close())),
+      tools ? h('div', { class: 'sheet__tools' }, tools, iconButton('close', t('fenetres.fermer'), () => close())) : iconButton('close', t('fenetres.fermer'), () => close())),
     content,
   ), { onClose, returnTo, beforeClose });
 }
@@ -277,10 +278,10 @@ export function openLightbox({ title, src, alt, caption }) {
   return overlay((close) => h('div', { class: 'lightbox', 'aria-labelledby': titleId },
     h('div', { class: 'lightbox__bar' },
       h('h2', { class: 'lightbox__title', id: titleId }, title),
-      iconButton('close', 'Fermer la photo', close)),
+      iconButton('close', t('fenetres.photo.fermer'), close)),
     h('div', { class: 'lightbox__stage' }, h('img', { class: 'lightbox__img', src, alt })),
     caption ? h('p', { class: 'lightbox__cap' }, caption) : null,
-    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, 'Fermer'))), { pc: true });
+    h('div', { class: 'lightbox__foot' }, h('button', { class: 'btn btn--secondary btn--block', type: 'button', onClick: close }, t('fenetres.fermer')))), { pc: true });
 }
 
 // Boîte de confirmation. Renvoie une promesse : true si l'action est confirmée.
@@ -288,7 +289,7 @@ export function openLightbox({ title, src, alt, caption }) {
 // lecteurs d'écran avec le titre (aria-describedby). focusCancel : le focus va
 // sur « Annuler » à l'ouverture (action grave : supprimer une liste), sinon
 // sur le bouton principal.
-export function confirmDialog({ title, text, confirmLabel, cancelLabel = 'Annuler', danger = true, focusCancel = false }) {
+export function confirmDialog({ title, text, confirmLabel, cancelLabel = t('fenetres.annuler'), danger = true, focusCancel = false }) {
   return new Promise((resolve) => {
     let answer = false;
     const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
@@ -328,7 +329,7 @@ export function confirmSheet({ title, text, warning, confirmLabel, danger = fals
         h('p', { class: 'sheet__sub' }, text),
         warning ? h('p', { class: 'note note--danger', role: 'alert' }, icon('alert', 'icon--sm'), h('span', {}, warning)) : null,
         h('div', { class: 'dialog__actions' },
-          h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, 'Annuler'),
+          h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, t('fenetres.annuler')),
           h('button', {
             class: `btn ${danger ? 'btn--danger' : 'btn--primary'}`,
             type: 'button',
@@ -385,7 +386,7 @@ document.addEventListener?.('pointerdown', () => { lastInputWasKeyboard = false;
 // choix à l'autre ; Tab ferme le menu (le focus revient au bouton qui l'a
 // ouvert) ; Échap aussi (voir overlay). Le bouton qui l'ouvre
 // (aria-haspopup="menu") dit s'il est ouvert (aria-expanded).
-export function openMenu(items, { label = 'Menu', onClose, anchor = null, at = null } = {}) {
+export function openMenu(items, { label = t('fenetres.menu'), onClose, anchor = null, at = null } = {}) {
   let closeMenu;
   let panel;
   const trigger = (anchor ?? document.activeElement)?.closest?.('[aria-haspopup="menu"]') ?? null;
@@ -529,12 +530,12 @@ export function drawWhenIdle(container, draw) {
 // couleur seule).
 
 const SYNC = {
-  ok: { className: 'sync--ok', icon: 'cloud-ok', text: () => 'À jour' },
-  busy: { className: 'sync--busy', icon: 'sync', text: () => 'Synchronisation…' },
+  ok: { className: 'sync--ok', icon: 'cloud-ok', text: () => t('fenetres.sync.aJour') },
+  busy: { className: 'sync--busy', icon: 'sync', text: () => t('fenetres.sync.enCours') },
   off: {
     className: 'sync--off',
     icon: 'cloud-off',
-    text: () => (pendingCount ? `Hors ligne · ${pendingCount} en attente` : 'Hors ligne'),
+    text: () => (pendingCount ? t('fenetres.sync.horsLigne.enAttente', { count: pendingCount }) : t('fenetres.sync.horsLigne')),
   },
 };
 let syncState = 'ok';
@@ -552,7 +553,7 @@ const offlineBanners = new Set();
 // la pastille), visible tant que Listo n'atteint pas le serveur
 export function offlineBanner() {
   const el = h('p', { class: 'note note--danger pc-banner', role: 'status' }, icon('cloud-off', 'icon--sm'),
-    h('span', {}, 'Hors ligne : vos changements sont gardés sur cet appareil et partiront au retour du réseau.'));
+    h('span', {}, t('fenetres.horsLigne.bandeau')));
   el.hidden = syncState !== 'off';
   offlineBanners.add(el);
   return el;
@@ -587,7 +588,7 @@ function paintPill(pill) {
     pill.className = `sync ${info.className}`;
     replace(pill, icon(info.icon, 'icon--sm'), h('span', { class: 'sync__text' }, text),
       syncState === 'off' && pendingCount ? h('span', { class: 'sync__count', 'aria-hidden': 'true' }, String(pendingCount)) : null);
-    if (pill.tagName === 'BUTTON') pill.setAttribute('aria-label', `${text}, synchroniser maintenant`);
+    if (pill.tagName === 'BUTTON') pill.setAttribute('aria-label', t('fenetres.sync.bouton', { state: text }));
   }
   fitPill(pill);
 }

@@ -2,7 +2,7 @@
 
 <!-- Fichier fabriqué par scripts/guide.js à partir de public/js/help-content.js : ne pas le modifier à la main. -->
 
-Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [https://magicgg91.github.io/listo/](https://magicgg91.github.io/listo/). Les parties marquées « Pour la personne qui gère le serveur » ne concernent que l'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d'exploitation, [docs/exploitation.md](exploitation.md).
+Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [https://magicgg91.github.io/listo/fr/](https://magicgg91.github.io/listo/fr/). Les parties marquées « Pour la personne qui gère le serveur » ne concernent que l'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d'exploitation, [docs/exploitation.md](exploitation.md).
 
 ## Sommaire
 
@@ -83,8 +83,9 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.13 Nouveautés](#nouveautes)
 - [5.14 Hors ligne et synchronisation](#hors-ligne)
 - [5.15 Thème clair ou sombre](#theme)
-- [5.16 Sur ordinateur](#ordinateur)
-- [5.17 Sous-tâches](#sous-taches)
+- [5.16 Langue : français ou anglais](#langue)
+- [5.17 Sur ordinateur](#ordinateur)
+- [5.18 Sous-tâches](#sous-taches)
 
 </details>
 
@@ -180,7 +181,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 ### 1.2 Ce que Listo ne fait pas
 
 - Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
-- Français seulement.
+- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide aussi.
 - Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
 - Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. MCP Claude](#claude)).
@@ -239,7 +240,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Une heure, et un rappel choisi tâche par tâche ([5.2 Heure et rappel](#heure)).
 - Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.3 Tâches qui se répètent](#repeter)).
 - Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.4 Attribuer une tâche](#attribuer)).
-- Ranger des sous-tâches sous une tâche principale ([5.17 Sous-tâches](#sous-taches)).
+- Ranger des sous-tâches sous une tâche principale ([5.18 Sous-tâches](#sous-taches)).
 - Tri par priorité ou par échéance ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
@@ -329,6 +330,9 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
+      # Langue par défaut (fr ou en) et monnaie des envies (EUR, USD, CHF…)
+      # - LISTO_LANG=fr
+      # - LISTO_CURRENCY=EUR
       # - LISTO_UPDATE_CHECK=off
       # - LISTO_PRODUCT_LOOKUP=off
       # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
@@ -357,6 +361,8 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dossier `data/`). |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dossier `secrets/`). |
 | `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours. |
+| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : celle d'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d'un tel compte. Une installation neuve réglée sur `en` crée ses magasins et rayons de départ en anglais. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
+| `LISTO_CURRENCY` | absente : `EUR` | Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_COMMIT` | posée par l'image | Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir. |
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([9.9 Savoir qu'une nouvelle version existe](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
@@ -449,7 +455,7 @@ Avec les notifications activées (`LISTO_PUSH=on`), gardez de la même façon `s
 
 ### 3.8 Sauvegardes
 
-- Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`sauvegarde_reussie` ou `sauvegarde_ratee`). Une copie ratée n'arrête pas Listo.
+- Chaque nuit vers 3 h (heure de `TZ`), Listo copie sa base dans `data/backups/` (`listo-AAAA-MM-JJ-HHMM.db`), vérifie que la copie est intacte et garde les 14 dernières. Chaque copie, réussie ou ratée, est notée dans le journal (`backup_success` ou `backup_failure`, le journal étant toujours en anglais). Une copie ratée n'arrête pas Listo.
 - Sauvegarde à la demande, avant une mise à jour par exemple (`-u node` est important : la copie doit appartenir à Listo, comme celles de la nuit) :
 
 ```sh
@@ -465,7 +471,7 @@ La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`
 1. HTTPS : `https://listo.exemple.fr` s'ouvre avec le cadenas ; `http://listo.exemple.fr` redirige vers `https://`.
 2. Santé : `https://listo.exemple.fr/healthz` répond `{"status":"ok"}`.
 3. En-têtes de sécurité : passez l'adresse dans un outil comme [securityheaders.com](https://securityheaders.com). On doit y voir `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (envoyés par Listo) et `Strict-Transport-Security` (ajouté par le proxy, voir [3.4 Ce que doit faire le proxy](#proxy)), et aucun `X-Powered-By`.
-4. Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep sauvegarde` la ligne `sauvegarde_reussie`.
+4. Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep backup` la ligne `backup_success`.
 5. Une restauration d'essai, une fois, avec la copie de la nuit : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
 6. Le port fermé : voir [3.4 Ce que doit faire le proxy](#proxy).
 7. Le téléphone : installation sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
@@ -739,7 +745,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.9 Groupes, tri et compteur
 
-- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.17 Sous-tâches](#sous-taches)).
+- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.18 Sous-tâches](#sous-taches)).
 - « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
 - Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
@@ -812,9 +818,17 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
+<a id="langue"></a>
+
+### 5.16 Langue : français ou anglais
+
+Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.
+
+Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide suit la langue choisie.
+
 <a id="ordinateur"></a>
 
-### 5.16 Sur ordinateur
+### 5.17 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
@@ -857,7 +871,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 <a id="sous-taches"></a>
 
-### 5.17 Sous-tâches
+### 5.18 Sous-tâches
 
 Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.
 
@@ -1032,7 +1046,7 @@ Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nou
 
 ### 7.3 Propriétaire : modifier la liste
 
-Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.17 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
+Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.18 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
 - La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d'envies. Tout le monde la voit. L'échéance n'existe que pour les listes de tâches.
@@ -1057,7 +1071,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
 - Si la liste est pour un autre compte, cette personne en fait partie d'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.
-- Un souhait a un nom, et si l'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.
+- Un souhait a un nom, et si l'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » (dans la monnaie réglée sur le serveur, l'euro par défaut), une note et une photo.
 - Cocher un souhait le range dans « Reçus » : seuls le bénéficiaire et le propriétaire le peuvent ; les réservations n'y sont plus affichées.
 - Quand la liste est pour quelqu'un d'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti ([9.11 Liste d'envies : un participant est parti](#faq-orphelin)).
 - Une liste d'envies n'a pas de copie (« Dupliquer la liste » n'est pas proposé).
@@ -1152,7 +1166,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.11 U
 - Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l'arrosage.” Claude dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
-- Sous-tâches ([5.17 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
+- Sous-tâches ([5.18 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
 
 Claude lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.
 
@@ -1274,7 +1288,7 @@ Proxy : rien à régler, ces adresses passent par le même hôte. Le sous-domain
 - Les plafonds ([8.6 Limites](#claude-limites)) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.
 - L'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d'un coup : retirer `LISTO_MCP=on`.
 
-Journal de sécurité (jamais un jeton, un code ni le contenu d'une liste) : `claude.connexion`, `claude.refus`, `claude.revocation`, `claude.renouvellement`, `claude.enregistrement`, `claude.client_refuse`, `claude.outil` (une ligne par appel d'outil, avec le nombre d'éléments, jamais un nom saisi), `claude.jeton_refuse`, `claude.origine_refusee`.
+Journal de sécurité (jamais un jeton, un code ni le contenu d'une liste) : `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (une ligne par appel d'outil, avec le nombre d'éléments, jamais un nom saisi), `claude.token_refused`, `claude.origin_refused`.
 
 <a id="mcp-essai"></a>
 
@@ -1287,7 +1301,7 @@ Après l'activation, une fois, avant tout usage régulier :
 1. Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.
 2. Connecter Claude ([8.7 Connecter Claude](#claude-connecter)).
 3. Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu'y a-t-il dans les courses ?” : les réponses doivent correspondre à l'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.
-4. `docker logs listo` : des lignes `claude.connexion` et `claude.outil`, aucune erreur. Signaler les lignes `claude.origine_refusee` ou `claude.client_refuse` s'il y en a.
+4. `docker logs listo` : des lignes `claude.connected` et `claude.tool`, aucune erreur. Signaler les lignes `claude.origin_refused` ou `claude.client_refused` s'il y en a.
 5. Plus d'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.
 6. En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).
 
@@ -1334,7 +1348,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 
 ### 9.6 Je ne peux pas me connecter
 
-- « Trop d'essais » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
+- « Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
 - « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
 - Mot de passe oublié, téléphone perdu : [4.7 Mot de passe oublié, téléphone perdu](#oubli).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.

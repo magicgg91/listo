@@ -9,6 +9,7 @@
 // la Content-Security-Policy reste stricte.
 
 import { h, icon } from './dom.js';
+import { t } from './i18n.js';
 
 // --- Choisir une image : UN seul bouton ---
 // Un champ fichier caché, accept="image/*", SANS l'attribut capture : le
@@ -33,7 +34,7 @@ import { h, icon } from './dom.js';
 // input à placer dans la page (les deux champs sur Android) ;
 // button(attributs, ...contenu) fabrique un bouton qui ouvre le choix ;
 // open() l'ouvre (dans un appui).
-export function createImagePicker(onFile, { title = 'Choisir une image', android = isAndroid(), sheet = null } = {}) {
+export function createImagePicker(onFile, { title = t('photo.choisir'), android = isAndroid(), sheet = null } = {}) {
   const field = (attrs = {}) => {
     const input = h('input', { class: 'visually-hidden', type: 'file', accept: 'image/*', tabindex: '-1', 'aria-hidden': 'true', ...attrs });
     input.addEventListener('change', () => {
@@ -81,9 +82,9 @@ async function chooseSource({ title, camera, gallery, sheet }) {
   ({ close } = openSheet({
     title,
     content: h('div', { class: 'stack stack--sm' },
-      choice('camera', 'Prendre une photo', camera),
-      choice('image', 'Choisir dans la galerie', gallery),
-      h('button', { class: 'btn btn--ghost btn--block', type: 'button', onClick: () => close() }, 'Annuler')),
+      choice('camera', t('photo.prendre'), camera),
+      choice('image', t('photo.galerie'), gallery),
+      h('button', { class: 'btn btn--ghost btn--block', type: 'button', onClick: () => close() }, t('photo.annuler'))),
   }));
 }
 
@@ -106,7 +107,7 @@ export async function shrinkPhoto(file) {
     // « from-image » : la photo est redressée selon son orientation
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
   } catch {
-    throw new PhotoError('Cette image ne peut pas être lue. Choisissez une photo (JPEG ou PNG).');
+    throw new PhotoError(t('photo.illisible'));
   }
   const { width, height } = fitSize(bitmap.width, bitmap.height);
   const canvas = document.createElement('canvas');
@@ -117,6 +118,6 @@ export async function shrinkPhoto(file) {
   context.drawImage(bitmap, 0, 0, width, height);
   bitmap.close?.();
   const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', PHOTO_QUALITY));
-  if (!jpeg) throw new PhotoError('La photo n\'a pas pu être préparée. Réessayez.');
+  if (!jpeg) throw new PhotoError(t('photo.preparation'));
   return jpeg;
 }

@@ -10,8 +10,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { emptyState, loadTypeFilter, saveTypeFilter, TYPE_FILTER_KEY } from '../public/js/store.js';
-import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, DEADLINE_GROUPS } from '../public/js/deadlines.js';
+import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, deadlineGroups } from '../public/js/deadlines.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
+import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -53,7 +54,7 @@ function state() {
 const ids = (groups) => groups.map((g) => [g.key, g.entries.map((e) => e.item.id)]);
 
 test('groupes : En retard, Aujourd\'hui, Demain, Cette semaine (jusqu\'au dimanche), Plus tard', () => {
-  assert.deepEqual(DEADLINE_GROUPS.map(([, title]) => title), ['En retard', "Aujourd'hui", 'Demain', 'Cette semaine', 'Plus tard']);
+  assert.deepEqual(deadlineGroups().map(([, title]) => title), ['En retard', "Aujourd'hui", 'Demain', 'Cette semaine', 'Plus tard']);
   assert.equal(endOfWeek(TODAY), '2026-11-15');
   assert.equal(endOfWeek('2026-11-15'), '2026-11-15', 'dimanche : la semaine finit aujourd\'hui');
   assert.equal(endOfWeek('2026-11-16'), '2026-11-22', 'lundi');
@@ -111,7 +112,12 @@ test('pastille : tâches en retard + tâches du jour (comme le résumé de 8 h)'
   assert.equal(deadlineBadge(emptyState(), TODAY), 0);
   // Libellé lu, et pastille cachée à zéro (tabbar.js et menu de l'ordinateur)
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /return `Échéances, \$\{count\} \$\{count > 1 \? 'tâches' : 'tâche'\} en retard ou pour aujourd'hui`;/);
+  assert.match(tabbar, /if \(!count\) return t\('navigation\.echeances'\);\s*return t\('navigation\.echeances\.pastille', \{ count \}\);/);
+  assert.equal(fr['navigation.echeances'], 'Échéances');
+  assert.deepEqual(fr['navigation.echeances.pastille'], {
+    one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
+    other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
+  });
   assert.match(tabbar, /badge\.hidden = count === 0;/);
   assert.match(read('public/js/screens/pc-side.js'), /deadlinesCount\.hidden = count === 0;/);
 });
@@ -125,7 +131,8 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   const screen = read('public/js/screens/deadlines.js');
   assert.match(screen, /const canCheck = canEditList\(list\);/);
   assert.match(screen, /canCheck\s*\? h\('button', \{ class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': item\.name, onClick: \(\) => check\(item\) \}/);
-  assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': 'Non coché, lecture seule' \}/);
+  assert.match(screen, /: h\('span', \{ class: 'check check--static', role: 'img', 'aria-label': t\('echeances\.lectureSeule'\) \}/);
+  assert.equal(fr['echeances.lectureSeule'], 'Non coché, lecture seule');
   // Écritures : checkItem (actions.js → perform → file d'attente), et
   // updateItem seulement pour « Annuler » d'une tâche qui se répète
   // (l'ancienne date revient, et chacun son tour, la personne de cette
@@ -146,7 +153,10 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
 
 test('bandeau du bas : trois boutons, même place partout, loupe seulement là où l\'écran la branche', () => {
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /\['lists', 'tasks', 'Mes listes'\],\s*\['deadlines', 'calendar', 'Échéances'\],\s*\['settings', 'sliders', 'Réglages'\],/);
+  assert.match(tabbar, /\['lists', 'tasks', \(\) => t\('navigation\.mesListes'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
+  assert.equal(fr['navigation.mesListes'], 'Mes listes');
+  assert.equal(fr['navigation.echeances'], 'Échéances');
+  assert.equal(fr['navigation.reglages'], 'Réglages');
   // Retour vers « Mes listes » : un retour en arrière ; entre les autres, un écran remplace l'autre
   assert.match(tabbar, /if \(name === 'lists'\) \{\s*goBack\('lists'\);\s*return;\s*\}\s*navigate\(name, \{\}, \{ replace: current !== 'lists' \}\);/);
   // La loupe est retirée à chaque écran ; « Mes listes » et « Échéances » la rebranchent, pas « Réglages »
@@ -164,7 +174,8 @@ test('bandeau du bas : trois boutons, même place partout, loupe seulement là o
   // Bouton de l'écran affiché : aria-current ET pastille (jamais la couleur seule)
   assert.match(tabbar, /if \(tab === name\) button\.setAttribute\('aria-current', 'page'\);/);
   // Réglages sur téléphone : plus de bouton Retour
-  assert.match(read('public/js/screens/settings.js'), /topbar\('Réglages'\),/);
+  assert.match(read('public/js/screens/settings.js'), /topbar\(t\('reglages\.titre'\)\),/);
+  assert.equal(fr['reglages.titre'], 'Réglages');
   // Adresse de l'écran
   assert.deepEqual(matchRoute('#/echeances'), { name: 'deadlines', params: {} });
   assert.equal(pathFor('deadlines'), '#/echeances');

@@ -12,7 +12,11 @@ import { startTestApp, setupAdmin, addUser, login, ORIGIN } from './helpers.js';
 import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync } from '../public/js/store.js';
-import { OWNER_CANNOT_LEAVE } from '../server/lists.js';
+import { OWNER_CANNOT_LEAVE as OWNER_CANNOT_LEAVE_KEY } from '../server/lists.js';
+import fr from '../public/js/i18n/fr.js';
+
+// Refus : nom du texte ; la réponse le donne en français
+const OWNER_CANNOT_LEAVE = fr[OWNER_CANNOT_LEAVE_KEY];
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -66,7 +70,7 @@ test('un invité quitte : il ne voit plus la liste ; ses articles restent ; les 
   const owner = (await h.guillaume.get('/api/sync')).body.lists.find((l) => l.id === h.shop);
   assert.deepEqual(owner.members.map((m) => m.id).sort(), [1, h.ids.paul]);
   // Journal : identifiants seulement
-  const entry = h.app.logs.find((l) => l.includes('liste_quittee'));
+  const entry = h.app.logs.find((l) => l.includes('list_left'));
   assert.ok(entry);
   assert.doesNotMatch(entry, /Courses|Lait/);
   // Quitter une seconde fois : plus membre → « Liste introuvable »
@@ -149,14 +153,22 @@ test('file hors ligne : les opérations de la personne partie sont refusées et 
 test('menus : mêmes actions, même ordre, aux deux endroits, pour chaque profil ; pas de « ⋯ » sans action', () => {
   const source = read('public/js/screens/list-actions.js');
   // Propriétaire : Modifier, Dupliquer, Partager, sourdine (nouveautés), silence (notifications), — Supprimer
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: 'Modifier la liste'[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: 'Partager par lien'[^\n]*\n\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: 'Supprimer la liste', danger: true, separated: true,/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\)[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\)[^\n]*\n\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true,/);
+  assert.equal(fr['menu.modifier'], 'Modifier la liste');
+  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
+  assert.equal(fr['menu.supprimer'], 'Supprimer la liste');
   // Invité : « Peut modifier » : Dupliquer, — Quitter ; lecture seule : Quitter (sans trait au-dessus)
-  assert.match(source, /const leave = \{ icon: 'logout', label: 'Quitter la liste', danger: true, separated: canEdit, onSelect: async \(\) => \{\s*if \(!\(await leaveListWithConfirm\(list\)\)\) return;/);
+  assert.match(source, /const leave = \{ icon: 'logout', label: t\('menu\.quitter'\), danger: true, separated: canEdit, onSelect: async \(\) => \{\s*if \(!\(await leaveListWithConfirm\(list\)\)\) return;/);
+  assert.equal(fr['menu.quitter'], 'Quitter la liste');
   assert.match(source, /onDeleted\(\);\s*setTimeout\(\(\) => toast\(message, \{ low: true \}\), 400\);/);
   assert.match(source, /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   // Confirmation et hors ligne
-  assert.match(source, /title: `Quitter la liste « \$\{list\.name\} » \?`,\s*text: 'Vous ne la verrez plus\. Le propriétaire pourra de nouveau la partager avec vous\.',\s*confirmLabel: 'Quitter',/);
-  assert.match(source, /const OFFLINE_LEAVE = 'Connexion nécessaire pour quitter une liste';/);
+  assert.match(source, /title: t\('menu\.quitter\.question', \{ name: list\.name \}\),\s*text: t\('menu\.quitter\.texte'\),\s*confirmLabel: t\('menu\.quitter\.confirmer'\),/);
+  assert.equal(fr['menu.quitter.question'], 'Quitter la liste « {name} » ?');
+  assert.equal(fr['menu.quitter.texte'], 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.');
+  assert.equal(fr['menu.quitter.confirmer'], 'Quitter');
+  assert.match(source, /const offlineLeave = \(\) => t\('menu\.quitter\.horsLigne'\);/);
+  assert.equal(fr['menu.quitter.horsLigne'], 'Connexion nécessaire pour quitter une liste');
   assert.match(source, /await refreshData\(\{ quiet: true \}\); \/\/ envoie d'abord ce qui attend\s*await post\(`\/api\/lists\/\$\{list\.id\}\/leave`\);/);
   // Les deux menus viennent de listActions ; liste ouverte : retour à l'accueil après départ
   assert.match(read('public/js/screens/lists.js'), /const actions = listActions\(list\);\s*if \(!actions\.length\) return card;/);

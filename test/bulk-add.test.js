@@ -7,8 +7,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import { splitItems, planBulkAdd, hasSeparator, joinPastedLines, BULK_MAX, BULK_INPUT_MAX, TOO_MANY } from '../public/js/bulk-add.js';
+import { splitItems, planBulkAdd, hasSeparator, joinPastedLines, BULK_MAX, BULK_INPUT_MAX, tooMany } from '../public/js/bulk-add.js';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -38,8 +39,8 @@ test('20 éléments au plus : 20 acceptés, 21 refusés en entier avec une phras
   const names = (n) => Array.from({ length: n }, (_, i) => `article ${i + 1}`).join(', ');
   assert.equal(BULK_MAX, 20);
   assert.equal(planBulkAdd(names(20)).names.length, 20);
-  assert.deepEqual(planBulkAdd(names(21)), { error: TOO_MANY });
-  assert.match(TOO_MANY, /^20 éléments au plus à la fois\./);
+  assert.deepEqual(planBulkAdd(names(21)), { error: tooMany() });
+  assert.equal(tooMany(), '20 éléments au plus à la fois. Rien n\'a été ajouté.');
   // Les morceaux vides ne comptent pas
   assert.equal(planBulkAdd(`${names(20)},,;\n`).names.length, 20);
   // Le champ accepte 20 noms de 100 caractères et leurs séparateurs
@@ -118,7 +119,8 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   assert.match(several, /if \(place === undefined\) return;/);
   // Jamais de fiche ouverte ; une phrase annoncée (toast role="status")
   assert.doesNotMatch(several, /openItemSheet|addModeOf/);
-  assert.match(several, /toast\(`\$\{countItems\(entries\.length, list\)\} ajoutés`\);/);
+  assert.match(several, /toast\(t\('liste\.ajout\.plusieurs', \{ items: countItems\(entries\.length, list\) \}\)\);/);
+  assert.equal(fr['liste.ajout.plusieurs'], '{items} ajoutés');
   // Message lu par la zone d'annonce (js/announce.js), plus fiable qu'un role="status" posé sur le message
   assert.match(read('public/js/ui.js'), /h\('div', \{ class: `toast\$\{low \? ' toast--low' : ''\}` \}/);
   assert.match(read('public/js/ui.js'), /currentToast = el;\n  announce\(text\);/);
@@ -129,7 +131,9 @@ test('écran : découpage seulement pour les courses et les tâches ; tout ou ri
   assert.match(list, /if \(!remembersNames\(view\?\.list\) \|\| splitItems\(input\.value\)\.length > 1\) \{/);
   // Module simple : aucune syntaxe d'expression régulière récente (anciens iPhone), aucun HTML
   const bulk = read('public/js/bulk-add.js');
-  assert.doesNotMatch(bulk, /\(\?<[=!]|innerHTML|import /);
+  // (seul import : les textes, i18n.js)
+  assert.deepEqual(bulk.match(/^import .*$/gm), ["import { t } from './i18n.js';"]);
+  assert.doesNotMatch(bulk.replace("import { t } from './i18n.js';", ''), /\(\?<[=!]|innerHTML|import /);
   // Gardé hors ligne
   assert.ok(read('public/sw.js').includes("'/js/bulk-add.js'"));
 });

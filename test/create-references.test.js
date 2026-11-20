@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -60,7 +61,7 @@ test('un compte qui n\'est pas Admin crée un magasin et un rayon ; ils sont com
   const admin = (await h.guillaume.get('/api/admin/aisles')).body.items;
   assert.ok(admin.some((a) => a.name === 'Produits du monde'));
   // Journal : nom du compte et type, rien d'une liste
-  const lines = h.app.logs.filter((l) => /magasin_cree|rayon_cree/.test(l));
+  const lines = h.app.logs.filter((l) => /store_created|aisle_created/.test(l));
   assert.equal(lines.length, 2);
   assert.ok(lines.every((l) => l.includes('lea') && !l.includes('Courses')));
   // Le magasin créé sert tout de suite à une nouvelle liste
@@ -164,15 +165,24 @@ test('fréquence : 20 créations par heure et par compte (429), les autres compt
 
 test('écran : même feuille pour magasin et rayon, dernière ligne des choix, hors ligne, aucun focus', () => {
   const module = read('public/js/create-reference.js');
-  assert.match(module, /store: \{ path: '\/api\/stores', title: 'Nouveau magasin', label: 'Libellé du magasin',[^\n]*offline: 'Connexion nécessaire pour créer un magasin' \}/);
-  assert.match(module, /aisle: \{ path: '\/api\/aisles', title: 'Nouveau rayon', label: 'Libellé du rayon',[^\n]*offline: 'Connexion nécessaire pour créer un rayon' \}/);
+  assert.match(module, /store: \{ path: '\/api\/stores', get title\(\) \{ return t\('reference\.magasin\.titre'\); \}, get label\(\) \{ return t\('reference\.magasin\.libelle'\); \},[^\n]*get offline\(\) \{ return t\('reference\.magasin\.horsLigne'\); \} \}/);
+  assert.match(module, /aisle: \{ path: '\/api\/aisles', get title\(\) \{ return t\('reference\.rayon\.titre'\); \}, get label\(\) \{ return t\('reference\.rayon\.libelle'\); \},[^\n]*get offline\(\) \{ return t\('reference\.rayon\.horsLigne'\); \} \}/);
+  assert.equal(fr['reference.magasin.titre'], 'Nouveau magasin');
+  assert.equal(fr['reference.magasin.libelle'], 'Libellé du magasin');
+  assert.equal(fr['reference.magasin.horsLigne'], 'Connexion nécessaire pour créer un magasin');
+  assert.equal(fr['reference.rayon.titre'], 'Nouveau rayon');
+  assert.equal(fr['reference.rayon.libelle'], 'Libellé du rayon');
+  assert.equal(fr['reference.rayon.horsLigne'], 'Connexion nécessaire pour créer un rayon');
   assert.match(module, /const input = h\('input', \{ class: 'input', \.\.\.LABEL_INPUT, maxlength: '100', placeholder: kind\.placeholder \}\);/);
   assert.match(module, /if \(!navigator\.onLine\) \{\s*toast\(kind\.offline\);\s*return Promise\.resolve\(undefined\);/);
-  assert.match(module, /`Choisir « \$\{existing\.name\} »`/);
+  assert.match(module, /t\('reference\.choisirExistant', \{ name: existing\.name \}\)/);
+  assert.equal(fr['reference.choisirExistant'], 'Choisir « {name} »');
   assert.doesNotMatch(module, /innerHTML|\.focus\(|autofocus/);
   const list = read('public/js/screens/list.js');
-  assert.match(list, /create: \{ kind: 'aisle', text: 'Nouveau rayon…' \}/);
-  assert.match(list, /create: \{ kind: 'store', text: 'Nouveau magasin…' \}/);
+  assert.match(list, /create: \{ kind: 'aisle', text: t\('liste\.choix\.nouveauRayon'\) \}/);
+  assert.match(list, /create: \{ kind: 'store', text: t\('liste\.choix\.nouveauMagasin'\) \}/);
+  assert.equal(fr['liste.choix.nouveauRayon'], 'Nouveau rayon…');
+  assert.equal(fr['liste.choix.nouveauMagasin'], 'Nouveau magasin…');
   // Le nouvel élément est ajouté aux choix ET sélectionné (il reste à confirmer, rien n'est perdu)
   assert.match(list, /const made = await openCreateReference\(create\.kind, \{ listId \}\);\s*if \(!made\) return;/);
   assert.match(list, /selected = made\.id;\s*paint\(\);/);

@@ -8,7 +8,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { loadConfig } from './config.js';
+import { loadConfig, consoleLocale } from './config.js';
+import { translate } from '../public/js/i18n.js';
 import { deriveKeys, buildId } from './secrets.js';
 import { createLimiter } from './limiter.js';
 import { createAudit } from './audit.js';
@@ -34,6 +35,7 @@ import { referenceRoutes } from './routes/references.js';
 import { createOAuthService } from './oauth.js';
 import { fetchClientMetadata } from './oauth-clients.js';
 import { createOidc, fetchOidc } from './oidc.js';
+import { localeMiddleware, requestLocale } from './locale.js';
 import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
@@ -191,6 +193,8 @@ export function createApp({
   app.disable('x-powered-by');
 
   // En-têtes de sécurité sur toutes les réponses
+  // Langue des réponses : req.t(nom, valeurs) (server/locale.js)
+  app.use(localeMiddleware(config));
   app.use((req, res, next) => {
     res.set({
       'Content-Security-Policy': isPublicLinkPath(req.path) ? CONTENT_SECURITY_POLICY : APP_CONTENT_SECURITY_POLICY,
@@ -290,16 +294,16 @@ export function createApp({
   api.use('/admin', adminRoutes(ctx));
 
   // Route inconnue
-  api.use((req, res) => res.status(404).json({ error: 'Route inconnue.' }));
+  api.use((req, res) => res.status(404).json({ error: req.t('reseau.routeInconnue') }));
 
   // Erreurs : JSON mal formé, ou problème inattendu (sans détail technique
   // dans la réponse ; le détail va dans les journaux du serveur)
   api.use((err, req, res, next) => {
-    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
-    if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
-    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
-    console.error('Erreur inattendue :', err.message);
-    res.status(500).json({ error: 'Erreur interne du serveur.' });
+    if (err.type === 'entity.parse.failed') return res.status(400).json({ error: req.t('reseau.requeteMalFormee') });
+    if (err.type === 'entity.too.large') return res.status(413).json({ error: req.t('reseau.requeteTropVolumineuse') });
+    if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: req.t('reseau.requeteInvalide') }); // adresse mal formée…
+    console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
+    res.status(500).json({ error: req.t('reseau.erreurInterne') });
   });
 
   app.use('/api', api);
@@ -321,21 +325,33 @@ export function createApp({
     app.get(url, (req, res) => res.type('js').set('Cache-Control', 'no-cache').send(source));
   }
 
+  // Manifeste de l'application (nom et description à l'installation sur le
+  // téléphone) dans la langue du navigateur : description et « lang »
+  // traduites, le reste identique (public/manifest.webmanifest)
+  const manifest = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'manifest.webmanifest'), 'utf8'));
+  const MANIFEST_TEXTS = { fr: { description: manifest.description, lang: 'fr' }, en: { description: 'Shared lists: shopping, tasks…', lang: 'en' } };
+  app.get('/manifest.webmanifest', (req, res) => {
+    const texts = MANIFEST_TEXTS[requestLocale(req, config)] ?? MANIFEST_TEXTS.fr;
+    res.type('application/manifest+json').set('Cache-Control', 'no-cache').set('Vary', 'Accept-Language').send(JSON.stringify({ ...manifest, ...texts }, null, 2));
+  });
+
   // Fichiers de l'interface. Ils sont revalidés à chaque chargement (le
   // navigateur demande « ai-je la dernière version ? »), pour qu'une mise à
   // jour de Listo soit vue tout de suite.
   app.use(express.static(PUBLIC_DIR, { cacheControl: true, maxAge: 0 }));
 
   // Adresse inconnue (hors API) : réponse courte en français
-  app.use((req, res) => res.status(404).type('text').send('Page introuvable.'));
+  app.use((req, res) => res.status(404).type('text').send(req.t('reseau.pageIntrouvable')));
 
   // Erreur hors API (adresse mal formée, problème inattendu) : jamais de
   // trace ni de chemin de fichier dans la réponse ; le détail d'une erreur
   // inattendue va dans les journaux du serveur
   app.use((err, req, res, next) => {
     const status = err.status >= 400 && err.status < 500 ? err.status : 500;
-    if (status === 500) console.error('Erreur inattendue :', err.message);
-    res.status(status).type('text').send(status === 500 ? 'Erreur interne du serveur.' : 'Requête invalide.');
+    if (status === 500) console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
+    // req.t existe dès la première étape ; par prudence, le français sinon
+    const say = req.t ?? ((key) => translate('fr', key));
+    res.status(status).type('text').send(status === 500 ? say('reseau.erreurInterne') : say('reseau.requeteInvalide'));
   });
 
   // Ménage régulier : sessions expirées, compteurs de tentatives et d'envois

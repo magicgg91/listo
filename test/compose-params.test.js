@@ -42,7 +42,13 @@ test('paramètres : chaque variable documentée est dans chaque exemple de compo
 
 test('LISTO_PUSH : en commentaire, avec la même explication courte, dans tous les exemples ; TZ=Europe/Paris partout', () => {
   const pushLine = /# - LISTO_PUSH=on/;
-  const explained = (text) => ['DÉSACTIVÉES par défaut', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'secrets/vapid.json', 'secret.key'].every((word) => text.includes(word));
+  // Explication en français (guide) ou en anglais (fichiers compose,
+  // commentés en anglais depuis le 20 novembre 2026 ; guide anglais)
+  const EXPLANATIONS = [
+    ['DÉSACTIVÉES par défaut', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'secrets/vapid.json', 'secret.key'],
+    ['OFF by default', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'secrets/vapid.json', 'secret.key'],
+  ];
+  const explained = (text) => EXPLANATIONS.some((words) => words.every((word) => text.includes(word)));
   const examples = { ...EXAMPLES, 'docs/guide.md': read('docs/guide.md'), 'site/index.html': read('site/index.html'), 'docs/exploitation.md': read('docs/exploitation.md') };
   for (const [name, text] of Object.entries(examples)) {
     assert.match(text, pushLine, name);

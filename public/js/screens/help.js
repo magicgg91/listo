@@ -1,7 +1,10 @@
 // Écran « Aide » (#/aide, ou #/aide/<section> pour ouvrir une section
 // précise), ouvert depuis les Réglages. Il affiche le guide de Listo : tout
 // le texte vient de help-content.js, la même source que docs/guide.md et que
-// la page publique (site/).
+// la page publique (site/). Le guide suit la langue de la personne
+// (helpFor(getLocale()), lu à chaque affichage) : chapitres, renvois
+// [[…]] et leurs numéros, « Qui peut quoi », recherche et sommaire viennent
+// tous du guide de cette langue (help-content-en.js pour l'anglais).
 // - trois boutons ronds flottants, en pile en bas à droite (icône seule,
 //   aria-label, info-bulle au survol et au focus) : de bas en haut,
 //   « Sommaire du guide », « Rechercher dans le guide », puis « Retour en
@@ -47,13 +50,14 @@ import { goBack } from '../router.js';
 import { openSheet, onPc, releaseFocus } from '../ui.js';
 import { keepFieldFocus } from '../tap.js';
 import { highlightParts, resultsLabel } from '../search.js';
-import { GUIDE, ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE, outline, numbered, parseInline, refLabel, searchGuide } from '../help-content.js';
+import { helpFor, outline, numbered, parseInline, refLabel, searchGuide } from '../help-content.js';
+import { t, getLocale } from '../i18n.js';
 
 // Identifiant d'élément (unique dans la page) de l'ancre d'une section
 export const anchorId = (id) => `guide-${id}`;
 
-export const SEARCH_LABEL = 'Rechercher dans le guide';
-export const NO_RESULT = 'Aucun résultat. Essayez un autre mot, ou ouvrez le sommaire.';
+export const searchLabel = () => t('aide.recherche');
+export const noResult = () => t('aide.recherche.aucunResultat');
 
 // Un texte, avec le texte cherché surligné (<mark class="hit">)
 function marked(text, query) {
@@ -63,7 +67,10 @@ function marked(text, query) {
 
 // sectionId : section à montrer tout de suite (adresse #/aide/<section>)
 export function renderHelp(sectionId = null) {
-  const entries = outline();
+  // Le guide de la langue affichée (français ou anglais)
+  const help = helpFor(getLocale());
+  const { GUIDE, SERVER_NOTE } = help;
+  const entries = outline(GUIDE);
   const entryOf = new Map(entries.map((e) => [e.id, e]));
   const pc = onPc(); // ordinateur : sommaire fixe à gauche, recherche dans l'en-tête
   // chapitres dépliés (hors recherche) : le premier ; tous sur ordinateur
@@ -83,15 +90,15 @@ export function renderHelp(sectionId = null) {
     autocapitalize: 'off',
     spellcheck: 'false',
     maxlength: '100',
-    placeholder: SEARCH_LABEL,
-    'aria-label': SEARCH_LABEL,
+    placeholder: searchLabel(),
+    'aria-label': searchLabel(),
   });
   // Croix « Effacer la recherche » : un appui ne retire pas le curseur du
   // champ (s'il y était), comme dans une liste ; jamais de curseur mis de force
   const clearButton = h('button', {
     class: 'icon-btn',
     type: 'button',
-    'aria-label': 'Effacer la recherche',
+    'aria-label': t('aide.recherche.effacer'),
     onPointerdown: keepFieldFocus.pointerdown,
     onMousedown: keepFieldFocus.mousedown,
     onClick: () => clearSearch(),
@@ -102,7 +109,7 @@ export function renderHelp(sectionId = null) {
   const searchRow = h('div', { class: 'help-search help-search--bar', id: 'aide-recherche' },
     h('div', { class: 'help-search__row' },
       h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton),
-      pc ? null : iconButton('close', 'Fermer la recherche', () => closeSearch())),
+      pc ? null : iconButton('close', t('aide.recherche.fermer'), () => closeSearch())),
     status);
   searchRow.hidden = true;
 
@@ -176,7 +183,7 @@ export function renderHelp(sectionId = null) {
           event.preventDefault();
           jump(part.ref);
         },
-      }, marked(refLabel(part.ref), query));
+      }, marked(refLabel(part.ref, GUIDE), query));
     }
     if (part.link !== undefined) return h('a', { href: part.href, target: '_blank', rel: 'noopener noreferrer' }, marked(part.link, query));
     return marked(part.text, query);
@@ -191,7 +198,7 @@ export function renderHelp(sectionId = null) {
     if (entry.note) return h('div', { class: 'note help__note-box' }, icon('alert'), h('p', {}, rich(entry.note)));
     if (entry.sub) return h('h4', { class: 'help__sub' }, rich(entry.sub));
     if (entry.table) return table(entry.table, rich);
-    if (entry.who) return whoCanWhat(query);
+    if (entry.who) return whoCanWhat(query, help);
     return null;
   };
 
@@ -237,7 +244,7 @@ export function renderHelp(sectionId = null) {
   function draw() {
     folds = new Map();
     headings = new Map();
-    const result = searchGuide(query);
+    const result = searchGuide(query, help);
     if (!result) {
       status.textContent = '';
       replace(content, GUIDE.map((chapter) => chapterPart(chapter, null)));
@@ -247,14 +254,14 @@ export function renderHelp(sectionId = null) {
     const shown = new Map(result.chapters.map((c) => [c.id, c]));
     replace(content, result.count
       ? GUIDE.filter((chapter) => shown.has(chapter.id)).map((chapter) => chapterPart(chapter, shown.get(chapter.id)))
-      : h('div', { class: 'empty help-search__empty' }, icon('search', 'icon--lg'), h('p', { class: 'empty__text' }, NO_RESULT)));
+      : h('div', { class: 'empty help-search__empty' }, icon('search', 'icon--lg'), h('p', { class: 'empty__text' }, noResult())));
   }
   draw();
 
   // Ordinateur : sommaire fixe à gauche du texte, chapitre en cours repéré
   const tocLinks = new Map(); // chapitre -> lien du sommaire
   const pcToc = pc ? h('nav', { class: 'pc-toc', 'aria-labelledby': 'pc-toc-titre' },
-    h('h2', { class: 'pc-toc__title', id: 'pc-toc-titre' }, 'Sommaire ', h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, 'S')),
+    h('h2', { class: 'pc-toc__title', id: 'pc-toc-titre' }, `${t('aide.sommaire')} `, h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, 'S')),
     h('ol', { class: 'pc-toc__list' }, GUIDE.map((chapter) => {
       const entry = entryOf.get(chapter.id);
       const link = h('a', {
@@ -306,13 +313,13 @@ export function renderHelp(sectionId = null) {
     ...extra,
   }, icon(iconName));
   // Sommaire et sa feuille
-  const tocButton = fab('layers', 'Sommaire du guide', { 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, ' help__toc-btn');
+  const tocButton = fab('layers', t('aide.sommaire.bouton'), { 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, ' help__toc-btn');
   tocButton.addEventListener('click', () => openToc());
   // Loupe : ouvre (ou referme) la barre de recherche
-  const searchButton = fab('search', SEARCH_LABEL, { 'aria-expanded': 'false', 'aria-controls': 'aide-recherche' });
+  const searchButton = fab('search', searchLabel(), { 'aria-expanded': 'false', 'aria-controls': 'aide-recherche' });
   searchButton.addEventListener('click', () => (searchRow.hidden ? openSearch() : closeSearch()));
   // Retour en haut : seulement après un certain défilement (trois quarts d'écran)
-  const topButton = fab('arrow-up', 'Retour en haut de la page');
+  const topButton = fab('arrow-up', t('aide.hautDePage.bouton'));
   topButton.hidden = true;
   topButton.addEventListener('click', () => goTop());
   const goTop = () => {
@@ -335,7 +342,7 @@ export function renderHelp(sectionId = null) {
     const content = tocContent({ entries, here, hereChapter, onChoose: choose });
     tocButton.setAttribute('aria-expanded', 'true');
     const sheet = openSheet({
-      title: 'Sommaire',
+      title: t('aide.sommaire'),
       content,
       scroll: true,
       // En-tête collé (titre et croix toujours visibles quand la feuille défile)
@@ -361,7 +368,7 @@ export function renderHelp(sectionId = null) {
     sheet.panel.querySelector?.('.is-current')?.scrollIntoView?.({ block: 'center' });
   }
 
-  const topTitle = h('h1', { class: pc ? 'pc-head__title' : 'topbar__title', tabindex: '-1' }, 'Aide');
+  const topTitle = h('h1', { class: pc ? 'pc-head__title' : 'topbar__title', tabindex: '-1' }, t('aide.titre'));
   if (pc) {
     searchRow.hidden = false;
     searchRow.classList.add('help-search--pc');
@@ -370,14 +377,14 @@ export function renderHelp(sectionId = null) {
     if (sectionId && entryOf.has(sectionId)) requestAnimationFrame(() => jump(sectionId));
     return h('div', { class: 'screen help-screen help-screen--pc' },
       h('header', { class: 'pc-head' },
-        h('div', { class: 'pc-head__main' }, topTitle, h('p', { class: 'pc-head__sub' }, icon('book', 'icon--xs'), 'Guide d\'utilisation')),
+        h('div', { class: 'pc-head__main' }, topTitle, h('p', { class: 'pc-head__sub' }, icon('book', 'icon--xs'), t('aide.guide'))),
         searchRow),
       body);
   }
   const screen = h('div', { class: 'screen help-screen' },
     // Barre du haut (même balisage que les Réglages) : retour vers les Réglages
     h('header', { class: 'topbar' },
-      iconButton('chev-l', 'Retour', () => goBack('settings')),
+      iconButton('chev-l', t('aide.retour'), () => goBack('settings')),
       h('div', { class: 'topbar__main' }, topTitle)),
     searchRow,
     body,
@@ -404,13 +411,13 @@ export function tocContent({ entries, here, hereChapter, onChoose }) {
     },
     current ? icon('chev-r', 'icon--sm') : null,
     h('span', {}, label),
-    current ? h('span', { class: 'visually-hidden' }, ' (section en cours)') : null);
+    current ? h('span', { class: 'visually-hidden' }, ` ${t('aide.sommaire.enCours')}`) : null);
   };
   const toggles = [];
   const chapters = entries.filter((e) => e.level === 1).map((chapter) => {
     const subId = `sommaire-${chapter.id}`;
     const sub = h('ol', { class: 'help-toc__list help-toc__list--sub', id: subId },
-      h('li', {}, entryButton(chapter, 'Aller au chapitre')),
+      h('li', {}, entryButton(chapter, t('aide.sommaire.chapitre'))),
       entries.filter((e) => e.chapter === chapter.id).map((section) => h('li', {}, entryButton(section))));
     const toggle = h('button', {
       class: 'help-toc__entry help-toc__entry--1 help-toc__chapter',
@@ -430,8 +437,8 @@ export function tocContent({ entries, here, hereChapter, onChoose }) {
     toggles.push({ show });
     return h('li', {}, toggle, sub);
   });
-  return h('nav', { class: 'help-toc', 'aria-label': 'Sommaire' },
-    h('button', { class: 'help-toc__entry help-toc__top', type: 'button', onClick: () => onChoose('top') }, icon('arrow-up', 'icon--sm'), h('span', {}, 'Haut de page')),
+  return h('nav', { class: 'help-toc', 'aria-label': t('aide.sommaire') },
+    h('button', { class: 'help-toc__entry help-toc__top', type: 'button', onClick: () => onChoose('top') }, icon('arrow-up', 'icon--sm'), h('span', {}, t('aide.sommaire.haut'))),
     h('ol', { class: 'help-toc__list' }, chapters));
 }
 
@@ -440,12 +447,13 @@ export function tocContent({ entries, here, hereChapter, onChoose }) {
 function table({ head, rows }, rich) {
   return h('div', { class: 'help-table', role: 'list' }, rows.map((row) => h('div', { class: 'help-table__row', role: 'listitem' },
     h('p', { class: 'help-table__key' }, rich(row[0])),
-    row.slice(1).map((value, i) => h('p', { class: 'help-table__cell' }, h('span', { class: 'help-table__head' }, `${head[i + 1]} : `), rich(value))))));
+    row.slice(1).map((value, i) => h('p', { class: 'help-table__cell' }, h('span', { class: 'help-table__head' }, `${t('aide.tableau.entete', { head: head[i + 1] })} `), rich(value))))));
 }
 
 // « Qui peut quoi » : un bloc par action, les rôles dessous, « oui » ou
-// « non » en icône ET en texte (jamais la couleur seule)
-function whoCanWhat(query) {
+// « non » en icône ET en texte (jamais la couleur seule) ; help : le guide
+// de la langue affichée (rôles, actions et note dans cette langue)
+function whoCanWhat(query, { ROLES, PERMISSIONS, PERMISSIONS_NOTE }) {
   return h('div', { class: 'help-who' },
     h('div', { class: 'group' }, PERMISSIONS.map((permission) => h('div', { class: 'help-who__row' },
       h('p', { class: 'help-who__action' }, marked(permission.action, query)),
@@ -454,7 +462,7 @@ function whoCanWhat(query) {
         return h('li', { class: `chip help-who__role${yes ? ' help-who__role--yes' : ' help-who__role--no'}` },
           icon(yes ? 'check' : 'close', 'icon--xs'),
           h('span', {}, marked(role.label, query)),
-          h('span', { class: 'visually-hidden' }, yes ? ' : oui' : ' : non'));
+          h('span', { class: 'visually-hidden' }, ` ${yes ? t('aide.qui.oui') : t('aide.qui.non')}`));
       }))))),
     h('p', { class: 'help__note' }, marked(PERMISSIONS_NOTE, query)));
 }

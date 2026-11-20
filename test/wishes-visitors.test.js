@@ -13,7 +13,15 @@ import fs from 'node:fs';
 import { startTestApp, setupAdmin, addUser, login, createClient } from './helpers.js';
 import { emptyState, loadSync, toSnapshot } from '../public/js/store.js';
 import { dropOrphanStates } from '../server/db.js';
-import { ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, BAD_FIRST_NAME, VISITOR_LIMIT, ITEM_FULL, LINK_FULL } from '../server/reservations.js';
+import fr from '../public/js/i18n/fr.js';
+import * as reservationTexts from '../server/reservations.js';
+import { translate } from '../public/js/i18n.js';
+
+// Messages attendus, en français (server/reservations.js exporte leurs noms)
+const [ALREADY, ALREADY_IN, RECEIVED, NOT_FOUND, NOT_IN, VISITOR_LIMIT, ITEM_FULL, LINK_FULL] = [
+  'ALREADY', 'ALREADY_IN', 'RECEIVED', 'NOT_FOUND', 'NOT_IN', 'VISITOR_LIMIT', 'ITEM_FULL', 'LINK_FULL',
+].map((name) => translate('fr', reservationTexts[name]));
+const BAD_FIRST_NAME = translate('fr', reservationTexts.BAD_FIRST_NAME, { max: reservationTexts.VISITOR_NAME_MAX });
 
 const uuid = () => crypto.randomUUID();
 const HOUR = 60 * 60 * 1000;
@@ -406,20 +414,26 @@ test('TEST FORT : ce que reçoit la destinataire (lecture, synchronisation, temp
 
 test('écrans : visiteurs marqués « (lien public) » et retirés par le gestionnaire ; page publique : boutons, prénom gardé pour ce lien, annonces ; avertissement sur le destinataire', () => {
   const list = code('public/js/screens/list.js');
-  assert.match(list, /const participantLabel = \(p\) => \(p\.viaLink \? `\$\{p\.displayName\} \(lien public\)` : p\.displayName\);/);
+  assert.match(list, /const participantLabel = \(p\) => \(p\.viaLink \? t\('liste\.envies\.visiteur', \{ name: p\.displayName \}\) : p\.displayName\);/);
+  assert.equal(fr['liste.envies.visiteur'], '{name} (lien public)');
   assert.match(list, /p\.viaLink \? actions\.removeWishVisitor\(item\.id, p\.visitorId\) : actions\.removeWishParticipant\(item\.id, p\.userId\)/);
   assert.match(list, /mine \|\| manager \? openSwitch\(current\.open/);
   assert.match(read('public/js/actions.js'), /await del\(reservationUrl\(itemId, `\/visitors\/\$\{encodeURIComponent\(visitorId\)\}`\)\);/);
   const page = code('public/js/public.js');
   assert.match(page, /const NAME_KEY = `listo_prenom_\$\{token\}`;/);
   assert.match(page, /if \(!canReserve \|\| item\.checked \|\| !item\.id\) return null;/);
-  for (const label of ['Je participe', 'Annuler', 'Réservé · ouvert à d\\\'autres', 'Participer', 'Réservé', 'Réserver']) assert.ok(page.includes(label), label);
+  const labels = { 'lienpublic.jeParticipe': 'Je participe', 'lienpublic.annuler': 'Annuler', 'lienpublic.reserveOuvert': 'Réservé · ouvert à d\'autres', 'lienpublic.participer': 'Participer', 'lienpublic.reserve': 'Réservé', 'lienpublic.reserver': 'Réserver' };
+  for (const [key, label] of Object.entries(labels)) {
+    assert.ok(page.includes(`t('${key}')`), key);
+    assert.equal(fr[key], label);
+  }
   assert.match(page, /h\('div', \{ class: 'toast' \}, h\('span', \{ class: 'toast__text' \}, text\)\);\n  root\.append\(el\);\n  speak\(text\);/);
   assert.match(page, /document\.addEventListener\('visibilitychange', \(\) => \{/);
   assert.doesNotMatch(page, /innerHTML|insertAdjacentHTML|outerHTML/);
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);
   const share = read('public/js/screens/share.js');
-  assert.match(share, /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
+  assert.match(share, /h\('span', \{\}, wishShareWarning\(\)\)/);
+  assert.match(fr['partage.envies.avertissement'], /ouvre ce lien sans être connectée à Listo, elle verra quels souhaits sont réservés \(jamais par qui\)\. Ne le lui donnez pas\./);
   assert.match(read('public/sw.js'), /const VERSION = `v(6[0-9]|[7-9]\d|\d{3,})-/);
 });
 

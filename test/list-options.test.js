@@ -13,14 +13,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { startTestApp, setupAdmin, addUser, login, createClient, ORIGIN, databaseAt } from './helpers.js';
 import { openDatabase, schemaVersion } from '../server/db.js';
-import { PRIORITY_OFF, DUE_OFF } from '../server/lists.js';
+import { PRIORITY_OFF as PRIORITY_OFF_KEY, DUE_OFF as DUE_OFF_KEY } from '../server/lists.js';
 import { createQueue } from '../public/js/queue.js';
 import { memoryLocal } from '../public/js/localdb.js';
 import { emptyState, loadSync, mergeSync, applyOp, listOptions, availableSorts, effectiveSort, computeListView } from '../public/js/store.js';
+import fr from '../public/js/i18n/fr.js';
 
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const OWNER_ONLY = 'Seul le propriétaire de la liste peut faire cela.';
+// Refus : noms des textes ; l'application et Claude les donnent en français
+const [PRIORITY_OFF, DUE_OFF] = [PRIORITY_OFF_KEY, DUE_OFF_KEY].map((key) => fr[key]);
 
 // Guillaume (propriétaire) ; Léa « Peut modifier » ; Paul « Lecture seule ».
 // Une liste de tâches toute neuve (réglages désactivés par défaut) avec un
@@ -59,8 +62,9 @@ async function household(t) {
   return { app, guillaume, ...clients, ids, tasks, shopping, bulb, milk, notified, settings, values };
 }
 
+// Résultat d'une opération, sans son identifiant ni le nom du texte de refus (code)
 async function run(client, op) {
-  const { id, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
+  const { id, code, ...result } = (await client.post('/api/ops', { ops: [{ id: uuid(), ...op }] })).body.results[0];
   return result;
 }
 
@@ -76,7 +80,7 @@ test('migration 13 : listes existantes autres que les courses activées, courses
   const before = db.prepare('SELECT * FROM items').all();
   db.close();
   db = openDatabase(file);
-  assert.equal(schemaVersion(db), 33);
+  assert.equal(schemaVersion(db), 34);
   const row = (id) => ({ ...db.prepare('SELECT priority_enabled, due_enabled FROM lists WHERE id = ?').get(id) });
   assert.deepEqual(row('taches'), { priority_enabled: 1, due_enabled: 1 }, 'rien ne change, rien ne disparaît');
   assert.deepEqual(row('courses'), { priority_enabled: 0, due_enabled: 0 }, 'courses : réglages ignorés');
@@ -228,7 +232,7 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
       deletePhoto: async () => {},
     },
     timers: { setTimeout: () => 0, clearTimeout: () => {} },
-    events: { refused: (entry, message) => refused.push(message) },
+    events: { refused: (entry, message, code) => refused.push([message, code]) },
   });
   // Léa, hors ligne : priorité, puis une note, puis une échéance
   await queue.add({ kind: 'op', op: { id: uuid(), type: 'item.update', itemId: h.bulb, priority: 'high' } });
@@ -238,7 +242,7 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
   await run(h.guillaume, { type: 'list.update', listId: h.tasks, priorityEnabled: false });
   assert.equal(await queue.flush(), 'done');
   assert.equal(queue.count(), 0);
-  assert.deepEqual(refused, [PRIORITY_OFF]);
+  assert.deepEqual(refused, [[PRIORITY_OFF, PRIORITY_OFF_KEY]], 'le message, et le nom de son texte (reconnu par app.js)');
   assert.deepEqual(h.values(h.bulb), { priority: 'normal', due_date: '2026-10-30' }, 'la suite est passée');
   assert.equal(h.app.db.prepare('SELECT note FROM items WHERE id = ?').pluck().get(h.bulb), 'couloir');
   calls.length = 0;
@@ -246,10 +250,12 @@ test('hors ligne : une modification refusée (option désactivée) sort de la fi
   assert.deepEqual(calls, [], 'pas de boucle');
   // app.js : un seul message court, après la synchronisation
   const appJs = read('public/js/app.js');
-  assert.match(appJs, /const OPTION_OFF = \['La priorité est désactivée pour cette liste\.', "L'échéance est désactivée pour cette liste\."\];/);
+  assert.match(appJs, /const OPTION_OFF = \['ops\.prioriteDesactivee', 'ops\.echeanceDesactivee'\];/);
+  assert.deepEqual([PRIORITY_OFF_KEY, DUE_OFF_KEY], ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'], 'mêmes noms que le serveur');
   assert.deepEqual([PRIORITY_OFF, DUE_OFF], ['La priorité est désactivée pour cette liste.', "L'échéance est désactivée pour cette liste."]);
-  assert.match(appJs, /const OPTION_OFF_MESSAGE = 'Cette option est désactivée pour cette liste\.';/);
-  assert.match(appJs, /if \(readOnlyRefused\) toast\(READ_ONLY_OFFLINE\);\s*else if \(optionRefused\) toast\(OPTION_OFF_MESSAGE\);/);
+  assert.match(appJs, /optionRefused = refusals\.some\(\(\{ code \}\) => OPTION_OFF\.includes\(code\)\);/);
+  assert.equal(fr['application.optionDesactivee'], 'Cette option est désactivée pour cette liste.');
+  assert.match(appJs, /if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);\s*else if \(optionRefused\) toast\(t\('application\.optionDesactivee'\)\);/);
 });
 
 test('téléphone : options d\'une liste, tri proposé, tri mémorisé indisponible → alphabétique', () => {
@@ -299,7 +305,9 @@ test('écran : champ, pastilles, fiche à consulter et option de tri masqués qu
   assert.match(list, /const stopWatching = onDataChange\(\(\) => \{\s*reservation\?\.paint\(\);[^\n]*\n\s*showOptions\(\);/);
   assert.match(list, /const enabled = options\(\);\s*if \(enabled\.priority && priority !== \(item\.priority \?\? 'normal'\)\) changes\.priority = priority;\s*if \(enabled\.due && dueDate !== savedDue\) changes\.dueDate = dueDate; \/\/ null : échéance effacée\s*if \(enabled\.due && repeat !== savedRepeat\) changes\.repeat = repeat;/);
   // Fiche à consulter (lecture seule) : même règle
-  assert.match(list, /options\.priority \? value\('Priorité', [^\n]*\) : null,\s*options\.due \? value\('Échéance', [^\n]*\) : null,/);
+  assert.match(list, /options\.priority \? value\(t\('liste\.fiche\.priorite'\), [^\n]*\) : null,\s*options\.due \? value\(t\('liste\.fiche\.echeance'\), [^\n]*\) : null,/);
+  assert.equal(fr['liste.fiche.priorite'], 'Priorité');
+  assert.equal(fr['liste.fiche.echeance'], 'Échéance');
   // Tri : seulement les choix proposés ; pas de bouton sans choix
   assert.match(list, /const offered = availableSorts\(currentList\(\)\);\s*openMenu\(SORTS\.filter\(\(\[value\]\) => offered\.includes\(value\)\)/);
   assert.match(list, /sortButton\.hidden = availableSorts\(list\)\.length < 2;/);
@@ -310,18 +318,25 @@ test('formulaire : le même composant à la création et dans « Modifier la lis
   const form = read('public/js/screens/list-form.js');
   assert.match(form, /export function optionSwitches\(values, onChange, leading = null\) \{/);
   assert.equal((form.match(/optionSwitches\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois, dans le formulaire commun');
-  assert.match(form, /\['priority', 'Priorité', /);
-  assert.match(form, /\['due', 'Échéance', /);
+  assert.match(form, /\['priority', t\('formulaire\.option\.priorite'\), /);
+  assert.match(form, /\['due', t\('formulaire\.option\.echeance'\), /);
+  assert.equal(fr['formulaire.option.priorite'], 'Priorité');
+  assert.equal(fr['formulaire.option.echeance'], 'Échéance');
   // Vrai interrupteur : nom = titre de la ligne, description reliée, état dans aria-checked
   assert.match(form, /const toggle = h\('button', \{ class: 'switch', type: 'button', role: 'switch', 'aria-labelledby': titleId, 'aria-describedby': helpId \}\);/);
   assert.match(form, /h\('span', \{ class: 'row__title', id: titleId \}, label\), h\('span', \{ class: 'row__sub', id: helpId \}, help\)/);
   assert.match(form, /toggle\.setAttribute\('aria-checked', String\(current\[key\]\)\);/);
   // Description seule, fixe : ni « Activée · » / « Désactivée · » (la position du
   // bouton montre l'état), ni mention du tri (sous-entendue quand l'option est activée)
-  assert.match(form, /\['priority', 'Priorité', 'Basse, normale ou élevée\.'\],/);
-  assert.match(form, /\['due', 'Échéance', 'Une date limite ; retards signalés\.'\],/);
+  assert.match(form, /\['priority', t\('formulaire\.option\.priorite'\), t\('formulaire\.option\.priorite\.detail'\)\],/);
+  assert.match(form, /\['due', t\('formulaire\.option\.echeance'\), t\('formulaire\.option\.echeance\.detail'\)\],/);
+  assert.equal(fr['formulaire.option.priorite.detail'], 'Basse, normale ou élevée.');
+  assert.equal(fr['formulaire.option.echeance.detail'], 'Une date limite ; retards signalés.');
   const block = form.slice(form.indexOf('export function optionSwitches('), form.indexOf('export function addModeChoice('));
   for (const gone of ['Activée', 'Désactivée', 'textContent', "'aria-label'"]) assert.equal(block.includes(gone), false, gone);
+  for (const key of ['formulaire.option.priorite.detail', 'formulaire.option.echeance.detail', 'formulaire.option.attribution.detail', 'formulaire.option.sousTaches.detail']) {
+    assert.doesNotMatch(fr[key], /Activée|Désactivée|\btri\b|par priorité|par échéance/, key);
+  }
   assert.doesNotMatch(block, /\btri\b|par priorité|par échéance/);
   // Nouvelle liste : désactivées (envies comprises, voir
   // test/wish-priority.test.js) ; liste existante : ses réglages enregistrés ;

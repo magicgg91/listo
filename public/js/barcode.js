@@ -19,6 +19,7 @@
 // par le service worker : le scan marche ensuite hors ligne.
 
 import { scriptUrl } from './trusted.js';
+import { t } from './i18n.js';
 
 // --- Code-barres (calculs purs, testés automatiquement) ---
 
@@ -46,10 +47,10 @@ export function normalizeBarcode(value) {
 // Message pour un code tapé à la main qui n'est pas valable (null s'il l'est)
 export function barcodeProblem(value) {
   const digits = String(value ?? '').replace(/[\s-]/g, '');
-  if (!digits) return 'Tapez les chiffres sous le code-barres.';
-  if (!/^\d+$/.test(digits)) return 'Seulement des chiffres, sans lettre.';
-  if (![8, 12, 13].includes(digits.length)) return 'Le code a 8, 12 ou 13 chiffres.';
-  if (!normalizeBarcode(digits)) return 'Ce code ne semble pas valable : vérifiez les chiffres.';
+  if (!digits) return t('photo.codeBarres.vide');
+  if (!/^\d+$/.test(digits)) return t('photo.codeBarres.chiffres');
+  if (![8, 12, 13].includes(digits.length)) return t('photo.codeBarres.longueur');
+  if (!normalizeBarcode(digits)) return t('photo.codeBarres.invalide');
   return null;
 }
 

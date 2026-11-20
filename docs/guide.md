@@ -181,7 +181,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 ### 1.2 Ce que Listo ne fait pas
 
 - Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
-- Français seulement.
+- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide est encore en français seulement.
 - Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
 - Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. MCP Claude](#claude)).

@@ -88,8 +88,8 @@ export function publicUser(user, config, { method = null } = {}) {
     claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
     // Notifications push activées sur le serveur (LISTO_PUSH=on)
     push: config?.push === true,
-    // Comment cette session a été ouverte : 'oidc' (Authelia : mot de passe
-    // et double authentification gérés par Authelia) ou 'password'
+    // Comment cette session a été ouverte : 'oidc' (fournisseur d'identité : mot de passe
+    // et double authentification gérés par le fournisseur d'identité) ou 'password'
     loginMethod: method,
     // Connexion par mot de passe possible sur ce serveur (LISTO_LOCAL_LOGIN)
     localLogin: config?.localLogin !== false,
@@ -104,7 +104,7 @@ function cookieOptions(ctx, maxAge) {
 }
 
 // Ouvre une session pour un compte et envoie le cookie au navigateur
-// method : 'password' (identifiant et mot de passe) ou 'oidc' (Authelia)
+// method : 'password' (identifiant et mot de passe) ou 'oidc' (fournisseur d'identité)
 export function startSession(ctx, res, userId, { method = 'password' } = {}) {
   const token = newToken();
   const now = ctx.now();
@@ -160,7 +160,7 @@ export function loadSession(ctx) {
     const row = findSession.get(hashToken(token), new Date(now).toISOString());
     if (!row) return next();
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : une session
-    // ouverte par mot de passe est fermée ; il faut passer par Authelia
+    // ouverte par mot de passe est fermée ; il faut passer par le fournisseur d'identité
     if (ctx.config.localLogin === false && row.session_method !== 'oidc') {
       drop.run(row.session_id);
       return next();

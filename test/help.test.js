@@ -114,7 +114,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.ok(GUIDE.every((c) => !('adminOnly' in c)));
   // Parties du serveur : marquées (un chapitre, et des sections d'autres chapitres)
   assert.deepEqual(GUIDE.filter((c) => c.server).map((c) => c.id), ['installation']);
-  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['authelia-serveur', 'secours', 'notif-serveur', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
+  assert.deepEqual(GUIDE.flatMap((c) => (c.sections ?? []).filter((s) => s.server).map((s) => s.id)), ['sso-serveur', 'secours', 'notif-serveur', 'mcp-serveur', 'mcp-regles', 'mcp-essai', 'cle-perdue']);
 });
 
 test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens en https seulement', () => {

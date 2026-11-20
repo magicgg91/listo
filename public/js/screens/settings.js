@@ -101,7 +101,7 @@ function generalRows(isAdmin) {
   return [
     notificationsRow(),
     row({ iconName: 'trash', title: 'Corbeille des listes', onClick: () => navigate('trash') }),
-    // Pastille : demandes de compte en attente (connexion avec Authelia)
+    // Pastille : demandes de compte en attente (connexion avec le fournisseur d'identité)
     isAdmin ? row({ iconName: 'shield', title: 'Administration', end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];
 }

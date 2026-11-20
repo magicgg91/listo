@@ -13,14 +13,14 @@
 import { h, icon, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { applyTheme, savedTheme } from '../theme.js';
-import { app, resetLocalCopy, pendingCount, logOut } from '../app.js';
+import { app, resetLocalCopy, pendingCount, logOut, providerName } from '../app.js';
 import { toast, confirmDialog, onPc } from '../ui.js';
 import { topbar, row, roleChip } from './settings.js';
 
 export function renderAccount(onLeave = () => {}) {
   const user = app.user;
-  // Nom du fournisseur d'identité (LISTO_OIDC_NAME), « Authelia » par défaut
-  const provider = app.oidc?.name ?? 'Authelia';
+  // Nom du fournisseur d'identité (LISTO_OIDC_NAME), « SSO » par défaut
+  const provider = providerName();
 
   // Interrupteur de thème : écrit simplement data-theme sur <html> (effet
   // immédiat, choix mémorisé sur ce téléphone, voir theme.js)
@@ -55,8 +55,8 @@ export function renderAccount(onLeave = () => {}) {
         h('div', { class: 'grow' }, h('p', { class: 'row__title' }, user.displayName), h('p', { class: 'row__sub' }, user.username ? `Identifiant : ${user.username}` : 'Compte connecté')),
         roleChip(user)),
       h('h2', { class: 'section-title' }, 'Sécurité'),
-      // Session ouverte avec Authelia : le mot de passe et la double
-      // authentification se gèrent dans Authelia (le serveur refuse aussi de
+      // Session ouverte avec le fournisseur d'identité (« Connecté avec … ») : le mot de passe et la double
+      // authentification se gèrent chez le fournisseur d'identité (le serveur refuse aussi de
       // les changer depuis cette session) ; sinon, comme avant
       user.loginMethod === 'oidc'
         ? h('div', { class: 'group' },

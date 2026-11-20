@@ -15,7 +15,7 @@
 import { h, icon, iconButton, field, passwordInput, errorNote, replace } from '../dom.js';
 import { announce } from '../announce.js';
 import { post, get, errorMessage, ApiError } from '../api.js';
-import { app, loggedIn, logOut } from '../app.js';
+import { app, loggedIn, logOut, providerName } from '../app.js';
 import { defaultDisplayName } from '../format.js';
 
 const MIN_PASSWORD = 10;
@@ -65,8 +65,8 @@ function checkNewPassword(password, confirmation, passwordField, confirmField) {
 
 // --- Écran de connexion (avec ses étapes) ---
 
-// Retour d'Authelia (server/oidc.js) : un mot-clé dans l'adresse
-// (#/connexion?authelia=…), jamais un texte venu d'Authelia. Les demandes de
+// Retour du fournisseur d'identité (server/oidc.js) : un mot-clé dans l'adresse
+// (#/connexion?authelia=…), jamais un texte venu du fournisseur d'identité. Les demandes de
 // compte sont des informations, pas des erreurs.
 const AUTHELIA_ERRORS = {
   annulee: 'Connexion avec {nom} annulée.',
@@ -82,7 +82,7 @@ const AUTHELIA_NOTICES = {
   attente: 'Votre demande de compte attend encore l\'accord de l\'Admin.',
 };
 
-// Lit (et retire de l'adresse) le résultat d'un retour d'Authelia
+// Lit (et retire de l'adresse) le résultat d'un retour du fournisseur d'identité
 function autheliaOutcome() {
   const query = String(location.hash).split('?')[1] ?? '';
   const outcome = new URLSearchParams(query).get('authelia');
@@ -90,17 +90,17 @@ function autheliaOutcome() {
   return outcome;
 }
 
-// localLogin : identifiant et mot de passe proposés (sinon Authelia seul,
+// localLogin : identifiant et mot de passe proposés (sinon le fournisseur d'identité seul,
 // LISTO_LOCAL_LOGIN=off) ; returnTo : écran demandé avant la connexion (seul
-// « Autoriser Claude » est transmis à Authelia, pour y revenir après)
+// « Autoriser Claude » est transmis au fournisseur d'identité, pour y revenir après)
 export function renderLogin({ setupNeeded, oidc = null, localLogin = true, returnTo = null }) {
   const container = h('div', { class: 'screen' });
   const back = returnTo?.name === 'authorize' && returnTo.params?.id ? `autoriser/${returnTo.params.id}` : null;
   const show = (step, info) => replace(container, step(show, { oidc, localLogin: localLogin || !oidc, back, ...info }));
   const outcome = setupNeeded ? null : autheliaOutcome();
-  const name = oidc?.name ?? 'Authelia';
+  const name = oidc?.name ?? providerName();
   const text = (template) => template.replaceAll('{nom}', name);
-  if (outcome === 'code') show(codeStep, {}); // Authelia sans double authentification : le code Listo
+  if (outcome === 'code') show(codeStep, {}); // Le fournisseur d'identité sans double authentification : le code Listo
   else if (setupNeeded) show(setupStep);
   else show(passwordStep, {
     message: AUTHELIA_ERRORS[outcome] ? text(AUTHELIA_ERRORS[outcome]) : undefined,
@@ -109,8 +109,8 @@ export function renderLogin({ setupNeeded, oidc = null, localLogin = true, retur
   return container;
 }
 
-// Bouton « Se connecter avec Authelia » (LISTO_OIDC=on) : un lien vers
-// /oidc/connexion, qui mène à la page de connexion d'Authelia
+// Bouton « Se connecter avec … » (LISTO_OIDC=on) : un lien vers
+// /oidc/connexion, qui mène à la page de connexion du fournisseur d'identité
 function autheliaButton(oidc, error, { primary = false, back = null } = {}) {
   return h('a', {
     class: `btn ${primary ? 'btn--primary' : 'btn--secondary'} btn--block`,
@@ -133,7 +133,7 @@ function passwordStep(show, info = {}) {
   const notice = info.notice ? h('div', { class: 'note' }, icon('clock'), h('p', {}, info.notice)) : null;
   if (info.notice) announce(info.notice);
 
-  // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : Authelia
+  // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : le fournisseur d'identité
   // seulement, en bouton principal en bas (même place que « Se connecter »)
   if (!info.localLogin && info.oidc) {
     return h('div', { class: 'screen' },

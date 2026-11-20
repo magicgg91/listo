@@ -44,7 +44,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [3.7 Garder la clé secrète](#cle)
 - [3.8 Sauvegardes](#sauvegardes)
 - [3.9 Vérifications une fois en production](#verifications)
-- [3.10 Connexion avec Authelia (facultative)](#authelia-serveur)
+- [3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)
 
 </details>
 
@@ -60,7 +60,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [4.6 Double authentification et codes de secours](#double-auth)
 - [4.7 Mot de passe oublié, téléphone perdu](#oubli)
 - [4.8 Compte Admin perdu](#secours)
-- [4.9 Se connecter avec Authelia](#authelia)
+- [4.9 Se connecter avec un fournisseur d'identité](#sso)
 
 </details>
 
@@ -337,13 +337,14 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
       # Google, Mozilla ou Microsoft ne voient que l'heure, la taille et
       # l'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.
       # - LISTO_PUSH=on
-      # Connexion avec Authelia : DÉSACTIVÉE par défaut (chapitre « Installation »,
-      # « Connexion avec Authelia »). Clé secrète dans secrets/oidc-client-secret.
+      # Connexion par un fournisseur d'identité (Authelia, Authentik, Pocket ID…) :
+      # DÉSACTIVÉE par défaut (chapitre « Installation »). Clé secrète dans
+      # secrets/oidc-client-secret.
       # - LISTO_OIDC=on
       # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
       # - LISTO_OIDC_CLIENT_ID=listo
       # - LISTO_OIDC_NAME=Authelia
-      # Connexion par mot de passe : activée par défaut ; off = Authelia seulement
+      # Connexion par mot de passe : activée par défaut ; off = fournisseur seulement
       # - LISTO_LOCAL_LOGIN=off
 ```
 
@@ -362,11 +363,11 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_PRODUCT_CONTACT` | absente | Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_MCP` | absente : désactivé | `on` active l'accès depuis Claude ([8.12 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
 | `LISTO_PUSH` | absente : désactivées | `on` active les notifications ([6.7 Activer la fonction sur le serveur](#notif-serveur)) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées. |
-| `LISTO_OIDC` | absente : désactivée | `on` active la connexion avec Authelia ([3.10 Connexion avec Authelia (facultative)](#authelia-serveur)) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée. |
-| `LISTO_OIDC_ISSUER` | absente | Adresse d'Authelia, en `https://` (par exemple `https://auth.exemple.fr`). |
-| `LISTO_OIDC_CLIENT_ID` | absente : `listo` | Identifiant de Listo dans la configuration d'Authelia (`client_id`). |
-| `LISTO_OIDC_NAME` | absente : `Authelia` | Nom du bouton « Se connecter avec … » (30 caractères au plus). |
-| `LISTO_LOCAL_LOGIN` | absente : activée | `off` coupe la connexion par identifiant et mot de passe : on n'entre plus que par Authelia (exige `LISTO_OIDC=on`), et les sessions ouvertes par mot de passe sont fermées ([3.10 Connexion avec Authelia (facultative)](#authelia-serveur)). |
+| `LISTO_OIDC` | absente : désactivée | `on` active la connexion par un fournisseur d'identité OpenID Connect ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée. |
+| `LISTO_OIDC_ISSUER` | absente | Adresse du fournisseur d'identité (son “issuer”), en `https://` (par exemple `https://auth.exemple.fr`). |
+| `LISTO_OIDC_CLIENT_ID` | absente : `listo` | Identifiant de Listo chez le fournisseur d'identité (`client_id`). |
+| `LISTO_OIDC_NAME` | absente : `SSO` | Nom du fournisseur affiché à l'écran, par exemple `Authelia` : bouton « Se connecter avec … », « Mon compte », Administration (30 caractères au plus). |
+| `LISTO_LOCAL_LOGIN` | absente : activée | `off` coupe la connexion par identifiant et mot de passe : on n'entre plus que par le fournisseur d'identité (exige `LISTO_OIDC=on`), et les sessions ouvertes par mot de passe sont fermées ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)). |
 
 <a id="proxy"></a>
 
@@ -469,16 +470,26 @@ La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`
 6. Le port fermé : voir [3.4 Ce que doit faire le proxy](#proxy).
 7. Le téléphone : installation sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
 
-<a id="authelia-serveur"></a>
+<a id="sso-serveur"></a>
 
-### 3.10 Connexion avec Authelia (facultative)
+### 3.10 Connexion avec un fournisseur d'identité (facultative)
 
-Avec un serveur Authelia à la maison, chacun peut se connecter à Listo par son compte Authelia (bouton « Se connecter avec Authelia »), en plus de l'identifiant et du mot de passe Listo, qui restent possibles. Désactivée par défaut ; sans elle, aucun bouton et les adresses `/oidc/…` répondent 404.
+Avec un fournisseur d'identité à la maison (Authelia, Authentik ou Pocket ID, par exemple : tout fournisseur qui respecte le standard OpenID Connect), chacun peut se connecter à Listo par son compte chez ce fournisseur (bouton « Se connecter avec … »), en plus de l'identifiant et du mot de passe Listo, qui restent possibles. Désactivée par défaut ; sans elle, aucun bouton et les adresses `/oidc/…` répondent 404.
 
-1. Créez la clé secrète du client. Authelia la donne en clair et sous forme d'empreinte : `docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986` (“Random Password” : la clé en clair ; “Digest” : l'empreinte).
+1. Chez le fournisseur, créez un client (parfois appelé “application”) pour Listo : confidentiel (avec une clé secrète), adresse de retour `https://listo.exemple.fr/oidc/retour` (l'adresse de Listo suivie de `/oidc/retour`), autorisations (scopes) `openid` et `profile`, PKCE en `S256`, clé secrète envoyée dans l'en-tête (`client_secret_basic`). Notez son identifiant (`client_id`) et sa clé secrète en clair.
 2. Mettez la clé en clair, seule sur une ligne, dans `secrets/oidc-client-secret` (à côté de `secret.key`), puis `chmod 600 secrets/oidc-client-secret`. Jamais dans `docker-compose.yml` ni dans une variable. Gardez-en une copie avec la clé secrète ([3.7 Garder la clé secrète](#cle)).
-3. Ajoutez le client « listo » dans la configuration d'Authelia (partie `identity_providers.oidc.clients`), avec l'empreinte dans `client_secret` et l'adresse de Listo dans `redirect_uris` (exemple ci-dessous), puis redémarrez Authelia.
-4. Dans `docker-compose.yml`, décommentez `LISTO_OIDC=on` et `LISTO_OIDC_ISSUER` avec l'adresse d'Authelia ([3.3 Les réglages (variables)](#variables)), puis `docker compose up -d`. `docker logs listo` doit dire “Connexion avec Authelia activée”. Sinon, le message dit ce qui manque.
+3. Dans `docker-compose.yml`, décommentez `LISTO_OIDC=on`, `LISTO_OIDC_ISSUER` avec l'adresse du fournisseur (son “issuer”), `LISTO_OIDC_CLIENT_ID` si l'identifiant n'est pas `listo`, et `LISTO_OIDC_NAME` avec le nom à afficher (sinon « SSO ») ([3.3 Les réglages (variables)](#variables)), puis `docker compose up -d`. `docker logs listo` doit dire “Connexion avec … activée”. Sinon, le message dit ce qui manque.
+
+Ce que Listo attend du fournisseur (le standard) :
+
+- sa description à l'adresse de l'issuer suivie de `/.well-known/openid-configuration`, avec ses adresses sur le même site que l'issuer ;
+- un jeton d'identité signé en RS256, PS256 ou ES256 (un jeton non signé ou signé en HS256 est refusé) ;
+- l'identifiant de la personne dans `preferred_username` et son nom dans `name` (scope `profile`) ;
+- pour autoriser Claude ([8.7 Connecter Claude](#claude-connecter)) depuis une session ouverte par le fournisseur : redemander la connexion quand Listo le demande (`prompt=login`, `max_age=0`) et indiquer son heure (`auth_time`). Sinon la confirmation n'aboutit pas : connectez-vous alors avec votre mot de passe Listo pour autoriser Claude.
+
+Double authentification : si le jeton dit qu'elle a été faite chez le fournisseur (`amr` contient `mfa`), Listo ne redemande pas son propre code. Sinon, un compte Listo qui a activé la double authentification de Listo la voit redemandée.
+
+Exemple avec Authelia : la clé secrète se crée avec `docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986` (“Random Password” : la clé en clair, pour `secrets/oidc-client-secret` ; “Digest” : son empreinte, pour Authelia). Le client se déclare dans `identity_providers.oidc.clients`, puis on redémarre Authelia. Avec `authorization_policy: 'two_factor'`, Authelia fait la double authentification. Avec Authentik, Pocket ID ou un autre fournisseur : les mêmes réglages, dans son interface.
 
 ```sh
 identity_providers:
@@ -499,13 +510,11 @@ identity_providers:
         token_endpoint_auth_method: 'client_secret_basic'
 ```
 
-Avec `authorization_policy: 'two_factor'`, Authelia demande sa double authentification : Listo ne redemande pas son propre code. Un compte Listo qui a activé la double authentification de Listo la voit redemandée si Authelia ne l'a pas faite.
+Le serveur Listo doit joindre le fournisseur à son adresse publique (`LISTO_OIDC_ISSUER`), en HTTPS. Les adresses `/oidc/connexion` et `/oidc/retour` passent par le même hôte que Listo : rien à régler dans le proxy.
 
-Le serveur Listo doit joindre Authelia à son adresse publique (`LISTO_OIDC_ISSUER`), en HTTPS. Les adresses `/oidc/connexion` et `/oidc/retour` passent par le même hôte que Listo : rien à régler dans le proxy.
+Pour n'entrer QUE par le fournisseur, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les réglages (variables)](#variables)) : l'écran de connexion ne montre plus que « Se connecter avec … », la connexion par mot de passe est refusée et les sessions ouvertes par mot de passe sont fermées ; dans l'Administration, « Ajouter un compte » ne demande plus de mot de passe (la personne entre par le fournisseur, même identifiant). Si le fournisseur est en panne, plus personne n'entre : retirez la ligne (ou mettez `on`), puis `docker compose up -d`, pour retrouver la connexion par mot de passe.
 
-Pour n'entrer QUE par Authelia, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les réglages (variables)](#variables)) : l'écran de connexion ne montre plus que « Se connecter avec Authelia », la connexion par mot de passe est refusée et les sessions ouvertes par mot de passe sont fermées ; dans l'Administration, « Ajouter un compte » ne demande plus de mot de passe (la personne entre avec Authelia, même identifiant). Si Authelia est en panne, plus personne n'entre : retirez la ligne (ou mettez `on`), puis `docker compose up -d`, pour retrouver la connexion par mot de passe.
-
-> **Attention** : Le compte Authelia ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez les comptes Authelia avec les identifiants de Listo. À la première connexion, Listo retient ce compte Authelia : un autre compte Authelia du même nom, plus tard, est refusé (l'Admin peut « Délier d'Authelia » un compte, dans Administration › Comptes).
+> **Attention** : Le compte chez le fournisseur ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez-y les comptes avec les identifiants de Listo. À la première connexion, Listo retient ce compte : un autre compte du même nom, plus tard, est refusé (l'Admin peut « Délier le compte … », dans Administration › Comptes).
 
 <a id="comptes"></a>
 
@@ -597,15 +606,15 @@ docker exec -u node listo node server/admin-secours.js identifiant
 
 Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([8.8 Voir et déconnecter Claude](#claude-connexions)). Ce que l'Admin peut faire et ne peut pas faire : [7.1 Admin](#role-admin).
 
-<a id="authelia"></a>
+<a id="sso"></a>
 
-### 4.9 Se connecter avec Authelia
+### 4.9 Se connecter avec un fournisseur d'identité
 
-Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec Authelia ». Touchez-le, connectez-vous chez Authelia : vous revenez dans Listo, connecté. Votre compte Authelia ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion avec Authelia.
+Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec … », suivi du nom choisi par l'Admin (Authelia, Authentik, Pocket ID… ; « SSO » s'il n'en a pas choisi). Touchez-le, connectez-vous chez ce fournisseur : vous revenez dans Listo, connecté. Votre compte chez le fournisseur ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion par le fournisseur.
 
-Connecté avec Authelia, « Mon compte » le dit (« Connecté avec Authelia ») : votre mot de passe et votre double authentification se changent dans Authelia, pas dans Listo. Autoriser Claude se confirme alors aussi avec Authelia ([8.7 Connecter Claude](#claude-connecter)).
+Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser Claude se confirme alors aussi chez le fournisseur ([8.7 Connecter Claude](#claude-connecter)).
 
-Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous avec Authelia. Une demande refusée ne peut pas être refaite avant 30 jours.
+Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous par le fournisseur. Une demande refusée ne peut pas être refaite avant 30 jours.
 
 <a id="quotidien"></a>
 
@@ -1193,7 +1202,7 @@ Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui 
 2. Dans Claude (claude.ai, l'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.
 3. Claude ouvre l'écran « Autoriser Claude » de Listo. Vérifiez que c'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
 
-Connecté avec Authelia ([4.9 Se connecter avec Authelia](#authelia)) : pas de mot de passe à cette étape. L'écran demande d'abord « Confirmer avec Authelia » : Authelia vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».
+Connecté par un fournisseur d'identité ([4.9 Se connecter avec un fournisseur d'identité](#sso)) : pas de mot de passe à cette étape. L'écran demande d'abord « Confirmer avec … » : le fournisseur vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».
 
 Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.
 

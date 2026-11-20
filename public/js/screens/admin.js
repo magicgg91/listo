@@ -19,7 +19,7 @@ import { get, post, patch, del, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { compareNames } from '../sorting.js';
 import { activeOnly } from '../store.js';
-import { app, refreshData } from '../app.js';
+import { app, refreshData, providerName } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
@@ -154,7 +154,7 @@ function roleSwitch(role, onChange, { disabled = false } = {}) {
 const userSub = (user) => [
   user.role === 'admin' ? 'Admin' : 'Utilisateur',
   user.active ? (user.totpEnabled ? '2FA activé' : '2FA désactivé') : 'compte désactivé',
-  user.authelia ? 'Authelia' : null,
+  user.authelia ? providerName() : null,
 ].filter(Boolean).join(' · ');
 
 async function loadUsers(panel, footer, alive) {
@@ -173,12 +173,12 @@ async function loadUsers(panel, footer, alive) {
   // Pastille de Réglages › Administration : le nombre à jour
   if (app.user) app.user.accountRequests = accountRequests.length;
   users.sort((a, b) => compareNames(a.displayName, b.displayName));
-  // Demandes de compte (connexion avec Authelia) : en premier, quand il y en a
+  // Demandes de compte (connexion avec le fournisseur d'identité) : en premier, quand il y en a
   const requests = accountRequests.length
     ? [h('p', { class: 'section-title' }, accountRequests.length === 1 ? 'Demande de compte' : 'Demandes de compte'),
       h('div', { class: 'group' }, accountRequests.map((request) => h('div', { class: 'row' },
         avatar(request.displayName),
-        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, request.displayName), h('span', { class: 'row__sub' }, `${request.username} · par Authelia`)),
+        h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, request.displayName), h('span', { class: 'row__sub' }, `${request.username} · par ${providerName()}`)),
         h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => refuseRequest(request, reload) }, 'Refuser'),
         h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => openAcceptSheet(request, reload) }, 'Accepter')))),
       h('p', { class: 'section-title' }, 'Comptes')]
@@ -248,17 +248,18 @@ function openUserSheet(user, reload, { localLogin = true } = {}) {
     }
   }
 
-  // Relié à Authelia : le délier (un compte Authelia recréé avec le même
-  // identifiant pourra de nouveau l'ouvrir)
+  // Relié au fournisseur d'identité : « Délier le compte … » (… : son nom ;
+  // un compte recréé chez le fournisseur avec le même identifiant pourra de
+  // nouveau ouvrir ce compte Listo)
   if (user.authelia) {
     actions.push(h('button', {
       class: 'row row--menu',
       type: 'button',
       onClick: async () => {
-        const ok = await confirmDialog({ title: 'Délier d\'Authelia ?', text: `Le prochain compte Authelia nommé « ${user.username} » pourra ouvrir le compte de ${user.displayName}.`, confirmLabel: 'Délier' });
-        if (ok) run(() => del(`/api/admin/users/${user.id}/authelia`), 'Compte délié d\'Authelia');
+        const ok = await confirmDialog({ title: `Délier le compte ${providerName()} ?`, text: `Le prochain compte ${providerName()} nommé « ${user.username} » pourra ouvrir le compte de ${user.displayName}.`, confirmLabel: 'Délier' });
+        if (ok) run(() => del(`/api/admin/users/${user.id}/authelia`), `Compte ${providerName()} délié`);
       },
-    }, icon('link-off'), h('span', { class: 'row__title' }, 'Délier d\'Authelia')));
+    }, icon('link-off'), h('span', { class: 'row__title' }, `Délier le compte ${providerName()}`)));
   }
 
   const sheet = openSheet({
@@ -301,9 +302,9 @@ function openResetSheet(user, reload) {
   });
 }
 
-// Demande de compte (connexion avec Authelia) : accepter, avec
+// Demande de compte (connexion avec le fournisseur d'identité) : accepter, avec
 // l'identifiant et le nom proposés, que l'Admin peut corriger ; le compte
-// est relié à ce compte Authelia (pas de mot de passe Listo)
+// est relié à ce compte chez le fournisseur d'identité (pas de mot de passe Listo)
 function openAcceptSheet(request, reload) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: request.username });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100', value: request.displayName });
@@ -313,7 +314,7 @@ function openAcceptSheet(request, reload) {
   const error = errorNote();
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
   const form = h('form', { class: 'stack', novalidate: true },
-    h('p', { class: 'muted' }, 'La personne se connectera avec Authelia ; elle n\'a pas de mot de passe Listo.'),
+    h('p', { class: 'muted' }, `La personne se connectera avec ${providerName()} ; elle n'a pas de mot de passe Listo.`),
     usernameField.field, nameField.field,
     h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
@@ -354,7 +355,7 @@ async function refuseRequest(request, reload) {
 
 // Nouveau compte (administration-3)
 // Connexion par mot de passe coupée (localLogin faux) : pas de mot de passe
-// provisoire, la personne entrera avec Authelia (même identifiant)
+// provisoire, la personne entrera avec le fournisseur d'identité (même identifiant)
 function openNewUserSheet(reload, { localLogin = true } = {}) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100' });
@@ -367,7 +368,7 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, 'Créer le compte');
   const form = h('form', { class: 'stack', novalidate: true },
     usernameField.field, nameField.field,
-    localLogin ? passwordField.field : h('p', { class: 'muted' }, 'La personne se connectera avec Authelia, avec le même identifiant.'),
+    localLogin ? passwordField.field : h('p', { class: 'muted' }, `La personne se connectera avec ${providerName()}, avec le même identifiant.`),
     h('div', { class: 'field' }, h('span', { class: 'field__label' }, 'Rôle'), roleSwitch(role, (value) => { role = value; })),
     error.note, submit);
   const sheet = openSheet({ title: 'Nouveau compte', content: form });

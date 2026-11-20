@@ -423,7 +423,7 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Administration : les onglets « Comptes » et « Courses » ont le même aspect qu'avant ; l'onglet choisi est souligné.
     5. Windows, contraste élevé activé (Paramètres › Accessibilité) : le champ qui a le curseur a un contour bien visible.
 56. **Trusted Types** (15 novembre 2026 ; vérifié dans Chromium, qui l'applique) : sur un iPhone à jour (iOS 26 et après), après la mise à jour, ouvrir Listo : il s'ouvre normalement (service worker) ; scanner un code-barres (Ajouter › Scanner) : il est lu comme avant. Hors ligne ensuite : Listo s'ouvre toujours.
-57. **Connexion avec Authelia** (15 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16 avec un faux Authelia local, et par 17 tests automatiques ; le vrai Authelia reste à essayer) : avec `LISTO_OIDC=on` et le client configuré dans Authelia ([guide](guide.md#authelia-serveur)) :
+57. **Connexion avec Authelia** (15 novembre 2026 ; vérifié dans Chromium à la taille de l'iPhone 16 avec un faux Authelia local, et par 17 tests automatiques ; le vrai Authelia reste à essayer) : avec `LISTO_OIDC=on` et le client configuré dans Authelia ([guide](guide.md#sso-serveur)) :
     1. Écran de connexion : « Se connecter avec Authelia » sous le mot de passe. Le toucher : la page d'Authelia s'ouvre ; après connexion (et sa double authentification), retour dans Listo, sur « Mes listes ».
     2. Un compte avec un mot de passe provisoire : pas d'écran « Nouveau mot de passe » ; le mot de passe provisoire ne marche plus.
     3. Un compte Authelia sans compte Listo : « Votre demande de compte est envoyée à l'Admin » ; l'Admin voit la pastille dans Réglages, la demande dans Administration › Comptes, « Accepter » ; la personne se reconnecte avec Authelia et entre.
@@ -448,12 +448,13 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     3. « Monter » et « Descendre » : un cran à chaque appui. « Terminé » : retour aux lignes normales, dans le nouvel ordre ; une sous-tâche cochée reste à sa place, barrée.
     4. VoiceOver : la nouvelle place est dite (« … en position 2 sur 3 ») et le curseur reste sur le bouton touché.
     5. Un autre appareil voit le nouvel ordre ; le lien public aussi.
+61. **Tout fournisseur OpenID Connect** (20 novembre 2026 ; vérifié par des tests automatiques ; Authentik et Pocket ID n'ont pas été essayés) : avec `LISTO_OIDC_NAME` réglé (par exemple `Authelia`), l'écran de connexion, « Mon compte », Administration › Comptes et « Autoriser Claude » disent ce nom ; sans `LISTO_OIDC_NAME`, ils disent « SSO ». Avec Authentik ou Pocket ID : se connecter, se faire accepter une demande de compte, autoriser Claude depuis cette session (le fournisseur doit redemander la connexion).
 
 ## API des comptes (étape 2)
 
 | Route | Rôle |
 | --- | --- |
-| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`), et le nom du bouton de connexion avec Authelia (`oidc`, ou `null`) |
+| `GET /api/setup` | Indique s'il faut créer le premier Admin (`{"needed": true}`), et le nom du fournisseur d'identité à afficher (`oidc` : `{ name }`, « SSO » par défaut, ou `null`) |
 | `POST /api/setup` | Crée le premier Admin : `code` (code de démarrage), `username`, `displayName`, `password` |
 | `POST /api/login` | Connexion : `username`, `password`. Si la 2FA est active, répond `{"twoFactorRequired": true}` |
 | `POST /api/login/2fa` | Saisie du code à 6 chiffres (ou d'un code de secours) : `code` |

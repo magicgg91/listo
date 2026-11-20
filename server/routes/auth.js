@@ -151,8 +151,8 @@ export function publicAuthRoutes(ctx) {
 
     ctx.pending.finish(ctx, res, pending.key);
     limiter.reset(keys);
-    // Même méthode que le début de la connexion (mot de passe, ou Authelia
-    // quand Authelia n'a pas fait la double authentification)
+    // Même méthode que le début de la connexion (mot de passe, ou fournisseur d'identité
+    // quand le fournisseur d'identité n'a pas fait la double authentification)
     startSession(ctx, res, user.id, { method: pending.method });
     audit('connexion_reussie', { utilisateur: user.username, ip: req.ip, etape: '2fa', ...(pending.method === 'oidc' ? { methode: 'authelia' } : {}) });
     res.json({ user: publicUser(user, ctx.config, { method: pending.method }) });

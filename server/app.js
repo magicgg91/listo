@@ -115,7 +115,7 @@ export const PERMISSIONS_POLICY = [
 //   temporaire (tests)
 // - pushRequest : envoi vers un service de push (notifications ; les tests
 //   la remplacent : aucun vrai réseau)
-// - oidcRequest : appels vers Authelia (connexion OIDC ; les tests la
+// - oidcRequest : appels vers le fournisseur d'identité (connexion OIDC ; les tests la
 //   remplacent : aucun vrai réseau) ; oidcClientSecret : clé secrète du
 //   client (secrets/oidc-client-secret, lue par index.js), LISTO_OIDC=on seulement
 export function createApp({
@@ -176,7 +176,7 @@ export function createApp({
   ctx.pushCounters = [];
   // Qui reçoit quoi (modifications, envies, partage ; voir notify.js)
   ctx.notify = ctx.push ? createNotifier(ctx) : null;
-  // Connexion avec Authelia (voir oidc.js) : seulement avec LISTO_OIDC=on.
+  // Connexion avec le fournisseur d'identité (voir oidc.js) : seulement avec LISTO_OIDC=on.
   // Coupée : aucun service, aucune demande sortante, ses adresses en 404.
   ctx.oidc = config.oidc ? createOidc(ctx, { request: oidcRequest, clientSecret: oidcClientSecret }) : null;
   // Identifiant opaque de la version installée (null en développement) : le
@@ -242,7 +242,7 @@ export function createApp({
   const mcp = config.mcp ? mcpRoutes(ctx) : null;
   if (mcp) app.use(mcp.router);
 
-  // /oidc/connexion et /oidc/retour : connexion avec Authelia (navigateur,
+  // /oidc/connexion et /oidc/retour : connexion avec le fournisseur d'identité (navigateur,
   // sans session). Désactivée : 404.
   if (ctx.oidc) app.use(ctx.oidc.router);
 

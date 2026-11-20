@@ -57,22 +57,23 @@ export function loadConfig(env = process.env) {
     // LISTO_PUSH=on), dans le même dossier que la clé de chiffrement
     vapidPath: path.resolve(path.dirname(path.resolve(env.LISTO_KEY_PATH || 'secrets/secret.key')), 'vapid.json'),
 
-    // Connexion avec Authelia (OpenID Connect, voir server/oidc.js).
+    // Connexion avec le fournisseur d'identité (OpenID Connect, voir server/oidc.js).
     // DÉSACTIVÉE par défaut : seul LISTO_OIDC=on l'active. Désactivée, ses
     // adresses (/oidc/…) répondent comme une adresse inexistante (404) et
     // l'écran de connexion ne montre pas de bouton.
     oidc: String(env.LISTO_OIDC ?? '').trim().toLowerCase() === 'on',
     // Connexion par identifiant et mot de passe Listo. Activée par défaut ;
     // LISTO_LOCAL_LOGIN=off la coupe (avec LISTO_OIDC=on seulement) : on
-    // n'entre plus que par Authelia, et les sessions ouvertes par mot de
+    // n'entre plus que par le fournisseur d'identité, et les sessions ouvertes par mot de
     // passe sont fermées.
     localLogin: String(env.LISTO_LOCAL_LOGIN ?? '').trim().toLowerCase() !== 'off',
-    // Adresse d'Authelia (son « issuer »), par exemple https://auth.exemple.fr
+    // Adresse du fournisseur d'identité (son « issuer »), par exemple https://auth.exemple.fr
     oidcIssuer: String(env.LISTO_OIDC_ISSUER ?? '').trim(),
-    // Identifiant de Listo chez Authelia (client_id), « listo » par défaut
+    // Identifiant de Listo chez le fournisseur d'identité (client_id), « listo » par défaut
     oidcClientId: String(env.LISTO_OIDC_CLIENT_ID ?? '').trim() || 'listo',
-    // Nom affiché sur le bouton (« Se connecter avec … »), « Authelia » par défaut
-    oidcName: validButtonName(env.LISTO_OIDC_NAME) ?? 'Authelia',
+    // Nom affiché sur le bouton (« Se connecter avec … »), « SSO » par défaut (nom neutre,
+    // valable pour tout fournisseur)
+    oidcName: validButtonName(env.LISTO_OIDC_NAME) ?? 'SSO',
     // Clé secrète du client (JAMAIS dans une variable) : fichier
     // oidc-client-secret, dans le même dossier que la clé de chiffrement
     oidcSecretPath: path.resolve(path.dirname(path.resolve(env.LISTO_KEY_PATH || 'secrets/secret.key')), 'oidc-client-secret'),
@@ -125,14 +126,14 @@ export function configProblem(config) {
     return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
   }
   if (config.localLogin === false && !config.oidc) {
-    return 'LISTO_LOCAL_LOGIN=off coupe la connexion par mot de passe : il faut alors LISTO_OIDC=on (connexion avec Authelia), sinon personne ne peut entrer.';
+    return 'LISTO_LOCAL_LOGIN=off coupe la connexion par mot de passe : il faut alors LISTO_OIDC=on (connexion avec un fournisseur d\'identité), sinon personne ne peut entrer.';
   }
   if (config.oidc) {
     let issuer;
     try {
       issuer = new URL(config.oidcIssuer);
     } catch {
-      return `LISTO_OIDC=on demande LISTO_OIDC_ISSUER, l'adresse d'Authelia (actuellement « ${config.oidcIssuer} »). Exemple : https://auth.exemple.fr`;
+      return `LISTO_OIDC=on demande LISTO_OIDC_ISSUER, l'adresse du fournisseur d'identité (actuellement « ${config.oidcIssuer} »). Exemple : https://auth.exemple.fr`;
     }
     if (config.production && issuer.protocol !== 'https:') {
       return `LISTO_OIDC_ISSUER doit commencer par https:// (actuellement « ${config.oidcIssuer} »).`;

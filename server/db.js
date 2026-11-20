@@ -589,12 +589,12 @@ export const MIGRATIONS = [
   ALTER TABLE items ADD COLUMN assign_people TEXT CHECK (assign_people IS NULL OR (length(assign_people) BETWEEN 3 AND 300 AND assign_people NOT GLOB '*[^0-9,]*'));
   `,
 
-  // --- Migration 29 : connexion avec Authelia (15 novembre 2026, voir server/oidc.js) ---
-  // users.oidc_sub : identifiant interne du compte Authelia relié à ce
+  // --- Migration 29 : connexion avec le fournisseur d'identité (15 novembre 2026, voir server/oidc.js) ---
+  // users.oidc_sub : identifiant interne du compte chez le fournisseur d'identité relié à ce
   // compte Listo (retenu à la première connexion, ou à l'acceptation d'une
-  // demande) ; un compte Authelia ne peut être relié qu'à un seul compte.
+  // demande) ; un compte chez le fournisseur d'identité ne peut être relié qu'à un seul compte.
   // account_requests : demandes de compte faites en se connectant avec
-  // Authelia sans compte Listo ; l'Admin les accepte (le compte est créé)
+  // le fournisseur d'identité sans compte Listo ; l'Admin les accepte (le compte est créé)
   // ou les refuse (gardées 30 jours, pour ne pas redemander aussitôt).
   `
   ALTER TABLE users ADD COLUMN oidc_sub TEXT CHECK (oidc_sub IS NULL OR length(oidc_sub) BETWEEN 1 AND 255);
@@ -612,8 +612,8 @@ export const MIGRATIONS = [
 
   // --- Migration 30 : comment chaque session a été ouverte (15 novembre 2026) ---
   // method : 'password' (identifiant et mot de passe Listo ; toutes les
-  // sessions d'avant) ou 'oidc' (connexion avec Authelia). Une session
-  // Authelia ne change ni le mot de passe ni la double authentification de
+  // sessions d'avant) ou 'oidc' (connexion avec le fournisseur d'identité). Une session
+  // ouverte ainsi ne change ni le mot de passe ni la double authentification de
   // Listo ; avec LISTO_LOCAL_LOGIN=off, les sessions 'password' sont refusées.
   `
   ALTER TABLE sessions ADD COLUMN method TEXT NOT NULL DEFAULT 'password' CHECK (method IN ('password', 'oidc'));

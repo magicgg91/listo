@@ -22,7 +22,7 @@ export function meRoutes(ctx) {
   const { db, limiter, audit } = ctx;
   const reloadUser = (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 
-  // accountRequests (Admin, connexion avec Authelia) : nombre de demandes de
+  // accountRequests (Admin, connexion avec le fournisseur d'identité) : nombre de demandes de
   // compte en attente, pour la pastille de Réglages › Administration
   const pendingRequests = ctx.db.prepare("SELECT COUNT(*) FROM account_requests WHERE status = 'pending'").pluck();
   router.get('/me', (req, res) => {
@@ -34,10 +34,10 @@ export function meRoutes(ctx) {
   // Changement de mot de passe. Toutes les sessions du compte sont fermées
   // (les autres appareils devront se reconnecter), puis une nouvelle session
   // est ouverte pour l'appareil qui a fait le changement.
-  // Session ouverte avec Authelia : le mot de passe et la double
-  // authentification se gèrent dans Authelia, pas ici (décision du
+  // Session ouverte avec le fournisseur d'identité : le mot de passe et la double
+  // authentification se gèrent chez le fournisseur d'identité, pas ici (décision du
   // 15 novembre 2026) ; refusé aussi par le serveur, pas seulement masqué
-  const LOCAL_ONLY = 'Connecté avec Authelia : votre mot de passe et votre double authentification se gèrent dans Authelia.';
+  const LOCAL_ONLY = `Connecté avec ${ctx.config.oidcName} : votre mot de passe et votre double authentification se gèrent dans ${ctx.config.oidcName}.`;
   router.use(['/me/password', '/me/2fa'], (req, res, next) => {
     if (req.sessionMethod === 'oidc') return res.status(403).json({ error: LOCAL_ONLY });
     next();

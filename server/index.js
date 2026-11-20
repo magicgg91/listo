@@ -56,7 +56,7 @@ try {
   process.exit(1);
 }
 
-// 2 ter. Connexion avec Authelia (LISTO_OIDC=on seulement) : la clé secrète
+// 2 ter. Connexion avec le fournisseur d'identité (LISTO_OIDC=on seulement) : la clé secrète
 //    du client est lue dans secrets/oidc-client-secret (jamais dans une
 //    variable). Absente ou vide : Listo ne démarre pas, avec un message clair.
 //    Jamais la clé elle-même dans les journaux.
@@ -68,7 +68,7 @@ if (config.oidc) {
     oidcClientSecret = '';
   }
   if (!oidcClientSecret) {
-    console.error(`Listo ne démarre pas : LISTO_OIDC=on demande la clé secrète du client dans ${config.oidcSecretPath} (une seule ligne, la même que dans la configuration d'Authelia).`);
+    console.error(`Listo ne démarre pas : LISTO_OIDC=on demande la clé secrète du client dans ${config.oidcSecretPath} (une seule ligne, la même que dans la configuration du fournisseur d'identité).`);
     process.exit(1);
   }
   console.log(`Connexion avec ${config.oidcName} activée : ${config.oidcIssuer}`);

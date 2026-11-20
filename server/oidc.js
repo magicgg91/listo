@@ -1,4 +1,5 @@
-// Connexion avec un fournisseur d'identité OpenID Connect (Authelia),
+// Connexion avec un fournisseur d'identité OpenID Connect (Authelia, Authentik,
+// Pocket ID… : tout fournisseur qui respecte le standard),
 // facultative : LISTO_OIDC=on (décisions du 15 novembre 2026, voir le cahier
 // des charges, « Connexion avec Authelia »). Désactivée (par défaut), ses
 // adresses (/oidc/…) répondent comme une adresse inexistante (404) et
@@ -8,29 +9,29 @@
 // 1. GET /oidc/connexion : Listo prépare trois valeurs aléatoires (state,
 //    nonce, code_verifier), garde les deux dernières en mémoire 10 minutes,
 //    pose state dans un cookie de ce navigateur, puis envoie le navigateur
-//    sur la page de connexion d'Authelia.
-// 2. Authelia renvoie le navigateur sur GET /oidc/retour?code=…&state=….
+//    sur la page de connexion du fournisseur d'identité.
+// 2. Le fournisseur d'identité renvoie le navigateur sur GET /oidc/retour?code=…&state=….
 //    Listo vérifie que state est bien celui de CE navigateur (cookie), et
 //    qu'il n'a jamais servi ; il échange le code contre des jetons, de
 //    serveur à serveur, avec sa clé secrète (fichier dans secrets/) et le
 //    code_verifier ; il vérifie le jeton d'identité (signature avec les clés
-//    publiées par Authelia, émetteur, destinataire, expiration, nonce), puis
+//    publiées par le fournisseur d'identité, émetteur, destinataire, expiration, nonce), puis
 //    lit l'identifiant et le nom (userinfo).
 // 3. Le compte Listo qui a le MÊME identifiant (sans tenir compte des
 //    majuscules) s'ouvre. À la première connexion, Listo retient
-//    l'identifiant interne du compte Authelia (« sub ») : plus tard, seul ce
-//    compte Authelia ouvre ce compte Listo (un compte Authelia recréé avec
+//    l'identifiant interne du compte chez le fournisseur d'identité (« sub ») : plus tard, seul ce
+//    compte chez le fournisseur d'identité ouvre ce compte Listo (un compte recréé chez le fournisseur d'identité avec
 //    le même nom est refusé). Personne de ce nom : une demande de compte
 //    est faite à l'Admin (account_requests), qui l'accepte ou la refuse.
-// 4. Double authentification : Authelia s'en charge. Seule exception : un
-//    compte Listo qui a activé la sienne, quand Authelia ne l'a pas faite
+// 4. Double authentification : le fournisseur d'identité s'en charge. Seule exception : un
+//    compte Listo qui a activé la sienne, quand le fournisseur d'identité ne l'a pas faite
 //    (« amr » sans « mfa ») : Listo demande alors son code à 6 chiffres.
 //
-// Sécurité : l'adresse d'Authelia vient de la configuration seulement ;
+// Sécurité : l'adresse du fournisseur d'identité vient de la configuration seulement ;
 // toutes ses adresses doivent être sur le même site que lui (pas de
 // redirection suivie, réponses de taille limitée, délai limité). Aucun
-// jeton d'Authelia n'est gardé : seule la session Listo habituelle est
-// créée. Les messages d'erreur ne recopient jamais ce qu'envoie Authelia.
+// jeton du fournisseur d'identité n'est gardé : seule la session Listo habituelle est
+// créée. Les messages d'erreur ne recopient jamais ce qu'envoie le fournisseur d'identité.
 
 import crypto from 'node:crypto';
 import express from 'express';
@@ -40,9 +41,9 @@ import { REQUEST_ID } from './oauth.js';
 import { hashPassword } from './passwords.js';
 import { cleanName } from './validate.js';
 
-const FLOW_MS = 10 * 60 * 1000;          // 10 minutes pour se connecter chez Authelia
+const FLOW_MS = 10 * 60 * 1000;          // 10 minutes pour se connecter chez le fournisseur d'identité
 const MAX_FLOWS = 200;                   // connexions en cours au plus (mémoire bornée)
-const METADATA_MS = 60 * 60 * 1000;      // description d'Authelia et clés gardées 1 heure
+const METADATA_MS = 60 * 60 * 1000;      // description du fournisseur d'identité et clés gardées 1 heure
 const HTTP_TIMEOUT_MS = 10 * 1000;
 const MAX_BYTES = 100 * 1024;
 const CLOCK_SKEW_S = 120;                // tolérance d'horloge entre les deux serveurs
@@ -51,11 +52,11 @@ export const REFUSED_DAYS = 30;          // une demande refusée est oubliée ap
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Messages de l'écran de connexion (public/js/screens/login.js) : seul ce
-// mot-clé passe dans l'adresse, jamais un texte venu d'Authelia
+// mot-clé passe dans l'adresse, jamais un texte venu du fournisseur d'identité
 export const OIDC_OUTCOMES = ['annulee', 'erreur', 'expiree', 'indisponible', 'refuse', 'demande', 'attente', 'refusee', 'complet', 'code', 'confirme', 'non-confirme'];
 const CONFIRM_MS = 5 * 60 * 1000;      // reconfirmation pour Claude : valable 5 minutes, une fois
 
-// --- Appels vers Authelia (les tests les remplacent : aucun vrai réseau) ---
+// --- Appels vers le fournisseur d'identité (les tests les remplacent : aucun vrai réseau) ---
 
 // Renvoie { status, json } ; jamais de redirection suivie
 export async function fetchOidc(url, { method = 'GET', headers = {}, body = null, fetchImpl = fetch } = {}) {
@@ -84,7 +85,7 @@ const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('base64ur
 const sha256url = (text) => crypto.createHash('sha256').update(text).digest('base64url');
 const withoutSlash = (url) => String(url).replace(/\/+$/, '');
 
-// Adresse publiée par Authelia : https (http seulement hors production),
+// Adresse publiée par le fournisseur d'identité : https (http seulement hors production),
 // sur le même site (origine) que l'émetteur configuré
 function sameOriginUrl(value, issuer) {
   if (typeof value !== 'string') return null;
@@ -109,7 +110,7 @@ const ALGORITHMS = {
 };
 
 // Vérifie un jeton d'identité (JWT signé). Renvoie ses informations
-// (claims), ou lance une erreur. keys : clés publiques d'Authelia (JWKS).
+// (claims), ou lance une erreur. keys : clés publiques du fournisseur d'identité (JWKS).
 export function verifyIdToken(token, { keys, issuer, clientId, nonce, nowS }) {
   if (typeof token !== 'string' || token.length > 16384) throw new Error('jeton absent ou trop long');
   const parts = token.split('.');
@@ -143,10 +144,10 @@ export function verifyIdToken(token, { keys, issuer, clientId, nonce, nowS }) {
   return claims;
 }
 
-// La double authentification a-t-elle été faite chez Authelia ?
+// La double authentification a-t-elle été faite chez le fournisseur d'identité ?
 export const didMfa = (claims) => Array.isArray(claims.amr) && claims.amr.includes('mfa');
 
-// Identifiant Listo proposé à partir de celui d'Authelia : minuscules, et
+// Identifiant Listo proposé à partir de celui du fournisseur d'identité : minuscules, et
 // seulement les caractères permis par Listo (l'Admin peut le changer en
 // acceptant une demande)
 export function usernameFrom(value) {
@@ -163,30 +164,30 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   const cookieName = `${config.production ? '__Host-' : ''}listo_oidc`;
   const cookieOptions = { httpOnly: true, secure: config.production, sameSite: 'lax', path: '/' };
   const flows = new Map(); // empreinte de state -> { nonce, verifier, expiresAt, startedAt, confirm, returnTo }
-  // Reconfirmations par Authelia pour autoriser Claude : « demande:compte » -> fin de validité
+  // Reconfirmations par le fournisseur d'identité pour autoriser Claude : « demande:compte » -> fin de validité
   const confirmations = new Map();
   let metadata = null;     // { value, expiresAt }
   let jwks = null;         // { keys, expiresAt }
 
   const nowMs = () => ctx.now();
 
-  // Description d'Authelia (/.well-known/openid-configuration), vérifiée
+  // Description du fournisseur d'identité (/.well-known/openid-configuration), vérifiée
   async function discover() {
     if (metadata && metadata.expiresAt > nowMs()) return metadata.value;
     const { status, json } = await request(`${issuer}/.well-known/openid-configuration`);
-    if (status !== 200 || !json || typeof json !== 'object') throw new Error(`description d'Authelia illisible (HTTP ${status})`);
+    if (status !== 200 || !json || typeof json !== 'object') throw new Error(`description du fournisseur d'identité illisible (HTTP ${status})`);
     if (withoutSlash(json.issuer) !== issuer) throw new Error('émetteur différent de LISTO_OIDC_ISSUER');
     const value = {};
     for (const key of ['authorization_endpoint', 'token_endpoint', 'jwks_uri', 'userinfo_endpoint']) {
       const url = sameOriginUrl(json[key], issuer);
-      if (!url) throw new Error(`${key} absent ou hors du site d'Authelia`);
+      if (!url) throw new Error(`${key} absent ou hors du site du fournisseur d'identité`);
       value[key] = url.href;
     }
     metadata = { value, expiresAt: nowMs() + METADATA_MS };
     return value;
   }
 
-  // Clés publiques d'Authelia (relues si une clé inconnue apparaît, une
+  // Clés publiques du fournisseur d'identité (relues si une clé inconnue apparaît, une
   // fois par minute au plus)
   let lastKeyRefresh = 0;
   async function signingKeys(meta, { refresh = false } = {}) {
@@ -194,7 +195,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     if (refresh && nowMs() - lastKeyRefresh < 60 * 1000 && jwks) return jwks.keys;
     lastKeyRefresh = nowMs();
     const { status, json } = await request(meta.jwks_uri);
-    if (status !== 200 || !Array.isArray(json?.keys)) throw new Error(`clés d'Authelia illisibles (HTTP ${status})`);
+    if (status !== 200 || !Array.isArray(json?.keys)) throw new Error(`clés du fournisseur d'identité illisibles (HTTP ${status})`);
     jwks = { keys: json.keys.filter((key) => key && typeof key === 'object').slice(0, 20), expiresAt: nowMs() + METADATA_MS };
     return jwks.keys;
   }
@@ -204,7 +205,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   }
 
   // Fin du parcours : retour à l'application, avec un mot-clé pour l'écran
-  // de connexion (jamais de texte venu d'Authelia)
+  // de connexion (jamais de texte venu du fournisseur d'identité)
   // returnTo : écran « Autoriser Claude » (#/autoriser/<demande>) à retrouver
   // après la connexion, seule adresse de retour possible
   const finish = (res, outcome, returnTo = null) => res.redirect(303, outcome ? `/#/connexion?authelia=${outcome}` : `/#/${returnTo ?? 'listes'}`);
@@ -233,7 +234,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       claims = check(await signingKeys(meta));
     } catch (err) {
       if (err.message !== 'clé de signature inconnue') throw err;
-      claims = check(await signingKeys(meta, { refresh: true })); // Authelia a changé de clé
+      claims = check(await signingKeys(meta, { refresh: true })); // Le fournisseur d'identité a changé de clé
     }
     const info = await request(meta.userinfo_endpoint, { headers: { Authorization: `Bearer ${tokens.json.access_token}` } });
     if (info.status !== 200 || !info.json || typeof info.json !== 'object') throw new Error(`userinfo illisible (HTTP ${info.status})`);
@@ -276,10 +277,10 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     next();
   });
 
-  // 1. Départ vers Authelia
+  // 1. Départ vers le fournisseur d'identité
   // Échecs de vérification (state, jeton…) comptés par adresse IP : au-delà
-  // de 5 en 15 minutes, la connexion avec Authelia est bloquée 15 minutes
-  // pour cette adresse (une annulation chez Authelia ne compte pas)
+  // de 5 en 15 minutes, la connexion avec le fournisseur d'identité est bloquée 15 minutes
+  // pour cette adresse (une annulation chez le fournisseur d'identité ne compte pas)
   const failKeys = (req) => [`oidc:${req.ip}`];
   const failed = (req) => ctx.limiter.fail(failKeys(req));
 
@@ -287,7 +288,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   // - retour=autoriser/<demande> : revenir sur l'écran « Autoriser Claude »
   //   après la connexion (seule adresse de retour acceptée) ;
   // - confirmer=<demande> : reconfirmation pour autoriser Claude, depuis une
-  //   session ouverte avec Authelia ; Authelia redemande la connexion
+  //   session ouverte avec le fournisseur d'identité ; le fournisseur d'identité redemande la connexion
   //   (prompt=login, max_age=0), puis l'écran d'autorisation reprend.
   router.get('/oidc/connexion', loadSession(ctx), async (req, res) => {
     const returnMatch = typeof req.query.retour === 'string' ? /^autoriser\/([A-Za-z0-9_-]+)$/.exec(req.query.retour) : null;
@@ -329,13 +330,13 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       nonce,
       code_challenge: sha256url(verifier),
       code_challenge_method: 'S256',
-      // Reconfirmation : Authelia doit redemander la connexion
+      // Reconfirmation : le fournisseur d'identité doit redemander la connexion
       ...(confirm ? { prompt: 'login', max_age: '0' } : {}),
     })) url.searchParams.set(key, value);
     res.redirect(303, url.href);
   });
 
-  // 2. Retour d'Authelia
+  // 2. Retour du fournisseur d'identité
   router.get('/oidc/retour', async (req, res) => {
     const fromCookie = parseCookies(req.headers.cookie)[cookieName];
     res.clearCookie(cookieName, cookieOptions);
@@ -351,7 +352,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     flows.delete(key);
     if (!flow || flow.expiresAt <= nowMs()) return finish(res, 'expiree');
     if (typeof req.query.error === 'string') {
-      audit('connexion_authelia_refusee', { raison: 'refus ou annulation chez Authelia', ip: req.ip });
+      audit('connexion_authelia_refusee', { raison: 'refus ou annulation chez le fournisseur d\'identité', ip: req.ip });
       return finish(res, req.query.error === 'access_denied' ? 'annulee' : 'erreur');
     }
     const code = typeof req.query.code === 'string' ? req.query.code : '';
@@ -366,15 +367,15 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       return finish(res, 'erreur');
     }
 
-    // Reconfirmation pour autoriser Claude : le même compte Authelia que la
-    // session, et une connexion faite à l'instant chez Authelia (auth_time
+    // Reconfirmation pour autoriser Claude : le même compte chez le fournisseur d'identité que la
+    // session, et une connexion faite à l'instant chez le fournisseur d'identité (auth_time
     // après le départ) ; valable 5 minutes, pour cette demande seulement
     if (flow.confirm) {
       const owner = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1').get(flow.confirm.userId);
       const fresh = identity.authTime !== null && identity.authTime * 1000 >= flow.startedAt - CLOCK_SKEW_S * 1000;
       if (!owner || owner.oidc_sub !== identity.sub || !fresh) {
         failed(req);
-        audit('confirmation_authelia_refusee', { utilisateur: owner?.username ?? '(inconnu)', raison: !fresh ? 'connexion non redemandée par Authelia' : 'autre compte', ip: req.ip });
+        audit('confirmation_authelia_refusee', { utilisateur: owner?.username ?? '(inconnu)', raison: !fresh ? 'connexion non redemandée par le fournisseur d\'identité' : 'autre compte', ip: req.ip });
         return res.redirect(303, `/#/${flow.returnTo}?authelia=non-confirme`);
       }
       pruneConfirmations();
@@ -383,17 +384,17 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       return res.redirect(303, `/#/${flow.returnTo}?authelia=confirme`);
     }
 
-    // Quel compte Listo ? D'abord celui qui est déjà relié à ce compte
-    // Authelia ; sinon celui qui porte le même identifiant, s'il n'est
+    // Quel compte Listo ? D'abord celui qui est déjà relié à ce compte du
+    // fournisseur d'identité ; sinon celui qui porte le même identifiant, s'il n'est
     // relié à aucun autre (il est alors relié à celui-ci)
     let user = q.bySub.get(identity.sub);
     if (!user) {
-      // Même identifiant, majuscules ignorées ; un identifiant Authelia avec
+      // Même identifiant, majuscules ignorées ; un identifiant chez le fournisseur d'identité avec
       // des caractères que Listo n'accepte pas ne correspond à aucun compte
       const wanted = identity.username.trim().toLowerCase();
       const sameName = wanted && usernameFrom(wanted) === wanted ? q.byName.get(wanted) : null;
       if (sameName && sameName.oidc_sub && sameName.oidc_sub !== identity.sub) {
-        audit('connexion_authelia_refusee', { utilisateur: sameName.username, raison: 'compte relié à un autre compte Authelia', ip: req.ip });
+        audit('connexion_authelia_refusee', { utilisateur: sameName.username, raison: 'compte relié à un autre compte du fournisseur d\'identité', ip: req.ip });
         return finish(res, 'refuse');
       }
       if (sameName) {
@@ -407,16 +408,16 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       audit('connexion_authelia_refusee', { utilisateur: user.username, raison: 'compte désactivé', ip: req.ip });
       return finish(res, 'refuse');
     }
-    // Mot de passe provisoire donné par l'Admin, jamais changé : avec
-    // Authelia, la personne n'en a pas besoin. Il est remplacé par un mot de
+    // Mot de passe provisoire donné par l'Admin, jamais changé : avec le
+    // fournisseur d'identité, la personne n'en a pas besoin. Il est remplacé par un mot de
     // passe aléatoire que personne ne connaît (l'Admin, qui connaissait le
     // provisoire, ne peut plus s'en servir), sans écran « Nouveau mot de passe ».
     if (user.must_change_password === 1) {
       const hash = await hashPassword(randomToken());
       db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ? AND must_change_password = 1').run(hash, user.id);
-      audit('mot_de_passe_provisoire_efface', { utilisateur: user.username, raison: 'connexion avec Authelia', ip: req.ip });
+      audit('mot_de_passe_provisoire_efface', { utilisateur: user.username, raison: 'connexion avec le fournisseur d\'identité', ip: req.ip });
     }
-    // Compte avec double authentification Listo, qu'Authelia n'a pas faite :
+    // Compte avec double authentification Listo, que le fournisseur d'identité n'a pas faite :
     // le code à 6 chiffres est demandé (même écran que pour le mot de passe)
     if (user.totp_enabled === 1 && !identity.mfa) {
       ctx.pending.start(ctx, res, user.id, { method: 'oidc' });
@@ -428,8 +429,8 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
     finish(res, null, flow.returnTo);
   });
 
-  // Demande acceptée par l'Admin : création du compte, relié à ce compte
-  // Authelia, avec un mot de passe aléatoire que personne ne connaît (la
+  // Demande acceptée par l'Admin : création du compte, relié à ce compte du
+  // fournisseur d'identité, avec un mot de passe aléatoire que personne ne connaît (la
   // connexion par mot de passe reste fermée tant que l'Admin n'en donne pas
   // un provisoire). Renvoie l'identifiant du compte, ou une erreur.
   async function acceptRequest(requestId, { username, displayName, role }) {
@@ -438,7 +439,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       const pending = db.prepare("SELECT * FROM account_requests WHERE id = ? AND status = 'pending'").get(requestId);
       if (!pending) return { error: 'Demande introuvable ou déjà traitée.', status: 404 };
       if (q.byName.get(username)) return { error: 'Cet identifiant est déjà pris.', status: 409 };
-      if (q.bySub.get(pending.oidc_sub)) return { error: 'Ce compte Authelia est déjà relié à un compte Listo.', status: 409 };
+      if (q.bySub.get(pending.oidc_sub)) return { error: `Ce compte ${config.oidcName} est déjà relié à un compte Listo.`, status: 409 };
       const id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, oidc_sub) VALUES (?, ?, ?, ?, ?)')
         .run(username, displayName, hash, role, pending.oidc_sub).lastInsertRowid;
       db.prepare('DELETE FROM account_requests WHERE id = ?').run(requestId);

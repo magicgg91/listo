@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v121-${BUILD ?? 'dev'}`;
+const VERSION = `v122-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -173,7 +173,7 @@ self.addEventListener('fetch', (event) => {
     return; // tout le reste de l'API : jamais gardé
   }
   if (url.pathname.startsWith('/p/')) return; // lien public : jamais gardé
-  if (url.pathname.startsWith('/oidc/')) return; // connexion avec Authelia : toujours le serveur
+  if (url.pathname.startsWith('/oidc/')) return; // connexion avec le fournisseur d'identité : toujours le serveur
 
   const local = LOCAL_PHOTO_PATH.exec(url.pathname);
   if (local) {

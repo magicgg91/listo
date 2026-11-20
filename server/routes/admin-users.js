@@ -5,8 +5,8 @@
 //   POST   /api/admin/users/:id/password    réinitialiser le mot de passe
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
 //   DELETE /api/admin/users/:id             supprimer un compte jamais utilisé
-//   DELETE /api/admin/users/:id/authelia    délier le compte de son compte Authelia
-// Demandes de compte (connexion avec Authelia, LISTO_OIDC=on seulement) :
+//   DELETE /api/admin/users/:id/authelia    délier le compte de son compte chez le fournisseur d'identité
+// Demandes de compte (connexion avec le fournisseur d'identité, LISTO_OIDC=on seulement) :
 //   POST   /api/admin/account-requests/:id/accept   accepter (le compte est créé)
 //   POST   /api/admin/account-requests/:id/refuse   refuser (gardée 30 jours)
 // (la liste des demandes en attente arrive avec GET /api/admin/users)
@@ -56,12 +56,12 @@ export function adminUserRoutes(ctx) {
     mustChangePassword: user.must_change_password === 1,
     createdAt: user.created_at,
     inUse: accountUsed.get({ id: user.id }) === 1,
-    // Relié à un compte Authelia (oui ou non seulement, jamais son identifiant interne)
+    // Relié à un compte chez le fournisseur d'identité (oui ou non seulement, jamais son identifiant interne)
     authelia: user.oidc_sub != null,
   });
 
-  // Demandes de compte en attente (connexion avec Authelia) : ce que la
-  // personne a donné chez Authelia, jamais son identifiant interne
+  // Demandes de compte en attente (connexion avec le fournisseur d'identité) : ce que la
+  // personne a donné chez le fournisseur d'identité, jamais son identifiant interne
   const pendingRequests = db.prepare("SELECT id, username, display_name, created_at FROM account_requests WHERE status = 'pending' ORDER BY created_at, id");
   const describeRequest = (request) => ({ id: request.id, username: request.username, displayName: request.display_name, createdAt: request.created_at });
 
@@ -87,7 +87,7 @@ export function adminUserRoutes(ctx) {
     });
   });
 
-  // Demande acceptée : le compte est créé, relié au compte Authelia de la
+  // Demande acceptée : le compte est créé, relié au compte chez le fournisseur d'identité de la
   // demande. L'Admin peut corriger l'identifiant et le nom proposés.
   router.post('/account-requests/:id/accept', async (req, res) => {
     if (!ctx.oidc) return res.status(404).json({ error: 'Route inconnue.' });
@@ -116,8 +116,8 @@ export function adminUserRoutes(ctx) {
     res.status(204).end();
   });
 
-  // Délier un compte de son compte Authelia : le prochain compte Authelia du
-  // même identifiant pourra de nouveau l'ouvrir (compte Authelia recréé…)
+  // Délier un compte de son compte chez le fournisseur d'identité : le prochain compte du
+  // fournisseur d'identité du même identifiant pourra de nouveau l'ouvrir (compte recréé chez le fournisseur d'identité…)
   router.delete('/users/:id/authelia', (req, res) => {
     const user = target(req, res);
     if (!user) return;
@@ -135,7 +135,7 @@ export function adminUserRoutes(ctx) {
     if (!name) return res.status(400).json({ error: 'Nom affiché invalide (1 à 100 caractères).' });
     if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Rôle invalide (admin ou user).' });
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
-    // mot de passe provisoire ; la personne entrera avec Authelia (même
+    // mot de passe provisoire ; la personne entrera avec le fournisseur d'identité (même
     // identifiant), le compte a un mot de passe aléatoire que personne ne connaît
     const local = ctx.config.localLogin !== false;
     if (local) {

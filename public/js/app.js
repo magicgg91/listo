@@ -40,10 +40,14 @@ prepareAnnouncer();
 
 // --- État partagé par les écrans ---
 
+// Nom du fournisseur d'identité affiché à l'écran (« Se connecter avec … »,
+// « Confirmer avec … ») : LISTO_OIDC_NAME, sinon « SSO », nom neutre
+export const providerName = () => app.oidc?.name ?? 'SSO';
+
 export const app = {
   user: null,            // compte connecté (null : pas connecté)
   setupNeeded: false,    // aucun compte : proposer de créer l'Admin
-  oidc: null,            // connexion avec Authelia proposée : { name }, sinon null
+  oidc: null,            // connexion avec le fournisseur d'identité proposée : { name }, sinon null
   localLogin: true,      // connexion par identifiant et mot de passe proposée
   data: emptyState(),    // copie des listes, articles, rayons… (store.js)
   route: null,
@@ -688,8 +692,8 @@ function show(route) {
     case 'settings': mount(() => renderSettings()); break;
     case 'account': mount((onLeave) => renderAccount(onLeave)); break;
     case 'about': mount(() => renderAbout()); break;
-    // Session ouverte avec Authelia : mot de passe et double authentification
-    // gérés dans Authelia ; ces écrans mènent à « Mon compte »
+    // Session ouverte avec le fournisseur d'identité : mot de passe et double authentification
+    // gérés chez le fournisseur d'identité ; ces écrans mènent à « Mon compte »
     case 'password':
       if (app.user.loginMethod === 'oidc') navigate('account', {}, { replace: true });
       else mount(() => renderPassword());
@@ -722,7 +726,7 @@ async function start() {
   try {
     const setup = await get('/api/setup', { auth: false });
     app.setupNeeded = setup.needed;
-    // Connexion avec Authelia (LISTO_OIDC=on) : { name } du bouton, ou null
+    // Connexion avec le fournisseur d'identité (LISTO_OIDC=on) : { name } du bouton, ou null
     app.oidc = setup.oidc ?? null;
     // Connexion par mot de passe proposée (LISTO_LOCAL_LOGIN), oui par défaut
     app.localLogin = setup.localLogin !== false;

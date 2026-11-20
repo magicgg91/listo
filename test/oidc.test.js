@@ -312,7 +312,7 @@ test('configuration : LISTO_OIDC=on exige l\'adresse d\'Authelia (https en produ
   assert.equal(configProblem({ ...base, oidc: true, oidcIssuer: 'https://auth.test', oidcClientId: 'listo' }), null);
   const full = loadConfig({ LISTO_OIDC: 'on', LISTO_OIDC_ISSUER: 'https://auth.test', LISTO_OIDC_NAME: '<script>' });
   assert.equal(full.oidc, true);
-  assert.equal(full.oidcName, 'Authelia', 'nom invalide : nom par défaut');
+  assert.equal(full.oidcName, 'SSO', 'nom invalide : nom neutre par défaut');
   assert.equal(full.oidcClientId, 'listo');
   assert.match(full.oidcSecretPath, /oidc-client-secret$/);
 });
@@ -529,4 +529,32 @@ test('Claude depuis une session Authelia : reconfirmation par Authelia (connexio
   await login(local, 'guillaume', 'MotDePasseAdmin!');
   assert.equal((await local.request('GET', `/oidc/connexion?confirmer=${requestId}`, undefined, {}, { redirect: 'manual' })).headers.get('location'), '/#/connexion?authelia=erreur');
   assert.equal((await app.client().request('GET', `/oidc/connexion?confirmer=${requestId}`, undefined, {}, { redirect: 'manual' })).headers.get('location'), '/#/connexion?authelia=erreur');
+});
+
+// --- Tout fournisseur OpenID Connect (20 novembre 2026) ---
+
+test('autre fournisseur (LISTO_OIDC_NAME=Authentik) : les messages de Listo disent son nom, jamais « Authelia »', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake, { oidcName: 'Authentik' });
+  await setupAdmin(app);
+  assert.deepEqual((await app.client().get('/api/setup')).body.oidc, { name: 'Authentik' });
+  const session = app.client();
+  assert.equal(await signIn(session, fake, 'adminmfa'), '/#/listes');
+  const res = await session.post('/api/me/password', {});
+  assert.equal(res.status, 403);
+  assert.match(res.body.error, /Authentik/);
+  assert.doesNotMatch(res.body.error, /Authelia/);
+});
+
+test('aucun écran ni message du serveur n\'écrit « Authelia » en dur (seulement le nom réglé)', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const root = path.resolve(import.meta.dirname, '..');
+  const files = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true })
+    .flatMap((entry) => (entry.isDirectory() ? files(path.join(dir, entry.name)) : entry.name.endsWith('.js') ? [path.join(dir, entry.name)] : []));
+  // L'aide (help-content.js) cite Authelia comme exemple, avec Authentik et Pocket ID
+  for (const file of [...files('server'), ...files('public/js')].filter((f) => !f.endsWith('help-content.js'))) {
+    const code = fs.readFileSync(path.join(root, file), 'utf8').split('\n').filter((line) => !line.trim().startsWith('//'));
+    assert.ok(!code.some((line) => line.includes('Authelia')), `${file} : « Authelia » en dur`);
+  }
 });

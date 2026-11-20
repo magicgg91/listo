@@ -8,7 +8,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { loadConfig } from './config.js';
+import { loadConfig, consoleLocale } from './config.js';
+import { translate } from '../public/js/i18n.js';
 import { deriveKeys, buildId } from './secrets.js';
 import { createLimiter } from './limiter.js';
 import { createAudit } from './audit.js';
@@ -301,7 +302,7 @@ export function createApp({
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Requête mal formée.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Requête trop volumineuse.' });
     if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: 'Requête invalide.' }); // adresse mal formée…
-    console.error('Erreur inattendue :', err.message);
+    console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
     res.status(500).json({ error: 'Erreur interne du serveur.' });
   });
 
@@ -347,7 +348,7 @@ export function createApp({
   // inattendue va dans les journaux du serveur
   app.use((err, req, res, next) => {
     const status = err.status >= 400 && err.status < 500 ? err.status : 500;
-    if (status === 500) console.error('Erreur inattendue :', err.message);
+    if (status === 500) console.error(translate(consoleLocale(config), 'demarrage.erreur'), err.message);
     res.status(status).type('text').send(status === 500 ? 'Erreur interne du serveur.' : 'Requête invalide.');
   });
 

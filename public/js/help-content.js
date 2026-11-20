@@ -1,10 +1,11 @@
 // Le guide de Listo : UNE seule documentation, numérotée, affichée par la page
 // « Aide » de l'application (screens/help.js) et recopiée dans le dépôt sous
-// la forme de docs/guide.md par le script scripts/guide.js (à relancer à la
-// main après chaque changement : node scripts/guide.js ; un test échoue si
-// docs/guide.md n'est pas à jour). Tout le texte d'aide est ici, et seulement
-// ici. Une évolution qui change un droit, un libellé ou un écran met ce
-// fichier à jour, puis relance le script.
+// la forme de docs/guide.md, docs/guide.en.md et site/ par le script
+// scripts/guide.js (à relancer à la main après chaque changement : node
+// scripts/guide.js ; un test échoue si une copie n'est pas à jour). Tout le
+// texte d'aide en français est ici, et seulement ici (l'anglais : voir
+// « Langues » plus bas). Une évolution qui change un droit, un libellé ou un
+// écran met ce fichier à jour (et l'anglais), puis relance le script.
 //
 // Organisation :
 // - GUIDE : les chapitres, dans l'ordre. Chaque chapitre a un identifiant
@@ -33,10 +34,19 @@
 // - aucun secret, aucun code de démarrage, aucune adresse réelle : seulement
 //   des exemples inventés (listo.exemple.fr, 192.168.1.20…).
 //
+// Langues : ce fichier est le guide en français (la référence). Le guide en
+// anglais est dans public/js/help-content-en.js (chapitres traduits dans
+// public/js/help-en/, mêmes identifiants et même structure). helpFor(langue)
+// donne celui d'une langue ; l'écran « Aide » prend celui de la langue de la
+// personne, docs/guide.md et site/fr/ le français, docs/guide.en.md et
+// site/ l'anglais. Une évolution du guide se fait dans les deux langues.
+//
 // Ce module ne touche pas à l'écran : il est testé automatiquement
-// (test/help.test.js, test/help-labels.test.js, test/guide.test.js).
+// (test/help.test.js, test/help-en.test.js, test/help-labels.test.js,
+// test/guide.test.js).
 
 import { matches, isSearching } from './search.js';
+import * as ENGLISH from './help-content-en.js';
 
 // --- Tableau « Qui peut quoi » ---
 
@@ -69,6 +79,26 @@ export const PERMISSIONS_NOTE = 'Contributeur : un compte avec le droit « Peut 
 // Mention placée sous le titre des chapitres et sections server: true
 export const SERVER_NOTE = 'Pour la personne qui gère le serveur';
 
+// Textes des copies du guide hors de l'application (docs/guide.md et la page
+// publique en français, fabriqués par scripts/guide.js) ; les mêmes noms en
+// anglais dans help-content-en.js. {site} : adresse de la page publique ;
+// {server} : SERVER_NOTE ; [texte](https://…) : un lien.
+export const DOC = {
+  title: 'Listo : le guide',
+  description: 'Le mode d\'emploi complet de Listo, application de listes partagées (courses, tâches, envies) à installer sur son propre serveur.',
+  // docs/guide.md : sous le titre
+  intro: 'Le mode d\'emploi complet de Listo, le même que la page « Aide » de l\'application (Réglages › « Aide ») et que la page en ligne [{site}]({site}). Les parties marquées « {server} » ne concernent que l\'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d\'exploitation, [docs/exploitation.md](exploitation.md).',
+  // Page publique : sous le titre
+  siteIntro: 'Le mode d\'emploi complet de Listo, le même que la page « Aide » de l\'application (Réglages › « Aide »). Les parties marquées « {server} » ne concernent que l\'installation du serveur.',
+  footer: 'Listo est un logiciel libre (licence Apache-2.0). Code source : [github.com/magicgg91/listo](https://github.com/magicgg91/listo).',
+  // Tableau « Qui peut quoi » en Markdown : en-tête de la première colonne, puis oui / non
+  action: 'Action',
+  yes: 'Oui',
+  no: 'Non',
+  // Encadré d'avertissement en Markdown
+  warning: 'Attention',
+};
+
 // --- Le guide ---
 
 export const GUIDE = [
@@ -92,7 +122,7 @@ export const GUIDE = [
         blocks: [
           { ul: [
             'Pas de version en ligne : Listo s\'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [[installation]].',
-            'En français ou en anglais, au choix de chacun dans « Mon compte » ([[langue]]) ; cette aide est encore en français seulement.',
+            'En français ou en anglais, au choix de chacun dans « Mon compte » ([[langue]]) ; cette aide aussi.',
             'Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([[notifications]]).',
             'Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.',
             'Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]), le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l\'appareil voit l\'heure, la taille et l\'appareil, jamais le texte : [[notif-confidentialite]]). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
@@ -712,7 +742,7 @@ export const GUIDE = [
         title: 'Langue : français ou anglais',
         blocks: [
           'Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l\'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.',
-          'Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide, elle, reste en français pour l\'instant.',
+          'Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide suit la langue choisie.',
         ],
       },
       {
@@ -961,7 +991,7 @@ export const GUIDE = [
             '« Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.',
             'Une liste de courses ou de tâches peut devenir une liste d\'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C\'est définitif, il faut du réseau, et rien n\'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.',
             'Si la liste est pour un autre compte, cette personne en fait partie d\'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.',
-            'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.',
+            'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » (dans la monnaie réglée sur le serveur, l\'euro par défaut), une note et une photo.',
             'Cocher un souhait le range dans « Reçus » : seuls le bénéficiaire et le propriétaire le peuvent ; les réservations n\'y sont plus affichées.',
             'Quand la liste est pour quelqu\'un d\'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu\'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti ([[faq-orphelin]]).',
             'Une liste d\'envies n\'a pas de copie (« Dupliquer la liste » n\'est pas proposé).',
@@ -1268,7 +1298,7 @@ export const GUIDE = [
         id: 'faq-connexion',
         title: 'Je ne peux pas me connecter',
         blocks: [{ ul: [
-          '« Trop d\'essais » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).',
+          '« Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).',
           '« Requête refusée : origine inconnue. » : l\'adresse tapée n\'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([[dossier]]).',
           'Mot de passe oublié, téléphone perdu : [[oubli]].',
           'Le mode hors ligne ou l\'installation sur l\'écran d\'accueil ne marchent pas : Listo n\'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.',
@@ -1326,7 +1356,22 @@ export const GUIDE = [
   },
 ];
 
+// --- Le guide d'une langue ---
+
+// Tout ce qu'il faut pour afficher le guide dans une langue : { GUIDE,
+// ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE, DOC }. 'fr' ou 'en' ;
+// toute autre langue : le français (la référence).
+const HELP = {
+  fr: { GUIDE, ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE, DOC },
+  en: { GUIDE: ENGLISH.GUIDE, ROLES: ENGLISH.ROLES, PERMISSIONS: ENGLISH.PERMISSIONS, PERMISSIONS_NOTE: ENGLISH.PERMISSIONS_NOTE, SERVER_NOTE: ENGLISH.SERVER_NOTE, DOC: ENGLISH.DOC },
+};
+export const HELP_LOCALES = Object.keys(HELP);
+export const helpFor = (locale) => HELP[locale] ?? HELP.fr;
+
 // --- Numérotation et texte enrichi (partagés par l'écran et le script) ---
+// guide : les chapitres d'une langue (helpFor(langue).GUIDE), le français
+// si rien n'est donné. Un renvoi [[id]] prend toujours le numéro et le
+// titre du guide de la même langue.
 
 // Plan numéroté du guide : une entrée par chapitre (niveau 1, « 3 ») et par
 // section (niveau 2, « 3.2 »), dans l'ordre. Les numéros viennent seulement
@@ -1386,18 +1431,19 @@ export function blockTexts(block) {
 // --- Recherche dans le guide ---
 
 // Texte simple d'un texte enrichi (code, renvois et liens compris), pour
-// chercher dedans
-export function plainText(text) {
-  return parseInline(text).map((part) => part.code ?? part.link ?? (part.ref !== undefined ? refLabel(part.ref) : part.text)).join('');
+// chercher dedans ; guide : celui de la langue du texte (renvois)
+export function plainText(text, guide = GUIDE) {
+  return parseInline(text).map((part) => part.code ?? part.link ?? (part.ref !== undefined ? refLabel(part.ref, guide) : part.text)).join('');
 }
 
 // Tout le texte d'une suite de blocs (commandes et « Qui peut quoi » compris)
-function blocksText(blocks = []) {
-  return blocks.flatMap((block) => {
+// help : le guide d'une langue (helpFor)
+function blocksText(blocks, help) {
+  return (blocks ?? []).flatMap((block) => {
     if (block.code !== undefined) return [block.code];
-    if (block.who) return [...PERMISSIONS.map((p) => p.action), ...ROLES.map((r) => r.label), PERMISSIONS_NOTE];
+    if (block.who) return [...help.PERMISSIONS.map((p) => p.action), ...help.ROLES.map((r) => r.label), help.PERMISSIONS_NOTE];
     return blockTexts(block);
-  }).map(plainText).join('\n');
+  }).map((text) => plainText(text, help.GUIDE)).join('\n');
 }
 
 // Recherche dans les titres et le texte (majuscules et accents ignorés, voir
@@ -1407,15 +1453,18 @@ function blocksText(blocks = []) {
 // à montrer : celles qui le contiennent, ou toutes si le titre du chapitre
 // le contient) } ; count, le nombre de résultats (sections et
 // introductions trouvées, ou le chapitre seul si seul son titre est trouvé).
-export function searchGuide(query, guide = GUIDE) {
+// help : le guide d'une langue (helpFor(langue)), le français si rien n'est
+// donné ; on cherche dans le guide de la langue affichée.
+export function searchGuide(query, help = helpFor('fr')) {
   if (!isSearching(query)) return null;
+  const guide = help.GUIDE;
   const entryOf = new Map(outline(guide).map((e) => [e.id, e]));
   const chapters = [];
   let count = 0;
   for (const chapter of guide) {
     const titleHit = matches(numbered(entryOf.get(chapter.id)), query);
-    const intro = (chapter.blocks ?? []).length > 0 && matches(blocksText(chapter.blocks), query);
-    const found = (chapter.sections ?? []).filter((section) => matches(`${numbered(entryOf.get(section.id))}\n${blocksText(section.blocks)}`, query)).map((section) => section.id);
+    const intro = (chapter.blocks ?? []).length > 0 && matches(blocksText(chapter.blocks, help), query);
+    const found = (chapter.sections ?? []).filter((section) => matches(`${numbered(entryOf.get(section.id))}\n${blocksText(section.blocks, help)}`, query)).map((section) => section.id);
     count += found.length + (intro ? 1 : 0) + (titleHit && !found.length && !intro ? 1 : 0);
     if (titleHit || intro || found.length) {
       chapters.push({ id: chapter.id, intro: intro || titleHit, sections: titleHit ? (chapter.sections ?? []).map((section) => section.id) : found });

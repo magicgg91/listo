@@ -2,7 +2,7 @@
 
 <!-- Fichier fabriqué par scripts/guide.js à partir de public/js/help-content.js : ne pas le modifier à la main. -->
 
-Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [https://magicgg91.github.io/listo/](https://magicgg91.github.io/listo/). Les parties marquées « Pour la personne qui gère le serveur » ne concernent que l'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d'exploitation, [docs/exploitation.md](exploitation.md).
+Le mode d'emploi complet de Listo, le même que la page « Aide » de l'application (Réglages › « Aide ») et que la page en ligne [https://magicgg91.github.io/listo/fr/](https://magicgg91.github.io/listo/fr/). Les parties marquées « Pour la personne qui gère le serveur » ne concernent que l'installation du serveur ; son entretien (restauration, mises à jour, journaux) est décrit dans le guide d'exploitation, [docs/exploitation.md](exploitation.md).
 
 ## Sommaire
 
@@ -181,7 +181,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 ### 1.2 Ce que Listo ne fait pas
 
 - Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
-- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide est encore en français seulement.
+- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide aussi.
 - Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
 - Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. MCP Claude](#claude)).
@@ -824,7 +824,7 @@ Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre »
 
 Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.
 
-Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide, elle, reste en français pour l'instant.
+Les noms des listes, des articles, des rayons et des magasins ne sont pas traduits : ce sont vos données. Cette aide suit la langue choisie.
 
 <a id="ordinateur"></a>
 
@@ -1071,7 +1071,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
 - Si la liste est pour un autre compte, cette personne en fait partie d'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.
-- Un souhait a un nom, et si l'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » en euros, une note et une photo.
+- Un souhait a un nom, et si l'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » (dans la monnaie réglée sur le serveur, l'euro par défaut), une note et une photo.
 - Cocher un souhait le range dans « Reçus » : seuls le bénéficiaire et le propriétaire le peuvent ; les réservations n'y sont plus affichées.
 - Quand la liste est pour quelqu'un d'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti ([9.11 Liste d'envies : un participant est parti](#faq-orphelin)).
 - Une liste d'envies n'a pas de copie (« Dupliquer la liste » n'est pas proposé).
@@ -1348,7 +1348,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 
 ### 9.6 Je ne peux pas me connecter
 
-- « Trop d'essais » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
+- « Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
 - « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
 - Mot de passe oublié, téléphone perdu : [4.7 Mot de passe oublié, téléphone perdu](#oubli).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.

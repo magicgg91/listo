@@ -22,6 +22,8 @@
 
 import express from 'express';
 import { TOOLS, ParamsError, createMcpTools } from './mcp-tools.js';
+import { consoleLocale } from './config.js';
+import { translate } from '../public/js/i18n.js';
 
 // Versions acceptées, de la plus ancienne à la plus récente
 export const PROTOCOL_VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
@@ -201,7 +203,7 @@ export function mcpRoutes(ctx) {
       }
     } catch (error) {
       if (error instanceof ParamsError) return send(rpcError(id, INVALID_PARAMS, error.message));
-      console.error('Erreur MCP inattendue :', error.message);
+      console.error(translate(consoleLocale(ctx.config), 'demarrage.erreur.mcp'), error.message);
       return send(rpcError(id, INTERNAL_ERROR, 'Erreur interne.'));
     }
   });

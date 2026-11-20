@@ -28,6 +28,8 @@
 
 import fs from 'node:fs';
 import { readJson } from './http-json.js';
+import { consoleLocale } from './config.js';
+import { translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 export const OFF_ORIGIN = 'https://world.openfoodfacts.org';
 // Champs demandés à Open Food Facts : ceux-là, et rien d'autre
@@ -149,13 +151,14 @@ export function userAgent(contact = null, version = listoVersion()) {
 // { notFound: true } (404, ou redirection vers un autre site : produit non
 // alimentaire). Toute autre réponse est une erreur.
 // fetchImpl : la fonction fetch (les tests la remplacent : aucun vrai réseau)
-export async function fetchProduct(code, { fetchImpl = fetch, timeoutMs = TIMEOUT_MS, maxBytes = MAX_BYTES, agent = userAgent() } = {}) {
+// locale : langue de la raison d'un échec (écrite dans la console)
+export async function fetchProduct(code, { fetchImpl = fetch, timeoutMs = TIMEOUT_MS, maxBytes = MAX_BYTES, agent = userAgent(), locale = DEFAULT_LOCALE } = {}) {
   // Seul un code déjà validé (des chiffres) entre dans l'adresse
-  if (!/^\d{8}$|^\d{13}$/.test(code)) throw new Error('code invalide');
+  if (!/^\d{8}$|^\d{13}$/.test(code)) throw new Error(translate(locale, 'demarrage.raison.codeInvalide'));
   const url = new URL(`/api/v3/product/${code}`, OFF_ORIGIN);
   url.searchParams.set('fields', OFF_FIELDS);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(new Error('délai dépassé')), timeoutMs);
+  const timer = setTimeout(() => controller.abort(new Error(translate(locale, 'demarrage.raison.delai'))), timeoutMs);
   try {
     const res = await fetchImpl(url.href, {
       redirect: 'manual',      // jamais suivie
@@ -167,8 +170,8 @@ export async function fetchProduct(code, { fetchImpl = fetch, timeoutMs = TIMEOU
       await res.body?.cancel().catch(() => {});
       return { notFound: true };
     }
-    if (res.status !== 200) throw new Error(`réponse HTTP ${res.status}`);
-    if (res.url && new URL(res.url).origin !== OFF_ORIGIN) throw new Error('réponse venue d\'un autre site');
+    if (res.status !== 200) throw new Error(translate(locale, 'demarrage.raison.http', { status: res.status }));
+    if (res.url && new URL(res.url).origin !== OFF_ORIGIN) throw new Error(translate(locale, 'demarrage.raison.autreSite'));
     return await readJson(res, maxBytes);
   } finally {
     clearTimeout(timer);
@@ -217,6 +220,7 @@ export function createProductLookup({ config, now = Date.now, request = fetchPro
   const accounts = createWindow({ max: ACCOUNT_PER_MINUTE, now });
   const outgoing = createWindow({ max: OFF_PER_MINUTE, now });
   const agent = userAgent(config.productContact);
+  const lang = consoleLocale(config); // langue de la ligne écrite en cas d'échec
 
   const UNKNOWN = { status: 'unknown' };
   const UNAVAILABLE = { status: 'unavailable' };
@@ -232,9 +236,9 @@ export function createProductLookup({ config, now = Date.now, request = fetchPro
     // Limite globale vers Open Food Facts : au-delà, « indisponible »
     if (!outgoing.take('off')) return UNAVAILABLE;
     try {
-      const data = await request(code, { agent });
+      const data = await request(code, { agent, locale: lang });
       const product = data?.notFound ? { found: false } : productFrom(data);
-      if (!product) throw new Error('réponse inattendue');
+      if (!product) throw new Error(translate(lang, 'demarrage.raison.inattendue'));
       // Réponse envoyée au téléphone : ces champs, et rien d'autre
       const result = product.found
         ? { status: 'found', name: product.name, brand: product.brand, quantity: product.quantity }
@@ -242,7 +246,7 @@ export function createProductLookup({ config, now = Date.now, request = fetchPro
       remember(code, result);
       return result;
     } catch (err) {
-      log(`Recherche de produit impossible : ${err?.message ?? err}`);
+      log(translate(lang, 'demarrage.produitImpossible', { reason: err?.message ?? err }));
       return UNAVAILABLE;
     }
   }

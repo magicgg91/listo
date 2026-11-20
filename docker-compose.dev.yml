@@ -1,19 +1,19 @@
-# Listo en local, pour tester sur son ordinateur avant de publier.
+# Listo locally, to test on your computer before publishing.
 #
-# Construit l'image à partir du code du dépôt, puis la démarre :
+# Builds the image from the repository's code, then starts it:
 #   docker compose -f docker-compose.dev.yml up --build
-# Ensuite, ouvrir http://localhost:3000 (ou http://localhost:3000/healthz).
-# Arrêt : Ctrl+C, puis « docker compose -f docker-compose.dev.yml down ».
+# Then open http://localhost:3000 (or http://localhost:3000/healthz).
+# Stop: Ctrl+C, then “docker compose -f docker-compose.dev.yml down”.
 #
-# Par défaut, le port n'est ouvert que sur l'ordinateur lui-même (127.0.0.1),
-# jamais sur le réseau.
+# By default, the port is only open on the computer itself (127.0.0.1),
+# never on the network.
 #
-# Pour essayer depuis un téléphone du même réseau Wi-Fi (voir
-# docs/developpement.md, « Essayer sur son téléphone »), deux réglages facultatifs :
-#   LISTO_DEV_BIND=0.0.0.0                       ouvre le port au réseau local
-#   LISTO_DEV_URL=http://192.168.1.20:3000       adresse de l'ordinateur, telle
-#                                                que le téléphone la tape
-# Exemple :
+# To try it from a phone on the same Wi-Fi network (see
+# docs/developpement.md, “Essayer sur son téléphone”, in French), two optional settings:
+#   LISTO_DEV_BIND=0.0.0.0                       opens the port to the local network
+#   LISTO_DEV_URL=http://192.168.1.20:3000       address of the computer, as
+#                                                the phone types it
+# Example:
 #   LISTO_DEV_BIND=0.0.0.0 LISTO_DEV_URL=http://192.168.1.20:3000 \
 #     docker compose -f docker-compose.dev.yml up --build
 
@@ -24,37 +24,37 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - TZ=Europe/Paris              # fuseau : sauvegarde vers 3 h, résumé des échéances à 8 h
+      - TZ=Europe/Paris              # time zone: backup around 3 AM, due-date summary at 8 AM
       - LISTO_PUBLIC_URL=${LISTO_DEV_URL:-http://localhost:3000}
       - LISTO_DB_PATH=/data/listo.db
       - LISTO_KEY_PATH=/secrets/secret.key
       - LISTO_SESSION_DAYS=30
-      # Langue par défaut (fr ou en, le français sans réglage) et monnaie du
-      # prix des envies (EUR sans réglage ; USD, CHF, GBP…). Voir docs/guide.md.
+      # Default language (fr or en, French when not set) and currency of
+      # wish prices (EUR when not set; USD, CHF, GBP…). See docs/guide.en.md.
       # - LISTO_LANG=fr
       # - LISTO_CURRENCY=EUR
-      # Facultatifs (comme dans docker-compose.yml, voir docs/guide.md,
-      # « Les réglages (variables) ») :
+      # Optional (as in docker-compose.yml, see docs/guide.en.md,
+      # “Settings (variables)”):
       # - LISTO_UPDATE_CHECK=off
       # - LISTO_PRODUCT_LOOKUP=off
       # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
-      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »).
-      # Notifications push : DÉSACTIVÉES par défaut ; décommenter la ligne
-      # ci-dessous pour les activer. Contenu chiffré : Apple, Google, Mozilla
-      # ou Microsoft ne voient que l'heure, la taille et l'appareil. Clés
-      # créées dans secrets/vapid.json : à sauvegarder avec secret.key.
+      # LISTO_MCP: access from Claude, off by default (“Claude MCP” chapter).
+      # Push notifications: OFF by default; uncomment the line
+      # below to turn them on. Encrypted content: Apple, Google, Mozilla
+      # or Microsoft only see the time, the size and the device. Keys
+      # created in secrets/vapid.json: back them up along with secret.key.
       # - LISTO_PUSH=on
-      # Connexion par un fournisseur d'identité OpenID Connect (Authelia,
-      # Authentik, Pocket ID…) : DÉSACTIVÉE par défaut ; voir docs/guide.md,
-      # « Connexion avec un fournisseur d'identité ». Clé secrète du client
-      # dans secrets/oidc-client-secret (jamais ici). LISTO_OIDC_NAME : nom
-      # affiché (« SSO » par défaut).
+      # Sign-in with an OpenID Connect identity provider (Authelia,
+      # Authentik, Pocket ID…): OFF by default; see docs/guide.en.md,
+      # “Sign-in with an identity provider”. Client secret
+      # in secrets/oidc-client-secret (never here). LISTO_OIDC_NAME: name
+      # shown on screen (“SSO” by default).
       # - LISTO_OIDC=on
       # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
       # - LISTO_OIDC_CLIENT_ID=listo
       # - LISTO_OIDC_NAME=Authelia
-      # Connexion par mot de passe : activée par défaut ; « off » = fournisseur
-      # seulement (exige LISTO_OIDC=on ; sessions par mot de passe fermées)
+      # Password sign-in: on by default; “off” = identity provider
+      # only (requires LISTO_OIDC=on; password sessions are closed)
       # - LISTO_LOCAL_LOGIN=off
     volumes:
       - ./data:/data

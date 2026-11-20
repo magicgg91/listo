@@ -14,37 +14,42 @@
 
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { loadConfig } from './config.js';
+import { loadConfig, consoleLocale } from './config.js';
 import { hashPassword } from './passwords.js';
 import { generateSharePassword } from './shares.js';
 import { createAudit, createJournalFile } from './audit.js';
+import { translate } from '../public/js/i18n.js';
+
+// Configuration lue d'abord : les messages suivent la langue de
+// l'installation (LISTO_LANG), le français si elle n'est pas valable
+const config = loadConfig();
+const lang = consoleLocale(config);
 
 const [username, option] = process.argv.slice(2);
 if (!username || (option && option !== '--retirer-2fa')) {
-  console.error('Utilisation : node server/admin-secours.js <identifiant> [--retirer-2fa]');
+  console.error(translate(lang, 'demarrage.secours.utilisation', { argument: `<${translate(lang, 'demarrage.secours.argument')}>` }));
   process.exit(1);
 }
 if (process.getuid?.() === 0) {
-  console.error('Lancez cette commande avec « -u node » :');
+  console.error(translate(lang, 'demarrage.secours.utilisateur'));
   console.error(`  docker exec -u node listo node server/admin-secours.js ${username}${option ? ` ${option}` : ''}`);
   process.exit(1);
 }
 
-const config = loadConfig();
 let db;
 try {
   db = new Database(config.dbPath, { fileMustExist: true });
 } catch {
-  console.error(`Base introuvable (${config.dbPath}).`);
+  console.error(translate(lang, 'demarrage.secours.baseIntrouvable', { path: config.dbPath }));
   process.exit(1);
 }
 db.pragma('busy_timeout = 5000');
 db.pragma('foreign_keys = ON');
-const audit = createAudit({ file: createJournalFile({ path: path.join(path.dirname(config.dbPath), 'journal.log') }) });
+const audit = createAudit({ file: createJournalFile({ path: path.join(path.dirname(config.dbPath), 'journal.log'), locale: lang }) });
 
 const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
 if (!user) {
-  console.error(`Aucun compte avec l'identifiant « ${username} ».`);
+  console.error(translate(lang, 'demarrage.secours.inconnu', { username }));
   process.exit(1);
 }
 
@@ -67,10 +72,10 @@ db.close();
 audit('rescue_temporary_password', { user: user.username });
 if (option === '--retirer-2fa') audit('rescue_2fa_removed', { user: user.username });
 
-console.log(`Compte « ${user.username} » : mot de passe provisoire (à changer à la connexion) :`);
+console.log(translate(lang, 'demarrage.secours.motDePasse', { username: user.username }));
 console.log('');
 console.log(`    ${password}`);
 console.log('');
-if (option === '--retirer-2fa') console.log('La double authentification de ce compte est désactivée : réactivez-la depuis Réglages → Mon compte.');
-if (user.active === 0) console.log("Attention : ce compte est désactivé. Un Admin doit le réactiver (Administration → Comptes).");
-console.log("Si la connexion est refusée pour « trop d'essais », redémarrez Listo : docker compose restart");
+if (option === '--retirer-2fa') console.log(translate(lang, 'demarrage.secours.sans2fa'));
+if (user.active === 0) console.log(translate(lang, 'demarrage.secours.desactive'));
+console.log(translate(lang, 'demarrage.secours.tropDEssais'));

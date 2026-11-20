@@ -52,7 +52,9 @@ test('guide : les besoins du proxy correspondent au code', () => {
   assert.match(proxy, /un seul proxy/);
   assert.match(proxy, /X-Forwarded-For/);
   // HTTPS : obligatoire en production (server/config.js), cookies « Secure »
-  assert.match(read('server/config.js'), /En production, LISTO_PUBLIC_URL doit commencer par https:\/\//);
+  // Message de configProblem (server/config.js), rangé dans le dictionnaire des messages de la console
+  assert.match(read('server/config.js'), /translate\(lang, 'demarrage\.config\.https'/);
+  assert.match(read('public/js/i18n/fr/demarrage.js'), /En production, LISTO_PUBLIC_URL doit commencer par https:\/\//);
   assert.match(proxy, /refuse de démarrer si `LISTO_PUBLIC_URL` ne commence pas par `https:\/\/`/);
   // Origine : le navigateur doit être sur LISTO_PUBLIC_URL (server/auth.js)
   assert.match(read('server/auth.js'), /if \(req\.get\('origin'\) !== allowed\)/);
@@ -60,12 +62,16 @@ test('guide : les besoins du proxy correspondent au code', () => {
 });
 
 test('documents publics : un proxy HTTPS quel qu\'il soit, Nginx Proxy Manager en exemple', () => {
+  // README en anglais (README.md) et en français (README.fr.md)
   const readme = read('README.md');
-  assert.match(readme, /un proxy inverse HTTPS, peu importe lequel \(Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…\)/);
-  assert.doesNotMatch(readme, /proxy HTTPS \(Nginx Proxy Manager\)/);
+  assert.match(readme, /an HTTPS reverse proxy, any one will do \(Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…\)/);
+  const readmeFr = read('README.fr.md');
+  assert.match(readmeFr, /un proxy inverse HTTPS, peu importe lequel \(Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…\)/);
+  for (const text of [readme, readmeFr]) assert.doesNotMatch(text, /proxy HTTPS \(Nginx Proxy Manager\)|HTTPS proxy \(Nginx Proxy Manager\)/);
+  // docker-compose.yml : commentaires en anglais (20 novembre 2026)
   const compose = read('docker-compose.yml');
-  assert.match(compose.split('\n')[0], /derrière un proxy inverse HTTPS \(Nginx Proxy Manager, Caddy,/);
-  assert.doesNotMatch(compose, /derrière Nginx Proxy Manager/);
+  assert.match(compose.split('\n')[0], /behind an HTTPS reverse proxy \(Nginx Proxy Manager, Caddy,/);
+  assert.doesNotMatch(compose, /behind Nginx Proxy Manager/);
   assert.match(read('SECURITY.md'), /\(Nginx Proxy Manager, Caddy, Traefik, nginx ou autre\)/);
   assert.match(read('docs/exploitation.md'), /\[Ce que doit faire le proxy\]\(guide\.md#proxy\)/);
   // docs/guide.md est fabriqué depuis la même source

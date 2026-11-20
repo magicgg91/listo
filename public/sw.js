@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v132-${BUILD ?? 'dev'}`;
+const VERSION = `v134-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -85,6 +85,17 @@ const APP_FILES = [
   '/js/format.js',
   '/js/freshness.js',
   '/js/help-content.js',
+  '/js/help-content-en.js',
+  '/js/help-en/presentation.js',
+  '/js/help-en/possibilites.js',
+  '/js/help-en/installation.js',
+  '/js/help-en/comptes.js',
+  '/js/help-en/quotidien.js',
+  '/js/help-en/notifications.js',
+  '/js/help-en/roles.js',
+  '/js/help-en/claude.js',
+  '/js/help-en/faq.js',
+  '/js/help-en/tableau.js',
   '/js/history.js',
   '/js/list-icons.js',
   '/js/list-types.js',
@@ -156,6 +167,8 @@ const APP_FILES = [
   '/js/i18n/en/reseau.js',
   '/js/i18n/fr/version.js',
   '/js/i18n/en/version.js',
+  '/js/i18n/fr/demarrage.js',
+  '/js/i18n/en/demarrage.js',
   '/js/i18n/fr/alertes.js',
   '/js/i18n/en/alertes.js',
   '/js/i18n/fr/autorisation.js',

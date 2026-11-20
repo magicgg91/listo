@@ -1,0 +1,185 @@
+// Guide de Listo en anglais : chapitre « Installation » (voir public/js/help-content.js).
+export default {
+  id: 'installation',
+  title: 'Installation',
+  server: true,
+  sections: [
+    {
+      id: 'prerequis',
+      title: 'What you need',
+      blocks: [
+        { ul: [
+          "A server: a computer that is always on, running Linux, with Docker and Docker Compose. Note its address on the local network (for example `192.168.1.20`): this is the `IP_LOCALE` used below.",
+          "An HTTPS reverse proxy, on this server or on another machine: Nginx Proxy Manager, Caddy, Traefik, nginx, Apache or another one, it doesn't matter which. It needs a subdomain that points to it (for example `listo.exemple.fr`) and a valid HTTPS certificate for that name (Let's Encrypt, for example). What it must do: [[proxy]].",
+          "A password manager, to keep Listo's key in ([[cle]]).",
+        ] },
+        "Listo is used over HTTPS: without HTTPS, it refuses to start in production, because signing in, offline mode and installing on the phone all need it.",
+      ],
+    },
+    {
+      id: 'dossier',
+      title: 'The folder and docker-compose.yml',
+      blocks: [
+        "A single file is enough, no source code:",
+        { code: "mkdir -p /opt/listo && cd /opt/listo\n# copy the repository's docker-compose.yml file here, then open it to edit it" },
+        "In `docker-compose.yml` (commented line by line), replace two values:",
+        { ol: [
+          "`LISTO_PUBLIC_URL=https://listo.exemple.fr`: the exact address you will type in the browser, without a `/` at the end. A different address makes every connection get refused (“unknown origin”).",
+          "`IP_LOCALE`: the server's address on the local network (`192.168.1.20:13300:13300`). Never `0.0.0.0`: the port must only be open on the local network, and only the proxy should use it.",
+        ] },
+        "The `data/` folder (database, backups, photos, log) and the `secrets/` folder (encryption key) are created automatically on first start, next to the file. They must never be copied anywhere except into your backups.",
+      ],
+    },
+    {
+      id: 'variables',
+      title: 'Settings (variables)',
+      blocks: [
+        "All the variables are in `docker-compose.yml`. None of them contains a password or a key.",
+        "The `environment:` part of the file, as shipped (the commented-out lines, starting with `#`, are optional: remove the `#` to use them):",
+        { code: "    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # backup around 3 AM, due-date summary at 8 AM\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # Default language (fr or en) and currency for wishes (EUR, USD, CHF…)\n      # - LISTO_LANG=fr\n      # - LISTO_CURRENCY=EUR\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP: access from Claude, off by default (Claude chapter)\n      # Push notifications: OFF by default. Encrypted content: Apple,\n      # Google, Mozilla or Microsoft only see the time, the size and the\n      # device. Keys in secrets/vapid.json: back it up along with secret.key.\n      # - LISTO_PUSH=on\n      # Sign-in with an identity provider (Authelia, Authentik, Pocket ID…):\n      # OFF by default (Installation chapter). Client secret in\n      # secrets/oidc-client-secret.\n      # - LISTO_OIDC=on\n      # - LISTO_OIDC_ISSUER=https://auth.exemple.fr\n      # - LISTO_OIDC_CLIENT_ID=listo\n      # - LISTO_OIDC_NAME=Authelia\n      # Password sign-in: on by default; off = identity provider only\n      # - LISTO_LOCAL_LOGIN=off" },
+        { table: {
+          head: ['Variable', 'Production value', 'What it does'],
+          rows: [
+            ['`NODE_ENV`', '`production`', "Production mode: secure cookies, HTTPS required."],
+            ['`PORT`', '`13300`', "Port Listo listens on inside the container (the same as in `ports:`)."],
+            ['`TZ`', '`Europe/Paris`', "Time zone: time of the nightly backup (3 AM), of the due-date summary (8 AM), and dates in the log. Set it: without it, the server counts in universal time (one or two hours earlier than in Paris)."],
+            ['`LISTO_PUBLIC_URL`', '`https://listo.exemple.fr`', "Exact public address, which must start with `https://` in production (otherwise Listo refuses to start and explains why in `docker logs listo`)."],
+            ['`LISTO_DB_PATH`', '`/data/listo.db`', "Database (`data/` folder)."],
+            ['`LISTO_KEY_PATH`', '`/secrets/secret.key`', "Encryption key, created on first start (`secrets/` folder)."],
+            ['`LISTO_SESSION_DAYS`', '`30`', "How long a session lasts without signing in again, in days."],
+            ['`LISTO_LANG`', 'not set: `fr`', "Default language, `fr` or `en`: the one used by an account set to “Automatic” when the browser doesn't give a known language, and for that account's notifications. A new installation set to `en` creates its starter stores and aisles in English. Any other value: Listo doesn't start and explains why in `docker logs`."],
+            ['`LISTO_CURRENCY`', 'not set: `EUR`', "Currency for wish prices, as a three-letter code (`EUR`, `USD`, `CHF`, `GBP`…), with two decimals. Only the display changes: prices already entered are not converted. Any other value: Listo doesn't start and explains why in `docker logs`."],
+            ['`LISTO_COMMIT`', 'set by the image', "Installed version, shown in Settings › “About”. Don't fill it in."],
+            ['`LISTO_UPDATE_CHECK`', 'not set: on', "`off` turns off the update check on GitHub ([[version]])."],
+            ['`LISTO_PRODUCT_LOOKUP`', 'not set: on', "`off` turns off scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur))."],
+            ['`LISTO_PRODUCT_CONTACT`', 'not set', "Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur))."],
+            ['`LISTO_MCP`', 'not set: off', "`on` turns on access from Claude ([[mcp-serveur]]). Any other value: off."],
+            ['`LISTO_PUSH`', 'not set: off', "`on` turns on notifications ([[notif-serveur]]); keys created in `secrets/vapid.json`. Any other value: off."],
+            ['`LISTO_OIDC`', 'not set: off', "`on` turns on sign-in with an OpenID Connect identity provider ([[sso-serveur]]); also requires `LISTO_OIDC_ISSUER` and the `secrets/oidc-client-secret` file. Any other value: off."],
+            ['`LISTO_OIDC_ISSUER`', 'not set', "Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`)."],
+            ['`LISTO_OIDC_CLIENT_ID`', 'not set: `listo`', "Listo's ID at the identity provider (`client_id`)."],
+            ['`LISTO_OIDC_NAME`', 'not set: `SSO`', "Provider name shown on screen, for example `Authelia`: the “Sign in with …” button, “My account”, Administration (30 characters at most)."],
+            ['`LISTO_LOCAL_LOGIN`', 'not set: on', "`off` turns off sign-in with username and password: you can only get in through the identity provider (requires `LISTO_OIDC=on`), and sessions opened with a password are closed ([[sso-serveur]])."],
+          ],
+        } },
+      ],
+    },
+    {
+      id: 'proxy',
+      title: 'What the proxy must do',
+      blocks: [
+        "Any reverse proxy will do, as long as it does the following. These requirements come from Listo's code; how to set them depends on the product (see its documentation, or the Nginx Proxy Manager example: [[npm]]).",
+        { ol: [
+          "Terminate HTTPS with a valid certificate for the subdomain, and redirect `http://` to `https://`. HTTPS is required: in production, Listo refuses to start if `LISTO_PUBLIC_URL` doesn't start with `https://`, its sign-in cookies are ‘Secure’ (the browser only sends them over HTTPS), and installing on the Home Screen as well as offline mode need HTTPS.",
+          "Forward the whole subdomain, at its root and without changing paths, to `http://IP_LOCALE:13300` (plain HTTP on the local network). Listo can't be installed in a subfolder of another site (an address ending in `…/listo` doesn't work). The address typed in the browser must be exactly `LISTO_PUBLIC_URL`: every change is refused (“unknown origin”) if the `Origin` header sent by the browser doesn't match it, so the proxy must not rewrite this header.",
+          "Let real-time updates through: `/api/events` is an HTTP connection that stays open (Server-Sent Events, type `text/event-stream`), not a WebSocket. The proxy must neither hold back nor cache its responses (Listo sends the `X-Accel-Buffering: no` header, which nginx understands), and its read timeout must be longer than 25 seconds: Listo sends a signal every 25 seconds on this connection. Otherwise, changes arrive late or the connection keeps getting cut.",
+          "Accept uploads of at least 2 MB: an item photo is 2 MB at most (Listo refuses anything bigger). Many proxies accept less by default (nginx: 1 MB); allow a little margin, for example 5 MB.",
+          "Pass on the visitors' real IP address: Listo trusts a single proxy and reads the last address in the `X-Forwarded-For` header, which the proxy must fill in with the person's address. It's used to block repeated password attempts. With two proxies one behind the other (an online service in front of your proxy, for example), Listo would see the address of the first one, and a block would hit everyone.",
+          "Pass on the other request headers unchanged: cookies, `Authorization` (access from Claude, [[mcp-serveur]]) and `Sec-Fetch-Site`.",
+          "Add the `Strict-Transport-Security` (HSTS) header, if the proxy allows it: Listo doesn't send it itself.",
+        ] },
+        { sub: "Restrict access to Listo's port" },
+        "Listo believes the IP address the proxy passes on: someone who reached port 13300 directly could make one up and get around the blocking of password attempts. So this port must only be reachable from the proxy's machine, with a firewall rule on the server or on the network (internet box, router).",
+        { ul: [
+          "Example with ufw, if the proxy is at `192.168.1.10`: `sudo ufw allow from 192.168.1.10 to any port 13300 proto tcp`. Careful: Docker opens the ports it publishes by going around ufw; you need a Docker-specific setting (the `DOCKER-USER` chain) or a firewall upstream.",
+          "Check: from another computer on the network, `curl http://IP_LOCALE:13300/healthz` must fail; from the proxy's machine, it must answer `{\"status\":\"ok\"}`.",
+          "The proxy's access log records the addresses of public links that were opened (`/p/…`). To cut off a link that may have been passed around, stop it from Listo.",
+        ] },
+      ],
+    },
+    {
+      id: 'npm',
+      title: 'Example with Nginx Proxy Manager',
+      blocks: [
+        "A step-by-step example, with Nginx Proxy Manager (it can be on another machine). In Nginx Proxy Manager, ‘Hosts’, ‘Proxy Hosts’, ‘Add Proxy Host’:",
+        { ul: [
+          "Details: ‘Domain Names’ = your subdomain; ‘Scheme’ = `http`; ‘Forward Hostname / IP’ = `IP_LOCALE`; ‘Forward Port’ = `13300`. ‘Websockets Support’: not needed, leave it unchecked (real-time updates go through an ordinary HTTP connection).",
+          "SSL: request a Let's Encrypt certificate, check ‘Force SSL’, ‘HTTP/2 Support’ and ‘HSTS Enabled’ (this is what adds the HSTS header).",
+          "Advanced (‘Custom Nginx Configuration’): paste the four lines below. These are nginx directives: with plain nginx, they go in the `location` block that forwards to Listo.",
+        ] },
+        { code: 'client_max_body_size 5m;\nproxy_buffering off;\nproxy_cache off;\nproxy_read_timeout 3600s;' },
+        { ul: [
+          "`client_max_body_size 5m;`: without it, photo uploads are refused (nginx accepts 1 MB by default; a Listo photo is 2 MB at most).",
+          "The other three are for real-time updates: without them, changes only reach the other phone after about a minute.",
+          "Nginx Proxy Manager already fills in the `X-Forwarded-For` header with the phones' real IP address: nothing to set.",
+          "Access from Claude: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([[mcp-serveur]]).",
+          "Firewall: only allow Nginx Proxy Manager's address to reach port 13300 ([[proxy]]).",
+        ] },
+      ],
+    },
+    {
+      id: 'demarrage',
+      title: 'First start and setup code',
+      blocks: [
+        "On the server, in `/opt/listo`:",
+        { code: "# downloads the image and starts Listo\ndocker compose up -d\n# shows the setup code\ndocker logs listo" },
+        { ol: [
+          "In `docker logs listo`, find the setup code, framed by `====` (it looks like `ABCD-EFGH-JKLM`). Don't share it with anyone.",
+          "Open `https://listo.exemple.fr`: the “Welcome to Listo” screen offers to create the Admin account ([[premier-admin]]).",
+          "This code only works once: the screen disappears as soon as an account exists.",
+        ] },
+      ],
+    },
+    {
+      id: 'cle',
+      title: 'Keep the secret key safe',
+      blocks: [
+        "Right after the first start, display the key and copy it into your password manager (one line of text):",
+        { code: 'cat /opt/listo/secrets/secret.key' },
+        "Without it, after a server failure or a restore on another machine, two-factor authentication can no longer be read: everyone has to set it up again ([[cle-perdue]]). Lists, photos and passwords don't depend on it. It is never copied into the nightly backups, on purpose: keep it separately, once and for all.",
+        "With notifications turned on (`LISTO_PUSH=on`), keep `secrets/vapid.json` (notification keys) the same way: without it, every device has to subscribe again ([[notif-serveur]]).",
+      ],
+    },
+    {
+      id: 'sauvegardes',
+      title: 'Backups',
+      blocks: [
+        { ul: [
+          "Every night around 3 AM (`TZ` time), Listo copies its database into `data/backups/` (`listo-YYYY-MM-DD-HHMM.db`), checks that the copy is intact, and keeps the last 14. Each copy, successful or failed, is recorded in the log (`backup_success` or `backup_failure`; the log is always in English). A failed copy doesn't stop Listo.",
+          "On-demand backup, before an update for example (`-u node` matters: the copy must belong to Listo, like the nightly ones):",
+        ] },
+        { code: 'docker exec -u node listo node server/backup-now.js' },
+        "The nightly copy contains neither the photos (`data/photos/`), nor the log (`data/journal.log`), nor the `secrets/secret.key` key (on purpose: a copy of the database alone doesn't let anyone read the two-factor authentication secrets). So back up the whole `/opt/listo/data` folder with the server's usual backup, and keep the key separately ([[cle]]). Restoring a backup: [operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).",
+      ],
+    },
+    {
+      id: 'verifications',
+      title: 'Checks once in production',
+      blocks: [{ ol: [
+        "HTTPS: `https://listo.exemple.fr` opens with the padlock; `http://listo.exemple.fr` redirects to `https://`.",
+        "Health: `https://listo.exemple.fr/healthz` answers `{\"status\":\"ok\"}`.",
+        "Security headers: run the address through a tool like [securityheaders.com](https://securityheaders.com). You should see `Content-Security-Policy`, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, `X-Robots-Tag` (sent by Listo) and `Strict-Transport-Security` (added by the proxy, see [[proxy]]), and no `X-Powered-By`.",
+        "A backup: the next morning, `ls -l /opt/listo/data/backups` shows a copy from the night, and `docker logs listo | grep backup` shows the `backup_success` line.",
+        "A test restore, once, with the nightly copy: [operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).",
+        "The port is closed: see [[proxy]].",
+        "The phone: installing on the Home Screen ([[telephone]]), then the ‘Vérifier sur les téléphones’ checklist (in French) in [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).",
+      ] }],
+    },
+    {
+      id: 'sso-serveur',
+      title: 'Sign-in with an identity provider (optional)',
+      server: true,
+      blocks: [
+        "With an identity provider at home (Authelia, Authentik or Pocket ID, for example: any provider that follows the OpenID Connect standard), everyone can sign in to Listo with their account at that provider (the “Sign in with …” button), in addition to the Listo username and password, which still work. Off by default; without it, there's no button and the `/oidc/…` addresses answer 404.",
+        { ol: [
+          "At the provider, create a client (sometimes called an ‘application’) for Listo: confidential (with a client secret), redirect address `https://listo.exemple.fr/oidc/retour` (Listo's address followed by `/oidc/retour`), scopes `openid` and `profile`, PKCE with `S256`, client secret sent in the header (`client_secret_basic`). Write down its ID (`client_id`) and its plain-text client secret.",
+          "Put the plain-text secret, alone on one line, in `secrets/oidc-client-secret` (next to `secret.key`), then run `chmod 600 secrets/oidc-client-secret`. Never in `docker-compose.yml` or in a variable. Keep a copy of it with the secret key ([[cle]]).",
+          "In `docker-compose.yml`, uncomment `LISTO_OIDC=on`, `LISTO_OIDC_ISSUER` with the provider's address (its ‘issuer’), `LISTO_OIDC_CLIENT_ID` if the ID isn't `listo`, and `LISTO_OIDC_NAME` with the name to display (otherwise “SSO”) ([[variables]]), then run `docker compose up -d`. `docker logs listo` should show the line ‘Sign-in with … enabled’ (startup messages follow `LISTO_LANG`: with `fr`, ‘Connexion avec … activée’). If not, the message says what's missing.",
+        ] },
+        "What Listo expects from the provider (the standard):",
+        { ul: [
+          "its description at the issuer's address followed by `/.well-known/openid-configuration`, with its addresses on the same site as the issuer;",
+          "an ID token signed with RS256, PS256 or ES256 (an unsigned token or one signed with HS256 is refused);",
+          "the person's username in `preferred_username` and their name in `name` (`profile` scope);",
+          "to authorize Claude ([[claude-connecter]]) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize Claude.",
+        ] },
+        "Two-factor authentication: if the token says it was done at the provider (`amr` contains `mfa`), Listo doesn't ask for its own code again. Otherwise, a Listo account that turned on Listo's two-factor authentication is asked for it again.",
+        "Example with Authelia: the client secret is created with `docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986` (‘Random Password’: the plain-text secret, for `secrets/oidc-client-secret`; ‘Digest’: its hash, for Authelia). The client is declared in `identity_providers.oidc.clients`, then you restart Authelia. With `authorization_policy: 'two_factor'`, Authelia handles two-factor authentication. With Authentik, Pocket ID or another provider: the same settings, in its interface.",
+        { code: "identity_providers:\n  oidc:\n    clients:\n      - client_id: 'listo'\n        client_name: 'Listo'\n        client_secret: '$pbkdf2-sha512$…'   # the hash (Digest)\n        public: false\n        authorization_policy: 'two_factor'\n        require_pkce: true\n        pkce_challenge_method: 'S256'\n        redirect_uris:\n          - 'https://listo.exemple.fr/oidc/retour'\n        scopes: ['openid', 'profile']\n        response_types: ['code']\n        grant_types: ['authorization_code']\n        token_endpoint_auth_method: 'client_secret_basic'" },
+        "The Listo server must reach the provider at its public address (`LISTO_OIDC_ISSUER`), over HTTPS. The `/oidc/connexion` and `/oidc/retour` addresses go through the same host as Listo: nothing to set in the proxy.",
+        "To get in ONLY through the provider, add `LISTO_LOCAL_LOGIN=off` ([[variables]]): the sign-in screen only shows “Sign in with …”, password sign-in is refused and sessions opened with a password are closed; in Administration, “Add account” no longer asks for a password (the person gets in through the provider, with the same username). If the provider is down, nobody can get in: remove the line (or set it to `on`), then run `docker compose up -d`, to get password sign-in back.",
+        { note: "The account at the provider opens the Listo account that has the same username (case doesn't matter): create the accounts there with the Listo usernames. On first sign-in, Listo remembers that account: a different account with the same name, later on, is refused (the Admin can use “Unlink … account”, in Administration › Accounts)." },
+      ],
+    },
+  ],
+};

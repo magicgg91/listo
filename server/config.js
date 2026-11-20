@@ -5,7 +5,7 @@
 // Aucune de ces variables ne contient de mot de passe ni de clé.
 
 import path from 'node:path';
-import { isLocale, validCurrency, DEFAULT_LOCALE } from '../public/js/i18n.js';
+import { isLocale, validCurrency, translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 export function loadConfig(env = process.env) {
   return {
@@ -121,49 +121,60 @@ export function validCommit(value) {
   return typeof value === 'string' && /^[0-9a-f]{40}$/.test(value) ? value : null;
 }
 
+// Langue des messages de la console (docker logs) : celle de l'installation
+// (LISTO_LANG) quand elle est valable, sinon le français (LISTO_LANG
+// absente ou fausse, configuration partielle des tests…). Jamais celle d'un
+// compte : la console sert à la personne qui gère le serveur.
+export function consoleLocale(config) {
+  return isLocale(config?.lang) ? config.lang : DEFAULT_LOCALE;
+}
+
 // Vérifie la configuration avant le démarrage. Renvoie un message clair si
-// quelque chose empêche Listo de démarrer, sinon null.
+// quelque chose empêche Listo de démarrer, sinon null. Le message est dans
+// la langue de la console (consoleLocale), le français si LISTO_LANG est
+// elle-même fausse.
 // En production, l'adresse publique doit être en https:// : sans HTTPS, les
 // cookies « Secure » ne passent pas, le service worker (hors ligne) ne
 // marche pas, et les mots de passe circuleraient en clair.
 export function configProblem(config) {
+  const lang = consoleLocale(config);
   let url;
   try {
     url = new URL(config.publicUrl);
   } catch {
-    return `LISTO_PUBLIC_URL n'est pas une adresse valide (« ${config.publicUrl} »). Exemple : https://listo.exemple.fr`;
+    return translate(lang, 'demarrage.config.adresse', { value: config.publicUrl });
   }
   if (config.production && url.protocol !== 'https:') {
-    return `En production, LISTO_PUBLIC_URL doit commencer par https:// (actuellement « ${config.publicUrl} »). Corrigez-la dans docker-compose.yml, puis relancez Listo.`;
+    return translate(lang, 'demarrage.config.https', { value: config.publicUrl });
   }
   if (config.lang !== undefined && !isLocale(config.lang)) {
-    return `LISTO_LANG doit valoir fr ou en (actuellement « ${config.lang} »).`;
+    return translate(lang, 'demarrage.config.langue', { value: config.lang });
   }
   if (config.currency !== undefined && !validCurrency(config.currency)) {
-    return `LISTO_CURRENCY doit être le code d'une monnaie à deux décimales, en trois lettres (EUR, USD, CHF…) ; actuellement « ${config.currency} ».`;
+    return translate(lang, 'demarrage.config.monnaie', { value: config.currency });
   }
   if (config.localLogin === false && !config.oidc) {
-    return 'LISTO_LOCAL_LOGIN=off coupe la connexion par mot de passe : il faut alors LISTO_OIDC=on (connexion avec un fournisseur d\'identité), sinon personne ne peut entrer.';
+    return translate(lang, 'demarrage.config.connexionLocale');
   }
   if (config.oidc) {
     let issuer;
     try {
       issuer = new URL(config.oidcIssuer);
     } catch {
-      return `LISTO_OIDC=on demande LISTO_OIDC_ISSUER, l'adresse du fournisseur d'identité (actuellement « ${config.oidcIssuer} »). Exemple : https://auth.exemple.fr`;
+      return translate(lang, 'demarrage.config.oidcAdresse', { value: config.oidcIssuer });
     }
     if (config.production && issuer.protocol !== 'https:') {
-      return `LISTO_OIDC_ISSUER doit commencer par https:// (actuellement « ${config.oidcIssuer} »).`;
+      return translate(lang, 'demarrage.config.oidcHttps', { value: config.oidcIssuer });
     }
     if (issuer.username || issuer.password || issuer.search || issuer.hash) {
-      return 'LISTO_OIDC_ISSUER : adresse simple attendue, sans identifiant, ni « ? », ni « # ».';
+      return translate(lang, 'demarrage.config.oidcSimple');
     }
     if (!/^[A-Za-z0-9._~-]{1,100}$/.test(config.oidcClientId)) {
-      return `LISTO_OIDC_CLIENT_ID invalide (« ${config.oidcClientId} ») : lettres sans accent, chiffres, . _ ~ - (100 au plus).`;
+      return translate(lang, 'demarrage.config.oidcClient', { value: config.oidcClientId });
     }
   }
   if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535) {
-    return `PORT invalide (« ${config.port} ») : un nombre entre 1 et 65535 est attendu.`;
+    return translate(lang, 'demarrage.config.port', { value: config.port });
   }
   return null;
 }

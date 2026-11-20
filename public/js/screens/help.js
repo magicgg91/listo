@@ -1,7 +1,10 @@
 // Écran « Aide » (#/aide, ou #/aide/<section> pour ouvrir une section
 // précise), ouvert depuis les Réglages. Il affiche le guide de Listo : tout
 // le texte vient de help-content.js, la même source que docs/guide.md et que
-// la page publique (site/).
+// la page publique (site/). Le guide suit la langue de la personne
+// (helpFor(getLocale()), lu à chaque affichage) : chapitres, renvois
+// [[…]] et leurs numéros, « Qui peut quoi », recherche et sommaire viennent
+// tous du guide de cette langue (help-content-en.js pour l'anglais).
 // - trois boutons ronds flottants, en pile en bas à droite (icône seule,
 //   aria-label, info-bulle au survol et au focus) : de bas en haut,
 //   « Sommaire du guide », « Rechercher dans le guide », puis « Retour en
@@ -47,8 +50,8 @@ import { goBack } from '../router.js';
 import { openSheet, onPc, releaseFocus } from '../ui.js';
 import { keepFieldFocus } from '../tap.js';
 import { highlightParts, resultsLabel } from '../search.js';
-import { GUIDE, ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE, outline, numbered, parseInline, refLabel, searchGuide } from '../help-content.js';
-import { t } from '../i18n.js';
+import { helpFor, outline, numbered, parseInline, refLabel, searchGuide } from '../help-content.js';
+import { t, getLocale } from '../i18n.js';
 
 // Identifiant d'élément (unique dans la page) de l'ancre d'une section
 export const anchorId = (id) => `guide-${id}`;
@@ -64,7 +67,10 @@ function marked(text, query) {
 
 // sectionId : section à montrer tout de suite (adresse #/aide/<section>)
 export function renderHelp(sectionId = null) {
-  const entries = outline();
+  // Le guide de la langue affichée (français ou anglais)
+  const help = helpFor(getLocale());
+  const { GUIDE, SERVER_NOTE } = help;
+  const entries = outline(GUIDE);
   const entryOf = new Map(entries.map((e) => [e.id, e]));
   const pc = onPc(); // ordinateur : sommaire fixe à gauche, recherche dans l'en-tête
   // chapitres dépliés (hors recherche) : le premier ; tous sur ordinateur
@@ -177,7 +183,7 @@ export function renderHelp(sectionId = null) {
           event.preventDefault();
           jump(part.ref);
         },
-      }, marked(refLabel(part.ref), query));
+      }, marked(refLabel(part.ref, GUIDE), query));
     }
     if (part.link !== undefined) return h('a', { href: part.href, target: '_blank', rel: 'noopener noreferrer' }, marked(part.link, query));
     return marked(part.text, query);
@@ -192,7 +198,7 @@ export function renderHelp(sectionId = null) {
     if (entry.note) return h('div', { class: 'note help__note-box' }, icon('alert'), h('p', {}, rich(entry.note)));
     if (entry.sub) return h('h4', { class: 'help__sub' }, rich(entry.sub));
     if (entry.table) return table(entry.table, rich);
-    if (entry.who) return whoCanWhat(query);
+    if (entry.who) return whoCanWhat(query, help);
     return null;
   };
 
@@ -238,7 +244,7 @@ export function renderHelp(sectionId = null) {
   function draw() {
     folds = new Map();
     headings = new Map();
-    const result = searchGuide(query);
+    const result = searchGuide(query, help);
     if (!result) {
       status.textContent = '';
       replace(content, GUIDE.map((chapter) => chapterPart(chapter, null)));
@@ -445,8 +451,9 @@ function table({ head, rows }, rich) {
 }
 
 // « Qui peut quoi » : un bloc par action, les rôles dessous, « oui » ou
-// « non » en icône ET en texte (jamais la couleur seule)
-function whoCanWhat(query) {
+// « non » en icône ET en texte (jamais la couleur seule) ; help : le guide
+// de la langue affichée (rôles, actions et note dans cette langue)
+function whoCanWhat(query, { ROLES, PERMISSIONS, PERMISSIONS_NOTE }) {
   return h('div', { class: 'help-who' },
     h('div', { class: 'group' }, PERMISSIONS.map((permission) => h('div', { class: 'help-who__row' },
       h('p', { class: 'help-who__action' }, marked(permission.action, query)),

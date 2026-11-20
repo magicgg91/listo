@@ -7,30 +7,37 @@
 
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { loadConfig } from './config.js';
+import { loadConfig, consoleLocale } from './config.js';
 import { createBackups } from './backup.js';
 import { createAudit, createJournalFile } from './audit.js';
+import { translate } from '../public/js/i18n.js';
+
+// Configuration lue d'abord : les messages suivent la langue de
+// l'installation (LISTO_LANG), le français si elle n'est pas valable
+const config = loadConfig();
+const lang = consoleLocale(config);
 
 // Lancée en administrateur (root), la copie et son dossier n'appartiendraient
 // plus à Listo, qui ne pourrait plus y écrire ses sauvegardes de la nuit
 if (process.getuid?.() === 0) {
-  console.error('Sauvegarde non faite : lancez cette commande avec « -u node » :');
+  console.error(translate(lang, 'demarrage.sauvegarde.utilisateur'));
   console.error('  docker exec -u node listo node server/backup-now.js');
   process.exit(1);
 }
 
-const config = loadConfig();
 const dataDir = path.dirname(config.dbPath);
 let db;
 try {
   db = new Database(config.dbPath, { fileMustExist: true });
 } catch {
-  console.error(`Sauvegarde impossible : base introuvable (${config.dbPath}).`);
+  console.error(translate(lang, 'demarrage.sauvegarde.baseIntrouvable', { path: config.dbPath }));
   process.exit(1);
 }
 db.pragma('busy_timeout = 5000');
-const audit = createAudit({ file: createJournalFile({ path: path.join(dataDir, 'journal.log') }) });
+const audit = createAudit({ file: createJournalFile({ path: path.join(dataDir, 'journal.log'), locale: lang }) });
 const result = createBackups({ db, dir: path.join(dataDir, 'backups'), audit }).run();
 db.close();
-console.log(result.ok ? `Sauvegarde créée : ${result.file}` : `Sauvegarde ratée : ${result.error}`);
+console.log(result.ok
+  ? translate(lang, 'demarrage.sauvegarde.creee', { file: result.file })
+  : translate(lang, 'demarrage.sauvegarde.ratee', { error: result.error }));
 process.exit(result.ok ? 0 : 1);

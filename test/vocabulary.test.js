@@ -23,7 +23,8 @@ const jsFiles = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: t
 });
 
 test('interface : « invité » ne désigne jamais une personne qui peut modifier', () => {
-  for (const file of jsFiles('public/js').filter((f) => !f.endsWith('help-content.js'))) {
+  // (hors du guide, en français et en anglais : help-content.js, help-content-en.js, help-en/)
+  for (const file of jsFiles('public/js').filter((f) => !/(^|\/)help-content(-en)?\.js$|(^|\/)help-en\//.test(f))) {
     const text = code(file);
     // Aucun texte d'écran, de menu, de message ou d'aria-label ne dit « invité » :
     // il y est question de « personnes avec qui la liste est partagée »

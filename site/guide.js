@@ -27,10 +27,33 @@
 // - toucher une entrée ferme la feuille (et efface une recherche en cours),
 //   fait défiler jusqu'au titre et lui donne le focus ; Échap ou la croix
 //   rendent le focus au bouton.
-// Aucun appel à un autre site ; textes posés par le HTML de la page.
+// Langues : le même script sert la page anglaise (site/index.html) et la
+// page française (site/fr/index.html). Il n'écrit aucun texte lui-même : les
+// textes sont posés par le HTML de la page, dans sa langue ; le nombre de
+// résultats (« 4 résultats », “4 results”) vient des formes du pluriel
+// écrites dans la page (data-texts, textes de l'application), choisies avec
+// Intl.PluralRules dans la langue de la page (<html lang>).
+// Aucun appel à un autre site.
 // Fichier source : scripts/site-assets/guide.js (site/ est fabriqué).
 
-import { highlightParts, matches, isSearching, resultsLabel } from './search.js';
+import { highlightParts, matches, isSearching, resultsLabel, setTranslator } from './search.js';
+
+// --- Textes dans la langue de la page (pour search.js) ---
+// data-texts : { nom : texte, ou { one, other… } selon le nombre }
+const pageTexts = (() => {
+  try {
+    return JSON.parse(document.querySelector('[data-texts]')?.dataset.texts ?? '{}');
+  } catch {
+    return {};
+  }
+})();
+const plural = new Intl.PluralRules(document.documentElement.lang || undefined);
+setTranslator((key, { count } = {}) => {
+  const value = pageTexts[key];
+  if (value === undefined) return key;
+  const text = typeof value === 'object' ? (value[`=${count}`] ?? value[plural.select(Number(count) || 0)] ?? value.other) : value;
+  return String(text).replace(/\{count\}/g, String(count));
+});
 
 // --- Recherche ---
 const search = document.getElementById('guide-recherche');

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { matchRoute, ROUTES } from '../public/js/router.js';
-import { GUIDE, PERMISSIONS, PERMISSIONS_NOTE, ROLES, SERVER_NOTE, outline, numbered, parseInline, refLabel, blockTexts, searchGuide, plainText } from '../public/js/help-content.js';
+import { GUIDE, PERMISSIONS, PERMISSIONS_NOTE, ROLES, SERVER_NOTE, outline, numbered, parseInline, refLabel, blockTexts, searchGuide, plainText, helpFor } from '../public/js/help-content.js';
 import { resultsLabel } from '../public/js/search.js';
 import fr from '../public/js/i18n/fr.js';
 
@@ -315,6 +315,9 @@ test('sommaire : feuille du kit (openSheet), section en cours repérée sans la 
 test('hors ligne : les fichiers de l\'aide sont gardés par le service worker, nouvelle version', () => {
   const sw = read('public/sw.js');
   assert.match(sw, /'\/js\/help-content\.js',/);
+  // Le guide en anglais : l'assembleur et chacun de ses fichiers
+  assert.match(sw, /'\/js\/help-content-en\.js',/);
+  for (const file of fs.readdirSync(path.join(ROOT, 'public/js/help-en'))) assert.ok(sw.includes(`'/js/help-en/${file}',`), file);
   assert.match(sw, /'\/js\/screens\/help\.js',/);
   assert.match(sw, /const VERSION = `v(69|[7-9]\d|\d{3,})-/);
   assert.match(sw, /'\/js\/search\.js',/);
@@ -531,4 +534,43 @@ test('chapitre « Notifications » : son sommaire, ses sujets ; plus aucune affi
   const limits = JSON.stringify(GUIDE.find((c) => c.id === 'presentation').sections.find((s) => s.id === 'limites'));
   assert.match(limits, /Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions/);
   for (const needle of ['GitHub', 'Open Food Facts', 'notifications']) assert.ok(limits.includes(needle), needle);
+});
+
+// --- Langue du guide ---
+
+test('écran : le guide de la langue affichée (helpFor(getLocale()), lu à chaque affichage), renvois et « Qui peut quoi » compris', async (t) => {
+  const screen = code('public/js/screens/help.js');
+  assert.match(screen, /import \{ helpFor, outline, numbered, parseInline, refLabel, searchGuide \} from '\.\.\/help-content\.js';/);
+  assert.match(screen, /export function renderHelp\(sectionId = null\) \{\s*const help = helpFor\(getLocale\(\)\);\s*const \{ GUIDE, SERVER_NOTE \} = help;\s*const entries = outline\(GUIDE\);/);
+  assert.match(screen, /refLabel\(part\.ref, GUIDE\)/);
+  assert.match(screen, /searchGuide\(query, help\)/);
+  assert.match(screen, /whoCanWhat\(query, help\)/);
+  assert.doesNotMatch(screen, /import \{[^}]*\b(GUIDE|ROLES|PERMISSIONS|SERVER_NOTE)\b[^}]*\} from '\.\.\/help-content\.js'/, 'jamais le guide français importé tel quel');
+  // Rendu en anglais : chapitres, sections, renvois, « Qui peut quoi » et
+  // recherche viennent du guide anglais
+  const { setLocale } = await import('../public/js/i18n.js');
+  setLocale('en');
+  t.after(() => setLocale('fr'));
+  const en = helpFor('en');
+  const page = await render(t);
+  assert.deepEqual(toggles(page).map((b) => b.textContent), outline(en.GUIDE).filter((e) => e.level === 1).map(numbered));
+  assert.deepEqual(page.findAll((n) => n.tag === 'h3').map((n) => n.textContent), outline(en.GUIDE).filter((e) => e.level === 2).map(numbered));
+  const backups = page.findAll((n) => hasClass(n, 'help__ref') && n.attrs.href === '#/aide/sauvegardes')[0];
+  assert.equal(backups.textContent, refLabel('sauvegardes', en.GUIDE));
+  assert.ok(page.textContent.includes(en.SERVER_NOTE) && !page.textContent.includes(SERVER_NOTE));
+  const chips = page.findAll((n) => hasClass(n, 'help-who__role'));
+  assert.equal(chips.length, en.PERMISSIONS.length * en.ROLES.length);
+  assert.ok(chips.every((chip) => / : (yes|no)$|: (yes|no)$/.test(chip.textContent)), chips[0].textContent);
+  assert.ok(page.textContent.includes(en.PERMISSIONS_NOTE));
+  assert.equal(page.findAll((n) => n.tag === 'input')[0].attrs['aria-label'], 'Search the guide');
+  const input = page.findAll((n) => n.tag === 'input')[0];
+  input.value = 'backup';
+  input.fire('input');
+  const status = page.findAll((n) => n.attrs.role === 'status')[0];
+  assert.equal(toggles(page).length, searchGuide('backup', en).chapters.length);
+  assert.ok(status.textContent.length > 0);
+  // Retour au français : le guide français de nouveau
+  setLocale('fr');
+  const back = await render(t);
+  assert.equal(back.findAll((n) => n.tag === 'h3')[0].textContent, numbered(outline().find((e) => e.level === 2)));
 });

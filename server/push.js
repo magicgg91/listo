@@ -35,6 +35,7 @@ import {
   encryptMessage, fromB64url, toB64url, isP256PublicKey, generateVapidKeys, vapidKeyObject, vapidAuthorization, MAX_PLAINTEXT_BYTES,
 } from './webpush.js';
 import { translate, intlTag, DEFAULT_LOCALE } from '../public/js/i18n.js';
+import { consoleLocale } from './config.js';
 
 // --- Services de push autorisés ---
 // Sources (documentation officielle, relevée le 10 novembre 2026) :
@@ -101,10 +102,11 @@ export function checkKeys(keys) {
 // lu ni créé, renvoie null. Sinon renvoie { keys, created }.
 export function preparePushKeys(config) {
   if (!config.push) return null;
-  return loadOrCreateVapidKeys(config.vapidPath);
+  return loadOrCreateVapidKeys(config.vapidPath, { locale: consoleLocale(config) });
 }
 
-export function loadOrCreateVapidKeys(file) {
+// locale : langue du message d'un fichier abîmé (console, LISTO_LANG)
+export function loadOrCreateVapidKeys(file, { locale = DEFAULT_LOCALE } = {}) {
   if (fs.existsSync(file)) {
     let keys;
     try {
@@ -113,7 +115,7 @@ export function loadOrCreateVapidKeys(file) {
       vapidKeyObject(keys); // vérifie la paire
     } catch {
       // Fichier abîmé : on s'arrête plutôt que de le remplacer en silence
-      throw new Error(`Le fichier ${file} est invalide. Restaurez sa copie de sauvegarde, ou effacez-le pour créer de nouvelles clés (chaque appareil devra alors réactiver les notifications, ou se réabonnera tout seul à la prochaine ouverture de Listo).`);
+      throw new Error(translate(locale, 'demarrage.push.fichierInvalide', { path: file }));
     }
     return { keys, created: false };
   }
@@ -185,6 +187,7 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
   const { db } = ctx;
   const signingKey = vapidKeyObject(keys);
   const subject = new URL(ctx.config.publicUrl).origin; // jamais une adresse e-mail
+  const lang = consoleLocale(ctx.config); // langue des lignes de la console
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -283,7 +286,7 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
         body,
       }));
     } catch {
-      log('Notifications : un service de push n\'a pas répondu.');
+      log(translate(lang, 'demarrage.push.sansReponse'));
       return 'failed';
     }
     if (status >= 200 && status < 300) {
@@ -292,10 +295,10 @@ export function createPushService(ctx, { keys, request = fetchPush, log = (line)
     }
     if (status === 404 || status === 410) {
       q.drop.run(sub.id);
-      log(`Notifications : abonnement expiré retiré (HTTP ${status}).`);
+      log(translate(lang, 'demarrage.push.expire', { status }));
       return 'expired';
     }
-    log(`Notifications : envoi refusé par le service de push (HTTP ${status}).`);
+    log(translate(lang, 'demarrage.push.refuse', { status }));
     return 'refused';
   }
 

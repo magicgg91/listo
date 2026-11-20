@@ -21,6 +21,7 @@ import compte from './fr/compte.js';
 import comptes from './fr/comptes.js';
 import connexion from './fr/connexion.js';
 import corbeille from './fr/corbeille.js';
+import demarrage from './fr/demarrage.js';
 import donnees from './fr/donnees.js';
 import echeances from './fr/echeances.js';
 import fenetres from './fr/fenetres.js';
@@ -51,6 +52,6 @@ import reseau from './fr/reseau.js';
 import scan from './fr/scan.js';
 import version from './fr/version.js';
 
-export const PARTS = { administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, donnees, echeances, fenetres, format, formulaire, icones, lienpublic, liens, liste, listes, menu, mots, navigation, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
+export const PARTS = { administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, lienpublic, liens, liste, listes, menu, mots, navigation, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
 
 export default Object.assign({}, ...Object.values(PARTS));

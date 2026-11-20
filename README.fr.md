@@ -1,0 +1,59 @@
+Version anglaise : [README.md](README.md)
+
+# Listo
+
+**Listo est une application de listes partagées (courses, tâches, idées de cadeaux), pensée pour le téléphone, que l'on installe sur son propre serveur.** Gratuite, sans publicité, en français, pour une famille ou un petit groupe de proches.
+
+## L'essentiel
+
+- **Listes partagées en direct** : un article coché sur un téléphone l'est sur les autres en quelques secondes ; chaque personne a son droit, « Peut modifier » ou « Lecture seule ».
+- **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance, répétition, attribution) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
+- **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
+- **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
+- **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
+- **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
+- **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées, et tâches qu'on vous attribue), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
+- **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/fr/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
+
+## En images
+
+| ![« Mes listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
+| :---: | :---: | :---: | :---: | :---: |
+| Mes listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
+| ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Connexions Claude » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
+| Envies, réservations | Mode scan | Lien public | « Connexions Claude » | Réglages |
+
+*Instance de démonstration, données inventées.*
+
+## Installation en trois commandes
+
+Il faut un serveur Linux avec Docker, un nom de domaine, et un proxy inverse HTTPS, peu importe lequel (Nginx Proxy Manager, Caddy, Traefik, nginx, Apache…).
+
+```sh
+mkdir -p /opt/listo && cd /opt/listo     # puis y copier docker-compose.yml et le régler
+docker compose up -d                     # télécharge et démarre Listo
+docker logs listo                        # affiche le code de démarrage du premier Admin
+```
+
+Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pour Nginx Proxy Manager, clé secrète, vérifications) est dans le guide, [chapitre Installation](docs/guide.md#installation). Sauvegardes : [guide](docs/guide.md#sauvegardes). Restauration, mises à jour et dépannage du serveur : le guide d'exploitation, [docs/exploitation.md](docs/exploitation.md).
+
+## Limites
+
+- **Aucune donnée envoyée ailleurs que sur votre serveur**, sauf trois exceptions désactivables : la vérification d'une nouvelle version (GitHub), le nom d'un produit scanné (Open Food Facts) et les **notifications push**, désactivées par défaut (`LISTO_PUSH=on` les active ; contenu chiffré de bout en bout, mais Apple, Google, Mozilla ou Microsoft voient l'heure, la taille du message et l'appareil destinataire). Si vous connectez Claude (`LISTO_MCP=on`), les listes autorisées lui sont envoyées quand vous l'interrogez. Connexion facultative par votre propre fournisseur d'identité OpenID Connect, par exemple Authelia, Authentik ou Pocket ID (`LISTO_OIDC=on`, [guide](docs/guide.md#sso-serveur)). En français et en anglais, pas de paiement ; notifications sur iPhone et iPad : iOS 16.4 ou plus, Listo installé sur l'écran d'accueil ([chapitre Notifications](docs/guide.md#notifications)).
+
+## Liens utiles
+
+- [Le guide en ligne](https://magicgg91.github.io/listo/fr/), ou [docs/guide.md](docs/guide.md) dans le dépôt : pour tout le monde.
+- [docs/cahier-des-charges.md](docs/cahier-des-charges.md) : fonctions, droits, modèle de données, sécurité, décisions.
+- [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones.
+- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès depuis Claude ; [design/README.md](design/README.md) : le kit de design.
+
+## Sécurité
+
+Le port de Listo n'est publié que sur le réseau local ; seul le proxy HTTPS doit pouvoir le joindre. Mots de passe hachés, cookies protégés, blocage après 5 essais, politique de sécurité du contenu stricte. Signaler une faille, en privé : [SECURITY.md](SECURITY.md).
+
+## Licence et crédits
+
+- Licence **Apache-2.0**, © magicgg91 : [LICENSE](LICENSE). En cas de réutilisation, conserver [NOTICE](NOTICE) et la mention de l'auteur. Contribuer : [CONTRIBUTING.md](CONTRIBUTING.md).
+- Lecteur de codes-barres : [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT et Apache-2.0). Noms des produits : [Open Food Facts](https://world.openfoodfacts.org) (ODbL).
+- Développé avec l'aide de Claude (Anthropic).

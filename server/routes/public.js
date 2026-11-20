@@ -52,7 +52,8 @@ import { createLimiter } from '../limiter.js';
 import { sendPhoto } from '../photos.js';
 import { ACCESS_COOKIE } from '../shares.js';
 import { splitDone } from '../../public/js/sorting.js';
-import { DEFAULT_LOCALE } from '../../public/js/i18n.js';
+import { DEFAULT_LOCALE, translate } from '../../public/js/i18n.js';
+import { consoleLocale } from '../config.js';
 import { requestLocale } from '../locale.js';
 import { nestItems, usesSubtasks, orderSubtasks } from '../../public/js/subtasks.js';
 
@@ -438,7 +439,7 @@ export function publicRoutes(ctx, { publicDir }) {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: req.t('liens.public.requeteMalFormee') });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: req.t('liens.public.requeteTropVolumineuse') });
     if (err.status >= 400 && err.status < 500) return res.status(err.status).json({ error: req.t('liens.public.requeteInvalide') }); // adresse mal formée…
-    console.error('Erreur inattendue (lien public) :', err.message);
+    console.error(translate(consoleLocale(ctx.config), 'demarrage.erreur.lienPublic'), err.message);
     res.status(500).json({ error: req.t('liens.public.erreurInterne') });
   });
 

@@ -1,79 +1,79 @@
-# Listo en production, derrière un proxy inverse HTTPS (Nginx Proxy Manager, Caddy,
-# Traefik, nginx… : peu importe lequel ; ce qu'il doit faire : docs/guide.md,
-# « Ce que doit faire le proxy »). L'exemple ci-dessous : proxy sur une autre machine.
+# Listo in production, behind an HTTPS reverse proxy (Nginx Proxy Manager, Caddy,
+# Traefik, nginx…: any of them will do; what it must do: docs/guide.en.md,
+# “What the proxy must do”). The example below: proxy on another machine.
 #
-# À placer seul sur le serveur (aucun code source n'est nécessaire), puis :
-#   docker compose up -d                     (démarrer)
-#   docker logs listo                        (voir les journaux)
-#   docker compose pull && docker compose up -d   (mettre à jour)
-#   docker exec -u node listo node server/backup-now.js   (sauvegarde à la demande)
-# Le guide complet (installation, sauvegarde, restauration, dépannage) est
-# dans le dépôt : README, puis docs/guide.md (chapitre Installation) ;
-# mises à jour et restauration : docs/exploitation.md.
+# Put this file alone on the server (no source code is needed), then:
+#   docker compose up -d                     (start)
+#   docker logs listo                        (view the logs)
+#   docker compose pull && docker compose up -d   (update)
+#   docker exec -u node listo node server/backup-now.js   (backup on demand)
+# The full guide (installation, backup, restore, troubleshooting) is
+# in the repository: README, then docs/guide.en.md (Installation chapter);
+# updates and restore: docs/exploitation.md (in French).
 #
-# Le proxy n'étant pas sur la même machine, il n'y a pas de réseau Docker
-# partagé : Listo publie son port sur l'adresse du réseau local du serveur
-# (IP_LOCALE), jamais sur toutes les interfaces. Dans le proxy : schéma http,
-# cette adresse IP et le port 13300 ; le HTTPS s'arrête chez lui. Ouvrir Listo directement par http://IP:13300 ne permet pas de se
-# connecter (origine et cookie Secure refusés) : c'est voulu.
-# Un pare-feu qui n'autorise que l'adresse du proxy à joindre ce port est
-# recommandé.
-# Aucun mot de passe ni clé ici : la clé est générée au premier démarrage.
+# As the proxy is not on the same machine, there is no shared Docker
+# network: Listo publishes its port on the server's local network address
+# (IP_LOCALE), never on all interfaces. In the proxy: http scheme,
+# this IP address and port 13300; HTTPS ends at the proxy. Opening Listo directly at http://IP:13300 does not let you
+# sign in (origin and Secure cookie refused): this is intended.
+# A firewall that only lets the proxy's address reach this port is
+# recommended.
+# No password or key here: the key is generated on first start.
 
 services:
   listo:
-    image: ghcr.io/magicgg91/listo:latest   # construite par GitHub Actions
+    image: ghcr.io/magicgg91/listo:latest   # built by GitHub Actions
     container_name: listo
     restart: unless-stopped
-    # Toutes les variables lues par Listo (aucune ne contient de secret)
+    # All the variables read by Listo (none of them contains a secret)
     environment:
-      - NODE_ENV=production          # production : cookies « Secure », https obligatoire
-      - PORT=13300                   # port d'écoute dans le conteneur (le même que ci-dessous)
-      - TZ=Europe/Paris              # fuseau horaire : sauvegarde vers 3 h, résumé des échéances à 8 h (heure de Paris)
-      - LISTO_PUBLIC_URL=https://listo.exemple.fr   # À REMPLACER : votre sous-domaine, en https (sinon Listo refuse de démarrer)
-      - LISTO_DB_PATH=/data/listo.db                # base (dans le volume data)
-      - LISTO_KEY_PATH=/secrets/secret.key          # clé de chiffrement 2FA, créée au 1er démarrage (volume secrets)
-      - LISTO_SESSION_DAYS=30        # durée d'une session sans se reconnecter, en jours
-      # Langue par défaut (fr ou en, le français sans réglage) et monnaie du
-      # prix des envies (EUR sans réglage ; USD, CHF, GBP…). Voir docs/guide.md.
+      - NODE_ENV=production          # production: “Secure” cookies, https required
+      - PORT=13300                   # port listened on inside the container (the same as below)
+      - TZ=Europe/Paris              # time zone: backup around 3 AM, due-date summary at 8 AM (Paris time)
+      - LISTO_PUBLIC_URL=https://listo.exemple.fr   # TO REPLACE: your subdomain, with https (otherwise Listo refuses to start)
+      - LISTO_DB_PATH=/data/listo.db                # database (in the data volume)
+      - LISTO_KEY_PATH=/secrets/secret.key          # 2FA encryption key, created on first start (secrets volume)
+      - LISTO_SESSION_DAYS=30        # how long a session lasts without signing in again, in days
+      # Default language (fr or en, French when not set) and currency of
+      # wish prices (EUR when not set; USD, CHF, GBP…). See docs/guide.en.md.
       # - LISTO_LANG=fr
       # - LISTO_CURRENCY=EUR
-      # Vérification de mise à jour (Réglages › À propos, Admin) : au plus une
-      # fois par heure, le conteneur demande à api.github.com (sans compte ni
-      # jeton) s'il existe une image plus récente. Rien ne s'installe tout seul.
-      # Décommenter la ligne ci-dessous pour la couper (aucune demande vers GitHub).
+      # Update check (Settings › About, Admin): at most once
+      # an hour, the container asks api.github.com (without an account or
+      # token) whether a newer image exists. Nothing installs by itself.
+      # Uncomment the line below to turn it off (no request to GitHub).
       # - LISTO_UPDATE_CHECK=off
-      # Mode scan des listes de courses : le conteneur demande le nom d'un
-      # produit à world.openfoodfacts.org à partir de son code-barres (la photo
-      # reste sur le téléphone ; seul le numéro part). Décommenter la ligne
-      # ci-dessous pour le couper (bouton « Scanner » masqué, aucune demande).
+      # Scan mode of shopping lists: the container asks world.openfoodfacts.org
+      # for a product's name from its barcode (the picture stays on
+      # the phone; only the number is sent). Uncomment the line
+      # below to turn it off (“Scan” button hidden, no request).
       # - LISTO_PRODUCT_LOOKUP=off
-      # Facultatif : contact (adresse e-mail ou URL) ajouté à l'en-tête
-      # User-Agent envoyé à Open Food Facts, qui le demande pour joindre
-      # l'application en cas de souci. Sans lui : adresse du projet seulement.
+      # Optional: contact (email address or URL) added to the User-Agent
+      # header sent to Open Food Facts, which asks for it to reach the
+      # application if there is a problem. Without it: project address only.
       # - LISTO_PRODUCT_CONTACT=https://exemple.fr/contact
-      # LISTO_MCP : accès depuis Claude, désactivé par défaut et volontairement
-      # absent d'ici ; pour l'activer, lire d'abord docs/guide.md, chapitre
-      # « MCP Claude » (essai réel avant la production).
-      # Notifications push : DÉSACTIVÉES par défaut ; décommenter la ligne
-      # ci-dessous pour les activer. Contenu chiffré : Apple, Google, Mozilla
-      # ou Microsoft ne voient que l'heure, la taille et l'appareil. Clés
-      # créées dans secrets/vapid.json : à sauvegarder avec secret.key.
+      # LISTO_MCP: access from Claude, off by default and deliberately
+      # left out of here; to turn it on, first read docs/guide.en.md, chapter
+      # “Claude MCP” (real trial before production).
+      # Push notifications: OFF by default; uncomment the line
+      # below to turn them on. Encrypted content: Apple, Google, Mozilla
+      # or Microsoft only see the time, the size and the device. Keys
+      # created in secrets/vapid.json: back them up along with secret.key.
       # - LISTO_PUSH=on
-      # Connexion par un fournisseur d'identité OpenID Connect (Authelia,
-      # Authentik, Pocket ID…) : DÉSACTIVÉE par défaut ; voir docs/guide.md,
-      # « Connexion avec un fournisseur d'identité ». Clé secrète du client
-      # dans secrets/oidc-client-secret (jamais ici). LISTO_OIDC_NAME : nom
-      # affiché (« SSO » par défaut).
+      # Sign-in with an OpenID Connect identity provider (Authelia,
+      # Authentik, Pocket ID…): OFF by default; see docs/guide.en.md,
+      # “Sign-in with an identity provider”. Client secret
+      # in secrets/oidc-client-secret (never here). LISTO_OIDC_NAME: name
+      # shown on screen (“SSO” by default).
       # - LISTO_OIDC=on
       # - LISTO_OIDC_ISSUER=https://auth.exemple.fr
       # - LISTO_OIDC_CLIENT_ID=listo
       # - LISTO_OIDC_NAME=Authelia
-      # Connexion par mot de passe : activée par défaut ; « off » = fournisseur
-      # seulement (exige LISTO_OIDC=on ; sessions par mot de passe fermées)
+      # Password sign-in: on by default; “off” = identity provider
+      # only (requires LISTO_OIDC=on; password sessions are closed)
       # - LISTO_LOCAL_LOGIN=off
     ports:
-      - "IP_LOCALE:13300:13300"   # à remplacer par l'adresse du serveur sur le réseau local, jamais 0.0.0.0
+      - "IP_LOCALE:13300:13300"   # replace with the server's address on the local network, never 0.0.0.0
     volumes:
-      - ./data:/data         # base listo.db, sauvegardes (backups/), photos, journal.log
-      - ./secrets:/secrets   # clé de chiffrement, gardée à part de la base (jamais dans data/backups)
+      - ./data:/data         # listo.db database, backups (backups/), photos, journal.log
+      - ./secrets:/secrets   # encryption key, kept apart from the database (never in data/backups)

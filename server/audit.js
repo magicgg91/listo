@@ -16,6 +16,7 @@
 // adresses IP y figurent.
 
 import fs from 'node:fs';
+import { translate, DEFAULT_LOCALE } from '../public/js/i18n.js';
 
 const MEGABYTE = 1024 * 1024;
 
@@ -40,7 +41,9 @@ export function createAudit({ write = (line) => console.log(line), file = null, 
 // Si l'écriture échoue (disque plein, droits…), Listo continue normalement :
 // l'erreur est signalée dans docker logs, une seule fois tant que le problème
 // dure, et la connexion en cours n'est jamais bloquée.
-export function createJournalFile({ path, maxBytes = MEGABYTE, keep = 5, report = (message) => console.error(message) }) {
+// locale : langue de ces signalements (console, LISTO_LANG) ; les lignes du
+// journal elles-mêmes restent en anglais.
+export function createJournalFile({ path, maxBytes = MEGABYTE, keep = 5, locale = DEFAULT_LOCALE, report = (message) => console.error(message) }) {
   let failing = false;
 
   // Décale journal.log → .1 → .2 … → .5 (le .5 existant est supprimé)
@@ -73,12 +76,12 @@ export function createJournalFile({ path, maxBytes = MEGABYTE, keep = 5, report 
       fs.chmodSync(path, 0o600);
       if (failing) {
         failing = false;
-        report(`Journal de sécurité : écriture dans ${path} rétablie.`);
+        report(translate(locale, 'demarrage.journal.retabli', { path }));
       }
     } catch (err) {
       if (!failing) {
         failing = true;
-        report(`Journal de sécurité : impossible d'écrire dans ${path} (${err.code || err.message}). Listo continue ; le journal reste visible dans docker logs.`);
+        report(translate(locale, 'demarrage.journal.impossible', { path, reason: err.code || err.message }));
       }
     }
   };

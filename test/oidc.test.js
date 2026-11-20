@@ -554,8 +554,10 @@ test('aucun écran ni message du serveur n\'écrit « Authelia » en dur (seulem
   const root = path.resolve(import.meta.dirname, '..');
   const files = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true })
     .flatMap((entry) => (entry.isDirectory() ? files(path.join(dir, entry.name)) : entry.name.endsWith('.js') ? [path.join(dir, entry.name)] : []));
-  // L'aide (help-content.js) cite Authelia comme exemple, avec Authentik et Pocket ID
-  for (const file of [...files('server'), ...files('public/js')].filter((f) => !f.endsWith('help-content.js'))) {
+  // L'aide (help-content.js, et en anglais help-content-en.js et help-en/)
+  // cite Authelia comme exemple, avec Authentik et Pocket ID
+  const guideFile = (f) => /(^|\/)help-content(-en)?\.js$|(^|\/)help-en\//.test(f);
+  for (const file of [...files('server'), ...files('public/js')].filter((f) => !guideFile(f))) {
     const code = fs.readFileSync(path.join(root, file), 'utf8').split('\n').filter((line) => !line.trim().startsWith('//'));
     assert.ok(!code.some((line) => line.includes('Authelia')), `${file} : « Authelia » en dur`);
   }

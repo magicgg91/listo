@@ -112,6 +112,18 @@ export default {
   'administration.magasins.aucunSimple': 'Add some single stores first.',
   'administration.magasins.sansMagasin': 'Items without a store come last, under “No store”.',
 
+  // Rayons : groupés par magasin, magasin d'un nouveau rayon, changement de magasin
+  'administration.rayons.tousMagasins': 'All stores',
+  'administration.rayons.magasin': 'Aisle\'s store',
+  'administration.rayons.magasin.choisir': 'Store for the new aisle: {store}',
+  'administration.rayons.magasin.valider': 'Choose',
+  'administration.rayons.ajoute': '“{name}” added to {store}',
+  'administration.rayons.deplacer': 'Change the store of {name}',
+  'administration.rayons.deplacer.titre': 'Store for “{name}”',
+  'administration.rayons.deplacer.texte': 'An “All stores” aisle is used in every list; a store\'s aisle, only in that store\'s lists.',
+  'administration.rayons.deplacer.valider': 'Move',
+  'administration.rayons.deplace': '“{name}”: {store}',
+
   // État d'un magasin ou d'un rayon
   'administration.etat.active': 'Active',
   'administration.etat.actif': 'Active',
@@ -164,6 +176,7 @@ export default {
   'administration.noms.rayon': 'Aisle',
   'administration.noms.rayon.fait': 'Aisle for “{name}”: {aisle}',
   'administration.noms.rayon.aucun': '“{name}” no longer has a usual aisle',
+  'administration.noms.rayon.magasin': '{aisle} ({store})',
 
   // Retirer un article des suggestions
   'administration.noms.retirer.question': 'Remove “{name}” from suggestions?',

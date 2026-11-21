@@ -5,15 +5,20 @@
 //   POST /api/stores   { name, listId? }  nouveau magasin (simple)
 //   POST /api/aisles   { name, listId }   nouveau rayon
 //
-// Les magasins et les rayons restent communs à tout le foyer. Règles,
-// vérifiées à chaque requête :
+// Les magasins restent communs à tout le foyer. Un rayon créé depuis une
+// liste appartient au magasin simple de la liste, ou à « Tous les magasins »
+// si la liste n'a pas de magasin (rayons propres à un magasin, 21 novembre
+// 2026, public/js/aisles.js). Règles, vérifiées à chaque requête :
 // - nom nettoyé (espaces) et 100 caractères au plus, comme dans
 //   l'Administration ;
 // - pas de doublon : majuscules, accents et espaces multiples ignorés. Nom
 //   déjà pris par un élément actif : 409 avec cet élément (le téléphone
 //   propose de le choisir) ; par un élément désactivé : 409, demander à
 //   l'Admin de le réactiver (le plus simple et le plus sûr : rien n'est
-//   réactivé sans lui) ;
+//   réactivé sans lui). Pour un rayon, seuls comptent les rayons que la
+//   liste peut voir (communs et de son magasin) ; un rayon de « Tous les
+//   magasins » ne prend pas non plus le nom d'un rayon d'un magasin (409,
+//   sans proposition : la liste ne peut pas le choisir) ;
 // - un rayon se crée depuis un article : listId obligatoire, liste de
 //   courses (sans magasin « multi ») que le compte peut modifier (un invité
 //   en lecture seule reçoit 403) ;
@@ -33,6 +38,7 @@ import express from 'express';
 import { cleanName, comparableName } from '../validate.js';
 import { OpError } from '../lists.js';
 import { isShoppingList } from '../../public/js/list-types.js';
+import { aisleFits, aisleNameClash } from '../../public/js/aisles.js';
 
 const KINDS = {
   stores: {
@@ -46,6 +52,8 @@ const KINDS = {
     event: 'aisle_created',
     duplicate: 'references.rayon.existe',
     disabled: 'references.rayon.existe.desactive',
+    // Nom pris par le rayon d'un autre magasin (création d'un rayon commun)
+    elsewhere: 'references.rayon.existe.autreMagasin',
   },
 };
 
@@ -75,9 +83,25 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
   }
   const name = cleanName(rawName);
   if (!name) throw new OpError(400, 'references.nomInvalide');
+  // Rayon : celui du magasin simple de la liste, ou commun (liste sans magasin)
+  const aisleStore = path === 'aisles' ? list.store_id ?? null : null;
   // Doublon (même désactivé) : majuscules, accents et espaces ignorés
-  const wanted = comparableName(name);
-  const twin = db.prepare(`SELECT id, name, active FROM ${kind.table}`).all().find((row) => comparableName(cleanName(row.name) ?? row.name) === wanted);
+  let twin;
+  if (path === 'aisles') {
+    const aisles = db.prepare('SELECT id, name, active, store_id FROM aisles').all()
+      .map((row) => ({ id: row.id, name: row.name, active: row.active === 1, storeId: row.store_id ?? null }));
+    const clash = aisleNameClash(aisles, name, aisleStore);
+    // Rayon d'un autre magasin (seulement pour un nouveau rayon commun) :
+    // la liste ne peut pas le choisir, il faut un autre nom
+    if (clash && !aisleFits(clash, aisleStore)) {
+      const store = db.prepare('SELECT name FROM stores WHERE id = ?').pluck().get(clash.storeId);
+      throw new OpError(409, kind.elsewhere, { name: clash.name, store });
+    }
+    twin = clash && { id: clash.id, name: clash.name, active: clash.active ? 1 : 0 };
+  } else {
+    const wanted = comparableName(name);
+    twin = db.prepare(`SELECT id, name, active FROM ${kind.table}`).all().find((row) => comparableName(cleanName(row.name) ?? row.name) === wanted);
+  }
   if (twin) {
     const error = new OpError(409, twin.active === 1 ? kind.duplicate : kind.disabled, { name: twin.name });
     if (twin.active === 1) error.existing = { id: twin.id, name: twin.name };
@@ -87,14 +111,16 @@ function create(ctx, path, kind, user, { name: rawName, listId }) {
     throw new OpError(429, 'references.tropDeCreations');
   }
   const id = db.transaction(() => {
-    const newId = Number(db.prepare(`INSERT INTO ${kind.table} (name) VALUES (?)`).run(name).lastInsertRowid);
+    const newId = path === 'aisles'
+      ? Number(db.prepare('INSERT INTO aisles (name, store_id) VALUES (?, ?)').run(name, aisleStore).lastInsertRowid)
+      : Number(db.prepare(`INSERT INTO ${kind.table} (name) VALUES (?)`).run(name).lastInsertRowid);
     // Article d'une liste « multi » : le magasin rejoint ses magasins regroupés
     if (path === 'stores' && list?.is_multi === 1) {
       db.prepare('INSERT INTO store_members (multi_store_id, store_id) VALUES (?, ?)').run(list.store_id, newId);
     }
     return newId;
   })();
-  ctx.audit(kind.event, { user: user.username, name, ...(path === 'stores' && list?.is_multi === 1 ? { grouped: true } : {}) });
+  ctx.audit(kind.event, { user: user.username, name, ...(path === 'stores' && list?.is_multi === 1 ? { grouped: true } : {}), ...(path === 'aisles' && aisleStore !== null ? { store: db.prepare('SELECT name FROM stores WHERE id = ?').pluck().get(aisleStore) } : {}) });
   ctx.events?.notifyReferences();
-  return { item: { id, name, active: true, ...(path === 'stores' ? { isMulti: false, storeIds: [] } : {}) } };
+  return { item: { id, name, active: true, ...(path === 'stores' ? { isMulti: false, storeIds: [] } : { storeId: aisleStore }) } };
 }

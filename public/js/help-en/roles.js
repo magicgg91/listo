@@ -21,7 +21,7 @@ export default {
         { sub: "“Shopping” tab" },
         { ul: [
           "“Stores”: add a “Single” store or a “Multi” store (which groups other stores), rename, disable, delete if it has never been used.",
-          "“Aisles”: add, rename, disable, delete if it has never been used.",
+          "“Aisles”: grouped by store, “All stores” first. Add (choosing its store), rename, change the store, disable, delete if it has never been used. Two stores can each have an aisle with the same name; an “All stores” aisle has a name of its own. An aisle only goes to a store if no list from another store, or without a store, uses it.",
           "“Items”: the memory of names typed in shopping lists. “Correct” changes a name everywhere, “Change aisle” changes the usual aisle, “Remove” takes it out of the suggestions.",
         ] },
         { sub: "Can / can't" },
@@ -42,7 +42,7 @@ export default {
           "Shopping list: also choose the store. Items are sorted by aisle, or by store for a “Multi” store.",
           "Task list: “Options for items” turns on priority, due date and assignment.",
           "“After adding” (all lists): “Stay on the list” to keep adding, or “Open item details” to fill in what you just added right away. To start with: “Stay on the list” for a shopping list, “Open item details” for the others.",
-          "If the store or aisle is missing, “New store…” or “New aisle…” creates it (network connection needed).",
+          "If the store or aisle is missing, “New store…” or “New aisle…” creates it (network connection needed). An aisle created this way belongs to the list's store (to “All stores” for a list without a store).",
         ] },
       ],
     },
@@ -53,6 +53,7 @@ export default {
         "The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([[sous-taches]]); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.",
         { ul: [
           "Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.",
+          "Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).",
           "Priority (low, normal, high) is off to start with, for a task list as well as for a wish list. Everyone sees it. Due dates exist only for task lists.",
           "Becoming a wish list, on the other hand, is permanent ([[envies]]).",
         ] },

@@ -403,6 +403,19 @@ export default {
 
   // Choix du rayon ou du magasin
   'liste.choix.nouveauRayon': 'New aisle…',
+
+  // « Ranger les articles » : après un changement de magasin, les articles qui ont perdu leur rayon
+  'liste.ranger.titre': 'Put items in aisles',
+  'liste.ranger.texte.magasin': {
+    one: 'This item is now in “No aisle”: its aisle doesn\'t exist at {store}. Choose one now, or later from its details.',
+    other: 'These {count} items are now in “No aisle”: their aisle doesn\'t exist at {store}. Choose new ones now, or later from their details.',
+  },
+  'liste.ranger.texte.sansMagasin': {
+    one: 'This item is now in “No aisle”: its aisle belonged to the previous store. Choose one now, or later from its details.',
+    other: 'These {count} items are now in “No aisle”: their aisle belonged to the previous store. Choose new ones now, or later from their details.',
+  },
+  'liste.ranger.rayonDe': 'Aisle for “{name}”',
+  'liste.ranger.termine': 'Done',
   'liste.choix.nouveauMagasin': 'New store…',
 
   // Droit changé pendant que la liste est ouverte

@@ -17,6 +17,7 @@ import { modeOf, turnAfterCheck } from './assign.js';
 import { nestsSubtasks, nestItems, parentOf, orderSubtasks, nextPosition, reorderedIds } from './subtasks.js';
 import { t, compareText } from './i18n.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
+import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -252,6 +253,13 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (typeof op.subtasksEnabled === 'boolean') next.subtasksEnabled = op.subtasksEnabled;
       if (ADD_MODES.includes(op.addMode)) next.addMode = op.addMode;
       state.lists.set(list.id, next);
+      // Nouveau magasin (ou retour au type « Courses ») : chaque article dont
+      // le rayon n'est plus proposé va dans le rayon de même nom, sinon
+      // « Sans rayon » (même règle que le serveur, public/js/aisles.js)
+      const storeBefore = (list.store ?? list.keptStore)?.id ?? null;
+      if (isShoppingList(next) && !isMultiList(next) && ((next.store?.id ?? null) !== storeBefore || next.type !== list.type)) {
+        rematchItems(state, list.id, next.store?.id ?? null, now);
+      }
       return;
     }
     case 'list.delete':
@@ -429,6 +437,30 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     default:
   }
 }
+
+// Range de nouveau les articles d'une liste qui change de magasin (storeId :
+// magasin simple, ou null pour « aucun magasin ») : chaque article dont le
+// rayon ne sert pas dans ce magasin va dans le rayon proposé de même nom,
+// sinon « Sans rayon » (rematchAisle, la même règle que le serveur)
+function rematchItems(state, listId, storeId, now) {
+  for (const item of itemsOf(state, listId)) {
+    if (item.aisleId === null || item.aisleId === undefined) continue;
+    const aisleId = rematchAisle(item.aisleId, state.aisles, storeId);
+    if (aisleId !== item.aisleId) state.items.set(item.id, { ...item, aisleId, updatedAt: now });
+  }
+}
+
+// Articles d'une liste qui avaient un rayon (before : Map identifiant ->
+// rayon, prise avant un changement de magasin) et n'en ont plus : ceux que
+// la feuille « Ranger les articles » propose de ranger, par ordre alphabétique
+export function itemsWithoutAisle(state, listId, before) {
+  return itemsOf(state, listId)
+    .filter((item) => (item.aisleId ?? null) === null && (before.get(item.id) ?? null) !== null)
+    .sort((a, b) => compareNames(a.name, b.name));
+}
+
+// Rayon de chaque article d'une liste, avant un changement (voir itemsWithoutAisle)
+export const aislesOfItems = (state, listId) => new Map(itemsOf(state, listId).map((item) => [item.id, item.aisleId ?? null]));
 
 // Éléments retirés par « Retirer les terminés » : les cochés, sauf une
 // sous-tâche cochée sous une principale à faire (elle n'est pas dans les
@@ -879,7 +911,7 @@ export function computeListView(state, listId, { sort = null, me = null } = {}) 
   // (subtasks : identifiant -> sous-tâches, à faire puis cochées)
   const { tops, childrenOf } = nestItems(items, nestsSubtasks(list));
   const chosen = effectiveSort(list, sort);
-  const { groups, done } = splitDone(tops, state.aisles, isShoppingList(list), { byStore: multi, stores: state.stores, sort: chosen, people: memberNames(list), me });
+  const { groups, done } = splitDone(tops, aislesForList(state, list), isShoppingList(list), { byStore: multi, stores: state.stores, sort: chosen, people: memberNames(list), me });
   // Sous-tâches : toujours l'ordre manuel (cochées à leur place)
   const subtasks = new Map([...childrenOf].map(([id, children]) => [id, orderSubtasks(children)]));
   return {
@@ -919,16 +951,33 @@ export function usualStoreFor(state, list, name) {
   return usualStore(state.history, name, storeChoices(state, list).map((store) => store.id));
 }
 
-// Rayon habituel d'un article dans une liste à magasin simple (null si inconnu)
+// Rayons d'une liste de courses (public/js/aisles.js) : ceux de son magasin
+// simple et les rayons communs ; liste sans magasin, les rayons communs ;
+// liste « multi » ou d'un autre type, aucun.
+// aislesForList : actifs ou non (groupes, nom du rayon d'un article) ;
+// offeredAislesFor : actifs seulement (ceux qu'on peut choisir), par ordre alphabétique.
+export function aislesForList(state, list) {
+  if (!isShoppingList(list) || isMultiList(list)) return [];
+  return aislesForStore(state.aisles, list.store?.id ?? null);
+}
+export function offeredAislesFor(state, list) {
+  if (!isShoppingList(list) || isMultiList(list)) return [];
+  return activeOnly(offeredAisles(state.aisles, list.store?.id ?? null));
+}
+
+// Rayon habituel d'un article dans une liste à magasin simple (null si
+// inconnu) : seulement s'il est proposé à cette liste
 export function usualAisleFor(state, list, name) {
-  const active = new Set(state.aisles.filter((aisle) => aisle.active).map((aisle) => aisle.id));
-  return usualAisle(state.history, name, list.store?.id ?? null, (id) => active.has(id));
+  const offered = new Set(offeredAisles(state.aisles, list.store?.id ?? null).map((aisle) => aisle.id));
+  return usualAisle(state.history, name, list.store?.id ?? null, (id) => offered.has(id));
 }
 
 // Suggestions d'autocomplétion (même règle que le serveur), avec le nom du
-// rayon habituel s'il est encore actif.
-export function computeSuggestions(state, typed, limit = 5) {
-  const aisleName = new Map(state.aisles.filter((a) => a.active).map((a) => [a.id, a.name]));
+// rayon habituel s'il est encore actif (et, avec une liste, proposé à
+// cette liste : commun ou de son magasin).
+export function computeSuggestions(state, typed, limit = 5, list = null) {
+  const choices = list ? offeredAisles(state.aisles, list.store?.id ?? null) : state.aisles.filter((a) => a.active);
+  const aisleName = new Map(choices.map((a) => [a.id, a.name]));
   return suggest(state.history, typed, limit).map((entry) => ({
     name: entry.name,
     aisleId: aisleName.has(entry.aisleId) ? entry.aisleId : null,

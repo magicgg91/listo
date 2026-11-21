@@ -8,7 +8,8 @@
 import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { put, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
-import { activeOnly, addModeOf, defaultAddMode, priorityAtStart } from '../store.js';
+import { activeOnly, addModeOf, defaultAddMode, priorityAtStart, aislesOfItems, itemsWithoutAisle } from '../store.js';
+import { askTidy } from '../tidy-aisles.js';
 import { itemWords } from '../words.js';
 import * as actions from '../actions.js';
 import { compareNames } from '../sorting.js';
@@ -722,7 +723,12 @@ function form(list, users) {
       if (withSubtasks && options.subtasks !== saved.subtasks) switches.subtasksEnabled = options.subtasks;
       if (chosenIcon !== (list.icon ?? '')) switches.icon = chosenIcon; // icône : seulement si elle a changé
       if (addMode !== addModeOf(list)) switches.addMode = addMode; // « Après l'ajout » : seulement s'il a changé
+      // Rayons propres à un magasin : les articles qui perdent leur rayon
+      // avec le nouveau magasin seront proposés au rangement, sur l'écran de
+      // la liste (tidy-aisles.js), à cet appareil seulement
+      const aislesBefore = aislesOfItems(app.data, id);
       if (Object.keys(switches).length) await actions.updateList(id, switches);
+      if (shopping) askTidy(id, itemsWithoutAisle(app.data, id, aislesBefore).map((item) => item.id));
     }
     // Partage : seulement s'il a changé, et seulement en ligne (route réservée
     // au propriétaire ; la liste doit d'abord exister sur le serveur)

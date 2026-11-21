@@ -230,6 +230,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 - Items sorted by aisle; Listo remembers the usual aisle of each item, suggests names you've already typed and “Often added” items ([5.1 Add, edit, check, delete](#ajouter)).
 - “Multi” store: a trip to several shops, where each item has its store instead of an aisle ([7.2 Owner: creating a list](#creer)).
+- An aisle is used in every store (“All stores”), or in a single one: each list offers the aisles of its store and those of all stores.
 - Anyone can create a missing store or aisle; the Admin manages them ([7.1 Admin](#role-admin)).
 
 <a id="p-taches"></a>
@@ -1021,7 +1022,7 @@ Settings, “Administration” (visible only to an Admin).
 **“Shopping” tab**
 
 - “Stores”: add a “Single” store or a “Multi” store (which groups other stores), rename, disable, delete if it has never been used.
-- “Aisles”: add, rename, disable, delete if it has never been used.
+- “Aisles”: grouped by store, “All stores” first. Add (choosing its store), rename, change the store, disable, delete if it has never been used. Two stores can each have an aisle with the same name; an “All stores” aisle has a name of its own. An aisle only goes to a store if no list from another store, or without a store, uses it.
 - “Items”: the memory of names typed in shopping lists. “Correct” changes a name everywhere, “Change aisle” changes the usual aisle, “Remove” takes it out of the suggestions.
 
 **Can / can't**
@@ -1040,7 +1041,7 @@ On “My lists”, tap “+” at the top right (on a computer: “New list”).
 - Shopping list: also choose the store. Items are sorted by aisle, or by store for a “Multi” store.
 - Task list: “Options for items” turns on priority, due date and assignment.
 - “After adding” (all lists): “Stay on the list” to keep adding, or “Open item details” to fill in what you just added right away. To start with: “Stay on the list” for a shopping list, “Open item details” for the others.
-- If the store or aisle is missing, “New store…” or “New aisle…” creates it (network connection needed).
+- If the store or aisle is missing, “New store…” or “New aisle…” creates it (network connection needed). An aisle created this way belongs to the list's store (to “All stores” for a list without a store).
 
 <a id="modifier"></a>
 
@@ -1049,6 +1050,7 @@ On “My lists”, tap “+” at the top right (on a computer: “New list”).
 The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.18 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
 
 - Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.
+- Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).
 - Priority (low, normal, high) is off to start with, for a task list as well as for a wish list. Everyone sees it. Due dates exist only for task lists.
 - Becoming a wish list, on the other hand, is permanent ([7.5 Owner: wish list](#envies)).
 
@@ -1249,7 +1251,7 @@ Only ask Claude to change an item yourself; check in Listo what it did.
 - A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect Claude with “All my lists” ([8.7 Connect Claude](#claude-connecter)).
 - Claude refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.
 - Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “Claude connections” ([8.8 See and disconnect Claude](#claude-connexions)).
-- Claude says an aisle or a store is unknown: it doesn't exist, it's disabled, or (store in a “Multi” list) this list doesn't offer it. Nothing was added; Claude should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
+- Claude says an aisle or a store is unknown: it doesn't exist, it's disabled, or this list doesn't offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; Claude should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
 - Claude says a store can't be chosen in this list: in a list with a “Single” store, the store is the list's own; you choose the aisle. The aisle, for its part, can't be chosen in a “Multi” list.
 
 <a id="claude-activation"></a>

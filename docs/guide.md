@@ -230,6 +230,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Articles classés par rayon ; Listo retient le rayon habituel de chaque article, propose les noms déjà saisis et les articles « Souvent ajoutés » ([5.1 Ajouter, modifier, cocher, supprimer](#ajouter)).
 - Magasin « Multi » : une tournée de plusieurs boutiques, où chaque article a son magasin au lieu d'un rayon ([7.2 Propriétaire : créer une liste](#creer)).
+- Un rayon sert dans tous les magasins (« Tous les magasins »), ou dans un seul : chaque liste propose les rayons de son magasin et ceux de tous les magasins.
 - Chacun peut créer un magasin ou un rayon qui manque ; l'Admin les gère ([7.1 Admin](#role-admin)).
 
 <a id="p-taches"></a>
@@ -1021,7 +1022,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Onglet « Courses »**
 
 - « Magasins » : ajouter un magasin « Simple » ou « Multi » (qui regroupe d'autres magasins), renommer, désactiver, supprimer s'il n'a jamais été utilisé.
-- « Rayons » : ajouter, renommer, désactiver, supprimer s'il n'a jamais été utilisé.
+- « Rayons » : groupés par magasin, « Tous les magasins » d'abord. Ajouter (en choisissant son magasin), renommer, changer de magasin, désactiver, supprimer s'il n'a jamais été utilisé. Deux magasins peuvent avoir chacun un rayon du même nom ; un rayon de « Tous les magasins » a un nom bien à lui. Un rayon ne va dans un magasin que si aucune liste d'un autre magasin, ou sans magasin, ne s'en sert.
 - « Articles » : la mémoire des noms saisis dans les listes de courses. « Corriger » change un nom partout, « Modifier le rayon » change le rayon habituel, « Retirer » l'enlève des suggestions.
 
 **Peut / ne peut pas**
@@ -1040,7 +1041,7 @@ Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nou
 - Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».
 - Liste de tâches : « Options des éléments » active la priorité, l'échéance et l'attribution.
 - « Après l'ajout » (toutes les listes) : « Rester sur la liste » pour enchaîner les ajouts, ou « Ouvrir la fiche » pour compléter aussitôt ce qui vient d'être ajouté. Au départ : « Rester sur la liste » pour une liste de courses, « Ouvrir la fiche » pour les autres.
-- Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire).
+- Si le magasin ou le rayon manque, « Nouveau magasin… » ou « Nouveau rayon… » le crée (connexion nécessaire). Un rayon créé ainsi appartient au magasin de la liste (à « Tous les magasins » pour une liste sans magasin).
 
 <a id="modifier"></a>
 
@@ -1049,6 +1050,7 @@ Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nou
 Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.18 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
+- Changer de magasin : chaque article garde son rayon s'il sert aussi dans le nouveau magasin, sinon il va dans le rayon du même nom ; à défaut, il passe « Sans rayon ». La fenêtre « Ranger les articles » s'ouvre alors pour lui choisir un rayon tout de suite (ou plus tard, depuis sa fiche).
 - La priorité (basse, normale, élevée) est désactivée au départ, pour une liste de tâches comme pour une liste d'envies. Tout le monde la voit. L'échéance n'existe que pour les listes de tâches.
 - Devenir une liste d'envies, en revanche, est définitif ([7.5 Propriétaire : liste d'envies](#envies)).
 
@@ -1249,7 +1251,7 @@ Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans L
 - Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([8.7 Connecter Claude](#claude-connecter)).
 - Claude refuse d'écrire : la connexion est en « Lecture seule », ou vous n'avez que le droit « Lecture seule » sur cette liste.
 - Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([8.8 Voir et déconnecter Claude](#claude-connexions)).
-- Claude dit qu'un rayon ou un magasin est inconnu : il n'existe pas, il est désactivé, ou (magasin d'une liste « Multi ») cette liste ne le propose pas. Rien n'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l'Admin de le créer (Réglages, « Administration », onglet « Courses »).
+- Claude dit qu'un rayon ou un magasin est inconnu : il n'existe pas, il est désactivé, ou cette liste ne le propose pas (rayon d'un autre magasin, ou magasin d'une liste « Multi »). Rien n'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l'Admin de le créer (Réglages, « Administration », onglet « Courses »).
 - Claude dit qu'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».
 
 <a id="claude-activation"></a>

@@ -74,7 +74,7 @@ export default {
         "Automatic backup every night ([[sauvegardes]]).",
         "Light, dark or automatic theme ([[theme]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
-        "Claude (Anthropic's assistant) can read your lists and, if you allow it, write to them ([[claude]]).",
+        "An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([[claude]]).",
       ] }],
     },
   ],

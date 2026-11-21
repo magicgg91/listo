@@ -245,7 +245,7 @@ test('aide (ordinateur) : sommaire fixe à gauche (chapitre en cours repéré), 
   assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
 });
 
-test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte « Clavier » (raccourcis) ; thème et Connexions Claude dans Mon compte seulement', () => {
+test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte « Clavier » (raccourcis) ; thème et Assistants IA dans Mon compte seulement', () => {
   const settings = read('public/js/screens/settings.js');
   assert.match(settings, /if \(onPc\(\)\) return renderSettingsPc\(\);/);
   const pc = settings.slice(settings.indexOf('function renderSettingsPc'), settings.indexOf('export function keysRow'));
@@ -267,8 +267,8 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   assert.equal(fr['reglages.administration'], 'Administration');
   assert.match(settings, /isAdmin \? row\(\{ iconName: 'shield', title: t\('reglages\.administration'\), end: app\.user\.accountRequests \? \[requestsBadge\(app\.user\.accountRequests\), icon\('chev-r'\)\] : undefined, onClick: \(\) => navigate\('admin', \{ tab: 'comptes' \}\) \}\) : null,/);
   assert.doesNotMatch(settings, /Guide d\\'utilisation|Visible seulement pour les comptes Admin|pc-settings__hint/);
-  // Plus de doublon : ni thème, ni Connexions Claude dans les Réglages (téléphone et ordinateur)
-  assert.doesNotMatch(code, /Connexions Claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
+  // Plus de doublon : ni thème, ni Assistants IA (« Connexions Claude ») dans les Réglages (téléphone et ordinateur)
+  assert.doesNotMatch(code, /Connexions Claude|Assistants IA|compte\.claude|claudeConnections|segmented|applyTheme|'Thème'|Apparence/);
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');
   assert.match(account, /h\('h2', \{ class: 'section-title' \}, t\('compte\.apparence'\)\),/);

@@ -1,9 +1,10 @@
 <!doctype html>
-<!-- Listo : réponse unique pour une demande d'autorisation (connexion de
-     Claude) qui ne peut pas être vérifiée : application inconnue, adresse de
-     retour qui n'est pas celle de Claude, paramètres manquants. Toujours la
-     même page : AUCUNE redirection n'est faite dans ce cas, et rien de la
-     demande n'est recopié dans la page. -->
+<!-- Listo : réponse unique pour une demande d'autorisation (connexion d'un
+     assistant IA) qui ne peut pas être vérifiée : application inconnue,
+     adresse de retour refusée (règles de server/oauth-clients.js),
+     paramètres manquants, ou erreur à renvoyer vers un site qui n'est pas
+     connu. Toujours la même page : AUCUNE redirection n'est faite dans ce
+     cas, et rien de la demande n'est recopié dans la page. -->
 <html lang="fr" data-theme="auto">
 <head>
   <meta charset="utf-8">
@@ -21,7 +22,7 @@
   <div class="empty">
     <span class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-alert"/></svg></span>
     <h1 class="empty__title">Demande d'autorisation invalide</h1>
-    <p class="empty__text">Cette demande de connexion n'a pas pu être vérifiée. Relancez la connexion depuis Claude.</p>
+    <p class="empty__text">Cette demande de connexion n'a pas pu être vérifiée. Relancez la connexion depuis votre assistant IA.</p>
   </div>
 </div>
 </body>

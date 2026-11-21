@@ -1,7 +1,7 @@
 // Écran « Mon compte » (ouvert depuis la carte du compte, en haut des
 // Réglages) : identité, puis les blocs Sécurité (mot de passe, double
 // authentification), Apparence (thème), Langue (dès qu'une deuxième langue
-// est complète, voir public/js/i18n.js), Claude (si l'accès est activé), Ce
+// est complète, voir public/js/i18n.js), Assistants IA (si l'accès est activé), Ce
 // téléphone (réinitialisation), et tout en bas « Se déconnecter » (déplacé
 // des Réglages, où il était fixé au-dessus du bandeau du bas : décision du
 // propriétaire du 11 novembre 2026 ; il défile avec le reste). Les réglages des Nouveautés sont dans
@@ -70,7 +70,7 @@ export function renderAccount(onLeave = () => {}) {
       h('h2', { class: 'section-title' }, t('compte.apparence')),
       h('div', { class: 'group group--pad' }, h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': t('compte.theme') }, options)),
       languageBlock(),
-      // Accès depuis Claude : seulement s'il est activé sur le serveur
+      // Accès des assistants IA : seulement s'il est activé sur le serveur
       user.claudeUrl ? [
         h('h2', { class: 'section-title' }, t('compte.claude')),
         h('div', { class: 'group' },

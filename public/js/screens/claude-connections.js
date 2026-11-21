@@ -1,7 +1,8 @@
-// Écran « Connexions Claude » (#/reglages/claude), étape D de
-// docs/mcp-cadrage.md. Ouvert depuis Mon compte, seulement si l'accès depuis
-// Claude est activé sur le serveur (app.user.claudeUrl).
-// - en haut : une phrase d'explication, l'adresse à saisir dans Claude (avec
+// Écran « Assistants IA » (#/reglages/assistants, autrefois « Connexions
+// Claude », #/reglages/claude), étape D de docs/mcp-cadrage.md. Ouvert
+// depuis Mon compte, seulement si l'accès des assistants IA est activé sur
+// le serveur (app.user.claudeUrl).
+// - en haut : une phrase d'explication, l'adresse à saisir dans l'assistant IA (avec
 //   « Copier ») et un lien vers l'aide ;
 // - puis les connexions actives du compte : application (hôte, et nom
 //   « non vérifié » s'il est donné par l'application elle-même), où va la

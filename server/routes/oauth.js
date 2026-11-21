@@ -1,24 +1,24 @@
-// Routes de l'autorisation OAuth pour Claude (étape A de docs/mcp-cadrage.md).
+// Routes de l'autorisation OAuth pour les assistants IA (étape A de docs/mcp-cadrage.md).
 // Montées SEULEMENT si LISTO_MCP=on ; sinon, toutes ces adresses répondent
 // comme une adresse inexistante (404).
 //
-// Sans session (appelées par Claude ou par le navigateur) :
+// Sans session (appelées par l'assistant IA ou par le navigateur) :
 //   GET  /.well-known/oauth-protected-resource/mcp   description de la ressource (RFC 9728)
 //   GET  /.well-known/oauth-protected-resource       idem (adresse de repli)
 //   GET  /.well-known/oauth-authorization-server     description du serveur d'autorisation (RFC 8414)
-//   GET  /oauth/authorize    vérifie la demande, puis ouvre l'écran « Autoriser Claude »
+//   GET  /oauth/authorize    vérifie la demande, puis ouvre l'écran « Autoriser un assistant IA »
 //   POST /oauth/token        échange du code, renouvellement (formulaire)
 //   POST /oauth/revoke       révocation par l'application (RFC 7009)
 //   POST /oauth/register     enregistrement automatique (DCR, RFC 7591)
 // Aucune de ces routes ne lit le cookie de session : un navigateur connecté
 // n'y obtient rien de plus.
 //
-// Avec la session (écrans « Autoriser Claude » et « Connexions Claude »,
+// Avec la session (écrans « Autoriser un assistant IA » et « Assistants IA »,
 // même origine exigée) :
 //   GET    /api/oauth/demandes/:id         ce qu'il faut afficher
 //   POST   /api/oauth/demandes/:id/accord  accord (mot de passe, et code 2FA)
 //   POST   /api/oauth/demandes/:id/refus   refus
-//   GET    /api/me/claude                  mes connexions Claude actives
+//   GET    /api/me/claude                  mes connexions actives (assistants IA)
 //   DELETE /api/me/claude/:id              déconnecter une connexion
 //   DELETE /api/me/claude                  tout déconnecter
 
@@ -31,7 +31,7 @@ import { OAuthError, SCOPES, PKCE_CHALLENGE, parseScope, withParams, REQUEST_ID 
 import { requestLocale } from '../locale.js';
 
 const PAGES = new URL('../pages/', import.meta.url);
-// Noms des messages de l'écran « Autoriser Claude »
+// Noms des messages de l'écran « Autoriser un assistant IA »
 // (public/js/i18n/fr/autorisation.js), traduits par req.t
 const BLOCKED = 'autorisation.tropDeTentatives';
 const EXPIRED = 'autorisation.demandeExpiree';
@@ -103,20 +103,24 @@ export function oauthRoutes(ctx, { publicDir }) {
   // Début d'une autorisation, dans le navigateur de la personne.
   // 1. Application et adresse de retour : si elles ne sont pas sûres, page
   //    d'erreur, et AUCUNE redirection (sinon Listo servirait de relais).
-  // 2. Le reste : erreur renvoyée à l'application (avec state et iss).
-  // 3. Demande gardée 10 minutes, puis écran « Autoriser Claude ».
+  // 2. Le reste : erreur renvoyée à l'application (avec state et iss),
+  //    seulement vers l'ordinateur ou un site connu (oauth.canSendErrorTo) ;
+  //    vers un autre site, la page d'erreur, sans redirection (sinon
+  //    n'importe qui pourrait se servir de Listo comme relais).
+  // 3. Demande gardée 10 minutes, puis écran « Autoriser un assistant IA ».
   router.get('/oauth/authorize', noStore, async (req, res, next) => {
     try {
       const params = req.query;
       const redirectUri = one(params.redirect_uri);
       const client = await oauth.resolveClient(one(params.client_id));
-      if (!client || !redirectUri || !oauth.clientRedirect(client, redirectUri)) {
-        return res.status(400).type('html').send(invalidByLocale[requestLocale(req, ctx.config)] ?? invalidByLocale.fr);
-      }
+      const invalid = () => res.status(400).type('html').send(invalidByLocale[requestLocale(req, ctx.config)] ?? invalidByLocale.fr);
+      if (!client || !redirectUri || !oauth.clientRedirect(client, redirectUri)) return invalid();
       const state = one(params.state);
-      const back = (error, description) => res.redirect(302, withParams(redirectUri, {
-        error, error_description: description, state: state && state.length <= MAX_STATE ? state : undefined, iss: oauth.issuer,
-      }));
+      const back = (error, description) => (oauth.canSendErrorTo(redirectUri)
+        ? res.redirect(302, withParams(redirectUri, {
+          error, error_description: description, state: state && state.length <= MAX_STATE ? state : undefined, iss: oauth.issuer,
+        }))
+        : invalid());
       if (params.state !== undefined && (state === undefined || state.length > MAX_STATE)) return back('invalid_request', 'Paramètre state invalide.');
       if (one(params.response_type) !== 'code') return back('unsupported_response_type', 'Seul response_type=code est accepté.');
       if (one(params.code_challenge_method) !== 'S256' || !PKCE_CHALLENGE.test(one(params.code_challenge) ?? '')) {
@@ -185,7 +189,7 @@ export function oauthRoutes(ctx, { publicDir }) {
 // dans la langue de la requête s'il porte un nom, sinon son explication
 const consentError = (req, error) => (error.key ? req.t(error.key, error.params) : error.message);
 
-// --- Écran « Autoriser Claude » (session exigée, montée dans /api) ---
+// --- Écran « Autoriser un assistant IA » (session exigée, montée dans /api) ---
 export function oauthConsentRoutes(ctx) {
   const router = express.Router();
   const { oauth, limiter, audit } = ctx;
@@ -262,16 +266,16 @@ export function oauthConsentRoutes(ctx) {
     // Même limitation des tentatives que la connexion (5 échecs en 15 min)
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {
-      audit('login_blocked', { user: user.username, ip: req.ip, step: 'claude authorization' });
+      audit('login_blocked', { user: user.username, ip: req.ip, step: 'ai assistant authorization' });
       return res.status(429).json({ error: req.t(BLOCKED) });
     }
     limiter.fail(keys); // compté d'avance, remis à zéro en cas de succès
     if (!(await verifyPassword(password, user.password_hash))) {
-      audit('password_refused', { user: user.username, ip: req.ip, step: 'claude authorization' });
+      audit('password_refused', { user: user.username, ip: req.ip, step: 'ai assistant authorization' });
       return res.status(403).json({ error: req.t('autorisation.motDePasseIncorrect') });
     }
     if (user.totp_enabled === 1 && !checkSecondFactor(ctx, user, code)) {
-      audit('login_failure', { user: user.username, ip: req.ip, step: 'claude authorization, 2fa' });
+      audit('login_failure', { user: user.username, ip: req.ip, step: 'ai assistant authorization, 2fa' });
       return res.status(403).json({ error: req.t('autorisation.codeIncorrect') });
     }
     limiter.reset(keys);
@@ -294,7 +298,7 @@ export function oauthConsentRoutes(ctx) {
     res.json({ redirect: oauth.refuse(request, req.user, req.ip) });
   });
 
-  // --- Écran « Connexions Claude » : mes connexions, et les déconnecter ---
+  // --- Écran « Assistants IA » : mes connexions, et les déconnecter ---
   // Aucun mot de passe demandé : déconnecter est une mesure de sécurité,
   // toujours permise. Une connexion d'un autre compte répond comme une
   // connexion inconnue (404).

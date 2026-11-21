@@ -29,10 +29,10 @@ export default {
   'compte.langue.auto': 'Automatic',
   'compte.langue.enregistree': 'Language saved',
 
-  // Claude
-  'compte.claude': 'Claude',
-  'compte.claude.connexions': 'Claude connections',
-  'compte.claude.connexions.detail': 'View and disconnect Claude',
+  // Assistants IA
+  'compte.claude': 'AI assistants',
+  'compte.claude.connexions': 'AI assistants',
+  'compte.claude.connexions.detail': 'View and disconnect',
 
   // Ce téléphone (sur ordinateur : cet appareil)
   'compte.appareil.telephone': 'This phone',

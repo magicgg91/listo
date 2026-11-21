@@ -27,15 +27,18 @@ const EXAMPLES = {
 };
 
 test('paramètres : chaque variable documentée est dans chaque exemple de compose, et inversement', () => {
+  const row = (v) => variables.blocks.find((b) => b.table).table.rows.find((r) => r[0] === `\`${v}\``);
   assert.ok(documented.includes('LISTO_PUSH') && documented.includes('LISTO_MCP') && documented.includes('TZ'));
-  assert.equal(documented.indexOf('LISTO_PUSH'), documented.indexOf('LISTO_MCP') + 1, 'LISTO_PUSH à côté de LISTO_MCP');
+  // LISTO_MCP_SITES (facultative, avec LISTO_MCP) juste après elle, puis LISTO_PUSH
+  assert.equal(documented.indexOf('LISTO_MCP_SITES'), documented.indexOf('LISTO_MCP') + 1, 'LISTO_MCP_SITES après LISTO_MCP');
+  assert.equal(documented.indexOf('LISTO_PUSH'), documented.indexOf('LISTO_MCP') + 2, 'LISTO_PUSH à côté de LISTO_MCP');
+  assert.equal(row('LISTO_MCP_SITES')[1], 'absente : tous les assistants IA');
   for (const [name, text] of Object.entries(EXAMPLES)) {
     const found = namesIn(text);
     for (const variable of documented.filter((v) => !FROM_IMAGE.includes(v))) assert.ok(found.has(variable), `${variable} absent de ${name}`);
     for (const variable of found) assert.ok(documented.includes(variable), `${variable} (${name}) absent du tableau du guide`);
   }
   // Valeurs par défaut écrites dans le tableau
-  const row = (v) => variables.blocks.find((b) => b.table).table.rows.find((r) => r[0] === `\`${v}\``);
   assert.equal(row('LISTO_PUSH')[1], 'absente : désactivées');
   assert.equal(row('LISTO_MCP')[1], 'absente : désactivé');
 });

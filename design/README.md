@@ -393,24 +393,24 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 - Liste en sourdine ou « Nouveautés » désactivé : ni pastille, ni halo.
 - Réglages (10 novembre 2026) : écran Réglages › « Notifications », partie « Dans l'application » (auparavant dans « Mon compte »), avant la partie « Sur cet appareil » des notifications ; mêmes `.toggle-row` et `.switch`. Menu ⋮ : « Masquer les nouveautés de cette liste » / « Afficher les nouveautés de cette liste » (`i-eye-off`, `i-eye`), distinct de « Couper / Réactiver les notifications de cette liste » (`i-bell`).
 
-## Ajout : écran « Autoriser Claude »
+## Ajout : écran « Autoriser un assistant IA » (« Autoriser Claude » jusqu'au 21 novembre 2026)
 
-Écran de l'application (`#/autoriser/<id>`) où une personne accepte, ou refuse, que Claude accède à ses listes (autorisation OAuth, `docs/mcp-cadrage.md`). Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**. Balisage : « Autoriser Claude (claude.ai) » et « Autoriser Claude : Claude Code (retour local) » dans `components.html` (clair et sombre).
+Écran de l'application (`#/autoriser/<id>`) où une personne accepte, ou refuse, qu'un assistant IA (Claude, par exemple) accède à ses listes (autorisation OAuth, `docs/mcp-cadrage.md`). Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**. Balisage : « Autoriser Claude (claude.ai) » et « Autoriser Claude : Claude Code (retour local) » dans `components.html` (clair et sombre).
 
 - Barre du haut sans bouton Retour (on sort par « Autoriser » ou « Refuser ») ; pas de panneau latéral sur ordinateur.
-- Avertissement permanent `.note` (`#i-alert`) : « Ne continuez que si vous venez de lancer la connexion depuis Claude. »
-- Carte de trois `.row` : l'application (hôte ; un nom déclaré par l'application elle-même est suivi de « (nom donné par l'application, non vérifié) », celui du document d'identification publié sur claude.ai de « (nom fourni par l'application) »), **l'hôte de retour** (« claude.ai », ou « une application sur cet ordinateur (localhost) »), le compte connecté. Retour local : `.note--danger` en plus.
-- Choix exclusifs « Lecture seule » / « Lecture et écriture » et « Toutes mes listes » / « Certaines listes » : `.radio-row` dans une `.card` (rond plein ET texte en gras sur le choix actif ; une ligne par choix, lisible sur un téléphone de 320 px, là où `.segmented` coupait « Toutes mes listes » en deux). « Lecture seule » et « Toutes mes listes » sont présélectionnés. Sous « Accès », `.field__hint` dit ce que Claude pourra faire.
+- Avertissement permanent `.note` (`#i-alert`) : « Ne continuez que si vous venez de lancer la connexion depuis votre assistant IA. »
+- Carte de trois `.row` : l'application (hôte ; un nom déclaré par l'application elle-même est suivi de « (nom donné par l'application, non vérifié) », celui du document d'identification publié sur claude.ai de « (nom fourni par l'application) »), **l'hôte de retour** (« claude.ai », ou « une application sur cet ordinateur (localhost) »), le compte connecté. Sous la carte, toujours un `.note--danger` : retour local (« La réponse ira à une application installée sur cet ordinateur… »), ou site (« Vérifiez que <site> est bien le site de votre assistant IA. Si vous n'avez pas lancé cette connexion vous-même, refusez : quelqu'un essaie peut-être d'accéder à vos listes. »).
+- Choix exclusifs « Lecture seule » / « Lecture et écriture » et « Toutes mes listes » / « Certaines listes » : `.radio-row` dans une `.card` (rond plein ET texte en gras sur le choix actif ; une ligne par choix, lisible sur un téléphone de 320 px, là où `.segmented` coupait « Toutes mes listes » en deux). « Lecture seule » et « Toutes mes listes » sont présélectionnés. Sous « Accès », `.field__hint` dit ce que l'assistant IA pourra faire.
 - « Certaines listes » : listes à cocher en `.tick-row` (icône de la liste, nom), comme le partage d'une liste.
 - Mot de passe (`passwordInput`, avec l'œil) et, si la 2FA est activée, le champ « Code » ; erreurs en `.form-error`.
-- `.footer` : la phrase « Vous venez de lancer cette connexion depuis Claude ? Si ce n'est pas le cas, refusez. » (texte simple, sans icône), puis `.btn--primary` « Autoriser » et `.btn--secondary` « Refuser » (44 px et plus).
+- `.footer` : la phrase « Vous venez de lancer cette connexion depuis votre assistant IA ? Si ce n'est pas le cas, refusez. » (texte simple, sans icône), puis `.btn--primary` « Autoriser » et `.btn--secondary` « Refuser » (44 px et plus).
 - Seul ajout dans `public/css/app.css` : `.card--clip { overflow: hidden; }`, pour que le fond du choix actif ne dépasse pas des coins arrondis de la carte.
 
-## Ajout : écran « Connexions Claude »
+## Ajout : écran « Assistants IA » (« Connexions Claude » jusqu'au 21 novembre 2026)
 
-Écran de Mon compte (`#/reglages/claude`) où chaque personne voit et déconnecte ses connexions Claude. Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**.
+Écran de Mon compte (`#/reglages/assistants`) où chaque personne voit et déconnecte ses connexions d'assistants IA. Pas de maquette : composé avec le kit seul, **aucune couleur ni variable nouvelle**.
 
-- Texte d'introduction, puis section « Adresse à saisir dans Claude » : une `.group` avec l'adresse sur sa propre ligne (elle peut passer à la ligne) et `.btn--secondary.btn--block` « Copier l'adresse », puis une `.row` vers l'aide « Utiliser Listo avec Claude ».
+- Texte d'introduction, puis section « Adresse à saisir dans votre assistant IA » : une `.group` avec l'adresse sur sa propre ligne (elle peut passer à la ligne) et `.btn--secondary.btn--block` « Copier l'adresse », puis une `.row` vers l'aide « Utiliser Listo avec un assistant IA ».
 - Section « Connexions (N) » : une `.row` par connexion (`#i-shield`) ; dans `.row__body` : l'hôte de l'application, le nom (« nom donné par l'application, non vérifié » ou « nom fourni par l'application »), « Réponse envoyée à : … », le droit en `.chip` (`.chip--accent` pour « Lecture et écriture »), les listes, la date de connexion, la dernière utilisation (« jamais »), puis `.btn--danger-outline.btn--sm` « Déconnecter » (44 px, `aria-label` « Déconnecter <hôte> »).
 - En bas, `.btn--danger.btn--block` « Tout déconnecter ». Confirmations : la fenêtre `.dialog` habituelle (`confirmDialog`). Aucune connexion, hors ligne : `.empty`.
 - Ajouts dans `public/css/app.css`, mise en place seulement : `.claude-connections__intro`, `.claude-connections__address`, `.claude-connections__url`, `.claude-connections__chips`, `.claude-connections__button`, `.claude-connections__all`, et `.claude-connections .row { align-items: flex-start; }`.

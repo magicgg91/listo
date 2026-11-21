@@ -985,35 +985,23 @@ export function pruneHistory(db) {
   return removed;
 }
 
-// Magasins et rayons créés par la migration 3 (en français), et leurs noms
-// dans les autres langues. Seulement pour une base toute neuve (index.js),
-// jamais pour une base existante : ses noms sont des données saisies.
-const STARTING_DATA = {
-  en: {
-    stores: { Carrefour: 'Supermarket', 'E.Leclerc': 'Market', Lidl: 'Drugstore' },
-    aisles: {
-      Boissons: 'Beverages', Boucherie: 'Meat', Boulangerie: 'Bakery', 'Crèmerie': 'Dairy',
-      Entretien: 'Household', 'Épicerie salée': 'Pantry', 'Épicerie sucrée': 'Snacks and sweets',
-      Fromages: 'Cheese', 'Fruits et légumes': 'Produce', 'Hygiène': 'Personal care',
-      Poissonnerie: 'Seafood', 'Surgelés': 'Frozen',
-    },
-  },
-};
-
-// Renomme les magasins et rayons de départ dans la langue de l'installation
-// (rien pour le français, ni pour une langue sans traduction). Renvoie le
-// nombre de noms changés.
-export function localizeStartingData(db, locale) {
-  const names = STARTING_DATA[locale];
-  if (!names) return 0;
-  let changed = 0;
+// Installation neuve : aucun magasin ni rayon au départ, quelle que soit la
+// langue (décision du 21 novembre 2026). La migration 3 en crée encore
+// quelques-uns (Carrefour, Boulangerie…) : ils servent de données d'exemple
+// aux tests, et une base existante les garde tels quels. index.js appelle
+// cette fonction seulement pour une base qui vient d'être créée ; par
+// prudence, elle ne fait rien s'il existe déjà une liste ou un compte.
+// Renvoie le nombre de lignes retirées.
+export function clearStartingData(db) {
+  const used = db.prepare('SELECT (SELECT COUNT(*) FROM lists) + (SELECT COUNT(*) FROM users)').pluck().get();
+  if (used > 0) return 0;
+  let removed = 0;
   db.transaction(() => {
-    for (const [table, map] of [['stores', names.stores], ['aisles', names.aisles]]) {
-      const rename = db.prepare(`UPDATE ${table} SET name = ? WHERE name = ?`);
-      for (const [before, after] of Object.entries(map)) changed += rename.run(after, before).changes;
-    }
+    removed += db.prepare('DELETE FROM item_history').run().changes;
+    removed += db.prepare('DELETE FROM stores').run().changes;
+    removed += db.prepare('DELETE FROM aisles').run().changes;
   })();
-  return changed;
+  return removed;
 }
 
 // Ouvre (ou crée) la base, règle SQLite et applique les migrations.

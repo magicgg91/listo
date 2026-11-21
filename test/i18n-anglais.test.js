@@ -4,8 +4,7 @@
 //   navigateur, sinon LISTO_LANG), les notifications dans celle du
 //   destinataire ; les pages sans application ont leur version anglaise ;
 // - le manifeste suit la langue du navigateur ;
-// - une installation neuve réglée en anglais crée ses magasins et rayons
-//   de départ en anglais ; le français ne change pas.
+// - une installation neuve n'a aucun magasin ni rayon au départ.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +12,7 @@ import fs from 'node:fs';
 import { READY_LOCALES, translate } from '../public/js/i18n.js';
 import fr from '../public/js/i18n/fr.js';
 import en from '../public/js/i18n/en.js';
-import { openDatabase, localizeStartingData } from '../server/db.js';
+import { openDatabase, clearStartingData } from '../server/db.js';
 import { startTestApp, setupAdmin, addUser, login } from './helpers.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -80,19 +79,23 @@ test('manifeste : description dans la langue du navigateur, le reste identique',
   assert.deepEqual({ ...enManifest, lang: 'fr', description: frManifest.description }, frManifest);
 });
 
-test('installation neuve en anglais : magasins et rayons de départ en anglais ; français et base existante inchangés', () => {
-  const english = openDatabase(':memory:');
-  assert.ok(localizeStartingData(english, 'en') > 0);
-  const aisles = english.prepare('SELECT name FROM aisles ORDER BY id').pluck().all();
-  assert.ok(aisles.includes('Produce') && aisles.includes('Frozen'));
-  assert.ok(!aisles.some((name) => /[éè]/.test(name)));
-  const french = openDatabase(':memory:');
-  assert.equal(localizeStartingData(french, 'fr'), 0);
-  assert.ok(french.prepare('SELECT name FROM aisles').pluck().all().includes('Fruits et légumes'));
-  // index.js : seulement pour une base qui n'existait pas
+test('installation neuve : aucun magasin ni rayon au départ, quelle que soit la langue ; base existante inchangée', () => {
+  // Base neuve (comme au premier démarrage) : tout est retiré
+  const fresh = openDatabase(':memory:');
+  assert.ok(fresh.prepare('SELECT COUNT(*) FROM aisles').pluck().get() > 0, 'la migration crée encore des exemples');
+  assert.ok(clearStartingData(fresh) > 0);
+  assert.equal(fresh.prepare('SELECT COUNT(*) FROM stores').pluck().get(), 0);
+  assert.equal(fresh.prepare('SELECT COUNT(*) FROM aisles').pluck().get(), 0);
+  // Base déjà utilisée (un compte) : rien n'est retiré
+  const used = openDatabase(':memory:');
+  used.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run();
+  const before = used.prepare('SELECT COUNT(*) FROM aisles').pluck().get();
+  assert.equal(clearStartingData(used), 0);
+  assert.equal(used.prepare('SELECT COUNT(*) FROM aisles').pluck().get(), before);
+  // index.js : seulement pour une base qui n'existait pas, sans regarder la langue
   const index = read('server/index.js');
   assert.match(index, /const freshDatabase = !fs\.existsSync\(config\.dbPath\);/);
-  assert.match(index, /if \(freshDatabase\) localizeStartingData\(db, config\.lang\);/);
+  assert.match(index, /if \(freshDatabase\) clearStartingData\(db\);/);
 });
 
 test('réponses générales du serveur : adresse inconnue, requête mal formée, page introuvable, dans la langue de la requête', async (t) => {

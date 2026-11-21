@@ -44,8 +44,8 @@ import { shrinkPhoto, PhotoError, createImagePicker } from '../photo.js';
 import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName, HABITUAL_LIMIT_KEYBOARD } from '../history.js';
-import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, activeOnly, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
-  groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove } from '../store.js';
+import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
+  offeredAislesFor, groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove } from '../store.js';
 import { progressOf, parentOf } from '../subtasks.js';
 import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
@@ -65,6 +65,7 @@ import { modeOf, peopleOf, assigneesOf } from '../assign.js';
 import { splitItems, planBulkAdd, joinPastedLines, BULK_INPUT_MAX, ITEM_NAME_MAX } from '../bulk-add.js';
 import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
+import { takeTidy } from '../tidy-aisles.js';
 import { listActions } from './list-actions.js';
 import { openSharePanel } from './share-panel.js';
 import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
@@ -1372,7 +1373,7 @@ export function renderList(listId, onLeave) {
     // « oeufs x6 ») est lue d'abord ; les suggestions cherchent le nom seul
     // (quantityFor, quantity.js ; jamais de lecture hors listes de courses)
     const read = quantityFor(view?.list, typed);
-    const suggestions = read.name.length >= 2 ? computeSuggestions(app.data, read.name) : [];
+    const suggestions = read.name.length >= 2 ? computeSuggestions(app.data, read.name, undefined, view?.list) : [];
     if (!suggestions.length && read.name.length < 2) {
       suggestBox.hidden = true;
       return;
@@ -2682,9 +2683,11 @@ export function renderList(listId, onLeave) {
 
   // Feuille de choix du rayon (article-2). Renvoie l'id du rayon choisi,
   // null pour « Sans rayon », ou undefined si la feuille est fermée.
+  // Seuls les rayons proposés à cette liste (actifs, communs ou de son
+  // magasin, public/js/aisles.js).
   // keep : rayon actuel, gardé dans la liste même s'il a été désactivé.
   function pickAisle({ title, sub, current, keep = null, confirmLabel }) {
-    const aisles = activeOnly(app.data.aisles);
+    const aisles = offeredAislesFor(app.data, view.list);
     if (keep !== null && !aisles.some((a) => a.id === keep)) {
       const old = app.data.aisles.find((a) => a.id === keep);
       if (old) aisles.unshift(old);
@@ -2767,6 +2770,49 @@ export function renderList(listId, onLeave) {
     });
   }
 
+  // « Ranger les articles » (tidy-aisles.js) : après un changement de
+  // magasin fait sur cet appareil, les articles qui ont perdu leur rayon,
+  // chacun avec son choix de rayon (ceux du nouveau magasin, puis « Sans
+  // rayon »). Chaque choix est enregistré aussitôt, comme depuis la fiche
+  // (opération item.update, hors ligne compris) ; « Terminé » ou la croix
+  // referment la feuille, le reste se range plus tard depuis chaque fiche.
+  function openTidySheet(itemIds) {
+    const items = itemIds.map((id) => app.data.items.get(id)).filter((item) => item && item.listId === listId && (item.aisleId ?? null) === null);
+    if (!items.length) return;
+    const storeLabel = view.list.store?.name;
+    const rows = items.map((item) => {
+      const label = h('span');
+      const show = () => {
+        const latest = app.data.items.get(item.id);
+        label.textContent = app.data.aisles.find((a) => a.id === latest?.aisleId)?.name ?? t('liste.sansRayon');
+      };
+      show();
+      const labelId = `ranger-${item.id}`;
+      const button = h('button', {
+        class: 'input input--select',
+        type: 'button',
+        'aria-labelledby': labelId,
+        onClick: async () => {
+          const latest = app.data.items.get(item.id);
+          if (!latest || !editable()) return;
+          const chosen = await pickAisle({ title: t('liste.ranger.rayonDe', { name: latest.name }), current: latest.aisleId ?? null, keep: latest.aisleId ?? null, confirmLabel: t('liste.choisir') });
+          const now = app.data.items.get(item.id);
+          if (chosen === undefined || !now || chosen === (now.aisleId ?? null)) return;
+          await actions.updateItem(now, { aisleId: chosen });
+          show();
+        },
+      }, label, icon('chev-d'));
+      return h('div', { class: 'field' }, h('span', { class: 'field__label', id: labelId }, item.name), button);
+    });
+    const sheet = openSheet({
+      title: t('liste.ranger.titre'),
+      sub: storeLabel ? t('liste.ranger.texte.magasin', { count: items.length, store: storeLabel }) : t('liste.ranger.texte.sansMagasin', { count: items.length }),
+      content: [h('div', { class: 'stack' }, rows),
+        h('button', { class: 'btn btn--primary btn--block', type: 'button', onClick: () => sheet.close() }, t('liste.ranger.termine'))],
+      scroll: true,
+    });
+  }
+
   // Nom d'un magasin (null si inconnu)
   function storeName(id) {
     return id === null || id === undefined ? null : app.data.stores.find((store) => store.id === id)?.name ?? null;
@@ -2845,6 +2891,16 @@ export function renderList(listId, onLeave) {
   takeNews(); // nouveautés depuis ma dernière visite (avant le premier dessin)
   draw();
   refreshData({ quiet: true }); // actualisation à l'ouverture
+
+  // Retour du formulaire de la liste après un changement de magasin fait
+  // ici : « Ranger les articles » qui ont perdu leur rayon (tidy-aisles.js),
+  // une fois l'écran posé ; jamais en lecture seule ni hors liste de courses
+  const toTidy = takeTidy(listId);
+  if (toTidy.length) {
+    requestAnimationFrame(() => {
+      if (view && canEditList(view.list) && isShoppingList(view.list) && !view.multi) openTidySheet(toTidy);
+    });
+  }
 
   // Arrivée depuis « Échéances » (une tâche touchée) : sa fiche s'ouvre,
   // une fois l'écran posé ; en lecture seule, la fiche à consulter

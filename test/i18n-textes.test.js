@@ -78,6 +78,8 @@ const MIGRATED = [
   'public/js/repeat.js',
   'public/js/due-time.js',
   'public/js/quantity.js',
+  'public/js/aisles.js',
+  'public/js/tidy-aisles.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {

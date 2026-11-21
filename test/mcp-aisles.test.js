@@ -81,9 +81,9 @@ test('add_items : rayon inconnu ou désactivé, liste multi, de tâches ou d\'en
   h.app.db.prepare("UPDATE aisles SET active = 0 WHERE name = 'Surgelés'").run();
   const before = count(h, h.ids.courses);
   const unknown = toolError(await c.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Pommes', aisle: 'Fruits et légumes' }, { name: 'Bonbons', aisle: 'Confiserie' }] }));
-  assert.match(unknown, /^Rayon inconnu ou désactivé : « Confiserie »\. Rayons disponibles : Boissons, Boucherie, Boulangerie, Crèmerie, .*Fruits et légumes.*\. Rien n'a été écrit\.$/);
+  assert.match(unknown, /^Rayon inconnu, désactivé ou que cette liste ne propose pas : « Confiserie »\. Rayons disponibles : Boissons, Boucherie, Boulangerie, Crèmerie, .*Fruits et légumes.*\. Rien n'a été écrit\.$/);
   assert.doesNotMatch(unknown, /Surgelés/);
-  assert.match(toolError(await c.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Glace', aisle: 'Surgelés' }] })), /^Rayon inconnu ou désactivé : « Surgelés »/);
+  assert.match(toolError(await c.tool('add_items', { list_id: h.ids.courses, items: [{ name: 'Glace', aisle: 'Surgelés' }] })), /^Rayon inconnu, désactivé ou que cette liste ne propose pas : « Surgelés »/);
   assert.equal(count(h, h.ids.courses), before, 'rien n\'est ajouté, même « Pommes »');
   // Tâches et envies
   assert.equal(toolError(await c.tool('add_items', { list_id: h.ids.maison, items: [{ name: 'Vis', aisle: 'Boissons' }] })), AISLE_NOT_HERE);
@@ -125,7 +125,7 @@ test('update_items : changer le rayon (mémorisé), « Sans rayon » avec un tex
   assert.equal(aisleOf(h, h.ids.lait), null);
   // Rayon inconnu : tout l'appel est refusé (même le nom)
   const err = toolError(await c.tool('update_items', { list_id: h.ids.courses, items: [{ id: h.ids.lait, name: 'Lait entier' }, { id: h.ids.pain, aisle: 'Viennoiseries' }] }));
-  assert.match(err, /^Rayon inconnu ou désactivé : « Viennoiseries »\. Rayons disponibles : /);
+  assert.match(err, /^Rayon inconnu, désactivé ou que cette liste ne propose pas : « Viennoiseries »\. Rayons disponibles : /);
   assert.equal(h.app.db.prepare('SELECT name FROM items WHERE id = ?').pluck().get(h.ids.lait), 'Lait');
   // Liste de tâches : refusé
   assert.equal(toolError(await c.tool('update_items', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, aisle: 'Boissons' }] })), AISLE_NOT_HERE);
@@ -146,7 +146,7 @@ test('descriptions et consignes : lire les rayons, choisir parmi eux, ne pas en 
   const byName = Object.fromEntries(TOOLS.map((tool) => [tool.name, tool]));
   assert.match(byName.read_list.description, /dans list\.aisles les noms des rayons qu'on peut choisir/);
   assert.match(byName.add_items.description, /aisle \(facultatif\), le nom d'un rayon pris dans list\.aisles de read_list/);
-  assert.match(byName.add_items.description, /N'inventez pas de rayon : un rayon inconnu ou désactivé refuse l'appel entier \(le message donne les rayons valides\)/);
+  assert.match(byName.add_items.description, /N'inventez pas de rayon : un rayon inconnu, désactivé ou que cette liste ne propose pas refuse l'appel entier \(le message donne les rayons valides\)/);
   assert.match(byName.add_items.description, /s'il est absent, l'article est sans rayon : dites-le à la personne/);
   assert.match(byName.update_items.description, /aisle \(liste de courses à magasin simple : nom d'un rayon pris dans list\.aisles de read_list ; texte vide : sans rayon ; jamais un rayon inventé\)/);
   assert.match(INSTRUCTIONS, /choisissez le rayon parmi ses rayons disponibles \(list\.aisles\) et passez-le dans aisle ; n'inventez jamais de rayon\. La réponse dit le rayon obtenu : si un article est resté sans rayon, dites-le à la personne/);

@@ -22,6 +22,11 @@
 // parmi ceux que regroupe le magasin de la liste (et actifs). Une liste à
 // magasin simple garde ses rayons, sans magasin par article.
 //
+// Rayons propres à un magasin (21 novembre 2026, public/js/aisles.js) : une
+// liste de courses à magasin simple propose les rayons de ce magasin et les
+// rayons communs ; une liste sans magasin, les rayons communs seulement.
+// Un rayon qui n'est pas proposé à la liste est refusé comme un rayon inconnu.
+//
 // Les dates (created_at, updated_at, deleted_at) sont toujours posées ici,
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
@@ -46,6 +51,7 @@ import {
   usesSubtasks, SUBTASK_NOT_HERE, SUBTASKS_OFF, BAD_PARENT, PARENT_IS_SUBTASK, HAS_SUBTASKS, NOT_OWN_PARENT, SUBTASK_NO_REPEAT,
   NOT_A_SUBTASK, BAD_PLACE, nextPosition, reorderedIds,
 } from '../public/js/subtasks.js';
+import { aisleFits, aislesForStore, offeredAisles, rematchAisle } from '../public/js/aisles.js';
 import { createReservationService } from './reservations.js';
 import { cleanName, parseId } from './validate.js';
 import { normalizeBarcode } from './products.js';
@@ -406,19 +412,25 @@ export function createListService(ctx) {
     return store;
   }
 
-  // Rayon actif, ou null pour « Sans rayon »
-  function activeAisleOrNull(id) {
+  // Tous les rayons, sous la forme des règles partagées (public/js/aisles.js)
+  const allAisles = () => q.allAisles.all().map(describeAisle);
+
+  // Rayon proposé à une liste de ce magasin (storeId : magasin simple de la
+  // liste, ou null), ou null pour « Sans rayon ». Un rayon désactivé, ou
+  // d'un autre magasin, est refusé comme un rayon inconnu.
+  function offeredAisleOrNull(id, storeId) {
     if (id === null) return null;
-    const aisle = parseId(id) && q.aisle.get(parseId(id));
-    if (!aisle || aisle.active !== 1) throw new OpError(400, 'ops.rayonInconnu');
-    return aisle;
+    const row = parseId(id) && q.aisle.get(parseId(id));
+    if (!row || row.active !== 1 || !aisleFits(describeAisle(row), storeId)) throw new OpError(400, 'ops.rayonInconnu');
+    return row;
   }
 
-  // Rayons actifs, { id, name }, dans l'ordre de l'application (ordre
+  // Rayons proposés à une liste de ce magasin (storeId : magasin simple de
+  // la liste, ou null), { id, name }, dans l'ordre de l'application (ordre
   // alphabétique des noms) : ceux qu'on peut choisir pour un article.
   // Seul Claude (MCP) les lit : ordre français, comme ses réponses.
-  function activeAisles() {
-    return q.allAisles.all().filter((a) => a.active === 1)
+  function activeAisles(storeId = null) {
+    return offeredAisles(allAisles(), storeId)
       .map((a) => ({ id: a.id, name: a.name }))
       .sort((a, b) => compareNames(a.name, b.name, 'fr'));
   }
@@ -502,9 +514,11 @@ export function createListService(ctx) {
   }
 
   // Rayon habituel (règle partagée) : d'abord celui de l'article dans ce
-  // magasin, sinon son rayon général ; seulement s'il est encore actif
+  // magasin, sinon son rayon général ; seulement s'il est encore proposé à
+  // une liste de ce magasin (actif, commun ou de ce magasin)
   function usualAisle(name, storeId) {
-    return sharedUsualAisle(historyOf(name), name, storeId, (id) => q.aisle.get(id)?.active === 1);
+    const offered = new Set(offeredAisles(allAisles(), storeId).map((a) => a.id));
+    return sharedUsualAisle(historyOf(name), name, storeId, (id) => offered.has(id));
   }
 
   // Magasin habituel (règle partagée) parmi les magasins proposés par la liste
@@ -513,11 +527,19 @@ export function createListService(ctx) {
   }
 
   // Changement de magasin d'une liste (ou passage en liste de courses) :
-  // chaque article garde son rayon et son magasin ; seuls les champs vides
-  // sont complétés par l'historique (règle choisie par le propriétaire) :
+  // chaque article garde son magasin ; seuls les champs vides sont
+  // complétés par l'historique (règle choisie par le propriétaire) :
   // - liste « multi » : un article sans magasin, ou dont le magasin n'est pas
   //   regroupé par le nouveau, reçoit son magasin habituel s'il en a un ;
-  // - liste à magasin simple : un article sans rayon reçoit son rayon habituel.
+  //   les rayons ne changent pas (cachés, ils reviennent avec un magasin
+  //   simple) ;
+  // - liste à magasin simple ou sans magasin : un article dont le rayon
+  //   n'est pas proposé pour le nouveau magasin va dans le rayon proposé de
+  //   même nom, sinon « Sans rayon » (rematchAisle, public/js/aisles.js :
+  //   même règle sur le téléphone, store.js) ; puis un article qui était
+  //   déjà sans rayon reçoit son rayon habituel. Un article qui vient de
+  //   perdre son rayon reste « Sans rayon » : le téléphone qui a fait le
+  //   changement propose de le ranger. L'historique ne change pas.
   function completeItems(listId) {
     const list = db.prepare(`
       SELECT lists.*, COALESCE(stores.is_multi, 0) AS store_is_multi
@@ -527,6 +549,7 @@ export function createListService(ctx) {
     const now = nowIso();
     const setStore = db.prepare('UPDATE items SET store_id = ?, updated_at = ? WHERE id = ?');
     const setAisle = db.prepare('UPDATE items SET aisle_id = ?, updated_at = ? WHERE id = ?');
+    const aisles = allAisles();
     for (const item of q.liveItems.all(listId)) {
       if (list.store_is_multi === 1) {
         if (item.store_id !== null && q.memberStores.all(list.store_id).includes(item.store_id)) continue;
@@ -535,6 +558,9 @@ export function createListService(ctx) {
       } else if (item.aisle_id === null) {
         const aisleId = usualAisle(item.name, list.store_id);
         if (aisleId !== null) setAisle.run(aisleId, now, item.id);
+      } else {
+        const aisleId = rematchAisle(item.aisle_id, aisles, list.store_id);
+        if (aisleId !== item.aisle_id) setAisle.run(aisleId, now, item.id);
       }
     }
   }
@@ -834,6 +860,8 @@ export function createListService(ctx) {
     name: row.name,
     active: row.active === 1,
   });
+  // Rayon : en plus, son magasin (null : « Tous les magasins »)
+  const describeAisle = (row) => ({ ...describeReference(row), storeId: row.store_id ?? null });
 
   // Magasins : type (simple ou « multi ») et magasins regroupés
   function describeStores() {
@@ -1110,7 +1138,7 @@ export function createListService(ctx) {
       if (list.is_multi === 1) {
         storeId = op.storeId === undefined ? usualStore(name, list.store_id) : chosenStore(op.storeId, list.store_id);
       } else if (isShoppingList(list)) {
-        aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : activeAisleOrNull(op.aisleId)?.id ?? null;
+        aisleId = op.aisleId === undefined ? usualAisle(name, list.store_id) : offeredAisleOrNull(op.aisleId, list.store_id)?.id ?? null;
       }
       const now = nowIso();
       // Sous-tâche : à la fin des sous-tâches de sa principale
@@ -1185,9 +1213,10 @@ export function createListService(ctx) {
       let aisleId = item.aisle_id;
       if (op.aisleId !== undefined && isShoppingList(item.list_type) && !multi) {
         if (op.aisleId !== null && !parseId(op.aisleId)) throw new OpError(400, 'ops.rayonInconnu');
-        // Un rayon désactivé peut être gardé, pas choisi
+        // Un rayon désactivé peut être gardé, pas choisi ; seulement un
+        // rayon proposé à la liste (commun ou de son magasin)
         const wanted = op.aisleId === null ? null : parseId(op.aisleId);
-        if (wanted !== item.aisle_id) aisleId = activeAisleOrNull(wanted)?.id ?? null;
+        if (wanted !== item.aisle_id) aisleId = offeredAisleOrNull(wanted, item.list_store_id)?.id ?? null;
       }
       let storeId = item.store_id;
       if (op.storeId !== undefined && multi) {
@@ -1461,7 +1490,8 @@ export function createListService(ctx) {
     const list = q.myLists.all(user.id).find((l) => l.id === listId.toLowerCase());
     if (!list) return null;
     const shopping = isShoppingList(list);
-    const aisles = q.allAisles.all();
+    // Rayons de cette liste seulement (communs et de son magasin)
+    const aisles = aislesForStore(allAisles(), list.store_id);
     const items = q.liveItems.all(list.id).map(describeItem);
     const byStore = shopping && list.store_id !== null && q.store.get(list.store_id).is_multi === 1;
     const groups = groupItems(items, aisles, shopping, { byStore, stores: q.allStores.all(), locale });
@@ -1472,13 +1502,16 @@ export function createListService(ctx) {
   }
 
   // Suggestions d'autocomplétion (même règle que sur le téléphone). Le rayon
-  // proposé n'est donné que s'il est encore actif. Avec une liste (listId) :
-  // aucune suggestion si ce n'est pas une liste de courses (la liste doit
-  // être une des miennes).
+  // proposé n'est donné que s'il est encore actif (et, avec une liste,
+  // proposé à cette liste : commun ou de son magasin). Avec une liste
+  // (listId) : aucune suggestion si ce n'est pas une liste de courses (la
+  // liste doit être une des miennes).
   // locale : langue de la requête (ordre alphabétique, à égalité)
   function suggestions(typed, { user, listId, locale = 'fr' } = {}) {
-    if (listId !== undefined && !isShoppingList(listForMember(user, listId))) return [];
-    const activeAisles = new Set(q.allAisles.all().filter((a) => a.active === 1).map((a) => a.id));
+    const list = listId === undefined ? null : listForMember(user, listId);
+    if (list && !isShoppingList(list)) return [];
+    const aisles = allAisles();
+    const activeAisles = new Set((list ? offeredAisles(aisles, list.store_id) : aisles.filter((a) => a.active)).map((a) => a.id));
     return suggest(q.allHistory.all().map(describeHistory), typed, undefined, { locale }).map((entry) => ({
       name: entry.name,
       aisleId: activeAisles.has(entry.aisleId) ? entry.aisleId : null,
@@ -1523,7 +1556,8 @@ export function createListService(ctx) {
       listIds: [...summaries.keys()],
       items: items.map(describeItem),
       stores: describeStores(),
-      aisles: q.allAisles.all().map(describeReference),
+      // Rayons, avec leur magasin (storeId ; null : « Tous les magasins »)
+      aisles: q.allAisles.all().map(describeAisle),
       // (lignes utilisées, ou retirées de « Souvent ajoutés », depuis la dernière synchronisation)
       history: db.prepare('SELECT * FROM item_history WHERE last_used_at >= ? OR hidden_at >= ?').all(from, from).map(describeHistory),
       // Comptes actifs (choix des personnes avec qui partager), gardés sur le téléphone pour

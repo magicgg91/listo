@@ -21,6 +21,7 @@ export default {
       blocks: [{ ul: [
         "Items sorted by aisle; Listo remembers the usual aisle of each item, suggests names you've already typed and “Often added” items ([[ajouter]]).",
         "“Multi” store: a trip to several shops, where each item has its store instead of an aisle ([[creer]]).",
+        "An aisle is used in every store (“All stores”), or in a single one: each list offers the aisles of its store and those of all stores.",
         "Anyone can create a missing store or aisle; the Admin manages them ([[role-admin]]).",
       ] }],
     },

@@ -228,7 +228,7 @@ test('écran : la quantité n\'est lue que par quantityFor (courses seulement) ;
   // Suggestions (listes de courses seulement : une liste de tâches n'en a pas,
   // et quantityFor ne lirait rien) ; suggestion choisie avec la quantité lue
   assert.match(list, /if \(!remembersNames\(view\?\.list\) \|\| splitItems\(input\.value\)\.length > 1\) \{/);
-  assert.match(list, /const read = quantityFor\(view\?\.list, typed\);\s*const suggestions = read\.name\.length >= 2 \? computeSuggestions\(app\.data, read\.name\) : \[\];/);
+  assert.match(list, /const read = quantityFor\(view\?\.list, typed\);\s*const suggestions = read\.name\.length >= 2 \? computeSuggestions\(app\.data, read\.name, undefined, view\?\.list\) : \[\];/);
   assert.match(list, /addTyped\(s\.name, \{ whole: true, quantity: read\.quantity \}\)/);
   // La fiche d'un article reste la façon de corriger (champ « Quantité » inchangé)
   assert.match(list, /field\(t\('liste\.fiche\.quantite'\), quantity, \{ aside: t\('liste\.fiche\.quantite\.exemple'\) \}\)/);

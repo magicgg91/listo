@@ -39,8 +39,11 @@
 // Changer le rayon habituel : un seul rayon pour le nom, écrit sur TOUTES ses
 // lignes (générale et par magasin : sinon le rayon retenu pour un magasin
 // passerait avant le nouveau, voir usualAisle dans public/js/history.js).
-// aisleId null = aucun rayon. Les articles déjà dans les listes gardent leur
-// rayon (aucune liste ne change). La date des lignes (last_used_at, la même
+// aisleId null = aucun rayon. Rayon d'un magasin (rayons propres à un
+// magasin, 21 novembre 2026) : il ne sert que dans ce magasin, il est donc
+// écrit sur la seule ligne de ce magasin (créée au besoin, sans achat
+// compté) ; les autres lignes gardent le leur. Les articles déjà dans les
+// listes gardent leur rayon (aucune liste ne change). La date des lignes (last_used_at, la même
 // que pour une correction) avance : c'est elle que la synchronisation des
 // téléphones suit ; « event: refs » les prévient tout de suite.
 
@@ -92,8 +95,11 @@ export function adminNameRoutes(ctx) {
     renameLines: db.prepare('UPDATE item_history SET display_name = ?, last_used_at = ? WHERE name_normalized = ?'),
     removeLines: db.prepare('DELETE FROM item_history WHERE name_normalized = ?'),
     aisleName: db.prepare('SELECT name FROM aisles WHERE id = ?').pluck(),
-    activeAisle: db.prepare('SELECT id, name FROM aisles WHERE id = ? AND active = 1'),
+    activeAisle: db.prepare('SELECT id, name, store_id FROM aisles WHERE id = ? AND active = 1'),
     setAisle: db.prepare('UPDATE item_history SET aisle_id = ?, last_used_at = ? WHERE name_normalized = ?'),
+    setStoreAisle: db.prepare('UPDATE item_history SET aisle_id = ?, last_used_at = ? WHERE name_normalized = ? AND store_id = ?'),
+    addStoreLine: db.prepare(`INSERT INTO item_history (name_normalized, store_id, display_name, aisle_id, use_count, last_used_at)
+      VALUES (?, ?, ?, ?, 0, ?)`),
   };
 
   // Nombre d'articles présents dans les listes de courses, par nom normalisé
@@ -247,7 +253,15 @@ export function adminNameRoutes(ctx) {
       if (!aisle) return res.status(400).json({ error: req.t(BAD_AISLE) });
     }
     db.transaction(() => {
-      q.setAisle.run(aisle?.id ?? null, nowIso(), fromKey);
+      const now = nowIso();
+      if (aisle?.store_id) {
+        // Rayon d'un magasin : la ligne de ce magasin seulement
+        if (!q.setStoreAisle.run(aisle.id, now, fromKey, aisle.store_id).changes) {
+          q.addStoreLine.run(fromKey, aisle.store_id, displayNameOf(lines), aisle.id, now);
+        }
+      } else {
+        q.setAisle.run(aisle?.id ?? null, now, fromKey);
+      }
     })();
     // Après l'écriture : les téléphones connectés relisent la mémoire des noms
     ctx.events?.notifyReferences();

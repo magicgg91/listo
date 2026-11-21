@@ -5,7 +5,10 @@
 //   compte jamais utilisé ;
 // - Courses, avec trois choix :
 //   - Magasins, Rayons : ajout, renommage, désactivation / réactivation,
-//     suppression d'un élément jamais utilisé ;
+//     suppression d'un élément jamais utilisé ; les rayons sont groupés
+//     par magasin (« Tous les magasins » d'abord, puis chaque magasin
+//     simple), se créent dans un magasin choisi et changent de magasin
+//     (rayons propres à un magasin, 21 novembre 2026, public/js/aisles.js) ;
 //   - Articles : la mémoire commune des articles saisis dans les listes de
 //     courses (autocomplétion, rayon habituel) ; corriger un nom dans toutes
 //     les listes de courses, changer son rayon habituel, ou le retirer des
@@ -402,8 +405,10 @@ async function loadReferences(tab, panel, alive) {
   replace(panel, loadingText());
   const reload = () => loadReferences(tab, panel, alive);
   let items;
+  let response;
   try {
-    ({ items } = await get(`/api/admin/${tab.api}`));
+    response = await get(`/api/admin/${tab.api}`);
+    ({ items } = response);
   } catch (err) {
     if (alive()) replace(panel, errorBlock(err, reload));
     return;
@@ -411,6 +416,10 @@ async function loadReferences(tab, panel, alive) {
   if (!alive()) return;
 
   const isStores = tab.api === 'stores';
+  if (tab.api === 'aisles') {
+    drawAisles(tab, panel, { items, stores: response.stores ?? [] }, reload);
+    return;
+  }
 
   // Ajout (add-inline ; pour un magasin, add-block avec le choix Simple / Multi)
   const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
@@ -452,6 +461,151 @@ async function loadReferences(tab, panel, alive) {
     rows = items.map((item) => manageRow(tab, item, reload));
   }
   replace(panel, addForm, items.length ? h('div', { class: 'group' }, rows) : h('p', { class: 'muted empty__text' }, t('administration.vide')));
+}
+
+// ---- Rayons, groupés par magasin ----
+//
+// « Tous les magasins » (rayons communs) d'abord, puis chaque magasin simple
+// qui a des rayons, par ordre alphabétique ; dans chaque groupe, les rayons
+// par ordre alphabétique. L'ajout demande le magasin (par défaut « Tous les
+// magasins ») ; chaque rayon peut changer de magasin. Sans aucun magasin
+// simple, le choix du magasin n'apparaît pas (tout est commun).
+function drawAisles(tab, panel, { items, stores }, reload) {
+  const storeById = new Map(stores.map((store) => [store.id, store]));
+  const placeName = (storeId) => (storeId === null ? t('administration.rayons.tousMagasins') : storeById.get(storeId)?.name ?? t('administration.rayons.tousMagasins'));
+
+  // Ajout : nom, puis magasin du nouveau rayon
+  let place = null;
+  const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: '100', placeholder: tab.placeholder, 'aria-label': tab.placeholder });
+  const addButton = h('button', { class: 'btn btn--primary btn--add', type: 'submit' }, t('administration.ajouter'));
+  const placeLabel = h('span', { class: 'input__value' });
+  const showPlace = () => replace(placeLabel, icon('store', 'icon--sm'), placeName(place));
+  showPlace();
+  const placeButton = h('button', {
+    class: 'input input--select',
+    type: 'button',
+    'aria-label': t('administration.rayons.magasin.choisir', { store: placeName(place) }),
+    onClick: async () => {
+      const chosen = await pickAislePlace({ title: t('administration.rayons.magasin'), stores, current: place, confirmLabel: t('administration.rayons.magasin.valider') });
+      if (chosen === undefined) return;
+      place = chosen;
+      showPlace();
+      placeButton.setAttribute('aria-label', t('administration.rayons.magasin.choisir', { store: placeName(place) }));
+    },
+  }, placeLabel, icon('chev-d'));
+  const addForm = stores.length
+    ? h('form', { class: 'add-block', novalidate: true },
+      h('div', { class: 'add-block__row' }, h('label', { class: 'grow' }, input), addButton),
+      placeButton)
+    : h('form', { class: 'add-inline add-inline--flush', novalidate: true }, h('label', { class: 'grow' }, input), addButton);
+  addForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+      await post('/api/admin/aisles', { name, storeId: place });
+      toast(place === null ? t('administration.ajoute', { name }) : t('administration.rayons.ajoute', { name, store: placeName(place) }), { low: true });
+      afterChange(reload);
+    } catch (err) {
+      toast(errorMessage(err), { low: true });
+    }
+  });
+
+  if (!items.length) {
+    replace(panel, addForm, h('p', { class: 'muted empty__text' }, t('administration.vide')));
+    return;
+  }
+  // Groupes : rayons communs, puis magasins (ordre donné par le serveur)
+  const groups = [null, ...stores.map((store) => store.id)]
+    .map((storeId) => ({ storeId, aisles: items.filter((item) => (item.storeId ?? null) === storeId) }))
+    .filter((group) => group.aisles.length);
+  // Rayon d'un magasin inconnu (ne devrait pas arriver) : avec les communs
+  const known = new Set([null, ...stores.map((store) => store.id)]);
+  const strays = items.filter((item) => !known.has(item.storeId ?? null));
+  if (strays.length) {
+    const common = groups.find((group) => group.storeId === null);
+    if (common) common.aisles.push(...strays);
+    else groups.unshift({ storeId: null, aisles: strays });
+  }
+  // Sans magasin simple, tout est commun : un seul groupe, sans titre
+  replace(panel, addForm, groups.map((group) => [
+    stores.length ? h('h2', { class: 'section-title' }, placeName(group.storeId),
+      group.storeId !== null && storeById.get(group.storeId)?.active === false ? ` ${t('administration.magasins.desactive')}` : null) : null,
+    h('div', { class: 'group' }, group.aisles.map((aisle) => manageRow(tab, aisle, reload, {
+      // Changer de magasin : seulement s'il y a un autre endroit où aller
+      extra: stores.length || aisle.storeId !== null
+        ? iconButton('store', t('administration.rayons.deplacer', { name: aisle.name }), () => moveAisle(aisle, stores, placeName, reload))
+        : null,
+    }))),
+  ]));
+}
+
+// Feuille de choix du magasin d'un rayon : « Tous les magasins », puis les
+// magasins simples (un magasin désactivé reste proposé : l'Admin range ses
+// rayons). Renvoie l'identifiant choisi, null (« Tous les magasins »), ou
+// undefined si la feuille est fermée sans choisir.
+function pickAislePlace({ title, sub, stores, current, confirmLabel }) {
+  return new Promise((resolve) => {
+    let selected = current;
+    let result;
+    const choices = [{ id: null, name: t('administration.rayons.tousMagasins') }, ...stores];
+    const confirm = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, confirmLabel);
+    const rows = choices.map((choice) => {
+      const row = h('button', { class: 'radio-row', type: 'button', role: 'radio', 'aria-checked': 'false' },
+        h('span', { class: 'radio' }),
+        h('span', { class: 'grow' }, choice.name, choice.active === false ? h('span', { class: 'muted' }, ` ${t('administration.magasins.desactive')}`) : null));
+      row.dataset.id = String(choice.id);
+      row.addEventListener('click', () => {
+        selected = choice.id;
+        paint();
+      });
+      return row;
+    });
+    const paint = () => {
+      for (const row of rows) {
+        const on = row.dataset.id === String(selected);
+        row.classList.toggle('is-on', on);
+        row.setAttribute('aria-checked', String(on));
+        row.querySelector('.radio').classList.toggle('is-on', on);
+        row.querySelector('.icon-end')?.remove();
+        if (on) row.append(icon('check', 'icon-end'));
+      }
+    };
+    paint();
+    const sheet = openSheet({
+      title,
+      sub,
+      content: [h('div', { class: 'card picker' }, h('div', { role: 'radiogroup', 'aria-label': t('administration.rayons.magasin') }, rows)), confirm],
+      onClose: () => resolve(result),
+    });
+    confirm.addEventListener('click', () => {
+      result = selected;
+      sheet.close();
+    });
+  });
+}
+
+// Changer le magasin d'un rayon. Le serveur refuse (avec le nombre de
+// listes) quand des articles de listes d'un autre magasin, ou sans magasin,
+// l'utilisent ; vers « Tous les magasins », c'est toujours possible si le
+// nom est libre.
+async function moveAisle(aisle, stores, placeName, reload) {
+  const current = aisle.storeId ?? null;
+  const chosen = await pickAislePlace({
+    title: t('administration.rayons.deplacer.titre', { name: aisle.name }),
+    sub: t('administration.rayons.deplacer.texte'),
+    stores,
+    current,
+    confirmLabel: t('administration.rayons.deplacer.valider'),
+  });
+  if (chosen === undefined || chosen === current) return;
+  try {
+    await patch(`/api/admin/aisles/${aisle.id}`, { storeId: chosen });
+    toast(t('administration.rayons.deplace', { name: aisle.name, store: placeName(chosen) }), { low: true });
+    afterChange(reload);
+  } catch (err) {
+    toast(errorMessage(err));
+  }
 }
 
 // Segmenté à choix unique (icône + libellé), comme pour le thème
@@ -771,10 +925,13 @@ function nameRow(entry, reload) {
 // « Modifier le rayon » : feuille de choix (rayons actifs par ordre
 // alphabétique, puis « Aucun rayon » ; l'actuel est coché), puis
 // « Enregistrer ». Le rayon habituel change pour ce nom (toutes ses lignes,
-// générale et par magasin) ; les articles déjà dans les listes gardent le
-// leur. Aucun champ de saisie, donc aucun clavier.
+// générale et par magasin ; un rayon d'un magasin, suivi du nom de ce
+// magasin, ne change que la ligne de ce magasin) ; les articles déjà dans
+// les listes gardent le leur. Aucun champ de saisie, donc aucun clavier.
 function chooseAisle(entry, reload) {
-  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisle.name })), { id: null, name: t('administration.noms.aucunRayon') }];
+  const storeName = new Map(app.data.stores.map((store) => [store.id, store.name]));
+  const aisleLabel = (aisle) => (aisle.storeId != null && storeName.has(aisle.storeId) ? t('administration.noms.rayon.magasin', { aisle: aisle.name, store: storeName.get(aisle.storeId) }) : aisle.name);
+  const choices = [...activeOnly(app.data.aisles).map((aisle) => ({ id: aisle.id, name: aisleLabel(aisle) })), { id: null, name: t('administration.noms.aucunRayon') }];
   // Rayon actuel : coché seulement s'il est encore proposé
   let selected = choices.some((c) => c.id === (entry.aisleId ?? null)) ? (entry.aisleId ?? null) : undefined;
   const save = h('button', { class: 'btn btn--primary btn--block', type: 'button' }, t('administration.noms.enregistrer'));

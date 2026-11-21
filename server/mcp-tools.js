@@ -223,7 +223,7 @@ export const TOOLS = [
   {
     name: 'add_items',
     title: 'Ajouter des éléments',
-    description: `Ajoute 1 à ${ADD_MAX} éléments à une liste Listo (identifiant donné par list_lists), au nom du compte qui a autorisé la connexion. Chaque élément : name (obligatoire), quantity et note (facultatives) ; pour une liste d'envies : pas de quantité, mais link (adresse web en http ou https) et price (prix indicatif en euros), facultatifs ; priority (low, normal ou high) pour une liste de tâches ou d'envies dont la priorité est activée ; due_date (date AAAA-MM-JJ) pour une liste de tâches dont l'échéance est activée (jamais pour une liste de courses ou d'envies), avec si besoin due_time (heure HH:MM) et remind (rappel avant l'heure : at_time, 15min, 30min, 1h, 2h ou day_before) ; repeat pour une tâche qui se répète, dans les mêmes listes (par exemple { every: "week", weekdays: ["monday", "thursday"] } ou { every: "month", month_day: 5 }) : sans due_date, l'échéance est posée sur la prochaine date de la règle, et la réponse la donne (due_date) avec la règle en clair (repeat) : dites-les à la personne. Si un élément demande une priorité, une échéance ou une répétition que la liste n'active pas, ou une date qui n'existe pas, l'appel entier est refusé et rien n'est ajouté. Pour une liste de courses à magasin simple : aisle (facultatif), le nom d'un rayon pris dans list.aisles de read_list (accents et majuscules ignorés ; texte vide : sans rayon) ; sans aisle, le rayon habituel est choisi comme dans l'application. N'inventez pas de rayon : un rayon inconnu ou désactivé refuse l'appel entier (le message donne les rayons valides) ; pas de rayon dans une liste « multi », de tâches ou d'envies. La réponse donne le rayon obtenu (aisle) ; s'il est absent, l'article est sans rayon : dites-le à la personne. Pour une liste « multi » (chaque article a son magasin, pas de rayon) : store (facultatif), le nom d'un magasin pris dans list.stores de read_list (accents et majuscules ignorés ; texte vide : sans magasin) ; sans store, le magasin habituel de l'article est choisi comme dans l'application. N'inventez pas de magasin : un magasin inconnu, désactivé ou que cette liste ne propose pas refuse l'appel entier (le message donne les magasins valides) ; store est refusé hors liste « multi » (dans une liste à magasin simple, le magasin est celui de la liste : choisissez le rayon avec aisle). La réponse donne le magasin obtenu (store) ; s'il est absent, l'article est sans magasin : dites-le à la personne. Sous-tâches (liste de tâches dont l'option « Sous-tâches » est activée, list.subtasks de read_list) : parent_id, l'identifiant (donné par read_list) d'une tâche de la liste qui n'est pas elle-même une sous-tâche ; un seul niveau, jamais de répétition pour une sous-tâche ; une principale inconnue, une sous-tâche donnée comme principale ou l'option désactivée refusent l'appel entier. Pour créer une principale et ses sous-tâches, ajoutez d'abord la principale, puis ses sous-tâches avec l'identifiant obtenu. Ne crée rien si un élément de même nom est déjà dans la liste sans être coché (sous la même principale, pour une sous-tâche ; il n'est pas modifié), ou vient d'être ajouté par cette connexion (moins de 2 minutes) : la réponse le signale. ${ADDS_PER_HOUR} ajouts par heure au plus. Exige une connexion « Lecture et écriture » et le droit de modifier la liste. Demandez confirmation avant d'ajouter plus de 5 éléments.`,
+    description: `Ajoute 1 à ${ADD_MAX} éléments à une liste Listo (identifiant donné par list_lists), au nom du compte qui a autorisé la connexion. Chaque élément : name (obligatoire), quantity et note (facultatives) ; pour une liste d'envies : pas de quantité, mais link (adresse web en http ou https) et price (prix indicatif en euros), facultatifs ; priority (low, normal ou high) pour une liste de tâches ou d'envies dont la priorité est activée ; due_date (date AAAA-MM-JJ) pour une liste de tâches dont l'échéance est activée (jamais pour une liste de courses ou d'envies), avec si besoin due_time (heure HH:MM) et remind (rappel avant l'heure : at_time, 15min, 30min, 1h, 2h ou day_before) ; repeat pour une tâche qui se répète, dans les mêmes listes (par exemple { every: "week", weekdays: ["monday", "thursday"] } ou { every: "month", month_day: 5 }) : sans due_date, l'échéance est posée sur la prochaine date de la règle, et la réponse la donne (due_date) avec la règle en clair (repeat) : dites-les à la personne. Si un élément demande une priorité, une échéance ou une répétition que la liste n'active pas, ou une date qui n'existe pas, l'appel entier est refusé et rien n'est ajouté. Pour une liste de courses à magasin simple : aisle (facultatif), le nom d'un rayon pris dans list.aisles de read_list (accents et majuscules ignorés ; texte vide : sans rayon) ; sans aisle, le rayon habituel est choisi comme dans l'application. N'inventez pas de rayon : un rayon inconnu, désactivé ou que cette liste ne propose pas refuse l'appel entier (le message donne les rayons valides) ; pas de rayon dans une liste « multi », de tâches ou d'envies. La réponse donne le rayon obtenu (aisle) ; s'il est absent, l'article est sans rayon : dites-le à la personne. Pour une liste « multi » (chaque article a son magasin, pas de rayon) : store (facultatif), le nom d'un magasin pris dans list.stores de read_list (accents et majuscules ignorés ; texte vide : sans magasin) ; sans store, le magasin habituel de l'article est choisi comme dans l'application. N'inventez pas de magasin : un magasin inconnu, désactivé ou que cette liste ne propose pas refuse l'appel entier (le message donne les magasins valides) ; store est refusé hors liste « multi » (dans une liste à magasin simple, le magasin est celui de la liste : choisissez le rayon avec aisle). La réponse donne le magasin obtenu (store) ; s'il est absent, l'article est sans magasin : dites-le à la personne. Sous-tâches (liste de tâches dont l'option « Sous-tâches » est activée, list.subtasks de read_list) : parent_id, l'identifiant (donné par read_list) d'une tâche de la liste qui n'est pas elle-même une sous-tâche ; un seul niveau, jamais de répétition pour une sous-tâche ; une principale inconnue, une sous-tâche donnée comme principale ou l'option désactivée refusent l'appel entier. Pour créer une principale et ses sous-tâches, ajoutez d'abord la principale, puis ses sous-tâches avec l'identifiant obtenu. Ne crée rien si un élément de même nom est déjà dans la liste sans être coché (sous la même principale, pour une sous-tâche ; il n'est pas modifié), ou vient d'être ajouté par cette connexion (moins de 2 minutes) : la réponse le signale. ${ADDS_PER_HOUR} ajouts par heure au plus. Exige une connexion « Lecture et écriture » et le droit de modifier la liste. Demandez confirmation avant d'ajouter plus de 5 éléments.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -475,9 +475,10 @@ export function createMcpTools(ctx) {
         ...(shopping && list.store ? { store: clip(list.store.name, MAX.store) } : {}),
         // Liste de courses à magasin simple : les rayons qu'on peut choisir
         // (noms seulement, dans l'ordre de l'application), pour add_items et
-        // update_items. Donnés ici, avec la liste à remplir, plutôt que dans
-        // list_lists où ils se répéteraient pour chaque liste de courses.
-        ...(shopping && !list.store?.isMulti ? { aisles: ctx.lists.activeAisles().map((a) => clip(a.name, MAX.place)) } : {}),
+        // update_items : ceux que la liste propose (communs et de son
+        // magasin, actifs). Donnés ici, avec la liste à remplir, plutôt que
+        // dans list_lists où ils se répéteraient pour chaque liste de courses.
+        ...(shopping && !list.store?.isMulti ? { aisles: ctx.lists.activeAisles(list.store?.id ?? null).map((a) => clip(a.name, MAX.place)) } : {}),
         // Liste « multi » : les magasins qu'on peut choisir pour un article
         // (ceux qu'elle regroupe, actifs ; noms seulement, ordre de l'application)
         ...(shopping && list.store?.isMulti ? { stores: ctx.lists.activeStoreChoices(list.store.id).map((s) => clip(s.name, MAX.place)) } : {}),
@@ -840,13 +841,14 @@ export function createMcpTools(ctx) {
   }
 
   // Rayon (« aisle ») : liste de courses à magasin simple seulement, parmi
-  // les rayons ACTIFS ; texte vide : « Sans rayon »
+  // les rayons que CETTE liste propose (actifs, communs ou de son magasin) ;
+  // texte vide : « Sans rayon »
   function aislesFor(list, items) {
     if (!asks(items, 'aisle')) return { ids: new Map() };
     if (!isShoppingList(list)) return { error: AISLE_NOT_HERE };
     if (list.store?.isMulti) return { error: inFrench(MULTI_NO_AISLE) };
-    return pickPlaces(items, 'aisle', ctx.lists.activeAisles(),
-      (name, names) => `Rayon inconnu ou désactivé : « ${name} ». Rayons disponibles : ${names}. Rien n'a été écrit.`);
+    return pickPlaces(items, 'aisle', ctx.lists.activeAisles(list.store?.id ?? null),
+      (name, names) => `Rayon inconnu, désactivé ou que cette liste ne propose pas : « ${name} ». Rayons disponibles : ${names}. Rien n'a été écrit.`);
   }
 
   // Magasin (« store ») : liste « multi » seulement, parmi les magasins que
@@ -872,7 +874,7 @@ export function createMcpTools(ctx) {
     const id = multi ? item.storeId : item.aisleId;
     if (id === null || id === undefined) return {};
     const key = multi ? 'store' : 'aisle';
-    const choices = multi ? ctx.lists.activeStoreChoices(list.store.id) : ctx.lists.activeAisles();
+    const choices = multi ? ctx.lists.activeStoreChoices(list.store.id) : ctx.lists.activeAisles(list.store?.id ?? null);
     const name = choices.find((c) => c.id === id)?.name ?? read.groups.find((g) => g[key]?.id === id)?.[key].name;
     return name ? { [key]: clip(name, MAX.place) } : {};
   }

@@ -385,6 +385,19 @@ export default {
 
   // Choix du rayon ou du magasin
   'liste.choix.nouveauRayon': 'Nouveau rayon…',
+
+  // « Ranger les articles » : après un changement de magasin, les articles qui ont perdu leur rayon
+  'liste.ranger.titre': 'Ranger les articles',
+  'liste.ranger.texte.magasin': {
+    one: 'Cet article est passé « Sans rayon » : son rayon n\'existe pas chez {store}. Choisissez-en un maintenant, ou plus tard depuis sa fiche.',
+    other: 'Ces {count} articles sont passés « Sans rayon » : leur rayon n\'existe pas chez {store}. Choisissez les nouveaux maintenant, ou plus tard depuis leur fiche.',
+  },
+  'liste.ranger.texte.sansMagasin': {
+    one: 'Cet article est passé « Sans rayon » : son rayon appartenait à l\'ancien magasin. Choisissez-en un maintenant, ou plus tard depuis sa fiche.',
+    other: 'Ces {count} articles sont passés « Sans rayon » : leur rayon appartenait à l\'ancien magasin. Choisissez les nouveaux maintenant, ou plus tard depuis leur fiche.',
+  },
+  'liste.ranger.rayonDe': 'Rayon de « {name} »',
+  'liste.ranger.termine': 'Terminé',
   'liste.choix.nouveauMagasin': 'Nouveau magasin…',
 
   // Droit changé pendant que la liste est ouverte

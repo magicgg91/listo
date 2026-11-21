@@ -662,7 +662,46 @@ export const MIGRATIONS = [
   `
   ALTER TABLE users ADD COLUMN locale TEXT CHECK (locale IS NULL OR locale IN ('fr', 'en'));
   `,
+
+  // --- Migration 35 : rayons propres à un magasin (21 novembre 2026) ---
+  // aisles.store_id : le magasin simple auquel le rayon appartient, ou vide
+  // pour un rayon commun à tous les magasins (« Tous les magasins »). Les
+  // rayons existants deviennent tous communs : rien ne change. Le même nom
+  // peut désormais exister dans deux magasins : la contrainte UNIQUE du nom
+  // part, et la table est recréée (voir aislesByStoreMigration).
+  (db) => aislesByStoreMigration(db),
 ];
+
+// Migration 35 : la table aisles est recréée avec la colonne store_id et
+// sans la contrainte UNIQUE sur le nom. Les identifiants sont gardés : les
+// articles et l'historique qui pointent vers un rayon le retrouvent.
+//
+// SQLite ne sait pas retirer une contrainte : on copie les rayons dans une
+// table temporaire, on efface la table, on la recrée sous le même nom, puis
+// on remet les rayons. Les clés étrangères restent actives : effacer la
+// table compte les articles qui la pointent comme « en défaut », et
+// defer_foreign_keys repousse la vérification à la fin de la transaction ;
+// remettre chaque rayon efface ce défaut. S'il restait un article sans son
+// rayon, la transaction échouerait et rien ne changerait.
+// Filet de sécurité : un index unique sur (magasin, nom) ; la règle avec les
+// rayons communs (public/js/aisles.js, aisleNameClash) est vérifiée par le code.
+export function aislesByStoreMigration(db) {
+  db.pragma('defer_foreign_keys = ON');
+  db.exec(`
+    CREATE TEMP TABLE aisles_copy AS SELECT id, name, active FROM aisles;
+    DROP TABLE aisles;
+    CREATE TABLE aisles (
+      id       INTEGER PRIMARY KEY,
+      name     TEXT    NOT NULL COLLATE NOCASE CHECK (length(name) BETWEEN 1 AND 100),
+      active   INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+      store_id INTEGER REFERENCES stores(id) -- vide : rayon commun
+    );
+    INSERT INTO aisles (id, name, active, store_id) SELECT id, name, active, NULL FROM aisles_copy;
+    DROP TABLE temp.aisles_copy;
+    CREATE UNIQUE INDEX aisles_store_name ON aisles(COALESCE(store_id, 0), name COLLATE NOCASE);
+    CREATE INDEX aisles_store ON aisles(store_id) WHERE store_id IS NOT NULL;
+  `);
+}
 
 // Migration 33 : positions de départ des sous-tâches existantes (supprimées
 // comprises : « Annuler » les remet à leur place). Renvoie le nombre de
@@ -998,8 +1037,9 @@ export function clearStartingData(db) {
   let removed = 0;
   db.transaction(() => {
     removed += db.prepare('DELETE FROM item_history').run().changes;
-    removed += db.prepare('DELETE FROM stores').run().changes;
+    // Les rayons d'abord : un rayon peut pointer vers son magasin
     removed += db.prepare('DELETE FROM aisles').run().changes;
+    removed += db.prepare('DELETE FROM stores').run().changes;
   })();
   return removed;
 }

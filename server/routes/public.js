@@ -56,6 +56,7 @@ import { DEFAULT_LOCALE, translate } from '../../public/js/i18n.js';
 import { consoleLocale } from '../config.js';
 import { requestLocale } from '../locale.js';
 import { nestItems, usesSubtasks, orderSubtasks } from '../../public/js/subtasks.js';
+import { aislesForStore } from '../../public/js/aisles.js';
 
 // Noms des messages (public/js/i18n/fr/liens.js), traduits par req.t dans
 // la langue du visiteur (son navigateur, sinon celle de l'installation)
@@ -111,7 +112,7 @@ export function publicRoutes(ctx, { publicDir }) {
     displayName: db.prepare('SELECT display_name FROM users WHERE id = ?').pluck(),
     store: db.prepare('SELECT id, name, is_multi FROM stores WHERE id = ?'),
     allStores: db.prepare('SELECT id, name FROM stores'),
-    allAisles: db.prepare('SELECT id, name FROM aisles'),
+    allAisles: db.prepare('SELECT id, name, store_id FROM aisles'),
     items: db.prepare(`
       SELECT id, name, quantity, note, aisle_id, store_id, checked, checked_at, photo_at, priority, due_date, due_time, repeat, ean, link, price_cents, parent_id, position, created_at
       FROM items WHERE list_id = ? AND deleted_at IS NULL
@@ -215,7 +216,10 @@ export function publicRoutes(ctx, { publicDir }) {
     // part, du plus récemment coché au plus ancien (zone « Dans le panier » /
     // « Terminés », même règle que l'application). La date du coché sert à
     // l'ordre, elle n'est pas envoyée.
-    const aisles = q.allAisles.all();
+    // Rayons de cette liste seulement (communs et de son magasin, même règle
+    // que l'application, public/js/aisles.js) : seuls leurs noms, et
+    // seulement ceux de ses articles, apparaissent
+    const aisles = aislesForStore(q.allAisles.all().map((row) => ({ id: row.id, name: row.name, storeId: row.store_id ?? null })), list.store_id ?? null);
     const stores = q.allStores.all();
     const { groups, done } = splitDone(tops, aisles, isShopping, { byStore, stores, locale });
     // Liste de tâches : priorité et échéance en plus (lecture seule),

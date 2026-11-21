@@ -116,7 +116,7 @@ export default {
         'A list is missing: the connection may only allow some lists, or you\'re no longer a member. Reconnect Claude with “All my lists” ([[claude-connecter]]).',
         'Claude refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.',
         'Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “Claude connections” ([[claude-connexions]]).',
-        'Claude says an aisle or a store is unknown: it doesn\'t exist, it\'s disabled, or (store in a “Multi” list) this list doesn\'t offer it. Nothing was added; Claude should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).',
+        'Claude says an aisle or a store is unknown: it doesn\'t exist, it\'s disabled, or this list doesn\'t offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; Claude should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).',
         'Claude says a store can\'t be chosen in this list: in a list with a “Single” store, the store is the list\'s own; you choose the aisle. The aisle, for its part, can\'t be chosen in a “Multi” list.',
       ] }],
     },

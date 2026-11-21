@@ -112,6 +112,18 @@ export default {
   'administration.magasins.aucunSimple': 'Ajoutez d\'abord des magasins simples.',
   'administration.magasins.sansMagasin': 'Les articles sans magasin passent en dernier, sous « Sans magasin ».',
 
+  // Rayons : groupés par magasin, magasin d'un nouveau rayon, changement de magasin
+  'administration.rayons.tousMagasins': 'Tous les magasins',
+  'administration.rayons.magasin': 'Magasin du rayon',
+  'administration.rayons.magasin.choisir': 'Magasin du nouveau rayon : {store}',
+  'administration.rayons.magasin.valider': 'Choisir',
+  'administration.rayons.ajoute': '« {name} » ajouté à {store}',
+  'administration.rayons.deplacer': 'Changer le magasin de {name}',
+  'administration.rayons.deplacer.titre': 'Magasin de « {name} »',
+  'administration.rayons.deplacer.texte': 'Un rayon de « Tous les magasins » sert dans toutes les listes ; un rayon d\'un magasin, seulement dans les listes de ce magasin.',
+  'administration.rayons.deplacer.valider': 'Déplacer',
+  'administration.rayons.deplace': '« {name} » : {store}',
+
   // État d'un magasin ou d'un rayon
   'administration.etat.active': 'Active',
   'administration.etat.actif': 'Actif',
@@ -164,6 +176,7 @@ export default {
   'administration.noms.rayon': 'Rayon',
   'administration.noms.rayon.fait': 'Rayon de « {name} » : {aisle}',
   'administration.noms.rayon.aucun': '« {name} » n\'a plus de rayon habituel',
+  'administration.noms.rayon.magasin': '{aisle} ({store})',
 
   // Retirer un article des suggestions
   'administration.noms.retirer.question': 'Retirer « {name} » des suggestions ?',

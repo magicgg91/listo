@@ -361,7 +361,7 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_DB_PATH` | `/data/listo.db` | Database (`data/` folder). |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Encryption key, created on first start (`secrets/` folder). |
 | `LISTO_SESSION_DAYS` | `30` | How long a session lasts without signing in again, in days. |
-| `LISTO_LANG` | not set: `fr` | Default language, `fr` or `en`: the one used by an account set to “Automatic” when the browser doesn't give a known language, and for that account's notifications. A new installation set to `en` creates its starter stores and aisles in English. Any other value: Listo doesn't start and explains why in `docker logs`. |
+| `LISTO_LANG` | not set: `fr` | Default language, `fr` or `en`: the one used by an account set to “Automatic” when the browser doesn't give a known language, and for that account's notifications. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_CURRENCY` | not set: `EUR` | Currency for wish prices, as a three-letter code (`EUR`, `USD`, `CHF`, `GBP`…), with two decimals. Only the display changes: prices already entered are not converted. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_COMMIT` | set by the image | Installed version, shown in Settings › “About”. Don't fill it in. |
 | `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([9.9 Knowing a new version exists](#version)). |
@@ -536,7 +536,7 @@ The very first time Listo is opened, the “Welcome to Listo” screen asks for:
 - “Password”: at least 10 characters, then “Confirm password”;
 - “Setup code”: the one shown in the server logs ([3.6 First start and setup code](#demarrage)).
 
-Then “Create Admin account”. This account then creates all the others.
+Then “Create Admin account”. This account then creates all the others. A new installation has no stores or aisles: the Admin creates them in “Administration”, “Shopping” tab ([7.1 Admin](#role-admin)), or everyone creates them as they go, with “New store…” and “New aisle…”.
 
 <a id="creer-comptes"></a>
 

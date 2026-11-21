@@ -13,7 +13,7 @@ export default {
           "“Password”: at least 10 characters, then “Confirm password”;",
           "“Setup code”: the one shown in the server logs ([[demarrage]]).",
         ] },
-        "Then “Create Admin account”. This account then creates all the others.",
+        "Then “Create Admin account”. This account then creates all the others. A new installation has no stores or aisles: the Admin creates them in “Administration”, “Shopping” tab ([[role-admin]]), or everyone creates them as they go, with “New store…” and “New aisle…”.",
       ],
     },
     {

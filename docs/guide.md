@@ -190,7 +190,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 
 ### 1.3 Trois types de liste
 
-- « Courses » : les articles sont classés par rayon (« Fruits et légumes », « Crèmerie »…), ou par magasin pour une tournée de plusieurs boutiques (magasin « Multi »). Listo retient le rayon habituel de chaque article.
+- « Courses » : les articles sont classés par rayon (“Fruits et légumes”, “Crèmerie”…), ou par magasin pour une tournée de plusieurs boutiques (magasin « Multi »). Listo retient le rayon habituel de chaque article.
 - « Tâches » : des choses à faire, avec si besoin une priorité et une échéance.
 - « Envies » : des idées de cadeaux pour une personne. Ses proches réservent un souhait pour ne pas offrir deux fois la même chose, sans qu'elle le sache.
 
@@ -361,7 +361,7 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_DB_PATH` | `/data/listo.db` | Base de données (dossier `data/`). |
 | `LISTO_KEY_PATH` | `/secrets/secret.key` | Clé de chiffrement, créée au premier démarrage (dossier `secrets/`). |
 | `LISTO_SESSION_DAYS` | `30` | Durée d'une session sans se reconnecter, en jours. |
-| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : celle d'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d'un tel compte. Une installation neuve réglée sur `en` crée ses magasins et rayons de départ en anglais. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
+| `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : celle d'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d'un tel compte. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_CURRENCY` | absente : `EUR` | Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_COMMIT` | posée par l'image | Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir. |
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([9.9 Savoir qu'une nouvelle version existe](#version)). |
@@ -536,7 +536,7 @@ Pour n'entrer QUE par le fournisseur, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les 
 - « Mot de passe » : au moins 10 caractères, puis « Confirmation du mot de passe » ;
 - « Code de démarrage » : celui affiché dans les journaux du serveur ([3.6 Premier démarrage et code de démarrage](#demarrage)).
 
-Puis « Créer le compte Admin ». Ce compte crée ensuite tous les autres.
+Puis « Créer le compte Admin ». Ce compte crée ensuite tous les autres. Une installation neuve n'a aucun magasin ni rayon : l'Admin les crée dans « Administration », onglet « Courses » ([7.1 Admin](#role-admin)), ou chacun au fil des listes, avec « Nouveau magasin… » et « Nouveau rayon… ».
 
 <a id="creer-comptes"></a>
 

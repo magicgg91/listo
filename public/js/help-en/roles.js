@@ -28,7 +28,7 @@ export default {
         { ul: [
           "Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).",
           "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner.",
-          "Other accounts' Claude connections: see [[claude-connexions]].",
+          "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",
         ] },
       ],
@@ -155,7 +155,7 @@ export default {
       blocks: [
         "The person the wish list is for adds their wishes (if they have an account) and marks them “Received”.",
         { ul: [
-          "Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through Claude ([[claude-envies]]), and not on the public link page when signed in.",
+          "Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through an AI assistant ([[claude-envies]]), and not on the public link page when signed in.",
           "Can't reserve their own wishes.",
           "Only someone with access to the server (database files, backups) could read a reservation: don't give this access to the recipient if the surprise matters.",
         ] },

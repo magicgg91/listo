@@ -2,7 +2,7 @@
 // chapitres, source unique (public/js/help-content.js), recherche, chapitres
 // repliables, bouton « Sommaire » (chapitres repliables, un seul déplié),
 // même contenu et mêmes numéros pour tout le monde, disponible hors ligne ;
-// tout ce qui concerne Claude dans « MCP Claude » ; l'entretien du serveur
+// tout ce qui concerne les assistants IA dans « Assistants IA (MCP) » ; l'entretien du serveur
 // dans docs/exploitation.md, hors du guide. Un petit faux document suffit pour dessiner l'écran ; la
 // feuille du sommaire, les sauts et le thème sont vérifiés dans Chromium
 // (docs/developpement.md, point 36).
@@ -76,7 +76,7 @@ async function render(t, section) {
 }
 const toggles = (screen) => screen.findAll((n) => hasClass(n, 'aisle__toggle'));
 
-test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; « Connexions Claude » renvoie au chapitre Claude', () => {
+test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; « Assistants IA » renvoie au chapitre des assistants IA', () => {
   assert.match(code('public/js/screens/settings.js'), /const helpRow = \(\) => row\(\{ iconName: 'book', title: t\('reglages\.aide'\), onClick: \(\) => navigate\('help'\) \}\);/);
   assert.equal(fr['reglages.aide'], 'Aide');
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
@@ -105,7 +105,7 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   for (const id of ids) assert.match(id, /^[a-z][a-z0-9-]*$/, `ancre valable : ${id}`);
   // Ordre demandé : présentation, possibilités et Claude au début ; serveur à la fin
   assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
-  assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'MCP Claude');
+  assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'Assistants IA (MCP)');
   assert.deepEqual(entries.filter((e) => e.chapter === 'roles').map((e) => e.id).filter((id) => id.startsWith('role-')),
     ['role-admin', 'role-contributeur', 'role-lecture', 'role-visiteur', 'role-beneficiaire']);
   // Aucun numéro écrit à la main dans les titres
@@ -143,19 +143,22 @@ test('renvois [[id]] : tous vers une section qui existe ; blocs connus ; liens e
   assert.deepEqual(parseInline('[lien](javascript:alert(1))'), [{ text: '[lien](javascript:alert(1))' }], 'seulement https');
 });
 
-test('contenu : les parties demandées sont là (types, possibilités, MCP Claude, installation, comptes, rôles, dépannage)', () => {
+test('contenu : les parties demandées sont là (types, possibilités, assistants IA (MCP), installation, comptes, rôles, dépannage)', () => {
   const ids = new Set(outline().map((e) => e.id));
-  for (const id of ['types', 'vocabulaire', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'claude-prudence', 'claude-activation',
+  for (const id of ['types', 'vocabulaire', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'assistant-site', 'claude-prudence', 'claude-activation',
     'prerequis', 'dossier', 'proxy', 'npm', 'demarrage', 'cle', 'sauvegardes', 'verifications', 'premier-admin', 'creer-comptes', 'premiere-connexion', 'double-auth', 'oubli', 'secours',
     'faq-hors-ligne', 'faq-photo', 'faq-lien', 'faq-double-auth', 'cle-perdue', 'version', 'faq-claude', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
     assert.ok(ids.has(id), id);
   }
   const text = allTexts().join('\n');
-  // Claude : les deux niveaux, les limites, les envies, LISTO_MCP
+  // Assistants IA : les deux niveaux, les limites, les envies, LISTO_MCP, LISTO_MCP_SITES, le site à vérifier
   assert.match(text, /« Lecture seule » \(choisi au départ\)/);
   assert.match(text, /« Lecture et écriture » : en plus/);
   assert.match(text, /100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés/);
-  assert.match(text, /Claude ne reçoit jamais aucune donnée de réservation/);
+  assert.match(text, /Un assistant IA ne reçoit jamais aucune donnée de réservation/);
+  assert.match(text, /`- LISTO_MCP_SITES=claude\.ai,claude\.com`/);
+  assert.match(text, /Si vous n'avez pas lancé la connexion vous-même, refusez : quelqu'un essaie peut-être d'accéder à vos listes\./);
+  assert.match(text, /ChatGPT ou Le Chat de Mistral/);
   assert.match(text, /`LISTO_MCP=on`/);
   assert.match(text, /nouvelle conversation, ou déconnectez puis reconnectez le connecteur/);
   // Le tableau « Qui peut quoi » est dans le chapitre des rôles
@@ -341,7 +344,7 @@ test('recherche (source) : titres et texte, majuscules et accents ignorés ; cha
   assert.ok(searchGuide('docker-compose.yml').count > 0);
   assert.ok(searchGuide('Lecture seule').chapters.some((c) => c.id === 'roles' && c.intro), '« Qui peut quoi » compte');
   // Un titre de chapitre trouvé : tout le chapitre
-  const claude = searchGuide('mcp claude').chapters.find((c) => c.id === 'claude');
+  const claude = searchGuide('assistants ia (mcp)').chapters.find((c) => c.id === 'claude');
   assert.equal(claude.sections.length, GUIDE.find((c) => c.id === 'claude').sections.length);
   // Rien
   assert.deepEqual(searchGuide('zzqqxw'), { chapters: [], count: 0 });
@@ -468,25 +471,25 @@ test('plus de chapitre « Gérer le serveur » : son entretien est dans docs/exp
   assert.match(text, /guide d'exploitation, dans le dépôt/);
 });
 
-test('« MCP Claude » regroupe tout ce qui concerne Claude ; ailleurs, au plus un renvoi', () => {
+test('« Assistants IA (MCP) » regroupe tout ce qui concerne les assistants IA ; ailleurs, au plus un renvoi', () => {
   const claude = GUIDE.find((c) => c.id === 'claude');
   const claudeIds = new Set([claude.id, ...claude.sections.map((s) => s.id)]);
-  for (const id of ['claude-quoi', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'claude-prudence', 'faq-claude', 'claude-activation', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
+  for (const id of ['claude-quoi', 'claude-phrases', 'claude-niveaux', 'claude-jamais', 'claude-envies', 'claude-limites', 'claude-connecter', 'claude-connexions', 'assistant-site', 'claude-prudence', 'faq-claude', 'claude-activation', 'mcp-serveur', 'mcp-regles', 'mcp-essai']) {
     assert.ok(claudeIds.has(id), id);
   }
-  // Dans les autres chapitres, une phrase qui parle de Claude renvoie au chapitre
+  // Dans les autres chapitres, une phrase qui parle d'un assistant IA (ou de Claude) renvoie au chapitre
   for (const chapter of GUIDE.filter((c) => c.id !== 'claude')) {
     // (une ligne de tableau se lit en entier : la cellule de renvoi compte)
     const textsOf = (block) => (block.table ? block.table.rows.map((row) => row.join(' | ')) : blockTexts(block));
     const texts = [chapter.title, ...(chapter.blocks ?? []).flatMap(textsOf), ...(chapter.sections ?? []).flatMap((s) => [s.title, ...(s.blocks ?? []).flatMap(textsOf)])];
-    for (const text of texts.filter((x) => /Claude|MCP/.test(x))) {
+    for (const text of texts.filter((x) => /Claude|MCP|assistants? IA/.test(x))) {
       const refs = parseInline(text).filter((p) => p.ref !== undefined).map((p) => p.ref);
-      assert.ok(refs.some((id) => claudeIds.has(id)), `${chapter.id} : « ${text.slice(0, 80)} » sans renvoi vers « MCP Claude »`);
+      assert.ok(refs.some((id) => claudeIds.has(id)), `${chapter.id} : « ${text.slice(0, 80)} » sans renvoi vers « Assistants IA (MCP) »`);
     }
   }
-  // Ce qui concernait Claude n'est pas perdu
+  // Ce qui concernait Claude n'est pas perdu (Claude reste l'exemple)
   const claudeText = claude.sections.flatMap((s) => (s.blocks ?? []).flatMap(blockTexts)).join('\n');
-  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Proxy : rien à régler', 'claude.origin_refused', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions Claude des autres comptes', 'platform.claude.com']) {
+  for (const marker of ['nouvelle conversation', 'LISTO_MCP=on', 'IPv4', 'Proxy : rien à régler', 'claude.origin_refused', 'Premier', 'rayon ou un magasin est inconnu', 'ne voit pas les connexions d\'assistants IA des autres comptes', 'platform.claude.com', 'claude mcp add']) {
     assert.ok(claudeText.includes(marker) || claude.sections.some((s) => s.title.includes(marker)), marker);
   }
 });

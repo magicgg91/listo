@@ -43,6 +43,7 @@ export default {
   'demarrage.config.oidcHttps': 'LISTO_OIDC_ISSUER doit commencer par https:// (actuellement « {value} »).',
   'demarrage.config.oidcSimple': 'LISTO_OIDC_ISSUER : adresse simple attendue, sans identifiant, ni « ? », ni « # ».',
   'demarrage.config.oidcClient': 'LISTO_OIDC_CLIENT_ID invalide (« {value} ») : lettres sans accent, chiffres, . _ ~ - (100 au plus).',
+  'demarrage.config.sites': 'LISTO_MCP_SITES : un nom de site invalide (« {value} »). Attendu : des noms simples séparés par des virgules, sans https://, ni chemin, ni port, ni adresse IP, ni « * ». Exemple : claude.ai,claude.com',
   'demarrage.config.port': 'PORT invalide (« {value} ») : un nombre entre 1 et 65535 est attendu.',
 
   // Migrations de la base (server/db.js) : des nombres, jamais un nom de liste

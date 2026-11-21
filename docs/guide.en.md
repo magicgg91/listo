@@ -123,23 +123,24 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 </details>
 
 <details>
-<summary>8. Claude MCP</summary>
+<summary>8. AI assistants (MCP)</summary>
 
 - [Go to chapter](#claude)
 - [8.1 What it's for](#claude-quoi)
 - [8.2 Example sentences](#claude-phrases)
 - [8.3 Two levels of access](#claude-niveaux)
-- [8.4 What Claude can never do](#claude-jamais)
+- [8.4 What an assistant can never do](#claude-jamais)
 - [8.5 Wish lists: no reservations](#claude-envies)
 - [8.6 Limits](#claude-limites)
-- [8.7 Connect Claude](#claude-connecter)
-- [8.8 See and disconnect Claude](#claude-connexions)
-- [8.9 Be careful: booby-trapped texts](#claude-prudence)
-- [8.10 Troubleshooting](#faq-claude)
-- [8.11 Access turned off at first](#claude-activation)
-- [8.12 Turn on access on the server](#mcp-serveur)
-- [8.13 Rules and log](#mcp-regles)
-- [8.14 First try](#mcp-essai)
+- [8.7 Connect an AI assistant](#claude-connecter)
+- [8.8 See and disconnect an AI assistant](#claude-connexions)
+- [8.9 Be careful: check the website](#assistant-site)
+- [8.10 Be careful: booby-trapped texts](#claude-prudence)
+- [8.11 Troubleshooting](#faq-claude)
+- [8.12 Access turned off at first](#claude-activation)
+- [8.13 Turn on access on the server](#mcp-serveur)
+- [8.14 Rules and log](#mcp-regles)
+- [8.15 First try](#mcp-essai)
 
 </details>
 
@@ -184,7 +185,7 @@ Accounts are created by the Admin, the person who manages Listo: there's no publ
 - In French or English, as each person chooses in “My account” ([5.16 Language: French or English](#langue)); this help is available in both languages too.
 - Notifications are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
 - No payments: for a group gift, Listo shows who's chipping in, never how much.
-- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.6 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect Claude, the content of the lists you allow is sent to it when you ask it something ([8. Claude MCP](#claude)).
+- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.6 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists you allow is sent to it when you ask it something ([8. AI assistants (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -278,7 +279,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - Automatic backup every night ([3.8 Backups](#sauvegardes)).
 - Light, dark or automatic theme ([5.15 Light or dark theme](#theme)).
 - Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
-- Claude (Anthropic's assistant) can read your lists and, if you allow it, write to them ([8. Claude MCP](#claude)).
+- An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([8. AI assistants (MCP)](#claude)).
 
 <a id="installation"></a>
 
@@ -337,7 +338,9 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
       # - LISTO_UPDATE_CHECK=off
       # - LISTO_PRODUCT_LOOKUP=off
       # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
-      # LISTO_MCP: access from Claude, off by default (Claude chapter)
+      # LISTO_MCP: access for AI assistants, off by default (“AI assistants (MCP)” chapter)
+      # Optional: only accept these sites (otherwise, any AI assistant)
+      # - LISTO_MCP_SITES=claude.ai,claude.com
       # Push notifications: OFF by default. Encrypted content: Apple,
       # Google, Mozilla or Microsoft only see the time, the size and the
       # device. Keys in secrets/vapid.json: back it up along with secret.key.
@@ -368,7 +371,8 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([9.9 Knowing a new version exists](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | not set: on | `off` turns off scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | not set | Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
-| `LISTO_MCP` | not set: off | `on` turns on access from Claude ([8.12 Turn on access on the server](#mcp-serveur)). Any other value: off. |
+| `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([8.13 Turn on access on the server](#mcp-serveur)). Any other value: off. |
+| `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([8.13 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_PUSH` | not set: off | `on` turns on notifications ([6.7 Turning the feature on on the server](#notif-serveur)); keys created in `secrets/vapid.json`. Any other value: off. |
 | `LISTO_OIDC` | not set: off | `on` turns on sign-in with an OpenID Connect identity provider ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)); also requires `LISTO_OIDC_ISSUER` and the `secrets/oidc-client-secret` file. Any other value: off. |
 | `LISTO_OIDC_ISSUER` | not set | Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`). |
@@ -387,7 +391,7 @@ Any reverse proxy will do, as long as it does the following. These requirements 
 3. Let real-time updates through: `/api/events` is an HTTP connection that stays open (Server-Sent Events, type `text/event-stream`), not a WebSocket. The proxy must neither hold back nor cache its responses (Listo sends the `X-Accel-Buffering: no` header, which nginx understands), and its read timeout must be longer than 25 seconds: Listo sends a signal every 25 seconds on this connection. Otherwise, changes arrive late or the connection keeps getting cut.
 4. Accept uploads of at least 2 MB: an item photo is 2 MB at most (Listo refuses anything bigger). Many proxies accept less by default (nginx: 1 MB); allow a little margin, for example 5 MB.
 5. Pass on the visitors' real IP address: Listo trusts a single proxy and reads the last address in the `X-Forwarded-For` header, which the proxy must fill in with the person's address. It's used to block repeated password attempts. With two proxies one behind the other (an online service in front of your proxy, for example), Listo would see the address of the first one, and a block would hit everyone.
-6. Pass on the other request headers unchanged: cookies, `Authorization` (access from Claude, [8.12 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
+6. Pass on the other request headers unchanged: cookies, `Authorization` (access for AI assistants, [8.13 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
 7. Add the `Strict-Transport-Security` (HSTS) header, if the proxy allows it: Listo doesn't send it itself.
 
 **Restrict access to Listo's port**
@@ -418,7 +422,7 @@ proxy_read_timeout 3600s;
 - `client_max_body_size 5m;`: without it, photo uploads are refused (nginx accepts 1 MB by default; a Listo photo is 2 MB at most).
 - The other three are for real-time updates: without them, changes only reach the other phone after about a minute.
 - Nginx Proxy Manager already fills in the `X-Forwarded-For` header with the phones' real IP address: nothing to set.
-- Access from Claude: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([8.12 Turn on access on the server](#mcp-serveur)).
+- Access for AI assistants: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([8.13 Turn on access on the server](#mcp-serveur)).
 - Firewall: only allow Nginx Proxy Manager's address to reach port 13300 ([3.4 What the proxy must do](#proxy)).
 
 <a id="demarrage"></a>
@@ -492,7 +496,7 @@ What Listo expects from the provider (the standard):
 - its description at the issuer's address followed by `/.well-known/openid-configuration`, with its addresses on the same site as the issuer;
 - an ID token signed with RS256, PS256 or ES256 (an unsigned token or one signed with HS256 is refused);
 - the person's username in `preferred_username` and their name in `name` (`profile` scope);
-- to authorize Claude ([8.7 Connect Claude](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize Claude.
+- to authorize an AI assistant ([8.7 Connect an AI assistant](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize the assistant.
 
 Two-factor authentication: if the token says it was done at the provider (`amr` contains `mfa`), Listo doesn't ask for its own code again. Otherwise, a Listo account that turned on Listo's two-factor authentication is asked for it again.
 
@@ -574,7 +578,7 @@ The Listo icon appears. When you open it from the home screen, Listo shows full 
 
 ### 4.5 Changing your password
 
-Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your Claude connections ([8.8 See and disconnect Claude](#claude-connexions)).
+Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([8.8 See and disconnect an AI assistant](#claude-connexions)).
 
 <a id="double-auth"></a>
 
@@ -611,7 +615,7 @@ If there's another Admin, they use “Reset password” ([7.1 Admin](#role-admin
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's Claude connections are cut off ([8.8 See and disconnect Claude](#claude-connexions)). What the Admin can and can't do: [7.1 Admin](#role-admin).
+A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([8.8 See and disconnect an AI assistant](#claude-connexions)). What the Admin can and can't do: [7.1 Admin](#role-admin).
 
 <a id="sso"></a>
 
@@ -619,7 +623,7 @@ A temporary password is shown once: sign in with it, then choose a new one. If t
 
 If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.
 
-When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing Claude is then also confirmed with the provider ([8.7 Connect Claude](#claude-connecter)).
+When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([8.7 Connect an AI assistant](#claude-connecter)).
 
 No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.
 
@@ -922,7 +926,7 @@ Four kinds of notifications, each turned on or off in Settings, “Notifications
 | “Sharing” | You're added to a list, or your access changes. | ‘Léa added you to “Home”’ |
 | “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
 
-You're never notified about what you do yourself (or about what Claude does for you: [8. Claude MCP](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
+You're never notified about what you do yourself (or about what an AI assistant does for you: [8. AI assistants (MCP)](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
 
 <a id="notif-detail"></a>
 
@@ -1029,7 +1033,7 @@ Settings, “Administration” (visible only to an Admin).
 
 - Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).
 - Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner.
-- Other accounts' Claude connections: see [8.8 See and disconnect Claude](#claude-connexions).
+- Other accounts' AI assistant connections: see [8.8 See and disconnect an AI assistant](#claude-connexions).
 - Finding out that a new version exists: [9.9 Knowing a new version exists](#version).
 
 <a id="creer"></a>
@@ -1136,23 +1140,23 @@ A person without an account opens the link they were sent, without installing an
 
 The person the wish list is for adds their wishes (if they have an account) and marks them “Received”.
 
-- Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through Claude ([8.5 Wish lists: no reservations](#claude-envies)), and not on the public link page when signed in.
+- Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through an AI assistant ([8.5 Wish lists: no reservations](#claude-envies)), and not on the public link page when signed in.
 - Can't reserve their own wishes.
 - Only someone with access to the server (database files, backups) could read a reservation: don't give this access to the recipient if the surprise matters.
 
 <a id="claude"></a>
 
-## 8. Claude MCP
+## 8. AI assistants (MCP)
 
 <a id="claude-quoi"></a>
 
 ### 8.1 What it's for
 
-Claude is Anthropic's assistant (claude.ai, the mobile app, Claude Desktop, Claude Code). Once it's connected to Listo, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking.
+An AI assistant is a program you chat with, for example Claude (Anthropic's assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral's Le Chat, depending on their versions and plans. Once it's connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking.
 
-Claude acts with your account and your rights, never more: what it adds shows up under your name, as if you had done it yourself, and it only sees the lists you allowed it to.
+The assistant acts with your account and your rights, never more: what it adds shows up under your name, as if you had done it yourself, and it only sees the lists you allowed it to. Nothing happens without your approval, given on Listo's “Authorize an AI assistant” screen.
 
-This access only exists if the person who runs the server has turned it on ([8.11 Access turned off at first](#claude-activation)). Otherwise, the “Claude” section doesn't appear in “My account”.
+This access only exists if the person who runs the server has turned it on ([8.12 Access turned off at first](#claude-activation)). Otherwise, the “AI assistants” section doesn't appear in “My account”.
 
 <a id="claude-phrases"></a>
 
@@ -1165,29 +1169,29 @@ This access only exists if the person who runs the server has turned it on ([8.1
 - Priority and due date (task list): ‘Make the Light bulb task high priority, due Friday.’
 - Time and reminder ([5.2 Time and reminder](#heure)): ‘Dentist Thursday at 2 pm, remind me an hour before.’ ‘No more reminder for the dentist.’
 - Assign ([5.4 Assign a task](#attribuer)): ‘Give the light bulb task to Léa.’ ‘What do I have to do this week?’ ‘The garage, for Léa and Marc.’ ‘Trash every Monday, taking turns: Léa, Marc, Zoé.’
-- Task that repeats ([5.3 Repeating tasks](#repeter)): ‘Trash, every Monday and Thursday.’ ‘Rent, on the 5th of every month.’ ‘The meeting, on the first Monday of the month.’ ‘Stop repeating the watering.’ Claude tells you the next date. If it checks a task that repeats, the task comes back on its next date, and Claude tells you that date.
+- Task that repeats ([5.3 Repeating tasks](#repeter)): ‘Trash, every Monday and Thursday.’ ‘Rent, on the 5th of every month.’ ‘The meeting, on the first Monday of the month.’ ‘Stop repeating the watering.’ The assistant tells you the next date. If it checks a task that repeats, the task comes back on its next date, and the assistant tells you that date.
 - Rename or add details: ‘Rename milk to 2% milk’, ‘Add the note organic to the apples.’
 - Move to an aisle: ‘Put the milk in the dairy aisle.’
 - Subtasks ([5.18 Subtasks](#sous-taches)): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’
 
-Claude first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how Claude behaves is up to Claude: check in Listo.
+The assistant first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how it behaves is up to the assistant itself: check in Listo.
 
 <a id="claude-niveaux"></a>
 
 ### 8.3 Two levels of access
 
-When you connect Claude, Listo's “Authorize Claude” screen lets you choose:
+When you connect an assistant, Listo's “Authorize an AI assistant” screen lets you choose:
 
-- “Read only” (selected at first): Claude can read your lists, without changing anything.
-- “Read and write”: on top of that, Claude can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store.
+- “Read only” (selected at first): the assistant can read your lists, without changing anything.
+- “Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store.
 
-You also choose “All my lists” or “Some lists”. Even with “Read and write”, Claude can only write in lists where you yourself can write: if you have the “Read only” right on a list, it can only read it.
+You also choose “All my lists” or “Some lists”. Even with “Read and write”, the assistant can only write in lists where you yourself can write: if you have the “Read only” right on a list, it can only read it.
 
 <a id="claude-jamais"></a>
 
-### 8.4 What Claude can never do
+### 8.4 What an assistant can never do
 
-Whatever the level of access, Claude can never:
+Whatever the level of access, an AI assistant can never:
 
 - delete an item, or change its link or its price;
 - create, rename, delete or share a list;
@@ -1198,111 +1202,127 @@ Whatever the level of access, Claude can never:
 
 ### 8.5 Wish lists: no reservations
 
-Claude never receives any reservation data, for anyone: not who reserved, not even whether a wish is reserved. So the surprise is kept, even if the recipient asks Claude. In a wish list, checking means ‘received’: only the recipient and the list's owner can do it, with or without Claude.
+An AI assistant never receives any reservation data, for anyone: not who reserved, not even whether a wish is reserved. So the surprise is kept, even if the recipient asks their assistant. In a wish list, checking means ‘received’: only the recipient and the list's owner can do it, with or without an assistant.
 
 <a id="claude-limites"></a>
 
 ### 8.6 Limits
 
 - 20 items at most per request.
-- Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited. Beyond that, Claude gets a refusal and nothing is written.
+- Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited. Beyond that, the assistant gets a refusal and nothing is written.
 - 120 calls per minute per connection.
-- 5 active Claude connections at most per account; a connection unused for 30 days frees itself up.
-- Claude doesn't create an item with the same name as one that's already there and not checked: it tells you instead.
+- 5 active AI assistant connections at most per account; a connection unused for 30 days frees itself up.
+- The assistant doesn't create an item with the same name as one that's already there and not checked: it tells you instead.
 
 <a id="claude-connecter"></a>
 
-### 8.7 Connect Claude
+### 8.7 Connect an AI assistant
 
-1. In Listo: Settings, “My account”, “Claude” section, “Claude connections”. Under “Address to enter in Claude”, tap “Copy address”. It looks like `https://listo.exemple.fr/mcp`.
-2. In Claude (claude.ai, the mobile app or Claude Desktop): in its settings, add a custom connector with this address.
-3. Claude opens Listo's “Authorize Claude” screen. Check that you're the one who just started the connection, choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
+The steps are the same for every assistant:
+
+1. In Listo: Settings, “My account”, “AI assistants” section, “AI assistants”. Under “Address to enter in your AI assistant”, tap “Copy address”. It looks like `https://listo.exemple.fr/mcp`.
+2. In your AI assistant: in its settings, add a custom connector (or MCP server) with this address. Menu names change from one assistant to another; see its help.
+3. The assistant opens Listo's “Authorize an AI assistant” screen. Check the website shown under “The response will be sent here” and that you're the one who just started the connection ([8.9 Be careful: check the website](#assistant-site)), choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
+
+Example with Claude (claude.ai, the mobile app or Claude Desktop): in its settings, add a custom connector with Listo's address, then connect it; on the “Authorize an AI assistant” screen, the website shown is `claude.ai`.
+
+With Claude Code, on a computer: `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, then `/mcp` to authorize. The response then goes to “an app on this computer (localhost)”.
 
 Signed in with an identity provider ([4.9 Signing in with an identity provider](#sso)): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.
-
-With Claude Code, on a computer: `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, then `/mcp` to authorize.
 
 If you didn't start the connection yourself, tap “Deny”.
 
 <a id="claude-connexions"></a>
 
-### 8.8 See and disconnect Claude
+### 8.8 See and disconnect an AI assistant
 
-Settings, “My account”, “Claude connections”: every authorized connection appears there, with the app, its right (“Read only” or “Read and write”), its lists, its date and when it was last used.
+Settings, “My account”, “AI assistants”: every authorized connection appears there, with the app, its right (“Read only” or “Read and write”), its lists, its date and when it was last used.
 
 - “Disconnect” cuts a connection right away; “Disconnect all” cuts them all. No password is asked.
-- Changing your password also disconnects all your Claude connections.
-- To reconnect Claude, you have to authorize it again.
-- The Admin doesn't see other accounts' Claude connections; but disabling an account or resetting its password cuts them all.
+- Changing your password also disconnects all your AI assistant connections.
+- To reconnect an assistant, you have to authorize it again.
+- The Admin doesn't see other accounts' AI assistant connections; but disabling an account or resetting its password cuts them all.
+
+<a id="assistant-site"></a>
+
+### 8.9 Be careful: check the website
+
+> **Warning**: Any AI assistant that follows the standard can ask for access to Listo: you are the one who decides, on the “Authorize an AI assistant” screen. It shows in large type the website that will receive the response (for example `claude.ai` for Claude). Check that it really is your assistant's. If you didn't start the connection yourself, deny: someone may be trying to get into your lists.
+
+When the app chooses its own name, it is followed by “name given by the app, not verified”: trust the website, not the name. The person who runs the server can also accept only some websites ([8.13 Turn on access on the server](#mcp-serveur)).
 
 <a id="claude-prudence"></a>
 
-### 8.9 Be careful: booby-trapped texts
+### 8.10 Be careful: booby-trapped texts
 
-> **Warning**: A shared list can contain a booby-trapped text, written by someone else to trick Claude (for example a note asking it to check everything). Listo always presents list content to Claude as data, never as instructions, but only choose “Read and write” if you need it.
+> **Warning**: A shared list can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents list content to the assistant as data, never as instructions, but only choose “Read and write” if you need it.
 
-Only ask Claude to change an item yourself; check in Listo what it did.
+Only ask the assistant to change an item yourself; check in Listo what it did.
 
 <a id="faq-claude"></a>
 
-### 8.10 Troubleshooting
+### 8.11 Troubleshooting
 
-- After a Listo update, Claude may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in Claude.
-- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect Claude with “All my lists” ([8.7 Connect Claude](#claude-connecter)).
-- Claude refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.
-- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “Claude connections” ([8.8 See and disconnect Claude](#claude-connexions)).
-- Claude says an aisle or a store is unknown: it doesn't exist, it's disabled, or this list doesn't offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; Claude should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
-- Claude says a store can't be chosen in this list: in a list with a “Single” store, the store is the list's own; you choose the aisle. The aisle, for its part, can't be chosen in a “Multi” list.
+- After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.
+- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists” ([8.7 Connect an AI assistant](#claude-connecter)).
+- The assistant refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.
+- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([8.8 See and disconnect an AI assistant](#claude-connexions)).
+- Listo shows a page saying the authorization request is invalid: the assistant's request couldn't be verified (return address refused, incomplete request), or its website isn't accepted by the server ([8.13 Turn on access on the server](#mcp-serveur)). Start the connection again from the assistant; if it happens again, tell the person who runs the server.
+- The assistant says an aisle or a store is unknown: it doesn't exist, it's disabled, or this list doesn't offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; the assistant should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
+- The assistant says a store can't be chosen in this list: in a list with a “Single” store, the store is the list's own; you choose the aisle. The aisle, for its part, can't be chosen in a “Multi” list.
 
 <a id="claude-activation"></a>
 
-### 8.11 Access turned off at first
+### 8.12 Access turned off at first
 
-Access from Claude is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([8.12 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “Claude” section of “My account” doesn't appear.
+Access for AI assistants is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([8.13 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “AI assistants” section of “My account” doesn't appear.
 
 <a id="mcp-serveur"></a>
 
-### 8.12 Turn on access on the server
+### 8.13 Turn on access on the server
 
 *For the person who runs the server.*
 
-Access from Claude is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To turn it off: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven't expired). No password or key is needed.
+Access for AI assistants is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To turn it off: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven't expired). No password or key is needed.
 
-Proxy: nothing to set up, these addresses go through the same host. The subdomain must have an IPv4 address (DNS ‘A’ record): Claude doesn't use IPv6. These addresses must stay reachable from the Internet: Claude calls them from Anthropic's servers, Claude Code from your computer. If a firewall filters incoming connections, don't copy an address range found somewhere else: Anthropic publishes the up-to-date list of addresses these calls come from on its official [‘IP addresses’](https://platform.claude.com/docs/en/api/ip-addresses) page, section ‘Outbound IP addresses’, and may change it.
+Which assistants: by default, any AI assistant that follows the standard (MCP, with OAuth 2.1 authorization and PKCE) can ask for access, always after the person approves. To accept only some websites, add for example `- LISTO_MCP_SITES=claude.ai,claude.com` (website names separated by commas, without `https://` or a path): only those websites, and apps on the computer (`localhost`, like Claude Code), can then connect. Connections already granted to another website stop working (without being deleted: they come back if you put the website back). A badly written value keeps Listo from starting, with a message in `docker logs listo`. Listo only reads an app's identification document (CIMD) on a short list of websites (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`); other assistants register on their own.
+
+Proxy: nothing to set up, these addresses go through the same host. They must stay reachable from the Internet: an online assistant calls them from its servers, an app on the computer (Claude Code) from your computer. Claude as an example: the subdomain must have an IPv4 address (DNS ‘A’ record), because Claude doesn't use IPv6; if a firewall filters incoming connections, don't copy an address range found somewhere else: Anthropic publishes the up-to-date list of addresses these calls come from on its official [‘IP addresses’](https://platform.claude.com/docs/en/api/ip-addresses) page, section ‘Outbound IP addresses’, and may change it. For another assistant, see its documentation.
 
 | Address | Who calls it | Role |
 | --- | --- | --- |
-| `/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource` | Claude | Says where to ask for authorization. |
-| `/.well-known/oauth-authorization-server` | Claude | Description of the authorization server. |
-| `/oauth/authorize` | your browser | Checks the request, then opens the “Authorize Claude” screen. |
-| `/oauth/token`, `/oauth/revoke`, `/oauth/register` | Claude | Tokens, revocation, automatic registration. |
-| `/mcp` | Claude | The MCP server: requires a token obtained through authorization; without a valid token, refusal (401). |
+| `/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource` | the AI assistant | Says where to ask for authorization. |
+| `/.well-known/oauth-authorization-server` | the AI assistant | Description of the authorization server. |
+| `/oauth/authorize` | your browser | Checks the request, then opens the “Authorize an AI assistant” screen. |
+| `/oauth/token`, `/oauth/revoke`, `/oauth/register` | the AI assistant | Tokens, revocation, automatic registration. |
+| `/mcp` | the AI assistant | The MCP server: requires a token obtained through authorization; without a valid token, refusal (401). |
 
 <a id="mcp-regles"></a>
 
-### 8.13 Rules and log
+### 8.14 Rules and log
 
 *For the person who runs the server.*
 
 - Access token: 1 hour; refresh token: 30 rolling days, replaced at each use; an old token presented again brings down the whole connection. The database only keeps a fingerprint of the tokens, never the tokens themselves.
-- A Claude token opens nothing but `/mcp`: not the app, not its other addresses.
-- Changing your password, or an account that is disabled or whose password is reset (including with the recovery command): all its Claude connections are revoked.
+- An AI assistant's token opens nothing but `/mcp`: not the app, not its other addresses.
+- Return addresses: https on a website name (never an IP address), without a username or fragment, or the computer (`localhost`); with `LISTO_MCP_SITES`, only those websites. They are checked at registration and at every authorization. An error is only sent back without a screen to the computer or a known website (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`): otherwise, Listo shows its error page, so it never acts as a relay to another website.
+- Changing your password, or an account that is disabled or whose password is reset (including with the recovery command): all its AI assistant connections are revoked.
 - The caps ([8.6 Limits](#claude-limites)) are counted in memory: they start again from zero when the container restarts.
 - The Admin doesn't see other people's connections. In an emergency, they disable the account or reset its password. For everyone at once: remove `LISTO_MCP=on`.
 
-Security log (never a token, a code or the content of a list): `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (one line per tool call, with the number of items, never a typed name), `claude.token_refused`, `claude.origin_refused`.
+Security log (never a token, a code or the content of a list; the names start with `claude.` for every assistant): `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (one line per tool call, with the number of items, never a typed name), `claude.token_refused`, `claude.origin_refused`.
 
 <a id="mcp-essai"></a>
 
-### 8.14 First try
+### 8.15 First try
 
 *For the person who runs the server.*
 
-After turning it on, once, before any regular use:
+After turning it on, once, before any regular use (here with Claude):
 
 1. In a browser: `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` shows a short text with `"resource": "https://listo.exemple.fr/mcp"`.
-2. Connect Claude ([8.7 Connect Claude](#claude-connecter)).
-3. Ask Claude ‘What are my Listo lists?’, then ‘What's on the shopping list?’: the answers must match the app. With “Read and write”: ‘Add milk to the shopping list’, ‘Check off the bread’; on a phone open on the list, the changes show up live.
+2. Connect the assistant ([8.7 Connect an AI assistant](#claude-connecter)).
+3. Ask the assistant ‘What are my Listo lists?’, then ‘What's on the shopping list?’: the answers must match the app. With “Read and write”: ‘Add milk to the shopping list’, ‘Check off the bread’; on a phone open on the list, the changes show up live.
 4. `docker logs listo`: lines `claude.connected` and `claude.tool`, no errors. Report any `claude.origin_refused` or `claude.client_refused` lines.
 5. More than an hour later, ask another question: it must work without a new authorization.
 6. If there's a problem: remove `LISTO_MCP=on`, `docker compose up -d`, and pass on the `claude.` lines from the log (they contain neither tokens nor list content).

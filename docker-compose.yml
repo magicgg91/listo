@@ -52,9 +52,13 @@ services:
       # header sent to Open Food Facts, which asks for it to reach the
       # application if there is a problem. Without it: project address only.
       # - LISTO_PRODUCT_CONTACT=https://exemple.fr/contact
-      # LISTO_MCP: access from Claude, off by default and deliberately
-      # left out of here; to turn it on, first read docs/guide.en.md, chapter
-      # “Claude MCP” (real trial before production).
+      # LISTO_MCP: access for AI assistants (Claude, for example), off by
+      # default and deliberately left out of here; to turn it on, first read
+      # docs/guide.en.md, chapter “AI assistants (MCP)” (real trial before
+      # production). Optional, with it: only accept these AI assistant
+      # websites (otherwise, any assistant that follows the standard, always
+      # after the person approves).
+      # - LISTO_MCP_SITES=claude.ai,claude.com
       # Push notifications: OFF by default; uncomment the line
       # below to turn them on. Encrypted content: Apple, Google, Mozilla
       # or Microsoft only see the time, the size and the device. Keys

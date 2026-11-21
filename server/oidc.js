@@ -54,7 +54,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Messages de l'écran de connexion (public/js/screens/login.js) : seul ce
 // mot-clé passe dans l'adresse, jamais un texte venu du fournisseur d'identité
 export const OIDC_OUTCOMES = ['annulee', 'erreur', 'expiree', 'indisponible', 'refuse', 'demande', 'attente', 'refusee', 'complet', 'code', 'confirme', 'non-confirme'];
-const CONFIRM_MS = 5 * 60 * 1000;      // reconfirmation pour Claude : valable 5 minutes, une fois
+const CONFIRM_MS = 5 * 60 * 1000;      // reconfirmation pour un assistant IA : valable 5 minutes, une fois
 
 // --- Appels vers le fournisseur d'identité (les tests les remplacent : aucun vrai réseau) ---
 
@@ -170,7 +170,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   const cookieName = `${config.production ? '__Host-' : ''}listo_oidc`;
   const cookieOptions = { httpOnly: true, secure: config.production, sameSite: 'lax', path: '/' };
   const flows = new Map(); // empreinte de state -> { nonce, verifier, expiresAt, startedAt, confirm, returnTo }
-  // Reconfirmations par le fournisseur d'identité pour autoriser Claude : « demande:compte » -> fin de validité
+  // Reconfirmations par le fournisseur d'identité pour autoriser un assistant IA : « demande:compte » -> fin de validité
   const confirmations = new Map();
   let metadata = null;     // { value, expiresAt }
   let jwks = null;         // { keys, expiresAt }
@@ -212,7 +212,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
 
   // Fin du parcours : retour à l'application, avec un mot-clé pour l'écran
   // de connexion (jamais de texte venu du fournisseur d'identité)
-  // returnTo : écran « Autoriser Claude » (#/autoriser/<demande>) à retrouver
+  // returnTo : écran « Autoriser un assistant IA » (#/autoriser/<demande>) à retrouver
   // après la connexion, seule adresse de retour possible
   const finish = (res, outcome, returnTo = null) => res.redirect(303, outcome ? `/#/connexion?authelia=${outcome}` : `/#/${returnTo ?? 'listes'}`);
   const confirmKey = (requestId, userId) => `${requestId}:${userId}`;
@@ -291,9 +291,9 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   const failed = (req) => ctx.limiter.fail(failKeys(req));
 
   // Paramètres du départ (facultatifs) :
-  // - retour=autoriser/<demande> : revenir sur l'écran « Autoriser Claude »
+  // - retour=autoriser/<demande> : revenir sur l'écran « Autoriser un assistant IA »
   //   après la connexion (seule adresse de retour acceptée) ;
-  // - confirmer=<demande> : reconfirmation pour autoriser Claude, depuis une
+  // - confirmer=<demande> : reconfirmation pour autoriser un assistant IA, depuis une
   //   session ouverte avec le fournisseur d'identité ; le fournisseur d'identité redemande la connexion
   //   (prompt=login, max_age=0), puis l'écran d'autorisation reprend.
   router.get('/oidc/connexion', loadSession(ctx), async (req, res) => {
@@ -373,7 +373,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       return finish(res, 'erreur');
     }
 
-    // Reconfirmation pour autoriser Claude : le même compte chez le fournisseur d'identité que la
+    // Reconfirmation pour autoriser un assistant IA : le même compte chez le fournisseur d'identité que la
     // session, et une connexion faite à l'instant chez le fournisseur d'identité (auth_time
     // après le départ) ; valable 5 minutes, pour cette demande seulement
     if (flow.confirm) {
@@ -386,7 +386,7 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       }
       pruneConfirmations();
       confirmations.set(confirmKey(flow.confirm.requestId, owner.id), nowMs() + CONFIRM_MS);
-      audit('oidc_confirmation', { user: owner.username, ip: req.ip, step: 'claude authorization' });
+      audit('oidc_confirmation', { user: owner.username, ip: req.ip, step: 'ai assistant authorization' });
       return res.redirect(303, `/#/${flow.returnTo}?authelia=confirme`);
     }
 

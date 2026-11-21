@@ -1,7 +1,8 @@
 <!doctype html>
-<!-- Listo (version anglaise de server/pages/autorisation-invalide.html) : réponse unique pour une demande d'autorisation (connexion de
-     Claude) qui ne peut pas être vérifiée : application inconnue, adresse de
-     retour qui n'est pas celle de Claude, paramètres manquants. Toujours la
+<!-- Listo (version anglaise de server/pages/autorisation-invalide.html) : réponse unique pour une demande d'autorisation (connexion d'un
+     assistant IA) qui ne peut pas être vérifiée : application inconnue,
+     adresse de retour refusée, paramètres manquants, ou erreur à renvoyer
+     vers un site qui n'est pas connu. Toujours la
      même page : AUCUNE redirection n'est faite dans ce cas, et rien de la
      demande n'est recopié dans la page. -->
 <html lang="en" data-theme="auto">
@@ -21,7 +22,7 @@
   <div class="empty">
     <span class="empty__icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-alert"/></svg></span>
     <h1 class="empty__title">Invalid authorization request</h1>
-    <p class="empty__text">This connection request could not be verified. Start the connection again from Claude.</p>
+    <p class="empty__text">This connection request could not be verified. Start the connection again from your AI assistant.</p>
   </div>
 </div>
 </body>

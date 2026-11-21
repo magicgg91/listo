@@ -54,7 +54,7 @@ export default {
     {
       id: 'mot-de-passe',
       title: "Changing your password",
-      blocks: ["Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your Claude connections ([[claude-connexions]])."],
+      blocks: ["Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([[claude-connexions]])."],
     },
     {
       id: 'double-auth',
@@ -87,7 +87,7 @@ export default {
       blocks: [
         "If there's another Admin, they use “Reset password” ([[role-admin]]). Otherwise, on the server (replace `identifiant` with the account's username):",
         { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
-        "A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's Claude connections are cut off ([[claude-connexions]]). What the Admin can and can't do: [[role-admin]].",
+        "A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([[claude-connexions]]). What the Admin can and can't do: [[role-admin]].",
       ],
     },
     {
@@ -95,7 +95,7 @@ export default {
       title: "Signing in with an identity provider",
       blocks: [
         "If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.",
-        "When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing Claude is then also confirmed with the provider ([[claude-connecter]]).",
+        "When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([[claude-connecter]]).",
         "No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.",
       ],
     },

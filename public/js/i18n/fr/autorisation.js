@@ -1,10 +1,10 @@
-// Textes de server/oauth.js et server/routes/oauth.js (écran « Autoriser Claude », réponses du serveur), en français.
+// Textes de server/oauth.js et server/routes/oauth.js (écran « Autoriser un assistant IA », réponses du serveur), en français.
 // Chaque nom commence par « autorisation. ».
 
 export default {
-  // Écran « Autoriser Claude » (routes/oauth.js)
+  // Écran « Autoriser un assistant IA » (routes/oauth.js)
   'autorisation.tropDeTentatives': 'Trop de tentatives. Réessayez dans 15 minutes.',
-  'autorisation.demandeExpiree': 'Demande introuvable ou expirée. Relancez la connexion depuis Claude.',
+  'autorisation.demandeExpiree': 'Demande introuvable ou expirée. Relancez la connexion depuis votre assistant IA.',
   'autorisation.choisirNiveau': 'Choisissez « Lecture seule » ou « Lecture et écriture ».',
   'autorisation.lectureSeulementDemandee': 'Cette application n\'a demandé que la lecture.',
   'autorisation.choisirListe': 'Choisissez au moins une liste.',
@@ -16,8 +16,8 @@ export default {
   'autorisation.motDePasseIncorrect': 'Mot de passe incorrect.',
   'autorisation.codeIncorrect': 'Code incorrect.',
   // Accord refusé par oauth.js ({max} : nombre maximal de connexions)
-  'autorisation.tropDeConnexions': 'Vous avez déjà {max} connexions Claude actives (le maximum). Une connexion inutilisée pendant 30 jours se libère d\'elle-même.',
+  'autorisation.tropDeConnexions': 'Vous avez déjà {max} connexions d\'assistants IA actives (le maximum). Une connexion inutilisée pendant 30 jours se libère d\'elle-même.',
 
-  // Écran « Connexions Claude »
+  // Écran « Assistants IA »
   'autorisation.connexionIntrouvable': 'Connexion introuvable.',
 };

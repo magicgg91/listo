@@ -2,6 +2,14 @@
 
 Document de conception rédigé le 31 octobre 2026. Il ne contient aucun code et ne change rien à l'application : il sert à décider. Rien ne sera construit avant sa validation.
 
+> **Mise à jour du 21 novembre 2026 (décision du propriétaire) : ouvert à tout assistant IA qui suit le standard.** Le serveur MCP n'est plus réservé à Claude, qui reste l'exemple de ce document. Ce qui change par rapport aux règles ci-dessous (le cahier des charges, section Sécurité, décrit la règle en vigueur) :
+> - **Adresses de retour** : sans réglage, toute adresse `https` sur un nom de site (jamais une adresse IP), sans identifiant ni fragment, comparée exactement, en plus du bouclage de l'ordinateur ; avec `LISTO_MCP_SITES` (facultative, par exemple `claude.ai,claude.com`), seulement ces sites (et le bouclage). La règle est vérifiée à l'enregistrement, à chaque autorisation et à chaque usage d'une connexion.
+> - **Documents CIMD** : toujours lus sur une liste courte seulement (claude.ai et claude.com sans réglage, sinon les sites de `LISTO_MCP_SITES`), jamais sur un site quelconque (SSRF) ; les autres assistants passent par l'enregistrement automatique (DCR).
+> - **En-tête `Origin` de `/mcp`** : absent, ou une origine `https` bien formée autre que celle de Listo ; avec `LISTO_MCP_SITES`, un de ces sites seulement.
+> - **Redirection ouverte** : une erreur d'autorisation n'est renvoyée sans écran que vers l'ordinateur ou un site connu ; vers un autre site, page d'erreur.
+> - **Écran** : « Autoriser un assistant IA » (le site de la réponse en grand, avertissement ferme toujours affiché : vérifier le site, refuser si l'on n'a pas lancé la connexion soi-même) ; « Connexions Claude » devient « Assistants IA » (`#/reglages/assistants`).
+> - **Journal** : les événements gardent leur nom `claude.…` ; l'étape d'un mot de passe refusé devient `ai assistant authorization`.
+
 **But** : utiliser Listo depuis Claude partout (claude.ai, application mobile, Claude Desktop, Claude Code). Par exemple : « ajoute du lait et des œufs aux courses », « qu'y a-t-il dans ma liste ? », « coche le pain ».
 
 **Principe** :
@@ -197,7 +205,7 @@ Listo serait un serveur « **double** » (*dual-era* dans la spécification), qu
 - **Méthodes HTTP** : GET et DELETE donnent 405 (pas de flux serveur). `Mcp-Session-Id` et `Last-Event-ID` sont ignorés.
 - **En-tête `Origin`**, obligatoire à valider selon la spécification (rebinding DNS) :
   - **absent** (cas des serveurs d'Anthropic et de Claude Code) : accepté ;
-  - **présent** : accepté seulement s'il vaut l'origine de Listo, `https://claude.ai` ou `https://claude.com` ; sinon 403.
+  - **présent** : accepté seulement s'il vaut l'origine de Listo, `https://claude.ai` ou `https://claude.com` ; sinon 403. *(Livré : l'origine de Listo refusée. Depuis le 21 novembre 2026 : toute origine `https` bien formée, ou les seuls sites de `LISTO_MCP_SITES`.)*
   - Les origines refusées sont notées au journal, pour ajuster si Claude en envoie une autre. La documentation de Claude prévient qu'une vérification trop stricte bloque ses appels.
 - **Jeton** : il est vérifié **avant** toute lecture du corps. Sans jeton ou jeton invalide : 401 (§5.2). Tout est protégé, même `initialize` et `tools/list` : pas d'authentification « paresseuse », donc rien n'est révélé sans connexion.
 
@@ -466,9 +474,9 @@ Accès : Réglages › Mon compte › section « Claude » › « Connexions Cla
 | Vol d'un jeton d'accès | Lecture et ajout pendant 1 h au plus | Durée courte ; empreinte seule en base ; jamais dans l'adresse ni dans les journaux ; HTTPS ; révocable depuis « Connexions Claude » |
 | Vol d'un jeton de renouvellement | Accès durable | Rotation à chaque usage ; la réutilisation révoque toute la connexion et est journalisée ; 30 jours glissants ; révocation |
 | Code d'autorisation intercepté | Obtention de jetons | PKCE S256 obligatoire ; usage unique, 60 s ; lié au client, à la redirection et à la ressource ; un code rejoué révoque les jetons qui en sont nés |
-| Redirection ouverte | Code ou utilisateur envoyés ailleurs | Redirections réduites à `https://claude.ai/api/mcp/auth_callback` et au bouclage local, comparées exactement (port ignoré pour le bouclage seulement) ; aucune redirection avant ces contrôles |
+| Redirection ouverte | Code ou utilisateur envoyés ailleurs | Redirections réduites à `https://claude.ai/api/mcp/auth_callback` et au bouclage local, comparées exactement (port ignoré pour le bouclage seulement) ; aucune redirection avant ces contrôles. *Depuis le 21 novembre 2026 : toute adresse https enregistrée (ou les sites de `LISTO_MCP_SITES`) ; le code ne part qu'après l'accord de la personne, qui voit le site ; une erreur n'est renvoyée sans écran que vers l'ordinateur ou un site connu.* |
 | **Consentement détourné** : un tiers lance la connexion depuis *son* compte Claude et fait approuver le lien par la victime, connectée à Listo | Le Claude du tiers lit les listes de la victime | Mot de passe (et code 2FA) redemandé au consentement ; l'écran dit clairement « Ne continuez que si vous venez de lancer la connexion depuis Claude » ; demande valable 10 min ; connexion visible et révocable ; ligne `claude.connected` au journal. **Risque résiduel** : voir les risques principaux. |
-| Enregistrement abusif de clients (DCR) | Base remplie, faux noms sur l'écran de consentement | Redirections imposées (seulement Claude ou le bouclage) ; 50 clients au plus ; 5 par heure et par IP ; nettoyage ; nom déclaré affiché comme « fourni par l'application », après l'hôte de redirection qui fait foi |
+| Enregistrement abusif de clients (DCR) | Base remplie, faux noms sur l'écran de consentement | Redirections imposées (seulement Claude ou le bouclage ; *depuis le 21 novembre 2026 : https sur un nom de site, ou les sites de `LISTO_MCP_SITES` ; avertissement ferme sur l'écran*) ; 50 clients au plus ; 5 par heure et par IP ; nettoyage ; nom déclaré affiché comme « fourni par l'application », après l'hôte de redirection qui fait foi |
 | Document CIMD malveillant, SSRF | Le serveur appelle une adresse interne | Liste blanche d'hôtes (claude.ai, claude.com) ; https seulement ; sans suivre de redirection ; 16 ko, 5 s ; cache d'une heure |
 | Page de consentement : CSRF, clic piégé | Accord donné à l'insu | Accord par `POST` à l'API, avec contrôle d'origine (`requireSameOrigin`) et mot de passe ; `frame-ancestors 'none'` et `X-Frame-Options: DENY` ; aucun accord par GET |
 | Force brute (mot de passe au consentement, codes, jetons) | Prise de compte, devinette de jeton | Limitation existante (5 échecs en 15 min) pour le mot de passe ; jetons et codes de 256 bits ; échecs de jeton comptés par IP (journal et 429) |
@@ -476,7 +484,7 @@ Accès : Réglages › Mon compte › section « Claude » › « Connexions Cla
 | Ajouts en masse (boucle, injection, erreur) | Liste noyée | 20 éléments par appel ; 100 par heure et par connexion (et 300 cochages par heure, ajouté après l'étape D) ; pas de doublon dans les 2 minutes ; journal `claude.ajout` |
 | Fuite des noms des autres membres | Données personnelles chez Anthropic | Aucun nom de personne dans les sorties d'outil (§3) |
 | Déni de service | Listo ralenti pour le foyer | Corps de 64 ko au plus, lu après le jeton ; 60 requêtes par minute et par connexion ; réponses JSON courtes, sans flux ouvert ; aucun appel sortant pendant `/mcp` |
-| Rebinding DNS | Un site malveillant parle à `/mcp` via le navigateur | `Origin` validé (absent, Listo ou Claude) ; jeton Bearer exigé (un navigateur piégé n'en a pas) ; aucun cookie accepté sur `/mcp` |
+| Rebinding DNS | Un site malveillant parle à `/mcp` via le navigateur | `Origin` validé (absent, Listo ou Claude ; *depuis le 21 novembre 2026 : absent ou https, jamais Listo, ou les sites de `LISTO_MCP_SITES`*) ; jeton Bearer exigé (un navigateur piégé n'en a pas) ; aucun cookie accepté sur `/mcp` |
 | Jeton présenté pour une autre ressource (« confused deputy ») | Jeton détourné | `resource` vérifiée à l'émission et à chaque appel ; Listo ne transmet jamais un jeton à un autre service |
 | Usurpation d'émetteur (« mix-up ») | Code envoyé au mauvais serveur | Paramètre `iss` dans chaque réponse d'autorisation (RFC 9207) |
 

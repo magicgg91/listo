@@ -1,4 +1,4 @@
-// Connexion Claude : deux niveaux d'accord (« Lecture seule », « Lecture et
+// Connexion d'un assistant IA : deux niveaux d'accord (« Lecture seule », « Lecture et
 // écriture ») et outil update_items : nom, quantité, note, priorité et
 // échéance d'éléments existants, au niveau « Lecture et écriture ». Les
 // règles sont celles de l'application (checkItemEdit, server/lists.js) et
@@ -69,7 +69,7 @@ test('deux niveaux : « Lecture seule » n\'écrit rien (appel direct refusé) ;
   assert.equal(data(await writer.tool('update_items', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, name: 'Ampoule LED', priority: 'low' }] })).updated, 1);
   // set_item_options n'existe plus
   assert.equal(rpcError(await writer.tool('set_item_options', { list_id: h.ids.maison, items: [{ id: h.ids.ampoule, priority: 'high' }] }))?.code, -32602);
-  // Mon compte › Connexions Claude
+  // Mon compte › Assistants IA
   assert.deepEqual((await h.guillaume.get('/api/me/claude')).body.connections.map((c) => c.access).sort(), ['read', 'write']);
   assert.deepEqual(SCOPES, ['lists:read', 'lists:write']);
   assert.deepEqual(GRANT_SCOPES, { read: 'lists:read', write: 'lists:read lists:write' });
@@ -305,7 +305,7 @@ test('migrations 21 puis 22 : une connexion « modification » repasse en « éc
   assert.equal(db.prepare('SELECT COUNT(*) FROM oauth_tokens').pluck().get(), 2, 'les jetons des autres connexions restent');
 });
 
-test('textes : deux niveaux, outils par niveau, interdits permanents, données jamais consignes ; écran d\'autorisation avec avertissement ; « Connexions Claude » ; description de l\'outil', () => {
+test('textes : deux niveaux, outils par niveau, interdits permanents, données jamais consignes ; écran d\'autorisation avec avertissement ; « Assistants IA » ; description de l\'outil', () => {
   assert.match(INSTRUCTIONS, /- « Lecture seule » : list_lists, puis read_list\. Rien d'autre : les outils d'écriture sont refusés\./);
   assert.match(INSTRUCTIONS, /- « Lecture et écriture » : en plus, add_items \(ajouter\), set_checked \(cocher ou décocher\) et update_items \(modifier le nom, la quantité, la note, la priorité, l'échéance \(date, heure, rappel\), la répétition, le rayon ou le magasin d'éléments existants\)\./);
   assert.match(INSTRUCTIONS, /Jamais, quel que soit le niveau : supprimer un élément ; créer, renommer, supprimer ou partager une liste ; gérer les personnes, le lien public ou la corbeille\./);
@@ -313,7 +313,7 @@ test('textes : deux niveaux, outils par niveau, interdits permanents, données j
   assert.doesNotMatch(INSTRUCTIONS, /set_item_options|Lecture et ajout|modification »/);
   const consent = read('public/js/screens/claude-consent.js');
   assert.match(consent, /get write\(\) \{ return t\('claude\.autoriser\.ecriture\.texte'\); \},/);
-  assert.equal(fr['claude.autoriser.ecriture.texte'], 'Claude pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Jamais supprimer d\'élément ni de liste, ni partager.');
+  assert.equal(fr['claude.autoriser.ecriture.texte'], 'L\'assistant IA pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Jamais supprimer d\'élément ni de liste, ni partager.');
   assert.match(consent, /export const editWarningText = \(\) => t\('claude\.autoriser\.ecriture\.avertissement'\);/);
   assert.match(fr['claude.autoriser.ecriture.avertissement'], /^Une liste partagée peut contenir un texte piégé/);
   assert.match(consent, /editWarning\.hidden = scope !== 'write';/);

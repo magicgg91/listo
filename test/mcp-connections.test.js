@@ -1,5 +1,6 @@
-// Écran « Connexions Claude » (étape D de docs/mcp-cadrage.md) : un compte
-// voit et déconnecte SES connexions Claude, et seulement les siennes ; une
+// Écran « Assistants IA » (autrefois « Connexions Claude », étape D de
+// docs/mcp-cadrage.md) : un compte voit et déconnecte SES connexions
+// d'assistants IA, et seulement les siennes ; une
 // connexion déconnectée ne marche plus sur /mcp à l'appel suivant.
 
 import { test } from 'node:test';
@@ -9,7 +10,7 @@ import crypto from 'node:crypto';
 import { createClient, ORIGIN } from './helpers.js';
 import { PASSWORD, MARIE_PASSWORD, household, connect, claude } from './mcp-helpers.js';
 import { GUIDE } from '../public/js/help-content.js';
-import { matchRoute } from '../public/js/router.js';
+import { matchRoute, pathFor } from '../public/js/router.js';
 import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -96,7 +97,7 @@ test('déconnecter UNE connexion : refusée sur /mcp tout de suite, les autres r
   // Renouvellement refusé aussi
   const refreshed = await fetch(`${h.app.base}/oauth/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: first.clientId }) });
   assert.equal((await refreshed.json()).error, 'invalid_grant');
-  const line = h.app.logs.find((l) => /claude\.revoked/.test(l) && /Claude connections/.test(l));
+  const line = h.app.logs.find((l) => /claude\.revoked/.test(l) && /AI assistants/.test(l));
   assert.match(line, /by="account"/);
   assert.match(line, /user="guillaume"/);
 });
@@ -130,12 +131,19 @@ test('refus sans session et depuis une autre origine', async (t) => {
 });
 
 test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\'accès est activé ; adresse jamais écrite en dur', () => {
-  assert.deepEqual(matchRoute('#/reglages/claude'), { name: 'claudeConnections', params: {} });
+  assert.deepEqual(matchRoute('#/reglages/assistants'), { name: 'claudeConnections', params: {} });
+  assert.equal(pathFor('claudeConnections'), '#/reglages/assistants');
+  // Ancienne adresse (favoris, anciens liens) : remplacée par la nouvelle
+  assert.deepEqual(matchRoute('#/reglages/claude'), { name: 'oldClaudeConnections', params: {} });
   const account = read('public/js/screens/account.js');
   assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   assert.match(account, /navigate\('claudeConnections'\)/);
   const app = read('public/js/app.js');
   assert.match(app, /case 'claudeConnections':\s*if \(app\.user\.claudeUrl\) mount\(\(\) => renderClaudeConnections\(\)\);\s*else navigate\('account', \{\}, \{ replace: true \}\);/);
+  assert.match(app, /case 'oldClaudeConnections': navigate\('claudeConnections', \{\}, \{ replace: true \}\); break;/);
+  assert.equal(fr['compte.claude'], 'Assistants IA');
+  assert.equal(fr['compte.claude.connexions'], 'Assistants IA');
+  assert.equal(fr['claude.connexions.titre'], 'Assistants IA');
   const screen = read('public/js/screens/claude-connections.js');
   assert.match(screen, /del\(`\/api\/me\/claude\/\$\{encodeURIComponent\(connection\.id\)\}`\)/);
   assert.match(screen, /del\('\/api\/me\/claude'\)/);
@@ -149,12 +157,12 @@ test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\
   assert.equal(fr['claude.application.nonVerifie'], 'nom donné par l\'application, non vérifié');
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|https:\/\//);
   assert.ok(read('public/sw.js').includes("'/js/screens/claude-connections.js'"));
-  // Aide : le chapitre « Claude et Listo » du guide, le même pour tous ; il
-  // renvoie à « Connexions Claude » pour l'adresse réelle, et ne donne qu'une
+  // Aide : le chapitre « Assistants IA (MCP) » du guide, le même pour tous ;
+  // il renvoie à « Assistants IA » pour l'adresse réelle, et ne donne qu'une
   // adresse d'exemple inventée
   const claude = GUIDE.find((c) => c.id === 'claude');
   const connect = JSON.stringify(claude.sections.find((s) => s.id === 'claude-connecter'));
-  assert.match(connect, /« Connexions Claude »/);
+  assert.match(connect, /« Mon compte », section « Assistants IA », « Assistants IA »/);
   assert.match(connect, /« Copier l'adresse »/);
   assert.match(connect, /claude mcp add --transport http listo https:\/\/listo\.exemple\.fr\/mcp/);
   const addresses = [...read('public/js/help-content.js').matchAll(/https:\/\/([a-z.-]+)\/mcp/g)].map((m) => m[1]);

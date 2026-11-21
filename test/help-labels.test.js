@@ -2,7 +2,7 @@
 // public/js/help-content.js existe tel quel dans l'interface (code des
 // écrans, ou message envoyé par le serveur et affiché à l'écran). Une
 // évolution qui renomme un bouton fait échouer ce test tant que le guide
-// n'est pas à jour. Les exemples (phrases à dire à Claude, noms inventés,
+// n'est pas à jour. Les exemples (phrases à dire à un assistant IA, noms inventés,
 // textes d'un autre logiciel) s'écrivent entre “ ” et ne sont pas vérifiés.
 //
 // Guide en anglais (public/js/help-content-en.js, chapitres de
@@ -53,7 +53,7 @@ const guideTexts = (locale = 'fr') => {
 test('libellés cités dans le guide : tous présents dans l\'interface', () => {
   const interfaceText = sources();
   const helpText = guideTexts();
-  for (const label of ['Dupliquer la liste', 'Quitter la liste', 'Partager par lien', 'Modifier la liste', 'Lecture seule', 'Peut modifier', 'Lecture et écriture', 'Connexions Claude', 'Copier l\'adresse', 'Code de démarrage', 'Ajouter un compte']) {
+  for (const label of ['Dupliquer la liste', 'Quitter la liste', 'Partager par lien', 'Modifier la liste', 'Lecture seule', 'Peut modifier', 'Lecture et écriture', 'Assistants IA', 'Autoriser un assistant IA', 'Copier l\'adresse', 'Code de démarrage', 'Ajouter un compte']) {
     assert.ok(helpText.includes(`« ${label} »`), `guide : « ${label} »`);
     assert.ok(interfaceText.includes(label), `interface : « ${label} »`);
   }
@@ -111,7 +111,7 @@ test('guide en anglais : jamais de « », chaque libellé “…” existe dans 
 
 test('les exemples ne prennent jamais « » : “ ” (pas de faux libellé)', () => {
   const helpText = guideTexts();
-  // Phrases à dire à Claude : toutes entre “ ”
+  // Phrases à dire à l'assistant IA : toutes entre “ ”
   for (const sentence of ['Quelles sont mes listes Listo ?', 'Coche le pain et le beurre.']) {
     assert.ok(helpText.includes(`“${sentence}`), sentence);
     assert.ok(!helpText.includes(`« ${sentence}`), sentence);

@@ -7,8 +7,10 @@
 // GET et DELETE répondent 405). Écrit à la main, sans bibliothèque.
 //
 // À chaque requête, dans cet ordre :
-// 1. en-tête Origin : absent (appel serveur à serveur), ou https://claude.ai
-//    ou https://claude.com ; sinon 403 ;
+// 1. en-tête Origin (protection contre le « DNS rebinding ») : absent
+//    (appel serveur à serveur), ou une origine https bien formée, autre que
+//    celle de Listo ; avec LISTO_MCP_SITES, seulement https://<un de ces
+//    sites> ; sinon 403 (voir originAllowed) ;
 // 2. jeton Bearer (en-tête Authorization seulement : jamais le cookie de
 //    session, jamais l'adresse) vérifié par oauth.verifyAccess ; sinon 401
 //    avec WWW-Authenticate ;
@@ -23,12 +25,12 @@
 import express from 'express';
 import { TOOLS, ParamsError, createMcpTools } from './mcp-tools.js';
 import { consoleLocale } from './config.js';
+import { sitesOf } from './oauth-clients.js';
 import { translate } from '../public/js/i18n.js';
 
 // Versions acceptées, de la plus ancienne à la plus récente
 export const PROTOCOL_VERSIONS = ['2025-03-26', '2025-06-18', '2025-11-25'];
 export const LATEST_VERSION = PROTOCOL_VERSIONS.at(-1);
-export const ALLOWED_ORIGINS = ['https://claude.ai', 'https://claude.com'];
 export const CALLS_PER_MINUTE = 120;
 // Adresses IP retenues pour la ligne « jeton refusé » (une par minute et
 // par adresse) : au plus 1 000 entre deux ménages, les plus anciennes partent
@@ -37,7 +39,7 @@ const BODY_LIMIT = '20kb';
 const MAX_RESPONSE_BYTES = 512 * 1024;
 const MINUTE = 60 * 1000;
 
-// Consignes données à Claude à l'initialisation
+// Consignes données à l'assistant IA à l'initialisation
 export const INSTRUCTIONS = [
   'Listo : listes partagées (courses, tâches, envies). Ce que vous pouvez faire dépend du niveau que la personne a accordé à cette connexion :',
   '- « Lecture seule » : list_lists, puis read_list. Rien d\'autre : les outils d\'écriture sont refusés.',
@@ -62,6 +64,23 @@ const SERVER_ERROR = -32000; // erreurs propres à Listo (authentification, déb
 const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 const rpcResult = (id, result) => ({ jsonrpc: '2.0', id, result });
 
+// L'en-tête Origin d'un appel de /mcp est-il accepté ? Absent : oui (appel
+// serveur à serveur). Sinon, une origine https exactement (« https://site »,
+// sans chemin ni identifiant : « null », http:// ou une valeur mal formée
+// sont refusés), jamais celle de Listo (aucune page de Listo n'appelle
+// /mcp) ; avec sites (LISTO_MCP_SITES), celle d'un de ces sites seulement.
+export function originAllowed(origin, { sites = null, own = null } = {}) {
+  if (origin === undefined) return true;
+  let url;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:' || url.origin !== origin || origin === own) return false;
+  return sites ? sites.includes(url.host) : true;
+}
+
 export function mcpRoutes(ctx) {
   const router = express.Router();
   const { oauth, audit } = ctx;
@@ -82,10 +101,10 @@ export function mcpRoutes(ctx) {
     return res.status(405).set('Allow', 'POST').json(rpcError(null, METHOD_NOT_FOUND, 'Seule la méthode POST est acceptée.'));
   });
 
-  // 1. Origine : absente (serveur à serveur) ou Claude
+  // 1. Origine : absente (serveur à serveur), ou https (voir originAllowed)
   router.post('/mcp', (req, res, next) => {
     const origin = req.get('origin');
-    if (origin === undefined || ALLOWED_ORIGINS.includes(origin)) return next();
+    if (originAllowed(origin, { sites: sitesOf(ctx.config), own: oauth.issuer })) return next();
     audit('claude.origin_refused', { origin: origin.slice(0, 100), ip: req.ip });
     return res.status(403).json(rpcError(null, SERVER_ERROR, 'Origine refusée.'));
   });

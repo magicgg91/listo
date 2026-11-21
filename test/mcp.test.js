@@ -121,11 +121,15 @@ test('protocole : JSON invalide, corps trop gros, lot refusé, requête mal form
     assert.equal(res.status, 405);
     assert.equal(res.headers.get('allow'), 'POST');
   }
-  const evil = await claude(h, token, { origin: 'https://pirate.example' }).rpc('ping');
+  // Origine : absente ou https (tout assistant IA, sans LISTO_MCP_SITES) ;
+  // jamais http://, « null » ni une valeur mal formée
+  const evil = await claude(h, token, { origin: 'http://pirate.example' }).rpc('ping');
   assert.equal(evil.status, 403);
   assert.ok(h.app.logs.some((l) => /claude\.origin_refused/.test(l) && /pirate\.example/.test(l)));
-  assert.equal((await claude(h, token, { origin: ORIGIN }).rpc('ping')).status, 403, 'même l\'origine de Listo : aucun navigateur n\'a à appeler /mcp');
-  for (const origin of ['https://claude.ai', 'https://claude.com']) assert.equal((await claude(h, token, { origin }).rpc('ping')).status, 200, origin);
+  for (const origin of [ORIGIN, 'null', 'https://pirate.example/chemin', 'pas une origine']) {
+    assert.equal((await claude(h, token, { origin }).rpc('ping')).status, 403, origin);
+  }
+  for (const origin of ['https://claude.ai', 'https://claude.com', 'https://chat.example']) assert.equal((await claude(h, token, { origin }).rpc('ping')).status, 200, origin);
   assert.equal(evil.headers.get('access-control-allow-origin'), null, 'pas de CORS');
 });
 

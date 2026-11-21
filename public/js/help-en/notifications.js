@@ -34,7 +34,7 @@ export default {
             ['“Due”', "Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([[heure]]).", "‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’"],
           ],
         } },
-        "You're never notified about what you do yourself (or about what Claude does for you: [[claude]]). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.",
+        "You're never notified about what you do yourself (or about what an AI assistant does for you: [[claude]]). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.",
       ],
     },
     {

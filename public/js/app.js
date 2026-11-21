@@ -695,7 +695,7 @@ function show(route) {
     return;
   }
   // Mot de passe imposé par l'Admin : à changer avant tout le reste (une
-  // autorisation de Claude en attente reprend ensuite)
+  // autorisation d'un assistant IA en attente reprend ensuite)
   if (app.user.mustChangePassword) {
     if (route.name === 'authorize') app.afterLogin = route;
     mount(renderForcedChange(), { withSide: false });
@@ -750,11 +750,13 @@ function show(route) {
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
-    // Connexions Claude : seulement si l'accès est activé sur le serveur
+    // Assistants IA : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':
       if (app.user.claudeUrl) mount(() => renderClaudeConnections());
       else navigate('account', {}, { replace: true });
       break;
+    // Ancienne adresse (#/reglages/claude) : remplacée par la nouvelle
+    case 'oldClaudeConnections': navigate('claudeConnections', {}, { replace: true }); break;
     default: navigate('lists', {}, { replace: true });
   }
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran

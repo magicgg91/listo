@@ -11,7 +11,7 @@ Version anglaise : [README.md](README.md)
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
 - **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
-- **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; **Claude** (Anthropic) peut lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord et sans jamais rien supprimer.
+- **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; les **assistants IA** qui suivent le standard MCP (par exemple Claude, d'Anthropic) peuvent lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord, toujours après votre accord sur un écran « Autoriser un assistant IA », et sans jamais rien supprimer.
 - **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées, et tâches qu'on vous attribue), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/fr/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
@@ -20,8 +20,8 @@ Version anglaise : [README.md](README.md)
 | ![« Mes listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
 | :---: | :---: | :---: | :---: | :---: |
 | Mes listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
-| ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Connexions Claude » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
-| Envies, réservations | Mode scan | Lien public | « Connexions Claude » | Réglages |
+| ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Assistants IA » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
+| Envies, réservations | Mode scan | Lien public | « Assistants IA » | Réglages |
 
 *Instance de démonstration, données inventées.*
 
@@ -39,14 +39,14 @@ Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pou
 
 ## Limites
 
-- **Aucune donnée envoyée ailleurs que sur votre serveur**, sauf trois exceptions désactivables : la vérification d'une nouvelle version (GitHub), le nom d'un produit scanné (Open Food Facts) et les **notifications push**, désactivées par défaut (`LISTO_PUSH=on` les active ; contenu chiffré de bout en bout, mais Apple, Google, Mozilla ou Microsoft voient l'heure, la taille du message et l'appareil destinataire). Si vous connectez Claude (`LISTO_MCP=on`), les listes autorisées lui sont envoyées quand vous l'interrogez. Connexion facultative par votre propre fournisseur d'identité OpenID Connect, par exemple Authelia, Authentik ou Pocket ID (`LISTO_OIDC=on`, [guide](docs/guide.md#sso-serveur)). En français et en anglais, pas de paiement ; notifications sur iPhone et iPad : iOS 16.4 ou plus, Listo installé sur l'écran d'accueil ([chapitre Notifications](docs/guide.md#notifications)).
+- **Aucune donnée envoyée ailleurs que sur votre serveur**, sauf trois exceptions désactivables : la vérification d'une nouvelle version (GitHub), le nom d'un produit scanné (Open Food Facts) et les **notifications push**, désactivées par défaut (`LISTO_PUSH=on` les active ; contenu chiffré de bout en bout, mais Apple, Google, Mozilla ou Microsoft voient l'heure, la taille du message et l'appareil destinataire). Si vous connectez un assistant IA comme Claude (`LISTO_MCP=on` ; `LISTO_MCP_SITES` peut limiter les sites d'assistants acceptés), les listes autorisées lui sont envoyées quand vous l'interrogez. Connexion facultative par votre propre fournisseur d'identité OpenID Connect, par exemple Authelia, Authentik ou Pocket ID (`LISTO_OIDC=on`, [guide](docs/guide.md#sso-serveur)). En français et en anglais, pas de paiement ; notifications sur iPhone et iPad : iOS 16.4 ou plus, Listo installé sur l'écran d'accueil ([chapitre Notifications](docs/guide.md#notifications)).
 
 ## Liens utiles
 
 - [Le guide en ligne](https://magicgg91.github.io/listo/fr/), ou [docs/guide.md](docs/guide.md) dans le dépôt : pour tout le monde.
 - [docs/cahier-des-charges.md](docs/cahier-des-charges.md) : fonctions, droits, modèle de données, sécurité, décisions.
 - [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones.
-- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès depuis Claude ; [design/README.md](design/README.md) : le kit de design.
+- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès des assistants IA (MCP) ; [design/README.md](design/README.md) : le kit de design.
 
 ## Sécurité
 

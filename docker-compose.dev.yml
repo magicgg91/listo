@@ -38,7 +38,9 @@ services:
       # - LISTO_UPDATE_CHECK=off
       # - LISTO_PRODUCT_LOOKUP=off
       # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact
-      # LISTO_MCP: access from Claude, off by default (“Claude MCP” chapter).
+      # LISTO_MCP: access for AI assistants, off by default (“AI assistants
+      # (MCP)” chapter). Optional: only accept these websites.
+      # - LISTO_MCP_SITES=claude.ai,claude.com
       # Push notifications: OFF by default; uncomment the line
       # below to turn them on. Encrypted content: Apple, Google, Mozilla
       # or Microsoft only see the time, the size and the device. Keys

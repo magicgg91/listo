@@ -154,7 +154,7 @@ export function renderAbout() {
 // --- Réglages sur ordinateur (design/maquettes/pc-A, capture 08a) ---
 // Le même rangement que sur le téléphone (décision du propriétaire du
 // 10 novembre 2026 : le téléphone fait référence), en cartes : Compte (ouvre
-// « Mon compte », où sont le thème, « Connexions Claude » et « Se
+// « Mon compte », où sont le thème, « Assistants IA » et « Se
 // déconnecter », comme sur le téléphone), Général (« Raccourcis à une
 // touche », propre à l'ordinateur, puis les mêmes lignes que le téléphone),
 // Informations (Aide, « Raccourcis clavier », À propos).

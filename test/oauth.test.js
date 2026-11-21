@@ -1,5 +1,5 @@
-// Autorisation OAuth pour Claude (étape A de docs/mcp-cadrage.md). Un faux
-// client (« faux Claude ») rejoue tout le flux, sans aucun vrai réseau :
+// Autorisation OAuth pour les assistants IA (étape A de docs/mcp-cadrage.md),
+// ici avec Claude en exemple. Un faux client (« faux Claude ») rejoue tout le flux, sans aucun vrai réseau :
 // description, enregistrement, autorisation dans le navigateur, accord avec
 // mot de passe, échange du code (PKCE), renouvellement, révocation. Le
 // document CIMD de Claude Code est servi par une fausse lecture.
@@ -233,7 +233,10 @@ test('CIMD hors liste blanche ou document incohérent : refusé, sans appel rés
 
 test('redirection non autorisée : DCR refusée, autorisation sans aucune redirection', async (t) => {
   const h = await setup(t);
-  for (const uri of ['https://pirate.example/cb', 'http://192.168.0.2/cb', 'https://claude.ai/autre', 'javascript:alert(1)']) {
+  // Sans LISTO_MCP_SITES, toute adresse https sur un nom de site est
+  // acceptée ; jamais http (sauf l'ordinateur), une adresse IP, un
+  // identifiant ni un fragment
+  for (const uri of ['http://pirate.example/cb', 'http://192.168.0.2/cb', 'https://192.168.0.2/cb', 'https://[2001:db8::1]/cb', 'https://pirate.example/cb#x', 'https://u:p@pirate.example/cb', 'https://localhost/cb', 'javascript:alert(1)', `https://pirate.example/${'x'.repeat(500)}`]) {
     const reg = await raw(h.app, 'POST', '/oauth/register', { json: { redirect_uris: [uri] } });
     assert.equal(reg.status, 400, uri);
     assert.equal(reg.body.error, 'invalid_redirect_uri');
@@ -394,7 +397,7 @@ test(`${MAX_GRANTS} connexions au plus ; réautoriser la même application rempl
   const sixth = await apps[MAX_GRANTS].authorize();
   const refused = await apps[MAX_GRANTS].consent(h.guillaume, sixth.requestId);
   assert.equal(refused.status, 409);
-  assert.match(refused.body.error, /5 connexions Claude actives/);
+  assert.match(refused.body.error, /5 connexions d'assistants IA actives/);
   // La même application, réautorisée : remplace (la première tombe)
   const renewed = await apps[0].connect();
   assert.ok(access(h, renewed.access_token));
@@ -431,7 +434,7 @@ test('mot de passe erroné au consentement : refusé, limitation des tentatives 
   const wrong = await claude.consent(h.guillaume, start.requestId, { password: 'pas le bon' });
   assert.equal(wrong.status, 403);
   assert.equal(wrong.body.error, 'Mot de passe incorrect.');
-  assert.ok(h.app.logs.some((l) => /password_refused/.test(l) && /step="claude authorization"/.test(l)));
+  assert.ok(h.app.logs.some((l) => /password_refused/.test(l) && /step="ai assistant authorization"/.test(l)));
   for (let i = 0; i < 4; i++) await claude.consent(h.guillaume, start.requestId, { password: 'pas le bon' });
   const blocked = await claude.consent(h.guillaume, start.requestId);
   assert.equal(blocked.status, 429, 'bloqué même avec le bon mot de passe');
@@ -614,7 +617,7 @@ test('configuration : LISTO_MCP désactivé par défaut, seulement « on » l\'a
   assert.equal(/LISTO_MCP=on/.test(read('docker-compose.yml')), false, 'jamais activé dans docker-compose.yml');
 });
 
-test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée, mot de passe, POST seulement, textContent', () => {
+test('écran « Autoriser un assistant IA » : adresse, lecture seule présélectionnée, mot de passe, POST seulement, textContent', () => {
   assert.deepEqual(matchRoute('#/autoriser/abcdefghijklmnopqrstuv'), { name: 'authorize', params: { id: 'abcdefghijklmnopqrstuv' } });
   assert.equal(pathFor('authorize', { id: 'x' }), '#/autoriser/x');
   const app = read('public/js/app.js');
@@ -624,7 +627,12 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   assert.match(screen, /let scope = 'read';\s+\/\/ « Lecture seule » présélectionnée/);
   assert.match(screen, /let allLists = true;\s+\/\/ « Toutes mes listes » par défaut/);
   assert.match(screen, /t\('claude\.autoriser\.attention'\)/);
-  assert.equal(fr['claude.autoriser.attention'], 'Ne continuez que si vous venez de lancer la connexion depuis Claude.');
+  assert.equal(fr['claude.autoriser.attention'], 'Ne continuez que si vous venez de lancer la connexion depuis votre assistant IA.');
+  // Avertissement ferme sous « qui demande », toujours : l'ordinateur, ou le site nommé
+  assert.match(screen, /const text = request\.redirect\.local \? t\('claude\.autoriser\.local'\) : t\('claude\.autoriser\.site', \{ host: request\.redirect\.host \}\);/);
+  assert.equal((screen.match(/warning\(request\),/g) ?? []).length, 2, 'formulaire et confirmation chez le fournisseur d\'identité');
+  assert.equal(fr['claude.autoriser.site'], 'Vérifiez que {host} est bien le site de votre assistant IA. Si vous n\'avez pas lancé cette connexion vous-même, refusez : quelqu\'un essaie peut-être d\'accéder à vos listes.');
+  assert.equal(fr['claude.autoriser.titre'], 'Autoriser un assistant IA');
   assert.match(screen, /t\('claude\.local'\)/);
   assert.equal(fr['claude.local'], 'une application sur cet ordinateur (localhost)');
   // Nom déclaré par l'application elle-même (DCR) : « non vérifié »
@@ -635,7 +643,7 @@ test('écran « Autoriser Claude » : adresse, lecture seule présélectionnée,
   assert.equal(fr['claude.application.nom'], '« {name} » ({detail})');
   // Phrase de confirmation juste au-dessus d'« Autoriser », dans la barre du bas
   assert.match(screen, /h\('div', \{ class: 'footer' \},\s*h\('p', \{\}, t\('claude\.autoriser\.question'\)\),\s*allow, deny\)/);
-  assert.equal(fr['claude.autoriser.question'], 'Vous venez de lancer cette connexion depuis Claude ? Si ce n\'est pas le cas, refusez.');
+  assert.equal(fr['claude.autoriser.question'], 'Vous venez de lancer cette connexion depuis votre assistant IA ? Si ce n\'est pas le cas, refusez.');
   assert.match(screen, /post\(`\/api\/oauth\/demandes\/\$\{enc\(id\)\}\/accord`/);
   assert.match(screen, /location\.assign\(redirect\)/);
   assert.doesNotMatch(screen, /innerHTML|\.focus\(|style=|<script/);

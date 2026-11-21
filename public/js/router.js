@@ -26,10 +26,14 @@ export const ROUTES = [
   { name: 'help', path: '/aide' },
   { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },
-  // Écran « Autoriser Claude » (autorisation OAuth, voir claude-consent.js)
+  // Écran « Autoriser un assistant IA » (autorisation OAuth, voir claude-consent.js)
   { name: 'authorize', path: '/autoriser/:id' },
-  // Connexions Claude (Mon compte), seulement si l'accès est activé
-  { name: 'claudeConnections', path: '/reglages/claude' },
+  // Assistants IA (Mon compte), seulement si l'accès est activé
+  { name: 'claudeConnections', path: '/reglages/assistants' },
+  // Ancienne adresse de l'écran « Assistants IA » (« Connexions Claude »
+  // jusqu'au 21 novembre 2026) : favoris et anciens liens y mènent encore
+  // (app.js remplace l'adresse par la nouvelle)
+  { name: 'oldClaudeConnections', path: '/reglages/claude' },
 ];
 
 // Écran affiché quand l'adresse est vide ou inconnue

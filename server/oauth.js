@@ -1,15 +1,17 @@
-// Autorisation OAuth de Listo pour Claude (étape A de docs/mcp-cadrage.md).
+// Autorisation OAuth de Listo pour les assistants IA (étape A de
+// docs/mcp-cadrage.md).
 //
 // Listo est son propre « serveur d'autorisation » : une personne connectée
-// à Listo autorise Claude (claude.ai, mobile, Desktop, Claude Code) à lire
-// ses listes, et éventuellement à y ajouter, sans jamais lui donner son mot
-// de passe. Étapes :
-// 1. Claude ouvre /oauth/authorize dans le navigateur : la demande est
+// à Listo autorise un assistant IA (par exemple Claude : claude.ai, mobile,
+// Desktop, Claude Code) à lire ses listes, et éventuellement à y ajouter,
+// sans jamais lui donner son mot de passe. Étapes :
+// 1. l'assistant ouvre /oauth/authorize dans le navigateur : la demande est
 //    vérifiée puis gardée 10 minutes (oauth_requests) ;
-// 2. la personne accepte sur l'écran « Autoriser Claude », en confirmant
-//    son mot de passe : une « connexion » est créée (oauth_grants), avec un
-//    code à usage unique valable 60 s, renvoyé à Claude ;
-// 3. Claude échange ce code (et la preuve PKCE) contre un jeton d'accès
+// 2. la personne accepte sur l'écran « Autoriser un assistant IA », en
+//    confirmant son mot de passe : une « connexion » est créée
+//    (oauth_grants), avec un code à usage unique valable 60 s, renvoyé à
+//    l'assistant ;
+// 3. l'assistant échange ce code (et la preuve PKCE) contre un jeton d'accès
 //    (1 heure) et un jeton de renouvellement (30 jours glissants, remplacé à
 //    chaque usage).
 //
@@ -32,6 +34,7 @@ import { hashToken } from './auth.js';
 import { translate } from '../public/js/i18n.js';
 import {
   cimdUrl, checkCimdDocument, fetchClientMetadata, checkRegistration, redirectMatches, redirectHost,
+  trustedRedirect, sitesOf, grantSiteAllowed,
 } from './oauth-clients.js';
 
 const SECOND = 1000;
@@ -70,7 +73,7 @@ const PKCE_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;    // RFC 7636, §4.1
 export const REQUEST_ID = /^[A-Za-z0-9_-]{22}$/;
 
 // Erreur à renvoyer telle quelle : status HTTP, code OAuth, explication.
-// Une erreur montrée sur l'écran « Autoriser Claude » porte aussi le nom de
+// Une erreur montrée sur l'écran « Autoriser un assistant IA » porte aussi le nom de
 // son texte (key) et ses valeurs (params), traduits par la route.
 export class OAuthError extends Error {
   constructor(status, error, description) {
@@ -121,6 +124,9 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   const resource = `${origin}/mcp`;
   const iso = (ms = ctx.now()) => new Date(ms).toISOString();
   const audit = (event, details) => ctx.audit?.(event, details);
+  // Sites de LISTO_MCP_SITES, ou null (tout assistant IA accepté) ; relus
+  // à chaque fois (la configuration ne change qu'au redémarrage)
+  const sites = () => sitesOf(ctx.config);
 
   // Réponses déjà envoyées pour un renouvellement, gardées 60 s EN MÉMOIRE
   // seulement (jamais en base) : empreinte de l'ancien jeton -> réponse
@@ -143,7 +149,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     deleteRequest: db.prepare('DELETE FROM oauth_requests WHERE id = ?'),
     activeGrants: db.prepare(`SELECT * FROM oauth_grants
       WHERE user_id = ? AND revoked_at IS NULL AND COALESCE(last_used_at, created_at) > ?`),
-    // Connexions actives d'un compte, pour l'écran « Connexions Claude »
+    // Connexions actives d'un compte, pour l'écran « Assistants IA »
     myGrants: db.prepare(`SELECT oauth_grants.*, oauth_clients.kind, oauth_clients.client_name
       FROM oauth_grants JOIN oauth_clients ON oauth_clients.client_id = oauth_grants.client_id
       WHERE oauth_grants.user_id = ? AND oauth_grants.revoked_at IS NULL AND COALESCE(oauth_grants.last_used_at, oauth_grants.created_at) > ?
@@ -153,7 +159,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
       JOIN lists ON lists.id = oauth_grant_lists.list_id AND lists.deleted_at IS NULL
       JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = ?
       WHERE oauth_grant_lists.grant_id = ? ORDER BY lists.name COLLATE NOCASE`).pluck(),
-    // last_used_at : dernier appel de /mcp (vide tant que Claude n'a rien demandé)
+    // last_used_at : dernier appel de /mcp (vide tant que l'assistant n'a rien demandé)
     insertGrant: db.prepare(`INSERT INTO oauth_grants (user_id, client_id, app_key, client_host, redirect_host, scope, all_lists, created_at)
       VALUES (@userId, @clientId, @appKey, @clientHost, @redirectHost, @scope, @allLists, @now)`),
     insertGrantList: db.prepare('INSERT INTO oauth_grant_lists (grant_id, list_id) VALUES (?, ?)'),
@@ -177,18 +183,20 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   // --- Applications (clients) ---
 
   // Retrouve l'application d'un client_id. CIMD : document lu sur la liste
-  // blanche seulement (sinon refus SANS appel réseau), relu au plus une
+  // courte seulement (sinon refus SANS appel réseau), relu au plus une
   // fois par heure. DCR : enregistrée auparavant par /oauth/register.
+  // L'adresse de retour est vérifiée ensuite (clientRedirect), avec la
+  // règle du moment.
   async function resolveClient(clientId) {
     if (typeof clientId !== 'string' || !clientId || clientId.length > 500) return null;
     const known = q.client.get(clientId);
     if (known?.kind === 'dcr') return known;
-    const url = cimdUrl(clientId);
+    const url = cimdUrl(clientId, sites());
     if (!url) return null;
     if (known && Date.parse(known.fetched_at) > ctx.now() - CIMD_CACHE) return known;
     let doc;
     try {
-      doc = checkCimdDocument(clientId, await fetchMetadata(url));
+      doc = checkCimdDocument(clientId, await fetchMetadata(url), sites());
     } catch (error) {
       audit('claude.client_refused', { client: url.hostname, reason: error.message });
       return null;
@@ -201,7 +209,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   // Enregistrement automatique (DCR). Renvoie la description du client
   // (RFC 7591, §3.2.1) ou lance une OAuthError.
   function register(body, ip) {
-    const checked = checkRegistration(body);
+    const checked = checkRegistration(body, sites());
     if (checked.error) throw new OAuthError(400, checked.error, checked.description);
     const time = ctx.now();
     let entry = dcrByIp.get(ip);
@@ -224,11 +232,16 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     };
   }
 
-  // L'adresse de retour demandée est-elle une de celles du client ?
+  // L'adresse de retour demandée est-elle une de celles du client, et
+  // passe-t-elle encore la règle du moment (LISTO_MCP_SITES resserrée
+  // depuis l'enregistrement : refusée) ?
   function clientRedirect(client, requested) {
     const registered = JSON.parse(client.redirect_uris);
-    return registered.some((uri) => redirectMatches(requested, uri));
+    return registered.some((uri) => redirectMatches(requested, uri, sites()));
   }
+
+  // Une erreur peut-elle être renvoyée sans écran vers cette adresse ?
+  const canSendErrorTo = (redirectUri) => trustedRedirect(redirectUri, sites());
 
   // Hôte qui représente l'application : celui du document CIMD (claude.ai),
   // ou celui de l'adresse de retour pour un client DCR
@@ -252,7 +265,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     return q.request.get(id, iso()) ?? null;
   }
 
-  // Ce que l'écran « Autoriser Claude » affiche (aucun secret)
+  // Ce que l'écran « Autoriser un assistant IA » affiche (aucun secret)
   function describeRequest(request) {
     const kind = request.kind;
     return {
@@ -271,7 +284,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   // Adresse de retour d'une réponse d'autorisation (avec state et iss, RFC 9207)
   const answer = (request, params) => withParams(request.redirect_uri, { ...params, state: request.state, iss: issuer });
 
-  // Refus par la personne : retour vers Claude avec access_denied
+  // Refus par la personne : retour vers l'assistant avec access_denied
   function refuse(request, user, ip) {
     q.deleteRequest.run(request.id);
     const host = describeRequest(request).app.host;
@@ -333,10 +346,13 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     return { access_token: access, token_type: 'Bearer', expires_in: ACCESS_TTL / SECOND, refresh_token: refresh, scope: grant.scope };
   }
 
-  // Connexion utilisable : non révoquée, compte actif
+  // Connexion utilisable : non révoquée, compte actif, et site de
+  // l'application toujours accepté (LISTO_MCP_SITES resserrée après
+  // l'accord : refusée, sans être effacée ; elle revient si le site est remis)
   function liveGrant(grantId) {
     const grant = q.grant.get(grantId);
     if (!grant || grant.revoked_at) return null;
+    if (!grantSiteAllowed(grant, sites())) return null;
     const user = q.user.get(grant.user_id);
     return user?.active === 1 ? { grant, user } : null;
   }
@@ -461,19 +477,19 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     }));
   }
 
-  // Déconnexion depuis l'écran « Connexions Claude » : seulement une
+  // Déconnexion depuis l'écran « Assistants IA » : seulement une
   // connexion active du compte (sinon false, comme une connexion inconnue)
   function revokeOwnGrant(user, grantId) {
     const grant = Number.isSafeInteger(grantId) ? q.grant.get(grantId) : null;
     if (!grant || grant.user_id !== user.id || grant.revoked_at) return false;
-    return revokeGrant(grant.id, { reason: 'disconnected from Claude connections', user, by: 'account' });
+    return revokeGrant(grant.id, { reason: 'disconnected from AI assistants', user, by: 'account' });
   }
 
   // « Tout déconnecter » : renvoie le nombre de connexions révoquées
   function revokeAllOwn(user) {
     let count = 0;
     for (const grantId of q.userGrants.all(user.id)) {
-      if (revokeGrant(grantId, { reason: 'disconnected from Claude connections (disconnect all)', user, by: 'account' })) count += 1;
+      if (revokeGrant(grantId, { reason: 'disconnected from AI assistants (disconnect all)', user, by: 'account' })) count += 1;
     }
     return count;
   }
@@ -554,7 +570,7 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
 
   return {
     issuer, resource,
-    resolveClient, register, clientRedirect, createRequest, findRequest, describeRequest,
+    resolveClient, register, clientRedirect, canSendErrorTo, createRequest, findRequest, describeRequest,
     approve, refuse, exchangeCode, refresh, revokeGrant, revokeAllForUser, revokeToken, verifyAccess, useGrant, purge,
     listGrants, revokeOwnGrant, revokeAllOwn,
   };

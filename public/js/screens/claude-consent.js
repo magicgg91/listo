@@ -1,16 +1,20 @@
-// Écran « Autoriser Claude » (#/autoriser/<id>), étape A de
-// docs/mcp-cadrage.md. Claude a ouvert /oauth/authorize dans le navigateur ;
-// le serveur a vérifié la demande, puis renvoyé ici. La personne, connectée
-// (sinon l'écran de connexion passe d'abord, avec la 2FA), voit :
+// Écran « Autoriser un assistant IA » (#/autoriser/<id>), étape A de
+// docs/mcp-cadrage.md. L'assistant IA (Claude, par exemple) a ouvert
+// /oauth/authorize dans le navigateur ; le serveur a vérifié la demande,
+// puis renvoyé ici. La personne, connectée (sinon l'écran de connexion
+// passe d'abord, avec la 2FA), voit :
 // - qui demande l'accès et où la réponse sera envoyée (hôte de retour bien
-//   visible : « claude.ai », ou une application sur cet ordinateur) ;
+//   visible : « claude.ai », un autre site, ou une application sur cet
+//   ordinateur), avec un avertissement ferme : vérifier le site, refuser si
+//   l'on n'a pas lancé la connexion soi-même (tout assistant IA peut
+//   demander l'accès : seul cet écran décide) ;
 // - l'accès : « Lecture seule » (présélectionnée) ou « Lecture et écriture »
 //   (choix volontaire, seulement si l'application le demande, avec un
 //   avertissement) ;
 // - les listes : « Toutes mes listes » (par défaut) ou une sélection ;
 // - son mot de passe (et un code 2FA), redemandés à chaque autorisation.
 // « Autoriser » et « Refuser » passent par l'API (POST, même origine) ; le
-// serveur répond avec l'adresse de retour vers Claude, où l'on va ensuite.
+// serveur répond avec l'adresse de retour vers l'assistant, où l'on va ensuite.
 // Aucun curseur mis tout seul ; tout le texte venu du serveur passe par
 // textContent (h()).
 
@@ -23,7 +27,7 @@ import { t } from '../i18n.js';
 
 const enc = encodeURIComponent;
 
-// Ce que Claude pourra faire, pour chacun des deux niveaux d'accord (écran
+// Ce que l'assistant IA pourra faire, pour chacun des deux niveaux d'accord (écran
 // d'autorisation ; mêmes niveaux que server/oauth.js)
 export const SCOPE_TEXTS = {
   get read() { return t('claude.autoriser.lecture.texte'); },
@@ -86,6 +90,13 @@ function message(title, text) {
     h('p', { class: 'empty__text' }, text));
 }
 
+// Avertissement sous « qui demande » : application de l'ordinateur, ou site
+// (nommé : celui qui recevra la réponse), toujours affiché
+function warning(request) {
+  const text = request.redirect.local ? t('claude.autoriser.local') : t('claude.autoriser.site', { host: request.redirect.host });
+  return h('div', { class: 'note note--danger' }, icon('alert'), h('p', {}, text));
+}
+
 function topbar() {
   return h('header', { class: 'topbar' },
     h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('claude.autoriser.titre'))));
@@ -127,6 +138,7 @@ function confirmFirst(id, request, failed) {
       h('p', {}, t('claude.autoriser.intro')),
       h('div', { class: 'note' }, icon('alert'), h('p', {}, t('claude.autoriser.attention'))),
       h('div', { class: 'card card--clip' }, row({ iconName: 'shield', title: request.app.host, sub: request.app.name ? t('claude.autoriser.nomSeul', { name: request.app.name }) : t('claude.autoriser.application') })),
+      warning(request),
       h('p', {}, t('claude.autoriser.fournisseur.texte', { provider: providerName() })),
       error.note)),
     h('div', { class: 'footer' },
@@ -147,7 +159,8 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
   const local = request.redirect.local;
   // Nom de l'application : déclaré par l'application elle-même
   // (enregistrement automatique) → signalé comme non vérifié ; lu dans le
-  // document d'identification publié sur claude.ai → nom fourni par l'application
+  // document d'identification publié sur le site de l'application (claude.ai)
+  // → nom publié par le site de l'application
   const named = request.app.nameFromApp ? t('claude.application.nonVerifie') : t('claude.application.fourni');
   const appSub = request.app.name ? t('claude.application.nom', { name: request.app.name, detail: named }) : t('claude.autoriser.application');
   const who = h('div', { class: 'card card--clip' },
@@ -208,8 +221,7 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
       h('p', {}, t('claude.autoriser.intro')),
       h('div', { class: 'note' }, icon('alert'), h('p', {}, t('claude.autoriser.attention'))),
       who,
-      local ? h('div', { class: 'note note--danger' }, icon('alert'),
-        h('p', {}, t('claude.autoriser.local'))) : null,
+      warning(request),
       scopeField,
       listsField,
       viaProvider
@@ -248,7 +260,7 @@ function consentForm(id, { request, account, twoFactor, lists, confirmWith = 'pa
     return undefined;
   });
 
-  // Refuser : Claude est prévenu (error=access_denied)
+  // Refuser : l'assistant est prévenu (error=access_denied)
   deny.addEventListener('click', async () => {
     if (deny.disabled) return;
     error.show('');

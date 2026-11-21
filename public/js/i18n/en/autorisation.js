@@ -1,10 +1,10 @@
-// Textes de server/oauth.js et server/routes/oauth.js (écran « Autoriser Claude », réponses du serveur), en anglais (traduction à l'étape 4).
+// Textes de server/oauth.js et server/routes/oauth.js (écran « Autoriser un assistant IA », réponses du serveur), en anglais (traduction à l'étape 4).
 // Mêmes noms que public/js/i18n/fr/autorisation.js.
 
 export default {
-  // Écran « Autoriser Claude » (routes/oauth.js)
+  // Écran « Autoriser un assistant IA » (routes/oauth.js)
   'autorisation.tropDeTentatives': 'Too many attempts. Try again in 15 minutes.',
-  'autorisation.demandeExpiree': 'Request not found or expired. Start the connection again from Claude.',
+  'autorisation.demandeExpiree': 'Request not found or expired. Start the connection again from your AI assistant.',
   'autorisation.choisirNiveau': 'Choose “Read only” or “Read and write”.',
   'autorisation.lectureSeulementDemandee': 'This app only asked for read access.',
   'autorisation.choisirListe': 'Choose at least one list.',
@@ -16,8 +16,8 @@ export default {
   'autorisation.motDePasseIncorrect': 'Incorrect password.',
   'autorisation.codeIncorrect': 'Incorrect code.',
   // Accord refusé par oauth.js ({max} : nombre maximal de connexions)
-  'autorisation.tropDeConnexions': 'You already have {max} active Claude connections (the maximum). A connection unused for 30 days frees up its spot on its own.',
+  'autorisation.tropDeConnexions': 'You already have {max} active AI assistant connections (the maximum). A connection unused for 30 days frees up its spot on its own.',
 
-  // Écran « Connexions Claude »
+  // Écran « Assistants IA »
   'autorisation.connexionIntrouvable': 'Connection not found.',
 };

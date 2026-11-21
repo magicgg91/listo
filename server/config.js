@@ -47,6 +47,14 @@ export function loadConfig(env = process.env) {
     // l'active. Désactivé, toutes ses adresses (/.well-known/…, /oauth/…,
     // /api/oauth/…) répondent comme une adresse inexistante (404).
     mcp: String(env.LISTO_MCP ?? '').trim().toLowerCase() === 'on',
+    // Sites des assistants IA acceptés (LISTO_MCP_SITES, facultatif) : noms
+    // d'hôtes séparés par des virgules, par exemple « claude.ai,claude.com ».
+    // Absent ou vide (liste vide) : tout assistant IA qui suit le standard
+    // peut demander l'accès (toujours après l'accord de la personne). Avec
+    // une liste : seuls ces sites (et les applications de l'ordinateur,
+    // localhost). Une valeur mal formée empêche Listo de démarrer (voir
+    // configProblem et validSite).
+    mcpSites: siteList(env.LISTO_MCP_SITES),
 
     // Notifications push (voir server/push.js). DÉSACTIVÉES par défaut :
     // seul LISTO_PUSH=on les active. Désactivées : aucune clé créée, aucune
@@ -114,6 +122,26 @@ export function validButtonName(value) {
   return /^[\p{L}\p{N} .'-]{1,30}$/u.test(name) ? name : null;
 }
 
+// LISTO_MCP_SITES découpée : noms en minuscules, sans espaces autour ;
+// liste vide si la variable est absente ou vide. Les noms invalides sont
+// gardés tels quels : configProblem les refuse au démarrage.
+export function siteList(value) {
+  const text = String(value ?? '').trim();
+  return text ? text.split(',').map((entry) => entry.trim().toLowerCase()) : [];
+}
+
+// Un site de LISTO_MCP_SITES : un nom d'hôte simple, comme « claude.ai ».
+// Refusés : vide, schéma (https://), chemin, port, adresse IP, joker (*),
+// nom sans point (localhost). Chaque partie : lettres sans accent,
+// chiffres et tirets (pas au début ni à la fin), 63 caractères au plus.
+export function validSite(value) {
+  if (typeof value !== 'string' || value.length > 253) return false;
+  const label = '[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?';
+  if (!new RegExp(`^${label}(?:\\.${label})+$`).test(value)) return false;
+  // Dernière partie entièrement en chiffres : une adresse IP (1.2.3.4)
+  return !/^[0-9]+$/.test(value.split('.').at(-1));
+}
+
 // Un commit Git est exactement 40 caractères hexadécimaux. Toute autre
 // valeur (vide, trop courte, caractères interdits, texte injecté…) est
 // ignorée : elle ne sera jamais affichée.
@@ -172,6 +200,10 @@ export function configProblem(config) {
     if (!/^[A-Za-z0-9._~-]{1,100}$/.test(config.oidcClientId)) {
       return translate(lang, 'demarrage.config.oidcClient', { value: config.oidcClientId });
     }
+  }
+  const badSite = (config.mcpSites ?? []).find((site) => !validSite(site));
+  if (badSite !== undefined) {
+    return translate(lang, 'demarrage.config.sites', { value: badSite.slice(0, 100) });
   }
   if (!Number.isInteger(config.port) || config.port < 0 || config.port > 65535) {
     return translate(lang, 'demarrage.config.port', { value: config.port });

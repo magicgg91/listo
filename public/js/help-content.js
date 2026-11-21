@@ -125,7 +125,7 @@ export const GUIDE = [
             'En français ou en anglais, au choix de chacun dans « Mon compte » ([[langue]]) ; cette aide aussi.',
             'Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([[notifications]]).',
             'Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.',
-            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]), le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l\'appareil voit l\'heure, la taille et l\'appareil, jamais le texte : [[notif-confidentialite]]). Si vous connectez Claude, le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
+            'Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]), le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l\'appareil voit l\'heure, la taille et l\'appareil, jamais le texte : [[notif-confidentialite]]). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
           ] },
         ],
       },
@@ -235,7 +235,7 @@ export const GUIDE = [
           'Sauvegarde automatique chaque nuit ([[sauvegardes]]).',
           'Thème clair, sombre ou automatique ([[theme]]).',
           'Installation sur l\'écran d\'accueil du téléphone, comme une application ([[telephone]]).',
-          'Claude (l\'assistant d\'Anthropic) peut lire vos listes et, si vous le permettez, y écrire ([[claude]]).',
+          'Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([[claude]]).',
         ] }],
       },
     ],
@@ -279,7 +279,7 @@ export const GUIDE = [
         blocks: [
           'Toutes les variables sont dans `docker-compose.yml`. Aucune ne contient de mot de passe ni de clé.',
           'La partie `environment:` du fichier, telle qu\'elle est livrée (les lignes en commentaire, commençant par `#`, sont facultatives : enlevez le `#` pour les utiliser) :',
-          { code: '    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # sauvegarde vers 3 h, résumé des échéances à 8 h\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # Langue par défaut (fr ou en) et monnaie des envies (EUR, USD, CHF…)\n      # - LISTO_LANG=fr\n      # - LISTO_CURRENCY=EUR\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP : accès depuis Claude, désactivé par défaut (chapitre « MCP Claude »)\n      # Notifications push : DÉSACTIVÉES par défaut. Contenu chiffré : Apple,\n      # Google, Mozilla ou Microsoft ne voient que l\'heure, la taille et\n      # l\'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.\n      # - LISTO_PUSH=on\n      # Connexion par un fournisseur d\'identité (Authelia, Authentik, Pocket ID…) :\n      # DÉSACTIVÉE par défaut (chapitre « Installation »). Clé secrète dans\n      # secrets/oidc-client-secret.\n      # - LISTO_OIDC=on\n      # - LISTO_OIDC_ISSUER=https://auth.exemple.fr\n      # - LISTO_OIDC_CLIENT_ID=listo\n      # - LISTO_OIDC_NAME=Authelia\n      # Connexion par mot de passe : activée par défaut ; off = fournisseur seulement\n      # - LISTO_LOCAL_LOGIN=off' },
+          { code: '    environment:\n      - NODE_ENV=production\n      - PORT=13300\n      - TZ=Europe/Paris   # sauvegarde vers 3 h, résumé des échéances à 8 h\n      - LISTO_PUBLIC_URL=https://listo.exemple.fr\n      - LISTO_DB_PATH=/data/listo.db\n      - LISTO_KEY_PATH=/secrets/secret.key\n      - LISTO_SESSION_DAYS=30\n      # Langue par défaut (fr ou en) et monnaie des envies (EUR, USD, CHF…)\n      # - LISTO_LANG=fr\n      # - LISTO_CURRENCY=EUR\n      # - LISTO_UPDATE_CHECK=off\n      # - LISTO_PRODUCT_LOOKUP=off\n      # - LISTO_PRODUCT_CONTACT=https://listo.exemple.fr/contact\n      # LISTO_MCP : accès des assistants IA, désactivé par défaut (chapitre « Assistants IA (MCP) »)\n      # Facultatif : n\'accepter que ces sites (sinon, tout assistant IA)\n      # - LISTO_MCP_SITES=claude.ai,claude.com\n      # Notifications push : DÉSACTIVÉES par défaut. Contenu chiffré : Apple,\n      # Google, Mozilla ou Microsoft ne voient que l\'heure, la taille et\n      # l\'appareil. Clés dans secrets/vapid.json : à sauvegarder avec secret.key.\n      # - LISTO_PUSH=on\n      # Connexion par un fournisseur d\'identité (Authelia, Authentik, Pocket ID…) :\n      # DÉSACTIVÉE par défaut (chapitre « Installation »). Clé secrète dans\n      # secrets/oidc-client-secret.\n      # - LISTO_OIDC=on\n      # - LISTO_OIDC_ISSUER=https://auth.exemple.fr\n      # - LISTO_OIDC_CLIENT_ID=listo\n      # - LISTO_OIDC_NAME=Authelia\n      # Connexion par mot de passe : activée par défaut ; off = fournisseur seulement\n      # - LISTO_LOCAL_LOGIN=off' },
           { table: {
             head: ['Variable', 'Valeur de production', 'Rôle'],
             rows: [
@@ -296,7 +296,8 @@ export const GUIDE = [
               ['`LISTO_UPDATE_CHECK`', 'absente : activée', '`off` coupe la vérification de mise à jour sur GitHub ([[version]]).'],
               ['`LISTO_PRODUCT_LOOKUP`', 'absente : activé', '`off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
               ['`LISTO_PRODUCT_CONTACT`', 'absente', 'Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)).'],
-              ['`LISTO_MCP`', 'absente : désactivé', '`on` active l\'accès depuis Claude ([[mcp-serveur]]). Toute autre valeur : désactivé.'],
+              ['`LISTO_MCP`', 'absente : désactivé', '`on` active l\'accès des assistants IA, par exemple Claude ([[mcp-serveur]]). Toute autre valeur : désactivé.'],
+              ['`LISTO_MCP_SITES`', 'absente : tous les assistants IA', 'Facultative : sites des assistants IA acceptés, séparés par des virgules (par exemple `claude.ai,claude.com`), en plus des applications de l\'ordinateur (`localhost`). Absente : tout assistant IA qui suit le standard peut demander l\'accès, toujours après votre accord ([[mcp-serveur]]). Une valeur mal écrite (`https://`, chemin, port, adresse IP, `*`) : Listo ne démarre pas et l\'explique dans `docker logs`.'],
               ['`LISTO_PUSH`', 'absente : désactivées', '`on` active les notifications ([[notif-serveur]]) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées.'],
               ['`LISTO_OIDC`', 'absente : désactivée', '`on` active la connexion par un fournisseur d\'identité OpenID Connect ([[sso-serveur]]) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée.'],
               ['`LISTO_OIDC_ISSUER`', 'absente', 'Adresse du fournisseur d\'identité (son “issuer”), en `https://` (par exemple `https://auth.exemple.fr`).'],
@@ -318,7 +319,7 @@ export const GUIDE = [
             'Laisser passer le temps réel : `/api/events` est une connexion HTTP qui reste ouverte (Server-Sent Events, type `text/event-stream`), pas un WebSocket. Le proxy ne doit ni retenir ni mettre en cache ses réponses (Listo envoie l\'en-tête `X-Accel-Buffering: no`, que nginx comprend), et son délai de lecture doit dépasser 25 secondes : Listo envoie un signal toutes les 25 secondes sur cette connexion. Sinon, les changements arrivent en retard ou la connexion est coupée sans cesse.',
             'Accepter des envois d\'au moins 2 Mo : une photo d\'article fait au plus 2 Mo (Listo la refuse au-delà). Beaucoup de proxys acceptent moins par défaut (nginx : 1 Mo) ; prévoir un peu de marge, par exemple 5 Mo.',
             'Donner l\'adresse IP réelle des visiteurs : Listo fait confiance à un seul proxy et lit la dernière adresse de l\'en-tête `X-Forwarded-For`, que le proxy doit compléter avec l\'adresse de la personne. Elle sert à bloquer les essais de mots de passe répétés. Avec deux proxys l\'un derrière l\'autre (un service en ligne devant votre proxy, par exemple), Listo verrait l\'adresse du premier, et un blocage toucherait tout le monde.',
-            'Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès depuis Claude, [[mcp-serveur]]) et `Sec-Fetch-Site`.',
+            'Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès des assistants IA, [[mcp-serveur]]) et `Sec-Fetch-Site`.',
             'Ajouter l\'en-tête `Strict-Transport-Security` (HSTS), si le proxy le permet : Listo ne l\'envoie pas lui-même.',
           ] },
           { sub: 'Limiter l\'accès au port de Listo' },
@@ -345,7 +346,7 @@ export const GUIDE = [
             '`client_max_body_size 5m;` : sans elle, l\'envoi des photos est refusé (nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).',
             'Les trois autres servent au temps réel : sans elles, les changements n\'arrivent sur l\'autre téléphone qu\'au bout d\'environ une minute.',
             'Nginx Proxy Manager complète déjà l\'en-tête `X-Forwarded-For` avec l\'adresse IP réelle des téléphones : rien à régler.',
-            'Accès depuis Claude : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([[mcp-serveur]]).',
+            'Accès des assistants IA : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([[mcp-serveur]]).',
             'Pare-feu : n\'autoriser que l\'adresse de Nginx Proxy Manager à joindre le port 13300 ([[proxy]]).',
           ] },
         ],
@@ -414,7 +415,7 @@ export const GUIDE = [
             'sa description à l\'adresse de l\'issuer suivie de `/.well-known/openid-configuration`, avec ses adresses sur le même site que l\'issuer ;',
             'un jeton d\'identité signé en RS256, PS256 ou ES256 (un jeton non signé ou signé en HS256 est refusé) ;',
             'l\'identifiant de la personne dans `preferred_username` et son nom dans `name` (scope `profile`) ;',
-            'pour autoriser Claude ([[claude-connecter]]) depuis une session ouverte par le fournisseur : redemander la connexion quand Listo le demande (`prompt=login`, `max_age=0`) et indiquer son heure (`auth_time`). Sinon la confirmation n\'aboutit pas : connectez-vous alors avec votre mot de passe Listo pour autoriser Claude.',
+            'pour autoriser un assistant IA ([[claude-connecter]]) depuis une session ouverte par le fournisseur : redemander la connexion quand Listo le demande (`prompt=login`, `max_age=0`) et indiquer son heure (`auth_time`). Sinon la confirmation n\'aboutit pas : connectez-vous alors avec votre mot de passe Listo pour autoriser l\'assistant.',
           ] },
           'Double authentification : si le jeton dit qu\'elle a été faite chez le fournisseur (`amr` contient `mfa`), Listo ne redemande pas son propre code. Sinon, un compte Listo qui a activé la double authentification de Listo la voit redemandée.',
           'Exemple avec Authelia : la clé secrète se crée avec `docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986` (“Random Password” : la clé en clair, pour `secrets/oidc-client-secret` ; “Digest” : son empreinte, pour Authelia). Le client se déclare dans `identity_providers.oidc.clients`, puis on redémarre Authelia. Avec `authorization_policy: \'two_factor\'`, Authelia fait la double authentification. Avec Authentik, Pocket ID ou un autre fournisseur : les mêmes réglages, dans son interface.',
@@ -483,7 +484,7 @@ export const GUIDE = [
       {
         id: 'mot-de-passe',
         title: 'Changer de mot de passe',
-        blocks: ['Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions Claude ([[claude-connexions]]).'],
+        blocks: ['Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d\'assistants IA ([[claude-connexions]]).'],
       },
       {
         id: 'double-auth',
@@ -516,7 +517,7 @@ export const GUIDE = [
         blocks: [
           'S\'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([[role-admin]]). Sinon, sur le serveur (remplacer `identifiant` par celui du compte) :',
           { code: 'docker exec -u node listo node server/admin-secours.js identifiant' },
-          'Un mot de passe provisoire s\'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions Claude du compte sont coupées ([[claude-connexions]]). Ce que l\'Admin peut faire et ne peut pas faire : [[role-admin]].',
+          'Un mot de passe provisoire s\'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions d\'assistants IA du compte sont coupées ([[claude-connexions]]). Ce que l\'Admin peut faire et ne peut pas faire : [[role-admin]].',
         ],
       },
       {
@@ -524,7 +525,7 @@ export const GUIDE = [
         title: 'Se connecter avec un fournisseur d\'identité',
         blocks: [
           'Si le serveur le propose, l\'écran de connexion montre aussi « Se connecter avec … », suivi du nom choisi par l\'Admin (Authelia, Authentik, Pocket ID… ; « SSO » s\'il n\'en a pas choisi). Touchez-le, connectez-vous chez ce fournisseur : vous revenez dans Listo, connecté. Votre compte chez le fournisseur ouvre le compte Listo qui a le même identifiant. L\'identifiant et le mot de passe Listo restent possibles. Si l\'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion par le fournisseur.',
-          'Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser Claude se confirme alors aussi chez le fournisseur ([[claude-connecter]]).',
+          'Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser un assistant IA se confirme alors aussi chez le fournisseur ([[claude-connecter]]).',
           'Pas encore de compte Listo : « Votre demande de compte est envoyée à l\'Admin ». L\'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l\'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous par le fournisseur. Une demande refusée ne peut pas être refaite avant 30 jours.',
         ],
       },
@@ -847,7 +848,7 @@ export const GUIDE = [
               ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a. Et le rappel d\'une tâche, au moment choisi dans sa fiche ([[heure]]).', '“3 tâches à faire aujourd\'hui · 1 en retard”, “Rappel : une tâche aujourd\'hui à 14:00”'],
             ],
           } },
-          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce que Claude fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée, et jamais les tâches attribuées à quelqu\'un d\'autre. Le rappel d\'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.',
+          'Vous n\'êtes jamais prévenu de ce que vous faites vous-même (ni de ce qu\'un assistant IA fait pour vous : [[claude]]). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l\'échéance est activée, et jamais les tâches attribuées à quelqu\'un d\'autre. Le rappel d\'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.',
         ],
       },
       {
@@ -941,7 +942,7 @@ export const GUIDE = [
           { ul: [
             'Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s\'il existe une nouvelle version (Réglages › « À propos »).',
             'Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire.',
-            'Connexions Claude des autres comptes : voir [[claude-connexions]].',
+            'Connexions d\'assistants IA des autres comptes : voir [[claude-connexions]].',
             'Savoir qu\'une nouvelle version existe : [[version]].',
           ] },
         ],
@@ -1068,7 +1069,7 @@ export const GUIDE = [
         blocks: [
           'La personne à qui la liste d\'envies est destinée ajoute ses souhaits (si elle a un compte) et les marque « Reçus ».',
           { ul: [
-            'Ne voit jamais : qu\'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d\'autres ». Ni dans la liste, ni dans les nouveautés, ni par Claude ([[claude-envies]]), ni sur la page du lien public quand elle est connectée.',
+            'Ne voit jamais : qu\'un souhait est réservé, par qui, combien de personnes participent, ni « Ouvert à d\'autres ». Ni dans la liste, ni dans les nouveautés, ni par un assistant IA ([[claude-envies]]), ni sur la page du lien public quand elle est connectée.',
             'Ne peut pas réserver ses propres souhaits.',
             'Seule une personne qui a la main sur le serveur (fichiers de la base, sauvegardes) pourrait lire une réservation : ne donnez pas cet accès au bénéficiaire si la surprise compte.',
           ] },
@@ -1077,18 +1078,18 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 8. Claude ============
+  // ============ 8. Assistants IA (MCP) ============
   {
     id: 'claude',
-    title: 'MCP Claude',
+    title: 'Assistants IA (MCP)',
     sections: [
       {
         id: 'claude-quoi',
         title: 'À quoi ça sert',
         blocks: [
-          'Claude est l\'assistant d\'Anthropic (claude.ai, l\'application mobile, Claude Desktop, Claude Code). Une fois connecté à Listo, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.',
-          'Claude agit avec votre compte et vos droits, jamais plus : ce qu\'il ajoute apparaît à votre nom, comme si vous l\'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées.',
-          'Cet accès n\'existe que si la personne qui gère le serveur l\'a activé ([[claude-activation]]). Sinon, la section « Claude » n\'apparaît pas dans « Mon compte ».',
+          'Un assistant IA est un programme avec qui l\'on discute, par exemple Claude (l\'assistant d\'Anthropic : claude.ai, l\'application mobile, Claude Desktop, Claude Code). Listo suit le standard MCP : tout assistant IA qui accepte un connecteur personnalisé (ou serveur MCP) peut s\'y brancher, comme Claude, ChatGPT ou Le Chat de Mistral, selon leurs versions et leurs abonnements. Une fois connecté, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.',
+          'L\'assistant agit avec votre compte et vos droits, jamais plus : ce qu\'il ajoute apparaît à votre nom, comme si vous l\'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées. Rien ne se fait sans votre accord, donné sur l\'écran « Autoriser un assistant IA » de Listo.',
+          'Cet accès n\'existe que si la personne qui gère le serveur l\'a activé ([[claude-activation]]). Sinon, la section « Assistants IA » n\'apparaît pas dans « Mon compte ».',
         ],
       },
       {
@@ -1103,31 +1104,31 @@ export const GUIDE = [
             'Priorité et échéance (liste de tâches) : “Mets la tâche Ampoule en priorité élevée, pour vendredi.”',
             'Heure et rappel ([[heure]]) : “Dentiste jeudi à 14 h, rappelle-le une heure avant.” “Plus de rappel pour le dentiste.”',
             'Attribuer ([[attribuer]]) : “Donne la tâche ampoule à Léa.” “Qu\'est-ce que j\'ai à faire cette semaine ?” “Le garage, pour Léa et Marc.” “Les poubelles chaque lundi, chacun son tour : Léa, Marc, Zoé.”',
-            'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l\'arrosage.” Claude dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
+            'Tâche qui se répète ([[repeter]]) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l\'arrosage.” L\'assistant dit la prochaine date. S\'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.',
             'Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”',
             'Ranger : “Range le lait au rayon crèmerie.”',
             'Sous-tâches ([[sous-taches]]) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”',
           ] },
-          'Claude lit d\'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Le comportement exact de Claude dépend de lui : vérifiez dans Listo.',
+          'L\'assistant lit d\'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Son comportement exact dépend de l\'assistant lui-même : vérifiez dans Listo.',
         ],
       },
       {
         id: 'claude-niveaux',
         title: 'Deux niveaux d\'accord',
         blocks: [
-          'Au moment de connecter Claude, l\'écran « Autoriser Claude » de Listo vous laisse choisir :',
+          'Au moment de connecter un assistant, l\'écran « Autoriser un assistant IA » de Listo vous laisse choisir :',
           { ul: [
-            '« Lecture seule » (choisi au départ) : Claude peut lire vos listes, sans rien y changer.',
-            '« Lecture et écriture » : en plus, Claude peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.',
+            '« Lecture seule » (choisi au départ) : l\'assistant peut lire vos listes, sans rien y changer.',
+            '« Lecture et écriture » : en plus, l\'assistant peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.',
           ] },
-          'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », Claude ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
+          'Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », l\'assistant ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.',
         ],
       },
       {
         id: 'claude-jamais',
-        title: 'Ce que Claude ne peut jamais faire',
+        title: 'Ce qu\'un assistant ne peut jamais faire',
         blocks: [
-          'Quel que soit le niveau d\'accord, Claude ne peut jamais :',
+          'Quel que soit le niveau d\'accord, un assistant IA ne peut jamais :',
           { ul: [
             'supprimer un élément, ni changer son lien ou son prix ;',
             'créer, renommer, supprimer ou partager une liste ;',
@@ -1139,86 +1140,98 @@ export const GUIDE = [
       {
         id: 'claude-envies',
         title: 'Listes d\'envies : aucune réservation',
-        blocks: ['Claude ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge Claude. Dans une liste d\'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec Claude comme sans lui.'],
+        blocks: ['Un assistant IA ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge son assistant. Dans une liste d\'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec un assistant comme sans lui.'],
       },
       {
         id: 'claude-limites',
         title: 'Limites',
         blocks: [{ ul: [
           '20 éléments au plus par demande.',
-          'Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, Claude reçoit un refus et rien n\'est écrit.',
+          'Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, l\'assistant reçoit un refus et rien n\'est écrit.',
           '120 appels par minute et par connexion.',
-          '5 connexions Claude actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.',
-          'Claude ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.',
+          '5 connexions d\'assistants IA actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.',
+          'L\'assistant ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.',
         ] }],
       },
       {
         id: 'claude-connecter',
-        title: 'Connecter Claude',
+        title: 'Connecter un assistant IA',
         blocks: [
+          'La marche à suivre est la même pour tous les assistants :',
           { ol: [
-            'Dans Listo : Réglages, « Mon compte », section « Claude », « Connexions Claude ». Sous « Adresse à saisir dans Claude », touchez « Copier l\'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.',
-            'Dans Claude (claude.ai, l\'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec cette adresse.',
-            'Claude ouvre l\'écran « Autoriser Claude » de Listo. Vérifiez que c\'est bien vous qui venez de lancer la connexion, choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».',
+            'Dans Listo : Réglages, « Mon compte », section « Assistants IA », « Assistants IA ». Sous « Adresse à saisir dans votre assistant IA », touchez « Copier l\'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.',
+            'Dans votre assistant IA : dans ses réglages, ajoutez un connecteur personnalisé (ou serveur MCP) avec cette adresse. Le nom des menus change d\'un assistant à l\'autre ; voyez son aide.',
+            'L\'assistant ouvre l\'écran « Autoriser un assistant IA » de Listo. Vérifiez le site affiché sous « La réponse sera envoyée ici » et que c\'est bien vous qui venez de lancer la connexion ([[assistant-site]]), choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».',
           ] },
+          'Exemple avec Claude (claude.ai, l\'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec l\'adresse de Listo, puis connectez-le ; sur l\'écran « Autoriser un assistant IA », le site affiché est `claude.ai`.',
+          'Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser. La réponse va alors à « une application sur cet ordinateur (localhost) ».',
           'Connecté par un fournisseur d\'identité ([[sso]]) : pas de mot de passe à cette étape. L\'écran demande d\'abord « Confirmer avec … » : le fournisseur vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».',
-          'Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser.',
           'Si vous n\'avez pas lancé vous-même la connexion, touchez « Refuser ».',
         ],
       },
       {
         id: 'claude-connexions',
-        title: 'Voir et déconnecter Claude',
+        title: 'Voir et déconnecter un assistant IA',
         blocks: [
-          'Réglages, « Mon compte », « Connexions Claude » : chaque connexion autorisée y apparaît, avec l\'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.',
+          'Réglages, « Mon compte », « Assistants IA » : chaque connexion autorisée y apparaît, avec l\'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.',
           { ul: [
             '« Déconnecter » coupe une connexion tout de suite ; « Tout déconnecter » les coupe toutes. Aucun mot de passe n\'est demandé.',
-            'Changer votre mot de passe déconnecte aussi toutes vos connexions Claude.',
-            'Pour reconnecter Claude, il faut l\'autoriser de nouveau.',
-            'L\'Admin ne voit pas les connexions Claude des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.',
+            'Changer votre mot de passe déconnecte aussi toutes vos connexions d\'assistants IA.',
+            'Pour reconnecter un assistant, il faut l\'autoriser de nouveau.',
+            'L\'Admin ne voit pas les connexions d\'assistants IA des autres comptes ; mais désactiver un compte ou réinitialiser son mot de passe les coupe toutes.',
           ] },
+        ],
+      },
+      {
+        id: 'assistant-site',
+        title: 'Prudence : vérifier le site',
+        blocks: [
+          { note: 'Tout assistant IA qui suit le standard peut demander l\'accès à Listo : c\'est vous qui décidez, sur l\'écran « Autoriser un assistant IA ». Il montre en grand le site qui recevra la réponse (par exemple `claude.ai` pour Claude). Vérifiez que c\'est bien celui de votre assistant. Si vous n\'avez pas lancé la connexion vous-même, refusez : quelqu\'un essaie peut-être d\'accéder à vos listes.' },
+          'Quand l\'application choisit elle-même son nom, il est suivi de « nom donné par l\'application, non vérifié » : fiez-vous au site, pas au nom. La personne qui gère le serveur peut aussi n\'accepter que certains sites ([[mcp-serveur]]).',
         ],
       },
       {
         id: 'claude-prudence',
         title: 'Prudence : les textes piégés',
         blocks: [
-          { note: 'Une liste partagée peut contenir un texte piégé, écrit par quelqu\'un d\'autre pour tromper Claude (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à Claude comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.' },
-          'Ne demandez à Claude de modifier un élément que vous-même ; vérifiez dans Listo ce qu\'il a fait.',
+          { note: 'Une liste partagée peut contenir un texte piégé, écrit par quelqu\'un d\'autre pour tromper l\'assistant IA (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à l\'assistant comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.' },
+          'Ne demandez à l\'assistant de modifier un élément que vous-même ; vérifiez dans Listo ce qu\'il a fait.',
         ],
       },
       {
         id: 'faq-claude',
         title: 'Dépannage',
         blocks: [{ ul: [
-          'Après une mise à jour de Listo, Claude peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans Claude.',
-          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez Claude avec « Toutes mes listes » ([[claude-connecter]]).',
-          'Claude refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
-          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Connexions Claude » ([[claude-connexions]]).',
-          'Claude dit qu\'un rayon ou un magasin est inconnu : il n\'existe pas, il est désactivé, ou cette liste ne le propose pas (rayon d\'un autre magasin, ou magasin d\'une liste « Multi »). Rien n\'a été ajouté ; Claude doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l\'Admin de le créer (Réglages, « Administration », onglet « Courses »).',
-          'Claude dit qu\'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».',
+          'Après une mise à jour de Listo, l\'assistant peut garder l\'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans l\'assistant.',
+          'Une liste manque : la connexion n\'autorise peut-être que certaines listes, ou vous n\'en êtes plus membre. Reconnectez l\'assistant avec « Toutes mes listes » ([[claude-connecter]]).',
+          'L\'assistant refuse d\'écrire : la connexion est en « Lecture seule », ou vous n\'avez que le droit « Lecture seule » sur cette liste.',
+          'Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Assistants IA » ([[claude-connexions]]).',
+          'Listo affiche « Demande d\'autorisation invalide » : la demande de l\'assistant n\'a pas pu être vérifiée (adresse de retour refusée, demande incomplète), ou son site n\'est pas accepté par le serveur ([[mcp-serveur]]). Relancez la connexion depuis l\'assistant ; si cela recommence, prévenez la personne qui gère le serveur.',
+          'L\'assistant dit qu\'un rayon ou un magasin est inconnu : il n\'existe pas, il est désactivé, ou cette liste ne le propose pas (rayon d\'un autre magasin, ou magasin d\'une liste « Multi »). Rien n\'a été ajouté ; l\'assistant doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l\'Admin de le créer (Réglages, « Administration », onglet « Courses »).',
+          'L\'assistant dit qu\'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».',
         ] }],
       },
       {
         id: 'claude-activation',
         title: 'Un accès désactivé au départ',
-        blocks: ['L\'accès depuis Claude est désactivé tant que la personne qui gère le serveur n\'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([[mcp-serveur]]). Désactivé, toutes ses adresses répondent comme si elles n\'existaient pas, et la section « Claude » de « Mon compte » n\'apparaît pas.'],
+        blocks: ['L\'accès des assistants IA est désactivé tant que la personne qui gère le serveur n\'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([[mcp-serveur]]). Désactivé, toutes ses adresses répondent comme si elles n\'existaient pas, et la section « Assistants IA » de « Mon compte » n\'apparaît pas.'],
       },
       {
         id: 'mcp-serveur',
         title: 'Activer l\'accès sur le serveur',
         server: true,
         blocks: [
-          'L\'accès depuis Claude est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
-          'Proxy : rien à régler, ces adresses passent par le même hôte. Le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”) : Claude ne passe pas par IPv6. Ces adresses doivent rester joignables depuis Internet : Claude les appelle depuis les serveurs d\'Anthropic, Claude Code depuis votre ordinateur. Si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer.',
+          'L\'accès des assistants IA est désactivé par défaut. Pour l\'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l\'on réactive, tant qu\'elles n\'ont pas expiré). Aucun mot de passe ni aucune clé n\'est à fournir.',
+          'Quels assistants : par défaut, tout assistant IA qui suit le standard (MCP, avec l\'autorisation OAuth 2.1 et PKCE) peut demander l\'accès, toujours après l\'accord de la personne. Pour n\'accepter que certains sites, ajoutez par exemple `- LISTO_MCP_SITES=claude.ai,claude.com` (noms de sites séparés par des virgules, sans `https://` ni chemin) : seuls ces sites, et les applications de l\'ordinateur (`localhost`, comme Claude Code), peuvent alors se connecter. Les connexions déjà accordées à un autre site cessent de marcher (sans être effacées : elles reviennent si l\'on remet le site). Une valeur mal écrite empêche Listo de démarrer, avec un message dans `docker logs listo`. Listo ne lit le document d\'identification d\'une application (CIMD) que sur une liste courte de sites (`claude.ai`, `claude.com`, ou ceux de `LISTO_MCP_SITES`) ; les autres assistants s\'enregistrent tout seuls.',
+          'Proxy : rien à régler, ces adresses passent par le même hôte. Elles doivent rester joignables depuis Internet : un assistant en ligne les appelle depuis ses serveurs, une application de l\'ordinateur (Claude Code) depuis votre ordinateur. Exemple de Claude : le sous-domaine doit avoir une adresse IPv4 (enregistrement DNS “A”), car Claude ne passe pas par IPv6 ; si un pare-feu filtre les connexions entrantes, ne recopiez pas une plage d\'adresses trouvée ailleurs : Anthropic publie la liste à jour des adresses d\'où partent ces appels sur sa page officielle [“IP addresses”](https://platform.claude.com/docs/en/api/ip-addresses), section “Outbound IP addresses” (en anglais), et peut la faire évoluer. Pour un autre assistant, voyez sa documentation.',
           { table: {
             head: ['Adresse', 'Qui l\'appelle', 'Rôle'],
             rows: [
-              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'Claude', 'Dit où demander l\'autorisation.'],
-              ['`/.well-known/oauth-authorization-server`', 'Claude', 'Description du serveur d\'autorisation.'],
-              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser Claude ».'],
-              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'Claude', 'Jetons, révocation, enregistrement automatique.'],
-              ['`/mcp`', 'Claude', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
+              ['`/.well-known/oauth-protected-resource/mcp`, `/.well-known/oauth-protected-resource`', 'l\'assistant IA', 'Dit où demander l\'autorisation.'],
+              ['`/.well-known/oauth-authorization-server`', 'l\'assistant IA', 'Description du serveur d\'autorisation.'],
+              ['`/oauth/authorize`', 'votre navigateur', 'Vérifie la demande, puis ouvre l\'écran « Autoriser un assistant IA ».'],
+              ['`/oauth/token`, `/oauth/revoke`, `/oauth/register`', 'l\'assistant IA', 'Jetons, révocation, enregistrement automatique.'],
+              ['`/mcp`', 'l\'assistant IA', 'Le serveur MCP : exige un jeton obtenu par l\'autorisation ; sans jeton valable, refus (401).'],
             ],
           } },
         ],
@@ -1230,12 +1243,13 @@ export const GUIDE = [
         blocks: [
           { ul: [
             'Jeton d\'accès : 1 heure ; jeton de renouvellement : 30 jours glissants, remplacé à chaque usage ; un ancien jeton présenté de nouveau fait tomber toute la connexion. La base ne garde que l\'empreinte des jetons, jamais les jetons eux-mêmes.',
-            'Un jeton Claude n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
-            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions Claude sont révoquées.',
+            'Un jeton d\'assistant IA n\'ouvre rien d\'autre que `/mcp` : ni l\'application, ni ses autres adresses.',
+            'Adresses de retour : https sur un nom de site (jamais une adresse IP), sans identifiant ni fragment, ou l\'ordinateur (`localhost`) ; avec `LISTO_MCP_SITES`, seulement ces sites. Elles sont vérifiées à l\'enregistrement et à chaque autorisation. Une erreur n\'est renvoyée sans écran que vers l\'ordinateur ou un site connu (`claude.ai`, `claude.com`, ou ceux de `LISTO_MCP_SITES`) : sinon, Listo affiche sa page d\'erreur, pour ne jamais servir de relais vers un autre site.',
+            'Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions d\'assistants IA sont révoquées.',
             'Les plafonds ([[claude-limites]]) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.',
             'L\'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d\'un coup : retirer `LISTO_MCP=on`.',
           ] },
-          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste) : `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.token_refused`, `claude.origin_refused`.',
+          'Journal de sécurité (jamais un jeton, un code ni le contenu d\'une liste ; les noms commencent par `claude.` pour tous les assistants) : `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (une ligne par appel d\'outil, avec le nombre d\'éléments, jamais un nom saisi), `claude.token_refused`, `claude.origin_refused`.',
         ],
       },
       {
@@ -1243,11 +1257,11 @@ export const GUIDE = [
         title: 'Premier essai',
         server: true,
         blocks: [
-          'Après l\'activation, une fois, avant tout usage régulier :',
+          'Après l\'activation, une fois, avant tout usage régulier (ici avec Claude) :',
           { ol: [
             'Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.',
-            'Connecter Claude ([[claude-connecter]]).',
-            'Demander à Claude “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
+            'Connecter l\'assistant ([[claude-connecter]]).',
+            'Demander à l\'assistant “Quelles sont mes listes Listo ?”, puis “Qu\'y a-t-il dans les courses ?” : les réponses doivent correspondre à l\'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.',
             '`docker logs listo` : des lignes `claude.connected` et `claude.tool`, aucune erreur. Signaler les lignes `claude.origin_refused` ou `claude.client_refused` s\'il y en a.',
             'Plus d\'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.',
             'En cas de problème : retirer `LISTO_MCP=on`, `docker compose up -d`, et transmettre les lignes `claude.` du journal (elles ne contiennent ni jeton ni contenu de liste).',
@@ -1391,7 +1405,7 @@ export function outline(guide = GUIDE) {
 }
 
 // Titre numéroté, le même partout (écran, sommaire, docs/guide.md) :
-// chapitre « 7. MCP Claude », section « 7.2 … » (numéros calculés)
+// chapitre « 8. Assistants IA (MCP) », section « 8.2 … » (numéros calculés)
 export const numbered = (entry) => (entry.level === 1 ? `${entry.number}. ${entry.title}` : `${entry.number} ${entry.title}`);
 
 // Numéro et titre d'une section, pour un renvoi [[id]] : « 3.8 Sauvegardes »

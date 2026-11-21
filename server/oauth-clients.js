@@ -1,28 +1,47 @@
-// Applications autorisées à demander l'accès à Listo pour Claude
-// (docs/mcp-cadrage.md, §4). Deux façons de se faire connaître :
+// Applications autorisées à demander l'accès à Listo pour un assistant IA
+// (docs/mcp-cadrage.md, §4). Tout assistant IA qui suit le standard MCP
+// (Claude, par exemple) peut demander l'accès, toujours après l'accord de la
+// personne sur l'écran « Autoriser un assistant IA » (décision du
+// 21 novembre 2026). Deux façons de se faire connaître :
 // - CIMD : l'application donne comme identifiant l'adresse https d'un petit
 //   document JSON qui la décrit (Claude Code :
 //   https://claude.ai/oauth/claude-code-client-metadata). Listo ne lit ce
-//   document que sur claude.ai ou claude.com (liste blanche), en https, sans
+//   document que sur une liste courte de sites (claude.ai et claude.com, ou
+//   ceux de LISTO_MCP_SITES), jamais sur un site quelconque (sinon Listo
+//   pourrait être poussé à appeler n'importe quelle adresse), en https, sans
 //   suivre de redirection, 16 ko et 5 secondes au plus, une fois par heure ;
-// - DCR (enregistrement automatique, RFC 7591), en secours.
+// - DCR (enregistrement automatique, RFC 7591), pour toutes les autres.
 //
-// Dans les deux cas, les seules adresses de retour acceptées sont celles de
-// Claude : https://claude.ai/api/mcp/auth_callback exactement, ou le
-// « bouclage » de l'ordinateur (http://localhost/… et http://127.0.0.1/…),
-// dont le port change à chaque fois et n'est donc pas comparé.
+// Adresses de retour acceptées (sites : LISTO_MCP_SITES découpée, ou null
+// si la variable est absente) :
+// - sans LISTO_MCP_SITES : toute adresse https sur un nom de site (jamais
+//   une adresse IP), sans identifiant ni fragment ;
+// - avec LISTO_MCP_SITES : une adresse https sur un de ces sites exactement
+//   (pas de sous-domaine implicite) ;
+// - dans les deux cas, le « bouclage » de l'ordinateur (http://localhost/…
+//   et http://127.0.0.1/…, applications comme Claude Code), dont le port
+//   change à chaque fois et n'est donc pas comparé.
+// La règle est appliquée à l'enregistrement ET à chaque autorisation : une
+// liste resserrée vaut aussi pour les applications déjà enregistrées.
 
 import { readJson } from './http-json.js';
+import { validSite } from './config.js';
 
 // Adresse de retour de claude.ai, de l'application mobile et de Claude Desktop
 export const CLAUDE_CALLBACK = 'https://claude.ai/api/mcp/auth_callback';
-// Hôtes dont Listo accepte de lire un document d'identification (CIMD)
+// Sites dont Listo accepte de lire un document d'identification (CIMD) sans
+// LISTO_MCP_SITES ; ce sont aussi les sites « connus » vers lesquels une
+// erreur peut être renvoyée sans écran (voir trustedRedirect)
 export const CIMD_HOSTS = ['claude.ai', 'claude.com'];
 const LOOPBACK_HOSTS = ['localhost', '127.0.0.1'];
 const CIMD_TIMEOUT_MS = 5000;
 const CIMD_MAX_BYTES = 16 * 1024;
 const MAX_NAME = 80;
 const MAX_REDIRECTS = 5;
+
+// Sites de LISTO_MCP_SITES d'une configuration, ou null si la variable est
+// absente (tout assistant IA accepté)
+export const sitesOf = (config) => (config?.mcpSites?.length ? config.mcpSites : null);
 
 // Lit une adresse ; null si elle est mal formée
 function parse(value) {
@@ -41,26 +60,50 @@ function loopback(url) {
     && !url.username && !url.password && !url.hash;
 }
 
-// Une adresse de retour peut-elle être enregistrée ? Seulement celles de Claude.
-export function allowedRedirect(value) {
-  if (value === CLAUDE_CALLBACK) return true;
+// Adresse https sur un nom de site (jamais une adresse IP ni « localhost »),
+// sans identifiant ni fragment ; avec sites, sur l'un d'eux exactement
+function siteAddress(url, sites) {
+  if (url.protocol !== 'https:' || url.username || url.password || url.hash) return false;
+  if (!validSite(url.hostname)) return false;
+  return sites ? sites.includes(url.hostname) : true;
+}
+
+// Une adresse de retour peut-elle être enregistrée (et utilisée) ?
+export function allowedRedirect(value, sites = null) {
   const url = parse(value);
-  return Boolean(url) && loopback(url);
+  return Boolean(url) && (loopback(url) || siteAddress(url, sites));
 }
 
 // L'adresse de retour demandée correspond-elle à une adresse enregistrée ?
-// Comparaison exacte, sauf le port pour le bouclage (RFC 8252, §7.3).
-export function redirectMatches(requested, registered) {
-  if (requested === registered) return allowedRedirect(requested);
+// Comparaison exacte, sauf le port pour le bouclage (RFC 8252, §7.3). La
+// règle du moment (sites) est vérifiée à chaque fois.
+export function redirectMatches(requested, registered, sites = null) {
+  if (requested === registered) return allowedRedirect(requested, sites);
   const a = parse(requested);
   const b = parse(registered);
   if (!a || !b || !loopback(a) || !loopback(b)) return false;
   return a.hostname === b.hostname && a.pathname === b.pathname && a.search === b.search;
 }
 
-// Nom de l'hôte d'une adresse de retour, à afficher (« claude.ai », « localhost »)
+// Une erreur peut-elle être renvoyée sans écran vers cette adresse de
+// retour (déjà acceptée) ? Seulement vers l'ordinateur ou un site connu
+// (CIMD_HOSTS, ou ceux de LISTO_MCP_SITES) : sinon, n'importe qui pourrait
+// enregistrer son site et se servir de Listo comme relais de redirection
+// (RFC 9700, §4.11). Les autres voient la page « Demande d'autorisation
+// invalide ».
+export function trustedRedirect(value, sites = null) {
+  const url = parse(value);
+  if (!url) return false;
+  return loopback(url) || (url.protocol === 'https:' && (sites ?? CIMD_HOSTS).includes(url.hostname));
+}
+
+// Hôte d'une adresse de retour, à afficher (« claude.ai », « localhost »),
+// avec son port s'il n'est pas celui par défaut (sauf le bouclage, dont le
+// port change à chaque fois)
 export function redirectHost(value) {
-  return parse(value)?.hostname ?? '';
+  const url = parse(value);
+  if (!url) return '';
+  return loopback(url) ? url.hostname : url.host;
 }
 
 export function isLoopbackRedirect(value) {
@@ -68,12 +111,23 @@ export function isLoopbackRedirect(value) {
   return Boolean(url) && loopback(url);
 }
 
+// Une connexion déjà accordée passe-t-elle encore la règle du moment ?
+// Sans LISTO_MCP_SITES : oui. Avec : le site de l'application (client_host,
+// celui du document CIMD ou de l'adresse de retour) et celui de la réponse
+// (redirect_host) doivent être l'ordinateur ou un site de la liste.
+export function grantSiteAllowed(grant, sites = null) {
+  if (!sites) return true;
+  const ok = (host) => LOOPBACK_HOSTS.includes(host) || sites.includes(String(host).replace(/:\d+$/, ''));
+  return ok(grant.client_host) && ok(grant.redirect_host);
+}
+
 // Le client_id est-il l'adresse d'un document CIMD que Listo accepte de lire ?
-// https, hôte de la liste blanche, port par défaut, un chemin, ni
-// identifiant, ni paramètres, ni fragment. Aucun appel réseau ici.
-export function cimdUrl(clientId) {
+// https, site de la liste courte (CIMD_HOSTS, ou ceux de LISTO_MCP_SITES),
+// port par défaut, un chemin, ni identifiant, ni paramètres, ni fragment.
+// Aucun appel réseau ici.
+export function cimdUrl(clientId, sites = null) {
   const url = parse(clientId);
-  if (!url || url.protocol !== 'https:' || !CIMD_HOSTS.includes(url.hostname)) return null;
+  if (!url || url.protocol !== 'https:' || !(sites ?? CIMD_HOSTS).includes(url.hostname)) return null;
   if (url.port || url.username || url.password || url.search || url.hash) return null;
   if (url.pathname === '/' || url.href !== clientId) return null;
   return url;
@@ -86,15 +140,15 @@ function cleanClientName(value) {
 }
 
 // Vérifie un document CIMD déjà lu. Renvoie { clientName, redirectUris } ou
-// lance une erreur. Seules les adresses de retour de Claude sont gardées.
-export function checkCimdDocument(clientId, doc) {
+// lance une erreur. Seules les adresses de retour acceptées sont gardées.
+export function checkCimdDocument(clientId, doc, sites = null) {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('invalid document');
   if (doc.client_id !== clientId) throw new Error('client_id differs from the document address');
   if (!Array.isArray(doc.redirect_uris)) throw new Error('missing redirect_uris');
   const method = doc.token_endpoint_auth_method;
   if (method !== undefined && method !== 'none') throw new Error('unsupported authentication method');
-  const redirectUris = doc.redirect_uris.filter((uri) => allowedRedirect(uri)).slice(0, MAX_REDIRECTS);
-  if (!redirectUris.length) throw new Error('no Claude redirect address');
+  const redirectUris = doc.redirect_uris.filter((uri) => allowedRedirect(uri, sites)).slice(0, MAX_REDIRECTS);
+  if (!redirectUris.length) throw new Error('no accepted redirect address');
   return { clientName: cleanClientName(doc.client_name), redirectUris };
 }
 
@@ -126,15 +180,18 @@ export async function fetchClientMetadata(url, { fetchImpl = fetch, timeoutMs = 
 
 // Vérifie une demande d'enregistrement automatique (DCR, RFC 7591).
 // Renvoie { clientName, redirectUris } ou { error, description }.
-export function checkRegistration(body) {
+export function checkRegistration(body, sites = null) {
   const fail = (error, description) => ({ error, description });
   if (!body || typeof body !== 'object' || Array.isArray(body)) return fail('invalid_client_metadata', 'Corps JSON attendu.');
   const uris = body.redirect_uris;
   if (!Array.isArray(uris) || !uris.length || uris.length > MAX_REDIRECTS) {
     return fail('invalid_redirect_uri', `redirect_uris : 1 à ${MAX_REDIRECTS} adresses.`);
   }
-  if (!uris.every((uri) => typeof uri === 'string' && allowedRedirect(uri))) {
-    return fail('invalid_redirect_uri', 'Seules les adresses de retour de Claude sont acceptées.');
+  if (!uris.every((uri) => typeof uri === 'string' && allowedRedirect(uri, sites))) {
+    // (la liste des sites acceptés n'est jamais donnée : réglage du serveur)
+    return fail('invalid_redirect_uri', sites
+      ? 'Adresse de retour refusée : ce serveur n\'accepte que certains sites, et http://localhost.'
+      : 'Adresse de retour refusée : https sur un nom de site (sans adresse IP, identifiant ni fragment), ou http://localhost, seulement.');
   }
   const method = body.token_endpoint_auth_method;
   if (method !== undefined && method !== 'none') {

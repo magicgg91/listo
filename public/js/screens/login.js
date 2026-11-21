@@ -100,7 +100,7 @@ function autheliaOutcome() {
 
 // localLogin : identifiant et mot de passe proposés (sinon le fournisseur d'identité seul,
 // LISTO_LOCAL_LOGIN=off) ; returnTo : écran demandé avant la connexion (seul
-// « Autoriser Claude » est transmis au fournisseur d'identité, pour y revenir après)
+// « Autoriser un assistant IA » est transmis au fournisseur d'identité, pour y revenir après)
 export function renderLogin({ setupNeeded, oidc = null, localLogin = true, returnTo = null }) {
   const container = h('div', { class: 'screen' });
   const back = returnTo?.name === 'authorize' && returnTo.params?.id ? `autoriser/${returnTo.params.id}` : null;

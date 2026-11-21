@@ -110,8 +110,9 @@ export const PERMISSIONS_POLICY = [
 // - productRequest : demande à Open Food Facts (mode scan ; les tests la
 //   remplacent : aucun vrai réseau)
 // - clientMetadataRequest : lecture du document d'identification (CIMD)
-//   d'une application, sur claude.ai ou claude.com seulement (autorisation
-//   pour Claude ; les tests la remplacent : aucun vrai réseau)
+//   d'une application, sur une liste courte de sites seulement (claude.ai,
+//   claude.com, ou ceux de LISTO_MCP_SITES ; autorisation des assistants
+//   IA ; les tests la remplacent : aucun vrai réseau)
 // - vapidKeys : clés des notifications push (secrets/vapid.json, lues par
 //   index.js), seulement avec LISTO_PUSH=on ; absentes : une paire
 //   temporaire (tests)
@@ -167,7 +168,7 @@ export function createApp({
   ctx.updates = createUpdateCheck({ config, now, request: githubRequest });
   // Nom d'un produit à partir de son code-barres (mode scan, voir products.js)
   ctx.products = createProductLookup({ config, now, request: productRequest });
-  // Autorisation OAuth pour Claude (voir oauth.js). Le service existe
+  // Autorisation OAuth pour les assistants IA (voir oauth.js). Le service existe
   // toujours, même si LISTO_MCP est désactivé : un mot de passe changé ou un
   // compte désactivé doit révoquer ses connexions dans tous les cas. Seules
   // les ROUTES dépendent de LISTO_MCP (plus bas).
@@ -238,8 +239,8 @@ export function createApp({
   app.use('/p', visitor.pageRouter);
   app.use('/api/public', visitor.apiRouter);
 
-  // --- Autorisation OAuth pour Claude (seulement avec LISTO_MCP=on) ---
-  // /.well-known/… et /oauth/… : appelées par Claude ou par le navigateur,
+  // --- Autorisation OAuth pour les assistants IA (seulement avec LISTO_MCP=on) ---
+  // /.well-known/… et /oauth/… : appelées par l'assistant IA ou par le navigateur,
   // sans session (le cookie n'y est jamais lu). Désactivées : 404.
   if (config.mcp) app.use(oauthRoutes(ctx, { publicDir: PUBLIC_DIR }));
   // /mcp : serveur MCP en lecture seule (jeton Bearer seulement, voir mcp.js)
@@ -278,7 +279,7 @@ export function createApp({
   api.use(listRoutes(ctx));
   api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
   api.use(referenceRoutes(ctx)); // nouveau magasin ou rayon (après listRoutes : utilise ctx.lists)
-  // Écran « Autoriser Claude » (LISTO_MCP=on seulement ; sinon « Route inconnue »)
+  // Écran « Autoriser un assistant IA » (LISTO_MCP=on seulement ; sinon « Route inconnue »)
   if (config.mcp) api.use(oauthConsentRoutes(ctx));
   api.use(photoRoutes(ctx));
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
@@ -371,7 +372,7 @@ export function createApp({
     ctx.publicAccess.prune();
     ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();
-    ctx.oauth.purge();           // autorisations Claude : demandes, codes, jetons expirés
+    ctx.oauth.purge();           // autorisations des assistants IA : demandes, codes, jetons expirés
     mcp?.prune();                // compteurs d'appels de /mcp
     for (const counter of ctx.pushCounters) counter.prune(); // notifications : compteurs de demandes
     ctx.notify?.prune();         // notifications : plafonds par heure

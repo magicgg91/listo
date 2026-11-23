@@ -19,12 +19,13 @@ import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
 import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
+import { renderGifts } from './screens/gifts.js';
 import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
 import { renderNotes } from './screens/notes.js';
 import { renderNote } from './screens/note.js';
 import { renderNoteTrash } from './screens/note-trash.js';
-import { tabBar, hasTabs } from './tabbar.js';
+import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -688,13 +689,14 @@ function mount(screen, { withSide = true, wide = false, full = false, listId = n
     screenShown(col);
     return;
   }
-  // Téléphone : bandeau du bas sur l'Accueil, « Échéances », « Listes »,
-  // « Notes » et « Réglages » (tabbar.js), toujours le même élément,
-  // posé en bas de la colonne (au-dessus de l'écran, sous les fenêtres)
+  // Téléphone : bandeau du bas sur « Échéances », « Listes » (et « À
+  // offrir », avec « Listes » marqué), « Notes » et « Réglages », pas sur
+  // l'Accueil (tabbar.js) ; toujours le même élément, posé en bas de la
+  // colonne (au-dessus de l'écran, sous les fenêtres)
   if (bar) {
     col.classList.add('shell__col--tabs');
     col.append(tabBar().el);
-    tabBar().select(app.route.name);
+    tabBar().select(tabOf(app.route.name));
   }
   dropPcSide();
   replace(root, h('div', { class: 'shell' }, h('main', { class: 'shell__main' }, col)));
@@ -787,6 +789,8 @@ function show(route) {
     // sur ordinateur (tuiles sur trois colonnes)
     case 'home': mount((onLeave) => renderHome(onLeave), { wide: true }); break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
+    // « À offrir » : liste automatique de mes réservations (gifts.js)
+    case 'gifts': mount((onLeave) => renderGifts(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
     // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
     // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran

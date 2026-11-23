@@ -158,11 +158,12 @@ export default {
         { ul: [
           '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
           '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
+          '“To give” tile, full width, only if you reserve a wish or chip in on a gift: the number of gifts still to buy (at the end of the title, which opens the “To give” page: [[a-offrir]]) and the last three reserved and not yet bought (‘For Zoé · reserved’); a row opens the wish in its list. When everything is bought: “All bought”.',
           '“Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([[notes]]); with no note: “No notes”.',
           '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
           'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
         ] },
-        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is also on Home, and sits just above the line at the bottom of an iPhone. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
+        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”; it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn\'t scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
         { ul: [
           '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.',
           'Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([[repeter]]). Tap the row to open the task in its list.',
@@ -227,6 +228,20 @@ export default {
       ],
     },
     {
+      id: 'a-offrir',
+      title: 'To give: your gifts',
+      blocks: [
+        '“To give” is an automatic list: all the wishes you reserve or chip in on, in all the wish lists you are a member of. It is yours alone, and works offline.',
+        { ul: [
+          'On “Lists”, its card (light blue, “Automatic”) comes first among the wish lists, under “All” and “Wishes”, only if you have at least one reservation. ‘3/5’: 3 gifts still to buy out of 5. It is not a list: nobody can add to it, rename it, share it or delete it, and it is not counted among your lists. On Home, the “To give” tile leads there too.',
+          'Gifts are grouped by person (‘For Zoé’), with their list, ‘Reserved’ or ‘You\'re chipping in (2 people)’, and their price.',
+          'Check “Bought” once you have bought the gift: it is crossed out and moves to the bottom of its group. Only you see this box: not the person the gift is for, not the others, not the notifications, not an AI assistant ([[claude-envies]]).',
+          'Tap the row (not the box) to open the wish in its list: that is where you cancel a reservation ([[reserver]]).',
+          'A gift leaves the list by itself when the person has marked it “Received”, when your reservation or participation ends, or when the wish or its list is deleted.',
+        ] },
+      ],
+    },
+    {
       id: 'nouveautes',
       title: 'What\'s new',
       blocks: [{ ul: [
@@ -267,7 +282,7 @@ export default {
         'In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.',
         { ul: [
           'On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.',
-          'The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
+          'The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
           'On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
           'An item\'s details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.',
           '“Share list” brings together the people on the list and the public link. The owner chooses each person\'s access there, adds or removes people, and manages the link; the other members only see the list of people there.',

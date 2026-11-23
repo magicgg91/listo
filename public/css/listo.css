@@ -1256,3 +1256,39 @@
 .inbox-row__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
 .inbox-foot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--space-2) var(--space-2) 0; text-align: center; }
 .inbox-foot__hint { font-size: var(--text-sm); color: var(--color-text-2); }
+
+/* 16.30 « À offrir » : liste automatique de mes réservations et
+   participations dans les listes d'envies (décisions du 23 novembre 2026,
+   maquettes page-a-offrir, listes-a-offrir, accueil-a-offrir-sans-bandeau)
+   - .topbar__chip : la pastille « Automatique » (.chip--accent, #i-repeat)
+     au bout de la barre du haut de la page.
+   - La page (#/listes/a-offrir) : .page-intro, .page-tools (« 5 cadeaux ·
+     3 à acheter »), puis un groupe par personne (.aisle « Pour Zoé » et son
+     nombre) de lignes .item du kit : case « Acheté » (.check, aria-pressed),
+     nom, ligne .item__note (« Noël de Zoé · Réservé »), prix en .item__qty.
+     Acheté : .is-done (coché ET barré, jamais la couleur seule), en bas de
+     son groupe.
+   - .list-card--auto : la carte « À offrir » de Listes, en tête des listes
+     d'envies : fond bleu clair, sans bordure, ni menu ⋮, ni personnes.
+   - Tuile de l'Accueil : .tile--wide, toute la largeur sur le téléphone (une
+     tuile ordinaire sur ordinateur) ; lignes sur deux lignes .tile__row--two
+     (.tile__strong, le souhait ; .tile__sub, « Pour Zoé · réservé », qui
+     passe à la ligne sur ordinateur) ; le nombre à acheter en .count au
+     bout du titre.
+   - .home-scroll : la zone de l'Accueil, sans rebond ; .scroll--fits (posée
+     par scroll-lock.js quand tout tient dans l'écran) : rien ne défile. Les
+     autres écrans ne changent pas. */
+.topbar__chip { display: inline-flex; flex: none; margin-right: var(--space-1); }
+.list-card--auto { background: var(--color-accent-soft); border-color: transparent; }
+.list-card--auto .list-card__icon { color: var(--color-accent-ink); }
+.list-card--auto .list-card__left { gap: 6px 12px; }
+.tile--wide { grid-column: 1 / -1; }
+.app--pc .tile--wide { grid-column: auto; }
+.tile__row--two { min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
+.tile__row--two .tile__label { display: flex; flex-direction: column; gap: 2px; }
+.tile__strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.tile__sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }
+.app--pc .tile__sub { white-space: normal; }
+.home-scroll { overscroll-behavior: none; }
+.home-scroll.scroll--fits { overflow-y: hidden; }
+html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { overscroll-behavior: none; }

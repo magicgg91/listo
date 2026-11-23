@@ -9,7 +9,7 @@
 //   « Échéances » (avec sa pastille : tâches en retard et du jour),
 //   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2) ;
 // - dessous, le menu suit l'écran :
-//   · écrans des listes (Listes, une liste) : seulement « Types », les types
+//   · écrans des listes (Listes, une liste, « À offrir ») : seulement « Types », les types
 //     que la personne a (Courses, Tâches, Envies), avec leur nombre de
 //     listes et le point des nouveautés. Le type choisi montre au centre
 //     seulement ses listes (lists.js) ; une liste ouverte met en avant son
@@ -53,8 +53,9 @@ export function setPcListType(type) {
   pcType = isListType(type) ? type : 'all';
 }
 
-// Écrans des listes : le menu y montre les types
-const LIST_SCREENS = ['lists', 'list', 'editList', 'newList'];
+// Écrans des listes : le menu y montre les types (« À offrir » compris :
+// Envies y est mis en avant)
+const LIST_SCREENS = ['lists', 'list', 'editList', 'newList', 'gifts'];
 // Écrans des notes : « Notes » mis en avant, « Nouvelle note » en bas
 export const NOTE_SCREENS = ['notes', 'note', 'newNote'];
 
@@ -205,7 +206,8 @@ export function createPcSide() {
   const typeEntry = ({ type, count, news }) => {
     const chosen = selected.name === 'lists' && pcType === type;
     const open = selected.listId ? app.data.lists.get(selected.listId) : null;
-    const ofOpenList = Boolean(open) && typeOf(open) === type;
+    // « À offrir » : une vue des listes d'envies
+    const ofOpenList = (Boolean(open) && typeOf(open) === type) || (selected.name === 'gifts' && type === 'wishes');
     return h('li', {}, h('a', {
       class: 'pc-nav__item',
       href: pathFor('lists'),

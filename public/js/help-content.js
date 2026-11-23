@@ -702,11 +702,12 @@ export const GUIDE = [
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
+            'Tuile « À offrir », sur toute la largeur, seulement si vous réservez un souhait ou participez à un cadeau : le nombre de cadeaux encore à acheter (au bout du titre, qui ouvre la page « À offrir » : [[a-offrir]]) et les trois derniers réservés pas encore achetés (“Pour Zoé · réservé”) ; une ligne ouvre le souhait dans sa liste. Quand tout est acheté : « Tout est acheté ».',
             'Tuile « Notes » : le nombre de vos notes (au bout du titre), les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
-          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages ». Il est aussi sur l\'Accueil, et descend jusqu\'au trait du bas de l\'iPhone. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
+          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » ; il descend jusqu\'au trait du bas de l\'iPhone. Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. Quand tout l\'Accueil tient dans l\'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
@@ -771,6 +772,20 @@ export const GUIDE = [
         ],
       },
       {
+        id: 'a-offrir',
+        title: 'À offrir : vos cadeaux',
+        blocks: [
+          '« À offrir » est une liste automatique : tous les souhaits que vous réservez ou auxquels vous participez, dans toutes les listes d\'envies dont vous êtes membre. Elle est à vous seul, et marche hors ligne.',
+          { ul: [
+            'Sur « Listes », sa carte (fond bleu clair, « Automatique ») est en tête des listes d\'envies, sous « Toutes » et « Envies », seulement si vous avez au moins une réservation. « 3/5 » : 3 cadeaux encore à acheter sur 5. Ce n\'est pas une liste : personne ne peut y ajouter, la renommer, la partager ni la supprimer, et elle n\'est pas comptée parmi vos listes. Sur l\'Accueil, la tuile « À offrir » y mène aussi.',
+            'Les cadeaux sont rangés par personne (“Pour Zoé”), avec leur liste, “Réservé” ou “Vous participez (2 personnes)”, et leur prix.',
+            'Cochez « Acheté » quand vous avez acheté le cadeau : il est barré et passe en bas de son groupe. Vous seul voyez cette case : ni la personne à qui va le cadeau, ni les autres proches, ni les notifications, ni un assistant IA ([[claude-envies]]).',
+            'Touchez la ligne (pas la case) pour ouvrir le souhait dans sa liste : c\'est là qu\'on annule une réservation ([[reserver]]).',
+            'Un cadeau sort de la liste tout seul quand la personne l\'a marqué « Reçu », quand votre réservation ou participation prend fin, ou quand le souhait ou sa liste est supprimé.',
+          ] },
+        ],
+      },
+      {
         id: 'nouveautes',
         title: 'Nouveautés',
         blocks: [{ ul: [
@@ -811,7 +826,7 @@ export const GUIDE = [
           'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
           { ul: [
             'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l\'« Accueil ». Les tuiles de l\'Accueil y sont sur trois colonnes.',
-            'Le menu suit l\'écran : sur « Listes » et dans une liste, il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
+            'Le menu suit l\'écran : sur « Listes », dans une liste et sur « À offrir » (Envies mis en avant), il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
             'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l\'un au-dessus de l\'autre ; sur un écran tactile, ils restent affichés.',
             'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
             '« Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.',

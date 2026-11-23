@@ -4,10 +4,11 @@
 // « Accueil », « Échéances », « Listes », « Notes », « Réglages » (la classe
 // tabbar--N suit le nombre de boutons).
 //
-// - Il existe sur l'Accueil, Échéances, Listes, Notes et Réglages (l'Accueil
-//   l'a aussi depuis le 23 novembre 2026, choix du propriétaire), pas dans
-//   une liste (le bas est pris par le champ d'ajout), et pas sur ordinateur
-//   (menu de gauche).
+// - Il existe sur Échéances, Listes (et « À offrir », avec « Listes »
+//   marqué), Notes et Réglages ; pas sur l'Accueil (décision du
+//   propriétaire, de nouveau le 23 novembre 2026, après essai : ses tuiles
+//   mènent déjà partout), pas dans une liste (le bas est pris par le champ
+//   d'ajout), et pas sur ordinateur (menu de gauche).
 // - Il prend toute la largeur et garde la même place : les boutons ne
 //   bougent jamais d'un écran à l'autre. Sur « Réglages », il n'y a rien à
 //   chercher : la loupe n'est pas affichée.
@@ -36,8 +37,18 @@ export const TABS = [
   ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 
-// L'écran a-t-il le bandeau ? (l'Accueil aussi, depuis le 23 novembre 2026)
-export const hasTabs = (routeName) => TABS.some(([name]) => name === routeName);
+// Bouton du bandeau d'un écran : le sien, ou celui de l'écran dont il
+// dépend (« À offrir » : Listes) ; null s'il n'en a pas
+const TAB_OF = { gifts: 'lists' };
+export const tabOf = (routeName) => {
+  const name = TAB_OF[routeName] ?? routeName;
+  return TABS.some(([tab]) => tab === name) ? name : null;
+};
+
+// L'écran a-t-il le bandeau ? Pas l'Accueil (décision du propriétaire, de
+// nouveau le 23 novembre 2026 : ses tuiles mènent déjà partout ; les
+// boutons du bandeau des autres écrans y ramènent toujours)
+export const hasTabs = (routeName) => routeName !== 'home' && tabOf(routeName) !== null;
 
 // Aller à un écran du bandeau. L'Accueil est l'écran de départ : on y
 // revient par un retour en arrière (le bouton Retour du téléphone ne fait

@@ -15,6 +15,9 @@ export const ROUTES = [
   // Échéances : les tâches à faire de toutes mes listes (deadlines.js)
   { name: 'deadlines', path: '/echeances' },
   { name: 'newList', path: '/listes/nouvelle' },
+  // « À offrir » : liste automatique de mes réservations (gifts.js) ;
+  // déclarée avant /listes/:id (jamais prise pour l'identifiant d'une liste)
+  { name: 'gifts', path: '/listes/a-offrir' },
   { name: 'editList', path: '/listes/:id/modifier' },
   { name: 'list', path: '/listes/:id' },
   // Notes (étape 2, 23 novembre 2026) : l'écran Notes, la corbeille des

@@ -342,6 +342,10 @@ const ALL_ACTIONS = (h) => [
   ['réserver fermé', () => h.reserve(h.marie, h.ids.velo)],
   ['ouvrir', () => h.setOpen(h.marie, h.ids.velo, true)],
   ['participer', () => h.reserve(h.paul, h.ids.velo)],
+  // « À offrir » (migration 39) : la marque « Acheté » d'un proche, privée
+  ['marquer « Acheté »', () => h.one(h.marie, { type: 'gift.bought', itemId: h.ids.velo, bought: true })],
+  ['marquer « Acheté » (2)', () => h.one(h.paul, { type: 'gift.bought', itemId: h.ids.velo, bought: true })],
+  ['retirer « Acheté »', () => h.one(h.paul, { type: 'gift.bought', itemId: h.ids.velo, bought: false })],
   ['fermer', () => h.setOpen(h.paul, h.ids.velo, false)],
   ['réserver ouvert', () => h.reserve(h.guillaume, h.ids.livre, { open: true })],
   ['participer (2)', () => h.reserve(h.marie, h.ids.livre)],
@@ -349,6 +353,7 @@ const ALL_ACTIONS = (h) => [
   ['retirer un participant', () => h.removeOne(h.guillaume, h.ids.velo, h.paulId)],
   ['libérer tout', () => h.releaseAll(h.guillaume, h.ids.livre)],
   ['réserver de nouveau', () => h.reserve(h.paul, h.ids.livre)],
+  ['marquer « Acheté » (3)', () => h.one(h.paul, { type: 'gift.bought', itemId: h.ids.livre, bought: true })],
 ];
 
 test('TEST FORT : tout ce que reçoit le bénéficiaire est strictement identique avant et après chaque action de réservation (corps, en-têtes, flux temps réel, copie locale)', async (t) => {
@@ -372,8 +377,9 @@ test('TEST FORT : tout ce que reçoit le bénéficiaire est strictement identiqu
     assert.deepEqual(await snapshotOf(h, h.lea, h.ids.lea), before, `${label} : rien de changé pour Léa`);
     assert.equal(stream.raw, rawBefore, `${label} : aucun octet de plus sur le flux temps réel de Léa`);
   }
-  // Les proches, eux, ont été prévenus à chaque action
-  assert.ok((marieStream.raw.match(/event: list/g) ?? []).length >= ALL_ACTIONS(h).length, marieStream.raw);
+  // Les proches, eux, ont été prévenus à chaque action de réservation (une
+  // marque « Acheté » ne prévient que les appareils de son auteur)
+  assert.ok((marieStream.raw.match(/event: list/g) ?? []).length >= ALL_ACTIONS(h).filter(([label]) => !label.includes('Acheté')).length, marieStream.raw);
   // Ni updated_at, ni nouveautés, ni journal
   assert.equal(updatedAt(), stamps, 'lists.updated_at et items.updated_at intacts');
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM list_events').pluck().get(), events, 'aucune nouveauté');
@@ -392,6 +398,9 @@ test('TEST FORT, souhait réservé modifié, supprimé puis rétabli, marqué «
   await withBookings.reserve(withBookings.marie, withBookings.ids.velo, { open: true });
   await withBookings.reserve(withBookings.paul, withBookings.ids.velo);
   await withBookings.reserve(withBookings.guillaume, withBookings.ids.livre);
+  // « Acheté » (« À offrir ») : marques privées de deux proches
+  assert.equal((await withBookings.one(withBookings.marie, { type: 'gift.bought', itemId: withBookings.ids.velo, bought: true })).status, 200);
+  assert.equal((await withBookings.one(withBookings.guillaume, { type: 'gift.bought', itemId: withBookings.ids.livre, bought: true })).status, 200);
   const steps = [
     ['modifier le souhait réservé (nom, lien, prix, priorité)', (h) => h.one(h.marie, { type: 'item.update', itemId: h.ids.velo, name: 'Vélo bleu', link: 'https://exemple.fr/velo-bleu', priceCents: 19990, priority: 'high' })],
     ['supprimer le souhait réservé', (h) => h.one(h.lea, { type: 'item.delete', itemId: h.ids.livre })],
@@ -563,7 +572,7 @@ test('migration 19 : colonnes et table ajoutées, rien d\'autre ne change, idemp
   const before = { lists: db.prepare('SELECT * FROM lists ORDER BY id').all(), items: db.prepare('SELECT * FROM items ORDER BY id').all() };
   db.close();
   db = openDatabase(file); // restauration : la copie est ouverte par Listo, la migration 19 s'applique
-  assert.equal(schemaVersion(db), 38);
+  assert.equal(schemaVersion(db), 39);
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map(({ for_user_id: a, for_name: b, assign_enabled: assign, subtasks_enabled: subtasks, ...rest }) => rest), before.lists.map(({ category_id: category, ...rest }) => rest));
   assert.deepEqual(db.prepare('SELECT * FROM lists ORDER BY id').all().map((l) => [l.for_user_id, l.for_name]), [[null, null], [null, null]]);
   assert.deepEqual(db.prepare('SELECT * FROM items ORDER BY id').all().map(({ link, price_cents: price, repeat, assigned_to: assignee, due_time: dueTime, remind_before: remind, assign_mode: assignMode, assign_people: assignPeople, parent_id: parentId, position: pos, ...rest }) => rest), before.items);

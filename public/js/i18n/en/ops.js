@@ -92,6 +92,7 @@ export default {
   // Éléments
   'ops.identifiantDejaUtilise': 'This ID is already in use.',
   'ops.valeurCocheeInvalide': 'Invalid “checked” value (true or false).',
+  'ops.valeurAcheteInvalide': 'Invalid “bought” value (true or false).',
   'ops.repereLectureInvalide': 'Invalid read marker.',
 
   // Lot d'opérations

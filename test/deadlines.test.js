@@ -151,7 +151,7 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   assert.match(screen, /onLeave\(watchNewDay\(draw\)\);/);
 });
 
-test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Réglages), même place partout, Accueil compris, loupe seulement là où l\'écran la branche', () => {
+test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Réglages), même place partout, pas sur l\'Accueil, loupe seulement là où l\'écran la branche', () => {
   const tabbar = read('public/js/tabbar.js');
   assert.match(tabbar, /\['home', 'home', \(\) => t\('navigation\.accueil'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['lists', 'tasks', \(\) => t\('navigation\.listes'\)\],\s*\['notes', 'note', \(\) => t\('navigation\.notes'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
   assert.equal(fr['navigation.accueil'], 'Accueil');
@@ -161,8 +161,10 @@ test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Régla
   assert.equal(fr['navigation.notes'], 'Notes');
   // Retour vers l'Accueil : un retour en arrière ; entre les autres, un écran remplace l'autre
   assert.match(tabbar, /if \(name === 'home'\) \{\s*goBack\('home'\);\s*return;\s*\}\s*navigate\(name, \{\}, \{ replace: current !== 'home' \}\);/);
-  // Bandeau aussi sur l'Accueil (23 novembre 2026, après essai sur iPhone)
-  assert.match(tabbar, /export const hasTabs = \(routeName\) => TABS\.some/);
+  // Pas de bandeau sur l'Accueil (décision du propriétaire, de nouveau le 23
+  // novembre 2026) ; « À offrir » l'a, avec « Listes » marqué
+  assert.match(tabbar, /export const hasTabs = \(routeName\) => routeName !== 'home' && tabOf\(routeName\) !== null;/);
+  assert.match(tabbar, /const TAB_OF = \{ gifts: 'lists' \};/);
   // Largeur de la pastille selon le nombre de boutons
   assert.match(tabbar, /class: `tabbar glass tabbar--\$\{TABS\.length\}`/);
   // La loupe est retirée à chaque écran ; « Mes listes » et « Échéances » la rebranchent, pas « Réglages »

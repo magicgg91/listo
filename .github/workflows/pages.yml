@@ -9,6 +9,14 @@
 # À faire une fois par le propriétaire : Settings › Pages › Source :
 # « GitHub Actions ».
 #
+# Deux travaux qui se suivent (le modèle de GitHub) : « build » prépare le
+# dossier, « deploy » le publie. Avant (un seul travail), la publication
+# échouait souvent : GitHub ne voyait pas encore le dossier qui venait d'être
+# envoyé (« No artifacts named github-pages »), et une relance en ajoutait un
+# second du même nom (« Multiple artifacts »). Désormais, le dossier porte le
+# numéro de la tentative qui l'a préparé, et « Re-run failed jobs » ne
+# relance que la publication, avec le dossier déjà prêt.
+#
 # Aucun secret : le jeton fourni par GitHub suffit, avec les seules
 # permissions nécessaires. Chaque action est épinglée sur l'empreinte de son
 # commit (SHA complet), avec sa version en commentaire ; Dependabot propose
@@ -30,29 +38,48 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  # Prépare le dossier site/ (tel quel) pour GitHub Pages
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read # lire le dépôt
+    # Nom du dossier envoyé, transmis à « deploy » : relancé seul, « deploy »
+    # reprend celui de la tentative réussie de « build »
+    outputs:
+      artifact: ${{ steps.name.outputs.artifact }}
+    steps:
+      - name: Nommer le dossier
+        id: name
+        run: echo "artifact=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
+      - name: Récupérer le code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Préparer le dossier site/
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+          # Un nom par tentative : une relance n'en crée jamais deux du même nom
+          name: ${{ steps.name.outputs.artifact }}
+
+  # Publie le dossier préparé par « build »
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
       pages: write # publier sur GitHub Pages
       id-token: write # prouver à GitHub Pages que la publication vient de ce workflow
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Récupérer le code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
       - name: Préparer GitHub Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-
-      - name: Préparer le dossier site/
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: site
 
       - name: Publier
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact }}

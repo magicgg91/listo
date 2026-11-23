@@ -13,7 +13,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 ## Captures
 
-- `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications 3, Réglages). Bandeau à cinq boutons, sans loupe.
+- `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications 3, Réglages). Ni bandeau du bas ni loupe : les tuiles mènent déjà partout (choix du propriétaire du 23 novembre 2026).
 - `accueil-2` : nouveau compte : « Aucune échéance », « Aucune liste » et « Nouvelle liste », « Aucune note » et « Nouvelle note », cloche sans pastille.
 - `accueil-3` : saisie rapide « Nouvelle note » : titre facultatif, texte (curseur dedans, clavier non dessiné), catégorie en pastilles, « Annuler » et « Enregistrer ».
 - `notes-1` : écran Notes : corbeille (2), menu ⋮, pastilles des catégories qui défilent, « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « Nouvelle note » flottant à gauche et loupe à droite.

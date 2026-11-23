@@ -4,7 +4,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 
 **Choix du propriétaire (23 novembre 2026)**
 
-- Bandeau du bas à cinq boutons : Accueil · Listes · Notes · Échéances · Réglages.
+- Bandeau du bas à cinq boutons : Accueil · Listes · Notes · Échéances · Réglages, sur tous les écrans qui l'ont aujourd'hui, **sauf l'Accueil** : ses tuiles mènent déjà partout.
 - Catégories des notes propres à chaque personne : chacun range toutes les notes qu'il voit (les siennes et celles qu'on lui partage) dans ses propres catégories.
 - Une note supprimée garde sa catégorie : dans la corbeille, elle n'apparaît plus et n'est plus comptée dans sa catégorie ; restaurée, elle retrouve sa catégorie.
 - Page Notifications : ce qui m'est adressé (jamais ce que mes actions ont envoyé aux autres).
@@ -25,7 +25,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 
 ## 1. Navigation
 
-- **Téléphone** : le bandeau du bas en verre (décision du 11 novembre 2026) passe de trois à cinq boutons, toujours à la même place, toute la largeur : **Accueil** (icône maison), **Listes** (« Mes listes » jusqu'ici), **Notes** (nouvelle icône « note »), **Échéances**, **Réglages**. Libellés courts sous chaque icône, zones tactiles d'au moins 44 px, bouton de l'écran ouvert mis en avant comme aujourd'hui.
+- **Téléphone** : le bandeau du bas en verre (décision du 11 novembre 2026) passe de trois à cinq boutons, toujours à la même place, toute la largeur : **Accueil** (icône maison), **Listes** (« Mes listes » jusqu'ici), **Notes** (nouvelle icône « note »), **Échéances**, **Réglages**. Libellés courts sous chaque icône, zones tactiles d'au moins 44 px, bouton de l'écran ouvert mis en avant comme aujourd'hui. **Pas de bandeau sur l'Accueil** (choix du propriétaire du 23 novembre 2026) : ses tuiles mènent déjà à tout (Listes, Notes, Échéances, Notifications, Mon compte, Réglages) ; on revient à l'Accueil par le bouton « Accueil » du bandeau des autres écrans.
 - **Premier écran** : l'Accueil (`#/accueil`) à l'ouverture de l'application et après la connexion ; une adresse vide ou inconnue mène à l'Accueil (aujourd'hui « Mes listes »). Un lien direct (liste, note, autorisation d'un assistant IA, notification touchée) ouvre toujours directement son écran.
 - **Loupe ronde** : sur Listes, Notes et Échéances comme aujourd'hui pour les écrans qui ont une recherche ; jamais sur l'Accueil (rien à chercher) ni sur la page Notifications.
 - **Ordinateur** (à partir de 1 024 px) : le menu de gauche gagne « Accueil » en tête, puis « Mes listes » (groupes et compteurs inchangés), « Notes » (avec ses catégories et leur nombre), « Échéances ». La cloche des notifications est dans l'en-tête de l'Accueil, comme sur le téléphone. Le téléphone ne change pas au-delà de ce qui est décrit ici (captures avant/après expliquées).
@@ -209,7 +209,7 @@ Les opérations hors ligne (`note.create`, `note.update` avec la version de dép
 - Liens dans le texte : `javascript:`, `data:`, adresses mal formées jamais cliquables.
 - Page Notifications : remplie sans LISTO_PUSH, filtre des catégories et sourdines, regroupement, lu sur tous les appareils, 30 jours / 300, langue du compte, « identique avec ou sans réservation » pour le bénéficiaire.
 - Accueil : nombres égaux à ceux des écrans Échéances, Mes listes et Notes ; hors ligne ; Admin seulement pour « Demandes de compte ».
-- Bandeau à cinq boutons, premier écran, ancien lien `#/listes` intact ; curseur automatique (`test/focus.test.js`) ; textes en français et en anglais, aide dans les deux langues.
+- Bandeau à cinq boutons (absent de l'Accueil), premier écran, ancien lien `#/listes` intact ; curseur automatique (`test/focus.test.js`) ; textes en français et en anglais, aide dans les deux langues.
 
 ## 8. Découpage en étapes
 

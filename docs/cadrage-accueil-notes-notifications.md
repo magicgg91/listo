@@ -238,6 +238,7 @@ Dans `design/accueil-notes/` (`README.md`, pages de référence, styles des nouv
 | notifications-1 | Page Notifications (Aujourd'hui, Hier, non lues) |
 | notifications-2 | Page Notifications vide |
 | pc-accueil-1 | Accueil sur ordinateur, menu de gauche avec Accueil et Notes |
+| pc-accueil-2 | Accueil sur ordinateur, suggestion : menu de gauche réduit aux entrées fixes (sans les listes) |
 | pc-notes-1 | Notes sur ordinateur (menu de gauche : les catégories et leur nombre à la place des listes, « Voyages » choisie, « Nouvelle note » en bas ; au centre, seulement les notes de « Voyages », sans pastilles de catégories ; note ouverte) |
 | pc-listes-1 | Mes listes sur ordinateur, mêmes règles (menu de gauche : les types et leur nombre, « Courses » choisi ; au centre, seulement les listes de courses, sans filtre ; « Nouvelle liste » seulement en bas du menu) |
 

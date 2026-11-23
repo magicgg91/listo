@@ -13,17 +13,17 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 ## Captures
 
-- `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications 3, Réglages). Ni bandeau du bas ni loupe : les tuiles mènent déjà partout (choix du propriétaire du 23 novembre 2026).
+- `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications, Réglages ; le nombre non lu n'est que sur la cloche). Ni bandeau du bas ni loupe : les tuiles mènent déjà partout (choix du propriétaire du 23 novembre 2026).
 - `accueil-2` : nouveau compte : « Aucune échéance », « Aucune liste » et « Nouvelle liste », « Aucune note » et « Nouvelle note », cloche sans pastille.
 - `accueil-3` : saisie rapide « Nouvelle note » : titre facultatif, texte (curseur dedans, clavier non dessiné), catégorie en pastilles, « Annuler » et « Enregistrer ».
-- `notes-1` : écran Notes : corbeille (2), menu ⋮, pastilles des catégories qui défilent, « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « + » (Nouvelle note) dans la barre du haut comme sur « Mes listes », loupe à droite au-dessus du bandeau.
+- `notes-1` : écran Notes : corbeille (2), menu ⋮, pastilles des catégories qui défilent, « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « + » (Nouvelle note) dans la barre du haut comme sur « Listes », loupe à droite au-dessus du bandeau.
 - `notes-2` : Catégories : poignées pour changer l'ordre, Renommer, Supprimer, « Sans catégorie » en dernier, « Nouvelle catégorie ». La confirmation de suppression est dans la page de référence (`notes-2-dialogue`), sans capture.
 - `notes-3` : Corbeille des notes : catégorie gardée, date et jours restants, « Partagée avec 2 personnes », Supprimer définitivement / Restaurer, « Vider la corbeille ».
 - `note-1` : une note (« Vacances en Bretagne », à Léa, que Guillaume peut modifier) : catégorie « Voyages », « Personnes », « Enregistré », lien cliquable, « Modifiée par Léa · il y a 5 min ».
 - `note-2` : conflit : « À vérifier », bandeau « Léa vient de modifier cette note », choix Garder la mienne / Prendre la leur / Garder les deux, « Décider plus tard ».
 - `notifications-1` : Aujourd'hui, Hier, Samedi 21 novembre ; trois non lues (point, texte en gras, icône bleue) ; « Tout marquer comme lu » ; une ligne glissée qui montre « Effacer » ; « Tout effacer » en bas.
 - `notifications-2` : « Aucune notification ».
-- `pc-accueil-1`, `pc-notes-1` : menu de gauche avec Accueil, Mes listes, Notes, Échéances ; dessous, le menu suit l'écran (choix du propriétaire du 23 novembre 2026) : les listes groupées par type et « Nouvelle liste » sur l'Accueil, les catégories et leur nombre et « Nouvelle note » sur l'écran Notes, où le centre ne montre que les notes de la catégorie choisie (« Voyages »), sans pastilles de catégories (elles restent sur le téléphone) ni bouton « Nouvelle note » en haut (celui du bas du menu suffit) ; tuiles sur trois colonnes ; notes à gauche et note ouverte à droite.
+- `pc-accueil-1`, `pc-notes-1` : menu de gauche avec Accueil, Échéances, Listes, Notes ; dessous, le menu suit l'écran (choix du propriétaire du 23 novembre 2026) : les listes groupées par type et « Nouvelle liste » sur l'Accueil, les catégories et leur nombre et « Nouvelle note » sur l'écran Notes, où le centre ne montre que les notes de la catégorie choisie (« Voyages »), sans pastilles de catégories (elles restent sur le téléphone) ni bouton « Nouvelle note » en haut (celui du bas du menu suffit) ; tuiles sur trois colonnes ; notes à gauche et note ouverte à droite.
 
 ## Nouveaux composants
 
@@ -34,9 +34,9 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 - En-tête de l'Accueil : le bonjour seul sur sa ligne, la date dessous avec la pastille et la cloche à droite. Avec la pastille et la cloche sur la même ligne, « Bonjour Guillaume » ne tenait pas sur 390 px.
 - Lignes des tuiles en pilule, comme tous les boutons depuis le 11 novembre. Nombres en pastille : rouge En retard, vert Aujourd'hui, bleu Notifications non lues, gris ailleurs. Le libellé dit toujours ce que compte le nombre.
 - « Lecture seule » des notes : icône œil (`#i-eye`), comme les listes. Le cadrage parle d'un cadenas.
-- « Nouvelle note » : « + » rond plein dans la barre du haut, comme « Mes listes » (choix du propriétaire du 23 novembre 2026, au lieu d'un gros bouton en bas).
+- « Nouvelle note » : « + » rond plein dans la barre du haut, comme « Listes » (choix du propriétaire du 23 novembre 2026, au lieu d'un gros bouton en bas).
 - Sur le téléphone, le bouton « Personnes » de la note montre l'icône et les pastilles, sans le mot (place) ; le mot est dans le nom lu. Il est écrit sur ordinateur.
-- Ordinateur : « Échéances » garde sa place sous l'Accueil dans l'ordre du bandeau (Accueil, Mes listes, Notes, Échéances), au-dessus des listes. Note ouverte dans une zone à droite, sans voile, et non dans un tiroir : elle s'enregistre toute seule.
+- Ordre partout (choix du propriétaire du 23 novembre 2026) : Accueil, Échéances, Listes, Notes (et Réglages dans le bandeau du téléphone) ; « Listes », jamais « Mes listes ». Note ouverte dans une zone à droite, sans voile, et non dans un tiroir : elle s'enregistre toute seule.
 - Notifications : réglages des notifications (icône) en haut à droite ; « Tout marquer comme lu » sur la ligne sous le titre.
 
 ## Décisions qui restent (section 10 du cadrage)

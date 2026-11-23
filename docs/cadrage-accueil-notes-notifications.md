@@ -4,9 +4,12 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 
 **Choix du propriétaire (23 novembre 2026)**
 
-- Bandeau du bas à cinq boutons : Accueil · Listes · Notes · Échéances · Réglages, sur tous les écrans qui l'ont aujourd'hui, **sauf l'Accueil** : ses tuiles mènent déjà partout.
+- Bandeau du bas à cinq boutons : Accueil · Échéances · Listes · Notes · Réglages, sur tous les écrans qui l'ont aujourd'hui, **sauf l'Accueil** : ses tuiles mènent déjà partout.
 - Catégories des notes propres à chaque personne : chacun range toutes les notes qu'il voit (les siennes et celles qu'on lui partage) dans ses propres catégories.
 - Une note supprimée garde sa catégorie : dans la corbeille, elle n'apparaît plus et n'est plus comptée dans sa catégorie ; restaurée, elle retrouve sa catégorie.
+- « Listes » partout, jamais « Mes listes » (bandeau, menu de gauche, titre de l'écran, aide) ; ordre Accueil, Échéances, Listes, Notes partout (bandeau du téléphone, menu de l'ordinateur).
+- Sur ordinateur, le menu de gauche suit l'écran : les entrées fixes seules sur l'Accueil, Échéances et Réglages ; les types de listes sur les écrans des listes ; les catégories sur les écrans des notes.
+- Le nombre de notifications non lues n'est que sur la cloche (pas dans la tuile Compte).
 - Page Notifications : ce qui m'est adressé (jamais ce que mes actions ont envoyé aux autres).
 - Texte des notes : texte simple (retours à la ligne gardés, adresses web cliquables), sans mise en forme.
 
@@ -25,10 +28,10 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 
 ## 1. Navigation
 
-- **Téléphone** : le bandeau du bas en verre (décision du 11 novembre 2026) passe de trois à cinq boutons, toujours à la même place, toute la largeur : **Accueil** (icône maison), **Listes** (« Mes listes » jusqu'ici), **Notes** (nouvelle icône « note »), **Échéances**, **Réglages**. Libellés courts sous chaque icône, zones tactiles d'au moins 44 px, bouton de l'écran ouvert mis en avant comme aujourd'hui. **Pas de bandeau sur l'Accueil** (choix du propriétaire du 23 novembre 2026) : ses tuiles mènent déjà à tout (Listes, Notes, Échéances, Notifications, Mon compte, Réglages) ; on revient à l'Accueil par le bouton « Accueil » du bandeau des autres écrans.
+- **Téléphone** : le bandeau du bas en verre (décision du 11 novembre 2026) passe de trois à cinq boutons, toujours à la même place, toute la largeur, dans cet ordre : **Accueil** (icône maison), **Échéances**, **Listes**, **Notes** (nouvelle icône « note »), **Réglages**. **« Listes » partout** (choix du propriétaire du 23 novembre 2026) : l'écran « Mes listes » s'appelle désormais « Listes » (titre, bandeau, menu de l'ordinateur, aide, en anglais « Lists »). Libellés courts sous chaque icône, zones tactiles d'au moins 44 px, bouton de l'écran ouvert mis en avant comme aujourd'hui. **Pas de bandeau sur l'Accueil** (choix du propriétaire du 23 novembre 2026) : ses tuiles mènent déjà à tout (Listes, Notes, Échéances, Notifications, Mon compte, Réglages) ; on revient à l'Accueil par le bouton « Accueil » du bandeau des autres écrans.
 - **Premier écran** : l'Accueil (`#/accueil`) à l'ouverture de l'application et après la connexion ; une adresse vide ou inconnue mène à l'Accueil (aujourd'hui « Mes listes »). Un lien direct (liste, note, autorisation d'un assistant IA, notification touchée) ouvre toujours directement son écran.
 - **Loupe ronde** : sur Listes, Notes et Échéances comme aujourd'hui pour les écrans qui ont une recherche ; jamais sur l'Accueil (rien à chercher) ni sur la page Notifications.
-- **Ordinateur** (à partir de 1 024 px) : le menu de gauche gagne « Accueil » en tête, puis « Mes listes » (groupes et compteurs inchangés), « Notes » (une seule entrée avec le nombre de notes), « Échéances ». **Dessous, le menu suit l'écran** (choix du propriétaire du 23 novembre 2026) : sur les écrans des notes (Notes, une note, corbeille des notes), seulement « Catégories » : mes catégories avec leur nombre de notes (« Sans catégorie » en dernier, point des nouveautés), et le bouton du bas devient « Nouvelle note » (touche N) ; sur les écrans des listes (Mes listes, une liste), **même règle** : seulement « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés), le type choisi montrant au centre seulement ses listes (titre « Courses », « 3 listes · 2 partagées »), **sans le filtre Toutes / Courses / Tâches / Envies** en haut sur ordinateur, avec le seul bouton « Nouvelle liste » en bas du menu ; une liste ouverte met en avant son type. Les listes ne sont donc plus nommées une à une dans le menu (on passe d'une liste à l'autre par son type). Sur les autres écrans (Accueil, Échéances, Réglages…) : voir « Décisions qui restent ». Toucher une catégorie montre au centre **seulement les notes de cette catégorie** (titre : son nom, « 2 notes · 1 partagée » ; la recherche cherche dans cette catégorie ; une nouvelle note y est rangée) ; l'entrée fixe « Notes » montre toutes les notes. **Pas de pastilles de catégories au-dessus des cartes sur ordinateur** (elles restent sur le téléphone), ni de second bouton « Nouvelle note » en haut : celui du bas du menu suffit. La cloche des notifications est dans l'en-tête de l'Accueil, comme sur le téléphone. Le téléphone ne change pas au-delà de ce qui est décrit ici (captures avant/après expliquées).
+- **Ordinateur** (à partir de 1 024 px) : le menu de gauche commence par quatre entrées fixes, dans le même ordre que le bandeau : « Accueil », « Échéances » (pastille), « Listes » (nombre de listes), « Notes » (nombre de notes). **Dessous, le menu suit l'écran** (choix du propriétaire du 23 novembre 2026) : sur les écrans des notes (Notes, une note, corbeille des notes), seulement « Catégories » : mes catégories avec leur nombre de notes (« Sans catégorie » en dernier, point des nouveautés), et le bouton du bas devient « Nouvelle note » (touche N) ; sur les écrans des listes (Listes, une liste), **même règle** : seulement « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés), le type choisi montrant au centre seulement ses listes (titre « Courses », « 3 listes · 2 partagées »), **sans le filtre Toutes / Courses / Tâches / Envies** en haut sur ordinateur, avec le seul bouton « Nouvelle liste » en bas du menu ; une liste ouverte met en avant son type. Les listes ne sont donc plus nommées une à une dans le menu (on passe d'une liste à l'autre par son type). Sur les autres écrans (Accueil, Échéances, Réglages…) : **seulement les quatre entrées fixes** (choix du propriétaire du 23 novembre 2026), avec « Nouvelle liste » en bas. Toucher une catégorie montre au centre **seulement les notes de cette catégorie** (titre : son nom, « 2 notes · 1 partagée » ; la recherche cherche dans cette catégorie ; une nouvelle note y est rangée) ; l'entrée fixe « Notes » montre toutes les notes. **Pas de pastilles de catégories au-dessus des cartes sur ordinateur** (elles restent sur le téléphone), ni de second bouton « Nouvelle note » en haut : celui du bas du menu suffit. La cloche des notifications est dans l'en-tête de l'Accueil, comme sur le téléphone. Le téléphone ne change pas au-delà de ce qui est décrit ici (captures avant/après expliquées).
 
 ## 2. Accueil
 
@@ -44,9 +47,9 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 | Tuile | Contenu | Au toucher |
 | --- | --- | --- |
 | **Échéances** (icône calendrier) | Trois lignes : « En retard » (pastille rouge), « Aujourd'hui » (pastille verte), « Plus tard » (pastille grise), chacune avec son nombre de tâches. Mêmes tâches et même filtre (« Toutes » / « Les miennes ») que l'écran Échéances. Aucune tâche avec échéance : « Aucune échéance ». | Une ligne ouvre Échéances à la bonne section ; le titre ouvre Échéances. |
-| **Listes** (icône des listes) | Une ligne par type que la personne a (Courses, Tâches, Envies), avec le nombre de listes ; un point de couleur si une liste de ce type a des nouveautés. Aucune liste : « Aucune liste » et « Nouvelle liste ». | Une ligne ouvre « Mes listes » filtrée sur ce type (filtre retenu comme aujourd'hui). |
+| **Listes** (icône des listes) | Une ligne par type que la personne a (Courses, Tâches, Envies), avec le nombre de listes ; un point de couleur si une liste de ce type a des nouveautés. Aucune liste : « Aucune liste » et « Nouvelle liste ». | Une ligne ouvre « Listes » filtrée sur ce type (filtre retenu comme aujourd'hui). |
 | **Notes** (icône note) | Le nombre de notes (« 12 notes »), les titres des deux dernières modifiées, et le bouton « Nouvelle note » (« + »). Aucune note : « Aucune note ». | Une note l'ouvre ; « Nouvelle note » ouvre la saisie rapide ; le titre ouvre l'écran Notes. |
-| **Compte** (icône personne) | « Mon compte », « Notifications » (avec le nombre non lu), « Réglages » ; pour l'Admin seulement, « Demandes de compte » avec leur nombre quand il y en a en attente (LISTO_OIDC=on). | Ouvre l'écran correspondant. |
+| **Compte** (icône personne) | « Mon compte », « Notifications », « Réglages » (le nombre non lu n'est que sur la cloche, pour ne pas le répéter) ; pour l'Admin seulement, « Demandes de compte » avec leur nombre quand il y en a en attente (LISTO_OIDC=on). | Ouvre l'écran correspondant. |
 
 - Ordre fixe : Échéances et Listes en haut, Notes et Compte dessous (comme l'exemple montré par le propriétaire). Pas de tuile cachée ni déplaçable pour l'instant (voir « Décisions qui restent »).
 - Les nombres viennent de la copie locale (aucune demande de plus au serveur) : l'Accueil s'affiche hors ligne et se met à jour en temps réel comme le reste.
@@ -76,7 +79,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 - **Pastilles de catégories** sous la barre, qui défilent de côté : « Toutes » (par défaut), chaque catégorie avec son nombre, « Sans catégorie ». Le choix est retenu sur l'appareil.
 - **Recherche** : la loupe ronde ouvre le champ sous le titre ; elle cherche dans les titres et les textes de la catégorie choisie (« Rechercher dans les notes »).
 - **Cartes** : les notes épinglées d'abord (petite épingle), puis les autres, les plus récemment modifiées d'abord (« Trier » propose aussi « Ordre alphabétique »). Chaque carte : titre (ou première ligne), deux ou trois lignes du texte, catégorie, « il y a 2 h », pastilles des personnes si elle est partagée, œil « Lecture seule » si je ne peux pas la modifier (comme les cartes de listes), et la pastille des nouveautés si quelqu'un d'autre l'a modifiée depuis ma dernière lecture.
-- **« + » dans la barre du haut** pour « Nouvelle note », comme le « + » de « Mes listes » (bouton rond plein, à droite ; pas de gros bouton en bas : choix du propriétaire du 23 novembre 2026).
+- **« + » dans la barre du haut** pour « Nouvelle note », comme le « + » de « Listes » (bouton rond plein, à droite ; pas de gros bouton en bas : choix du propriétaire du 23 novembre 2026).
 - **Menu d'une carte** (⋮, appui long, clic droit sur ordinateur) : Épingler / Désépingler, Catégorie…, Partager (propriétaire) ou Personnes, Dupliquer, Quitter la note (si on me l'a partagée), Supprimer (propriétaire).
 - **Vide** : « Aucune note » avec une phrase d'aide et « Nouvelle note » ; catégorie vide : « Aucune note dans « Recettes » ».
 
@@ -208,7 +211,7 @@ Les opérations hors ligne (`note.create`, `note.update` avec la version de dép
 - Lien public d'une note : expiré, mot de passe, 5 essais, corbeille, réponse champ par champ.
 - Liens dans le texte : `javascript:`, `data:`, adresses mal formées jamais cliquables.
 - Page Notifications : remplie sans LISTO_PUSH, filtre des catégories et sourdines, regroupement, lu sur tous les appareils, 30 jours / 300, langue du compte, « identique avec ou sans réservation » pour le bénéficiaire.
-- Accueil : nombres égaux à ceux des écrans Échéances, Mes listes et Notes ; hors ligne ; Admin seulement pour « Demandes de compte ».
+- Accueil : nombres égaux à ceux des écrans Échéances, Listes et Notes ; hors ligne ; Admin seulement pour « Demandes de compte ».
 - Bandeau à cinq boutons (absent de l'Accueil), premier écran, ancien lien `#/listes` intact ; curseur automatique (`test/focus.test.js`) ; textes en français et en anglais, aide dans les deux langues.
 
 ## 8. Découpage en étapes
@@ -238,9 +241,8 @@ Dans `design/accueil-notes/` (`README.md`, pages de référence, styles des nouv
 | notifications-1 | Page Notifications (Aujourd'hui, Hier, non lues) |
 | notifications-2 | Page Notifications vide |
 | pc-accueil-1 | Accueil sur ordinateur, menu de gauche avec Accueil et Notes |
-| pc-accueil-2 | Accueil sur ordinateur, suggestion : menu de gauche réduit aux entrées fixes (sans les listes) |
 | pc-notes-1 | Notes sur ordinateur (menu de gauche : les catégories et leur nombre à la place des listes, « Voyages » choisie, « Nouvelle note » en bas ; au centre, seulement les notes de « Voyages », sans pastilles de catégories ; note ouverte) |
-| pc-listes-1 | Mes listes sur ordinateur, mêmes règles (menu de gauche : les types et leur nombre, « Courses » choisi ; au centre, seulement les listes de courses, sans filtre ; « Nouvelle liste » seulement en bas du menu) |
+| pc-listes-1 | Listes sur ordinateur, mêmes règles (menu de gauche : les types et leur nombre, « Courses » choisi ; au centre, seulement les listes de courses, sans filtre ; « Nouvelle liste » seulement en bas du menu) |
 
 Les nouveaux composants (tuile, ligne de tuile avec nombre, carte de note, pastilles de catégories, ligne de notification, cloche avec pastille) sont dans `design/accueil-notes/listo-accueil-notes.css` (sections 16.19 à 16.27) et les icônes manquantes (« note », « épingle ») dans `design/accueil-notes/icons-nouvelles.svg.html` ; ils rejoindront `design/listo.css`, `design/components.html` et le sprite à la construction. Les choix faits en dessinant (en-tête, boutons, emplacement de « Nouvelle note »…) et les points à trancher sont dans `design/accueil-notes/README.md`.
 
@@ -251,4 +253,3 @@ Les nouveaux composants (tuile, ligne de tuile avec nombre, carte de note, pasti
 3. **Réglages communs** page et téléphone (une catégorie coupée disparaît des deux) : proposé oui.
 4. **Tuiles cachables ou déplaçables** : proposé pas pour l'instant.
 5. **Notes et assistants IA (MCP)** : proposé plus tard.
-6. **Menu de gauche de l'ordinateur sur l'Accueil, Échéances et Réglages** : seulement les entrées fixes, ou les types de listes ?

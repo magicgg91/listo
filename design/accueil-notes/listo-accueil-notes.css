@@ -83,7 +83,7 @@
    54 px de haut et d'environ 70 px de large sur un téléphone de 390 px.
    Pas de loupe sur l'Accueil (.loupe--off), ni sur la page Notifications.
    « Nouvelle note » : « + » rond plein (.icon-btn--accent) dans la barre
-   du haut, comme « Mes listes » (choix du 23 novembre 2026). */
+   du haut, comme « Listes » (choix du 23 novembre 2026). */
 .tabbar--5 .tabbar__pill { width: calc((100% - 10px) / 5); }
 .tabbar--5[data-current="3"] .tabbar__pill { transform: translateX(300%); }
 .tabbar--5[data-current="4"] .tabbar__pill { transform: translateX(400%); }
@@ -243,8 +243,8 @@
 
 /* 16.27 Ordinateur (.app--pc, à partir de 1 024 px)
    - Menu de gauche : .pc-side__main, entrées fixes sous la recherche, dans
-     l'ordre du bandeau du téléphone : Accueil, Mes listes, Notes,
-     Échéances (« Échéances » garde sa pastille .news-badge). Dessous,
+     l'ordre du bandeau du téléphone : Accueil, Échéances, Listes,
+     Notes (« Échéances » garde sa pastille .news-badge). Dessous,
      le menu suit l'écran (choix du propriétaire du 23 novembre 2026) :
      écrans des notes, « Catégories » : mes catégories et leur nombre
      (.pc-nav, mêmes classes que les listes), « Nouvelle note » en bas ;

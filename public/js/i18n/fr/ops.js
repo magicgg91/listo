@@ -129,6 +129,12 @@ export default {
   'ops.notesLimite': 'Vous avez déjà {max} notes, corbeille comprise : supprimez-en avant d\'en créer une autre.',
   'ops.notesInvalides': 'Liste des notes invalide.',
   'ops.notesTropVite': 'Trop d\'enregistrements de notes pour le moment. Ils repartiront dans un moment.',
+  // Partage des notes (étape 3)
+  'ops.proprietaireNePeutPasQuitterNote': 'Le propriétaire ne peut pas quitter sa note. Supprimez-la à la place.',
+  'ops.proprietaireTousDroitsNote': 'Le propriétaire a tous les droits sur sa note.',
+  'ops.droitSansPartageNote': 'Droit donné à une personne avec qui la note n\'est pas partagée.',
+  'ops.repereLectureNoteInvalide': 'Repère de lecture de la note invalide.',
+  'ops.reglageSourdineNoteInvalide': 'Réglage « Masquer les nouveautés de cette note » invalide.',
 
   // Synchronisation
   'ops.parametreSinceInvalide': 'Paramètre « since » invalide.',

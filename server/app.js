@@ -27,6 +27,8 @@ import { createEventHub, sameSiteOnly } from './events.js';
 import { createSaveCounter } from './notes.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
+import { createNoteShareService } from './note-shares.js';
+import { noteRoutes } from './routes/notes.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
 import { createUpdateCheck, fetchGithub } from './update-check.js';
@@ -166,6 +168,8 @@ export function createApp({
   // Liens publics (étape 10) et cookies de consultation des visiteurs
   ctx.publicAccess = createPublicAccess(now);
   ctx.shares = createShareService(ctx);
+  // Liens publics des notes (étape 3 des notes, server/note-shares.js)
+  ctx.noteShares = createNoteShareService(ctx);
   // Sauvegarde nocturne de la base (voir backup.js)
   ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
   // Vérification de mise à jour sur GitHub (Admin, voir update-check.js)
@@ -289,6 +293,7 @@ export function createApp({
   api.use(photoRoutes(ctx));
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
+  api.use(noteRoutes(ctx));    // partage et lien public d'une note (après listRoutes : utilise ctx.notes)
   // Notifications push (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
   if (ctx.push) api.use(pushRoutes(ctx));
   // Version installée (Réglages › À propos) : comptes connectés seulement
@@ -376,6 +381,7 @@ export function createApp({
     ctx.referenceCreations.prune();
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
+    ctx.noteShares.purgeOld();   // (même chose pour les liens des notes)
     ctx.publicAccess.prune();
     ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();

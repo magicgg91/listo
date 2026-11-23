@@ -21,6 +21,19 @@
 //   File d'envoi à part (server/push.js) : rien ne peut retarder ce que
 //   reçoit le bénéficiaire.
 // - d) 'sharing' : on m'ajoute à une liste, ou mon droit change.
+// - Notes (étape 3 du cadrage docs/cadrage-accueil-notes-notifications.md) :
+//   'changes' : « Léa a modifié la note « Vacances » », au propriétaire et
+//   aux membres sauf l'auteur, regroupées : une seule notification par note
+//   et par personne par quart d'heure (NOTE_QUIET_MS), la première une
+//   minute après la première modification (le temps qu'un texte tapé
+//   s'enregistre) ; déjà lue (la note ouverte a dépassé ces versions) :
+//   rien. 'sharing' : « Léa a partagé la note « Vacances » avec vous », ou
+//   « Votre droit sur la note … a changé ». « Couper les notifications de
+//   cette note » (note_user_state.muted_push). Sans le détail, la note n'est
+//   nommée que par son titre (jamais la première ligne de son texte) ;
+//   avec le détail, le début du texte suit. Toucher la notification ouvre
+//   la note. Droits relus à l'envoi avec noteAccess (server/notes.js) :
+//   une note dans la corbeille ou quittée ne notifie plus rien.
 // - b) 'due' : un résumé par personne et par jour, vers 8 h (heure du
 //   serveur, variable TZ), « 3 tâches à faire aujourd'hui · 1 en retard » ;
 //   jamais une notification par tâche. Seulement les listes de TÂCHES dont
@@ -61,6 +74,8 @@ import { reminderAt, timeLabel } from '../public/js/due-time.js';
 import { assigneesOf, parsePeople } from '../public/js/assign.js';
 import { translate, formatDate, formatList } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
+import { noteAccess } from './notes.js';
+import { noteTitle, noteExcerpt } from '../public/js/notes.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -73,6 +88,8 @@ export const DIGEST_HOUR = 8;           // résumé des échéances : à partir 
 export const DIGEST_LATEST_HOUR = 12;   // …et jusqu'à midi (serveur arrêté à 8 h)
 export const DIGEST_EVERY_MS = 60 * 1000;
 export const REMIND_LATE_MS = 30 * 60 * 1000; // rappel encore envoyé jusqu'à 30 min après son moment
+export const NOTE_QUIET_MS = 15 * 60 * 1000;  // notes : une notification par note et par personne par quart d'heure
+const NOTE_EXCERPT_MAX = 100;                  // début du texte d'une note (détail)
 
 // Jour local (heure du serveur, variable TZ) : « 2026-11-12 »
 const two = (n) => String(n).padStart(2, '0');
@@ -103,6 +120,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   const { db } = ctx;
   const origin = new URL(ctx.config.publicUrl).origin;
   const listUrl = (listId) => `${origin}/#/listes/${encodeURIComponent(listId)}`;
+  const noteUrl = (noteId) => `${origin}/#/notes/${encodeURIComponent(noteId)}`;
 
   const q = {
     settings: db.prepare('SELECT changes, due, wishes, sharing, detail FROM push_settings WHERE user_id = ?'),
@@ -166,6 +184,20 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     claimReminder: db.prepare(`INSERT INTO push_reminders (item_id, sent_key) VALUES (:itemId, :key)
       ON CONFLICT(item_id) DO UPDATE SET sent_key = :key WHERE push_reminders.sent_key <> :key`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
+    // --- Notes ---
+    // La note telle que ce compte la voit (droit lu dans note_members),
+    // avec l'état de ce compte (actif) et ses réglages pour la note
+    note: db.prepare(`SELECT notes.id, notes.title, notes.body, notes.owner_id, notes.version, notes.deleted_at,
+        (SELECT access FROM note_members WHERE note_members.note_id = notes.id AND note_members.user_id = :userId) AS member_access,
+        (SELECT active FROM users WHERE users.id = :userId) AS user_active,
+        COALESCE((SELECT muted_push FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS muted_push,
+        COALESCE((SELECT last_read_version FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS read_version
+      FROM notes WHERE notes.id = :noteId`),
+    noteAccess: db.prepare('SELECT access FROM note_members WHERE note_id = ? AND user_id = ?').pluck(),
+    notePeople: db.prepare('SELECT owner_id FROM notes WHERE id = ? UNION SELECT user_id FROM note_members WHERE note_id = ?').pluck(),
+    mutedNotes: db.prepare('SELECT note_id FROM note_user_state WHERE user_id = ? AND muted_push = 1').pluck(),
+    setNoteMuted: db.prepare(`INSERT INTO note_user_state (note_id, user_id, muted_push) VALUES (:noteId, :userId, :muted)
+      ON CONFLICT (note_id, user_id) DO UPDATE SET muted_push = :muted`),
   };
 
   // Langue des notifications d'une personne : celle de son compte, sinon
@@ -225,6 +257,31 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     if (category === 'wishes' && list.type !== 'wishes') return null;
     if (!push.hasDevices(userId)) return null;                  // aucun appareil : rien à faire
     return list;
+  }
+
+  // --- Notes : réglages ---
+  // La note, si cette personne la voit (relue en base, noteAccess), sinon null
+  function visibleNote(userId, noteId) {
+    const note = q.note.get({ userId, noteId });
+    if (!note || note.user_active !== 1 || !noteAccess({ id: userId }, note)) return null;
+    return note;
+  }
+  // « Couper les notifications de cette note » (sourdines des notes que je vois)
+  const mutedNotes = (userId) => q.mutedNotes.all(userId).filter((noteId) => visibleNote(userId, noteId));
+  const seesNote = (userId, noteId) => Boolean(visibleNote(userId, noteId));
+  function setNoteMuted(userId, noteId, muted) {
+    q.setNoteMuted.run({ noteId, userId, muted: muted ? 1 : 0 });
+  }
+  // La personne peut-elle recevoir cette notification de note ? La note
+  // (telle qu'elle la voit) ou null.
+  function allowedNote(userId, noteId, category, actorId = null) {
+    if (userId === actorId) return null;
+    const note = visibleNote(userId, noteId);
+    if (!note) return null;
+    if (!settingsOf(userId)[category]) return null;
+    if (note.muted_push === 1) return null;
+    if (!push.hasDevices(userId)) return null;
+    return note;
   }
 
   async function send(userId, message, options) {
@@ -308,8 +365,12 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     return buildMessage({ title, body, navigate: listUrl(list.id), tag: `liste-${list.id}`, locale });
   }
 
-  // Envoie les groupes dont la fenêtre de 60 s est passée
+  // Envoie les groupes dont la fenêtre de 60 s est passée (listes), puis
+  // ceux des notes qui sont mûrs
   async function flushDue() {
+    await Promise.all([flushLists(), flushNotes()]);
+  }
+  async function flushLists() {
     const due = [...groups.values()].filter((group) => ctx.now() - group.firstAt >= GROUP_MS);
     const work = [];
     for (const group of due) {
@@ -321,6 +382,92 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       work.push(send(group.userId, changesMessage(group, list, settingsOf(group.userId).detail)));
     }
     await Promise.all(work);
+  }
+
+  // --- Notes : modifications des autres, regroupées ---
+  // Appelé par server/notes.js après chaque enregistrement réussi
+  // (version : celle tout juste écrite). Ce qui est gardé en attendant
+  // l'envoi : des numéros seulement, jamais le texte.
+  const noteGroups = new Map(); // `${compte}:${note}` -> groupe
+  const noteSentAt = new Map(); // `${compte}:${note}` -> heure du dernier envoi
+  function noteChanged({ noteId, actorId, version }) {
+    if (!actorId) return;
+    for (const userId of q.notePeople.all(noteId, noteId)) {
+      if (userId === actorId || !push.hasDevices(userId)) continue;
+      const key = `${userId}:${noteId}`;
+      let group = noteGroups.get(key);
+      if (!group) {
+        group = { userId, noteId, firstAt: ctx.now(), actors: [], version: 0 };
+        noteGroups.set(key, group);
+      }
+      if (!group.actors.includes(actorId)) group.actors.push(actorId);
+      group.version = Math.max(group.version, version);
+    }
+  }
+
+  // Nom d'une note dans un texte : son titre ; avec le détail, sinon la
+  // première ligne de son texte. Vide : la phrase « … une note ».
+  const noteName = (note, detail) => (detail ? noteTitle(note) : (note.title ?? '').trim());
+
+  function noteChangesMessage(group, note, detail) {
+    const locale = localeOf(group.userId);
+    const actors = group.actors.map((id) => q.name.get(id) ?? translate(locale, 'alertes.ancienMembre'));
+    const people = peopleList(locale, actors);
+    const name = noteName(note, detail);
+    const title = name
+      ? translate(locale, 'alertes.note.modifie', { people, count: actors.length, note: name })
+      : translate(locale, 'alertes.note.modifie.sansTitre', { people, count: actors.length });
+    const body = detail ? noteExcerpt(note, NOTE_EXCERPT_MAX) : '';
+    return buildMessage({ title, body, navigate: noteUrl(note.id), tag: `note-${note.id}`, locale });
+  }
+
+  // Envoie les groupes de notes mûrs : une minute après la première
+  // modification, et jamais deux fois en un quart d'heure pour la même
+  // note et la même personne (le groupe attend la fin du quart d'heure)
+  async function flushNotes() {
+    const now = ctx.now();
+    const work = [];
+    for (const [key, group] of [...noteGroups]) {
+      if (now - group.firstAt < GROUP_MS) continue;
+      if (now - (noteSentAt.get(key) ?? -Infinity) < NOTE_QUIET_MS) continue;
+      noteGroups.delete(key);
+      const note = allowedNote(group.userId, group.noteId, 'changes');
+      if (!note) continue;
+      if (note.read_version >= group.version) continue; // déjà lue
+      noteSentAt.set(key, now);
+      const detail = settingsOf(group.userId).detail;
+      work.push(deliverNote(group.userId, noteChangesMessage(group, note, detail)));
+    }
+    await Promise.all(work);
+  }
+
+  // --- Notes : partage (ajouté à une note, ou droit changé) ---
+  function noteShared({ noteId, userId, actorId, kind }) {
+    const note = allowedNote(userId, noteId, 'sharing', actorId);
+    if (!note) return;
+    const locale = localeOf(userId);
+    const actor = q.name.get(actorId) ?? translate(locale, 'alertes.quelquun');
+    const detail = settingsOf(userId).detail;
+    const name = noteName(note, detail);
+    const canEdit = q.noteAccess.get(noteId, userId) === 'modification';
+    const message = kind === 'added'
+      ? buildMessage({
+        title: name ? translate(locale, 'alertes.note.partage', { actor, note: name }) : translate(locale, 'alertes.note.partage.sansTitre', { actor }),
+        body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        navigate: noteUrl(noteId), tag: `partage-note-${noteId}`, locale,
+      })
+      : buildMessage({
+        title: name ? translate(locale, 'alertes.note.droit', { note: name }) : translate(locale, 'alertes.note.droit.sansTitre'),
+        body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        navigate: noteUrl(noteId), tag: `partage-note-${noteId}`, locale,
+      });
+    deliverNote(userId, message);
+  }
+
+  // Remise d'une notification de note : le seul endroit où elle part
+  // (l'étape 4, page Notifications, y ajoutera son historique)
+  function deliverNote(userId, message) {
+    return send(userId, message);
   }
 
   // --- c) Envies : réservation ou participation ---
@@ -469,8 +616,12 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
 
   return {
     activity, assigned, wish, sharing, flushDue, runDigest, runReminders, settingsOf, setSettings, mutedLists, setMuted, isMember,
-    pending: () => groups.size,
-    prune: () => { for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId); },
+    noteChanged, noteShared, mutedNotes, setNoteMuted, seesNote,
+    pending: () => groups.size + noteGroups.size,
+    prune: () => {
+      for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId);
+      for (const [key, at] of noteSentAt) if (ctx.now() - at >= NOTE_QUIET_MS) noteSentAt.delete(key);
+    },
     stop: () => {
       clearInterval(timer);
       clearInterval(digestTimer);

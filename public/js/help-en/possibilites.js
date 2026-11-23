@@ -61,7 +61,8 @@ export default {
       id: 'p-notes',
       title: "Notes",
       blocks: [{ ul: [
-        "Notes of your own, in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
+        "Notes in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
+        "A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([[notes-partage]]).",
         "A quick note from Home, even offline ([[echeances]]).",
       ] }],
     },

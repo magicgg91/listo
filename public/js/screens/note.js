@@ -23,10 +23,18 @@
 //   modification arrivée pendant que j'écris : bandeau. Un enregistrement
 //   refusé : la feuille du choix (Garder la mienne, Prendre la leur, Garder
 //   les deux, Décider plus tard) ; mon texte reste sur ce téléphone.
+// - Note partagée (étape 3) : bouton « Partager » (propriétaire) ou
+//   « Personnes » (les autres) dans la barre, avec les pastilles des
+//   personnes (téléphone : icône et pastilles, le mot dans le nom lu ;
+//   ordinateur : le mot écrit). « Lecture seule » : titre et texte non
+//   modifiables (les liens restent cliquables), épingle permise ; la note se
+//   met à jour en direct. Ouvrir une note la marque « lue » (Nouveautés),
+//   sur tous mes appareils. Bas de la note : « Modifiée par Léa · il y a
+//   5 min ».
 
-import { h, icon, iconButton, replace } from '../dom.js';
+import { h, icon, iconButton, replace, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
-import { dateTimeLabel } from '../format.js';
+import { dateTimeLabel, relativeTime, namesList } from '../format.js';
 import { app, onDataChange } from '../app.js';
 import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState } from '../ui.js';
 import { uuid } from '../api.js';
@@ -34,6 +42,8 @@ import { linkParts, noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js
 import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
+import { canEditNote, isNoteOwner, notePeople } from '../store.js';
+import { openNoteSharePanel } from './share-panel.js';
 
 const SAVE_DELAY_MS = 1000;
 
@@ -102,9 +112,11 @@ export function noteEditor(initialId, onLeave, { pc }) {
       ? h('a', { class: 'note-link', href: part.href, target: '_blank', rel: 'noopener noreferrer' }, part.text)
       : part.text)));
   };
+  // Lecture seule (droit « Lecture seule ») : ni saisie, ni enregistrement
+  const readOnly = () => Boolean(note()) && !canEditNote(note());
   // Passer en saisie, curseur à cet endroit (geste fait pour écrire)
   const edit = (at) => {
-    if (!input.hidden) return;
+    if (!input.hidden || readOnly()) return;
     input.value = body;
     view.hidden = true;
     input.hidden = false;
@@ -137,6 +149,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
 
   // --- Enregistrement automatique ---
   function changed() {
+    if (readOnly()) return;
     dirty = true;
     clearTimeout(timer);
     timer = setTimeout(save, SAVE_DELAY_MS);
@@ -174,6 +187,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
   };
   const onHidden = () => {
     if (document.visibilityState === 'hidden') saveNow();
+    // Retour au premier plan : ce qui est arrivé entre-temps est lu
+    else if (note() && !note().deletedAt) actions.markNoteSeen(noteId);
   };
   document.addEventListener('visibilitychange', onHidden);
   window.addEventListener('pagehide', saveNow);
@@ -191,6 +206,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
   function drawStatus() {
     let state;
     if (kept()) state = ['note-status--check', 'alert', t('notes.statut.aVerifier')];
+    else if (readOnly()) state = ['', 'eye', t('notes.statut.lectureSeule')];
     else if (dirty || saving || (noteId && actions.notePending(noteId))) {
       state = currentSyncState() === 'off' && !dirty
         ? ['', 'cloud-off', t('notes.statut.horsLigne')]
@@ -217,8 +233,9 @@ export function noteEditor(initialId, onLeave, { pc }) {
     const n = note();
     foot.hidden = !n;
     if (!n) return;
-    const date = dateTimeLabel(n.updatedAt);
-    foot.textContent = byOther(n) ? t('notes.pied.autre', { name: n.updatedByName ?? '', date }) : t('notes.pied.moi', { date });
+    foot.textContent = byOther(n)
+      ? t('notes.pied.autre', { name: n.updatedByName ?? '', when: relativeTime(n.updatedAt) })
+      : t('notes.pied.moi', { date: dateTimeLabel(n.updatedAt) });
   }
 
   // --- Barre : menu (Épingler, Dupliquer, Supprimer) ; ordinateur : épingle, fermer ---
@@ -227,7 +244,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
   const menuButton = iconButton('more', t('notes.plusActions'), () => {
     const n = note();
     if (!n) return;
-    openMenu(noteMenuItems(n, { onDeleted: afterDelete, withPin: !pc }), { label: t('notes.plusActions'), anchor: menuButton });
+    openMenu(noteMenuItems(n, { onDeleted: afterDelete, withPin: !pc, withPeople: false }), { label: t('notes.plusActions'), anchor: menuButton });
   });
   menuButton.setAttribute('aria-haspopup', 'menu');
   menuButton.setAttribute('aria-expanded', 'false');
@@ -236,8 +253,32 @@ export function noteEditor(initialId, onLeave, { pc }) {
     if (n) actions.pinNote(n.id, !app.data.pinnedNotes.has(n.id));
   } }) : null;
 
+  // « Partager » (propriétaire) ou « Personnes » (les autres, note partagée)
+  const peopleButton = h('button', {
+    class: `btn btn--sm btn--secondary note-people`, type: 'button', 'aria-haspopup': 'dialog', hidden: true,
+    onClick: () => { if (note()) openNoteSharePanel(noteId); },
+  });
+  function drawPeople(n) {
+    const people = n ? notePeople(n) : [];
+    const owner = Boolean(n) && isNoteOwner(n);
+    peopleButton.hidden = !n || (!owner && !people.length);
+    if (peopleButton.hidden) return;
+    const names = namesList(people.map((m) => m.displayName));
+    const word = owner ? t('notes.personnes.partager') : t('notes.personnes.voir');
+    peopleButton.setAttribute('aria-label', owner
+      ? (people.length ? t('notes.personnes.lu.partager', { names }) : t('notes.personnes.lu.partager.seul'))
+      : t('notes.personnes.lu.voir', { names }));
+    replace(peopleButton, icon('users', 'icon--sm'), pc ? word : null,
+      people.length ? h('span', { class: 'avatars', 'aria-hidden': 'true' }, people.slice(0, 3).map((m, i) => avatar(m.displayName, { second: i > 0 }))) : null);
+  }
+
   function drawBar() {
     const n = note();
+    drawPeople(n);
+    titleInput.readOnly = readOnly();
+    view.setAttribute('role', readOnly() ? 'document' : 'textbox');
+    if (readOnly()) view.removeAttribute('aria-multiline');
+    else view.setAttribute('aria-multiline', 'true');
     menuButton.hidden = !n;
     if (!pinButton) return;
     pinButton.hidden = !n;
@@ -253,14 +294,17 @@ export function noteEditor(initialId, onLeave, { pc }) {
     const mine = kept();
     if (!n || !mine || sheetShown) return;
     sheetShown = true;
-    const other = byOther(n);
+    // Qui a écrit la version qui a gagné : d'après le refus du serveur (gardé
+    // avec mon texte), sinon d'après la note reçue
+    const other = mine.byId ? mine.byId !== app.user?.id : byOther(n);
+    const otherName = mine.byName ?? n.updatedByName ?? '';
     const copyName = t('format.copie', { name: noteTitle(mine) || t('notes.sansTitre') });
     const choice = (iconName, title, sub, onPick) => h('button', { class: 'row', type: 'button', onClick: onPick },
       h('span', { class: 'row__icon' }, icon(iconName)),
       h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), h('span', { class: 'row__sub' }, sub)),
       icon('chev-r', 'icon--sm'));
     const sheet = openSheet({
-      title: other ? t('notes.conflit.titre.autre', { name: n.updatedByName ?? '' }) : t('notes.conflit.titre.moi'),
+      title: other ? t('notes.conflit.titre.autre', { name: otherName }) : t('notes.conflit.titre.moi'),
       sub: t('notes.conflit.texte'),
       content: [
         h('div', { class: 'group conflict' },
@@ -316,6 +360,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
   // --- Dessin et temps réel ---
   function draw() {
     const n = note();
+    // Ouverte et à l'écran : lue (Nouveautés), sur tous mes appareils
+    if (n && !n.deletedAt && document.visibilityState === 'visible') actions.markNoteSeen(n.id);
     heading.textContent = n ? titleOf(n) : t('notes.nouvelle');
     if (!pc && n) document.title = `${heading.textContent} · Listo`;
     if (input.hidden) drawView();
@@ -370,7 +416,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
   if (isNew) queueMicrotask(() => edit(0));
 
   if (pc) {
-    const bar = h('div', { class: 'pc-note__bar' }, h('span', { class: 'grow' }), pinButton, menuButton,
+    const bar = h('div', { class: 'pc-note__bar' }, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton,
       iconButton('close', t('notes.fermer'), () => navigate('notes', {}, { replace: true })));
     return h('section', { class: 'pc-note', 'aria-labelledby': heading.id }, heading, bar, status, banner, scroll, foot);
   }
@@ -378,6 +424,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
     h('header', { class: 'topbar' },
       iconButton('chev-l', t('notes.retour'), () => back()),
       h('span', { class: 'grow' }),
+      peopleButton,
       menuButton),
     heading,
     status,

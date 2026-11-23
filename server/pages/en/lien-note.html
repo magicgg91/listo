@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Listo (version anglaise de server/pages/lien-note.html) : page publique
+     d'une note (lien /p/<jeton>, lecture seule, sans compte). Même module
+     que la page d'une liste (js/public.js), qui lit data-kind="note" ; aucun
+     script ni style écrit dans cette page. Elle ne contient rien de la
+     note : les données arrivent par /api/public/<jeton>, qui contrôle le lien. -->
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <script src="/js/viewport.js"></script>
+  <script src="/js/app-height.js"></script>
+  <title>Listo · Shared note</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/listo.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/public.js"></script>
+</head>
+<body>
+<!-- sprite -->
+<div class="app" id="app" data-kind="note">
+  <p class="boot muted" role="status">Loading…</p>
+</div>
+<noscript><p>This page needs JavaScript to show the note.</p></noscript>
+</body>
+</html>

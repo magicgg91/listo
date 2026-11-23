@@ -29,6 +29,7 @@ import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from 
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
+import { isNoteUnread } from '../store.js';
 import { t } from '../i18n.js';
 
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
@@ -135,8 +136,14 @@ function notesTile(pc) {
   return tile(t('accueil.notes'), 'note', open, [
     h('p', { class: 'tile__meta', 'aria-hidden': 'true' }, t('accueil.notes.nombre', { count: notes.length })),
     rowsOf([
-      ...latest.map((note) => h('button', { class: 'tile__row', type: 'button', onClick: () => navigate('note', { id: note.id }) },
-        h('span', { class: 'tile__label' }, titleOf(note)))),
+      // Note modifiée par quelqu'un d'autre depuis ma dernière lecture : le
+      // point des nouveautés (et dans le nom lu, jamais la couleur seule)
+      ...latest.map((note) => {
+        const news = isNoteUnread(app.data, note.id);
+        return h('button', { class: 'tile__row', type: 'button', 'aria-label': news ? t('notes.tuile.nouveautes', { name: titleOf(note) }) : null, onClick: () => navigate('note', { id: note.id }) },
+          h('span', { class: 'tile__label' }, titleOf(note)),
+          news ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null);
+      }),
       add,
     ]),
   ], { spoken: t('accueil.notes.lu', { count: notes.length }) });

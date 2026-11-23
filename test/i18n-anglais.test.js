@@ -60,8 +60,8 @@ test('pages sans application : version anglaise pour un navigateur anglais, la m
   assert.match(unknownEn.text, /Link expired or not found/);
   // Toujours la même page anglaise, quelle que soit la raison
   assert.equal((await page(`/p/${'b'.repeat(43)}`, 'en')).text, unknownEn.text);
-  // Les trois pages existent en anglais, avec les mêmes balises que le français
-  for (const name of ['lien-invalide.html', 'lien-public.html', 'autorisation-invalide.html']) {
+  // Les quatre pages existent en anglais (dont celle d'une note, étape 3), avec les mêmes balises que le français
+  for (const name of ['lien-invalide.html', 'lien-public.html', 'lien-note.html', 'autorisation-invalide.html']) {
     const tags = (text) => text.replace(/<!--[\s\S]*?-->/g, '').replace(/>[^<]*</g, '><').replace(/(title|content|alt|aria-label)="[^"]*"/g, '');
     assert.equal(tags(read(`server/pages/en/${name}`)).replace('lang="en"', 'lang="fr"'), tags(read(`server/pages/${name}`)), name);
   }

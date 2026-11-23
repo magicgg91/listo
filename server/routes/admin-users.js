@@ -44,6 +44,7 @@ export function adminUserRoutes(ctx) {
         OR EXISTS (SELECT 1 FROM list_members WHERE user_id = :id)
         OR EXISTS (SELECT 1 FROM lists WHERE for_user_id = :id)
         OR EXISTS (SELECT 1 FROM notes WHERE owner_id = :id)
+        OR EXISTS (SELECT 1 FROM note_members WHERE user_id = :id)
   `).pluck();
 
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste
@@ -195,8 +196,9 @@ export function adminUserRoutes(ctx) {
 
     // Un compte désactivé est déconnecté partout, tout de suite
     if (changes.active === 0) revokeAllSessions(ctx, user.id, 'account disabled');
-    // … et les liens publics de ses listes sont arrêtés
+    // … et les liens publics de ses listes et de ses notes sont arrêtés
     const stoppedLinks = changes.active === 0 ? ctx.shares.stopForOwner(user.id) : 0;
+    const stoppedNoteLinks = changes.active === 0 ? ctx.noteShares.stopForOwner(user.id) : 0;
 
     // Journal : une ligne par changement réel
     const who = { admin: req.user.username, user: user.username, ip: req.ip };
@@ -206,6 +208,7 @@ export function adminUserRoutes(ctx) {
     if (changes.role !== undefined && changes.role !== user.role) audit('admin_role_changed', { ...who, role: changes.role });
     if (changes.active === 0 && user.active === 1) audit('admin_account_disabled', who);
     if (stoppedLinks) audit('public_link_stopped', { ...who, count: stoppedLinks, reason: 'account disabled' });
+    if (stoppedNoteLinks) audit('note_link_stopped', { ...who, count: stoppedNoteLinks, reason: 'account disabled' });
     if (changes.active === 1 && user.active === 0) audit('admin_account_reactivated', who);
 
     res.json({ user: describe(findUser.get(user.id)) });

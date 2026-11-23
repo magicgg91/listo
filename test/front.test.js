@@ -313,13 +313,15 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   assert.equal(fromSnapshot(null), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 99 }), null);
   // Copie d'avant les types de liste (version 1, avec les catégories) ou
-  // d'avant les notes (version 3) : écartée, tout est rechargé
-  assert.equal(snapshot.version, 4);
+  // d'avant les notes (version 3), ou d'avant leur partage (version 4) :
+  // écartée, tout est rechargé
+  assert.equal(snapshot.version, 5);
   assert.equal(fromSnapshot({ ...snapshot, version: 3 }), null);
+  assert.equal(fromSnapshot({ ...snapshot, version: 4 }), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 1, categories: [] }), null);
   assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
   // Aucun secret dans la copie : seulement des données de listes et de notes
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {

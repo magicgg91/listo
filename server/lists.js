@@ -1419,7 +1419,7 @@ export function createListService(ctx) {
     },
   };
 
-  // Opérations des notes et de leurs catégories (server/notes.js)
+  // Opérations des notes (server/notes.js)
   for (const [type, handler] of Object.entries(notes.handlers)) handlers[type] = handler;
 
   // --- Lot d'opérations (POST /api/ops) ---
@@ -1580,7 +1580,7 @@ export function createListService(ctx) {
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire
       reservations: reservations.forUser(user),
-      // Notes que je vois, mon rangement et mes catégories (server/notes.js)
+      // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
       ...notes.syncFor(user, since),
     };
   }

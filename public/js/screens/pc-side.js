@@ -31,7 +31,7 @@ import { newsBadgeLabel } from '../format.js';
 import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list-types.js';
-import { computeSummaries, loadListSort, newsBadge, listCountsByType } from '../store.js';
+import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
 import { app, onDataChange } from '../app.js';
 import { drawWhenIdle, watchNewDay } from '../ui.js';
@@ -130,7 +130,10 @@ export function createPcSide() {
   const listsLink = fixedLink('lists', 'tasks', t('navigation.listes'), listsCount);
   // « Notes » avec le nombre de notes (lu « Notes, 12 notes »)
   const notesCount = h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' });
-  const notesLink = fixedLink('notes', 'note', t('navigation.notes'), notesCount);
+  // Point des nouveautés : une note partagée modifiée par quelqu'un d'autre
+  // depuis ma dernière lecture (dit aussi dans le nom lu)
+  const notesNews = h('span', { class: 'news-badge news-badge--dot', 'aria-hidden': 'true', hidden: true });
+  const notesLink = fixedLink('notes', 'note', t('navigation.notes'), notesNews, notesCount);
   const main = h('div', { class: 'pc-side__main' }, homeLink, deadlinesLink, listsLink, notesLink);
 
   // Bouton du bas : « Nouvelle liste », ou « Nouvelle note » sur les écrans
@@ -156,8 +159,10 @@ export function createPcSide() {
     markCurrent(listsLink, selected.name === 'lists' && pcType === 'all');
     const notes = app.data.loaded ? countNotes() : null;
     notesCount.textContent = notes === null ? '' : String(notes);
+    const notesNew = app.data.loaded && notesHaveNews(app.data);
+    notesNews.hidden = !notesNew;
     if (notes === null) notesLink.removeAttribute('aria-label');
-    else notesLink.setAttribute('aria-label', t('navigation.notes.nombre', { count: notes }));
+    else notesLink.setAttribute('aria-label', t(notesNew ? 'notes.nav.nombre.nouveautes' : 'navigation.notes.nombre', { count: notes }));
     markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
     newList.hidden = NOTE_SCREENS.includes(selected.name);
     newNote.hidden = !newList.hidden;

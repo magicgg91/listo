@@ -222,7 +222,8 @@ export const GUIDE = [
         id: 'p-notes',
         title: 'Notes',
         blocks: [{ ul: [
-          'Des notes à vous, en texte libre, qui s\'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([[notes]]).',
+          'Des notes en texte libre, qui s\'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([[notes]]).',
+          'Une note se partage comme une liste (« Peut modifier » ou « Lecture seule »), ou par un lien public en lecture seule ([[notes-partage]]).',
           'Une note rapide depuis l\'Accueil, même hors ligne ([[echeances]]).',
         ] }],
       },
@@ -718,20 +719,39 @@ export const GUIDE = [
         id: 'notes',
         title: 'Les notes',
         blocks: [
-          'Une note garde un texte libre : un code, une recette, des idées. Elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin. Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.',
+          'Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin ; vous pouvez la partager ([[notes-partage]]). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.',
           { ul: [
             'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d\'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.',
             '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » ouvre une saisie rapide : « Titre (facultatif) », le texte, puis « Enregistrer » (ou « Annuler »).',
             'Une note s\'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.',
             'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet.',
-            'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Dupliquer » (une copie dont le titre finit par “(copie)”), « Supprimer ».',
+            'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu\'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter la note ».',
           ] },
-          { sub: 'Deux appareils en même temps' },
-          'Si la note a été enregistrée ailleurs (sur un autre de vos appareils) pendant que vous écriviez, rien n\'est écrasé. Un bandeau prévient ; à l\'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l\'appareil et le choix revient quand vous rouvrez la note.',
+          { sub: 'Deux personnes en même temps' },
+          'Si la note a été enregistrée ailleurs (par une personne avec qui elle est partagée, ou sur un autre de vos appareils) pendant que vous écriviez, rien n\'est écrasé. Un bandeau prévient (“Léa vient de modifier cette note”) ; à l\'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note, à vous). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l\'appareil et le choix revient quand vous rouvrez la note. Si vous lisez la note sans écrire, elle se met à jour sous vos yeux.',
           { sub: 'Corbeille des notes' },
-          'Le bouton poubelle de l\'écran « Notes » ouvre la « Corbeille des notes » : une note supprimée y reste 30 jours, puis elle est effacée pour de bon. « Restaurer » la remet à sa place (épinglée si elle l\'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Hors ligne, tout cela attend le retour du réseau.',
+          'Le bouton poubelle de l\'écran « Notes » ouvre la « Corbeille des notes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n\'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l\'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.',
           { sub: 'Sur ordinateur' },
-          '« Notes » est dans le menu de gauche, avec le nombre de notes ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s\'affiche à droite des cartes et s\'enregistre toute seule ; la touche « / » cherche dans les notes.',
+          '« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s\'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s\'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s\'enregistre toute seule ; la touche « / » cherche dans les notes.',
+        ],
+      },
+      {
+        id: 'notes-partage',
+        title: 'Partager une note',
+        blocks: [
+          'Dans une de vos notes, « Partager » (en haut de la note, ou menu ⋮) ouvre « Partager la note », comme pour une liste : ajoutez une personne parmi les comptes existants, en « Peut modifier » ou « Lecture seule », changez ce droit, ou retirez-la. Il faut du réseau.',
+          { ul: [
+            'Propriétaire : tout, dont supprimer la note, la partager et gérer son lien public.',
+            '« Peut modifier » : modifier le titre et le texte. Jamais supprimer la note, la partager ni gérer son lien public.',
+            '« Lecture seule » : lire la note (les liens s\'ouvrent), l\'épingler pour soi. La carte le dit avec l\'œil « Lecture seule ».',
+            'Chacun, sauf le propriétaire, peut « Quitter la note » (menu ⋮). Une personne qui perd l\'accès perd aussi son épingle. L\'épingle de chacun n\'est jamais montrée aux autres.',
+            'Les cartes d\'une note partagée montrent les pastilles des personnes ; « Personnes », en haut de la note, les liste avec leur droit. En bas de la note : “Modifiée par Léa · il y a 5 min”.',
+          ] },
+          { sub: 'Nouveautés et notifications' },
+          'Quand quelqu\'un d\'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu\'à ce que vous l\'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l\'Accueil et, sur ordinateur, l\'entrée « Notes » du menu de gauche montrent aussi le point. C\'est le même réglage « Nouveautés » que pour les listes ([[nouveautes]]) ; menu ⋮ : « Masquer les nouveautés de cette note ».',
+          'Avec les notifications ([[notif-recevoir]]) : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). Menu ⋮ : « Couper les notifications de cette note ».',
+          { sub: 'Lien public d\'une note' },
+          'Menu ⋮ d\'une de vos notes, « Lien public » : la même feuille que pour une liste ([[lien-public]]) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte (liens cliquables) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n\'est plus visible par son lien ; restaurée, le lien remarche s\'il n\'a pas expiré.',
         ],
       },
       {
@@ -879,9 +899,9 @@ export const GUIDE = [
           { table: {
             head: ['Catégorie', 'Quand', 'Exemple'],
             rows: [
-              ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste.', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”'],
+              ['« Modifications »', 'Quelqu\'un d\'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d\'une minute sont regroupés en une seule notification par liste. Une note partagée modifiée par quelqu\'un d\'autre : une notification par note et par quart d\'heure au plus.', '“Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”, “Léa a modifié la note « Vacances »”'],
               ['« Envies »', 'Quelqu\'un réserve un souhait ou participe à un cadeau, dans une liste d\'envies dont vous voyez les réservations.', '“Marc a réservé un souhait”'],
-              ['« Partage »', 'On vous ajoute à une liste, ou votre droit change.', '“Léa vous a ajouté à « Maison »”'],
+              ['« Partage »', 'On vous ajoute à une liste ou à une note, ou votre droit change.', '“Léa vous a ajouté à « Maison »”, “Léa a partagé la note « Vacances » avec vous”'],
               ['« Échéances »', 'Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd\'hui et en retard, s\'il y en a. Et le rappel d\'une tâche, au moment choisi dans sa fiche ([[heure]]).', '“3 tâches à faire aujourd\'hui · 1 en retard”, “Rappel : une tâche aujourd\'hui à 14:00”'],
             ],
           } },
@@ -899,7 +919,7 @@ export const GUIDE = [
         id: 'notif-silencer',
         title: 'Couper les notifications d\'une liste',
         blocks: [
-          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste.',
+          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮ : « Couper les notifications de cette note ».',
           'C\'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [[nouveautes]]) : on peut garder les nouveautés d\'une liste sans recevoir ses notifications, et l\'inverse.',
         ],
       },
@@ -1042,7 +1062,7 @@ export const GUIDE = [
         id: 'lien-public',
         title: 'Propriétaire : le lien public',
         blocks: [
-          '« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([[role-visiteur]]).',
+          '« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([[role-visiteur]]). Une note a aussi son lien public, avec les mêmes règles : « Lien public » dans son menu ⋮ ([[notes-partage]]).',
           { ul: [
             'Durée : 1 heure, 24 heures, 7 jours, 30 jours, « Personnalisée » ou « Illimitée ». « Changer la durée » la modifie.',
             '« Protéger par mot de passe » : le mot de passe n\'est affiché qu\'une fois. Notez-le.',
@@ -1329,7 +1349,7 @@ export const GUIDE = [
       {
         id: 'faq-lien',
         title: 'Un lien public ne marche plus',
-        blocks: ['Il a expiré, ou son propriétaire l\'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien). Demandez un nouveau lien au propriétaire ([[lien-public]]). S\'il demande un mot de passe, c\'est celui que le propriétaire a noté à sa création.'],
+        blocks: ['Il a expiré, ou son propriétaire l\'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien), ou la note est dans la corbeille. Demandez un nouveau lien au propriétaire ([[lien-public]]). S\'il demande un mot de passe, c\'est celui que le propriétaire a noté à sa création.'],
       },
       {
         id: 'faq-retard',

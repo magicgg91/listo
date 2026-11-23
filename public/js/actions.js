@@ -14,7 +14,7 @@
 
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
-import { uuid, photoUrl, post, patch, del } from './api.js';
+import { uuid, photoUrl, post, put, patch, del } from './api.js';
 import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
 import { nextDue } from './repeat.js';
 import { modeOf, turnAfterCheck } from './assign.js';
@@ -286,7 +286,7 @@ export async function saveNote(noteId, { title, body, baseVersion }) {
   if (!note) return 'gone';
   const kept = app.data.noteConflicts.get(noteId);
   if (kept || note.version !== baseVersion) {
-    app.data.noteConflicts.set(noteId, { title, body, at: now() });
+    app.data.noteConflicts.set(noteId, { ...(kept ?? {}), title, body, at: now() });
     dataChanged();
     return 'conflict';
   }
@@ -313,6 +313,38 @@ const copyTitle = (source) => copyName(noteTitle(source) || t('notes.sansTitre')
 // Dupliquer : une note à moi, même texte, titre « (copie) »
 export function duplicateNote(note) {
   return createNote({ title: copyTitle(note), body: note.body });
+}
+
+// --- Notes partagées (étape 3) ---
+
+// Nouveautés : la note ouverte est lue jusqu'à sa version (sur tous mes
+// appareils, par le serveur). Rien à envoyer si elle n'a rien de nouveau.
+export function markNoteSeen(noteId) {
+  const note = app.data.notes.get(noteId);
+  if (!note || !app.data.noteNews.unread.has(noteId)) return null;
+  return perform({ type: 'note.seen', noteId, upTo: note.version });
+}
+
+// « Masquer les nouveautés de cette note » / « Afficher… » (pour moi seulement)
+export const setNoteNewsMuted = (noteId, muted) => perform({ type: 'note.mute', noteId, muted });
+
+// Partage (propriétaire) : la composition complète, personnes et droits,
+// envoyée au serveur (en ligne seulement, comme pour une liste), puis
+// relue par la synchronisation
+export async function setNoteMembers(noteId, members) {
+  await put(`/api/notes/${encodeURIComponent(noteId)}/members`, {
+    userIds: members.map((m) => m.id),
+    access: Object.fromEntries(members.map((m) => [m.id, m.access ?? 'lecture'])),
+  });
+  await refreshData({ quiet: true });
+}
+
+// Quitter une note qu'on m'a partagée (en ligne seulement) : ce qui attend
+// dans la file part d'abord ; la note disparaît ensuite de ce téléphone
+export async function leaveNote(noteId) {
+  await refreshData({ quiet: true });
+  await post(`/api/notes/${encodeURIComponent(noteId)}/leave`);
+  await refreshData({ quiet: true, full: true });
 }
 
 // --- Conflit (note « À vérifier ») : les trois choix ---

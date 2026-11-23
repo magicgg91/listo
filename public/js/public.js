@@ -21,6 +21,12 @@
 //   est relue et une phrase est annoncée (role="status") ; elle est relue
 //   aussi au retour au premier plan. Le bénéficiaire reconnu par sa session
 //   ne reçoit ni état ni bouton.
+// - Note (étape 3 des notes ; page server/pages/lien-note.html,
+//   data-kind="note") : le titre, la date de modification et le texte, en
+//   lecture seule ; les adresses http et https deviennent des liens
+//   (public/js/notes.js : éléments <a> et textContent seulement, nouvel
+//   onglet, rel="noopener noreferrer nofollow"). Même saisie du mot de
+//   passe, même page « Lien expiré ou inexistant ».
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { prepareAnnouncer, announce as speak } from './announce.js';
@@ -30,8 +36,11 @@ import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
 import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
+import { linkParts, noteTitle } from './notes.js';
 
 const root = document.getElementById('app');
+// Page d'une note (lien-note.html) ou d'une liste (lien-public.html)
+const isNotePage = root.dataset.kind === 'note';
 prepareAnnouncer();
 const token = location.pathname.split('/')[2] ?? '';
 const apiUrl = (path = '') => `/api/public/${encodeURIComponent(token)}${path}`;
@@ -62,7 +71,7 @@ function message(iconName, title, text) {
 }
 
 const showInvalid = () => message('link-off', t('lienpublic.invalide'), t('lienpublic.invalide.texte'));
-const showNetwork = () => message('cloud-off', t('lienpublic.reseau'), t('lienpublic.reseau.texte'));
+const showNetwork = () => message('cloud-off', isNotePage ? t('lienpublic.note.reseau') : t('lienpublic.reseau'), t('lienpublic.reseau.texte'));
 
 // Charge la liste (une requête) et affiche le résultat
 async function load() {
@@ -73,7 +82,10 @@ async function load() {
     showNetwork();
     return;
   }
-  if (res.status === 200) return showList(await res.json());
+  if (res.status === 200) {
+    const data = await res.json();
+    return data.note ? showNote(data) : showList(data);
+  }
   if (res.status === 401) return showGate();
   if (res.status === 429) return message('clock', t('lienpublic.tropEssais'), tooMany());
   return showInvalid(); // lien inconnu, expiré, arrêté… : toujours le même message
@@ -138,7 +150,7 @@ function showGate() {
   replace(root, h('div', { class: 'gate' },
     h('div', { class: 'gate__head' },
       h('span', { class: 'empty__icon' }, icon('lock', 'icon--lg')),
-      h('h1', { class: 'empty__title' }, t('lienpublic.protegee')),
+      h('h1', { class: 'empty__title' }, isNotePage ? t('lienpublic.note.protegee') : t('lienpublic.protegee')),
       h('p', { class: 'empty__text' }, t('lienpublic.protegee.texte'))),
     form));
   // Pas de curseur automatique : le clavier s'ouvre quand on touche le champ
@@ -211,6 +223,35 @@ function showList(data) {
     announce(announcement);
     announcement = null;
   }
+}
+
+// --- La note en lecture seule ---
+// Titre (ou première ligne du texte), date de modification, texte avec ses
+// adresses web en liens ; rien d'autre n'est reçu du serveur.
+function showNote({ note, expiresAt }) {
+  const title = noteTitle(note) || t('lienpublic.note.sansTitre');
+  document.title = `${title} · Listo`;
+  const refresh = h('button', { class: 'btn btn--secondary btn--sm', type: 'button' }, icon('sync', 'icon--sm'), t('lienpublic.actualiser'));
+  refresh.addEventListener('click', () => {
+    refresh.disabled = true;
+    load();
+  });
+  // Texte affiché tel quel : textContent et éléments <a> seulement
+  const body = note.body
+    ? h('div', { class: 'note-edit__body note-edit__body--read' }, linkParts(note.body).map((part) => (part.href
+      ? h('a', { class: 'note-link', href: part.href, target: '_blank', rel: 'noopener noreferrer nofollow' }, part.text)
+      : part.text)))
+    : h('p', { class: 'muted' }, t('lienpublic.note.vide'));
+  replace(root, h('div', { class: 'screen' },
+    h('p', { class: 'readonly-banner' }, icon('eye', 'icon--sm'), t('lienpublic.lectureSeule')),
+    h('header', { class: 'public-head' },
+      h('div', { class: 'public-head__main' },
+        h('h1', { class: 'public-head__title' }, title),
+        h('p', { class: 'public-head__sub' }, icon('note', 'icon--xs'), t('lienpublic.note.modifiee', { date: dateTimeLabel(note.updatedAt) }))),
+      refresh),
+    h('div', { class: 'scroll scroll--flat' }, h('div', { class: 'note-edit' }, body)),
+    h('footer', { class: 'public-foot' }, icon('clock', 'icon--sm'),
+      expiresAt ? t('lienpublic.expire', { date: dateTimeLabel(expiresAt) }) : t('lienpublic.sansExpiration'))));
 }
 
 // Message temporaire en bas de l'écran, lu par les lecteurs d'écran (par la

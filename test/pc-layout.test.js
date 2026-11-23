@@ -196,21 +196,26 @@ test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer /
 test('partage (ordinateur) : le propriétaire gère personnes et lien ; les autres voient les personnes, sans gestion ni lien public', () => {
   const panel = read('public/js/screens/share-panel.js');
   // Gestion (choix du droit, retrait, ajout, lien) : propriétaire seulement
-  assert.match(panel, /const owner = Boolean\(start\.isOwner\);/);
+  assert.match(panel, /owner: Boolean\(start\.isOwner\),/);
+  assert.match(panel, /owner: start\.access === 'owner',/); // note : propriétaire seulement
   assert.match(panel, /else if \(!owner\) right = h\('span', \{ class: 'pc-meta' \}, levelLabel\(person\.access\)\);/);
   assert.match(panel, /if \(owner\) \{\s*const candidates/);
-  assert.match(panel, /const link = owner \? linkPart\(start, \(\) => panel\.close\(\)\) : null;/);
-  assert.match(panel, /title: owner \? t\('partage\.panneau\.titre'\) : t\('partage\.panneau\.personnes'\),/);
+  assert.match(panel, /const link = owner \? linkOf\(\(\) => panel\.close\(\)\) : null;/);
+  assert.match(panel, /link: \(close\) => linkPart\(start, close\),/);
+  assert.match(panel, /link: \(close\) => noteLinkPart\(start, close\),/);
+  assert.match(panel, /title: owner \? titles\.owner : titles\.member,/);
+  assert.match(panel, /titles: \{ owner: t\('partage\.panneau\.titre'\), member: t\('partage\.panneau\.personnes'\) \},/);
   assert.equal(fr['partage.panneau.titre'], 'Partager la liste');
   assert.equal(fr['partage.panneau.personnes'], 'Personnes');
   // Destinataire d'une liste d'envies : « Peut modifier », sans choix
+  assert.match(panel, /beneficiary: \(list, person\) => isWishList\(list\) && list\.forUserId === person\.id,/);
   assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, t\('partage\.panneau\.destinataire'\)\);/);
   assert.equal(fr['partage.panneau.destinataire'], 'Destinataire · Peut modifier');
   // Même route que le formulaire, en ligne seulement ; jamais d'e-mail
   assert.match(panel, /await put\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`, \{/);
   assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
   // Le lien public : le même contenu que la feuille du téléphone
-  assert.match(read('public/js/screens/share.js'), /export function linkPart\(list, close\) \{/);
+  assert.match(read('public/js/screens/share.js'), /export function linkPart\(list, close, \{ url = `\/api\/lists\/\$\{encodeURIComponent\(list\.id\)\}\/share`, texts = LIST_TEXTS, key = list\.id \} = \{\}\) \{/);
   assert.match(read('public/sw.js'), /'\/js\/screens\/share-panel\.js',/);
 });
 

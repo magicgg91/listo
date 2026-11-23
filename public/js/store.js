@@ -49,8 +49,15 @@ export function emptyState() {
     // est gardé ici, sur ce téléphone seulement, jusqu'à mon choix
     // (id -> { title, body, at }). Jamais remplacé par une synchronisation.
     noteConflicts: new Map(),
+    // Nouveautés des notes (server/notes.js, étape 3) : notes modifiées par
+    // quelqu'un d'autre depuis ma dernière lecture (unread), et celles dont
+    // j'ai masqué les nouveautés (muted). Remplacées en entier à chaque
+    // synchronisation.
+    noteNews: emptyNoteNews(),
   };
 }
+
+const emptyNoteNews = () => ({ unread: new Set(), muted: new Set() });
 
 // Nouveautés avant la première synchronisation : rien à signaler (réglages
 // par défaut du compte : « Nouveautés » activé, cochés non signalés)
@@ -67,7 +74,10 @@ const emptyNews = () => ({ enabled: true, checks: false, lists: {} });
 // Version 4 : notes (23 novembre 2026). Même chose : une copie sans notes
 // est rechargée entièrement (une synchronisation « depuis » n'apporterait
 // pas les notes plus anciennes).
-export const SNAPSHOT_VERSION = 4;
+// Version 5 : partage des notes (droit, personnes, nouveautés). Une copie
+// de la version 4 est rechargée entièrement : ses notes n'ont pas leurs
+// personnes, et une synchronisation « depuis » ne les apporterait pas.
+export const SNAPSHOT_VERSION = 5;
 
 // Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
 export function toSnapshot(state, savedAt = new Date().toISOString()) {
@@ -88,6 +98,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     noteIds: [...state.noteIds],
     pinnedNotes: [...state.pinnedNotes],
     noteConflicts: [...state.noteConflicts],
+    noteNews: { unread: [...state.noteNews.unread], muted: [...state.noteNews.muted] },
   };
 }
 
@@ -111,6 +122,7 @@ export function fromSnapshot(snapshot) {
     state.noteIds = new Set(snapshot.noteIds ?? []);
     state.pinnedNotes = new Set(snapshot.pinnedNotes ?? []);
     state.noteConflicts = new Map(snapshot.noteConflicts ?? []);
+    state.noteNews = { unread: new Set(snapshot.noteNews?.unread ?? []), muted: new Set(snapshot.noteNews?.muted ?? []) };
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -175,6 +187,8 @@ function loadNotes(state, data, { full }) {
   for (const note of data.notes ?? []) if (state.noteIds.has(note.id)) state.notes.set(note.id, note);
   for (const id of [...state.notes.keys()]) if (!state.noteIds.has(id)) state.notes.delete(id);
   state.pinnedNotes = new Set(data.pinnedNotes ?? []);
+  // Nouveautés des notes : en entier à chaque synchronisation
+  if (data.noteNews) state.noteNews = { unread: new Set(data.noteNews.unread ?? []), muted: new Set(data.noteNews.muted ?? []) };
 }
 
 // Ajoute « ce qui a changé depuis » (réponse de /api/sync?since=…) à la
@@ -461,6 +475,8 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'note.restore':
     case 'note.purge':
     case 'note.pin':
+    case 'note.seen':
+    case 'note.mute':
       applyNoteOp(state, op, { user, now });
       return;
     case 'item.restore': {
@@ -505,7 +521,10 @@ function applyNoteOp(state, op, { user, now }) {
         updatedBy: user?.id ?? null,
         updatedByName: user?.displayName ?? null,
         deletedAt: null,
+        ownerId: user?.id ?? null,
         access: 'owner',
+        // Partagée avec personne (le serveur enverra les personnes)
+        members: user ? [{ id: user.id, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }] : [],
       });
       state.noteIds.add(op.noteId);
       if (op.pinned === true) state.pinnedNotes.add(op.noteId);
@@ -523,6 +542,7 @@ function applyNoteOp(state, op, { user, now }) {
         updatedBy: user?.id ?? null,
         updatedByName: user?.displayName ?? null,
       });
+      state.noteNews.unread.delete(note.id); // ma propre modification
       return;
     case 'note.delete':
       if (note && !note.deletedAt) state.notes.set(note.id, { ...note, deletedAt: now, updatedAt: now });
@@ -542,6 +562,18 @@ function applyNoteOp(state, op, { user, now }) {
       if (!note || typeof op.pinned !== 'boolean') return;
       if (op.pinned) state.pinnedNotes.add(note.id);
       else state.pinnedNotes.delete(note.id);
+      return;
+    // Nouveautés : la note ouverte est lue (sur tous mes appareils, par le serveur)
+    case 'note.seen':
+      if (note && Number.isSafeInteger(op.upTo) && op.upTo >= note.version) state.noteNews.unread.delete(note.id);
+      return;
+    // « Masquer les nouveautés de cette note » / « Afficher… »
+    case 'note.mute':
+      if (!note || typeof op.muted !== 'boolean') return;
+      if (op.muted) {
+        state.noteNews.muted.add(note.id);
+        state.noteNews.unread.delete(note.id);
+      } else state.noteNews.muted.delete(note.id);
       return;
     default:
   }
@@ -918,6 +950,30 @@ export function seenTarget(state, listId) {
 }
 
 export const isListMuted = (state, listId) => Boolean(state.news?.lists?.[listId]?.muted);
+
+// --- Notes partagées (étape 3) ---
+// Nouveautés d'une note : modifiée par quelqu'un d'autre depuis ma dernière
+// lecture (calculé par le serveur), « Nouveautés » activé, note pas en
+// sourdine ni dans la corbeille
+export function isNoteUnread(state, noteId) {
+  const note = state.notes.get(noteId);
+  return Boolean(note) && !note.deletedAt && state.news?.enabled !== false
+    && state.noteNews.unread.has(noteId) && !state.noteNews.muted.has(noteId);
+}
+// Une note au moins a des nouveautés (point de la tuile Notes, du menu de gauche)
+export const notesHaveNews = (state) => [...state.noteNews.unread].some((id) => isNoteUnread(state, id));
+export const isNoteNewsMuted = (state, noteId) => state.noteNews.muted.has(noteId);
+// Droit sur une note : propriétaire ou « Peut modifier » écrivent ; une
+// copie d'avant le partage (sans droit) est la mienne
+export const canEditNote = (note) => Boolean(note) && (note.access === undefined || note.access === 'owner' || note.access === 'edit');
+export const isNoteOwner = (note) => Boolean(note) && (note.access === undefined || note.access === 'owner');
+// Personnes d'une note partagée (comptes actifs, le propriétaire d'abord) ;
+// [] si elle n'est partagée avec personne
+export function notePeople(note) {
+  const people = (note?.members ?? []).filter((m) => m.active !== false || m.isOwner);
+  if (people.filter((m) => !m.isOwner).length === 0) return [];
+  return people.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
+}
 
 // « Après l'ajout » : 'quick' (rester sur la liste) ou 'detail' (ouvrir la
 // fiche de l'élément ajouté). Sans choix, une nouvelle liste de courses

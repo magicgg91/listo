@@ -1,5 +1,7 @@
 // Feuille « Partager par lien » (maquettes partage-lien-1 à 7), ouverte
-// depuis le menu d'une liste par son propriétaire.
+// depuis le menu d'une liste par son propriétaire. La même feuille sert au
+// lien public d'une note (étape 3 des notes, openNoteLinkSheet) : mêmes
+// écrans et mêmes mots, seules quelques phrases disent « la note ».
 //
 // États : aucun lien (choix de la durée, mot de passe ou non, « Créer le
 // lien ») ; lien actif (adresse, copie, expiration, mot de passe montré une
@@ -117,14 +119,50 @@ export function openShareSheet(list) {
   part.start();
 }
 
+// Lien public d'une note (propriétaire) : la même feuille
+export function openNoteLinkSheet(note) {
+  const part = noteLinkPart(note, () => sheet.close());
+  const sheet = openSheet({
+    title: t('partage.feuille.titre'),
+    content: part.body,
+    scroll: true,
+    onClose: part.dispose,
+  });
+  part.start();
+}
+
+// Phrases qui nomment ce qui est partagé : la liste (par défaut) ou la note
+const LIST_TEXTS = {
+  active: 'partage.lienActif',
+  create: 'partage.creation.texte',
+  removePassword: 'partage.motDePasse.retirer.texte',
+  open: 'partage.sansMotDePasse',
+};
+const NOTE_TEXTS = {
+  active: 'notes.partage.lienActif',
+  create: 'notes.partage.creation.texte',
+  removePassword: 'notes.partage.motDePasse.retirer.texte',
+  open: 'notes.partage.sansMotDePasse',
+};
+
+// Contenu « lien public » d'une note (feuille, ou section du panneau
+// « Partager la note ») : adresse /api/notes/<id>/share, propriétaire seulement
+export function noteLinkPart(note, close) {
+  return linkPart({ id: note.id, publicLink: note.publicLink ?? null }, close, {
+    url: `/api/notes/${encodeURIComponent(note.id)}/share`,
+    texts: NOTE_TEXTS,
+    key: `note:${note.id}`,
+  });
+}
+
 // Contenu « lien public » (feuille du téléphone, ou section du panneau
 // « Partager la liste » sur ordinateur). close() ferme la fenêtre qui le
-// contient. Renvoie { body, start(), dispose() }.
-export function linkPart(list, close) {
-  const url = `/api/lists/${encodeURIComponent(list.id)}/share`;
+// contient. Renvoie { body, start(), dispose() }. Pour une note : url,
+// texts et key (mémoire du dernier état) donnés par noteLinkPart.
+export function linkPart(list, close, { url = `/api/lists/${encodeURIComponent(list.id)}/share`, texts = LIST_TEXTS, key = list.id } = {}) {
   const body = h('div', { class: 'stack' }, h('p', { class: 'muted' }, t('partage.chargement')));
-  let share = lastKnown.get(list.id) ?? null; // état du lien selon le serveur
-  let loaded = lastKnown.has(list.id);         // état déjà reçu du serveur
+  let share = lastKnown.get(key) ?? null; // état du lien selon le serveur
+  let loaded = lastKnown.has(key);         // état déjà reçu du serveur
   let password = null;     // mot de passe tout juste créé : montré une seule fois
   let editingDuration = false;
   let busy = false;
@@ -146,7 +184,7 @@ export function linkPart(list, close) {
     try {
       share = (await get(url)).share;
       loaded = true;
-      lastKnown.set(list.id, share);
+      lastKnown.set(key, share);
     } catch (error) {
       if (!(error instanceof NetworkError)) {
         toast(errorMessage(error));
@@ -166,7 +204,7 @@ export function linkPart(list, close) {
       const result = await request();
       share = result.share;
       password = result.share?.password ?? null;
-      lastKnown.set(list.id, share && { ...share, password: undefined });
+      lastKnown.set(key, share && { ...share, password: undefined });
       editingDuration = false;
       if (done) toast(done);
       refreshData({ quiet: true }); // icône « lien » de Mes listes
@@ -185,7 +223,7 @@ export function linkPart(list, close) {
     if (!loaded && !offline) return; // chargement en cours
     // Hors ligne sans état connu, mais la liste a un lien : on le dit seulement
     if (!loaded && hasPublicLink(list)) {
-      replace(body, offlineNote(), h('p', { class: 'muted' }, t('partage.lienActif')));
+      replace(body, offlineNote(), h('p', { class: 'muted' }, t(texts.active)));
       return;
     }
     replace(body, share ? activeView(offline) : createView(offline));
@@ -216,7 +254,7 @@ export function linkPart(list, close) {
       act(() => put(url, { durationHours, protect }), { done: t('partage.cree') });
     });
     return [
-      offline ? offlineNote() : h('p', { class: 'muted' }, t('partage.creation.texte')),
+      offline ? offlineNote() : h('p', { class: 'muted' }, t(texts.create)),
       wishNotes(),
       picker.element,
       h('div', { class: 'card' }, h('div', { class: 'row' },
@@ -295,7 +333,7 @@ export function linkPart(list, close) {
         button('lock', t('partage.motDePasse.retirer'), async () => {
           const ok = await confirmDialog({
             title: t('partage.motDePasse.retirer.question'),
-            text: t('partage.motDePasse.retirer.texte'),
+            text: t(texts.removePassword),
             confirmLabel: t('partage.motDePasse.retirer.confirmer'),
           });
           if (ok) act(() => put(url, { password: 'none' }), { done: t('partage.motDePasse.retire') });
@@ -303,7 +341,7 @@ export function linkPart(list, close) {
       ];
     } else {
       passwordPart = [
-        h('p', { class: 'note', role: 'status' }, icon('eye', 'icon--sm'), h('span', {}, t('partage.sansMotDePasse'))),
+        h('p', { class: 'note', role: 'status' }, icon('eye', 'icon--sm'), h('span', {}, t(texts.open))),
         button('lock', t('partage.motDePasse.ajouter'), () => act(() => put(url, { password: 'new' }))),
       ];
     }

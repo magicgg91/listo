@@ -331,8 +331,8 @@ function makeQueue() {
     },
     events: {
       changed: () => setPendingCount(queue?.count() ?? 0),
-      refused: (entry, message, code) => {
-        if (code === NOTE_CONFLICT) markNoteConflict(entry.op);
+      refused: (entry, message, code, result) => {
+        if (code === NOTE_CONFLICT) markNoteConflict(entry.op, result?.current);
         refusals.push({ message, code });
       },
       dropped: () => {},
@@ -345,13 +345,17 @@ function makeQueue() {
 // texte est gardé sur ce téléphone, la note passe « À vérifier » jusqu'à
 // mon choix (screens/note.js). Plusieurs refus de suite (file hors ligne) :
 // le dernier texte l'emporte. Rien n'est écrasé, ni ici ni sur le serveur.
-function markNoteConflict(op) {
+// current : la version actuelle renvoyée avec le refus ; on en garde qui
+// l'a écrite (« Léa a modifié cette note »), avant même la synchronisation.
+function markNoteConflict(op, current = null) {
   const note = app.data.notes.get(op.noteId);
   const kept = app.data.noteConflicts.get(op.noteId);
   app.data.noteConflicts.set(op.noteId, {
     title: op.title ?? kept?.title ?? note?.title ?? '',
     body: op.body ?? kept?.body ?? note?.body ?? '',
     at: new Date().toISOString(),
+    byId: current?.updatedBy ?? kept?.byId ?? null,
+    byName: current?.updatedByName ?? kept?.byName ?? null,
   });
   dataChanged();
 }

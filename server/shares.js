@@ -254,8 +254,14 @@ export function createShareService(ctx) {
 export const ACCESS_COOKIE = 'listo_lien';
 const MAX_ACCESS_ENTRIES = 2000; // plafond de mémoire
 
+// Clé d'un lien dans cette mémoire : son numéro pour une liste,
+// « note:<numéro> » pour une note (server/note-shares.js) : les numéros des
+// deux tables se répètent, un cookie d'un lien de note n'ouvre donc jamais
+// le lien de liste qui aurait le même numéro (et inversement)
+const keyOf = (share) => share.accessKey ?? share.id;
+
 export function createPublicAccess(now = Date.now) {
-  const entries = new Map(); // empreinte du jeton -> { shareId, expiresAt }
+  const entries = new Map(); // empreinte du jeton -> { shareId (clé du lien), expiresAt }
 
   function prune() {
     for (const [key, entry] of entries) if (entry.expiresAt <= now()) entries.delete(key);
@@ -271,7 +277,7 @@ export function createPublicAccess(now = Date.now) {
       // Toujours plein : on oublie les plus anciens (le visiteur ressaisira)
       while (entries.size >= MAX_ACCESS_ENTRIES) entries.delete(entries.keys().next().value);
       const token = crypto.randomBytes(32).toString('base64url');
-      entries.set(hashToken(token), { shareId: share.id, expiresAt });
+      entries.set(hashToken(token), { shareId: keyOf(share), expiresAt });
       return { token, maxAge: expiresAt - t };
     },
 
@@ -285,10 +291,11 @@ export function createPublicAccess(now = Date.now) {
         entries.delete(key);
         return false;
       }
-      return entry.shareId === share.id;
+      return entry.shareId === keyOf(share);
     },
 
-    // Efface tous les accès d'un lien
+    // Efface tous les accès d'un lien (shareId : numéro d'un lien de liste,
+    // ou « note:<numéro> » pour une note)
     revokeShare(shareId) {
       for (const [key, entry] of entries) if (entry.shareId === shareId) entries.delete(key);
     },

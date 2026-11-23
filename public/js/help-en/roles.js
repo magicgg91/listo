@@ -91,7 +91,7 @@ export default {
       id: 'lien-public',
       title: "Owner: the public link",
       blocks: [
-        "“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]).",
+        "“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]). A note has its own public link too, with the same rules: “Public link” in its ⋮ menu ([[notes-partage]]).",
         { ul: [
           "Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.",
           "“Protect with a password”: the password is shown only once. Write it down.",

@@ -7,6 +7,8 @@
 //   PUT    /api/push/settings      préférences du compte { changes, due, wishes,
 //                                   sharing, detail } (vrai ou faux), tous ses appareils
 //   PUT    /api/push/mutes/:listId « Silencer cette liste » { muted } (membres seulement)
+//   PUT    /api/push/note-mutes/:noteId « Couper les notifications de cette
+//                                   note » { muted } (ceux qui voient la note)
 //
 // « Cet appareil » : la session de la requête. Protégées par la session et
 // la protection CSRF communes à toute l'API (server/app.js), et limitées en
@@ -25,6 +27,7 @@ export const TAKEN = 'alertes.autreCompte';
 export const BAD_SETTINGS = 'alertes.reglageInvalide';
 export const BAD_MUTE = 'alertes.silencerInvalide';
 export const LIST_NOT_FOUND = 'alertes.listeIntrouvable';
+export const NOTE_NOT_FOUND = 'alertes.noteIntrouvable';
 export const TOO_MANY = 'alertes.tropDeDemandes';
 export const TEST_RESULTS = {
   sent: null,
@@ -51,6 +54,7 @@ export function pushRoutes(ctx) {
     device: { subscribed: push.subscribed(req.sessionId) },
     settings: notify.settingsOf(req.user.id),
     mutedLists: notify.mutedLists(req.user.id),
+    mutedNotes: notify.mutedNotes(req.user.id),
   });
 
   router.get('/push', (req, res) => res.json(state(req)));
@@ -84,6 +88,16 @@ export function pushRoutes(ctx) {
     if (typeof req.body?.muted !== 'boolean') return res.status(400).json({ error: req.t(BAD_MUTE) });
     notify.setMuted(req.user.id, listId, req.body.muted);
     res.json({ mutedLists: notify.mutedLists(req.user.id) });
+  });
+
+  router.put('/push/note-mutes/:noteId', (req, res) => {
+    if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
+    const noteId = String(req.params.noteId).toLowerCase();
+    // Note inconnue, dans la corbeille, ou qu'on ne voit pas : la même réponse
+    if (!isUuid(noteId) || !notify.seesNote(req.user.id, noteId)) return res.status(404).json({ error: req.t(NOTE_NOT_FOUND) });
+    if (typeof req.body?.muted !== 'boolean') return res.status(400).json({ error: req.t(BAD_MUTE) });
+    notify.setNoteMuted(req.user.id, noteId, req.body.muted);
+    res.json({ mutedNotes: notify.mutedNotes(req.user.id) });
   });
 
   router.post('/push/test', async (req, res) => {

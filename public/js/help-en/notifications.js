@@ -28,9 +28,9 @@ export default {
         { table: {
           head: ['Kind', 'When', 'Example'],
           rows: [
-            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list.", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’"],
+            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour.", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’"],
             ['“Wishes”', "Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations.", "‘Marc reserved a wish’"],
-            ['“Sharing”', "You're added to a list, or your access changes.", "‘Léa added you to “Home”’"],
+            ['“Sharing”', "You're added to a list or a note, or your access changes.", "‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’"],
             ['“Due”', "Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([[heure]]).", "‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’"],
           ],
         } },
@@ -48,7 +48,7 @@ export default {
       id: 'notif-silencer',
       title: 'Turning off notifications for a list',
       blocks: [
-        "The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list.",
+        "The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.",
         "This is separate from “Hide what's new in this list” (badges and glow, [[nouveautes]]): you can keep what's new for a list without getting its notifications, and the other way around.",
       ],
     },

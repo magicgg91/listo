@@ -129,6 +129,12 @@ export default {
   'ops.notesLimite': 'You already have {max} notes, trash included: delete some before creating another.',
   'ops.notesInvalides': 'Invalid list of notes.',
   'ops.notesTropVite': 'Too many note saves right now. They will be sent again in a little while.',
+  // Partage des notes (étape 3)
+  'ops.proprietaireNePeutPasQuitterNote': "The owner can't leave their note. Delete it instead.",
+  'ops.proprietaireTousDroitsNote': 'The owner has full rights to their note.',
+  'ops.droitSansPartageNote': "Access given to someone the note isn't shared with.",
+  'ops.repereLectureNoteInvalide': 'Invalid read marker for the note.',
+  'ops.reglageSourdineNoteInvalide': 'Invalid “Hide what\'s new in this note” setting.',
 
   // Synchronisation
   'ops.parametreSinceInvalide': 'Invalid “since” parameter.',

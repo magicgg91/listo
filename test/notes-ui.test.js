@@ -66,7 +66,7 @@ test('enregistrement automatique : une seconde après la dernière frappe, en qu
 
 test('conflit : rien n\'est écrasé, mon texte reste sur l\'appareil ; les trois choix et « Décider plus tard »', () => {
   const actions = code('public/js/actions.js');
-  assert.match(actions, /if \(kept \|\| note\.version !== baseVersion\) \{\s*app\.data\.noteConflicts\.set\(noteId, \{ title, body, at: now\(\) \}\);/);
+  assert.match(actions, /if \(kept \|\| note\.version !== baseVersion\) \{\s*app\.data\.noteConflicts\.set\(noteId, \{ \.\.\.\(kept \?\? \{\}\), title, body, at: now\(\) \}\);/);
   // Enregistrement qui suit un autre encore en file : remplacé tant qu'il n'est pas parti, sinon chaîné (afterOp)
   assert.match(actions, /previous && !isQueuedSending\(previous\.seq\) && await replaceQueuedOp\(previous\.seq, \{ \.\.\.previous\.op, title, body \}\)/);
   assert.match(actions, /\.\.\.\(previous \? \{ afterOp: previous\.op\.id \} : \{\}\)/);
@@ -101,7 +101,7 @@ test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, «
 
 test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) en bas sur les écrans des notes, note ouverte à droite', () => {
   const side = code('public/js/screens/pc-side.js');
-  assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesCount\);/);
+  assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote', 'noteTrash'\];/);
   assert.match(side, /newList\.hidden = NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
   const app = code('public/js/app.js');

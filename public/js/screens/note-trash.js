@@ -51,6 +51,9 @@ export function renderNoteTrash(onLeave) {
     toast(t('notes.corbeille.restauree', { name: titleOf(note) }));
   }
 
+  // Nombre de personnes avec qui la note est partagée (sans moi)
+  const shared = (note) => (note.members ?? []).filter((m) => !m.isOwner).length;
+
   // Une ligne : titre, date de suppression et jours restants, actions
   const row = (note) => {
     const name = titleOf(note);
@@ -58,7 +61,9 @@ export function renderNoteTrash(onLeave) {
     return h('div', { class: 'note-trash' },
       h('div', { class: 'note-trash__body' },
         h('span', { class: 'note-trash__title' }, name),
-        h('span', { class: 'note-trash__when' }, t('notes.corbeille.ligne', { date, count: trashDaysLeft(note.deletedAt) }))),
+        h('span', { class: 'note-trash__when' }, t('notes.corbeille.ligne', { date, count: trashDaysLeft(note.deletedAt) })),
+        // Partagée : restaurée, elle revient aussi pour ces personnes
+        shared(note) ? h('span', { class: 'note-trash__when' }, t('notes.corbeille.partagee', { count: shared(note) })) : null),
       h('div', { class: 'note-trash__actions' },
         h('button', { class: 'cart__action cart__action--danger', type: 'button', 'aria-label': t('notes.corbeille.definitif.label', { name }), onClick: () => purgeOne(note) }, t('notes.corbeille.definitif')),
         h('button', { class: 'btn btn--sm btn--secondary', type: 'button', 'aria-label': t('notes.corbeille.restaurer.label', { name }), onClick: () => restore(note) }, t('notes.corbeille.restaurer'))));

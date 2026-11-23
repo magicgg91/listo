@@ -42,6 +42,16 @@ export default {
   'alertes.partage.droit.modification': 'You can now edit it.',
   'alertes.partage.droit.lecture': 'It\'s now read only for you.',
 
+  // Notes (étape 3) : modifications des autres (count : nombre de
+  // personnes), partage, droit changé ; sans titre : « une note »
+  'alertes.note.modifie': { one: '{people} edited the note “{note}”', other: '{people} edited the note “{note}”' },
+  'alertes.note.modifie.sansTitre': { one: '{people} edited a note', other: '{people} edited a note' },
+  'alertes.note.partage': '{actor} shared the note “{note}” with you',
+  'alertes.note.partage.sansTitre': '{actor} shared a note with you',
+  'alertes.note.droit': 'Your access to the note “{note}” has changed',
+  'alertes.note.droit.sansTitre': 'Your access to a note has changed',
+  'alertes.noteIntrouvable': 'Note not found.',
+
   // b) Résumé quotidien des échéances
   'alertes.echeances.aujourdhui': { one: '{count} task due today', other: '{count} tasks due today' },
   // En retard, après « … à faire aujourd'hui »

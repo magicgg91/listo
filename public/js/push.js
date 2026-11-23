@@ -24,14 +24,16 @@ import { get, put, post, del } from './api.js';
 import { t } from './i18n.js';
 
 // Dernier état connu du serveur (préférences, listes silencées)
-const known = { settings: null, muted: new Set() };
+const known = { settings: null, muted: new Set(), mutedNotes: new Set() };
 function remember(server) {
   if (server?.settings) known.settings = server.settings;
   if (Array.isArray(server?.mutedLists)) known.muted = new Set(server.mutedLists);
+  if (Array.isArray(server?.mutedNotes)) known.mutedNotes = new Set(server.mutedNotes);
   return server;
 }
 export const pushSettings = () => known.settings;
 export const isListPushMuted = (listId) => known.muted.has(listId);
+export const isNotePushMuted = (noteId) => known.mutedNotes.has(noteId);
 
 // Préférences : { changes?, wishes?, sharing?, detail? } (vrai ou faux)
 export async function savePushSettings(changes) {
@@ -41,6 +43,11 @@ export async function savePushSettings(changes) {
 // « Couper les notifications de cette liste » / « Réactiver les notifications de cette liste »
 export async function setListPushMuted(listId, muted) {
   remember(await put(`/api/push/mutes/${encodeURIComponent(listId)}`, { muted }));
+}
+
+// « Couper les notifications de cette note » / « Réactiver les notifications de cette note »
+export async function setNotePushMuted(noteId, muted) {
+  remember(await put(`/api/push/note-mutes/${encodeURIComponent(noteId)}`, { muted }));
 }
 
 // Relit l'état du serveur (préférences, listes silencées) ; sans réseau : rien

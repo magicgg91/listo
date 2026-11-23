@@ -710,6 +710,59 @@ export const MIGRATIONS = [
   );
   CREATE INDEX note_user_state_user ON note_user_state(user_id);
   `,
+
+  // --- Migration 37 : partage des notes (23 novembre 2026, étape 3 du cadrage) ---
+  // note_members : les personnes avec qui une note est partagée et leur
+  // droit ('modification' : « Peut modifier » ; 'lecture' : « Lecture
+  // seule »), comme list_members ; le propriétaire n'y figure pas (il a tous
+  // les droits, notes.owner_id).
+  // notes.changed_at : dernier changement de la note POUR LA
+  // SYNCHRONISATION (texte, corbeille, mais aussi partage et lien public) ;
+  // updated_at reste la date de modification du texte, montrée à l'écran
+  // (ajouter une personne ne doit pas faire remonter la note). Les notes
+  // existantes reçoivent leur date de modification.
+  // note_user_state reçoit ce qui est propre à chaque personne, en plus de
+  // l'épingle (une seule ligne par personne et par note, effacée quand elle
+  // perd l'accès : épingle, lecture et sourdines partent ensemble) :
+  // last_read_version (Nouveautés : la dernière version lue ; une note
+  // modifiée par quelqu'un d'autre au-delà est « nouvelle »), muted_news
+  // (« Masquer les nouveautés de cette note ») et muted_push (« Couper les
+  // notifications de cette note »). Deux sourdines séparées, comme
+  // list_reads.muted et push_list_mutes pour les listes.
+  // note_public_shares : lien public d'une note, mêmes colonnes et mêmes
+  // règles que public_shares (empreinte du jeton, jeton chiffré pour le
+  // réafficher au propriétaire, mot de passe haché, expiration, arrêt) ;
+  // un seul lien non arrêté par note.
+  `
+  ALTER TABLE notes ADD COLUMN changed_at TEXT;
+  UPDATE notes SET changed_at = updated_at;
+  CREATE INDEX notes_changed ON notes(changed_at);
+
+  CREATE TABLE note_members (
+    note_id TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    access  TEXT    NOT NULL DEFAULT 'lecture' CHECK (access IN ('modification', 'lecture')),
+    PRIMARY KEY (note_id, user_id)
+  );
+  CREATE INDEX note_members_user ON note_members(user_id);
+
+  ALTER TABLE note_user_state ADD COLUMN last_read_version INTEGER NOT NULL DEFAULT 0 CHECK (last_read_version >= 0);
+  ALTER TABLE note_user_state ADD COLUMN muted_news INTEGER NOT NULL DEFAULT 0 CHECK (muted_news IN (0, 1));
+  ALTER TABLE note_user_state ADD COLUMN muted_push INTEGER NOT NULL DEFAULT 0 CHECK (muted_push IN (0, 1));
+
+  CREATE TABLE note_public_shares (
+    id            INTEGER PRIMARY KEY,
+    note_id       TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    token_hash    TEXT    NOT NULL UNIQUE,
+    token_sealed  TEXT    NOT NULL,
+    password_hash TEXT,
+    expires_at    TEXT,
+    created_by    INTEGER NOT NULL REFERENCES users(id),
+    created_at    TEXT    NOT NULL,
+    revoked_at    TEXT
+  );
+  CREATE UNIQUE INDEX note_public_shares_one_per_note ON note_public_shares(note_id) WHERE revoked_at IS NULL;
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

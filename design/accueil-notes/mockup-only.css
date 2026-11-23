@@ -1,0 +1,41 @@
+/* Présentation des maquettes uniquement. Ne pas livrer.
+   1. Éléments de l'application actuelle (public/css/app.css) recréés pour
+      que les pages de référence se lisent seules : à ignorer, ils existent.
+   2. Planche (fond, légendes) et mode capture (capture.mjs).
+   3. Faux curseur de saisie (une capture ne montre pas le vrai). */
+
+/* 1. Recréés (app.css) */
+.screen { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.cards { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-1) var(--space-2) 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sync { border: 1px solid var(--color-border); }
+.app .sync--ok { color: var(--color-success-ink); }
+.app .btn { font-size: var(--text-base); font-weight: 600; line-height: 1.2; }
+.app .btn--primary { color: var(--color-on-accent); }
+.app .btn--danger-outline { color: var(--color-danger-ink); }
+.app .fab { color: var(--color-on-accent); font-size: var(--text-base); font-weight: 700; }
+.chip--readonly { height: 24px; padding: 0 8px; }
+.item.swipe { position: relative; padding-right: 0; }
+.swipe { position: relative; overflow: hidden; }
+.swipe__slide { position: relative; z-index: 1; transition: none; }
+.swipe__delete { position: absolute; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 104px; padding: 0; border: 0; background: var(--color-danger); color: var(--color-on-danger); font-size: var(--text-sm); font-weight: 700; }
+.swipe.is-open .swipe__slide { transform: translateX(-104px); }
+
+/* 2. Planche */
+html, body { margin: 0; }
+body { background: var(--color-bg); color: var(--color-text); font-family: var(--font); }
+.board { padding: 32px 40px 48px; background: var(--color-neutral-soft); }
+.board__title { margin: 0 0 4px; font-size: 24px; }
+.board__note { margin: 0 0 24px; color: var(--color-text-2); }
+.board__shots { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px; }
+.board .shot figcaption { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--color-text-2); }
+.board .shot figcaption code { font-size: 13px; color: var(--color-text); }
+/* Mode capture : un seul écran, sans cadre, à 0,0 (posé par capture.mjs) */
+.is-capture .phone, .is-capture .desk { border: 0; border-radius: 0; box-shadow: none; }
+.is-capture body { background: var(--color-bg); }
+.is-capture *, .is-capture *::before, .is-capture *::after { animation: none !important; transition: none !important; }
+
+/* 3. Faux curseur */
+.mock-caret { display: inline-block; width: 2px; height: 1.15em; margin-left: 1px; vertical-align: text-bottom; background: var(--color-accent); }
+.mock-field { cursor: text; }
+.mock-field { white-space: pre-wrap; }

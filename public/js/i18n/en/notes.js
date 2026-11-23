@@ -52,6 +52,7 @@ export default {
   'notes.statut.enregistre': 'Saved',
   'notes.statut.enCours': 'Saving…',
   'notes.statut.horsLigne': 'Offline · saved on this phone',
+  'notes.statut.horsLigne.court': 'Offline',
   'notes.statut.aVerifier': 'Needs checking · your version stays on this phone',
   // On a computer, “this device” (never “this phone”)
   'notes.statut.horsLigne.pc': 'Offline · saved on this device',

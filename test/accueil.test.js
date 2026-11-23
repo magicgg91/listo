@@ -271,8 +271,8 @@ test('kit : sections 16.19 à 16.21 identiques dans design/ et public/, couleurs
   assert.doesNotMatch(section, /#[0-9a-f]{3,8}\b|rgba?\(/i);
   assert.match(section, /\.tabbar--4 \.tabbar__pill \{ width: calc\(\(100% - 10px\) \/ 4\); \}/);
   assert.match(section, /\.tabbar\[data-current="3"\] \.tabbar__pill \{ transform: translateX\(300%\); \}/);
-  // Lignes des tuiles : 48 px (téléphone), une colonne sous 340 px
-  assert.match(section, /\.tile__row \{[^}]*min-height: var\(--tap\);/);
+  // Lignes des tuiles : 44 px, rectangles arrondis (Accueil compact, 23 novembre 2026), une colonne sous 340 px
+  assert.match(section, /\.tile__row \{[^}]*min-height: var\(--tap-min\);[^}]*border-radius: var\(--radius-sm\);/);
   assert.match(section, /@media \(max-width: 339\.98px\) \{ \.tiles \{ grid-template-columns: minmax\(0, 1fr\); \} \}/);
   // Nouveaux fichiers gardés pour l'ouverture sans réseau
   const sw = read('public/sw.js');

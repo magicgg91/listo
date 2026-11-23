@@ -1009,15 +1009,15 @@
 .home-head__tools .sync { position: relative; }
 .home-head__tools button.sync::after { content: ""; position: absolute; inset: -8px -2px; }
 
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 12px; padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px)); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 10px; padding: var(--space-1) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 339.98px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
-.tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px var(--space-1) var(--space-1); }
+.tile { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 4px var(--space-1) var(--space-1); }
 .tile__head { display: flex; align-items: center; gap: var(--space-1); width: 100%; min-height: var(--tap-min); padding: 0 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text); font-size: var(--text-lg); font-weight: 700; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
 .tile__head:active { background: var(--color-neutral-soft); }
 .tile__head .icon { color: var(--color-accent-ink); }
 .tile__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tile__rows { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.tile__row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--tap); padding: 0 var(--space-1) 0 12px; border: 0; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text); font-size: var(--text-base); font-weight: 500; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
+.tile__rows { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.tile__row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--tap-min); padding: 0 var(--space-1) 0 12px; border: 0; border-radius: var(--radius-sm); background: var(--color-neutral-soft); color: var(--color-text); font-size: var(--text-base); font-weight: 500; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
 .tile__row:active { background: var(--color-border); }
 .tile__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tile__row > .icon { flex: none; color: var(--color-text-2); }
@@ -1025,11 +1025,15 @@
 .tile__row--add > .icon { color: inherit; }
 .tile__row--add:active { background: var(--color-accent-soft); filter: brightness(0.96); }
 .tile__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
-.tile__empty { padding: 10px 12px; border-radius: var(--radius-sm); color: var(--color-text-2); font-weight: 500; line-height: var(--lh-tight); }
+.tile__empty { padding: 6px 12px; border-radius: var(--radius-sm); color: var(--color-text-2); font-weight: 500; line-height: var(--lh-tight); }
 
 .count { display: inline-grid; flex: none; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: var(--radius-pill); background: var(--color-text-2); color: var(--color-surface); font-size: var(--text-sm); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .count--danger { background: var(--color-danger); color: var(--color-on-danger); }
 .count--success { background: var(--color-success-ink); color: var(--color-surface); }
+/* Accueil plus compact (essai sur iPhone, 23 novembre 2026) : encarts en
+   rectangles arrondis de 44 px, moins d'espace, pastilles de 24 px, pour
+   que tout tienne sans défiler */
+.tile .count { min-width: 24px; height: 24px; }
 
 /* 16.20 Bandeau du bas à quatre boutons (étape 1, 23 novembre 2026) :
    Accueil, Échéances, Listes, Réglages. Depuis l'étape 2, Notes s'ajoute
@@ -1284,7 +1288,7 @@
 .list-card--auto .list-card__left { gap: 6px 12px; }
 .tile--wide { grid-column: 1 / -1; }
 .app--pc .tile--wide { grid-column: auto; }
-.tile__row--two { min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
+.tile__row--two { min-height: 50px; padding-top: 4px; padding-bottom: 4px; }
 .tile__row--two .tile__label { display: flex; flex-direction: column; gap: 2px; }
 .tile__strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .tile__sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }

@@ -216,7 +216,7 @@ Les opérations hors ligne (`note.create`, `note.update` avec la version de dép
 
 ## 8. Découpage en étapes
 
-Une PR par étape, validée avant la suivante :
+Chaque étape est validée avant la suivante. **Livraison** (choix du propriétaire du 23 novembre 2026) : les quatre étapes sont poussées sur `dev` sans PR, validées sur les captures envoyées (et, si le propriétaire le veut, avec `docker-compose.dev.yml`) ; une seule PR `dev` → `main` à la fin, quand il le dira.
 
 1. **Accueil et navigation** : écran Accueil (tuiles Échéances, Listes, Compte ; tuile Notes prévue mais masquée ; cloche masquée jusqu'à l'étape 4), bandeau dans l'ordre Accueil, Échéances, Listes, Réglages (Notes ajouté à l'étape 2), absent de l'Accueil ; « Mes listes » devient « Listes » ; premier écran ; menu de gauche de l'ordinateur qui suit l'écran (sans le filtre des types).
 2. **Notes, socle** (migration 36) : notes, écran Notes et écran d'une note, enregistrement automatique, conflits, hors ligne, temps réel, catégories, corbeille ; tuile Notes et bouton Notes du bandeau.

@@ -187,3 +187,19 @@ test('monnaie : le champ du prix dit le nom de la monnaie réglée, au pluriel, 
   assert.equal(currencyName({ locale: 'en', currency: 'USD' }), 'US dollars');
   assert.equal(fr['liste.fiche.prix.unite'], 'en {currency}');
 });
+
+test('monnaie : l\'icône du prix d\'un souhait est l\'euro pour l\'euro seulement (une étiquette sinon), dans la liste et sur le lien public', async () => {
+  const { setCurrency, priceIcon } = await import('../public/js/i18n.js');
+  setCurrency('EUR');
+  assert.equal(priceIcon(), 'euro');
+  for (const code of ['USD', 'CHF', 'GBP']) {
+    setCurrency(code);
+    assert.equal(priceIcon(), 'tag', code);
+  }
+  setCurrency('EUR');
+  for (const file of ['public/js/screens/list.js', 'public/js/public.js']) {
+    const source = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /icon\('euro'/, file);
+    assert.match(source, /icon\(priceIcon\(\), 'icon--xs'\)/, file);
+  }
+});

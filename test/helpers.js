@@ -77,6 +77,7 @@ export async function startTestApp(t, { config = {}, setupCode = SETUP_CODE, jou
   await once(server, 'listening');
   t.after(() => {
     app.locals.ctx.events.closeAll(); // flux temps réel encore ouverts
+    app.locals.ctx.notify?.stop();    // vérifications régulières des notifications (page Notifications)
     server.close();
   });
   const base = `http://127.0.0.1:${server.address().port}`;

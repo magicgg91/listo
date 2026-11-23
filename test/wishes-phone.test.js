@@ -33,7 +33,7 @@ test('copie locale : réservations telles que reçues, remplacées à chaque syn
   const beneficiary = loadSync(emptyState(), base({}));
   assert.equal(computeListView(beneficiary, 'L').reservations, null);
   const snapshot = toSnapshot(beneficiary, 'x');
-  assert.equal(SNAPSHOT_VERSION, 3);
+  assert.equal(SNAPSHOT_VERSION, 5); // (5 : partage des notes)
   assert.deepEqual(snapshot.reservations, {});
   assert.equal(JSON.stringify(snapshot).includes('Marie'), false);
   assert.deepEqual(fromSnapshot(JSON.parse(JSON.stringify(toSnapshot(viewer, 'x')))).reservations, { L: [] });

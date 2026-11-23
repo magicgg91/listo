@@ -72,6 +72,12 @@ const ALLOWED_FOCUS = new Map([
   // Fiche d'une tâche : sous-pages (décision du 11 novembre 2026)
   // Changement d'écran : le titre h1 du nouvel écran (tabindex="-1")
   ['public/js/app.js: heading', 'titre h1 du nouvel écran (tabindex="-1") après un changement d\'écran, jamais un champ'],
+  // Notes (décision du 23 novembre 2026) : « Nouvelle note » (saisie rapide
+  // de l'Accueil, « + » de l'écran Notes, touche N) est un geste fait pour
+  // écrire, le curseur va dans le texte ; toucher le texte affiché d'une
+  // note (ou Entrée) le remplace par le champ, curseur à l'endroit touché
+  ['public/js/screens/notes.js: text', 'EXCEPTION voulue : texte de la saisie rapide, juste après un appui sur « Nouvelle note »'],
+  ['public/js/screens/note.js: input', 'EXCEPTION voulue : texte d\'une note, après « Nouvelle note » (+, N) ou un appui sur le texte affiché'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
   ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: moveTarget', '« Réordonner » des sous-tâches : après Monter, Descendre, Réordonner ou Terminé, le focus reste sur le bouton touché (un bouton, jamais un champ)'],
@@ -84,11 +90,16 @@ const ALLOWED_FOCUS = new Map([
   ['scripts/site-assets/guide.js: button', 'retour au bouton « Sommaire » à la fermeture de la feuille'],
 ]);
 
+// Seul setSelectionRange permis : le curseur d'une note, placé à l'endroit
+// touché du texte affiché (geste fait pour écrire, décision du 23 novembre 2026)
+const ALLOWED_SELECTION = ['public/js/screens/note.js'];
+
 test('aucun .select(), autofocus ni setSelectionRange dans l\'interface', () => {
   for (const file of interfaceFiles()) {
     for (const { number, code } of codeLines(file)) {
       assert.ok(!/\.select\(\s*\)/.test(code), `${file}:${number} : .select() met le curseur dans un champ`);
       assert.ok(!/autofocus/i.test(code), `${file}:${number} : autofocus met le curseur dans un champ`);
+      if (ALLOWED_SELECTION.includes(file)) continue;
       assert.ok(!/setSelectionRange/.test(code), `${file}:${number} : setSelectionRange place le curseur dans un champ`);
     }
   }

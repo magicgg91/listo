@@ -1,9 +1,13 @@
-// Bandeau du bas du téléphone (décision du 11 novembre 2026) : trois
-// boutons, « Mes listes », « Échéances » et « Réglages », en style verre, et
-// la loupe ronde qui flotte juste au-dessus, à droite.
+// Bandeau du bas du téléphone (décision du 11 novembre 2026) : en style
+// verre, et la loupe ronde qui flotte juste au-dessus, à droite.
+// Cinq boutons depuis le 23 novembre 2026 (étape 2), dans cet ordre :
+// « Accueil », « Échéances », « Listes », « Notes », « Réglages » (la classe
+// tabbar--N suit le nombre de boutons).
 //
-// - Il n'existe que sur ces trois écrans (pas dans une liste, où le bas est
-//   pris par le champ d'ajout), et pas sur ordinateur (menu de gauche).
+// - Il n'existe que sur Échéances, Listes, Notes et Réglages : pas sur l'Accueil
+//   (ses tuiles mènent déjà partout, décision du 23 novembre 2026), pas dans
+//   une liste (le bas est pris par le champ d'ajout), et pas sur ordinateur
+//   (menu de gauche).
 // - Il prend toute la largeur et garde la même place : les boutons ne
 //   bougent jamais d'un écran à l'autre. Sur « Réglages », il n'y a rien à
 //   chercher : la loupe n'est pas affichée.
@@ -25,26 +29,28 @@ import { t } from './i18n.js';
 // [écran, icône, libellé] (le libellé est une fonction : il est lu dans la
 // langue choisie au moment de dessiner le bandeau)
 export const TABS = [
-  ['lists', 'tasks', () => t('navigation.mesListes')],
+  ['home', 'home', () => t('navigation.accueil')],
   ['deadlines', 'calendar', () => t('navigation.echeances')],
+  ['lists', 'tasks', () => t('navigation.listes')],
+  ['notes', 'note', () => t('navigation.notes')],
   ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 
-// L'écran a-t-il le bandeau ?
-export const hasTabs = (routeName) => TABS.some(([name]) => name === routeName);
+// L'écran a-t-il le bandeau ? (l'Accueil ne l'a pas)
+export const hasTabs = (routeName) => routeName !== 'home' && TABS.some(([name]) => name === routeName);
 
-// Aller à un écran du bandeau. « Mes listes » est l'écran de départ : on y
+// Aller à un écran du bandeau. L'Accueil est l'écran de départ : on y
 // revient par un retour en arrière (le bouton Retour du téléphone ne fait
-// pas faire le tour des onglets) ; entre « Échéances » et « Réglages », un
-// écran remplace l'autre.
+// pas faire le tour des onglets) ; entre Échéances, Listes, Notes et
+// Réglages, un écran remplace l'autre.
 export function goToTab(name) {
   const current = app.route?.name;
   if (name === current) return;
-  if (name === 'lists') {
-    goBack('lists');
+  if (name === 'home') {
+    goBack('home');
     return;
   }
-  navigate(name, {}, { replace: current !== 'lists' });
+  navigate(name, {}, { replace: true });
 }
 
 // Libellé lu de « Échéances » avec sa pastille
@@ -98,7 +104,7 @@ function createTabBar() {
       onClick: () => goToTab(name),
     }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? badge : null), h('span', { class: 'tabbar__label' }, label())));
   }
-  const nav = h('nav', { class: 'tabbar glass', 'aria-label': t('navigation.libelle') }, pill, ...buttons.values());
+  const nav = h('nav', { class: `tabbar glass tabbar--${TABS.length}`, 'aria-label': t('navigation.libelle') }, pill, ...buttons.values());
   const loupe = loupeButton();
   const el = h('div', { class: 'tabdock' }, nav, loupe.el);
 

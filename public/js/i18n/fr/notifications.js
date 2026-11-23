@@ -3,7 +3,7 @@
 
 export default {
   // État des notifications sur cet appareil (sous l'interrupteur)
-  'notifications.etat.serveurCoupe': 'Les notifications sont désactivées sur ce serveur Listo. La personne qui l\'administre peut les activer.',
+  'notifications.etat.serveurCoupe': 'Les notifications sur les appareils sont désactivées sur ce serveur Listo. La personne qui l\'administre peut les activer. La page Notifications (cloche de l\'Accueil) fonctionne quand même.',
   'notifications.etat.incompatible': 'Ce navigateur ne sait pas recevoir de notifications. Essayez avec un navigateur à jour.',
   'notifications.etat.iphone': 'Sur iPhone : ajoutez d\'abord Listo à l\'écran d\'accueil, puis ouvrez-le depuis son icône.',
   'notifications.etat.refusees': 'Les notifications ont été refusées pour Listo sur cet appareil. Pour les rétablir, autorisez-les dans les réglages du navigateur ou du téléphone (notifications de ce site ou de l\'application Listo), puis revenez ici.',
@@ -25,7 +25,7 @@ export default {
   'notifications.contenu.detail.texte': 'Le nom des éléments, par exemple « Ajouté : Lait, Pain ». Désactivé : seulement qui a modifié quelle liste.',
 
   // Notes sous les cartes
-  'notifications.compte.note': 'Ces réglages valent pour tous vos appareils.',
+  'notifications.compte.note': 'Ces réglages valent pour la page Notifications et pour tous vos appareils.',
   'notifications.parListe.note': 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».',
   'notifications.confidentialite': 'Le contenu des notifications est chiffré : seul votre appareil peut le lire. Le service de notification de votre appareil (Apple, Google, Mozilla ou Microsoft) voit seulement l\'heure, la taille du message et l\'appareil qui le reçoit.',
 

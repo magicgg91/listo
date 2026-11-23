@@ -31,6 +31,13 @@ export default {
   'lienpublic.expire': 'This link expires on {date}',
   'lienpublic.sansExpiration': 'This link has no expiration date',
 
+  // Page publique d'une note (étape 3 des notes)
+  'lienpublic.note.protegee': 'Protected note',
+  'lienpublic.note.reseau': 'Note unavailable',
+  'lienpublic.note.sansTitre': 'Untitled note',
+  'lienpublic.note.modifiee': 'Changed {date}',
+  'lienpublic.note.vide': 'This note is empty',
+
   // Prénom du visiteur (liste d'envies)
   'lienpublic.prenom': 'Your first name',
   'lienpublic.prenom.aide': 'The family and friends who manage the list will see it, never the other visitors.',

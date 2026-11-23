@@ -32,7 +32,7 @@ import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
-import { computeDeadlines, assigneesFor } from '../deadlines.js';
+import { computeDeadlines, assigneesFor, scopeOffered, loadDeadlineScope, saveDeadlineScope } from '../deadlines.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
@@ -54,11 +54,11 @@ export function renderDeadlines(onLeave) {
 
   // « Toutes / Les miennes » : seulement si une de mes listes de tâches a
   // l'attribution activée ; le choix est retenu sur cet appareil
-  let mine = loadScope();
+  let mine = loadDeadlineScope();
   const scopeButtons = [['all', t('echeances.filtre.toutes')], ['mine', t('echeances.filtre.miennes')]].map(([value, label]) => {
     const button = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
       mine = value === 'mine';
-      saveScope(mine);
+      saveDeadlineScope(mine);
       paintScope();
       draw();
     } });
@@ -68,7 +68,7 @@ export function renderDeadlines(onLeave) {
   });
   const scope = h('div', { class: 'segmented deadlines-scope', role: 'radiogroup', 'aria-label': t('echeances.filtre.label') }, scopeButtons);
   const paintScope = () => {
-    const offered = [...app.data.lists.values()].some((list) => listOptions(list).assign);
+    const offered = scopeOffered(app.data);
     scope.hidden = !offered;
     if (!offered) mine = false;
     for (const button of scopeButtons) {
@@ -188,11 +188,29 @@ export function renderDeadlines(onLeave) {
           : t('echeances.vide.texte'))));
       return;
     }
-    search.show(groups.map((group) => h('section', {},
+    search.show(groups.map((group) => h('section', { 'data-group': group.key },
       h('h2', { class: 'aisle' },
         h('span', { class: 'aisle__name' }, group.title),
         h('span', { class: 'aisle__count', 'aria-label': t('echeances.groupe.nombre', { count: group.entries.length }) }, String(group.entries.length))),
       h('ul', {}, group.entries.map((entry) => row(entry, today))))));
+    showSection();
+  };
+  // Ouvert depuis une ligne de la tuile « Échéances » de l'Accueil
+  // (app.openDeadlines : « late », « today », « tomorrow »…) : la section
+  // est amenée en haut de la zone qui défile, une seule fois (jamais de
+  // curseur mis dans un champ)
+  let section = app.openDeadlines;
+  app.openDeadlines = null;
+  // (la section est recherchée à l'image suivante : l'écran est alors
+  // posé, et il a pu être redessiné entre-temps)
+  const showSection = () => {
+    if (!section) return;
+    const key = section;
+    section = null;
+    requestAnimationFrame(() => {
+      const target = content.querySelector(`[data-group="${key}"]`);
+      if (target) content.scrollTop += target.getBoundingClientRect().top - content.getBoundingClientRect().top;
+    });
   };
   // Aucune tâche trouvée : message, et « Effacer la recherche »
   const noResults = (query) => h('div', { class: 'empty' },
@@ -236,23 +254,4 @@ export function renderDeadlines(onLeave) {
     search.bar,
     scope,
     content);
-}
-
-// Choix « Les miennes » retenu sur cet appareil (jamais envoyé au serveur ;
-// stockage indisponible : « Toutes » pour la visite)
-const SCOPE_KEY = 'listo-echeances-miennes';
-function loadScope() {
-  try {
-    return localStorage.getItem(SCOPE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-function saveScope(mine) {
-  try {
-    if (mine) localStorage.setItem(SCOPE_KEY, '1');
-    else localStorage.removeItem(SCOPE_KEY);
-  } catch {
-    // stockage indisponible : le choix vaut pour la visite
-  }
 }

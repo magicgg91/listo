@@ -26,8 +26,9 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [2.3 Tâches : priorité, échéance, heure, rappel, répétition, attribution](#p-taches)
 - [2.4 Envies : réservation et cotisation](#p-envies)
 - [2.5 Saisie rapide](#p-saisie)
-- [2.6 Hors ligne, corbeille, lien public](#p-securite)
-- [2.7 Sécurité et confort](#p-confort)
+- [2.6 Notes](#p-notes)
+- [2.7 Hors ligne, corbeille, lien public](#p-securite)
+- [2.8 Sécurité et confort](#p-confort)
 
 </details>
 
@@ -78,14 +79,16 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.8 Ajouter une photo](#photo)
 - [5.9 Groupes, tri et compteur](#tri)
 - [5.10 Rechercher](#recherche)
-- [5.11 Se déplacer, Échéances](#echeances)
-- [5.12 Réserver un souhait, cotiser](#reserver)
-- [5.13 Nouveautés](#nouveautes)
-- [5.14 Hors ligne et synchronisation](#hors-ligne)
-- [5.15 Thème clair ou sombre](#theme)
-- [5.16 Langue : français ou anglais](#langue)
-- [5.17 Sur ordinateur](#ordinateur)
-- [5.18 Sous-tâches](#sous-taches)
+- [5.11 Se déplacer : Accueil, Échéances](#echeances)
+- [5.12 Les notes](#notes)
+- [5.13 Partager une note](#notes-partage)
+- [5.14 Réserver un souhait, cotiser](#reserver)
+- [5.15 Nouveautés](#nouveautes)
+- [5.16 Hors ligne et synchronisation](#hors-ligne)
+- [5.17 Thème clair ou sombre](#theme)
+- [5.18 Langue : français ou anglais](#langue)
+- [5.19 Sur ordinateur](#ordinateur)
+- [5.20 Sous-tâches](#sous-taches)
 
 </details>
 
@@ -93,14 +96,15 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 <summary>6. Notifications</summary>
 
 - [Aller au chapitre](#notifications)
-- [6.1 Les activer sur un appareil](#notif-activer)
-- [6.2 Ce que vous recevez, et quand](#notif-recevoir)
-- [6.3 Le détail dans la notification](#notif-detail)
-- [6.4 Couper les notifications d'une liste](#notif-silencer)
-- [6.5 Limites et listes d'envies](#notif-limites)
-- [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)
-- [6.7 Activer la fonction sur le serveur](#notif-serveur)
-- [6.8 Rien ne s'affiche](#notif-depannage)
+- [6.1 La page Notifications](#notif-page)
+- [6.2 Les activer sur un appareil](#notif-activer)
+- [6.3 Ce que vous recevez, et quand](#notif-recevoir)
+- [6.4 Le détail dans la notification](#notif-detail)
+- [6.5 Couper les notifications d'une liste](#notif-silencer)
+- [6.6 Limites et listes d'envies](#notif-limites)
+- [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)
+- [6.8 Activer la fonction sur le serveur](#notif-serveur)
+- [6.9 Rien ne s'affiche](#notif-depannage)
 
 </details>
 
@@ -182,10 +186,10 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 ### 1.2 Ce que Listo ne fait pas
 
 - Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
-- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide aussi.
-- Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
+- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.18 Langue : français ou anglais](#langue)) ; cette aide aussi.
+- La page Notifications (la cloche de l'Accueil) garde ce que Listo vous signale. Les notifications sur le téléphone ou l'ordinateur sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
-- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. Assistants IA (MCP)](#claude)).
+- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. Assistants IA (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -207,6 +211,7 @@ Le type se choisit à la création de la liste. Une liste de courses peut deveni
 - Lecture seule : une personne qui peut seulement lire la liste.
 - Visiteur : une personne sans compte qui ouvre le lien public d'une liste.
 - Bénéficiaire : la personne à qui une liste d'envies est destinée.
+- Note : un texte libre, à part des listes, à vous seul au départ ; elle se partage comme une liste ([5.12 Les notes](#notes)).
 - Admin : le compte qui gère les comptes, les magasins et les rayons.
 
 <a id="possibilites"></a>
@@ -221,8 +226,8 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([7.4 Propriétaire : partager et choisir les droits](#partager)).
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
-- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.13 Nouveautés](#nouveautes)).
-- Notifications, facultatives : modifications (des autres), réservations, partage et résumé des échéances, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
+- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.15 Nouveautés](#nouveautes)).
+- Notifications : modifications (des autres), réservations, partage, résumé des échéances et rappels, dans la page Notifications (la cloche de l'Accueil) et, si vous le voulez, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
 - Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-courses"></a>
@@ -242,7 +247,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Une heure, et un rappel choisi tâche par tâche ([5.2 Heure et rappel](#heure)).
 - Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.3 Tâches qui se répètent](#repeter)).
 - Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.4 Attribuer une tâche](#attribuer)).
-- Ranger des sous-tâches sous une tâche principale ([5.18 Sous-tâches](#sous-taches)).
+- Ranger des sous-tâches sous une tâche principale ([5.20 Sous-tâches](#sous-taches)).
 - Tri par priorité ou par échéance ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
@@ -250,7 +255,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 ### 2.4 Envies : réservation et cotisation
 
 - Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([7.5 Propriétaire : liste d'envies](#envies)).
-- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.12 Réserver un souhait, cotiser](#reserver)).
+- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.14 Réserver un souhait, cotiser](#reserver)).
 - La personne à qui la liste est destinée ne voit jamais les réservations ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 - Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([7.10 Visiteur du lien public](#role-visiteur)).
 
@@ -263,21 +268,29 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Mode scan : le code-barres d'un produit, photographié, donne son nom ([5.7 Scanner un code-barres](#scan)).
 - Photo d'un article ([5.8 Ajouter une photo](#photo)).
 
+<a id="p-notes"></a>
+
+### 2.6 Notes
+
+- Des notes en texte libre, qui s'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([5.12 Les notes](#notes)).
+- Une note se partage comme une liste (« Peut modifier » ou « Lecture seule »), ou par un lien public en lecture seule ([5.13 Partager une note](#notes-partage)).
+- Une note rapide depuis l'Accueil, même hors ligne ([5.12 Les notes](#notes)).
+
 <a id="p-securite"></a>
 
-### 2.6 Hors ligne, corbeille, lien public
+### 2.7 Hors ligne, corbeille, lien public
 
-- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.14 Hors ligne et synchronisation](#hors-ligne)).
-- Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
-- Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)).
+- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.16 Hors ligne et synchronisation](#hors-ligne)).
+- Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi, depuis la corbeille des notes ([5.12 Les notes](#notes)).
+- Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)) ; une note aussi ([5.13 Partager une note](#notes-partage)).
 
 <a id="p-confort"></a>
 
-### 2.7 Sécurité et confort
+### 2.8 Sécurité et confort
 
 - Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
-- Thème clair, sombre ou automatique ([5.15 Thème clair ou sombre](#theme)).
+- Thème clair, sombre ou automatique ([5.17 Thème clair ou sombre](#theme)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([8. Assistants IA (MCP)](#claude)).
 
@@ -373,7 +386,7 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_PRODUCT_CONTACT` | absente | Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_MCP` | absente : désactivé | `on` active l'accès des assistants IA, par exemple Claude ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
 | `LISTO_MCP_SITES` | absente : tous les assistants IA | Facultative : sites des assistants IA acceptés, séparés par des virgules (par exemple `claude.ai,claude.com`), en plus des applications de l'ordinateur (`localhost`). Absente : tout assistant IA qui suit le standard peut demander l'accès, toujours après votre accord ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Une valeur mal écrite (`https://`, chemin, port, adresse IP, `*`) : Listo ne démarre pas et l'explique dans `docker logs`. |
-| `LISTO_PUSH` | absente : désactivées | `on` active les notifications ([6.7 Activer la fonction sur le serveur](#notif-serveur)) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées. |
+| `LISTO_PUSH` | absente : désactivées | `on` active les notifications ([6.8 Activer la fonction sur le serveur](#notif-serveur)) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées. |
 | `LISTO_OIDC` | absente : désactivée | `on` active la connexion par un fournisseur d'identité OpenID Connect ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée. |
 | `LISTO_OIDC_ISSUER` | absente | Adresse du fournisseur d'identité (son “issuer”), en `https://` (par exemple `https://auth.exemple.fr`). |
 | `LISTO_OIDC_CLIENT_ID` | absente : `listo` | Identifiant de Listo chez le fournisseur d'identité (`client_id`). |
@@ -454,7 +467,7 @@ cat /opt/listo/secrets/secret.key
 
 Sans elle, après une panne du serveur ou une restauration sur une autre machine, les doubles authentifications ne se lisent plus : chacun doit les refaire ([9.8 La clé secrète a été perdue](#cle-perdue)). Les listes, les photos et les mots de passe, eux, ne dépendent pas d'elle. Elle n'est jamais copiée dans les sauvegardes de la nuit, volontairement : gardez-la à part, une fois pour toutes.
 
-Avec les notifications activées (`LISTO_PUSH=on`), gardez de la même façon `secrets/vapid.json` (clés des notifications) : sans lui, chaque appareil doit se réabonner ([6.7 Activer la fonction sur le serveur](#notif-serveur)).
+Avec les notifications activées (`LISTO_PUSH=on`), gardez de la même façon `secrets/vapid.json` (clés des notifications) : sans lui, chaque appareil doit se réabonner ([6.8 Activer la fonction sur le serveur](#notif-serveur)).
 
 <a id="sauvegardes"></a>
 
@@ -660,11 +673,11 @@ Dans une liste de tâches où l'échéance est activée ([7.3 Propriétaire : mo
 
 Une fois l'heure choisie, « Rappel » propose : « Aucun » (au départ), « À l'heure », « 15 min avant », « 30 min avant », « 1 h avant », « 2 h avant » ou « La veille (24 h avant) ». Chaque tâche a son propre rappel.
 
-- Le rappel est une notification ([6. Notifications](#notifications)). Il part vers la personne à qui la tâche est attribuée ([5.4 Attribuer une tâche](#attribuer)) ; si elle n'est attribuée à personne, vers tous les membres de la liste.
+- Le rappel est une notification ([6. Notifications](#notifications)) : il arrive dans la page Notifications, et sur vos appareils où les notifications sont activées. Il part vers la personne à qui la tâche est attribuée ([5.4 Attribuer une tâche](#attribuer)) ; si elle n'est attribuée à personne, vers tous les membres de la liste.
 - Il ne part qu'une fois. Si vous changez la date, l'heure ou le rappel, il repartira au nouveau moment. Une tâche cochée n'envoie rien.
-- Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications, appareils où elles sont activées.
+- Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications.
 - Si le serveur était arrêté au moment prévu, le rappel part encore dans la demi-heure qui suit ; après, il est abandonné.
-- Si les notifications sont coupées sur le serveur, le choix « Rappel » n'apparaît pas.
+- Si les notifications sont coupées sur le serveur, le rappel arrive seulement dans la page Notifications.
 
 <a id="repeter"></a>
 
@@ -693,7 +706,7 @@ Dans une liste de tâches, le propriétaire active « Attribution » dans « Opt
 
 - Sur la ligne, une pastille dit à qui est la tâche : « Moi » (en bleu) ou le prénom.
 - « Trier la liste », « Par personne » : les tâches de « Moi » d'abord, puis celles de chacun, puis celles de « Personne ».
-- « Échéances » propose « Toutes » ou « Les miennes » ([5.11 Se déplacer, Échéances](#echeances)).
+- « Échéances » propose « Toutes » ou « Les miennes » ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
 - Une tâche qui se répète garde la même personne quand elle revient (sauf « Chacun son tour… »).
 - Si la personne quitte la liste, en est retirée ou passe en « Lecture seule », ses tâches reviennent à « Personne » (à plusieurs ou à tour de rôle : elle est retirée du groupe ou du tour ; s'il ne reste qu'une personne, la tâche est à elle seule).
 - Le lien public ne montre jamais à qui est une tâche.
@@ -750,9 +763,9 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.9 Groupes, tri et compteur
 
-- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.18 Sous-tâches](#sous-taches)).
-- « Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).
-- Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.
+- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.20 Sous-tâches](#sous-taches)).
+- « Listes » se trie par date ou par ordre alphabétique (bouton en haut).
+- Sur le téléphone, sous le titre de « Listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone. Sur ordinateur, le type se choisit dans le menu de gauche ([5.19 Sur ordinateur](#ordinateur)).
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
 - Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité », « Par échéance » et « Par personne », selon les options de la liste.
 - Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.
@@ -764,7 +777,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 - Touchez la loupe ronde, en bas à droite : le champ s'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s'ouvre. Dans une liste, elle flotte au-dessus de la barre d'ajout, et se cache pendant que vous y écrivez.
 - Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d'ajout se cache pendant la recherche.
-- Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.
+- Sur « Listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.
 - Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.
 - Majuscules et accents ne comptent pas : “eclair” trouve “Éclair”. Le texte trouvé est surligné, et le nombre de résultats s'affiche.
 - Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.
@@ -773,9 +786,17 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 <a id="echeances"></a>
 
-### 5.11 Se déplacer, Échéances
+### 5.11 Se déplacer : Accueil, Échéances
 
-Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».
+Listo s'ouvre sur l'« Accueil » : « Bonjour » et votre prénom, la date du jour, la pastille d'état et la cloche des notifications (avec le nombre de non lues : [6.1 La page Notifications](#notif-page)), puis des tuiles qui montrent d'un coup d'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.
+
+- Tuile « Échéances » : « En retard », « Aujourd'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».
+- Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l'une d'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».
+- Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([5.12 Les notes](#notes)) ; sans note : « Aucune note ».
+- Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l'Admin, quand la connexion par un fournisseur d'identité est activée, « Demandes de compte » apparaît avec leur nombre s'il y en a en attente.
+- Le titre d'une tuile ouvre l'écran entier. Une adresse inconnue mène aussi à l'Accueil ; un lien vers une liste ouvre toujours cette liste.
+
+Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages ». Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
@@ -783,9 +804,55 @@ Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Me
 - Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu'un d'autre.
 - L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
 
+<a id="notes"></a>
+
+### 5.12 Les notes
+
+Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.
+
+- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.
+- « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » ouvre une saisie rapide : « Titre (facultatif) », le texte, puis « Enregistrer » (ou « Annuler »).
+- Une note s'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.
+- Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s'ouvre dans un nouvel onglet.
+- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter la note ».
+
+**Deux personnes en même temps**
+
+Si la note a été enregistrée ailleurs (par une personne avec qui elle est partagée, ou sur un autre de vos appareils) pendant que vous écriviez, rien n'est écrasé. Un bandeau prévient (“Léa vient de modifier cette note”) ; à l'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note, à vous). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l'appareil et le choix revient quand vous rouvrez la note. Si vous lisez la note sans écrire, elle se met à jour sous vos yeux.
+
+**Corbeille des notes**
+
+Le bouton poubelle de l'écran « Notes » ouvre la « Corbeille des notes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.
+
+**Sur ordinateur**
+
+« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil ») ; la touche « / » cherche dans les notes.
+
+<a id="notes-partage"></a>
+
+### 5.13 Partager une note
+
+Dans une de vos notes, « Partager » (en haut de la note, ou menu ⋮) ouvre « Partager la note », comme pour une liste : ajoutez une personne parmi les comptes existants, en « Peut modifier » ou « Lecture seule », changez ce droit, ou retirez-la. Il faut du réseau.
+
+- Propriétaire : tout, dont supprimer la note, la partager et gérer son lien public.
+- « Peut modifier » : modifier le titre et le texte. Jamais supprimer la note, la partager ni gérer son lien public.
+- « Lecture seule » : lire la note (les liens s'ouvrent), l'épingler pour soi. La carte le dit avec l'œil « Lecture seule ».
+- Chacun, sauf le propriétaire, peut « Quitter la note » (menu ⋮). Une personne qui perd l'accès perd aussi son épingle. L'épingle de chacun n'est jamais montrée aux autres.
+- Les cartes d'une note partagée montrent les pastilles des personnes ; « Personnes », en haut de la note, les liste avec leur droit. En bas de la note : “Modifiée par Léa · il y a 5 min”.
+
+**Nouveautés et notifications**
+
+Quand quelqu'un d'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu'à ce que vous l'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l'Accueil et, sur ordinateur, l'entrée « Notes » du menu de gauche montrent aussi le point. C'est le même réglage « Nouveautés » que pour les listes ([5.15 Nouveautés](#nouveautes)) ; menu ⋮ : « Masquer les nouveautés de cette note ».
+
+Notifications ([6.3 Ce que vous recevez, et quand](#notif-recevoir)), dans la page Notifications et sur vos appareils : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([6.4 Le détail dans la notification](#notif-detail)). La page Notifications ne cite que le titre, jamais le texte. Menu ⋮ : « Couper les notifications de cette note ».
+
+**Lien public d'une note**
+
+Menu ⋮ d'une de vos notes, « Lien public » : la même feuille que pour une liste ([7.6 Propriétaire : le lien public](#lien-public)) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte (liens cliquables) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n'est plus visible par son lien ; restaurée, le lien remarche s'il n'a pas expiré.
+
 <a id="reserver"></a>
 
-### 5.12 Réserver un souhait, cotiser
+### 5.14 Réserver un souhait, cotiser
 
 Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lecture seule », sauf la personne à qui la liste est destinée. Il faut du réseau.
 
@@ -798,34 +865,34 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="nouveautes"></a>
 
-### 5.13 Nouveautés
+### 5.15 Nouveautés
 
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
-- Sur « Mes listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
+- Sur « Listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
 - Dans la liste, chaque nouveauté est surlignée, avec qui l'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.
-- Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C'est indépendant des notifications de la liste ([6.4 Couper les notifications d'une liste](#notif-silencer)).
+- Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C'est indépendant des notifications de la liste ([6.5 Couper les notifications d'une liste](#notif-silencer)).
 - Réglages, « Notifications », partie « Dans l'application » : « Nouveautés » désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.
 - Sur certains téléphones, l'icône de l'application installée montre aussi leur total. Pour être prévenu sans ouvrir Listo : [6. Notifications](#notifications).
 
 <a id="hors-ligne"></a>
 
-### 5.14 Hors ligne et synchronisation
+### 5.16 Hors ligne et synchronisation
 
-Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.
+Sans réseau, vous pouvez continuer à ajouter, modifier et cocher, et à écrire dans vos notes ([5.12 Les notes](#notes)). Les changements sont envoyés au retour du réseau.
 
 La pastille en haut indique l'état : « À jour », « Synchronisation… » ou « Hors ligne », avec le nombre de changements en attente. Touchez-la pour synchroniser.
 
-Le partage, le lien public, la duplication, « Quitter la liste », la corbeille, les réservations, la création d'un magasin ou d'un rayon et l'Administration demandent une connexion.
+Le partage (d'une liste ou d'une note), le lien public, la duplication, « Quitter la liste » et « Quitter la note », la corbeille des listes, les réservations, la création d'un magasin ou d'un rayon et l'Administration demandent une connexion.
 
 <a id="theme"></a>
 
-### 5.15 Thème clair ou sombre
+### 5.17 Thème clair ou sombre
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="langue"></a>
 
-### 5.16 Langue : français ou anglais
+### 5.18 Langue : français ou anglais
 
 Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.
 
@@ -833,11 +900,12 @@ Les noms des listes, des articles, des rayons et des magasins ne sont pas tradui
 
 <a id="ordinateur"></a>
 
-### 5.17 Sur ordinateur
+### 5.19 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
-- À gauche, le menu : « Rechercher une liste », « Échéances », vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».
+- À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l'« Accueil ». Les tuiles de l'Accueil y sont sur trois colonnes.
+- Le menu suit l'écran : sur « Listes » et dans une liste, il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s'affichent dessous.
 - À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d'ajout est au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l'un au-dessus de l'autre ; sur un écran tactile, ils restent affichés.
 - La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
 - « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
@@ -850,8 +918,8 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | Touche | Action |
 | --- | --- |
 | ? | Afficher les raccourcis |
-| N | Nouvelle liste |
-| / | Rechercher (dans la liste, ou dans le menu) |
+| N | Nouvelle liste (nouvelle note sur les écrans des notes) |
+| / | Rechercher (dans la liste, dans les notes, ou dans le menu) |
 | , | Réglages |
 | Échap | Fermer la fenêtre ; vider puis quitter la recherche |
 | \[ et \] | Liste précédente, suivante |
@@ -876,7 +944,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 <a id="sous-taches"></a>
 
-### 5.18 Sous-tâches
+### 5.20 Sous-tâches
 
 Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.
 
@@ -890,20 +958,37 @@ Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Op
 - Les sous-tâches gardent l'ordre choisi à la main, quel que soit le tri de la liste : au départ, l'ordre où elles ont été ajoutées (une nouvelle va à la fin). Pour le changer : dépliez la tâche principale et touchez les deux flèches à droite de « Ajouter une sous-tâche » (« Réordonner »). Glissez une sous-tâche par sa poignée (les trois traits à gauche), ou touchez « Monter » et « Descendre » ; « Terminé » ferme le mode. Chaque déplacement est enregistré tout de suite, hors ligne compris ; si deux personnes déplacent en même temps, le dernier déplacement l'emporte.
 - Les sous-tâches cochées restent à leur place, barrées : on voit où on en est. Une tâche principale cochée va dans « Terminés » avec ses sous-tâches. « Retirer les terminés » ne retire pas les sous-tâches cochées d'une tâche principale encore à faire.
 - Supprimer une tâche principale supprime aussi ses sous-tâches ; « Annuler » les ramène toutes.
-- La recherche trouve aussi les sous-tâches : elles s'affichent sous leur tâche principale. Dans « Échéances » ([5.11 Se déplacer, Échéances](#echeances)), une sous-tâche montre le nom de sa tâche principale. Le lien public montre les sous-tâches sous leur tâche principale, en lecture seule.
+- La recherche trouve aussi les sous-tâches : elles s'affichent sous leur tâche principale. Dans « Échéances » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), une sous-tâche montre le nom de sa tâche principale. Le lien public montre les sous-tâches sous leur tâche principale, en lecture seule.
 - Désactiver « Sous-tâches » n'efface rien : les tâches s'affichent à plat, et se regroupent de nouveau si l'option revient. Une liste dupliquée garde ses sous-tâches.
 
 <a id="notifications"></a>
 
 ## 6. Notifications
 
-Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.
+Listo vous signale ce qui vous concerne : une modification dans une liste partagée, une réservation, un partage, chaque matin les tâches du jour, et le rappel d'une tâche. Tout arrive dans la page Notifications (la cloche de l'Accueil), même sans téléphone inscrit. En plus, Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : c'est facultatif, la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil.
 
-L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.13 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
+L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.15 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici). Les catégories (« Notifications reçues ») valent à la fois pour la page Notifications et pour vos appareils.
+
+<a id="notif-page"></a>
+
+### 6.1 La page Notifications
+
+La cloche, en haut de l'Accueil, ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».
+
+- Les notifications sont groupées par jour (« Aujourd'hui », « Hier », puis la date), la plus récente en haut. Une notification non lue est en gras, avec un point bleu ; « 3 non lues » le dit en haut.
+- Toucher une notification la marque comme lue et ouvre ce qu'elle concerne : la liste, la tâche, la note ou les échéances. Si la liste a été supprimée ou ne vous est plus partagée : « Cette liste n'est plus disponible ».
+- Ouvrir la page ne marque rien comme lu : « Tout marquer comme lu » le fait. Ouvrir une liste, une note ou l'écran « Échéances » (par une notification du téléphone, par exemple) marque comme lues les notifications qui les concernent. Lu sur un appareil, c'est lu sur tous.
+- Effacer : glissez une notification vers la gauche, puis « Effacer » ; ou son bouton ⋮ (clavier, lecteur d'écran). « Tout effacer », en bas, demande confirmation.
+- Les notifications sont gardées 30 jours, 300 au plus (les plus anciennes partent).
+- Les modifications rapprochées d'une même liste ou d'une même note tiennent sur une seule ligne, qui se met à jour (“Léa a ajouté 4 articles dans « Courses »”) et redevient non lue.
+
+Elle se remplit même sans les notifications du téléphone (fonction coupée sur le serveur, appareil non inscrit) : rien n'est envoyé ailleurs que sur votre serveur pour la remplir. Hors ligne, elle montre la dernière copie reçue ; « Tout marquer comme lu » et « Effacer » partent au retour du réseau.
+
+Mêmes réglages que le téléphone : une catégorie coupée dans « Notifications reçues », ou une liste ou une note dont vous avez coupé les notifications, n'apparaît pas non plus dans la page. La page donne toujours le détail (nom de la tâche, du souhait) ; « Afficher le détail dans la notification » ne concerne que l'écran du téléphone. D'une note, elle ne cite que le titre, jamais le texte.
 
 <a id="notif-activer"></a>
 
-### 6.1 Les activer sur un appareil
+### 6.2 Les activer sur un appareil
 
 Réglages, « Notifications », partie « Sur cet appareil », puis l'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.
 
@@ -915,44 +1000,44 @@ Chaque appareil s'active à part : un appareil où vous vous déconnectez ne re�
 
 <a id="notif-recevoir"></a>
 
-### 6.2 Ce que vous recevez, et quand
+### 6.3 Ce que vous recevez, et quand
 
-Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour tous vos appareils.
+Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour la page Notifications et pour tous vos appareils.
 
 | Catégorie | Quand | Exemple |
 | --- | --- | --- |
-| « Modifications » | Quelqu'un d'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d'une minute sont regroupés en une seule notification par liste. | “Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »” |
+| « Modifications » | Quelqu'un d'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d'une minute sont regroupés en une seule notification par liste. Une note partagée modifiée par quelqu'un d'autre : une notification par note et par quart d'heure au plus. | “Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”, “Léa a modifié la note « Vacances »” |
 | « Envies » | Quelqu'un réserve un souhait ou participe à un cadeau, dans une liste d'envies dont vous voyez les réservations. | “Marc a réservé un souhait” |
-| « Partage » | On vous ajoute à une liste, ou votre droit change. | “Léa vous a ajouté à « Maison »” |
+| « Partage » | On vous ajoute à une liste ou à une note, ou votre droit change. | “Léa vous a ajouté à « Maison »”, “Léa a partagé la note « Vacances » avec vous” |
 | « Échéances » | Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd'hui et en retard, s'il y en a. Et le rappel d'une tâche, au moment choisi dans sa fiche ([5.2 Heure et rappel](#heure)). | “3 tâches à faire aujourd'hui · 1 en retard”, “Rappel : une tâche aujourd'hui à 14:00” |
 
 Vous n'êtes jamais prévenu de ce que vous faites vous-même (ni de ce qu'un assistant IA fait pour vous : [8. Assistants IA (MCP)](#claude)). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l'échéance est activée, et jamais les tâches attribuées à quelqu'un d'autre. Le rappel d'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.
 
 <a id="notif-detail"></a>
 
-### 6.3 Le détail dans la notification
+### 6.4 Le détail dans la notification
 
 Section « Contenu », « Afficher le détail dans la notification » : désactivé au départ. Désactivé, la notification dit seulement qui a modifié quelle liste, ou combien de tâches vous attendent. Activé, elle cite aussi les éléments (“Ajouté : Lait, Pain · Coché : Lait”, “Marc a réservé « Vélo »”, le nom des premières tâches du jour avec leur heure, “Rappel : Dentiste”). À éviter si d'autres personnes voient l'écran de votre téléphone verrouillé.
 
 <a id="notif-silencer"></a>
 
-### 6.4 Couper les notifications d'une liste
+### 6.5 Couper les notifications d'une liste
 
-Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste.
+Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, ni dans la page Notifications ni sur vos appareils, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮ : « Couper les notifications de cette note ».
 
-C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.13 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
+C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.15 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
 
 <a id="notif-limites"></a>
 
-### 6.5 Limites et listes d'envies
+### 6.6 Limites et listes d'envies
 
-- Au plus 30 notifications par personne et par heure (le résumé des échéances ne compte pas).
+- Au plus 30 notifications du téléphone par personne et par heure (le résumé des échéances ne compte pas) ; la page Notifications n'a pas ce plafond.
 - Si vous avez déjà la liste ouverte à l'écran quand quelqu'un la modifie, vous n'êtes pas prévenu : vous l'avez vu.
-- Liste d'envies : la personne à qui elle est destinée ne reçoit jamais rien qui parle d'une réservation ou d'une participation, ni ce que les autres ajoutent dans sa liste. La surprise est préservée. Un visiteur du lien public, sans compte, ne reçoit jamais de notification.
+- Liste d'envies : la personne à qui elle est destinée ne reçoit jamais rien, ni sur ses appareils ni dans sa page Notifications, qui parle d'une réservation ou d'une participation, ni ce que les autres ajoutent dans sa liste. La surprise est préservée. Un visiteur du lien public, sans compte, ne reçoit jamais de notification.
 
 <a id="notif-confidentialite"></a>
 
-### 6.6 Ce que voient Apple, Google, Mozilla et Microsoft
+### 6.7 Ce que voient Apple, Google, Mozilla et Microsoft
 
 Une notification passe par le service de votre appareil : Apple (iPhone, iPad, Safari sur Mac), Google (Chrome, Android, Edge sur Android), Mozilla (Firefox) ou Microsoft (Edge sur Windows). Le texte est chiffré pour votre appareil seul : ces services ne peuvent pas le lire. Ils voient l'heure, la taille du message et l'appareil qui le reçoit.
 
@@ -960,7 +1045,7 @@ C'est la troisième exception au principe “aucune donnée envoyée ailleurs qu
 
 <a id="notif-serveur"></a>
 
-### 6.7 Activer la fonction sur le serveur
+### 6.8 Activer la fonction sur le serveur
 
 *Pour la personne qui gère le serveur.*
 
@@ -974,11 +1059,11 @@ Le résumé des échéances part vers 8 h dans le fuseau du serveur : réglez `T
 
 Au premier démarrage, Listo crée ses clés de notification dans `secrets/vapid.json`, à côté de la clé secrète. Gardez-en une copie avec elle ([3.7 Garder la clé secrète](#cle)). Si ce fichier est perdu, Listo en crée un nouveau : chaque appareil dont l'accord est déjà donné se réabonne tout seul à sa prochaine ouverture de Listo ; sinon, il suffit de réactiver l'interrupteur.
 
-Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). Désactivée, aucune clé n'est créée et aucune demande ne part vers eux.
+Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). Désactivée, aucune clé n'est créée et aucune demande ne part vers eux ; la page Notifications, le résumé du matin et les rappels fonctionnent quand même, dans l'application seulement ([6.1 La page Notifications](#notif-page)).
 
 <a id="notif-depannage"></a>
 
-### 6.8 Rien ne s'affiche
+### 6.9 Rien ne s'affiche
 
 - L'écran dit que les notifications ont été refusées : autorisez-les dans les réglages du navigateur ou du téléphone (notifications de ce site, ou de l'application Listo), puis revenez dans Réglages, « Notifications ».
 - Sur iPhone : Listo doit être installé sur l'écran d'accueil et ouvert depuis son icône, pas depuis Safari.
@@ -987,13 +1072,13 @@ Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googl
 - Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».
 - Sur un ordinateur, le système doit aussi autoriser les notifications du navigateur, en plus de Listo dans le navigateur. Sur Mac : Réglages Système › Notifications › Firefox (ou Chrome, Edge, Brave…), “Autoriser les notifications” activé, style “Bannières” ou “Alertes” ; macOS le désactive tant qu'on n'a jamais répondu à sa demande. Sur Windows : Paramètres › Système › Notifications, notifications activées et le navigateur autorisé dans la liste. Dans Firefox, vérifiez aussi que “Suspendre les notifications jusqu'au redémarrage de Firefox” n'est pas coché (Réglages › Vie privée et sécurité › Permissions › Notifications).
 - Sur un ordinateur, l'écran dit que le navigateur n'a pas réussi à s'inscrire auprès de son service de notifications : le navigateur doit pouvoir joindre ce service par Internet (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Un filtre DNS (AdGuard, Pi-hole…), un bloqueur de publicité (uBlock Origin…), un proxy, un pare-feu ou un VPN peut l'en empêcher, même si d'autres sites déjà inscrits continuent de recevoir leurs notifications. Pour savoir quoi débloquer : ouvrez le journal des requêtes du filtre, activez les notifications dans Listo, et autorisez les adresses refusées à ce moment-là ; ce sont celles du service du navigateur, par exemple …googleapis.com ou …google.com pour Chrome et Brave, …notify.windows.com ou …wns.windows.com pour Edge, …push.services.mozilla.com pour Firefox. Avec un bloqueur dans le navigateur, désactivez-le un instant sur Listo pour essayer. Dans Brave, il faut aussi activer “Utiliser les services Google pour la messagerie push” dans ses réglages (Confidentialité et sécurité), puis le relancer. Le message donne le détail fourni par le navigateur.
-- Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [6.7 Activer la fonction sur le serveur](#notif-serveur).
+- Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L'écran dit « Les notifications sur les appareils sont désactivées sur ce serveur Listo » : voir [6.8 Activer la fonction sur le serveur](#notif-serveur). Dans tous les cas, la page Notifications garde ce que vous auriez reçu ([6.1 La page Notifications](#notif-page)).
 
 <a id="roles"></a>
 
 ## 7. Rôle par rôle
 
-Sur chaque liste, chacun a un rôle : propriétaire, contributeur (« Peut modifier »), lecture seule, ou visiteur du lien public. L'Admin, lui, gère les comptes. Le tableau ci-dessous résume qui peut quoi ; les sections qui suivent le détaillent.
+Sur chaque liste, chacun a un rôle : propriétaire, contributeur (« Peut modifier »), lecture seule, ou visiteur du lien public. L'Admin, lui, gère les comptes. Le tableau ci-dessous résume qui peut quoi ; les sections qui suivent le détaillent. Une note partagée a les mêmes droits, en plus simple : [5.13 Partager une note](#notes-partage).
 
 | Action | Propriétaire | Contributeur | Lecture seule | Visiteur | Admin |
 | --- | --- | --- | --- | --- | --- |
@@ -1032,7 +1117,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Peut / ne peut pas**
 
 - Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s'il existe une nouvelle version (Réglages › « À propos »).
-- Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire.
+- Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([5.12 Les notes](#notes)).
 - Connexions d'assistants IA des autres comptes : voir [8.8 Voir et déconnecter un assistant IA](#claude-connexions).
 - Savoir qu'une nouvelle version existe : [9.9 Savoir qu'une nouvelle version existe](#version).
 
@@ -1040,7 +1125,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 
 ### 7.2 Propriétaire : créer une liste
 
-Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.
+Sur « Listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.
 
 - Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».
 - Liste de tâches : « Options des éléments » active la priorité, l'échéance et l'attribution.
@@ -1051,7 +1136,7 @@ Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nou
 
 ### 7.3 Propriétaire : modifier la liste
 
-Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.18 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
+Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.20 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
 - Changer de magasin : chaque article garde son rayon s'il sert aussi dans le nouveau magasin, sinon il va dans le rayon du même nom ; à défaut, il passe « Sans rayon ». La fenêtre « Ranger les articles » s'ouvre alors pour lui choisir un rayon tout de suite (ou plus tard, depuis sa fiche).
@@ -1072,7 +1157,7 @@ Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l
 
 ### 7.5 Propriétaire : liste d'envies
 
-Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.12 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.14 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
@@ -1086,7 +1171,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 ### 7.6 Propriétaire : le lien public
 
-« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([7.10 Visiteur du lien public](#role-visiteur)).
+« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([7.10 Visiteur du lien public](#role-visiteur)). Une note a aussi son lien public, avec les mêmes règles : « Lien public » dans son menu ⋮ ([5.13 Partager une note](#notes-partage)).
 
 - Durée : 1 heure, 24 heures, 7 jours, 30 jours, « Personnalisée » ou « Illimitée ». « Changer la durée » la modifie.
 - « Protéger par mot de passe » : le mot de passe n'est affiché qu'une fois. Notez-le.
@@ -1172,7 +1257,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.12 U
 - Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l'arrosage.” L'assistant dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
-- Sous-tâches ([5.18 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
+- Sous-tâches ([5.20 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
 
 L'assistant lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Son comportement exact dépend de l'assistant lui-même : vérifiez dans Listo.
 
@@ -1335,7 +1420,7 @@ Après l'activation, une fois, avant tout usage régulier (ici avec Claude) :
 
 ### 9.1 Je n'ai pas de réseau
 
-Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.14 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
+Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.16 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
 
 <a id="faq-photo"></a>
 
@@ -1348,7 +1433,7 @@ Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du h
 
 ### 9.3 Un lien public ne marche plus
 
-Il a expiré, ou son propriétaire l'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien). Demandez un nouveau lien au propriétaire ([7.6 Propriétaire : le lien public](#lien-public)). S'il demande un mot de passe, c'est celui que le propriétaire a noté à sa création.
+Il a expiré, ou son propriétaire l'a arrêté, ou la liste a été supprimée (restaurer une liste ne fait pas revenir son lien), ou la note est dans la corbeille. Demandez un nouveau lien au propriétaire ([7.6 Propriétaire : le lien public](#lien-public)). S'il demande un mot de passe, c'est celui que le propriétaire a noté à sa création.
 
 <a id="faq-retard"></a>
 

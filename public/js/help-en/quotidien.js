@@ -32,11 +32,11 @@ export default {
         ] },
         'Once the time is chosen, “Reminder” offers: “None” (to start with), “At the time”, “15 min before”, “30 min before”, “1 hour before”, “2 hours before” or “The day before (24 hours)”. Each task has its own reminder.',
         { ul: [
-          'The reminder is a notification ([[notifications]]). It goes to the person the task is assigned to ([[attribuer]]); if it is assigned to nobody, to all the members of the list.',
+          'The reminder is a notification ([[notifications]]): it shows up on the Notifications page, and on your devices where notifications are turned on. It goes to the person the task is assigned to ([[attribuer]]); if it is assigned to nobody, to all the members of the list.',
           'It is sent only once. If you change the date, the time or the reminder, it will be sent again at the new moment. A checked task sends nothing.',
-          'It follows your settings: “Due” notifications turned on, lists whose notifications you muted, devices where notifications are turned on.',
+          'It follows your settings: “Due” notifications turned on, lists whose notifications you muted.',
           'If the server was stopped at the planned moment, the reminder is still sent within the next half hour; after that, it is dropped.',
-          'If notifications are turned off on the server, the “Reminder” choice does not appear.',
+          'If notifications are turned off on the server, the reminder only shows up on the Notifications page.',
         ] },
       ],
     },
@@ -128,8 +128,8 @@ export default {
       title: 'Groups, sorting and counter',
       blocks: [{ ul: [
         'Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([[sous-taches]]).',
-        '“My lists” can be sorted by date or alphabetically (button at the top).',
-        'Under the “My lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone.',
+        '“Lists” can be sorted by date or alphabetically (button at the top).',
+        'On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([[ordinateur]]).',
         'In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.',
         'In a task list, “Sort list” offers “Alphabetical”, “By priority”, “By due date” and “By person”, depending on the list\'s options.',
         'The sorting you choose applies only to you, on this phone: it changes nothing for the others, and it is allowed with read-only access.',
@@ -142,7 +142,7 @@ export default {
       blocks: [{ ul: [
         'Tap the round magnifying glass, at the bottom right: the field opens under the title, ready to type in, and does not move when the keyboard opens. In a list, it floats above the add bar, and hides while you type in it.',
         'In a list, “Search this list” searches item names, not notes. The add bar hides during the search.',
-        'On “My lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.',
+        'On “Lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.',
         'On “Due”, “Search tasks” searches task names.',
         'Capital letters and accents do not matter: ‘eclair’ finds ‘Éclair’. The text found is highlighted, and the number of results is shown.',
         'Checked items that are found stay visible, crossed out, in “In the cart”. You can check, open or delete an item from the results.',
@@ -152,9 +152,17 @@ export default {
     },
     {
       id: 'echeances',
-      title: 'Getting around, Due',
+      title: 'Getting around: Home, Due',
       blocks: [
-        'On the phone, the bar at the bottom leads to the three main screens: “My lists”, “Due” and “Settings”. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “My lists”.',
+        'Listo opens on “Home”: ‘Hello’ and your first name, today\'s date, the status badge and the notification bell (with the number of unread ones: [[notif-page]]), then tiles that show at a glance what is waiting. They work offline and update by themselves.',
+        { ul: [
+          '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
+          '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
+          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a quick entry ([[notes]]); with no note: “No notes”.',
+          '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
+          'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
+        ] },
+        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is not on Home, whose tiles already lead everywhere. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
         { ul: [
           '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.',
           'Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([[repeter]]). Tap the row to open the task in its list.',
@@ -162,6 +170,45 @@ export default {
           'The number on “Due” counts overdue tasks and today\'s tasks, except those assigned to someone else.',
           'The screen works offline, like the lists. On a computer, “Due” is in the menu on the left.',
         ] },
+      ],
+    },
+    {
+      id: 'notes',
+      title: 'Notes',
+      blocks: [
+        'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.',
+        { ul: [
+          '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. ⋮ menu, “Sort”: “Most recent first” or “Alphabetical order”. The magnifying glass searches titles and texts.',
+          '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” opens a quick entry: “Title (optional)”, the text, then “Save” (or “Cancel”).',
+          'A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.',
+          'To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.',
+          'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave note”.',
+        ] },
+        { sub: 'Two people at the same time' },
+        'If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just changed this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.',
+        { sub: 'Notes trash' },
+        'The trash button on the “Notes” screen opens the “Notes trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people\'s notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.',
+        { sub: 'On a computer' },
+        '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself (offline: “Offline · saved on this device”); the “/” key searches the notes.',
+      ],
+    },
+    {
+      id: 'notes-partage',
+      title: 'Sharing a note',
+      blocks: [
+        'In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens “Share note”, as for a list: add a person from the existing accounts, with “Can edit” or “Read only”, change that access, or remove them. You need a network connection.',
+        { ul: [
+          'Owner: everything, including deleting the note, sharing it and managing its public link.',
+          '“Can edit”: change the title and the text. Never delete the note, share it or manage its public link.',
+          '“Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.',
+          'Everyone except the owner can “Leave note” (⋮ menu). Someone who loses access also loses their pin. Each person\'s pin is never shown to the others.',
+          'The cards of a shared note show the people\'s initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Changed by Léa · 5 min ago’.',
+        ] },
+        { sub: 'What\'s new and notifications' },
+        'When someone else changes a shared note, its card shows a dot and ‘Changed by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It\'s the same “What\'s new” setting as for lists ([[nouveautes]]); ⋮ menu: “Hide what\'s new in this note”.',
+        'Notifications ([[notif-recevoir]]), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note\'s title is named, never its text; with details, the start of the text follows ([[notif-detail]]). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.',
+        { sub: 'A note\'s public link' },
+        '⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([[lien-public]]): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the text (clickable links) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn\'t expired.',
       ],
     },
     {
@@ -184,7 +231,7 @@ export default {
       title: 'What\'s new',
       blocks: [{ ul: [
         'In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.',
-        'On “My lists”, a badge on the card\'s icon gives the number of new updates (“30+” after more than a month away).',
+        'On “Lists”, a badge on the card\'s icon gives the number of new updates (“30+” after more than a month away).',
         'In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.',
         'List menu ⋮: “Hide what\'s new in this list”, then “Show what\'s new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list\'s notifications ([[notif-silencer]]).',
         'Settings, “Notifications”, “In the app” part: “What\'s new” turns off all of it; “Include checked items” (shown only when “What\'s new” is on) adds what the others check or uncheck.',
@@ -195,9 +242,9 @@ export default {
       id: 'hors-ligne',
       title: 'Offline and sync',
       blocks: [
-        'Without a network, you can keep adding, editing and checking. The changes are sent when the network comes back.',
+        'Without a network, you can keep adding, editing and checking, and writing in your notes ([[notes]]). The changes are sent when the network comes back.',
         'The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.',
-        'Sharing, the public link, duplicating, “Leave list”, the trash, reservations, creating a store or an aisle, and Administration need a connection.',
+        'Sharing (a list or a note), the public link, duplicating, “Leave list” and “Leave note”, the list trash, reservations, creating a store or an aisle, and Administration need a connection.',
       ],
     },
     {
@@ -219,7 +266,8 @@ export default {
       blocks: [
         'In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.',
         { ul: [
-          'On the left, the menu: “Search lists”, “Due”, your lists grouped by type (Shopping, Tasks, Wishes) with their counter, “New list”, your account and Settings. The logo takes you back to “My lists”.',
+          'On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.',
+          'The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
           'On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
           'An item\'s details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.',
           '“Share list” brings together the people on the list and the public link. The owner chooses each person\'s access there, adds or removes people, and manages the link; the other members only see the list of people there.',
@@ -231,8 +279,8 @@ export default {
           head: ['Key', 'Action'],
           rows: [
             ['?', 'Show shortcuts'],
-            ['N', 'New list'],
-            ['/', 'Search (in the list, or in the menu)'],
+            ['N', 'New list (new note on the notes screens)'],
+            ['/', 'Search (in the list, in the notes, or in the menu)'],
             [',', 'Settings'],
             ['Esc', 'Close the window; clear, then leave the search'],
             ['[ and ]', 'Previous, next list'],

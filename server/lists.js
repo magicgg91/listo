@@ -31,6 +31,8 @@
 // par le serveur : celles qu'enverrait le téléphone sont ignorées.
 
 import { createNewsService } from './news.js';
+import { createNoteService } from './notes.js';
+import { createInbox, inboxHandlers } from './inbox.js';
 import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
@@ -306,6 +308,12 @@ export function createListService(ctx) {
   // Réservations des listes d'envies (server/reservations.js) : seul module
   // qui lit la table reservations, et qui filtre ce qu'en voit chaque compte
   const reservations = ctx.reservations ?? (ctx.reservations = createReservationService(ctx));
+  // Notes (server/notes.js) : leurs opérations passent par la même file
+  // (POST /api/ops, applied_ops) et leurs données par la même synchronisation
+  const notes = ctx.notes ?? (ctx.notes = createNoteService(ctx, { OpError }));
+  // Page Notifications (server/inbox.js) : ses opérations hors ligne
+  // (« inbox.read », « inbox.delete ») et son empreinte dans la synchronisation
+  const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -1415,6 +1423,11 @@ export function createListService(ctx) {
     },
   };
 
+  // Opérations des notes (server/notes.js)
+  for (const [type, handler] of Object.entries(notes.handlers)) handlers[type] = handler;
+  // Opérations de la page Notifications (server/inbox.js) : lire, effacer
+  for (const [type, handler] of Object.entries(inboxHandlers(inbox, { OpError, now: nowIso }))) handlers[type] = handler;
+
   // --- Lot d'opérations (POST /api/ops) ---
   //
   // Les opérations sont appliquées dans l'ordre, chacune dans un bloc
@@ -1449,6 +1462,7 @@ export function createListService(ctx) {
     let result;
     touched.clear();
     touchedMine.clear();
+    notes.clearNotify();
     try {
       result = db.transaction(() => {
         if (!handler) throw new OpError(400, 'ops.operationInconnue');
@@ -1457,13 +1471,16 @@ export function createListService(ctx) {
         return value;
       })();
       notifyTouched(user); // écriture réussie : les membres sont prévenus
+      notes.flushNotify();
     } catch (err) {
       touched.clear(); // refus ou panne : rien n'a changé, personne n'est prévenu
       touchedMine.clear();
+      notes.clearNotify();
       if (!(err instanceof OpError)) throw err; // vraie panne : erreur 500
       // Un refus est lui aussi mémorisé : renvoyée, l'opération donnera le
-      // même refus (sans rien modifier).
-      result = refusal(opId, err.status, err.key, err.params);
+      // même refus (sans rien modifier). extra : ce que le refus apporte en
+      // plus (note en conflit : sa version actuelle, champ par champ)
+      result = { ...refusal(opId, err.status, err.key, err.params), ...(err.extra ?? {}) };
       saveApplied.run(opId, user.id, JSON.stringify(result), nowIso());
     }
     return result;
@@ -1569,6 +1586,11 @@ export function createListService(ctx) {
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire
       reservations: reservations.forUser(user),
+      // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
+      ...notes.syncFor(user, since),
+      // Page Notifications : seulement son empreinte (le téléphone relit la
+      // page, GET /api/inbox, quand elle a changé)
+      inboxStamp: inbox.stamp(user.id),
     };
   }
 
@@ -1926,7 +1948,7 @@ export function createListService(ctx) {
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
     deletedLists, restoreList, activeAisles, activeStoreChoices,
-    photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct,
+    photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct, notes,
   };
 }
 

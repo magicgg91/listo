@@ -53,7 +53,7 @@ import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, open
 import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
-import { t, compareText, currencyName, lowerFirst } from '../i18n.js';
+import { t, compareText, currencyName, lowerFirst, priceIcon } from '../i18n.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -613,7 +613,7 @@ export function renderList(listId, onLeave) {
     }
     const price = formatPrice(item.priceCents);
     if (price) {
-      chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), price));
+      chips.push(h('span', { class: 'chip' }, icon(priceIcon(), 'icon--xs'), price));
       spoken.push(price);
     }
     const reservation = item.checked ? null : view?.reservations?.get(item.id);
@@ -2045,8 +2045,9 @@ export function renderList(listId, onLeave) {
         ? t('liste.fiche.rappel.aide.pour')
         : t('liste.fiche.rappel.aide');
       timeField.hidden = !withDue || !dueDate;
-      // Pas de rappel proposé si les notifications sont coupées sur le serveur
-      remindField.hidden = !withDue || !dueDate || !dueTime || !app.user?.push;
+      // Rappel proposé même sans notifications sur le serveur : il arrive
+      // alors dans la page Notifications (étape 4 du cadrage)
+      remindField.hidden = !withDue || !dueDate || !dueTime;
     }
 
     drawDue();
@@ -2255,7 +2256,7 @@ export function renderList(listId, onLeave) {
       const names = memberNames(app.data.lists.get(listId));
       const nameOf = (id) => (id === app.user.id ? t('liste.moi') : names.get(id) ?? t('liste.fiche.ancienMembre'));
       const due = !dueDate ? t('liste.fiche.aucuneEcheance') : [dueDateLabel(dueDate), dueTime ? timeLabel(dueTime) : null,
-        dueTime && remind !== null && app.user?.push ? t('liste.fiche.resume.rappel', { label: `${reminderLabel(remind).charAt(0).toLowerCase()}${reminderLabel(remind).slice(1)}` }) : null].filter(Boolean).join(' · ');
+        dueTime && remind !== null ? t('liste.fiche.resume.rappel', { label: `${reminderLabel(remind).charAt(0).toLowerCase()}${reminderLabel(remind).slice(1)}` }) : null].filter(Boolean).join(' · ');
       const turnNow = assignee !== null && assignPeople.includes(assignee) ? assignee : assignPeople[0];
       const who = assignMode === 'all' ? assignPeople.map(nameOf).join(', ') || t('liste.fiche.pour.plusieurs')
         : assignMode === 'turn' ? (turnNow != null ? t('liste.fiche.resume.tour.cetteFois', { names: assignPeople.map(nameOf).join(', '), name: nameOf(turnNow) }) : t('liste.fiche.resume.tour', { names: assignPeople.map(nameOf).join(', ') }))
@@ -2646,7 +2647,7 @@ export function renderList(listId, onLeave) {
         options.priority ? value(t('liste.fiche.priorite'), PRIORITY_LABELS[it.priority ?? 'normal'] ?? t('liste.fiche.priorite.normale')) : null,
         options.due ? value(t('liste.fiche.echeance'), it.dueDate ? (it.dueTime ? t('liste.detail.echeance.heure', { date: dueDateLabel(it.dueDate), time: timeLabel(it.dueTime) }) : dueDateLabel(it.dueDate)) : t('liste.fiche.aucuneEcheance')) : null,
         // Rappel : propre à cette tâche, jamais sur la page publique
-        options.due && it.dueDate && it.dueTime && it.remindBefore != null && app.user?.push ? value(t('liste.fiche.rappel'), reminderLabel(it.remindBefore)) : null,
+        options.due && it.dueDate && it.dueTime && it.remindBefore != null ? value(t('liste.fiche.rappel'), reminderLabel(it.remindBefore)) : null,
         options.due && it.dueDate && it.repeat ? value(t('liste.fiche.repete'), repeatSentence(it.repeat)) : null,
         // Jamais sur la page publique (prénoms de la famille) : voir public-sheet
         options.assign ? value(t('liste.fiche.pour'), assignText(it)) : null,

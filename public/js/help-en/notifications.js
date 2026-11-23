@@ -3,10 +3,27 @@ export default {
   id: 'notifications',
   title: 'Notifications',
   blocks: [
-    "Listo can let you know on your phone or computer, without opening it: a change in a shared list, a reservation, a share, and every morning the tasks for the day. It's optional: the feature is off by default on the server, and then everyone chooses, device by device and kind by kind.",
-    "The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [[nouveautes]]) and “On this device” (notifications, described here).",
+    "Listo tells you about what concerns you: a change in a shared list, a reservation, a share, every morning the tasks for the day, and a task's reminder. Everything shows up on the Notifications page (the bell on Home), even with no phone signed up. On top of that, Listo can let you know on your phone or computer, without opening it: it's optional, the feature is off by default on the server, and then everyone chooses, device by device.",
+    "The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [[nouveautes]]) and “On this device” (notifications, described here). The kinds (“Notifications you get”) apply both to the Notifications page and to your devices.",
   ],
   sections: [
+    {
+      id: 'notif-page',
+      title: 'The Notifications page',
+      blocks: [
+        "The bell, at the top of Home, opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.",
+        { ul: [
+          "Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.",
+          "Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.",
+          "Opening the page marks nothing as read: “Mark all as read” does. Opening a list, a note or the “Due” screen (from a phone notification, for example) marks the notifications about them as read. Read on one device means read on all of them.",
+          "Clearing: swipe a notification to the left, then “Clear”; or use its ⋮ button (keyboard, screen reader). “Clear all”, at the bottom, asks for confirmation.",
+          "Notifications are kept for 30 days, 300 at most (the oldest ones go).",
+          "Changes made close together in the same list or the same note fit on a single line, which updates (‘Léa added 4 items to “Shopping”’) and becomes unread again.",
+        ] },
+        "It fills up even without phone notifications (feature off on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.",
+        "Same settings as the phone: a kind turned off in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.",
+      ],
+    },
     {
       id: 'notif-activer',
       title: 'Turning them on for a device',
@@ -24,13 +41,13 @@ export default {
       id: 'notif-recevoir',
       title: 'What you get, and when',
       blocks: [
-        "Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to all your devices.",
+        "Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.",
         { table: {
           head: ['Kind', 'When', 'Example'],
           rows: [
-            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list.", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’"],
+            ['“Changes”', "Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour.", "‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’"],
             ['“Wishes”', "Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations.", "‘Marc reserved a wish’"],
-            ['“Sharing”', "You're added to a list, or your access changes.", "‘Léa added you to “Home”’"],
+            ['“Sharing”', "You're added to a list or a note, or your access changes.", "‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’"],
             ['“Due”', "Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([[heure]]).", "‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’"],
           ],
         } },
@@ -48,7 +65,7 @@ export default {
       id: 'notif-silencer',
       title: 'Turning off notifications for a list',
       blocks: [
-        "The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list.",
+        "The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.",
         "This is separate from “Hide what's new in this list” (badges and glow, [[nouveautes]]): you can keep what's new for a list without getting its notifications, and the other way around.",
       ],
     },
@@ -56,9 +73,9 @@ export default {
       id: 'notif-limites',
       title: 'Limits and wish lists',
       blocks: [{ ul: [
-        "At most 30 notifications per person per hour (the due-date summary doesn't count).",
+        "At most 30 phone notifications per person per hour (the due-date summary doesn't count); the Notifications page has no such cap.",
         "If you already have the list open on screen when someone changes it, you're not notified: you've seen it.",
-        "Wish list: the person it's for never gets anything about a reservation or a contribution, nor what others add to their list. The surprise is kept. A visitor using the public link, without an account, never gets notifications.",
+        "Wish list: the person it's for never gets anything, neither on their devices nor on their Notifications page, about a reservation or a contribution, nor what others add to their list. The surprise is kept. A visitor using the public link, without an account, never gets notifications.",
       ] }],
     },
     {
@@ -78,7 +95,7 @@ export default {
         { code: 'docker compose up -d' },
         "The due-date summary goes out around 8 AM in the server's time zone: set `TZ` (for example `TZ=Europe/Paris`, already in the shipped file), otherwise it arrives at 8 AM universal time ([[variables]]).",
         "On first start, Listo creates its notification keys in `secrets/vapid.json`, next to the secret key. Keep a copy of it along with the key ([[cle]]). If this file is lost, Listo creates a new one: each device that already gave permission subscribes again by itself the next time it opens Listo; otherwise, just turn the switch back on.",
-        "The server must be able to reach the notification services over HTTPS (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). When the feature is off, no key is created and no request goes out to them.",
+        "The server must be able to reach the notification services over HTTPS (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). When the feature is off, no key is created and no request goes out to them; the Notifications page, the morning summary and reminders still work, in the app only ([[notif-page]]).",
       ],
     },
     {
@@ -92,7 +109,7 @@ export default {
         "Firefox after an update: quit it completely and open it again, then “Send a test notification”.",
         "On a computer, the system must also allow the browser's notifications, in addition to Listo in the browser. On Mac: System Settings › Notifications › Firefox (or Chrome, Edge, Brave…), ‘Allow notifications’ turned on, style ‘Banners’ or ‘Alerts’; macOS keeps it off as long as you've never answered its request. On Windows: Settings › System › Notifications, notifications turned on and the browser allowed in the list. In Firefox, also check that ‘Pause notifications until Firefox restarts’ is not checked (Settings › Privacy & Security › Permissions › Notifications).",
         "On a computer, the screen says the browser couldn't register with its notification service: the browser must be able to reach this service over the Internet (Google for Chrome and Brave, Microsoft for Edge, Mozilla for Firefox). A DNS filter (AdGuard, Pi-hole…), an ad blocker (uBlock Origin…), a proxy, a firewall or a VPN can prevent it, even if other sites that are already registered keep getting their notifications. To find out what to unblock: open the filter's query log, turn on notifications in Listo, and allow the addresses refused at that moment; they are the ones of the browser's service, for example …googleapis.com or …google.com for Chrome and Brave, …notify.windows.com or …wns.windows.com for Edge, …push.services.mozilla.com for Firefox. With a blocker in the browser, turn it off for a moment on Listo to try. In Brave, you also need to turn on ‘Use Google services for push messaging’ in its settings (Privacy and security), then restart it. The message gives the details provided by the browser.",
-        "Also check the phone's ‘Do Not Disturb’ or ‘Focus’ mode, the kind of notification in “Notifications you get”, and that the list's notifications aren't turned off. The screen says “Notifications are turned off on this Listo server”: see [[notif-serveur]].",
+        "Also check the phone's ‘Do Not Disturb’ or ‘Focus’ mode, the kind of notification in “Notifications you get”, and that the list's notifications aren't turned off. The screen says “Notifications on devices are turned off on this Listo server”: see [[notif-serveur]]. In any case, the Notifications page keeps what you would have received ([[notif-page]]).",
       ] }],
     },
   ],

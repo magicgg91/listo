@@ -19,7 +19,7 @@ export default {
     {
       id: 'faq-lien',
       title: 'A public link doesn\'t work anymore',
-      blocks: ['It has expired, or its owner stopped it, or the list was deleted (restoring a list doesn\'t bring its link back). Ask the owner for a new link ([[lien-public]]). If it asks for a password, it\'s the one the owner wrote down when creating it.'],
+      blocks: ['It has expired, or its owner stopped it, or the list was deleted (restoring a list doesn\'t bring its link back), or the note is in the trash. Ask the owner for a new link ([[lien-public]]). If it asks for a password, it\'s the one the owner wrote down when creating it.'],
     },
     {
       id: 'faq-retard',

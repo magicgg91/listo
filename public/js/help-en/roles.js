@@ -3,7 +3,7 @@ export default {
   id: 'roles',
   title: "Role by role",
   blocks: [
-    "On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail.",
+    "On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail. A shared note has the same permissions, in a simpler form: [[notes-partage]].",
     { who: true },
   ],
   sections: [
@@ -27,7 +27,7 @@ export default {
         { sub: "Can / can't" },
         { ul: [
           "Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).",
-          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner.",
+          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]).",
           "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",
         ] },
@@ -37,7 +37,7 @@ export default {
       id: 'creer',
       title: "Owner: creating a list",
       blocks: [
-        "On “My lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.",
+        "On “Lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.",
         { ul: [
           "Shopping list: also choose the store. Items are sorted by aisle, or by store for a “Multi” store.",
           "Task list: “Options for items” turns on priority, due date and assignment.",
@@ -91,7 +91,7 @@ export default {
       id: 'lien-public',
       title: "Owner: the public link",
       blocks: [
-        "“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]).",
+        "“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]). A note has its own public link too, with the same rules: “Public link” in its ⋮ menu ([[notes-partage]]).",
         { ul: [
           "Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.",
           "“Protect with a password”: the password is shown only once. Write it down.",

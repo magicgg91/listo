@@ -1,6 +1,7 @@
-// Lien public d'une liste, côté visiteur (SANS compte, lecture seule) :
+// Lien public d'une liste ou d'une note, côté visiteur (SANS compte,
+// lecture seule) :
 //   GET  /p/:jeton                          la page (HTML, sans donnée)
-//   GET  /api/public/:jeton                 la liste, en lecture seule
+//   GET  /api/public/:jeton                 la liste (ou la note), en lecture seule
 //   POST /api/public/:jeton/acces           saisie du mot de passe
 //   GET  /api/public/:jeton/photos/:id      photo d'un article de CETTE liste
 //   POST   /api/public/:jeton/souhaits/:id  liste d'envies : réserver un souhait
@@ -9,6 +10,14 @@
 //   DELETE /api/public/:jeton/souhaits/:id  liste d'envies : annuler SA participation
 //
 // Règles (refus par défaut) :
+// - Note (étape 3 du cadrage docs/cadrage-accueil-notes-notifications.md,
+//   section 3.7) : même adresse /p/<jeton>, le jeton est cherché parmi les
+//   liens des listes puis parmi ceux des notes (server/note-shares.js).
+//   Réponse : le titre, le texte et la date de modification, champ par
+//   champ ; jamais les épingles, les noms des personnes, les membres ni le
+//   propriétaire. Pas de photo ni de réservation (réponse d'un lien inconnu).
+//   Mêmes règles pour le reste (mot de passe, 5 essais, expiration, même
+//   page « Lien expiré ou inexistant » quelle que soit la raison).
 // - Ces routes ne lisent jamais la session d'un compte ; le cookie de
 //   consultation (listo_lien) n'est lu que par elles, et seulement pour le
 //   lien de l'adresse. Aucune autre route de Listo ne le reconnaît.
@@ -83,11 +92,11 @@ function loadPages(publicDir) {
   const sprite = index.slice(index.indexOf('<svg class="sprite"'), index.indexOf('</defs></svg>') + '</defs></svg>'.length);
   const page = (name, folder) => Buffer.from(fs.readFileSync(new URL(`${folder}${name}`, PAGES), 'utf8').replace('<!-- sprite -->', sprite));
   return Object.fromEntries(Object.entries({ fr: '', en: 'en/' })
-    .map(([locale, folder]) => [locale, { list: page('lien-public.html', folder), invalid: page('lien-invalide.html', folder) }]));
+    .map(([locale, folder]) => [locale, { list: page('lien-public.html', folder), note: page('lien-note.html', folder), invalid: page('lien-invalide.html', folder) }]));
 }
 
 export function publicRoutes(ctx, { publicDir }) {
-  const { db, shares, publicAccess, audit } = ctx;
+  const { db, shares, noteShares, publicAccess, audit } = ctx;
   const allPages = loadPages(publicDir);
   // Pages dans la langue de la requête (navigateur, sinon LISTO_LANG). La
   // page « lien invalide » reste la même, au caractère près, quelle que soit
@@ -118,7 +127,15 @@ export function publicRoutes(ctx, { publicDir }) {
       FROM items WHERE list_id = ? AND deleted_at IS NULL
     `),
     photo: db.prepare('SELECT id FROM items WHERE id = ? AND list_id = ? AND deleted_at IS NULL AND photo_at IS NOT NULL'),
+    // Note d'un lien : seulement ce que la page publique montre
+    note: db.prepare('SELECT title, body, updated_at FROM notes WHERE id = ? AND deleted_at IS NULL'),
   };
+
+  // Le lien valable de ce jeton : celui d'une liste, sinon celui d'une note
+  // (share.kind === 'note'), sinon null. Contrôle complet à chaque appel.
+  const lookup = (token) => shares.validShare(token) ?? noteShares.validShare(token);
+  const isNote = (share) => share.kind === 'note';
+
 
   // En-têtes de toutes les routes publiques
   const publicHeaders = (req, res, next) => {
@@ -140,7 +157,7 @@ export function publicRoutes(ctx, { publicDir }) {
       refuse(res, 429);
       return null;
     }
-    const share = shares.validShare(req.params.token);
+    const share = lookup(req.params.token);
     if (!share) {
       unknownLimiter.fail([ipKey(req)]);
       if (unknownLimiter.isBlocked([ipKey(req)])) audit('public_link_ip_blocked', { ip: req.ip });
@@ -157,6 +174,7 @@ export function publicRoutes(ctx, { publicDir }) {
   // Le visiteur peut-il voir ce lien ? (pas de mot de passe, ou cookie valable)
   function hasAccess(req, share) {
     if (share.password_hash === null) return true;
+    // (clé « note:<numéro> » pour une note : jamais celle d'une liste)
     return publicAccess.allows(parseCookies(req.headers.cookie)[ACCESS_COOKIE], share);
   }
 
@@ -298,6 +316,17 @@ export function publicRoutes(ctx, { publicDir }) {
     };
   }
 
+  // Ce que voit le visiteur d'une note : le titre (vide s'il n'y en a pas),
+  // le texte et la date de modification, champ par champ ; rien d'autre
+  // (ni épingle, ni nom, ni membre, ni propriétaire, ni identifiant)
+  function publicNoteView(share) {
+    const note = q.note.get(share.note_id);
+    return {
+      note: { title: note.title, body: note.body, updatedAt: note.updated_at },
+      expiresAt: share.expires_at,
+    };
+  }
+
   // Prénom du destinataire d'une liste d'envies (null si introuvable)
   function forNameOf(list) {
     if (list.for_name) return list.for_name;
@@ -309,8 +338,9 @@ export function publicRoutes(ctx, { publicDir }) {
   const pageRouter = express.Router();
   pageRouter.use(publicHeaders);
   pageRouter.get('/:token', (req, res) => {
-    if (!findShare(req, res, refusePage)) return;
-    res.type('html').send(pagesFor(req).list);
+    const share = findShare(req, res, refusePage);
+    if (!share) return;
+    res.type('html').send(isNote(share) ? pagesFor(req).note : pagesFor(req).list);
   });
   // Toute autre adresse sous /p/ : même réponse qu'un lien inconnu
   pageRouter.use((req, res) => {
@@ -328,6 +358,7 @@ export function publicRoutes(ctx, { publicDir }) {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
     if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
+    if (isNote(share)) return res.json(publicNoteView(share));
     const list = q.list.get(share.list_id);
     // Liste d'envies : un visiteur voit l'état des réservations ; le
     // bénéficiaire reconnu par sa session, jamais (réponse de la lecture seule)
@@ -345,6 +376,7 @@ export function publicRoutes(ctx, { publicDir }) {
     return (req, res) => {
       const share = findShare(req, res, refuseJson);
       if (!share) return;
+      if (isNote(share)) return refuseJson(res, 404); // une note n'a pas de souhaits
       if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
       const list = q.list.get(share.list_id);
       if (!isWishList(list) || isBeneficiary(req, list)) return refuseJson(res, 404);
@@ -393,7 +425,7 @@ export function publicRoutes(ctx, { publicDir }) {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
     if (share.password_hash === null) return res.json({ ok: true }); // rien à saisir
-    const keys = [`lien:${share.id}`, ipKey(req)];
+    const keys = [`lien:${share.accessKey ?? share.id}`, ipKey(req)];
     if (passwordLimiter.isBlocked(keys)) return res.status(429).json({ error: req.t(TOO_MANY), blocked: true });
 
     const typed = req.body?.password;
@@ -401,12 +433,13 @@ export function publicRoutes(ctx, { publicDir }) {
     // Même calcul scrypt dans tous les cas (comparaison en temps constant)
     const ok = await verifyPassword(usable ? typed : '', usable ? share.password_hash : await getDummyHash()) && usable;
     // Le lien a pu être arrêté, ou son mot de passe changé, pendant le calcul
-    const still = shares.validShare(req.params.token);
+    const still = lookup(req.params.token);
     if (!ok || !still || still.password_hash !== share.password_hash) {
       passwordLimiter.fail(keys);
-      audit('public_link_password_refused', { share: share.id, ip: req.ip });
+      // (un lien de note a ses propres événements, note_link_…)
+      audit(isNote(share) ? 'note_link_password_refused' : 'public_link_password_refused', { share: share.id, ip: req.ip });
       if (passwordLimiter.isBlocked(keys)) {
-        audit('public_link_entry_blocked', { share: share.id, ip: req.ip });
+        audit(isNote(share) ? 'note_link_entry_blocked' : 'public_link_entry_blocked', { share: share.id, ip: req.ip });
         return res.status(429).json({ error: req.t(TOO_MANY), blocked: true });
       }
       return res.status(401).json({ error: req.t(WRONG_PASSWORD) });
@@ -422,7 +455,7 @@ export function publicRoutes(ctx, { publicDir }) {
       path: `/api/public/${req.params.token}`,
       maxAge: access.maxAge,
     });
-    audit('public_link_opened', { share: share.id, ip: req.ip });
+    audit(isNote(share) ? 'note_link_opened' : 'public_link_opened', { share: share.id, ip: req.ip });
     res.json({ ok: true });
   });
 
@@ -430,6 +463,7 @@ export function publicRoutes(ctx, { publicDir }) {
     const share = findShare(req, res, refuseJson);
     if (!share) return;
     if (!hasAccess(req, share)) return res.status(401).json({ error: req.t(PASSWORD_REQUIRED), passwordRequired: true });
+    if (isNote(share)) return res.status(404).json({ error: req.t('liens.public.photoIntrouvable') }); // une note n'a pas de photo
     const itemId = String(req.params.itemId).toLowerCase();
     const item = q.photo.get(itemId, share.list_id); // un article de CETTE liste seulement
     if (!item) return res.status(404).json({ error: req.t('liens.public.photoIntrouvable') });

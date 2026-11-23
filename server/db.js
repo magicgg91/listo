@@ -11,9 +11,9 @@
 //   (ex. « 2026-10-16T21:30:00.000Z »). Elles se lisent facilement et se
 //   comparent dans le bon ordre. Elles sont toujours posées par le serveur.
 // - Les booléens sont des entiers 0 (non) ou 1 (oui).
-// - Les listes et articles ont un identifiant UUID (texte) créé par le
-//   téléphone, pour pouvoir les créer hors ligne. Les autres tables utilisent
-//   un simple numéro attribué par SQLite.
+// - Les listes, articles et notes ont un identifiant
+//   UUID (texte) créé par le téléphone, pour pouvoir les créer hors ligne.
+//   Les autres tables utilisent un simple numéro attribué par SQLite.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -670,6 +670,145 @@ export const MIGRATIONS = [
   // peut désormais exister dans deux magasins : la contrainte UNIQUE du nom
   // part, et la table est recréée (voir aislesByStoreMigration).
   (db) => aislesByStoreMigration(db),
+
+  // --- Migration 36 : notes (23 novembre 2026, docs/cadrage-accueil-notes-notifications.md) ---
+  // notes : une note (identifiant UUID créé par le téléphone, pour la créer
+  // hors ligne), son propriétaire, un titre facultatif (120 caractères au
+  // plus), un texte simple (20 000 au plus), un numéro de version (+1 à
+  // chaque enregistrement du titre ou du texte : sert à repérer deux
+  // enregistrements faits sur la même version, server/notes.js), qui a
+  // écrit en dernier, et la corbeille (deleted_at, deleted_by : effacée
+  // pour de bon 30 jours après par le ménage).
+  // note_user_state : ce qui est propre à chaque personne qui voit la note
+  // (l'épingle ; gardée pendant la corbeille). Le partage (étape 3) ajoutera
+  // des membres sans changer ces tables. (Catégories des notes : abandonnées
+  // le 23 novembre 2026, aucune table.)
+  // Un compte effacé (seul cas permis : compte jamais utilisé) n'a pas de
+  // note ; ON DELETE CASCADE en filet de sécurité. Les tables partent vides :
+  // rien ne change pour les données existantes.
+  `
+  CREATE TABLE notes (
+    id         TEXT    PRIMARY KEY,
+    owner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title      TEXT    NOT NULL DEFAULT '' CHECK (length(title) <= 120),
+    body       TEXT    NOT NULL DEFAULT '' CHECK (length(body) <= 20000),
+    version    INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
+    created_at TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL,
+    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at TEXT,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+  CREATE INDEX notes_owner ON notes(owner_id, updated_at);
+  CREATE INDEX notes_deleted ON notes(deleted_at) WHERE deleted_at IS NOT NULL;
+
+  CREATE TABLE note_user_state (
+    note_id TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pinned  INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
+    PRIMARY KEY (note_id, user_id)
+  );
+  CREATE INDEX note_user_state_user ON note_user_state(user_id);
+  `,
+
+  // --- Migration 37 : partage des notes (23 novembre 2026, étape 3 du cadrage) ---
+  // note_members : les personnes avec qui une note est partagée et leur
+  // droit ('modification' : « Peut modifier » ; 'lecture' : « Lecture
+  // seule »), comme list_members ; le propriétaire n'y figure pas (il a tous
+  // les droits, notes.owner_id).
+  // notes.changed_at : dernier changement de la note POUR LA
+  // SYNCHRONISATION (texte, corbeille, mais aussi partage et lien public) ;
+  // updated_at reste la date de modification du texte, montrée à l'écran
+  // (ajouter une personne ne doit pas faire remonter la note). Les notes
+  // existantes reçoivent leur date de modification.
+  // note_user_state reçoit ce qui est propre à chaque personne, en plus de
+  // l'épingle (une seule ligne par personne et par note, effacée quand elle
+  // perd l'accès : épingle, lecture et sourdines partent ensemble) :
+  // last_read_version (Nouveautés : la dernière version lue ; une note
+  // modifiée par quelqu'un d'autre au-delà est « nouvelle »), muted_news
+  // (« Masquer les nouveautés de cette note ») et muted_push (« Couper les
+  // notifications de cette note »). Deux sourdines séparées, comme
+  // list_reads.muted et push_list_mutes pour les listes.
+  // note_public_shares : lien public d'une note, mêmes colonnes et mêmes
+  // règles que public_shares (empreinte du jeton, jeton chiffré pour le
+  // réafficher au propriétaire, mot de passe haché, expiration, arrêt) ;
+  // un seul lien non arrêté par note.
+  `
+  ALTER TABLE notes ADD COLUMN changed_at TEXT;
+  UPDATE notes SET changed_at = updated_at;
+  CREATE INDEX notes_changed ON notes(changed_at);
+
+  CREATE TABLE note_members (
+    note_id TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    access  TEXT    NOT NULL DEFAULT 'lecture' CHECK (access IN ('modification', 'lecture')),
+    PRIMARY KEY (note_id, user_id)
+  );
+  CREATE INDEX note_members_user ON note_members(user_id);
+
+  ALTER TABLE note_user_state ADD COLUMN last_read_version INTEGER NOT NULL DEFAULT 0 CHECK (last_read_version >= 0);
+  ALTER TABLE note_user_state ADD COLUMN muted_news INTEGER NOT NULL DEFAULT 0 CHECK (muted_news IN (0, 1));
+  ALTER TABLE note_user_state ADD COLUMN muted_push INTEGER NOT NULL DEFAULT 0 CHECK (muted_push IN (0, 1));
+
+  CREATE TABLE note_public_shares (
+    id            INTEGER PRIMARY KEY,
+    note_id       TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    token_hash    TEXT    NOT NULL UNIQUE,
+    token_sealed  TEXT    NOT NULL,
+    password_hash TEXT,
+    expires_at    TEXT,
+    created_by    INTEGER NOT NULL REFERENCES users(id),
+    created_at    TEXT    NOT NULL,
+    revoked_at    TEXT
+  );
+  CREATE UNIQUE INDEX note_public_shares_one_per_note ON note_public_shares(note_id) WHERE revoked_at IS NULL;
+  `,
+
+  // --- Migration 38 : page Notifications (23 novembre 2026, étape 4 du cadrage) ---
+  // inbox : ce que Listo a signalé à une personne (server/inbox.js), qu'elle
+  // ait un appareil inscrit aux notifications push ou non.
+  // - category : la catégorie des réglages des notifications ('changes'
+  //   Modifications, 'due' Échéances, 'wishes' Envies, 'sharing' Partage) ;
+  // - text_key et params : le NOM du texte et ses valeurs (JSON construit
+  //   champ par champ par server/notify.js), mis en phrase au moment de la
+  //   lecture, dans la langue du compte (changer de langue traduit aussi
+  //   l'historique). Jamais le texte d'une note : une note n'est désignée
+  //   que par son identifiant (target_id), son titre est relu à l'affichage ;
+  // - target_type et target_id : ce qu'ouvre la ligne ('list', 'item',
+  //   'note', 'deadlines'), revérifié avec les droits du moment à chaque lecture ;
+  // - group_key et count : les modifications rapprochées d'une même liste
+  //   (ou d'une même note) mettent à jour une seule ligne ;
+  // - read_at : vide tant que la ligne n'est pas lue (lu sur un appareil =
+  //   lu sur tous) ;
+  // - num : le numéro de la ligne montré au téléphone, compté pour CHAQUE
+  //   personne (users.inbox_seq, qui ne fait que monter) : jamais le numéro
+  //   commun de la table, qui laisserait deviner qu'une autre personne a
+  //   reçu quelque chose entre-temps (une réservation, pour le bénéficiaire
+  //   d'une liste d'envies).
+  // Gardées 30 jours, 300 au plus par personne (ménage de server/inbox.js).
+  // La table part vide : rien ne change pour les données existantes.
+  `
+  ALTER TABLE users ADD COLUMN inbox_seq INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE inbox (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    num         INTEGER NOT NULL CHECK (num >= 1),
+    category    TEXT    NOT NULL CHECK (category IN ('changes', 'due', 'wishes', 'sharing')),
+    text_key    TEXT    NOT NULL CHECK (length(text_key) BETWEEN 1 AND 60),
+    params      TEXT    NOT NULL DEFAULT '{}' CHECK (length(params) <= 4000),
+    target_type TEXT    CHECK (target_type IN ('list', 'item', 'note', 'deadlines')),
+    target_id   TEXT,
+    group_key   TEXT,
+    count       INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1),
+    created_at  TEXT    NOT NULL,
+    updated_at  TEXT    NOT NULL,
+    read_at     TEXT
+  );
+  CREATE UNIQUE INDEX inbox_user_num ON inbox(user_id, num);
+  CREATE INDEX inbox_user ON inbox(user_id, updated_at);
+  CREATE INDEX inbox_group ON inbox(user_id, group_key) WHERE group_key IS NOT NULL;
+  CREATE INDEX inbox_updated ON inbox(updated_at);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

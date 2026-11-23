@@ -114,6 +114,32 @@ export default {
   'ops.enviesNonDupliquees': 'Une liste d\'envies ne se duplique pas.',
   'ops.tropDeDuplications': 'Trop de duplications pour le moment. Réessayez dans un moment.',
 
+  // Notes (server/notes.js)
+  'ops.noteIntrouvable': 'Note introuvable.',
+  'ops.noteExisteDeja': 'Cette note existe déjà.',
+  'ops.noteProprietaireSeulement': 'Seul le propriétaire de la note peut faire cela.',
+  'ops.noteLectureSeule': 'Vous avez un accès en lecture seule à cette note.',
+  'ops.noteConflit': 'Cette note a été modifiée entre-temps : rien n\'a été écrasé.',
+  'ops.versionNoteInvalide': 'Version de la note invalide.',
+  'ops.titreNoteInvalide': 'Titre de note invalide.',
+  'ops.titreNoteTropLong': 'Titre trop long ({max} caractères au plus).',
+  'ops.texteNoteInvalide': 'Texte de note invalide.',
+  'ops.texteNoteTropLong': 'Texte trop long ({max} caractères au plus).',
+  'ops.epingleInvalide': 'Réglage « Épingler » invalide.',
+  'ops.notesLimite': 'Vous avez déjà {max} notes, corbeille comprise : supprimez-en avant d\'en créer une autre.',
+  'ops.notesInvalides': 'Liste des notes invalide.',
+  'ops.notesTropVite': 'Trop d\'enregistrements de notes pour le moment. Ils repartiront dans un moment.',
+  // Partage des notes (étape 3)
+  'ops.proprietaireNePeutPasQuitterNote': 'Le propriétaire ne peut pas quitter sa note. Supprimez-la à la place.',
+  'ops.proprietaireTousDroitsNote': 'Le propriétaire a tous les droits sur sa note.',
+  'ops.droitSansPartageNote': 'Droit donné à une personne avec qui la note n\'est pas partagée.',
+  'ops.repereLectureNoteInvalide': 'Repère de lecture de la note invalide.',
+  'ops.reglageSourdineNoteInvalide': 'Réglage « Masquer les nouveautés de cette note » invalide.',
+
+  // Page Notifications (server/inbox.js)
+  'ops.inboxInvalide': 'Choix des notifications invalide.',
+  'ops.inboxIntrouvable': 'Notification introuvable.',
+
   // Synchronisation
   'ops.parametreSinceInvalide': 'Paramètre « since » invalide.',
 };

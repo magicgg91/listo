@@ -3,7 +3,7 @@
 
 export default {
   // État des notifications sur cet appareil (sous l'interrupteur)
-  'notifications.etat.serveurCoupe': 'Notifications are turned off on this Listo server. The person who runs it can turn them on.',
+  'notifications.etat.serveurCoupe': 'Notifications on devices are turned off on this Listo server. The person who runs it can turn them on. The Notifications page (bell on Home) works anyway.',
   'notifications.etat.incompatible': 'This browser can\'t receive notifications. Try an up-to-date browser.',
   'notifications.etat.iphone': 'On iPhone: first add Listo to your Home Screen, then open it from its icon.',
   'notifications.etat.refusees': 'Notifications were blocked for Listo on this device. To turn them back on, allow them in your browser or phone settings (notifications for this site or for the Listo app), then come back here.',
@@ -25,7 +25,7 @@ export default {
   'notifications.contenu.detail.texte': 'Item names, for example “Added: Milk, Bread”. When off: only who changed which list.',
 
   // Notes sous les cartes
-  'notifications.compte.note': 'These settings apply to all your devices.',
+  'notifications.compte.note': 'These settings apply to the Notifications page and to all your devices.',
   'notifications.parListe.note': 'For a single list: the list\'s ⋮ menu, “Hide what\'s new in this list” or “Turn off notifications for this list”.',
   'notifications.confidentialite': 'Notification content is encrypted: only your device can read it. Your device\'s notification service (Apple, Google, Mozilla or Microsoft) only sees the time, the message size, and the device that receives it.',
 

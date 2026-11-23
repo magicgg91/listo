@@ -17,7 +17,8 @@
 //                                    &listId=… : vide hors liste de courses
 //   GET  /api/sync?since=…          tout ce qui a changé depuis un instant
 //   POST /api/ops                   lot d'opérations (créer, modifier, cocher,
-//                                   supprimer une liste ou un article)
+//                                   supprimer une liste ou un article ; notes
+//                                   et leurs catégories, server/notes.js)
 //
 // Les droits sont vérifiés dans lists.js, pour chaque liste et chaque
 // article, à chaque requête.
@@ -25,6 +26,7 @@
 import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
 import { requestLocale } from '../locale.js';
+import { NOTE_SAVES } from '../notes.js';
 
 // Résultat d'une opération pour le téléphone : un refus (code : nom de son
 // texte) est dit dans la langue de la requête ; ses valeurs (params) restent
@@ -137,6 +139,13 @@ export function listRoutes(ctx) {
     const ops = req.body?.ops;
     if (!Array.isArray(ops) || ops.length === 0 || ops.length > MAX_OPS_PER_BATCH) {
       return res.status(400).json({ error: req.t('ops.lotInvalide', { max: MAX_OPS_PER_BATCH }) });
+    }
+    // Plafond des enregistrements de notes (server/notes.js) : tout le lot
+    // est refusé (429) et rien n'est appliqué ; le téléphone le garde en file
+    // et le renvoie plus tard (une opération refusée une à une serait perdue)
+    const saves = ops.filter((op) => NOTE_SAVES.includes(op?.type)).length;
+    if (saves && !ctx.noteSaves.take(req.user.id, saves)) {
+      return res.status(429).json({ error: req.t('ops.notesTropVite') });
     }
     res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });

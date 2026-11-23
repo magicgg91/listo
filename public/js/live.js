@@ -1,7 +1,8 @@
 // Temps réel côté téléphone : écoute du flux GET /api/events (Server-Sent
 // Events) et filets de sécurité.
 //
-// - Un message « la liste X a changé » déclenche une synchronisation
+// - Un message « la liste X a changé » (ou « mes notes ont changé »)
+//   déclenche une synchronisation
 //   (/api/sync?since=…). Plusieurs messages rapprochés n'en déclenchent
 //   qu'une (regroupement de 300 ms).
 // - Le flux n'est ouvert que lorsque l'application est au premier plan :
@@ -91,8 +92,12 @@ function open() {
     attempt = 0;
   });
   source.addEventListener('list', () => scheduleSync());
+  // Mes notes ont changé (une note, une épingle ; server/notes.js)
+  source.addEventListener('note', () => scheduleSync());
   // Catégories, magasins ou rayons changés par l'Admin (renommage…)
   source.addEventListener('refs', () => scheduleSync());
+  // Page Notifications : une ligne ajoutée, lue ou effacée (ici ou sur un autre appareil)
+  source.addEventListener('inbox', () => scheduleSync());
   source.addEventListener('error', () => {
     // Coupure (réseau, redémarrage du serveur, session expirée…) : le
     // navigateur réessaierait tout seul, sans délai croissant ; on reprend la main.

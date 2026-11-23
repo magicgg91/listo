@@ -26,6 +26,10 @@ import { reconnectDelay } from './live.js';
 import { t } from './i18n.js';
 
 export const OPS_PER_BATCH = 20;
+// Taille d'un lot (texte JSON des opérations, en caractères) : une note peut
+// avoir 20 000 caractères ; un lot reste bien sous la limite du serveur
+// (2 Mo, server/app.js). Une seule opération part toujours, même grosse.
+export const BATCH_CHARS = 400000;
 
 // Erreur passagère (on garde et on réessaie) ou refus définitif (on retire) ?
 // Pas de réseau, serveur en panne (5xx), trop de requêtes (429) : passagère.
@@ -38,9 +42,13 @@ export function isTemporary(error) {
 // transport : { sendOps(ops) → résultats, putPhoto(itemId, jpeg), deletePhoto(itemId) }
 // events : réactions (toutes facultatives) :
 //   changed()                 la file a changé (nombre en attente)
-//   refused(entry, message, code)   un élément a été refusé et retiré
+//   refused(entry, message, code, result)   un élément a été refusé et retiré
 //                             (code : nom du texte de refus donné par le
-//                             serveur, par exemple 'ops.lectureSeule', s'il y en a un)
+//                             serveur, par exemple 'ops.lectureSeule', s'il y en a un ;
+//                             result : la réponse complète, par exemple la
+//                             version actuelle d'une note en conflit). Appelé
+//                             AVANT le retrait de la file : l'écran le sait
+//                             avant tout nouvel enregistrement.
 //   dropped(entry)            photo abandonnée (article supprimé entre-temps)
 //   offline(error)            arrêt : pas de réseau ou serveur indisponible
 //   unauthorized()            arrêt : session expirée (la file est gardée)
@@ -51,6 +59,7 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
   let attempt = 0;
   let retryTimer = null;
   let stopped = false;
+  const sending = new Set(); // éléments en cours d'envoi (seq)
 
   const emit = (name, ...args) => events[name]?.(...args);
 
@@ -109,23 +118,43 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
     return 'offline';
   }
 
+  // Remplace l'opération d'un élément encore en file, pas en cours d'envoi
+  // (enregistrements rapprochés d'une même note : seul le dernier texte
+  // part). Renvoie faux si l'élément part déjà ou n'est plus là.
+  async function replaceOp(seq, op) {
+    const index = entries.findIndex((entry) => entry.seq === seq);
+    if (index < 0 || sending.has(seq) || entries[index].kind !== 'op') return false;
+    const updated = { ...entries[index], op };
+    entries[index] = updated;
+    await storage.queuePut(updated);
+    return true;
+  }
+
   async function sendOps() {
     const batch = [];
+    let chars = 0;
     for (const entry of entries) {
       if (entry.kind !== 'op' || batch.length >= OPS_PER_BATCH) break;
+      chars += JSON.stringify(entry.op).length;
+      if (batch.length && chars > BATCH_CHARS) break;
       batch.push(entry);
     }
     let results;
+    // Envoyés : plus modifiables (replaceOp) jusqu'à leur retrait de la file
+    for (const entry of batch) sending.add(entry.seq);
     try {
       results = await transport.sendOps(batch.map((entry) => entry.op));
+      for (const [index, entry] of batch.entries()) {
+        const result = results?.[index];
+        if (!result) return halt(null); // réponse incomplète : on réessaiera
+        if (result.status !== 200) emit('refused', entry, result.error || t('reseau.modificationRefusee'), result.code, result);
+        await remove(entry.seq);
+        sending.delete(entry.seq);
+      }
     } catch (error) {
       return halt(error);
-    }
-    for (const [index, entry] of batch.entries()) {
-      const result = results?.[index];
-      if (!result) return halt(null); // réponse incomplète : on réessaiera
-      await remove(entry.seq);
-      if (result.status !== 200) emit('refused', entry, result.error || t('reseau.modificationRefusee'), result.code);
+    } finally {
+      sending.clear();
     }
     return null;
   }
@@ -159,6 +188,10 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
       again = true;
       return flushing;
     }
+    // File vide : rien à envoyer. (Sans ce retour, l'envoi se terminerait
+    // avant même d'être noté comme en cours, et la file resterait bloquée
+    // sur ce résultat.)
+    if (!entries.length) return Promise.resolve('done');
     timers.clearTimeout(retryTimer);
     retryTimer = null;
     flushing = (async () => {
@@ -192,6 +225,8 @@ export function createQueue({ storage, transport, events = {}, delay = reconnect
     load,
     add,
     remove,
+    replaceOp,
+    isSending: (seq) => sending.has(seq),
     flush,
     stop,
     entries: () => [...entries],

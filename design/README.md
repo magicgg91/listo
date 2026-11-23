@@ -525,3 +525,39 @@ Décisions du propriétaire (cahier des charges, « Fiche d'une tâche en sous-p
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).
 
+
+## Ajout : Accueil et navigation (23 novembre 2026)
+
+Étape 1 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`accueil-1`, `accueil-2`, `pc-accueil-1`, `pc-listes-1`). Styles repris de `accueil-notes/listo-accueil-notes.css`, seulement ce qui sert à cette étape : sections 16.19 à 16.21 de `listo.css` (les numéros des maquettes, 16.19 à 16.27, seront redonnés aux étapes suivantes). Aucune couleur ni variable nouvelle, aucune icône nouvelle (`#i-home`, `#i-user` existaient).
+
+- **Accueil** (16.19) : `.home-head` (bonjour, date, pastille `.sync`) ; `.tiles` de `.card.tile` (`.tile__head`, `.tile__rows`, `.tile__row` avec `.count`, `.count--danger`, `.count--success`, `.tile__dot`, `.tile__row--add`, `.tile__empty`). Un nombre nul reste gris. La cloche (`.icon-btn--badge`) et la tuile Notes viendront aux étapes 2 et 4.
+- **Bandeau du bas** (16.20) : `.tabbar--4` (Accueil, Échéances, Listes, Réglages) ; `data-current` va de 0 à 3. Pas de bandeau sur l'Accueil.
+- **Ordinateur** (16.21) : `.pc-side__main` (entrées fixes Accueil, Échéances, Listes ; remplace `.pc-side__deadlines`) ; « Types » dans `.pc-nav` sur les écrans des listes, avec `.news-badge--dot` ; type de la liste ouverte en `aria-current="true"`, même aspect que le type choisi ; `.pc-head__hello` et `.pc-head__tools` pour l'en-tête de l'Accueil ; tuiles sur trois colonnes (quatre au-delà de 1 440 px). Plus de filtre `.segmented` sur « Listes » à l'ordinateur.
+
+## Ajout : Notes, socle (23 novembre 2026)
+
+Étape 2 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`notes-1`, `notes-3`, `note-1`, `note-2`, `accueil-3`, `pc-notes-1`), **sans les catégories** (abandonnées le 23 novembre 2026 : pastilles, écran « Catégories », bouton de catégorie et menu des catégories ne sont pas repris). Styles repris de `accueil-notes/listo-accueil-notes.css`, sections 16.22 à 16.28 de `listo.css`. Aucune couleur ni variable nouvelle. Icônes ajoutées au sprite : `#i-note`, `#i-pin`, `#i-pin-off`.
+
+- **Pastille sur un bouton-icône** (16.22) : `.icon-btn--badge`, `.icon-btn__badge` (`--neutral` en gris : corbeille des notes) ; `.count--accent`.
+- **Bandeau du bas** (16.23) : `.tabbar--5` (Accueil, Échéances, Listes, Notes, Réglages) ; `data-current` va de 0 à 4.
+- **Saisie rapide** (16.24) : `.quick-note`, `.quick-note__text`, `.quick-note__actions` (« Annuler », « Enregistrer » côte à côte ; `.sheet__actions` de `app.css` reste en colonne pour les autres feuilles) ; `.tile__meta` (« 12 notes » dans la tuile Notes).
+- **Écran Notes** (16.25) : `.notes-section`, `.note-card-wrap`, `.note-card` (`__head`, `__icon`, `__title`, `__time`, `__menu`, `__excerpt`, `__foot`, `__check`).
+- **Une note** (16.26) : `.note-status` (`--ok`, `--check`), `.note-edit` (`__title`, `__body`, `__body--input`, `__placeholder`), `.note-link`, `.note-foot`, `.note-banner`, `.conflict`. Le texte est affiché avec ses liens hors saisie ; le toucher passe en saisie (champ de texte simple).
+- **Corbeille des notes** (16.27) : `.page-intro`, `.page-tools`, `.note-trash`.
+- **Ordinateur** (16.28) : `.pc-col--full`, `.pc-notes` (`--closed` sans note ouverte), `.pc-notes__list`, `.pc-notes__cards`, `.pc-note` (`__bar`), 560 px (440 px sous 1 280 px).
+
+## Ajout : Notes, partage (23 novembre 2026)
+
+Étape 3 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquette `accueil-notes/` `notes-2` (le reste composé avec le kit). Quelques lignes ajoutées à la section 16.26 de `listo.css`, aucune couleur ni variable nouvelle, aucune icône nouvelle (`#i-users`, `#i-eye`, `#i-link` existaient). Le panneau « Partager la note » et la feuille du lien public reprennent ceux d'une liste.
+
+- **Carte d'une note partagée** : point des nouveautés sur l'icône (`.news-badge--dot`), « Modifiée par Léa » sous le titre (`.note-card__news`, texte d'accent) ; en bas, `.chip--readonly` (« Lecture seule ») à gauche, l'icône du lien public et les pastilles des personnes à droite (`.note-card__chips`, `.note-card__people`).
+- **Barre d'une note** : bouton « Partager » (propriétaire) ou « Personnes » (`.note-people` : `#i-users` et pastilles ; sur le téléphone, le mot est dans le nom lu).
+- **Page publique d'une note** : `.note-edit__body--read` (texte sans hauteur minimale ni curseur de saisie).
+
+## Ajout : Page Notifications (23 novembre 2026)
+
+Étape 4 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`notifications-1`, `notifications-2`, cloche de `accueil-1` et `pc-accueil-1`). Styles repris de `accueil-notes/listo-accueil-notes.css` (16.26 des maquettes), section 16.29 de `listo.css`. Aucune couleur ni variable nouvelle. Icône ajoutée au sprite : `#i-check-double` (« Tout marquer comme lu »).
+
+- **Page Notifications** (16.29) : `.inbox-day`, `.inbox-row` (`.is-unread` : texte en gras, icône bleue ; `__body`, `__text`, `__sub`, `__end`, `__time`, `__dot`), `.inbox-foot` (`__hint`). Jours en `.section-title`, lignes dans un `.group`, « N non lues » et « Tout marquer comme lu » dans `.page-tools`, page vide en `.empty`.
+- **Cloche** de l'Accueil : `.icon-btn--badge` et `.icon-btn__badge` (16.22), à droite de la pastille d'état, sur téléphone et sur ordinateur.
+- Dans `app.css` (application seulement) : `.inbox-item` (ligne glissable, même mécanisme que `.item.swipe`) et `.inbox-row__more`, le bouton ⋮ de chaque ligne pour le clavier et les lecteurs d'écran, visible au focus (et au survol sur ordinateur) : le téléphone garde la ligne de la maquette.

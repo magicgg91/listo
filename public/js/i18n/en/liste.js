@@ -46,7 +46,7 @@ export default {
   'liste.chargement': 'Loading…',
   'liste.introuvable': 'List not found',
   'liste.introuvable.texte': 'This list was deleted, or it\'s no longer shared with you.',
-  'liste.retourMesListes': 'Back to my lists',
+  'liste.retourMesListes': 'Back to lists',
   // Champ d'ajout (courses, tâches, envies)
   'liste.ajout.placeholder.courses': 'Add an item',
   'liste.ajout.placeholder.taches': 'Add an item',

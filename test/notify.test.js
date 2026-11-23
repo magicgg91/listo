@@ -349,10 +349,14 @@ async function scenario(t, withReservations) {
   await digestAt(f, at(f.app, 1, 8));
   await f.settle();
   const others = f.push.calls.filter((c) => c.endpoint !== f.people.lea.device.subscription.endpoint).length;
-  return { lea: f.inbox('lea'), others };
+  // Page Notifications (étape 4) : ce que lit Léa, et son empreinte dans la synchronisation
+  const page = (await f.people.lea.client.get('/api/inbox')).body;
+  const stamp = (await f.people.lea.client.get('/api/sync')).body.inboxStamp;
+  const othersPage = (await f.people.guillaume.client.get('/api/inbox')).body.rows.filter((r) => r.category === 'wishes').length;
+  return { lea: f.inbox('lea'), others, page, stamp, othersPage };
 }
 
-test('TEST FORT : le bénéficiaire reçoit exactement les mêmes notifications avec ou sans réservation (compte et visiteur)', async (t) => {
+test('TEST FORT : le bénéficiaire reçoit exactement les mêmes notifications avec ou sans réservation (compte et visiteur), téléphone et page Notifications', async (t) => {
   const without = await scenario(t, false);
   const withRes = await scenario(t, true);
   assert.ok(without.lea.length >= 3, 'Léa reçoit bien des notifications (liste de courses, partage, échéances)');
@@ -361,6 +365,13 @@ test('TEST FORT : le bénéficiaire reçoit exactement les mêmes notifications 
   assert.ok(withRes.others > without.others, 'les réservations ont bien été notifiées aux autres');
   // Rien de ce qu'a reçu Léa ne parle de réservation
   assert.doesNotMatch(JSON.stringify(withRes.lea), /réserv|particip|envies-|Tante Jo|lien public|Vélo|Livre/i);
+  // Page Notifications : strictement identique (lignes, numéros, heures,
+  // lu / non lu, nombre de non lues), empreinte comprise
+  assert.ok(without.page.rows.length >= 3, 'la page de Léa se remplit bien');
+  assert.deepEqual(withRes.page, without.page, 'page Notifications identique avec ou sans réservation');
+  assert.equal(withRes.stamp, without.stamp);
+  assert.ok(withRes.othersPage > without.othersPage, 'les réservations sont bien dans la page des autres');
+  assert.doesNotMatch(JSON.stringify(withRes.page), /réserv|particip|Tante Jo|lien public|Vélo|Livre|Envies/i);
 });
 
 // --- b) Résumé quotidien des échéances ---

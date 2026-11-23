@@ -257,7 +257,8 @@ test('copie locale et écran : effacements en cascade ; champs « Heure » et «
   applyOp(state, { type: 'item.update', itemId: 'i', dueDate: null }, { user, now });
   assert.deepEqual([state.items.get('i').dueTime, state.items.get('i').remindBefore], [null, null]);
   const list = read('public/js/screens/list.js');
-  assert.match(list, /timeField\.hidden = !withDue \|\| !dueDate;\s*\/\/ [^\n]*\s*remindField\.hidden = !withDue \|\| !dueDate \|\| !dueTime \|\| !app\.user\?\.push;/);
+  // Rappel proposé même sans LISTO_PUSH : il arrive dans la page Notifications (étape 4)
+  assert.match(list, /timeField\.hidden = !withDue \|\| !dueDate;\s*(\/\/ [^\n]*\s*)+remindField\.hidden = !withDue \|\| !dueDate \|\| !dueTime;/);
   assert.match(list, /if \(enabled\.due && dueTime !== savedDueTime\) changes\.dueTime = dueTime; \/\/ null : sans heure\s*if \(enabled\.due && remind !== savedRemind\) changes\.remindBefore = remind; \/\/ null : aucun rappel/);
   assert.match(list, /const timeInput = h\('input', \{ class: 'due-picker__input', type: 'time', step: '60' \}\);/);
   // Rien d'écrit en HTML ; le rappel n'est jamais sur la page publique

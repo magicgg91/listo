@@ -8,12 +8,21 @@
 // Les écrans et leur adresse. « :id » est une partie variable.
 export const ROUTES = [
   { name: 'login', path: '/connexion' },
+  // Accueil : premier écran (tuiles Échéances, Listes, Notes, Compte ; home.js)
+  { name: 'home', path: '/accueil' },
+  // Listes (« Mes listes » jusqu'au 23 novembre 2026 ; même adresse)
   { name: 'lists', path: '/listes' },
   // Échéances : les tâches à faire de toutes mes listes (deadlines.js)
   { name: 'deadlines', path: '/echeances' },
   { name: 'newList', path: '/listes/nouvelle' },
   { name: 'editList', path: '/listes/:id/modifier' },
   { name: 'list', path: '/listes/:id' },
+  // Notes (étape 2, 23 novembre 2026) : l'écran Notes, la corbeille des
+  // notes, une nouvelle note (pas encore enregistrée), une note
+  { name: 'notes', path: '/notes' },
+  { name: 'noteTrash', path: '/notes/corbeille' },
+  { name: 'newNote', path: '/notes/nouvelle' },
+  { name: 'note', path: '/notes/:id' },
   { name: 'settings', path: '/reglages' },
   { name: 'account', path: '/reglages/compte' },
   { name: 'about', path: '/reglages/a-propos' },
@@ -21,8 +30,11 @@ export const ROUTES = [
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
   { name: 'trash', path: '/reglages/corbeille' },
-  // Notifications (cet appareil ; catégories à l'étape suivante)
+  // Réglages › Notifications (Nouveautés, cet appareil, catégories)
   { name: 'notifications', path: '/reglages/notifications' },
+  // Page Notifications (étape 4, 23 novembre 2026) : ce que Listo m'a
+  // signalé ; la cloche de l'Accueil et la tuile Compte y mènent
+  { name: 'inbox', path: '/notifications' },
   { name: 'help', path: '/aide' },
   { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },
@@ -36,8 +48,9 @@ export const ROUTES = [
   { name: 'oldClaudeConnections', path: '/reglages/claude' },
 ];
 
-// Écran affiché quand l'adresse est vide ou inconnue
-export const DEFAULT_ROUTE = { name: 'lists', params: {} };
+// Écran affiché quand l'adresse est vide ou inconnue : l'Accueil (décision
+// du 23 novembre 2026 ; c'était « Mes listes » avant)
+export const DEFAULT_ROUTE = { name: 'home', params: {} };
 
 // Retrouve l'écran correspondant à une adresse (« #/listes/abc »).
 // Renvoie { name, params } ; une adresse inconnue donne l'écran par défaut.
@@ -170,7 +183,7 @@ export function closeOverlays() {
 // Démarre le routeur : onRoute(route) est appelé à chaque changement d'écran
 export function startRouter(onRoute) {
   renderRoute = onRoute;
-  if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || pathFor('lists'));
+  if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || pathFor('home'));
   window.addEventListener('popstate', () => {
     if (ignoredPops > 0) {
       ignoredPops--;

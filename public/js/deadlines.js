@@ -99,6 +99,61 @@ export function computeDeadlines(state, { today = todayKey(), query = '', mine =
     .filter((group) => group.entries.length > 0);
 }
 
+// --- Choix « Toutes / Les miennes » (écran Échéances et tuile de l'Accueil) ---
+
+// Le choix n'est proposé que si une de mes listes de tâches a l'attribution
+// activée ; sinon, « Toutes » quel que soit le choix gardé
+export const scopeOffered = (state) => [...state.lists.values()].some((list) => listOptions(list).assign);
+
+// Choix « Les miennes » retenu sur cet appareil (jamais envoyé au serveur ;
+// stockage indisponible : « Toutes » pour la visite)
+export const SCOPE_KEY = 'listo-echeances-miennes';
+export function loadDeadlineScope(storage = () => globalThis.localStorage) {
+  try {
+    return storage().getItem(SCOPE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+export function saveDeadlineScope(mine, storage = () => globalThis.localStorage) {
+  try {
+    if (mine) storage().setItem(SCOPE_KEY, '1');
+    else storage().removeItem(SCOPE_KEY);
+  } catch {
+    // stockage indisponible : le choix vaut pour la visite
+  }
+}
+
+// « Les miennes » vraiment appliqué : choisi ET proposé
+export const effectiveMine = (state, mine) => Boolean(mine) && scopeOffered(state);
+
+// --- Tuile « Échéances » de l'Accueil (décision du 23 novembre 2026) ---
+// Trois lignes : « En retard », « Aujourd'hui », « Plus tard » (Demain,
+// Cette semaine et Plus tard de l'écran, réunis). Les nombres sont ceux de
+// l'écran Échéances, avec le même choix « Toutes / Les miennes » : ils sont
+// calculés par computeDeadlines, jamais recomptés à part.
+export const HOME_DEADLINE_ROWS = [
+  ['late', ['late']],
+  ['today', ['today']],
+  ['later', ['tomorrow', 'week', 'later']],
+];
+
+// { late, today, later } : nombre de tâches de chaque ligne de la tuile
+export function deadlineCounts(state, { today = todayKey(), mine = false, me = null, now = nowTime() } = {}) {
+  const groups = computeDeadlines(state, { today, mine, me, now });
+  const size = (key) => groups.find((group) => group.key === key)?.entries.length ?? 0;
+  return Object.fromEntries(HOME_DEADLINE_ROWS.map(([row, keys]) => [row, keys.reduce((sum, key) => sum + size(key), 0)]));
+}
+
+// Section de l'écran Échéances à montrer pour une ligne de la tuile : la
+// première qui a des tâches (« Plus tard » : Demain, sinon Cette semaine,
+// sinon Plus tard), ou null
+export function deadlineSectionFor(state, row, { today = todayKey(), mine = false, me = null, now = nowTime() } = {}) {
+  const keys = HOME_DEADLINE_ROWS.find(([name]) => name === row)?.[1] ?? [];
+  const present = new Set(computeDeadlines(state, { today, mine, me, now }).map((group) => group.key));
+  return keys.find((key) => present.has(key)) ?? null;
+}
+
 // Nombre de la pastille : tâches en retard et tâches du jour, les miennes et
 // celles de personne (pas celles attribuées à quelqu'un d'autre)
 export function deadlineBadge(state, today = todayKey(), me = null) {

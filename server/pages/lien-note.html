@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Listo : page publique d'une note (lien /p/<jeton>, lecture seule, sans
+     compte ; étape 3 du cadrage). Même module que la page d'une liste
+     (js/public.js), qui lit data-kind="note" ; aucun script ni style écrit
+     dans cette page. Elle ne contient rien de la note : le titre, le texte
+     et la date arrivent par /api/public/<jeton>, qui contrôle le lien. -->
+<html lang="fr" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <script src="/js/viewport.js"></script>
+  <script src="/js/app-height.js"></script>
+  <title>Listo · Note partagée</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/listo.css">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/public.js"></script>
+</head>
+<body>
+<!-- sprite -->
+<div class="app" id="app" data-kind="note">
+  <p class="boot muted" role="status">Chargement…</p>
+</div>
+<noscript><p>Cette page a besoin de JavaScript pour afficher la note.</p></noscript>
+</body>
+</html>

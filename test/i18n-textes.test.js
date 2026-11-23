@@ -35,6 +35,8 @@ const MIGRATED = [
   'public/js/screens/lists.js',
   'public/js/tabbar.js',
   'public/js/screens/pc-side.js',
+  // Accueil et navigation (23 novembre 2026)
+  'public/js/screens/home.js',
   'public/js/screens/scan.js',
   'public/js/shortcuts.js',
   'public/js/list-icons.js',

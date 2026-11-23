@@ -102,8 +102,8 @@ export function createNewsService(ctx) {
     for (const itemId of itemIds) last = Number(q.insert.run(listId, userId, type, itemId, now).lastInsertRowid);
     db.prepare('UPDATE list_reads SET last_seen = ? WHERE list_id = ? AND user_id = ? AND last_seen >= ?').run(last, listId, userId, before);
     capList(listId);
-    // Notifications push (server/notify.js) : ce que les autres membres
-    // apprendront, regroupé ; rien si la fonction est coupée
+    // Notifications (server/notify.js) : ce que les autres membres
+    // apprendront, regroupé (page Notifications, et téléphone avec LISTO_PUSH)
     ctx.notify?.activity(listId, userId, type, itemIds, last);
   }
 

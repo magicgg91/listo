@@ -31,10 +31,16 @@ test('routeur : chaque adresse mène au bon écran', () => {
   for (const [hash, expected] of cases) assert.deepEqual(matchRoute(hash), expected, hash);
 });
 
-test('routeur : adresse vide, inconnue ou mal encodée → « Mes listes »', () => {
+test('routeur : adresse vide, inconnue ou mal encodée → Accueil (23 novembre 2026) ; #/listes intact', () => {
   for (const hash of ['', '#', '#/', '#/inconnu', '#/listes/a/b/c', '#/listes/%E0%A4%A', undefined]) {
-    assert.deepEqual(matchRoute(hash), { name: 'lists', params: {} }, String(hash));
+    assert.deepEqual(matchRoute(hash), { name: 'home', params: {} }, String(hash));
   }
+  assert.deepEqual(matchRoute('#/accueil'), { name: 'home', params: {} });
+  assert.equal(pathFor('home'), '#/accueil');
+  // Les anciennes adresses mènent toujours à leur écran
+  assert.deepEqual(matchRoute('#/listes'), { name: 'lists', params: {} });
+  assert.deepEqual(matchRoute('#/listes/abc'), { name: 'list', params: { id: 'abc' } });
+  assert.deepEqual(matchRoute('#/echeances'), { name: 'deadlines', params: {} });
 });
 
 test("routeur : fabrication d'une adresse, aller-retour sans perte", () => {
@@ -306,12 +312,16 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   assert.equal(back.loaded, true);
   assert.equal(fromSnapshot(null), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 99 }), null);
-  // Copie d'avant les types de liste (version 1, avec les catégories) : écartée, tout est rechargé
-  assert.equal(snapshot.version, 3);
+  // Copie d'avant les types de liste (version 1, avec les catégories) ou
+  // d'avant les notes (version 3), ou d'avant leur partage (version 4) :
+  // écartée, tout est rechargé
+  assert.equal(snapshot.version, 5);
+  assert.equal(fromSnapshot({ ...snapshot, version: 3 }), null);
+  assert.equal(fromSnapshot({ ...snapshot, version: 4 }), null);
   assert.equal(fromSnapshot({ ...snapshot, version: 1, categories: [] }), null);
   assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
-  // Aucun secret dans la copie : seulement des données de listes
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'items', 'listIds', 'lists', 'news', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  // Aucun secret dans la copie : seulement des données de listes et de notes
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'inbox', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {

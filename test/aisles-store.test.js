@@ -68,7 +68,7 @@ test('migration 35 : rayons existants communs, mêmes identifiants, liens intact
 
   const db = openDatabase(file);
   t.after(() => db.close());
-  assert.equal(schemaVersion(db), 35);
+  assert.equal(schemaVersion(db), 38);
   assert.deepEqual(db.prepare('SELECT id, name, active FROM aisles ORDER BY id').all(), before, 'mêmes rayons, mêmes identifiants');
   assert.equal(db.prepare('SELECT COUNT(*) FROM aisles WHERE store_id IS NOT NULL').pluck().get(), 0, 'tous communs');
   assert.equal(db.prepare("SELECT aisle_id FROM items WHERE id = 'i1'").pluck().get(), cremerie);

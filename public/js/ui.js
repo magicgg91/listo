@@ -559,8 +559,19 @@ export function offlineBanner() {
   return el;
 }
 
+// État affiché (« ok », « busy », « off ») et abonnements à ses changements
+// (mention « Enregistré » / « Hors ligne » d'une note, screens/note.js)
+export const currentSyncState = () => syncState;
+export const pendingTotal = () => pendingCount;
+const syncWatchers = new Set();
+export function onSyncChange(watcher) {
+  syncWatchers.add(watcher);
+  return () => syncWatchers.delete(watcher);
+}
+
 export function setSyncState(state) {
   syncState = state;
+  for (const watcher of [...syncWatchers]) watcher(state);
   for (const banner of [...offlineBanners]) {
     if (!banner.isConnected && banner.dataset.shown) offlineBanners.delete(banner);
     else {

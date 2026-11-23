@@ -222,7 +222,8 @@ export function createReservationService(ctx) {
     return { reservation: describeItem(item.list_id, item.id) };
   }
 
-  // Notification push (server/notify.js, catégorie « envies ») : la liste
+  // Notification (server/notify.js, catégorie « envies » ; page Notifications
+  // et téléphone) : la liste
   // des destinataires est calculée ICI, seul module qui connaît les
   // réservations ; notify.js refait le contrôle d'après la liste seule
   function pushToViewers(listId, itemId, kind, actor) {

@@ -24,8 +24,11 @@ import { photoRoutes } from './routes/photos.js';
 import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
+import { createSaveCounter } from './notes.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
+import { createNoteShareService } from './note-shares.js';
+import { noteRoutes } from './routes/notes.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
 import { createUpdateCheck, fetchGithub } from './update-check.js';
@@ -40,7 +43,9 @@ import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
 import { createNotifier } from './notify.js';
-import { pushRoutes } from './routes/push.js';
+import { createInbox } from './inbox.js';
+import { inboxRoutes } from './routes/inbox.js';
+import { pushRoutes, notificationSettingsRoutes } from './routes/push.js';
 import { generateVapidKeys } from './webpush.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
@@ -156,12 +161,17 @@ export function createApp({
     duplicates: createUploadCounter({ limit: 20, now }),
     // Magasins et rayons créés par les comptes : 20 par heure et par compte au plus
     referenceCreations: createUploadCounter({ limit: 20, now }),
+    // Enregistrements de notes : 3 600 par heure et par compte au plus
+    // (le téléphone en envoie au plus un par seconde ; voir server/notes.js)
+    noteSaves: createSaveCounter({ now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
   // Liens publics (étape 10) et cookies de consultation des visiteurs
   ctx.publicAccess = createPublicAccess(now);
   ctx.shares = createShareService(ctx);
+  // Liens publics des notes (étape 3 des notes, server/note-shares.js)
+  ctx.noteShares = createNoteShareService(ctx);
   // Sauvegarde nocturne de la base (voir backup.js)
   ctx.backups = createBackups({ db, dir: backupDir, now, audit: ctx.audit });
   // Vérification de mise à jour sur GitHub (Admin, voir update-check.js)
@@ -177,8 +187,13 @@ export function createApp({
   // Coupées : aucun service, aucune clé, aucune demande sortante.
   ctx.push = config.push ? createPushService(ctx, { keys: vapidKeys ?? generateVapidKeys(), request: pushRequest }) : null;
   ctx.pushCounters = [];
-  // Qui reçoit quoi (modifications, envies, partage ; voir notify.js)
-  ctx.notify = ctx.push ? createNotifier(ctx) : null;
+  // Page Notifications (étape 4 du cadrage, voir inbox.js) : toujours là,
+  // même sans LISTO_PUSH (rien n'est envoyé ailleurs que sur ce serveur)
+  ctx.inbox = createInbox(ctx);
+  // Qui reçoit quoi (modifications, échéances, envies, partage ; voir
+  // notify.js) : toujours actif, pour remplir la page Notifications ; le
+  // téléphone n'est prévenu qu'avec LISTO_PUSH=on (ctx.push)
+  ctx.notify = createNotifier(ctx);
   // Connexion avec le fournisseur d'identité (voir oidc.js) : seulement avec LISTO_OIDC=on.
   // Coupée : aucun service, aucune demande sortante, ses adresses en 404.
   ctx.oidc = config.oidc ? createOidc(ctx, { request: oidcRequest, clientSecret: oidcClientSecret }) : null;
@@ -259,10 +274,11 @@ export function createApp({
     next();
   });
   api.use(requireSameOrigin(config.publicUrl));    // protection CSRF, toujours en premier
-  // Lot d'opérations (file d'attente du téléphone, jusqu'à 200 ko) : la
+  // Lot d'opérations (file d'attente du téléphone, jusqu'à 2 Mo : une note
+  // peut avoir 20 000 caractères, voir queue.js) : la
   // connexion est vérifiée AVANT de lire le corps. Un visiteur non connecté
   // reçoit 401 sans que Listo lise ni analyse ce qu'il envoie.
-  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '200kb' }));
+  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '2mb' }));
   // Tout le reste : corps JSON de 20 ko au plus (la connexion et la création
   // du premier Admin en ont besoin avant toute session)
   api.use(express.json({ limit: '20kb' }));
@@ -284,7 +300,13 @@ export function createApp({
   api.use(photoRoutes(ctx));
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
-  // Notifications push (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
+  api.use(noteRoutes(ctx));    // partage et lien public d'une note (après listRoutes : utilise ctx.notes)
+  // Page Notifications (GET /api/inbox…) et réglages des notifications
+  // (catégories, sourdines par liste et par note) : toujours, car ils
+  // valent pour la page comme pour le téléphone
+  api.use(inboxRoutes(ctx));
+  api.use(notificationSettingsRoutes(ctx));
+  // Notifications push de cet appareil (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
   if (ctx.push) api.use(pushRoutes(ctx));
   // Version installée (Réglages › À propos) : comptes connectés seulement
   // (jamais public : une version publique aiderait un attaquant). build :
@@ -362,6 +384,8 @@ export function createApp({
   const cleanup = () => {
     purgeExpiredSessions(ctx);
     ctx.lists.purgeDeleted();
+    ctx.notes.purgeDeleted();     // notes dans la corbeille depuis plus de 30 jours
+    ctx.noteSaves.prune();
     ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();
@@ -369,6 +393,7 @@ export function createApp({
     ctx.referenceCreations.prune();
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
+    ctx.noteShares.purgeOld();   // (même chose pour les liens des notes)
     ctx.publicAccess.prune();
     ctx.products.prune();        // produits périmés du cache du mode scan
     for (const limiter of ctx.publicLimiters) limiter.prune();
@@ -376,6 +401,7 @@ export function createApp({
     mcp?.prune();                // compteurs d'appels de /mcp
     for (const counter of ctx.pushCounters) counter.prune(); // notifications : compteurs de demandes
     ctx.notify?.prune();         // notifications : plafonds par heure
+    ctx.inbox.purgeOld();        // page Notifications : lignes de plus de 30 jours
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);

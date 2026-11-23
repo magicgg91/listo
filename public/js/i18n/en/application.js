@@ -10,6 +10,7 @@ export default {
   },
   'application.lectureSeule.horsLigne': 'This list is now read only: your offline changes weren\'t sent.',
   'application.optionDesactivee': 'This option is turned off for this list.',
+  'application.noteAVerifier': 'A note needs checking: it was changed elsewhere while you were writing. Open it to choose which version to keep.',
   'application.reessayer': 'Try again',
 
   // Nouvelle version

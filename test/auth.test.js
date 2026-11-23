@@ -556,7 +556,7 @@ test('la politique de sécurité (CSP) stricte est envoyée sur toutes les répo
   }
 });
 
-test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\'à 200 ko)', async (t) => {
+test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\'à 2 Mo : notes de 20 000 caractères)', async (t) => {
   const app = await startTestApp(t);
   const post = (body, cookie) => fetch(`${app.base}/api/ops`, {
     method: 'POST',
@@ -566,7 +566,7 @@ test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\
   const garbage = (kb) => `{"ops": [${'x'.repeat(kb * 1024)}`; // JSON invalide
 
   // Sans connexion : 401, jamais 400 (JSON mal formé) ni 413 (trop gros)
-  for (const kb of [150, 300]) {
+  for (const kb of [150, 3000]) {
     const res = await post(garbage(kb));
     assert.equal(res.status, 401, `${kb} ko`);
     assert.deepEqual(await res.json(), { error: 'Connexion requise.' });
@@ -584,7 +584,8 @@ test('POST /api/ops : la connexion est vérifiée AVANT de lire le corps (jusqu\
   assert.equal(ok.status, 200);
   assert.equal((await ok.json()).results[0].status, 200);
   assert.equal((await post(garbage(150), cookie)).status, 400, 'connecté : JSON mal formé');
-  assert.equal((await post(garbage(300), cookie)).status, 413, 'connecté : lot trop gros');
+  assert.equal((await post(garbage(1500), cookie)).status, 400, 'connecté : 1,5 Mo lus (JSON mal formé)');
+  assert.equal((await post(garbage(3000), cookie)).status, 413, 'connecté : lot trop gros');
 
   // Mot de passe provisoire pas encore changé : refusé avant lecture aussi
   await addUser(app.db, { username: 'paul', password: 'MotDePasse-paul' });

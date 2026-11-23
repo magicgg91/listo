@@ -9,7 +9,7 @@ import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
 import { setLocale, setCurrency, resolveLocale, t } from './i18n.js';
 import { setTranslator } from './search.js';
-import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList, loadInbox, inboxRowsFor } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setPcLayer, onPc, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus, isTextField } from './ui.js';
@@ -19,7 +19,11 @@ import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
 import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
+import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
+import { renderNotes } from './screens/notes.js';
+import { renderNote } from './screens/note.js';
+import { renderNoteTrash } from './screens/note-trash.js';
 import { tabBar, hasTabs } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
@@ -29,6 +33,7 @@ import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
+import { renderInbox } from './screens/inbox.js';
 import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
 import { startShortcuts } from './shortcuts.js';
@@ -59,6 +64,7 @@ export const app = {
   route: null,
   afterLogin: null,      // écran demandé avant la connexion
   openItem: null,        // { listId, itemId } : fiche à ouvrir en arrivant dans la liste (Échéances)
+  openDeadlines: null,   // section d'Échéances à montrer en arrivant (ligne de la tuile de l'Accueil)
 };
 
 // Abonnements aux changements de données (les écrans se redessinent)
@@ -236,6 +242,9 @@ let refusals = [];         // modifications refusées par le serveur : { message
 //   le message court montré alors est « application.optionDesactivee ».
 const READ_ONLY = 'ops.lectureSeule';
 const OPTION_OFF = ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'];
+// Note enregistrée sur une version dépassée (server/notes.js) : pas de
+// message d'erreur, la note passe « À vérifier » (markNoteConflict)
+const NOTE_CONFLICT = 'ops.noteConflit';
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -264,10 +273,12 @@ export function refreshData({ quiet = false, full = false } = {}) {
       //    Même chose pour une option (priorité, échéance) désactivée entre-temps.
       let readOnlyRefused = false;
       let optionRefused = false;
+      let noteConflict = false;
       if (refusals.length) {
         readOnlyRefused = refusals.some(({ code }) => code === READ_ONLY);
         optionRefused = refusals.some(({ code }) => OPTION_OFF.includes(code));
-        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && !OPTION_OFF.includes(code)).map(({ message }) => message);
+        noteConflict = refusals.some(({ code }) => code === NOTE_CONFLICT);
+        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
         refusals = [];
         full = true;
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
@@ -279,12 +290,24 @@ export function refreshData({ quiet = false, full = false } = {}) {
       if (!app.user) return;
       if (since) mergeSync(app.data, data);
       else loadSync(app.data, data);
+      // Page Notifications : relue seulement quand son empreinte a changé
+      // (une ligne ajoutée, lue ou effacée, ici ou sur un autre appareil)
+      if (data.inboxStamp !== undefined && (data.inboxStamp !== app.data.inbox.stamp || !app.data.inbox.loaded)) {
+        const page = await get('/api/inbox');
+        if (!app.user) return;
+        loadInbox(app.data, page);
+      }
       // 4. Les modifications encore en file sont rejouées par-dessus
       replayQueue();
       setSyncState('ok');
       dataChanged();
       if (readOnlyRefused) toast(t('application.lectureSeule.horsLigne'));
       else if (optionRefused) toast(t('application.optionDesactivee'));
+      // Note « À vérifier » : l'écran de la note ouverte propose le choix ;
+      // ailleurs, un message dit de l'ouvrir
+      else if (noteConflict && app.route?.name !== 'note' && !app.route?.params?.note) toast(t('application.noteAVerifier'));
+      // Page Notifications reçue : celles de l'écran ouvert deviennent lues
+      readInboxOfScreen();
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
@@ -304,6 +327,21 @@ export function refreshData({ quiet = false, full = false } = {}) {
   return refreshing;
 }
 
+// Ouvrir une liste, une note ou Échéances rend lues les notifications de
+// la page qui les visent (une notification du téléphone touchée ouvre sa
+// cible). Ouvrir la page Notifications ne marque rien (décision du 23
+// novembre 2026).
+function readInboxOfScreen() {
+  const route = app.route;
+  if (!app.user || !route || !app.data.inbox?.loaded) return;
+  const scope = route.name === 'list' ? { listId: route.params.id }
+    : route.name === 'note' ? { noteId: route.params.id }
+      : route.name === 'deadlines' ? { deadlines: true } : null;
+  if (!scope) return;
+  const ids = inboxRowsFor(app.data, scope);
+  if (ids.length) actions.markInboxRead(ids);
+}
+
 // --- File d'attente (queue.js) ---
 
 let queue = null; // file du compte ouvert
@@ -318,12 +356,40 @@ function makeQueue() {
     },
     events: {
       changed: () => setPendingCount(queue?.count() ?? 0),
-      refused: (entry, message, code) => refusals.push({ message, code }),
+      refused: (entry, message, code, result) => {
+        if (code === NOTE_CONFLICT) markNoteConflict(entry.op, result?.current);
+        refusals.push({ message, code });
+      },
       dropped: () => {},
       offline: () => setSyncState('off'),
     },
   });
 }
+
+// Enregistrement d'une note refusé (la note a changé entre-temps) : mon
+// texte est gardé sur ce téléphone, la note passe « À vérifier » jusqu'à
+// mon choix (screens/note.js). Plusieurs refus de suite (file hors ligne) :
+// le dernier texte l'emporte. Rien n'est écrasé, ni ici ni sur le serveur.
+// current : la version actuelle renvoyée avec le refus ; on en garde qui
+// l'a écrite (« Léa a modifié cette note »), avant même la synchronisation.
+function markNoteConflict(op, current = null) {
+  const note = app.data.notes.get(op.noteId);
+  const kept = app.data.noteConflicts.get(op.noteId);
+  app.data.noteConflicts.set(op.noteId, {
+    title: op.title ?? kept?.title ?? note?.title ?? '',
+    body: op.body ?? kept?.body ?? note?.body ?? '',
+    at: new Date().toISOString(),
+    byId: current?.updatedBy ?? kept?.byId ?? null,
+    byName: current?.updatedByName ?? kept?.byName ?? null,
+  });
+  dataChanged();
+}
+
+// File d'attente vue par les notes (actions.js, screens/note.js) : éléments
+// en attente, remplacement d'un enregistrement pas encore parti
+export const queuedEntries = () => queue?.entries() ?? [];
+export const replaceQueuedOp = (seq, op) => queue?.replaceOp(seq, op) ?? Promise.resolve(false);
+export const isQueuedSending = (seq) => Boolean(queue?.isSending(seq));
 
 // Rejoue sur la copie locale ce qui attend encore dans la file
 function replayQueue() {
@@ -454,7 +520,8 @@ export function loggedIn(user) {
     goLive();
     resyncPush(user); // notifications : abonnement rendu au serveur si besoin
   });
-  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'lists', params: {} };
+  // Écran demandé avant la connexion (lien direct), sinon l'Accueil
+  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'home', params: {} };
   app.afterLogin = null;
   navigate(next.name, next.params, { replace: true });
 }
@@ -557,6 +624,8 @@ startShortcuts({
       update: (item, changes) => actions.updateItem(item, changes),
     }));
   },
+  // [ et ] : liste précédente ou suivante, dans l'ordre du menu de gauche
+  onGoList: (delta) => pcSide?.goList(delta),
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -590,19 +659,20 @@ function pcSideFor(route) {
 }
 
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
-// l'écran de connexion, par exemple). wide : colonne large (ordinateur).
+// l'écran de connexion, par exemple). wide : colonne large (ordinateur) ;
+// full : toute la largeur (écran Notes et note ouverte à droite).
 // Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
 // liste », qui s'ouvrent par-dessus l'écran en cours
 let mountedOnPc = false;
 let mountedListId = null;
-function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
+function mount(screen, { withSide = true, wide = false, full = false, listId = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
   const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
-  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}` : 'shell__col' });
+  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}${full ? ' pc-col--full' : ''}` : 'shell__col' });
   setOverlayHost(col);
   // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
   if (bar) tabBar().loupe.set(null);
@@ -618,9 +688,9 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
     screenShown(col);
     return;
   }
-  // Téléphone : bandeau du bas sur « Mes listes », « Échéances » et
-  // « Réglages » (tabbar.js), toujours le même élément, posé en bas de la
-  // colonne (au-dessus de l'écran, sous les fenêtres)
+  // Téléphone : bandeau du bas sur « Échéances », « Listes » et
+  // « Réglages », pas sur l'Accueil (tabbar.js), toujours le même élément,
+  // posé en bas de la colonne (au-dessus de l'écran, sous les fenêtres)
   if (bar) {
     col.classList.add('shell__col--tabs');
     col.append(tabBar().el);
@@ -704,7 +774,7 @@ function show(route) {
 
   const { name, params } = route;
   if (name === 'login') {
-    navigate('lists', {}, { replace: true });
+    navigate('home', {}, { replace: true });
     return;
   }
   if (name === 'admin' && app.user.role !== 'admin') {
@@ -713,11 +783,25 @@ function show(route) {
   }
 
   switch (name) {
+    // Accueil : premier écran (décision du 23 novembre 2026), colonne large
+    // sur ordinateur (tuiles sur trois colonnes)
+    case 'home': mount((onLeave) => renderHome(onLeave), { wide: true }); break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
+    // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
+    // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
+    case 'notes': mount((onLeave) => renderNotes(onLeave), { full: true }); break;
+    case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
+    case 'note':
+    case 'newNote': {
+      const id = name === 'note' ? params.id : null;
+      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }), { full: true });
+      else mount((onLeave) => renderNote(id, onLeave));
+      break;
+    }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
-    // l'écran en cours (ou sur « Mes listes », sur la liste à modifier)
+    // l'écran en cours (ou sur « Listes », sur la liste à modifier)
     case 'newList':
       if (isDesktop()) {
         if (!mountedOnPc) mount((onLeave) => renderLists(onLeave));
@@ -749,6 +833,8 @@ function show(route) {
     case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
+    // Page Notifications (étape 4) : la cloche de l'Accueil, la tuile Compte
+    case 'inbox': mount((onLeave) => renderInbox(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Assistants IA : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':
@@ -757,8 +843,9 @@ function show(route) {
       break;
     // Ancienne adresse (#/reglages/claude) : remplacée par la nouvelle
     case 'oldClaudeConnections': navigate('claudeConnections', {}, { replace: true }); break;
-    default: navigate('lists', {}, { replace: true });
+    default: navigate('home', {}, { replace: true });
   }
+  readInboxOfScreen();
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran
   freshness.retry();
 }

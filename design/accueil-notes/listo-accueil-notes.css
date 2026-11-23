@@ -1,0 +1,285 @@
+/* ==========================================================================
+   LISTO : Accueil, Notes et page Notifications (maquettes du 23 novembre 2026)
+   À coller dans design/listo.css, section 16, après 16.18 (nouvelles
+   sections 16.19 à 16.26), une fois les maquettes validées.
+   - Variables existantes uniquement : aucune couleur en dur, aucune
+     variable nouvelle. Clair et sombre viennent des variables.
+   - Zones tactiles d'au moins 44 px (--tap-min) ; sur ordinateur à la
+     souris, tailles de l'interface ordinateur (.app--pc : 40 / 36 px).
+   - Jamais la couleur seule : chaque nombre a son libellé, chaque point
+     de couleur a son texte (lu par les lecteurs d'écran ou écrit).
+   Réutilisés tels quels : .card, .topbar, .sync, .icon-btn, .btn, .chip,
+   .chip--readonly, .avatars, .news-badge, .group, .row, .section-title,
+   .manage, .add-inline, .sheet, .dialog, .menu, .empty, .note, .input,
+   .glass, .tabdock, .tabbar, .loupe, .fab, .cart__action, .pc-*.
+   ========================================================================== */
+
+/* 16.19 Pastille sur un bouton-icône : nombre posé sur le coin de l'icône
+   (cloche « Notifications, 3 non lues », corbeille des notes « 2 notes »).
+   Même aspect que .news-badge et .tabbar__badge ; aria-hidden, le nombre est
+   dans le nom du bouton. « 9+ » au-delà de 9. --neutral : un simple
+   compte (corbeille), en gris. */
+.icon-btn--badge { position: relative; }
+.icon-btn__badge { position: absolute; top: 2px; left: 23px; display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 2px solid var(--color-bg); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+.icon-btn__badge--neutral { background: var(--color-text-2); color: var(--color-surface); }
+
+/* 16.20 Accueil (#/accueil, premier écran)
+   - .home-head : en-tête fixe (seule la zone en dessous défile). Ligne 1,
+     « Bonjour Guillaume » en grand, sur toute la largeur (un prénom long
+     passe à la ligne, jamais coupé) ; ligne 2, la date du jour à gauche, la
+     pastille d'état .sync et la cloche (.icon-btn--badge) à droite.
+   - .tiles : grille de tuiles .card.tile, deux colonnes de même hauteur
+     par rangée (une colonne sous 340 px). Ordre fixe : Échéances, Listes,
+     Notes, Compte.
+   - .tile__head : le titre de la tuile est un vrai bouton (44 px), icône
+     en couleur d'accent ; il ouvre l'écran entier.
+   - .tile__row : chaque ligne est un bouton gris clair arrondi (48 px) :
+     libellé à gauche, à droite un nombre .count (--danger « En retard »,
+     --success « Aujourd'hui », gris pour le reste, --accent pour les non
+     lues) ou un chevron. Le libellé dit ce que compte le nombre (jamais la
+     couleur seule) ; nom lu : « En retard, 2 tâches ».
+   - .tile__dot : point des nouveautés devant le nombre (« Tâches, 4 listes,
+     nouveautés » pour les lecteurs d'écran).
+   - .tile__row--add : « Nouvelle note », « Nouvelle liste » (fond bleu
+     clair, texte d'accent en gras, « + »).
+   - .tile__meta : ligne d'information sous le titre (« 12 notes ») ;
+     .tile__empty : tuile vide (« Aucune échéance »). */
+.home-head { flex: none; padding: var(--space-2) var(--space-1) var(--space-1) var(--space-2); }
+.home-head__hello { font-size: var(--text-display); font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.home-head__line { display: flex; align-items: center; gap: var(--space-1); min-height: var(--tap-min); margin-top: 2px; }
+.home-head__date { flex: 1; min-width: 0; font-size: var(--text-item); color: var(--color-text-2); }
+.home-head__tools { display: flex; flex: none; align-items: center; gap: 4px; }
+.home-head__tools .sync { position: relative; }
+.home-head__tools button.sync::after { content: ""; position: absolute; inset: -8px -2px; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 12px; padding: var(--space-1) var(--space-2) 0; }
+@media (max-width: 339.98px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
+.tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px var(--space-1) var(--space-1); }
+.tile__head { display: flex; align-items: center; gap: var(--space-1); width: 100%; min-height: var(--tap-min); padding: 0 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text); font-size: var(--text-lg); font-weight: 700; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
+.tile__head:active { background: var(--color-neutral-soft); }
+.tile__head .icon { color: var(--color-accent-ink); }
+.tile__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile__meta { margin: -6px 0 0; padding: 0 6px 0 38px; font-size: var(--text-sm); color: var(--color-text-2); }
+.tile__rows { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.tile__row { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--tap); padding: 0 var(--space-1) 0 12px; border: 0; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text); font-size: var(--text-base); font-weight: 500; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
+.tile__row:active { background: var(--color-border); }
+.tile__label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile__row > .icon { flex: none; color: var(--color-text-2); }
+.tile__row--add { background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
+.tile__row--add > .icon { color: inherit; }
+.tile__row--add:active { background: var(--color-accent-soft); filter: brightness(0.96); }
+.tile__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.tile__empty { padding: 10px 12px; border-radius: var(--radius-sm); color: var(--color-text-2); font-weight: 500; line-height: var(--lh-tight); }
+
+.count { display: inline-grid; flex: none; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; border-radius: var(--radius-pill); background: var(--color-text-2); color: var(--color-surface); font-size: var(--text-sm); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.count--danger { background: var(--color-danger); color: var(--color-on-danger); }
+.count--success { background: var(--color-success-ink); color: var(--color-surface); }
+.count--accent { background: var(--color-accent); color: var(--color-on-accent); }
+
+/* 16.21 Bandeau du bas à cinq boutons (choix du 23 novembre 2026) :
+   Accueil (#i-home), Listes (#i-tasks), Notes (#i-note), Échéances
+   (#i-calendar, avec sa pastille), Réglages (#i-sliders). Même .tabdock,
+   même verre, même pastille qui glisse (data-current = 0 à 4) ; boutons de
+   54 px de haut et d'environ 70 px de large sur un téléphone de 390 px.
+   Pas de loupe sur l'Accueil (.loupe--off), ni sur la page Notifications.
+   « Nouvelle note » : « + » rond plein (.icon-btn--accent) dans la barre
+   du haut, comme « Listes » (choix du 23 novembre 2026). */
+.tabbar--5 .tabbar__pill { width: calc((100% - 10px) / 5); }
+.tabbar--5[data-current="3"] .tabbar__pill { transform: translateX(300%); }
+.tabbar--5[data-current="4"] .tabbar__pill { transform: translateX(400%); }
+.tabbar--5 .tabbar__tab { padding: 0 2px; }
+
+/* 16.22 Saisie rapide d'une note (feuille du bas ; fenêtre centrée sur
+   ordinateur) : « Titre (facultatif) », grand champ de texte, catégorie en
+   pastilles .cat-pick (« Sans catégorie » par défaut), « Annuler » et
+   « Enregistrer » (grisé tant que le titre et le texte sont vides). */
+.quick-note__text { min-height: 176px; }
+.cat-pick { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.cat-pick__opt { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 var(--space-2); border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; white-space: nowrap; }
+.cat-pick__opt[aria-pressed="true"], .cat-pick__opt[aria-checked="true"] { padding: 0 15px; border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
+.sheet__actions { display: flex; gap: var(--space-1); }
+.sheet__actions .btn { flex: 1; padding: 0 12px; }
+
+/* 16.23 Écran « Notes » (#/notes)
+   - .catbar : pastilles des catégories sous la barre du haut, qui défilent
+     de côté (« Toutes 12 », « Maison 4 »… « Sans catégorie 3 ») ; la
+     pastille choisie (aria-pressed) : liseré bleu de 2 px, fond bleu clair,
+     texte en gras (jamais la couleur seule). Le nombre est dans le nom lu.
+   - .notes-section : « Épinglées » (avec l'épingle) puis « Autres notes ».
+   - .note-card : carte du kit ; ligne 1, icône note (avec la pastille des
+     nouveautés .news-badge--dot), titre (deux lignes au plus), épingle,
+     heure, menu ⋮ ; puis .note-card__news « Modifiée par Léa » (texte
+     d'accent, comme « Ajouté par Marie » dans une liste) ; deux lignes du
+     texte (trois sur ordinateur) ; en bas, la catégorie (.chip, #i-tag), « Lecture
+     seule » (.chip--readonly, #i-eye, comme les listes) et les pastilles
+     des personnes si elle est partagée. Toute la carte ouvre la note.
+   - .note-card.is-selected : note ouverte (ordinateur). */
+.catbar { display: flex; flex: none; gap: var(--space-1); overflow-x: auto; padding: 0 var(--space-2) var(--space-1); scrollbar-width: none; overscroll-behavior-x: contain; }
+.catbar::-webkit-scrollbar { display: none; }
+.cat-chip { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 14px; border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; white-space: nowrap; }
+.cat-chip__count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; margin-right: -6px; padding: 0 6px; border-radius: var(--radius-pill); background: var(--color-neutral-soft); font-size: var(--text-sm); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--color-text-2); }
+.cat-chip[aria-pressed="true"] { padding: 0 13px; border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
+.cat-chip[aria-pressed="true"] .cat-chip__count { background: var(--color-surface); color: inherit; }
+
+.notes-section { display: flex; align-items: center; gap: 6px; padding: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
+.notes-section .aisle__count { margin-left: auto; }
+
+.note-card { display: block; width: 100%; padding: 14px var(--space-1) var(--space-2) var(--space-2); text-align: left; text-decoration: none; color: inherit; }
+.note-card.is-selected { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.note-card__head { display: flex; align-items: flex-start; gap: var(--space-1); }
+.note-card__icon { position: relative; display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
+.note-card__title { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: var(--text-lg); font-weight: 650; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.note-card__time { display: inline-flex; flex: none; align-items: center; gap: 4px; font-size: var(--text-sm); line-height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-text-2); }
+.note-card__head .icon-btn { margin: -10px 0 -10px -6px; color: var(--color-text-2); }
+.note-card__news { display: block; margin: 2px 0 0 28px; font-size: var(--text-sm); font-weight: 600; color: var(--color-accent-ink); }
+.note-card__excerpt { margin: 6px var(--space-1) 0 28px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; color: var(--color-text-2); line-height: var(--lh-base); white-space: pre-line; overflow-wrap: anywhere; }
+.note-card__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); min-height: 32px; margin: 10px var(--space-1) 0 0; }
+.note-card__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.note-card.is-selected .avatar { border-color: var(--color-accent-soft); }
+.news-badge--dot { top: -3px; left: -5px; min-width: 14px; width: 14px; height: 14px; padding: 0; }
+
+/* 16.24 Écran d'une note (#/notes/<id>)
+   - Barre du haut : retour, catégorie (.note-cat : bouton en pilule,
+     #i-tag, nom, chevron ; ouvre le choix), .note-people « Partager »
+     (propriétaire) ou « Personnes » (#i-users et pastilles des personnes ;
+     sur le téléphone le mot est dans le nom lu, faute de place ; sur
+     ordinateur il est écrit, comme dans l'en-tête d'une liste), menu ⋮.
+   - .note-status : mention discrète sous la barre : « Enregistré »,
+     « Enregistrement… », « Hors ligne · enregistrée sur ce téléphone »,
+     --check « À vérifier » (conflit pas encore tranché : icône d'alerte ET
+     texte, couleur danger). role="status".
+   - .note-edit : titre puis texte, sans cadre, qui occupent l'écran ;
+     retours à la ligne gardés ; adresses web en liens .note-link (texte
+     d'accent souligné, ouverts dans un nouvel onglet).
+   - .note-foot : « Modifiée par Léa · il y a 5 min », en bas.
+   - Conflit : .note (bandeau bleu clair, #i-users) « Léa vient de
+     modifier cette note » sous la mention ; feuille du bas avec trois
+     lignes .row (Garder la mienne, Prendre la leur, Garder les deux) et
+     « Décider plus tard ». */
+.note-cat { max-width: 52%; padding: 0 12px 0 10px; gap: 6px; }
+.note-cat__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-cat .icon { flex: none; color: var(--color-text-2); }
+.note-people { gap: 6px; padding: 0 8px 0 12px; }
+.note-people .avatar { width: 28px; height: 28px; font-size: 12px; }
+.note-status { display: flex; flex: none; align-items: center; gap: 6px; min-height: 24px; padding: 0 var(--space-2) var(--space-0); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.note-status--ok .icon { color: var(--color-success-ink); }
+.note-status--check { color: var(--color-danger-ink); }
+.note-edit { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-1) var(--space-2) var(--space-3); }
+.note-edit__title { width: 100%; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: var(--text-title); font-weight: 700; line-height: var(--lh-tight); }
+.note-edit__title::placeholder { color: var(--color-text-2); opacity: 1; }
+.note-edit__body { min-height: 320px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font-size: var(--text-item); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; resize: none; }
+.note-link { color: var(--color-accent-ink); font-weight: 500; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.note-foot { flex: none; padding: 12px var(--space-2) calc(12px + env(safe-area-inset-bottom, 0px)); text-align: center; font-size: var(--text-sm); color: var(--color-text-2); }
+.note-banner { flex: none; margin: 0 var(--space-2) var(--space-1); }
+.note-banner__text { flex: 1; min-width: 0; }
+.note-banner strong { display: block; }
+.conflict { margin: 0; }
+.conflict .row { min-height: 72px; }
+.conflict .row__icon { color: var(--color-accent-ink); background: var(--color-accent-soft); }
+
+/* 16.25 Catégories des notes (menu ⋮ › « Catégories ») et corbeille des
+   notes (#/notes/corbeille, bouton poubelle de l'écran Notes)
+   - Catégories : lignes .manage.cat-row : poignée à glisser (même poignée
+     que « Réordonner » des sous-tâches, #i-menu-lines), nom, « 4 notes »,
+     « Renommer » (#i-pencil) et « Supprimer » (#i-trash), 44 px chacun.
+     « Sans catégorie » : dernière ligne, ni poignée ni bouton.
+     « Nouvelle catégorie » : .add-inline (champ et « Ajouter »).
+   - .page-tools : ligne sous la barre du haut, nombre à gauche (« 2 notes »,
+     « 3 non lues »), action texte à droite (.cart__action : « Vider la
+     corbeille » en danger, « Tout marquer comme lu »).
+   - Corbeille : .group de lignes .note-trash : titre, « Supprimée le 21
+     novembre · encore 28 jours », catégorie gardée (.chip) et « Partagée
+     avec 2 personnes » ; dessous, à droite, « Supprimer définitivement »
+     (action texte en danger, 44 px, à gauche, confirmation) et
+     « Restaurer » (.btn--sm, à droite). */
+.cat-row { gap: 2px; padding-left: 0; padding-right: var(--space-0); }
+.cat-row__handle { display: grid; flex: none; place-items: center; align-self: stretch; width: 48px; color: var(--color-text-2); cursor: grab; touch-action: pinch-zoom; }
+.cat-row__handle--none { cursor: default; }
+.cat-row .manage__body { flex: 1; min-width: 0; }
+.cat-row .manage__name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-row .icon-btn { color: var(--color-text-2); }
+.page-intro { margin: 0 var(--space-2) var(--space-1); color: var(--color-text-2); }
+.page-tools { display: flex; flex: none; align-items: center; justify-content: space-between; gap: var(--space-1); min-height: var(--tap-min); padding: 0 var(--space-1) 0 var(--space-2); }
+.page-tools__count { font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.note-trash { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; padding: 14px 12px 12px var(--space-2); border-bottom: 1px solid var(--color-border); }
+.note-trash:last-child { border-bottom: 0; }
+.note-trash__body { display: flex; flex: 1 1 100%; flex-direction: column; gap: 4px; min-width: 0; }
+.note-trash__when { font-size: var(--text-sm); color: var(--color-text-2); }
+.note-trash__title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.note-trash__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: var(--text-sm); color: var(--color-text-2); }
+.note-trash__meta > span { display: inline-flex; align-items: center; gap: 6px; }
+.note-trash__meta .chip { height: 24px; padding: 0 8px; }
+.note-trash__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); width: 100%; }
+.note-trash__actions .cart__action { margin-left: calc(-1 * var(--space-1)); }
+
+/* 16.26 Page Notifications (#/notifications : la cloche de l'Accueil, la
+   ligne « Notifications » de la tuile Compte)
+   - Jours : .section-title (« Aujourd'hui », « Hier », « Samedi 21
+     novembre »), la plus récente en haut.
+   - .inbox-row dans un .group : bouton sur toute la ligne (ouvre la liste,
+     la tâche, la note) : icône de la catégorie (#i-calendar Échéances,
+     #i-pencil Modifications, #i-users Partage, #i-gift Envies), texte,
+     contexte (.inbox-row__sub), heure, et pour une non lue : point bleu
+     ET texte en gras ET « Non lue » dans le nom lu (jamais la couleur
+     seule). Glisser vers la gauche : « Effacer » (même glissement que les
+     lignes d'une liste) ; ordinateur : menu ⋮ au survol.
+   - En bas : « Tout effacer » (confirmation) et la durée de garde.
+   - Vide : .empty (#i-bell), « Aucune notification ». */
+.inbox-day:first-child { margin-top: var(--space-1); }
+.inbox-row { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 64px; padding: 12px var(--space-2) 12px 14px; border: 0; border-bottom: 1px solid var(--color-border); background: var(--color-surface); color: inherit; text-align: left; text-decoration: none; }
+.group > .inbox-row:last-child, .group > .swipe:last-child .inbox-row { border-bottom: 0; }
+.inbox-row:active { background: var(--color-neutral-soft); }
+.inbox-row .row__icon { color: var(--color-text-2); }
+.inbox-row.is-unread .row__icon { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.inbox-row__body { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; padding-top: 1px; }
+.inbox-row__text { line-height: 1.35; overflow-wrap: anywhere; }
+.inbox-row.is-unread .inbox-row__text { font-weight: 650; }
+.inbox-row__sub { font-size: var(--text-sm); color: var(--color-text-2); }
+.inbox-row__end { display: flex; flex: none; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 2px; }
+.inbox-row__time { font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.inbox-row__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.inbox-foot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--space-2) var(--space-2) 0; text-align: center; }
+.inbox-foot__hint { font-size: var(--text-sm); color: var(--color-text-2); }
+
+/* 16.27 Ordinateur (.app--pc, à partir de 1 024 px)
+   - Menu de gauche : .pc-side__main, entrées fixes sous la recherche, dans
+     l'ordre du bandeau du téléphone : Accueil, Échéances, Listes,
+     Notes (« Échéances » garde sa pastille .news-badge). Dessous,
+     le menu suit l'écran (choix du propriétaire du 23 novembre 2026) :
+     écrans des notes, « Catégories » : mes catégories et leur nombre
+     (.pc-nav, mêmes classes que les listes), « Nouvelle note » en bas ;
+     le centre ne montre que les notes de la catégorie choisie, sans
+     pastilles .catbar (téléphone seulement) ; ailleurs, les
+     listes groupées par type et « Nouvelle liste », inchangés.
+   - Accueil : en-tête .pc-head (« Bonjour Guillaume », date ; pastille
+     d'état et cloche à droite) ; tuiles sur trois colonnes (quatre au-delà
+     de 1 440 px), la tuile Notes montre jusqu'à quatre notes.
+   - Notes : deux zones dans la partie principale : les cartes à gauche,
+     la note ouverte à droite (.pc-note, 560 px), sans voile : elle
+     s'enregistre toute seule, et un clic sur une autre carte l'ouvre. */
+.pc-side__main { display: flex; flex: none; flex-direction: column; gap: 2px; margin: 4px 8px 0; padding-bottom: 6px; border-bottom: 1px solid var(--color-border); }
+.pc-side__main .news-badge { position: static; flex: none; margin-left: auto; border: 0; }
+.pc-head__tools { display: flex; flex: none; align-items: center; gap: 8px; }
+.pc-head__hello { font-size: var(--text-display); font-weight: 700; line-height: 1.15; }
+.app--pc .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 4px var(--pc-gutter) var(--pc-gutter); }
+@media (min-width: 1441px) { .app--pc .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.app--pc .tile { padding: 8px 10px 10px; }
+.app--pc .tile__row { min-height: var(--tap); }
+.app--pc .tile__row:hover { background: var(--color-border); }
+.app--pc .tile__row--add:hover { background: var(--color-accent-soft); filter: brightness(0.96); }
+.app--pc .tile__head:hover { background: var(--color-neutral-soft); }
+.pc-notes { display: grid; grid-template-columns: minmax(0, 1fr) 560px; flex: 1; min-height: 0; }
+.pc-notes__list { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pc-notes__cards { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--pc-gutter) var(--pc-gutter); }
+.pc-notes .notes-section { padding: 8px 0 0; }
+.pc-note { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--color-border); background: var(--color-surface); }
+.pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px 20px; }
+.pc-note .note-status { padding: 0 20px 4px; }
+.pc-note__bar .icon-btn[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.pc-note .note-edit { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 28px 24px; }
+.pc-note .note-edit__body { font-size: var(--text-base); }
+.pc-note .note-foot { padding: 12px 20px; border-top: 1px solid var(--color-border); text-align: left; }
+.app--pc .note-card { padding: 12px 8px 14px 16px; }
+.app--pc .note-card__excerpt { -webkit-line-clamp: 3; line-clamp: 3; }
+.app--pc .note-card:hover { border-color: var(--color-control); }
+@media (max-width: 1279.98px) { .pc-notes { grid-template-columns: minmax(0, 1fr) 440px; } }

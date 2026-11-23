@@ -1,4 +1,5 @@
-// Accueil « Mes listes » : une seule barre du haut (titre, pastille d'état,
+// Écran « Listes » (« Mes listes » jusqu'au 23 novembre 2026, l'accueil
+// d'alors) : une seule barre du haut (titre, pastille d'état,
 // tri des listes, « + » Nouvelle liste ; Réglages est dans le bandeau du
 // bas depuis le 11 novembre 2026) ; la pastille se réduit à l'icône quand la place
 // manque, sans jamais cacher son texte aux lecteurs d'écran. (Rendu réel :
@@ -13,11 +14,11 @@ const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), '
 const lists = read('public/js/screens/lists.js');
 const ui = read('public/js/ui.js');
 
-test('barre de l\'accueil : titre, pastille, tri, « + », sur une ligne ; plus de ligne d\'état dessous', () => {
+test('barre de « Listes » : titre, pastille, tri, « + », sur une ligne ; plus de ligne d\'état dessous', () => {
   const screen = lists.slice(lists.indexOf('export function renderLists'), lists.indexOf('// --- Colonne de gauche'));
   const bar = screen.slice(screen.indexOf("h('header', { class: 'topbar topbar--plain topbar--status' }"));
   const order = ["h('h1', { class: 'topbar__title' }, t('listes.titre'))", 'syncPill(() => refreshData({ full: true }), { inBar: true })', 'sorter.button', "iconButton('plus', t('listes.nouvelle'), () => navigate('newList'), 'icon-btn--accent')"];
-  assert.equal(fr['listes.titre'], 'Mes listes');
+  assert.equal(fr['listes.titre'], 'Listes'); // « Listes » partout, jamais « Mes listes » (23 novembre 2026)
   assert.equal(fr['listes.nouvelle'], 'Nouvelle liste');
   const at = order.map((text) => bar.indexOf(text));
   for (const [i, text] of order.entries()) assert.ok(at[i] >= 0, text);

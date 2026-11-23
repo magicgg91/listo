@@ -9,6 +9,7 @@
 // Chaque nouvelle partie est ajoutée ici, dans en.js et dans APP_FILES
 // (public/sw.js).
 
+import accueil from './fr/accueil.js';
 import administration from './fr/administration.js';
 import aide from './fr/aide.js';
 import ajout from './fr/ajout.js';
@@ -28,6 +29,7 @@ import fenetres from './fr/fenetres.js';
 import format from './fr/format.js';
 import formulaire from './fr/formulaire.js';
 import icones from './fr/icones.js';
+import inbox from './fr/inbox.js';
 import lienpublic from './fr/lienpublic.js';
 import liens from './fr/liens.js';
 import liste from './fr/liste.js';
@@ -35,6 +37,7 @@ import listes from './fr/listes.js';
 import menu from './fr/menu.js';
 import mots from './fr/mots.js';
 import navigation from './fr/navigation.js';
+import notes from './fr/notes.js';
 import notifications from './fr/notifications.js';
 import ops from './fr/ops.js';
 import partage from './fr/partage.js';
@@ -52,6 +55,6 @@ import reseau from './fr/reseau.js';
 import scan from './fr/scan.js';
 import version from './fr/version.js';
 
-export const PARTS = { administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, lienpublic, liens, liste, listes, menu, mots, navigation, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
+export const PARTS = { accueil, administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, inbox, lienpublic, liens, liste, listes, menu, mots, navigation, notes, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
 
 export default Object.assign({}, ...Object.values(PARTS));

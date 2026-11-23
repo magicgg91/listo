@@ -31,6 +31,13 @@ export default {
   'lienpublic.expire': 'Ce lien expire le {date}',
   'lienpublic.sansExpiration': 'Ce lien n\'a pas de date d\'expiration',
 
+  // Page publique d'une note (étape 3 des notes)
+  'lienpublic.note.protegee': 'Note protégée',
+  'lienpublic.note.reseau': 'Note indisponible',
+  'lienpublic.note.sansTitre': 'Note sans titre',
+  'lienpublic.note.modifiee': 'Modifiée le {date}',
+  'lienpublic.note.vide': 'Cette note est vide',
+
   // Prénom du visiteur (liste d'envies)
   'lienpublic.prenom': 'Votre prénom',
   'lienpublic.prenom.aide': 'Les proches qui gèrent la liste le verront, jamais les autres visiteurs.',

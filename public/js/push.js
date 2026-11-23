@@ -15,8 +15,8 @@
 // Le navigateur crée l'abonnement auprès du service de push de son
 // fabricant ; le serveur ne l'accepte que pour des services connus.
 //
-// Préférences du compte (valables sur tous ses appareils) et listes
-// silencées : gardées en mémoire après chaque lecture de GET /api/push,
+// Préférences du compte (valables pour la page Notifications et sur tous
+// ses appareils, même sans LISTO_PUSH) et listes silencées : gardées en mémoire après chaque lecture de GET /api/push,
 // pour que le menu d'une liste sache dire « Couper » ou « Réactiver les
 // notifications de cette liste » sans attendre le réseau.
 
@@ -24,14 +24,16 @@ import { get, put, post, del } from './api.js';
 import { t } from './i18n.js';
 
 // Dernier état connu du serveur (préférences, listes silencées)
-const known = { settings: null, muted: new Set() };
+const known = { settings: null, muted: new Set(), mutedNotes: new Set() };
 function remember(server) {
   if (server?.settings) known.settings = server.settings;
   if (Array.isArray(server?.mutedLists)) known.muted = new Set(server.mutedLists);
+  if (Array.isArray(server?.mutedNotes)) known.mutedNotes = new Set(server.mutedNotes);
   return server;
 }
 export const pushSettings = () => known.settings;
 export const isListPushMuted = (listId) => known.muted.has(listId);
+export const isNotePushMuted = (noteId) => known.mutedNotes.has(noteId);
 
 // Préférences : { changes?, wishes?, sharing?, detail? } (vrai ou faux)
 export async function savePushSettings(changes) {
@@ -43,11 +45,18 @@ export async function setListPushMuted(listId, muted) {
   remember(await put(`/api/push/mutes/${encodeURIComponent(listId)}`, { muted }));
 }
 
-// Relit l'état du serveur (préférences, listes silencées) ; sans réseau : rien
+// « Couper les notifications de cette note » / « Réactiver les notifications de cette note »
+export async function setNotePushMuted(noteId, muted) {
+  remember(await put(`/api/push/note-mutes/${encodeURIComponent(noteId)}`, { muted }));
+}
+
+// Relit l'état du serveur (préférences, listes silencées) ; sans réseau :
+// rien. Sans notifications push sur le serveur, les mêmes réglages valent
+// pour la page Notifications (GET /api/push/settings, étape 4).
 export async function loadPushState(user) {
-  if (!user?.push) return null;
+  if (!user) return null;
   try {
-    return remember(await get('/api/push'));
+    return remember(await get(user.push ? '/api/push' : '/api/push/settings'));
   } catch {
     return null;
   }

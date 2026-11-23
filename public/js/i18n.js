@@ -133,6 +133,10 @@ export function setCurrency(code) {
   currency = validCurrency(code) ? code : 'EUR';
 }
 
+// Icône du prix d'un souhait : l'euro pour l'euro, une étiquette pour toute
+// autre monnaie (jamais « € » à côté de « $25.50 »)
+export const priceIcon = () => (currency === 'EUR' ? 'euro' : 'tag');
+
 // Prix en centimes (centièmes de la monnaie) → « 25,50 € » en français,
 // « €25.50 » en anglais ; rien si ce n'est pas un nombre entier
 export function formatMoney(cents, { locale = current, currency: code = currency } = {}) {

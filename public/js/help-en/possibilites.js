@@ -11,7 +11,7 @@ export default {
         "A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([[partager]]).",
         "Changes reach the other phones within a few seconds. Checked items move to the bottom, crossed out.",
         "What's new: Listo shows what the others have added or changed since your last visit ([[nouveautes]]).",
-        "Notifications, optional: changes (by others), reservations, sharing and the due-date summary, on your phone or your computer ([[notifications]]).",
+        "Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([[notifications]]).",
         "An icon of your choice for each list, and a count of what's left on each card and each group ([[tri]]).",
       ] }],
     },
@@ -58,12 +58,21 @@ export default {
       ] }],
     },
     {
+      id: 'p-notes',
+      title: "Notes",
+      blocks: [{ ul: [
+        "Notes in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
+        "A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([[notes-partage]]).",
+        "A quick note from Home, even offline ([[notes]]).",
+      ] }],
+    },
+    {
       id: 'p-securite',
       title: "Offline, trash, public link",
       blocks: [{ ul: [
         "Offline: Listo opens and works without a network; changes are sent when the network comes back ([[hors-ligne]]).",
-        "Trash: a deleted list can be restored for 30 days ([[corbeille]]).",
-        "Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([[lien-public]]).",
+        "Trash: a deleted list can be restored for 30 days ([[corbeille]]); so can a note, from the notes trash ([[notes]]).",
+        "Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([[lien-public]]); a note too ([[notes-partage]]).",
       ] }],
     },
     {

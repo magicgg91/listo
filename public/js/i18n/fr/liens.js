@@ -8,6 +8,8 @@ export default {
   'liens.protectInvalide': 'Valeur « protect » invalide.',
   'liens.passwordInvalide': 'Valeur « password » invalide (« new » ou « none »).',
   'liens.dejaActif': 'Un lien est déjà actif pour cette liste.',
+  // Lien public d'une note (server/routes/notes.js)
+  'liens.dejaActifNote': 'Un lien est déjà actif pour cette note.',
   'liens.sansMotDePasse': 'Ce lien n\'a pas de mot de passe.',
   'liens.arrete': 'Ce lien vient d\'être arrêté.',
 

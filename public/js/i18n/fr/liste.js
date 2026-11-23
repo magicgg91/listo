@@ -46,7 +46,7 @@ export default {
   'liste.chargement': 'Chargement…',
   'liste.introuvable': 'Liste introuvable',
   'liste.introuvable.texte': 'Cette liste a été supprimée, ou elle n\'est plus partagée avec vous.',
-  'liste.retourMesListes': 'Retour à mes listes',
+  'liste.retourMesListes': 'Retour aux listes',
   // Champ d'ajout (courses, tâches, envies)
   'liste.ajout.placeholder.courses': 'Ajouter un article',
   'liste.ajout.placeholder.taches': 'Ajouter un élément',

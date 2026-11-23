@@ -1,5 +1,15 @@
-// Notifications push, étape 2 : QUI reçoit QUOI (LISTO_PUSH=on seulement ;
-// l'envoi chiffré lui-même est dans server/push.js).
+// Notifications : QUI reçoit QUOI. Toujours actif (étape 4 du cadrage
+// docs/cadrage-accueil-notes-notifications.md, page Notifications) : chaque
+// notification passe par UNE seule fonction, deliver(), qui l'écrit dans la
+// page Notifications de la personne (server/inbox.js), même sans
+// LISTO_PUSH et sans appareil, puis, avec LISTO_PUSH=on et au moins un
+// appareil inscrit, l'envoie aussi au téléphone (l'envoi chiffré lui-même
+// est dans server/push.js). Mêmes filtres pour les deux (décision du 23
+// novembre 2026) : catégorie coupée, liste ou note dont on a coupé les
+// notifications : ni page, ni téléphone. La page montre toujours le détail
+// (on y est connecté) ; le réglage « détail » ne vaut que pour l'écran
+// verrouillé du téléphone. Le plafond de 30 par heure ne vaut que pour le
+// téléphone (voir server/inbox.js).
 //
 // Trois catégories ici (la quatrième, le résumé des échéances, est à part) :
 // - a) 'changes' (« Modifications ») : ce que les AUTRES ajoutent, modifient
@@ -21,6 +31,19 @@
 //   File d'envoi à part (server/push.js) : rien ne peut retarder ce que
 //   reçoit le bénéficiaire.
 // - d) 'sharing' : on m'ajoute à une liste, ou mon droit change.
+// - Notes (étape 3 du cadrage docs/cadrage-accueil-notes-notifications.md) :
+//   'changes' : « Léa a modifié la note « Vacances » », au propriétaire et
+//   aux membres sauf l'auteur, regroupées : une seule notification par note
+//   et par personne par quart d'heure (NOTE_QUIET_MS), la première une
+//   minute après la première modification (le temps qu'un texte tapé
+//   s'enregistre) ; déjà lue (la note ouverte a dépassé ces versions) :
+//   rien. 'sharing' : « Léa a partagé la note « Vacances » avec vous », ou
+//   « Votre droit sur la note … a changé ». « Couper les notifications de
+//   cette note » (note_user_state.muted_push). Sans le détail, la note n'est
+//   nommée que par son titre (jamais la première ligne de son texte) ;
+//   avec le détail, le début du texte suit. Toucher la notification ouvre
+//   la note. Droits relus à l'envoi avec noteAccess (server/notes.js) :
+//   une note dans la corbeille ou quittée ne notifie plus rien.
 // - b) 'due' : un résumé par personne et par jour, vers 8 h (heure du
 //   serveur, variable TZ), « 3 tâches à faire aujourd'hui · 1 en retard » ;
 //   jamais une notification par tâche. Seulement les listes de TÂCHES dont
@@ -50,7 +73,8 @@
 //   propriétaire pour « Moi ») pour les catégories a) et c) : ni les
 //   ajouts des autres dans sa propre liste (la surprise), ni rien qui
 //   révèle une réservation ;
-// - 30 notifications au plus par personne et par heure ;
+// - 30 notifications push au plus par personne et par heure (la page
+//   Notifications n'a pas ce plafond : regroupée, 300 lignes au plus) ;
 // - texte neutre par défaut (« Léa a modifié « Courses » ») ; le nom des
 //   éléments seulement avec « Afficher le détail dans la notification ».
 // Les visiteurs du lien public n'ont pas de compte : ils ne reçoivent rien.
@@ -61,6 +85,8 @@ import { reminderAt, timeLabel } from '../public/js/due-time.js';
 import { assigneesOf, parsePeople } from '../public/js/assign.js';
 import { translate, formatDate, formatList } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
+import { noteAccess } from './notes.js';
+import { noteTitle, noteExcerpt } from '../public/js/notes.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -73,6 +99,8 @@ export const DIGEST_HOUR = 8;           // résumé des échéances : à partir 
 export const DIGEST_LATEST_HOUR = 12;   // …et jusqu'à midi (serveur arrêté à 8 h)
 export const DIGEST_EVERY_MS = 60 * 1000;
 export const REMIND_LATE_MS = 30 * 60 * 1000; // rappel encore envoyé jusqu'à 30 min après son moment
+export const NOTE_QUIET_MS = 15 * 60 * 1000;  // notes : une notification par note et par personne par quart d'heure
+const NOTE_EXCERPT_MAX = 100;                  // début du texte d'une note (détail)
 
 // Jour local (heure du serveur, variable TZ) : « 2026-11-12 »
 const two = (n) => String(n).padStart(2, '0');
@@ -99,10 +127,14 @@ function peopleList(locale, names) {
   return formatList([names[0], names[1], translate(locale, 'alertes.noms.autres', { count: names.length - 2 })], { locale });
 }
 
-export function createNotifier(ctx, { push = ctx.push } = {}) {
+// ctx.push : le service des notifications push (null sans LISTO_PUSH) ;
+// ctx.inbox : la page Notifications (server/inbox.js)
+export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {}) {
   const { db } = ctx;
+  const hasDevices = (userId) => Boolean(push?.hasDevices(userId));
   const origin = new URL(ctx.config.publicUrl).origin;
   const listUrl = (listId) => `${origin}/#/listes/${encodeURIComponent(listId)}`;
+  const noteUrl = (noteId) => `${origin}/#/notes/${encodeURIComponent(noteId)}`;
 
   const q = {
     settings: db.prepare('SELECT changes, due, wishes, sharing, detail FROM push_settings WHERE user_id = ?'),
@@ -166,6 +198,20 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     claimReminder: db.prepare(`INSERT INTO push_reminders (item_id, sent_key) VALUES (:itemId, :key)
       ON CONFLICT(item_id) DO UPDATE SET sent_key = :key WHERE push_reminders.sent_key <> :key`),
     seen: db.prepare('SELECT last_seen FROM list_reads WHERE list_id = ? AND user_id = ?').pluck(),
+    // --- Notes ---
+    // La note telle que ce compte la voit (droit lu dans note_members),
+    // avec l'état de ce compte (actif) et ses réglages pour la note
+    note: db.prepare(`SELECT notes.id, notes.title, notes.body, notes.owner_id, notes.version, notes.deleted_at,
+        (SELECT access FROM note_members WHERE note_members.note_id = notes.id AND note_members.user_id = :userId) AS member_access,
+        (SELECT active FROM users WHERE users.id = :userId) AS user_active,
+        COALESCE((SELECT muted_push FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS muted_push,
+        COALESCE((SELECT last_read_version FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS read_version
+      FROM notes WHERE notes.id = :noteId`),
+    noteAccess: db.prepare('SELECT access FROM note_members WHERE note_id = ? AND user_id = ?').pluck(),
+    notePeople: db.prepare('SELECT owner_id FROM notes WHERE id = ? UNION SELECT user_id FROM note_members WHERE note_id = ?').pluck(),
+    mutedNotes: db.prepare('SELECT note_id FROM note_user_state WHERE user_id = ? AND muted_push = 1').pluck(),
+    setNoteMuted: db.prepare(`INSERT INTO note_user_state (note_id, user_id, muted_push) VALUES (:noteId, :userId, :muted)
+      ON CONFLICT (note_id, user_id) DO UPDATE SET muted_push = :muted`),
   };
 
   // Langue des notifications d'une personne : celle de son compte, sinon
@@ -223,13 +269,54 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       if (category === 'wishes' && !seesReservations(userId, wish)) return null;
     }
     if (category === 'wishes' && list.type !== 'wishes') return null;
-    if (!push.hasDevices(userId)) return null;                  // aucun appareil : rien à faire
     return list;
+  }
+
+  // --- Notes : réglages ---
+  // La note, si cette personne la voit (relue en base, noteAccess), sinon null
+  function visibleNote(userId, noteId) {
+    const note = q.note.get({ userId, noteId });
+    if (!note || note.user_active !== 1 || !noteAccess({ id: userId }, note)) return null;
+    return note;
+  }
+  // « Couper les notifications de cette note » (sourdines des notes que je vois)
+  const mutedNotes = (userId) => q.mutedNotes.all(userId).filter((noteId) => visibleNote(userId, noteId));
+  const seesNote = (userId, noteId) => Boolean(visibleNote(userId, noteId));
+  function setNoteMuted(userId, noteId, muted) {
+    q.setNoteMuted.run({ noteId, userId, muted: muted ? 1 : 0 });
+  }
+  // La personne peut-elle recevoir cette notification de note ? La note
+  // (telle qu'elle la voit) ou null.
+  function allowedNote(userId, noteId, category, actorId = null) {
+    if (userId === actorId) return null;
+    const note = visibleNote(userId, noteId);
+    if (!note) return null;
+    if (!settingsOf(userId)[category]) return null;
+    if (note.muted_push === 1) return null;
+    return note;
   }
 
   async function send(userId, message, options) {
     if (!underCap(userId)) return;
     await push.sendToUser(userId, message, options);
+  }
+
+  // --- LE point de remise de toute notification adressée à une personne ---
+  // entry : la ligne de la page Notifications (server/inbox.js : category,
+  // textKey, params construits champ par champ, cible, clé de regroupement) ;
+  // message() : le message push, fabriqué seulement s'il part ; options :
+  // { queue } (file des envies) ou { ttl, cap: false } (résumé du matin,
+  // hors plafond comme avant). Les filtres (droits, catégorie, sourdines,
+  // bénéficiaire d'une liste d'envies) sont faits AVANT, par l'appelant.
+  function deliver(userId, entry, message, { cap = true, ...options } = {}) {
+    try {
+      inbox?.add(userId, entry);
+    } catch {
+      // page indisponible (base occupée…) : le téléphone est quand même prévenu
+    }
+    if (!hasDevices(userId)) return Promise.resolve();
+    if (!cap) return push.sendToUser(userId, message(), options);
+    return send(userId, message(), options);
   }
 
   // --- a) Modifications (des autres), regroupées ---
@@ -240,7 +327,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     const kind = ACTIVITY[type];
     if (!kind || !actorId || !itemIds.length) return;
     for (const userId of q.members.all(listId)) {
-      if (userId === actorId || !push.hasDevices(userId)) continue;
+      if (userId === actorId) continue;
       const key = `${userId}:${listId}`;
       let group = groups.get(key);
       if (!group) {
@@ -263,7 +350,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   // turn : « chacun son tour », la tâche revient à cette personne (« C'est
   // votre tour »)
   function assigned({ listId, itemId, userId, actorId, turn = false }) {
-    if (!actorId || userId === actorId || !push.hasDevices(userId)) return;
+    if (!actorId || userId === actorId) return;
     const key = `${userId}:${listId}`;
     let group = groups.get(key);
     if (!group) {
@@ -308,8 +395,38 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     return buildMessage({ title, body, navigate: listUrl(list.id), tag: `liste-${list.id}`, locale });
   }
 
-  // Envoie les groupes dont la fenêtre de 60 s est passée
+  // Ligne de la page Notifications d'un groupe de modifications : valeurs
+  // seulement (noms relus maintenant), la phrase est faite à la lecture
+  // (server/inbox.js). Regroupée avec la ligne de la même liste écrite
+  // dans la demi-heure.
+  function changesEntry(group, list) {
+    const stillMine = (id) => q.stillMine.get({ itemId: id, listId: list.id, userId: group.userId });
+    const itemNames = (ids) => ids.map((id) => q.itemName.get(id, list.id)).filter(Boolean);
+    return {
+      category: 'changes',
+      textKey: 'changes',
+      params: {
+        list: list.name,
+        listType: list.type,
+        actors: group.actors.map((id) => q.name.get(id)).filter(Boolean),
+        added: group.items.added.length,
+        updated: group.items.updated.length,
+        checked: group.items.checked.length,
+        assigned: itemNames(group.assigned.filter(stillMine)),
+        turns: itemNames(group.turns.filter(stillMine)),
+      },
+      targetType: 'list',
+      targetId: list.id,
+      groupKey: `changes:list:${list.id}`,
+    };
+  }
+
+  // Envoie les groupes dont la fenêtre de 60 s est passée (listes), puis
+  // ceux des notes qui sont mûrs
   async function flushDue() {
+    await Promise.all([flushLists(), flushNotes()]);
+  }
+  async function flushLists() {
     const due = [...groups.values()].filter((group) => ctx.now() - group.firstAt >= GROUP_MS);
     const work = [];
     for (const group of due) {
@@ -318,9 +435,106 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       if (!list) continue;
       // Déjà vu (liste ouverte et visible) : rien à annoncer
       if ((q.seen.get(group.listId, group.userId) ?? 0) >= group.lastEventId) continue;
-      work.push(send(group.userId, changesMessage(group, list, settingsOf(group.userId).detail)));
+      work.push(deliver(group.userId, changesEntry(group, list), () => changesMessage(group, list, settingsOf(group.userId).detail)));
     }
     await Promise.all(work);
+  }
+
+  // --- Notes : modifications des autres, regroupées ---
+  // Appelé par server/notes.js après chaque enregistrement réussi
+  // (version : celle tout juste écrite). Ce qui est gardé en attendant
+  // l'envoi : des numéros seulement, jamais le texte.
+  const noteGroups = new Map(); // `${compte}:${note}` -> groupe
+  const noteSentAt = new Map(); // `${compte}:${note}` -> heure du dernier envoi
+  function noteChanged({ noteId, actorId, version }) {
+    if (!actorId) return;
+    for (const userId of q.notePeople.all(noteId, noteId)) {
+      if (userId === actorId) continue;
+      const key = `${userId}:${noteId}`;
+      let group = noteGroups.get(key);
+      if (!group) {
+        group = { userId, noteId, firstAt: ctx.now(), actors: [], version: 0 };
+        noteGroups.set(key, group);
+      }
+      if (!group.actors.includes(actorId)) group.actors.push(actorId);
+      group.version = Math.max(group.version, version);
+    }
+  }
+
+  // Nom d'une note dans un texte : son titre ; avec le détail, sinon la
+  // première ligne de son texte. Vide : la phrase « … une note ».
+  const noteName = (note, detail) => (detail ? noteTitle(note) : (note.title ?? '').trim());
+
+  function noteChangesMessage(group, note, detail) {
+    const locale = localeOf(group.userId);
+    const actors = group.actors.map((id) => q.name.get(id) ?? translate(locale, 'alertes.ancienMembre'));
+    const people = peopleList(locale, actors);
+    const name = noteName(note, detail);
+    const title = name
+      ? translate(locale, 'alertes.note.modifie', { people, count: actors.length, note: name })
+      : translate(locale, 'alertes.note.modifie.sansTitre', { people, count: actors.length });
+    const body = detail ? noteExcerpt(note, NOTE_EXCERPT_MAX) : '';
+    return buildMessage({ title, body, navigate: noteUrl(note.id), tag: `note-${note.id}`, locale });
+  }
+
+  // Envoie les groupes de notes mûrs : une minute après la première
+  // modification, et jamais deux fois en un quart d'heure pour la même
+  // note et la même personne (le groupe attend la fin du quart d'heure)
+  async function flushNotes() {
+    const now = ctx.now();
+    const work = [];
+    for (const [key, group] of [...noteGroups]) {
+      if (now - group.firstAt < GROUP_MS) continue;
+      if (now - (noteSentAt.get(key) ?? -Infinity) < NOTE_QUIET_MS) continue;
+      noteGroups.delete(key);
+      const note = allowedNote(group.userId, group.noteId, 'changes');
+      if (!note) continue;
+      if (note.read_version >= group.version) continue; // déjà lue
+      noteSentAt.set(key, now);
+      const detail = settingsOf(group.userId).detail;
+      // Page Notifications : la note n'y est désignée que par son
+      // identifiant (son titre est relu à l'affichage, jamais gardé)
+      const entry = {
+        category: 'changes',
+        textKey: 'note.changes',
+        params: { actors: group.actors.map((id) => q.name.get(id)).filter(Boolean) },
+        targetType: 'note',
+        targetId: note.id,
+        groupKey: `changes:note:${note.id}`,
+      };
+      work.push(deliver(group.userId, entry, () => noteChangesMessage(group, note, detail)));
+    }
+    await Promise.all(work);
+  }
+
+  // --- Notes : partage (ajouté à une note, ou droit changé) ---
+  function noteShared({ noteId, userId, actorId, kind }) {
+    const note = allowedNote(userId, noteId, 'sharing', actorId);
+    if (!note) return;
+    const locale = localeOf(userId);
+    const actor = q.name.get(actorId) ?? translate(locale, 'alertes.quelquun');
+    const detail = settingsOf(userId).detail;
+    const name = noteName(note, detail);
+    const canEdit = q.noteAccess.get(noteId, userId) === 'modification';
+    const entry = {
+      category: 'sharing',
+      textKey: kind === 'added' ? 'note.shared' : 'note.access',
+      params: { actor: q.name.get(actorId) ?? null, access: canEdit ? 'modification' : 'lecture' },
+      targetType: 'note',
+      targetId: noteId,
+    };
+    const message = () => (kind === 'added'
+      ? buildMessage({
+        title: name ? translate(locale, 'alertes.note.partage', { actor, note: name }) : translate(locale, 'alertes.note.partage.sansTitre', { actor }),
+        body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        navigate: noteUrl(noteId), tag: `partage-note-${noteId}`, locale,
+      })
+      : buildMessage({
+        title: name ? translate(locale, 'alertes.note.droit', { note: name }) : translate(locale, 'alertes.note.droit.sansTitre'),
+        body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        navigate: noteUrl(noteId), tag: `partage-note-${noteId}`, locale,
+      }));
+    deliver(userId, entry, message);
   }
 
   // --- c) Envies : réservation ou participation ---
@@ -335,12 +549,23 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
         ? (q.name.get(actor.userId) ?? translate(locale, 'alertes.quelquun'))
         : translate(locale, 'alertes.envie.visiteur', { name: actor.visitorName });
       const detail = settingsOf(userId).detail;
-      const itemName = detail ? q.itemName.get(itemId, listId) : null;
+      const fullName = q.itemName.get(itemId, listId) ?? null;
+      const itemName = detail ? fullName : null;
+      // Page Notifications : toujours le nom du souhait (on y est connecté)
+      const entry = {
+        category: 'wishes',
+        textKey: kind === 'join' ? 'wish.join' : 'wish.reserve',
+        params: actor.userId
+          ? { actor: q.name.get(actor.userId) ?? null, visitor: false, item: fullName, list: list.name }
+          : { actor: String(actor.visitorName ?? '').slice(0, 40), visitor: true, item: fullName, list: list.name },
+        targetType: 'item',
+        targetId: itemId,
+      };
       const title = kind === 'join'
         ? (itemName ? translate(locale, 'alertes.envie.participe.nom', { actor: actorName, item: itemName }) : translate(locale, 'alertes.envie.participe', { actor: actorName }))
         : (itemName ? translate(locale, 'alertes.envie.reserve.nom', { actor: actorName, item: itemName }) : translate(locale, 'alertes.envie.reserve', { actor: actorName }));
-      const message = buildMessage({ title, body: translate(locale, 'alertes.envie.liste', { list: list.name }), navigate: listUrl(listId), tag: `envies-${listId}`, locale });
-      send(userId, message, { queue: 'wishes' });
+      const message = () => buildMessage({ title, body: translate(locale, 'alertes.envie.liste', { list: list.name }), navigate: listUrl(listId), tag: `envies-${listId}`, locale });
+      deliver(userId, entry, message, { queue: 'wishes' });
     }
   }
 
@@ -351,7 +576,14 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
     const locale = localeOf(userId);
     const actor = q.name.get(actorId) ?? translate(locale, 'alertes.quelquun');
     const canEdit = q.access.get(listId, userId) === 'modification';
-    const message = kind === 'added'
+    const entry = {
+      category: 'sharing',
+      textKey: kind === 'added' ? 'list.shared' : 'list.access',
+      params: { actor: q.name.get(actorId) ?? null, list: list.name, access: canEdit ? 'modification' : 'lecture' },
+      targetType: 'list',
+      targetId: listId,
+    };
+    const message = () => (kind === 'added'
       ? buildMessage({
         title: translate(locale, 'alertes.partage.ajoute', { actor, list: list.name }),
         body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
@@ -361,8 +593,8 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
         title: translate(locale, 'alertes.partage.droit', { list: list.name }),
         body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
         navigate: listUrl(listId), tag: `partage-${listId}`, locale,
-      });
-    send(userId, message);
+      }));
+    deliver(userId, entry, message);
   }
 
   // --- b) Résumé quotidien des échéances ---
@@ -382,7 +614,8 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
   }
 
   // Appelé chaque minute (et une fois au démarrage) : entre 8 h et midi,
-  // chaque compte pas encore examiné aujourd'hui l'est, une seule fois
+  // chaque compte pas encore examiné aujourd'hui l'est, une seule fois.
+  // Même sans LISTO_PUSH ni appareil : la page Notifications le reçoit.
   async function runDigest() {
     const now = new Date(ctx.now());
     const hour = now.getHours();
@@ -396,10 +629,13 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       // Noté AVANT tout envoi : jamais deux fois, même après un redémarrage
       if (!q.claimDigest.run({ userId, day: today }).changes) continue;
       const settings = settingsOf(userId);
-      if (!settings.due || !push.hasDevices(userId)) continue;
+      if (!settings.due) continue;
       const tasks = q.dueTasks.all({ userId, today });
       if (!tasks.length) continue;
-      work.push(push.sendToUser(userId, digestMessage(tasks, today, settings.detail, localeOf(userId)), { ttl }));
+      const dueToday = tasks.filter((task) => task.due_date === today).length;
+      const entry = { category: 'due', textKey: 'digest', params: { today: dueToday, late: tasks.length - dueToday }, targetType: 'deadlines' };
+      // Hors plafond horaire, comme avant (une fois par jour)
+      work.push(deliver(userId, entry, () => digestMessage(tasks, today, settings.detail, localeOf(userId)), { ttl, cap: false }));
     }
     await Promise.all(work);
   }
@@ -427,7 +663,19 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       : { title: translate(locale, keys[0], values), body: translate(locale, 'alertes.dans', { list: list.name }) };
     return buildMessage({ ...message, navigate: listUrl(list.id), tag: `rappel-${task.id}`, locale });
   }
-  // Appelé chaque minute (et une fois au démarrage)
+  // Ligne de la page Notifications d'un rappel : toujours le nom de la
+  // tâche ; « aujourd'hui », « demain » ou la date, par rapport au jour du rappel
+  function reminderEntry(task, list, today) {
+    const when = task.due_date === today ? 'today' : task.due_date === dayShift(today, 1) ? 'tomorrow' : 'date';
+    return {
+      category: 'due',
+      textKey: 'reminder',
+      params: { name: task.name, list: list.name, time: task.due_time, date: task.due_date, when },
+      targetType: 'item',
+      targetId: task.id,
+    };
+  }
+  // Appelé chaque minute (et une fois au démarrage), même sans LISTO_PUSH
   async function runReminders() {
     const now = ctx.now();
     const today = localDay(new Date(now));
@@ -445,7 +693,7 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
       for (const userId of recipients) {
         const list = allowed(userId, task.list_id, 'due');
         if (!list) continue;
-        work.push(send(userId, reminderMessage(task, list, settingsOf(userId).detail, today, localeOf(userId))));
+        work.push(deliver(userId, reminderEntry(task, list, today), () => reminderMessage(task, list, settingsOf(userId).detail, today, localeOf(userId))));
       }
     }
     await Promise.all(work);
@@ -469,8 +717,12 @@ export function createNotifier(ctx, { push = ctx.push } = {}) {
 
   return {
     activity, assigned, wish, sharing, flushDue, runDigest, runReminders, settingsOf, setSettings, mutedLists, setMuted, isMember,
-    pending: () => groups.size,
-    prune: () => { for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId); },
+    noteChanged, noteShared, mutedNotes, setNoteMuted, seesNote,
+    pending: () => groups.size + noteGroups.size,
+    prune: () => {
+      for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId);
+      for (const [key, at] of noteSentAt) if (ctx.now() - at >= NOTE_QUIET_MS) noteSentAt.delete(key);
+    },
     stop: () => {
       clearInterval(timer);
       clearInterval(digestTimer);

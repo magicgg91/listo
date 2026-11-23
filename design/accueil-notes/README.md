@@ -27,7 +27,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 ## Nouveaux composants
 
-`.icon-btn--badge` et `.icon-btn__badge` (cloche, corbeille) ; `.home-head` ; `.tiles`, `.tile`, `.tile__head`, `.tile__row` (48 px), `.tile__row--add`, `.tile__dot`, `.tile__empty`, `.count` (`--danger`, `--success`, `--accent`, gris par défaut) ; `.tabbar--5` ; `.cat-pick` ; `.catbar` et `.cat-chip` ; `.notes-section` ; `.note-card` ; `.news-badge--dot` ; `.note-cat`, `.note-people`, `.note-status`, `.note-edit`, `.note-link`, `.note-foot`, `.note-banner`, `.conflict` ; `.cat-row` ; `.page-intro`, `.page-tools` ; `.note-trash` ; `.inbox-row` ; `.inbox-foot` ; ordinateur : `.pc-side__main`, `.pc-nav__item--sub`, `.pc-head__tools`, `.pc-notes`, `.pc-note`. Le reste vient du kit tel quel.
+`.icon-btn--badge` et `.icon-btn__badge` (cloche, corbeille) ; `.home-head` ; `.tiles`, `.tile`, `.tile__head`, `.tile__row` (48 px), `.tile__row--add`, `.tile__dot`, `.tile__empty`, `.count` (`--danger`, `--success`, `--accent`, gris par défaut) ; `.tabbar--5` ; `.cat-pick` ; `.catbar` et `.cat-chip` ; `.notes-section` ; `.note-card` ; `.news-badge--dot` ; `.note-cat`, `.note-people`, `.note-status`, `.note-edit`, `.note-link`, `.note-foot`, `.note-banner`, `.conflict` ; `.cat-row` ; `.page-intro`, `.page-tools` ; `.note-trash` ; `.inbox-row` ; `.inbox-foot` ; ordinateur : `.pc-side__main`, `.pc-head__tools`, `.pc-notes`, `.pc-note`. Le reste vient du kit tel quel.
 
 ## Choix faits dans les maquettes
 

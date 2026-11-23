@@ -38,6 +38,9 @@ export const ROUTES = [
   { name: 'trash', path: '/reglages/corbeille' },
   // Réglages › Notifications (Nouveautés, cet appareil, catégories)
   { name: 'notifications', path: '/reglages/notifications' },
+  // Réglages › Accueil (23 novembre 2026) : tuiles affichées et leur
+  // ordre, Accueil coupé et premier écran (home-settings.js)
+  { name: 'homeSettings', path: '/reglages/accueil' },
   // Page Notifications (étape 4, 23 novembre 2026) : ce que Listo m'a
   // signalé ; la cloche de l'Accueil et la tuile Compte y mènent
   { name: 'inbox', path: '/notifications' },
@@ -55,7 +58,9 @@ export const ROUTES = [
 ];
 
 // Écran affiché quand l'adresse est vide ou inconnue : l'Accueil (décision
-// du 23 novembre 2026 ; c'était « Mes listes » avant)
+// du 23 novembre 2026 ; c'était « Mes listes » avant). Quand la personne a
+// coupé l'Accueil (Réglages › Accueil), app.js mène de là au premier écran
+// qu'elle a choisi (firstScreen, home-tiles.js).
 export const DEFAULT_ROUTE = { name: 'home', params: {} };
 
 // Retrouve l'écran correspondant à une adresse (« #/listes/abc »).

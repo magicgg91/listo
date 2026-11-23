@@ -79,6 +79,12 @@ export default {
   'ops.reglageSignalerCochesInvalide': 'Invalid “Include checked items” setting.',
   'ops.reglageCopierInvalide': 'Invalid “Copy items” setting.',
 
+  // Réglage « Accueil » (Réglages › Accueil, public/js/home-tiles.js)
+  'ops.accueilReglageInvalide': 'Invalid “Show the Home screen” setting.',
+  'ops.accueilPremierEcranInvalide': 'Unknown first screen: Due, Lists or Notes.',
+  'ops.accueilTuilesInvalides': 'Invalid Home tiles: each known tile, only once.',
+  'ops.accueilCompteToujours': 'The Account tile is always shown.',
+
   // Créer, modifier une liste
   'ops.listeExisteDeja': 'This list already exists.',
   'ops.magasinCoursesSeulement': 'A store can only be chosen for a shopping list.',
@@ -123,7 +129,7 @@ export default {
   'ops.noteExisteDeja': 'This note already exists.',
   'ops.noteProprietaireSeulement': 'Only the owner of the note can do that.',
   'ops.noteLectureSeule': 'You have read-only access to this note.',
-  'ops.noteConflit': 'This note was changed in the meantime: nothing was overwritten.',
+  'ops.noteConflit': 'This note was edited in the meantime: nothing was overwritten.',
   'ops.versionNoteInvalide': 'Invalid note version.',
   'ops.titreNoteInvalide': 'Invalid note title.',
   'ops.titreNoteTropLong': 'Title too long ({max} characters at most).',

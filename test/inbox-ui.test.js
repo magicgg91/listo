@@ -96,10 +96,15 @@ test('adresses : #/notifications (la page), #/reglages/notifications (les régla
 
 test('cloche de l\'Accueil (téléphone et ordinateur) : nombre de non lues, « 9+ », nom lu ; tuile Compte vers la page, sans nombre', () => {
   const home = code('public/js/screens/home.js');
-  assert.match(home, /export function bellBadgeText\(count\) \{\s*return count > 9 \? '9\+' : String\(count\);\s*\}/);
-  assert.match(home, /const button = h\('button', \{ class: 'icon-btn icon-btn--badge', type: 'button', onClick: \(\) => navigate\('inbox'\) \}, icon\('bell'\)\);/);
-  assert.match(home, /button\.setAttribute\('aria-label', count \? t\('inbox\.cloche\.nonLues', \{ count \}\) : t\('inbox\.cloche'\)\);/);
-  assert.match(home, /h\('span', \{ class: 'icon-btn__badge', 'aria-hidden': 'true' \}, bellBadgeText\(count\)\)/);
+  // La cloche est partagée (public/js/bell.js) : l'Accueil, et la barre du
+  // haut d'Échéances, Listes et Notes quand l'Accueil est coupé
+  const bell = code('public/js/bell.js');
+  assert.match(bell, /export function bellBadgeText\(count\) \{\s*return count > 9 \? '9\+' : String\(count\);\s*\}/);
+  assert.match(bell, /const button = h\('button', \{ class: 'icon-btn icon-btn--badge', type: 'button', onClick: \(\) => navigate\('inbox'\) \}, icon\('bell'\)\);/);
+  assert.match(bell, /button\.setAttribute\('aria-label', count \? t\('inbox\.cloche\.nonLues', \{ count \}\) : t\('inbox\.cloche'\)\);/);
+  assert.match(bell, /h\('span', \{ class: 'icon-btn__badge', 'aria-hidden': 'true' \}, bellBadgeText\(count\)\)/);
+  assert.match(home, /import \{ bell \} from '\.\.\/bell\.js';/);
+  assert.match(home, /const notifications = bell\(\);/);
   assert.match(home, /h\('div', \{ class: 'pc-head__tools' \}, pill, notifications\.el\)/);
   assert.match(home, /h\('div', \{ class: 'home-head__tools' \}, pill, notifications\.el\)/);
   assert.match(home, /row\(\{ label: t\('accueil\.compte\.notifications'\), onClick: \(\) => navigate\('inbox'\) \}\)/);
@@ -110,8 +115,10 @@ test('cloche de l\'Accueil (téléphone et ordinateur) : nombre de non lues, « 
 
 test('écran : ouvrir la page ne marque rien ; toucher une ligne la marque lue et ouvre sa cible ; glisser ou ⋮ pour effacer ; « Tout effacer » confirmé', () => {
   const screen = code('public/js/screens/inbox.js');
-  // Seuls trois endroits marquent lu : la ligne touchée, son menu, « Tout marquer comme lu »
-  assert.equal(screen.match(/markInboxRead\(/g).length, 2);
+  // Seuls quatre endroits marquent lu : la ligne touchée, son menu, le
+  // glissement vers la droite (non lue seulement), « Tout marquer comme lu »
+  assert.equal(screen.match(/markInboxRead\(/g).length, 3);
+  assert.match(screen, /swipes\.attach\(item, button, del, unread \? \{ onRight: \(\) => actions\.markInboxRead\(\[row\.id\]\) \} : \{\}\);/);
   assert.match(screen, /export function openRow\(row\) \{\s*actions\.markInboxRead\(\[row\.id\]\);/);
   assert.equal(screen.match(/markAllInboxRead\(/g).length, 1);
   assert.match(screen, /h\('button', \{ class: 'cart__action', type: 'button', hidden: unread === 0, onClick: \(\) => actions\.markAllInboxRead\(\) \}/);
@@ -123,7 +130,6 @@ test('écran : ouvrir la page ne marque rien ; toucher une ligne la marque lue e
   assert.match(screen, /'aria-label': t\(unread \? 'inbox\.ligne\.nonLue' : 'inbox\.ligne', \{ text: row\.text, sub: row\.sub, time \}\)/);
   assert.match(screen, /unread \? h\('span', \{ class: 'inbox-row__dot', 'aria-hidden': 'true' \}\) : null/);
   // Glissement (comme les lignes d'une liste) et bouton ⋮ (menu)
-  assert.match(screen, /swipes\.attach\(item, button, del\);/);
   assert.match(screen, /'inbox-row__more'\);\s*more\.setAttribute\('aria-haspopup', 'menu'\);/);
   assert.match(screen, /\{ icon: 'trash', label: t\('inbox\.effacer'\), danger: true, onSelect: remove \}/);
   // Tout effacer : confirmation d'abord

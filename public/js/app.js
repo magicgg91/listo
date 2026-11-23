@@ -26,6 +26,7 @@ import { renderNotes } from './screens/notes.js';
 import { renderNote } from './screens/note.js';
 import { renderNoteTrash } from './screens/note-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
+import { firstScreen, normalizeHome } from './home-tiles.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -34,6 +35,7 @@ import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
+import { renderHomeSettings } from './screens/home-settings.js';
 import { renderInbox } from './screens/inbox.js';
 import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
@@ -67,6 +69,11 @@ export const app = {
   openItem: null,        // { listId, itemId } : fiche à ouvrir en arrivant dans la liste (Échéances)
   openDeadlines: null,   // section d'Échéances à montrer en arrivant (ligne de la tuile de l'Accueil)
 };
+
+// Premier écran de Listo : l'Accueil, ou l'écran choisi par la personne
+// quand elle l'a coupé (Réglages › Accueil, home-tiles.js ; réglage du
+// compte, gardé avec la copie locale : hors ligne compris)
+export const openingScreen = () => firstScreen(app.data.home);
 
 // Abonnements aux changements de données (les écrans se redessinent)
 const listeners = new Set();
@@ -188,6 +195,10 @@ async function openAccount(user) {
     snapshot = null; // copie illisible : rechargée depuis le serveur
   }
   app.data = fromSnapshot(snapshot) ?? emptyState();
+  // Réglage « Accueil » donné par le serveur à l'ouverture (/api/me) : plus
+  // récent que la copie (changé sur un autre appareil) ; la file d'attente,
+  // rejouée juste après, y remet un changement pas encore envoyé
+  if (user.home) app.data.home = normalizeHome(user.home);
   // File d'attente du compte : ce qui n'était pas encore envoyé repartira
   queue?.stop();
   queue = makeQueue();
@@ -516,13 +527,16 @@ export function loggedIn(user) {
     show(app.route);
     return;
   }
+  // Premier écran (Accueil, ou celui choisi) connu tout de suite
+  if (user.home) app.data.home = normalizeHome(user.home);
   openAccount(user).then(() => {
     refreshData({ quiet: true, full: true });
     goLive();
     resyncPush(user); // notifications : abonnement rendu au serveur si besoin
   });
-  // Écran demandé avant la connexion (lien direct), sinon l'Accueil
-  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'home', params: {} };
+  // Écran demandé avant la connexion (lien direct), sinon le premier écran
+  // (l'Accueil, ou l'écran choisi quand il est coupé)
+  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: openingScreen(), params: {} };
   app.afterLogin = null;
   navigate(next.name, next.params, { replace: true });
 }
@@ -776,7 +790,7 @@ function show(route) {
 
   const { name, params } = route;
   if (name === 'login') {
-    navigate('home', {}, { replace: true });
+    navigate(openingScreen(), {}, { replace: true });
     return;
   }
   if (name === 'admin' && app.user.role !== 'admin') {
@@ -786,8 +800,12 @@ function show(route) {
 
   switch (name) {
     // Accueil : premier écran (décision du 23 novembre 2026), colonne large
-    // sur ordinateur (tuiles sur trois colonnes)
-    case 'home': mount((onLeave) => renderHome(onLeave), { wide: true }); break;
+    // sur ordinateur (tuiles sur trois colonnes). Coupé par la personne
+    // (Réglages › Accueil) : #/accueil mène au premier écran choisi
+    case 'home':
+      if (openingScreen() !== 'home') navigate(openingScreen(), {}, { replace: true });
+      else mount((onLeave) => renderHome(onLeave), { wide: true });
+      break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
     // « À offrir » : liste automatique de mes réservations (gifts.js)
     case 'gifts': mount((onLeave) => renderGifts(onLeave)); break;
@@ -839,6 +857,8 @@ function show(route) {
     case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
+    // Réglages › Accueil : tuiles, ordre, Accueil coupé et premier écran
+    case 'homeSettings': mount((onLeave) => renderHomeSettings(onLeave)); break;
     // Page Notifications (étape 4) : la cloche de l'Accueil, la tuile Compte
     case 'inbox': mount((onLeave) => renderInbox(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
@@ -849,7 +869,8 @@ function show(route) {
       break;
     // Ancienne adresse (#/reglages/claude) : remplacée par la nouvelle
     case 'oldClaudeConnections': navigate('claudeConnections', {}, { replace: true }); break;
-    default: navigate('home', {}, { replace: true });
+    // Adresse inconnue : le premier écran (l'Accueil, ou celui choisi)
+    default: navigate(openingScreen(), {}, { replace: true });
   }
   readInboxOfScreen();
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran

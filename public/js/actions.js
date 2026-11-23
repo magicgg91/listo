@@ -176,6 +176,9 @@ export const markSeen = (listId, upTo) => perform({ type: 'list.seen', listId, u
 export const setListMuted = (listId, muted) => perform({ type: 'list.mute', listId, muted });
 // Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
 export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });
+// Réglage « Accueil » (Réglages › Accueil, home-tiles.js) : { enabled },
+// { start }, { order } ou { hidden } ; même file d'attente, hors ligne compris
+export const setHome = (change) => perform({ type: 'account.home', ...change });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 
 // --- Réservations (listes d'envies) ---

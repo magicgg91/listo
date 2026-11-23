@@ -3,6 +3,12 @@
 // « Supprimer » ; au relâchement, elle reste ouverte au-delà d'un seuil,
 // sinon elle revient. Rien n'est supprimé sans un appui sur la zone rouge.
 //
+// Glissement vers la droite (facultatif, page Notifications : « Marquer
+// comme lue », 23 novembre 2026) : seulement si la ligne a une action à
+// droite (attach(…, { onRight })). La ligne suit le doigt et révèle une zone
+// verte ; relâchée au-delà du seuil, l'action est faite tout de suite (geste
+// sans risque, rien n'est effacé) et la ligne revient en place.
+//
 // Événements tactiles natifs seulement (pas de glissement à la souris) ; la
 // ligne garde le défilement vertical (CSS touch-action: pan-y). Le geste
 // n'est pris en compte que s'il est nettement horizontal. Une seule ligne
@@ -25,12 +31,17 @@ export function swipeIntent(dx, dy, { slop = SWIPE.slop, ratio = SWIPE.ratio } =
   return Math.abs(dx) > Math.abs(dy) * ratio ? 'horizontal' : 'vertical';
 }
 
-// Position de la ligne pendant le glissement : jamais vers la droite (0 au
-// plus), jamais au-delà de sa largeur. startOpen : la ligne était ouverte.
-export function swipeOffset(dx, startOpen, width, reveal = SWIPE.reveal) {
+// Position de la ligne pendant le glissement : jamais au-delà de sa
+// largeur ; vers la droite seulement si la ligne a une action à droite
+// (right : jusqu'à reveal px, sinon 0 au plus). startOpen : la ligne était
+// ouverte.
+export function swipeOffset(dx, startOpen, width, reveal = SWIPE.reveal, right = false) {
   const base = startOpen ? -reveal : 0;
-  return Math.max(-width, Math.min(0, base + dx));
+  return Math.max(-width, Math.min(right && !startOpen ? reveal : 0, base + dx));
 }
+
+// Au relâchement d'un glissement vers la droite : l'action est-elle faite ?
+export const swipeRightDone = (offset, width, threshold = SWIPE.threshold) => offset >= Math.min(threshold, width / 3);
 
 // Au relâchement : ouverte (zone rouge visible) si la ligne a été tirée
 // au-delà du seuil, sinon refermée. Un glissement vers la droite d'une ligne
@@ -87,7 +98,7 @@ export function createSwipeController(scroller) {
   document.addEventListener('click', onClick, true);
   scroller.addEventListener('scroll', close, { passive: true });
 
-  function attach(li, slide, button) {
+  function attach(li, slide, button, { onRight = null } = {}) {
     const row = { li, slide, button };
     let start = null; // { x, y, open, width, intent }
     li.addEventListener('touchstart', (event) => {
@@ -108,7 +119,9 @@ export function createSwipeController(scroller) {
         if (open && open !== row) close(); // une seule ligne ouverte
         li.classList.add('is-swiping');
       }
-      place(row, swipeOffset(dx, start.open, start.width), false);
+      const offset = swipeOffset(dx, start.open, start.width, SWIPE.reveal, Boolean(onRight));
+      li.classList.toggle('is-swiping-right', offset > 0);
+      place(row, offset, false);
     }, { passive: true });
     const end = (event) => {
       if (!start) return;
@@ -117,7 +130,15 @@ export function createSwipeController(scroller) {
         const t = event.changedTouches?.[0];
         const dx = t ? t.clientX - start.x : 0;
         li.classList.remove('is-swiping');
-        setOpen(row, event.type === 'touchend' && swipeRelease(swipeOffset(dx, start.open, start.width), start.width) === 'open');
+        const offset = swipeOffset(dx, start.open, start.width, SWIPE.reveal, Boolean(onRight));
+        li.classList.remove('is-swiping-right');
+        if (offset > 0) {
+          // Vers la droite : l'action, puis la ligne revient en place
+          setOpen(row, false);
+          if (event.type === 'touchend' && swipeRightDone(offset, start.width)) onRight();
+        } else {
+          setOpen(row, event.type === 'touchend' && swipeRelease(offset, start.width) === 'open');
+        }
         suppressClickIn = li; // la fin du glissement n'ouvre pas la fiche
         setTimeout(() => { if (suppressClickIn === li) suppressClickIn = null; }, 400);
       }

@@ -79,6 +79,12 @@ export default {
   'ops.reglageSignalerCochesInvalide': 'Réglage « Signaler les éléments cochés » invalide.',
   'ops.reglageCopierInvalide': 'Réglage « Copier les éléments » invalide.',
 
+  // Réglage « Accueil » (Réglages › Accueil, public/js/home-tiles.js)
+  'ops.accueilReglageInvalide': 'Réglage « Afficher l\'Accueil » invalide.',
+  'ops.accueilPremierEcranInvalide': 'Premier écran inconnu : Échéances, Listes ou Notes.',
+  'ops.accueilTuilesInvalides': 'Tuiles de l\'Accueil invalides : chaque tuile connue, une seule fois.',
+  'ops.accueilCompteToujours': 'La tuile Compte est toujours affichée.',
+
   // Créer, modifier une liste
   'ops.listeExisteDeja': 'Cette liste existe déjà.',
   'ops.magasinCoursesSeulement': 'Un magasin ne se choisit que pour une liste de courses.',

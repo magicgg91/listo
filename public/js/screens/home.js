@@ -7,13 +7,20 @@
 //   compte, la pastille d'état (un appui synchronise), puis la cloche
 //   (étape 4 du cadrage) : elle ouvre la page Notifications, avec le nombre
 //   de non lues en pastille (« 9+ » au-delà de 9 ; le nombre est dans son
-//   nom lu, « Notifications, 3 non lues »). C'est le seul endroit où ce
-//   nombre est montré (pas dans la tuile Compte).
-// - Tuiles, dans un ordre fixe : Échéances, Listes, « À offrir » (mes
-//   réservations dans les listes d'envies, seulement si j'en ai ; toute la
-//   largeur sur le téléphone), Notes (étape 2 du cadrage), Compte. Deux
-//   colonnes sur le téléphone (une sous 340 px), trois sur ordinateur
-//   (quatre au-delà de 1 440 px).
+//   nom lu, « Notifications, 3 non lues » ; bell.js). Ce nombre n'est
+//   montré que sur la cloche (pas dans la tuile Compte) ; Accueil coupé, la
+//   cloche passe dans la barre du haut d'Échéances, Listes et Notes.
+// - Tuiles : Échéances, Listes, « À offrir » (mes réservations dans les
+//   listes d'envies, seulement si j'en ai ; toute la largeur sur le
+//   téléphone), Notes (étape 2 du cadrage), Compte. Depuis le 23 novembre
+//   2026, chacun choisit leur ordre et masque celles qu'il veut (sauf
+//   Compte) dans Réglages › Accueil (home-tiles.js) ; sans choix, cet
+//   ordre-là, toutes affichées. Deux colonnes sur le téléphone (une sous
+//   340 px) : une tuile restée seule sur sa ligne prend toute la largeur
+//   (tileLayout), jamais de trou ; trois sur ordinateur (quatre au-delà de
+//   1 440 px), où « toute la largeur » n'a pas d'effet.
+// - Accueil coupé dans les Réglages : cet écran mène tout de suite au
+//   premier écran choisi (app.js le fait aussi pour #/accueil).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
 //   (« En retard, 2 tâches »). Le titre d'une tuile ouvre l'écran entier.
 // - Tout vient de la copie locale (aucune demande de plus au serveur) :
@@ -37,10 +44,12 @@ import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from 
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
-import { isNoteUnread, inboxUnread } from '../store.js';
+import { isNoteUnread } from '../store.js';
 import { computeGifts, recentGifts } from '../gifts.js';
 import { openGift, forLabel } from './gifts.js';
 import { lockWhenFits } from '../scroll-lock.js';
+import { bell } from '../bell.js';
+import { shownTiles, tileLayout, firstScreen } from '../home-tiles.js';
 import { t } from '../i18n.js';
 
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
@@ -49,9 +58,10 @@ import { t } from '../i18n.js';
 // lignes ; spoken : nom lu du titre s'il dit plus (« Notes, 12 notes ») ;
 // count : petite pastille grise au bout du titre (tuile Notes : « 12 »),
 // muette pour les lecteurs d'écran (le nombre est dans spoken)
-// wide : toute la largeur sur le téléphone (tuile « À offrir »)
-function tile(name, iconName, onOpen, rows, { spoken = null, count = null, wide = false } = {}) {
-  return h('section', { class: `card tile${wide ? ' tile--wide' : ''}`, 'aria-label': name },
+// (« toute la largeur » sur le téléphone : tile--wide, posé par renderHome
+// d'après tileLayout)
+function tile(name, iconName, onOpen, rows, { spoken = null, count = null } = {}) {
+  return h('section', { class: 'card tile', 'aria-label': name },
     h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name),
       count ? h('span', { class: 'count', 'aria-hidden': 'true' }, String(count)) : null),
     rows);
@@ -184,7 +194,7 @@ function giftsTile() {
         h('span', { class: 'tile__sub' }, sub(gift))),
       icon('chev-r', 'icon--sm'))))
     : emptyText(t('offrir.tuile.toutAchete')),
-  { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null, wide: true });
+  { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null });
 }
 
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans
@@ -207,23 +217,6 @@ function accountTile() {
   ].filter(Boolean)));
 }
 
-// Cloche de l'en-tête : bouton-icône « Notifications » et sa pastille
-// (aria-hidden : le nombre est dans le nom lu). Redessinée avec l'écran.
-export function bellBadgeText(count) {
-  return count > 9 ? '9+' : String(count);
-}
-function bell() {
-  const button = h('button', { class: 'icon-btn icon-btn--badge', type: 'button', onClick: () => navigate('inbox') }, icon('bell'));
-  const paint = () => {
-    const count = app.data.inbox?.loaded ? inboxUnread(app.data) : 0;
-    button.setAttribute('aria-label', count ? t('inbox.cloche.nonLues', { count }) : t('inbox.cloche'));
-    button.querySelector('.icon-btn__badge')?.remove();
-    if (count) button.append(h('span', { class: 'icon-btn__badge', 'aria-hidden': 'true' }, bellBadgeText(count)));
-  };
-  paint();
-  return { el: button, paint };
-}
-
 // --- Écran ---
 
 export function renderHome(onLeave) {
@@ -235,6 +228,7 @@ export function renderHome(onLeave) {
   onLeave(fit.stop);
   const date = h('p', { class: pc ? 'pc-head__sub' : 'home-head__date' });
   const notifications = bell();
+  let leaving = false; // Accueil coupé : départ vers le premier écran demandé
 
   const draw = () => {
     date.textContent = longToday();
@@ -243,9 +237,27 @@ export function renderHome(onLeave) {
       replace(tiles, h('p', { class: 'empty muted', role: 'status' }, t('accueil.chargement')));
       return;
     }
-    // Ordre fixe : Échéances, Listes, « À offrir » (si j'ai des
-    // réservations), puis Notes et Compte
-    replace(tiles, deadlinesTile(), listsTile(pc), giftsTile(), notesTile(pc), accountTile());
+    // Accueil coupé (Réglages › Accueil, ici ou sur un autre appareil) :
+    // le premier écran choisi le remplace
+    // (un instant plus tard : jamais pendant que l'écran se pose)
+    const first = firstScreen(app.data.home);
+    if (first !== 'home') {
+      if (!leaving) {
+        leaving = true;
+        setTimeout(() => {
+          if (app.route?.name === 'home') navigate(first, {}, { replace: true });
+        });
+      }
+      return;
+    }
+    // Tuiles dans l'ordre choisi, sans les masquées ; « À offrir »
+    // seulement si j'ai des réservations ; une tuile seule sur sa ligne du
+    // téléphone prend toute la largeur
+    const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile };
+    const present = shownTiles(app.data.home).map((name) => [name, build[name]()]).filter(([, el]) => el);
+    const layout = tileLayout(present.map(([name]) => name));
+    present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));
+    replace(tiles, present.map(([, el]) => el));
     fit.update();
   };
   const idle = drawWhenIdle(content, draw);

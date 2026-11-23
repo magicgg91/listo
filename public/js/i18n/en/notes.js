@@ -54,17 +54,17 @@ export default {
   // On a computer, “this device” (never “this phone”)
   'notes.statut.horsLigne.pc': 'Offline · saved on this device',
   'notes.statut.aVerifier.pc': 'Needs checking · your version stays on this device',
-  'notes.pied.moi': 'Changed {date}',
-  'notes.pied.autre': 'Changed by {name} · {when}',
+  'notes.pied.moi': 'Edited {date}',
+  'notes.pied.autre': 'Edited by {name} · {when}',
   'notes.introuvable.titre': 'Note not found',
   'notes.introuvable.texte': 'It may have been deleted.',
 
   // Deux enregistrements en même temps (conflit)
-  'notes.bandeau.autre': '{name} just changed this note',
-  'notes.bandeau.moi': 'This note was just changed on another device',
+  'notes.bandeau.autre': '{name} just edited this note',
+  'notes.bandeau.moi': 'This note was just edited on another device',
   'notes.bandeau.texte': 'Keep writing: you will choose when it saves.',
-  'notes.conflit.titre.autre': '{name} changed this note',
-  'notes.conflit.titre.moi': 'This note was changed elsewhere',
+  'notes.conflit.titre.autre': '{name} edited this note',
+  'notes.conflit.titre.moi': 'This note was edited elsewhere',
   'notes.conflit.texte': 'You were writing at the same time. Nothing is lost: choose which version to keep.',
   'notes.conflit.mienne': 'Keep mine',
   'notes.conflit.mienne.texte': 'Your text replaces the other version.',
@@ -98,9 +98,9 @@ export default {
   'notes.quitter.fait': 'You left the note “{name}”',
   'notes.quitter.horsLigne': 'You need a connection to leave a note',
   'notes.carte.lectureSeule': 'Read only',
-  'notes.carte.modifieePar': 'Changed by {name}',
+  'notes.carte.modifieePar': 'Edited by {name}',
   'notes.carte.partagee': 'Shared with {names}',
-  'notes.carte.nouveautes': 'Changed since you last read it',
+  'notes.carte.nouveautes': 'Edited since you last read it',
   'notes.carte.lienPublic': 'Public link on',
   'notes.personnes.partager': 'Share',
   'notes.personnes.voir': 'People',
@@ -118,7 +118,7 @@ export default {
   'notes.corbeille.partagee': { one: 'Shared with {count} person', other: 'Shared with {count} people' },
   // Menu de gauche (ordinateur) et tuile de l'Accueil : nouveautés
   'notes.nav.nombre.nouveautes': { one: "Notes, {count} note, what's new", other: "Notes, {count} notes, what's new" },
-  'notes.tuile.nouveautes': '{name}, changed since you last read it',
+  'notes.tuile.nouveautes': '{name}, edited since you last read it',
 
   // Saisie rapide (tuile Notes de l'Accueil)
 

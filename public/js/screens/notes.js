@@ -24,6 +24,7 @@ import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList } from '../format.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc } from '../ui.js';
+import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
@@ -334,6 +335,8 @@ export function renderNotes(onLeave, { openId = null } = {}) {
     h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('notes.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
+      // Cloche des notifications : Accueil coupé seulement (bell.js)
+      topBell(onLeave),
       sortMenu(() => draw()),
       iconButton('plus', t('notes.nouvelle'), () => navigate('newNote'), 'icon-btn--accent')),
     search.bar,
@@ -386,7 +389,7 @@ function renderNotesPc(onLeave, openId) {
       search.field),
     h('div', { class: 'pc-tools' },
       searchMeta,
-      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sortMenu(() => draw()))),
+      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), sortMenu(() => draw()))),
     offlineBanner(),
     content);
   const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;

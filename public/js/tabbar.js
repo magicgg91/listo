@@ -19,12 +19,18 @@
 //
 // Un seul bandeau pour toute la visite (il n'est pas refait à chaque écran :
 // c'est ce qui permet à la pastille de glisser d'un bouton à l'autre).
+//
+// Accueil coupé (Réglages › Accueil, home-tiles.js) : quatre boutons
+// (« Échéances », « Listes », « Notes », « Réglages », tabbar--4), sans
+// « Accueil ». Le bandeau suit le réglage dès qu'il change (sur cet
+// appareil ou sur un autre), sans être refait.
 
-import { h, icon } from './dom.js';
+import { h, icon, replace } from './dom.js';
 import { navigate, goBack } from './router.js';
 import { app, onDataChange } from './app.js';
 import { deadlineBadge } from './deadlines.js';
 import { watchNewDay } from './ui.js';
+import { tabScreens } from './home-tiles.js';
 import { t } from './i18n.js';
 
 // [écran, icône, libellé] (le libellé est une fonction : il est lu dans la
@@ -116,9 +122,27 @@ function createTabBar() {
       onClick: () => goToTab(name),
     }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? badge : null), h('span', { class: 'tabbar__label' }, label())));
   }
-  const nav = h('nav', { class: `tabbar glass tabbar--${TABS.length}`, 'aria-label': t('navigation.libelle') }, pill, ...buttons.values());
+  const nav = h('nav', { class: 'tabbar glass', 'aria-label': t('navigation.libelle') }, pill);
   const loupe = loupeButton();
   const el = h('div', { class: 'tabdock' }, nav, loupe.el);
+
+  // Boutons posés dans le bandeau (cinq, ou quatre sans « Accueil ») ;
+  // reposés seulement quand le réglage change. Renvoie vrai s'ils ont changé.
+  let shown = [];
+  let current = null; // bouton de l'écran affiché
+  const arrange = () => {
+    // (réglage du compte, copie locale ; home-tiles.js)
+    const names = tabScreens(app.data.home);
+    if (names.join() === shown.join()) return false;
+    shown = names;
+    nav.classList.remove(`tabbar--${TABS.length}`, `tabbar--${TABS.length - 1}`);
+    nav.classList.add(`tabbar--${names.length}`);
+    replace(nav, pill, names.map((name) => buttons.get(name)));
+    return true;
+  };
+  arrange();
+  // Place de la pastille sous le bouton de l'écran affiché
+  const placeOf = () => String(Math.max(shown.indexOf(current), 0));
 
   // Pastille d'« Échéances »
   const drawBadge = () => {
@@ -127,7 +151,12 @@ function createTabBar() {
     badge.textContent = count > 99 ? '99+' : String(count);
     buttons.get('deadlines').setAttribute('aria-label', deadlinesLabel(count));
   };
-  onDataChange(drawBadge);
+  onDataChange(() => {
+    drawBadge();
+    // Accueil coupé ou rétabli : boutons reposés, pastille remise en place
+    // sans glisser
+    if (arrange() && nav.dataset.current) nav.dataset.current = placeOf();
+  });
   watchNewDay(drawBadge);
   drawBadge();
 
@@ -136,7 +165,9 @@ function createTabBar() {
     loupe,
     // Écran affiché : bouton marqué, pastille déplacée
     select(name) {
-      const index = TABS.findIndex(([tab]) => tab === name);
+      current = name;
+      arrange();
+      const index = shown.indexOf(name);
       for (const [tab, button] of buttons) {
         if (tab === name) button.setAttribute('aria-current', 'page');
         else button.removeAttribute('aria-current');
@@ -144,7 +175,7 @@ function createTabBar() {
       pill.hidden = index < 0;
       // Le bandeau vient d'être reposé dans le nouvel écran : la pastille
       // part de son ancienne place à l'image suivante (sinon, pas de glissement)
-      const next = String(Math.max(index, 0));
+      const next = placeOf();
       if (!nav.dataset.current) nav.dataset.current = next;
       else requestAnimationFrame(() => requestAnimationFrame(() => { nav.dataset.current = next; }));
       drawBadge();

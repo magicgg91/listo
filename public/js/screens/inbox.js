@@ -30,7 +30,7 @@
 
 import { h, icon, iconButton, replace } from '../dom.js';
 import { navigate, goBack } from '../router.js';
-import { app, onDataChange, refreshData } from '../app.js';
+import { app, onDataChange, refreshData, openingScreen } from '../app.js';
 import * as actions from '../actions.js';
 import { inboxUnread, inboxTargetAvailable } from '../store.js';
 import { toast, confirmDialog, openMenu, drawWhenIdle, watchNewDay, offlineBanner } from '../ui.js';
@@ -142,8 +142,10 @@ export function renderInbox(onLeave) {
       ].filter(Boolean), { label: t('inbox.options'), anchor: event.currentTarget });
     }, 'inbox-row__more');
     more.setAttribute('aria-haspopup', 'menu');
-    const item = h('div', { class: 'inbox-item swipe' }, button, del, more);
-    swipes.attach(item, button, del);
+    // Glisser vers la droite : marquer comme lue (ligne non lue seulement)
+    const readZone = unread ? h('span', { class: 'swipe__right', 'aria-hidden': 'true' }, icon('check', 'icon--sm'), h('span', {}, t('inbox.lue'))) : null;
+    const item = h('div', { class: 'inbox-item swipe' }, readZone, button, del, more);
+    swipes.attach(item, button, del, unread ? { onRight: () => actions.markInboxRead([row.id]) } : {});
     return item;
   }
 
@@ -200,7 +202,9 @@ export function renderInbox(onLeave) {
 
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
-      iconButton('chev-l', t('reglages.retour'), () => goBack('home')),
+      // Retour : l'écran d'avant ; ouverte directement, le premier écran
+      // (l'Accueil, ou l'écran choisi quand il est coupé)
+      iconButton('chev-l', t('reglages.retour'), () => goBack(openingScreen())),
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('inbox.titre'))),
       iconButton('sliders', t('inbox.reglages'), toSettings)),
     offlineBanner(),

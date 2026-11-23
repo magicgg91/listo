@@ -33,6 +33,26 @@ export default {
   'reglages.pc.raccourcis.detail': 'Press ?',
   'reglages.notifications': 'Notifications',
 
+  // Réglages › Accueil (screens/home-settings.js ; home-tiles.js)
+  'reglages.accueil': 'Home',
+  'reglages.accueil.detail': 'Tiles shown, first screen',
+  'reglages.accueil.ecran': 'Home screen',
+  'reglages.accueil.afficher': 'Show the Home screen',
+  'reglages.accueil.afficher.oui': 'The first screen when Listo opens, with its tiles.',
+  'reglages.accueil.afficher.non': 'Off: Listo opens on the screen chosen below, and the Home button leaves the bottom bar.',
+  'reglages.accueil.tuiles': 'Tiles shown',
+  'reglages.accueil.reordonner': 'Reorder',
+  'reglages.accueil.termine': 'Done',
+  'reglages.accueil.offrir.detail': 'Only when you\'ve reserved a gift',
+  'reglages.accueil.compte.detail': 'Always shown: it leads to the settings',
+  'reglages.accueil.note': 'Applies to all your devices.',
+  'reglages.accueil.note.ordre': 'Drag a tile by its handle, or use the arrows. The Home screen follows this order.',
+  'reglages.accueil.monter': 'Move {name} up',
+  'reglages.accueil.descendre': 'Move {name} down',
+  'reglages.accueil.glisser': 'Drag to move',
+  'reglages.accueil.position': '“{name}” in position {position} of {total}',
+  'reglages.accueil.premier': 'First screen',
+
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',
   'reglages.touches.desactivees': 'Single-key shortcuts disabled',

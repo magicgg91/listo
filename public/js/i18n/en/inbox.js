@@ -33,6 +33,7 @@ export default {
   'inbox.ligne.nonLue': 'Unread: {text}, {sub}, {time}',
   'inbox.options': 'Options for this notification',
   'inbox.effacer': 'Clear',
+  'inbox.lue': 'Read',
   'inbox.effacer.lu': 'Clear this notification',
   'inbox.effacee': 'Notification cleared',
   'inbox.marquerLue': 'Mark as read',

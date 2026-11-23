@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { SWIPE, swipeIntent, swipeOffset, swipeRelease, createSwipeController } from '../public/js/swipe.js';
+import { SWIPE, swipeIntent, swipeOffset, swipeRelease, swipeRightDone, createSwipeController } from '../public/js/swipe.js';
 import fr from '../public/js/i18n/fr.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -188,4 +188,16 @@ test('page publique (lecture seule) : aucun glissement, aucune suppression', () 
 
 test('service worker : le module est gardé pour l\'ouverture sans réseau', () => {
   assert.match(read('public/sw.js'), /'\/js\/swipe\.js',/);
+});
+
+// Page Notifications (23 novembre 2026) : glisser vers la droite marque la
+// notification comme lue, seulement si la ligne a une action à droite
+test('glissement vers la droite : seulement avec une action, jusqu\'à la largeur de la zone, fait au-delà du seuil', () => {
+  assert.equal(swipeOffset(60, false, 358), 0, 'sans action à droite : ne bouge pas');
+  assert.equal(swipeOffset(60, false, 358, SWIPE.reveal, true), 60);
+  assert.equal(swipeOffset(400, false, 358, SWIPE.reveal, true), SWIPE.reveal, 'jamais plus loin que la zone verte');
+  assert.equal(swipeOffset(60, true, 358, SWIPE.reveal, true), -SWIPE.reveal + 60, 'ligne ouverte à gauche : ne passe pas à droite');
+  assert.equal(swipeRightDone(79, 358), false);
+  assert.equal(swipeRightDone(80, 358), true);
+  assert.equal(swipeRightDone(70, 210), true, 'ligne de 210 px : un tiers = 70 px');
 });

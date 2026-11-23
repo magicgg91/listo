@@ -30,6 +30,7 @@ import { canEditList, listOptions, memberNames } from '../store.js';
 import { nestsSubtasks, parentOf } from '../subtasks.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
+import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
 import { computeDeadlines, assigneesFor, scopeOffered, loadDeadlineScope, saveDeadlineScope } from '../deadlines.js';
@@ -243,14 +244,16 @@ export function renderDeadlines(onLeave) {
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('echeances.titre')),
           h('p', { class: 'pc-head__sub' }, t('echeances.pc.sousTitre'))),
         search.field),
-      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), scope, searchMeta),
+      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), scope, searchMeta),
       offlineBanner(),
       content);
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('echeances.titre'))),
-      syncPill(() => refreshData({ full: true }), { inBar: true })),
+      syncPill(() => refreshData({ full: true }), { inBar: true }),
+      // Cloche des notifications : Accueil coupé seulement (bell.js)
+      topBell(onLeave)),
     search.bar,
     scope,
     content);

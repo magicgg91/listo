@@ -31,6 +31,8 @@ export default {
 
   // Menu de gauche : marque, raccourcis, pied
   'navigation.marque.accueil': ': Home',
+  // Marque quand l'Accueil est coupé : le premier écran choisi
+  'navigation.marque.ecran': ': {name}',
   'navigation.raccourcis': 'Keyboard shortcuts',
   'navigation.raccourcis.infobulle': 'Keyboard shortcuts · ?',
   'navigation.nouvelleListe': 'New list',

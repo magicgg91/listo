@@ -5,7 +5,9 @@
 // De haut en bas :
 // - la marque (lien vers l'Accueil) et le bouton d'aide (raccourcis) ;
 // - le champ « Rechercher une liste » ;
-// - les entrées fixes, dans l'ordre du bandeau du téléphone : « Accueil »,
+// - les entrées fixes, dans l'ordre du bandeau du téléphone : « Accueil »
+//   (absent quand la personne l'a coupé dans Réglages › Accueil : la marque
+//   mène alors au premier écran choisi),
 //   « Échéances » (avec sa pastille : tâches en retard et du jour),
 //   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2) ;
 // - dessous, le menu suit l'écran :
@@ -33,7 +35,7 @@ import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list-types.js';
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
-import { app, onDataChange } from '../app.js';
+import { app, onDataChange, openingScreen } from '../app.js';
 import { drawWhenIdle, watchNewDay } from '../ui.js';
 import { deadlineBadge } from '../deadlines.js';
 import { deadlinesLabel } from '../tabbar.js';
@@ -52,6 +54,9 @@ export const pcListType = () => pcType;
 export function setPcListType(type) {
   pcType = isListType(type) ? type : 'all';
 }
+
+// Noms des premiers écrans possibles (marque, Accueil coupé)
+const SCREEN_NAMES = { deadlines: () => t('navigation.echeances'), lists: () => t('navigation.listes'), notes: () => t('navigation.notes') };
 
 // Écrans des listes : le menu y montre les types (« À offrir » compris :
 // Envies y est mis en avant)
@@ -142,6 +147,21 @@ export function createPcSide() {
   const newList = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), t('navigation.nouvelleListe'), keycap('N'));
   const newNote = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', hidden: true, onClick: () => navigate('newNote', {}, { replace: ['note', 'newNote'].includes(selected.name) }) }, icon('plus', 'icon--sm'), t('navigation.nouvelleNote'), keycap('N'));
 
+  // --- Marque ---
+  // La marque mène au premier écran : l'Accueil, ou l'écran choisi quand il
+  // est coupé (adresse et nom lu posés par drawFixed)
+  const brandScreen = h('span', { class: 'visually-hidden' });
+  const home = h('a', {
+    class: 'pc-brand__home',
+    href: pathFor('home'),
+    onClick: (event) => {
+      event.preventDefault();
+      const first = openingScreen();
+      if (first === 'lists') setPcListType('all');
+      navigate(first, {}, { replace: selected.name === first });
+    },
+  }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, icon('logo')), h('span', { class: 'pc-brand__name' }, 'Listo'), brandScreen);
+
   const markCurrent = (link, on) => {
     if (on) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
@@ -155,6 +175,12 @@ export function createPcSide() {
     listsCount.textContent = lists === null ? '' : String(lists);
     if (lists === null) listsLink.removeAttribute('aria-label');
     else listsLink.setAttribute('aria-label', t('navigation.listes.nombre', { count: lists }));
+    // Accueil coupé : ni entrée « Accueil », ni « Accueil » dans le nom lu
+    // de la marque (elle mène au premier écran choisi)
+    const first = openingScreen();
+    homeLink.hidden = first !== 'home';
+    home.href = pathFor(first);
+    brandScreen.textContent = ` ${first === 'home' ? t('navigation.marque.accueil') : t('navigation.marque.ecran', { name: SCREEN_NAMES[first]() })}`;
     markCurrent(homeLink, selected.name === 'home');
     markCurrent(deadlinesLink, selected.name === 'deadlines');
     markCurrent(listsLink, selected.name === 'lists' && pcType === 'all');
@@ -281,16 +307,7 @@ export function createPcSide() {
   const idle = drawWhenIdle(nav, draw);
   const unsubscribe = onDataChange(idle.request);
 
-  // --- Marque, pied (« Nouvelle liste », compte, Réglages) ---
-  const home = h('a', {
-    class: 'pc-brand__home',
-    href: pathFor('home'),
-    onClick: (event) => {
-      event.preventDefault();
-      navigate('home', {}, { replace: selected.name === 'home' });
-    },
-  }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, icon('logo')), h('span', { class: 'pc-brand__name' }, 'Listo'),
-  h('span', { class: 'visually-hidden' }, ` ${t('navigation.marque.accueil')}`));
+  // --- Pied (« Nouvelle liste », compte, Réglages) ---
   const user = app.user ?? {};
   const el = h('aside', { class: 'pc-side', 'aria-label': t('navigation.libelle') },
     // « ? » : la fenêtre des raccourcis (elle mène aussi à l'aide)

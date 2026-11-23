@@ -11,6 +11,7 @@
 // - requireAdmin : il faut en plus le rôle Admin.
 
 import crypto from 'node:crypto';
+import { homeFromRow } from './home.js';
 
 // Noms des cookies de connexion : session, et connexion en attente du code
 // 2FA. En production (HTTPS), ils portent le préfixe « __Host- » : le
@@ -96,6 +97,9 @@ export function publicUser(user, config, { method = null } = {}) {
     // Langue choisie dans « Mon compte » (« fr », « en »), ou null :
     // automatique (navigateur, sinon langue de l'installation)
     locale: user.locale ?? null,
+    // Réglage « Accueil » (Réglages › Accueil, server/home.js) : le premier
+    // écran est connu dès l'ouverture, avant la synchronisation
+    home: homeFromRow(user),
   };
 }
 

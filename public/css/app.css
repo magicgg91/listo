@@ -649,6 +649,23 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .item.reorder.is-dragging { position: relative; z-index: 2; box-shadow: var(--shadow-pop); cursor: grabbing; }
 .item.reorder .icon-btn:disabled { opacity: 0.35; }
 
+/* Réglages › Accueil (screens/home-settings.js, maquettes du 23 novembre
+   2026) :
+   - titre de section avec son bouton à droite (« Réordonner », « Terminé »),
+     aligné sur le bord droit des cartes ;
+   - mode « Réordonner » : mêmes lignes que les sous-tâches (.item.reorder),
+     avec l'icône de la tuile, 60 px comme les lignes des Réglages ;
+   - « Premier écran » : la coche du choix, en couleur d'accent (le choix
+     est aussi dit par aria-checked, jamais la couleur seule). */
+.section-head { display: flex; align-items: center; gap: var(--space-1); padding-right: var(--space-2); }
+.section-head > .section-title { flex: 1; min-width: 0; }
+.section-head > .btn { flex: none; }
+.home-order { padding: 0; list-style: none; }
+.home-order > .item { min-height: 60px; }
+.home-order > .item:last-child { border-bottom: 0; }
+.home-order .row__icon { margin-right: 10px; }
+.row > .icon.home-start__check { flex: none; color: var(--color-accent); }
+
 /* Photo agrandie (application et lien public) : la zone de la photo prend
    toute la place restante et a donc une hauteur définie, pour que la règle
    « pas plus haute que la zone » (max-height: 100%) s'applique. Sans cela,
@@ -668,6 +685,10 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .inbox-item.swipe { touch-action: pan-y; }
 .inbox-item .swipe__slide { padding-right: var(--space-2); }
 .inbox-item.is-swiping .swipe__delete, .inbox-item.is-open .swipe__delete { visibility: visible; }
+/* Glisser vers la droite : zone verte « Lue » derrière la ligne (non lue) */
+.swipe__right { position: absolute; top: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 104px; background: var(--color-success-ink); color: var(--color-surface); font-size: var(--text-sm); font-weight: 700; visibility: hidden; }
+.inbox-item.is-swiping-right .swipe__right { visibility: visible; }
+.inbox-item.is-swiping-right .swipe__delete { visibility: hidden; }
 .inbox-row__more { position: absolute; z-index: 2; top: 50%; right: 4px; transform: translateY(-50%); background: var(--color-surface); opacity: 0; pointer-events: none; }
 .inbox-row__more:focus-visible, .app--pc .inbox-item:hover .inbox-row__more { opacity: 1; pointer-events: auto; }
 .inbox-tools .cart__action[hidden] { display: none; }

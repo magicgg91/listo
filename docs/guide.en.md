@@ -822,7 +822,7 @@ If the note was saved elsewhere (by someone it is shared with, or on another of 
 
 **Notes trash**
 
-The trash button on the “Notes” screen opens the “Notes trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people's notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.
+The “Notes trash” is in “Settings”, just below the “List trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people's notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.
 
 **On a computer**
 

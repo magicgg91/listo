@@ -1,4 +1,5 @@
-// Corbeille des notes (#/notes/corbeille ; étape 2 du cadrage, maquette
+// Corbeille des notes (#/reglages/corbeille-notes, dans Réglages à côté
+// de celle des listes depuis le 23 novembre 2026 ; étape 2 du cadrage, maquette
 // design/accueil-notes/notes-3), ouverte par le bouton poubelle de l'écran
 // Notes (et non depuis les Réglages, comme celle des listes).
 //
@@ -91,12 +92,12 @@ export function renderNoteTrash(onLeave) {
   const title = h('h1', { class: isDesktop() ? 'pc-head__title' : 'topbar__title' }, t('notes.corbeille.titre'));
   if (isDesktop()) {
     return h('div', { class: 'screen' },
-      h('header', { class: 'pc-head' }, iconButton('chev-l', t('notes.retour'), () => goBack('notes')), h('div', { class: 'pc-head__main' }, title)),
+      h('header', { class: 'pc-head' }, iconButton('chev-l', t('notes.corbeille.retour'), () => goBack('settings')), h('div', { class: 'pc-head__main' }, title)),
       body);
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
-      iconButton('chev-l', t('notes.retour'), () => goBack('notes')),
+      iconButton('chev-l', t('notes.corbeille.retour'), () => goBack('settings')),
       h('div', { class: 'topbar__main' }, title)),
     body);
 }

@@ -89,13 +89,13 @@ export function noteEditor(initialId, onLeave, { pc }) {
   // téléphone) : celui de la note ; ordinateur : un h2, le h1 est « Notes »
   const heading = h(pc ? 'h2' : 'h1', { class: 'visually-hidden', id: `note-titre-${Math.random().toString(36).slice(2, 8)}` });
   const titleInput = h('input', {
-    class: 'note-edit__title', type: 'text', maxlength: String(NOTE_TITLE_MAX), autocomplete: 'off', enterkeyhint: 'next',
+    class: 'note-edit__title', type: 'text', maxlength: String(NOTE_TITLE_MAX), autocomplete: 'off', enterkeyhint: 'next', 'data-fit-keyboard': '',
     'aria-label': t('notes.champ.titre'), placeholder: t('notes.champ.titre'), value: start?.title ?? '',
   });
   // Texte affiché (avec ses liens) ou champ de saisie
   const view = h('div', { class: 'note-edit__body', role: 'textbox', 'aria-multiline': 'true', 'aria-label': t('notes.champ.texte'), tabindex: '0' });
   const input = h('textarea', {
-    class: 'note-edit__body note-edit__body--input', maxlength: String(NOTE_BODY_MAX),
+    class: 'note-edit__body note-edit__body--input', maxlength: String(NOTE_BODY_MAX), 'data-fit-keyboard': '',
     'aria-label': t('notes.champ.texte'), placeholder: t('notes.champ.texte.vide'), hidden: true,
   });
   const fitInput = () => {
@@ -114,19 +114,28 @@ export function noteEditor(initialId, onLeave, { pc }) {
   };
   // Lecture seule (droit « Lecture seule ») : ni saisie, ni enregistrement
   const readOnly = () => Boolean(note()) && !canEditNote(note());
-  // Passer en saisie, curseur à cet endroit (geste fait pour écrire)
-  const edit = (at) => {
+  // Passer en saisie, curseur à cet endroit (geste fait pour écrire).
+  // Téléphone : avant d'ouvrir le clavier, l'endroit touché (y, position
+  // à l'écran) est remonté dans le tiers haut de l'écran : le curseur est
+  // alors au-dessus du clavier, l'iPhone ne fait pas remonter toute la page
+  // et le haut de l'écran ne saute pas (essai sur iPhone, 23 novembre 2026)
+  const edit = (at, y = null) => {
     if (!input.hidden || readOnly()) return;
     input.value = body;
     view.hidden = true;
     input.hidden = false;
     fitInput();
-    input.focus();
+    if (!pc) {
+      fields.classList.add('note-edit--writing');
+      const target = window.innerHeight * 0.3;
+      if (y !== null && y > target) scroll.scrollTop += y - target;
+    }
+    input.focus({ preventScroll: true });
     input.setSelectionRange(at, at);
   };
   view.addEventListener('click', (event) => {
     if (event.target.closest('a')) return; // un lien s'ouvre, sans passer en saisie
-    edit(body ? offsetAt(view, event, body.length) : 0);
+    edit(body ? offsetAt(view, event, body.length) : 0, event.clientY);
   });
   view.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -135,6 +144,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
   });
   input.addEventListener('blur', () => {
     save();
+    fields.classList.remove('note-edit--writing');
     view.hidden = false;
     input.hidden = true;
     drawView();

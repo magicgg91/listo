@@ -85,17 +85,55 @@
   // curseur et que la zone visible est décalée, renvoie la zone visible
   // { top, height } que l'application doit recouvrir ; sinon null (comportement
   // d'avant). Pour la retirer, il suffit que cette fonction renvoie null.
-  function keyboardShift(win, typing) {
+  // fit : suivre le clavier même sans décalage (iPhone, tous les champs ;
+  // ailleurs, attribut data-fit-keyboard : texte d'une note ; 23 novembre
+  // 2026, « le haut de l'écran saute » à l'ouverture du clavier). La
+  // zone visible rétrécit dès que le clavier s'ouvre (visualViewport.height
+  // plus petit) : l'application la recouvre tout de suite, le haut reste en
+  // place et le texte défile dans la zone au-dessus du clavier, au lieu que
+  // l'iPhone fasse remonter toute la page quand le curseur descend.
+  function keyboardShift(win, typing, fit) {
     var vv = win.visualViewport;
     if (!typing || !vv || !(vv.height > 0)) return null;
     var offsetTop = vv.offsetTop > 0 ? vv.offsetTop : 0;
     if (offsetTop > 0 || win.scrollY > 0) return { top: offsetTop, height: vv.height };
+    if (fit && vv.height < win.innerHeight) return { top: 0, height: vv.height };
     return null;
+  }
+
+  // Hauteur du clavier gardée sur l'appareil (localStorage, peut manquer :
+  // navigation privée), pour la prochaine ouverture
+  var KEYBOARD_KEY = 'listo.clavier';
+  function readKeyboard(win) {
+    try {
+      var value = Number(win.localStorage && win.localStorage.getItem(KEYBOARD_KEY));
+      return value > 100 ? value : 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+  function saveKeyboard(win, value) {
+    try {
+      if (win.localStorage) win.localStorage.setItem(KEYBOARD_KEY, String(Math.round(value)));
+    } catch (error) {
+      // rien : la hauteur sera remesurée à la prochaine ouverture
+    }
   }
 
   // win, doc : la fenêtre et la page (de faux objets dans les tests)
   function start(win, doc) {
     var root = doc.documentElement;
+    // iPhone et iPad : seul Safari d'Apple a navigator.standalone (aucune
+    // marque ni modèle lus : une propriété que lui seul connaît)
+    var ios = Boolean(win.navigator) && typeof win.navigator.standalone === 'boolean';
+    // Hauteur du clavier déjà vue (iPhone) : à l'entrée dans un champ,
+    // l'application se cale tout de suite au-dessus de l'endroit où le
+    // clavier va s'ouvrir ; le champ y est déjà visible, l'iPhone ne fait
+    // donc pas remonter toute la page et le haut de l'écran ne saute pas.
+    // Première ouverture sur l'appareil : comportement d'avant, puis la
+    // hauteur est retenue.
+    var keyboardHeight = ios ? readKeyboard(win) : 0;
+    var preparing = false; // un champ vient de prendre le curseur, clavier attendu
     var last = null;      // dernière hauteur écrite (« 803.5px »)
     var baseHeight = 0;   // hauteur hors décalage, en nombre (celle d'avant le clavier)
     var lastWidth = null; // largeur au moment de cette mesure
@@ -122,11 +160,23 @@
       var width = win.innerWidth;
       var top = 0;
       var height;
-      var shift = keyboardShift(win, typing);
+      var fit = typing && (ios || Boolean(doc.activeElement.hasAttribute && doc.activeElement.hasAttribute('data-fit-keyboard')));
+      var shift = keyboardShift(win, typing, fit);
+      if (!typing) preparing = false;
       if (shift) {
-        // Zone visible décalée (clavier de l'iPhone) : recouvrir exactement
-        // la zone visible
+        // Zone visible décalée ou rétrécie par le clavier : la recouvrir
+        // exactement
         top = shift.top;
+        height = shift.height;
+        preparing = false;
+        // iPhone : hauteur du clavier retenue pour la prochaine fois
+        if (ios && baseHeight > 0 && baseHeight - shift.height > 100 && Math.abs(baseHeight - shift.height - keyboardHeight) > 1) {
+          keyboardHeight = baseHeight - shift.height;
+          saveKeyboard(win, keyboardHeight);
+        }
+      } else if (ios && typing && preparing && keyboardHeight > 0 && baseHeight > keyboardHeight) {
+        // Clavier attendu (iPhone) : place faite tout de suite
+        shift = { top: 0, height: baseHeight - keyboardHeight };
         height = shift.height;
       } else {
         height = visibleHeight(win);
@@ -140,7 +190,7 @@
       }
       if (!(height > 0)) return;
       lastWidth = width;
-      if (top === 0) baseHeight = height;
+      if (top === 0 && !shift) baseHeight = height;
       var topValue = px(top);
       if (topValue !== lastTop) { // valeur identique : rien à réécrire
         lastTop = topValue;
@@ -216,7 +266,10 @@
     win.addEventListener('orientationchange', measureSoon);
     // Champ touché ou quitté : le clavier s'ouvre ou se ferme (en s'animant),
     // on relit tout de suite puis un peu plus tard
-    doc.addEventListener('focusin', measureSoon);
+    doc.addEventListener('focusin', function () {
+      if (isTextField(doc.activeElement)) preparing = true;
+      measureSoon();
+    });
     doc.addEventListener('focusout', measureSoon);
     measureSoon();
     return { measure: measure, measureSoon: measureSoon };

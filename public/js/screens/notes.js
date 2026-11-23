@@ -275,20 +275,6 @@ const noResult = (query, search) => h('div', { class: 'empty' },
 
 const loading = () => h('p', { class: 'empty muted', role: 'status' }, t('notes.chargement'));
 
-// Bouton « Corbeille des notes » avec le nombre de notes qu'elle contient
-function trashButton() {
-  const badge = h('span', { class: 'icon-btn__badge icon-btn__badge--neutral', 'aria-hidden': 'true' });
-  const button = h('button', { class: 'icon-btn icon-btn--badge', type: 'button', onClick: () => navigate('noteTrash') }, icon('trash'), badge);
-  const draw = () => {
-    const count = trashed().length;
-    badge.hidden = count === 0;
-    badge.textContent = count > 9 ? '9+' : String(count);
-    button.setAttribute('aria-label', count ? t('notes.corbeille.bouton', { count }) : t('notes.corbeille.bouton.vide'));
-  };
-  draw();
-  return { el: button, draw };
-}
-
 // Menu ⋮ : « Trier » (plus récentes d'abord, ordre alphabétique)
 function sortMenu(onChange) {
   const button = iconButton('more', t('notes.plusActions'), () => {
@@ -320,10 +306,8 @@ export function renderNotes(onLeave, { openId = null } = {}) {
     onOpen: () => tabBar().loupe.sync(),
   });
   tabBar().loupe.set(search.loupe);
-  const trash = trashButton();
 
   const draw = () => {
-    trash.draw();
     if (!app.data.loaded) {
       search.show(loading());
       return;
@@ -350,7 +334,6 @@ export function renderNotes(onLeave, { openId = null } = {}) {
     h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('notes.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
-      trash.el,
       sortMenu(() => draw()),
       iconButton('plus', t('notes.nouvelle'), () => navigate('newNote'), 'icon-btn--accent')),
     search.bar,
@@ -369,15 +352,9 @@ function renderNotesPc(onLeave, openId) {
   const search = createSearchRow(content, { label: t('notes.recherche.libelle'), onChange: () => draw(), docked: true, placeholder: t('navigation.recherche.placeholder') });
   search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
   search.field.append(keycap('/'));
-  const trashCount = h('span', { class: 'count', 'aria-hidden': 'true' });
-  const trashBtn = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => navigate('noteTrash') }, icon('trash', 'icon--sm'), t('notes.corbeille.court'), trashCount);
   const selectedId = () => (openId && openId !== 'new' ? openId : null);
 
   const draw = () => {
-    const inTrash = trashed().length;
-    trashCount.hidden = inTrash === 0;
-    trashCount.textContent = String(inTrash);
-    trashBtn.setAttribute('aria-label', inTrash ? t('notes.corbeille.bouton', { count: inTrash }) : t('notes.corbeille.bouton.vide'));
     if (!app.data.loaded) {
       search.show(loading());
       return;
@@ -408,7 +385,6 @@ function renderNotesPc(onLeave, openId) {
       h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('notes.titre')), sub),
       search.field),
     h('div', { class: 'pc-tools' },
-      trashBtn,
       searchMeta,
       h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sortMenu(() => draw()))),
     offlineBanner(),

@@ -50,7 +50,7 @@ test('écran d\'une note : « Partager » ou « Personnes » avec les pastilles 
   // Téléphone : icône et pastilles, le mot dans le nom lu ; ordinateur : le mot écrit
   assert.match(note, /replace\(peopleButton, icon\('users', 'icon--sm'\), pc \? word : null,/);
   // Lecture seule : ni saisie, ni enregistrement ; titre non modifiable
-  assert.match(note, /const edit = \(at\) => \{\s*if \(!input\.hidden \|\| readOnly\(\)\) return;/);
+  assert.match(note, /const edit = \(at, y = null\) => \{\s*if \(!input\.hidden \|\| readOnly\(\)\) return;/);
   assert.match(note, /function changed\(\) \{\s*if \(readOnly\(\)\) return;/);
   assert.match(note, /titleInput\.readOnly = readOnly\(\);/);
   // Ouverte et visible : lue (Nouveautés) ; bas de la note « Modifiée par Léa · il y a 5 min »

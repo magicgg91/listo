@@ -9,9 +9,6 @@ export default {
   'notes.nombre': { one: '{count} note', other: '{count} notes' },
   'notes.sansTitre': 'Untitled note',
   'notes.plusActions': 'More actions',
-  'notes.corbeille.bouton': { one: 'Notes trash, {count} note', other: 'Notes trash, {count} notes' },
-  'notes.corbeille.bouton.vide': 'Notes trash',
-  'notes.corbeille.court': 'Trash',
   'notes.trier': 'Sort',
   'notes.tri.recent': 'Most recent first',
   'notes.tri.alpha': 'Alphabetical order',
@@ -126,6 +123,7 @@ export default {
   // Saisie rapide (tuile Notes de l'Accueil)
 
   // Corbeille des notes
+  'notes.corbeille.retour': 'Back to settings',
   'notes.corbeille.titre': 'Notes trash',
   'notes.corbeille.intro': 'Your deleted notes stay here for 30 days, then they are deleted for good.',
   'notes.corbeille.vider': 'Empty the trash',

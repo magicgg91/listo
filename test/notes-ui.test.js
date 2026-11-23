@@ -19,7 +19,9 @@ const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*
 
 test('adresses des écrans des notes ; la corbeille et « nouvelle » ne sont jamais prises pour une note', () => {
   assert.deepEqual(matchRoute('#/notes'), { name: 'notes', params: {} });
-  assert.deepEqual(matchRoute('#/notes/corbeille'), { name: 'noteTrash', params: {} });
+  // Corbeille des notes : dans Réglages (23 novembre 2026) ; l'ancienne adresse y mène
+  assert.deepEqual(matchRoute('#/reglages/corbeille-notes'), { name: 'noteTrash', params: {} });
+  assert.deepEqual(matchRoute('#/notes/corbeille'), { name: 'oldNoteTrash', params: {} });
   assert.deepEqual(matchRoute('#/notes/nouvelle'), { name: 'newNote', params: {} });
   assert.deepEqual(matchRoute('#/notes/abc'), { name: 'note', params: { id: 'abc' } });
   assert.equal(pathFor('note', { id: 'a b' }), '#/notes/a%20b');
@@ -41,7 +43,7 @@ test('curseur : jamais à l\'ouverture d\'une note existante ; seulement pour «
   assert.match(note, /if \(isNew\) queueMicrotask\(\(\) => edit\(0\)\);/);
   assert.equal((note.match(/\bedit\(/g) ?? []).length, 3, 'nouvelle note, appui sur le texte, Entrée');
   assert.equal((note.match(/\.focus\(/g) ?? []).length, 1);
-  assert.match(note, /input\.focus\(\);\s*input\.setSelectionRange\(at, at\);/);
+  assert.match(note, /input\.focus\(\{ preventScroll: true \}\);\s*input\.setSelectionRange\(at, at\);/);
   // Nouvelle note depuis l'Accueil : directement l'écran d'une nouvelle note
   const notes = code('public/js/screens/notes.js');
   assert.match(notes, /export function openQuickNote\(\) \{\s*navigate\('newNote'\);\s*\}/);
@@ -108,7 +110,7 @@ test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, «
 test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) en bas sur les écrans des notes, note ouverte à droite', () => {
   const side = code('public/js/screens/pc-side.js');
   assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
-  assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote', 'noteTrash'\];/);
+  assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
   assert.match(side, /newList\.hidden = NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
   const app = code('public/js/app.js');
   assert.match(app, /if \(isDesktop\(\)\) mount\(\(onLeave\) => renderNotes\(onLeave, \{ openId: id \?\? 'new' \}\), \{ full: true \}\);/);

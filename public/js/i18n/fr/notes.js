@@ -10,9 +10,6 @@ export default {
   'notes.nombre': { one: '{count} note', other: '{count} notes' },
   'notes.sansTitre': 'Note sans titre',
   'notes.plusActions': 'Plus d\'actions',
-  'notes.corbeille.bouton': { one: 'Corbeille des notes, {count} note', other: 'Corbeille des notes, {count} notes' },
-  'notes.corbeille.bouton.vide': 'Corbeille des notes',
-  'notes.corbeille.court': 'Corbeille',
   'notes.trier': 'Trier',
   'notes.tri.recent': 'Plus récentes d\'abord',
   'notes.tri.alpha': 'Ordre alphabétique',
@@ -127,6 +124,7 @@ export default {
   // Saisie rapide (tuile Notes de l'Accueil)
 
   // Corbeille des notes
+  'notes.corbeille.retour': 'Retour aux réglages',
   'notes.corbeille.titre': 'Corbeille des notes',
   'notes.corbeille.intro': 'Vos notes supprimées restent ici 30 jours, puis elles sont effacées pour de bon.',
   'notes.corbeille.vider': 'Vider la corbeille',

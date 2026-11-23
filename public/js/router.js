@@ -20,7 +20,10 @@ export const ROUTES = [
   // Notes (étape 2, 23 novembre 2026) : l'écran Notes, la corbeille des
   // notes, une nouvelle note (pas encore enregistrée), une note
   { name: 'notes', path: '/notes' },
-  { name: 'noteTrash', path: '/notes/corbeille' },
+  // Corbeille des notes : dans Réglages, à côté de celle des listes
+  // (23 novembre 2026) ; l'ancienne adresse y mène encore
+  { name: 'noteTrash', path: '/reglages/corbeille-notes' },
+  { name: 'oldNoteTrash', path: '/notes/corbeille' },
   { name: 'newNote', path: '/notes/nouvelle' },
   { name: 'note', path: '/notes/:id' },
   { name: 'settings', path: '/reglages' },

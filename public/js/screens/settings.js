@@ -97,11 +97,13 @@ export function renderSettings() {
 }
 
 // « Général » (téléphone et ordinateur) : notifications (notifications.js),
-// corbeille des listes (trash.js), administration (compte Admin seulement)
+// corbeilles des listes (trash.js) et des notes (note-trash.js),
+// administration (compte Admin seulement)
 function generalRows(isAdmin) {
   return [
     notificationsRow(),
     row({ iconName: 'trash', title: t('reglages.corbeille'), onClick: () => navigate('trash') }),
+    row({ iconName: 'trash', title: t('reglages.corbeilleNotes'), onClick: () => navigate('noteTrash') }),
     // Pastille : demandes de compte en attente (connexion avec le fournisseur d'identité)
     isAdmin ? row({ iconName: 'shield', title: t('reglages.administration'), end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];

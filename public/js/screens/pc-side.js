@@ -56,7 +56,7 @@ export function setPcListType(type) {
 // Écrans des listes : le menu y montre les types
 const LIST_SCREENS = ['lists', 'list', 'editList', 'newList'];
 // Écrans des notes : « Notes » mis en avant, « Nouvelle note » en bas
-export const NOTE_SCREENS = ['notes', 'note', 'newNote', 'noteTrash'];
+export const NOTE_SCREENS = ['notes', 'note', 'newNote'];
 
 // Ordre des listes du menu (types dans l'ordre Courses, Tâches, Envies,
 // puis le tri choisi) : celui des touches [ et ] (liste précédente,

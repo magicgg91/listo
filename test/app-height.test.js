@@ -14,7 +14,7 @@ const script = read('js/app-height.js');
 
 // Faux navigateur : fenêtre, visualViewport, page, minuteurs et images
 // (requestAnimationFrame) déclenchés à la main
-function browser({ height = 800, width = 390, visualViewport = true } = {}) {
+function browser({ height = 800, width = 390, visualViewport = true, ios = false, stored = null } = {}) {
   const listeners = new Map();
   const on = (target) => (type, fn) => listeners.set(`${target}:${type}`, [...(listeners.get(`${target}:${type}`) ?? []), fn]);
   const writes = [];
@@ -31,6 +31,13 @@ function browser({ height = 800, width = 390, visualViewport = true } = {}) {
       win.scrollY = y;
     },
     visualViewport: vv,
+    // iPhone : navigator.standalone (Safari d'Apple seulement) et la hauteur
+    // du clavier gardée sur l'appareil
+    navigator: ios ? { standalone: false } : {},
+    localStorage: (() => {
+      const data = new Map(stored === null ? [] : [['listo.clavier', String(stored)]]);
+      return { getItem: (k) => (data.has(k) ? data.get(k) : null), setItem: (k, v) => data.set(k, String(v)), data };
+    })(),
     addEventListener: on('window'),
     setTimeout: (fn, ms) => timers.push({ fn, ms }),
     requestAnimationFrame: (fn) => frames.push(fn),
@@ -482,9 +489,9 @@ test('app.css : clavier ouvert, plus de marge de sécurité en bas de la barre d
 });
 
 test('compensation du clavier isolée dans une seule fonction (keyboardShift)', () => {
-  assert.match(script, /function keyboardShift\(win, typing\) \{/);
+  assert.match(script, /function keyboardShift\(win, typing, fit\) \{/);
   assert.equal((script.match(/keyboardShift\(/g) ?? []).length, 2, 'définie une fois, utilisée une fois');
-  assert.match(script, /var shift = keyboardShift\(win, typing\);/);
+  assert.match(script, /var shift = keyboardShift\(win, typing, fit\);/);
 });
 
 test('panne du script : rien ne casse (100dvh s\'applique)', () => {
@@ -514,4 +521,84 @@ test('index.html : script externe, chargé tout en haut juste après viewport.js
   // (dans le code, hors commentaires)
   const code = script.split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
   assert.doesNotMatch(code, /\b(Xiaomi|Samsung|Pixel|Redmi|Galaxy)\b|userAgent|\b(44|48|56)px/);
+});
+
+// Texte d'une note (data-fit-keyboard, 23 novembre 2026) : le haut de
+// l'écran ne doit pas sauter quand le clavier s'ouvre ou se ferme
+test('champ data-fit-keyboard : sans décalage, l\'application rétrécit avec le clavier, le haut reste en place ; un champ ordinaire ne change pas', () => {
+  const fitField = () => ({ ...textInput(), hasAttribute: (name) => name === 'data-fit-keyboard' });
+  const b = browser({ height: 800 });
+  b.runLater();
+  b.doc.activeElement = fitField();
+  b.fire('document', 'focusin');
+  // Le clavier s'ouvre sans que la page remonte (curseur déjà au-dessus)
+  b.vv.height = 430;
+  b.fire('vv', 'resize');
+  assert.deepEqual(b.writes.slice(1), [['--app-h', '430px']], 'hauteur = zone au-dessus du clavier, --app-top jamais écrit');
+  assert.equal(b.doc.documentElement.attributes['data-keyboard'], 'open');
+  // Clavier fermé : hauteur de base, sans décalage
+  b.doc.activeElement = null;
+  b.vv.height = 800;
+  b.fire('document', 'focusout');
+  b.fire('vv', 'resize');
+  assert.equal(b.writes.at(-1)[1], '800px');
+  assert.equal(b.doc.documentElement.attributes['data-keyboard'], undefined);
+  assert.ok(!b.writes.some(([name]) => name === '--app-top'));
+  // Champ ordinaire, même situation : hauteur inchangée (comportement d'avant)
+  const c = browser({ height: 800 });
+  c.runLater();
+  c.doc.activeElement = { ...textInput(), hasAttribute: () => false };
+  c.fire('document', 'focusin');
+  c.vv.height = 430;
+  c.fire('vv', 'resize');
+  assert.deepEqual(c.writes, [['--app-h', '800px']]);
+});
+
+// iPhone (23 novembre 2026, « le haut saute aussi dans les listes ») : la
+// hauteur du clavier est retenue ; à l'ouverture suivante, l'application se
+// cale au-dessus avant que le clavier n'arrive, sans --app-top
+test('iPhone : hauteur du clavier retenue, puis place faite dès l\'entrée dans un champ (haut fixe) ; jamais pendant un appui', () => {
+  const b = browser({ height: 800, ios: true });
+  b.runLater();
+  // Première ouverture : l'iPhone fait remonter la page (comportement d'avant)
+  b.doc.activeElement = textInput();
+  b.fire('document', 'focusin');
+  b.vv.height = 420;
+  b.vv.offsetTop = 310;
+  b.fire('vv', 'resize');
+  assert.equal(b.win.localStorage.data.get('listo.clavier'), '380', 'clavier de 380 px retenu');
+  // Clavier fermé
+  b.doc.activeElement = null;
+  b.vv.height = 800;
+  b.vv.offsetTop = 0;
+  b.fire('document', 'focusout');
+  b.runLater();
+  assert.equal(b.writes.at(-1)[1], '800px');
+  // Deuxième fois, avec un doigt posé : rien ne bouge avant le click
+  const before = b.writes.length;
+  b.fire('document', 'pointerdown');
+  b.doc.activeElement = textInput();
+  b.fire('document', 'focusin');
+  assert.equal(b.writes.length, before, 'rien pendant l\'appui');
+  b.fire('document', 'click');
+  b.runLater({ upTo: 0 });
+  assert.deepEqual(b.writes.slice(before), [['--app-h', '420px']], 'place faite au-dessus du clavier, --app-top inchangé');
+  assert.equal(b.doc.documentElement.attributes['data-keyboard'], 'open');
+  // Le clavier arrive sans que la page remonte : même hauteur, rien de réécrit
+  b.vv.height = 420;
+  b.fire('vv', 'resize');
+  assert.deepEqual(b.writes.slice(before), [['--app-h', '420px']]);
+});
+
+test('iPhone : hauteur retenue lue au démarrage ; ailleurs (Android) aucune place faite d\'avance', () => {
+  const b = browser({ height: 800, ios: true, stored: 300 });
+  b.runLater();
+  b.doc.activeElement = textInput();
+  b.fire('document', 'focusin');
+  assert.equal(b.writes.at(-1)[1], '500px');
+  const a = browser({ height: 800, stored: 300 });
+  a.runLater();
+  a.doc.activeElement = textInput();
+  a.fire('document', 'focusin');
+  assert.deepEqual(a.writes, [['--app-h', '800px']]);
 });

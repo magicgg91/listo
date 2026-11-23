@@ -18,6 +18,7 @@ export default {
   'reglages.general': 'Général',
   'reglages.informations': 'Informations',
   'reglages.corbeille': 'Corbeille des listes',
+  'reglages.corbeilleNotes': 'Corbeille des notes',
   'reglages.administration': 'Administration',
   'reglages.aide': 'Aide',
   'reglages.miseAJour': 'Mise à jour',

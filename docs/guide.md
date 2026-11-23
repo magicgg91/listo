@@ -822,7 +822,7 @@ Si la note a été enregistrée ailleurs (par une personne avec qui elle est par
 
 **Corbeille des notes**
 
-Le bouton poubelle de l'écran « Notes » ouvre la « Corbeille des notes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.
+La « Corbeille des notes » est dans « Réglages », juste sous la « Corbeille des listes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.
 
 **Sur ordinateur**
 

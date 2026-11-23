@@ -1156,6 +1156,9 @@
 .note-edit__title::placeholder { color: var(--color-text-2); opacity: 1; }
 .note-edit__body { min-height: 320px; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font: inherit; font-size: var(--text-item); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; resize: none; cursor: text; }
 .note-edit__body--input { width: 100%; overflow: hidden; }
+/* Téléphone, en écriture : place sous le texte pour remonter l'endroit
+   touché au-dessus du clavier (note.js, edit) */
+.note-edit--writing { padding-bottom: 60vh; }
 .note-edit__body:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 4px; border-radius: 4px; }
 .note-edit__body--input:focus-visible { outline: 0; }
 .note-edit__placeholder { color: var(--color-text-2); }

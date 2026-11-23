@@ -792,6 +792,8 @@ function show(route) {
     // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
     case 'notes': mount((onLeave) => renderNotes(onLeave), { full: true }); break;
     case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
+    // Ancienne adresse (#/notes/corbeille) : remplacée par la nouvelle
+    case 'oldNoteTrash': navigate('noteTrash', {}, { replace: true }); break;
     case 'note':
     case 'newNote': {
       const id = name === 'note' ? params.id : null;

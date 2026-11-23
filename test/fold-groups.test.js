@@ -135,7 +135,7 @@ test('ménage : groupes qui n\'existent plus, listes qui ne sont plus sur le té
   pruneListMemory(['garde'], storage);
   assert.deepEqual([...memory.keys()].sort(), ['listo-groupes-replies-garde', 'listo-tri-liste-garde', 'listo-tri-listes', 'listo-zone-repliee-garde']);
   const lists = read('public/js/screens/lists.js');
-  assert.match(lists, /pruneListMemory\(lists\.map\(\(list\) => list\.id\)\);/);
+  assert.match(lists, /pruneListMemory\(all\.map\(\(list\) => list\.id\)\);/);
 });
 
 test('jamais envoyé au serveur : l\'état ne vit que dans le stockage du téléphone', () => {

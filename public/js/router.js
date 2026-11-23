@@ -8,6 +8,9 @@
 // Les écrans et leur adresse. « :id » est une partie variable.
 export const ROUTES = [
   { name: 'login', path: '/connexion' },
+  // Accueil : premier écran (tuiles Échéances, Listes, Compte ; home.js)
+  { name: 'home', path: '/accueil' },
+  // Listes (« Mes listes » jusqu'au 23 novembre 2026 ; même adresse)
   { name: 'lists', path: '/listes' },
   // Échéances : les tâches à faire de toutes mes listes (deadlines.js)
   { name: 'deadlines', path: '/echeances' },
@@ -36,8 +39,9 @@ export const ROUTES = [
   { name: 'oldClaudeConnections', path: '/reglages/claude' },
 ];
 
-// Écran affiché quand l'adresse est vide ou inconnue
-export const DEFAULT_ROUTE = { name: 'lists', params: {} };
+// Écran affiché quand l'adresse est vide ou inconnue : l'Accueil (décision
+// du 23 novembre 2026 ; c'était « Mes listes » avant)
+export const DEFAULT_ROUTE = { name: 'home', params: {} };
 
 // Retrouve l'écran correspondant à une adresse (« #/listes/abc »).
 // Renvoie { name, params } ; une adresse inconnue donne l'écran par défaut.
@@ -170,7 +174,7 @@ export function closeOverlays() {
 // Démarre le routeur : onRoute(route) est appelé à chaque changement d'écran
 export function startRouter(onRoute) {
   renderRoute = onRoute;
-  if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || pathFor('lists'));
+  if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || pathFor('home'));
   window.addEventListener('popstate', () => {
     if (ignoredPops > 0) {
       ignoredPops--;

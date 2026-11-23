@@ -12,7 +12,7 @@
 
 import { splitDone, compareNames, isMultiList, ITEM_SORTS } from './sorting.js';
 import { isListIcon } from './list-icons.js';
-import { isListType, isShoppingList, usesPriority, usesDue, usesAssign } from './list-types.js';
+import { LIST_TYPES, isListType, isShoppingList, usesPriority, usesDue, usesAssign, typeOf } from './list-types.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { nestsSubtasks, nestItems, parentOf, orderSubtasks, nextPosition, reorderedIds } from './subtasks.js';
 import { t, compareText } from './i18n.js';
@@ -890,6 +890,19 @@ export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
         lastActivity: [list.updatedAt, list.lastActivity ?? '', lastItem].sort().at(-1),
       };
     }), sort);
+}
+
+// Listes par type (tuile « Listes » de l'Accueil, types du menu de gauche
+// de l'ordinateur) : [{ type, count, news }], dans l'ordre Courses, Tâches,
+// Envies, seulement les types que la personne a. news : une liste de ce
+// type a des nouveautés à montrer (listNews : hors sourdine, « Nouveautés »
+// activé). Les mêmes listes que l'écran « Listes » (toute la copie locale).
+export function listCountsByType(state) {
+  const lists = [...state.lists.values()];
+  return LIST_TYPES.map((type) => {
+    const ofType = lists.filter((list) => typeOf(list) === type);
+    return { type, count: ofType.length, news: ofType.some((list) => Boolean(listNews(state, list.id))) };
+  }).filter((entry) => entry.count > 0);
 }
 
 // Une liste prête à afficher : ses articles à acheter groupés par rayon et

@@ -140,15 +140,7 @@ function moveInList(delta) {
   items[next].scrollIntoView({ block: 'nearest' });
   return true;
 }
-// Liste précédente ou suivante, dans l'ordre du menu de gauche
-function goList(delta) {
-  const links = $$('.pc-nav__item');
-  if (!links.length) return;
-  const index = links.findIndex((a) => a.getAttribute('aria-current') === 'page');
-  const target = links[Math.min(links.length - 1, Math.max(0, (index < 0 ? (delta > 0 ? -1 : links.length) : index) + delta))];
-  target?.click();
-}
-// Champ de recherche de l'écran : celui de l'en-tête (liste, Mes listes,
+// Champ de recherche de l'écran : celui de l'en-tête (liste, Listes,
 // aide), sinon celui du menu de gauche
 function focusSearch() {
   const field = [$('.pc-col .pc-head .searchfield__input'), $('.pc-col .help-search input'), $('.pc-side .searchfield__input')].find(visible);
@@ -217,7 +209,10 @@ let spaceHandled = false;
 
 // --- Démarrage ---
 // onUndo : Ctrl+Z (voir app.js : annule dans la liste ouverte)
-export function startShortcuts({ onUndo }) {
+// onGoList(delta) : [ et ], liste précédente ou suivante, dans l'ordre du
+// menu de gauche (pc-side.js : le menu ne nomme plus les listes une à une
+// depuis le 23 novembre 2026, il donne donc lui-même cet ordre)
+export function startShortcuts({ onUndo, onGoList }) {
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
   // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
@@ -284,8 +279,8 @@ export function startShortcuts({ onUndo }) {
       n: () => (navigate('newList'), true),
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
-      '[': () => (goList(-1), true),
-      ']': () => (goList(1), true),
+      '[': () => (onGoList(-1), true),
+      ']': () => (onGoList(1), true),
       p: () => {
         const share = $('.pc-head [data-action="share"]');
         if (!visible(share)) return false;

@@ -525,3 +525,11 @@ Décisions du propriétaire (cahier des charges, « Fiche d'une tâche en sous-p
 
 Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.card.account.account--link`), puis deux `.section-title` (« Général », « Informations ») et leurs `.group` de `.row` sans `.row__sub`. La ligne « À propos » porte à droite `.row__end` (valeur `.row__value` « Version 536d95c », ou `.chip.chip--accent` « Mise à jour » pour l'Admin, puis le chevron) ; style dans `public/css/app.css` (le titre ne passe jamais sur deux lignes, la valeur se réduit). Elle ouvre la page « À propos » (même bloc qu'avant).
 
+
+## Ajout : Accueil et navigation (23 novembre 2026)
+
+Étape 1 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`accueil-1`, `accueil-2`, `pc-accueil-1`, `pc-listes-1`). Styles repris de `accueil-notes/listo-accueil-notes.css`, seulement ce qui sert à cette étape : sections 16.19 à 16.21 de `listo.css` (les numéros des maquettes, 16.19 à 16.27, seront redonnés aux étapes suivantes). Aucune couleur ni variable nouvelle, aucune icône nouvelle (`#i-home`, `#i-user` existaient).
+
+- **Accueil** (16.19) : `.home-head` (bonjour, date, pastille `.sync`) ; `.tiles` de `.card.tile` (`.tile__head`, `.tile__rows`, `.tile__row` avec `.count`, `.count--danger`, `.count--success`, `.tile__dot`, `.tile__row--add`, `.tile__empty`). Un nombre nul reste gris. La cloche (`.icon-btn--badge`) et la tuile Notes viendront aux étapes 2 et 4.
+- **Bandeau du bas** (16.20) : `.tabbar--4` (Accueil, Échéances, Listes, Réglages) ; `data-current` va de 0 à 3. Pas de bandeau sur l'Accueil.
+- **Ordinateur** (16.21) : `.pc-side__main` (entrées fixes Accueil, Échéances, Listes ; remplace `.pc-side__deadlines`) ; « Types » dans `.pc-nav` sur les écrans des listes, avec `.news-badge--dot` ; type de la liste ouverte en `aria-current="true"`, même aspect que le type choisi ; `.pc-head__hello` et `.pc-head__tools` pour l'en-tête de l'Accueil ; tuiles sur trois colonnes (quatre au-delà de 1 440 px). Plus de filtre `.segmented` sur « Listes » à l'ordinateur.

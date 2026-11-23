@@ -31,10 +31,16 @@ test('routeur : chaque adresse mène au bon écran', () => {
   for (const [hash, expected] of cases) assert.deepEqual(matchRoute(hash), expected, hash);
 });
 
-test('routeur : adresse vide, inconnue ou mal encodée → « Mes listes »', () => {
+test('routeur : adresse vide, inconnue ou mal encodée → Accueil (23 novembre 2026) ; #/listes intact', () => {
   for (const hash of ['', '#', '#/', '#/inconnu', '#/listes/a/b/c', '#/listes/%E0%A4%A', undefined]) {
-    assert.deepEqual(matchRoute(hash), { name: 'lists', params: {} }, String(hash));
+    assert.deepEqual(matchRoute(hash), { name: 'home', params: {} }, String(hash));
   }
+  assert.deepEqual(matchRoute('#/accueil'), { name: 'home', params: {} });
+  assert.equal(pathFor('home'), '#/accueil');
+  // Les anciennes adresses mènent toujours à leur écran
+  assert.deepEqual(matchRoute('#/listes'), { name: 'lists', params: {} });
+  assert.deepEqual(matchRoute('#/listes/abc'), { name: 'list', params: { id: 'abc' } });
+  assert.deepEqual(matchRoute('#/echeances'), { name: 'deadlines', params: {} });
 });
 
 test("routeur : fabrication d'une adresse, aller-retour sans perte", () => {

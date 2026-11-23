@@ -9,17 +9,17 @@ Version anglaise : [README.md](README.md)
 - **Listes partagées en direct** : un article coché sur un téléphone l'est sur les autres en quelques secondes ; chaque personne a son droit, « Peut modifier » ou « Lecture seule ».
 - **Trois types de liste** : courses (classées par rayon, ou par magasin pour une tournée), tâches (priorité, échéance, répétition, attribution) et envies (réservation et cotisation, sans que la personne gâtée ne le sache).
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
-- **Hors ligne** : Listo s'ouvre et s'utilise sans réseau ; tout part au retour du réseau.
-- **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu des listes, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
+- **Accueil et hors ligne** : Listo s'ouvre sur des tuiles qui montrent d'un coup d'œil les échéances (en retard, aujourd'hui, plus tard), vos listes par type et votre compte ; il s'ouvre et s'utilise sans réseau, et tout part au retour du réseau.
+- **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu de gauche qui suit l'écran, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
 - **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; les **assistants IA** qui suivent le standard MCP (par exemple Claude, d'Anthropic) peuvent lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord, toujours après votre accord sur un écran « Autoriser un assistant IA », et sans jamais rien supprimer.
 - **Notifications**, facultatives et désactivées par défaut : modifications des autres (regroupées, et tâches qu'on vous attribue), réservations, partage et résumé des échéances chaque matin, sur le téléphone ou l'ordinateur.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/fr/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
 ## En images
 
-| ![« Mes listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
+| ![« Listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
 | :---: | :---: | :---: | :---: | :---: |
-| Mes listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
+| Listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
 | ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Assistants IA » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
 | Envies, réservations | Mode scan | Lien public | « Assistants IA » | Réglages |
 

@@ -7,7 +7,7 @@ import { itemWords } from './words.js';
 import { formatPrice } from './wishes.js';
 import { repeatSentence } from './repeat.js';
 import { isDueTime, isLate, nowTime, timeLabel } from './due-time.js';
-import { t, formatDate, formatTime, formatList } from './i18n.js';
+import { t, formatDate, formatTime, formatList, getLocale, intlTag } from './i18n.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -138,6 +138,14 @@ export function addDays(key, n) {
   const [y, m, d] = key.split('-').map(Number);
   const date = new Date(Date.UTC(y, m - 1, d + n));
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+// Date du jour en toutes lettres, pour l'en-tête de l'Accueil : « Lundi 23
+// novembre » en français, “Monday, November 23” en anglais (première lettre
+// en majuscule dans toutes les langues)
+export function longToday(now = new Date(), { locale = getLocale() } = {}) {
+  const text = formatDate(now, { weekday: 'long', day: 'numeric', month: 'long' }, { locale });
+  return text.charAt(0).toLocaleUpperCase(intlTag(locale)) + text.slice(1);
 }
 
 // « ven. 24 oct. » (et l'année si ce n'est pas l'année en cours), dans la

@@ -4,6 +4,7 @@
 // Tant que l'anglais n'est pas complet (READY_LOCALES), un texte absent
 // d'ici s'affiche en français.
 
+import accueil from './en/accueil.js';
 import administration from './en/administration.js';
 import aide from './en/aide.js';
 import ajout from './en/ajout.js';
@@ -47,6 +48,6 @@ import reseau from './en/reseau.js';
 import scan from './en/scan.js';
 import version from './en/version.js';
 
-export const PARTS = { administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, lienpublic, liens, liste, listes, menu, mots, navigation, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
+export const PARTS = { accueil, administration, aide, ajout, alertes, annulation, application, autorisation, claude, compte, comptes, connexion, corbeille, demarrage, donnees, echeances, fenetres, format, formulaire, icones, lienpublic, liens, liste, listes, menu, mots, navigation, notifications, ops, partage, photo, photos, push, raccourcis, recherche, reference, references, reglages, regles, repetition, reseau, scan, version };
 
 export default Object.assign({}, ...Object.values(PARTS));

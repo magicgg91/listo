@@ -24,7 +24,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 7. [Tests prévus](#7-tests-prévus)
 8. [Découpage en étapes](#8-découpage-en-étapes)
 9. [Maquettes](#9-maquettes)
-10. [Décisions qui restent](#10-décisions-qui-restent)
+10. [Décisions prises le 23 novembre 2026](#10-décisions-prises-le-23-novembre-2026)
 
 ## 1. Navigation
 

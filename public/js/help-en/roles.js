@@ -37,7 +37,7 @@ export default {
       id: 'creer',
       title: "Owner: creating a list",
       blocks: [
-        "On “My lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.",
+        "On “Lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.",
         { ul: [
           "Shopping list: also choose the store. Items are sorted by aisle, or by store for a “Multi” store.",
           "Task list: “Options for items” turns on priority, due date and assignment.",

@@ -1,0 +1,187 @@
+// Écran « Accueil » (#/accueil, premier écran depuis le 23 novembre 2026 ;
+// maquettes design/accueil-notes/accueil-1, accueil-2 et pc-accueil-1) :
+// voir d'un coup d'œil ce qui attend, sans arriver directement sur les
+// listes.
+//
+// - En-tête : « Bonjour Guillaume », la date du jour dans la langue du
+//   compte, la pastille d'état (un appui synchronise). La cloche des
+//   notifications viendra à droite de la pastille avec la page
+//   Notifications (étape 4 du cadrage).
+// - Tuiles, dans un ordre fixe : Échéances, Listes, (Notes, étape 2 du
+//   cadrage), Compte. Deux colonnes sur le téléphone (une sous 340 px),
+//   trois sur ordinateur (quatre au-delà de 1 440 px).
+// - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
+//   (« En retard, 2 tâches »). Le titre d'une tuile ouvre l'écran entier.
+// - Tout vient de la copie locale (aucune demande de plus au serveur) :
+//   l'écran marche hors ligne et se redessine en temps réel, à minuit et à
+//   chaque minute (une tâche du jour passe « En retard » à son heure).
+// - Pas de bandeau du bas ni de loupe sur l'Accueil (décision du 23
+//   novembre 2026) : ses tuiles mènent déjà partout.
+// Rien ici ne donne un droit : chaque écran ouvert revérifie les siens.
+
+import { h, icon, replace } from '../dom.js';
+import { navigate } from '../router.js';
+import { longToday, todayKey } from '../format.js';
+import { TYPE_LABELS } from '../list-types.js';
+import { listCountsByType, saveTypeFilter } from '../store.js';
+import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
+import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
+import { setPcListType } from './pc-side.js';
+import { t } from '../i18n.js';
+
+// --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
+
+// Tuile : carte avec son titre (un bouton qui ouvre l'écran entier) et ses lignes
+function tile(name, iconName, onOpen, rows) {
+  return h('section', { class: 'card tile', 'aria-label': name },
+    h('button', { class: 'tile__head', type: 'button', onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name)),
+    rows);
+}
+
+// Lignes d'une tuile (liste à puces sans puces)
+const rowsOf = (rows) => h('ul', { class: 'tile__rows' }, rows.map((row) => h('li', {}, row)));
+
+// Ligne : libellé, puis (à droite) le point des nouveautés et un nombre, ou
+// un chevron. Le nombre et le point sont cachés aux lecteurs d'écran : ils
+// sont dans le nom lu (label), jamais la couleur seule.
+function row({ label, spoken = null, count = null, tone = '', dot = false, onClick }) {
+  return h('button', { class: 'tile__row', type: 'button', 'aria-label': spoken, onClick },
+    h('span', { class: 'tile__label' }, label),
+    dot ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+    count === null
+      ? icon('chev-r', 'icon--sm')
+      : h('span', { class: `count${tone ? ` count--${tone}` : ''}`, 'aria-hidden': 'true' }, String(count)));
+}
+
+// Ligne d'ajout (« Nouvelle liste ») : fond bleu clair, « + »
+const addRow = (label, onClick) => h('button', { class: 'tile__row tile__row--add', type: 'button', onClick },
+  icon('plus', 'icon--sm'), h('span', { class: 'tile__label' }, label));
+
+const emptyText = (text) => h('p', { class: 'tile__empty' }, text);
+
+// --- Les tuiles ---
+
+// Échéances : « En retard » (rouge), « Aujourd'hui » (vert), « Plus tard »
+// (gris) ; mêmes nombres que l'écran Échéances, avec son choix « Toutes /
+// Les miennes » (deadlines.js). Un nombre nul reste gris.
+function deadlinesTile() {
+  const open = () => navigate('deadlines');
+  const options = { today: todayKey(), mine: effectiveMine(app.data, loadDeadlineScope()), me: app.user.id };
+  const counts = deadlineCounts(app.data, options);
+  // Une ligne ouvre Échéances à sa section (screens/deadlines.js)
+  const openAt = (name) => () => {
+    app.openDeadlines = deadlineSectionFor(app.data, name, options);
+    navigate('deadlines');
+  };
+  const lines = [
+    ['late', t('accueil.echeances.retard'), (count) => t('accueil.echeances.retard.lu', { count }), 'danger'],
+    ['today', t('accueil.echeances.aujourdhui'), (count) => t('accueil.echeances.aujourdhui.lu', { count }), 'success'],
+    ['later', t('accueil.echeances.plusTard'), (count) => t('accueil.echeances.plusTard.lu', { count }), ''],
+  ];
+  const total = counts.late + counts.today + counts.later;
+  return tile(t('accueil.echeances'), 'calendar', open, total === 0
+    ? emptyText(t('accueil.echeances.aucune'))
+    : rowsOf(lines.map(([name, label, spoken, tone]) => row({
+      label,
+      spoken: spoken(counts[name]),
+      count: counts[name],
+      tone: counts[name] ? tone : '',
+      onClick: openAt(name),
+    }))));
+}
+
+// Listes : une ligne par type que la personne a, avec son nombre de listes
+// et le point des nouveautés. Une ligne ouvre « Listes » sur ce type :
+// téléphone, le filtre retenu sur l'appareil ; ordinateur, le type choisi
+// dans le menu de gauche.
+function listsTile(pc) {
+  const pick = (type) => {
+    if (pc) setPcListType(type);
+    else if (type !== null) saveTypeFilter(type);
+  };
+  // Le titre ouvre « Listes » : toutes sur ordinateur (comme l'entrée fixe
+  // du menu), le filtre retenu sur le téléphone (comme le bandeau du bas)
+  const open = () => {
+    pick(pc ? 'all' : null);
+    navigate('lists');
+  };
+  const types = listCountsByType(app.data);
+  return tile(t('accueil.listes'), 'tasks', open, types.length === 0
+    ? [emptyText(t('accueil.listes.aucune')), rowsOf([addRow(t('accueil.listes.nouvelle'), () => navigate('newList'))])]
+    : rowsOf(types.map(({ type, count, news }) => row({
+      label: TYPE_LABELS[type],
+      spoken: news ? t('listes.type.lu.nouveautes', { type: TYPE_LABELS[type], count }) : t('listes.type.lu', { type: TYPE_LABELS[type], count }),
+      count,
+      dot: news,
+      onClick: () => {
+        pick(type);
+        navigate('lists');
+      },
+    }))));
+}
+
+// Compte : « Mon compte », « Notifications » (Réglages › Notifications, en
+// attendant la page Notifications de l'étape 4), « Réglages » ; pour
+// l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
+// le fournisseur d'identité, LISTO_OIDC=on : nombre donné par /api/me). Le
+// nombre de notifications non lues ne sera que sur la cloche.
+function accountTile() {
+  const requests = app.user.role === 'admin' ? app.user.accountRequests ?? 0 : 0;
+  return tile(t('accueil.compte'), 'user', () => navigate('account'), rowsOf([
+    row({ label: t('accueil.compte.monCompte'), onClick: () => navigate('account') }),
+    row({ label: t('accueil.compte.notifications'), onClick: () => navigate('notifications') }),
+    row({ label: t('accueil.compte.reglages'), onClick: () => navigate('settings') }),
+    requests > 0 ? row({
+      label: t('accueil.compte.demandes'),
+      spoken: t('accueil.compte.demandes.lu', { count: requests }),
+      count: requests,
+      onClick: () => navigate('admin', { tab: 'comptes' }),
+    }) : null,
+  ].filter(Boolean)));
+}
+
+// --- Écran ---
+
+export function renderHome(onLeave) {
+  const pc = isDesktop();
+  const tiles = h('div', { class: 'tiles' });
+  const content = h('div', { class: 'scroll' }, tiles);
+  const date = h('p', { class: pc ? 'pc-head__sub' : 'home-head__date' });
+
+  const draw = () => {
+    date.textContent = longToday();
+    if (!app.data.loaded) {
+      replace(tiles, h('p', { class: 'empty muted', role: 'status' }, t('accueil.chargement')));
+      return;
+    }
+    // Ordre fixe : Échéances, Listes, puis Notes et Compte. La tuile Notes
+    // (étape 2 du cadrage) se placera entre Listes et Compte ; en attendant,
+    // Compte prend sa place.
+    replace(tiles, deadlinesTile(), listsTile(pc), accountTile());
+  };
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
+  onLeave(watchNewDay(draw));
+  onLeave(watchMinute(() => idle.request()));
+  draw();
+  refreshData({ quiet: true });
+
+  const hello = t('accueil.bonjour', { name: app.user.displayName ?? '' });
+  const pill = syncPill(() => refreshData({ full: true }));
+  // (étape 4 du cadrage : la cloche « Notifications » se placera ici, après la pastille)
+  if (pc) {
+    return h('div', { class: 'screen' },
+      h('header', { class: 'pc-head' },
+        h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__hello' }, hello), date),
+        h('div', { class: 'pc-head__tools' }, pill)),
+      offlineBanner(),
+      content);
+  }
+  return h('div', { class: 'screen' },
+    h('header', { class: 'home-head' },
+      h('h1', { class: 'home-head__hello' }, hello),
+      h('div', { class: 'home-head__line' }, date, h('div', { class: 'home-head__tools' }, pill))),
+    content);
+}

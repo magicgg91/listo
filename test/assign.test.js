@@ -346,9 +346,11 @@ test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prén
   const page = read('public/js/public.js') + read('public/js/format.js');
   assert.doesNotMatch(page, /assignedTo|assign/);
   assert.doesNotMatch(read('server/routes/public.js'), /assigned_to|assignedTo|assign_enabled/);
-  const deadlines = read('public/js/screens/deadlines.js');
-  assert.match(deadlines, /const SCOPE_KEY = 'listo-echeances-miennes';/);
-  assert.match(deadlines, /const offered = \[\.\.\.app\.data\.lists\.values\(\)\]\.some\(\(list\) => listOptions\(list\)\.assign\);/);
+  // Choix « Toutes / Les miennes » : règles dans deadlines.js, partagées
+  // avec la tuile « Échéances » de l'Accueil (23 novembre 2026)
+  assert.match(read('public/js/deadlines.js'), /export const SCOPE_KEY = 'listo-echeances-miennes';/);
+  assert.match(read('public/js/deadlines.js'), /export const scopeOffered = \(state\) => \[\.\.\.state\.lists\.values\(\)\]\.some\(\(list\) => listOptions\(list\)\.assign\);/);
+  assert.match(read('public/js/screens/deadlines.js'), /const offered = scopeOffered\(app\.data\);/);
   for (const file of ['public/js/screens/list.js', 'public/js/screens/deadlines.js', 'public/js/screens/list-form.js', 'public/js/deadlines.js', 'public/js/sorting.js']) {
     assert.doesNotMatch(read(file).replace(/\/\/.*$/gm, ''), /innerHTML|outerHTML|insertAdjacentHTML/, file);
   }

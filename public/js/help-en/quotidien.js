@@ -128,8 +128,8 @@ export default {
       title: 'Groups, sorting and counter',
       blocks: [{ ul: [
         'Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([[sous-taches]]).',
-        '“My lists” can be sorted by date or alphabetically (button at the top).',
-        'Under the “My lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone.',
+        '“Lists” can be sorted by date or alphabetically (button at the top).',
+        'On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([[ordinateur]]).',
         'In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.',
         'In a task list, “Sort list” offers “Alphabetical”, “By priority”, “By due date” and “By person”, depending on the list\'s options.',
         'The sorting you choose applies only to you, on this phone: it changes nothing for the others, and it is allowed with read-only access.',
@@ -142,7 +142,7 @@ export default {
       blocks: [{ ul: [
         'Tap the round magnifying glass, at the bottom right: the field opens under the title, ready to type in, and does not move when the keyboard opens. In a list, it floats above the add bar, and hides while you type in it.',
         'In a list, “Search this list” searches item names, not notes. The add bar hides during the search.',
-        'On “My lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.',
+        'On “Lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.',
         'On “Due”, “Search tasks” searches task names.',
         'Capital letters and accents do not matter: ‘eclair’ finds ‘Éclair’. The text found is highlighted, and the number of results is shown.',
         'Checked items that are found stay visible, crossed out, in “In the cart”. You can check, open or delete an item from the results.',
@@ -152,9 +152,16 @@ export default {
     },
     {
       id: 'echeances',
-      title: 'Getting around, Due',
+      title: 'Getting around: Home, Due',
       blocks: [
-        'On the phone, the bar at the bottom leads to the three main screens: “My lists”, “Due” and “Settings”. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “My lists”.',
+        'Listo opens on “Home”: ‘Hello’ and your first name, today\'s date and the status badge, then tiles that show at a glance what is waiting. They work offline and update by themselves.',
+        { ul: [
+          '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
+          '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
+          '“Account” tile: “My account”, “Notifications” (the notification settings) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
+          'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
+        ] },
+        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists” and “Settings”. It is not on Home, whose tiles already lead everywhere. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
         { ul: [
           '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.',
           'Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([[repeter]]). Tap the row to open the task in its list.',
@@ -184,7 +191,7 @@ export default {
       title: 'What\'s new',
       blocks: [{ ul: [
         'In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.',
-        'On “My lists”, a badge on the card\'s icon gives the number of new updates (“30+” after more than a month away).',
+        'On “Lists”, a badge on the card\'s icon gives the number of new updates (“30+” after more than a month away).',
         'In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.',
         'List menu ⋮: “Hide what\'s new in this list”, then “Show what\'s new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list\'s notifications ([[notif-silencer]]).',
         'Settings, “Notifications”, “In the app” part: “What\'s new” turns off all of it; “Include checked items” (shown only when “What\'s new” is on) adds what the others check or uncheck.',
@@ -219,7 +226,8 @@ export default {
       blocks: [
         'In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.',
         { ul: [
-          'On the left, the menu: “Search lists”, “Due”, your lists grouped by type (Shopping, Tasks, Wishes) with their counter, “New list”, your account and Settings. The logo takes you back to “My lists”.',
+          'On the left, the menu: “Search lists”, then “Home”, “Due” and “Lists” (with the number of lists), and at the bottom “New list”, your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.',
+          'The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
           'On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
           'An item\'s details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.',
           '“Share list” brings together the people on the list and the public link. The owner chooses each person\'s access there, adds or removes people, and manages the link; the other members only see the list of people there.',

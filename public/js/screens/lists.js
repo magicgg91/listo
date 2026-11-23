@@ -1,6 +1,8 @@
-// Écran « Mes listes » (maquettes mes-listes-1 à 3, refaites le 11 novembre
-// 2026 ; ordinateur : design/maquettes/pc-A, capture 01) : une carte par
-// liste, la plus récemment active en premier, et « Nouvelle liste ».
+// Écran « Listes » (« Mes listes » jusqu'au 23 novembre 2026 ; maquettes
+// mes-listes-1 à 3, refaites le 11 novembre 2026 ; ordinateur :
+// design/maquettes/pc-A, capture 01, et design/accueil-notes/pc-listes-1) :
+// une carte par liste, la plus récemment active en premier, et « Nouvelle
+// liste ».
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { LIST_TYPES, TYPE_LABELS, typeOf } from '../list-types.js';
@@ -15,6 +17,7 @@ import { syncPill, toast, drawWhenIdle, openMenu, offlineBanner } from '../ui.js
 import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
+import { pcListType } from './pc-side.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 import { t } from '../i18n.js';
 
@@ -30,7 +33,7 @@ export function hasPublicLink(list, now = Date.now()) {
 // coin : un appui sur ce bouton ouvre le menu sans ouvrir la liste. Les
 // actions sont les mêmes que dans le menu ⋮ de la liste (list-actions.js) ;
 // après « Modifier la liste » ou le partage, on revient ici.
-// query : texte cherché (recherche de « Mes listes »), mis en évidence dans
+// query : texte cherché (recherche de « Listes »), mis en évidence dans
 // le titre.
 export function listCard(list, { selected = false, query = '' } = {}) {
   const card = cardLink(list, { selected, query });
@@ -166,7 +169,7 @@ function sortControl(onChange) {
   return { button, status, setCount: (count) => { button.hidden = count < 2; } };
 }
 
-// --- Écran « Mes listes » (téléphone) ---
+// --- Écran « Listes » (téléphone) ---
 // Barre du haut : titre, pastille d'état, tri, et « + » (Nouvelle liste).
 // Dessous : le filtre des types (Toutes, Courses, Tâches, Envies), en
 // verre, retenu sur ce téléphone. Recherche : la loupe ronde du bandeau du
@@ -286,46 +289,41 @@ export function renderLists(onLeave) {
     content);
 }
 
-// --- Écran « Mes listes » (ordinateur, design/maquettes/pc-A, capture 01) ---
-// En-tête : titre, « 6 listes · 4 partagées », champ « Rechercher une
-// liste » toujours visible ; outils : filtre par type (Toutes, Courses,
-// Tâches, Envies), pastille d'état, tri ; puis les cartes, groupées par type
-// sur deux colonnes (ou plus, selon la largeur). « Nouvelle liste » est dans
-// le menu de gauche. Filtre, tri et recherche : une simple vue sur la copie
+// --- Écran « Listes » (ordinateur, design/maquettes/pc-A, capture 01 ;
+// design/accueil-notes/pc-listes-1) ---
+// Le type se choisit dans le menu de gauche (décision du 23 novembre 2026,
+// pc-side.js) : plus de filtre « Toutes / Courses / Tâches / Envies » ici.
+// - Toutes les listes (entrée fixe « Listes ») : titre « Listes », « 6 listes
+//   · 4 partagées », cartes groupées par type ;
+// - un type choisi : titre du type (« Courses »), « 3 listes · 2
+//   partagées », seulement ses listes, sans groupe.
+// En-tête : champ « Rechercher une liste » toujours visible (il cherche dans
+// le type choisi) ; outils : pastille d'état, tri ; puis les cartes, sur deux
+// colonnes (ou plus, selon la largeur). « Nouvelle liste » est en bas du
+// menu de gauche. Type, tri et recherche : une simple vue sur la copie
 // locale (ni données, ni file d'attente touchées).
-let pcFilter = 'all';
 function renderListsPc(onLeave) {
   const content = h('div', { class: 'scroll' });
   const sorter = sortControl(() => draw());
+  const title = h('h1', { class: 'pc-head__title' }, t('listes.titre'));
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, { label: t('listes.recherche.libelle'), onChange: () => draw(), docked: true });
   search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
   search.field.append(keycap('/'));
 
-  // Filtre par type : un choix exclusif (radiogroup), « Toutes » au départ
-  const filters = [['all', t('listes.filtre.toutes')], ...LIST_TYPES.map((type) => [type, TYPE_LABELS[type]])];
-  const filterButtons = filters.map(([value, label]) => h('button', {
-    class: 'segmented__opt',
-    type: 'button',
-    role: 'radio',
-    'data-value': value,
-    onClick: () => {
-      pcFilter = value;
-      draw();
-    },
-  }, label));
-  const filterBar = h('div', { class: 'segmented pc-filter', role: 'radiogroup', 'aria-label': t('listes.filtre.libelle') }, filterButtons);
-
   const draw = () => {
-    for (const button of filterButtons) button.setAttribute('aria-checked', String(button.dataset.value === pcFilter));
     if (!app.data.loaded) {
       search.show(loading());
       return;
     }
-    const lists = computeSummaries(app.data, { sort: currentSort() });
-    sorter.setCount(lists.length);
-    pruneListMemory(lists.map((list) => list.id));
+    const all = computeSummaries(app.data, { sort: currentSort() });
+    sorter.setCount(all.length);
+    pruneListMemory(all.map((list) => list.id)); // tri et groupes repliés des listes disparues : oubliés
+    // Type choisi dans le menu ; plus aucune liste de ce type : toutes
+    const type = all.some((list) => typeOf(list) === pcListType()) ? pcListType() : 'all';
+    const lists = type === 'all' ? all : all.filter((list) => typeOf(list) === type);
+    title.textContent = type === 'all' ? t('listes.titre') : TYPE_LABELS[type];
     const shared = lists.filter((list) => list.members.filter((m) => m.active || m.isOwner).length > 1).length;
     sub.textContent = lists.length ? t('listes.pc.resume', { lists: listsLabel(lists.length), count: shared }) : '';
     if (!lists.length) {
@@ -335,20 +333,23 @@ function renderListsPc(onLeave) {
     }
     const query = search.value;
     const searching = isSearching(query);
-    const found = (searching ? filterLists(lists, query) : lists).filter((list) => pcFilter === 'all' || typeOf(list) === pcFilter);
+    const found = searching ? filterLists(lists, query) : lists;
     searchMeta.textContent = searching ? listsLabel(found.length) : '';
     if (!found.length) {
-      search.show(searching ? noListsPc(query, search) : h('div', { class: 'empty' },
-        h('h2', { class: 'empty__title' }, t('listes.filtre.aucune.titre')),
-        h('p', { class: 'empty__text' }, t('listes.filtre.aucune.texte'))));
+      search.show(noListsPc(query, search, type));
       return;
     }
-    search.show(LIST_TYPES.map((type) => {
-      const ofType = found.filter((list) => typeOf(list) === type);
+    const cards = (ofType) => h('div', { class: 'pc-cards' }, ofType.map((list) => listCard(list, { query: searching ? query : '' })));
+    if (type !== 'all') {
+      search.show(cards(found));
+      return;
+    }
+    search.show(LIST_TYPES.map((listType) => {
+      const ofType = found.filter((list) => typeOf(list) === listType);
       if (!ofType.length) return null;
       return h('section', {},
-        h('h2', { class: 'pc-section-title' }, TYPE_LABELS[type]),
-        h('div', { class: 'pc-cards' }, ofType.map((list) => listCard(list, { query: searching ? query : '' }))));
+        h('h2', { class: 'pc-section-title' }, TYPE_LABELS[listType]),
+        cards(ofType));
     }));
   };
   const idle = drawWhenIdle(content, draw);
@@ -359,10 +360,9 @@ function renderListsPc(onLeave) {
 
   return h('div', { class: 'screen' },
     h('header', { class: 'pc-head' },
-      h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('listes.titre')), sub),
+      h('div', { class: 'pc-head__main' }, title, sub),
       search.field),
     h('div', { class: 'pc-tools' },
-      filterBar,
       searchMeta,
       h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sorter.button)),
     sorter.status,
@@ -370,12 +370,15 @@ function renderListsPc(onLeave) {
     content);
 }
 
-// Aucune liste trouvée (ordinateur) : message et « Effacer la recherche »
-function noListsPc(query, search) {
+// Aucune liste trouvée (ordinateur) : message (dans le type choisi) et
+// « Effacer la recherche »
+function noListsPc(query, search, type) {
   return h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
     h('h2', { class: 'empty__title' }, t('listes.recherche.aucunResultat')),
-    h('p', { class: 'empty__text' }, t('listes.recherche.aucune', { query: query.trim() })),
+    h('p', { class: 'empty__text' }, type === 'all'
+      ? t('listes.recherche.aucune', { query: query.trim() })
+      : t('listes.recherche.aucune.type', { query: query.trim(), type: TYPE_LABELS[type] })),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',

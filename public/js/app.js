@@ -19,6 +19,7 @@ import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
 import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
+import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
 import { tabBar, hasTabs } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
@@ -59,6 +60,7 @@ export const app = {
   route: null,
   afterLogin: null,      // écran demandé avant la connexion
   openItem: null,        // { listId, itemId } : fiche à ouvrir en arrivant dans la liste (Échéances)
+  openDeadlines: null,   // section d'Échéances à montrer en arrivant (ligne de la tuile de l'Accueil)
 };
 
 // Abonnements aux changements de données (les écrans se redessinent)
@@ -454,7 +456,8 @@ export function loggedIn(user) {
     goLive();
     resyncPush(user); // notifications : abonnement rendu au serveur si besoin
   });
-  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'lists', params: {} };
+  // Écran demandé avant la connexion (lien direct), sinon l'Accueil
+  const next = app.afterLogin && app.afterLogin.name !== 'login' ? app.afterLogin : { name: 'home', params: {} };
   app.afterLogin = null;
   navigate(next.name, next.params, { replace: true });
 }
@@ -557,6 +560,8 @@ startShortcuts({
       update: (item, changes) => actions.updateItem(item, changes),
     }));
   },
+  // [ et ] : liste précédente ou suivante, dans l'ordre du menu de gauche
+  onGoList: (delta) => pcSide?.goList(delta),
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -618,9 +623,9 @@ function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
     screenShown(col);
     return;
   }
-  // Téléphone : bandeau du bas sur « Mes listes », « Échéances » et
-  // « Réglages » (tabbar.js), toujours le même élément, posé en bas de la
-  // colonne (au-dessus de l'écran, sous les fenêtres)
+  // Téléphone : bandeau du bas sur « Échéances », « Listes » et
+  // « Réglages », pas sur l'Accueil (tabbar.js), toujours le même élément,
+  // posé en bas de la colonne (au-dessus de l'écran, sous les fenêtres)
   if (bar) {
     col.classList.add('shell__col--tabs');
     col.append(tabBar().el);
@@ -704,7 +709,7 @@ function show(route) {
 
   const { name, params } = route;
   if (name === 'login') {
-    navigate('lists', {}, { replace: true });
+    navigate('home', {}, { replace: true });
     return;
   }
   if (name === 'admin' && app.user.role !== 'admin') {
@@ -713,11 +718,14 @@ function show(route) {
   }
 
   switch (name) {
+    // Accueil : premier écran (décision du 23 novembre 2026), colonne large
+    // sur ordinateur (tuiles sur trois colonnes)
+    case 'home': mount((onLeave) => renderHome(onLeave), { wide: true }); break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
-    // l'écran en cours (ou sur « Mes listes », sur la liste à modifier)
+    // l'écran en cours (ou sur « Listes », sur la liste à modifier)
     case 'newList':
       if (isDesktop()) {
         if (!mountedOnPc) mount((onLeave) => renderLists(onLeave));
@@ -757,7 +765,7 @@ function show(route) {
       break;
     // Ancienne adresse (#/reglages/claude) : remplacée par la nouvelle
     case 'oldClaudeConnections': navigate('claudeConnections', {}, { replace: true }); break;
-    default: navigate('lists', {}, { replace: true });
+    default: navigate('home', {}, { replace: true });
   }
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran
   freshness.retry();

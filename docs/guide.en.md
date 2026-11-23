@@ -78,7 +78,7 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [5.8 Add a photo](#photo)
 - [5.9 Groups, sorting and counter](#tri)
 - [5.10 Search](#recherche)
-- [5.11 Getting around, Due](#echeances)
+- [5.11 Getting around: Home, Due](#echeances)
 - [5.12 Reserve a wish, chip in](#reserver)
 - [5.13 What's new](#nouveautes)
 - [5.14 Offline and sync](#hors-ligne)
@@ -693,7 +693,7 @@ In a task list, the owner turns on “Assignment” in “Options for items” (
 
 - On the row, a badge says whose task it is: “Me” (in blue) or the first name.
 - “Sort list”, “By person”: the tasks of “Me” first, then those of each person, then those of “Nobody”.
-- “Due” offers “All” or “Mine” ([5.11 Getting around, Due](#echeances)).
+- “Due” offers “All” or “Mine” ([5.11 Getting around: Home, Due](#echeances)).
 - A repeating task keeps the same person when it comes back (except with “Take turns…”).
 - If the person leaves the list, is removed from it or is switched to “Read only”, their tasks go back to “Nobody” (with several people or taking turns: they are removed from the group or from the rotation; if only one person is left, the task is theirs alone).
 - The public link never shows whose task it is.
@@ -751,8 +751,8 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 ### 5.9 Groups, sorting and counter
 
 - Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([5.18 Subtasks](#sous-taches)).
-- “My lists” can be sorted by date or alphabetically (button at the top).
-- Under the “My lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone.
+- “Lists” can be sorted by date or alphabetically (button at the top).
+- On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([5.17 On a computer](#ordinateur)).
 - In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.
 - In a task list, “Sort list” offers “Alphabetical”, “By priority”, “By due date” and “By person”, depending on the list's options.
 - The sorting you choose applies only to you, on this phone: it changes nothing for the others, and it is allowed with read-only access.
@@ -764,7 +764,7 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 - Tap the round magnifying glass, at the bottom right: the field opens under the title, ready to type in, and does not move when the keyboard opens. In a list, it floats above the add bar, and hides while you type in it.
 - In a list, “Search this list” searches item names, not notes. The add bar hides during the search.
-- On “My lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.
+- On “Lists”, “Search lists” searches the titles of the lists of the chosen type (“All” to see everything), including those shared with you.
 - On “Due”, “Search tasks” searches task names.
 - Capital letters and accents do not matter: ‘eclair’ finds ‘Éclair’. The text found is highlighted, and the number of results is shown.
 - Checked items that are found stay visible, crossed out, in “In the cart”. You can check, open or delete an item from the results.
@@ -773,9 +773,16 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 <a id="echeances"></a>
 
-### 5.11 Getting around, Due
+### 5.11 Getting around: Home, Due
 
-On the phone, the bar at the bottom leads to the three main screens: “My lists”, “Due” and “Settings”. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “My lists”.
+Listo opens on “Home”: ‘Hello’ and your first name, today's date and the status badge, then tiles that show at a glance what is waiting. They work offline and update by themselves.
+
+- “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
+- “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
+- “Account” tile: “My account”, “Notifications” (the notification settings) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
+- A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
+
+On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists” and “Settings”. It is not on Home, whose tiles already lead everywhere. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
 - “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
@@ -801,7 +808,7 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 ### 5.13 What's new
 
 - In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.
-- On “My lists”, a badge on the card's icon gives the number of new updates (“30+” after more than a month away).
+- On “Lists”, a badge on the card's icon gives the number of new updates (“30+” after more than a month away).
 - In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.
 - List menu ⋮: “Hide what's new in this list”, then “Show what's new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list's notifications ([6.4 Turning off notifications for a list](#notif-silencer)).
 - Settings, “Notifications”, “In the app” part: “What's new” turns off all of it; “Include checked items” (shown only when “What's new” is on) adds what the others check or uncheck.
@@ -837,7 +844,8 @@ The names of lists, items, aisles and stores are not translated: they are your d
 
 In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.
 
-- On the left, the menu: “Search lists”, “Due”, your lists grouped by type (Shopping, Tasks, Wishes) with their counter, “New list”, your account and Settings. The logo takes you back to “My lists”.
+- On the left, the menu: “Search lists”, then “Home”, “Due” and “Lists” (with the number of lists), and at the bottom “New list”, your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.
+- The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
 - An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
 - “Share list” brings together the people on the list and the public link. The owner chooses each person's access there, adds or removes people, and manages the link; the other members only see the list of people there.
@@ -890,7 +898,7 @@ In a task list, the owner turns on “Subtasks” in “Options for items” ([7
 - Subtasks keep the order chosen by hand, whatever the list's sorting: to start with, the order in which they were added (a new one goes at the end). To change it: expand the main task and tap the two arrows to the right of “Add a subtask” (“Reorder”). Drag a subtask by its handle (the three lines on the left), or tap “Move … up” and “Move … down”; “Done” closes the mode. Each move is saved right away, offline included; if two people move things at the same time, the last move wins.
 - Checked subtasks stay in their place, crossed out: you can see how far along you are. A checked main task goes to “Done” with its subtasks. “Remove done items” does not remove the checked subtasks of a main task that is still to do.
 - Deleting a main task also deletes its subtasks; “Undo” brings them all back.
-- The search also finds subtasks: they are shown under their main task. In “Due” ([5.11 Getting around, Due](#echeances)), a subtask shows the name of its main task. The public link shows subtasks under their main task, read only.
+- The search also finds subtasks: they are shown under their main task. In “Due” ([5.11 Getting around: Home, Due](#echeances)), a subtask shows the name of its main task. The public link shows subtasks under their main task, read only.
 - Turning off “Subtasks” erases nothing: the tasks are shown in one flat list, and are grouped again if the option comes back. A duplicated list keeps its subtasks.
 
 <a id="notifications"></a>
@@ -1040,7 +1048,7 @@ Settings, “Administration” (visible only to an Admin).
 
 ### 7.2 Owner: creating a list
 
-On “My lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.
+On “Lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.
 
 - Shopping list: also choose the store. Items are sorted by aisle, or by store for a “Multi” store.
 - Task list: “Options for items” turns on priority, due date and assignment.

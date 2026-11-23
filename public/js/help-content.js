@@ -662,8 +662,8 @@ export const GUIDE = [
         title: 'Groupes, tri et compteur',
         blocks: [{ ul: [
           'Touchez l\'en-tête d\'un rayon (ou d\'un magasin, ou d\'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([[sous-taches]]).',
-          '« Mes listes » se trie par date ou par ordre alphabétique (bouton en haut).',
-          'Sous le titre de « Mes listes », « Toutes », « Courses », « Tâches » ou « Envies » n\'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone.',
+          '« Listes » se trie par date ou par ordre alphabétique (bouton en haut).',
+          'Sur le téléphone, sous le titre de « Listes », « Toutes », « Courses », « Tâches » ou « Envies » n\'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone. Sur ordinateur, le type se choisit dans le menu de gauche ([[ordinateur]]).',
           'Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.',
           'Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité », « Par échéance » et « Par personne », selon les options de la liste.',
           'Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.',
@@ -676,7 +676,7 @@ export const GUIDE = [
         blocks: [{ ul: [
           'Touchez la loupe ronde, en bas à droite : le champ s\'ouvre sous le titre, prêt à écrire, et ne bouge pas quand le clavier s\'ouvre. Dans une liste, elle flotte au-dessus de la barre d\'ajout, et se cache pendant que vous y écrivez.',
           'Dans une liste, « Rechercher dans la liste » cherche dans le nom des articles, pas dans les notes. La barre d\'ajout se cache pendant la recherche.',
-          'Sur « Mes listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.',
+          'Sur « Listes », « Rechercher une liste » cherche dans le titre des listes du type choisi (« Toutes » pour tout voir), celles partagées avec vous comprises.',
           'Sur « Échéances », « Rechercher une tâche » cherche dans le nom des tâches.',
           'Majuscules et accents ne comptent pas : “eclair” trouve “Éclair”. Le texte trouvé est surligné, et le nombre de résultats s\'affiche.',
           'Les articles cochés trouvés restent visibles, barrés, dans « Dans le panier ». Vous pouvez cocher, ouvrir ou supprimer un article depuis les résultats.',
@@ -686,9 +686,16 @@ export const GUIDE = [
       },
       {
         id: 'echeances',
-        title: 'Se déplacer, Échéances',
+        title: 'Se déplacer : Accueil, Échéances',
         blocks: [
-          'Sur le téléphone, le bandeau du bas mène aux trois écrans principaux : « Mes listes », « Échéances » et « Réglages ». La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Mes listes ».',
+          'Listo s\'ouvre sur l\'« Accueil » : « Bonjour » et votre prénom, la date du jour et la pastille d\'état, puis des tuiles qui montrent d\'un coup d\'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.',
+          { ul: [
+            'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
+            'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
+            'Tuile « Compte » : « Mon compte », « Notifications » (les réglages des notifications) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
+            'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
+          ] },
+          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes » et « Réglages ». Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
@@ -718,7 +725,7 @@ export const GUIDE = [
         title: 'Nouveautés',
         blocks: [{ ul: [
           'Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.',
-          'Sur « Mes listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (“30+” après plus d\'un mois d\'absence).',
+          'Sur « Listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (“30+” après plus d\'un mois d\'absence).',
           'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
           'Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C\'est indépendant des notifications de la liste ([[notif-silencer]]).',
           'Réglages, « Notifications », partie « Dans l\'application » : « Nouveautés » désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
@@ -753,7 +760,8 @@ export const GUIDE = [
         blocks: [
           'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
           { ul: [
-            'À gauche, le menu : « Rechercher une liste », « Échéances », vos listes groupées par type (Courses, Tâches, Envies) avec leur compteur, « Nouvelle liste », votre compte et Réglages. Le logo ramène à « Mes listes ».',
+            'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances » et « Listes » (avec le nombre de listes), et en bas « Nouvelle liste », votre compte et Réglages. Le logo ramène à l\'« Accueil ». Les tuiles de l\'Accueil y sont sur trois colonnes.',
+            'Le menu suit l\'écran : sur « Listes » et dans une liste, il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
             'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l\'un au-dessus de l\'autre ; sur un écran tactile, ils restent affichés.',
             'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
             '« Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.',
@@ -951,7 +959,7 @@ export const GUIDE = [
         id: 'creer',
         title: 'Propriétaire : créer une liste',
         blocks: [
-          'Sur « Mes listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.',
+          'Sur « Listes », touchez « + » en haut à droite (sur ordinateur : « Nouvelle liste »). Donnez un titre, choisissez le type de liste (« Courses », « Tâches » ou « Envies ») et une icône.',
           { ul: [
             'Liste de courses : choisissez aussi le magasin. Les articles sont classés par rayon, ou par magasin pour un magasin « Multi ».',
             'Liste de tâches : « Options des éléments » active la priorité, l\'échéance et l\'attribution.',

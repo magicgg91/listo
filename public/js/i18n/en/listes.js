@@ -29,8 +29,13 @@ export default {
   'listes.recherche.effacer': 'Clear search',
 
   // Barre du haut
-  'listes.titre': 'My lists',
+  'listes.titre': 'Lists',
   'listes.nouvelle': 'New list',
+
+  // Un type et son nombre de listes (tuile « Listes » de l'Accueil, types
+  // du menu de gauche de l'ordinateur)
+  'listes.type.lu': { one: '{type}, {count} list', other: '{type}, {count} lists' },
+  'listes.type.lu.nouveautes': { one: '{type}, {count} list, new updates', other: '{type}, {count} lists, new updates' },
 
   // Ordinateur : « 6 listes · 4 partagées »
   'listes.pc.resume': {

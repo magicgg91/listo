@@ -9,17 +9,17 @@ Version française : [README.fr.md](README.fr.md)
 - **Lists shared live**: an item checked on one phone is checked on the others within seconds; each person has their own right, “Can edit” or “Read only”.
 - **Three types of list**: shopping (sorted by aisle, or by store for a round of shops), tasks (priority, due date, repeat, assignment) and wishes (reserving and chipping in, without the person being spoiled knowing).
 - **Quick entry**: several items at once, quantity read from the name, barcode scanning, photos.
-- **Offline**: Listo opens and works without a network; everything is sent when the network comes back.
-- **On a computer** (window at least 1,024 px wide): two areas (list menu, open list), item details and sharing in a panel, keyboard shortcuts (“?” lists them; they can be turned off) and Ctrl+Z to undo a deletion, a check or an edit. On the phone, nothing changes.
+- **Home and offline**: Listo opens on tiles that show at a glance your due tasks (overdue, today, later), your lists by type and your account; it opens and works without a network, and everything is sent when the network comes back.
+- **On a computer** (window at least 1,024 px wide): two areas (a menu on the left that follows the screen, open list), item details and sharing in a panel, keyboard shortcuts (“?” lists them; they can be turned off) and Ctrl+Z to undo a deletion, a check or an edit. On the phone, nothing changes.
 - **Public link** to show a list to someone without an account, **trash** kept for 30 days; **AI assistants** that follow the MCP standard (for example Claude, by Anthropic) can read your lists and, if you allow it, write to them, with two levels of permission, always after you approve on an “Authorize an AI assistant” screen, and without ever deleting anything.
 - **Notifications**, optional and off by default: other people's changes (grouped, plus tasks assigned to you), reservations, sharing and a due-date summary every morning, on the phone or the computer.
 - **Security**: two-factor authentication, nightly backup, rights checked by the server. **A single numbered guide**, the same in the app (Settings › Help), online at **<https://magicgg91.github.io/listo/>** (in French: <https://magicgg91.github.io/listo/fr/>) and in the repository: [docs/guide.en.md](docs/guide.en.md).
 
 ## Screenshots
 
-| ![“My lists”: type filter, four lists with their icon and the count of remaining items, bottom bar](docs/images/accueil.png) | ![Shopping list sorted by aisle, with quantities and a photo](docs/images/liste-courses.png) | ![Checked items, struck through, grouped at the bottom in “In the cart”](docs/images/liste-courses-cochee.png) | ![Task list with priority and due date](docs/images/liste-taches.png) | ![“Due”: the tasks to do from every list, overdue, today, tomorrow, this week, later](docs/images/echeances.png) |
+| ![“Lists”: type filter, four lists with their icon and the count of remaining items, bottom bar](docs/images/accueil.png) | ![Shopping list sorted by aisle, with quantities and a photo](docs/images/liste-courses.png) | ![Checked items, struck through, grouped at the bottom in “In the cart”](docs/images/liste-courses-cochee.png) | ![Task list with priority and due date](docs/images/liste-taches.png) | ![“Due”: the tasks to do from every list, overdue, today, tomorrow, this week, later](docs/images/echeances.png) |
 | :---: | :---: | :---: | :---: | :---: |
-| My lists | Shopping by aisle | “In the cart” | Tasks | “Due” |
+| Lists | Shopping by aisle | “In the cart” | Tasks | “Due” |
 | ![Wish list seen by the person giving: price, priority, reservation, chipping in](docs/images/liste-envies.png) | ![Scan mode: the product found from its barcode](docs/images/mode-scan.png) | ![Public page of a list, read only, opened without an account](docs/images/page-publique.png) | ![“AI assistants” screen: address to enter and authorized connection](docs/images/connexions-claude.png) | ![Settings screen](docs/images/reglages.png) |
 | Wishes, reservations | Scan mode | Public link | “AI assistants” | Settings |
 

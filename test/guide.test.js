@@ -299,11 +299,21 @@ test('pages publiques autonomes : rien chargé d\'ailleurs, pas de noindex (choi
   assert.match(read('README.md'), /https:\/\/magicgg91\.github\.io\/listo\/fr\//);
 });
 
-test('workflow GitHub Pages : publie site/ seulement, à chaque fusion sur main, actions officielles épinglées, permissions minimales, aucun secret', () => {
+test('workflow GitHub Pages : publie site/ seulement, à chaque fusion sur main, en deux travaux (préparer, publier), actions officielles épinglées, permissions minimales, aucun secret', () => {
   const wf = read('.github/workflows/pages.yml');
   assert.match(wf, /on:\n  push:\n    branches: \[main\]/);
   assert.match(wf, /^permissions: \{\}$/m);
-  assert.match(wf, /permissions:\n      contents: read[^\n]*\n      pages: write[^\n]*\n      id-token: write/);
+  // Deux travaux : « build » lit le dépôt seulement, « deploy » publie
+  // seulement (sans lire le dépôt)
+  assert.match(wf, /  build:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read[^\n]*\n/);
+  assert.match(wf, /  deploy:\n    needs: build\n    runs-on: ubuntu-latest\n    permissions:\n      pages: write[^\n]*\n      id-token: write[^\n]*\n    environment:/);
+  // Le dossier porte le numéro de la tentative qui l'a préparé (une relance
+  // n'en crée jamais deux du même nom) ; « deploy » reçoit ce nom de « build »
+  // (relancé seul, il reprend le dossier de la tentative réussie)
+  assert.match(wf, /echo "artifact=github-pages-\$\{\{ github\.run_attempt \}\}" >> "\$GITHUB_OUTPUT"/);
+  assert.match(wf, /outputs:\n      artifact: \$\{\{ steps\.name\.outputs\.artifact \}\}/);
+  assert.match(wf, /name: \$\{\{ steps\.name\.outputs\.artifact \}\}\n/);
+  assert.match(wf, /artifact_name: \$\{\{ needs\.build\.outputs\.artifact \}\}\n/);
   for (const action of ['actions/checkout', 'actions/configure-pages', 'actions/upload-pages-artifact', 'actions/deploy-pages']) {
     assert.match(wf, new RegExp(`uses: ${action}@[0-9a-f]{40} # v\\d+\\.\\d+\\.\\d+`), action);
   }

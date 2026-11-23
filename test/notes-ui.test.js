@@ -94,7 +94,8 @@ test('conflit : rien n\'est écrasé, mon texte reste sur l\'appareil ; les troi
 
 test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, « Nouvelle note ») ; nombres hors corbeille', () => {
   const home = code('public/js/screens/home.js');
-  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), notesTile\(pc\), accountTile\(\)\);/);
+  // (« À offrir » entre Listes et Notes, seulement si j'ai des réservations)
+  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), giftsTile\(\), notesTile\(pc\), accountTile\(\)\);/);
   assert.match(home, /\.slice\(0, pc \? 4 : 2\)/);
   assert.match(home, /const add = addRow\(t\('accueil\.notes\.nouvelle'\), \(\) => openQuickNote\(\)\);/);
   assert.match(home, /emptyText\(t\('accueil\.notes\.aucune'\)\)/);

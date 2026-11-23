@@ -19,6 +19,8 @@ import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { pcListType } from './pc-side.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
+import { computeGifts } from '../gifts.js';
+import { autoChip } from './gifts.js';
 import { t } from '../i18n.js';
 
 // Vrai si la liste a un lien public en cours (information donnée au
@@ -122,6 +124,36 @@ export function cardCount(list) {
     'aria-label': label,
     title: label,
   }, h('span', { 'aria-hidden': 'true' }, progressText(list.remaining, list.total)), done ? icon('check', 'icon--sm') : null);
+}
+
+// Carte « À offrir » (liste automatique de mes réservations, gifts.js ;
+// maquette listes-a-offrir) : en tête des listes d'envies, fond bleu clair,
+// icône cadeau, « 3/5 » (3 cadeaux encore à acheter sur 5), pastille
+// « Automatique ». Ni menu ⋮, ni personnes, ni lien public : ce n'est pas
+// une liste (on ne peut ni la renommer, ni la partager, ni la supprimer),
+// et elle n'est pas comptée parmi les listes. Seulement si j'ai au moins
+// une réservation ou participation en cours ; sinon null.
+export function giftsCard() {
+  const { total, toBuy } = computeGifts(app.data, app.user.id);
+  if (!total) return null;
+  const progress = t('offrir.carte.compte', { count: toBuy, total });
+  const label = toBuy === 0 ? t('offrir.carte.toutAchete', { progress }) : progress;
+  return h('div', { class: 'list-card-wrap' }, h('a', {
+    class: 'card list-card list-card--auto',
+    href: pathFor('gifts'),
+    onClick: (event) => {
+      event.preventDefault();
+      navigate('gifts');
+    },
+  },
+  h('div', { class: 'list-card__head' },
+    h('span', { class: 'list-card__icon' }, icon('gift', 'icon--sm')),
+    h('h2', { class: 'list-card__name' }, t('offrir.titre'))),
+  h('div', { class: 'list-card__foot' },
+    h('div', { class: 'list-card__left' },
+      h('p', { class: `list-card__count list-card__count--progress${toBuy === 0 ? ' list-card__count--done' : ''}`, role: 'img', 'aria-label': label, title: label },
+        h('span', { 'aria-hidden': 'true' }, progressText(toBuy, total)), toBuy === 0 ? icon('check', 'icon--sm') : null),
+      autoChip()))));
 }
 
 // Message quand il n'y a encore aucune liste (mes-listes-2)
@@ -245,7 +277,10 @@ export function renderLists(onLeave) {
     const query = search.value;
     if (!isSearching(query)) {
       searchMeta.textContent = '';
-      search.show(lists.length ? h('div', { class: 'cards' }, lists.map((list) => listCard(list))) : noListOfType());
+      // « À offrir » en premier, sous « Toutes » et « Envies » (pas pendant
+      // une recherche : ce n'est pas une liste)
+      const gifts = type === 'all' || type === 'wishes' ? giftsCard() : null;
+      search.show(lists.length ? h('div', { class: 'cards' }, gifts, lists.map((list) => listCard(list))) : noListOfType());
       return;
     }
     const found = filterLists(lists, query);
@@ -339,9 +374,12 @@ function renderListsPc(onLeave) {
       search.show(noListsPc(query, search, type));
       return;
     }
-    const cards = (ofType) => h('div', { class: 'pc-cards' }, ofType.map((list) => listCard(list, { query: searching ? query : '' })));
+    // « À offrir » en tête des listes d'envies (pas pendant une recherche)
+    const cards = (ofType, listType) => h('div', { class: 'pc-cards' },
+      listType === 'wishes' && !searching ? giftsCard() : null,
+      ofType.map((list) => listCard(list, { query: searching ? query : '' })));
     if (type !== 'all') {
-      search.show(cards(found));
+      search.show(cards(found, type));
       return;
     }
     search.show(LIST_TYPES.map((listType) => {
@@ -349,7 +387,7 @@ function renderListsPc(onLeave) {
       if (!ofType.length) return null;
       return h('section', {},
         h('h2', { class: 'pc-section-title' }, TYPE_LABELS[listType]),
-        cards(ofType));
+        cards(ofType, listType));
     }));
   };
   const idle = drawWhenIdle(content, draw);

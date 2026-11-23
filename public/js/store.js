@@ -37,6 +37,12 @@ export function emptyState() {
     // ce compte peut les voir (jamais celles dont il est le bénéficiaire :
     // le serveur ne les envoie pas). Remplacées en entier à chaque synchronisation.
     reservations: {},
+    // « À offrir » (liste automatique de mes réservations, gifts.js) : pour
+    // MES seules participations en cours, la date de ma réservation
+    // (reservedAt, souhait -> date) et les souhaits que j'ai cochés
+    // « Acheté » (bought). Privé : le serveur ne l'envoie qu'à moi.
+    // Remplacé en entier à chaque synchronisation.
+    gifts: emptyGifts(),
     news: emptyNews(),      // mes nouveautés (voir « Nouveautés » plus bas)
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
     // Notes (notes.js, server/notes.js) : celles que je vois, corbeille
@@ -64,6 +70,13 @@ export function emptyState() {
 }
 
 const emptyInbox = () => ({ rows: [], stamp: null, loaded: false });
+
+const emptyGifts = () => ({ reservedAt: {}, bought: new Set() });
+// « À offrir » reçu du serveur (/api/sync) ou relu sur le téléphone
+const giftsFrom = (value) => ({
+  reservedAt: value?.reservedAt && typeof value.reservedAt === 'object' ? { ...value.reservedAt } : {},
+  bought: new Set(Array.isArray(value?.bought) ? value.bought : []),
+});
 
 const emptyNoteNews = () => ({ unread: new Set(), muted: new Set() });
 
@@ -102,6 +115,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     users: state.users,
     news: state.news,
     reservations: state.reservations,
+    gifts: { reservedAt: state.gifts.reservedAt, bought: [...state.gifts.bought] },
     notes: [...state.notes.values()],
     noteIds: [...state.noteIds],
     pinnedNotes: [...state.pinnedNotes],
@@ -127,6 +141,8 @@ export function fromSnapshot(snapshot) {
     state.users = [...(snapshot.users ?? [])];
     state.news = snapshot.news ?? emptyNews();
     state.reservations = snapshot.reservations ?? {};
+    // (copie d'avant « À offrir » : vide, remplie à la synchronisation suivante)
+    state.gifts = giftsFrom(snapshot.gifts);
     state.notes = new Map((snapshot.notes ?? []).map((note) => [note.id, note]));
     state.noteIds = new Set(snapshot.noteIds ?? []);
     state.pinnedNotes = new Set(snapshot.pinnedNotes ?? []);
@@ -179,6 +195,7 @@ export function loadSync(state, data) {
   state.aisles = data.aisles;
   state.history = data.history;
   state.reservations = data.reservations ?? {};
+  state.gifts = giftsFrom(data.gifts);
   if (data.users) state.users = data.users;
   if (data.news) state.news = data.news;
   loadNotes(state, data, { full: true });
@@ -227,6 +244,9 @@ export function mergeSync(state, data) {
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
+  // « À offrir » : de même, en entier (une réservation terminée emporte sa
+  // marque « Acheté »)
+  state.gifts = giftsFrom(data.gifts);
   loadNotes(state, data, { full: false });
   refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
@@ -345,6 +365,13 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'account.news':
       if (typeof op.enabled === 'boolean') state.news.enabled = op.enabled;
       if (typeof op.checks === 'boolean') state.news.checks = op.checks;
+      return;
+    // « Acheté » dans « À offrir » (propre à moi ; le serveur vérifie que
+    // je réserve bien ce souhait en ce moment)
+    case 'gift.bought':
+      if (typeof op.bought !== 'boolean' || !op.itemId) return;
+      if (op.bought) state.gifts.bought.add(op.itemId);
+      else state.gifts.bought.delete(op.itemId);
       return;
     case 'list.removeChecked': {
       // Sous-tâches : une sous-tâche cochée sous une principale à faire

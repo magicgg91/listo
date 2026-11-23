@@ -398,6 +398,9 @@ test('TEST FORT : ce que reçoit la destinataire (lecture, synchronisation, temp
     ['visiteur : réserver de nouveau', () => h.act(jo, token, h.ids.lampe)],
     ['gestionnaire : libérer', () => h.guillaume.del(`/api/items/${h.ids.lampe}/reservation/all`)],
     ['visiteur : réserver un troisième', () => h.act(max, token, h.ids.jeu, 'POST', 'Oncle Max')],
+    // « À offrir » : un proche réserve, puis coche « Acheté » (privé, migration 39)
+    ['proche : réserver', () => h.marie.post(`/api/items/${h.ids.lampe}/reservation`, {})],
+    ['proche : « Acheté »', async () => (await h.marie.post('/api/ops', { ops: [{ id: uuid(), type: 'gift.bought', itemId: h.ids.lampe, bought: true }] })).body.results[0]],
   ];
   for (const [label, action] of actions) {
     assert.equal((await action()).status, 200, label);
@@ -524,7 +527,8 @@ test('les déclencheurs effacent l\'état avec le dernier participant, par tous 
   assert.equal((await h.marie.del(`/api/items/${h.ids.lampe}/reservation`)).status, 200);
   assert.equal(statesCount(h), 0);
   const names = h.app.db.prepare("SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name").pluck().all();
-  assert.deepEqual(names, ['reservations_state_cleanup', 'visitor_reservations_state_cleanup']);
+  // (gift_bought_cleanup : la marque « Acheté » part avec la participation, migration 39)
+  assert.deepEqual(names, ['gift_bought_cleanup', 'reservations_state_cleanup', 'visitor_reservations_state_cleanup']);
 });
 
 test('compte désactivé ou qui quitte la liste : ses participations restent, le souhait reste réservé (voulu) ; le gestionnaire peut libérer', async (t) => {

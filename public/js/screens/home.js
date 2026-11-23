@@ -9,16 +9,22 @@
 //   de non lues en pastille (« 9+ » au-delà de 9 ; le nombre est dans son
 //   nom lu, « Notifications, 3 non lues »). C'est le seul endroit où ce
 //   nombre est montré (pas dans la tuile Compte).
-// - Tuiles, dans un ordre fixe : Échéances, Listes, Notes (étape 2 du
-//   cadrage), Compte. Deux colonnes sur le téléphone (une sous 340 px),
-//   trois sur ordinateur (quatre au-delà de 1 440 px).
+// - Tuiles, dans un ordre fixe : Échéances, Listes, « À offrir » (mes
+//   réservations dans les listes d'envies, seulement si j'en ai ; toute la
+//   largeur sur le téléphone), Notes (étape 2 du cadrage), Compte. Deux
+//   colonnes sur le téléphone (une sous 340 px), trois sur ordinateur
+//   (quatre au-delà de 1 440 px).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
 //   (« En retard, 2 tâches »). Le titre d'une tuile ouvre l'écran entier.
 // - Tout vient de la copie locale (aucune demande de plus au serveur) :
 //   l'écran marche hors ligne et se redessine en temps réel, à minuit et à
 //   chaque minute (une tâche du jour passe « En retard » à son heure).
-// - Pas de bandeau du bas ni de loupe sur l'Accueil (décision du 23
-//   novembre 2026) : ses tuiles mènent déjà partout.
+// - Pas de bandeau du bas ni de loupe sur l'Accueil (décision du
+//   propriétaire, de nouveau le 23 novembre 2026, après essai) : ses tuiles
+//   mènent déjà partout.
+// - Quand tout tient dans l'écran, rien ne défile ni ne rebondit (iPhone
+//   compris) : scroll-lock.js mesure la zone et la bloque ; sinon (petit
+//   téléphone, beaucoup de tuiles), elle défile normalement.
 // Rien ici ne donne un droit : chaque écran ouvert revérifie les siens.
 
 import { h, icon, replace } from '../dom.js';
@@ -32,6 +38,9 @@ import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } 
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
 import { isNoteUnread, inboxUnread } from '../store.js';
+import { computeGifts, recentGifts } from '../gifts.js';
+import { openGift, forLabel } from './gifts.js';
+import { lockWhenFits } from '../scroll-lock.js';
 import { t } from '../i18n.js';
 
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
@@ -40,8 +49,9 @@ import { t } from '../i18n.js';
 // lignes ; spoken : nom lu du titre s'il dit plus (« Notes, 12 notes ») ;
 // count : petite pastille grise au bout du titre (tuile Notes : « 12 »),
 // muette pour les lecteurs d'écran (le nombre est dans spoken)
-function tile(name, iconName, onOpen, rows, { spoken = null, count = null } = {}) {
-  return h('section', { class: 'card tile', 'aria-label': name },
+// wide : toute la largeur sur le téléphone (tuile « À offrir »)
+function tile(name, iconName, onOpen, rows, { spoken = null, count = null, wide = false } = {}) {
+  return h('section', { class: `card tile${wide ? ' tile--wide' : ''}`, 'aria-label': name },
     h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name),
       count ? h('span', { class: 'count', 'aria-hidden': 'true' }, String(count)) : null),
     rows);
@@ -154,6 +164,29 @@ function notesTile(pc) {
   ], { spoken: t('accueil.notes.lu', { count: notes.length }), count: notes.length });
 }
 
+// « À offrir » (gifts.js) : seulement si j'ai au moins une réservation ou
+// participation en cours. Le titre (avec le nombre de cadeaux encore à
+// acheter) ouvre la page ; dessous, les trois derniers réservés pas encore
+// achetés (« Lego Technic grue » / « Pour Zoé · réservé »), chacun ouvre le
+// souhait dans sa liste. Tout acheté : « Tout est acheté ».
+function giftsTile() {
+  const { total, toBuy } = computeGifts(app.data, app.user.id);
+  if (!total) return null;
+  const recent = recentGifts(app.data, app.user.id, 3);
+  const sub = (gift) => {
+    const name = gift.recipient.name ?? forLabel(gift);
+    return gift.alone ? t('offrir.tuile.reserve', { name }) : t('offrir.tuile.participe', { name, count: gift.people });
+  };
+  return tile(t('offrir.titre'), 'gift', () => navigate('gifts'), recent.length
+    ? rowsOf(recent.map((gift) => h('button', { class: 'tile__row tile__row--two', type: 'button', onClick: () => openGift(gift) },
+      h('span', { class: 'tile__label' },
+        h('span', { class: 'tile__strong' }, gift.item.name),
+        h('span', { class: 'tile__sub' }, sub(gift))),
+      icon('chev-r', 'icon--sm'))))
+    : emptyText(t('offrir.tuile.toutAchete')),
+  { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null, wide: true });
+}
+
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans
 // son nombre : il n'est que sur la cloche), « Réglages » ; pour
 // l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
@@ -196,7 +229,10 @@ function bell() {
 export function renderHome(onLeave) {
   const pc = isDesktop();
   const tiles = h('div', { class: 'tiles' });
-  const content = h('div', { class: 'scroll' }, tiles);
+  const content = h('div', { class: 'scroll home-scroll' }, tiles);
+  // Tout tient dans l'écran : rien ne défile (scroll-lock.js)
+  const fit = lockWhenFits(content, tiles);
+  onLeave(fit.stop);
   const date = h('p', { class: pc ? 'pc-head__sub' : 'home-head__date' });
   const notifications = bell();
 
@@ -207,8 +243,10 @@ export function renderHome(onLeave) {
       replace(tiles, h('p', { class: 'empty muted', role: 'status' }, t('accueil.chargement')));
       return;
     }
-    // Ordre fixe : Échéances, Listes, puis Notes et Compte
-    replace(tiles, deadlinesTile(), listsTile(pc), notesTile(pc), accountTile());
+    // Ordre fixe : Échéances, Listes, « À offrir » (si j'ai des
+    // réservations), puis Notes et Compte
+    replace(tiles, deadlinesTile(), listsTile(pc), giftsTile(), notesTile(pc), accountTile());
+    fit.update();
   };
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));

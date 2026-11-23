@@ -176,11 +176,11 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   assert.match(read('public/js/router.js'), /history\.replaceState\(\{ depth: 0 \}, '', location\.hash \|\| pathFor\('home'\)\);/);
 });
 
-test('Accueil : bandeau du bas sans loupe ; nombres lus avec leur libellé ; copie locale seulement', () => {
+test('Accueil : ni bandeau du bas ni loupe ; nombres lus avec leur libellé ; copie locale seulement', () => {
   const home = code('public/js/screens/home.js');
   assert.doesNotMatch(home, /tabBar|loupe|createSearchRow/);
-  // Bandeau aussi sur l'Accueil (23 novembre 2026, après essai sur iPhone)
-  assert.match(read('public/js/tabbar.js'), /export const hasTabs = \(routeName\) => TABS\.some/);
+  // Plus de bandeau sur l'Accueil (décision du propriétaire, de nouveau le 23 novembre 2026)
+  assert.match(read('public/js/tabbar.js'), /export const hasTabs = \(routeName\) => routeName !== 'home' && tabOf\(routeName\) !== null;/);
   // Aucune demande au serveur en dehors de la synchronisation habituelle
   assert.doesNotMatch(home, /api\.js|fetch\(|\bget\(|\bpost\(/);
   // Texte simple, aucun curseur, aucune mise en page en dur
@@ -195,8 +195,8 @@ test('Accueil : bandeau du bas sans loupe ; nombres lus avec leur libellé ; cop
   assert.equal(translate('en', 'listes.type.lu', { type: 'Shopping', count: 1 }), 'Shopping, 1 list');
   // Temps réel, minuit et minute (une tâche passe « En retard » à son heure)
   for (const text of ['onLeave(onDataChange(idle.request));', 'onLeave(watchNewDay(draw));', 'onLeave(watchMinute(() => idle.request()));']) assert.ok(home.includes(text), text);
-  // Ordre des tuiles : Échéances, Listes, Notes, Compte (étape 2)
-  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), notesTile\(pc\), accountTile\(\)\);/);
+  // Ordre des tuiles : Échéances, Listes, « À offrir » (si j'ai des réservations), Notes, Compte
+  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), giftsTile\(\), notesTile\(pc\), accountTile\(\)\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
   assert.match(home, /requests > 0 \? row\(\{/);
@@ -234,7 +234,7 @@ test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur
   assert.match(side, /const homeLink = fixedLink\('home', 'home', t\('navigation\.accueil'\)\);/);
   assert.match(side, /const listsLink = fixedLink\('lists', 'tasks', t\('navigation\.listes'\), listsCount\);/);
   // Écrans des listes seulement : « Types » ; ailleurs, rien de plus
-  assert.match(side, /const LIST_SCREENS = \['lists', 'list', 'editList', 'newList'\];/);
+  assert.match(side, /const LIST_SCREENS = \['lists', 'list', 'editList', 'newList', 'gifts'\];/);
   assert.match(side, /if \(!LIST_SCREENS\.includes\(selected\.name\)\) \{\s*showNav\(false\);/);
   assert.match(side, /const types = listCountsByType\(app\.data\);/);
   // Plus de liste nommée une à une dans le menu, sauf les résultats d'une recherche

@@ -211,7 +211,7 @@ Les opérations hors ligne (`note.create`, `note.update` avec la version de dép
 - Liens dans le texte : `javascript:`, `data:`, adresses mal formées jamais cliquables.
 - Page Notifications : remplie sans LISTO_PUSH, filtre des catégories et sourdines, regroupement, lu sur tous les appareils, 30 jours / 300, langue du compte, « identique avec ou sans réservation » pour le bénéficiaire.
 - Accueil : nombres égaux à ceux des écrans Échéances, Listes et Notes ; hors ligne ; Admin seulement pour « Demandes de compte ».
-- Bandeau à cinq boutons (sur l'Accueil aussi depuis le 23 novembre 2026, après essai), premier écran, ancien lien `#/listes` intact ; curseur automatique (`test/focus.test.js`) ; textes en français et en anglais, aide dans les deux langues.
+- Bandeau à cinq boutons (sur l'Accueil aussi le 23 novembre 2026, après essai, puis retiré de l'Accueil le même jour, décision du propriétaire), premier écran, ancien lien `#/listes` intact ; curseur automatique (`test/focus.test.js`) ; textes en français et en anglais, aide dans les deux langues.
 
 ## 8. Découpage en étapes
 

@@ -191,6 +191,12 @@ export async function convertToWishes(listId, body) {
   await refreshData({ quiet: true });
 }
 
+// « Acheté » dans « À offrir » (gifts.js) : ma case à moi, que je suis seul
+// à voir. Contrairement à la réservation, elle passe par la file
+// d'attente : elle marche hors ligne (le serveur vérifie à l'envoi que je
+// réserve bien ce souhait).
+export const setGiftBought = (itemId, bought) => perform({ type: 'gift.bought', itemId, bought });
+
 const reservationUrl = (itemId, rest = '') => `/api/items/${encodeURIComponent(itemId)}/reservation${rest}`;
 // Réserver un souhait libre (open : « Ouvert à d'autres »), ou participer à
 // une réservation ouverte

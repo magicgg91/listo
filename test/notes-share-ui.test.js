@@ -119,7 +119,7 @@ test('textes du partage des notes : en français et en anglais, mêmes noms et m
 });
 
 test('service worker : nouvelle version (fichiers changés)', () => {
-  assert.match(read('public/sw.js'), /const VERSION = `v14[2-9]-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v1(4[2-9]|[5-9]\d)-/);
 });
 
 test('« Partager la note » sur le téléphone : la rangée « Ajouter » n\'est jamais tassée (le bouton passait sur « Lien public »)', () => {

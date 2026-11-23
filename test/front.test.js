@@ -321,7 +321,8 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   assert.equal(fromSnapshot({ ...snapshot, version: 1, categories: [] }), null);
   assert.equal(fromSnapshot({ ...snapshot, lists: 'abîmé' }), null);
   // Aucun secret dans la copie : seulement des données de listes et de notes
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'history', 'inbox', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  // (« À offrir » : mes dates de réservation et marques « Acheté », à moi seul)
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'gifts', 'history', 'inbox', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {

@@ -83,12 +83,13 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [5.12 Notes](#notes)
 - [5.13 Sharing a note](#notes-partage)
 - [5.14 Reserve a wish, chip in](#reserver)
-- [5.15 What's new](#nouveautes)
-- [5.16 Offline and sync](#hors-ligne)
-- [5.17 Light or dark theme](#theme)
-- [5.18 Language: French or English](#langue)
-- [5.19 On a computer](#ordinateur)
-- [5.20 Subtasks](#sous-taches)
+- [5.15 To give: your gifts](#a-offrir)
+- [5.16 What's new](#nouveautes)
+- [5.17 Offline and sync](#hors-ligne)
+- [5.18 Light or dark theme](#theme)
+- [5.19 Language: French or English](#langue)
+- [5.20 On a computer](#ordinateur)
+- [5.21 Subtasks](#sous-taches)
 
 </details>
 
@@ -186,7 +187,7 @@ Accounts are created by the Admin, the person who manages Listo: there's no publ
 ### 1.2 What Listo doesn't do
 
 - No online version: you install Listo on your own server (a computer that's always on, at home for example). See [3. Installation](#installation).
-- In French or English, as each person chooses in “My account” ([5.18 Language: French or English](#langue)); this help is available in both languages too.
+- In French or English, as each person chooses in “My account” ([5.19 Language: French or English](#langue)); this help is available in both languages too.
 - The Notifications page (the bell on Home) keeps what Listo tells you about. Notifications on your phone or computer are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
 - No payments: for a group gift, Listo shows who's chipping in, never how much.
 - No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists you allow is sent to it when you ask it something ([8. AI assistants (MCP)](#claude)).
@@ -226,7 +227,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 - A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([7.4 Owner: sharing and choosing permissions](#partager)).
 - Changes reach the other phones within a few seconds. Checked items move to the bottom, crossed out.
-- What's new: Listo shows what the others have added or changed since your last visit ([5.15 What's new](#nouveautes)).
+- What's new: Listo shows what the others have added or changed since your last visit ([5.16 What's new](#nouveautes)).
 - Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([6. Notifications](#notifications)).
 - An icon of your choice for each list, and a count of what's left on each card and each group ([5.9 Groups, sorting and counter](#tri)).
 
@@ -247,7 +248,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - A time, and a reminder chosen task by task ([5.2 Time and reminder](#heure)).
 - Tasks that repeat: every day, on certain days of the week, every month, every year ([5.3 Repeating tasks](#repeter)).
 - Assign a task to a person on the list, and see “Mine” ([5.4 Assign a task](#attribuer)).
-- Put subtasks under a main task ([5.20 Subtasks](#sous-taches)).
+- Put subtasks under a main task ([5.21 Subtasks](#sous-taches)).
 - Sort by priority or by due date ([5.9 Groups, sorting and counter](#tri)).
 
 <a id="p-envies"></a>
@@ -280,7 +281,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 ### 2.7 Offline, trash, public link
 
-- Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.16 Offline and sync](#hors-ligne)).
+- Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
 - Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note, from the notes trash ([5.12 Notes](#notes)).
 - Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([7.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
@@ -290,7 +291,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 - Two-factor authentication, with recovery codes ([4.6 Two-factor authentication and recovery codes](#double-auth)).
 - Automatic backup every night ([3.8 Backups](#sauvegardes)).
-- Light, dark or automatic theme ([5.17 Light or dark theme](#theme)).
+- Light, dark or automatic theme ([5.18 Light or dark theme](#theme)).
 - Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
 - An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([8. AI assistants (MCP)](#claude)).
 
@@ -763,9 +764,9 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 ### 5.9 Groups, sorting and counter
 
-- Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([5.20 Subtasks](#sous-taches)).
+- Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([5.21 Subtasks](#sous-taches)).
 - “Lists” can be sorted by date or alphabetically (button at the top).
-- On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([5.19 On a computer](#ordinateur)).
+- On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([5.20 On a computer](#ordinateur)).
 - In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.
 - In a task list, “Sort list” offers “Alphabetical”, “By priority”, “By due date” and “By person”, depending on the list's options.
 - The sorting you choose applies only to you, on this phone: it changes nothing for the others, and it is allowed with read-only access.
@@ -792,11 +793,12 @@ Listo opens on “Home”: ‘Hello’ and your first name, today's date, the st
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
+- “To give” tile, full width, only if you reserve a wish or chip in on a gift: the number of gifts still to buy (at the end of the title, which opens the “To give” page: [5.15 To give: your gifts](#a-offrir)) and the last three reserved and not yet bought (‘For Zoé · reserved’); a row opens the wish in its list. When everything is bought: “All bought”.
 - “Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([5.12 Notes](#notes)); with no note: “No notes”.
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
 - A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
 
-On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is also on Home, and sits just above the line at the bottom of an iPhone. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
+On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”; it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
 - “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
@@ -842,7 +844,7 @@ In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens �
 
 **What's new and notifications**
 
-When someone else changes a shared note, its card shows a dot and ‘Changed by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.15 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
+When someone else changes a shared note, its card shows a dot and ‘Changed by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.16 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
 
 Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.4 Details in the notification](#notif-detail)). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.
 
@@ -863,9 +865,21 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 - Listo only says who is chipping in: no amount, no share, no payment.
 - Editing a reserved wish does not remove the reservation.
 
+<a id="a-offrir"></a>
+
+### 5.15 To give: your gifts
+
+“To give” is an automatic list: all the wishes you reserve or chip in on, in all the wish lists you are a member of. It is yours alone, and works offline.
+
+- On “Lists”, its card (light blue, “Automatic”) comes first among the wish lists, under “All” and “Wishes”, only if you have at least one reservation. ‘3/5’: 3 gifts still to buy out of 5. It is not a list: nobody can add to it, rename it, share it or delete it, and it is not counted among your lists. On Home, the “To give” tile leads there too.
+- Gifts are grouped by person (‘For Zoé’), with their list, ‘Reserved’ or ‘You're chipping in (2 people)’, and their price.
+- Check “Bought” once you have bought the gift: it is crossed out and moves to the bottom of its group. Only you see this box: not the person the gift is for, not the others, not the notifications, not an AI assistant ([8.5 Wish lists: no reservations](#claude-envies)).
+- Tap the row (not the box) to open the wish in its list: that is where you cancel a reservation ([5.14 Reserve a wish, chip in](#reserver)).
+- A gift leaves the list by itself when the person has marked it “Received”, when your reservation or participation ends, or when the wish or its list is deleted.
+
 <a id="nouveautes"></a>
 
-### 5.15 What's new
+### 5.16 What's new
 
 - In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.
 - On “Lists”, a badge on the card's icon gives the number of new updates (“30+” after more than a month away).
@@ -876,7 +890,7 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 
 <a id="hors-ligne"></a>
 
-### 5.16 Offline and sync
+### 5.17 Offline and sync
 
 Without a network, you can keep adding, editing and checking, and writing in your notes ([5.12 Notes](#notes)). The changes are sent when the network comes back.
 
@@ -886,13 +900,13 @@ Sharing (a list or a note), the public link, duplicating, “Leave list” and �
 
 <a id="theme"></a>
 
-### 5.17 Light or dark theme
+### 5.18 Light or dark theme
 
 Settings, “My account”, “Appearance” section: “Light”, “Dark” or “Auto” (like the phone). The choice applies to this device. On a computer, it is in the same place: Settings, “My account”, “Appearance”.
 
 <a id="langue"></a>
 
-### 5.18 Language: French or English
+### 5.19 Language: French or English
 
 Settings, “My account”, “Language” section: “Automatic” (the language of the phone or the browser, otherwise the one chosen for the server), “Français” or “English”. The choice applies to your account, on all your devices; the app reloads in the chosen language. Your notifications also arrive in this language.
 
@@ -900,12 +914,12 @@ The names of lists, items, aisles and stores are not translated: they are your d
 
 <a id="ordinateur"></a>
 
-### 5.19 On a computer
+### 5.20 On a computer
 
 In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.
 
 - On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.
-- The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
+- The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
 - An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
 - “Share list” brings together the people on the list and the public link. The owner chooses each person's access there, adds or removes people, and manages the link; the other members only see the list of people there.
@@ -944,7 +958,7 @@ Ctrl+Z does not undo: adding an item (delete the item), a photo, a reservation o
 
 <a id="sous-taches"></a>
 
-### 5.20 Subtasks
+### 5.21 Subtasks
 
 In a task list, the owner turns on “Subtasks” in “Options for items” ([7.3 Owner: editing the list](#modifier)). A main task can then group subtasks: the list stays short, and each project has its steps.
 
@@ -967,7 +981,7 @@ In a task list, the owner turns on “Subtasks” in “Options for items” ([7
 
 Listo tells you about what concerns you: a change in a shared list, a reservation, a share, every morning the tasks for the day, and a task's reminder. Everything shows up on the Notifications page (the bell on Home), even with no phone signed up. On top of that, Listo can let you know on your phone or computer, without opening it: it's optional, the feature is off by default on the server, and then everyone chooses, device by device.
 
-The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [5.15 What's new](#nouveautes)) and “On this device” (notifications, described here). The kinds (“Notifications you get”) apply both to the Notifications page and to your devices.
+The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [5.16 What's new](#nouveautes)) and “On this device” (notifications, described here). The kinds (“Notifications you get”) apply both to the Notifications page and to your devices.
 
 <a id="notif-page"></a>
 
@@ -1025,7 +1039,7 @@ You're never notified about what you do yourself (or about what an AI assistant 
 
 The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.
 
-This is separate from “Hide what's new in this list” (badges and glow, [5.15 What's new](#nouveautes)): you can keep what's new for a list without getting its notifications, and the other way around.
+This is separate from “Hide what's new in this list” (badges and glow, [5.16 What's new](#nouveautes)): you can keep what's new for a list without getting its notifications, and the other way around.
 
 <a id="notif-limites"></a>
 
@@ -1136,7 +1150,7 @@ On “Lists”, tap “+” at the top right (on a computer: “New list”). Gi
 
 ### 7.3 Owner: editing the list
 
-The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.20 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
+The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.21 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
 
 - Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.
 - Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).
@@ -1258,7 +1272,7 @@ This access only exists if the person who runs the server has turned it on ([8.1
 - Task that repeats ([5.3 Repeating tasks](#repeter)): ‘Trash, every Monday and Thursday.’ ‘Rent, on the 5th of every month.’ ‘The meeting, on the first Monday of the month.’ ‘Stop repeating the watering.’ The assistant tells you the next date. If it checks a task that repeats, the task comes back on its next date, and the assistant tells you that date.
 - Rename or add details: ‘Rename milk to 2% milk’, ‘Add the note organic to the apples.’
 - Move to an aisle: ‘Put the milk in the dairy aisle.’
-- Subtasks ([5.20 Subtasks](#sous-taches)): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’
+- Subtasks ([5.21 Subtasks](#sous-taches)): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’
 
 The assistant first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how it behaves is up to the assistant itself: check in Listo.
 
@@ -1421,7 +1435,7 @@ After turning it on, once, before any regular use (here with Claude):
 
 ### 9.1 I have no network
 
-Keep going: adding, editing and checking work offline, and the badge at the top counts the pending changes ([5.16 Offline and sync](#hors-ligne)). They go out on their own when the network comes back. Sharing, the public link, the trash and reservations wait for the network.
+Keep going: adding, editing and checking work offline, and the badge at the top counts the pending changes ([5.17 Offline and sync](#hors-ligne)). They go out on their own when the network comes back. Sharing, the public link, the trash and reservations wait for the network.
 
 <a id="faq-photo"></a>
 

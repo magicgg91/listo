@@ -9,7 +9,8 @@
 //
 // RÈGLE CRITIQUE : le bénéficiaire de la liste ne doit jamais savoir qu'un
 // souhait est réservé, ni par qui, ni combien. Ce module est le SEUL à lire
-// les tables reservations et reservation_states, et il filtre lui-même
+// les tables reservations et reservation_states (et gift_bought, la marque
+// « Acheté » de la liste « À offrir », migration 39), et il filtre lui-même
 // chaque canal :
 // - lecture d'une liste (forList) et synchronisation (forUser) : seulement
 //   pour les membres qui ont le droit de voir les réservations
@@ -71,6 +72,10 @@ export const ITEM_FULL = 'liens.envies.souhaitComplet';
 export const LINK_FULL = 'liens.envies.lienComplet';
 // Limites des visiteurs (voir le cahier des charges)
 export const VISITOR_LIMITS = { perVisitor: 20, perItem: 10, perLink: 100 };
+// « À offrir » (opération gift.bought, file d'attente) : refus d'un élément
+// inconnu, le même que pour les autres opérations (public/js/i18n/fr/ops.js)
+export const GIFT_NOT_FOUND = 'ops.introuvable';
+export const GIFT_BAD_VALUE = 'ops.valeurAcheteInvalide';
 
 // Condition SQL : le souhait de cette ligne de reservation_states a au moins
 // un participant (compte ou visiteur). Tout lecteur de l'état l'utilise, pour
@@ -166,6 +171,25 @@ export function createReservationService(ctx) {
       JOIN items ON items.id = visitor_reservations.item_id AND items.deleted_at IS NULL
       WHERE items.list_id = ? AND visitor_reservations.token_hash = ?
     `).pluck(),
+    // --- « À offrir » (migration 39) : MES réservations et participations ---
+    // Souhaits (non supprimés) de listes d'envies (non supprimées) dont je
+    // suis membre et où je participe, avec la date de ma participation et ma
+    // marque « Acheté » ; la liste, pour écarter celles dont je serais le
+    // bénéficiaire (jamais le cas : il ne peut pas réserver ; filet de sécurité)
+    myGifts: db.prepare(`
+      SELECT reservations.item_id, reservations.created_at, lists.owner_id, lists.for_user_id, lists.for_name,
+        (gift_bought.item_id IS NOT NULL) AS bought
+      FROM reservations
+      JOIN items ON items.id = reservations.item_id AND items.deleted_at IS NULL
+      JOIN lists ON lists.id = items.list_id AND lists.deleted_at IS NULL AND lists.type = 'wishes'
+      JOIN list_members ON list_members.list_id = lists.id AND list_members.user_id = reservations.user_id
+      LEFT JOIN gift_bought ON gift_bought.user_id = reservations.user_id AND gift_bought.item_id = reservations.item_id
+      WHERE reservations.user_id = ?
+      ORDER BY reservations.item_id
+    `),
+    isParticipant: db.prepare('SELECT 1 FROM reservations WHERE item_id = ? AND user_id = ?').pluck(),
+    markBought: db.prepare('INSERT INTO gift_bought (user_id, item_id, created_at) VALUES (?, ?, ?) ON CONFLICT(user_id, item_id) DO NOTHING'),
+    unmarkBought: db.prepare('DELETE FROM gift_bought WHERE user_id = ? AND item_id = ?'),
   };
 
   // Nombre de participants d'un souhait (comptes et visiteurs)
@@ -410,5 +434,45 @@ export function createReservationService(ctx) {
     return out;
   }
 
-  return { reserve, setOpen, leave, removeParticipant, removeVisitor, releaseAll, forList, forUser, visitorReserve, visitorLeave, forVisitor };
+  // --- « À offrir » (liste automatique, migration 39) ---
+  // La liste « À offrir » est calculée sur le téléphone à partir de ce qu'il
+  // reçoit déjà (les réservations des listes où je vois les réservations,
+  // forUser). Le serveur ajoute seulement, pour MES participations en
+  // cours : la date où j'ai réservé (les plus récentes en premier sur
+  // l'Accueil) et ma marque « Acheté ». Rien d'autre, et rien pour personne
+  // d'autre : ni le bénéficiaire, ni les autres proches ne le reçoivent.
+
+  // Synchronisation : { reservedAt: { <souhait>: date }, bought: [souhaits] }
+  function giftsFor(user) {
+    const reservedAt = {};
+    const bought = [];
+    for (const row of q.myGifts.all(user.id)) {
+      if (!seesReservations(user.id, wishListOf(row))) continue;
+      reservedAt[row.item_id] = row.created_at;
+      if (row.bought === 1) bought.push(row.item_id);
+    }
+    return { reservedAt, bought };
+  }
+
+  // « Acheté » (opération gift.bought de la file d'attente, { itemId,
+  // bought }) : seulement sur un souhait que je réserve ou auquel je
+  // participe EN CE MOMENT. Tout autre cas (souhait inconnu ou supprimé, pas
+  // membre, autre type de liste, bénéficiaire, Admin, réservation terminée
+  // ou jamais faite) reçoit la même réponse qu'un élément inconnu (404),
+  // donnée avant de lire la valeur envoyée ; le bénéficiaire est écarté avant toute
+  // lecture des réservations. Rejouable sans effet (file d'attente hors
+  // ligne). Aucune écriture ailleurs (ni items, ni lists, ni nouveautés, ni
+  // journal) ; aucun signal temps réel aux autres : l'appelant prévient mes
+  // seuls appareils. Renvoie l'identifiant de la liste du souhait.
+  function setBought(user, op) {
+    const item = isUuid(op.itemId) ? q.memberItem.get({ userId: user.id, itemId: op.itemId.toLowerCase() }) : null;
+    if (!item || item.type !== 'wishes' || !seesReservations(user.id, wishListOf(item))) throw new OpError(404, GIFT_NOT_FOUND);
+    if (!q.isParticipant.get(item.id, user.id)) throw new OpError(404, GIFT_NOT_FOUND);
+    if (typeof op.bought !== 'boolean') throw new OpError(400, GIFT_BAD_VALUE);
+    if (op.bought) q.markBought.run(user.id, item.id, nowIso());
+    else q.unmarkBought.run(user.id, item.id);
+    return item.list_id;
+  }
+
+  return { reserve, setOpen, leave, removeParticipant, removeVisitor, releaseAll, forList, forUser, visitorReserve, visitorLeave, forVisitor, giftsFor, setBought };
 }

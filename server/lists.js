@@ -1413,6 +1413,15 @@ export function createListService(ctx) {
       return {};
     },
 
+    // « Acheté » dans « À offrir » (liste automatique de mes réservations,
+    // server/reservations.js) : propre à chaque personne et privé ; seuls
+    // mes propres appareils sont prévenus. Refus d'un élément inconnu (404)
+    // pour tout souhait que je ne réserve pas en ce moment.
+    'gift.bought'(user, op) {
+      changedForMe(reservations.setBought(user, op));
+      return {};
+    },
+
     // Réglages du compte : « Nouveautés » (enabled), « Signaler les éléments
     // cochés » (checks)
     'account.news'(user, op) {
@@ -1588,6 +1597,10 @@ export function createListService(ctx) {
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire
       reservations: reservations.forUser(user),
+      // « À offrir » : pour MES seules réservations et participations en
+      // cours, la date de ma réservation et ma marque « Acheté » (jamais
+      // celles d'un autre ; rien pour une liste dont je suis le bénéficiaire)
+      gifts: reservations.giftsFor(user),
       // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
       ...notes.syncFor(user, since),
       // Page Notifications : seulement son empreinte (le téléphone relit la

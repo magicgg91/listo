@@ -322,6 +322,8 @@ async function scenario(t, withReservations) {
   if (withReservations) {
     await f.reserve('marc', f.ids.velo, { open: true });
     await f.reserve('zoe', f.ids.velo);
+    // « À offrir » : la marque « Acheté » de Marc (privée, migration 39)
+    await f.ops('marc', [{ type: 'gift.bought', itemId: f.ids.velo, bought: true }]);
   }
   await f.tick(20 * 1000);
   await f.ops('marc', [{ type: 'item.create', listId: f.ids.noel, itemId: fixed(41), name: 'Puzzle' }]); // dans la liste de Léa

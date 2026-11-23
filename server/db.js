@@ -809,6 +809,31 @@ export const MIGRATIONS = [
   CREATE INDEX inbox_group ON inbox(user_id, group_key) WHERE group_key IS NOT NULL;
   CREATE INDEX inbox_updated ON inbox(updated_at);
   `,
+
+  // --- Migration 39 : « À offrir », la case « Acheté » (23 novembre 2026) ---
+  // gift_bought : les souhaits qu'une personne a cochés « Acheté » dans sa
+  // liste automatique « À offrir » (ses réservations et participations).
+  // Propre à chaque personne et PRIVÉ : lu et écrit seulement par
+  // server/reservations.js, envoyé à elle seule ; jamais au bénéficiaire, ni
+  // aux autres proches, ni dans les nouveautés, les notifications, le
+  // journal, la page publique ou l'accès des assistants IA.
+  // Une marque n'a de sens que pendant la réservation : quand la personne
+  // ne participe plus au souhait (départ, retrait, libération, souhait ou
+  // compte effacé), le déclencheur l'efface avec la ligne de reservations.
+  // La table part vide : rien ne change pour les données existantes.
+  `
+  CREATE TABLE gift_bought (
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    item_id    TEXT    NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+    created_at TEXT    NOT NULL,
+    PRIMARY KEY (user_id, item_id)
+  );
+  CREATE INDEX gift_bought_item ON gift_bought(item_id);
+  CREATE TRIGGER gift_bought_cleanup AFTER DELETE ON reservations
+  BEGIN
+    DELETE FROM gift_bought WHERE user_id = OLD.user_id AND item_id = OLD.item_id;
+  END;
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

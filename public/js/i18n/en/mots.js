@@ -34,9 +34,6 @@ export default {
   'mots.suppression.chemin.corbeille': 'List trash',
   'mots.suppression.suite': 'It will disappear for everyone. You can restore it within 30 days from {path}.',
 
-  // Corbeille des listes
-  'mots.corbeille.jours': { one: 'Permanently deleted in {count} day', other: 'Permanently deleted in {count} days' },
-
   // Zone des cochés, en bas de la liste
   'mots.coches.envies.titre': 'Received',
   'mots.coches.envies.rouvrir': 'Reopen all',

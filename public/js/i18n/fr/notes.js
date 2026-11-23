@@ -124,22 +124,13 @@ export default {
   // Saisie rapide (tuile Notes de l'Accueil)
 
   // Corbeille des notes
-  'notes.corbeille.retour': 'Retour aux réglages',
   'notes.corbeille.titre': 'Corbeille des notes',
   'notes.corbeille.intro': 'Vos notes supprimées restent ici 30 jours, puis elles sont effacées pour de bon.',
-  'notes.corbeille.vider': 'Vider la corbeille',
-  'notes.corbeille.vider.question': 'Vider la corbeille ?',
   'notes.corbeille.vider.texte': {
     one: 'La note de la corbeille sera effacée pour de bon. Cela ne peut pas être annulé.',
     other: 'Les {count} notes de la corbeille seront effacées pour de bon. Cela ne peut pas être annulé.',
   },
-  'notes.corbeille.vider.confirmer': 'Vider',
-  'notes.corbeille.ligne': { one: 'Supprimée le {date} · encore {count} jour', other: 'Supprimée le {date} · encore {count} jours' },
-  'notes.corbeille.restaurer': 'Restaurer',
-  'notes.corbeille.restaurer.label': 'Restaurer {name}',
-  'notes.corbeille.definitif': 'Supprimer définitivement',
-  'notes.corbeille.definitif.label': 'Supprimer définitivement {name}',
-  'notes.corbeille.definitif.question': 'Supprimer définitivement « {name} » ?',
+  'notes.corbeille.restaurer.label': 'Restaurer la note « {name} »',
   'notes.corbeille.definitif.texte': 'Elle sera effacée pour de bon. Cela ne peut pas être annulé.',
   'notes.corbeille.restauree': 'Note « {name} » restaurée',
   'notes.corbeille.vide.titre': 'Corbeille vide',

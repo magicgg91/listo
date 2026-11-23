@@ -23,7 +23,6 @@ export default {
 
   // Tuile « Notes »
   'accueil.notes': 'Notes',
-  'accueil.notes.nombre': { one: '{count} note', other: '{count} notes' },
   'accueil.notes.lu': { one: 'Notes, {count} note', other: 'Notes, {count} notes' },
   'accueil.notes.aucune': 'No notes',
   'accueil.notes.nouvelle': 'New note',

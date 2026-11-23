@@ -4,6 +4,10 @@
 //                                   moins de 30 jours (propriétaire seulement)
 //   POST /api/lists/:id/restore     restaurer une de ces listes (propriétaire ;
 //                                   en ligne seulement)
+//   POST /api/lists/:id/purge       supprimer définitivement une de ces listes
+//                                   (propriétaire ; en ligne seulement)
+//   POST /api/lists/deleted/purge   « Vider la corbeille » : { ids } les listes
+//                                   que l'écran montrait (propriétaire ; en ligne)
 //   GET  /api/lists/:id             une liste et ses articles, groupés et triés
 //   PUT  /api/lists/:id/members     changer le partage (propriétaire seulement)
 //   POST /api/lists/:id/wishes      convertir en liste d'envies, avec son
@@ -57,6 +61,26 @@ export function listRoutes(ctx) {
   router.post('/lists/:id/restore', (req, res) => {
     try {
       res.json(service.restoreList(req.user, req.params.id));
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
+      throw err;
+    }
+  });
+
+  // Corbeille : supprimer définitivement (déclarée avant /lists/:id/purge,
+  // pour que « deleted » ne soit jamais pris pour l'identifiant d'une liste)
+  router.post('/lists/deleted/purge', (req, res) => {
+    try {
+      res.json(service.purgeTrash(req.user, req.body?.ids));
+    } catch (err) {
+      if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
+      throw err;
+    }
+  });
+
+  router.post('/lists/:id/purge', (req, res) => {
+    try {
+      res.json(service.purgeList(req.user, req.params.id));
     } catch (err) {
       if (err instanceof OpError) return res.status(err.status).json({ error: req.t(err.key, err.params) });
       throw err;

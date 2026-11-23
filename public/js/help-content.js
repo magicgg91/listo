@@ -69,7 +69,7 @@ export const PERMISSIONS = [
   { action: 'Modifier la liste (titre, type, magasin, icône, options)', roles: ['owner'] },
   { action: 'Partager la liste et choisir le droit de chaque personne', roles: ['owner'] },
   { action: 'Créer un lien public', roles: ['owner'] },
-  { action: 'Supprimer la liste, la restaurer depuis la corbeille (30 jours)', roles: ['owner'] },
+  { action: 'Supprimer la liste, la restaurer ou l\'effacer pour de bon depuis la corbeille (30 jours)', roles: ['owner'] },
   { action: 'Quitter la liste', roles: ['contributor', 'reader'] },
   { action: 'Gérer les comptes, les magasins, les rayons et les articles', roles: ['admin'] },
 ];
@@ -702,7 +702,7 @@ export const GUIDE = [
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
-            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([[notes]]) ; sans note : « Aucune note ».',
+            'Tuile « Notes » : le nombre de vos notes (au bout du titre), les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
@@ -1097,8 +1097,9 @@ export const GUIDE = [
           { ul: [
             '« Dupliquer la liste » crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.',
             '« Supprimer la liste » (menu ⋮) demande une confirmation, qui rappelle ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s\'arrête.',
-            'Une liste supprimée reste 30 jours dans votre « Corbeille des listes » (Réglages), puis elle est effacée pour de bon. Seul son propriétaire l\'y voit ; chaque ligne indique dans combien de jours elle sera effacée.',
+            'Une liste supprimée reste 30 jours dans votre « Corbeille des listes » (Réglages), puis elle est effacée pour de bon. Seul son propriétaire l\'y voit ; chaque ligne indique son type, son nombre d\'éléments, le jour de sa suppression et le nombre de jours qui restent.',
             '« Restaurer » la remet telle qu\'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.',
+            '« Supprimer définitivement » (la poubelle rouge d\'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.',
             'Le propriétaire ne quitte pas sa liste : il la supprime, ou la laisse.',
           ] },
         ],

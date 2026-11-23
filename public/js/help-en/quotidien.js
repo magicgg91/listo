@@ -158,7 +158,7 @@ export default {
         { ul: [
           '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
           '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
-          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([[notes]]); with no note: “No notes”.',
+          '“Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([[notes]]); with no note: “No notes”.',
           '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
           'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
         ] },

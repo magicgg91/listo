@@ -25,7 +25,6 @@ export default {
 
   // Tuile « Notes » : nombre de notes, les dernières modifiées, « Nouvelle note »
   'accueil.notes': 'Notes',
-  'accueil.notes.nombre': { one: '{count} note', other: '{count} notes' },
   'accueil.notes.lu': { one: 'Notes, {count} note', other: 'Notes, {count} notes' },
   'accueil.notes.aucune': 'Aucune note',
   'accueil.notes.nouvelle': 'Nouvelle note',

@@ -108,8 +108,9 @@ export default {
         { ul: [
           "“Duplicate list” creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.",
           "“Delete list” (⋮ menu) asks for confirmation, which reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.",
-          "A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows in how many days it will be erased.",
+          "A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.",
           "“Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.",
+          "“Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.",
           "The owner doesn't leave their list: they delete it, or keep it.",
         ] },
       ],

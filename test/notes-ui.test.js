@@ -98,7 +98,11 @@ test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, «
   assert.match(home, /\.slice\(0, pc \? 4 : 2\)/);
   assert.match(home, /const add = addRow\(t\('accueil\.notes\.nouvelle'\), \(\) => openQuickNote\(\)\);/);
   assert.match(home, /emptyText\(t\('accueil\.notes\.aucune'\)\)/);
-  assert.equal(translate('fr', 'accueil.notes.nombre', { count: 12 }), '12 notes');
+  // Nombre : pastille grise au bout du titre (plus de ligne « 12 notes » dessous), aucune sans note
+  assert.match(home, /count \? h\('span', \{ class: 'count', 'aria-hidden': 'true' \}, String\(count\)\) : null/);
+  assert.match(home, /\{ spoken: t\('accueil\.notes\.lu', \{ count: notes\.length \}\), count: notes\.length \}/);
+  assert.doesNotMatch(home, /tile__meta/);
+  assert.doesNotMatch(read('public/css/listo.css'), /tile__meta/);
   assert.equal(translate('fr', 'accueil.notes.lu', { count: 1 }), 'Notes, 1 note');
   assert.equal(translate('en', 'accueil.notes.lu', { count: 2 }), 'Notes, 2 notes');
   // Le nombre compte les notes hors corbeille (même calcul que l'écran Notes et le menu de gauche)

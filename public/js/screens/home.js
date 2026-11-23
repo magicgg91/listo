@@ -37,10 +37,13 @@ import { t } from '../i18n.js';
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
 
 // Tuile : carte avec son titre (un bouton qui ouvre l'écran entier) et ses
-// lignes ; spoken : nom lu du titre s'il dit plus (« Notes, 12 notes »)
-function tile(name, iconName, onOpen, rows, { spoken = null } = {}) {
+// lignes ; spoken : nom lu du titre s'il dit plus (« Notes, 12 notes ») ;
+// count : petite pastille grise au bout du titre (tuile Notes : « 12 »),
+// muette pour les lecteurs d'écran (le nombre est dans spoken)
+function tile(name, iconName, onOpen, rows, { spoken = null, count = null } = {}) {
   return h('section', { class: 'card tile', 'aria-label': name },
-    h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name)),
+    h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name),
+      count ? h('span', { class: 'count', 'aria-hidden': 'true' }, String(count)) : null),
     rows);
 }
 
@@ -126,7 +129,8 @@ function listsTile(pc) {
     }))));
 }
 
-// Notes : le nombre de notes (« 12 notes »), les dernières modifiées (deux ;
+// Notes : le nombre de notes (pastille au bout du titre, « Notes, 12 notes »
+// au lecteur d'écran ; décision du 23 novembre 2026), les dernières modifiées (deux ;
 // quatre sur ordinateur), et « Nouvelle note » (saisie rapide, le curseur va
 // dans le texte). Une note ouvre son écran ; le titre ouvre l'écran Notes.
 function notesTile(pc) {
@@ -136,7 +140,6 @@ function notesTile(pc) {
   const open = () => navigate('notes');
   if (!notes.length) return tile(t('accueil.notes'), 'note', open, [emptyText(t('accueil.notes.aucune')), rowsOf([add])]);
   return tile(t('accueil.notes'), 'note', open, [
-    h('p', { class: 'tile__meta', 'aria-hidden': 'true' }, t('accueil.notes.nombre', { count: notes.length })),
     rowsOf([
       // Note modifiée par quelqu'un d'autre depuis ma dernière lecture : le
       // point des nouveautés (et dans le nom lu, jamais la couleur seule)
@@ -148,7 +151,7 @@ function notesTile(pc) {
       }),
       add,
     ]),
-  ], { spoken: t('accueil.notes.lu', { count: notes.length }) });
+  ], { spoken: t('accueil.notes.lu', { count: notes.length }), count: notes.length });
 }
 
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans

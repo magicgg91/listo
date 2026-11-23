@@ -9,6 +9,9 @@ export default {
   'ops.lectureSeule': 'Vous avez un accès en lecture seule à cette liste.',
   'ops.proprietaireNePeutPasQuitter': 'Le propriétaire ne peut pas quitter sa liste. Supprimez-la à la place.',
 
+  // « Vider la corbeille » : demande mal formée
+  'ops.corbeilleInvalide': 'Liste des listes à effacer invalide.',
+
   // Priorité, échéance, rayon (règles des options de la liste)
   'ops.prioriteDesactivee': 'La priorité est désactivée pour cette liste.',
   'ops.echeanceDesactivee': "L'échéance est désactivée pour cette liste.",

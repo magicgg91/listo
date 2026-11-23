@@ -97,10 +97,6 @@ export function deleteListText(list, itemCount, sharedWith) {
   ];
 }
 
-// Corbeille des listes : « Suppression définitive dans 12 jours » (« dans
-// 1 jour »). Le nombre de jours vient du serveur, calculé comme le nettoyage.
-export const trashDaysText = (days) => t('mots.corbeille.jours', { count: days });
-
 // Zone des articles cochés, en bas de la liste (design : section 16.5) :
 // textes selon la liste. title : titre de la zone ; reopen : action qui
 // décoche tout ; remove : action qui supprime les cochés.

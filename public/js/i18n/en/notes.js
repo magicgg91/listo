@@ -123,22 +123,13 @@ export default {
   // Saisie rapide (tuile Notes de l'Accueil)
 
   // Corbeille des notes
-  'notes.corbeille.retour': 'Back to settings',
   'notes.corbeille.titre': 'Notes trash',
   'notes.corbeille.intro': 'Your deleted notes stay here for 30 days, then they are deleted for good.',
-  'notes.corbeille.vider': 'Empty the trash',
-  'notes.corbeille.vider.question': 'Empty the trash?',
   'notes.corbeille.vider.texte': {
     one: 'The note in the trash will be deleted for good. This can\'t be undone.',
     other: 'The {count} notes in the trash will be deleted for good. This can\'t be undone.',
   },
-  'notes.corbeille.vider.confirmer': 'Empty',
-  'notes.corbeille.ligne': { one: 'Deleted {date} · {count} day left', other: 'Deleted {date} · {count} days left' },
-  'notes.corbeille.restaurer': 'Restore',
-  'notes.corbeille.restaurer.label': 'Restore {name}',
-  'notes.corbeille.definitif': 'Delete for good',
-  'notes.corbeille.definitif.label': 'Delete {name} for good',
-  'notes.corbeille.definitif.question': 'Delete “{name}” for good?',
+  'notes.corbeille.restaurer.label': 'Restore the note “{name}”',
   'notes.corbeille.definitif.texte': 'It will be deleted for good. This can\'t be undone.',
   'notes.corbeille.restauree': 'Note “{name}” restored',
   'notes.corbeille.vide.titre': 'Trash is empty',

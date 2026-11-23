@@ -1,50 +1,34 @@
-// Corbeille des notes (#/reglages/corbeille-notes, dans Réglages à côté
-// de celle des listes depuis le 23 novembre 2026 ; étape 2 du cadrage, maquette
-// design/accueil-notes/notes-3), ouverte par le bouton poubelle de l'écran
-// Notes (et non depuis les Réglages, comme celle des listes).
+// Corbeille des notes (#/reglages/corbeille-notes, dans Réglages juste sous
+// la corbeille des listes depuis le 23 novembre 2026 ; étape 2 du cadrage).
+// L'ancienne adresse #/notes/corbeille y mène encore.
 //
 // Mes notes supprimées depuis moins de 30 jours (le serveur n'envoie que
 // les miennes : jamais celles des autres, pas même à l'Admin), la plus
-// récente en haut : titre, « Supprimée le … · encore N jours »,
-// « Supprimer définitivement » (confirmation) et « Restaurer » ; en haut,
-// « Vider la corbeille » (confirmation avec le nombre). Tout passe par la
-// copie locale et la file d'attente : hors ligne compris.
+// récente en haut. Même écran que la corbeille des listes (morceaux
+// communs : trash-parts.js) : nombre et « Vider la corbeille » en haut
+// (confirmation avec le nombre) ; chaque ligne : titre, « Supprimer
+// définitivement » (confirmation) et « Restaurer », puis « Partagée avec
+// 2 personnes » si elle l'est et « Supprimée le 21 nov. · encore 28 jours ».
+// Tout passe par la copie locale et la file d'attente : hors ligne compris.
 
-import { h, icon, iconButton, replace } from '../dom.js';
-import { goBack } from '../router.js';
-import { app, onDataChange, isDesktop } from '../app.js';
+import { h, replace } from '../dom.js';
+import { app, onDataChange } from '../app.js';
 import { toast, confirmDialog, drawWhenIdle } from '../ui.js';
 import { trashDaysLeft } from '../notes.js';
 import * as actions from '../actions.js';
-import { t, formatDate } from '../i18n.js';
+import { t } from '../i18n.js';
 import { trashed, titleOf } from './notes.js';
+import { trashScreen, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion } from './trash-parts.js';
 
 export function renderNoteTrash(onLeave) {
-  const count = h('span', { class: 'page-tools__count' });
-  const emptyButton = h('button', { class: 'cart__action cart__action--danger', type: 'button', onClick: () => emptyTrash() }, icon('trash', 'icon--sm'), t('notes.corbeille.vider'));
-  const tools = h('div', { class: 'page-tools' }, count, emptyButton);
-  const list = h('div', {});
-
   async function emptyTrash() {
     const ids = trashed().map((note) => note.id);
     if (!ids.length) return;
-    const ok = await confirmDialog({
-      title: t('notes.corbeille.vider.question'),
-      text: t('notes.corbeille.vider.texte', { count: ids.length }),
-      confirmLabel: t('notes.corbeille.vider.confirmer'),
-      focusCancel: true,
-    });
-    if (ok) actions.purgeNotes(ids);
+    if (await confirmDialog(emptyQuestion(t('notes.corbeille.vider.texte', { count: ids.length })))) actions.purgeNotes(ids);
   }
 
   async function purgeOne(note) {
-    const ok = await confirmDialog({
-      title: t('notes.corbeille.definitif.question', { name: titleOf(note) }),
-      text: t('notes.corbeille.definitif.texte'),
-      confirmLabel: t('notes.corbeille.definitif'),
-      focusCancel: true,
-    });
-    if (ok) actions.purgeNotes([note.id]);
+    if (await confirmDialog(purgeQuestion(titleOf(note), t('notes.corbeille.definitif.texte')))) actions.purgeNotes([note.id]);
   }
 
   async function restore(note) {
@@ -55,49 +39,33 @@ export function renderNoteTrash(onLeave) {
   // Nombre de personnes avec qui la note est partagée (sans moi)
   const shared = (note) => (note.members ?? []).filter((m) => !m.isOwner).length;
 
-  // Une ligne : titre, date de suppression et jours restants, actions
-  const row = (note) => {
-    const name = titleOf(note);
-    const date = formatDate(new Date(note.deletedAt), { day: 'numeric', month: 'long' });
-    return h('div', { class: 'note-trash' },
-      h('div', { class: 'note-trash__body' },
-        h('span', { class: 'note-trash__title' }, name),
-        h('span', { class: 'note-trash__when' }, t('notes.corbeille.ligne', { date, count: trashDaysLeft(note.deletedAt) })),
-        // Partagée : restaurée, elle revient aussi pour ces personnes
-        shared(note) ? h('span', { class: 'note-trash__when' }, t('notes.corbeille.partagee', { count: shared(note) })) : null),
-      h('div', { class: 'note-trash__actions' },
-        h('button', { class: 'cart__action cart__action--danger', type: 'button', 'aria-label': t('notes.corbeille.definitif.label', { name }), onClick: () => purgeOne(note) }, t('notes.corbeille.definitif')),
-        h('button', { class: 'btn btn--sm btn--secondary', type: 'button', 'aria-label': t('notes.corbeille.restaurer.label', { name }), onClick: () => restore(note) }, t('notes.corbeille.restaurer'))));
-  };
+  // Une ligne ; partagée : restaurée, elle revient aussi pour ces personnes
+  const row = (note) => trashRow({
+    name: titleOf(note),
+    meta: [
+      shared(note) ? t('notes.corbeille.partagee', { count: shared(note) }) : null,
+      deletedText(note.deletedAt, trashDaysLeft(note.deletedAt)),
+    ],
+    restoreLabel: t('notes.corbeille.restaurer.label', { name: titleOf(note) }),
+    onPurge: () => purgeOne(note),
+    onRestore: () => restore(note),
+  });
+
+  const view = trashScreen({ title: t('notes.corbeille.titre'), intro: t('notes.corbeille.intro'), onEmpty: () => emptyTrash() });
 
   const draw = () => {
     const notes = app.data.loaded ? trashed() : [];
-    tools.hidden = notes.length === 0;
-    count.textContent = t('notes.nombre', { count: notes.length });
+    view.tools.hidden = notes.length === 0;
+    view.count.textContent = t('notes.nombre', { count: notes.length });
     if (!notes.length) {
-      replace(list, h('div', { class: 'empty' },
-        h('div', { class: 'empty__icon' }, icon('trash', 'icon--lg')),
-        h('h2', { class: 'empty__title' }, t('notes.corbeille.vide.titre')),
-        h('p', { class: 'empty__text' }, t('notes.corbeille.vide.texte'))));
+      replace(view.content, trashEmpty('trash', t('notes.corbeille.vide.titre'), t('notes.corbeille.vide.texte')));
       return;
     }
-    replace(list, h('div', { class: 'group' }, notes.map(row)));
+    replace(view.content, h('div', { class: 'group' }, notes.map(row)));
   };
-  const body = h('div', { class: 'body body--flush' }, h('p', { class: 'page-intro' }, t('notes.corbeille.intro')), tools, list);
-  const idle = drawWhenIdle(body, draw);
+  const idle = drawWhenIdle(view.body, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
   draw();
-
-  const title = h('h1', { class: isDesktop() ? 'pc-head__title' : 'topbar__title' }, t('notes.corbeille.titre'));
-  if (isDesktop()) {
-    return h('div', { class: 'screen' },
-      h('header', { class: 'pc-head' }, iconButton('chev-l', t('notes.corbeille.retour'), () => goBack('settings')), h('div', { class: 'pc-head__main' }, title)),
-      body);
-  }
-  return h('div', { class: 'screen' },
-    h('header', { class: 'topbar' },
-      iconButton('chev-l', t('notes.corbeille.retour'), () => goBack('settings')),
-      h('div', { class: 'topbar__main' }, title)),
-    body);
+  return view.screen;
 }

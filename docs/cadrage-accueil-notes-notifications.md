@@ -218,10 +218,10 @@ Les opérations hors ligne (`note.create`, `note.update` avec la version de dép
 
 Une PR par étape, validée avant la suivante :
 
-1. **Accueil et navigation** : écran Accueil (tuiles Échéances, Listes, Compte ; tuile Notes prévue mais masquée), bandeau à cinq boutons (Notes masqué), premier écran, menu de gauche.
-2. **Notes, socle** : notes, écran Notes et écran d'une note, enregistrement automatique, conflits, hors ligne, temps réel, catégories, corbeille ; tuile Notes et bouton Notes du bandeau.
-3. **Notes, partage** : partage, droits, Nouveautés, notifications, lien public et page publique.
-4. **Page Notifications** : historique, cloche, regroupement, lu / non lu, résumé et rappels sans LISTO_PUSH.
+1. **Accueil et navigation** : écran Accueil (tuiles Échéances, Listes, Compte ; tuile Notes prévue mais masquée ; cloche masquée jusqu'à l'étape 4), bandeau dans l'ordre Accueil, Échéances, Listes, Réglages (Notes ajouté à l'étape 2), absent de l'Accueil ; « Mes listes » devient « Listes » ; premier écran ; menu de gauche de l'ordinateur qui suit l'écran (sans le filtre des types).
+2. **Notes, socle** (migration 36) : notes, écran Notes et écran d'une note, enregistrement automatique, conflits, hors ligne, temps réel, catégories, corbeille ; tuile Notes et bouton Notes du bandeau.
+3. **Notes, partage** (migration 37) : partage, droits, Nouveautés, notifications, lien public et page publique.
+4. **Page Notifications** (migration 38) : historique, cloche, regroupement, lu / non lu, résumé et rappels sans LISTO_PUSH.
 5. **Aide et documents** : chapitres de l'aide en français et en anglais, guide, site, README, cahier des charges (à chaque étape pour ce qui la concerne).
 
 ## 9. Maquettes
@@ -246,10 +246,12 @@ Dans `design/accueil-notes/` (`README.md`, pages de référence, styles des nouv
 
 Les nouveaux composants (tuile, ligne de tuile avec nombre, carte de note, pastilles de catégories, ligne de notification, cloche avec pastille) sont dans `design/accueil-notes/listo-accueil-notes.css` (sections 16.19 à 16.27) et les icônes manquantes (« note », « épingle ») dans `design/accueil-notes/icons-nouvelles.svg.html` ; ils rejoindront `design/listo.css`, `design/components.html` et le sprite à la construction. Les choix faits en dessinant (en-tête, boutons, emplacement de « Nouvelle note »…) et les points à trancher sont dans `design/accueil-notes/README.md`.
 
-## 10. Décisions qui restent
+## 10. Décisions prises le 23 novembre 2026
 
-1. **Curseur dans « Nouvelle note »** : proposé, le curseur va dans le texte quand on touche « Nouvelle note » (geste fait pour écrire, comme la loupe). Sinon : il faut toucher le champ.
-2. **Ouvrir la page Notifications** marque-t-il tout comme lu ? Proposé : non (on marque en touchant une ligne ou « Tout marquer comme lu »).
-3. **Réglages communs** page et téléphone (une catégorie coupée disparaît des deux) : proposé oui.
-4. **Tuiles cachables ou déplaçables** : proposé pas pour l'instant.
-5. **Notes et assistants IA (MCP)** : proposé plus tard.
+Le propriétaire a validé les propositions :
+
+1. **Curseur dans « Nouvelle note »** : oui, le curseur va dans le texte quand on touche « Nouvelle note » (geste fait pour écrire, comme la loupe) ; ajouté aux exceptions de `test/focus.test.js`.
+2. **Ouvrir la page Notifications** ne marque rien comme lu : on marque en touchant une ligne ou « Tout marquer comme lu ».
+3. **Réglages communs** à la page et au téléphone : une catégorie coupée, ou une liste ou une note dont on a coupé les notifications, disparaît des deux.
+4. **Tuiles** : ni cachables ni déplaçables pour l'instant.
+5. **Notes et assistants IA (MCP)** : plus tard.

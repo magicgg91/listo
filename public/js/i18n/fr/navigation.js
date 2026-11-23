@@ -7,6 +7,7 @@ export default {
   'navigation.listes': 'Listes',
   'navigation.echeances': 'Échéances',
   'navigation.reglages': 'Réglages',
+  'navigation.notes': 'Notes',
   'navigation.echeances.pastille': {
     one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
     other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
@@ -22,6 +23,7 @@ export default {
   // Menu de gauche : entrée fixe « Listes » (lue « Listes, 5 listes »),
   // types de listes (écrans des listes)
   'navigation.listes.nombre': { one: 'Listes, {count} liste', other: 'Listes, {count} listes' },
+  'navigation.notes.nombre': { one: 'Notes, {count} note', other: 'Notes, {count} notes' },
   'navigation.types': 'Types',
   'navigation.types.libelle': 'Types de listes',
   'navigation.chargement': 'Chargement…',
@@ -33,5 +35,6 @@ export default {
   'navigation.raccourcis': 'Raccourcis clavier',
   'navigation.raccourcis.infobulle': 'Raccourcis clavier · ?',
   'navigation.nouvelleListe': 'Nouvelle liste',
+  'navigation.nouvelleNote': 'Nouvelle note',
   'navigation.role.admin': 'Admin',
 };

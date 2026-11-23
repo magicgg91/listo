@@ -58,6 +58,14 @@ export default {
       ] }],
     },
     {
+      id: 'p-notes',
+      title: "Notes",
+      blocks: [{ ul: [
+        "Notes of your own, in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
+        "A quick note from Home, even offline ([[echeances]]).",
+      ] }],
+    },
+    {
       id: 'p-securite',
       title: "Offline, trash, public link",
       blocks: [{ ul: [

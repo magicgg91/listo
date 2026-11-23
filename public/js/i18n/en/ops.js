@@ -114,6 +114,22 @@ export default {
   'ops.enviesNonDupliquees': "A wish list can't be duplicated.",
   'ops.tropDeDuplications': 'Too many duplicates right now. Try again in a little while.',
 
+  // Notes (server/notes.js)
+  'ops.noteIntrouvable': 'Note not found.',
+  'ops.noteExisteDeja': 'This note already exists.',
+  'ops.noteProprietaireSeulement': 'Only the owner of the note can do that.',
+  'ops.noteLectureSeule': 'You have read-only access to this note.',
+  'ops.noteConflit': 'This note was changed in the meantime: nothing was overwritten.',
+  'ops.versionNoteInvalide': 'Invalid note version.',
+  'ops.titreNoteInvalide': 'Invalid note title.',
+  'ops.titreNoteTropLong': 'Title too long ({max} characters at most).',
+  'ops.texteNoteInvalide': 'Invalid note text.',
+  'ops.texteNoteTropLong': 'Text too long ({max} characters at most).',
+  'ops.epingleInvalide': 'Invalid “Pin” setting.',
+  'ops.notesLimite': 'You already have {max} notes, trash included: delete some before creating another.',
+  'ops.notesInvalides': 'Invalid list of notes.',
+  'ops.notesTropVite': 'Too many note saves right now. They will be sent again in a little while.',
+
   // Synchronisation
   'ops.parametreSinceInvalide': 'Invalid “since” parameter.',
 };

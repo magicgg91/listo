@@ -1,0 +1,350 @@
+// Écran « Notes » (#/notes ; étape 2 du cadrage, 23 novembre 2026 ;
+// maquettes design/accueil-notes/notes-1 et pc-notes-1, sans catégories :
+// abandonnées le 23 novembre 2026) et saisie rapide d'une note (tuile Notes
+// de l'Accueil, maquette accueil-3).
+//
+// Téléphone : barre du haut (titre, pastille d'état, corbeille avec son
+// nombre, ⋮ « Trier », « + » Nouvelle note), loupe ronde du bandeau (titres
+// et textes), notes épinglées d'abord puis les autres. Ordinateur : les
+// cartes à gauche, la note ouverte à droite (screens/note.js), « Nouvelle
+// note » en bas du menu de gauche (touche N).
+//
+// Tout vient de la copie locale (hors ligne compris) ; chaque action passe
+// par la file d'attente (actions.js) et le serveur revérifie les droits.
+
+import { h, icon, iconButton } from '../dom.js';
+import { navigate, pathFor } from '../router.js';
+import { relativeTime } from '../format.js';
+import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
+import { createSearchRow } from '../search-row.js';
+import { tabBar } from '../tabbar.js';
+import { keycap } from '../shortcuts.js';
+import { isSearching, matches } from '../search.js';
+import { liveNotes, trashedNotes, sortNotes, noteTitle, noteExcerpt, NOTE_SORTS, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
+import * as actions from '../actions.js';
+import { t, compareText } from '../i18n.js';
+import { noteEditor } from './note.js';
+
+// --- Tri, gardé sur cet appareil ---
+const SORT_KEY = 'listo-tri-notes';
+export function loadNoteSort() {
+  try {
+    const value = localStorage.getItem(SORT_KEY);
+    return NOTE_SORTS.includes(value) ? value : 'recent';
+  } catch {
+    return 'recent';
+  }
+}
+function saveNoteSort(value) {
+  try {
+    localStorage.setItem(SORT_KEY, value);
+  } catch {
+    // stockage indisponible : le tri n'est pas retenu
+  }
+}
+
+// Titre affiché d'une note (« Note sans titre » si tout est vide)
+export const titleOf = (note) => noteTitle(note) || t('notes.sansTitre');
+
+// Notes visibles (hors corbeille), dans l'ordre choisi
+export function sortedNotes(sort = loadNoteSort()) {
+  return sortNotes(liveNotes([...app.data.notes.values()]), app.data.pinnedNotes, sort, (a, b) => compareText(a, b, { sensitivity: 'base', numeric: true }));
+}
+
+// Notes de la corbeille (les miennes), la plus récemment supprimée d'abord
+export const trashed = () => trashedNotes([...app.data.notes.values()]);
+
+// Recherche dans le titre et le texte
+const found = (notes, query) => (isSearching(query) ? notes.filter((note) => matches(note.title, query) || matches(note.body, query)) : notes);
+
+// --- Menu d'une note (carte ⋮, clic droit ; écran de la note) ---
+// Épingler / Désépingler, Dupliquer, Supprimer (propriétaire ; toujours le
+// cas à l'étape 2). onDeleted : après la mise à la corbeille.
+export function noteMenuItems(note, { onDeleted = () => {}, withPin = true } = {}) {
+  const pinned = app.data.pinnedNotes.has(note.id);
+  return [
+    withPin ? {
+      icon: pinned ? 'pin-off' : 'pin',
+      label: pinned ? t('notes.menu.desepingler') : t('notes.menu.epingler'),
+      onSelect: () => actions.pinNote(note.id, !pinned),
+    } : null,
+    {
+      icon: 'copy',
+      label: t('notes.menu.dupliquer'),
+      onSelect: async () => {
+        const copyId = await actions.duplicateNote(note);
+        const copy = app.data.notes.get(copyId);
+        toast(t('notes.dupliquee', { name: titleOf(copy) }), { action: t('notes.ouvrir'), onAction: () => navigate('note', { id: copyId }) });
+      },
+    },
+    { icon: 'trash', label: t('notes.menu.supprimer'), danger: true, separated: true, onSelect: () => askDelete(note, onDeleted) },
+  ].filter(Boolean);
+}
+
+// Supprimer (confirmation) : la note va dans la corbeille des notes ;
+// « Annuler » la restaure tout de suite
+export async function askDelete(note, onDeleted = () => {}) {
+  const ok = await confirmDialog({
+    title: t('notes.supprimer.question', { name: titleOf(note) }),
+    text: t('notes.supprimer.texte'),
+    confirmLabel: t('notes.supprimer.confirmer'),
+    focusCancel: true,
+  });
+  if (!ok) return;
+  await actions.deleteNote(note.id);
+  onDeleted();
+  toast(t('notes.supprimee'), { action: t('notes.annuler'), onAction: () => actions.restoreNote(note.id) });
+}
+
+// --- Carte d'une note (balisage de design/accueil-notes, notes-1) ---
+// Un lien (toute la carte ouvre la note) et, posé dans son coin, le bouton ⋮.
+export function noteCard(note, { selected = false } = {}) {
+  const pinned = app.data.pinnedNotes.has(note.id);
+  const title = titleOf(note);
+  const excerpt = noteExcerpt(note);
+  const check = app.data.noteConflicts.has(note.id);
+  const card = h('a', {
+    class: `card note-card${selected ? ' is-selected' : ''}`,
+    href: pathFor('note', { id: note.id }),
+    'aria-current': selected ? 'page' : null,
+    onClick: (event) => {
+      event.preventDefault();
+      navigate('note', { id: note.id }, { replace: selected || app.route?.name === 'note' || app.route?.name === 'newNote' });
+    },
+  },
+  h('div', { class: 'note-card__head' },
+    h('span', { class: 'note-card__icon' }, icon('note', 'icon--sm')),
+    h('h3', { class: 'note-card__title' }, title),
+    h('span', { class: 'note-card__time' },
+      pinned ? [icon('pin', 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('notes.carte.epinglee')}, `)] : null,
+      relativeTime(note.updatedAt))),
+  excerpt ? h('p', { class: 'note-card__excerpt' }, excerpt) : null,
+  // Note « À vérifier » (conflit pas encore tranché) : icône ET texte
+  check ? h('div', { class: 'note-card__foot' }, h('span', { class: 'chip note-card__check' }, icon('alert', 'icon--xs'), t('notes.aVerifier'))) : null);
+  const label = t('notes.carte.actions', { name: title });
+  const menuButton = iconButton('more', label, () => openMenu(noteMenuItems(note), { label, anchor: menuButton }), 'note-card__menu');
+  menuButton.setAttribute('aria-haspopup', 'menu');
+  menuButton.setAttribute('aria-expanded', 'false');
+  // Ordinateur : clic droit sur la carte, même menu
+  card.addEventListener('contextmenu', (event) => {
+    if (!onPc()) return;
+    event.preventDefault();
+    openMenu(noteMenuItems(note), { label, at: { x: event.clientX, y: event.clientY } });
+  });
+  return h('div', { class: 'note-card-wrap' }, card, menuButton);
+}
+
+// Épinglées, puis autres notes (titres de section seulement s'il y a des épinglées)
+function noteSections(notes, { selectedId = null } = {}) {
+  const pinned = notes.filter((note) => app.data.pinnedNotes.has(note.id));
+  const others = notes.filter((note) => !app.data.pinnedNotes.has(note.id));
+  const card = (note) => noteCard(note, { selected: note.id === selectedId });
+  if (!pinned.length) return others.map(card);
+  return [
+    h('h2', { class: 'notes-section' }, icon('pin', 'icon--xs'), t('notes.section.epinglees')),
+    pinned.map(card),
+    others.length ? h('h2', { class: 'notes-section' }, t('notes.section.autres')) : null,
+    others.map(card),
+  ];
+}
+
+// Aucune note : phrase d'aide et « Nouvelle note »
+const emptyNotes = () => h('div', { class: 'empty' },
+  h('div', { class: 'empty__icon' }, icon('note', 'icon--lg')),
+  h('h2', { class: 'empty__title' }, t('notes.vide.titre')),
+  h('p', { class: 'empty__text' }, t('notes.vide.texte')),
+  h('button', { class: 'btn btn--primary', type: 'button', onClick: () => navigate('newNote') }, icon('plus', 'icon--sm'), t('notes.nouvelle')));
+
+const noResult = (query, search) => h('div', { class: 'empty' },
+  h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
+  h('h2', { class: 'empty__title' }, t('notes.recherche.aucunResultat')),
+  h('p', { class: 'empty__text' }, t('notes.recherche.aucune', { query: query.trim() })),
+  h('button', {
+    class: 'btn btn--secondary',
+    type: 'button',
+    onPointerdown: search.keepFocus.pointerdown,
+    onMousedown: search.keepFocus.mousedown,
+    onClick: () => search.clear(),
+  }, t('notes.recherche.effacer')));
+
+const loading = () => h('p', { class: 'empty muted', role: 'status' }, t('notes.chargement'));
+
+// Bouton « Corbeille des notes » avec le nombre de notes qu'elle contient
+function trashButton() {
+  const badge = h('span', { class: 'icon-btn__badge icon-btn__badge--neutral', 'aria-hidden': 'true' });
+  const button = h('button', { class: 'icon-btn icon-btn--badge', type: 'button', onClick: () => navigate('noteTrash') }, icon('trash'), badge);
+  const draw = () => {
+    const count = trashed().length;
+    badge.hidden = count === 0;
+    badge.textContent = count > 9 ? '9+' : String(count);
+    button.setAttribute('aria-label', count ? t('notes.corbeille.bouton', { count }) : t('notes.corbeille.bouton.vide'));
+  };
+  draw();
+  return { el: button, draw };
+}
+
+// Menu ⋮ : « Trier » (plus récentes d'abord, ordre alphabétique)
+function sortMenu(onChange) {
+  const button = iconButton('more', t('notes.plusActions'), () => {
+    const current = loadNoteSort();
+    const pick = (value) => () => {
+      saveNoteSort(value);
+      onChange();
+    };
+    openMenu([
+      { icon: 'clock', label: t('notes.tri.recent'), checked: current === 'recent', onSelect: pick('recent') },
+      { icon: 'az', label: t('notes.tri.alpha'), checked: current === 'alpha', onSelect: pick('alpha') },
+    ], { label: t('notes.trier'), anchor: button });
+  });
+  button.setAttribute('aria-haspopup', 'menu');
+  button.setAttribute('aria-expanded', 'false');
+  return button;
+}
+
+// --- Écran « Notes » ---
+// openId : ordinateur, note ouverte à droite ; 'new' : nouvelle note
+export function renderNotes(onLeave, { openId = null } = {}) {
+  if (isDesktop()) return renderNotesPc(onLeave, openId);
+  const content = h('div', { class: 'scroll' });
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const search = createSearchRow(content, {
+    label: t('notes.recherche.libelle'),
+    onChange: () => draw(),
+    status: searchMeta,
+    onOpen: () => tabBar().loupe.sync(),
+  });
+  tabBar().loupe.set(search.loupe);
+  const trash = trashButton();
+
+  const draw = () => {
+    trash.draw();
+    if (!app.data.loaded) {
+      search.show(loading());
+      return;
+    }
+    const all = sortedNotes();
+    if (!all.length) {
+      searchMeta.textContent = '';
+      search.show(emptyNotes());
+      return;
+    }
+    const query = search.value;
+    const notes = found(all, query);
+    searchMeta.textContent = isSearching(query) ? t('notes.recherche.nombre', { count: notes.length }) : '';
+    searchMeta.classList.toggle('visually-hidden', notes.length === 0);
+    search.show(notes.length ? h('div', { class: 'cards' }, noteSections(notes)) : noResult(query, search));
+  };
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
+  draw();
+  refreshData({ quiet: true });
+
+  return h('div', { class: 'screen' },
+    h('header', { class: 'topbar topbar--plain topbar--status' },
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('notes.titre'))),
+      syncPill(() => refreshData({ full: true }), { inBar: true }),
+      trash.el,
+      sortMenu(() => draw()),
+      iconButton('plus', t('notes.nouvelle'), () => navigate('newNote'), 'icon-btn--accent')),
+    search.bar,
+    content);
+}
+
+// --- Ordinateur (maquette pc-notes-1, sans catégories) ---
+// À gauche : titre « Notes », « 12 notes », recherche toujours visible,
+// corbeille, pastille d'état, tri, cartes ; à droite : la note ouverte
+// (screens/note.js), sans voile.
+let pcScroll = 0;
+function renderNotesPc(onLeave, openId) {
+  const content = h('div', { class: 'scroll' });
+  const sub = h('p', { class: 'pc-head__sub' });
+  const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const search = createSearchRow(content, { label: t('notes.recherche.libelle'), onChange: () => draw(), docked: true, placeholder: t('navigation.recherche.placeholder') });
+  search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
+  search.field.append(keycap('/'));
+  const trashCount = h('span', { class: 'count', 'aria-hidden': 'true' });
+  const trashBtn = h('button', { class: 'btn btn--secondary btn--sm', type: 'button', onClick: () => navigate('noteTrash') }, icon('trash', 'icon--sm'), t('notes.corbeille.court'), trashCount);
+  const selectedId = () => (openId && openId !== 'new' ? openId : null);
+
+  const draw = () => {
+    const inTrash = trashed().length;
+    trashCount.hidden = inTrash === 0;
+    trashCount.textContent = String(inTrash);
+    trashBtn.setAttribute('aria-label', inTrash ? t('notes.corbeille.bouton', { count: inTrash }) : t('notes.corbeille.bouton.vide'));
+    if (!app.data.loaded) {
+      search.show(loading());
+      return;
+    }
+    const all = sortedNotes();
+    sub.textContent = t('notes.nombre', { count: all.length });
+    if (!all.length) {
+      searchMeta.textContent = '';
+      search.show(emptyNotes());
+      return;
+    }
+    const query = search.value;
+    const notes = found(all, query);
+    searchMeta.textContent = isSearching(query) ? t('notes.recherche.nombre', { count: notes.length }) : '';
+    search.show(notes.length ? h('div', { class: 'pc-notes__cards' }, noteSections(notes, { selectedId: selectedId() })) : noResult(query, search));
+  };
+  const idle = drawWhenIdle(content, draw);
+  onLeave(onDataChange(idle.request));
+  onLeave(idle.stop);
+  draw();
+  refreshData({ quiet: true });
+  // Ouvrir une autre note redessine l'écran : les cartes gardent leur défilement
+  onLeave(() => { pcScroll = content.scrollTop; });
+  requestAnimationFrame(() => { content.scrollTop = pcScroll; });
+
+  const list = h('div', { class: 'pc-notes__list' },
+    h('header', { class: 'pc-head' },
+      h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('notes.titre')), sub),
+      search.field),
+    h('div', { class: 'pc-tools' },
+      trashBtn,
+      searchMeta,
+      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sortMenu(() => draw()))),
+    offlineBanner(),
+    content);
+  const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;
+  return h('div', { class: 'screen' }, h('div', { class: `pc-notes${pane ? '' : ' pc-notes--closed'}` }, list, pane));
+}
+
+// --- Saisie rapide (tuile Notes de l'Accueil, maquette accueil-3) ---
+// « Titre (facultatif) », texte, « Annuler » et « Enregistrer » (grisé tant
+// que le titre et le texte sont vides). Le curseur va dans le texte : le
+// geste « Nouvelle note » a pour but d'écrire (décision du 23 novembre
+// 2026, exception de test/focus.test.js). Hors ligne : la note est créée sur
+// le téléphone et part au retour du réseau.
+export function openQuickNote() {
+  const titleField = h('input', { class: 'input', type: 'text', maxlength: String(NOTE_TITLE_MAX), autocomplete: 'off', enterkeyhint: 'next', 'aria-label': t('notes.rapide.champTitre'), placeholder: t('notes.rapide.champTitre') });
+  const text = h('textarea', { class: 'input input--area quick-note__text', maxlength: String(NOTE_BODY_MAX), 'aria-label': t('notes.champ.texte'), placeholder: t('notes.champ.texte') });
+  const saveButton = h('button', { class: 'btn btn--primary', type: 'button', disabled: true }, t('notes.rapide.enregistrer'));
+  const cancelButton = h('button', { class: 'btn btn--secondary', type: 'button' }, t('notes.rapide.annuler'));
+  const empty = () => titleField.value.trim() === '' && text.value.trim() === '';
+  const update = () => { saveButton.disabled = empty(); };
+  titleField.addEventListener('input', update);
+  text.addEventListener('input', update);
+  const buttons = h('div', { class: 'quick-note__actions' }, cancelButton, saveButton);
+  const pc = onPc();
+  const sheet = openSheet({
+    title: t('notes.rapide.titre'),
+    content: h('div', { class: 'quick-note' }, titleField, text, pc ? null : buttons),
+    footer: pc ? buttons : null,
+    size: 'sm',
+  });
+  cancelButton.addEventListener('click', () => sheet.close());
+  saveButton.addEventListener('click', async () => {
+    if (empty()) return;
+    saveButton.disabled = true;
+    const noteId = await actions.createNote({ title: titleField.value, body: text.value });
+    sheet.close();
+    toast(t('notes.rapide.faite'), { action: t('notes.ouvrir'), onAction: () => navigate('note', { id: noteId }) });
+  });
+  text.focus();
+}
+
+// Nombre de notes (hors corbeille) : tuile de l'Accueil, menu de gauche
+export const notesCount = () => liveNotes([...app.data.notes.values()]).length;

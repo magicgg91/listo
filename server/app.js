@@ -24,6 +24,7 @@ import { photoRoutes } from './routes/photos.js';
 import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
+import { createSaveCounter } from './notes.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { publicRoutes } from './routes/public.js';
@@ -156,6 +157,9 @@ export function createApp({
     duplicates: createUploadCounter({ limit: 20, now }),
     // Magasins et rayons créés par les comptes : 20 par heure et par compte au plus
     referenceCreations: createUploadCounter({ limit: 20, now }),
+    // Enregistrements de notes : 3 600 par heure et par compte au plus
+    // (le téléphone en envoie au plus un par seconde ; voir server/notes.js)
+    noteSaves: createSaveCounter({ now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -259,10 +263,11 @@ export function createApp({
     next();
   });
   api.use(requireSameOrigin(config.publicUrl));    // protection CSRF, toujours en premier
-  // Lot d'opérations (file d'attente du téléphone, jusqu'à 200 ko) : la
+  // Lot d'opérations (file d'attente du téléphone, jusqu'à 2 Mo : une note
+  // peut avoir 20 000 caractères, voir queue.js) : la
   // connexion est vérifiée AVANT de lire le corps. Un visiteur non connecté
   // reçoit 401 sans que Listo lise ni analyse ce qu'il envoie.
-  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '200kb' }));
+  api.use('/ops', loadSession(ctx), requireAuth, requirePasswordChanged, express.json({ limit: '2mb' }));
   // Tout le reste : corps JSON de 20 ko au plus (la connexion et la création
   // du premier Admin en ont besoin avant toute session)
   api.use(express.json({ limit: '20kb' }));
@@ -362,6 +367,8 @@ export function createApp({
   const cleanup = () => {
     purgeExpiredSessions(ctx);
     ctx.lists.purgeDeleted();
+    ctx.notes.purgeDeleted();     // notes dans la corbeille depuis plus de 30 jours
+    ctx.noteSaves.prune();
     ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();

@@ -2,6 +2,8 @@
 
 Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifications.md`. Rien n'est construit : ces fichiers servent à décider.
 
+**Catégories des notes : abandonnées le 23 novembre 2026** (décision du propriétaire pendant l'étape 2, à reprendre si le besoin vient). Les maquettes les montrent encore (pastilles de `notes-1`, écran `notes-2`, bouton « Voyages » de `note-1` et `note-2`, pastilles de `accueil-3`, menu de gauche de `pc-notes-1`, ligne de catégorie de `notes-3`) : les ignorer. Les classes `.cat-pick`, `.catbar`, `.cat-chip`, `.cat-row`, `.note-cat` ne sont pas reprises dans `design/listo.css`.
+
 | Fichier | Rôle |
 |---|---|
 | `captures/` | 24 PNG : les 12 écrans de la section 9 du cadrage, en clair (`-clair`) et en sombre (`-sombre`). Téléphone 390 × 844 points à 2x, ordinateur 1 440 × 900 points à 2x |

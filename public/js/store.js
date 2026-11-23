@@ -18,6 +18,7 @@ import { nestsSubtasks, nestItems, parentOf, orderSubtasks, nextPosition, reorde
 import { t, compareText } from './i18n.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
+import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -38,6 +39,16 @@ export function emptyState() {
     reservations: {},
     news: emptyNews(),      // mes nouveautés (voir « Nouveautés » plus bas)
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
+    // Notes (notes.js, server/notes.js) : celles que je vois, corbeille
+    // comprise (deletedAt rempli)
+    notes: new Map(),       // id -> note
+    noteIds: new Set(),     // notes auxquelles j'ai accès
+    pinnedNotes: new Set(), // notes que j'ai épinglées (propre à chaque personne)
+    // Notes « À vérifier » : enregistrement refusé parce que la note a
+    // changé entre-temps (deux appareils, ou deux personnes) ; mon texte
+    // est gardé ici, sur ce téléphone seulement, jusqu'à mon choix
+    // (id -> { title, body, at }). Jamais remplacé par une synchronisation.
+    noteConflicts: new Map(),
   };
 }
 
@@ -53,7 +64,10 @@ const emptyNews = () => ({ enabled: true, checks: false, lists: {} });
 // file d'attente, gardée à part, n'est pas touchée.
 // Version 3 : listes d'envies (lien, prix, réservations). Une copie plus
 // ancienne est écartée et rechargée de la même façon.
-export const SNAPSHOT_VERSION = 3;
+// Version 4 : notes (23 novembre 2026). Même chose : une copie sans notes
+// est rechargée entièrement (une synchronisation « depuis » n'apporterait
+// pas les notes plus anciennes).
+export const SNAPSHOT_VERSION = 4;
 
 // Forme enregistrable de la copie (tableaux simples, sans Map ni Set)
 export function toSnapshot(state, savedAt = new Date().toISOString()) {
@@ -70,6 +84,10 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     users: state.users,
     news: state.news,
     reservations: state.reservations,
+    notes: [...state.notes.values()],
+    noteIds: [...state.noteIds],
+    pinnedNotes: [...state.pinnedNotes],
+    noteConflicts: [...state.noteConflicts],
   };
 }
 
@@ -89,6 +107,10 @@ export function fromSnapshot(snapshot) {
     state.users = [...(snapshot.users ?? [])];
     state.news = snapshot.news ?? emptyNews();
     state.reservations = snapshot.reservations ?? {};
+    state.notes = new Map((snapshot.notes ?? []).map((note) => [note.id, note]));
+    state.noteIds = new Set(snapshot.noteIds ?? []);
+    state.pinnedNotes = new Set(snapshot.pinnedNotes ?? []);
+    state.noteConflicts = new Map(snapshot.noteConflicts ?? []);
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -136,9 +158,23 @@ export function loadSync(state, data) {
   state.reservations = data.reservations ?? {};
   if (data.users) state.users = data.users;
   if (data.news) state.news = data.news;
+  loadNotes(state, data, { full: true });
   state.loaded = true;
   refreshListReferences(state);
   return state;
+}
+
+// Notes reçues du serveur (/api/sync) : full, synchronisation complète ;
+// sinon, seulement les notes changées depuis. Épingles : toujours en entier. Une note absente de noteIds n'est plus visible
+// (effacée, ou accès retiré) : elle disparaît. Les notes « À vérifier »
+// (noteConflicts) restent : mon texte n'est jamais perdu.
+function loadNotes(state, data, { full }) {
+  if (!Array.isArray(data.noteIds)) return;
+  state.noteIds = new Set(data.noteIds);
+  if (full) state.notes = new Map();
+  for (const note of data.notes ?? []) if (state.noteIds.has(note.id)) state.notes.set(note.id, note);
+  for (const id of [...state.notes.keys()]) if (!state.noteIds.has(id)) state.notes.delete(id);
+  state.pinnedNotes = new Set(data.pinnedNotes ?? []);
 }
 
 // Ajoute « ce qui a changé depuis » (réponse de /api/sync?since=…) à la
@@ -166,6 +202,7 @@ export function mergeSync(state, data) {
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
+  loadNotes(state, data, { full: false });
   refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
@@ -418,6 +455,14 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         state.items.delete(item.id);
       }
       return;
+    case 'note.create':
+    case 'note.update':
+    case 'note.delete':
+    case 'note.restore':
+    case 'note.purge':
+    case 'note.pin':
+      applyNoteOp(state, op, { user, now });
+      return;
     case 'item.restore': {
       const old = state.trash.get(op.itemId);
       if (!old || !state.lists.has(old.listId)) return;
@@ -434,6 +479,70 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       }
       return;
     }
+    default:
+  }
+}
+
+// --- Notes : même effet que le serveur (server/notes.js), hors ligne compris ---
+
+// Titre et texte tels que le serveur les garde (une ligne pour le titre ;
+// retours à la ligne du texte gardés)
+export const cleanNoteTitle = (value) => String(value ?? '').normalize('NFC').replace(/[\r\n]+/g, ' ').trim().slice(0, NOTE_TITLE_MAX);
+export const cleanNoteBody = (value) => String(value ?? '').normalize('NFC').replace(/\r\n?/g, '\n').slice(0, NOTE_BODY_MAX);
+
+function applyNoteOp(state, op, { user, now }) {
+  const note = op.noteId ? state.notes.get(op.noteId) : null;
+  switch (op.type) {
+    case 'note.create': {
+      if (state.notes.has(op.noteId)) return;
+      state.notes.set(op.noteId, {
+        id: op.noteId,
+        title: cleanNoteTitle(op.title),
+        body: cleanNoteBody(op.body),
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        updatedBy: user?.id ?? null,
+        updatedByName: user?.displayName ?? null,
+        deletedAt: null,
+        access: 'owner',
+      });
+      state.noteIds.add(op.noteId);
+      if (op.pinned === true) state.pinnedNotes.add(op.noteId);
+      return;
+    }
+    case 'note.update':
+      // Seulement sur la version prévue (sinon le serveur refusera : conflit)
+      if (!note || note.version !== op.baseVersion) return;
+      state.notes.set(note.id, {
+        ...note,
+        ...(op.title === undefined ? {} : { title: cleanNoteTitle(op.title) }),
+        ...(op.body === undefined ? {} : { body: cleanNoteBody(op.body) }),
+        version: note.version + 1,
+        updatedAt: now,
+        updatedBy: user?.id ?? null,
+        updatedByName: user?.displayName ?? null,
+      });
+      return;
+    case 'note.delete':
+      if (note && !note.deletedAt) state.notes.set(note.id, { ...note, deletedAt: now, updatedAt: now });
+      return;
+    case 'note.restore':
+      if (note?.deletedAt) state.notes.set(note.id, { ...note, deletedAt: null, updatedAt: now });
+      return;
+    case 'note.purge':
+      for (const id of op.noteIds ?? []) {
+        if (!state.notes.get(id)?.deletedAt) continue;
+        state.notes.delete(id);
+        state.noteIds.delete(id);
+        state.pinnedNotes.delete(id);
+      }
+      return;
+    case 'note.pin':
+      if (!note || typeof op.pinned !== 'boolean') return;
+      if (op.pinned) state.pinnedNotes.add(note.id);
+      else state.pinnedNotes.delete(note.id);
+      return;
     default:
   }
 }

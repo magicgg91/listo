@@ -7,19 +7,19 @@
 // - le champ « Rechercher une liste » ;
 // - les entrées fixes, dans l'ordre du bandeau du téléphone : « Accueil »,
 //   « Échéances » (avec sa pastille : tâches en retard et du jour),
-//   « Listes » (nombre de listes). « Notes » viendra après « Listes »
-//   (étape 2 du cadrage) ;
+//   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2) ;
 // - dessous, le menu suit l'écran :
 //   · écrans des listes (Listes, une liste) : seulement « Types », les types
 //     que la personne a (Courses, Tâches, Envies), avec leur nombre de
 //     listes et le point des nouveautés. Le type choisi montre au centre
 //     seulement ses listes (lists.js) ; une liste ouverte met en avant son
 //     type. L'entrée fixe « Listes » montre toutes les listes ;
-//   · autres écrans (Accueil, Échéances, Réglages, Aide…) : rien de plus ;
+//   · autres écrans (Accueil, Échéances, Notes, Réglages, Aide…) : rien de
+//     plus (catégories des notes : abandonnées le 23 novembre 2026) ;
 //   · pendant une recherche, sur n'importe quel écran : les listes trouvées,
 //     groupées par type, avec leur compteur « restants/total » ;
-// - en bas : « Nouvelle liste » (touche N), le compte connecté et
-//   « Réglages ».
+// - en bas : « Nouvelle liste » (touche N), « Nouvelle note » sur les
+//   écrans des notes, le compte connecté et « Réglages ».
 //
 // Le menu est créé une fois et gardé d'un écran à l'autre (texte cherché et
 // défilement conservés) ; seul ce qui dépend de l'écran change.
@@ -32,6 +32,7 @@ import { progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list-types.js';
 import { computeSummaries, loadListSort, newsBadge, listCountsByType } from '../store.js';
+import { liveNotes } from '../notes.js';
 import { app, onDataChange } from '../app.js';
 import { drawWhenIdle, watchNewDay } from '../ui.js';
 import { deadlineBadge } from '../deadlines.js';
@@ -54,6 +55,8 @@ export function setPcListType(type) {
 
 // Écrans des listes : le menu y montre les types
 const LIST_SCREENS = ['lists', 'list', 'editList', 'newList'];
+// Écrans des notes : « Notes » mis en avant, « Nouvelle note » en bas
+export const NOTE_SCREENS = ['notes', 'note', 'newNote', 'noteTrash'];
 
 // Ordre des listes du menu (types dans l'ordre Courses, Tâches, Envies,
 // puis le tri choisi) : celui des touches [ et ] (liste précédente,
@@ -61,6 +64,9 @@ const LIST_SCREENS = ['lists', 'list', 'editList', 'newList'];
 function listsInMenuOrder(lists) {
   return LIST_TYPES.flatMap((type) => lists.filter((list) => typeOf(list) === type));
 }
+
+// Nombre de notes (hors corbeille), dans la copie locale
+const countNotes = () => liveNotes([...app.data.notes.values()]).length;
 
 // Crée le menu. Renvoie { el, select(route), goList(delta), dispose() }.
 export function createPcSide() {
@@ -122,8 +128,15 @@ export function createPcSide() {
   // « Listes » avec le nombre de listes (lu « Listes, 5 listes »)
   const listsCount = h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' });
   const listsLink = fixedLink('lists', 'tasks', t('navigation.listes'), listsCount);
-  // (étape 2 du cadrage : l'entrée « Notes » se placera ici, après « Listes »)
-  const main = h('div', { class: 'pc-side__main' }, homeLink, deadlinesLink, listsLink);
+  // « Notes » avec le nombre de notes (lu « Notes, 12 notes »)
+  const notesCount = h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' });
+  const notesLink = fixedLink('notes', 'note', t('navigation.notes'), notesCount);
+  const main = h('div', { class: 'pc-side__main' }, homeLink, deadlinesLink, listsLink, notesLink);
+
+  // Bouton du bas : « Nouvelle liste », ou « Nouvelle note » sur les écrans
+  // des notes (même touche N)
+  const newList = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), t('navigation.nouvelleListe'), keycap('N'));
+  const newNote = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', hidden: true, onClick: () => navigate('newNote', {}, { replace: ['note', 'newNote'].includes(selected.name) }) }, icon('plus', 'icon--sm'), t('navigation.nouvelleNote'), keycap('N'));
 
   const markCurrent = (link, on) => {
     if (on) link.setAttribute('aria-current', 'page');
@@ -141,6 +154,13 @@ export function createPcSide() {
     markCurrent(homeLink, selected.name === 'home');
     markCurrent(deadlinesLink, selected.name === 'deadlines');
     markCurrent(listsLink, selected.name === 'lists' && pcType === 'all');
+    const notes = app.data.loaded ? countNotes() : null;
+    notesCount.textContent = notes === null ? '' : String(notes);
+    if (notes === null) notesLink.removeAttribute('aria-label');
+    else notesLink.setAttribute('aria-label', t('navigation.notes.nombre', { count: notes }));
+    markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
+    newList.hidden = NOTE_SCREENS.includes(selected.name);
+    newNote.hidden = !newList.hidden;
   };
   const stopDay = watchNewDay(drawFixed);
 
@@ -276,7 +296,8 @@ export function createPcSide() {
     nav,
     filler,
     h('div', { class: 'pc-side__foot' },
-      h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), t('navigation.nouvelleListe'), keycap('N')),
+      newList,
+      newNote,
       h('div', { class: 'pc-user' },
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },

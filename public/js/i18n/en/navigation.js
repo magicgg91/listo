@@ -7,6 +7,7 @@ export default {
   'navigation.listes': 'Lists',
   'navigation.echeances': 'Due',
   'navigation.reglages': 'Settings',
+  'navigation.notes': 'Notes',
   'navigation.echeances.pastille': {
     one: 'Due, {count} task overdue or due today',
     other: 'Due, {count} tasks overdue or due today',
@@ -21,6 +22,7 @@ export default {
 
   // Menu de gauche : entrée fixe « Listes », types de listes
   'navigation.listes.nombre': { one: 'Lists, {count} list', other: 'Lists, {count} lists' },
+  'navigation.notes.nombre': { one: 'Notes, {count} note', other: 'Notes, {count} notes' },
   'navigation.types': 'Types',
   'navigation.types.libelle': 'List types',
   'navigation.chargement': 'Loading…',
@@ -32,5 +34,6 @@ export default {
   'navigation.raccourcis': 'Keyboard shortcuts',
   'navigation.raccourcis.infobulle': 'Keyboard shortcuts · ?',
   'navigation.nouvelleListe': 'New list',
+  'navigation.nouvelleNote': 'New note',
   'navigation.role.admin': 'Admin',
 };

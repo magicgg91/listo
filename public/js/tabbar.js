@@ -1,11 +1,10 @@
 // Bandeau du bas du téléphone (décision du 11 novembre 2026) : en style
 // verre, et la loupe ronde qui flotte juste au-dessus, à droite.
-// Quatre boutons depuis le 23 novembre 2026, dans cet ordre : « Accueil »,
-// « Échéances », « Listes », « Réglages » (« Notes » viendra entre
-// « Listes » et « Réglages » ; la classe tabbar--N suit le nombre de
-// boutons).
+// Cinq boutons depuis le 23 novembre 2026 (étape 2), dans cet ordre :
+// « Accueil », « Échéances », « Listes », « Notes », « Réglages » (la classe
+// tabbar--N suit le nombre de boutons).
 //
-// - Il n'existe que sur Échéances, Listes et Réglages : pas sur l'Accueil
+// - Il n'existe que sur Échéances, Listes, Notes et Réglages : pas sur l'Accueil
 //   (ses tuiles mènent déjà partout, décision du 23 novembre 2026), pas dans
 //   une liste (le bas est pris par le champ d'ajout), et pas sur ordinateur
 //   (menu de gauche).
@@ -33,6 +32,7 @@ export const TABS = [
   ['home', 'home', () => t('navigation.accueil')],
   ['deadlines', 'calendar', () => t('navigation.echeances')],
   ['lists', 'tasks', () => t('navigation.listes')],
+  ['notes', 'note', () => t('navigation.notes')],
   ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 
@@ -41,8 +41,8 @@ export const hasTabs = (routeName) => routeName !== 'home' && TABS.some(([name])
 
 // Aller à un écran du bandeau. L'Accueil est l'écran de départ : on y
 // revient par un retour en arrière (le bouton Retour du téléphone ne fait
-// pas faire le tour des onglets) ; entre Échéances, Listes et Réglages, un
-// écran remplace l'autre.
+// pas faire le tour des onglets) ; entre Échéances, Listes, Notes et
+// Réglages, un écran remplace l'autre.
 export function goToTab(name) {
   const current = app.route?.name;
   if (name === current) return;

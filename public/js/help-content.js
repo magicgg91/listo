@@ -219,6 +219,14 @@ export const GUIDE = [
         ] }],
       },
       {
+        id: 'p-notes',
+        title: 'Notes',
+        blocks: [{ ul: [
+          'Des notes à vous, en texte libre, qui s\'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([[notes]]).',
+          'Une note rapide depuis l\'Accueil, même hors ligne ([[echeances]]).',
+        ] }],
+      },
+      {
         id: 'p-securite',
         title: 'Hors ligne, corbeille, lien public',
         blocks: [{ ul: [
@@ -692,10 +700,11 @@ export const GUIDE = [
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
+            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (les réglages des notifications) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
-          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes » et « Réglages ». Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
+          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages ». Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
@@ -703,6 +712,26 @@ export const GUIDE = [
             'Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu\'un d\'autre.',
             'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
           ] },
+        ],
+      },
+      {
+        id: 'notes',
+        title: 'Les notes',
+        blocks: [
+          'Une note garde un texte libre : un code, une recette, des idées. Elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin. Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.',
+          { ul: [
+            'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d\'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.',
+            '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » ouvre une saisie rapide : « Titre (facultatif) », le texte, puis « Enregistrer » (ou « Annuler »).',
+            'Une note s\'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.',
+            'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet.',
+            'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Dupliquer » (une copie dont le titre finit par “(copie)”), « Supprimer ».',
+          ] },
+          { sub: 'Deux appareils en même temps' },
+          'Si la note a été enregistrée ailleurs (sur un autre de vos appareils) pendant que vous écriviez, rien n\'est écrasé. Un bandeau prévient ; à l\'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l\'appareil et le choix revient quand vous rouvrez la note.',
+          { sub: 'Corbeille des notes' },
+          'Le bouton poubelle de l\'écran « Notes » ouvre la « Corbeille des notes » : une note supprimée y reste 30 jours, puis elle est effacée pour de bon. « Restaurer » la remet à sa place (épinglée si elle l\'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Hors ligne, tout cela attend le retour du réseau.',
+          { sub: 'Sur ordinateur' },
+          '« Notes » est dans le menu de gauche, avec le nombre de notes ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s\'affiche à droite des cartes et s\'enregistre toute seule ; la touche « / » cherche dans les notes.',
         ],
       },
       {

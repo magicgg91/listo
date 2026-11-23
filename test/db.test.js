@@ -23,6 +23,7 @@ const TABLES = [
   'push_subscriptions', 'push_settings', 'push_list_mutes', 'push_digests',
   'push_reminders', // rappels des tâches à heure précise (migration 26)
   'account_requests', // demandes de compte par Authelia (migration 29)
+  'notes', 'note_user_state', // notes (migration 36)
 ];
 
 // Base en mémoire avec un compte et une liste, pour les tests
@@ -33,7 +34,7 @@ function sampleDb() {
   return db;
 }
 
-test('les vingt-neuf tables du cahier des charges sont créées (plus de catégories : migration 32)', () => {
+test('les trente et une tables du cahier des charges sont créées (plus de catégories : migration 32)', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)

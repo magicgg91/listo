@@ -10,6 +10,7 @@ export default {
   },
   'application.lectureSeule.horsLigne': 'Cette liste est maintenant en lecture seule : vos modifications hors ligne n\'ont pas été envoyées.',
   'application.optionDesactivee': 'Cette option est désactivée pour cette liste.',
+  'application.noteAVerifier': 'Une note est à vérifier : elle a été modifiée ailleurs pendant que vous écriviez. Ouvrez-la pour choisir la version à garder.',
   'application.reessayer': 'Réessayer',
 
   // Nouvelle version

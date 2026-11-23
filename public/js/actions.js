@@ -13,13 +13,16 @@
 // appliquées ici aussi : elles marchent hors ligne.
 
 import { isShoppingList } from './list-types.js';
-import { app, dataChanged, queueEntry, flushSoon, refreshData } from './app.js';
+import { app, dataChanged, queueEntry, flushSoon, refreshData, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
 import { uuid, photoUrl, post, patch, del } from './api.js';
-import { applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
+import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
 import { nextDue } from './repeat.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { todayKey } from './format.js';
 import { isMultiList } from './sorting.js';
+import { noteTitle, NOTE_TITLE_MAX } from './notes.js';
+import { copyName } from './format.js';
+import { t } from './i18n.js';
 
 const now = () => new Date().toISOString();
 
@@ -249,3 +252,92 @@ export function photoSrc(item) {
 }
 
 export const hasPhoto = (item) => Boolean(item.localPhoto || item.photoAt);
+
+// --- Notes (étape 2 ; server/notes.js) ---
+// Comme le reste : copie locale d'abord, puis file d'attente (hors ligne
+// compris). Chaque note a son numéro de version ; un enregistrement porte
+// celui sur lequel le texte a été écrit (baseVersion).
+
+// Nouvelle note (saisie rapide, « + », « Garder les deux », « Dupliquer ») ;
+// renvoie son identifiant
+export async function createNote({ title = '', body = '', pinned = false, noteId = uuid() } = {}) {
+  await perform({ type: 'note.create', noteId, title, body, ...(pinned ? { pinned: true } : {}) });
+  return noteId;
+}
+
+// Dernier enregistrement (création ou texte) de cette note encore en file
+function lastQueuedSave(noteId) {
+  return queuedEntries().filter((entry) => entry.kind === 'op' && entry.op.noteId === noteId
+    && (entry.op.type === 'note.create' || entry.op.type === 'note.update')).at(-1) ?? null;
+}
+
+// Vrai si un enregistrement de cette note attend encore d'être envoyé
+export const notePending = (noteId) => Boolean(lastQueuedSave(noteId));
+
+// Enregistre le titre et le texte d'une note. baseVersion : la version sur
+// laquelle l'écran a écrit. Renvoie 'queued' (parti dans la file) ou
+// 'conflict' (la note a changé entre-temps, ou était déjà « À vérifier » :
+// mon texte est gardé sur ce téléphone jusqu'à mon choix, rien n'est envoyé).
+// Enregistrements rapprochés : tant que le précédent n'est pas parti, il
+// est remplacé (un seul envoi, le dernier texte) ; sinon le nouveau le suit
+// (afterOp : refusé si le précédent l'est, voir server/notes.js).
+export async function saveNote(noteId, { title, body, baseVersion }) {
+  const note = app.data.notes.get(noteId);
+  if (!note) return 'gone';
+  const kept = app.data.noteConflicts.get(noteId);
+  if (kept || note.version !== baseVersion) {
+    app.data.noteConflicts.set(noteId, { title, body, at: now() });
+    dataChanged();
+    return 'conflict';
+  }
+  const previous = lastQueuedSave(noteId);
+  if (previous && !isQueuedSending(previous.seq) && await replaceQueuedOp(previous.seq, { ...previous.op, title, body })) {
+    app.data.notes.set(noteId, { ...note, title: cleanNoteTitle(title), body: cleanNoteBody(body), updatedAt: now() });
+    dataChanged();
+    flushSoon();
+    return 'queued';
+  }
+  await perform({ type: 'note.update', noteId, title, body, baseVersion: note.version, ...(previous ? { afterOp: previous.op.id } : {}) });
+  return 'queued';
+}
+
+export const pinNote = (noteId, pinned) => perform({ type: 'note.pin', noteId, pinned });
+export const deleteNote = (noteId) => perform({ type: 'note.delete', noteId });
+export const restoreNote = (noteId) => perform({ type: 'note.restore', noteId });
+// Supprimer définitivement (une note, ou toute la corbeille) : une seule opération
+export const purgeNotes = (noteIds) => perform({ type: 'note.purge', noteIds });
+
+// Titre d'une copie : « Vacances (copie) » (« Note sans titre (copie) »)
+const copyTitle = (source) => copyName(noteTitle(source) || t('notes.sansTitre'), NOTE_TITLE_MAX);
+
+// Dupliquer : une note à moi, même texte, titre « (copie) »
+export function duplicateNote(note) {
+  return createNote({ title: copyTitle(note), body: note.body });
+}
+
+// --- Conflit (note « À vérifier ») : les trois choix ---
+
+// « Garder la mienne » : mon texte est enregistré sur la version actuelle
+export async function keepMyNote(noteId) {
+  const kept = app.data.noteConflicts.get(noteId);
+  const note = app.data.notes.get(noteId);
+  if (!kept || !note) return;
+  app.data.noteConflicts.delete(noteId);
+  await perform({ type: 'note.update', noteId, title: kept.title, body: kept.body, baseVersion: note.version });
+}
+
+// « Prendre la leur » : mon texte est abandonné (après confirmation)
+export function takeTheirNote(noteId) {
+  app.data.noteConflicts.delete(noteId);
+  dataChanged();
+}
+
+// « Garder les deux » : mon texte devient une nouvelle note « (copie) »,
+// épinglée comme l'originale ; l'originale garde leur texte. Renvoie
+// l'identifiant de la copie.
+export async function keepBothNotes(noteId) {
+  const kept = app.data.noteConflicts.get(noteId);
+  if (!kept) return null;
+  app.data.noteConflicts.delete(noteId);
+  return createNote({ title: copyTitle(kept), body: kept.body, pinned: app.data.pinnedNotes.has(noteId) });
+}

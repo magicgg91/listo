@@ -21,6 +21,9 @@ import { renderTrash } from './screens/trash.js';
 import { renderLists } from './screens/lists.js';
 import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
+import { renderNotes } from './screens/notes.js';
+import { renderNote } from './screens/note.js';
+import { renderNoteTrash } from './screens/note-trash.js';
 import { tabBar, hasTabs } from './tabbar.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
@@ -238,6 +241,9 @@ let refusals = [];         // modifications refusées par le serveur : { message
 //   le message court montré alors est « application.optionDesactivee ».
 const READ_ONLY = 'ops.lectureSeule';
 const OPTION_OFF = ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'];
+// Note enregistrée sur une version dépassée (server/notes.js) : pas de
+// message d'erreur, la note passe « À vérifier » (markNoteConflict)
+const NOTE_CONFLICT = 'ops.noteConflit';
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -266,10 +272,12 @@ export function refreshData({ quiet = false, full = false } = {}) {
       //    Même chose pour une option (priorité, échéance) désactivée entre-temps.
       let readOnlyRefused = false;
       let optionRefused = false;
+      let noteConflict = false;
       if (refusals.length) {
         readOnlyRefused = refusals.some(({ code }) => code === READ_ONLY);
         optionRefused = refusals.some(({ code }) => OPTION_OFF.includes(code));
-        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && !OPTION_OFF.includes(code)).map(({ message }) => message);
+        noteConflict = refusals.some(({ code }) => code === NOTE_CONFLICT);
+        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
         refusals = [];
         full = true;
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
@@ -287,6 +295,9 @@ export function refreshData({ quiet = false, full = false } = {}) {
       dataChanged();
       if (readOnlyRefused) toast(t('application.lectureSeule.horsLigne'));
       else if (optionRefused) toast(t('application.optionDesactivee'));
+      // Note « À vérifier » : l'écran de la note ouverte propose le choix ;
+      // ailleurs, un message dit de l'ouvrir
+      else if (noteConflict && app.route?.name !== 'note' && !app.route?.params?.note) toast(t('application.noteAVerifier'));
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
@@ -320,12 +331,36 @@ function makeQueue() {
     },
     events: {
       changed: () => setPendingCount(queue?.count() ?? 0),
-      refused: (entry, message, code) => refusals.push({ message, code }),
+      refused: (entry, message, code) => {
+        if (code === NOTE_CONFLICT) markNoteConflict(entry.op);
+        refusals.push({ message, code });
+      },
       dropped: () => {},
       offline: () => setSyncState('off'),
     },
   });
 }
+
+// Enregistrement d'une note refusé (la note a changé entre-temps) : mon
+// texte est gardé sur ce téléphone, la note passe « À vérifier » jusqu'à
+// mon choix (screens/note.js). Plusieurs refus de suite (file hors ligne) :
+// le dernier texte l'emporte. Rien n'est écrasé, ni ici ni sur le serveur.
+function markNoteConflict(op) {
+  const note = app.data.notes.get(op.noteId);
+  const kept = app.data.noteConflicts.get(op.noteId);
+  app.data.noteConflicts.set(op.noteId, {
+    title: op.title ?? kept?.title ?? note?.title ?? '',
+    body: op.body ?? kept?.body ?? note?.body ?? '',
+    at: new Date().toISOString(),
+  });
+  dataChanged();
+}
+
+// File d'attente vue par les notes (actions.js, screens/note.js) : éléments
+// en attente, remplacement d'un enregistrement pas encore parti
+export const queuedEntries = () => queue?.entries() ?? [];
+export const replaceQueuedOp = (seq, op) => queue?.replaceOp(seq, op) ?? Promise.resolve(false);
+export const isQueuedSending = (seq) => Boolean(queue?.isSending(seq));
 
 // Rejoue sur la copie locale ce qui attend encore dans la file
 function replayQueue() {
@@ -595,19 +630,20 @@ function pcSideFor(route) {
 }
 
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
-// l'écran de connexion, par exemple). wide : colonne large (ordinateur).
+// l'écran de connexion, par exemple). wide : colonne large (ordinateur) ;
+// full : toute la largeur (écran Notes et note ouverte à droite).
 // Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
 // liste », qui s'ouvrent par-dessus l'écran en cours
 let mountedOnPc = false;
 let mountedListId = null;
-function mount(screen, { withSide = true, wide = false, listId = null } = {}) {
+function mount(screen, { withSide = true, wide = false, full = false, listId = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
   const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
-  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}` : 'shell__col' });
+  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}${full ? ' pc-col--full' : ''}` : 'shell__col' });
   setOverlayHost(col);
   // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
   if (bar) tabBar().loupe.set(null);
@@ -723,6 +759,17 @@ function show(route) {
     case 'home': mount((onLeave) => renderHome(onLeave), { wide: true }); break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
+    // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
+    // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
+    case 'notes': mount((onLeave) => renderNotes(onLeave), { full: true }); break;
+    case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
+    case 'note':
+    case 'newNote': {
+      const id = name === 'note' ? params.id : null;
+      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }), { full: true });
+      else mount((onLeave) => renderNote(id, onLeave));
+      break;
+    }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
     // l'écran en cours (ou sur « Listes », sur la liste à modifier)

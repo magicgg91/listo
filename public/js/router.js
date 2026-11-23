@@ -8,7 +8,7 @@
 // Les écrans et leur adresse. « :id » est une partie variable.
 export const ROUTES = [
   { name: 'login', path: '/connexion' },
-  // Accueil : premier écran (tuiles Échéances, Listes, Compte ; home.js)
+  // Accueil : premier écran (tuiles Échéances, Listes, Notes, Compte ; home.js)
   { name: 'home', path: '/accueil' },
   // Listes (« Mes listes » jusqu'au 23 novembre 2026 ; même adresse)
   { name: 'lists', path: '/listes' },
@@ -17,6 +17,12 @@ export const ROUTES = [
   { name: 'newList', path: '/listes/nouvelle' },
   { name: 'editList', path: '/listes/:id/modifier' },
   { name: 'list', path: '/listes/:id' },
+  // Notes (étape 2, 23 novembre 2026) : l'écran Notes, la corbeille des
+  // notes, une nouvelle note (pas encore enregistrée), une note
+  { name: 'notes', path: '/notes' },
+  { name: 'noteTrash', path: '/notes/corbeille' },
+  { name: 'newNote', path: '/notes/nouvelle' },
+  { name: 'note', path: '/notes/:id' },
   { name: 'settings', path: '/reglages' },
   { name: 'account', path: '/reglages/compte' },
   { name: 'about', path: '/reglages/a-propos' },

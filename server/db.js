@@ -11,9 +11,9 @@
 //   (ex. « 2026-10-16T21:30:00.000Z »). Elles se lisent facilement et se
 //   comparent dans le bon ordre. Elles sont toujours posées par le serveur.
 // - Les booléens sont des entiers 0 (non) ou 1 (oui).
-// - Les listes et articles ont un identifiant UUID (texte) créé par le
-//   téléphone, pour pouvoir les créer hors ligne. Les autres tables utilisent
-//   un simple numéro attribué par SQLite.
+// - Les listes, articles et notes ont un identifiant
+//   UUID (texte) créé par le téléphone, pour pouvoir les créer hors ligne.
+//   Les autres tables utilisent un simple numéro attribué par SQLite.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -670,6 +670,46 @@ export const MIGRATIONS = [
   // peut désormais exister dans deux magasins : la contrainte UNIQUE du nom
   // part, et la table est recréée (voir aislesByStoreMigration).
   (db) => aislesByStoreMigration(db),
+
+  // --- Migration 36 : notes (23 novembre 2026, docs/cadrage-accueil-notes-notifications.md) ---
+  // notes : une note (identifiant UUID créé par le téléphone, pour la créer
+  // hors ligne), son propriétaire, un titre facultatif (120 caractères au
+  // plus), un texte simple (20 000 au plus), un numéro de version (+1 à
+  // chaque enregistrement du titre ou du texte : sert à repérer deux
+  // enregistrements faits sur la même version, server/notes.js), qui a
+  // écrit en dernier, et la corbeille (deleted_at, deleted_by : effacée
+  // pour de bon 30 jours après par le ménage).
+  // note_user_state : ce qui est propre à chaque personne qui voit la note
+  // (l'épingle ; gardée pendant la corbeille). Le partage (étape 3) ajoutera
+  // des membres sans changer ces tables. (Catégories des notes : abandonnées
+  // le 23 novembre 2026, aucune table.)
+  // Un compte effacé (seul cas permis : compte jamais utilisé) n'a pas de
+  // note ; ON DELETE CASCADE en filet de sécurité. Les tables partent vides :
+  // rien ne change pour les données existantes.
+  `
+  CREATE TABLE notes (
+    id         TEXT    PRIMARY KEY,
+    owner_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title      TEXT    NOT NULL DEFAULT '' CHECK (length(title) <= 120),
+    body       TEXT    NOT NULL DEFAULT '' CHECK (length(body) <= 20000),
+    version    INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
+    created_at TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL,
+    updated_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at TEXT,
+    deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+  CREATE INDEX notes_owner ON notes(owner_id, updated_at);
+  CREATE INDEX notes_deleted ON notes(deleted_at) WHERE deleted_at IS NOT NULL;
+
+  CREATE TABLE note_user_state (
+    note_id TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    pinned  INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
+    PRIMARY KEY (note_id, user_id)
+  );
+  CREATE INDEX note_user_state_user ON note_user_state(user_id);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

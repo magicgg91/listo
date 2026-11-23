@@ -8,7 +8,9 @@
 //
 // Le message ne contient AUCUNE donnée de la liste (ni nom, ni article, ni
 // photo) : le téléphone demande ensuite lui-même les changements par
-// /api/sync, avec tous les contrôles d'accès habituels. Après un changement
+// /api/sync, avec tous les contrôles d'accès habituels. Pour les notes
+// (server/notes.js) : « event: note », sans données non plus, aux seuls
+// appareils des comptes concernés. Après un changement
 // de catégorie, de magasin ou de rayon par l'Admin, tous les téléphones
 // connectés reçoivent « event: refs » (sans données non plus).
 //
@@ -97,6 +99,16 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     }
   }
 
+  // Prévient les comptes donnés que leurs notes ont changé (une note, une
+  // catégorie, un rangement) : « event: note », sans aucune donnée ; le
+  // téléphone fait une synchronisation (droits vérifiés par /api/sync)
+  function notifyNotes(userIds) {
+    const message = 'event: note\ndata: {}\n\n';
+    for (const userId of new Set(userIds)) {
+      for (const connection of byUser.get(userId) ?? []) write(connection, message);
+    }
+  }
+
   // Prévient les membres actifs d'une liste (relus dans la base au moment de
   // l'envoi : une personne retirée du partage ou un compte désactivé ne reçoit plus rien)
   function notifyList(listId, { alsoUsers = [] } = {}) {
@@ -136,7 +148,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const list of [...byUser.values()]) for (const connection of [...list]) close(connection);
   }
 
-  return { connect, notifyList, notifyUsers, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
+  return { connect, notifyList, notifyUsers, notifyNotes, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
 }
 
 // Refuse un flux demandé depuis un autre site. Un navigateur n'envoie pas

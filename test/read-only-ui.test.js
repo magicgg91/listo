@@ -222,8 +222,8 @@ test('hors ligne : une modification refusée (lecture seule) sort de la file, sa
   assert.equal(READ_ONLY, 'ops.lectureSeule', 'même nom que le serveur');
   assert.equal(fr[READ_ONLY], 'Vous avez un accès en lecture seule à cette liste.');
   assert.equal(fr['application.lectureSeule.horsLigne'], "Cette liste est maintenant en lecture seule : vos modifications hors ligne n'ont pas été envoyées.");
-  assert.match(appJs, /readOnlyRefused = refusals\.some\(\(\{ code \}\) => code === READ_ONLY\);[\s\S]*?const \[first, \.\.\.others\] = refusals\.filter\(\(\{ code \}\) => code !== READ_ONLY && !OPTION_OFF\.includes\(code\)\)\.map\(\(\{ message \}\) => message\);\s*refusals = \[\];\s*full = true;/);
-  assert.match(appJs, /refused: \(entry, message, code\) => refusals\.push\(\{ message, code \}\),/);
+  assert.match(appJs, /readOnlyRefused = refusals\.some\(\(\{ code \}\) => code === READ_ONLY\);[\s\S]*?const \[first, \.\.\.others\] = refusals\.filter\(\(\{ code \}\) => code !== READ_ONLY && code !== NOTE_CONFLICT && !OPTION_OFF\.includes\(code\)\)\.map\(\(\{ message \}\) => message\);\s*refusals = \[\];\s*full = true;/);
+  assert.match(appJs, /refused: \(entry, message, code\) => \{\s*if \(code === NOTE_CONFLICT\) markNoteConflict\(entry\.op\);\s*refusals\.push\(\{ message, code \}\);\s*\},/);
   assert.match(appJs, /dataChanged\(\);\s*if \(readOnlyRefused\) toast\(t\('application\.lectureSeule\.horsLigne'\)\);/);
 });
 

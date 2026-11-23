@@ -114,6 +114,22 @@ export default {
   'ops.enviesNonDupliquees': 'Une liste d\'envies ne se duplique pas.',
   'ops.tropDeDuplications': 'Trop de duplications pour le moment. Réessayez dans un moment.',
 
+  // Notes (server/notes.js)
+  'ops.noteIntrouvable': 'Note introuvable.',
+  'ops.noteExisteDeja': 'Cette note existe déjà.',
+  'ops.noteProprietaireSeulement': 'Seul le propriétaire de la note peut faire cela.',
+  'ops.noteLectureSeule': 'Vous avez un accès en lecture seule à cette note.',
+  'ops.noteConflit': 'Cette note a été modifiée entre-temps : rien n\'a été écrasé.',
+  'ops.versionNoteInvalide': 'Version de la note invalide.',
+  'ops.titreNoteInvalide': 'Titre de note invalide.',
+  'ops.titreNoteTropLong': 'Titre trop long ({max} caractères au plus).',
+  'ops.texteNoteInvalide': 'Texte de note invalide.',
+  'ops.texteNoteTropLong': 'Texte trop long ({max} caractères au plus).',
+  'ops.epingleInvalide': 'Réglage « Épingler » invalide.',
+  'ops.notesLimite': 'Vous avez déjà {max} notes, corbeille comprise : supprimez-en avant d\'en créer une autre.',
+  'ops.notesInvalides': 'Liste des notes invalide.',
+  'ops.notesTropVite': 'Trop d\'enregistrements de notes pour le moment. Ils repartiront dans un moment.',
+
   // Synchronisation
   'ops.parametreSinceInvalide': 'Paramètre « since » invalide.',
 };

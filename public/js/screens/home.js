@@ -7,7 +7,7 @@
 //   compte, la pastille d'état (un appui synchronise). La cloche des
 //   notifications viendra à droite de la pastille avec la page
 //   Notifications (étape 4 du cadrage).
-// - Tuiles, dans un ordre fixe : Échéances, Listes, (Notes, étape 2 du
+// - Tuiles, dans un ordre fixe : Échéances, Listes, Notes (étape 2 du
 //   cadrage), Compte. Deux colonnes sur le téléphone (une sous 340 px),
 //   trois sur ordinateur (quatre au-delà de 1 440 px).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
@@ -28,14 +28,16 @@ import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
+import { sortedNotes, titleOf, openQuickNote } from './notes.js';
 import { t } from '../i18n.js';
 
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
 
-// Tuile : carte avec son titre (un bouton qui ouvre l'écran entier) et ses lignes
-function tile(name, iconName, onOpen, rows) {
+// Tuile : carte avec son titre (un bouton qui ouvre l'écran entier) et ses
+// lignes ; spoken : nom lu du titre s'il dit plus (« Notes, 12 notes »)
+function tile(name, iconName, onOpen, rows, { spoken = null } = {}) {
   return h('section', { class: 'card tile', 'aria-label': name },
-    h('button', { class: 'tile__head', type: 'button', onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name)),
+    h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name)),
     rows);
 }
 
@@ -121,6 +123,25 @@ function listsTile(pc) {
     }))));
 }
 
+// Notes : le nombre de notes (« 12 notes »), les dernières modifiées (deux ;
+// quatre sur ordinateur), et « Nouvelle note » (saisie rapide, le curseur va
+// dans le texte). Une note ouvre son écran ; le titre ouvre l'écran Notes.
+function notesTile(pc) {
+  const notes = sortedNotes('recent');
+  const latest = [...notes].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0, pc ? 4 : 2);
+  const add = addRow(t('accueil.notes.nouvelle'), () => openQuickNote());
+  const open = () => navigate('notes');
+  if (!notes.length) return tile(t('accueil.notes'), 'note', open, [emptyText(t('accueil.notes.aucune')), rowsOf([add])]);
+  return tile(t('accueil.notes'), 'note', open, [
+    h('p', { class: 'tile__meta', 'aria-hidden': 'true' }, t('accueil.notes.nombre', { count: notes.length })),
+    rowsOf([
+      ...latest.map((note) => h('button', { class: 'tile__row', type: 'button', onClick: () => navigate('note', { id: note.id }) },
+        h('span', { class: 'tile__label' }, titleOf(note)))),
+      add,
+    ]),
+  ], { spoken: t('accueil.notes.lu', { count: notes.length }) });
+}
+
 // Compte : « Mon compte », « Notifications » (Réglages › Notifications, en
 // attendant la page Notifications de l'étape 4), « Réglages » ; pour
 // l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
@@ -155,10 +176,8 @@ export function renderHome(onLeave) {
       replace(tiles, h('p', { class: 'empty muted', role: 'status' }, t('accueil.chargement')));
       return;
     }
-    // Ordre fixe : Échéances, Listes, puis Notes et Compte. La tuile Notes
-    // (étape 2 du cadrage) se placera entre Listes et Compte ; en attendant,
-    // Compte prend sa place.
-    replace(tiles, deadlinesTile(), listsTile(pc), accountTile());
+    // Ordre fixe : Échéances, Listes, puis Notes et Compte
+    replace(tiles, deadlinesTile(), listsTile(pc), notesTile(pc), accountTile());
   };
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));

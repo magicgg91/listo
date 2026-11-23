@@ -194,8 +194,8 @@ test('Accueil : pas de bandeau du bas ni de loupe ; nombres lus avec leur libell
   assert.equal(translate('en', 'listes.type.lu', { type: 'Shopping', count: 1 }), 'Shopping, 1 list');
   // Temps réel, minuit et minute (une tâche passe « En retard » à son heure)
   for (const text of ['onLeave(onDataChange(idle.request));', 'onLeave(watchNewDay(draw));', 'onLeave(watchMinute(() => idle.request()));']) assert.ok(home.includes(text), text);
-  // Ordre des tuiles : Échéances, Listes, (Notes), Compte
-  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), accountTile\(\)\);/);
+  // Ordre des tuiles : Échéances, Listes, Notes, Compte (étape 2)
+  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), notesTile\(pc\), accountTile\(\)\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
   assert.match(home, /requests > 0 \? row\(\{/);
@@ -228,8 +228,8 @@ test('« Listes » partout, jamais « Mes listes » (interface en français et e
 
 test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur les écrans des listes ; plus le filtre en haut)', () => {
   const side = code('public/js/screens/pc-side.js');
-  // Entrées fixes, dans l'ordre du bandeau : Accueil, Échéances, Listes
-  assert.match(side, /const main = h\('div', \{ class: 'pc-side__main' \}, homeLink, deadlinesLink, listsLink\);/);
+  // Entrées fixes, dans l'ordre du bandeau : Accueil, Échéances, Listes, Notes (étape 2)
+  assert.match(side, /const main = h\('div', \{ class: 'pc-side__main' \}, homeLink, deadlinesLink, listsLink, notesLink\);/);
   assert.match(side, /const homeLink = fixedLink\('home', 'home', t\('navigation\.accueil'\)\);/);
   assert.match(side, /const listsLink = fixedLink\('lists', 'tasks', t\('navigation\.listes'\), listsCount\);/);
   // Écrans des listes seulement : « Types » ; ailleurs, rien de plus

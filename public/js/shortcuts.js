@@ -276,7 +276,9 @@ export function startShortcuts({ onUndo, onGoList }) {
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     const run = {
       '?': () => (openShortcuts(), true),
-      n: () => (navigate('newList'), true),
+      // N : « Nouvelle liste », ou « Nouvelle note » sur les écrans des notes
+      // (le curseur va alors dans le texte : geste fait pour écrire)
+      n: () => (location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
       '[': () => (onGoList(-1), true),

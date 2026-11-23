@@ -26,8 +26,9 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [2.3 Tâches : priorité, échéance, heure, rappel, répétition, attribution](#p-taches)
 - [2.4 Envies : réservation et cotisation](#p-envies)
 - [2.5 Saisie rapide](#p-saisie)
-- [2.6 Hors ligne, corbeille, lien public](#p-securite)
-- [2.7 Sécurité et confort](#p-confort)
+- [2.6 Notes](#p-notes)
+- [2.7 Hors ligne, corbeille, lien public](#p-securite)
+- [2.8 Sécurité et confort](#p-confort)
 
 </details>
 
@@ -79,13 +80,14 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [5.9 Groupes, tri et compteur](#tri)
 - [5.10 Rechercher](#recherche)
 - [5.11 Se déplacer : Accueil, Échéances](#echeances)
-- [5.12 Réserver un souhait, cotiser](#reserver)
-- [5.13 Nouveautés](#nouveautes)
-- [5.14 Hors ligne et synchronisation](#hors-ligne)
-- [5.15 Thème clair ou sombre](#theme)
-- [5.16 Langue : français ou anglais](#langue)
-- [5.17 Sur ordinateur](#ordinateur)
-- [5.18 Sous-tâches](#sous-taches)
+- [5.12 Les notes](#notes)
+- [5.13 Réserver un souhait, cotiser](#reserver)
+- [5.14 Nouveautés](#nouveautes)
+- [5.15 Hors ligne et synchronisation](#hors-ligne)
+- [5.16 Thème clair ou sombre](#theme)
+- [5.17 Langue : français ou anglais](#langue)
+- [5.18 Sur ordinateur](#ordinateur)
+- [5.19 Sous-tâches](#sous-taches)
 
 </details>
 
@@ -182,7 +184,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 ### 1.2 Ce que Listo ne fait pas
 
 - Pas de version en ligne : Listo s'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [3. Installation](#installation).
-- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.16 Langue : français ou anglais](#langue)) ; cette aide aussi.
+- En français ou en anglais, au choix de chacun dans « Mon compte » ([5.17 Langue : français ou anglais](#langue)) ; cette aide aussi.
 - Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
 - Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.6 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. Assistants IA (MCP)](#claude)).
@@ -221,7 +223,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 - Une liste se partage avec d'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([7.4 Propriétaire : partager et choisir les droits](#partager)).
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
-- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.13 Nouveautés](#nouveautes)).
+- Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.14 Nouveautés](#nouveautes)).
 - Notifications, facultatives : modifications (des autres), réservations, partage et résumé des échéances, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
 - Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.9 Groupes, tri et compteur](#tri)).
 
@@ -242,7 +244,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Une heure, et un rappel choisi tâche par tâche ([5.2 Heure et rappel](#heure)).
 - Tâches qui se répètent : chaque jour, certains jours de la semaine, chaque mois, chaque année ([5.3 Tâches qui se répètent](#repeter)).
 - Attribuer une tâche à une personne de la liste, et voir « Les miennes » ([5.4 Attribuer une tâche](#attribuer)).
-- Ranger des sous-tâches sous une tâche principale ([5.18 Sous-tâches](#sous-taches)).
+- Ranger des sous-tâches sous une tâche principale ([5.19 Sous-tâches](#sous-taches)).
 - Tri par priorité ou par échéance ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-envies"></a>
@@ -250,7 +252,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 ### 2.4 Envies : réservation et cotisation
 
 - Pour soi, pour un autre compte ou pour une personne sans compte ; lien, prix indicatif, priorité et photo ([7.5 Propriétaire : liste d'envies](#envies)).
-- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.12 Réserver un souhait, cotiser](#reserver)).
+- Les proches réservent un souhait, éventuellement à plusieurs (cotisation) ([5.13 Réserver un souhait, cotiser](#reserver)).
 - La personne à qui la liste est destinée ne voit jamais les réservations ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 - Par le lien public, un visiteur sans compte peut aussi réserver ou participer ([7.10 Visiteur du lien public](#role-visiteur)).
 
@@ -263,21 +265,28 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Mode scan : le code-barres d'un produit, photographié, donne son nom ([5.7 Scanner un code-barres](#scan)).
 - Photo d'un article ([5.8 Ajouter une photo](#photo)).
 
+<a id="p-notes"></a>
+
+### 2.6 Notes
+
+- Des notes à vous, en texte libre, qui s'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([5.12 Les notes](#notes)).
+- Une note rapide depuis l'Accueil, même hors ligne ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
+
 <a id="p-securite"></a>
 
-### 2.6 Hors ligne, corbeille, lien public
+### 2.7 Hors ligne, corbeille, lien public
 
-- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.14 Hors ligne et synchronisation](#hors-ligne)).
+- Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.15 Hors ligne et synchronisation](#hors-ligne)).
 - Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)).
 - Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)).
 
 <a id="p-confort"></a>
 
-### 2.7 Sécurité et confort
+### 2.8 Sécurité et confort
 
 - Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
-- Thème clair, sombre ou automatique ([5.15 Thème clair ou sombre](#theme)).
+- Thème clair, sombre ou automatique ([5.16 Thème clair ou sombre](#theme)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([8. Assistants IA (MCP)](#claude)).
 
@@ -750,9 +759,9 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.9 Groupes, tri et compteur
 
-- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.18 Sous-tâches](#sous-taches)).
+- Touchez l'en-tête d'un rayon (ou d'un magasin, ou d'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([5.19 Sous-tâches](#sous-taches)).
 - « Listes » se trie par date ou par ordre alphabétique (bouton en haut).
-- Sur le téléphone, sous le titre de « Listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone. Sur ordinateur, le type se choisit dans le menu de gauche ([5.17 Sur ordinateur](#ordinateur)).
+- Sur le téléphone, sous le titre de « Listes », « Toutes », « Courses », « Tâches » ou « Envies » n'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone. Sur ordinateur, le type se choisit dans le menu de gauche ([5.18 Sur ordinateur](#ordinateur)).
 - Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.
 - Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité », « Par échéance » et « Par personne », selon les options de la liste.
 - Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.
@@ -779,10 +788,11 @@ Listo s'ouvre sur l'« Accueil » : « Bonjour » et votre prénom, la date du j
 
 - Tuile « Échéances » : « En retard », « Aujourd'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».
 - Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l'une d'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».
+- Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([5.12 Les notes](#notes)) ; sans note : « Aucune note ».
 - Tuile « Compte » : « Mon compte », « Notifications » (les réglages des notifications) et « Réglages ». Pour l'Admin, quand la connexion par un fournisseur d'identité est activée, « Demandes de compte » apparaît avec leur nombre s'il y en a en attente.
 - Le titre d'une tuile ouvre l'écran entier. Une adresse inconnue mène aussi à l'Accueil ; un lien vers une liste ouvre toujours cette liste.
 
-Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes » et « Réglages ». Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
+Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages ». Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
@@ -790,9 +800,33 @@ Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil 
 - Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu'un d'autre.
 - L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
 
+<a id="notes"></a>
+
+### 5.12 Les notes
+
+Une note garde un texte libre : un code, une recette, des idées. Elle est à vous seul : personne d'autre ne la voit, pas même l'Admin. Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.
+
+- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.
+- « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » ouvre une saisie rapide : « Titre (facultatif) », le texte, puis « Enregistrer » (ou « Annuler »).
+- Une note s'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.
+- Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s'ouvre dans un nouvel onglet.
+- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Dupliquer » (une copie dont le titre finit par “(copie)”), « Supprimer ».
+
+**Deux appareils en même temps**
+
+Si la note a été enregistrée ailleurs (sur un autre de vos appareils) pendant que vous écriviez, rien n'est écrasé. Un bandeau prévient ; à l'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l'appareil et le choix revient quand vous rouvrez la note.
+
+**Corbeille des notes**
+
+Le bouton poubelle de l'écran « Notes » ouvre la « Corbeille des notes » : une note supprimée y reste 30 jours, puis elle est effacée pour de bon. « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Hors ligne, tout cela attend le retour du réseau.
+
+**Sur ordinateur**
+
+« Notes » est dans le menu de gauche, avec le nombre de notes ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s'affiche à droite des cartes et s'enregistre toute seule ; la touche « / » cherche dans les notes.
+
 <a id="reserver"></a>
 
-### 5.12 Réserver un souhait, cotiser
+### 5.13 Réserver un souhait, cotiser
 
 Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lecture seule », sauf la personne à qui la liste est destinée. Il faut du réseau.
 
@@ -805,7 +839,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="nouveautes"></a>
 
-### 5.13 Nouveautés
+### 5.14 Nouveautés
 
 - Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.
 - Sur « Listes », une pastille sur l'icône de la carte donne le nombre de nouveautés (“30+” après plus d'un mois d'absence).
@@ -816,7 +850,7 @@ Dans une liste d'envies, tout membre peut réserver un souhait, même en « Lect
 
 <a id="hors-ligne"></a>
 
-### 5.14 Hors ligne et synchronisation
+### 5.15 Hors ligne et synchronisation
 
 Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.
 
@@ -826,13 +860,13 @@ Le partage, le lien public, la duplication, « Quitter la liste », la corbeille
 
 <a id="theme"></a>
 
-### 5.15 Thème clair ou sombre
+### 5.16 Thème clair ou sombre
 
 Réglages, « Mon compte », section « Apparence » : « Clair », « Sombre » ou « Auto » (comme le téléphone). Le choix vaut pour cet appareil. Sur un ordinateur, c'est au même endroit : Réglages, « Mon compte », « Apparence ».
 
 <a id="langue"></a>
 
-### 5.16 Langue : français ou anglais
+### 5.17 Langue : français ou anglais
 
 Réglages, « Mon compte », section « Langue » : « Automatique » (la langue du téléphone ou du navigateur, sinon celle choisie pour le serveur), « Français » ou “English”. Le choix vaut pour votre compte, sur tous vos appareils ; l'application se recharge dans la langue choisie. Vos notifications arrivent aussi dans cette langue.
 
@@ -840,7 +874,7 @@ Les noms des listes, des articles, des rayons et des magasins ne sont pas tradui
 
 <a id="ordinateur"></a>
 
-### 5.17 Sur ordinateur
+### 5.18 Sur ordinateur
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
@@ -884,7 +918,7 @@ Ne s'annulent pas par Ctrl+Z : un ajout (supprimez l'article), une photo, une r�
 
 <a id="sous-taches"></a>
 
-### 5.18 Sous-tâches
+### 5.19 Sous-tâches
 
 Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([7.3 Propriétaire : modifier la liste](#modifier)). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.
 
@@ -907,7 +941,7 @@ Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Op
 
 Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.
 
-L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.13 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
+L'écran Réglages, « Notifications » a deux parties : « Dans l'application » (les nouveautés, pastilles et halo : [5.14 Nouveautés](#nouveautes)) et « Sur cet appareil » (les notifications, décrites ici).
 
 <a id="notif-activer"></a>
 
@@ -948,7 +982,7 @@ Section « Contenu », « Afficher le détail dans la notification » : désacti
 
 Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c'est oublié si vous quittez la liste.
 
-C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.13 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
+C'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [5.14 Nouveautés](#nouveautes)) : on peut garder les nouveautés d'une liste sans recevoir ses notifications, et l'inverse.
 
 <a id="notif-limites"></a>
 
@@ -1059,7 +1093,7 @@ Sur « Listes », touchez « + » en haut à droite (sur ordinateur : « Nouvell
 
 ### 7.3 Propriétaire : modifier la liste
 
-Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.18 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
+Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l'échéance, l'attribution et les sous-tâches ([5.19 Sous-tâches](#sous-taches)) ; pour une liste d'envies, « Priorité ». « Après l'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.
 
 - Changer le type n'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l'échéance. Tout revient si la liste reprend son type d'origine. Le formulaire le rappelle avant l'enregistrement.
 - Changer de magasin : chaque article garde son rayon s'il sert aussi dans le nouveau magasin, sinon il va dans le rayon du même nom ; à défaut, il passe « Sans rayon ». La fenêtre « Ranger les articles » s'ouvre alors pour lui choisir un rayon tout de suite (ou plus tard, depuis sa fiche).
@@ -1080,7 +1114,7 @@ Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l
 
 ### 7.5 Propriétaire : liste d'envies
 
-Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.12 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
+Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéficiaire. Ses proches peuvent réserver un souhait ([5.13 Réserver un souhait, cotiser](#reserver)). La surprise est préservée : le bénéficiaire ne voit jamais qu'un souhait est réservé, ni par qui, ni combien de personnes participent, même si c'est lui qui a créé la liste ([7.11 Bénéficiaire d'une liste d'envies](#role-beneficiaire)).
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
@@ -1180,7 +1214,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.12 U
 - Tâche qui se répète ([5.3 Tâches qui se répètent](#repeter)) : “Les poubelles, chaque lundi et jeudi.” “Le loyer, le 5 de chaque mois.” “La réunion, le premier lundi du mois.” “Arrête de répéter l'arrosage.” L'assistant dit la prochaine date. S'il coche une tâche qui se répète, elle revient à sa date suivante, et il vous la donne.
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
-- Sous-tâches ([5.18 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
+- Sous-tâches ([5.19 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
 
 L'assistant lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Son comportement exact dépend de l'assistant lui-même : vérifiez dans Listo.
 
@@ -1343,7 +1377,7 @@ Après l'activation, une fois, avant tout usage régulier (ici avec Claude) :
 
 ### 9.1 Je n'ai pas de réseau
 
-Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.14 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
+Continuez : ajouter, modifier et cocher marchent hors ligne, et la pastille du haut compte les changements en attente ([5.15 Hors ligne et synchronisation](#hors-ligne)). Ils partent tout seuls au retour du réseau. Le partage, le lien public, la corbeille et les réservations attendent le réseau.
 
 <a id="faq-photo"></a>
 

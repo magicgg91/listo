@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v139-${BUILD ?? 'dev'}`;
+const VERSION = `v140-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -131,6 +131,8 @@ const APP_FILES = [
   '/js/i18n/en/menu.js',
   '/js/i18n/fr/navigation.js',
   '/js/i18n/en/navigation.js',
+  '/js/i18n/fr/notes.js',
+  '/js/i18n/en/notes.js',
   '/js/i18n/fr/raccourcis.js',
   '/js/i18n/en/raccourcis.js',
   '/js/i18n/fr/reference.js',
@@ -204,6 +206,7 @@ const APP_FILES = [
   '/js/tabbar.js',
   '/js/repeat.js',
   '/js/subtasks.js',
+  '/js/notes.js',
   '/js/aisles.js',
   '/js/tidy-aisles.js',
   '/js/due-time.js',
@@ -230,6 +233,9 @@ const APP_FILES = [
   '/js/screens/list.js',
   '/js/screens/lists.js',
   '/js/screens/home.js',
+  '/js/screens/notes.js',
+  '/js/screens/note.js',
+  '/js/screens/note-trash.js',
   '/js/screens/deadlines.js',
   '/js/screens/login.js',
   '/js/screens/notifications.js',

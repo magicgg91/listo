@@ -43,6 +43,7 @@ export function adminUserRoutes(ctx) {
         OR EXISTS (SELECT 1 FROM items WHERE created_by = :id)
         OR EXISTS (SELECT 1 FROM list_members WHERE user_id = :id)
         OR EXISTS (SELECT 1 FROM lists WHERE for_user_id = :id)
+        OR EXISTS (SELECT 1 FROM notes WHERE owner_id = :id)
   `).pluck();
 
   // Ce qu'un Admin voit d'un compte : jamais d'empreinte, de secret ni de liste
@@ -243,7 +244,7 @@ export function adminUserRoutes(ctx) {
   });
 
   // Suppression d'un compte, seulement s'il n'a jamais servi (aucune liste,
-  // aucun article, membre d'aucune liste). Sinon : le désactiver.
+  // aucun article, membre d'aucune liste, aucune note). Sinon : le désactiver.
   router.delete('/users/:id', (req, res) => {
     const user = target(req, res);
     if (!user) return;

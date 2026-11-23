@@ -5,7 +5,7 @@ export default {
   // Liste des raccourcis : partout
   'raccourcis.partout': 'Everywhere',
   'raccourcis.partout.afficher': 'Show shortcuts',
-  'raccourcis.partout.nouvelleListe': 'New list',
+  'raccourcis.partout.nouvelleListe': 'New list (new note on the notes screens)',
   'raccourcis.partout.rechercher': 'Search',
   'raccourcis.partout.reglages': 'Settings',
   'raccourcis.touche.echap': 'Esc',

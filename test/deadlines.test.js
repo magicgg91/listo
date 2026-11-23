@@ -151,13 +151,14 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   assert.match(screen, /onLeave\(watchNewDay\(draw\)\);/);
 });
 
-test('bandeau du bas : quatre boutons (Accueil, Échéances, Listes, Réglages), même place partout, absent de l\'Accueil, loupe seulement là où l\'écran la branche', () => {
+test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Réglages), même place partout, absent de l\'Accueil, loupe seulement là où l\'écran la branche', () => {
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /\['home', 'home', \(\) => t\('navigation\.accueil'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['lists', 'tasks', \(\) => t\('navigation\.listes'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
+  assert.match(tabbar, /\['home', 'home', \(\) => t\('navigation\.accueil'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['lists', 'tasks', \(\) => t\('navigation\.listes'\)\],\s*\['notes', 'note', \(\) => t\('navigation\.notes'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
   assert.equal(fr['navigation.accueil'], 'Accueil');
   assert.equal(fr['navigation.listes'], 'Listes');
   assert.equal(fr['navigation.echeances'], 'Échéances');
   assert.equal(fr['navigation.reglages'], 'Réglages');
+  assert.equal(fr['navigation.notes'], 'Notes');
   // Retour vers l'Accueil : un retour en arrière ; entre les autres, un écran remplace l'autre
   assert.match(tabbar, /if \(name === 'home'\) \{\s*goBack\('home'\);\s*return;\s*\}\s*navigate\(name, \{\}, \{ replace: true \}\);/);
   // Pas de bandeau sur l'Accueil (décision du 23 novembre 2026)

@@ -246,8 +246,10 @@
      l'ordre du bandeau du téléphone : Accueil, Mes listes, Notes,
      Échéances (« Échéances » garde sa pastille .news-badge). Dessous,
      le menu suit l'écran (choix du propriétaire du 23 novembre 2026) :
-     écrans des notes, les notes groupées par catégorie (.pc-nav, mêmes
-     classes que les listes) et « Nouvelle note » en bas ; ailleurs, les
+     écrans des notes, « Catégories » : mes catégories et leur nombre
+     (.pc-nav, mêmes classes que les listes), « Nouvelle note » en bas ;
+     le centre ne montre que les notes de la catégorie choisie, sans
+     pastilles .catbar (téléphone seulement) ; ailleurs, les
      listes groupées par type et « Nouvelle liste », inchangés.
    - Accueil : en-tête .pc-head (« Bonjour Guillaume », date ; pastille
      d'état et cloche à droite) ; tuiles sur trois colonnes (quatre au-delà

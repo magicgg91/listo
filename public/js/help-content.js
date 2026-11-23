@@ -152,6 +152,7 @@ export const GUIDE = [
             'Lecture seule : une personne qui peut seulement lire la liste.',
             'Visiteur : une personne sans compte qui ouvre le lien public d\'une liste.',
             'Bénéficiaire : la personne à qui une liste d\'envies est destinée.',
+            'Note : un texte libre, à part des listes, à vous seul au départ ; elle se partage comme une liste ([[notes]]).',
             'Admin : le compte qui gère les comptes, les magasins et les rayons.',
           ] },
         ],
@@ -224,7 +225,7 @@ export const GUIDE = [
         blocks: [{ ul: [
           'Des notes en texte libre, qui s\'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([[notes]]).',
           'Une note se partage comme une liste (« Peut modifier » ou « Lecture seule »), ou par un lien public en lecture seule ([[notes-partage]]).',
-          'Une note rapide depuis l\'Accueil, même hors ligne ([[echeances]]).',
+          'Une note rapide depuis l\'Accueil, même hors ligne ([[notes]]).',
         ] }],
       },
       {
@@ -232,8 +233,8 @@ export const GUIDE = [
         title: 'Hors ligne, corbeille, lien public',
         blocks: [{ ul: [
           'Hors ligne : Listo s\'ouvre et s\'utilise sans réseau ; les changements partent au retour du réseau ([[hors-ligne]]).',
-          'Corbeille : une liste supprimée se restaure pendant 30 jours ([[corbeille]]).',
-          'Lien public : montrer une liste à quelqu\'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([[lien-public]]).',
+          'Corbeille : une liste supprimée se restaure pendant 30 jours ([[corbeille]]) ; une note aussi, depuis la corbeille des notes ([[notes]]).',
+          'Lien public : montrer une liste à quelqu\'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([[lien-public]]) ; une note aussi ([[notes-partage]]).',
         ] }],
       },
       {
@@ -701,7 +702,7 @@ export const GUIDE = [
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
-            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([[notes]]) ; sans note : « Aucune note ».',
+            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
@@ -732,7 +733,7 @@ export const GUIDE = [
           { sub: 'Corbeille des notes' },
           'Le bouton poubelle de l\'écran « Notes » ouvre la « Corbeille des notes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n\'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l\'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.',
           { sub: 'Sur ordinateur' },
-          '« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s\'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s\'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s\'enregistre toute seule ; la touche « / » cherche dans les notes.',
+          '« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s\'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s\'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s\'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil ») ; la touche « / » cherche dans les notes.',
         ],
       },
       {
@@ -785,9 +786,9 @@ export const GUIDE = [
         id: 'hors-ligne',
         title: 'Hors ligne et synchronisation',
         blocks: [
-          'Sans réseau, vous pouvez continuer à ajouter, modifier et cocher. Les changements sont envoyés au retour du réseau.',
+          'Sans réseau, vous pouvez continuer à ajouter, modifier et cocher, et à écrire dans vos notes ([[notes]]). Les changements sont envoyés au retour du réseau.',
           'La pastille en haut indique l\'état : « À jour », « Synchronisation… » ou « Hors ligne », avec le nombre de changements en attente. Touchez-la pour synchroniser.',
-          'Le partage, le lien public, la duplication, « Quitter la liste », la corbeille, les réservations, la création d\'un magasin ou d\'un rayon et l\'Administration demandent une connexion.',
+          'Le partage (d\'une liste ou d\'une note), le lien public, la duplication, « Quitter la liste » et « Quitter la note », la corbeille des listes, les réservations, la création d\'un magasin ou d\'un rayon et l\'Administration demandent une connexion.',
         ],
       },
       {
@@ -809,8 +810,8 @@ export const GUIDE = [
         blocks: [
           'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
           { ul: [
-            'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances » et « Listes » (avec le nombre de listes), et en bas « Nouvelle liste », votre compte et Réglages. Le logo ramène à l\'« Accueil ». Les tuiles de l\'Accueil y sont sur trois colonnes.',
-            'Le menu suit l\'écran : sur « Listes » et dans une liste, il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
+            'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l\'« Accueil ». Les tuiles de l\'Accueil y sont sur trois colonnes.',
+            'Le menu suit l\'écran : sur « Listes » et dans une liste, il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
             'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l\'un au-dessus de l\'autre ; sur un écran tactile, ils restent affichés.',
             'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
             '« Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.',
@@ -822,8 +823,8 @@ export const GUIDE = [
             head: ['Touche', 'Action'],
             rows: [
               ['?', 'Afficher les raccourcis'],
-              ['N', 'Nouvelle liste'],
-              ['/', 'Rechercher (dans la liste, ou dans le menu)'],
+              ['N', 'Nouvelle liste (nouvelle note sur les écrans des notes)'],
+              ['/', 'Rechercher (dans la liste, dans les notes, ou dans le menu)'],
               [',', 'Réglages'],
               ['Échap', 'Fermer la fenêtre ; vider puis quitter la recherche'],
               ['[ et ]', 'Liste précédente, suivante'],
@@ -991,7 +992,7 @@ export const GUIDE = [
     id: 'roles',
     title: 'Rôle par rôle',
     blocks: [
-      'Sur chaque liste, chacun a un rôle : propriétaire, contributeur (« Peut modifier »), lecture seule, ou visiteur du lien public. L\'Admin, lui, gère les comptes. Le tableau ci-dessous résume qui peut quoi ; les sections qui suivent le détaillent.',
+      'Sur chaque liste, chacun a un rôle : propriétaire, contributeur (« Peut modifier »), lecture seule, ou visiteur du lien public. L\'Admin, lui, gère les comptes. Le tableau ci-dessous résume qui peut quoi ; les sections qui suivent le détaillent. Une note partagée a les mêmes droits, en plus simple : [[notes-partage]].',
       { who: true },
     ],
     sections: [
@@ -1015,7 +1016,7 @@ export const GUIDE = [
           { sub: 'Peut / ne peut pas' },
           { ul: [
             'Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s\'il existe une nouvelle version (Réglages › « À propos »).',
-            'Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire.',
+            'Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([[notes]]).',
             'Connexions d\'assistants IA des autres comptes : voir [[claude-connexions]].',
             'Savoir qu\'une nouvelle version existe : [[version]].',
           ] },

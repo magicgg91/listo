@@ -83,7 +83,7 @@ export function openNoteSharePanel(noteId) {
 function peoplePanel({ current, owner, name, beneficiary, save, link: linkOf, titles, allIn }) {
   let busy = false;
   const people = h('ul', { class: 'pc-share__people', 'aria-labelledby': 'pc-share-people' });
-  const addRow = h('div', { class: 'share-row share-row--add' });
+  const addRow = h('div', { class: 'share-row share-row--add sheet__keep' }); // jamais tassée dans la feuille du téléphone (app.css)
   const offlineNote = h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, t('partage.panneau.horsLigne')));
 
   // Envoie la nouvelle composition du partage (personnes et droits)

@@ -205,13 +205,14 @@ export function noteEditor(initialId, onLeave, { pc }) {
 
   function drawStatus() {
     let state;
-    if (kept()) state = ['note-status--check', 'alert', t('notes.statut.aVerifier')];
+    if (kept()) state = ['note-status--check', 'alert', t(pc ? 'notes.statut.aVerifier.pc' : 'notes.statut.aVerifier')];
     else if (readOnly()) state = ['', 'eye', t('notes.statut.lectureSeule')];
     else if (dirty || saving || (noteId && actions.notePending(noteId))) {
       state = currentSyncState() === 'off' && !dirty
-        ? ['', 'cloud-off', t('notes.statut.horsLigne')]
+        ? ['', 'cloud-off', t(pc ? 'notes.statut.horsLigne.pc' : 'notes.statut.horsLigne')]
         : ['', 'sync', t('notes.statut.enCours')];
-    } else if (noteId) state = ['note-status--ok', 'check', t('notes.statut.enregistre')];
+    } else if (noteId && note() && !note().deletedAt) state = ['note-status--ok', 'check', t('notes.statut.enregistre')];
+    // (note introuvable ou supprimée : aucune mention, seulement « Note introuvable »)
     else state = null;
     status.className = `note-status ${state?.[0] ?? ''}`.trim();
     replace(status, state ? [icon(state[1], 'icon--sm'), state[2]] : null);

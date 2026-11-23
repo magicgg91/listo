@@ -48,6 +48,7 @@ export default {
           "Read only: a person who can only read the list.",
           "Visitor: a person without an account who opens a list's public link.",
           "Recipient: the person a wish list is for.",
+          "Note: free text, separate from the lists, yours alone at first; it can be shared like a list ([[notes]]).",
           "Admin: the account that manages accounts, stores and aisles.",
         ] },
       ],

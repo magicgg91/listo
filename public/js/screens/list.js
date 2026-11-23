@@ -53,7 +53,7 @@ import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, open
 import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
-import { t, compareText, currencyName, lowerFirst } from '../i18n.js';
+import { t, compareText, currencyName, lowerFirst, priceIcon } from '../i18n.js';
 
 // « article » → « Article », « élément » → « Élément »
 const capitalized = (word) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -613,7 +613,7 @@ export function renderList(listId, onLeave) {
     }
     const price = formatPrice(item.priceCents);
     if (price) {
-      chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), price));
+      chips.push(h('span', { class: 'chip' }, icon(priceIcon(), 'icon--xs'), price));
       spoken.push(price);
     }
     const reservation = item.checked ? null : view?.reservations?.get(item.id);

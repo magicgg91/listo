@@ -314,12 +314,17 @@ test('workflow GitHub Pages : publie site/ seulement, à chaque fusion sur main,
   assert.match(read('.dockerignore'), /^site\/$/m);
 });
 
-test('captures du README : toutes utilisées, toutes présentes, sans métadonnées, poids raisonnable, hors de l\'image Docker', () => {
-  const readme = read('README.md');
-  const used = [...readme.matchAll(/\]\(docs\/images\/([^)]+)\)/g)].map((m) => m[1]).sort();
-  const files = fs.readdirSync(path.join(ROOT, 'docs/images')).sort();
-  assert.deepEqual(files, used, 'chaque capture est montrée par le README, et chaque image du README existe');
-  for (const file of files) {
+test('captures du README : françaises (README.fr.md, docs/images/) et anglaises (README.md, docs/images/en/), les mêmes dans les deux langues, toutes utilisées, toutes présentes, sans métadonnées, poids raisonnable, hors de l\'image Docker', () => {
+  const usedBy = (file, dir) => [...read(file).matchAll(/\]\(docs\/images\/([^)]+)\)/g)].map((m) => m[1])
+    .map((name) => { assert.ok(name.startsWith(dir), `${file} : ${name}`); return name.slice(dir.length); }).sort();
+  const pngs = (dir) => fs.readdirSync(path.join(ROOT, 'docs/images', dir), { withFileTypes: true }).filter((e) => e.isFile()).map((e) => e.name).sort();
+  const fr = usedBy('README.fr.md', '');
+  const en = usedBy('README.md', 'en/');
+  assert.deepEqual(pngs(''), fr, 'chaque capture française est montrée par README.fr.md, et chaque image du README existe');
+  assert.deepEqual(pngs('en'), en, 'chaque capture anglaise est montrée par README.md, et chaque image du README existe');
+  assert.deepEqual(en, fr, 'les mêmes captures dans les deux langues');
+  assert.deepEqual(fs.readdirSync(path.join(ROOT, 'docs/images')).sort(), [...fr, 'en'].sort(), 'rien d\'autre dans docs/images/');
+  for (const file of [...fr, ...en.map((name) => `en/${name}`)]) {
     const data = fs.readFileSync(path.join(ROOT, 'docs/images', file));
     assert.equal(data.subarray(1, 4).toString(), 'PNG', file);
     // Morceaux du PNG : aucun texte, aucune date, aucune donnée EXIF
@@ -331,7 +336,9 @@ test('captures du README : toutes utilisées, toutes présentes, sans métadonn�
     }
     assert.deepEqual(kinds.filter((k) => /^(tEXt|iTXt|zTXt|eXIf|tIME)$/.test(k)), [], file);
     assert.ok(data.length < 150_000, `${file} : ${data.length} octets`);
+    // Téléphone 390 × 844 à l'échelle 2
+    assert.deepEqual([data.readUInt32BE(16), data.readUInt32BE(20)], [780, 1688], file);
   }
-  assert.doesNotMatch(readme, /captures datent d'avant/);
+  for (const file of ['README.md', 'README.fr.md']) assert.doesNotMatch(read(file), /captures datent d'avant|interface in French/, file);
   assert.match(read('.dockerignore'), /^docs\/$/m);
 });

@@ -546,6 +546,14 @@ Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.c
 - **Corbeille des notes** (16.27) : `.page-intro`, `.page-tools`, `.note-trash`.
 - **Ordinateur** (16.28) : `.pc-col--full`, `.pc-notes` (`--closed` sans note ouverte), `.pc-notes__list`, `.pc-notes__cards`, `.pc-note` (`__bar`), 560 px (440 px sous 1 280 px).
 
+## Ajout : Notes, partage (23 novembre 2026)
+
+Étape 3 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquette `accueil-notes/` `notes-2` (le reste composé avec le kit). Quelques lignes ajoutées à la section 16.26 de `listo.css`, aucune couleur ni variable nouvelle, aucune icône nouvelle (`#i-users`, `#i-eye`, `#i-link` existaient). Le panneau « Partager la note » et la feuille du lien public reprennent ceux d'une liste.
+
+- **Carte d'une note partagée** : point des nouveautés sur l'icône (`.news-badge--dot`), « Modifiée par Léa » sous le titre (`.note-card__news`, texte d'accent) ; en bas, `.chip--readonly` (« Lecture seule ») à gauche, l'icône du lien public et les pastilles des personnes à droite (`.note-card__chips`, `.note-card__people`).
+- **Barre d'une note** : bouton « Partager » (propriétaire) ou « Personnes » (`.note-people` : `#i-users` et pastilles ; sur le téléphone, le mot est dans le nom lu).
+- **Page publique d'une note** : `.note-edit__body--read` (texte sans hauteur minimale ni curseur de saisie).
+
 ## Ajout : Page Notifications (23 novembre 2026)
 
 Étape 4 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`notifications-1`, `notifications-2`, cloche de `accueil-1` et `pc-accueil-1`). Styles repris de `accueil-notes/listo-accueil-notes.css` (16.26 des maquettes), section 16.29 de `listo.css`. Aucune couleur ni variable nouvelle. Icône ajoutée au sprite : `#i-check-double` (« Tout marquer comme lu »).

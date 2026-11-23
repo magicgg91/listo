@@ -158,7 +158,7 @@ export default {
         { ul: [
           '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
           '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
-          '“Notes” tile: the number of your notes, the last two changed (a row opens the note) and “New note”, which opens a quick entry ([[notes]]); with no note: “No notes”.',
+          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a quick entry ([[notes]]); with no note: “No notes”.',
           '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
           'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
         ] },
@@ -189,7 +189,7 @@ export default {
         { sub: 'Notes trash' },
         'The trash button on the “Notes” screen opens the “Notes trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people\'s notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.',
         { sub: 'On a computer' },
-        '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself; the “/” key searches the notes.',
+        '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself (offline: “Offline · saved on this device”); the “/” key searches the notes.',
       ],
     },
     {
@@ -242,9 +242,9 @@ export default {
       id: 'hors-ligne',
       title: 'Offline and sync',
       blocks: [
-        'Without a network, you can keep adding, editing and checking. The changes are sent when the network comes back.',
+        'Without a network, you can keep adding, editing and checking, and writing in your notes ([[notes]]). The changes are sent when the network comes back.',
         'The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.',
-        'Sharing, the public link, duplicating, “Leave list”, the trash, reservations, creating a store or an aisle, and Administration need a connection.',
+        'Sharing (a list or a note), the public link, duplicating, “Leave list” and “Leave note”, the list trash, reservations, creating a store or an aisle, and Administration need a connection.',
       ],
     },
     {
@@ -266,8 +266,8 @@ export default {
       blocks: [
         'In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.',
         { ul: [
-          'On the left, the menu: “Search lists”, then “Home”, “Due” and “Lists” (with the number of lists), and at the bottom “New list”, your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.',
-          'The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
+          'On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.',
+          'The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
           'On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
           'An item\'s details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.',
           '“Share list” brings together the people on the list and the public link. The owner chooses each person\'s access there, adds or removes people, and manages the link; the other members only see the list of people there.',
@@ -279,8 +279,8 @@ export default {
           head: ['Key', 'Action'],
           rows: [
             ['?', 'Show shortcuts'],
-            ['N', 'New list'],
-            ['/', 'Search (in the list, or in the menu)'],
+            ['N', 'New list (new note on the notes screens)'],
+            ['/', 'Search (in the list, in the notes, or in the menu)'],
             [',', 'Settings'],
             ['Esc', 'Close the window; clear, then leave the search'],
             ['[ and ]', 'Previous, next list'],

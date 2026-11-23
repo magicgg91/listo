@@ -3,7 +3,7 @@ export default {
   id: 'roles',
   title: "Role by role",
   blocks: [
-    "On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail.",
+    "On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail. A shared note has the same permissions, in a simpler form: [[notes-partage]].",
     { who: true },
   ],
   sections: [
@@ -27,7 +27,7 @@ export default {
         { sub: "Can / can't" },
         { ul: [
           "Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).",
-          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner.",
+          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]).",
           "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",
         ] },

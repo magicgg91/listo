@@ -121,3 +121,10 @@ test('textes du partage des notes : en français et en anglais, mêmes noms et m
 test('service worker : nouvelle version (fichiers changés)', () => {
   assert.match(read('public/sw.js'), /const VERSION = `v14[2-9]-/);
 });
+
+test('« Partager la note » sur le téléphone : la rangée « Ajouter » n\'est jamais tassée (le bouton passait sur « Lien public »)', () => {
+  // La feuille du bas est une colonne flexible qui défile : sans flex-shrink: 0,
+  // la rangée, passée sur deux lignes, était ramenée à sa hauteur minimale
+  assert.match(read('public/js/screens/share-panel.js'), /const addRow = h\('div', \{ class: 'share-row share-row--add sheet__keep' \}\);/);
+  assert.match(read('public/css/app.css'), /^\.sheet > \.sheet__keep \{ flex-shrink: 0; \}$/m);
+});

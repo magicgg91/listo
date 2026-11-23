@@ -59,9 +59,15 @@ test('enregistrement automatique : une seconde après la dernière frappe, en qu
   // La version sur laquelle le texte a été écrit part avec lui
   assert.match(note, /actions\.saveNote\(noteId, \{ title, body: text, baseVersion: base \}\)/);
   // Mentions d'état : icône ET texte ; « À vérifier » en premier
-  for (const key of ['notes.statut.aVerifier', 'notes.statut.horsLigne', 'notes.statut.enCours', 'notes.statut.enregistre']) assert.ok(note.includes(`t('${key}')`), key);
+  for (const key of ['notes.statut.enCours', 'notes.statut.enregistre']) assert.ok(note.includes(`t('${key}')`), key);
+  // « ce téléphone » sur le téléphone, « cet appareil » sur ordinateur (jamais « téléphone » sur un ordinateur)
+  for (const key of ['notes.statut.aVerifier', 'notes.statut.horsLigne']) assert.ok(note.includes(`t(pc ? '${key}.pc' : '${key}')`), key);
   assert.equal(fr['notes.statut.horsLigne'], 'Hors ligne · enregistrée sur ce téléphone');
   assert.equal(en['notes.statut.horsLigne'], 'Offline · saved on this phone');
+  assert.equal(fr['notes.statut.horsLigne.pc'], 'Hors ligne · enregistrée sur cet appareil');
+  assert.equal(en['notes.statut.horsLigne.pc'], 'Offline · saved on this device');
+  assert.match(fr['notes.statut.aVerifier.pc'], /cet appareil$/);
+  assert.match(en['notes.statut.aVerifier.pc'], /this device$/);
 });
 
 test('conflit : rien n\'est écrasé, mon texte reste sur l\'appareil ; les trois choix et « Décider plus tard »', () => {
@@ -139,4 +145,9 @@ test('textes : français et anglais, noms des écrans des notes', () => {
   assert.equal(en['notes.statut.enCours'], 'Saving…');
   assert.equal(fr['notes.sansTitre'], 'Note sans titre');
   for (const key of Object.keys(fr).filter((k) => k.startsWith('notes.'))) assert.ok(key in en, `en : ${key}`);
+});
+
+test('note introuvable ou supprimée : aucune mention « Enregistré » au-dessus de « Note introuvable »', () => {
+  const note = read('public/js/screens/note.js');
+  assert.match(note, /\} else if \(noteId && note\(\) && !note\(\)\.deletedAt\) state = \['note-status--ok', 'check', t\('notes\.statut\.enregistre'\)\];/);
 });

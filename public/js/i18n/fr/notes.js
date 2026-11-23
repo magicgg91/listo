@@ -54,6 +54,9 @@ export default {
   'notes.statut.enCours': 'Enregistrement…',
   'notes.statut.horsLigne': 'Hors ligne · enregistrée sur ce téléphone',
   'notes.statut.aVerifier': 'À vérifier · votre version reste sur ce téléphone',
+  // Sur ordinateur, « cet appareil » (jamais « ce téléphone »)
+  'notes.statut.horsLigne.pc': 'Hors ligne · enregistrée sur cet appareil',
+  'notes.statut.aVerifier.pc': 'À vérifier · votre version reste sur cet appareil',
   'notes.pied.moi': 'Modifiée le {date}',
   'notes.pied.autre': 'Modifiée par {name} · {when}',
   'notes.introuvable.titre': 'Note introuvable',

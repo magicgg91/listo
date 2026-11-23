@@ -218,6 +218,12 @@ button.sync { cursor: pointer; }
    défilement de côté : sur iPhone, la fiche glissait de gauche à droite
    (constat du 11 novembre 2026). */
 .sheet { overflow-y: auto; overflow-x: hidden; }
+/* « Partager la note » sur le téléphone (feuille du bas, 23 novembre 2026) :
+   la rangée « Ajouter » passe sur deux lignes ; sans ceci, la feuille (une
+   colonne flexible qui défile) la tassait à sa hauteur minimale (56 px) et
+   le bouton « Ajouter » passait sur le titre « Lien public ». .sheet__keep :
+   un enfant de la feuille qui garde toujours sa hauteur */
+.sheet > .sheet__keep { flex-shrink: 0; }
 /* Les vrais champs de date et de choix posés, invisibles, sur l'échéance et
    sur « Se répète » : jamais plus larges que leur case (Safari sur iPhone
    leur donne sinon une largeur minimale à lui) */

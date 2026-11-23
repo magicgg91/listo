@@ -2,7 +2,7 @@ Version anglaise : [README.md](README.md)
 
 # Listo
 
-**Listo est une application de listes partagées (courses, tâches, idées de cadeaux), pensée pour le téléphone, que l'on installe sur son propre serveur.** Gratuite, sans publicité, en français, pour une famille ou un petit groupe de proches.
+**Listo est une application de listes partagées (courses, tâches, idées de cadeaux), pensée pour le téléphone, que l'on installe sur son propre serveur.** Gratuite, sans publicité, en français et en anglais, pour une famille ou un petit groupe de proches.
 
 ## L'essentiel
 
@@ -11,19 +11,21 @@ Version anglaise : [README.md](README.md)
 - **Saisie rapide** : plusieurs articles d'un coup, quantité lue dans le nom, scan du code-barres, photos.
 - **Accueil, notes et hors ligne** : Listo s'ouvre sur des tuiles qui montrent d'un coup d'œil les échéances (en retard, aujourd'hui, plus tard), vos listes par type, vos dernières notes et votre compte ; les notes sont des textes libres qui s'enregistrent tout seuls, avec des liens cliquables, une épingle et leur corbeille, partagées comme les listes (« Peut modifier » ou « Lecture seule », nouveautés, notifications) ou par un lien public en lecture seule (deux personnes ou deux appareils qui écrivent en même temps ne s'écrasent jamais : vous choisissez la version à garder) ; il s'ouvre et s'utilise sans réseau, et tout part au retour du réseau.
 - **Sur ordinateur** (fenêtre d'au moins 1 024 px) : deux zones (menu de gauche qui suit l'écran, liste ouverte), fiche et partage dans un panneau, raccourcis clavier (« ? » les liste, désactivables) et Ctrl+Z pour annuler une suppression, un cochage ou une modification. Sur le téléphone, rien ne change.
-- **Lien public** pour montrer une liste à quelqu'un sans compte, **corbeille** de 30 jours ; les **assistants IA** qui suivent le standard MCP (par exemple Claude, d'Anthropic) peuvent lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord, toujours après votre accord sur un écran « Autoriser un assistant IA », et sans jamais rien supprimer.
+- **Lien public** pour montrer une liste ou une note à quelqu'un sans compte, **corbeille** de 30 jours ; les **assistants IA** qui suivent le standard MCP (par exemple Claude, d'Anthropic) peuvent lire vos listes et, si vous le permettez, y écrire, avec deux niveaux d'accord, toujours après votre accord sur un écran « Autoriser un assistant IA », et sans jamais rien supprimer.
 - **Notifications** : modifications des autres (regroupées, et tâches qu'on vous attribue), réservations, partage, résumé des échéances chaque matin et rappels des tâches, gardés 30 jours dans la **page Notifications** (la cloche de l'Accueil, lu ou non lu, pareil sur tous les appareils, même sans notifications push) ; et, facultatives et désactivées par défaut, sur le téléphone ou l'ordinateur en notifications push.
 - **Sécurité** : double authentification, sauvegarde chaque nuit, droits vérifiés par le serveur. **Un seul guide numéroté**, le même dans l'application (Réglages › Aide), en ligne sur **<https://magicgg91.github.io/listo/fr/>** et dans le dépôt : [docs/guide.md](docs/guide.md).
 
 ## En images
 
-| ![« Listes » : filtre des types, quatre listes avec leur icône et le compteur des restants, bandeau du bas](docs/images/accueil.png) | ![Liste de courses classée par rayon, avec quantités et photo](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Liste de tâches avec priorité et échéance](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine, plus tard](docs/images/echeances.png) |
+| ![« Accueil » : bonjour et date, pastille d'état, cloche avec 4 non lues, tuiles « Échéances » (en retard, aujourd'hui, plus tard), « Listes » par type, « Notes » (dernières notes, « Nouvelle note ») et « Compte »](docs/images/accueil.png) | ![« Listes » : filtre des types, cinq listes avec leur icône, le compteur des restants et les personnes, bandeau du bas à cinq boutons](docs/images/listes.png) | ![Liste de courses classée par rayon, avec quantités ; un article que Léa vient d'ajouter est mis en avant](docs/images/liste-courses.png) | ![Articles cochés, barrés, regroupés en bas dans « Dans le panier »](docs/images/liste-courses-cochee.png) | ![Mode scan : le produit trouvé à partir de son code-barres, avec sa marque et son format](docs/images/mode-scan.png) |
 | :---: | :---: | :---: | :---: | :---: |
-| Listes | Courses par rayon | « Dans le panier » | Tâches | « Échéances » |
-| ![Liste d'envies vue par la personne qui offre : prix, priorité, réservation, cotisation](docs/images/liste-envies.png) | ![Mode scan : le produit trouvé à partir de son code-barres](docs/images/mode-scan.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Assistants IA » : adresse à saisir et connexion autorisée](docs/images/connexions-claude.png) | ![Écran Réglages](docs/images/reglages.png) |
-| Envies, réservations | Mode scan | Lien public | « Assistants IA » | Réglages |
+| Accueil | Listes | Courses par rayon | « Dans le panier » | Mode scan |
+| ![Liste de tâches : priorité, échéance et heure, tâches en retard, une tâche qui se répète attribuée à « Moi », une tâche terminée](docs/images/liste-taches.png) | ![« Échéances » : les tâches à faire de toutes les listes, en retard, aujourd'hui, demain, cette semaine](docs/images/echeances.png) | ![Liste d'envies vue par la personne qui offre : prix, priorité, réservations, cotisation ouverte à d'autres](docs/images/liste-envies.png) | ![« Notes » : une note épinglée, puis les autres, avec les personnes qui les partagent et le point des nouveautés](docs/images/notes.png) | ![Une note partagée par Léa, ouverte : texte avec un lien cliquable, personnes en haut, « Modifiée par Léa · il y a 5 min »](docs/images/note-partagee.png) |
+| Tâches | « Échéances » | Envies, réservations | Notes | Note partagée |
+| ![Page « Notifications » : 4 non lues aujourd'hui (une note modifiée, des articles ajoutés, un rappel, le résumé du matin), puis hier](docs/images/notifications.png) | ![Page publique d'une liste, en lecture seule, ouverte sans compte](docs/images/page-publique.png) | ![Écran « Assistants IA » : adresse à saisir et connexion autorisée](docs/images/assistants-ia.png) | ![Écran Réglages](docs/images/reglages.png) |   |
+| Notifications | Lien public | « Assistants IA » | Réglages |   |
 
-*Instance de démonstration, données inventées.*
+*Instance de démonstration, données inventées, compte en français.*
 
 ## Installation en trois commandes
 
@@ -45,8 +47,7 @@ Le pas à pas complet (réglages, ce que doit faire le proxy avec un exemple pou
 
 - [Le guide en ligne](https://magicgg91.github.io/listo/fr/), ou [docs/guide.md](docs/guide.md) dans le dépôt : pour tout le monde.
 - [docs/cahier-des-charges.md](docs/cahier-des-charges.md) : fonctions, droits, modèle de données, sécurité, décisions.
-- [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones.
-- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès des assistants IA (MCP) ; [design/README.md](design/README.md) : le kit de design.
+- [docs/developpement.md](docs/developpement.md) : organisation du code, tests, vérifications sur les téléphones ; [docs/mcp-cadrage.md](docs/mcp-cadrage.md) : la conception de l'accès des assistants IA (MCP) ; [design/README.md](design/README.md) : le kit de design.
 
 ## Sécurité
 
@@ -55,5 +56,4 @@ Le port de Listo n'est publié que sur le réseau local ; seul le proxy HTTPS do
 ## Licence et crédits
 
 - Licence **Apache-2.0**, © magicgg91 : [LICENSE](LICENSE). En cas de réutilisation, conserver [NOTICE](NOTICE) et la mention de l'auteur. Contribuer : [CONTRIBUTING.md](CONTRIBUTING.md).
-- Lecteur de codes-barres : [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT et Apache-2.0). Noms des produits : [Open Food Facts](https://world.openfoodfacts.org) (ODbL).
-- Développé avec l'aide de Claude (Anthropic).
+- Lecteur de codes-barres : [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT et Apache-2.0). Noms des produits : [Open Food Facts](https://world.openfoodfacts.org) (ODbL). Développé avec l'aide de Claude (Anthropic).

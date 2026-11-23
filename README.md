@@ -11,19 +11,21 @@ Version française : [README.fr.md](README.fr.md)
 - **Quick entry**: several items at once, quantity read from the name, barcode scanning, photos.
 - **Home, notes and offline**: Listo opens on tiles that show at a glance your due tasks (overdue, today, later), your lists by type, your latest notes and your account; notes are free text that saves itself, with clickable links, pinning and their own trash, shared like lists (“Can edit” or “Read only”, what's new, notifications) or through a read-only public link (two people or devices writing at once never overwrite each other: you choose the version to keep); it opens and works without a network, and everything is sent when the network comes back.
 - **On a computer** (window at least 1,024 px wide): two areas (a menu on the left that follows the screen, open list), item details and sharing in a panel, keyboard shortcuts (“?” lists them; they can be turned off) and Ctrl+Z to undo a deletion, a check or an edit. On the phone, nothing changes.
-- **Public link** to show a list to someone without an account, **trash** kept for 30 days; **AI assistants** that follow the MCP standard (for example Claude, by Anthropic) can read your lists and, if you allow it, write to them, with two levels of permission, always after you approve on an “Authorize an AI assistant” screen, and without ever deleting anything.
+- **Public link** to show a list or a note to someone without an account, **trash** kept for 30 days; **AI assistants** that follow the MCP standard (for example Claude, by Anthropic) can read your lists and, if you allow it, write to them, with two levels of permission, always after you approve on an “Authorize an AI assistant” screen, and without ever deleting anything.
 - **Notifications**: other people's changes (grouped, plus tasks assigned to you), reservations, sharing, a due-date summary every morning and task reminders, kept for 30 days on the **Notifications page** (the bell on Home, read or unread, same on every device, even without push notifications); and, optional and off by default, on the phone or the computer as push notifications.
 - **Security**: two-factor authentication, nightly backup, rights checked by the server. **A single numbered guide**, the same in the app (Settings › Help), online at **<https://magicgg91.github.io/listo/>** (in French: <https://magicgg91.github.io/listo/fr/>) and in the repository: [docs/guide.en.md](docs/guide.en.md).
 
 ## Screenshots
 
-| ![“Lists”: type filter, four lists with their icon and the count of remaining items, bottom bar](docs/images/accueil.png) | ![Shopping list sorted by aisle, with quantities and a photo](docs/images/liste-courses.png) | ![Checked items, struck through, grouped at the bottom in “In the cart”](docs/images/liste-courses-cochee.png) | ![Task list with priority and due date](docs/images/liste-taches.png) | ![“Due”: the tasks to do from every list, overdue, today, tomorrow, this week, later](docs/images/echeances.png) |
+| ![“Home”: greeting and date, sync badge, bell with 4 unread, tiles “Due” (overdue, today, later), “Lists” by type, “Notes” (latest notes, “New note”) and “Account”](docs/images/en/accueil.png) | ![“Lists”: type filter, five lists with their icon, count of remaining items and people, bottom bar with five buttons](docs/images/en/listes.png) | ![Shopping list sorted by aisle, with quantities; an item Emma just added is highlighted](docs/images/en/liste-courses.png) | ![Checked items, struck through, grouped at the bottom in “In the cart”](docs/images/en/liste-courses-cochee.png) | ![Scan mode: the product found from its barcode, with its brand and size](docs/images/en/mode-scan.png) |
 | :---: | :---: | :---: | :---: | :---: |
-| Lists | Shopping by aisle | “In the cart” | Tasks | “Due” |
-| ![Wish list seen by the person giving: price, priority, reservation, chipping in](docs/images/liste-envies.png) | ![Scan mode: the product found from its barcode](docs/images/mode-scan.png) | ![Public page of a list, read only, opened without an account](docs/images/page-publique.png) | ![“AI assistants” screen: address to enter and authorized connection](docs/images/connexions-claude.png) | ![Settings screen](docs/images/reglages.png) |
-| Wishes, reservations | Scan mode | Public link | “AI assistants” | Settings |
+| Home | Lists | Shopping by aisle | “In the cart” | Scan mode |
+| ![Task list: priority, due date and time, overdue tasks, a repeating task assigned to me, a done task](docs/images/en/liste-taches.png) | ![“Due”: the tasks to do from every list, overdue, today, tomorrow, this week](docs/images/en/echeances.png) | ![Wish list seen by the person giving: price, priority, reservations, chipping in open to others](docs/images/en/liste-envies.png) | ![“Notes”: a pinned note, then the others, with the people they are shared with and the dot for what is new](docs/images/en/notes.png) | ![A note shared by Emma, open: text with a clickable link, people at the top, “Changed by Emma · 5 min ago”](docs/images/en/note-partagee.png) |
+| Tasks | “Due” | Wishes, reservations | Notes | Shared note |
+| ![“Notifications” page: 4 unread today (a note changed, items added, a reminder, the morning summary), then yesterday](docs/images/en/notifications.png) | ![Public page of a list, read only, opened without an account](docs/images/en/page-publique.png) | ![“AI assistants” screen: address to enter and an authorized connection](docs/images/en/assistants-ia.png) | ![Settings screen](docs/images/en/reglages.png) |   |
+| Notifications | Public link | “AI assistants” | Settings |   |
 
-*Demo instance, made-up data, interface in French.*
+*Demo instance, made-up data, account in English.*
 
 ## Installation in three commands
 
@@ -45,8 +47,7 @@ The full step-by-step (settings, what the proxy must do with an example for Ngin
 
 - [The online guide](https://magicgg91.github.io/listo/) ([in French](https://magicgg91.github.io/listo/fr/)), or [docs/guide.en.md](docs/guide.en.md) in the repository (in French: [docs/guide.md](docs/guide.md)): for everyone.
 - [docs/cahier-des-charges.md](docs/cahier-des-charges.md) (in French): features, rights, data model, security, decisions.
-- [docs/developpement.md](docs/developpement.md) (in French): code organization, tests, checks on phones.
-- [docs/mcp-cadrage.md](docs/mcp-cadrage.md) (in French): the design of access for AI assistants (MCP); [design/README.md](design/README.md): the design kit.
+- [docs/developpement.md](docs/developpement.md) (in French): code organization, tests, checks on phones; [docs/mcp-cadrage.md](docs/mcp-cadrage.md) (in French): the design of access for AI assistants (MCP); [design/README.md](design/README.md): the design kit.
 
 ## Security
 
@@ -55,5 +56,4 @@ Listo's port is only published on the local network; only the HTTPS proxy must b
 ## Licence and credits
 
 - **Apache-2.0** licence, © magicgg91: [LICENSE](LICENSE). If you reuse it, keep [NOTICE](NOTICE) and the author credit. Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
-- Barcode reader: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT and Apache-2.0). Product names: [Open Food Facts](https://world.openfoodfacts.org) (ODbL).
-- Developed with the help of Claude (Anthropic).
+- Barcode reader: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT and Apache-2.0). Product names: [Open Food Facts](https://world.openfoodfacts.org) (ODbL). Developed with the help of Claude (Anthropic).

@@ -63,7 +63,7 @@ export default {
       blocks: [{ ul: [
         "Notes in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
         "A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([[notes-partage]]).",
-        "A quick note from Home, even offline ([[echeances]]).",
+        "A quick note from Home, even offline ([[notes]]).",
       ] }],
     },
     {
@@ -71,8 +71,8 @@ export default {
       title: "Offline, trash, public link",
       blocks: [{ ul: [
         "Offline: Listo opens and works without a network; changes are sent when the network comes back ([[hors-ligne]]).",
-        "Trash: a deleted list can be restored for 30 days ([[corbeille]]).",
-        "Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([[lien-public]]).",
+        "Trash: a deleted list can be restored for 30 days ([[corbeille]]); so can a note, from the notes trash ([[notes]]).",
+        "Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([[lien-public]]); a note too ([[notes-partage]]).",
       ] }],
     },
     {

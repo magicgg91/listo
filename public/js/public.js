@@ -34,7 +34,7 @@ import { dateTimeLabel, dueChip, priorityChip, todayKey, publicItemDetails } fro
 import { itemWords, wordKind, byKind, countItems, doneZoneWords } from './words.js';
 import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
-import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst } from './i18n.js';
+import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst, priceIcon } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
 import { linkParts, noteTitle } from './notes.js';
 
@@ -387,7 +387,7 @@ function metaRow(item) {
   if (priority) chips.push(h('span', { class: `chip${item.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.priorite')} `), priority.text));
   // Liste d'envies : le prix indicatif
   const price = formatPrice(item.priceCents);
-  if (price) chips.push(h('span', { class: 'chip' }, icon('euro', 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.prix')} `), price));
+  if (price) chips.push(h('span', { class: 'chip' }, icon(priceIcon(), 'icon--xs'), h('span', { class: 'visually-hidden' }, `${t('lienpublic.pastille.prix')} `), price));
   const due = dueChip(item.dueDate ?? null, item.checked, todayKey(), item.dueTime ?? null);
   if (due) {
     const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';

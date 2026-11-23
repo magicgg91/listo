@@ -1,5 +1,7 @@
 # Listo : Accueil, Notes et page Notifications (cadrage, sans code)
 
+**État : construit le 23 novembre 2026, en quatre étapes** (Accueil et navigation, sans migration ; Notes, socle, migration 36 ; Notes, partage, migration 37 ; page Notifications, migration 38), sur `dev`. Ce qui est construit est décrit dans le cahier des charges (Fonctionnalités, Écrans, Modèle de données, Sécurité) et dans l'aide ; ce document reste le cadrage d'origine. Écarts avec ce qui suit : **catégories des notes abandonnées** pendant l'étape 2 (§ 3.5 ; les maquettes les montrent encore) ; la tuile Notes et le bouton « Notes » du bandeau sont arrivés à l'étape 2, **la cloche de l'Accueil seulement à l'étape 4**, avec la page Notifications (masquée jusque-là) ; la page Notifications reprend aussi les sourdines par liste et par note sans `LISTO_PUSH` ; les notes ne sont toujours pas ouvertes aux assistants IA (décision 5).
+
 Document de conception rédigé le 23 novembre 2026, à partir des demandes et des choix du propriétaire. Il ne contient aucun code et ne change rien à l'application : il sert à décider. Rien ne sera construit avant sa validation et celle des maquettes (`design/accueil-notes/`). Une fois construit, chaque point rejoindra le texte du cahier des charges (Fonctionnalités, Écrans, Modèle de données, Sécurité).
 
 **Choix du propriétaire (23 novembre 2026)**

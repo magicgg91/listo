@@ -53,6 +53,9 @@ export default {
   'notes.statut.enCours': 'Saving…',
   'notes.statut.horsLigne': 'Offline · saved on this phone',
   'notes.statut.aVerifier': 'Needs checking · your version stays on this phone',
+  // On a computer, “this device” (never “this phone”)
+  'notes.statut.horsLigne.pc': 'Offline · saved on this device',
+  'notes.statut.aVerifier.pc': 'Needs checking · your version stays on this device',
   'notes.pied.moi': 'Changed {date}',
   'notes.pied.autre': 'Changed by {name} · {when}',
   'notes.introuvable.titre': 'Note not found',

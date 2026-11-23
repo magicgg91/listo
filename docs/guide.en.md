@@ -211,6 +211,7 @@ You choose the type when you create the list. A shopping list can become a task 
 - Read only: a person who can only read the list.
 - Visitor: a person without an account who opens a list's public link.
 - Recipient: the person a wish list is for.
+- Note: free text, separate from the lists, yours alone at first; it can be shared like a list ([5.12 Notes](#notes)).
 - Admin: the account that manages accounts, stores and aisles.
 
 <a id="possibilites"></a>
@@ -273,15 +274,15 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 - Notes in free text, that save themselves, with clickable links, a pin and their own trash ([5.12 Notes](#notes)).
 - A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([5.13 Sharing a note](#notes-partage)).
-- A quick note from Home, even offline ([5.11 Getting around: Home, Due](#echeances)).
+- A quick note from Home, even offline ([5.12 Notes](#notes)).
 
 <a id="p-securite"></a>
 
 ### 2.7 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.16 Offline and sync](#hors-ligne)).
-- Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)).
-- Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([7.6 Owner: the public link](#lien-public)).
+- Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note, from the notes trash ([5.12 Notes](#notes)).
+- Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([7.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
 <a id="p-confort"></a>
 
@@ -791,7 +792,7 @@ Listo opens on “Home”: ‘Hello’ and your first name, today's date, the st
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
-- “Notes” tile: the number of your notes, the last two changed (a row opens the note) and “New note”, which opens a quick entry ([5.12 Notes](#notes)); with no note: “No notes”.
+- “Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a quick entry ([5.12 Notes](#notes)); with no note: “No notes”.
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
 - A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
 
@@ -825,7 +826,7 @@ The trash button on the “Notes” screen opens the “Notes trash”: your del
 
 **On a computer**
 
-“Notes” is in the menu on the left, with the number of notes (and a dot when there's something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself; the “/” key searches the notes.
+“Notes” is in the menu on the left, with the number of notes (and a dot when there's something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself (offline: “Offline · saved on this device”); the “/” key searches the notes.
 
 <a id="notes-partage"></a>
 
@@ -877,11 +878,11 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 
 ### 5.16 Offline and sync
 
-Without a network, you can keep adding, editing and checking. The changes are sent when the network comes back.
+Without a network, you can keep adding, editing and checking, and writing in your notes ([5.12 Notes](#notes)). The changes are sent when the network comes back.
 
 The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.
 
-Sharing, the public link, duplicating, “Leave list”, the trash, reservations, creating a store or an aisle, and Administration need a connection.
+Sharing (a list or a note), the public link, duplicating, “Leave list” and “Leave note”, the list trash, reservations, creating a store or an aisle, and Administration need a connection.
 
 <a id="theme"></a>
 
@@ -903,8 +904,8 @@ The names of lists, items, aisles and stores are not translated: they are your d
 
 In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.
 
-- On the left, the menu: “Search lists”, then “Home”, “Due” and “Lists” (with the number of lists), and at the bottom “New list”, your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.
-- The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
+- On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.
+- The menu follows the screen: on “Lists” and in a list, it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
 - An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
 - “Share list” brings together the people on the list and the public link. The owner chooses each person's access there, adds or removes people, and manages the link; the other members only see the list of people there.
@@ -917,8 +918,8 @@ The “?” key (or the “?” button at the top left) shows the list. No singl
 | Key | Action |
 | --- | --- |
 | ? | Show shortcuts |
-| N | New list |
-| / | Search (in the list, or in the menu) |
+| N | New list (new note on the notes screens) |
+| / | Search (in the list, in the notes, or in the menu) |
 | , | Settings |
 | Esc | Close the window; clear, then leave the search |
 | \[ and \] | Previous, next list |
@@ -1077,7 +1078,7 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 
 ## 7. Role by role
 
-On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail.
+On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail. A shared note has the same permissions, in a simpler form: [5.13 Sharing a note](#notes-partage).
 
 | Action | Owner | Contributor | Read only | Visitor | Admin |
 | --- | --- | --- | --- | --- | --- |
@@ -1116,7 +1117,7 @@ Settings, “Administration” (visible only to an Admin).
 **Can / can't**
 
 - Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).
-- Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner.
+- Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([5.12 Notes](#notes)).
 - Other accounts' AI assistant connections: see [8.8 See and disconnect an AI assistant](#claude-connexions).
 - Finding out that a new version exists: [9.9 Knowing a new version exists](#version).
 

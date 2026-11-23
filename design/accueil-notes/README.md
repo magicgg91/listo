@@ -23,7 +23,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 - `note-2` : conflit : « À vérifier », bandeau « Léa vient de modifier cette note », choix Garder la mienne / Prendre la leur / Garder les deux, « Décider plus tard ».
 - `notifications-1` : Aujourd'hui, Hier, Samedi 21 novembre ; trois non lues (point, texte en gras, icône bleue) ; « Tout marquer comme lu » ; une ligne glissée qui montre « Effacer » ; « Tout effacer » en bas.
 - `notifications-2` : « Aucune notification ».
-- `pc-accueil-1`, `pc-notes-1` : menu de gauche avec Accueil, Mes listes, Notes (catégories ouvertes sur l'écran Notes), Échéances ; tuiles sur trois colonnes ; notes à gauche et note ouverte à droite.
+- `pc-accueil-1`, `pc-notes-1` : menu de gauche avec Accueil, Mes listes, Notes (une seule entrée, sans les catégories : choix du propriétaire du 23 novembre 2026), Échéances ; pastilles des catégories au-dessus des cartes de notes, comme sur le téléphone ; tuiles sur trois colonnes ; notes à gauche et note ouverte à droite.
 
 ## Nouveaux composants
 

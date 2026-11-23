@@ -28,7 +28,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 - **Téléphone** : le bandeau du bas en verre (décision du 11 novembre 2026) passe de trois à cinq boutons, toujours à la même place, toute la largeur : **Accueil** (icône maison), **Listes** (« Mes listes » jusqu'ici), **Notes** (nouvelle icône « note »), **Échéances**, **Réglages**. Libellés courts sous chaque icône, zones tactiles d'au moins 44 px, bouton de l'écran ouvert mis en avant comme aujourd'hui. **Pas de bandeau sur l'Accueil** (choix du propriétaire du 23 novembre 2026) : ses tuiles mènent déjà à tout (Listes, Notes, Échéances, Notifications, Mon compte, Réglages) ; on revient à l'Accueil par le bouton « Accueil » du bandeau des autres écrans.
 - **Premier écran** : l'Accueil (`#/accueil`) à l'ouverture de l'application et après la connexion ; une adresse vide ou inconnue mène à l'Accueil (aujourd'hui « Mes listes »). Un lien direct (liste, note, autorisation d'un assistant IA, notification touchée) ouvre toujours directement son écran.
 - **Loupe ronde** : sur Listes, Notes et Échéances comme aujourd'hui pour les écrans qui ont une recherche ; jamais sur l'Accueil (rien à chercher) ni sur la page Notifications.
-- **Ordinateur** (à partir de 1 024 px) : le menu de gauche gagne « Accueil » en tête, puis « Mes listes » (groupes et compteurs inchangés), « Notes » (avec ses catégories et leur nombre), « Échéances ». La cloche des notifications est dans l'en-tête de l'Accueil, comme sur le téléphone. Le téléphone ne change pas au-delà de ce qui est décrit ici (captures avant/après expliquées).
+- **Ordinateur** (à partir de 1 024 px) : le menu de gauche gagne « Accueil » en tête, puis « Mes listes » (groupes et compteurs inchangés), « Notes » (une seule entrée avec le nombre de notes, **sans les catégories** : choix du propriétaire du 23 novembre 2026 ; elles restent en pastilles au-dessus des cartes, comme sur le téléphone), « Échéances ». La cloche des notifications est dans l'en-tête de l'Accueil, comme sur le téléphone. Le téléphone ne change pas au-delà de ce qui est décrit ici (captures avant/après expliquées).
 
 ## 2. Accueil
 
@@ -238,7 +238,7 @@ Dans `design/accueil-notes/` (`README.md`, pages de référence, styles des nouv
 | notifications-1 | Page Notifications (Aujourd'hui, Hier, non lues) |
 | notifications-2 | Page Notifications vide |
 | pc-accueil-1 | Accueil sur ordinateur, menu de gauche avec Accueil et Notes |
-| pc-notes-1 | Notes sur ordinateur (catégories dans le menu, note ouverte) |
+| pc-notes-1 | Notes sur ordinateur (« Notes » dans le menu de gauche sans ses catégories, pastilles de catégories au-dessus des cartes, note ouverte) |
 
 Les nouveaux composants (tuile, ligne de tuile avec nombre, carte de note, pastilles de catégories, ligne de notification, cloche avec pastille) sont dans `design/accueil-notes/listo-accueil-notes.css` (sections 16.19 à 16.27) et les icônes manquantes (« note », « épingle ») dans `design/accueil-notes/icons-nouvelles.svg.html` ; ils rejoindront `design/listo.css`, `design/components.html` et le sprite à la construction. Les choix faits en dessinant (en-tête, boutons, emplacement de « Nouvelle note »…) et les points à trancher sont dans `design/accueil-notes/README.md`.
 

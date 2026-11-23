@@ -245,10 +245,10 @@
 /* 16.27 Ordinateur (.app--pc, à partir de 1 024 px)
    - Menu de gauche : .pc-side__main, entrées fixes sous la recherche, dans
      l'ordre du bandeau du téléphone : Accueil, Mes listes, Notes,
-     Échéances (« Échéances » garde sa pastille .news-badge). Les
-     catégories des notes s'ouvrent sous « Notes » (.pc-nav__item--sub,
-     en retrait, avec leur nombre) quand l'écran Notes est affiché. Les
-     listes, groupées par type, restent dessous, inchangées.
+     Échéances (« Échéances » garde sa pastille .news-badge). « Notes »
+     est une seule entrée, sans ses catégories (choix du propriétaire du
+     23 novembre 2026) : elles sont en pastilles (.catbar) au-dessus des
+     cartes, comme sur le téléphone. Les listes, groupées par type, restent dessous, inchangées.
    - Accueil : en-tête .pc-head (« Bonjour Guillaume », date ; pastille
      d'état et cloche à droite) ; tuiles sur trois colonnes (quatre au-delà
      de 1 440 px), la tuile Notes montre jusqu'à quatre notes.
@@ -257,8 +257,6 @@
      s'enregistre toute seule, et un clic sur une autre carte l'ouvre. */
 .pc-side__main { display: flex; flex: none; flex-direction: column; gap: 2px; margin: 4px 8px 0; padding-bottom: 6px; border-bottom: 1px solid var(--color-border); }
 .pc-side__main .news-badge { position: static; flex: none; margin-left: auto; border: 0; }
-.pc-nav__item--sub { min-height: 36px; padding-left: 42px; font-size: var(--text-base); }
-@media (pointer: coarse) { .pc-nav__item--sub { min-height: 44px; } }
 .pc-head__tools { display: flex; flex: none; align-items: center; gap: 8px; }
 .pc-head__hello { font-size: var(--text-display); font-weight: 700; line-height: 1.15; }
 .app--pc .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 4px var(--pc-gutter) var(--pc-gutter); }

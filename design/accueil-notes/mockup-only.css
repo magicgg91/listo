@@ -39,3 +39,17 @@ body { background: var(--color-bg); color: var(--color-text); font-family: var(-
 .mock-caret { display: inline-block; width: 2px; height: 1.15em; margin-left: 1px; vertical-align: text-bottom; background: var(--color-accent); }
 .mock-field { cursor: text; }
 .mock-field { white-space: pre-wrap; }
+
+/* Cartes de listes (copie de public/css/app.css, pour pc-listes-1) */
+.list-card-wrap { position: relative; }
+.list-card-wrap .list-card__head { padding-right: 36px; }
+.list-card__menu { position: absolute; top: 6px; right: 4px; color: var(--color-text-2); }
+.list-card__head { align-items: flex-start; }
+.list-card__icon { display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
+.list-card__head .list-card__name { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; }
+.list-card__head .list-card__time { line-height: calc(var(--text-lg) * var(--lh-tight)); }
+.list-card__foot { gap: var(--space-1); margin-top: 10px; }
+.list-card__left { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.list-card__count--progress { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.list-card__people { display: flex; flex: none; align-items: center; gap: 6px; }
+.list-card__link { display: inline-flex; color: var(--color-text-2); }

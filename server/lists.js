@@ -75,6 +75,8 @@ export function isDueDate(value) {
   return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
 }
 export const PURGE_AFTER_DAYS = 30;
+// « Vider la corbeille » : au plus tant de listes par demande
+export const MAX_TRASH_PURGE = 500;
 export const MAX_OPS_PER_BATCH = 100;
 
 // Identifiant UUID (forme 8-4-4-4-12 en hexadécimal)
@@ -1817,6 +1819,32 @@ export function createListService(ctx) {
     return row ? { name: row.name, note: row.note ?? '' } : null;
   }
 
+  // --- Effacer des listes pour de bon ---
+  // Une seule façon d'effacer une liste, utilisée par le nettoyage (listes
+  // supprimées depuis plus de 30 jours) et par la corbeille (« Supprimer
+  // définitivement », « Vider la corbeille ») : la ligne de la liste est
+  // effacée, et la base efface avec elle (ON DELETE CASCADE) ses éléments,
+  // ses membres, son lien public, ses nouveautés et repères de lecture, ses
+  // sourdines, ses réservations et participations, ses rappels, ses accès
+  // donnés aux assistants IA. eraseListRows travaille dans la transaction de
+  // l'appelant et rend les articles dont la photo est sur le disque ;
+  // removePhotoFiles efface ces fichiers, APRÈS la transaction.
+  const listPhotoItems = db.prepare('SELECT id FROM items WHERE list_id = ? AND photo_at IS NOT NULL').pluck();
+  const deleteListRow = db.prepare('DELETE FROM lists WHERE id = ?');
+  function eraseListRows(listIds) {
+    const photoIds = [];
+    let lists = 0;
+    for (const id of listIds) {
+      photoIds.push(...listPhotoItems.all(id));
+      lists += deleteListRow.run(id).changes;
+    }
+    return { lists, photoIds };
+  }
+  function removePhotoFiles(photoIds) {
+    if (!ctx.photos) return;
+    for (const id of photoIds) ctx.photos.remove(id);
+  }
+
   // --- Nettoyage périodique ---
   // Efface pour de bon ce qui est marqué supprimé depuis plus de 30 jours
   // (les articles d'une liste effacée partent avec elle), ainsi que la trace
@@ -1827,22 +1855,24 @@ export function createListService(ctx) {
   function purgeDeleted() {
     const limit = new Date(ctx.now() - PURGE_AFTER_DAYS * DAY).toISOString();
     const result = db.transaction(() => {
-      const photos = db.prepare(`
-        SELECT items.id FROM items JOIN lists ON lists.id = items.list_id
-        WHERE items.photo_at IS NOT NULL
-          AND ((items.deleted_at IS NOT NULL AND items.deleted_at < :limit)
-            OR (lists.deleted_at IS NOT NULL AND lists.deleted_at < :limit))
-      `).pluck().all({ limit });
+      // Articles supprimés un par un (leur liste peut être vivante)
+      const itemPhotos = db.prepare(`
+        SELECT id FROM items WHERE photo_at IS NOT NULL AND deleted_at IS NOT NULL AND deleted_at < ?
+      `).pluck().all(limit);
+      const items = db.prepare('DELETE FROM items WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes;
+      // Listes supprimées : effacées comme depuis la corbeille
+      const old = db.prepare('SELECT id FROM lists WHERE deleted_at IS NOT NULL AND deleted_at < ?').pluck().all(limit);
+      const erased = eraseListRows(old);
       return {
-        photoIds: photos,
-        items: db.prepare('DELETE FROM items WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
-        lists: db.prepare('DELETE FROM lists WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes,
+        photoIds: [...itemPhotos, ...erased.photoIds],
+        items,
+        lists: erased.lists,
         ops: db.prepare('DELETE FROM applied_ops WHERE applied_at < ?').run(limit).changes,
       };
     })();
     const { photoIds, ...counts } = result;
     if (ctx.photos) {
-      for (const id of photoIds) ctx.photos.remove(id);
+      removePhotoFiles(photoIds);
       const known = db.prepare('SELECT 1 FROM items WHERE id = ?').pluck();
       counts.photos = photoIds.length + ctx.photos.sweep((id) => known.get(id) === 1, ctx.now());
     }
@@ -1945,9 +1975,48 @@ export function createListService(ctx) {
     return { list: describeList(q.myLists.all(user.id).find((l) => l.id === list.id), user) };
   }
 
+  // Supprimer définitivement mes listes de la corbeille (POST
+  // /api/lists/:id/purge pour une, POST /api/lists/deleted/purge pour
+  // plusieurs) : exactement l'effacement du nettoyage (eraseListRows,
+  // removePhotoFiles), plus tôt et à la demande du propriétaire. Seulement
+  // une liste dont je suis propriétaire et qui est dans ma corbeille (même
+  // condition que l'écran et la restauration : myDeletedList). Rien à
+  // prévenir : les membres ne la voient déjà plus depuis sa suppression, et
+  // leur synchronisation retire de leur copie toute liste absente de
+  // listIds. Une liste d'envies ne dit donc rien de plus au bénéficiaire.
+  // Journal : list_purged, identifiants seulement (jamais le nom).
+  function purgeLists(user, listIds) {
+    const limit = purgeLimit();
+    const { lists, photoIds } = db.transaction(() => {
+      const mine = listIds.filter((id) => myDeletedList.get(id, user.id, limit));
+      const erased = eraseListRows(mine);
+      return { lists: mine, photoIds: erased.photoIds };
+    })();
+    removePhotoFiles(photoIds);
+    for (const id of lists) ctx.audit('list_purged', { user: user.username, list: id });
+    return lists.length;
+  }
+
+  // Une liste : liste d'un autre, inconnue, pas dans la corbeille ou déjà
+  // effacée : la même réponse, 404 « Liste introuvable. »
+  function purgeList(user, listId) {
+    const id = isUuid(listId) ? listId.toLowerCase() : null;
+    if (!id || purgeLists(user, [id]) !== 1) throw new OpError(404, LIST_NOT_FOUND);
+    return { purged: 1 };
+  }
+
+  // « Vider la corbeille » : les listes que l'écran montrait (ids, pour ne
+  // jamais effacer une liste mise à la corbeille entre-temps sur un autre
+  // appareil, que la personne n'a pas vue). Celles qui n'y sont plus (ou ne
+  // sont pas à moi) sont ignorées ; la réponse dit combien sont effacées.
+  function purgeTrash(user, ids) {
+    if (!Array.isArray(ids) || ids.length > MAX_TRASH_PURGE || !ids.every(isUuid)) throw new OpError(400, 'ops.corbeilleInvalide');
+    return { purged: purgeLists(user, [...new Set(ids.map((id) => id.toLowerCase()))]) };
+  }
+
   return {
     applyOps, myLists, readList, suggestions, changesSince, setMembers, convertToWishes, duplicateList, leaveList, purgeDeleted, activeUsers, news,
-    deletedLists, restoreList, activeAisles, activeStoreChoices,
+    deletedLists, restoreList, purgeList, purgeTrash, activeAisles, activeStoreChoices,
     photoItem, setPhotoDate, nowIso, OpError, listForMember, listForEditor, knownProduct, notes,
   };
 }

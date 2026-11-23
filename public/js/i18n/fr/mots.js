@@ -34,9 +34,6 @@ export default {
   'mots.suppression.chemin.corbeille': 'Corbeille des listes',
   'mots.suppression.suite': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis {path}.',
 
-  // Corbeille des listes
-  'mots.corbeille.jours': { one: 'Suppression définitive dans {count} jour', other: 'Suppression définitive dans {count} jours' },
-
   // Zone des cochés, en bas de la liste
   'mots.coches.envies.titre': 'Reçus',
   'mots.coches.envies.rouvrir': 'Tout rouvrir',

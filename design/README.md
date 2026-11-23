@@ -540,10 +540,10 @@ Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.c
 
 - **Pastille sur un bouton-icône** (16.22) : `.icon-btn--badge`, `.icon-btn__badge` (`--neutral` en gris : corbeille des notes) ; `.count--accent`.
 - **Bandeau du bas** (16.23) : `.tabbar--5` (Accueil, Échéances, Listes, Notes, Réglages) ; `data-current` va de 0 à 4.
-- **Saisie rapide** (16.24) : `.quick-note`, `.quick-note__text`, `.quick-note__actions` (« Annuler », « Enregistrer » côte à côte ; `.sheet__actions` de `app.css` reste en colonne pour les autres feuilles) ; `.tile__meta` (« 12 notes » dans la tuile Notes).
+- **Saisie rapide** (16.24) : `.quick-note`, `.quick-note__text`, `.quick-note__actions` (« Annuler », « Enregistrer » côte à côte ; `.sheet__actions` de `app.css` reste en colonne pour les autres feuilles) ; nombre de notes de la tuile Notes : pastille `.count` grise au bout du titre (`.tile__head`), aucune sans note.
 - **Écran Notes** (16.25) : `.notes-section`, `.note-card-wrap`, `.note-card` (`__head`, `__icon`, `__title`, `__time`, `__menu`, `__excerpt`, `__foot`, `__check`).
 - **Une note** (16.26) : `.note-status` (`--ok`, `--check`), `.note-edit` (`__title`, `__body`, `__body--input`, `__placeholder`), `.note-link`, `.note-foot`, `.note-banner`, `.conflict`. Le texte est affiché avec ses liens hors saisie ; le toucher passe en saisie (champ de texte simple).
-- **Corbeille des notes** (16.27) : `.page-intro`, `.page-tools`, `.note-trash`.
+- **Corbeilles des listes et des notes** (16.27, même écran depuis le 23 novembre 2026) : `.page-intro`, `.page-tools`, `.trash-row` (grille : titre et actions `.trash-row__actions` sur la première ligne, poubelle rouge `.trash-row__purge`, puis les lignes `.trash-row__meta`).
 - **Ordinateur** (16.28) : `.pc-col--full`, `.pc-notes` (`--closed` sans note ouverte), `.pc-notes__list`, `.pc-notes__cards`, `.pc-note` (`__bar`), 560 px (440 px sous 1 280 px).
 
 ## Ajout : Notes, partage (23 novembre 2026)

@@ -9,6 +9,9 @@ export default {
   'ops.lectureSeule': 'You have read-only access to this list.',
   'ops.proprietaireNePeutPasQuitter': "The owner can't leave their own list. Delete it instead.",
 
+  // « Vider la corbeille » : demande mal formée
+  'ops.corbeilleInvalide': 'Invalid list of lists to erase.',
+
   // Priorité, échéance, rayon (règles des options de la liste)
   'ops.prioriteDesactivee': 'Priority is turned off for this list.',
   'ops.echeanceDesactivee': 'Due dates are turned off for this list.',

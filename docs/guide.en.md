@@ -792,7 +792,7 @@ Listo opens on “Home”: ‘Hello’ and your first name, today's date, the st
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
-- “Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([5.12 Notes](#notes)); with no note: “No notes”.
+- “Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([5.12 Notes](#notes)); with no note: “No notes”.
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
 - A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
 
@@ -1090,7 +1090,7 @@ On each list, everyone has a role: owner, contributor (“Can edit”), read onl
 | Edit the list (title, type, store, icon, options) | Yes | No | No | No | No |
 | Share the list and choose each person's permission | Yes | No | No | No | No |
 | Create a public link | Yes | No | No | No | No |
-| Delete the list, restore it from the trash (30 days) | Yes | No | No | No | No |
+| Delete the list, restore it or erase it for good from the trash (30 days) | Yes | No | No | No | No |
 | Leave the list | No | Yes | Yes | No | No |
 | Manage accounts, stores, aisles and items | No | No | No | No | Yes |
 
@@ -1186,8 +1186,9 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 - “Duplicate list” creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - “Delete list” (⋮ menu) asks for confirmation, which reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
-- A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows in how many days it will be erased.
+- A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
+- “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.
 
 <a id="role-contributeur"></a>

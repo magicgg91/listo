@@ -48,6 +48,8 @@ const MIGRATED = [
   'public/js/screens/share.js',
   'public/js/screens/share-panel.js',
   'public/js/screens/trash.js',
+  'public/js/screens/trash-parts.js',
+  'public/js/screens/note-trash.js',
   'public/js/screens/deadlines.js',
   'public/js/deadlines.js',
   'public/js/screens/claude-connections.js',

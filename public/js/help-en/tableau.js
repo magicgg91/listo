@@ -21,7 +21,7 @@ export const PERMISSIONS = [
   { action: 'Edit the list (title, type, store, icon, options)', roles: ['owner'] },
   { action: 'Share the list and choose each person\'s permission', roles: ['owner'] },
   { action: 'Create a public link', roles: ['owner'] },
-  { action: 'Delete the list, restore it from the trash (30 days)', roles: ['owner'] },
+  { action: 'Delete the list, restore it or erase it for good from the trash (30 days)', roles: ['owner'] },
   { action: 'Leave the list', roles: ['contributor', 'reader'] },
   { action: 'Manage accounts, stores, aisles and items', roles: ['admin'] },
 ];

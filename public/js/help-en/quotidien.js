@@ -158,7 +158,7 @@ export default {
         { ul: [
           '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
           '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
-          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which asks for the title then opens the note ([[notes]]); with no note: “No notes”.',
+          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([[notes]]); with no note: “No notes”.',
           '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
           'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
         ] },
@@ -179,7 +179,7 @@ export default {
         'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.',
         { ul: [
           '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. ⋮ menu, “Sort”: “Most recent first” or “Alphabetical order”. The magnifying glass searches titles and texts.',
-          '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” opens a small window asking for “Title (optional)”; “Create” opens the note with the cursor in the text (“Cancel” creates nothing).',
+          '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.',
           'A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.',
           'To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.',
           'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave note”.',

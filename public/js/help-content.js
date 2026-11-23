@@ -702,7 +702,7 @@ export const GUIDE = [
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
-            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui demande le titre puis ouvre la note ([[notes]]) ; sans note : « Aucune note ».',
+            'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
@@ -723,7 +723,7 @@ export const GUIDE = [
           'Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin ; vous pouvez la partager ([[notes-partage]]). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.',
           { ul: [
             'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d\'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.',
-            '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » ouvre une petite fenêtre qui demande « Titre (facultatif) » ; « Créer » ouvre la note, le curseur dans le texte (« Annuler » ne crée rien).',
+            '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » fait de même.',
             'Une note s\'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.',
             'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet.',
             'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu\'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter la note ».',

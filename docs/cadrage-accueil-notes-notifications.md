@@ -231,7 +231,7 @@ Dans `design/accueil-notes/` (`README.md`, pages de référence, styles des nouv
 | --- | --- |
 | accueil-1 | Accueil, avec des échéances, des listes, des notes et des notifications non lues |
 | accueil-2 | Accueil d'un nouveau compte (tuiles vides) |
-| accueil-3 | Saisie rapide « Nouvelle note » |
+| accueil-3 | Saisie rapide « Nouvelle note » (retirée le 23 novembre 2026 : « Nouvelle note » ouvre directement une nouvelle note) |
 | notes-1 | Écran Notes : pastilles de catégories (abandonnées : à ignorer), notes épinglées et autres, une partagée en lecture seule, nouveautés |
 | notes-2 | Catégories (gérer) : abandonné le 23 novembre 2026, à ignorer |
 | notes-3 | Corbeille des notes |

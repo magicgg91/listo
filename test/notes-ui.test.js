@@ -38,16 +38,14 @@ test('texte d\'une note : textContent et éléments <a> seulement (http, https),
 test('curseur : jamais à l\'ouverture d\'une note existante ; seulement pour « Nouvelle note » ou un appui sur le texte', () => {
   const note = code('public/js/screens/note.js');
   // Une seule mise en saisie automatique : une nouvelle note
-  assert.match(note, /if \(isNew \|\| justCreated\) queueMicrotask\(\(\) => edit\(0\)\);/);
+  assert.match(note, /if \(isNew\) queueMicrotask\(\(\) => edit\(0\)\);/);
   assert.equal((note.match(/\bedit\(/g) ?? []).length, 3, 'nouvelle note, appui sur le texte, Entrée');
   assert.equal((note.match(/\.focus\(/g) ?? []).length, 1);
   assert.match(note, /input\.focus\(\);\s*input\.setSelectionRange\(at, at\);/);
-  // Nouvelle note depuis l'Accueil : le curseur dans le titre de la petite
-  // fenêtre (juste après l'appui), puis dans le texte de la note créée
+  // Nouvelle note depuis l'Accueil : directement l'écran d'une nouvelle note
   const notes = code('public/js/screens/notes.js');
-  assert.match(notes, /const \{ field, answer \} = textDialog\([\s\S]*?\}\);\s*field\.focus\(\);/);
-  assert.match(notes, /writeOnOpen\(noteId\);\s*navigate\('note', \{ id: noteId \}\);/);
-  assert.equal((notes.match(/\.focus\(/g) ?? []).length, 1);
+  assert.match(notes, /export function openQuickNote\(\) \{\s*navigate\('newNote'\);\s*\}/);
+  assert.equal((notes.match(/\.focus\(/g) ?? []).length, 0);
 });
 
 test('enregistrement automatique : une seconde après la dernière frappe, en quittant, en arrière-plan ; jamais une page vide', () => {

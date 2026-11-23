@@ -6,7 +6,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 | Fichier | Rôle |
 |---|---|
-| `captures/` | 24 PNG : 12 écrans de la section 9 du cadrage (sans l’écran des catégories), en clair (`-clair`) et en sombre (`-sombre`). Téléphone 390 × 844 points à 2x, ordinateur 1 440 × 900 points à 2x |
+| `captures/` | 22 PNG : 12 écrans de la section 9 du cadrage (sans l’écran des catégories), en clair (`-clair`) et en sombre (`-sombre`). Téléphone 390 × 844 points à 2x, ordinateur 1 440 × 900 points à 2x |
 | `listo-accueil-notes.css` | Nouveaux composants seulement (sections 16.19 à 16.27, à ajouter à `design/listo.css` après validation). Variables existantes uniquement |
 | `icons-nouvelles.svg.html` | Icônes à ajouter au sprite : `i-note`, `i-pin`, `i-pin-off`, `i-check-double` |
 | `reference-telephone.html`, `reference-ordinateur.html` | Balisage de référence (lisent `../listo.css`). Ajouter `?theme=dark` à l'adresse pour le sombre |
@@ -17,7 +17,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 - `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications, Réglages ; le nombre non lu n'est que sur la cloche). Bandeau du bas, Accueil choisi (ajouté sur l'Accueil le 23 novembre 2026, après essai sur iPhone), sans loupe.
 - `accueil-2` : nouveau compte : « Aucune échéance », « Aucune liste » et « Nouvelle liste », « Aucune note » et « Nouvelle note », cloche sans pastille.
-- `accueil-3` : « Nouvelle note » depuis la tuile Notes : petite fenêtre centrée (`.dialog` du kit, comme une confirmation) sur l'Accueil assombri : titre « Nouvelle note », un seul champ « Titre (facultatif) » avec le curseur dedans (clavier non dessiné), « Annuler » et « Créer ». Après « Créer », l'écran de la note s'ouvre, curseur dans le texte (choix du propriétaire du 23 novembre 2026).
+- `accueil-3` : retirée le 23 novembre 2026 : « Nouvelle note » de la tuile Notes ouvre directement une nouvelle note (écran `note-1`, curseur dans le texte), comme « + ».
 - `notes-1` : écran Notes : corbeille (2), menu ⋮ (« Trier »), « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « + » (Nouvelle note) dans la barre du haut comme sur « Listes », loupe à droite au-dessus du bandeau.
 - `notes-3` : Corbeille des notes : date et jours restants, « Partagée avec 2 personnes », Supprimer définitivement / Restaurer, « Vider la corbeille ».
 - `note-1` : une note (« Vacances en Bretagne », à Léa, que Guillaume peut modifier) : « Personnes », « Enregistré », lien cliquable, « Modifiée par Léa · il y a 5 min ».
@@ -43,7 +43,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 
 ## Décisions qui restent (section 10 du cadrage)
 
-1. Curseur dans « Nouvelle note » : tranché, dans le champ du titre de la petite fenêtre (dessiné dans `accueil-3`), puis dans le texte de la note après « Créer ».
+1. Curseur dans « Nouvelle note » : tranché, « Nouvelle note » (Accueil) et « + » ouvrent une nouvelle note, le curseur dans le texte.
 2. Ouvrir la page Notifications marque-t-il tout comme lu ? Proposé : non.
 3. Réglages communs à la page et au téléphone : proposé oui.
 4. Tuiles cachables ou déplaçables : proposé pas pour l'instant.

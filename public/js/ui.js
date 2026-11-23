@@ -316,44 +316,6 @@ export function confirmDialog({ title, text, confirmLabel, cancelLabel = t('fene
   });
 }
 
-// Petite fenêtre qui demande un texte d'une ligne (titre d'une nouvelle
-// note, depuis l'Accueil) : titre, un champ, « Annuler » et le bouton
-// principal. Centrée sur le téléphone comme sur l'ordinateur, elle reste
-// au-dessus du clavier. Renvoie { field, answer } : answer est une promesse
-// (le texte saisi, ou null si la fenêtre est fermée sans valider). Le
-// curseur n'est jamais mis dans le champ ici : c'est à l'appelant de le
-// faire, seulement après un geste fait pour écrire (test/focus.test.js).
-export function textDialog({ title, label, confirmLabel, maxLength, cancelLabel = t('fenetres.annuler') }) {
-  let resolveAnswer;
-  const answer = new Promise((resolve) => { resolveAnswer = resolve; });
-  let value = null;
-  const titleId = `dlg-${Math.random().toString(36).slice(2, 8)}`;
-  const field = h('input', {
-    class: 'input', type: 'text', autocomplete: 'off', enterkeyhint: 'done',
-    maxlength: maxLength ? String(maxLength) : null, 'aria-label': label, placeholder: label,
-  });
-  const pc = onPc();
-  overlay((closeFn) => {
-    const confirm = () => {
-      value = field.value;
-      closeFn();
-    };
-    field.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && !event.isComposing) {
-        event.preventDefault();
-        confirm();
-      }
-    });
-    return h('div', { class: pc ? 'pc-panel pc-modal pc-modal--sm' : 'dialog', 'aria-labelledby': titleId },
-      pc ? h('div', { class: 'pc-panel__head' }, h('h2', { class: 'pc-panel__title', id: titleId }, title)) : h('h2', { class: 'dialog__title', id: titleId }, title),
-      h('div', { class: pc ? 'pc-panel__body' : 'dialog__field' }, field),
-      h('div', { class: pc ? 'pc-panel__foot pc-panel__foot--end' : 'dialog__actions' },
-        h('button', { class: 'btn btn--secondary', type: 'button', onClick: closeFn }, cancelLabel),
-        h('button', { class: 'btn btn--primary', type: 'button', onClick: confirm }, confirmLabel)));
-  }, { onClose: () => resolveAnswer(value), pc: true });
-  return { field, answer };
-}
-
 // Confirmation par une feuille du bas (zone des articles cochés) : titre,
 // texte, avertissement facultatif (encadré rouge) et deux boutons. Renvoie une
 // promesse : true si l'action est confirmée. La feuille prend le focus sur

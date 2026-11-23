@@ -123,9 +123,6 @@ export default {
   'notes.tuile.nouveautes': '{name}, changed since you last read it',
 
   // Saisie rapide (tuile Notes de l'Accueil)
-  'notes.rapide.titre': 'New note',
-  'notes.rapide.champTitre': 'Title (optional)',
-  'notes.rapide.creer': 'Create',
 
   // Corbeille des notes
   'notes.corbeille.titre': 'Notes trash',

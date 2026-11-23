@@ -23,7 +23,7 @@ import { h, icon, iconButton, avatar } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList } from '../format.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc, textDialog } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
@@ -36,7 +36,7 @@ import { isNoteUnread, isNoteNewsMuted, isNoteOwner, canEditNote, notePeople } f
 import { isNotePushMuted, setNotePushMuted } from '../push.js';
 import { openNoteSharePanel } from './share-panel.js';
 import { openNoteLinkSheet } from './share.js';
-import { noteEditor, writeOnOpen } from './note.js';
+import { noteEditor } from './note.js';
 
 // --- Tri, gardé sur cet appareil ---
 const SORT_KEY = 'listo-tri-notes';
@@ -418,26 +418,12 @@ function renderNotesPc(onLeave, openId) {
 }
 
 // --- Nouvelle note depuis l'Accueil (tuile Notes) ---
-// Une petite fenêtre demande seulement le titre (facultatif), puis la note
-// s'ouvre, prête à écrire (décision du 23 novembre 2026 : l'ancienne
-// saisie rapide, titre et texte dans une feuille, passait sous le clavier
-// de l'iPhone). Le curseur va dans le titre : le geste « Nouvelle note » a
-// pour but d'écrire (exception de test/focus.test.js). Hors ligne : la note
-// est créée sur le téléphone et part au retour du réseau.
-export async function openQuickNote() {
-  const { field, answer } = textDialog({
-    title: t('notes.rapide.titre'),
-    label: t('notes.rapide.champTitre'),
-    confirmLabel: t('notes.rapide.creer'),
-    maxLength: NOTE_TITLE_MAX,
-  });
-  field.focus();
-  const title = await answer;
-  if (title === null) return;
-  const noteId = await actions.createNote({ title, body: '' });
-  // L'écran de la note met le curseur dans le texte (comme « + »)
-  writeOnOpen(noteId);
-  navigate('note', { id: noteId });
+// Ouvre directement une nouvelle note, comme « + » (décision du
+// 23 novembre 2026 : l'ancienne saisie rapide, une feuille, passait sous le
+// clavier de l'iPhone) ; le curseur va dans le texte de la note (geste fait
+// pour écrire, exception de test/focus.test.js).
+export function openQuickNote() {
+  navigate('newNote');
 }
 
 // Nombre de notes (hors corbeille) : tuile de l'Accueil, menu de gauche

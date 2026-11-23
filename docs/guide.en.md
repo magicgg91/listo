@@ -820,7 +820,7 @@ A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nob
 
 **Two people at the same time**
 
-If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just changed this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.
+If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just edited this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.
 
 **Notes trash**
 
@@ -840,11 +840,11 @@ In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens �
 - “Can edit”: change the title and the text. Never delete the note, share it or manage its public link.
 - “Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.
 - Everyone except the owner can “Leave note” (⋮ menu). Someone who loses access also loses their pin. Each person's pin is never shown to the others.
-- The cards of a shared note show the people's initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Changed by Léa · 5 min ago’.
+- The cards of a shared note show the people's initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
 
 **What's new and notifications**
 
-When someone else changes a shared note, its card shows a dot and ‘Changed by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.16 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
+When someone else changes a shared note, its card shows a dot and ‘Edited by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.16 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
 
 Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.4 Details in the notification](#notif-detail)). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.
 
@@ -992,6 +992,7 @@ The bell, at the top of Home, opens the Notifications page; its badge gives the 
 - Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.
 - Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.
 - Opening the page marks nothing as read: “Mark all as read” does. Opening a list, a note or the “Due” screen (from a phone notification, for example) marks the notifications about them as read. Read on one device means read on all of them.
+- Marking as read without opening: swipe an unread notification to the right (green “Read” area); or its ⋮ button, “Mark as read”.
 - Clearing: swipe a notification to the left, then “Clear”; or use its ⋮ button (keyboard, screen reader). “Clear all”, at the bottom, asks for confirmation.
 - Notifications are kept for 30 days, 300 at most (the oldest ones go).
 - Changes made close together in the same list or the same note fit on a single line, which updates (‘Léa added 4 items to “Shopping”’) and becomes unread again.

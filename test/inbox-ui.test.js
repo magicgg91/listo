@@ -110,8 +110,10 @@ test('cloche de l\'Accueil (téléphone et ordinateur) : nombre de non lues, « 
 
 test('écran : ouvrir la page ne marque rien ; toucher une ligne la marque lue et ouvre sa cible ; glisser ou ⋮ pour effacer ; « Tout effacer » confirmé', () => {
   const screen = code('public/js/screens/inbox.js');
-  // Seuls trois endroits marquent lu : la ligne touchée, son menu, « Tout marquer comme lu »
-  assert.equal(screen.match(/markInboxRead\(/g).length, 2);
+  // Seuls quatre endroits marquent lu : la ligne touchée, son menu, le
+  // glissement vers la droite (non lue seulement), « Tout marquer comme lu »
+  assert.equal(screen.match(/markInboxRead\(/g).length, 3);
+  assert.match(screen, /swipes\.attach\(item, button, del, unread \? \{ onRight: \(\) => actions\.markInboxRead\(\[row\.id\]\) \} : \{\}\);/);
   assert.match(screen, /export function openRow\(row\) \{\s*actions\.markInboxRead\(\[row\.id\]\);/);
   assert.equal(screen.match(/markAllInboxRead\(/g).length, 1);
   assert.match(screen, /h\('button', \{ class: 'cart__action', type: 'button', hidden: unread === 0, onClick: \(\) => actions\.markAllInboxRead\(\) \}/);
@@ -123,7 +125,6 @@ test('écran : ouvrir la page ne marque rien ; toucher une ligne la marque lue e
   assert.match(screen, /'aria-label': t\(unread \? 'inbox\.ligne\.nonLue' : 'inbox\.ligne', \{ text: row\.text, sub: row\.sub, time \}\)/);
   assert.match(screen, /unread \? h\('span', \{ class: 'inbox-row__dot', 'aria-hidden': 'true' \}\) : null/);
   // Glissement (comme les lignes d'une liste) et bouton ⋮ (menu)
-  assert.match(screen, /swipes\.attach\(item, button, del\);/);
   assert.match(screen, /'inbox-row__more'\);\s*more\.setAttribute\('aria-haspopup', 'menu'\);/);
   assert.match(screen, /\{ icon: 'trash', label: t\('inbox\.effacer'\), danger: true, onSelect: remove \}/);
   // Tout effacer : confirmation d'abord

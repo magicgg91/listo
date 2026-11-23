@@ -35,7 +35,7 @@ export default {
   'lienpublic.note.protegee': 'Protected note',
   'lienpublic.note.reseau': 'Note unavailable',
   'lienpublic.note.sansTitre': 'Untitled note',
-  'lienpublic.note.modifiee': 'Changed {date}',
+  'lienpublic.note.modifiee': 'Edited {date}',
   'lienpublic.note.vide': 'This note is empty',
 
   // Prénom du visiteur (liste d'envies)

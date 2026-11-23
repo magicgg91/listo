@@ -123,7 +123,7 @@ export default {
   'ops.noteExisteDeja': 'This note already exists.',
   'ops.noteProprietaireSeulement': 'Only the owner of the note can do that.',
   'ops.noteLectureSeule': 'You have read-only access to this note.',
-  'ops.noteConflit': 'This note was changed in the meantime: nothing was overwritten.',
+  'ops.noteConflit': 'This note was edited in the meantime: nothing was overwritten.',
   'ops.versionNoteInvalide': 'Invalid note version.',
   'ops.titreNoteInvalide': 'Invalid note title.',
   'ops.titreNoteTropLong': 'Title too long ({max} characters at most).',

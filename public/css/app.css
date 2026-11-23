@@ -668,6 +668,10 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .inbox-item.swipe { touch-action: pan-y; }
 .inbox-item .swipe__slide { padding-right: var(--space-2); }
 .inbox-item.is-swiping .swipe__delete, .inbox-item.is-open .swipe__delete { visibility: visible; }
+/* Glisser vers la droite : zone verte « Lue » derrière la ligne (non lue) */
+.swipe__right { position: absolute; top: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 104px; background: var(--color-success-ink); color: var(--color-surface); font-size: var(--text-sm); font-weight: 700; visibility: hidden; }
+.inbox-item.is-swiping-right .swipe__right { visibility: visible; }
+.inbox-item.is-swiping-right .swipe__delete { visibility: hidden; }
 .inbox-row__more { position: absolute; z-index: 2; top: 50%; right: 4px; transform: translateY(-50%); background: var(--color-surface); opacity: 0; pointer-events: none; }
 .inbox-row__more:focus-visible, .app--pc .inbox-item:hover .inbox-row__more { opacity: 1; pointer-events: auto; }
 .inbox-tools .cart__action[hidden] { display: none; }

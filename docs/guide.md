@@ -992,6 +992,7 @@ La cloche, en haut de l'Accueil, ouvre la page Notifications ; sa pastille donne
 - Les notifications sont groupées par jour (« Aujourd'hui », « Hier », puis la date), la plus récente en haut. Une notification non lue est en gras, avec un point bleu ; « 3 non lues » le dit en haut.
 - Toucher une notification la marque comme lue et ouvre ce qu'elle concerne : la liste, la tâche, la note ou les échéances. Si la liste a été supprimée ou ne vous est plus partagée : « Cette liste n'est plus disponible ».
 - Ouvrir la page ne marque rien comme lu : « Tout marquer comme lu » le fait. Ouvrir une liste, une note ou l'écran « Échéances » (par une notification du téléphone, par exemple) marque comme lues les notifications qui les concernent. Lu sur un appareil, c'est lu sur tous.
+- Marquer comme lue sans l'ouvrir : glissez une notification non lue vers la droite (zone verte « Lue ») ; ou son bouton ⋮, « Marquer comme lue ».
 - Effacer : glissez une notification vers la gauche, puis « Effacer » ; ou son bouton ⋮ (clavier, lecteur d'écran). « Tout effacer », en bas, demande confirmation.
 - Les notifications sont gardées 30 jours, 300 au plus (les plus anciennes partent).
 - Les modifications rapprochées d'une même liste ou d'une même note tiennent sur une seule ligne, qui se met à jour (“Léa a ajouté 4 articles dans « Courses »”) et redevient non lue.

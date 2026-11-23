@@ -38,6 +38,7 @@ export default {
   'inbox.ligne.nonLue': 'Non lue : {text}, {sub}, {time}',
   'inbox.options': 'Options de cette notification',
   'inbox.effacer': 'Effacer',
+  'inbox.lue': 'Lue',
   'inbox.effacer.lu': 'Effacer cette notification',
   'inbox.effacee': 'Notification effacée',
   'inbox.marquerLue': 'Marquer comme lue',

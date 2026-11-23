@@ -142,8 +142,10 @@ export function renderInbox(onLeave) {
       ].filter(Boolean), { label: t('inbox.options'), anchor: event.currentTarget });
     }, 'inbox-row__more');
     more.setAttribute('aria-haspopup', 'menu');
-    const item = h('div', { class: 'inbox-item swipe' }, button, del, more);
-    swipes.attach(item, button, del);
+    // Glisser vers la droite : marquer comme lue (ligne non lue seulement)
+    const readZone = unread ? h('span', { class: 'swipe__right', 'aria-hidden': 'true' }, icon('check', 'icon--sm'), h('span', {}, t('inbox.lue'))) : null;
+    const item = h('div', { class: 'inbox-item swipe' }, readZone, button, del, more);
+    swipes.attach(item, button, del, unread ? { onRight: () => actions.markInboxRead([row.id]) } : {});
     return item;
   }
 

@@ -244,10 +244,11 @@
 /* 16.27 Ordinateur (.app--pc, à partir de 1 024 px)
    - Menu de gauche : .pc-side__main, entrées fixes sous la recherche, dans
      l'ordre du bandeau du téléphone : Accueil, Mes listes, Notes,
-     Échéances (« Échéances » garde sa pastille .news-badge). « Notes »
-     est une seule entrée, sans ses catégories (choix du propriétaire du
-     23 novembre 2026) : elles sont en pastilles (.catbar) au-dessus des
-     cartes, comme sur le téléphone. Les listes, groupées par type, restent dessous, inchangées.
+     Échéances (« Échéances » garde sa pastille .news-badge). Dessous,
+     le menu suit l'écran (choix du propriétaire du 23 novembre 2026) :
+     écrans des notes, les notes groupées par catégorie (.pc-nav, mêmes
+     classes que les listes) et « Nouvelle note » en bas ; ailleurs, les
+     listes groupées par type et « Nouvelle liste », inchangés.
    - Accueil : en-tête .pc-head (« Bonjour Guillaume », date ; pastille
      d'état et cloche à droite) ; tuiles sur trois colonnes (quatre au-delà
      de 1 440 px), la tuile Notes montre jusqu'à quatre notes.

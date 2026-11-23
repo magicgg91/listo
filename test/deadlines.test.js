@@ -165,8 +165,9 @@ test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Régla
   // novembre 2026) ; « À offrir » l'a, avec « Listes » marqué
   assert.match(tabbar, /export const hasTabs = \(routeName\) => routeName !== 'home' && tabOf\(routeName\) !== null;/);
   assert.match(tabbar, /const TAB_OF = \{ gifts: 'lists' \};/);
-  // Largeur de la pastille selon le nombre de boutons
-  assert.match(tabbar, /class: `tabbar glass tabbar--\$\{TABS\.length\}`/);
+  // Largeur de la pastille selon le nombre de boutons (cinq, ou quatre sans
+  // « Accueil » quand il est coupé : test/home-tiles.test.js)
+  assert.match(tabbar, /nav\.classList\.add\(`tabbar--\$\{names\.length\}`\);/);
   // La loupe est retirée à chaque écran ; « Mes listes » et « Échéances » la rebranchent, pas « Réglages »
   const app = read('public/js/app.js');
   assert.match(app, /if \(bar\) tabBar\(\)\.loupe\.set\(null\);\s*const content = /);

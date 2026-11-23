@@ -128,7 +128,7 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   assert.equal(fr['raccourcis.touche.menu'], 'Menu');
   // Réglages : l'interrupteur, sur ordinateur
   const settings = read('public/js/screens/settings.js');
-  assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, homeRow\(\), keysRow\(\), generalRows\(isAdmin\)\)\),/);
   assert.equal(fr['reglages.general'], 'Général');
   assert.match(settings, /t\('reglages\.touches\.titre'\)/);
   assert.equal(fr['reglages.touches.titre'], 'Raccourcis à une touche');

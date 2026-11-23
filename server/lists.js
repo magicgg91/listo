@@ -33,6 +33,7 @@
 import { createNewsService } from './news.js';
 import { createNoteService } from './notes.js';
 import { createInbox, inboxHandlers } from './inbox.js';
+import { createHome } from './home.js';
 import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
@@ -316,6 +317,8 @@ export function createListService(ctx) {
   // Page Notifications (server/inbox.js) : ses opérations hors ligne
   // (« inbox.read », « inbox.delete ») et son empreinte dans la synchronisation
   const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
+  // Réglage « Accueil » de chaque compte (server/home.js, migration 40)
+  const home = createHome(db);
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -1432,6 +1435,19 @@ export function createListService(ctx) {
       if (news.setSettings(user.id, { enabled: op.enabled, checks: op.checks })) changedForMe(null);
       return {};
     },
+
+    // Réglage « Accueil » (Réglages › Accueil) : Accueil affiché (enabled),
+    // premier écran quand il est coupé (start), ordre des tuiles (order),
+    // tuiles masquées (hidden). Toujours celui de la personne connectée ;
+    // tuile inconnue ou en double, « Compte » masqué, premier écran
+    // inconnu : refusé (400), rien n'est écrit. Ses autres appareils sont
+    // prévenus (même synchronisation que les nouveautés).
+    'account.home'(user, op) {
+      const { problem, changed } = home.setHome(user.id, { enabled: op.enabled, start: op.start, order: op.order, hidden: op.hidden });
+      if (problem) throw new OpError(400, problem);
+      if (changed) changedForMe(null);
+      return {};
+    },
   };
 
   // Opérations des notes (server/notes.js)
@@ -1593,6 +1609,8 @@ export function createListService(ctx) {
       users: activeUsers(),
       // Mes nouveautés, en entier à chaque synchronisation (server/news.js)
       news: news.newsFor(user),
+      // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
+      home: home.homeFor(user.id),
       // Réservations des listes d'envies où ce compte a le droit de les voir,
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire

@@ -244,6 +244,7 @@ export const GUIDE = [
           'Double authentification, avec des codes de secours ([[double-auth]]).',
           'Sauvegarde automatique chaque nuit ([[sauvegardes]]).',
           'Thème clair, sombre ou automatique ([[theme]]).',
+          'Un Accueil à votre goût : tuiles masquées ou dans un autre ordre, ou pas d\'Accueil du tout ([[echeances]]).',
           'Installation sur l\'écran d\'accueil du téléphone, comme une application ([[telephone]]).',
           'Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([[claude]]).',
         ] }],
@@ -698,22 +699,29 @@ export const GUIDE = [
         id: 'echeances',
         title: 'Se déplacer : Accueil, Échéances',
         blocks: [
-          'Listo s\'ouvre sur l\'« Accueil » : « Bonjour » et votre prénom, la date du jour, la pastille d\'état et la cloche des notifications (avec le nombre de non lues : [[notif-page]]), puis des tuiles qui montrent d\'un coup d\'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.',
+          'Listo s\'ouvre sur l\'« Accueil » (sauf si vous l\'avez coupé, voir plus bas) : « Bonjour » et votre prénom, la date du jour, la pastille d\'état et la cloche des notifications (avec le nombre de non lues : [[notif-page]]), puis des tuiles qui montrent d\'un coup d\'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.',
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
             'Tuile « À offrir », sur toute la largeur, seulement si vous réservez un souhait ou participez à un cadeau : le nombre de cadeaux encore à acheter (au bout du titre, qui ouvre la page « À offrir » : [[a-offrir]]) et les trois derniers réservés pas encore achetés (“Pour Zoé · réservé”) ; une ligne ouvre le souhait dans sa liste. Quand tout est acheté : « Tout est acheté ».',
             'Tuile « Notes » : le nombre de vos notes (au bout du titre), les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([[notes]]) ; sans note : « Aucune note ».',
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
-            'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
+            'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil (Accueil coupé : au premier écran choisi) ; un lien vers une liste ouvre toujours cette liste.',
           ] },
-          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » ; il descend jusqu\'au trait du bas de l\'iPhone. Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. Quand tout l\'Accueil tient dans l\'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
+          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l\'Accueil est coupé) ; il descend jusqu\'au trait du bas de l\'iPhone. Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. Quand tout l\'Accueil tient dans l\'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
             'Si une de vos listes a l\'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s\'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([[attribuer]]). Le choix est retenu sur l\'appareil.',
             'Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu\'un d\'autre.',
             'L\'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.',
+          ] },
+          { sub: 'Choisir ses tuiles, ou couper l\'Accueil' },
+          'Réglages, « Accueil » (la première ligne de « Général ») règle l\'Accueil de votre compte : le choix vaut pour tous vos appareils, et se fait aussi hors ligne.',
+          { ul: [
+            '« Tuiles affichées » : un interrupteur par tuile, pour la masquer ou l\'afficher (« À offrir » n\'apparaît de toute façon que si vous avez réservé un cadeau). La tuile « Compte » est toujours affichée : sur l\'Accueil, il n\'y a pas de bandeau du bas, et c\'est elle qui mène aux Réglages.',
+            '« Réordonner » : glissez une tuile par sa poignée, ou utilisez les flèches « Monter » et « Descendre » ; « Terminé » ferme ce mode. L\'Accueil suit cet ordre ; sur le téléphone, une tuile restée seule sur sa ligne prend toute la largeur.',
+            '« Afficher l\'Accueil » coupé : Listo s\'ouvre sur le « Premier écran » choisi (« Échéances », « Listes » ou « Notes » ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d\'« Échéances », de « Listes » et de « Notes » ([[notif-page]]). Sur ordinateur, l\'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.',
           ] },
         ],
       },
@@ -825,7 +833,7 @@ export const GUIDE = [
         blocks: [
           'Dans une fenêtre d\'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c\'est l\'affichage du téléphone ; passer de l\'un à l\'autre garde la liste ouverte et ferme les fenêtres ouvertes.',
           { ul: [
-            'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l\'« Accueil ». Les tuiles de l\'Accueil y sont sur trois colonnes.',
+            'À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l\'« Accueil » (Accueil coupé : au premier écran choisi). Les tuiles de l\'Accueil y sont sur trois colonnes.',
             'Le menu suit l\'écran : sur « Listes », dans une liste et sur « À offrir » (Envies mis en avant), il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n\'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s\'affichent dessous.',
             'À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d\'ajout est au-dessus des articles. Au survol d\'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l\'un au-dessus de l\'autre ; sur un écran tactile, ils restent affichés.',
             'La fiche d\'un article et « Partager la liste » s\'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l\'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.',
@@ -898,7 +906,7 @@ export const GUIDE = [
         id: 'notif-page',
         title: 'La page Notifications',
         blocks: [
-          'La cloche, en haut de l\'Accueil, ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».',
+          'La cloche, en haut de l\'Accueil (Accueil coupé : en haut d\'« Échéances », de « Listes » et de « Notes »), ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».',
           { ul: [
             'Les notifications sont groupées par jour (« Aujourd\'hui », « Hier », puis la date), la plus récente en haut. Une notification non lue est en gras, avec un point bleu ; « 3 non lues » le dit en haut.',
             'Toucher une notification la marque comme lue et ouvre ce qu\'elle concerne : la liste, la tâche, la note ou les échéances. Si la liste a été supprimée ou ne vous est plus partagée : « Cette liste n\'est plus disponible ».',

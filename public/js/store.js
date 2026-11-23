@@ -19,6 +19,7 @@ import { t, compareText } from './i18n.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
+import { normalizeHome, homeChangeProblem, applyHomeChange } from './home-tiles.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -44,6 +45,10 @@ export function emptyState() {
     // Remplacé en entier à chaque synchronisation.
     gifts: emptyGifts(),
     news: emptyNews(),      // mes nouveautés (voir « Nouveautés » plus bas)
+    // Mon réglage « Accueil » (Réglages › Accueil, home-tiles.js), le même
+    // sur tous mes appareils ; valeurs de départ avant la première
+    // synchronisation (Accueil affiché, toutes les tuiles, ordre de départ)
+    home: normalizeHome(null),
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
     // Notes (notes.js, server/notes.js) : celles que je vois, corbeille
     // comprise (deletedAt rempli)
@@ -114,6 +119,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     history: state.history,
     users: state.users,
     news: state.news,
+    home: state.home,
     reservations: state.reservations,
     gifts: { reservedAt: state.gifts.reservedAt, bought: [...state.gifts.bought] },
     notes: [...state.notes.values()],
@@ -140,6 +146,9 @@ export function fromSnapshot(snapshot) {
     state.history = [...snapshot.history];
     state.users = [...(snapshot.users ?? [])];
     state.news = snapshot.news ?? emptyNews();
+    // (copie d'avant le réglage « Accueil » : valeurs de départ, remplacées
+    // à la synchronisation suivante)
+    state.home = normalizeHome(snapshot.home);
     state.reservations = snapshot.reservations ?? {};
     // (copie d'avant « À offrir » : vide, remplie à la synchronisation suivante)
     state.gifts = giftsFrom(snapshot.gifts);
@@ -198,6 +207,7 @@ export function loadSync(state, data) {
   state.gifts = giftsFrom(data.gifts);
   if (data.users) state.users = data.users;
   if (data.news) state.news = data.news;
+  if (data.home) state.home = normalizeHome(data.home);
   loadNotes(state, data, { full: true });
   state.loaded = true;
   refreshListReferences(state);
@@ -241,6 +251,8 @@ export function mergeSync(state, data) {
   if (data.users) state.users = data.users;
   // Nouveautés : envoyées en entier à chaque synchronisation
   if (data.news) state.news = data.news;
+  // Réglage « Accueil » : de même
+  if (data.home) state.home = normalizeHome(data.home);
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
@@ -365,6 +377,12 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'account.news':
       if (typeof op.enabled === 'boolean') state.news.enabled = op.enabled;
       if (typeof op.checks === 'boolean') state.news.checks = op.checks;
+      return;
+    // Réglage « Accueil » (mêmes règles que le serveur, home-tiles.js) :
+    // effet tout de suite, hors ligne compris
+    case 'account.home':
+      if (homeChangeProblem(op)) return;
+      state.home = applyHomeChange(state.home, op);
       return;
     // « Acheté » dans « À offrir » (propre à moi ; le serveur vérifie que
     // je réserve bien ce souhait en ce moment)

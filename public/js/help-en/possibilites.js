@@ -82,6 +82,7 @@ export default {
         "Two-factor authentication, with recovery codes ([[double-auth]]).",
         "Automatic backup every night ([[sauvegardes]]).",
         "Light, dark or automatic theme ([[theme]]).",
+        "A Home screen your way: tiles hidden or in another order, or no Home screen at all ([[echeances]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
         "An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([[claude]]).",
       ] }],

@@ -33,6 +33,26 @@ export default {
   'reglages.pc.raccourcis.detail': 'Touche ?',
   'reglages.notifications': 'Notifications',
 
+  // Réglages › Accueil (screens/home-settings.js ; home-tiles.js)
+  'reglages.accueil': 'Accueil',
+  'reglages.accueil.detail': 'Tuiles affichées, premier écran',
+  'reglages.accueil.ecran': 'Écran d\'accueil',
+  'reglages.accueil.afficher': 'Afficher l\'Accueil',
+  'reglages.accueil.afficher.oui': 'Le premier écran à l\'ouverture, avec ses tuiles.',
+  'reglages.accueil.afficher.non': 'Coupé : Listo s\'ouvre sur l\'écran choisi ci-dessous, et le bouton Accueil disparaît du bandeau du bas.',
+  'reglages.accueil.tuiles': 'Tuiles affichées',
+  'reglages.accueil.reordonner': 'Réordonner',
+  'reglages.accueil.termine': 'Terminé',
+  'reglages.accueil.offrir.detail': 'Seulement quand vous avez réservé un cadeau',
+  'reglages.accueil.compte.detail': 'Toujours affichée : elle mène aux réglages',
+  'reglages.accueil.note': 'Vaut pour tous vos appareils.',
+  'reglages.accueil.note.ordre': 'Glissez une tuile par sa poignée, ou utilisez les flèches. L\'Accueil suit cet ordre.',
+  'reglages.accueil.monter': 'Monter {name}',
+  'reglages.accueil.descendre': 'Descendre {name}',
+  'reglages.accueil.glisser': 'Glisser pour déplacer',
+  'reglages.accueil.position': '« {name} » en position {position} sur {total}',
+  'reglages.accueil.premier': 'Premier écran',
+
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',
   'reglages.touches.desactivees': 'Raccourcis à une touche désactivés',

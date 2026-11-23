@@ -11,7 +11,7 @@ export default {
       id: 'notif-page',
       title: 'The Notifications page',
       blocks: [
-        "The bell, at the top of Home, opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.",
+        "The bell, at the top of Home (Home turned off: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.",
         { ul: [
           "Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.",
           "Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.",

@@ -96,10 +96,15 @@ test('adresses : #/notifications (la page), #/reglages/notifications (les régla
 
 test('cloche de l\'Accueil (téléphone et ordinateur) : nombre de non lues, « 9+ », nom lu ; tuile Compte vers la page, sans nombre', () => {
   const home = code('public/js/screens/home.js');
-  assert.match(home, /export function bellBadgeText\(count\) \{\s*return count > 9 \? '9\+' : String\(count\);\s*\}/);
-  assert.match(home, /const button = h\('button', \{ class: 'icon-btn icon-btn--badge', type: 'button', onClick: \(\) => navigate\('inbox'\) \}, icon\('bell'\)\);/);
-  assert.match(home, /button\.setAttribute\('aria-label', count \? t\('inbox\.cloche\.nonLues', \{ count \}\) : t\('inbox\.cloche'\)\);/);
-  assert.match(home, /h\('span', \{ class: 'icon-btn__badge', 'aria-hidden': 'true' \}, bellBadgeText\(count\)\)/);
+  // La cloche est partagée (public/js/bell.js) : l'Accueil, et la barre du
+  // haut d'Échéances, Listes et Notes quand l'Accueil est coupé
+  const bell = code('public/js/bell.js');
+  assert.match(bell, /export function bellBadgeText\(count\) \{\s*return count > 9 \? '9\+' : String\(count\);\s*\}/);
+  assert.match(bell, /const button = h\('button', \{ class: 'icon-btn icon-btn--badge', type: 'button', onClick: \(\) => navigate\('inbox'\) \}, icon\('bell'\)\);/);
+  assert.match(bell, /button\.setAttribute\('aria-label', count \? t\('inbox\.cloche\.nonLues', \{ count \}\) : t\('inbox\.cloche'\)\);/);
+  assert.match(bell, /h\('span', \{ class: 'icon-btn__badge', 'aria-hidden': 'true' \}, bellBadgeText\(count\)\)/);
+  assert.match(home, /import \{ bell \} from '\.\.\/bell\.js';/);
+  assert.match(home, /const notifications = bell\(\);/);
   assert.match(home, /h\('div', \{ class: 'pc-head__tools' \}, pill, notifications\.el\)/);
   assert.match(home, /h\('div', \{ class: 'home-head__tools' \}, pill, notifications\.el\)/);
   assert.match(home, /row\(\{ label: t\('accueil\.compte\.notifications'\), onClick: \(\) => navigate\('inbox'\) \}\)/);

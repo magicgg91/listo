@@ -116,9 +116,9 @@ async function openStream(app, client) {
 }
 
 test('migration 38 : table inbox et compteur par personne ; base existante mise à jour ; lignes effacées avec le compte', () => {
-  assert.equal(MIGRATIONS.length, 39);
+  assert.equal(MIGRATIONS.length, 40);
   const db = openDatabase(':memory:');
-  assert.equal(schemaVersion(db), 39);
+  assert.equal(schemaVersion(db), 40);
   const cols = db.prepare('PRAGMA table_info(inbox)').all().map((c) => c.name);
   assert.deepEqual(cols, ['id', 'user_id', 'num', 'category', 'text_key', 'params', 'target_type', 'target_id', 'group_key', 'count', 'created_at', 'updated_at', 'read_at']);
   assert.ok(db.prepare('PRAGMA table_info(users)').all().some((c) => c.name === 'inbox_seq'));

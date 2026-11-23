@@ -30,7 +30,7 @@
 
 import { h, icon, iconButton, replace } from '../dom.js';
 import { navigate, goBack } from '../router.js';
-import { app, onDataChange, refreshData } from '../app.js';
+import { app, onDataChange, refreshData, openingScreen } from '../app.js';
 import * as actions from '../actions.js';
 import { inboxUnread, inboxTargetAvailable } from '../store.js';
 import { toast, confirmDialog, openMenu, drawWhenIdle, watchNewDay, offlineBanner } from '../ui.js';
@@ -202,7 +202,9 @@ export function renderInbox(onLeave) {
 
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
-      iconButton('chev-l', t('reglages.retour'), () => goBack('home')),
+      // Retour : l'écran d'avant ; ouverte directement, le premier écran
+      // (l'Accueil, ou l'écran choisi quand il est coupé)
+      iconButton('chev-l', t('reglages.retour'), () => goBack(openingScreen())),
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('inbox.titre'))),
       iconButton('sliders', t('inbox.reglages'), toSettings)),
     offlineBanner(),

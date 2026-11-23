@@ -834,6 +834,22 @@ export const MIGRATIONS = [
     DELETE FROM gift_bought WHERE user_id = OLD.user_id AND item_id = OLD.item_id;
   END;
   `,
+
+  // --- Migration 40 : réglage « Accueil » de chaque compte (23 novembre 2026) ---
+  // Réglages › Accueil, le même sur tous les appareils de la personne
+  // (public/js/home-tiles.js, server/home.js) :
+  // - home_enabled : l'Accueil est affiché (1, au départ) ou coupé (0) ;
+  // - home_start : le premier écran quand l'Accueil est coupé (« lists »
+  //   au départ ; « deadlines » ou « notes » possibles) ;
+  // - home_tiles : l'ordre des tuiles et celles qui sont masquées, un petit
+  //   texte JSON {"order":[…],"hidden":[…]} vérifié par le serveur avant
+  //   d'être écrit ; vide : l'ordre de départ, toutes affichées.
+  // Les comptes existants gardent l'Accueil tel qu'il était : rien ne change.
+  `
+  ALTER TABLE users ADD COLUMN home_enabled INTEGER NOT NULL DEFAULT 1 CHECK (home_enabled IN (0, 1));
+  ALTER TABLE users ADD COLUMN home_start TEXT NOT NULL DEFAULT 'lists' CHECK (home_start IN ('deadlines', 'lists', 'notes'));
+  ALTER TABLE users ADD COLUMN home_tiles TEXT CHECK (home_tiles IS NULL OR length(home_tiles) <= 200);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

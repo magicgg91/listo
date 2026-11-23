@@ -292,6 +292,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - Two-factor authentication, with recovery codes ([4.6 Two-factor authentication and recovery codes](#double-auth)).
 - Automatic backup every night ([3.8 Backups](#sauvegardes)).
 - Light, dark or automatic theme ([5.18 Light or dark theme](#theme)).
+- A Home screen your way: tiles hidden or in another order, or no Home screen at all ([5.11 Getting around: Home, Due](#echeances)).
 - Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
 - An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([8. AI assistants (MCP)](#claude)).
 
@@ -789,22 +790,30 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 ### 5.11 Getting around: Home, Due
 
-Listo opens on “Home”: ‘Hello’ and your first name, today's date, the status badge and the notification bell (with the number of unread ones: [6.1 The Notifications page](#notif-page)), then tiles that show at a glance what is waiting. They work offline and update by themselves.
+Listo opens on “Home” (unless you have turned it off, see below): ‘Hello’ and your first name, today's date, the status badge and the notification bell (with the number of unread ones: [6.1 The Notifications page](#notif-page)), then tiles that show at a glance what is waiting. They work offline and update by themselves.
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
 - “To give” tile, full width, only if you reserve a wish or chip in on a gift: the number of gifts still to buy (at the end of the title, which opens the “To give” page: [5.15 To give: your gifts](#a-offrir)) and the last three reserved and not yet bought (‘For Zoé · reserved’); a row opens the wish in its list. When everything is bought: “All bought”.
 - “Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([5.12 Notes](#notes)); with no note: “No notes”.
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
-- A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
+- A tile's title opens the whole screen. An unknown address also leads to Home (Home turned off: to the first screen you chose); a link to a list always opens that list.
 
-On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”; it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
+On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
 - “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
 - If one of your lists has assignment turned on, “All” or “Mine” chooses what is shown; “Mine” keeps only the tasks assigned to you ([5.4 Assign a task](#attribuer)). The choice is remembered on the device.
 - The number on “Due” counts overdue tasks and today's tasks, except those assigned to someone else.
 - The screen works offline, like the lists. On a computer, “Due” is in the menu on the left.
+
+**Choosing your tiles, or turning Home off**
+
+Settings, “Home” (the first row of “General”) sets up the Home screen for your account: the choice applies to all your devices, and also works offline.
+
+- “Tiles shown”: one switch per tile, to hide or show it (“To give” only appears anyway when you have reserved a gift). The “Account” tile is always shown: there is no bottom bar on Home, and it is the tile that leads to Settings.
+- “Reorder”: drag a tile by its handle, or use the up and down arrows; “Done” closes this mode. Home follows this order; on the phone, a tile left alone on its row takes the full width.
+- “Show the Home screen” turned off: Listo opens on the “First screen” you chose (“Due”, “Lists” or “Notes”; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
 
 <a id="notes"></a>
 
@@ -918,7 +927,7 @@ The names of lists, items, aisles and stores are not translated: they are your d
 
 In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.
 
-- On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home”. The Home tiles are shown in three columns there.
+- On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home” (Home turned off: to the first screen you chose). The Home tiles are shown in three columns there.
 - The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
 - An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
@@ -987,7 +996,7 @@ The Settings screen, “Notifications”, has two parts: “In the app” (what'
 
 ### 6.1 The Notifications page
 
-The bell, at the top of Home, opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.
+The bell, at the top of Home (Home turned off: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.
 
 - Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.
 - Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.

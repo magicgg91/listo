@@ -1,6 +1,7 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
 // - réglages : carte du compte (ouvre « Mon compte », voir account.js),
-//   administration (Admin), notifications (voir notifications.js), aide (voir help.js), à propos, déconnexion ;
+//   Accueil (tuiles, premier écran : voir home-settings.js), administration
+//   (Admin), notifications (voir notifications.js), aide (voir help.js), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
 //   secours affichés une seule fois) ;
@@ -91,14 +92,17 @@ export function renderSettings() {
       roleChip(user),
       icon('chev-r')),
       h('h2', { class: 'section-title' }, t('reglages.general')),
-      h('div', { class: 'group' }, generalRows(isAdmin)),
+      h('div', { class: 'group' }, homeRow(), generalRows(isAdmin)),
       h('h2', { class: 'section-title' }, t('reglages.informations')),
       h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin))));
 }
 
-// « Général » (téléphone et ordinateur) : notifications (notifications.js),
-// corbeilles des listes (trash.js) et des notes (note-trash.js),
-// administration (compte Admin seulement)
+// « Général » (téléphone et ordinateur) : Accueil (home-settings.js, en
+// premier depuis le 23 novembre 2026 ; sur ordinateur, avant les raccourcis
+// à une touche), notifications (notifications.js), corbeilles des listes
+// (trash.js) et des notes (note-trash.js), administration (compte Admin
+// seulement)
+const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
 function generalRows(isAdmin) {
   return [
     notificationsRow(),
@@ -175,7 +179,7 @@ function renderSettingsPc() {
       avatar(user.displayName),
       h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, t('reglages.pc.compte.detail'))),
       roleChip(user), icon('chev-r')))),
-      section(t('reglages.general'), h('div', { class: 'group' }, keysRow(), generalRows(isAdmin))),
+      section(t('reglages.general'), h('div', { class: 'group' }, homeRow(), keysRow(), generalRows(isAdmin))),
       section(t('reglages.informations'), h('div', { class: 'group' },
         helpRow(),
         row({ iconName: 'keyboard', title: t('reglages.pc.raccourcis'), sub: t('reglages.pc.raccourcis.detail'), onClick: () => openShortcuts() }),

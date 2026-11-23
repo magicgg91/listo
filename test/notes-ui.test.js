@@ -12,6 +12,7 @@ import en from '../public/js/i18n/en.js';
 import { translate } from '../public/js/i18n.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
 import { liveNotes } from '../public/js/notes.js';
+import { HOME_TILES } from '../public/js/home-tiles.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -94,8 +95,10 @@ test('conflit : rien n\'est écrasé, mon texte reste sur l\'appareil ; les troi
 
 test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, « Nouvelle note ») ; nombres hors corbeille', () => {
   const home = code('public/js/screens/home.js');
-  // (« À offrir » entre Listes et Notes, seulement si j'ai des réservations)
-  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), giftsTile\(\), notesTile\(pc\), accountTile\(\)\);/);
+  // Ordre de départ : Notes entre « À offrir » (seulement si j'ai des
+  // réservations) et Compte ; chacun peut le changer (Réglages › Accueil)
+  assert.deepEqual(HOME_TILES, ['deadlines', 'lists', 'gifts', 'notes', 'account']);
+  assert.match(home, /notes: \(\) => notesTile\(pc\)/);
   assert.match(home, /\.slice\(0, pc \? 4 : 2\)/);
   assert.match(home, /const add = addRow\(t\('accueil\.notes\.nouvelle'\), \(\) => openQuickNote\(\)\);/);
   assert.match(home, /emptyText\(t\('accueil\.notes\.aucune'\)\)/);

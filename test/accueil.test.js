@@ -167,11 +167,14 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   assert.deepEqual(matchRoute('#/listes'), { name: 'lists', params: {} });
   assert.deepEqual(matchRoute('#/autoriser/abc'), { name: 'authorize', params: { id: 'abc' } });
   const app = read('public/js/app.js');
-  // Après la connexion : l'écran demandé avant (lien direct), sinon l'Accueil
-  assert.match(app, /const next = app\.afterLogin && app\.afterLogin\.name !== 'login' \? app\.afterLogin : \{ name: 'home', params: \{\} \};/);
-  assert.match(app, /if \(name === 'login'\) \{\s*navigate\('home', \{\}, \{ replace: true \}\);/);
-  assert.match(app, /default: navigate\('home', \{\}, \{ replace: true \}\);/);
-  assert.match(app, /case 'home': mount\(\(onLeave\) => renderHome\(onLeave\), \{ wide: true \}\); break;/);
+  // Après la connexion : l'écran demandé avant (lien direct), sinon le
+  // premier écran (l'Accueil, ou celui choisi quand il est coupé :
+  // Réglages › Accueil, test/home-tiles.test.js)
+  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home\);/);
+  assert.match(app, /const next = app\.afterLogin && app\.afterLogin\.name !== 'login' \? app\.afterLogin : \{ name: openingScreen\(\), params: \{\} \};/);
+  assert.match(app, /if \(name === 'login'\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
+  assert.match(app, /default: navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
+  assert.match(app, /case 'home':\s*if \(openingScreen\(\) !== 'home'\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);\s*else mount\(\(onLeave\) => renderHome\(onLeave\), \{ wide: true \}\);\s*break;/);
   assert.match(app, /case 'lists': mount\(\(onLeave\) => renderLists\(onLeave\)\); break;/);
   assert.match(read('public/js/router.js'), /history\.replaceState\(\{ depth: 0 \}, '', location\.hash \|\| pathFor\('home'\)\);/);
 });
@@ -195,8 +198,10 @@ test('Accueil : ni bandeau du bas ni loupe ; nombres lus avec leur libellé ; co
   assert.equal(translate('en', 'listes.type.lu', { type: 'Shopping', count: 1 }), 'Shopping, 1 list');
   // Temps réel, minuit et minute (une tâche passe « En retard » à son heure)
   for (const text of ['onLeave(onDataChange(idle.request));', 'onLeave(watchNewDay(draw));', 'onLeave(watchMinute(() => idle.request()));']) assert.ok(home.includes(text), text);
-  // Ordre des tuiles : Échéances, Listes, « À offrir » (si j'ai des réservations), Notes, Compte
-  assert.match(home, /replace\(tiles, deadlinesTile\(\), listsTile\(pc\), giftsTile\(\), notesTile\(pc\), accountTile\(\)\);/);
+  // Tuiles dans l'ordre choisi (au départ : Échéances, Listes, « À offrir »
+  // si j'ai des réservations, Notes, Compte ; test/home-tiles.test.js)
+  assert.match(home, /const build = \{ deadlines: deadlinesTile, lists: \(\) => listsTile\(pc\), gifts: giftsTile, notes: \(\) => notesTile\(pc\), account: accountTile \};/);
+  assert.match(home, /const present = shownTiles\(app\.data\.home\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
   assert.match(home, /requests > 0 \? row\(\{/);

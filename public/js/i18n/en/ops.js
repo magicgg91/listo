@@ -79,6 +79,12 @@ export default {
   'ops.reglageSignalerCochesInvalide': 'Invalid “Include checked items” setting.',
   'ops.reglageCopierInvalide': 'Invalid “Copy items” setting.',
 
+  // Réglage « Accueil » (Réglages › Accueil, public/js/home-tiles.js)
+  'ops.accueilReglageInvalide': 'Invalid “Show the Home screen” setting.',
+  'ops.accueilPremierEcranInvalide': 'Unknown first screen: Due, Lists or Notes.',
+  'ops.accueilTuilesInvalides': 'Invalid Home tiles: each known tile, only once.',
+  'ops.accueilCompteToujours': 'The Account tile is always shown.',
+
   // Créer, modifier une liste
   'ops.listeExisteDeja': 'This list already exists.',
   'ops.magasinCoursesSeulement': 'A store can only be chosen for a shopping list.',

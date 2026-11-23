@@ -14,6 +14,7 @@ import { listIcon } from '../list-icons.js';
 import { computeSummaries, canEditList, loadListSort, saveListSort, pruneListMemory, newsBadge, loadTypeFilter, saveTypeFilter } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, offlineBanner } from '../ui.js';
+import { topBell } from '../bell.js';
 import { listActions, isFreshList } from './list-actions.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
@@ -312,10 +313,12 @@ export function renderLists(onLeave) {
 
   return h('div', { class: 'screen' },
     // Barre du haut sur une ligne : titre, pastille d'état (réduite à
-    // l'icône si la place manque), tri des listes, « + » (Nouvelle liste)
+    // l'icône si la place manque), cloche des notifications (Accueil coupé
+    // seulement, bell.js), tri des listes, « + » (Nouvelle liste)
     h('header', { class: 'topbar topbar--plain topbar--status' },
       h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('listes.titre'))),
       syncPill(() => refreshData({ full: true }), { inBar: true }),
+      topBell(onLeave),
       sorter.button,
       iconButton('plus', t('listes.nouvelle'), () => navigate('newList'), 'icon-btn--accent')),
     sorter.status,
@@ -402,7 +405,7 @@ function renderListsPc(onLeave) {
       search.field),
     h('div', { class: 'pc-tools' },
       searchMeta,
-      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), sorter.button)),
+      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), sorter.button)),
     sorter.status,
     offlineBanner(),
     content);

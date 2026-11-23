@@ -53,6 +53,7 @@ export default {
   'notes.statut.enregistre': 'Enregistré',
   'notes.statut.enCours': 'Enregistrement…',
   'notes.statut.horsLigne': 'Hors ligne · enregistrée sur ce téléphone',
+  'notes.statut.horsLigne.court': 'Hors ligne',
   'notes.statut.aVerifier': 'À vérifier · votre version reste sur ce téléphone',
   // Sur ordinateur, « cet appareil » (jamais « ce téléphone »)
   'notes.statut.horsLigne.pc': 'Hors ligne · enregistrée sur cet appareil',

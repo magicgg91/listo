@@ -1131,10 +1131,12 @@
 
 /* 16.26 Écran d'une note (#/notes/<id>)
    - Barre du haut : retour, menu ⋮ (Épingler, Dupliquer, Supprimer).
-   - .note-status : mention discrète sous la barre : « Enregistré »,
-     « Enregistrement… », « Hors ligne · enregistrée sur ce téléphone »,
-     --check « À vérifier » (conflit pas encore tranché : icône d'alerte ET
-     texte, couleur danger). role="status".
+   - .note-status : pastille .sync dans la barre du haut, comme « À jour »
+     ailleurs (décision du 23 novembre 2026) : « Enregistré » (--ok),
+     « Enregistrement… » (--busy), « Hors ligne » (--off), --check « À
+     vérifier » (conflit pas encore tranché : icône d'alerte ET texte,
+     couleur danger) ; sur le téléphone le texte court, la phrase complète
+     pour les lecteurs d'écran. role="status".
    - .note-edit : titre puis texte, sans cadre, qui occupent l'écran ;
      retours à la ligne gardés. Hors saisie, le texte est affiché avec ses
      adresses web en liens .note-link (texte d'accent souligné, ouverts dans
@@ -1145,9 +1147,10 @@
      cette note » sous la mention ; feuille du bas avec trois lignes .row
      (Garder la mienne, Prendre la leur, Garder les deux) et « Décider plus
      tard ». */
-.note-status { display: flex; flex: none; align-items: center; gap: 6px; min-height: 24px; margin: 0; padding: 0 var(--space-2) var(--space-0); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
-.note-status--ok .icon { color: var(--color-success-ink); }
-.note-status--check { color: var(--color-danger-ink); }
+.note-status { flex: 0 1 auto; min-width: 0; margin: 0; }
+.note-status[hidden] { display: none; }
+.note-status .sync__text { overflow: hidden; text-overflow: ellipsis; }
+.note-status--check { border-color: var(--color-danger-ink); color: var(--color-danger-ink); }
 .note-edit { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-1) var(--space-2) var(--space-3); }
 .note-edit__title { width: 100%; padding: 4px 0; border: 0; outline: 0; background: transparent; color: var(--color-text); font: inherit; font-size: var(--text-title); font-weight: 700; line-height: var(--lh-tight); }
 .note-edit__title::placeholder { color: var(--color-text-2); opacity: 1; }
@@ -1204,7 +1207,6 @@
 .pc-notes .notes-section { padding: 8px 0 0; }
 .pc-note { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--color-border); background: var(--color-surface); }
 .pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px 20px; }
-.pc-note .note-status { padding: 0 20px 4px; }
 .pc-note__bar .icon-btn[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
 .pc-note .note-edit { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 28px 24px; }
 .pc-note .note-edit__body { font-size: var(--text-base); }

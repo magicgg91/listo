@@ -149,5 +149,5 @@ test('textes : français et anglais, noms des écrans des notes', () => {
 
 test('note introuvable ou supprimée : aucune mention « Enregistré » au-dessus de « Note introuvable »', () => {
   const note = read('public/js/screens/note.js');
-  assert.match(note, /\} else if \(noteId && note\(\) && !note\(\)\.deletedAt\) state = \['note-status--ok', 'check', t\('notes\.statut\.enregistre'\)\];/);
+  assert.match(note, /\} else if \(noteId && note\(\) && !note\(\)\.deletedAt\) state = \['sync--ok', 'check', t\('notes\.statut\.enregistre'\), t\('notes\.statut\.enregistre'\)\];/);
 });

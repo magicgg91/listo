@@ -198,24 +198,35 @@ export function noteEditor(initialId, onLeave, { pc }) {
     saveNow();
   });
 
-  // --- Mention d'état, bandeau, pied ---
-  const status = h('p', { class: 'note-status', role: 'status' });
+  // --- Mention d'état (pastille dans la barre du haut, comme « À jour »
+  // ailleurs ; décision du 23 novembre 2026), bandeau, pied ---
+  const status = h('p', { class: 'sync note-status', role: 'status', hidden: true });
   const banner = h('div', { class: 'note note-banner', role: 'alert', hidden: true });
   const foot = h('p', { class: 'note-foot' });
 
+  // [classe, icône, texte court affiché, texte complet lu] ; sur le
+  // téléphone la pastille montre le texte court (place de la barre du
+  // haut), les lecteurs d'écran lisent la phrase complète
   function drawStatus() {
     let state;
-    if (kept()) state = ['note-status--check', 'alert', t(pc ? 'notes.statut.aVerifier.pc' : 'notes.statut.aVerifier')];
-    else if (readOnly()) state = ['', 'eye', t('notes.statut.lectureSeule')];
+    if (kept()) state = ['note-status--check', 'alert', t('notes.aVerifier'), t(pc ? 'notes.statut.aVerifier.pc' : 'notes.statut.aVerifier')];
+    else if (readOnly()) state = ['', 'eye', t('notes.statut.lectureSeule'), t('notes.statut.lectureSeule')];
     else if (dirty || saving || (noteId && actions.notePending(noteId))) {
       state = currentSyncState() === 'off' && !dirty
-        ? ['', 'cloud-off', t(pc ? 'notes.statut.horsLigne.pc' : 'notes.statut.horsLigne')]
-        : ['', 'sync', t('notes.statut.enCours')];
-    } else if (noteId && note() && !note().deletedAt) state = ['note-status--ok', 'check', t('notes.statut.enregistre')];
+        ? ['sync--off', 'cloud-off', t('notes.statut.horsLigne.court'), t(pc ? 'notes.statut.horsLigne.pc' : 'notes.statut.horsLigne')]
+        : ['sync--busy', 'sync', t('notes.statut.enCours'), t('notes.statut.enCours')];
+    } else if (noteId && note() && !note().deletedAt) state = ['sync--ok', 'check', t('notes.statut.enregistre'), t('notes.statut.enregistre')];
     // (note introuvable ou supprimée : aucune mention, seulement « Note introuvable »)
     else state = null;
-    status.className = `note-status ${state?.[0] ?? ''}`.trim();
-    replace(status, state ? [icon(state[1], 'icon--sm'), state[2]] : null);
+    status.className = `sync note-status ${state?.[0] ?? ''}`.trim();
+    status.hidden = !state;
+    // Ordinateur : la phrase complète tient dans la barre de la note
+    const shown = state ? (pc ? state[3] : state[2]) : '';
+    replace(status, state ? [
+      icon(state[1], 'icon--sm'),
+      h('span', { class: 'sync__text', 'aria-hidden': shown === state[3] ? null : 'true' }, shown),
+      shown === state[3] ? null : h('span', { class: 'visually-hidden' }, state[3]),
+    ] : null);
   }
 
   // Qui a écrit la version actuelle : « Léa », ou moi (sur un autre appareil)
@@ -417,18 +428,18 @@ export function noteEditor(initialId, onLeave, { pc }) {
   if (isNew) queueMicrotask(() => edit(0));
 
   if (pc) {
-    const bar = h('div', { class: 'pc-note__bar' }, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton,
+    const bar = h('div', { class: 'pc-note__bar' }, status, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton,
       iconButton('close', t('notes.fermer'), () => navigate('notes', {}, { replace: true })));
-    return h('section', { class: 'pc-note', 'aria-labelledby': heading.id }, heading, bar, status, banner, scroll, foot);
+    return h('section', { class: 'pc-note', 'aria-labelledby': heading.id }, heading, bar, banner, scroll, foot);
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
       iconButton('chev-l', t('notes.retour'), () => back()),
+      status,
       h('span', { class: 'grow' }),
       peopleButton,
       menuButton),
     heading,
-    status,
     banner,
     scroll,
     foot);

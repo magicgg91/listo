@@ -136,6 +136,10 @@ export default {
   'ops.repereLectureNoteInvalide': 'Repère de lecture de la note invalide.',
   'ops.reglageSourdineNoteInvalide': 'Réglage « Masquer les nouveautés de cette note » invalide.',
 
+  // Page Notifications (server/inbox.js)
+  'ops.inboxInvalide': 'Choix des notifications invalide.',
+  'ops.inboxIntrouvable': 'Notification introuvable.',
+
   // Synchronisation
   'ops.parametreSinceInvalide': 'Paramètre « since » invalide.',
 };

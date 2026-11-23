@@ -136,6 +136,10 @@ export default {
   'ops.repereLectureNoteInvalide': 'Invalid read marker for the note.',
   'ops.reglageSourdineNoteInvalide': 'Invalid “Hide what\'s new in this note” setting.',
 
+  // Page Notifications (server/inbox.js)
+  'ops.inboxInvalide': 'Invalid choice of notifications.',
+  'ops.inboxIntrouvable': 'Notification not found.',
+
   // Synchronisation
   'ops.parametreSinceInvalide': 'Invalid “since” parameter.',
 };

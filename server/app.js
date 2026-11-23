@@ -43,7 +43,9 @@ import { oauthRoutes, oauthConsentRoutes } from './routes/oauth.js';
 import { mcpRoutes } from './mcp.js';
 import { createPushService, fetchPush } from './push.js';
 import { createNotifier } from './notify.js';
-import { pushRoutes } from './routes/push.js';
+import { createInbox } from './inbox.js';
+import { inboxRoutes } from './routes/inbox.js';
+import { pushRoutes, notificationSettingsRoutes } from './routes/push.js';
 import { generateVapidKeys } from './webpush.js';
 
 // Dossier des fichiers de l'interface (HTML, CSS, JavaScript, icônes)
@@ -185,8 +187,13 @@ export function createApp({
   // Coupées : aucun service, aucune clé, aucune demande sortante.
   ctx.push = config.push ? createPushService(ctx, { keys: vapidKeys ?? generateVapidKeys(), request: pushRequest }) : null;
   ctx.pushCounters = [];
-  // Qui reçoit quoi (modifications, envies, partage ; voir notify.js)
-  ctx.notify = ctx.push ? createNotifier(ctx) : null;
+  // Page Notifications (étape 4 du cadrage, voir inbox.js) : toujours là,
+  // même sans LISTO_PUSH (rien n'est envoyé ailleurs que sur ce serveur)
+  ctx.inbox = createInbox(ctx);
+  // Qui reçoit quoi (modifications, échéances, envies, partage ; voir
+  // notify.js) : toujours actif, pour remplir la page Notifications ; le
+  // téléphone n'est prévenu qu'avec LISTO_PUSH=on (ctx.push)
+  ctx.notify = createNotifier(ctx);
   // Connexion avec le fournisseur d'identité (voir oidc.js) : seulement avec LISTO_OIDC=on.
   // Coupée : aucun service, aucune demande sortante, ses adresses en 404.
   ctx.oidc = config.oidc ? createOidc(ctx, { request: oidcRequest, clientSecret: oidcClientSecret }) : null;
@@ -294,7 +301,12 @@ export function createApp({
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   api.use(noteRoutes(ctx));    // partage et lien public d'une note (après listRoutes : utilise ctx.notes)
-  // Notifications push (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
+  // Page Notifications (GET /api/inbox…) et réglages des notifications
+  // (catégories, sourdines par liste et par note) : toujours, car ils
+  // valent pour la page comme pour le téléphone
+  api.use(inboxRoutes(ctx));
+  api.use(notificationSettingsRoutes(ctx));
+  // Notifications push de cet appareil (LISTO_PUSH=on seulement ; sinon « Route inconnue »)
   if (ctx.push) api.use(pushRoutes(ctx));
   // Version installée (Réglages › À propos) : comptes connectés seulement
   // (jamais public : une version publique aiderait un attaquant). build :
@@ -389,6 +401,7 @@ export function createApp({
     mcp?.prune();                // compteurs d'appels de /mcp
     for (const counter of ctx.pushCounters) counter.prune(); // notifications : compteurs de demandes
     ctx.notify?.prune();         // notifications : plafonds par heure
+    ctx.inbox.purgeOld();        // page Notifications : lignes de plus de 30 jours
   };
   cleanup();
   const cleanupTimer = setInterval(cleanup, 60 * 60 * 1000);

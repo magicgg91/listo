@@ -545,3 +545,11 @@ Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.c
 - **Une note** (16.26) : `.note-status` (`--ok`, `--check`), `.note-edit` (`__title`, `__body`, `__body--input`, `__placeholder`), `.note-link`, `.note-foot`, `.note-banner`, `.conflict`. Le texte est affiché avec ses liens hors saisie ; le toucher passe en saisie (champ de texte simple).
 - **Corbeille des notes** (16.27) : `.page-intro`, `.page-tools`, `.note-trash`.
 - **Ordinateur** (16.28) : `.pc-col--full`, `.pc-notes` (`--closed` sans note ouverte), `.pc-notes__list`, `.pc-notes__cards`, `.pc-note` (`__bar`), 560 px (440 px sous 1 280 px).
+
+## Ajout : Page Notifications (23 novembre 2026)
+
+Étape 4 du cadrage `docs/cadrage-accueil-notes-notifications.md` ; maquettes `accueil-notes/` (`notifications-1`, `notifications-2`, cloche de `accueil-1` et `pc-accueil-1`). Styles repris de `accueil-notes/listo-accueil-notes.css` (16.26 des maquettes), section 16.29 de `listo.css`. Aucune couleur ni variable nouvelle. Icône ajoutée au sprite : `#i-check-double` (« Tout marquer comme lu »).
+
+- **Page Notifications** (16.29) : `.inbox-day`, `.inbox-row` (`.is-unread` : texte en gras, icône bleue ; `__body`, `__text`, `__sub`, `__end`, `__time`, `__dot`), `.inbox-foot` (`__hint`). Jours en `.section-title`, lignes dans un `.group`, « N non lues » et « Tout marquer comme lu » dans `.page-tools`, page vide en `.empty`.
+- **Cloche** de l'Accueil : `.icon-btn--badge` et `.icon-btn__badge` (16.22), à droite de la pastille d'état, sur téléphone et sur ordinateur.
+- Dans `app.css` (application seulement) : `.inbox-item` (ligne glissable, même mécanisme que `.item.swipe`) et `.inbox-row__more`, le bouton ⋮ de chaque ligne pour le clavier et les lecteurs d'écran, visible au focus (et au survol sur ordinateur) : le téléphone garde la ligne de la maquette.

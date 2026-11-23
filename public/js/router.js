@@ -30,8 +30,11 @@ export const ROUTES = [
   { name: 'twoFactor', path: '/reglages/double-authentification' },
   // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
   { name: 'trash', path: '/reglages/corbeille' },
-  // Notifications (cet appareil ; catégories à l'étape suivante)
+  // Réglages › Notifications (Nouveautés, cet appareil, catégories)
   { name: 'notifications', path: '/reglages/notifications' },
+  // Page Notifications (étape 4, 23 novembre 2026) : ce que Listo m'a
+  // signalé ; la cloche de l'Accueil et la tuile Compte y mènent
+  { name: 'inbox', path: '/notifications' },
   { name: 'help', path: '/aide' },
   { name: 'helpSection', path: '/aide/:section' },
   { name: 'admin', path: '/administration/:tab' },

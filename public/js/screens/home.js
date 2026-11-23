@@ -4,9 +4,11 @@
 // listes.
 //
 // - En-tête : « Bonjour Guillaume », la date du jour dans la langue du
-//   compte, la pastille d'état (un appui synchronise). La cloche des
-//   notifications viendra à droite de la pastille avec la page
-//   Notifications (étape 4 du cadrage).
+//   compte, la pastille d'état (un appui synchronise), puis la cloche
+//   (étape 4 du cadrage) : elle ouvre la page Notifications, avec le nombre
+//   de non lues en pastille (« 9+ » au-delà de 9 ; le nombre est dans son
+//   nom lu, « Notifications, 3 non lues »). C'est le seul endroit où ce
+//   nombre est montré (pas dans la tuile Compte).
 // - Tuiles, dans un ordre fixe : Échéances, Listes, Notes (étape 2 du
 //   cadrage), Compte. Deux colonnes sur le téléphone (une sous 340 px),
 //   trois sur ordinateur (quatre au-delà de 1 440 px).
@@ -29,7 +31,7 @@ import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from 
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
-import { isNoteUnread } from '../store.js';
+import { isNoteUnread, inboxUnread } from '../store.js';
 import { t } from '../i18n.js';
 
 // --- Morceaux d'une tuile (balisage de design/accueil-notes) ---
@@ -149,8 +151,8 @@ function notesTile(pc) {
   ], { spoken: t('accueil.notes.lu', { count: notes.length }) });
 }
 
-// Compte : « Mon compte », « Notifications » (Réglages › Notifications, en
-// attendant la page Notifications de l'étape 4), « Réglages » ; pour
+// Compte : « Mon compte », « Notifications » (la page Notifications, sans
+// son nombre : il n'est que sur la cloche), « Réglages » ; pour
 // l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
 // le fournisseur d'identité, LISTO_OIDC=on : nombre donné par /api/me). Le
 // nombre de notifications non lues ne sera que sur la cloche.
@@ -158,7 +160,7 @@ function accountTile() {
   const requests = app.user.role === 'admin' ? app.user.accountRequests ?? 0 : 0;
   return tile(t('accueil.compte'), 'user', () => navigate('account'), rowsOf([
     row({ label: t('accueil.compte.monCompte'), onClick: () => navigate('account') }),
-    row({ label: t('accueil.compte.notifications'), onClick: () => navigate('notifications') }),
+    row({ label: t('accueil.compte.notifications'), onClick: () => navigate('inbox') }),
     row({ label: t('accueil.compte.reglages'), onClick: () => navigate('settings') }),
     requests > 0 ? row({
       label: t('accueil.compte.demandes'),
@@ -169,6 +171,23 @@ function accountTile() {
   ].filter(Boolean)));
 }
 
+// Cloche de l'en-tête : bouton-icône « Notifications » et sa pastille
+// (aria-hidden : le nombre est dans le nom lu). Redessinée avec l'écran.
+export function bellBadgeText(count) {
+  return count > 9 ? '9+' : String(count);
+}
+function bell() {
+  const button = h('button', { class: 'icon-btn icon-btn--badge', type: 'button', onClick: () => navigate('inbox') }, icon('bell'));
+  const paint = () => {
+    const count = app.data.inbox?.loaded ? inboxUnread(app.data) : 0;
+    button.setAttribute('aria-label', count ? t('inbox.cloche.nonLues', { count }) : t('inbox.cloche'));
+    button.querySelector('.icon-btn__badge')?.remove();
+    if (count) button.append(h('span', { class: 'icon-btn__badge', 'aria-hidden': 'true' }, bellBadgeText(count)));
+  };
+  paint();
+  return { el: button, paint };
+}
+
 // --- Écran ---
 
 export function renderHome(onLeave) {
@@ -176,9 +195,11 @@ export function renderHome(onLeave) {
   const tiles = h('div', { class: 'tiles' });
   const content = h('div', { class: 'scroll' }, tiles);
   const date = h('p', { class: pc ? 'pc-head__sub' : 'home-head__date' });
+  const notifications = bell();
 
   const draw = () => {
     date.textContent = longToday();
+    notifications.paint();
     if (!app.data.loaded) {
       replace(tiles, h('p', { class: 'empty muted', role: 'status' }, t('accueil.chargement')));
       return;
@@ -196,18 +217,17 @@ export function renderHome(onLeave) {
 
   const hello = t('accueil.bonjour', { name: app.user.displayName ?? '' });
   const pill = syncPill(() => refreshData({ full: true }));
-  // (étape 4 du cadrage : la cloche « Notifications » se placera ici, après la pastille)
   if (pc) {
     return h('div', { class: 'screen' },
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__hello' }, hello), date),
-        h('div', { class: 'pc-head__tools' }, pill)),
+        h('div', { class: 'pc-head__tools' }, pill, notifications.el)),
       offlineBanner(),
       content);
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'home-head' },
       h('h1', { class: 'home-head__hello' }, hello),
-      h('div', { class: 'home-head__line' }, date, h('div', { class: 'home-head__tools' }, pill))),
+      h('div', { class: 'home-head__line' }, date, h('div', { class: 'home-head__tools' }, pill, notifications.el))),
     content);
 }

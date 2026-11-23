@@ -54,8 +54,16 @@ export function emptyState() {
     // j'ai masqué les nouveautés (muted). Remplacées en entier à chaque
     // synchronisation.
     noteNews: emptyNoteNews(),
+    // Page Notifications (server/inbox.js, étape 4) : la dernière copie
+    // reçue de GET /api/inbox (lignes déjà mises en phrases par le serveur)
+    // et son empreinte (stamp) ; la synchronisation donne l'empreinte du
+    // serveur, la page est relue quand elle diffère. Gardée sur le
+    // téléphone : la page s'affiche hors ligne.
+    inbox: emptyInbox(),
   };
 }
+
+const emptyInbox = () => ({ rows: [], stamp: null, loaded: false });
 
 const emptyNoteNews = () => ({ unread: new Set(), muted: new Set() });
 
@@ -99,6 +107,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     pinnedNotes: [...state.pinnedNotes],
     noteConflicts: [...state.noteConflicts],
     noteNews: { unread: [...state.noteNews.unread], muted: [...state.noteNews.muted] },
+    inbox: state.inbox,
   };
 }
 
@@ -123,6 +132,8 @@ export function fromSnapshot(snapshot) {
     state.pinnedNotes = new Set(snapshot.pinnedNotes ?? []);
     state.noteConflicts = new Map(snapshot.noteConflicts ?? []);
     state.noteNews = { unread: new Set(snapshot.noteNews?.unread ?? []), muted: new Set(snapshot.noteNews?.muted ?? []) };
+    // (copie d'avant la page Notifications : vide, relue au premier passage du réseau)
+    state.inbox = Array.isArray(snapshot.inbox?.rows) ? { rows: snapshot.inbox.rows, stamp: snapshot.inbox.stamp ?? null, loaded: true } : emptyInbox();
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -479,6 +490,11 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'note.mute':
       applyNoteOp(state, op, { user, now });
       return;
+    // Page Notifications : lire, effacer (comme le serveur, server/inbox.js)
+    case 'inbox.read':
+    case 'inbox.delete':
+      applyInboxOp(state, op, { now });
+      return;
     case 'item.restore': {
       const old = state.trash.get(op.itemId);
       if (!old || !state.lists.has(old.listId)) return;
@@ -496,6 +512,58 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       return;
     }
     default:
+  }
+}
+
+// --- Page Notifications : même effet que le serveur (server/inbox.js) ---
+
+// Lignes visées : ids, ou toutes celles reçues jusqu'à upTo (« Tout… ») ;
+// une ligne arrivée après n'est pas touchée
+function inboxSelected(row, op) {
+  if (Array.isArray(op.ids)) return op.ids.includes(row.id);
+  return op.all === true && typeof op.upTo === 'string' && row.at <= op.upTo;
+}
+function applyInboxOp(state, op, { now }) {
+  const rows = state.inbox?.rows ?? [];
+  if (op.type === 'inbox.read') {
+    state.inbox = { ...state.inbox, rows: rows.map((row) => (!row.read && inboxSelected(row, op) ? { ...row, read: true, readAt: now } : row)) };
+  } else {
+    state.inbox = { ...state.inbox, rows: rows.filter((row) => !inboxSelected(row, op)) };
+  }
+}
+
+// Copie de la page reçue du serveur (GET /api/inbox) : remplacée en entier
+export function loadInbox(state, data) {
+  state.inbox = { rows: Array.isArray(data?.rows) ? data.rows : [], stamp: data?.stamp ?? null, loaded: true };
+  return state;
+}
+
+// Nombre de notifications non lues (pastille de la cloche)
+export const inboxUnread = (state) => (state.inbox?.rows ?? []).filter((row) => !row.read).length;
+
+// Lignes non lues dont la cible est cette liste (ou un de ses éléments),
+// cette note, ou l'écran Échéances : ouvrir la cible les rend lues (une
+// notification du téléphone touchée ouvre sa cible)
+export function inboxRowsFor(state, { listId = null, noteId = null, deadlines = false }) {
+  return (state.inbox?.rows ?? []).filter((row) => !row.read && row.target && (
+    (listId && row.target.listId === listId)
+    || (noteId && row.target.noteId === noteId)
+    || (deadlines && row.target.type === 'deadlines'))).map((row) => row.id);
+}
+
+// Cible d'une ligne encore ouverte sur CE téléphone ? (copie locale : une
+// liste quittée, une note retirée ou un élément effacé ne s'ouvrent plus)
+export function inboxTargetAvailable(state, target) {
+  if (!target) return false;
+  switch (target.type) {
+    case 'deadlines': return true;
+    case 'list': return state.lists.has(target.listId);
+    case 'item': return state.lists.has(target.listId) && state.items.has(target.itemId);
+    case 'note': {
+      const note = state.notes.get(target.noteId);
+      return Boolean(note) && !note.deletedAt;
+    }
+    default: return false;
   }
 }
 

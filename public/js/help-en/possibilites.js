@@ -11,7 +11,7 @@ export default {
         "A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([[partager]]).",
         "Changes reach the other phones within a few seconds. Checked items move to the bottom, crossed out.",
         "What's new: Listo shows what the others have added or changed since your last visit ([[nouveautes]]).",
-        "Notifications, optional: changes (by others), reservations, sharing and the due-date summary, on your phone or your computer ([[notifications]]).",
+        "Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([[notifications]]).",
         "An icon of your choice for each list, and a count of what's left on each card and each group ([[tri]]).",
       ] }],
     },

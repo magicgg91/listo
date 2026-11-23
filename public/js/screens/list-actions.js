@@ -94,10 +94,10 @@ function newsMuteAction(list) {
 
 // Notifications push : « Couper les notifications de cette liste » (plus aucune notification
 // venant d'elle, quelle que soit la catégorie) / « Réactiver les
-// notifications de cette liste ». Seulement si la fonction est activée sur le serveur ; en ligne
-// seulement (réglage du compte, gardé par le serveur).
+// notifications de cette liste ». Toujours (depuis l'étape 4 du cadrage :
+// la sourdine vaut aussi pour la page Notifications, même sans LISTO_PUSH) ;
+// en ligne seulement (réglage du compte, gardé par le serveur).
 function pushMuteAction(list) {
-  if (!app.user?.push) return null;
   const muted = isListPushMuted(list.id);
   const run = async () => {
     try {

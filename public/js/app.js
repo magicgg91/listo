@@ -9,7 +9,7 @@ import { startRouter, navigate, closeOverlays } from './router.js';
 import { applyTheme, savedTheme } from './theme.js';
 import { setLocale, setCurrency, resolveLocale, t } from './i18n.js';
 import { setTranslator } from './search.js';
-import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList } from './store.js';
+import { emptyState, loadSync, mergeSync, toSnapshot, fromSnapshot, isTooOld, applyOp, newsTotal, canEditList, loadInbox, inboxRowsFor } from './store.js';
 import { createQueue } from './queue.js';
 import { openLocal, deleteLocal, memoryLocal } from './localdb.js';
 import { setOverlayHost, setPcLayer, onPc, setSyncState, setPendingCount, toast, confirmDialog, releaseFocus, isTextField } from './ui.js';
@@ -33,6 +33,7 @@ import { renderAccount } from './screens/account.js';
 import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
+import { renderInbox } from './screens/inbox.js';
 import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
 import { startShortcuts } from './shortcuts.js';
@@ -289,6 +290,13 @@ export function refreshData({ quiet = false, full = false } = {}) {
       if (!app.user) return;
       if (since) mergeSync(app.data, data);
       else loadSync(app.data, data);
+      // Page Notifications : relue seulement quand son empreinte a changé
+      // (une ligne ajoutée, lue ou effacée, ici ou sur un autre appareil)
+      if (data.inboxStamp !== undefined && (data.inboxStamp !== app.data.inbox.stamp || !app.data.inbox.loaded)) {
+        const page = await get('/api/inbox');
+        if (!app.user) return;
+        loadInbox(app.data, page);
+      }
       // 4. Les modifications encore en file sont rejouées par-dessus
       replayQueue();
       setSyncState('ok');
@@ -298,6 +306,8 @@ export function refreshData({ quiet = false, full = false } = {}) {
       // Note « À vérifier » : l'écran de la note ouverte propose le choix ;
       // ailleurs, un message dit de l'ouvrir
       else if (noteConflict && app.route?.name !== 'note' && !app.route?.params?.note) toast(t('application.noteAVerifier'));
+      // Page Notifications reçue : celles de l'écran ouvert deviennent lues
+      readInboxOfScreen();
     } catch (error) {
       // Serveur injoignable ou en panne : « Hors ligne » (choix du propriétaire)
       const unauthorized = error instanceof ApiError && error.status === 401;
@@ -315,6 +325,21 @@ export function refreshData({ quiet = false, full = false } = {}) {
     }
   })();
   return refreshing;
+}
+
+// Ouvrir une liste, une note ou Échéances rend lues les notifications de
+// la page qui les visent (une notification du téléphone touchée ouvre sa
+// cible). Ouvrir la page Notifications ne marque rien (décision du 23
+// novembre 2026).
+function readInboxOfScreen() {
+  const route = app.route;
+  if (!app.user || !route || !app.data.inbox?.loaded) return;
+  const scope = route.name === 'list' ? { listId: route.params.id }
+    : route.name === 'note' ? { noteId: route.params.id }
+      : route.name === 'deadlines' ? { deadlines: true } : null;
+  if (!scope) return;
+  const ids = inboxRowsFor(app.data, scope);
+  if (ids.length) actions.markInboxRead(ids);
 }
 
 // --- File d'attente (queue.js) ---
@@ -808,6 +833,8 @@ function show(route) {
     case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
+    // Page Notifications (étape 4) : la cloche de l'Accueil, la tuile Compte
+    case 'inbox': mount((onLeave) => renderInbox(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Assistants IA : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':
@@ -818,6 +845,7 @@ function show(route) {
     case 'oldClaudeConnections': navigate('claudeConnections', {}, { replace: true }); break;
     default: navigate('home', {}, { replace: true });
   }
+  readInboxOfScreen();
   // Une nouvelle version attend : nouvel essai de rechargement sur le nouvel écran
   freshness.retry();
 }

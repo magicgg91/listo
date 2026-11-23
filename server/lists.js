@@ -32,6 +32,7 @@
 
 import { createNewsService } from './news.js';
 import { createNoteService } from './notes.js';
+import { createInbox, inboxHandlers } from './inbox.js';
 import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
@@ -310,6 +311,9 @@ export function createListService(ctx) {
   // Notes (server/notes.js) : leurs opérations passent par la même file
   // (POST /api/ops, applied_ops) et leurs données par la même synchronisation
   const notes = ctx.notes ?? (ctx.notes = createNoteService(ctx, { OpError }));
+  // Page Notifications (server/inbox.js) : ses opérations hors ligne
+  // (« inbox.read », « inbox.delete ») et son empreinte dans la synchronisation
+  const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -1421,6 +1425,8 @@ export function createListService(ctx) {
 
   // Opérations des notes (server/notes.js)
   for (const [type, handler] of Object.entries(notes.handlers)) handlers[type] = handler;
+  // Opérations de la page Notifications (server/inbox.js) : lire, effacer
+  for (const [type, handler] of Object.entries(inboxHandlers(inbox, { OpError, now: nowIso }))) handlers[type] = handler;
 
   // --- Lot d'opérations (POST /api/ops) ---
   //
@@ -1582,6 +1588,9 @@ export function createListService(ctx) {
       reservations: reservations.forUser(user),
       // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
       ...notes.syncFor(user, since),
+      // Page Notifications : seulement son empreinte (le téléphone relit la
+      // page, GET /api/inbox, quand elle a changé)
+      inboxStamp: inbox.stamp(user.id),
     };
   }
 

@@ -96,6 +96,8 @@ function open() {
   source.addEventListener('note', () => scheduleSync());
   // Catégories, magasins ou rayons changés par l'Admin (renommage…)
   source.addEventListener('refs', () => scheduleSync());
+  // Page Notifications : une ligne ajoutée, lue ou effacée (ici ou sur un autre appareil)
+  source.addEventListener('inbox', () => scheduleSync());
   source.addEventListener('error', () => {
     // Coupure (réseau, redémarrage du serveur, session expirée…) : le
     // navigateur réessaierait tout seul, sans délai croissant ; on reprend la main.

@@ -126,10 +126,9 @@ function newsMuteItem(note) {
   };
 }
 
-// Notifications push de cette note : seulement si elles sont activées sur
-// le serveur ; en ligne seulement (réglage gardé par le serveur)
+// Notifications de cette note (page Notifications et téléphone, même sans
+// LISTO_PUSH depuis l'étape 4) ; en ligne seulement (réglage gardé par le serveur)
 function pushMuteItem(note) {
-  if (!app.user?.push) return null;
   const muted = isNotePushMuted(note.id);
   return {
     icon: 'bell',

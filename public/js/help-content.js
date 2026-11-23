@@ -123,7 +123,7 @@ export const GUIDE = [
           { ul: [
             'Pas de version en ligne : Listo s\'installe sur votre propre serveur (un ordinateur toujours allumé, à la maison par exemple). Voir [[installation]].',
             'En français ou en anglais, au choix de chacun dans « Mon compte » ([[langue]]) ; cette aide aussi.',
-            'Les notifications sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([[notifications]]).',
+            'La page Notifications (la cloche de l\'Accueil) garde ce que Listo vous signale. Les notifications sur le téléphone ou l\'ordinateur sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([[notifications]]).',
             'Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.',
             'Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l\'on peut couper : la vérification d\'une nouvelle version (GitHub, [[version]]), le nom d\'un produit scanné (Open Food Facts, [guide d\'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l\'appareil voit l\'heure, la taille et l\'appareil, jamais le texte : [[notif-confidentialite]]). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l\'interrogez ([[claude]]).',
           ] },
@@ -172,7 +172,7 @@ export const GUIDE = [
           'Une liste se partage avec d\'autres comptes, chacun avec son droit : « Peut modifier » ou « Lecture seule » ([[partager]]).',
           'Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.',
           'Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([[nouveautes]]).',
-          'Notifications, facultatives : modifications (des autres), réservations, partage et résumé des échéances, sur le téléphone ou l\'ordinateur ([[notifications]]).',
+          'Notifications : modifications (des autres), réservations, partage, résumé des échéances et rappels, dans la page Notifications (la cloche de l\'Accueil) et, si vous le voulez, sur le téléphone ou l\'ordinateur ([[notifications]]).',
           'Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([[tri]]).',
         ] }],
       },
@@ -575,11 +575,11 @@ export const GUIDE = [
           ] },
           'Une fois l\'heure choisie, « Rappel » propose : « Aucun » (au départ), « À l\'heure », « 15 min avant », « 30 min avant », « 1 h avant », « 2 h avant » ou « La veille (24 h avant) ». Chaque tâche a son propre rappel.',
           { ul: [
-            'Le rappel est une notification ([[notifications]]). Il part vers la personne à qui la tâche est attribuée ([[attribuer]]) ; si elle n\'est attribuée à personne, vers tous les membres de la liste.',
+            'Le rappel est une notification ([[notifications]]) : il arrive dans la page Notifications, et sur vos appareils où les notifications sont activées. Il part vers la personne à qui la tâche est attribuée ([[attribuer]]) ; si elle n\'est attribuée à personne, vers tous les membres de la liste.',
             'Il ne part qu\'une fois. Si vous changez la date, l\'heure ou le rappel, il repartira au nouveau moment. Une tâche cochée n\'envoie rien.',
-            'Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications, appareils où elles sont activées.',
+            'Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications.',
             'Si le serveur était arrêté au moment prévu, le rappel part encore dans la demi-heure qui suit ; après, il est abandonné.',
-            'Si les notifications sont coupées sur le serveur, le choix « Rappel » n\'apparaît pas.',
+            'Si les notifications sont coupées sur le serveur, le rappel arrive seulement dans la page Notifications.',
           ] },
         ],
       },
@@ -697,12 +697,12 @@ export const GUIDE = [
         id: 'echeances',
         title: 'Se déplacer : Accueil, Échéances',
         blocks: [
-          'Listo s\'ouvre sur l\'« Accueil » : « Bonjour » et votre prénom, la date du jour et la pastille d\'état, puis des tuiles qui montrent d\'un coup d\'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.',
+          'Listo s\'ouvre sur l\'« Accueil » : « Bonjour » et votre prénom, la date du jour, la pastille d\'état et la cloche des notifications (avec le nombre de non lues : [[notif-page]]), puis des tuiles qui montrent d\'un coup d\'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.',
           { ul: [
             'Tuile « Échéances » : « En retard », « Aujourd\'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l\'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».',
             'Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l\'une d\'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».',
             'Tuile « Notes » : le nombre de vos notes, les deux dernières modifiées (une ligne ouvre la note) et « Nouvelle note », qui ouvre une saisie rapide ([[notes]]) ; sans note : « Aucune note ».',
-            'Tuile « Compte » : « Mon compte », « Notifications » (les réglages des notifications) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
+            'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil ; un lien vers une liste ouvre toujours cette liste.',
           ] },
           'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages ». Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
@@ -749,7 +749,7 @@ export const GUIDE = [
           ] },
           { sub: 'Nouveautés et notifications' },
           'Quand quelqu\'un d\'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu\'à ce que vous l\'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l\'Accueil et, sur ordinateur, l\'entrée « Notes » du menu de gauche montrent aussi le point. C\'est le même réglage « Nouveautés » que pour les listes ([[nouveautes]]) ; menu ⋮ : « Masquer les nouveautés de cette note ».',
-          'Avec les notifications ([[notif-recevoir]]) : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). Menu ⋮ : « Couper les notifications de cette note ».',
+          'Notifications ([[notif-recevoir]]), dans la page Notifications et sur vos appareils : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). La page Notifications ne cite que le titre, jamais le texte. Menu ⋮ : « Couper les notifications de cette note ».',
           { sub: 'Lien public d\'une note' },
           'Menu ⋮ d\'une de vos notes, « Lien public » : la même feuille que pour une liste ([[lien-public]]) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte (liens cliquables) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n\'est plus visible par son lien ; restaurée, le lien remarche s\'il n\'a pas expiré.',
         ],
@@ -874,10 +874,27 @@ export const GUIDE = [
     id: 'notifications',
     title: 'Notifications',
     blocks: [
-      'Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l\'ouvrir : une modification dans une liste partagée, une réservation, un partage, et chaque matin les tâches du jour. C\'est facultatif : la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil et catégorie par catégorie.',
-      'L\'écran Réglages, « Notifications » a deux parties : « Dans l\'application » (les nouveautés, pastilles et halo : [[nouveautes]]) et « Sur cet appareil » (les notifications, décrites ici).',
+      'Listo vous signale ce qui vous concerne : une modification dans une liste partagée, une réservation, un partage, chaque matin les tâches du jour, et le rappel d\'une tâche. Tout arrive dans la page Notifications (la cloche de l\'Accueil), même sans téléphone inscrit. En plus, Listo peut vous prévenir sur votre téléphone ou votre ordinateur, sans l\'ouvrir : c\'est facultatif, la fonction est désactivée par défaut sur le serveur, et chacun choisit ensuite, appareil par appareil.',
+      'L\'écran Réglages, « Notifications » a deux parties : « Dans l\'application » (les nouveautés, pastilles et halo : [[nouveautes]]) et « Sur cet appareil » (les notifications, décrites ici). Les catégories (« Notifications reçues ») valent à la fois pour la page Notifications et pour vos appareils.',
     ],
     sections: [
+      {
+        id: 'notif-page',
+        title: 'La page Notifications',
+        blocks: [
+          'La cloche, en haut de l\'Accueil, ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».',
+          { ul: [
+            'Les notifications sont groupées par jour (« Aujourd\'hui », « Hier », puis la date), la plus récente en haut. Une notification non lue est en gras, avec un point bleu ; « 3 non lues » le dit en haut.',
+            'Toucher une notification la marque comme lue et ouvre ce qu\'elle concerne : la liste, la tâche, la note ou les échéances. Si la liste a été supprimée ou ne vous est plus partagée : « Cette liste n\'est plus disponible ».',
+            'Ouvrir la page ne marque rien comme lu : « Tout marquer comme lu » le fait. Ouvrir une liste, une note ou l\'écran « Échéances » (par une notification du téléphone, par exemple) marque comme lues les notifications qui les concernent. Lu sur un appareil, c\'est lu sur tous.',
+            'Effacer : glissez une notification vers la gauche, puis « Effacer » ; ou son bouton ⋮ (clavier, lecteur d\'écran). « Tout effacer », en bas, demande confirmation.',
+            'Les notifications sont gardées 30 jours, 300 au plus (les plus anciennes partent).',
+            'Les modifications rapprochées d\'une même liste ou d\'une même note tiennent sur une seule ligne, qui se met à jour (“Léa a ajouté 4 articles dans « Courses »”) et redevient non lue.',
+          ] },
+          'Elle se remplit même sans les notifications du téléphone (fonction coupée sur le serveur, appareil non inscrit) : rien n\'est envoyé ailleurs que sur votre serveur pour la remplir. Hors ligne, elle montre la dernière copie reçue ; « Tout marquer comme lu » et « Effacer » partent au retour du réseau.',
+          'Mêmes réglages que le téléphone : une catégorie coupée dans « Notifications reçues », ou une liste ou une note dont vous avez coupé les notifications, n\'apparaît pas non plus dans la page. La page donne toujours le détail (nom de la tâche, du souhait) ; « Afficher le détail dans la notification » ne concerne que l\'écran du téléphone. D\'une note, elle ne cite que le titre, jamais le texte.',
+        ],
+      },
       {
         id: 'notif-activer',
         title: 'Les activer sur un appareil',
@@ -895,7 +912,7 @@ export const GUIDE = [
         id: 'notif-recevoir',
         title: 'Ce que vous recevez, et quand',
         blocks: [
-          'Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour tous vos appareils.',
+          'Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour la page Notifications et pour tous vos appareils.',
           { table: {
             head: ['Catégorie', 'Quand', 'Exemple'],
             rows: [
@@ -919,7 +936,7 @@ export const GUIDE = [
         id: 'notif-silencer',
         title: 'Couper les notifications d\'une liste',
         blocks: [
-          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮ : « Couper les notifications de cette note ».',
+          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, ni dans la page Notifications ni sur vos appareils, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮ : « Couper les notifications de cette note ».',
           'C\'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [[nouveautes]]) : on peut garder les nouveautés d\'une liste sans recevoir ses notifications, et l\'inverse.',
         ],
       },
@@ -927,9 +944,9 @@ export const GUIDE = [
         id: 'notif-limites',
         title: 'Limites et listes d\'envies',
         blocks: [{ ul: [
-          'Au plus 30 notifications par personne et par heure (le résumé des échéances ne compte pas).',
+          'Au plus 30 notifications du téléphone par personne et par heure (le résumé des échéances ne compte pas) ; la page Notifications n\'a pas ce plafond.',
           'Si vous avez déjà la liste ouverte à l\'écran quand quelqu\'un la modifie, vous n\'êtes pas prévenu : vous l\'avez vu.',
-          'Liste d\'envies : la personne à qui elle est destinée ne reçoit jamais rien qui parle d\'une réservation ou d\'une participation, ni ce que les autres ajoutent dans sa liste. La surprise est préservée. Un visiteur du lien public, sans compte, ne reçoit jamais de notification.',
+          'Liste d\'envies : la personne à qui elle est destinée ne reçoit jamais rien, ni sur ses appareils ni dans sa page Notifications, qui parle d\'une réservation ou d\'une participation, ni ce que les autres ajoutent dans sa liste. La surprise est préservée. Un visiteur du lien public, sans compte, ne reçoit jamais de notification.',
         ] }],
       },
       {
@@ -949,7 +966,7 @@ export const GUIDE = [
           { code: 'docker compose up -d' },
           'Le résumé des échéances part vers 8 h dans le fuseau du serveur : réglez `TZ` (par exemple `TZ=Europe/Paris`, déjà dans le fichier livré), sinon il arrive à 8 h en heure universelle ([[variables]]).',
           'Au premier démarrage, Listo crée ses clés de notification dans `secrets/vapid.json`, à côté de la clé secrète. Gardez-en une copie avec elle ([[cle]]). Si ce fichier est perdu, Listo en crée un nouveau : chaque appareil dont l\'accord est déjà donné se réabonne tout seul à sa prochaine ouverture de Listo ; sinon, il suffit de réactiver l\'interrupteur.',
-          'Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). Désactivée, aucune clé n\'est créée et aucune demande ne part vers eux.',
+          'Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). Désactivée, aucune clé n\'est créée et aucune demande ne part vers eux ; la page Notifications, le résumé du matin et les rappels fonctionnent quand même, dans l\'application seulement ([[notif-page]]).',
         ],
       },
       {
@@ -963,7 +980,7 @@ export const GUIDE = [
           'Firefox après une mise à jour : fermez-le complètement et rouvrez-le, puis « Envoyer une notification test ».',
           'Sur un ordinateur, le système doit aussi autoriser les notifications du navigateur, en plus de Listo dans le navigateur. Sur Mac : Réglages Système › Notifications › Firefox (ou Chrome, Edge, Brave…), “Autoriser les notifications” activé, style “Bannières” ou “Alertes” ; macOS le désactive tant qu\'on n\'a jamais répondu à sa demande. Sur Windows : Paramètres › Système › Notifications, notifications activées et le navigateur autorisé dans la liste. Dans Firefox, vérifiez aussi que “Suspendre les notifications jusqu\'au redémarrage de Firefox” n\'est pas coché (Réglages › Vie privée et sécurité › Permissions › Notifications).',
           'Sur un ordinateur, l\'écran dit que le navigateur n\'a pas réussi à s\'inscrire auprès de son service de notifications : le navigateur doit pouvoir joindre ce service par Internet (Google pour Chrome et Brave, Microsoft pour Edge, Mozilla pour Firefox). Un filtre DNS (AdGuard, Pi-hole…), un bloqueur de publicité (uBlock Origin…), un proxy, un pare-feu ou un VPN peut l\'en empêcher, même si d\'autres sites déjà inscrits continuent de recevoir leurs notifications. Pour savoir quoi débloquer : ouvrez le journal des requêtes du filtre, activez les notifications dans Listo, et autorisez les adresses refusées à ce moment-là ; ce sont celles du service du navigateur, par exemple …googleapis.com ou …google.com pour Chrome et Brave, …notify.windows.com ou …wns.windows.com pour Edge, …push.services.mozilla.com pour Firefox. Avec un bloqueur dans le navigateur, désactivez-le un instant sur Listo pour essayer. Dans Brave, il faut aussi activer “Utiliser les services Google pour la messagerie push” dans ses réglages (Confidentialité et sécurité), puis le relancer. Le message donne le détail fourni par le navigateur.',
-          'Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L\'écran dit « Les notifications sont désactivées sur ce serveur Listo » : voir [[notif-serveur]].',
+          'Vérifiez aussi le mode “Ne pas déranger” ou “Concentration” du téléphone, la catégorie dans « Notifications reçues » et que les notifications de la liste ne sont pas coupées. L\'écran dit « Les notifications sur les appareils sont désactivées sur ce serveur Listo » : voir [[notif-serveur]]. Dans tous les cas, la page Notifications garde ce que vous auriez reçu ([[notif-page]]).',
         ] }],
       },
     ],

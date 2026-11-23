@@ -1,0 +1,52 @@
+// Textes de la page Notifications (public/js/screens/inbox.js) et de ses
+// lignes (server/inbox.js), en anglais.
+// Mêmes noms que public/js/i18n/fr/inbox.js.
+
+export default {
+  // --- Lignes (server/inbox.js) ---
+  'inbox.sous': '{label} · {context}',
+  'inbox.resume': 'Morning summary',
+  'inbox.rappel': 'Reminder',
+  'inbox.rappel.aujourdhui': '{name} at {time}',
+  'inbox.rappel.demain': '{name} tomorrow at {time}',
+  'inbox.rappel.date': '{name} on {date} at {time}',
+  'inbox.tour': 'Your turn: {names}',
+  'inbox.ajoute': { one: '{people} added {things} to “{list}”', other: '{people} added {things} to “{list}”' },
+  'inbox.modifie': { one: '{people} made {changes} in “{list}”', other: '{people} made {changes} in “{list}”' },
+  'inbox.partage.liste': '{actor} shared the list “{list}” with you',
+  'inbox.droit.liste.modification': 'You can now edit “{list}”',
+  'inbox.droit.liste.lecture': '“{list}” is now read-only for you',
+  'inbox.droit.note.modification': 'You can now edit the note “{note}”',
+  'inbox.droit.note.lecture': 'The note “{note}” is now read-only for you',
+  'inbox.droit.note.modification.sansTitre': 'You can now edit a note',
+  'inbox.droit.note.lecture.sansTitre': 'A note is now read-only for you',
+
+  // --- Écran ---
+  'inbox.titre': 'Notifications',
+  'inbox.reglages': 'Notification settings',
+  'inbox.nonLues': { one: '{count} unread', other: '{count} unread' },
+  'inbox.toutLues': 'All read',
+  'inbox.toutLu': 'Mark all as read',
+  'inbox.aujourdhui': 'Today',
+  'inbox.hier': 'Yesterday',
+  'inbox.ligne': '{text}, {sub}, {time}',
+  'inbox.ligne.nonLue': 'Unread: {text}, {sub}, {time}',
+  'inbox.options': 'Options for this notification',
+  'inbox.effacer': 'Clear',
+  'inbox.effacer.lu': 'Clear this notification',
+  'inbox.effacee': 'Notification cleared',
+  'inbox.marquerLue': 'Mark as read',
+  'inbox.toutEffacer': 'Clear all',
+  'inbox.toutEffacer.question': 'Clear all notifications?',
+  'inbox.toutEffacer.texte': 'They disappear from this page on all your devices. Your lists and notes don\'t change.',
+  'inbox.toutesEffacees': 'Notifications cleared',
+  'inbox.garde': 'Notifications are kept for 30 days.',
+  'inbox.vide.titre': 'No notifications',
+  'inbox.vide.texte': 'What Listo tells you about (due tasks, sharing, changes) will show up here for 30 days.',
+  'inbox.chargement': 'Loading…',
+  'inbox.indisponible.liste': 'This list is no longer available',
+  'inbox.indisponible.element': 'This item is no longer available',
+  'inbox.indisponible.note': 'This note is no longer available',
+  'inbox.cloche': 'Notifications',
+  'inbox.cloche.nonLues': { one: 'Notifications, {count} unread', other: 'Notifications, {count} unread' },
+};

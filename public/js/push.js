@@ -15,8 +15,8 @@
 // Le navigateur crée l'abonnement auprès du service de push de son
 // fabricant ; le serveur ne l'accepte que pour des services connus.
 //
-// Préférences du compte (valables sur tous ses appareils) et listes
-// silencées : gardées en mémoire après chaque lecture de GET /api/push,
+// Préférences du compte (valables pour la page Notifications et sur tous
+// ses appareils, même sans LISTO_PUSH) et listes silencées : gardées en mémoire après chaque lecture de GET /api/push,
 // pour que le menu d'une liste sache dire « Couper » ou « Réactiver les
 // notifications de cette liste » sans attendre le réseau.
 
@@ -50,11 +50,13 @@ export async function setNotePushMuted(noteId, muted) {
   remember(await put(`/api/push/note-mutes/${encodeURIComponent(noteId)}`, { muted }));
 }
 
-// Relit l'état du serveur (préférences, listes silencées) ; sans réseau : rien
+// Relit l'état du serveur (préférences, listes silencées) ; sans réseau :
+// rien. Sans notifications push sur le serveur, les mêmes réglages valent
+// pour la page Notifications (GET /api/push/settings, étape 4).
 export async function loadPushState(user) {
-  if (!user?.push) return null;
+  if (!user) return null;
   try {
-    return remember(await get('/api/push'));
+    return remember(await get(user.push ? '/api/push' : '/api/push/settings'));
   } catch {
     return null;
   }

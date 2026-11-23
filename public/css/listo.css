@@ -1216,3 +1216,35 @@
 .app--pc .note-card__excerpt { -webkit-line-clamp: 3; line-clamp: 3; }
 .app--pc .note-card:hover { border-color: var(--color-control); }
 @media (max-width: 1279.98px) { .pc-notes { grid-template-columns: minmax(0, 1fr) 440px; } .pc-notes--closed { grid-template-columns: minmax(0, 1fr); } }
+
+/* 16.29 Page Notifications (#/notifications : la cloche de l'Accueil, la
+   ligne « Notifications » de la tuile Compte ; étape 4, 23 novembre 2026,
+   maquettes notifications-1 et notifications-2)
+   - Jours : .section-title (« Aujourd'hui », « Hier », « Samedi 21
+     novembre »), la plus récente en haut.
+   - .inbox-row dans un .group : bouton sur toute la ligne (ouvre la liste,
+     la tâche, la note) : icône de la catégorie (#i-calendar résumé du
+     matin, #i-clock rappel, #i-pencil Modifications, #i-repeat « C'est
+     votre tour », #i-users Partage, #i-gift Envies), texte, contexte
+     (.inbox-row__sub), heure, et pour une non lue : point bleu ET texte en
+     gras ET « Non lue » dans le nom lu (jamais la couleur seule). Glisser
+     vers la gauche : « Effacer » (même glissement que les lignes d'une
+     liste) ; bouton ⋮ (.inbox-row__more) pour le clavier et les lecteurs
+     d'écran, visible au focus (et au survol sur ordinateur).
+   - En bas : « Tout effacer » (confirmation) et la durée de garde.
+   - Vide : .empty (#i-bell), « Aucune notification ». */
+.inbox-day:first-child { margin-top: var(--space-1); }
+.inbox-row { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 64px; padding: 12px var(--space-2) 12px 14px; border: 0; border-bottom: 1px solid var(--color-border); background: var(--color-surface); color: inherit; font: inherit; text-align: left; text-decoration: none; }
+.group > .inbox-row:last-child, .group > .inbox-item:last-child .inbox-row { border-bottom: 0; }
+.inbox-row:active { background: var(--color-neutral-soft); }
+.inbox-row .row__icon { color: var(--color-text-2); }
+.inbox-row.is-unread .row__icon { background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.inbox-row__body { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; padding-top: 1px; }
+.inbox-row__text { line-height: 1.35; overflow-wrap: anywhere; }
+.inbox-row.is-unread .inbox-row__text { font-weight: 650; }
+.inbox-row__sub { font-size: var(--text-sm); color: var(--color-text-2); }
+.inbox-row__end { display: flex; flex: none; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 2px; }
+.inbox-row__time { font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.inbox-row__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); }
+.inbox-foot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: var(--space-2) var(--space-2) 0; text-align: center; }
+.inbox-foot__hint { font-size: var(--text-sm); color: var(--color-text-2); }

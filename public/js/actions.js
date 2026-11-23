@@ -373,3 +373,26 @@ export async function keepBothNotes(noteId) {
   app.data.noteConflicts.delete(noteId);
   return createNote({ title: copyTitle(kept), body: kept.body, pinned: app.data.pinnedNotes.has(noteId) });
 }
+
+// --- Page Notifications (étape 4, server/inbox.js) ---
+// Lire et effacer passent par la file d'attente, comme le reste : hors
+// ligne, la page change tout de suite et le serveur suit au retour du
+// réseau (lu sur un appareil = lu sur tous). « Tout… » ne vise que les
+// lignes déjà reçues (upTo : la plus récente d'entre elles, heure du
+// serveur) : une notification arrivée entre-temps n'est pas touchée.
+const newestInbox = () => (app.data.inbox?.rows ?? []).reduce((max, row) => (row.at > max ? row.at : max), '');
+
+export function markInboxRead(ids) {
+  const unread = ids.filter((id) => app.data.inbox?.rows.some((row) => row.id === id && !row.read));
+  if (!unread.length) return null;
+  return perform({ type: 'inbox.read', ids: unread });
+}
+export function markAllInboxRead() {
+  if (!app.data.inbox?.rows.some((row) => !row.read)) return null;
+  return perform({ type: 'inbox.read', all: true, upTo: newestInbox() });
+}
+export const deleteInboxRow = (id) => perform({ type: 'inbox.delete', ids: [id] });
+export function clearInbox() {
+  if (!app.data.inbox?.rows.length) return null;
+  return perform({ type: 'inbox.delete', all: true, upTo: newestInbox() });
+}

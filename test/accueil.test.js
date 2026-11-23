@@ -202,7 +202,7 @@ test('Accueil : pas de bandeau du bas ni de loupe ; nombres lus avec leur libell
   // Une ligne de type ouvre « Listes » sur ce type : filtre retenu (téléphone), type du menu (ordinateur)
   assert.match(home, /if \(pc\) setPcListType\(type\);\s*else if \(type !== null\) saveTypeFilter\(type\);/);
   // Compte : Mon compte, Notifications (Réglages › Notifications pour l'instant), Réglages
-  assert.match(home, /navigate\('account'\)[\s\S]*navigate\('notifications'\)[\s\S]*navigate\('settings'\)/);
+  assert.match(home, /navigate\('account'\)[\s\S]*navigate\('inbox'\)[\s\S]*navigate\('settings'\)/);
   assert.equal(pathFor('notifications'), '#/reglages/notifications');
 });
 

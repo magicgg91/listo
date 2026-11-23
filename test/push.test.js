@@ -318,7 +318,9 @@ test('LISTO_PUSH absente : aucune clé créée, adresses inconnues (404), aucune
   const app = await startTestApp(t, { pushRequest: push });
   const admin = await setupAdmin(app);
   assert.equal(app.ctx.push, null);
-  assert.equal(app.ctx.notify, null, 'ni regroupement, ni résumé des échéances');
+  // Le regroupement et le résumé des échéances tournent quand même (page
+  // Notifications, étape 4), mais sans aucun envoi vers un téléphone
+  assert.ok(app.ctx.notify, 'page Notifications : toujours remplie');
   assert.equal((await admin.get('/api/me')).body.user.push, false);
   for (const [method, url] of [['GET', '/api/push'], ['PUT', '/api/push/subscription'], ['DELETE', '/api/push/subscription'], ['POST', '/api/push/test']]) {
     const res = await admin.request(method, url, method === 'GET' ? undefined : fakeDevice().subscription);

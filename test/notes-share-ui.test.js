@@ -31,8 +31,9 @@ test('menu d\'une note selon le droit : Partager et Lien public (propriétaire),
   assert.match(notes, /owner \? \{ icon: 'link', label: t\('notes\.menu\.lienPublic'\), onSelect: \(\) => openNoteLinkSheet\(note\) \} : null,/);
   assert.match(notes, /\? \{ icon: 'trash', label: t\('notes\.menu\.supprimer'\), danger: true, separated: true, onSelect: \(\) => askDelete\(note, onDeleted\) \}\s*: \{ icon: 'logout', label: t\('notes\.menu\.quitter'\), danger: true, separated: true, onSelect: \(\) => askLeave\(note, onDeleted\) \},/);
   assert.match(notes, /shared \? newsMuteItem\(note\) : null,\s*shared \? pushMuteItem\(note\) : null,/);
-  // Notifications : seulement si elles sont activées sur le serveur
-  assert.match(notes, /function pushMuteItem\(note\) \{\s*if \(!app\.user\?\.push\) return null;/);
+  // Notifications : toujours (étape 4 : la sourdine vaut aussi pour la
+  // page Notifications, même sans LISTO_PUSH)
+  assert.match(notes, /function pushMuteItem\(note\) \{\s*const muted = isNotePushMuted\(note\.id\);/);
   // Supprimer une note partagée : la confirmation dit qu'elle disparaît pour tout le monde
   assert.match(notes, /text: notePeople\(note\)\.length \? t\('notes\.supprimer\.texte\.partagee'\) : t\('notes\.supprimer\.texte'\),/);
   assert.match(fr['notes.supprimer.texte.partagee'], /disparaît pour tout le monde/);
@@ -118,5 +119,5 @@ test('textes du partage des notes : en français et en anglais, mêmes noms et m
 });
 
 test('service worker : nouvelle version (fichiers changés)', () => {
-  assert.match(read('public/sw.js'), /const VERSION = `v141-/);
+  assert.match(read('public/sw.js'), /const VERSION = `v14[2-9]-/);
 });

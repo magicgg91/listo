@@ -144,13 +144,15 @@ test('étape 2 : réglages du compte (Modifications, Envies, Partage, détail) e
   assert.equal(fr['notifications.sujet.echeances'], 'Échéances');
   assert.equal(fr['notifications.sujet.echeances.detail'], 'Chaque matin vers 8 h : les tâches à faire aujourd\'hui et celles en retard.');
   assert.match(screen, /t\('notifications\.compte\.note'\)/);
-  assert.equal(fr['notifications.compte.note'], 'Ces réglages valent pour tous vos appareils.');
+  assert.equal(fr['notifications.compte.note'], 'Ces réglages valent pour la page Notifications et pour tous vos appareils.');
   // Interrupteurs accessibles ; inactifs hors ligne ou avant la lecture du serveur
   assert.match(screen, /class: 'switch', type: 'button', role: 'switch', 'aria-checked': 'false', disabled: true,\s*'aria-labelledby': `notif-\$\{key\}-titre`, 'aria-describedby': `notif-\$\{key\}-aide`,/);
   assert.match(screen, /toggle\.disabled = !settings \|\| !navigator\.onLine;/);
-  // Menu ⋮ : seulement si la fonction est activée sur le serveur
+  // Menu ⋮ : toujours (étape 4 : la sourdine vaut aussi pour la page
+  // Notifications, même sans LISTO_PUSH)
   const menu = read('public/js/screens/list-actions.js');
-  assert.match(menu, /function pushMuteAction\(list\) \{\s*if \(!app\.user\?\.push\) return null;/);
+  assert.match(menu, /function pushMuteAction\(list\) \{\s*const muted = isListPushMuted\(list\.id\);/);
+  assert.doesNotMatch(menu, /app\.user\?\.push/);
   assert.match(menu, /label: t\('menu\.notifications\.couper'\)/);
   assert.match(menu, /label: t\('menu\.notifications\.reactiver'\)/);
   assert.equal(fr['menu.notifications.couper'], 'Couper les notifications de cette liste');

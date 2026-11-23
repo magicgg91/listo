@@ -96,14 +96,15 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 <summary>6. Notifications</summary>
 
 - [Go to chapter](#notifications)
-- [6.1 Turning them on for a device](#notif-activer)
-- [6.2 What you get, and when](#notif-recevoir)
-- [6.3 Details in the notification](#notif-detail)
-- [6.4 Turning off notifications for a list](#notif-silencer)
-- [6.5 Limits and wish lists](#notif-limites)
-- [6.6 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)
-- [6.7 Turning the feature on on the server](#notif-serveur)
-- [6.8 Nothing shows up](#notif-depannage)
+- [6.1 The Notifications page](#notif-page)
+- [6.2 Turning them on for a device](#notif-activer)
+- [6.3 What you get, and when](#notif-recevoir)
+- [6.4 Details in the notification](#notif-detail)
+- [6.5 Turning off notifications for a list](#notif-silencer)
+- [6.6 Limits and wish lists](#notif-limites)
+- [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)
+- [6.8 Turning the feature on on the server](#notif-serveur)
+- [6.9 Nothing shows up](#notif-depannage)
 
 </details>
 
@@ -186,9 +187,9 @@ Accounts are created by the Admin, the person who manages Listo: there's no publ
 
 - No online version: you install Listo on your own server (a computer that's always on, at home for example). See [3. Installation](#installation).
 - In French or English, as each person chooses in “My account” ([5.18 Language: French or English](#langue)); this help is available in both languages too.
-- Notifications are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
+- The Notifications page (the bell on Home) keeps what Listo tells you about. Notifications on your phone or computer are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
 - No payments: for a group gift, Listo shows who's chipping in, never how much.
-- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.6 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists you allow is sent to it when you ask it something ([8. AI assistants (MCP)](#claude)).
+- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists you allow is sent to it when you ask it something ([8. AI assistants (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -225,7 +226,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([7.4 Owner: sharing and choosing permissions](#partager)).
 - Changes reach the other phones within a few seconds. Checked items move to the bottom, crossed out.
 - What's new: Listo shows what the others have added or changed since your last visit ([5.15 What's new](#nouveautes)).
-- Notifications, optional: changes (by others), reservations, sharing and the due-date summary, on your phone or your computer ([6. Notifications](#notifications)).
+- Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([6. Notifications](#notifications)).
 - An icon of your choice for each list, and a count of what's left on each card and each group ([5.9 Groups, sorting and counter](#tri)).
 
 <a id="p-courses"></a>
@@ -384,7 +385,7 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_PRODUCT_CONTACT` | not set | Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([8.13 Turn on access on the server](#mcp-serveur)). Any other value: off. |
 | `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([8.13 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
-| `LISTO_PUSH` | not set: off | `on` turns on notifications ([6.7 Turning the feature on on the server](#notif-serveur)); keys created in `secrets/vapid.json`. Any other value: off. |
+| `LISTO_PUSH` | not set: off | `on` turns on notifications ([6.8 Turning the feature on on the server](#notif-serveur)); keys created in `secrets/vapid.json`. Any other value: off. |
 | `LISTO_OIDC` | not set: off | `on` turns on sign-in with an OpenID Connect identity provider ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)); also requires `LISTO_OIDC_ISSUER` and the `secrets/oidc-client-secret` file. Any other value: off. |
 | `LISTO_OIDC_ISSUER` | not set | Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`). |
 | `LISTO_OIDC_CLIENT_ID` | not set: `listo` | Listo's ID at the identity provider (`client_id`). |
@@ -465,7 +466,7 @@ cat /opt/listo/secrets/secret.key
 
 Without it, after a server failure or a restore on another machine, two-factor authentication can no longer be read: everyone has to set it up again ([9.8 The secret key was lost](#cle-perdue)). Lists, photos and passwords don't depend on it. It is never copied into the nightly backups, on purpose: keep it separately, once and for all.
 
-With notifications turned on (`LISTO_PUSH=on`), keep `secrets/vapid.json` (notification keys) the same way: without it, every device has to subscribe again ([6.7 Turning the feature on on the server](#notif-serveur)).
+With notifications turned on (`LISTO_PUSH=on`), keep `secrets/vapid.json` (notification keys) the same way: without it, every device has to subscribe again ([6.8 Turning the feature on on the server](#notif-serveur)).
 
 <a id="sauvegardes"></a>
 
@@ -671,11 +672,11 @@ In a task list where the due date is turned on ([7.3 Owner: editing the list](#m
 
 Once the time is chosen, “Reminder” offers: “None” (to start with), “At the time”, “15 min before”, “30 min before”, “1 hour before”, “2 hours before” or “The day before (24 hours)”. Each task has its own reminder.
 
-- The reminder is a notification ([6. Notifications](#notifications)). It goes to the person the task is assigned to ([5.4 Assign a task](#attribuer)); if it is assigned to nobody, to all the members of the list.
+- The reminder is a notification ([6. Notifications](#notifications)): it shows up on the Notifications page, and on your devices where notifications are turned on. It goes to the person the task is assigned to ([5.4 Assign a task](#attribuer)); if it is assigned to nobody, to all the members of the list.
 - It is sent only once. If you change the date, the time or the reminder, it will be sent again at the new moment. A checked task sends nothing.
-- It follows your settings: “Due” notifications turned on, lists whose notifications you muted, devices where notifications are turned on.
+- It follows your settings: “Due” notifications turned on, lists whose notifications you muted.
 - If the server was stopped at the planned moment, the reminder is still sent within the next half hour; after that, it is dropped.
-- If notifications are turned off on the server, the “Reminder” choice does not appear.
+- If notifications are turned off on the server, the reminder only shows up on the Notifications page.
 
 <a id="repeter"></a>
 
@@ -786,12 +787,12 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 ### 5.11 Getting around: Home, Due
 
-Listo opens on “Home”: ‘Hello’ and your first name, today's date and the status badge, then tiles that show at a glance what is waiting. They work offline and update by themselves.
+Listo opens on “Home”: ‘Hello’ and your first name, today's date, the status badge and the notification bell (with the number of unread ones: [6.1 The Notifications page](#notif-page)), then tiles that show at a glance what is waiting. They work offline and update by themselves.
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
 - “Notes” tile: the number of your notes, the last two changed (a row opens the note) and “New note”, which opens a quick entry ([5.12 Notes](#notes)); with no note: “No notes”.
-- “Account” tile: “My account”, “Notifications” (the notification settings) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
+- “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
 - A tile's title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.
 
 On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is not on Home, whose tiles already lead everywhere. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
@@ -842,7 +843,7 @@ In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens �
 
 When someone else changes a shared note, its card shows a dot and ‘Changed by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.15 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
 
-With notifications ([6.2 What you get, and when](#notif-recevoir)): ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.3 Details in the notification](#notif-detail)). ⋮ menu: “Turn off notifications for this note”.
+Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.4 Details in the notification](#notif-detail)). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.
 
 **A note's public link**
 
@@ -868,7 +869,7 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 - In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.
 - On “Lists”, a badge on the card's icon gives the number of new updates (“30+” after more than a month away).
 - In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.
-- List menu ⋮: “Hide what's new in this list”, then “Show what's new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list's notifications ([6.4 Turning off notifications for a list](#notif-silencer)).
+- List menu ⋮: “Hide what's new in this list”, then “Show what's new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list's notifications ([6.5 Turning off notifications for a list](#notif-silencer)).
 - Settings, “Notifications”, “In the app” part: “What's new” turns off all of it; “Include checked items” (shown only when “What's new” is on) adds what the others check or uncheck.
 - On some phones, the icon of the installed app also shows their total. To be told without opening Listo: [6. Notifications](#notifications).
 
@@ -963,13 +964,30 @@ In a task list, the owner turns on “Subtasks” in “Options for items” ([7
 
 ## 6. Notifications
 
-Listo can let you know on your phone or computer, without opening it: a change in a shared list, a reservation, a share, and every morning the tasks for the day. It's optional: the feature is off by default on the server, and then everyone chooses, device by device and kind by kind.
+Listo tells you about what concerns you: a change in a shared list, a reservation, a share, every morning the tasks for the day, and a task's reminder. Everything shows up on the Notifications page (the bell on Home), even with no phone signed up. On top of that, Listo can let you know on your phone or computer, without opening it: it's optional, the feature is off by default on the server, and then everyone chooses, device by device.
 
-The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [5.15 What's new](#nouveautes)) and “On this device” (notifications, described here).
+The Settings screen, “Notifications”, has two parts: “In the app” (what's new, badges and glow: [5.15 What's new](#nouveautes)) and “On this device” (notifications, described here). The kinds (“Notifications you get”) apply both to the Notifications page and to your devices.
+
+<a id="notif-page"></a>
+
+### 6.1 The Notifications page
+
+The bell, at the top of Home, opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.
+
+- Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.
+- Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.
+- Opening the page marks nothing as read: “Mark all as read” does. Opening a list, a note or the “Due” screen (from a phone notification, for example) marks the notifications about them as read. Read on one device means read on all of them.
+- Clearing: swipe a notification to the left, then “Clear”; or use its ⋮ button (keyboard, screen reader). “Clear all”, at the bottom, asks for confirmation.
+- Notifications are kept for 30 days, 300 at most (the oldest ones go).
+- Changes made close together in the same list or the same note fit on a single line, which updates (‘Léa added 4 items to “Shopping”’) and becomes unread again.
+
+It fills up even without phone notifications (feature off on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.
+
+Same settings as the phone: a kind turned off in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.
 
 <a id="notif-activer"></a>
 
-### 6.1 Turning them on for a device
+### 6.2 Turning them on for a device
 
 Settings, “Notifications”, “On this device” part, then the “Get notifications on this device” switch. The browser then asks for your permission: accept. It only asks at that moment, never on its own. “Send a test notification” checks that everything works.
 
@@ -981,9 +999,9 @@ Each device is turned on separately: a device where you sign out no longer gets 
 
 <a id="notif-recevoir"></a>
 
-### 6.2 What you get, and when
+### 6.3 What you get, and when
 
-Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to all your devices.
+Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.
 
 | Kind | When | Example |
 | --- | --- | --- |
@@ -996,29 +1014,29 @@ You're never notified about what you do yourself (or about what an AI assistant 
 
 <a id="notif-detail"></a>
 
-### 6.3 Details in the notification
+### 6.4 Details in the notification
 
 “Content” section, “Show details in the notification”: off at first. When it's off, the notification only says who changed which list, or how many tasks are waiting for you. When it's on, it also names the items (‘Added: Milk, Bread · Checked: Milk’, ‘Marc reserved “Bike”’, the names of the first tasks of the day with their time, ‘Reminder: Dentist’). Best avoided if other people can see your phone's lock screen.
 
 <a id="notif-silencer"></a>
 
-### 6.4 Turning off notifications for a list
+### 6.5 Turning off notifications for a list
 
-The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.
+The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.
 
 This is separate from “Hide what's new in this list” (badges and glow, [5.15 What's new](#nouveautes)): you can keep what's new for a list without getting its notifications, and the other way around.
 
 <a id="notif-limites"></a>
 
-### 6.5 Limits and wish lists
+### 6.6 Limits and wish lists
 
-- At most 30 notifications per person per hour (the due-date summary doesn't count).
+- At most 30 phone notifications per person per hour (the due-date summary doesn't count); the Notifications page has no such cap.
 - If you already have the list open on screen when someone changes it, you're not notified: you've seen it.
-- Wish list: the person it's for never gets anything about a reservation or a contribution, nor what others add to their list. The surprise is kept. A visitor using the public link, without an account, never gets notifications.
+- Wish list: the person it's for never gets anything, neither on their devices nor on their Notifications page, about a reservation or a contribution, nor what others add to their list. The surprise is kept. A visitor using the public link, without an account, never gets notifications.
 
 <a id="notif-confidentialite"></a>
 
-### 6.6 What Apple, Google, Mozilla and Microsoft see
+### 6.7 What Apple, Google, Mozilla and Microsoft see
 
 A notification goes through your device's service: Apple (iPhone, iPad, Safari on Mac), Google (Chrome, Android, Edge on Android), Mozilla (Firefox) or Microsoft (Edge on Windows). The text is encrypted for your device only: these services can't read it. They see the time, the size of the message, and the device that receives it.
 
@@ -1026,7 +1044,7 @@ This is the third exception to the principle ‘no data sent anywhere but your s
 
 <a id="notif-serveur"></a>
 
-### 6.7 Turning the feature on on the server
+### 6.8 Turning the feature on on the server
 
 *For the person who runs the server.*
 
@@ -1040,11 +1058,11 @@ The due-date summary goes out around 8 AM in the server's time zone: set `TZ` (f
 
 On first start, Listo creates its notification keys in `secrets/vapid.json`, next to the secret key. Keep a copy of it along with the key ([3.7 Keep the secret key safe](#cle)). If this file is lost, Listo creates a new one: each device that already gave permission subscribes again by itself the next time it opens Listo; otherwise, just turn the switch back on.
 
-The server must be able to reach the notification services over HTTPS (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). When the feature is off, no key is created and no request goes out to them.
+The server must be able to reach the notification services over HTTPS (fcm.googleapis.com, push.services.mozilla.com, push.apple.com, notify.windows.com). When the feature is off, no key is created and no request goes out to them; the Notifications page, the morning summary and reminders still work, in the app only ([6.1 The Notifications page](#notif-page)).
 
 <a id="notif-depannage"></a>
 
-### 6.8 Nothing shows up
+### 6.9 Nothing shows up
 
 - The screen says notifications were blocked: allow them in your browser or phone settings (notifications for this site, or for the Listo app), then come back to Settings, “Notifications”.
 - On iPhone: Listo must be installed on the Home Screen and opened from its icon, not from Safari.
@@ -1053,7 +1071,7 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 - Firefox after an update: quit it completely and open it again, then “Send a test notification”.
 - On a computer, the system must also allow the browser's notifications, in addition to Listo in the browser. On Mac: System Settings › Notifications › Firefox (or Chrome, Edge, Brave…), ‘Allow notifications’ turned on, style ‘Banners’ or ‘Alerts’; macOS keeps it off as long as you've never answered its request. On Windows: Settings › System › Notifications, notifications turned on and the browser allowed in the list. In Firefox, also check that ‘Pause notifications until Firefox restarts’ is not checked (Settings › Privacy & Security › Permissions › Notifications).
 - On a computer, the screen says the browser couldn't register with its notification service: the browser must be able to reach this service over the Internet (Google for Chrome and Brave, Microsoft for Edge, Mozilla for Firefox). A DNS filter (AdGuard, Pi-hole…), an ad blocker (uBlock Origin…), a proxy, a firewall or a VPN can prevent it, even if other sites that are already registered keep getting their notifications. To find out what to unblock: open the filter's query log, turn on notifications in Listo, and allow the addresses refused at that moment; they are the ones of the browser's service, for example …googleapis.com or …google.com for Chrome and Brave, …notify.windows.com or …wns.windows.com for Edge, …push.services.mozilla.com for Firefox. With a blocker in the browser, turn it off for a moment on Listo to try. In Brave, you also need to turn on ‘Use Google services for push messaging’ in its settings (Privacy and security), then restart it. The message gives the details provided by the browser.
-- Also check the phone's ‘Do Not Disturb’ or ‘Focus’ mode, the kind of notification in “Notifications you get”, and that the list's notifications aren't turned off. The screen says “Notifications are turned off on this Listo server”: see [6.7 Turning the feature on on the server](#notif-serveur).
+- Also check the phone's ‘Do Not Disturb’ or ‘Focus’ mode, the kind of notification in “Notifications you get”, and that the list's notifications aren't turned off. The screen says “Notifications on devices are turned off on this Listo server”: see [6.8 Turning the feature on on the server](#notif-serveur). In any case, the Notifications page keeps what you would have received ([6.1 The Notifications page](#notif-page)).
 
 <a id="roles"></a>
 

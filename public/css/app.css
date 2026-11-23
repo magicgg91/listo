@@ -659,3 +659,20 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
    « Fermer » (constat du 18 novembre 2026 sur ordinateur). Téléphone en
    portrait : rien ne change, la photo tenait déjà. */
 .lightbox__stage { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1fr); }
+
+/* --- Page Notifications (screens/inbox.js, section 16.29 de listo.css) ---
+   Ligne glissable (.inbox-item.swipe) : la ligne (.inbox-row, qui est
+   aussi .swipe__slide) suit le doigt et révèle « Effacer » (même mécanisme
+   que .item.swipe). Le bouton ⋮ (.inbox-row__more) est toujours dans
+   l'ordre du clavier et des lecteurs d'écran, mais ne se voit qu'au focus
+   du clavier (et au survol sur ordinateur) : le téléphone garde la ligne
+   de la maquette. */
+.inbox-item { position: relative; display: flex; overflow: hidden; background: var(--color-surface); }
+.inbox-item.swipe { touch-action: pan-y; }
+.inbox-item .swipe__slide { padding-right: var(--space-2); }
+.inbox-item.is-swiping .swipe__delete, .inbox-item.is-open .swipe__delete { visibility: visible; }
+.inbox-row__more { position: absolute; z-index: 2; top: 50%; right: 4px; transform: translateY(-50%); background: var(--color-surface); opacity: 0; pointer-events: none; }
+.inbox-row__more:focus-visible, .app--pc .inbox-item:hover .inbox-row__more { opacity: 1; pointer-events: auto; }
+.inbox-tools .cart__action[hidden] { display: none; }
+/* Le ⋮ prend la place de l'heure et du point (sinon il les recouvrirait) */
+.app--pc .inbox-item:hover .inbox-row__end, .inbox-item:has(.inbox-row__more:focus-visible) .inbox-row__end { visibility: hidden; }

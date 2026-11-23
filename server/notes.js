@@ -151,8 +151,8 @@ export function createNoteService(ctx, { OpError }) {
     changedFor(note.owner_id);
     for (const id of q.memberIds.all(note.id)) changedFor(id);
   };
-  // Notifications push « Modifications » (server/notify.js), envoyées
-  // seulement si l'écriture a réussi
+  // Notifications « Modifications » (server/notify.js : page Notifications,
+  // et téléphone avec LISTO_PUSH), envoyées seulement si l'écriture a réussi
   const pushes = [];
   function flushNotify() {
     if (touched.size) ctx.events?.notifyNotes([...touched]);

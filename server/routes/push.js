@@ -1,14 +1,22 @@
-// Routes des notifications push (compte connecté ; montées seulement avec
-// LISTO_PUSH=on, sinon toutes répondent « Route inconnue » (404)) :
+// Routes des notifications (compte connecté).
+//
+// Réglages, toujours montés (ils valent pour la page Notifications comme
+// pour le téléphone, décision du 23 novembre 2026 ; notificationSettingsRoutes) :
+//   GET    /api/push/settings      préférences du compte, listes et notes
+//                                   dont les notifications sont coupées
+//   PUT    /api/push/settings      préférences du compte { changes, due, wishes,
+//                                   sharing, detail } (vrai ou faux), page et appareils
+//   PUT    /api/push/mutes/:listId « Couper les notifications de cette liste » { muted } (membres seulement)
+//   PUT    /api/push/note-mutes/:noteId « Couper les notifications de cette
+//                                   note » { muted } (ceux qui voient la note)
+//
+// Cet appareil (montées seulement avec LISTO_PUSH=on, sinon toutes
+// répondent « Route inconnue » (404) ; pushRoutes) :
 //   GET    /api/push               clé publique du serveur, état de cet appareil
+//                                   (et les mêmes réglages que /api/push/settings)
 //   PUT    /api/push/subscription  abonner cet appareil { endpoint, keys }
 //   DELETE /api/push/subscription  désabonner cet appareil
 //   POST   /api/push/test          notification test, vers cet appareil seulement
-//   PUT    /api/push/settings      préférences du compte { changes, due, wishes,
-//                                   sharing, detail } (vrai ou faux), tous ses appareils
-//   PUT    /api/push/mutes/:listId « Silencer cette liste » { muted } (membres seulement)
-//   PUT    /api/push/note-mutes/:noteId « Couper les notifications de cette
-//                                   note » { muted } (ceux qui voient la note)
 //
 // « Cet appareil » : la session de la requête. Protégées par la session et
 // la protection CSRF communes à toute l'API (server/app.js), et limitées en
@@ -38,40 +46,15 @@ export const TEST_RESULTS = {
   failed: 'alertes.test.sansReponse',
 };
 
-export function pushRoutes(ctx) {
+// Réglages du compte : page Notifications et téléphone (toujours montées)
+export function notificationSettingsRoutes(ctx) {
   const router = express.Router();
-  const push = ctx.push;
-  // Abonnements : 30 changements par heure et par compte ; tests : 10 par heure
-  const changes = createUploadCounter({ limit: 30, now: ctx.now });
-  const tests = createUploadCounter({ limit: 10, now: ctx.now });
   // Préférences et listes silencées : 120 changements par heure et par compte
   const prefs = createUploadCounter({ limit: 120, now: ctx.now });
-  ctx.pushCounters = [changes, tests, prefs];
+  ctx.pushCounters.push(prefs);
   const notify = ctx.notify;
 
-  const state = (req) => ({
-    publicKey: push.publicKey,
-    device: { subscribed: push.subscribed(req.sessionId) },
-    settings: notify.settingsOf(req.user.id),
-    mutedLists: notify.mutedLists(req.user.id),
-    mutedNotes: notify.mutedNotes(req.user.id),
-  });
-
-  router.get('/push', (req, res) => res.json(state(req)));
-
-  router.put('/push/subscription', (req, res) => {
-    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
-    const result = push.subscribe(req.user, req.sessionId, req.body);
-    if (!result) return res.status(400).json({ error: req.t(BAD_SUBSCRIPTION) });
-    if (result === 'taken') return res.status(409).json({ error: req.t(TAKEN) });
-    res.json(state(req));
-  });
-
-  router.delete('/push/subscription', (req, res) => {
-    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
-    push.unsubscribe(req.sessionId);
-    res.json(state(req));
-  });
+  router.get('/push/settings', (req, res) => res.json(settingsState(notify, req.user.id)));
 
   router.put('/push/settings', (req, res) => {
     if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
@@ -98,6 +81,48 @@ export function pushRoutes(ctx) {
     if (typeof req.body?.muted !== 'boolean') return res.status(400).json({ error: req.t(BAD_MUTE) });
     notify.setNoteMuted(req.user.id, noteId, req.body.muted);
     res.json({ mutedNotes: notify.mutedNotes(req.user.id) });
+  });
+
+  return router;
+}
+
+// Réglages lus par l'écran (champ par champ)
+const settingsState = (notify, userId) => ({
+  settings: notify.settingsOf(userId),
+  mutedLists: notify.mutedLists(userId),
+  mutedNotes: notify.mutedNotes(userId),
+});
+
+// Cet appareil (LISTO_PUSH=on seulement)
+export function pushRoutes(ctx) {
+  const router = express.Router();
+  const push = ctx.push;
+  // Abonnements : 30 changements par heure et par compte ; tests : 10 par heure
+  const changes = createUploadCounter({ limit: 30, now: ctx.now });
+  const tests = createUploadCounter({ limit: 10, now: ctx.now });
+  ctx.pushCounters.push(changes, tests);
+  const notify = ctx.notify;
+
+  const state = (req) => ({
+    publicKey: push.publicKey,
+    device: { subscribed: push.subscribed(req.sessionId) },
+    ...settingsState(notify, req.user.id),
+  });
+
+  router.get('/push', (req, res) => res.json(state(req)));
+
+  router.put('/push/subscription', (req, res) => {
+    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
+    const result = push.subscribe(req.user, req.sessionId, req.body);
+    if (!result) return res.status(400).json({ error: req.t(BAD_SUBSCRIPTION) });
+    if (result === 'taken') return res.status(409).json({ error: req.t(TAKEN) });
+    res.json(state(req));
+  });
+
+  router.delete('/push/subscription', (req, res) => {
+    if (!changes.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
+    push.unsubscribe(req.sessionId);
+    res.json(state(req));
   });
 
   router.post('/push/test', async (req, res) => {

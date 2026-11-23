@@ -14,8 +14,12 @@
 // - En bas : ce que voient les services de notification (Apple, Google,
 //   Mozilla, Microsoft).
 //
-// Étape 2 : réglages du COMPTE (tous ses appareils ; fonction activée sur le
-// serveur seulement), en ligne seulement :
+// Étape 2 : réglages du COMPTE (tous ses appareils), en ligne seulement ;
+// depuis l'étape 4 du cadrage (page Notifications), « Notifications
+// reçues » est toujours là, même sans LISTO_PUSH : ces catégories filtrent
+// aussi la page Notifications (mêmes réglages, décision du 23 novembre
+// 2026) ; « Contenu » seulement avec LISTO_PUSH (il ne touche que l'écran
+// verrouillé du téléphone : la page montre toujours le détail) :
 // - « Notifications reçues » : Modifications (toujours celles des autres :
 //   jamais les siennes), Envies, Partage,
 //   Échéances (étape 3 : résumé quotidien des tâches, vers 8 h) ;
@@ -125,14 +129,18 @@ export function renderNotifications(onLeave = () => {}) {
       toggle);
     return { key, toggle, row };
   });
-  const accountPart = h('div', { hidden: true },
+  const accountPart = h('div', {},
     h('h2', { class: 'section-title' }, t('notifications.recues.titre')),
     h('div', { class: 'group list-options' }, switches.filter((s) => s.key !== 'detail').map((s) => s.row)),
-    h('h2', { class: 'section-title' }, t('notifications.contenu.titre')),
-    h('div', { class: 'group list-options' }, switches.filter((s) => s.key === 'detail').map((s) => s.row)),
+    h('h2', { class: 'section-title detail-part', hidden: !app.user.push }, t('notifications.contenu.titre')),
+    h('div', { class: 'group list-options detail-part', hidden: !app.user.push }, switches.filter((s) => s.key === 'detail').map((s) => s.row)),
     h('div', { class: 'group-after' }, h('p', { class: 'muted' }, accountNote())));
+  // Catégories : toujours (elles filtrent aussi la page Notifications,
+  // étape 4) ; « Contenu » (le détail sur l'écran verrouillé) : seulement
+  // avec les notifications push sur le serveur
+  const detailPart = accountPart.querySelectorAll('.detail-part');
   function paintSettings() {
-    accountPart.hidden = !app.user.push;
+    for (const el of detailPart) el.hidden = !app.user.push;
     for (const { key, toggle } of switches) {
       toggle.setAttribute('aria-checked', String(Boolean(settings?.[key])));
       toggle.disabled = !settings || !navigator.onLine;

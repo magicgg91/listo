@@ -763,6 +763,52 @@ export const MIGRATIONS = [
   );
   CREATE UNIQUE INDEX note_public_shares_one_per_note ON note_public_shares(note_id) WHERE revoked_at IS NULL;
   `,
+
+  // --- Migration 38 : page Notifications (23 novembre 2026, étape 4 du cadrage) ---
+  // inbox : ce que Listo a signalé à une personne (server/inbox.js), qu'elle
+  // ait un appareil inscrit aux notifications push ou non.
+  // - category : la catégorie des réglages des notifications ('changes'
+  //   Modifications, 'due' Échéances, 'wishes' Envies, 'sharing' Partage) ;
+  // - text_key et params : le NOM du texte et ses valeurs (JSON construit
+  //   champ par champ par server/notify.js), mis en phrase au moment de la
+  //   lecture, dans la langue du compte (changer de langue traduit aussi
+  //   l'historique). Jamais le texte d'une note : une note n'est désignée
+  //   que par son identifiant (target_id), son titre est relu à l'affichage ;
+  // - target_type et target_id : ce qu'ouvre la ligne ('list', 'item',
+  //   'note', 'deadlines'), revérifié avec les droits du moment à chaque lecture ;
+  // - group_key et count : les modifications rapprochées d'une même liste
+  //   (ou d'une même note) mettent à jour une seule ligne ;
+  // - read_at : vide tant que la ligne n'est pas lue (lu sur un appareil =
+  //   lu sur tous) ;
+  // - num : le numéro de la ligne montré au téléphone, compté pour CHAQUE
+  //   personne (users.inbox_seq, qui ne fait que monter) : jamais le numéro
+  //   commun de la table, qui laisserait deviner qu'une autre personne a
+  //   reçu quelque chose entre-temps (une réservation, pour le bénéficiaire
+  //   d'une liste d'envies).
+  // Gardées 30 jours, 300 au plus par personne (ménage de server/inbox.js).
+  // La table part vide : rien ne change pour les données existantes.
+  `
+  ALTER TABLE users ADD COLUMN inbox_seq INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE inbox (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    num         INTEGER NOT NULL CHECK (num >= 1),
+    category    TEXT    NOT NULL CHECK (category IN ('changes', 'due', 'wishes', 'sharing')),
+    text_key    TEXT    NOT NULL CHECK (length(text_key) BETWEEN 1 AND 60),
+    params      TEXT    NOT NULL DEFAULT '{}' CHECK (length(params) <= 4000),
+    target_type TEXT    CHECK (target_type IN ('list', 'item', 'note', 'deadlines')),
+    target_id   TEXT,
+    group_key   TEXT,
+    count       INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1),
+    created_at  TEXT    NOT NULL,
+    updated_at  TEXT    NOT NULL,
+    read_at     TEXT
+  );
+  CREATE UNIQUE INDEX inbox_user_num ON inbox(user_id, num);
+  CREATE INDEX inbox_user ON inbox(user_id, updated_at);
+  CREATE INDEX inbox_group ON inbox(user_id, group_key) WHERE group_key IS NOT NULL;
+  CREATE INDEX inbox_updated ON inbox(updated_at);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

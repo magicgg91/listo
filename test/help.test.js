@@ -517,13 +517,13 @@ test('boutons flottants : pile au-dessus de la zone de sécurité, place gardée
   assert.match(code('public/js/screens/help.js'), /matchMedia\?\.\('\(prefers-reduced-motion: reduce\)'\)\.matches;\s*body\.scrollTo\?\.\(\{ top: 0, behavior: still \? 'auto' : 'smooth' \}\);\s*topTitle\.focus\(\{ preventScroll: true \}\);/);
 });
 
-test('chapitre « Notifications » : son sommaire, ses sujets ; plus aucune affirmation « pas de notification » ; trois exceptions au principe', () => {
+test('chapitre « Notifications » : son sommaire (la page Notifications en premier), ses sujets ; plus aucune affirmation « pas de notification » ; trois exceptions au principe', () => {
   const chapter = GUIDE.find((c) => c.id === 'notifications');
   assert.equal(chapter.title, 'Notifications');
   assert.equal(GUIDE.indexOf(chapter), GUIDE.findIndex((c) => c.id === 'quotidien') + 1, 'juste après « Au quotidien »');
-  assert.deepEqual(chapter.sections.map((s) => s.id), ['notif-activer', 'notif-recevoir', 'notif-detail', 'notif-silencer', 'notif-limites', 'notif-confidentialite', 'notif-serveur', 'notif-depannage']);
+  assert.deepEqual(chapter.sections.map((s) => s.id), ['notif-page', 'notif-activer', 'notif-recevoir', 'notif-detail', 'notif-silencer', 'notif-limites', 'notif-confidentialite', 'notif-serveur', 'notif-depannage']);
   const text = JSON.stringify(chapter);
-  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Couper les notifications de cette liste »', '« Masquer les nouveautés de cette liste »', '30 notifications par personne et par heure', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
+  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Couper les notifications de cette liste »', '« Masquer les nouveautés de cette liste »', '30 notifications du téléphone par personne et par heure', 'la page Notifications n\'a pas ce plafond', '30 jours, 300 au plus', 'Ouvrir la page ne marque rien comme lu', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
     assert.ok(text.includes(needle), needle);
   }
   // Dans la recherche du guide

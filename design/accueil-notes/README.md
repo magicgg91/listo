@@ -16,7 +16,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 - `accueil-1` : « Bonjour Guillaume », la date, la pastille « À jour » et la cloche avec « 3 ». Quatre tuiles : Échéances (En retard 2 en rouge, Aujourd'hui 3 en vert, Plus tard 8 en gris), Listes (Courses, Tâches avec le point des nouveautés, Envies), Notes (« 12 notes », les deux dernières, « Nouvelle note »), Compte (Mon compte, Notifications 3, Réglages). Ni bandeau du bas ni loupe : les tuiles mènent déjà partout (choix du propriétaire du 23 novembre 2026).
 - `accueil-2` : nouveau compte : « Aucune échéance », « Aucune liste » et « Nouvelle liste », « Aucune note » et « Nouvelle note », cloche sans pastille.
 - `accueil-3` : saisie rapide « Nouvelle note » : titre facultatif, texte (curseur dedans, clavier non dessiné), catégorie en pastilles, « Annuler » et « Enregistrer ».
-- `notes-1` : écran Notes : corbeille (2), menu ⋮, pastilles des catégories qui défilent, « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « Nouvelle note » flottant à gauche et loupe à droite.
+- `notes-1` : écran Notes : corbeille (2), menu ⋮, pastilles des catégories qui défilent, « Épinglées » puis « Autres notes », une note modifiée par Léa (pastille et « Modifiée par Léa »), une note en lecture seule, « + » (Nouvelle note) dans la barre du haut comme sur « Mes listes », loupe à droite au-dessus du bandeau.
 - `notes-2` : Catégories : poignées pour changer l'ordre, Renommer, Supprimer, « Sans catégorie » en dernier, « Nouvelle catégorie ». La confirmation de suppression est dans la page de référence (`notes-2-dialogue`), sans capture.
 - `notes-3` : Corbeille des notes : catégorie gardée, date et jours restants, « Partagée avec 2 personnes », Supprimer définitivement / Restaurer, « Vider la corbeille ».
 - `note-1` : une note (« Vacances en Bretagne », à Léa, que Guillaume peut modifier) : catégorie « Voyages », « Personnes », « Enregistré », lien cliquable, « Modifiée par Léa · il y a 5 min ».
@@ -34,7 +34,7 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 - En-tête de l'Accueil : le bonjour seul sur sa ligne, la date dessous avec la pastille et la cloche à droite. Avec la pastille et la cloche sur la même ligne, « Bonjour Guillaume » ne tenait pas sur 390 px.
 - Lignes des tuiles en pilule, comme tous les boutons depuis le 11 novembre. Nombres en pastille : rouge En retard, vert Aujourd'hui, bleu Notifications non lues, gris ailleurs. Le libellé dit toujours ce que compte le nombre.
 - « Lecture seule » des notes : icône œil (`#i-eye`), comme les listes. Le cadrage parle d'un cadenas.
-- « Nouvelle note » : bouton flottant à gauche, à la hauteur de la loupe (le cadrage le demande). « Mes listes » a son « + » en haut.
+- « Nouvelle note » : « + » rond plein dans la barre du haut, comme « Mes listes » (choix du propriétaire du 23 novembre 2026, au lieu d'un gros bouton en bas).
 - Sur le téléphone, le bouton « Personnes » de la note montre l'icône et les pastilles, sans le mot (place) ; le mot est dans le nom lu. Il est écrit sur ordinateur.
 - Ordinateur : « Échéances » garde sa place sous l'Accueil dans l'ordre du bandeau (Accueil, Mes listes, Notes, Échéances), au-dessus des listes. Note ouverte dans une zone à droite, sans voile, et non dans un tiroir : elle s'enregistre toute seule.
 - Notifications : réglages des notifications (icône) en haut à droite ; « Tout marquer comme lu » sur la ligne sous le titre.
@@ -47,4 +47,4 @@ Maquettes du 23 novembre 2026 pour le cadrage `docs/cadrage-accueil-notes-notifi
 4. Tuiles cachables ou déplaçables : proposé pas pour l'instant.
 5. Notes et assistants IA (MCP) : proposé plus tard.
 
-À trancher aussi : cadenas ou œil pour « Lecture seule » ; bouton flottant ou « + » en haut pour « Nouvelle note » ; liens cliquables pendant qu’on écrit (un champ de texte simple ne sait pas les afficher : à régler à la construction) ; pour les catégories, « Monter » et « Descendre » au clavier et au lecteur d’écran, en plus de la poignée (comme « Réordonner » des sous-tâches).
+À trancher aussi : cadenas ou œil pour « Lecture seule » ; liens cliquables pendant qu’on écrit (un champ de texte simple ne sait pas les afficher : à régler à la construction) ; pour les catégories, « Monter » et « Descendre » au clavier et au lecteur d’écran, en plus de la poignée (comme « Réordonner » des sous-tâches).

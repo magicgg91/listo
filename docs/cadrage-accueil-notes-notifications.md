@@ -76,7 +76,7 @@ Document de conception rédigé le 23 novembre 2026, à partir des demandes et d
 - **Pastilles de catégories** sous la barre, qui défilent de côté : « Toutes » (par défaut), chaque catégorie avec son nombre, « Sans catégorie ». Le choix est retenu sur l'appareil.
 - **Recherche** : la loupe ronde ouvre le champ sous le titre ; elle cherche dans les titres et les textes de la catégorie choisie (« Rechercher dans les notes »).
 - **Cartes** : les notes épinglées d'abord (petite épingle), puis les autres, les plus récemment modifiées d'abord (« Trier » propose aussi « Ordre alphabétique »). Chaque carte : titre (ou première ligne), deux ou trois lignes du texte, catégorie, « il y a 2 h », pastilles des personnes si elle est partagée, œil « Lecture seule » si je ne peux pas la modifier (comme les cartes de listes), et la pastille des nouveautés si quelqu'un d'autre l'a modifiée depuis ma dernière lecture.
-- **Bouton flottant** « Nouvelle note » en bas, à portée de pouce (même composant que « Nouvelle liste »).
+- **« + » dans la barre du haut** pour « Nouvelle note », comme le « + » de « Mes listes » (bouton rond plein, à droite ; pas de gros bouton en bas : choix du propriétaire du 23 novembre 2026).
 - **Menu d'une carte** (⋮, appui long, clic droit sur ordinateur) : Épingler / Désépingler, Catégorie…, Partager (propriétaire) ou Personnes, Dupliquer, Quitter la note (si on me l'a partagée), Supprimer (propriétaire).
 - **Vide** : « Aucune note » avec une phrase d'aide et « Nouvelle note » ; catégorie vide : « Aucune note dans « Recettes » ».
 

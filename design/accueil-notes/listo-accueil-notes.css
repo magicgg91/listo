@@ -82,13 +82,12 @@
    même verre, même pastille qui glisse (data-current = 0 à 4) ; boutons de
    54 px de haut et d'environ 70 px de large sur un téléphone de 390 px.
    Pas de loupe sur l'Accueil (.loupe--off), ni sur la page Notifications.
-   .tabdock > .fab : « Nouvelle note », à gauche, à la hauteur de la loupe
-   (12 px au-dessus du bandeau), à portée de pouce. */
+   « Nouvelle note » : « + » rond plein (.icon-btn--accent) dans la barre
+   du haut, comme « Mes listes » (choix du 23 novembre 2026). */
 .tabbar--5 .tabbar__pill { width: calc((100% - 10px) / 5); }
 .tabbar--5[data-current="3"] .tabbar__pill { transform: translateX(300%); }
 .tabbar--5[data-current="4"] .tabbar__pill { transform: translateX(400%); }
 .tabbar--5 .tabbar__tab { padding: 0 2px; }
-.tabdock > .fab { left: 0; right: auto; bottom: calc(100% + 12px); }
 
 /* 16.22 Saisie rapide d'une note (feuille du bas ; fenêtre centrée sur
    ordinateur) : « Titre (facultatif) », grand champ de texte, catégorie en

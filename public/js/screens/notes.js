@@ -23,12 +23,12 @@ import { h, icon, iconButton, avatar } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
 import { relativeTime, namesList } from '../format.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
-import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
+import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc, textDialog } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import { isSearching, matches } from '../search.js';
-import { liveNotes, trashedNotes, sortNotes, noteTitle, noteExcerpt, NOTE_SORTS, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
+import { liveNotes, trashedNotes, sortNotes, noteTitle, noteExcerpt, NOTE_SORTS, NOTE_TITLE_MAX } from '../notes.js';
 import * as actions from '../actions.js';
 import { t, compareText } from '../i18n.js';
 import { errorMessage } from '../api.js';
@@ -36,7 +36,7 @@ import { isNoteUnread, isNoteNewsMuted, isNoteOwner, canEditNote, notePeople } f
 import { isNotePushMuted, setNotePushMuted } from '../push.js';
 import { openNoteSharePanel } from './share-panel.js';
 import { openNoteLinkSheet } from './share.js';
-import { noteEditor } from './note.js';
+import { noteEditor, writeOnOpen } from './note.js';
 
 // --- Tri, gardé sur cet appareil ---
 const SORT_KEY = 'listo-tri-notes';
@@ -417,38 +417,27 @@ function renderNotesPc(onLeave, openId) {
   return h('div', { class: 'screen' }, h('div', { class: `pc-notes${pane ? '' : ' pc-notes--closed'}` }, list, pane));
 }
 
-// --- Saisie rapide (tuile Notes de l'Accueil, maquette accueil-3) ---
-// « Titre (facultatif) », texte, « Annuler » et « Enregistrer » (grisé tant
-// que le titre et le texte sont vides). Le curseur va dans le texte : le
-// geste « Nouvelle note » a pour but d'écrire (décision du 23 novembre
-// 2026, exception de test/focus.test.js). Hors ligne : la note est créée sur
-// le téléphone et part au retour du réseau.
-export function openQuickNote() {
-  const titleField = h('input', { class: 'input', type: 'text', maxlength: String(NOTE_TITLE_MAX), autocomplete: 'off', enterkeyhint: 'next', 'aria-label': t('notes.rapide.champTitre'), placeholder: t('notes.rapide.champTitre') });
-  const text = h('textarea', { class: 'input input--area quick-note__text', maxlength: String(NOTE_BODY_MAX), 'aria-label': t('notes.champ.texte'), placeholder: t('notes.champ.texte') });
-  const saveButton = h('button', { class: 'btn btn--primary', type: 'button', disabled: true }, t('notes.rapide.enregistrer'));
-  const cancelButton = h('button', { class: 'btn btn--secondary', type: 'button' }, t('notes.rapide.annuler'));
-  const empty = () => titleField.value.trim() === '' && text.value.trim() === '';
-  const update = () => { saveButton.disabled = empty(); };
-  titleField.addEventListener('input', update);
-  text.addEventListener('input', update);
-  const buttons = h('div', { class: 'quick-note__actions' }, cancelButton, saveButton);
-  const pc = onPc();
-  const sheet = openSheet({
+// --- Nouvelle note depuis l'Accueil (tuile Notes) ---
+// Une petite fenêtre demande seulement le titre (facultatif), puis la note
+// s'ouvre, prête à écrire (décision du 23 novembre 2026 : l'ancienne
+// saisie rapide, titre et texte dans une feuille, passait sous le clavier
+// de l'iPhone). Le curseur va dans le titre : le geste « Nouvelle note » a
+// pour but d'écrire (exception de test/focus.test.js). Hors ligne : la note
+// est créée sur le téléphone et part au retour du réseau.
+export async function openQuickNote() {
+  const { field, answer } = textDialog({
     title: t('notes.rapide.titre'),
-    content: h('div', { class: 'quick-note' }, titleField, text, pc ? null : buttons),
-    footer: pc ? buttons : null,
-    size: 'sm',
+    label: t('notes.rapide.champTitre'),
+    confirmLabel: t('notes.rapide.creer'),
+    maxLength: NOTE_TITLE_MAX,
   });
-  cancelButton.addEventListener('click', () => sheet.close());
-  saveButton.addEventListener('click', async () => {
-    if (empty()) return;
-    saveButton.disabled = true;
-    const noteId = await actions.createNote({ title: titleField.value, body: text.value });
-    sheet.close();
-    toast(t('notes.rapide.faite'), { action: t('notes.ouvrir'), onAction: () => navigate('note', { id: noteId }) });
-  });
-  text.focus();
+  field.focus();
+  const title = await answer;
+  if (title === null) return;
+  const noteId = await actions.createNote({ title, body: '' });
+  // L'écran de la note met le curseur dans le texte (comme « + »)
+  writeOnOpen(noteId);
+  navigate('note', { id: noteId });
 }
 
 // Nombre de notes (hors corbeille) : tuile de l'Accueil, menu de gauche

@@ -126,9 +126,7 @@ export default {
   // Saisie rapide (tuile Notes de l'Accueil)
   'notes.rapide.titre': 'Nouvelle note',
   'notes.rapide.champTitre': 'Titre (facultatif)',
-  'notes.rapide.annuler': 'Annuler',
-  'notes.rapide.enregistrer': 'Enregistrer',
-  'notes.rapide.faite': 'Note enregistrée',
+  'notes.rapide.creer': 'Créer',
 
   // Corbeille des notes
   'notes.corbeille.titre': 'Corbeille des notes',

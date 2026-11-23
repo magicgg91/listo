@@ -688,8 +688,8 @@ function mount(screen, { withSide = true, wide = false, full = false, listId = n
     screenShown(col);
     return;
   }
-  // Téléphone : bandeau du bas sur « Échéances », « Listes » et
-  // « Réglages », pas sur l'Accueil (tabbar.js), toujours le même élément,
+  // Téléphone : bandeau du bas sur l'Accueil, « Échéances », « Listes »,
+  // « Notes » et « Réglages » (tabbar.js), toujours le même élément,
   // posé en bas de la colonne (au-dessus de l'écran, sous les fenêtres)
   if (bar) {
     col.classList.add('shell__col--tabs');

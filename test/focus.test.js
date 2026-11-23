@@ -76,7 +76,7 @@ const ALLOWED_FOCUS = new Map([
   // de l'Accueil, « + » de l'écran Notes, touche N) est un geste fait pour
   // écrire, le curseur va dans le texte ; toucher le texte affiché d'une
   // note (ou Entrée) le remplace par le champ, curseur à l'endroit touché
-  ['public/js/screens/notes.js: text', 'EXCEPTION voulue : texte de la saisie rapide, juste après un appui sur « Nouvelle note »'],
+  ['public/js/screens/notes.js: field', 'EXCEPTION voulue : titre de la petite fenêtre « Nouvelle note » de l\'Accueil, juste après l\'appui'],
   ['public/js/screens/note.js: input', 'EXCEPTION voulue : texte d\'une note, après « Nouvelle note » (+, N) ou un appui sur le texte affiché'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
   ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],

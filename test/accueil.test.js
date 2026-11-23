@@ -176,10 +176,11 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   assert.match(read('public/js/router.js'), /history\.replaceState\(\{ depth: 0 \}, '', location\.hash \|\| pathFor\('home'\)\);/);
 });
 
-test('Accueil : pas de bandeau du bas ni de loupe ; nombres lus avec leur libellé ; copie locale seulement', () => {
+test('Accueil : bandeau du bas sans loupe ; nombres lus avec leur libellé ; copie locale seulement', () => {
   const home = code('public/js/screens/home.js');
   assert.doesNotMatch(home, /tabBar|loupe|createSearchRow/);
-  assert.match(read('public/js/tabbar.js'), /export const hasTabs = \(routeName\) => routeName !== 'home' &&/);
+  // Bandeau aussi sur l'Accueil (23 novembre 2026, après essai sur iPhone)
+  assert.match(read('public/js/tabbar.js'), /export const hasTabs = \(routeName\) => TABS\.some/);
   // Aucune demande au serveur en dehors de la synchronisation habituelle
   assert.doesNotMatch(home, /api\.js|fetch\(|\bget\(|\bpost\(/);
   // Texte simple, aucun curseur, aucune mise en page en dur

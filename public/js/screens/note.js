@@ -47,6 +47,14 @@ import { openNoteSharePanel } from './share-panel.js';
 
 const SAVE_DELAY_MS = 1000;
 
+// Note qui vient d'être créée depuis l'Accueil (« Nouvelle note », titre
+// demandé dans une petite fenêtre) : à son ouverture, le curseur va dans le
+// texte, comme pour « + » (geste fait pour écrire)
+let writeNext = null;
+export function writeOnOpen(noteId) {
+  writeNext = noteId;
+}
+
 // Écran d'une note sur le téléphone (noteId null : nouvelle note)
 export function renderNote(noteId, onLeave) {
   return noteEditor(noteId, onLeave, { pc: false });
@@ -414,7 +422,9 @@ export function noteEditor(initialId, onLeave, { pc }) {
   if (kept()) queueMicrotask(openConflict);
   // Nouvelle note : le curseur va dans le texte (geste fait pour écrire),
   // après la mise en place de l'écran
-  if (isNew) queueMicrotask(() => edit(0));
+  const justCreated = Boolean(initialId) && initialId === writeNext;
+  if (justCreated) writeNext = null;
+  if (isNew || justCreated) queueMicrotask(() => edit(0));
 
   if (pc) {
     const bar = h('div', { class: 'pc-note__bar' }, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton,

@@ -39,6 +39,9 @@ body { background: var(--color-bg); color: var(--color-text); font-family: var(-
 .mock-caret { display: inline-block; width: 2px; height: 1.15em; margin-left: 1px; vertical-align: text-bottom; background: var(--color-accent); }
 .mock-field { cursor: text; }
 .mock-field { white-space: pre-wrap; }
+/* Champ d'une ligne vide : curseur puis texte indicatif (accueil-3) */
+.mock-field--line { display: flex; align-items: center; white-space: nowrap; }
+.mock-placeholder { color: var(--color-text-2); }
 
 /* Cartes de listes (copie de public/css/app.css, pour pc-listes-1) */
 .list-card-wrap { position: relative; }

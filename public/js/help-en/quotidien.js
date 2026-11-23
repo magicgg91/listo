@@ -158,11 +158,11 @@ export default {
         { ul: [
           '“Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.',
           '“Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.',
-          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a quick entry ([[notes]]); with no note: “No notes”.',
+          '“Notes” tile: the number of your notes, the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([[notes]]); with no note: “No notes”.',
           '“Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.',
           'A tile\'s title opens the whole screen. An unknown address also leads to Home; a link to a list always opens that list.',
         ] },
-        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is not on Home, whose tiles already lead everywhere. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
+        'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings”. It is also on Home, and sits just above the line at the bottom of an iPhone. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
         { ul: [
           '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.',
           'Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([[repeter]]). Tap the row to open the task in its list.',
@@ -179,7 +179,7 @@ export default {
         'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.',
         { ul: [
           '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. ⋮ menu, “Sort”: “Most recent first” or “Alphabetical order”. The magnifying glass searches titles and texts.',
-          '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” opens a quick entry: “Title (optional)”, the text, then “Save” (or “Cancel”).',
+          '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.',
           'A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.',
           'To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.',
           'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave note”.',

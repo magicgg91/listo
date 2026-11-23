@@ -42,10 +42,10 @@ test('curseur : jamais à l\'ouverture d\'une note existante ; seulement pour «
   assert.equal((note.match(/\bedit\(/g) ?? []).length, 3, 'nouvelle note, appui sur le texte, Entrée');
   assert.equal((note.match(/\.focus\(/g) ?? []).length, 1);
   assert.match(note, /input\.focus\(\);\s*input\.setSelectionRange\(at, at\);/);
-  // Saisie rapide : le curseur dans le texte, après l'ouverture de la feuille
+  // Nouvelle note depuis l'Accueil : directement l'écran d'une nouvelle note
   const notes = code('public/js/screens/notes.js');
-  assert.match(notes, /cancelButton\.addEventListener[\s\S]*text\.focus\(\);\s*\}/);
-  assert.equal((notes.match(/\.focus\(/g) ?? []).length, 1);
+  assert.match(notes, /export function openQuickNote\(\) \{\s*navigate\('newNote'\);\s*\}/);
+  assert.equal((notes.match(/\.focus\(/g) ?? []).length, 0);
 });
 
 test('enregistrement automatique : une seconde après la dernière frappe, en quittant, en arrière-plan ; jamais une page vide', () => {

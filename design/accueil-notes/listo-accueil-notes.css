@@ -1,7 +1,9 @@
 /* ==========================================================================
    LISTO : Accueil, Notes et page Notifications (maquettes du 23 novembre 2026)
    À coller dans design/listo.css, section 16, après 16.18 (nouvelles
-   sections 16.19 à 16.26), une fois les maquettes validées.
+   sections 16.19 à 16.27), une fois les maquettes validées.
+   - Catégories des notes : abandonnées le 23 novembre 2026 (aucune
+     classe ici).
    - Variables existantes uniquement : aucune couleur en dur, aucune
      variable nouvelle. Clair et sombre viennent des variables.
    - Zones tactiles d'au moins 44 px (--tap-min) ; sur ordinateur à la
@@ -10,7 +12,7 @@
      de couleur a son texte (lu par les lecteurs d'écran ou écrit).
    Réutilisés tels quels : .card, .topbar, .sync, .icon-btn, .btn, .chip,
    .chip--readonly, .avatars, .news-badge, .group, .row, .section-title,
-   .manage, .add-inline, .sheet, .dialog, .menu, .empty, .note, .input,
+   .sheet, .scrim, .dialog, .menu, .empty, .note, .input,
    .glass, .tabdock, .tabbar, .loupe, .fab, .cart__action, .pc-*.
    ========================================================================== */
 
@@ -77,10 +79,14 @@
 .count--accent { background: var(--color-accent); color: var(--color-on-accent); }
 
 /* 16.21 Bandeau du bas à cinq boutons (choix du 23 novembre 2026) :
-   Accueil (#i-home), Listes (#i-tasks), Notes (#i-note), Échéances
-   (#i-calendar, avec sa pastille), Réglages (#i-sliders). Même .tabdock,
+   Accueil (#i-home), Échéances (#i-calendar, avec sa pastille), Listes
+   (#i-tasks), Notes (#i-note), Réglages (#i-sliders). Même .tabdock,
    même verre, même pastille qui glisse (data-current = 0 à 4) ; boutons de
    54 px de haut et d'environ 70 px de large sur un téléphone de 390 px.
+   Hauteur dans l'application (décision du 23 novembre 2026) : à
+   max(12px, env(safe-area-inset-bottom) - 10px) du bas, plus bas sur
+   l'iPhone (--dock-bottom de design/listo.css) ; les maquettes, sans zone
+   de sécurité, le montrent à 12 px, comme avant.
    Pas de loupe sur l'Accueil (.loupe--off), ni sur la page Notifications.
    « Nouvelle note » : « + » rond plein (.icon-btn--accent) dans la barre
    du haut, comme « Listes » (choix du 23 novembre 2026). */
@@ -89,38 +95,25 @@
 .tabbar--5[data-current="4"] .tabbar__pill { transform: translateX(400%); }
 .tabbar--5 .tabbar__tab { padding: 0 2px; }
 
-/* 16.22 Saisie rapide d'une note (feuille du bas ; fenêtre centrée sur
-   ordinateur) : « Titre (facultatif) », grand champ de texte, catégorie en
-   pastilles .cat-pick (« Sans catégorie » par défaut), « Annuler » et
-   « Enregistrer » (grisé tant que le titre et le texte sont vides). */
-.quick-note__text { min-height: 176px; }
-.cat-pick { display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.cat-pick__opt { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 var(--space-2); border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; white-space: nowrap; }
-.cat-pick__opt[aria-pressed="true"], .cat-pick__opt[aria-checked="true"] { padding: 0 15px; border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
-.sheet__actions { display: flex; gap: var(--space-1); }
-.sheet__actions .btn { flex: 1; padding: 0 12px; }
+/* 16.22 « Nouvelle note » depuis l'Accueil (tuile Notes ; décision du
+   23 novembre 2026) : petite fenêtre centrée .dialog du kit, sur le voile
+   .scrim (téléphone ; .pc-modal sur ordinateur) : titre « Nouvelle note »,
+   un seul champ « Titre (facultatif) » (.dialog__field, le curseur y va :
+   geste fait pour écrire), « Annuler » et « Créer ». Après « Créer », la
+   note s'ouvre, curseur dans le texte. Clavier non dessiné. */
+.dialog__field { margin-bottom: var(--space-3); }
 
 /* 16.23 Écran « Notes » (#/notes)
-   - .catbar : pastilles des catégories sous la barre du haut, qui défilent
-     de côté (« Toutes 12 », « Maison 4 »… « Sans catégorie 3 ») ; la
-     pastille choisie (aria-pressed) : liseré bleu de 2 px, fond bleu clair,
-     texte en gras (jamais la couleur seule). Le nombre est dans le nom lu.
    - .notes-section : « Épinglées » (avec l'épingle) puis « Autres notes ».
    - .note-card : carte du kit ; ligne 1, icône note (avec la pastille des
      nouveautés .news-badge--dot), titre (deux lignes au plus), épingle,
      heure, menu ⋮ ; puis .note-card__news « Modifiée par Léa » (texte
      d'accent, comme « Ajouté par Marie » dans une liste) ; deux lignes du
-     texte (trois sur ordinateur) ; en bas, la catégorie (.chip, #i-tag), « Lecture
-     seule » (.chip--readonly, #i-eye, comme les listes) et les pastilles
-     des personnes si elle est partagée. Toute la carte ouvre la note.
+     texte (trois sur ordinateur) ; en bas, « Lecture seule »
+     (.chip--readonly, #i-eye, comme les listes) et les pastilles des
+     personnes si elle est partagée (rien en bas sinon). Toute la carte
+     ouvre la note.
    - .note-card.is-selected : note ouverte (ordinateur). */
-.catbar { display: flex; flex: none; gap: var(--space-1); overflow-x: auto; padding: 0 var(--space-2) var(--space-1); scrollbar-width: none; overscroll-behavior-x: contain; }
-.catbar::-webkit-scrollbar { display: none; }
-.cat-chip { display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: var(--tap-min); padding: 0 14px; border: 1px solid var(--color-control); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-text); font-weight: 600; white-space: nowrap; }
-.cat-chip__count { display: inline-grid; place-items: center; min-width: 24px; height: 24px; margin-right: -6px; padding: 0 6px; border-radius: var(--radius-pill); background: var(--color-neutral-soft); font-size: var(--text-sm); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--color-text-2); }
-.cat-chip[aria-pressed="true"] { padding: 0 13px; border: 2px solid var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); font-weight: 700; }
-.cat-chip[aria-pressed="true"] .cat-chip__count { background: var(--color-surface); color: inherit; }
-
 .notes-section { display: flex; align-items: center; gap: 6px; padding: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
 .notes-section .aisle__count { margin-left: auto; }
 
@@ -139,10 +132,9 @@
 .news-badge--dot { top: -3px; left: -5px; min-width: 14px; width: 14px; height: 14px; padding: 0; }
 
 /* 16.24 Écran d'une note (#/notes/<id>)
-   - Barre du haut : retour, catégorie (.note-cat : bouton en pilule,
-     #i-tag, nom, chevron ; ouvre le choix), .note-people « Partager »
-     (propriétaire) ou « Personnes » (#i-users et pastilles des personnes ;
-     sur le téléphone le mot est dans le nom lu, faute de place ; sur
+   - Barre du haut : retour, .note-people « Partager » (propriétaire) ou
+     « Personnes » (#i-users et pastilles des personnes ; sur le
+     téléphone le mot est dans le nom lu, faute de place ; sur
      ordinateur il est écrit, comme dans l'en-tête d'une liste), menu ⋮.
    - .note-status : mention discrète sous la barre : « Enregistré »,
      « Enregistrement… », « Hors ligne · enregistrée sur ce téléphone »,
@@ -156,9 +148,6 @@
      modifier cette note » sous la mention ; feuille du bas avec trois
      lignes .row (Garder la mienne, Prendre la leur, Garder les deux) et
      « Décider plus tard ». */
-.note-cat { max-width: 52%; padding: 0 12px 0 10px; gap: 6px; }
-.note-cat__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.note-cat .icon { flex: none; color: var(--color-text-2); }
 .note-people { gap: 6px; padding: 0 8px 0 12px; }
 .note-people .avatar { width: 28px; height: 28px; font-size: 12px; }
 .note-status { display: flex; flex: none; align-items: center; gap: 6px; min-height: 24px; padding: 0 var(--space-2) var(--space-0); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
@@ -177,27 +166,16 @@
 .conflict .row { min-height: 72px; }
 .conflict .row__icon { color: var(--color-accent-ink); background: var(--color-accent-soft); }
 
-/* 16.25 Catégories des notes (menu ⋮ › « Catégories ») et corbeille des
-   notes (#/notes/corbeille, bouton poubelle de l'écran Notes)
-   - Catégories : lignes .manage.cat-row : poignée à glisser (même poignée
-     que « Réordonner » des sous-tâches, #i-menu-lines), nom, « 4 notes »,
-     « Renommer » (#i-pencil) et « Supprimer » (#i-trash), 44 px chacun.
-     « Sans catégorie » : dernière ligne, ni poignée ni bouton.
-     « Nouvelle catégorie » : .add-inline (champ et « Ajouter »).
+/* 16.25 Corbeille des notes (#/notes/corbeille, bouton poubelle de
+   l'écran Notes)
    - .page-tools : ligne sous la barre du haut, nombre à gauche (« 2 notes »,
      « 3 non lues »), action texte à droite (.cart__action : « Vider la
      corbeille » en danger, « Tout marquer comme lu »).
    - Corbeille : .group de lignes .note-trash : titre, « Supprimée le 21
-     novembre · encore 28 jours », catégorie gardée (.chip) et « Partagée
-     avec 2 personnes » ; dessous, à droite, « Supprimer définitivement »
-     (action texte en danger, 44 px, à gauche, confirmation) et
-     « Restaurer » (.btn--sm, à droite). */
-.cat-row { gap: 2px; padding-left: 0; padding-right: var(--space-0); }
-.cat-row__handle { display: grid; flex: none; place-items: center; align-self: stretch; width: 48px; color: var(--color-text-2); cursor: grab; touch-action: pinch-zoom; }
-.cat-row__handle--none { cursor: default; }
-.cat-row .manage__body { flex: 1; min-width: 0; }
-.cat-row .manage__name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cat-row .icon-btn { color: var(--color-text-2); }
+     novembre · encore 28 jours », « Partagée avec 2 personnes » s'il y a
+     lieu ; dessous, « Supprimer définitivement » (action texte en danger,
+     44 px, à gauche, confirmation) et « Restaurer » (.btn--sm, à
+     droite). */
 .page-intro { margin: 0 var(--space-2) var(--space-1); color: var(--color-text-2); }
 .page-tools { display: flex; flex: none; align-items: center; justify-content: space-between; gap: var(--space-1); min-height: var(--tap-min); padding: 0 var(--space-1) 0 var(--space-2); }
 .page-tools__count { font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
@@ -208,7 +186,6 @@
 .note-trash__title { font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .note-trash__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: var(--text-sm); color: var(--color-text-2); }
 .note-trash__meta > span { display: inline-flex; align-items: center; gap: 6px; }
-.note-trash__meta .chip { height: 24px; padding: 0 8px; }
 .note-trash__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); width: 100%; }
 .note-trash__actions .cart__action { margin-left: calc(-1 * var(--space-1)); }
 
@@ -246,10 +223,9 @@
      l'ordre du bandeau du téléphone : Accueil, Échéances, Listes,
      Notes (« Échéances » garde sa pastille .news-badge). Dessous,
      le menu suit l'écran (choix du propriétaire du 23 novembre 2026) :
-     écrans des notes, « Catégories » : mes catégories et leur nombre
-     (.pc-nav, mêmes classes que les listes), « Nouvelle note » en bas ;
-     le centre ne montre que les notes de la catégorie choisie, sans
-     pastilles .catbar (téléphone seulement) ; ailleurs, les
+     écrans des notes, rien sous les quatre entrées fixes et « Nouvelle
+     note » en bas ; le centre, « Notes » (« 12 notes · 4 partagées »),
+     montre toutes les notes, épinglées puis les autres ; ailleurs, les
      listes groupées par type et « Nouvelle liste », inchangés.
    - Accueil : en-tête .pc-head (« Bonjour Guillaume », date ; pastille
      d'état et cloche à droite) ; tuiles sur trois colonnes (quatre au-delà

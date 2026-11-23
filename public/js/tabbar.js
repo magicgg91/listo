@@ -4,8 +4,8 @@
 // « Accueil », « Échéances », « Listes », « Notes », « Réglages » (la classe
 // tabbar--N suit le nombre de boutons).
 //
-// - Il n'existe que sur Échéances, Listes, Notes et Réglages : pas sur l'Accueil
-//   (ses tuiles mènent déjà partout, décision du 23 novembre 2026), pas dans
+// - Il existe sur l'Accueil, Échéances, Listes, Notes et Réglages (l'Accueil
+//   l'a aussi depuis le 23 novembre 2026, choix du propriétaire), pas dans
 //   une liste (le bas est pris par le champ d'ajout), et pas sur ordinateur
 //   (menu de gauche).
 // - Il prend toute la largeur et garde la même place : les boutons ne
@@ -36,13 +36,14 @@ export const TABS = [
   ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 
-// L'écran a-t-il le bandeau ? (l'Accueil ne l'a pas)
-export const hasTabs = (routeName) => routeName !== 'home' && TABS.some(([name]) => name === routeName);
+// L'écran a-t-il le bandeau ? (l'Accueil aussi, depuis le 23 novembre 2026)
+export const hasTabs = (routeName) => TABS.some(([name]) => name === routeName);
 
 // Aller à un écran du bandeau. L'Accueil est l'écran de départ : on y
 // revient par un retour en arrière (le bouton Retour du téléphone ne fait
-// pas faire le tour des onglets) ; entre Échéances, Listes, Notes et
-// Réglages, un écran remplace l'autre.
+// pas faire le tour des onglets) ; depuis l'Accueil, l'écran choisi
+// s'ajoute par-dessus ; entre Échéances, Listes, Notes et Réglages, un
+// écran remplace l'autre.
 export function goToTab(name) {
   const current = app.route?.name;
   if (name === current) return;
@@ -50,7 +51,7 @@ export function goToTab(name) {
     goBack('home');
     return;
   }
-  navigate(name, {}, { replace: true });
+  navigate(name, {}, { replace: current !== 'home' });
 }
 
 // Libellé lu de « Échéances » avec sa pastille

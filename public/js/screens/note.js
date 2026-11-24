@@ -61,7 +61,7 @@ import { app, onDataChange, isDesktop } from '../app.js';
 import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState, offlineBanner } from '../ui.js';
 import { uuid } from '../api.js';
 import { noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
-import { renderNoteText, sourceOffset, applyFormat, formatsAt, insertLink, linkAround, toggleTask, LINE_KINDS } from '../note-format.js';
+import { renderNoteText, sourceOffset, domPoint, applyFormat, formatsAt, insertLink, linkAround, toggleTask, LINE_KINDS } from '../note-format.js';
 import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
@@ -292,9 +292,28 @@ function noteEditor(initialId, onLeave, { pc }) {
       input.setSelectionRange(out.start, out.end);
     } else {
       drawView();
+      // Le texte mis en forme reste choisi : on peut enchaîner un autre bouton
+      selectInView(out.start, out.end);
     }
     changed();
     drawPressed();
+  }
+
+  // Choisit à nouveau, dans l'affichage, le texte [start, end] (après un
+  // bouton de la barre hors saisie : le dessin a effacé la sélection)
+  function selectInView(start, end) {
+    if (end <= start) return;
+    const a = domPoint(view, start, 'start');
+    const b = domPoint(view, end, 'end');
+    const selection = document.getSelection?.();
+    if (!a || !b || !selection) return;
+    const range = document.createRange();
+    range.setStart(a[0], a[1]);
+    range.setEnd(b[0], b[1]);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    chosen = [start, end];
+    chosenLost = 0;
   }
 
   // « Insérer un lien » : sur la sélection (son texte prérempli), sinon à

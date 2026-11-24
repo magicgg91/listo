@@ -974,7 +974,8 @@
 .pc-side__deadlines .news-badge { position: static; flex: none; margin-left: auto; border: 0; }
 .scroll--under-dock { padding-bottom: calc(164px + env(safe-area-inset-bottom, 0px)); }
 
-/* 16.16 Boutons arrondis (décision du propriétaire du 11 novembre 2026) :
+/* 16.16 Boutons arrondis (décision du propriétaire du 11 novembre 2026 ;
+   coins des boutons texte remplacés le 24 novembre 2026, voir 16.34) :
    tous les boutons en pilule, comme le bandeau du bas, sur le téléphone et
    sur l'ordinateur : boutons texte (.btn), boutons ronds (.btn--icon,
    .icon-btn, la disquette .icon-btn--primary), choix à plusieurs options
@@ -1483,6 +1484,31 @@ span.nf-task__box::after { display: none; }
 .screen:has(.note-edit--writing) .note-foot { display: none; }
 .note-tools--top { position: sticky; top: 0; z-index: 1; margin: 2px 0 4px; padding: 6px 0 10px; border-top: 0; border-bottom: 1px solid var(--color-border); }
 .note-link-sheet { padding: 0 4px; }
+
+/* 16.34 Coins des boutons (décision du propriétaire du 24 novembre 2026,
+   remplace la « pilule » de 16.16) : rectangles aux coins arrondis, dans le
+   style des tuiles de l'Accueil et du bandeau du bas (16.15 : bandeau
+   22 px, écran affiché 16 px).
+   - Boutons texte (.btn : Enregistrer, OK, Partager…), choix d'une option
+     (.segmented__opt, durées du lien, Courses / Tâches / Envies), jours de
+     la semaine, actions de la zone des cochés, « Tout replier », petits
+     boutons texte (sous-tâches), pastille d'état (« À jour »,
+     « Enregistré ») : --radius-sm (12 px).
+   - Cadres des choix (.segmented, .choice--pill) : --radius-md (16 px) ;
+     filtre des types en verre (.typebar) et champs flottants en verre
+     (recherche, barre d'ajout) : 22 px, comme le bandeau du bas.
+   - Petites marques (« Propriétaire », « Lecture seule », « Multi »),
+     étiquettes et « + Étiquette » : 8 px.
+   - Restent ronds : la loupe, les boutons-icônes (retour, ⋮, « + » bleu,
+     disquette), les interrupteurs, les pastilles de nombre et la
+     petite barre d'avancement. */
+.btn, .segmented__opt, .duration__opt, .cart__action, .fold-all, .weekdays__opt, .sync,
+.choice__pill, .choice--row.choice--pill .choice__opt, .typebar .segmented__opt { border-radius: var(--radius-sm); }
+.btn.btn--icon { border-radius: var(--radius-pill); }
+.segmented, .choice--pill { border-radius: var(--radius-md); }
+.typebar .segmented, .searchfield--glass, .addbar--glass { border-radius: 22px; }
+.typebar .segmented__opt { border-radius: var(--radius-md); }
+.chip, .badge-multi, .label, .note-labels__add { border-radius: 8px; }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

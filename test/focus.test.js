@@ -124,8 +124,8 @@ test('chaque .focus() de l\'interface est une exception prévue (jamais un champ
   assert.deepEqual([...ALLOWED_FOCUS.keys()].filter((key) => !seen.has(key)), []);
   // Les gardes contre les champs de saisie sont bien là
   const ui = fs.readFileSync(path.join(ROOT, 'public/js/ui.js'), 'utf8');
-  assert.match(ui, /!isTextField\(opener\)\) opener\.focus\(\)/);
-  assert.match(ui, /!isTextField\(start\)\) start\.focus\(\)/);
+  assert.match(ui, /!isTextField\(opener\)\) opener\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(ui, /!isTextField\(start\)\) start\.focus\(\{ preventScroll: true \}\)/);
 });
 
 test('les attributs autocomplete des gestionnaires de mots de passe sont conservés', () => {

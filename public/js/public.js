@@ -23,10 +23,12 @@
 //   ne reçoit ni état ni bouton.
 // - Note (étape 3 des notes ; page server/pages/lien-note.html,
 //   data-kind="note") : le titre, la date de modification et le texte, en
-//   lecture seule ; les adresses http et https deviennent des liens
-//   (public/js/notes.js : éléments <a> et textContent seulement, nouvel
-//   onglet, rel="noopener noreferrer nofollow"). Même saisie du mot de
-//   passe, même page « Lien expiré ou inexistant ».
+//   lecture seule, mis en forme comme dans l'application (titres, gras,
+//   listes, cases montrées mais jamais cochables ici : public/js/
+//   note-format.js, éléments et textContent seulement, jamais de HTML) ;
+//   liens http et https seulement (nouvel onglet, rel="noopener noreferrer
+//   nofollow"). Même saisie du mot de passe, même page « Lien expiré ou
+//   inexistant ».
 
 import { h, icon, replace, passwordInput } from './dom.js';
 import { prepareAnnouncer, announce as speak } from './announce.js';
@@ -36,7 +38,8 @@ import { typeLabel, typeIcon, isWishList } from './list-types.js';
 import { cleanLink, formatPrice } from './wishes.js';
 import { setLocale, setCurrency, resolveLocale, t, formatTime, lowerFirst, priceIcon } from './i18n.js';
 import { repeatChip, repeatSentence } from './repeat.js';
-import { linkParts, noteTitle } from './notes.js';
+import { noteTitle } from './notes.js';
+import { renderNoteText } from './note-format.js';
 
 const root = document.getElementById('app');
 // Page d'une note (lien-note.html) ou d'une liste (lien-public.html)
@@ -226,8 +229,9 @@ function showList(data) {
 }
 
 // --- La note en lecture seule ---
-// Titre (ou première ligne du texte), date de modification, texte avec ses
-// adresses web en liens ; rien d'autre n'est reçu du serveur.
+// Titre (ou première ligne du texte), date de modification, texte mis en
+// forme (cases seulement montrées : lecture seule) ; rien d'autre n'est
+// reçu du serveur.
 function showNote({ note, expiresAt }) {
   const title = noteTitle(note) || t('lienpublic.note.sansTitre');
   document.title = `${title} · Listo`;
@@ -236,11 +240,9 @@ function showNote({ note, expiresAt }) {
     refresh.disabled = true;
     load();
   });
-  // Texte affiché tel quel : textContent et éléments <a> seulement
+  // Texte mis en forme élément par élément (textContent, jamais de HTML)
   const body = note.body
-    ? h('div', { class: 'note-edit__body note-edit__body--read' }, linkParts(note.body).map((part) => (part.href
-      ? h('a', { class: 'note-link', href: part.href, target: '_blank', rel: 'noopener noreferrer nofollow' }, part.text)
-      : part.text)))
+    ? h('div', { class: 'note-edit__body note-edit__body--read' }, renderNoteText(note.body, { h, icon, editable: false, rel: 'noopener noreferrer nofollow' }))
     : h('p', { class: 'muted' }, t('lienpublic.note.vide'));
   replace(root, h('div', { class: 'screen' },
     h('p', { class: 'readonly-banner' }, icon('eye', 'icon--sm'), t('lienpublic.lectureSeule')),

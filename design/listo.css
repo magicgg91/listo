@@ -1419,6 +1419,62 @@ html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { 
 .label-row__count { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .label-row__delete { color: var(--color-danger-ink); }
 
+/* 16.33 Mise en forme du texte des notes (décisions du 24 novembre 2026 ;
+   maquettes b-barre-au-dessus-du-clavier, c-lecture-mise-en-forme,
+   d-inserer-un-lien, e-pc-barre). Le texte garde des marques Markdown
+   (public/js/note-format.js) ; hors saisie, il est affiché mis en forme :
+   - une ligne de texte : .nf-line (rien de plus qu'avant : une note sans
+     marque s'affiche comme avant) ;
+   - titres : .nf-h1 (h2) et .nf-h2 (h3), en gras, plus grands ;
+   - gras (strong), italique (em), souligné (u), surligné (mark .nf-highlight :
+     fond jaune doux du kit, --label-jaune-bg, texte normal, lisible en
+     clair et en sombre) ; liens .note-link (16.26) ;
+   - listes .nf-list : --bullet (puces), --number (numéros tels qu'écrits,
+     attribut value), --task (cases) ;
+   - case .nf-task : .tick .nf-task__box de 22 px (zone tactile de 44 px
+     par ::after ; un bouton pour qui peut modifier, sinon montrée
+     seulement), texte .nf-task__text ; cochée : .is-done, texte barré ET
+     grisé (jamais la couleur seule).
+   Barre de mise en forme .note-tools (role="toolbar") : dix boutons
+   .note-tool carrés arrondis de 40 px (zone tactile de 44 px par ::after),
+   défilement de côté si elle ne tient pas ; aria-pressed : fond et contour
+   d'accent. .note-tools--dock : téléphone, en bas de l'écran, posée sur le
+   clavier quand il est ouvert (marge de sécurité du bas en dessous, retirée
+   clavier ouvert dans app.css) ; .note-tools--top : ordinateur, en haut du
+   texte, reste visible quand le texte défile. */
+.note-edit__body .nf-h1, .note-edit__body .nf-h2 { margin: 6px 0 4px; font-weight: 700; line-height: var(--lh-tight); }
+.note-edit__body .nf-h1 { font-size: 1.3em; }
+.note-edit__body .nf-h2 { font-size: 1.08em; }
+.nf-highlight { padding: 0 2px; border-radius: 3px; background: var(--label-jaune-bg); color: inherit; }
+.nf-list { margin: 0; padding: 0 0 0 1.4em; }
+.nf-list--bullet { list-style: disc; }
+.nf-list--number { padding-left: 1.8em; list-style: decimal; }
+.nf-list--bullet .nf-item::marker, .nf-list--number .nf-item::marker { color: var(--color-text-2); }
+.nf-list--task { padding: 0; list-style: none; }
+.nf-task { display: flex; align-items: flex-start; gap: 10px; padding: 4px 0; }
+.nf-task__box { position: relative; width: 22px; height: 22px; margin-top: calc((1.5em - 22px) / 2); padding: 0; border-radius: 6px; background: transparent; }
+.nf-task__box .icon { width: 14px; height: 14px; }
+.nf-task__box::after { content: ""; position: absolute; inset: -11px; }
+span.nf-task__box::after { display: none; }
+.nf-task__text { flex: 1; min-width: 0; }
+.nf-task.is-done .nf-task__text { color: var(--color-text-2); text-decoration: line-through; }
+.note-tools { display: flex; flex: none; gap: 6px; overflow-x: auto; padding: 8px 12px; border-top: 1px solid var(--color-border); background: var(--color-bg); scrollbar-width: none; }
+.note-tools::-webkit-scrollbar { display: none; }
+.note-tools[hidden] { display: none; }
+.note-tool { position: relative; display: grid; flex: none; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 15px; font-weight: 600; line-height: 1; }
+.note-tool::after { content: ""; position: absolute; inset: -2px -3px; }
+.note-tool[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.note-tool:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.note-tool__italic { font-family: Georgia, "Times New Roman", serif; }
+.note-tool__mark { padding: 3px 4px; border-radius: 4px; background: var(--label-jaune-bg); color: var(--color-text); }
+.note-tool__box { display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; }
+.note-tool__box .icon { width: 12px; height: 12px; stroke-width: 3; }
+.note-tools--dock { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.note-foot:has(~ .note-tools--dock:not([hidden])) { padding-bottom: 12px; }
+.screen:has(.note-edit--writing) .note-foot { display: none; }
+.note-tools--top { position: sticky; top: 0; z-index: 1; margin: 2px 0 4px; padding: 6px 0 10px; border-top: 0; border-bottom: 1px solid var(--color-border); }
+.note-link-sheet { padding: 0 4px; }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

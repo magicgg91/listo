@@ -224,6 +224,7 @@ export const GUIDE = [
         title: 'Notes',
         blocks: [{ ul: [
           'Des notes en texte libre, qui s\'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([[notes]]).',
+          'Une mise en forme simple dans les notes : titres, gras, italique, souligné, surligné, listes, cases à cocher et liens, avec une barre de boutons au-dessus du clavier ([[notes]]).',
           'Une note se partage comme une liste (« Peut modifier » ou « Lecture seule »), ou par un lien public en lecture seule ([[notes-partage]]).',
           'Une note rapide depuis l\'Accueil, même hors ligne ([[notes]]).',
           'Un assistant IA peut lire vos notes et, si vous le permettez, en créer ou les compléter ([[claude-notes]]).',
@@ -739,13 +740,24 @@ export const GUIDE = [
         id: 'notes',
         title: 'Les notes',
         blocks: [
-          'Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin ; vous pouvez la partager ([[notes-partage]]). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([[echeances]]) : elles disparaissent de vos écrans, sans rien effacer.',
+          'Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin ; vous pouvez la partager ([[notes-partage]]). Le texte garde ses retours à la ligne et peut être mis en forme : titres, gras, listes, cases à cocher, liens (voir « Mise en forme » plus bas) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([[echeances]]) : elles disparaissent de vos écrans, sans rien effacer.',
           { ul: [
             'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d\'abord à l\'ordre alphabétique, et inversement. La loupe cherche dans les titres, les textes et les noms des étiquettes.',
             '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » fait de même.',
             'Une note s\'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.',
-            'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet.',
+            'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet, et une case se coche.',
             'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu\'on vous a partagée), « Étiquettes » (si vous pouvez la modifier), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».',
+          ] },
+          { sub: 'Mise en forme' },
+          'Le texte d\'une note peut avoir des titres, du gras, des listes ou des cases à cocher. Ce sont de petites marques écrites dans le texte (celles du Markdown, si vous le connaissez) : pendant que vous écrivez, vous les voyez telles quelles ; dès que vous n\'écrivez plus, la note s\'affiche mise en forme, sans les marques.',
+          { ul: [
+            'La barre de mise en forme écrit les marques pour vous. Sur le téléphone, elle est en bas de la note, et juste au-dessus du clavier quand il est ouvert ; sur ordinateur, en haut du texte. Elle n\'apparaît que si vous pouvez modifier la note. Ses dix boutons, dans l\'ordre : « Titre » (H1), « Sous-titre » (H2), « Gras » (G), « Italique » (I), « Souligné » (S), « Surligné » (ab), « Liste à puces », « Liste numérotée », « Case à cocher » et « Insérer un lien ».',
+            'Un bouton s\'applique au texte choisi, même sans le clavier : choisissez des mots dans la note affichée, puis touchez le bouton. Touché une seconde fois, il retire la marque ; « Sous-titre » sur un titre le change en sous-titre. Les boutons de ligne (titres, listes, cases) s\'appliquent à chaque ligne choisie. Sans rien de choisi, un bouton commence à écrire à la fin de la note, déjà mis en forme.',
+            'Les marques, à écrire vous-même si vous préférez : `# Titre` et `## Sous-titre` en début de ligne ; `**gras**`, `*italique*` (ou `_italique_`), `++souligné++` et `==surligné==` autour des mots ; `- ` (ou `* `) en début de ligne pour une puce, `1. ` pour une liste numérotée (les numéros restent ceux que vous écrivez) ; `- [ ] ` pour une case à cocher, `- [x] ` pour une case cochée. `++souligné++` et `==surligné==` ne sont pas du Markdown standard, mais beaucoup d\'applications de notes les connaissent.',
+            'Cases à cocher : dans la note affichée, touchez une case pour la cocher ou la décocher ; la note s\'enregistre comme si vous aviez écrit. Une case cochée est aussi barrée. En « Lecture seule » et sur la page publique, les cases se voient mais ne se cochent pas.',
+            'Liens : « Insérer un lien » demande le « Texte affiché » (déjà rempli avec le texte choisi) et l\'« Adresse », puis « Insérer » écrit `[texte affiché](https://…)` ; la note ne montre que le texte, qui ouvre l\'adresse. Seules les adresses en http ou https sont acceptées : une autre (javascript:, data:…) reste du texte, jamais un lien. Une adresse écrite seule (https://…) reste cliquable.',
+            'Une marque mal fermée s\'affiche telle quelle (`**gras` reste `**gras`), et une ligne n\'a qu\'une marque de début (titre, puce, numéro ou case). Rien d\'autre n\'est interprété, pas même du HTML : il reste du texte. Le titre d\'une note n\'est jamais mis en forme.',
+            'Ailleurs, le texte se lit sans ses marques : cartes de l\'écran « Notes », tuile de l\'Accueil, notifications, titre d\'une copie ; la recherche trouve le texte avec ou sans ses marques. La page publique d\'une note la montre mise en forme. Un assistant IA lit et écrit le texte avec ses marques ([[claude-notes]]).',
           ] },
           { sub: 'Étiquettes' },
           'Une étiquette classe une note : “Recettes”, “Vacances”, “Maison”… Les étiquettes sont communes à tout le foyer : chacun peut en créer et choisir parmi celles des autres. Un nom n\'existe qu\'une fois, majuscules et accents compris : “Été”, “été” et “ETE” sont la même étiquette.',
@@ -780,7 +792,7 @@ export const GUIDE = [
           'Quand quelqu\'un d\'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu\'à ce que vous l\'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l\'Accueil et, sur ordinateur, l\'entrée « Notes » du menu de gauche montrent aussi le point. C\'est le même réglage « Nouveautés » que pour les listes ([[nouveautes]]) ; menu ⋮ de la note : « Masquer les nouveautés ».',
           'Notifications ([[notif-recevoir]]), dans la page Notifications et sur vos appareils : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). La page Notifications ne cite que le titre, jamais le texte. Menu ⋮ de la note : « Couper les notifications ».',
           { sub: 'Lien public d\'une note' },
-          'Menu ⋮ d\'une de vos notes, « Lien public » : la même feuille que pour une liste ([[lien-public]]) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte (liens cliquables) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n\'est plus visible par son lien ; restaurée, le lien remarche s\'il n\'a pas expiré.',
+          'Menu ⋮ d\'une de vos notes, « Lien public » : la même feuille que pour une liste ([[lien-public]]) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte mis en forme (liens cliquables, cases qui ne se cochent pas) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n\'est plus visible par son lien ; restaurée, le lien remarche s\'il n\'a pas expiré.',
         ],
       },
       {
@@ -1280,6 +1292,7 @@ export const GUIDE = [
           { ul: [
             'Lire : il voit la liste de vos notes (titre, début du texte, étiquettes, épingle), puis le texte d\'une note.',
             'Compléter : il ajoute du texte à la fin d\'une note, sur une nouvelle ligne, sans toucher au reste. C\'est la façon la plus sûre : rien n\'est perdu, même si quelqu\'un écrit dans la note au même moment.',
+            'Mise en forme : il lit le texte avec ses marques et peut s\'en servir en écrivant (par exemple une case à cocher, `- [ ] piles AA`) ([[notes]]).',
             'Remplacer tout le texte : seulement si la note n\'a pas changé depuis qu\'il l\'a lue ; sinon, rien n\'est écrit et il doit la relire. Il doit vous demander confirmation avant.',
             'Créer une note : elle est à vous, partagée avec personne.',
             'Étiquettes : il ne pose que des étiquettes qui existent déjà (majuscules et accents ignorés) ; un nom inconnu, et rien n\'est fait. Il peut créer une étiquette si vous le lui demandez.',

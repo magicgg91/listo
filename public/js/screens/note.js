@@ -8,13 +8,27 @@
 // - Titre puis texte, sans cadre. Aucun curseur mis tout seul à l'ouverture
 //   d'une note existante ; pour une nouvelle note (« + », « Nouvelle note »,
 //   touche N), le curseur va dans le texte : le geste a pour but d'écrire.
-// - Adresses web cliquables : un champ de texte simple ne sait pas les
-//   afficher. Hors saisie, le texte est donc affiché tel quel (textContent),
-//   avec ses adresses http et https en vrais liens (public/js/notes.js,
-//   nouvel onglet, rel="noopener noreferrer"). Toucher le texte ailleurs
-//   que sur un lien (ou Entrée au clavier) passe en saisie : le champ de
-//   texte prend sa place, curseur à l'endroit touché (geste fait pour
-//   écrire). Quitter le champ réaffiche les liens.
+// - Mise en forme (24 novembre 2026, public/js/note-format.js) : le texte
+//   garde ses marques (« **gras** », « - [ ] tâche »…), visibles pendant la
+//   saisie (un champ de texte simple). Hors saisie, il est affiché mis en
+//   forme, élément par élément (renderNoteText : textContent, jamais de
+//   HTML), avec ses liens http et https (nouvel onglet, rel="noopener
+//   noreferrer"). Toucher une case la coche ou la décoche (propriétaire et
+//   « Peut modifier ») : la ligne change dans le texte, qui s'enregistre
+//   comme une frappe. Toucher le texte ailleurs que sur un lien ou une case
+//   (ou Entrée au clavier) passe en saisie : le champ de texte prend sa
+//   place, curseur à l'endroit touché (geste fait pour écrire). Quitter le
+//   champ réaffiche le texte mis en forme.
+// - Barre de mise en forme (screens/note-toolbar.js), pour qui peut
+//   modifier la note : téléphone, en bas de l'écran, toujours là, et posée
+//   sur le clavier quand il est ouvert (la hauteur de l'application suit le
+//   clavier : app-height.js, data-fit-keyboard) ; ordinateur, en haut du
+//   texte. Un bouton agit sur la sélection du champ pendant la saisie, ou
+//   sur le texte choisi dans l'affichage mis en forme (sans clavier : les
+//   positions du texte sont sur les éléments affichés). Sans rien de
+//   choisi hors saisie, il passe en saisie à la fin du texte et s'y
+//   applique (geste fait pour écrire). Le changement s'enregistre comme une
+//   frappe (même chemin : version, file hors ligne, conflits).
 // - Enregistrement automatique : une seconde après la dernière frappe, en
 //   quittant l'écran, et quand l'application passe en arrière-plan. Mention
 //   « Enregistré », « Enregistrement… », « Hors ligne · enregistrée sur ce
@@ -44,13 +58,15 @@ import { dateTimeLabel, relativeTime, namesList } from '../format.js';
 import { app, onDataChange, isDesktop } from '../app.js';
 import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState, offlineBanner } from '../ui.js';
 import { uuid } from '../api.js';
-import { linkParts, noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
+import { noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
+import { renderNoteText, sourceOffset, applyFormat, formatsAt, insertLink, linkAround, toggleTask, LINE_KINDS } from '../note-format.js';
 import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
 import { canEditNote, isNoteOwner, notePeople } from '../store.js';
 import { openNoteSharePanel } from './share-panel.js';
 import { noteLabelsSlot, drawNoteLabels } from './note-labels.js';
+import { noteToolbar, openLinkSheet } from './note-toolbar.js';
 
 const SAVE_DELAY_MS = 1000;
 
@@ -60,22 +76,27 @@ export function renderNote(noteId, onLeave) {
   return noteEditor(noteId, onLeave, { pc: isDesktop() });
 }
 
-// Position du curseur dans le texte affiché, à l'endroit touché (nombre de
-// caractères avant ce point), ou la fin du texte si le navigateur ne sait
-// pas le dire
+// Position du curseur dans le texte (marques comprises), à l'endroit
+// touché du texte affiché, ou la fin du texte si le navigateur ne sait pas
+// le dire
 function offsetAt(view, event, length) {
   const point = document.caretPositionFromPoint?.(event.clientX, event.clientY);
   const range = point ? null : document.caretRangeFromPoint?.(event.clientX, event.clientY);
   const node = point?.offsetNode ?? range?.startContainer;
   const offset = point?.offset ?? range?.startOffset;
-  if (!node || !view.contains(node) || node.nodeType !== Node.TEXT_NODE) return length;
-  let count = 0;
-  const walker = document.createTreeWalker(view, NodeFilter.SHOW_TEXT);
-  for (let text = walker.nextNode(); text; text = walker.nextNode()) {
-    if (text === node) return Math.min(length, count + offset);
-    count += text.data.length;
-  }
-  return length;
+  if (!node || !view.contains(node)) return length;
+  return Math.min(length, sourceOffset(node, offset) ?? length);
+}
+
+// Texte choisi dans le texte affiché (sélection sans clavier) : [début,
+// fin] dans le texte, marques comprises, ou null
+function chosenRange(view) {
+  const selection = document.getSelection?.();
+  if (!selection || selection.isCollapsed || !view.contains(selection.anchorNode) || !view.contains(selection.focusNode)) return null;
+  const a = sourceOffset(selection.anchorNode, selection.anchorOffset);
+  const b = sourceOffset(selection.focusNode, selection.focusOffset);
+  if (a === null || b === null || a === b) return null;
+  return [Math.min(a, b), Math.max(a, b)];
 }
 
 // L'éditeur (téléphone : tout l'écran ; ordinateur : toute la colonne)
@@ -109,18 +130,22 @@ function noteEditor(initialId, onLeave, { pc }) {
     input.style.height = 'auto';
     input.style.height = `${input.scrollHeight}px`;
   };
-  // Texte affiché : textContent et éléments <a> seulement, jamais de HTML
+  // Lecture seule (droit « Lecture seule ») : ni saisie, ni enregistrement
+  const readOnly = () => Boolean(note()) && !canEditNote(note());
+  // Texte affiché, mis en forme élément par élément (textContent, jamais de
+  // HTML). Redessiné seulement s'il a changé : un texte choisi (sélection)
+  // reste choisi quand le reste de l'écran se met à jour.
+  let drawn = null;
   const drawView = () => {
+    const key = `${readOnly()}\n${body}`;
+    if (key === drawn) return;
+    drawn = key;
     if (!body) {
       replace(view, h('span', { class: 'note-edit__placeholder' }, t('notes.champ.texte.vide')));
       return;
     }
-    replace(view, linkParts(body).map((part) => (part.href
-      ? h('a', { class: 'note-link', href: part.href, target: '_blank', rel: 'noopener noreferrer' }, part.text)
-      : part.text)));
+    replace(view, renderNoteText(body, { h, icon, editable: !readOnly() }));
   };
-  // Lecture seule (droit « Lecture seule ») : ni saisie, ni enregistrement
-  const readOnly = () => Boolean(note()) && !canEditNote(note());
   // Passer en saisie, curseur à cet endroit (geste fait pour écrire).
   // Téléphone : avant d'ouvrir le clavier, l'endroit touché (y, position
   // à l'écran) est remonté dans le tiers haut de l'écran : le curseur est
@@ -142,25 +167,166 @@ function noteEditor(initialId, onLeave, { pc }) {
   };
   view.addEventListener('click', (event) => {
     if (event.target.closest('a')) return; // un lien s'ouvre, sans passer en saisie
+    const box = event.target.closest('.nf-task__box');
+    if (box) {
+      tick(box);
+      return;
+    }
+    // Texte en train d'être choisi (sélection) : pas de saisie
+    if (chosenRange(view)) return;
     edit(body ? offsetAt(view, event, body.length) : 0, event.clientY);
   });
   view.addEventListener('keydown', (event) => {
+    if (event.target !== view) return; // une case ou un lien du texte : leur propre touche
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     edit(body.length);
   });
-  input.addEventListener('blur', () => {
+
+  // Une case touchée (propriétaire, « Peut modifier ») : « - [ ] » ↔
+  // « - [x] » dans sa ligne, puis enregistrement comme une frappe. Le texte
+  // garde sa longueur : la case est mise à jour sur place (le focus reste).
+  function tick(box) {
+    if (readOnly()) return;
+    const line = box.closest('[data-line]');
+    const next = toggleTask(body, Number(line?.dataset.line));
+    if (next === body) return;
+    body = next;
+    drawn = `${readOnly()}\n${body}`;
+    const on = box.getAttribute('aria-checked') !== 'true';
+    box.setAttribute('aria-checked', String(on));
+    box.classList.toggle('is-on', on);
+    line.classList.toggle('is-done', on);
+    replace(box, on ? icon('check') : null);
+    changed();
+  }
+
+  // Quitter la saisie : enregistrement, puis le texte mis en forme
+  const leave = () => {
+    if (input.hidden) return;
     save();
     fields.classList.remove('note-edit--writing');
     view.hidden = false;
     input.hidden = true;
     drawView();
+    drawPressed();
+  };
+  // Le champ perd le curseur vers la barre (Tab au clavier) : la saisie
+  // continue, la barre agira sur la sélection du champ
+  input.addEventListener('blur', (event) => {
+    if (tools.el.contains(event.relatedTarget)) return;
+    leave();
   });
   input.addEventListener('input', () => {
     body = input.value;
     fitInput();
     changed();
   });
+
+  // --- Barre de mise en forme ---
+  const tools = noteToolbar(pick);
+  tools.el.classList.add(pc ? 'note-tools--top' : 'note-tools--dock');
+  // Sortie de la barre au clavier vers autre chose que le texte : fin de la saisie
+  tools.el.addEventListener('focusout', (event) => {
+    if (event.relatedTarget === input || tools.el.contains(event.relatedTarget)) return;
+    leave();
+  });
+  // Dernier texte choisi dans l'affichage : gardé un instant après sa
+  // disparition (sur le téléphone, toucher un bouton peut l'effacer juste
+  // avant que le bouton agisse)
+  let chosen = null;
+  let chosenLost = 0;
+  const KEEP_CHOSEN_MS = 1000;
+  const onSelection = () => {
+    if (!input.hidden) {
+      drawPressed();
+      return;
+    }
+    const range = chosenRange(view);
+    if (range) chosen = range;
+    else if (chosen && !chosenLost) chosenLost = Date.now();
+    if (range) chosenLost = 0;
+    drawPressed();
+  };
+  document.addEventListener('selectionchange', onSelection);
+  onLeave(() => document.removeEventListener('selectionchange', onSelection));
+  for (const type of ['keyup', 'click', 'select']) input.addEventListener(type, () => drawPressed());
+
+  // Texte choisi dans l'affichage, ou null
+  const chosenNow = () => chosenRange(view) ?? (chosen && (!chosenLost || Date.now() - chosenLost < KEEP_CHOSEN_MS) ? chosen : null);
+
+  // Boutons « enfoncés » : la mise en forme à l'endroit du curseur
+  function drawPressed() {
+    if (tools.el.hidden) return;
+    const at = input.hidden ? chosenNow()?.[0] : input.selectionStart;
+    tools.setActive(at === undefined || at === null ? new Set() : formatsAt(input.hidden ? body : input.value, at));
+  }
+
+  // Un bouton de la barre
+  function pick(kind) {
+    if (readOnly()) return;
+    let typing = !input.hidden;
+    let range = typing ? [input.selectionStart, input.selectionEnd] : chosenNow();
+    chosen = null;
+    if (kind === 'link') {
+      openLink(range);
+      return;
+    }
+    if (!typing && !range) {
+      // Rien de choisi hors saisie : saisie à la fin du texte ; une marque
+      // de ligne commence une nouvelle ligne
+      edit(body.length);
+      if (input.hidden) return;
+      if (LINE_KINDS.includes(kind) && body !== '' && !body.endsWith('\n')) input.value += '\n';
+      typing = true;
+      range = [input.value.length, input.value.length];
+    }
+    const out = applyFormat(typing ? input.value : body, range[0], range[1], kind);
+    body = out.text;
+    if (typing) {
+      input.value = body;
+      fitInput();
+      if (document.activeElement !== input) input.focus({ preventScroll: true });
+      input.setSelectionRange(out.start, out.end);
+    } else {
+      drawView();
+    }
+    changed();
+    drawPressed();
+  }
+
+  // « Insérer un lien » : sur la sélection (son texte prérempli), sinon à
+  // la fin du texte ; dans un lien déjà là, ce lien (texte et adresse
+  // préremplis)
+  function openLink(range) {
+    const source = input.hidden ? body : input.value;
+    let [start, end] = range ?? [source.length, source.length];
+    let label = source.slice(start, end).includes('\n') ? '' : source.slice(start, end);
+    let address = '';
+    // Dans un lien déjà là : il est remplacé en entier (jamais un lien dans un lien)
+    const around = range ? linkAround(source, start, end) : null;
+    if (around) [start, end, label, address] = [around.start, around.end, around.text, around.href];
+    openLinkSheet({
+      label,
+      address,
+      onInsert: (text, address) => {
+        if (readOnly()) return;
+        const current = input.hidden ? body : input.value;
+        // Le texte a changé pendant que la feuille était ouverte : à la fin
+        const [a, b] = current === source ? [start, end] : [current.length, current.length];
+        const pad = a === b && a === current.length && current && !/\s$/.test(current) ? ' ' : '';
+        const out = insertLink(current.slice(0, a) + pad + current.slice(a), a + pad.length, b + pad.length, text, address);
+        if (!out) return;
+        body = out.text;
+        if (!input.hidden) {
+          input.value = body;
+          fitInput();
+        }
+        drawView();
+        changed();
+      },
+    });
+  }
   // Étiquettes de la note, sous le titre (cachées s'il n'y en a aucune)
   const labelsRow = noteLabelsSlot();
   titleInput.addEventListener('input', changed);
@@ -315,6 +481,9 @@ function noteEditor(initialId, onLeave, { pc }) {
     if (readOnly()) view.removeAttribute('aria-multiline');
     else view.setAttribute('aria-multiline', 'true');
     menuButton.hidden = !n;
+    // Barre de mise en forme : pour qui peut modifier la note (pas en
+    // « Lecture seule », pas pour une note supprimée)
+    tools.el.hidden = readOnly() || (!isNew && (!n || Boolean(n.deletedAt)));
     if (!pinButton) return;
     pinButton.hidden = !n;
     const pinned = Boolean(n) && app.data.pinnedNotes.has(n.id);
@@ -410,7 +579,8 @@ function noteEditor(initialId, onLeave, { pc }) {
     h('h2', { class: 'empty__title' }, t('notes.introuvable.titre')),
     h('p', { class: 'empty__text' }, t('notes.introuvable.texte')),
     h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('notes', {}, { replace: true }) }, t('notes.retour')));
-  const fields = h('div', { class: 'note-edit' }, titleInput, labelsRow, view, input);
+  // Ordinateur : la barre en haut du texte, sous le titre et les étiquettes
+  const fields = h('div', { class: 'note-edit' }, titleInput, labelsRow, pc ? tools.el : null, view, input);
   const scroll = h('div', { class: 'scroll' }, fields);
 
   // Changement de données (synchronisation, temps réel, autre écran)
@@ -470,5 +640,7 @@ function noteEditor(initialId, onLeave, { pc }) {
     heading,
     banner,
     scroll,
-    foot);
+    foot,
+    // Téléphone : la barre en bas de l'écran (sur le clavier quand il est ouvert)
+    tools.el);
 }

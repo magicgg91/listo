@@ -490,6 +490,13 @@ Ces points ne peuvent pas être testés automatiquement : à vérifier une fois 
     4. Avec `LISTO_PUSH=on` : une notification du téléphone touchée ouvre son écran et marque la ligne correspondante comme lue dans la page.
     5. Liste d'envies : la personne gâtée ne voit jamais rien d'une réservation dans sa page, ni sur la cloche.
 76. **Nouveaux écrans en anglais** (23 novembre 2026 ; vérifié dans Chromium avec un compte en anglais et un compte en français : Accueil, Notes, une note, conflit, partage, lien public et page publique d'une note, corbeille des notes, page Notifications, états vides, confirmations et messages ; aucun texte de l'autre langue) : sur un vrai téléphone réglé en anglais, « Mon compte › Langue › Automatique » : l'Accueil dit “Hello” et la date en anglais (“Monday, November 23”) ; les notifications du téléphone et les lignes de la page Notifications arrivent dans la langue du compte qui les reçoit.
+77. **Mise en forme des notes** (24 novembre 2026 ; vérifié par des tests automatiques, `test/note-format.test.js`, et dans Chromium à la taille de l'iPhone avec un clavier simulé ; à refaire sur un vrai iPhone et un vrai Android) :
+    1. Dans une note qu'on peut modifier, la barre de dix boutons est en bas de l'écran ; toucher le texte : le clavier s'ouvre et la barre se pose juste au-dessus, sans saut de l'écran ; le texte n'est jamais caché derrière elle. En « Lecture seule » : aucune barre.
+    2. Pendant la saisie, choisir un mot puis toucher « Gras » : le mot est entouré de `**`, le clavier reste ouvert, le curseur reste dans le texte (un seul appui). Toucher de nouveau « Gras » : les marques partent.
+    3. Sans clavier : appui long sur un mot du texte affiché pour le choisir, puis « Surligné » : le mot est surligné, sans que le clavier s'ouvre.
+    4. Toucher une case du texte affiché : elle se coche (barrée), « Enregistrement… » puis « Enregistré » ; sur un deuxième téléphone, la case cochée arrive. Hors ligne : elle part au retour du réseau.
+    5. « Insérer un lien » : la feuille s'ouvre, « Texte affiché » rempli avec le texte choisi ; une adresse sans http ni https est refusée avec un message ; « Insérer » : le lien s'affiche par son texte et s'ouvre dans un nouvel onglet.
+    6. Page publique de la note : le texte mis en forme, cases visibles mais pas cochables. Thème sombre : surligné et cases lisibles.
 
 ## API des comptes (étape 2)
 

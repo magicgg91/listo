@@ -48,9 +48,9 @@ test('barre de la note (ordinateur) : « Retour aux notes » à gauche, puis la 
   assert.ok(!('notes.fermer' in fr) && !('notes.fermer' in en), 'plus de « Fermer la note »');
 });
 
-test('téléphone : la barre de la note ne change pas', () => {
+test('téléphone : la barre de la note ne change pas (la barre de mise en forme s\'ajoute en bas, 24 novembre 2026)', () => {
   const note = code('public/js/screens/note.js');
-  assert.match(note, /return h\('div', \{ class: 'screen' \},\s*h\('header', \{ class: 'topbar' \},\s*iconButton\('chev-l', t\('notes\.retour'\), \(\) => back\(\)\),\s*status,\s*h\('span', \{ class: 'grow' \}\),\s*peopleButton,\s*menuButton\),\s*heading,\s*banner,\s*scroll,\s*foot\);/);
+  assert.match(note, /return h\('div', \{ class: 'screen' \},\s*h\('header', \{ class: 'topbar' \},\s*iconButton\('chev-l', t\('notes\.retour'\), \(\) => back\(\)\),\s*status,\s*h\('span', \{ class: 'grow' \}\),\s*peopleButton,\s*menuButton\),\s*heading,\s*banner,\s*scroll,\s*foot,\s*tools\.el\);/);
   // Le défilement vers l'endroit touché reste propre au téléphone
   assert.match(note, /if \(!pc\) \{\s*fields\.classList\.add\('note-edit--writing'\);/);
 });

@@ -275,6 +275,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.6 Notes
 
 - Notes in free text, that save themselves, with clickable links, a pin and their own trash ([5.12 Notes](#notes)).
+- Simple formatting in notes: headings, bold, italic, underline, highlight, lists, checkboxes and links, with a bar of buttons above the keyboard ([5.12 Notes](#notes)).
 - A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([5.13 Sharing a note](#notes-partage)).
 - A quick note from Home, even offline ([5.12 Notes](#notes)).
 - An AI assistant can read your notes and, if you allow it, create notes or add to them ([8.6 Notes](#claude-notes)).
@@ -831,13 +832,25 @@ Settings, “Features” (just below “Home”) chooses the features you use; f
 
 ### 5.12 Notes
 
-A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links. Don't use notes? Turn them off for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
+A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text keeps its line breaks and can be formatted: headings, bold, lists, checkboxes, links (see “Formatting” below); web addresses in http or https become links. Don't use notes? Turn them off for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
 
 - “Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles, texts and label names.
 - “+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.
 - A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.
-- To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.
+- To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab, and a checkbox gets ticked.
 - A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
+
+**Formatting**
+
+A note's text can have headings, bold, lists or checkboxes. These are small marks written in the text (Markdown ones, if you know it): while you write, you see them as they are; as soon as you stop writing, the note is shown formatted, without the marks.
+
+- The formatting bar writes the marks for you. On the phone, it is at the bottom of the note, and just above the keyboard when it is open; on a computer, at the top of the text. It only appears if you can edit the note. Its ten buttons, in order: “Heading” (H1), “Subheading” (H2), “Bold” (B), “Italic” (I), “Underline” (U), “Highlight” (ab), “Bulleted list”, “Numbered list”, “Checkbox” and “Insert a link”.
+- A button applies to the chosen text, even without the keyboard: select words in the displayed note, then tap the button. Tapped a second time, it removes the mark; “Subheading” on a heading turns it into a subheading. Line buttons (headings, lists, checkboxes) apply to each chosen line. With nothing chosen, a button starts writing at the end of the note, already formatted.
+- The marks, to type yourself if you prefer: `# Heading` and `## Subheading` at the start of a line; `**bold**`, `*italic*` (or `_italic_`), `++underline++` and `==highlight==` around words; `- ` (or `* `) at the start of a line for a bullet, `1. ` for a numbered list (the numbers stay the ones you type); `- [ ] ` for a checkbox, `- [x] ` for a ticked checkbox. `++underline++` and `==highlight==` aren't standard Markdown, but many note apps know them.
+- Checkboxes: in the displayed note, tap a checkbox to tick or untick it; the note saves as if you had typed. A ticked checkbox is also crossed out. With “Read only” and on the public page, checkboxes show but can't be ticked.
+- Links: “Insert a link” asks for the “Text to show” (already filled with the chosen text) and the “Address”, then “Insert” writes `[text to show](https://…)`; the note only shows the text, which opens the address. Only http or https addresses are accepted: any other (javascript:, data:…) stays text, never a link. An address typed on its own (https://…) stays clickable.
+- A mark that isn't closed shows as it is (`**bold` stays `**bold`), and a line has only one start mark (heading, bullet, number or checkbox). Nothing else is interpreted, not even HTML: it stays text. A note's title is never formatted.
+- Elsewhere, the text reads without its marks: cards on the “Notes” screen, the Home tile, notifications, the title of a copy; search finds the text with or without its marks. A note's public page shows it formatted. An AI assistant reads and writes the text with its marks ([8.6 Notes](#claude-notes)).
 
 **Labels**
 
@@ -881,7 +894,7 @@ Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notificati
 
 **A note's public link**
 
-⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the text (clickable links) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
+⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
 
 <a id="reserver"></a>
 
@@ -1355,6 +1368,7 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 
 - Read: it sees the list of your notes (title, start of the text, labels, pin), then the text of a note.
 - Add to a note: it adds text at the end of a note, on a new line, without touching the rest. It's the safest way: nothing is lost, even if someone is writing in the note at the same time.
+- Formatting: it reads the text with its marks and can use them when writing (for example a checkbox, `- [ ] AA batteries`) ([5.12 Notes](#notes)).
 - Replace the whole text: only if the note hasn't changed since it read it; otherwise nothing is written and it has to read it again. It must ask you to confirm first.
 - Create a note: it's yours, shared with no one.
 - Labels: it only sets labels that already exist (capitals and accents ignored); with an unknown name, nothing is done. It can create a label if you ask it to.

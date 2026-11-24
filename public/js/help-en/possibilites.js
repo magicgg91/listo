@@ -62,6 +62,7 @@ export default {
       title: "Notes",
       blocks: [{ ul: [
         "Notes in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
+        "Simple formatting in notes: headings, bold, italic, underline, highlight, lists, checkboxes and links, with a bar of buttons above the keyboard ([[notes]]).",
         "A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([[notes-partage]]).",
         "A quick note from Home, even offline ([[notes]]).",
         "An AI assistant can read your notes and, if you allow it, create notes or add to them ([[claude-notes]]).",

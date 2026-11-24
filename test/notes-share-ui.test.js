@@ -99,7 +99,9 @@ test('page publique d\'une note : textContent et <a> seulement (http, https), no
   const pub = code('public/js/public.js');
   assert.doesNotMatch(pub, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
   assert.match(pub, /const isNotePage = root\.dataset\.kind === 'note';/);
-  assert.match(pub, /linkParts\(note\.body\)\.map\(\(part\) => \(part\.href\s*\? h\('a', \{ class: 'note-link', href: part\.href, target: '_blank', rel: 'noopener noreferrer nofollow' \}, part\.text\)\s*: part\.text\)\)/);
+  // Texte mis en forme (24 novembre 2026) : éléments construits par
+  // note-format.js, cases jamais cochables, liens rel « nofollow »
+  assert.match(pub, /renderNoteText\(note\.body, \{ h, icon, editable: false, rel: 'noopener noreferrer nofollow' \}\)/);
   assert.match(pub, /function showNote\(\{ note, expiresAt \}\) \{/);
   for (const lang of ['', 'en/']) {
     const page = read(`server/pages/${lang}lien-note.html`);

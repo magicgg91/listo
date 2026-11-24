@@ -859,7 +859,7 @@ La « Corbeille des notes » est dans « Réglages », juste sous la « Corbeill
 
 **Sur ordinateur**
 
-« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil ») ; la touche « / » cherche dans les notes.
+« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. Une carte ouvre sa note à la place des cartes, seule au centre, comme une liste ouverte : en haut, « Retour aux notes » (la flèche à gauche), la mention « Enregistré », « Partager » ou « Personnes », l'épingle et le menu ⋮ ; dessous, le titre et le texte, en lignes pas trop longues pour se lire facilement. Elle s'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil »). La flèche, Échap (quand vous n'écrivez pas) ou le retour du navigateur ramènent aux cartes. Sur l'écran « Notes », la touche « / » cherche dans les notes.
 
 <a id="notes-partage"></a>
 
@@ -967,7 +967,7 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | N | Nouvelle liste (nouvelle note sur les écrans des notes) |
 | / | Rechercher (dans la liste, dans les notes, ou dans le menu) |
 | , | Réglages |
-| Échap | Fermer la fenêtre ; vider puis quitter la recherche |
+| Échap | Fermer la fenêtre ; vider puis quitter la recherche ; quitter une note ouverte (retour aux notes) |
 | \[ et \] | Liste précédente, suivante |
 | P | Partager la liste |
 | A | Aller au champ d'ajout |

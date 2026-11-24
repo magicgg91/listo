@@ -214,7 +214,7 @@ export default {
         { sub: 'Notes trash' },
         'The “Notes trash” is in “Settings”, just below the “List trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people\'s notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.',
         { sub: 'On a computer' },
-        '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. The open note shows to the right of the cards, with “Share” or “People” at the top, and saves itself (offline: “Offline · saved on this device”); the “/” key searches the notes.',
+        '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. A card opens its note in place of the cards, alone in the middle, like an open list: at the top, “Back to notes” (the arrow on the left), the “Saved” status, “Share” or “People”, the pin and the ⋮ menu; below, the title and the text, in lines short enough to read easily. It saves itself (offline: “Offline · saved on this device”). The arrow, Esc (when you\'re not typing) or the browser\'s back button take you back to the cards. On the “Notes” screen, the “/” key searches the notes.',
       ],
     },
     {
@@ -322,7 +322,7 @@ export default {
             ['N', 'New list (new note on the notes screens)'],
             ['/', 'Search (in the list, in the notes, or in the menu)'],
             [',', 'Settings'],
-            ['Esc', 'Close the window; clear, then leave the search'],
+            ['Esc', 'Close the window; clear, then leave the search; leave an open note (back to notes)'],
             ['[ and ]', 'Previous, next list'],
             ['P', 'Share list'],
             ['A', 'Go to the add field'],

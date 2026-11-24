@@ -39,7 +39,6 @@ export default {
 
   // Écran d'une note
   'notes.retour': 'Back to notes',
-  'notes.fermer': 'Close the note',
   'notes.champ.titre': 'Title',
   'notes.champ.texte': 'Note text',
   'notes.champ.texte.vide': 'Write here…',

@@ -6,8 +6,9 @@
 // Téléphone : barre du haut (titre, pastille d'état, bouton de tri comme
 // « Listes », « + » Nouvelle note), loupe ronde du bandeau (titres
 // et textes), notes épinglées d'abord puis les autres. Ordinateur : les
-// cartes à gauche, la note ouverte à droite (screens/note.js), « Nouvelle
-// note » en bas du menu de gauche (touche N).
+// cartes seules dans la colonne ; une carte ouvre la note à sa place, seule
+// dans la colonne comme une liste ouverte (screens/note.js, décision du
+// 24 novembre 2026) ; « Nouvelle note » en bas du menu de gauche (touche N).
 //
 // Tout vient de la copie locale (hors ligne compris) ; chaque action passe
 // par la file d'attente (actions.js) et le serveur revérifie les droits.
@@ -45,7 +46,6 @@ import { isNoteUnread, isNoteNewsMuted, isNoteOwner, canEditNote, notePeople } f
 import { isNotePushMuted, setNotePushMuted } from '../push.js';
 import { openNoteSharePanel } from './share-panel.js';
 import { openNoteLinkSheet } from './share.js';
-import { noteEditor } from './note.js';
 import { noteMatches } from '../labels.js';
 import { labelList, labelsOfNote, labelFilterBar, drawLabelFilter, activeLabelFilter, openNoteLabelsSheet } from './note-labels.js';
 
@@ -201,7 +201,7 @@ export async function askDelete(note, onDeleted = () => {}) {
 
 // --- Carte d'une note (balisage de design/accueil-notes, notes-1) ---
 // Un lien (toute la carte ouvre la note) et, posé dans son coin, le bouton ⋮.
-export function noteCard(note, { selected = false } = {}) {
+export function noteCard(note) {
   const pinned = app.data.pinnedNotes.has(note.id);
   const title = titleOf(note);
   const excerpt = noteExcerpt(note);
@@ -226,13 +226,13 @@ export function noteCard(note, { selected = false } = {}) {
       people.length ? h('span', { class: 'avatars', role: 'img', 'aria-label': t('notes.carte.partagee', { names: namesList(people.map((m) => m.displayName)) }) },
         people.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))) : null)
     : null;
+  // Ouvre la note (nouvelle entrée de l'historique : Retour revient aux cartes)
   const card = h('a', {
-    class: `card note-card${selected ? ' is-selected' : ''}`,
+    class: 'card note-card',
     href: pathFor('note', { id: note.id }),
-    'aria-current': selected ? 'page' : null,
     onClick: (event) => {
       event.preventDefault();
-      navigate('note', { id: note.id }, { replace: selected || app.route?.name === 'note' || app.route?.name === 'newNote' });
+      navigate('note', { id: note.id });
     },
   },
   h('div', { class: 'note-card__head' },
@@ -260,10 +260,10 @@ export function noteCard(note, { selected = false } = {}) {
 }
 
 // Épinglées, puis autres notes (titres de section seulement s'il y a des épinglées)
-function noteSections(notes, { selectedId = null } = {}) {
+function noteSections(notes) {
   const pinned = notes.filter((note) => app.data.pinnedNotes.has(note.id));
   const others = notes.filter((note) => !app.data.pinnedNotes.has(note.id));
-  const card = (note) => noteCard(note, { selected: note.id === selectedId });
+  const card = (note) => noteCard(note);
   if (!pinned.length) return others.map(card);
   return [
     h('h2', { class: 'notes-section' }, icon('pin', 'icon--xs'), t('notes.section.epinglees')),
@@ -317,9 +317,8 @@ function sortButton(onChange) {
 }
 
 // --- Écran « Notes » ---
-// openId : ordinateur, note ouverte à droite ; 'new' : nouvelle note
-export function renderNotes(onLeave, { openId = null } = {}) {
-  if (isDesktop()) return renderNotesPc(onLeave, openId);
+export function renderNotes(onLeave) {
+  if (isDesktop()) return renderNotesPc(onLeave);
   const content = h('div', { class: 'scroll' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, {
@@ -370,18 +369,18 @@ export function renderNotes(onLeave, { openId = null } = {}) {
 }
 
 // --- Ordinateur (maquette pc-notes-1, sans catégories) ---
-// À gauche : titre « Notes », « 12 notes », recherche toujours visible,
-// corbeille, pastille d'état, tri, cartes ; à droite : la note ouverte
-// (screens/note.js), sans voile.
+// Titre « Notes », « 12 notes », pastille d'état, recherche toujours
+// visible ; dessous, filtre et tri ; puis les cartes, seules dans la
+// colonne. Une carte ouvre la note à la place des cartes (écran de la
+// note, screens/note.js ; décision du 24 novembre 2026).
 let pcScroll = 0;
-function renderNotesPc(onLeave, openId) {
+function renderNotesPc(onLeave) {
   const content = h('div', { class: 'scroll' });
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, { label: t('notes.recherche.libelle'), onChange: () => draw(), docked: true, placeholder: t('navigation.recherche.placeholder') });
   search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
   search.field.append(keycap('/'));
-  const selectedId = () => (openId && openId !== 'new' ? openId : null);
   // Filtre par étiquette : dans la ligne sous le titre (caché sans étiquette)
   const filter = labelFilterBar();
 
@@ -401,18 +400,19 @@ function renderNotesPc(onLeave, openId) {
     const query = search.value;
     const notes = found(withLabel(all, activeLabelFilter(all)), query);
     searchMeta.textContent = isSearching(query) ? t('notes.recherche.nombre', { count: notes.length }) : '';
-    search.show(notes.length ? h('div', { class: 'pc-notes__cards' }, noteSections(notes, { selectedId: selectedId() })) : noResult(query, search));
+    search.show(notes.length ? h('div', { class: 'pc-notes__cards' }, noteSections(notes)) : noResult(query, search));
   };
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
   draw();
   refreshData({ quiet: true });
-  // Ouvrir une autre note redessine l'écran : les cartes gardent leur défilement
+  // Retour d'une note : les cartes retrouvent leur défilement (et le filtre,
+  // gardé sur cet appareil)
   onLeave(() => { pcScroll = content.scrollTop; });
   requestAnimationFrame(() => { content.scrollTop = pcScroll; });
 
-  const list = h('div', { class: 'pc-notes__list' },
+  return h('div', { class: 'screen' },
     // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
     // (comme dans une liste ouverte) ; dessous : résultats et tri
     h('header', { class: 'pc-head' },
@@ -425,8 +425,6 @@ function renderNotesPc(onLeave, openId) {
       h('div', { class: 'pc-tools__end' }, sortButton(() => draw()))),
     offlineBanner(),
     content);
-  const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;
-  return h('div', { class: 'screen' }, h('div', { class: `pc-notes${pane ? '' : ' pc-notes--closed'}` }, list, pane));
 }
 
 // --- Nouvelle note depuis l'Accueil (tuile Notes) ---

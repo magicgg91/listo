@@ -839,8 +839,9 @@ function show(route) {
     // « À offrir » : liste automatique de mes réservations (gifts.js)
     case 'gifts': mount((onLeave) => renderGifts(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
-    // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
-    // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
+    // Notes (étape 2) : une note s'ouvre à la place des cartes, seule à
+    // l'écran (téléphone) ou dans la colonne (ordinateur, comme une liste
+    // ouverte ; décision du 24 novembre 2026)
     case 'notes': mount((onLeave) => renderNotes(onLeave)); break;
     case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
     // Ancienne adresse (#/notes/corbeille) : remplacée par la nouvelle
@@ -848,8 +849,7 @@ function show(route) {
     case 'note':
     case 'newNote': {
       const id = name === 'note' ? params.id : null;
-      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }));
-      else mount((onLeave) => renderNote(id, onLeave));
+      mount((onLeave) => renderNote(id, onLeave));
       break;
     }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;

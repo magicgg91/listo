@@ -544,7 +544,7 @@ Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.c
 - **Écran Notes** (16.25) : `.notes-section`, `.note-card-wrap`, `.note-card` (`__head`, `__icon`, `__title`, `__time`, `__menu`, `__excerpt`, `__foot`, `__check`).
 - **Une note** (16.26) : `.note-status` (`--ok`, `--check`), `.note-edit` (`__title`, `__body`, `__body--input`, `__placeholder`), `.note-link`, `.note-foot`, `.note-banner`, `.conflict`. Le texte est affiché avec ses liens hors saisie ; le toucher passe en saisie (champ de texte simple).
 - **Corbeilles des listes et des notes** (16.27, même écran depuis le 23 novembre 2026) : `.page-intro`, `.page-tools`, `.trash-row` (grille : titre et actions `.trash-row__actions` sur la première ligne, poubelle rouge `.trash-row__purge`, puis les lignes `.trash-row__meta`).
-- **Ordinateur** (16.28) : `.pc-notes` (`--closed` sans note ouverte), `.pc-notes__list`, `.pc-notes__cards`, `.pc-note` (`__bar`, un trait de chaque côté), 560 px (440 px sous 1 280 px), dans la colonne `.pc-col` de 1 040 px commune à tous les écrans (24 novembre 2026).
+- **Ordinateur** (16.28) : `.pc-notes__cards` (les cartes seules, dans la colonne `.pc-col` de 1 040 px commune à tous les écrans) ; `.pc-note` : la note ouverte, seule dans la colonne à la place des cartes, comme une liste ouverte (décision du 24 novembre 2026 ; plus de zone de droite ni de croix « Fermer »), avec sa barre `.pc-note__bar` (« Retour aux notes » `.pc-note__back` à gauche, puis la mention, « Partager » ou « Personnes », l'épingle et le menu ⋮), le titre et le texte alignés après le bouton de retour, le texte en `--text-lg` sur 70 caractères au plus (`max-width: 70ch`), « Modifiée par … » en bas sous un trait.
 
 ## Ajout : Notes, partage (23 novembre 2026)
 

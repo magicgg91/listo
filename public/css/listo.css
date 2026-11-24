@@ -732,10 +732,10 @@
 .pc-user__role { font-size: var(--text-sm); color: var(--color-text-2); }
 
 /* En-tête d'une liste (et de « Mes listes »), outils, ajout en haut */
-/* Si la place manque (cartes des notes à côté d'une note ouverte, petit
-   écran, cloche, « Hors ligne · 3 en attente »…), les derniers éléments
-   passent à la ligne, calés à droite : le titre garde au moins 120 px et
-   n'est jamais coupé au milieu d'un mot court */
+/* Si la place manque (petit écran, cloche, « Hors ligne · 3 en
+   attente »…), les derniers éléments passent à la ligne, calés à droite :
+   le titre garde au moins 120 px et n'est jamais coupé au milieu d'un mot
+   court */
 .pc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px var(--pc-gutter) 8px; }
 .pc-head > :last-child:not(:first-child) { margin-left: auto; }
 .pc-head__main { flex: 1; min-width: 120px; }
@@ -1140,12 +1140,10 @@
    - .note-card : carte du kit ; ligne 1, icône note, titre (deux lignes au
      plus), épingle, heure, menu ⋮ ; puis deux lignes du texte (trois sur
      ordinateur) ; « À vérifier » (.chip, icône d'alerte ET texte) pour une
-     note en conflit pas encore tranché. Toute la carte ouvre la note.
-   - .note-card.is-selected : note ouverte (ordinateur). */
+     note en conflit pas encore tranché. Toute la carte ouvre la note. */
 .notes-section { display: flex; align-items: center; gap: 6px; padding: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
 .note-card-wrap { position: relative; }
 .note-card { display: block; width: 100%; padding: 14px var(--space-1) var(--space-2) var(--space-2); text-align: left; text-decoration: none; color: inherit; }
-.note-card.is-selected { background: var(--color-accent-soft); border-color: var(--color-accent); }
 .note-card__head { display: flex; align-items: flex-start; gap: var(--space-1); padding-right: 40px; }
 .note-card__icon { position: relative; display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
 .note-card__title { flex: 1; min-width: 0; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: var(--text-lg); font-weight: 650; line-height: var(--lh-tight); overflow-wrap: anywhere; }
@@ -1163,7 +1161,6 @@
 .note-card__news { display: block; margin: 2px 0 0 28px; font-size: var(--text-sm); font-weight: 600; color: var(--color-accent-ink); }
 .note-card__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .note-card__people { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--color-text-2); }
-.note-card.is-selected .avatar { border-color: var(--color-accent-soft); }
 /* Bouton « Partager » (propriétaire) ou « Personnes » de la barre d'une
    note : #i-users et pastilles des personnes ; sur le téléphone le mot est
    dans le nom lu (place), sur ordinateur il est écrit. */
@@ -1244,26 +1241,28 @@
    (maquette pc-notes-1, sans catégories : abandonnées le 23 novembre 2026)
    - Menu de gauche : les quatre entrées fixes (Accueil, Échéances, Listes,
      Notes avec son nombre), « Nouvelle note » (touche N) en bas.
-   - Deux zones dans la colonne commune à tous les écrans (.pc-col,
-     1 040 px ; 24 novembre 2026) : les cartes à gauche, la note ouverte à
-     droite (.pc-note, 560 px), sans voile : elle s'enregistre toute seule,
-     et un clic sur une autre carte l'ouvre. Un trait de chaque côté de la
-     note : elle ne flotte pas au milieu de l'écran. */
-.pc-notes { display: grid; grid-template-columns: minmax(0, 1fr) 560px; flex: 1; min-height: 0; }
-.pc-notes--closed { grid-template-columns: minmax(0, 1fr); }
-.pc-notes__list { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+   - Écran Notes : les cartes seules, l'une sous l'autre (.pc-notes__cards),
+     dans la colonne commune à tous les écrans (.pc-col, 1 040 px).
+   - Note ouverte (.pc-note, décision du 24 novembre 2026) : seule dans la
+     colonne, à la place des cartes, comme une liste ouverte. Barre
+     .pc-note__bar : « Retour aux notes » (.pc-note__back, #i-chev-l) à
+     gauche, la mention « Enregistré », puis « Partager » ou « Personnes »,
+     l'épingle et le menu ⋮. Dessous, le titre, les étiquettes et le texte,
+     alignés après le bouton de retour ; le texte un peu plus grand
+     (--text-lg) et sur 70 caractères au plus, pour une lecture confortable.
+     En bas, « Modifiée par … » sous un trait. */
 .pc-notes__cards { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--pc-gutter) var(--pc-gutter); }
-.pc-notes .notes-section { padding: 8px 0 0; }
-.pc-note { display: flex; flex-direction: column; min-height: 0; border-inline: 1px solid var(--color-border); background: var(--color-surface); }
-.pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px 20px; }
+.pc-notes__cards .notes-section { padding: 8px 0 0; }
+.pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 20px var(--pc-gutter) 6px; }
 .pc-note__bar .icon-btn[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
-.pc-note .note-edit { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 28px 24px; }
-.pc-note .note-edit__body { font-size: var(--text-base); }
-.pc-note .note-foot { padding: 12px 20px; border-top: 1px solid var(--color-border); text-align: left; }
+.pc-note > .scroll { padding: 0 var(--pc-gutter) var(--pc-gutter) calc(var(--pc-gutter) + var(--tap-min) + 12px); }
+.pc-note .note-edit { max-width: 70ch; padding: 8px 0 0; font-size: var(--text-lg); }
+.pc-note .note-edit__body { font-size: inherit; }
+.pc-note .note-banner { max-width: 70ch; margin: 0 var(--pc-gutter) 8px calc(var(--pc-gutter) + var(--tap-min) + 12px); }
+.pc-note .note-foot { padding: 12px var(--pc-gutter) 12px calc(var(--pc-gutter) + var(--tap-min) + 12px); border-top: 1px solid var(--color-border); text-align: left; }
 .app--pc .note-card { padding: 12px 8px 14px 16px; }
 .app--pc .note-card__excerpt { -webkit-line-clamp: 3; line-clamp: 3; }
 .app--pc .note-card:hover { border-color: var(--color-control); }
-@media (max-width: 1279.98px) { .pc-notes { grid-template-columns: minmax(0, 1fr) 440px; } .pc-notes--closed { grid-template-columns: minmax(0, 1fr); } }
 
 /* 16.29 Page Notifications (#/notifications : la cloche de l'Accueil, la
    ligne « Notifications » de la tuile Compte ; étape 4, 23 novembre 2026,

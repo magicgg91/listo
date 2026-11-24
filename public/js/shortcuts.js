@@ -6,7 +6,8 @@
 //   P  partager la liste           A  ajouter un article  S  sommaire de l'aide
 //   ↓ ↑  article suivant, précédent    Espace  cocher ou décocher
 //   Entrée  ouvrir la fiche        E  modifier            Suppr  supprimer (annulable)
-//   Échap  fermer, effacer la recherche (géré par chaque fenêtre et chaque champ)
+//   Échap  fermer, effacer la recherche (géré par chaque fenêtre et chaque champ) ;
+//          dans une note ouverte, hors saisie : retour aux notes
 //   Ctrl+Z  annuler la dernière action (undo.js)   Ctrl+Entrée  enregistrer
 //   Menu ou Maj+F10 (et clic droit)  menu de la ligne : Modifier, Cocher, Supprimer
 //
@@ -260,6 +261,17 @@ export function startShortcuts({ onUndo, onGoList, notesOn = () => true }) {
       return;
     }
     if (typing || mod || event.altKey) return;
+    // Échap dans une note ouverte (hors saisie, aucune fenêtre ouverte : elle
+    // se ferme d'abord) : appuie sur « Retour aux notes ». Pas une touche de
+    // caractère : reste active quand les raccourcis à une touche sont coupés
+    if (event.key === 'Escape') {
+      const back = $('.pc-col .pc-note__back');
+      if (!topLayer() && visible(back)) {
+        event.preventDefault();
+        back.click();
+      }
+      return;
+    }
     // Menu de la ligne : touche Menu ou Maj+F10
     if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
       const row = rowOf(document.activeElement);

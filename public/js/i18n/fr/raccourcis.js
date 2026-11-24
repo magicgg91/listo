@@ -9,7 +9,7 @@ export default {
   'raccourcis.partout.rechercher': 'Rechercher',
   'raccourcis.partout.reglages': 'Réglages',
   'raccourcis.touche.echap': 'Échap',
-  'raccourcis.partout.fermer': 'Fermer la fenêtre, effacer la recherche',
+  'raccourcis.partout.fermer': 'Fermer la fenêtre, effacer la recherche, quitter une note',
   'raccourcis.partout.listeVoisine': 'Liste précédente, suivante',
   'raccourcis.touche.ctrl': 'Ctrl',
   'raccourcis.partout.annuler': 'Annuler la dernière action',

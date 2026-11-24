@@ -312,7 +312,7 @@ test('sommaire : feuille du kit (openSheet), section en cours repérée sans la 
   assert.match(ui, /if \(event\.key === 'Escape'\) close\(\);/);
   assert.match(ui, /iconButton\('close', t\('fenetres\.fermer'\), \(\) => close\(\)\)/);
   assert.equal(fr['fenetres.fermer'], 'Fermer');
-  assert.match(ui, /opener\.focus\(\)/);
+  assert.match(ui, /opener\.focus\(\{ preventScroll: true \}\)/);
 });
 
 test('hors ligne : les fichiers de l\'aide sont gardés par le service worker, nouvelle version', () => {

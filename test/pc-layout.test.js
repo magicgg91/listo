@@ -166,7 +166,7 @@ test('fenêtres de l\'ordinateur : tiroir ou fenêtre centrée, role dialog et a
   assert.match(ui, /class: pc \? 'pc-panel pc-modal pc-modal--sm' : 'dialog', 'aria-labelledby': titleId, 'aria-describedby': textId/);
   // Seule la fenêtre du dessus répond à Échap ; focus rendu à l'élément d'origine
   assert.match(ui, /if \(event\.key === 'Escape' && onLayer && target\.lastElementChild !== panel\) return;/);
-  assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\);/);
+  assert.match(ui, /if \(opener\?\.isConnected && !isTextField\(opener\)\) opener\.focus\(\{ preventScroll: true \}\);/);
   // Passage sous 1 024 px : fenêtres refermées avant de redessiner
   assert.match(read('public/js/app.js'), /closeOverlays\(\);\s*markLayout\(\);\s*show\(app\.route\);/);
   // Le téléphone garde ses feuilles : rien de tout cela sans .app--pc

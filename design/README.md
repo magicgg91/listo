@@ -582,3 +582,7 @@ Décisions du propriétaire du 24 novembre 2026 ; maquettes « barre au-dessus d
 - **Case** : `.nf-task` avec `.tick.nf-task__box` (22 px, zone tactile de 44 px par `::after` ; un `button` pour qui peut modifier, un `span` sinon) et `.nf-task__text` ; cochée : `.is-done`, texte barré ET grisé.
 - **Barre** `.note-tools` (`role="toolbar"`) : dix boutons `.note-tool` carrés arrondis de 40 px (44 px de zone tactile), défilement de côté ; `aria-pressed="true"` : fond et contour d'accent. `.note-tools--dock` (téléphone, en bas, marge de sécurité du bas dessous, retirée clavier ouvert dans `app.css`) ; `.note-tools--top` (ordinateur, en haut du texte, collée en haut quand le texte défile). Faces : `.note-tool__italic` (italique à empattements), `.note-tool__mark` (« ab » surligné), `.note-tool__box` (case avec `#i-check`).
 - **Feuille « Insérer un lien »** : `.note-link-sheet`, deux champs `.field` (« Texte affiché », « Adresse » avec l'aide « Adresses en http ou https seulement. »), bouton principal avec `#i-link`.
+
+## Ajout : Coins des boutons (24 novembre 2026)
+
+- **16.34 Coins des boutons** (24 novembre 2026, remplace la pilule de 16.16) : boutons texte, choix d'une option, jours, « Tout replier », pastille d'état à `--radius-sm` (12 px) ; cadres `.segmented`, `.choice--pill` à `--radius-md` ; éléments en verre (filtre des types, recherche, barre d'ajout) à 22 px ; `.chip`, `.badge-multi`, `.label`, « + Étiquette » à 8 px ; boutons-icônes, loupe, interrupteurs et pastilles de nombre ronds.

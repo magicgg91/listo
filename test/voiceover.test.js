@@ -70,7 +70,7 @@ test('fenêtre ouverte : le reste de l\'écran est inerte, rendu à la fermeture
   assert.match(ui, /if \(child === scrim \|\| child === panel \|\| child\.inert\) continue;\n      child\.inert = true;\n      madeInert\.push\(child\);/);
   const restore = ui.indexOf('for (const element of madeInert) element.inert = false;');
   assert.ok(restore > 0);
-  assert.ok(restore < ui.indexOf('opener.focus()'), 'inerte retiré avant le retour du focus');
+  assert.ok(restore < ui.indexOf('opener.focus({ preventScroll: true })'), 'inerte retiré avant le retour du focus');
 });
 
 test('rond à cocher : nom fixe, l\'état dans aria-pressed seulement (dit une fois)', () => {

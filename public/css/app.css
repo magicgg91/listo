@@ -638,7 +638,7 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
    dessous : mêmes lignes que les autres, en retrait, puis « Ajouter une
    sous-tâche ». Le chevron se retourne quand elles sont dépliées ; l'état
    s'annonce par aria-expanded (jamais l'icône seule). */
-.subtasks__toggle { display: inline-flex; align-items: center; gap: 2px; flex: none; align-self: center; min-width: var(--tap-min); min-height: var(--tap-min); padding: 0 var(--space-1) 0 var(--space-2); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
+.subtasks__toggle { display: inline-flex; align-items: center; gap: 2px; flex: none; align-self: center; min-width: var(--tap-min); min-height: var(--tap-min); padding: 0 var(--space-1) 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
 .subtasks__toggle .icon { flex: none; transition: transform var(--dur-fast) var(--ease); }
 .subtasks__toggle[aria-expanded="true"] { color: var(--color-accent-ink); }
 .subtasks__toggle[aria-expanded="true"] .icon { transform: rotate(180deg); }

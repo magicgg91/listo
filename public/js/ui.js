@@ -141,7 +141,7 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
     onClose?.();
     // Retour du focus à l'élément d'origine (bouton, ligne…), sauf si c'était
     // un champ de saisie : le clavier se rouvrirait tout seul
-    if (opener?.isConnected && !isTextField(opener)) opener.focus();
+    if (opener?.isConnected && !isTextField(opener)) opener.focus({ preventScroll: true });
   };
   const shut = () => (closeViaRouter ? closeViaRouter() : remove());
   let asking = false;
@@ -228,10 +228,13 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
   // Focus sur le bouton de départ de la fenêtre (data-initial-focus, jamais
   // un champ de saisie), sinon sur la fenêtre elle-même : les lecteurs
   // d'écran annoncent son titre, et aucun clavier ne s'ouvre
+  // preventScroll : sur l'iPhone, donner le focus faisait défiler la page
+  // derrière la fenêtre (l'écran « sautait » à l'ouverture, retour du
+  // propriétaire du 24 novembre 2026 sur « Partager » dans une note)
   panel.setAttribute('tabindex', '-1');
   const start = panel.querySelector('[data-initial-focus]');
-  if (start && !isTextField(start)) start.focus();
-  else panel.focus();
+  if (start && !isTextField(start)) start.focus({ preventScroll: true });
+  else panel.focus({ preventScroll: true });
   return { close, panel, forceClose, setBack: (fn) => { backHandler = fn; } };
 }
 

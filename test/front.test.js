@@ -323,7 +323,7 @@ test('copie locale : enregistrée puis relue à l\'identique ; illisible ou d\'u
   // Aucun secret dans la copie : seulement des données de listes et de notes
   // (« À offrir » : mes dates de réservation et marques « Acheté », à moi
   // seul ; « home » : mon réglage Réglages › Accueil)
-  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'features', 'gifts', 'history', 'home', 'inbox', 'items', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
+  assert.deepEqual(Object.keys(snapshot).sort(), ['aisles', 'features', 'gifts', 'history', 'home', 'inbox', 'items', 'labels', 'listIds', 'lists', 'news', 'noteConflicts', 'noteIds', 'noteNews', 'notes', 'pinnedNotes', 'reservations', 'savedAt', 'serverTime', 'stores', 'users', 'version']);
 });
 
 test('copie locale : trop ancienne au-delà de 25 jours sans synchronisation', async () => {

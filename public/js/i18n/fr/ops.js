@@ -141,6 +141,14 @@ export default {
   'ops.notesLimite': 'Vous avez déjà {max} notes, corbeille comprise : supprimez-en avant d\'en créer une autre.',
   'ops.notesInvalides': 'Liste des notes invalide.',
   'ops.notesTropVite': 'Trop d\'enregistrements de notes pour le moment. Ils repartiront dans un moment.',
+  // Étiquettes des notes (server/labels.js, 24 novembre 2026)
+  'ops.etiquetteIntrouvable': 'Étiquette introuvable.',
+  'ops.nomEtiquetteInvalide': 'Nom d\'étiquette invalide : de 1 à 30 caractères, sans caractère spécial invisible.',
+  'ops.couleurEtiquetteInvalide': 'Couleur d\'étiquette invalide.',
+  'ops.etiquettesLimite': 'Il y a déjà {max} étiquettes : demandez à l\'Admin d\'en supprimer avant d\'en créer une autre.',
+  'ops.tropDEtiquettes': 'Trop d\'étiquettes créées pour le moment. Réessayez dans une heure.',
+  'ops.etiquetteExisteDeja': 'L\'étiquette « {name} » existe déjà (majuscules et accents ne comptent pas).',
+  'ops.etiquettesNoteInvalides': 'Étiquettes de la note invalides ({max} au plus).',
   // Partage des notes (étape 3)
   'ops.proprietaireNePeutPasQuitterNote': 'Le propriétaire ne peut pas quitter sa note. Supprimez-la à la place.',
   'ops.proprietaireTousDroitsNote': 'Le propriétaire a tous les droits sur sa note.',

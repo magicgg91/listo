@@ -561,3 +561,15 @@ Décision du propriétaire. Aucune classe du kit nouvelle : carte du compte (`.c
 - **Page Notifications** (16.29) : `.inbox-day`, `.inbox-row` (`.is-unread` : texte en gras, icône bleue ; `__body`, `__text`, `__sub`, `__end`, `__time`, `__dot`), `.inbox-foot` (`__hint`). Jours en `.section-title`, lignes dans un `.group`, « N non lues » et « Tout marquer comme lu » dans `.page-tools`, page vide en `.empty`.
 - **Cloche** de l'Accueil : `.icon-btn--badge` et `.icon-btn__badge` (16.22), à droite de la pastille d'état, sur téléphone et sur ordinateur.
 - Dans `app.css` (application seulement) : `.inbox-item` (ligne glissable, même mécanisme que `.item.swipe`) et `.inbox-row__more`, le bouton ⋮ de chaque ligne pour le clavier et les lecteurs d'écran, visible au focus (et au survol sur ordinateur) : le téléphone garde la ligne de la maquette.
+
+## Ajout : Étiquettes des notes (24 novembre 2026)
+
+Décisions du propriétaire du 24 novembre 2026 ; maquettes l1 à l4 (téléphone), p1 et p2 (ordinateur), avec sa correction : sur une carte, les étiquettes sont sur la même ligne que les pastilles des personnes (étiquettes à gauche, personnes à droite). Section 16.32 de `listo.css`. Aucune icône nouvelle (`#i-tag`, `#i-plus`, `#i-check` existaient).
+
+- **Couleurs** (sections 2 et 3, et le thème automatique) : huit couleurs fixes, `gris`, `rouge`, `orange`, `jaune`, `vert`, `bleu`, `violet`, `rose`, chacune en deux variables, `--label-<couleur>-bg` (fond doux) et `--label-<couleur>-ink` (texte et point), une valeur claire et une sombre. Contraste du texte sur son fond : 4,6:1 au moins en clair, 7,4:1 au moins en sombre.
+- **Étiquette** (16.32) : `.label` (point `::before` à la couleur du texte, puis le nom `.label__name`) et `.label--<couleur>` ; `.labels`, une rangée qui passe à la ligne. Le nom est toujours écrit : la couleur n'est jamais seule.
+- **Carte d'une note** : les étiquettes dans `.note-card__chips`, à gauche de `.note-card__foot`, les pastilles des personnes à droite (`.note-card__people`), sur la même ligne.
+- **Écran d'une note** : `.note-labels` sous le titre (étiquettes puis `.note-labels__add`, « + Étiquette » en pointillés, zone tactile de 44 px par `::after`) ; caché quand la note n'a aucune étiquette.
+- **Filtre de l'écran Notes** : `.label-filter` (`role="group"`), boutons `.label-filter__opt` (44 px, `aria-pressed`) qui portent une étiquette, ou `.label--all` pour « Toutes » ; le choix : coche `#i-check` ET contour de la couleur du texte. Téléphone : sous la barre du haut, défile de côté ; ordinateur (`.app--pc`) : dans la ligne `.pc-tools`, passe à la ligne.
+- **Feuille « Étiquettes »** : `.label-sheet` (champ, phrase `.label-sheet__hint`, titres `.label-sheet__title`, lignes `.tick-row` avec `.tick` et l'étiquette) ; palette `.label-palette` (`role="radiogroup"`), ronds `.label-swatch` de 44 px (`role="radio"`, nom de la couleur dans `aria-label`, `.label-swatch__dot` ; choisi : anneau de la couleur du texte) ; aperçu `.label-preview`.
+- **Administration › Étiquettes** : lignes `.label-row` (étiquette, nombre de notes `.label-row__count`, crayon, corbeille `.label-row__delete`).

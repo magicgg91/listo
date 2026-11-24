@@ -14,8 +14,14 @@
 //     les listes de courses, changer son rayon habituel, ou le retirer des
 //     suggestions. (Son identifiant interne reste « noms », comme les
 //     routes /api/admin/names.)
+// - Étiquettes (24 novembre 2026, maquette p2) : les étiquettes des notes,
+//   communes à tout le foyer, avec leur nombre de notes ; renommer et
+//   changer la couleur (une feuille : nom et palette), supprimer (avec
+//   confirmation : retirée des notes, sans toucher aux notes). Toujours
+//   là, même si l'Admin a coupé les notes pour lui (Réglages › Fonctions).
 // Aucune de ces vues ne montre le contenu d'une liste (son nom, ses membres,
-// ses éléments) : les articles enregistrés viennent avec de simples compteurs.
+// ses éléments) ni d'une note : les articles enregistrés et les étiquettes
+// viennent avec de simples compteurs.
 
 import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
 import { get, post, patch, del, errorMessage } from '../api.js';
@@ -26,7 +32,9 @@ import { app, refreshData, providerName } from '../app.js';
 import { openSheet, confirmDialog, toast } from '../ui.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
-import { t } from '../i18n.js';
+import { t, compareText } from '../i18n.js';
+import { labelChip, labelPalette } from './note-labels.js';
+import { cleanLabelName, labelNameProblem, sortLabels, LABEL_NAME_MAX } from '../labels.js';
 
 // Mot des listes de courses (words.js) : « article », « articles »
 const ITEM = itemWords(true);
@@ -46,6 +54,7 @@ const SHOPPING = [
 const TABS = [
   { key: 'comptes', get label() { return t('administration.onglets.comptes'); } },
   { key: 'courses', get label() { return t('administration.onglets.courses'); } },
+  { key: 'etiquettes', get label() { return t('administration.onglets.etiquettes'); } },
 ];
 
 // Dernier choix de « Courses », retrouvé en revenant sur l'onglet pendant la
@@ -97,6 +106,7 @@ export function renderAdmin(tabKey, onLeave) {
   });
   const load = () => {
     if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive);
+    if (tab.key === 'etiquettes') return loadLabels(panel, () => alive);
     if (tab.key === 'noms') return loadNames(panel, () => alive);
     return loadReferences(tab, panel, () => alive);
   };
@@ -990,6 +1000,100 @@ async function removeName(entry, reload) {
     await post('/api/admin/names/remove', { from: entry.key });
     toast(t('administration.noms.retire', { name: entry.name }), { low: true });
     afterNameChange(reload);
+  } catch (err) {
+    toast(errorMessage(err), { low: true });
+  }
+}
+
+// ================= Étiquettes des notes =================
+//
+// La réserve commune des étiquettes (server/labels.js) : chaque étiquette,
+// le nombre de notes qui la portent (jamais lesquelles), le crayon (nom et
+// couleur) et la corbeille. Rien ne se crée ici : les étiquettes se créent
+// depuis une note.
+
+async function loadLabels(panel, alive) {
+  replace(panel, loadingText());
+  const reload = () => loadLabels(panel, alive);
+  let items;
+  try {
+    ({ items } = await get('/api/admin/labels'));
+  } catch (err) {
+    if (alive()) replace(panel, errorBlock(err, reload));
+    return;
+  }
+  if (!alive()) return;
+  const sorted = sortLabels(items, (a, b) => compareText(a, b, { sensitivity: 'base', numeric: true }));
+  replace(panel,
+    h('p', { class: 'page-intro' }, t('administration.etiquettes.intro')),
+    sorted.length
+      ? h('div', { class: 'group' }, sorted.map((label) => h('div', { class: 'label-row' },
+        labelChip(label),
+        h('span', { class: 'label-row__count' }, t('administration.etiquettes.notes', { count: label.notes })),
+        iconButton('pencil', t('administration.modifier', { name: label.name }), () => openLabelSheet(label, reload)),
+        iconButton('trash', t('administration.supprimer.element', { name: label.name }), () => removeLabel(label, reload), 'label-row__delete'))))
+      : h('p', { class: 'muted empty__text' }, t('administration.etiquettes.vide')));
+}
+
+// Renommer et changer la couleur : une feuille avec le nom et la palette
+// (le champ apparaît sans curseur : on le touche pour écrire)
+function openLabelSheet(label, reload) {
+  let color = label.color;
+  const input = h('input', { class: 'input', ...LABEL_INPUT, maxlength: String(LABEL_NAME_MAX * 2), value: label.name });
+  const nameField = field(t('administration.etiquettes.nom'), input, { hint: t('administration.etiquettes.nom.aide') });
+  const palette = labelPalette(color, (value) => {
+    color = value;
+  }, { label: t('administration.etiquettes.couleur') });
+  const error = errorNote();
+  const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.etiquettes.enregistrer'));
+  const form = h('form', { class: 'stack', novalidate: true },
+    nameField.field,
+    h('div', { class: 'field' }, h('p', { class: 'field__label', 'aria-hidden': 'true' }, t('administration.etiquettes.couleur')), palette.element),
+    error.note,
+    submit);
+  const sheet = openSheet({ title: t('administration.etiquettes.edition'), sub: label.name, content: form });
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const problem = labelNameProblem(input.value);
+    if (problem) {
+      nameField.setError(t({ vide: 'administration.etiquettes.nom.vide', long: 'notes.etiquettes.nom.long', caractere: 'notes.etiquettes.nom.caractere' }[problem], { max: LABEL_NAME_MAX }));
+      return;
+    }
+    nameField.setError('');
+    const name = cleanLabelName(input.value);
+    const change = {};
+    if (name !== label.name) change.name = name;
+    if (color !== label.color) change.color = color;
+    if (!Object.keys(change).length) {
+      sheet.close();
+      return;
+    }
+    submit.disabled = true;
+    try {
+      await patch(`/api/admin/labels/${label.id}`, change);
+      sheet.close();
+      toast(t('administration.etiquettes.enregistree', { name }), { low: true });
+      afterChange(reload);
+    } catch (err) {
+      error.show(errorMessage(err), input);
+      submit.disabled = false;
+    }
+  });
+}
+
+// Supprimer (confirmation) : retirée de ses notes, sans toucher aux notes
+async function removeLabel(label, reload) {
+  const ok = await confirmDialog({
+    title: t('administration.etiquettes.supprimer.question', { name: label.name }),
+    text: label.notes ? t('administration.etiquettes.supprimer.texte', { count: label.notes }) : t('administration.etiquettes.supprimer.texte.aucune'),
+    confirmLabel: t('administration.supprimer'),
+    focusCancel: true,
+  });
+  if (!ok) return;
+  try {
+    await del(`/api/admin/labels/${label.id}`);
+    toast(t('administration.etiquettes.supprimee', { name: label.name }), { low: true });
+    afterChange(reload);
   } catch (err) {
     toast(errorMessage(err), { low: true });
   }

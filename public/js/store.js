@@ -19,6 +19,7 @@ import { t, compareText } from './i18n.js';
 import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, recordUse, moveUse, normalizeItemName } from './history.js';
 import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
+import { cleanLabelIds } from './labels.js';
 import { normalizeHome, homeChangeProblem, applyHomeChange } from './home-tiles.js';
 import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn } from './features.js';
 
@@ -59,6 +60,10 @@ export function emptyState() {
     notes: new Map(),       // id -> note
     noteIds: new Set(),     // notes auxquelles j'ai accès
     pinnedNotes: new Set(), // notes que j'ai épinglées (propre à chaque personne)
+    // Étiquettes des notes (labels.js, server/labels.js) : toute la réserve,
+    // commune au foyer ({ id, name, color }), remplacée en entier à chaque
+    // synchronisation ; chaque note porte les numéros des siennes (labelIds)
+    labels: [],
     // Notes « À vérifier » : enregistrement refusé parce que la note a
     // changé entre-temps (deux appareils, ou deux personnes) ; mon texte
     // est gardé ici, sur ce téléphone seulement, jusqu'à mon choix
@@ -130,6 +135,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     notes: [...state.notes.values()],
     noteIds: [...state.noteIds],
     pinnedNotes: [...state.pinnedNotes],
+    labels: state.labels,
     noteConflicts: [...state.noteConflicts],
     noteNews: { unread: [...state.noteNews.unread], muted: [...state.noteNews.muted] },
     inbox: state.inbox,
@@ -162,6 +168,9 @@ export function fromSnapshot(snapshot) {
     state.notes = new Map((snapshot.notes ?? []).map((note) => [note.id, note]));
     state.noteIds = new Set(snapshot.noteIds ?? []);
     state.pinnedNotes = new Set(snapshot.pinnedNotes ?? []);
+    // (copie d'avant les étiquettes : aucune, remplies à la synchronisation
+    // suivante ; ses notes n'en portaient aucune, rien d'autre à recharger)
+    state.labels = Array.isArray(snapshot.labels) ? [...snapshot.labels] : [];
     state.noteConflicts = new Map(snapshot.noteConflicts ?? []);
     state.noteNews = { unread: new Set(snapshot.noteNews?.unread ?? []), muted: new Set(snapshot.noteNews?.muted ?? []) };
     // (copie d'avant la page Notifications : vide, relue au premier passage du réseau)
@@ -233,6 +242,8 @@ function loadNotes(state, data, { full }) {
   for (const note of data.notes ?? []) if (state.noteIds.has(note.id)) state.notes.set(note.id, note);
   for (const id of [...state.notes.keys()]) if (!state.noteIds.has(id)) state.notes.delete(id);
   state.pinnedNotes = new Set(data.pinnedNotes ?? []);
+  // Étiquettes : toute la réserve, en entier à chaque synchronisation
+  if (Array.isArray(data.labels)) state.labels = data.labels;
   // Nouveautés des notes : en entier à chaque synchronisation
   if (data.noteNews) state.noteNews = { unread: new Set(data.noteNews.unread ?? []), muted: new Set(data.noteNews.muted ?? []) };
 }
@@ -551,6 +562,7 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'note.pin':
     case 'note.seen':
     case 'note.mute':
+    case 'note.labels':
       applyNoteOp(state, op, { user, now });
       return;
     // Page Notifications : lire, effacer (comme le serveur, server/inbox.js)
@@ -664,6 +676,7 @@ function applyNoteOp(state, op, { user, now }) {
         access: 'owner',
         // Partagée avec personne (le serveur enverra les personnes)
         members: user ? [{ id: user.id, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }] : [],
+        labelIds: [],
       });
       state.noteIds.add(op.noteId);
       if (op.pinned === true) state.pinnedNotes.add(op.noteId);
@@ -706,6 +719,17 @@ function applyNoteOp(state, op, { user, now }) {
     case 'note.seen':
       if (note && Number.isSafeInteger(op.upTo) && op.upTo >= note.version) state.noteNews.unread.delete(note.id);
       return;
+    // Étiquettes de la note (propriétaire ou « Peut modifier ») : la liste
+    // complète remplace l'ancienne ; ni version ni date de modification
+    // (comme le serveur). Liste invalide, ou étiquette inconnue : rien ne
+    // change (le serveur la refusera).
+    case 'note.labels': {
+      const ids = cleanLabelIds(op.labelIds);
+      const known = new Set(state.labels.map((label) => label.id));
+      if (!note || !canEditNote(note) || !ids || !ids.every((id) => known.has(id))) return;
+      state.notes.set(note.id, { ...note, labelIds: ids });
+      return;
+    }
     // Menu de la note : « Masquer les nouveautés » / « Afficher… »
     case 'note.mute':
       if (!note || typeof op.muted !== 'boolean') return;

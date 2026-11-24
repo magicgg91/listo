@@ -63,8 +63,8 @@ async function household(t, options = {}) {
 
 test('migration 39 : table gift_bought (clé personne + souhait), effacée avec le compte, le souhait, et la participation (déclencheur)', () => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 41);
-  assert.equal(schemaVersion(db), 41);
+  assert.equal(MIGRATIONS.length, 42);
+  assert.equal(schemaVersion(db), 42);
   const columns = db.prepare('PRAGMA table_info(gift_bought)').all().map((c) => c.name);
   assert.deepEqual(columns, ['user_id', 'item_id', 'created_at']);
   db.prepare("INSERT INTO users (id, username, display_name, password_hash) VALUES (1, 'g', 'G', 'x'), (2, 'm', 'M', 'x')").run();

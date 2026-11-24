@@ -27,6 +27,7 @@ const TABLES = [
   'note_members', 'note_public_shares', // partage des notes (migration 37)
   'inbox', // page Notifications (migration 38)
   'gift_bought', // « Acheté » de la liste automatique « À offrir » (migration 39)
+  'labels', 'note_labels', // étiquettes des notes (migration 42)
 ];
 
 // Base en mémoire avec un compte et une liste, pour les tests
@@ -37,7 +38,7 @@ function sampleDb() {
   return db;
 }
 
-test('les trente-cinq tables du cahier des charges sont créées (plus de catégories : migration 32 ; page Notifications : migration 38 ; « À offrir » : migration 39)', () => {
+test('les trente-sept tables du cahier des charges sont créées (plus de catégories : migration 32 ; page Notifications : migration 38 ; « À offrir » : migration 39 ; étiquettes : migration 42)', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)

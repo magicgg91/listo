@@ -831,11 +831,21 @@ Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que 
 
 Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : elles disparaissent de vos écrans, sans rien effacer.
 
-- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres et les textes.
+- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres, les textes et les noms des étiquettes.
 - « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » fait de même.
 - Une note s'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.
 - Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s'ouvre dans un nouvel onglet.
-- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
+- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Étiquettes » (si vous pouvez la modifier), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
+
+**Étiquettes**
+
+Une étiquette classe une note : “Recettes”, “Vacances”, “Maison”… Les étiquettes sont communes à tout le foyer : chacun peut en créer et choisir parmi celles des autres. Un nom n'existe qu'une fois, majuscules et accents compris : “Été”, “été” et “ETE” sont la même étiquette.
+
+- Poser des étiquettes : « Étiquette » avec son « + », sous le titre de la note (ou menu ⋮ de la note, « Étiquettes »). Cochez celles qui conviennent, 10 au plus par note ; décochez pour retirer. Cela marche aussi hors ligne.
+- Créer une étiquette : tapez son nom dans le champ de la même fenêtre. Si ce nom existe déjà, Listo le propose au lieu d'en créer un second ; sinon, choisissez une couleur parmi huit, puis « Créer ». Créer demande une connexion (30 caractères au plus).
+- Les étiquettes d'une note sont les mêmes pour tous ceux qui la voient. Le propriétaire et « Peut modifier » les changent ; « Lecture seule » les voit seulement. Changer les étiquettes est discret : ni nouveauté ni notification pour les autres, et la note ne passe pas en “Modifiée par Léa”.
+- Sur l'écran « Notes », les étiquettes d'une note sont en bas de sa carte, à gauche des pastilles des personnes. Au-dessus des cartes, « Toutes » et les étiquettes de vos notes servent de filtre : touchez-en une pour ne voir que ses notes (le choix est gardé sur cet appareil, et se combine avec la recherche).
+- Seul l'Admin renomme, recolore ou supprime une étiquette (Réglages, « Administration », onglet « Étiquettes » : [7.1 Admin](#role-admin)). La page publique d'une note ne montre jamais ses étiquettes.
 
 **Deux personnes en même temps**
 
@@ -1149,9 +1159,16 @@ Réglages, « Administration » (visible seulement pour un Admin).
 - « Rayons » : groupés par magasin, « Tous les magasins » d'abord. Ajouter (en choisissant son magasin), renommer, changer de magasin, désactiver, supprimer s'il n'a jamais été utilisé. Deux magasins peuvent avoir chacun un rayon du même nom ; un rayon de « Tous les magasins » a un nom bien à lui. Un rayon ne va dans un magasin que si aucune liste d'un autre magasin, ou sans magasin, ne s'en sert.
 - « Articles » : la mémoire des noms saisis dans les listes de courses. « Corriger » change un nom partout, « Modifier le rayon » change le rayon habituel, « Retirer » l'enlève des suggestions.
 
+**Onglet « Étiquettes »**
+
+- Les étiquettes des notes, communes à tout le foyer ([5.12 Les notes](#notes)), avec le nombre de notes qui portent chacune (jamais lesquelles). Il reste là même si vous avez coupé les notes pour vous.
+- Le crayon renomme l'étiquette et change sa couleur ; un nom déjà pris par une autre étiquette (majuscules et accents ignorés) est refusé.
+- La corbeille supprime l'étiquette, après confirmation : elle est retirée de ses notes, sans toucher aux notes.
+- Les étiquettes se créent depuis une note, par n'importe quel compte.
+
 **Peut / ne peut pas**
 
-- Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s'il existe une nouvelle version (Réglages › « À propos »).
+- Peut : gérer les comptes, les magasins, les rayons, les articles et les étiquettes des notes ; voir s'il existe une nouvelle version (Réglages › « À propos »).
 - Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([5.12 Les notes](#notes)).
 - Connexions d'assistants IA des autres comptes : voir [8.8 Voir et déconnecter un assistant IA](#claude-connexions).
 - Savoir qu'une nouvelle version existe : [9.9 Savoir qu'une nouvelle version existe](#version).

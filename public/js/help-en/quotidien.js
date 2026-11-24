@@ -194,11 +194,20 @@ export default {
       blocks: [
         'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links. Don\'t use notes? Turn them off for yourself in Settings, “Features” ([[echeances]]): they disappear from your screens, and nothing is deleted.',
         { ul: [
-          '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles and texts.',
+          '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles, texts and label names.',
           '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.',
           'A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.',
           'To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.',
-          'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.',
+          'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.',
+        ] },
+        { sub: 'Labels' },
+        'A label sorts a note: ‘Recipes’, ‘Holidays’, ‘Home’… Labels are shared by the whole household: everyone can create some and pick from other people\'s. A name exists only once, ignoring capitals and accents: ‘Home’, ‘home’ and ‘HOME’ are the same label.',
+        { ul: [
+          'Putting labels on a note: “Label” with its “+”, under the note\'s title (or the note\'s ⋮ menu, “Labels”). Tick the ones that fit, 10 at most per note; untick to remove. This also works offline.',
+          'Creating a label: type its name in the field of the same window. If that name already exists, Listo offers it instead of creating a second one; otherwise, choose one of eight colors, then “Create”. Creating needs a connection (30 characters at most).',
+          'A note\'s labels are the same for everyone who sees it. The owner and “Can edit” change them; “Read only” only sees them. Changing labels is quiet: nothing new and no notification for the others, and the note does not show ‘Edited by Léa’.',
+          'On the “Notes” screen, a note\'s labels are at the bottom of its card, to the left of the people\'s badges. Above the cards, “All” and the labels of your notes act as a filter: tap one to see only its notes (the choice is kept on this device, and combines with the search).',
+          'Only the Admin renames, recolors or deletes a label (Settings, “Administration”, “Labels” tab: [[role-admin]]). A note\'s public page never shows its labels.',
         ] },
         { sub: 'Two people at the same time' },
         'If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just edited this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.',

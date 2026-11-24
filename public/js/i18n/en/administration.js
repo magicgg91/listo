@@ -183,4 +183,24 @@ export default {
   'administration.noms.retirer.texte': 'It won\'t be suggested anymore when you type an item. Lists don\'t change. If it\'s typed again in a shopping list, it will be saved again.',
   'administration.noms.retirer.bouton': 'Remove',
   'administration.noms.retire': '“{name}” removed from suggestions',
+
+  // “Labels” tab (24 November 2026)
+  'administration.onglets.etiquettes': 'Labels',
+  'administration.etiquettes.intro': 'Note labels are shared by everyone. A name exists only once, ignoring capitals and accents: “Home”, “home” and “HOME” are the same label. Deleting a label removes it from the notes, without touching the notes.',
+  'administration.etiquettes.notes': { one: '{count} note', other: '{count} notes' },
+  'administration.etiquettes.vide': 'No labels yet. They are created from a note.',
+  'administration.etiquettes.edition': 'Edit label',
+  'administration.etiquettes.nom': 'Name',
+  'administration.etiquettes.nom.aide': '1 to 30 characters; a name that already exists (ignoring capitals and accents) is refused.',
+  'administration.etiquettes.nom.vide': 'Give the label a name.',
+  'administration.etiquettes.couleur': 'Color',
+  'administration.etiquettes.enregistrer': 'Save',
+  'administration.etiquettes.enregistree': 'Label “{name}” saved',
+  'administration.etiquettes.supprimer.question': 'Delete the label “{name}”?',
+  'administration.etiquettes.supprimer.texte.aucune': 'It is not on any note.',
+  'administration.etiquettes.supprimer.texte': {
+    one: 'It will be removed from {count} note, without touching the note.',
+    other: 'It will be removed from {count} notes, without touching the notes.',
+  },
+  'administration.etiquettes.supprimee': 'Label “{name}” deleted',
 };

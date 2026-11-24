@@ -31,6 +31,11 @@
 //   met à jour en direct. Ouvrir une note la marque « lue » (Nouveautés),
 //   sur tous mes appareils. Bas de la note : « Modifiée par Léa · il y a
 //   5 min ».
+// - Étiquettes (24 novembre 2026, screens/note-labels.js) : sous le titre,
+//   les étiquettes de la note et « + Étiquette » (propriétaire et « Peut
+//   modifier » ; « Lecture seule » : les étiquettes seulement). Une note
+//   sans étiquette n'a pas cette rangée : la première se pose par le menu ⋮,
+//   « Étiquettes ».
 
 import { h, icon, iconButton, replace, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
@@ -44,6 +49,7 @@ import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
 import { canEditNote, isNoteOwner, notePeople } from '../store.js';
 import { openNoteSharePanel } from './share-panel.js';
+import { noteLabelsSlot, drawNoteLabels } from './note-labels.js';
 
 const SAVE_DELAY_MS = 1000;
 
@@ -154,6 +160,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
     fitInput();
     changed();
   });
+  // Étiquettes de la note, sous le titre (cachées s'il n'y en a aucune)
+  const labelsRow = noteLabelsSlot();
   titleInput.addEventListener('input', changed);
   titleInput.addEventListener('blur', () => save());
 
@@ -388,6 +396,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
     if (n && !n.deletedAt && document.visibilityState === 'visible') actions.markNoteSeen(n.id);
     heading.textContent = n ? titleOf(n) : t('notes.nouvelle');
     if (!pc && n) document.title = `${heading.textContent} · Listo`;
+    drawNoteLabels(labelsRow, n);
     if (input.hidden) drawView();
     drawStatus();
     drawFoot();
@@ -398,7 +407,7 @@ export function noteEditor(initialId, onLeave, { pc }) {
     h('h2', { class: 'empty__title' }, t('notes.introuvable.titre')),
     h('p', { class: 'empty__text' }, t('notes.introuvable.texte')),
     h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('notes', {}, { replace: true }) }, t('notes.retour')));
-  const fields = h('div', { class: 'note-edit' }, titleInput, view, input);
+  const fields = h('div', { class: 'note-edit' }, titleInput, labelsRow, view, input);
   const scroll = pc ? fields : h('div', { class: 'scroll' }, fields);
 
   // Changement de données (synchronisation, temps réel, autre écran)

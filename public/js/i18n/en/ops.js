@@ -141,6 +141,14 @@ export default {
   'ops.notesLimite': 'You already have {max} notes, trash included: delete some before creating another.',
   'ops.notesInvalides': 'Invalid list of notes.',
   'ops.notesTropVite': 'Too many note saves right now. They will be sent again in a little while.',
+  // Note labels (server/labels.js, 24 November 2026)
+  'ops.etiquetteIntrouvable': 'Label not found.',
+  'ops.nomEtiquetteInvalide': 'Invalid label name: 1 to 30 characters, no invisible special character.',
+  'ops.couleurEtiquetteInvalide': 'Invalid label color.',
+  'ops.etiquettesLimite': 'There are already {max} labels: ask the Admin to delete some before creating another.',
+  'ops.tropDEtiquettes': 'Too many labels created for now. Try again in an hour.',
+  'ops.etiquetteExisteDeja': 'The label “{name}” already exists (capitals and accents do not count).',
+  'ops.etiquettesNoteInvalides': 'Invalid note labels ({max} at most).',
   // Partage des notes (étape 3)
   'ops.proprietaireNePeutPasQuitterNote': "The owner can't leave their note. Delete it instead.",
   'ops.proprietaireTousDroitsNote': 'The owner has full rights to their note.',

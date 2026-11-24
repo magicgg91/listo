@@ -340,6 +340,25 @@ export function markNoteSeen(noteId) {
 // Menu de la note : « Masquer les nouveautés » / « Afficher… » (pour moi seulement)
 export const setNoteNewsMuted = (noteId, muted) => perform({ type: 'note.mute', noteId, muted });
 
+// --- Étiquettes des notes (24 novembre 2026, labels.js) ---
+
+// Étiquettes d'une note (propriétaire ou « Peut modifier ») : la liste
+// complète voulue, par la file d'attente (hors ligne compris)
+export const setNoteLabels = (noteId, labelIds) => perform({ type: 'note.labels', noteId, labelIds });
+
+// Nouvelle étiquette (en ligne seulement) : le serveur la crée, ou renvoie
+// celle qui porte déjà ce nom (majuscules et accents ignorés). Elle entre
+// tout de suite dans la réserve de ce téléphone (la synchronisation suivante
+// la confirme). Renvoie { label, existing }.
+export async function createLabel({ name, color }) {
+  const result = await post('/api/labels', { name, color });
+  const { label } = result;
+  if (!app.data.labels.some((known) => known.id === label.id)) app.data.labels = [...app.data.labels, label];
+  dataChanged();
+  refreshData({ quiet: true });
+  return result;
+}
+
 // Partage (propriétaire) : la composition complète, personnes et droits,
 // envoyée au serveur (en ligne seulement, comme pour une liste), puis
 // relue par la synchronisation

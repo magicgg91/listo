@@ -24,9 +24,16 @@ export default {
           "“Aisles”: grouped by store, “All stores” first. Add (choosing its store), rename, change the store, disable, delete if it has never been used. Two stores can each have an aisle with the same name; an “All stores” aisle has a name of its own. An aisle only goes to a store if no list from another store, or without a store, uses it.",
           "“Items”: the memory of names typed in shopping lists. “Correct” changes a name everywhere, “Change aisle” changes the usual aisle, “Remove” takes it out of the suggestions.",
         ] },
+        { sub: "“Labels” tab" },
+        { ul: [
+          "Note labels, shared by the whole household ([[notes]]), with the number of notes that carry each one (never which ones). It stays there even if you turned notes off for yourself.",
+          "The pencil renames the label and changes its color; a name already taken by another label (ignoring capitals and accents) is refused.",
+          "The trash can deletes the label, after confirmation: it is removed from its notes, without touching the notes.",
+          "Labels are created from a note, by any account.",
+        ] },
         { sub: "Can / can't" },
         { ul: [
-          "Can: manage accounts, stores, aisles and items; see whether a new version exists (Settings › “About”).",
+          "Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).",
           "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]).",
           "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",

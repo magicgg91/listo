@@ -183,4 +183,24 @@ export default {
   'administration.noms.retirer.texte': 'Il ne sera plus proposé pendant la saisie d\'un article. Les listes ne changent pas. S\'il est saisi de nouveau dans une liste de courses, il sera de nouveau enregistré.',
   'administration.noms.retirer.bouton': 'Retirer',
   'administration.noms.retire': '« {name} » retiré des suggestions',
+
+  // Onglet « Étiquettes » (24 novembre 2026)
+  'administration.onglets.etiquettes': 'Étiquettes',
+  'administration.etiquettes.intro': 'Les étiquettes des notes servent à tout le monde. Un nom n\'existe qu\'une fois : « Été », « été » et « ETE » sont la même étiquette. Supprimer une étiquette la retire des notes, sans toucher aux notes.',
+  'administration.etiquettes.notes': { one: '{count} note', other: '{count} notes' },
+  'administration.etiquettes.vide': 'Aucune étiquette pour l\'instant. Elles se créent depuis une note.',
+  'administration.etiquettes.edition': 'Modifier l\'étiquette',
+  'administration.etiquettes.nom': 'Nom',
+  'administration.etiquettes.nom.aide': 'De 1 à 30 caractères ; un nom qui existe déjà (majuscules et accents ignorés) est refusé.',
+  'administration.etiquettes.nom.vide': 'Donnez un nom à l\'étiquette.',
+  'administration.etiquettes.couleur': 'Couleur',
+  'administration.etiquettes.enregistrer': 'Enregistrer',
+  'administration.etiquettes.enregistree': 'Étiquette « {name} » enregistrée',
+  'administration.etiquettes.supprimer.question': 'Supprimer l\'étiquette « {name} » ?',
+  'administration.etiquettes.supprimer.texte.aucune': 'Elle n\'est sur aucune note.',
+  'administration.etiquettes.supprimer.texte': {
+    one: 'Elle sera retirée de {count} note, sans toucher à la note.',
+    other: 'Elle sera retirée de {count} notes, sans toucher aux notes.',
+  },
+  'administration.etiquettes.supprimee': 'Étiquette « {name} » supprimée',
 };

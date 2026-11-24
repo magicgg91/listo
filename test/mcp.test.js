@@ -133,11 +133,11 @@ test('protocole : JSON invalide, corps trop gros, lot refusé, requête mal form
   assert.equal(evil.headers.get('access-control-allow-origin'), null, 'pas de CORS');
 });
 
-test('tools/list : cinq outils, annotations (lecture, ajout, cochage, modification), descriptions sans donnée d\'un compte', async (t) => {
+test('tools/list : cinq outils des listes puis huit des notes, annotations (lecture, ajout, cochage, modification), descriptions sans donnée d\'un compte', async (t) => {
   const h = await household(t);
   const { access_token: token } = await connect(h, h.guillaume, PASSWORD);
   const { tools } = (await claude(h, token).rpc('tools/list')).body.result;
-  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items']);
+  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items', 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note']);
   const hints = Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]));
   for (const name of ['list_lists', 'read_list']) assert.equal(hints[name].readOnlyHint, true, name);
   for (const name of ['add_items', 'set_checked', 'update_items']) {

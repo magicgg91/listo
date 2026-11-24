@@ -115,13 +115,15 @@ test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, «
   assert.match(code('public/js/screens/pc-side.js'), /const countNotes = \(\) => liveNotes\(\[\.\.\.app\.data\.notes\.values\(\)\]\)\.length;/);
 });
 
-test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) en bas sur les écrans des notes, note ouverte à droite', () => {
+test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) en bas sur les écrans des notes, note ouverte seule dans la colonne', () => {
   const side = code('public/js/screens/pc-side.js');
   assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
-  assert.match(side, /newList\.hidden = NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
+  assert.match(side, /newList\.hidden = notesUsed && NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
   const app = code('public/js/app.js');
-  assert.match(app, /if \(isDesktop\(\)\) mount\(\(onLeave\) => renderNotes\(onLeave, \{ openId: id \?\? 'new' \}\)\);/);
+  // Une note (et une nouvelle note) : son propre écran, sur le téléphone comme sur l'ordinateur
+  assert.match(app, /case 'note':\s*case 'newNote': \{\s*const id = name === 'note' \? params\.id : null;\s*mount\(\(onLeave\) => renderNote\(id, onLeave\)\);\s*break;\s*\}/);
+  assert.doesNotMatch(app, /openId/);
   const shortcuts = code('public/js/shortcuts.js');
   assert.match(shortcuts, /location\.hash\.startsWith\('#\/notes'\) \? navigate\('newNote'/);
   // Pas de catégories (abandonnées le 23 novembre 2026)

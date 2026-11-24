@@ -1,6 +1,7 @@
 // Écrans « Réglages » (maquettes reglages-1 à 5) :
 // - réglages : carte du compte (ouvre « Mon compte », voir account.js),
-//   Accueil (tuiles, premier écran : voir home-settings.js), administration
+//   Accueil (tuiles, premier écran : voir home-settings.js), Fonctions
+//   (notes utilisées ou coupées : voir features.js), administration
 //   (Admin), notifications (voir notifications.js), aide (voir help.js), à propos, déconnexion ;
 // - changement de mot de passe ;
 // - activation de la double authentification (QR code, puis codes de
@@ -12,6 +13,7 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace }
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { app } from '../app.js';
+import { notesOn } from '../features.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
@@ -92,7 +94,7 @@ export function renderSettings() {
       roleChip(user),
       icon('chev-r')),
       h('h2', { class: 'section-title' }, t('reglages.general')),
-      h('div', { class: 'group' }, homeRow(), generalRows(isAdmin)),
+      h('div', { class: 'group' }, homeRow(), featuresRow(), generalRows(isAdmin)),
       h('h2', { class: 'section-title' }, t('reglages.informations')),
       h('div', { class: 'group' }, helpRow(), aboutRow(isAdmin))));
 }
@@ -100,14 +102,16 @@ export function renderSettings() {
 // « Général » (téléphone et ordinateur) : Accueil (home-settings.js, en
 // premier depuis le 23 novembre 2026 ; sur ordinateur, avant les raccourcis
 // à une touche), notifications (notifications.js), corbeilles des listes
-// (trash.js) et des notes (note-trash.js), administration (compte Admin
-// seulement)
+// (trash.js) et des notes (note-trash.js ; pas quand les notes sont
+// coupées), administration (compte Admin seulement). « Fonctions »
+// (features.js, 24 novembre 2026) suit « Accueil ».
 const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
+const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: t('reglages.fonctions.detail'), onClick: () => navigate('features') });
 function generalRows(isAdmin) {
   return [
     notificationsRow(),
     row({ iconName: 'trash', title: t('reglages.corbeille'), onClick: () => navigate('trash') }),
-    row({ iconName: 'trash', title: t('reglages.corbeilleNotes'), onClick: () => navigate('noteTrash') }),
+    notesOn(app.data.features) ? row({ iconName: 'trash', title: t('reglages.corbeilleNotes'), onClick: () => navigate('noteTrash') }) : null,
     // Pastille : demandes de compte en attente (connexion avec le fournisseur d'identité)
     isAdmin ? row({ iconName: 'shield', title: t('reglages.administration'), end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];
@@ -179,7 +183,7 @@ function renderSettingsPc() {
       avatar(user.displayName),
       h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, user.displayName), h('span', { class: 'row__sub' }, t('reglages.pc.compte.detail'))),
       roleChip(user), icon('chev-r')))),
-      section(t('reglages.general'), h('div', { class: 'group' }, homeRow(), keysRow(), generalRows(isAdmin))),
+      section(t('reglages.general'), h('div', { class: 'group' }, homeRow(), featuresRow(), keysRow(), generalRows(isAdmin))),
       section(t('reglages.informations'), h('div', { class: 'group' },
         helpRow(),
         row({ iconName: 'keyboard', title: t('reglages.pc.raccourcis'), sub: t('reglages.pc.raccourcis.detail'), onClick: () => openShortcuts() }),

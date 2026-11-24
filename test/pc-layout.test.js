@@ -260,14 +260,14 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   // « Raccourcis à une touche », puis les lignes du téléphone), Informations (Aide, Raccourcis clavier, À propos)
   const order = [...pc.matchAll(/section\(t\('([^']+)'\)/g)].map((m) => fr[m[1]]);
   assert.deepEqual(order, ['Compte', 'Général', 'Informations']);
-  assert.match(pc, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, homeRow\(\), keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(pc, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), keysRow\(\), generalRows\(isAdmin\)\)\),/);
   assert.match(pc, /section\(t\('reglages\.informations'\), h\('div', \{ class: 'group' \},\s*helpRow\(\),\s*row\(\{ iconName: 'keyboard', title: t\('reglages\.pc\.raccourcis'\)/);
   assert.equal(fr['reglages.pc.raccourcis'], 'Raccourcis clavier');
   assert.match(pc, /aboutRow\(isAdmin\)/);
   // Mêmes lignes que le téléphone (une seule définition)
   const phone = code.slice(code.indexOf('export function renderSettings'), code.indexOf('function generalRows'));
   // (« Accueil » en premier, téléphone et ordinateur : Réglages › Accueil)
-  assert.match(phone, /h\('div', \{ class: 'group' \}, homeRow\(\), generalRows\(isAdmin\)\),/);
+  assert.match(phone, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), generalRows\(isAdmin\)\),/);
   assert.match(phone, /h\('div', \{ class: 'group' \}, helpRow\(\), aboutRow\(isAdmin\)\)/);
   // (pastille : demandes de compte en attente, connexion avec Authelia)
   assert.equal(fr['reglages.administration'], 'Administration');

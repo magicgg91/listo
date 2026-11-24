@@ -18,7 +18,7 @@ import { ASSIGN_NOT_HERE as ASSIGN_NOT_HERE_KEY, ASSIGN_OFF as ASSIGN_OFF_KEY, B
 import { GROUP_MS, localDay } from '../server/notify.js';
 import { emptyState, applyOp, listOptions, availableSorts, computeListView, assignablePeople } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
-import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
+import { computeDeadlines, deadlineBadges } from '../public/js/deadlines.js';
 import fr from '../public/js/i18n/fr.js';
 
 // Refus : noms des textes ; l'application et Claude les donnent en français
@@ -325,12 +325,12 @@ test('copie locale : option, attribution, tri « Par personne » (Moi, les autre
   const mine = computeDeadlines(state, { today: '2030-01-07', mine: true, me: 1 }).flatMap((g) => g.entries.map((e) => e.item.name));
   assert.deepEqual(mine, ['Bois']);
   assert.equal(computeDeadlines(state, { today: '2030-01-07', me: 1 }).flatMap((g) => g.entries).length, 5, '« Toutes »');
-  assert.equal(deadlineBadge(state, '2030-01-07', 1), 2, 'Bois et Clous');
-  assert.equal(deadlineBadge(state, '2030-01-07', 2), 3, 'Léa : Eau, Zinc et Clous');
+  assert.deepEqual(deadlineBadges(state, '2030-01-07', 1), { late: 0, today: 2 }, 'Bois et Clous');
+  assert.deepEqual(deadlineBadges(state, '2030-01-07', 2), { late: 0, today: 3 }, 'Léa : Eau, Zinc et Clous');
   // Option désactivée : plus de tri par personne, plus de filtre, tout compte
   applyOp(state, { type: 'list.update', listId: 'l', assignEnabled: false }, { user, now });
   assert.deepEqual(availableSorts(state.lists.get('l')), ['alpha', 'due']);
-  assert.equal(deadlineBadge(state, '2030-01-07', 1), 5);
+  assert.deepEqual(deadlineBadges(state, '2030-01-07', 1), { late: 0, today: 5 });
 });
 
 test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prénom ; jamais sur la page publique ; « Toutes / Les miennes » retenu ; texte sûr', () => {

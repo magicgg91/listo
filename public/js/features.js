@@ -1,0 +1,80 @@
+// Réglage « Fonctions » de chaque compte (Réglages › Fonctions, décision du
+// 24 novembre 2026) : les fonctions de Listo qu'une personne peut couper
+// pour elle seule. Règles partagées par le serveur (server/features.js, qui
+// vérifie tout) et par les écrans (copie locale, file d'attente hors
+// ligne). Aucun texte ici, aucune page touchée : des fonctions « pures »,
+// testées automatiquement (test/features.test.js).
+//
+// Le réglage : { notes } (vrai : la fonction est utilisée).
+// - notes : les notes (vrai au départ). Coupées, elles disparaissent des
+//   écrans de cette personne seulement : ni bouton « Notes » dans le
+//   bandeau du bas, ni tuile, ni entrée du menu de gauche, ni nouveautés,
+//   ni notifications. Rien n'est effacé : ses notes et celles qu'on lui a
+//   partagées restent en base, et reviennent quand elle les rallume.
+//
+// D'autres fonctions pourront suivre de la même façon (une colonne
+// <nom>_enabled dans la table users, une entrée ici) ; chacune a sa valeur
+// de départ.
+
+// Les fonctions, dans l'ordre de l'écran, avec leur valeur de départ
+export const FEATURE_DEFAULTS = { notes: true };
+export const FEATURES = Object.keys(FEATURE_DEFAULTS);
+
+// Écrans (noms du routeur, router.js) qui appartiennent à une fonction :
+// coupée, leurs adresses mènent au premier écran
+export const FEATURE_ROUTES = {
+  notes: ['notes', 'newNote', 'note', 'noteTrash', 'oldNoteTrash'],
+};
+
+// Réglage de départ (aucun choix fait)
+export function defaultFeatures() {
+  return { ...FEATURE_DEFAULTS };
+}
+
+// Réglage complet et valable, à partir de ce qui est gardé (base, copie du
+// téléphone) ou reçu, même incomplet ou ancien : valeur de départ pour
+// chaque fonction qui manque ou qui n'est pas un booléen ; noms inconnus
+// écartés.
+export function normalizeFeatures(value) {
+  const features = defaultFeatures();
+  if (!value || typeof value !== 'object') return features;
+  for (const name of FEATURES) {
+    if (typeof value[name] === 'boolean') features[name] = value[name];
+  }
+  return features;
+}
+
+// Problème d'une modification { notes? } (le contenu d'une opération
+// « account.features », sans son identifiant ni son type) : le nom du texte
+// de refus, ou null si tout va bien. Refusés : autre chose qu'un objet,
+// nom inconnu, valeur qui n'est pas un booléen, rien à modifier.
+export function featuresChangeProblem(change) {
+  if (!change || typeof change !== 'object' || Array.isArray(change)) return 'ops.fonctionsInvalides';
+  const names = Object.keys(change);
+  if (!names.length) return 'ops.rienAModifier';
+  if (!names.every((name) => FEATURES.includes(name))) return 'ops.fonctionInconnue';
+  if (!names.every((name) => typeof change[name] === 'boolean')) return 'ops.fonctionsInvalides';
+  return null;
+}
+
+// Applique une modification valable à un réglage (renvoie un nouveau réglage)
+export function applyFeaturesChange(features, change) {
+  return normalizeFeatures({ ...normalizeFeatures(features), ...change });
+}
+
+// La fonction est-elle utilisée ? (réglage absent : valeur de départ)
+export const featureOn = (features, name) => normalizeFeatures(features)[name] === true;
+export const notesOn = (features) => featureOn(features, 'notes');
+
+// Fonction dont dépend un écran (nom du routeur, ou d'une tuile, d'un
+// bouton du bandeau, d'un premier écran : ce sont les mêmes noms), ou null
+export function featureOf(name) {
+  return FEATURES.find((feature) => FEATURE_ROUTES[feature].includes(name)) ?? null;
+}
+
+// L'écran est-il ouvert à la personne ? (toujours, sauf s'il appartient à
+// une fonction qu'elle a coupée)
+export function screenAllowed(name, features) {
+  const feature = featureOf(name);
+  return !feature || featureOn(features, feature);
+}

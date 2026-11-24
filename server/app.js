@@ -29,6 +29,7 @@ import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { createNoteShareService } from './note-shares.js';
 import { noteRoutes } from './routes/notes.js';
+import { labelRoutes } from './routes/labels.js';
 import { publicRoutes } from './routes/public.js';
 import { createBackups } from './backup.js';
 import { createUpdateCheck, fetchGithub } from './update-check.js';
@@ -161,6 +162,8 @@ export function createApp({
     duplicates: createUploadCounter({ limit: 20, now }),
     // Magasins et rayons créés par les comptes : 20 par heure et par compte au plus
     referenceCreations: createUploadCounter({ limit: 20, now }),
+    // Étiquettes des notes créées par les comptes : 20 par heure et par compte au plus
+    labelCreations: createUploadCounter({ limit: 20, now }),
     // Enregistrements de notes : 3 600 par heure et par compte au plus
     // (le téléphone en envoie au plus un par seconde ; voir server/notes.js)
     noteSaves: createSaveCounter({ now }),
@@ -301,6 +304,7 @@ export function createApp({
   api.use(reservationRoutes(ctx)); // listes d'envies (après listRoutes : utilise ctx.reservations)
   api.use(shareRoutes(ctx));   // lien public, côté propriétaire
   api.use(noteRoutes(ctx));    // partage et lien public d'une note (après listRoutes : utilise ctx.notes)
+  api.use(labelRoutes(ctx));   // nouvelle étiquette de note (après listRoutes : utilise ctx.labels)
   // Page Notifications (GET /api/inbox…) et réglages des notifications
   // (catégories, sourdines par liste et par note) : toujours, car ils
   // valent pour la page comme pour le téléphone
@@ -391,6 +395,7 @@ export function createApp({
     ctx.uploads.prune();
     ctx.duplicates.prune();
     ctx.referenceCreations.prune();
+    ctx.labelCreations.prune();
     ctx.pending.prune();
     ctx.shares.purgeOld();       // liens arrêtés ou expirés depuis plus de 30 jours
     ctx.noteShares.purgeOld();   // (même chose pour les liens des notes)

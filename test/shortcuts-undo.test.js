@@ -118,7 +118,7 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   // Seulement sur ordinateur
   assert.match(keys, /if \(event\.defaultPrevented \|\| !onPc\(\)\) return;/);
   // Les 17 raccourcis de la maquette, ni plus ni moins (fenêtre « ? »)
-  const listed = [...keys.matchAll(/\[\[((?:(?:'[^']*'|t\('[^']+'\))(?:, )?)+)\], t\('/g)].map((m) => m[1]);
+  const listed = [...keys.matchAll(/\[\[((?:(?:'[^']*'|t\('[^']+'\))(?:, )?)+)\], t\(/g)].map((m) => m[1]);
   assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "t('raccourcis.touche.echap')", "'[', ']'", "t('raccourcis.touche.ctrl'), 'Z'", "t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')", "'P'", "'A'", "'↓', '↑'", "t('raccourcis.touche.espace')", "t('raccourcis.touche.entree')", "'E'", "t('raccourcis.touche.suppr')", "t('raccourcis.touche.menu')", "'S'"]);
   assert.equal(fr['raccourcis.touche.echap'], 'Échap');
   assert.equal(fr['raccourcis.touche.ctrl'], 'Ctrl');
@@ -128,7 +128,7 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   assert.equal(fr['raccourcis.touche.menu'], 'Menu');
   // Réglages : l'interrupteur, sur ordinateur
   const settings = read('public/js/screens/settings.js');
-  assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, homeRow\(\), keysRow\(\), generalRows\(isAdmin\)\)\),/);
+  assert.match(settings, /section\(t\('reglages\.general'\), h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), keysRow\(\), generalRows\(isAdmin\)\)\),/);
   assert.equal(fr['reglages.general'], 'Général');
   assert.match(settings, /t\('reglages\.touches\.titre'\)/);
   assert.equal(fr['reglages.touches.titre'], 'Raccourcis à une touche');

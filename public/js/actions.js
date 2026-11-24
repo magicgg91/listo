@@ -15,7 +15,7 @@
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
 import { uuid, photoUrl, post, put, patch, del } from './api.js';
-import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
+import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove, inboxShownRows } from './store.js';
 import { nextDue } from './repeat.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { todayKey } from './format.js';
@@ -179,6 +179,9 @@ export const setNewsSettings = (settings) => perform({ type: 'account.news', ...
 // Réglage « Accueil » (Réglages › Accueil, home-tiles.js) : { enabled },
 // { start }, { order } ou { hidden } ; même file d'attente, hors ligne compris
 export const setHome = (change) => perform({ type: 'account.home', ...change });
+// Réglage « Fonctions » (Réglages › Fonctions, features.js) : { notes } ;
+// même file d'attente, hors ligne compris
+export const setFeatures = (change) => perform({ type: 'account.features', ...change });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 
 // --- Réservations (listes d'envies) ---
@@ -337,6 +340,25 @@ export function markNoteSeen(noteId) {
 // Menu de la note : « Masquer les nouveautés » / « Afficher… » (pour moi seulement)
 export const setNoteNewsMuted = (noteId, muted) => perform({ type: 'note.mute', noteId, muted });
 
+// --- Étiquettes des notes (24 novembre 2026, labels.js) ---
+
+// Étiquettes d'une note (propriétaire ou « Peut modifier ») : la liste
+// complète voulue, par la file d'attente (hors ligne compris)
+export const setNoteLabels = (noteId, labelIds) => perform({ type: 'note.labels', noteId, labelIds });
+
+// Nouvelle étiquette (en ligne seulement) : le serveur la crée, ou renvoie
+// celle qui porte déjà ce nom (majuscules et accents ignorés). Elle entre
+// tout de suite dans la réserve de ce téléphone (la synchronisation suivante
+// la confirme). Renvoie { label, existing }.
+export async function createLabel({ name, color }) {
+  const result = await post('/api/labels', { name, color });
+  const { label } = result;
+  if (!app.data.labels.some((known) => known.id === label.id)) app.data.labels = [...app.data.labels, label];
+  dataChanged();
+  refreshData({ quiet: true });
+  return result;
+}
+
 // Partage (propriétaire) : la composition complète, personnes et droits,
 // envoyée au serveur (en ligne seulement, comme pour une liste), puis
 // relue par la synchronisation
@@ -396,12 +418,18 @@ export function markInboxRead(ids) {
   if (!unread.length) return null;
   return perform({ type: 'inbox.read', ids: unread });
 }
+// Notes coupées (Réglages › Fonctions) : leurs lignes, cachées, ne sont ni
+// lues ni effacées par « Tout… » (seules les lignes montrées sont visées)
 export function markAllInboxRead() {
-  if (!app.data.inbox?.rows.some((row) => !row.read)) return null;
+  const shown = inboxShownRows(app.data);
+  if (!shown.some((row) => !row.read)) return null;
+  if (shown.length < (app.data.inbox?.rows.length ?? 0)) return markInboxRead(shown.map((row) => row.id));
   return perform({ type: 'inbox.read', all: true, upTo: newestInbox() });
 }
 export const deleteInboxRow = (id) => perform({ type: 'inbox.delete', ids: [id] });
 export function clearInbox() {
-  if (!app.data.inbox?.rows.length) return null;
+  const shown = inboxShownRows(app.data);
+  if (!shown.length) return null;
+  if (shown.length < (app.data.inbox?.rows.length ?? 0)) return perform({ type: 'inbox.delete', ids: shown.map((row) => row.id) });
   return perform({ type: 'inbox.delete', all: true, upTo: newestInbox() });
 }

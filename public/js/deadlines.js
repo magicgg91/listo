@@ -15,9 +15,9 @@
 // (jusqu'au dimanche), « Plus tard ». Dans un groupe : la date la plus
 // proche d'abord, puis la priorité élevée, puis l'ordre alphabétique.
 //
-// Pastille du bouton « Échéances » : tâches en retard + tâches du jour
-// (comme le résumé de 8 h des notifications), sans celles attribuées à
-// quelqu'un d'autre.
+// Pastilles du bouton « Échéances » (24 novembre 2026) : une rouge pour les
+// tâches en retard, une verte pour celles du jour (ensemble, comme le résumé
+// de 8 h des notifications), sans celles attribuées à quelqu'un d'autre.
 //
 // Attribution (décisions du 11 novembre 2026) : « Les miennes » ne garde que
 // les tâches qui me sont attribuées ; « Toutes » montre tout. Une
@@ -154,9 +154,33 @@ export function deadlineSectionFor(state, row, { today = todayKey(), mine = fals
   return keys.find((key) => present.has(key)) ?? null;
 }
 
-// Nombre de la pastille : tâches en retard et tâches du jour, les miennes et
-// celles de personne (pas celles attribuées à quelqu'un d'autre)
-export function deadlineBadge(state, today = todayKey(), me = null) {
+// Pastilles du bouton « Échéances » (décision du 24 novembre 2026 : deux
+// pastilles au lieu d'une) : { late, today }, le nombre de tâches en retard
+// (rouge) et le nombre de tâches du jour (verte), les miennes et celles de
+// personne (pas celles attribuées à quelqu'un d'autre). Mêmes groupes que
+// l'écran : une tâche du jour dont l'heure est passée est « En retard »
+// (deadlineGroup) ; ensemble, ce sont toujours les tâches dont l'échéance
+// est aujourd'hui ou avant.
+export function deadlineBadges(state, today = todayKey(), me = null, now = nowTime()) {
   const keep = (item, list) => { const who = assigneesFor(item, list); return who.length === 0 || who.includes(me); };
-  return collect(state, keep).filter((entry) => entry.item.dueDate <= today).length;
+  const counts = { late: 0, today: 0 };
+  for (const { item } of collect(state, keep)) {
+    const group = deadlineGroup(item.dueDate, today, item.dueTime, now);
+    if (group === 'late' || group === 'today') counts[group] += 1;
+  }
+  return counts;
+}
+
+// Texte d'une pastille : le nombre, « 99+ » au-delà de 99
+export const badgeText = (count) => (count > 99 ? '99+' : String(count));
+
+// Nom lu du bouton (ou de l'entrée du menu) « Échéances » : seulement les
+// nombres qui ne sont pas nuls (« Échéances, 2 en retard, 1 aujourd'hui »),
+// sinon « Échéances ». Une phrase entière par cas (jamais de morceaux
+// assemblés) ; les pastilles elles-mêmes sont cachées aux lecteurs d'écran.
+export function deadlinesLabel({ late = 0, today = 0 } = {}) {
+  if (late && today) return t('navigation.echeances.pastilles', { late, today });
+  if (late) return t('navigation.echeances.pastille.retard', { count: late });
+  if (today) return t('navigation.echeances.pastille.aujourdhui', { count: today });
+  return t('navigation.echeances');
 }

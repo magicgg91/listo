@@ -15,12 +15,12 @@ import fr from '../public/js/i18n/fr.js';
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*$/, '')).join('\n');
 
-test('deux onglets, plus de « Catégories » ; « Courses » propose Magasins, Rayons, Articles, chacun avec son contenu d\'avant', () => {
+test('trois onglets (Étiquettes depuis le 24 novembre 2026), plus de « Catégories » ; « Courses » propose Magasins, Rayons, Articles, chacun avec son contenu d\'avant', () => {
   const admin = code('public/js/screens/admin.js');
   const block = (name) => admin.slice(admin.indexOf(`const ${name} = [`), admin.indexOf('];', admin.indexOf(`const ${name} = [`)));
   // Libellé : « label: … », ou lu au moment de l'affichage (« get label() { return …; } »)
   const keys = (text) => [...text.matchAll(/\{ key: '([a-z]+)', (?:get label\(\) \{ return |label: )([^,;}]+)/g)].map((m) => [m[1], m[2].trim()]);
-  assert.deepEqual(keys(block('TABS')), [['comptes', "t('administration.onglets.comptes')"], ['courses', "t('administration.onglets.courses')"]]);
+  assert.deepEqual(keys(block('TABS')), [['comptes', "t('administration.onglets.comptes')"], ['courses', "t('administration.onglets.courses')"], ['etiquettes', "t('administration.onglets.etiquettes')"]]);
   assert.equal(fr['administration.onglets.comptes'], 'Comptes');
   assert.equal(fr['administration.onglets.courses'], 'Courses');
   assert.doesNotMatch(admin, /categor|Catégor/i, 'aucune trace des catégories dans l\'écran');

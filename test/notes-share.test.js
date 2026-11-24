@@ -54,9 +54,9 @@ async function sharedNote(t) {
 // --- Migration 37 ---
 
 test('migration 37 : membres, lien public, lecture et sourdines ; base existante mise à jour, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 40);
+  assert.equal(MIGRATIONS.length, 42);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 40);
+  assert.equal(schemaVersion(fresh), 42);
   for (const table of ['note_members', 'note_public_shares']) {
     assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
   }
@@ -71,7 +71,7 @@ test('migration 37 : membres, lien public, lecture et sourdines ; base existante
   old.prepare("INSERT INTO note_user_state (note_id, user_id, pinned) VALUES ('n1', 1, 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 40);
+  assert.equal(schemaVersion(db), 42);
   assert.deepEqual(db.prepare('SELECT title, changed_at FROM notes').get(), { title: 'Codes', changed_at: '2026-11-02T00:00:00.000Z' });
   assert.deepEqual(db.prepare('SELECT pinned, last_read_version, muted_news, muted_push FROM note_user_state').get(), { pinned: 1, last_read_version: 0, muted_news: 0, muted_push: 0 });
   assert.equal(db.prepare('SELECT COUNT(*) FROM note_members').pluck().get(), 0, 'aucune note partagée au départ');
@@ -167,7 +167,7 @@ test('synchronisation : chacun reçoit son droit et les personnes, jamais l\'ép
   // Seulement ce que les listes donnent de leurs membres : ni identifiant de
   // connexion, ni mot de passe, ni rôle ; jamais le lien public d'un autre
   assert.ok(!('publicLink' in note));
-  assert.deepEqual(Object.keys(note).sort(), ['access', 'body', 'createdAt', 'deletedAt', 'id', 'members', 'ownerId', 'title', 'updatedAt', 'updatedBy', 'updatedByName', 'version']);
+  assert.deepEqual(Object.keys(note).sort(), ['access', 'body', 'createdAt', 'deletedAt', 'id', 'labelIds', 'members', 'ownerId', 'title', 'updatedAt', 'updatedBy', 'updatedByName', 'version']);
   assert.deepEqual(marc.pinnedNotes, [], 'l\'épingle de Léa n\'est pas la sienne');
   assert.deepEqual(marc.noteNews, { unread: [], muted: [] });
   assert.equal((await h.sync('zoe')).notes[0].access, 'read');

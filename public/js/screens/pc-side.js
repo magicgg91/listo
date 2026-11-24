@@ -8,8 +8,11 @@
 // - les entrées fixes, dans l'ordre du bandeau du téléphone : « Accueil »
 //   (absent quand la personne l'a coupé dans Réglages › Accueil : la marque
 //   mène alors au premier écran choisi),
-//   « Échéances » (avec sa pastille : tâches en retard et du jour),
-//   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2) ;
+//   « Échéances » (avec ses deux pastilles, au bout de la ligne : la rouge
+//   pour les tâches en retard, puis la verte pour celles du jour ; chacune
+//   seulement si son nombre n'est pas nul ; décision du 24 novembre 2026),
+//   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2 ;
+//   absent quand la personne a coupé les notes dans Réglages › Fonctions) ;
 // - dessous, le menu suit l'écran :
 //   · écrans des listes (Listes, une liste, « À offrir ») : seulement « Types », les types
 //     que la personne a (Courses, Tâches, Envies), avec leur nombre de
@@ -21,7 +24,8 @@
 //   · pendant une recherche, sur n'importe quel écran : les listes trouvées,
 //     groupées par type, avec leur compteur « restants/total » ;
 // - en bas : « Nouvelle liste » (touche N), « Nouvelle note » sur les
-//   écrans des notes, le compte connecté et « Réglages ».
+//   écrans des notes (jamais quand les notes sont coupées), le compte
+//   connecté et « Réglages ».
 //
 // Le menu est créé une fois et gardé d'un écran à l'autre (texte cherché et
 // défilement conservés) ; seul ce qui dépend de l'écran change.
@@ -36,9 +40,9 @@ import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
 import { app, onDataChange, openingScreen } from '../app.js';
-import { drawWhenIdle, watchNewDay } from '../ui.js';
-import { deadlineBadge } from '../deadlines.js';
-import { deadlinesLabel } from '../tabbar.js';
+import { notesOn } from '../features.js';
+import { drawWhenIdle, watchNewDay, watchMinute } from '../ui.js';
+import { deadlineBadges, deadlinesLabel, badgeText } from '../deadlines.js';
 import { keepFieldFocus } from '../tap.js';
 import { isSearching, filterLists, highlightParts, listsLabel } from '../search.js';
 import { openShortcuts, keycap } from '../shortcuts.js';
@@ -128,9 +132,12 @@ export function createPcSide() {
   }, h('span', { class: 'pc-nav__icon' }, icon(iconName, 'icon--sm')), h('span', { class: 'pc-nav__name' }, label), ...end);
 
   const homeLink = fixedLink('home', 'home', t('navigation.accueil'));
-  // « Échéances » (deadlines.js) avec sa pastille numérique
-  const deadlinesCount = h('span', { class: 'news-badge', 'aria-hidden': 'true', hidden: true });
-  const deadlinesLink = fixedLink('deadlines', 'calendar', t('navigation.echeances'), deadlinesCount);
+  // « Échéances » (deadlines.js) avec ses deux pastilles : rouge (en
+  // retard) puis verte (aujourd'hui), les nombres .count du kit ; cachées
+  // aux lecteurs d'écran (les nombres sont dans le nom de l'entrée)
+  const deadlinesLate = h('span', { class: 'count count--danger', 'aria-hidden': 'true', hidden: true });
+  const deadlinesToday = h('span', { class: 'count count--success', 'aria-hidden': 'true', hidden: true });
+  const deadlinesLink = fixedLink('deadlines', 'calendar', t('navigation.echeances'), deadlinesLate, deadlinesToday);
   // « Listes » avec le nombre de listes (lu « Listes, 5 listes »)
   const listsCount = h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' });
   const listsLink = fixedLink('lists', 'tasks', t('navigation.listes'), listsCount);
@@ -167,10 +174,12 @@ export function createPcSide() {
     else link.removeAttribute('aria-current');
   };
   const drawFixed = () => {
-    const count = app.data.loaded ? deadlineBadge(app.data, undefined, app.user?.id ?? null) : 0;
-    deadlinesCount.hidden = count === 0;
-    deadlinesCount.textContent = count > 99 ? '99+' : String(count);
-    deadlinesLink.setAttribute('aria-label', deadlinesLabel(count));
+    const counts = app.data.loaded ? deadlineBadges(app.data, undefined, app.user?.id ?? null) : { late: 0, today: 0 };
+    deadlinesLate.hidden = counts.late === 0;
+    deadlinesLate.textContent = badgeText(counts.late);
+    deadlinesToday.hidden = counts.today === 0;
+    deadlinesToday.textContent = badgeText(counts.today);
+    deadlinesLink.setAttribute('aria-label', deadlinesLabel(counts));
     const lists = app.data.loaded ? app.data.lists.size : null;
     listsCount.textContent = lists === null ? '' : String(lists);
     if (lists === null) listsLink.removeAttribute('aria-label');
@@ -191,10 +200,15 @@ export function createPcSide() {
     if (notes === null) notesLink.removeAttribute('aria-label');
     else notesLink.setAttribute('aria-label', t(notesNew ? 'notes.nav.nombre.nouveautes' : 'navigation.notes.nombre', { count: notes }));
     markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
-    newList.hidden = NOTE_SCREENS.includes(selected.name);
+    // Notes coupées (Réglages › Fonctions) : ni « Notes », ni « Nouvelle note »
+    const notesUsed = notesOn(app.data.features);
+    notesLink.hidden = !notesUsed;
+    newList.hidden = notesUsed && NOTE_SCREENS.includes(selected.name);
     newNote.hidden = !newList.hidden;
   };
   const stopDay = watchNewDay(drawFixed);
+  // Une tâche du jour à heure précise passe « En retard » à son heure
+  const stopMinute = watchMinute(drawFixed);
 
   // --- Partie qui suit l'écran : types, ou résultats de la recherche ---
   const nav = h('nav', { class: 'pc-nav' });
@@ -359,6 +373,7 @@ export function createPcSide() {
       unsubscribe();
       idle.stop();
       stopDay();
+      stopMinute();
     },
   };
 }

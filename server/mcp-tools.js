@@ -10,6 +10,9 @@
 // - update_items : modifier le nom, la quantité, la note, la priorité,
 //   l'échéance, le rayon ou le magasin (liste « multi ») de 1 à 20 éléments
 //   existants (300 par heure et par connexion).
+// Notes (décision du 24 novembre 2026, server/mcp-notes.js) : list_notes et
+// read_note (lecture) ; create_note, append_to_note, replace_note_text,
+// set_note_labels, create_label, delete_note (écriture ; corbeille seulement).
 // Jamais, quel que soit le niveau : supprimer un élément, modifier son lien
 // ou son prix, créer, renommer, supprimer ou partager une liste, gérer les
 // personnes, le lien public, la corbeille, un compte ou l'administration.
@@ -44,6 +47,7 @@ import {
   NOT_A_SUBTASK, BAD_PLACE,
 } from '../public/js/subtasks.js';
 import { translate } from '../public/js/i18n.js';
+import { NOTE_TOOLS, createMcpNoteTools } from './mcp-notes.js';
 
 // Refus communs avec l'application (READ_ONLY, SUBTASKS_OFF… : noms de
 // textes) : Claude les reçoit toujours en français (décision du propriétaire)
@@ -322,14 +326,18 @@ export const TOOLS = [
     },
     annotations: { title: 'Modifier des éléments', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
+  // Notes (server/mcp-notes.js) : list_notes, read_note, create_note,
+  // append_to_note, replace_note_text, set_note_labels, create_label, delete_note
+  ...NOTE_TOOLS,
 ];
 
 // Argument invalide : erreur JSON-RPC -32602 (Invalid params)
 export class ParamsError extends Error {}
 
-// Résultat d'outil : texte simple (ligne fixe + JSON) et structuredContent
-const result = (data) => ({
-  content: [{ type: 'text', text: `${DATA_NOTICE}\n${JSON.stringify(data)}` }],
+// Résultat d'outil : texte simple (ligne fixe + JSON) et structuredContent ;
+// notice : la ligne fixe (celle des notes pour leurs outils)
+const result = (data, notice = DATA_NOTICE) => ({
+  content: [{ type: 'text', text: `${notice}\n${JSON.stringify(data)}` }],
   structuredContent: data,
   isError: false,
 });
@@ -1088,7 +1096,9 @@ export function createMcpTools(ctx) {
     };
   }
 
-  const handlers = { list_lists: listLists, read_list: readList, add_items: addItems, set_checked: setChecked, update_items: updateItems };
+  // Outils des notes (server/mcp-notes.js)
+  const notes = createMcpNoteTools(ctx, { ParamsError, clip, READ_ONLY_GRANT });
+  const handlers = { list_lists: listLists, read_list: readList, add_items: addItems, set_checked: setChecked, update_items: updateItems, ...notes.handlers };
 
   // Appelle un outil. Renvoie { result, count } ; un nom d'outil inconnu ou
   // des arguments invalides lancent une ParamsError (-32602).
@@ -1101,7 +1111,7 @@ export function createMcpTools(ctx) {
     if (extra.length) throw new ParamsError(`Argument inconnu : ${extra[0].slice(0, 50)}.`);
     const out = handler(access, args);
     if (out.error) return { result: toolError(out.error), count: 0, log: {} };
-    return { result: result(out.data), count: out.count, log: out.log ?? {} };
+    return { result: result(out.data, out.notice), count: out.count, log: out.log ?? {} };
   }
 
   // Ménage des mémoires de l'anti-doublon et des plafonds horaires
@@ -1115,6 +1125,7 @@ export function createMcpTools(ctx) {
         else times.delete(grantId);
       }
     }
+    notes.prune();
   }
 
   return { call, prune };

@@ -27,6 +27,7 @@ import { renderNote } from './screens/note.js';
 import { renderNoteTrash } from './screens/note-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { firstScreen, normalizeHome } from './home-tiles.js';
+import { normalizeFeatures, screenAllowed, notesOn } from './features.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -36,6 +37,7 @@ import { renderAdmin } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
 import { renderHomeSettings } from './screens/home-settings.js';
+import { renderFeatures } from './screens/features.js';
 import { renderInbox } from './screens/inbox.js';
 import { resyncPush, forgetPush } from './push.js';
 import { BUILD } from './version.js';
@@ -72,8 +74,9 @@ export const app = {
 
 // Premier écran de Listo : l'Accueil, ou l'écran choisi par la personne
 // quand elle l'a coupé (Réglages › Accueil, home-tiles.js ; réglage du
-// compte, gardé avec la copie locale : hors ligne compris)
-export const openingScreen = () => firstScreen(app.data.home);
+// compte, gardé avec la copie locale : hors ligne compris). Écran d'une
+// fonction coupée (Réglages › Fonctions, features.js) : « Listes ».
+export const openingScreen = () => firstScreen(app.data.home, app.data.features);
 
 // Abonnements aux changements de données (les écrans se redessinent)
 const listeners = new Set();
@@ -81,6 +84,19 @@ export function onDataChange(listener) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+// Fonction coupée pendant qu'un de ses écrans est ouvert (sur un autre
+// appareil, ou à la synchronisation) : le premier écran le remplace (un
+// instant plus tard : jamais pendant que les écrans se redessinent)
+let leavingScreen = false;
+onDataChange(() => {
+  if (leavingScreen || !app.user || !app.route || screenAllowed(app.route.name, app.data.features)) return;
+  leavingScreen = true;
+  setTimeout(() => {
+    leavingScreen = false;
+    if (app.user && app.route && !screenAllowed(app.route.name, app.data.features)) navigate(openingScreen(), {}, { replace: true });
+  });
+});
 export function dataChanged() {
   for (const listener of [...listeners]) listener();
   showAppBadge();
@@ -199,6 +215,8 @@ async function openAccount(user) {
   // récent que la copie (changé sur un autre appareil) ; la file d'attente,
   // rejouée juste après, y remet un changement pas encore envoyé
   if (user.home) app.data.home = normalizeHome(user.home);
+  // Réglage « Fonctions » : de même
+  if (user.features) app.data.features = normalizeFeatures(user.features);
   // File d'attente du compte : ce qui n'était pas encore envoyé repartira
   queue?.stop();
   queue = makeQueue();
@@ -527,8 +545,10 @@ export function loggedIn(user) {
     show(app.route);
     return;
   }
-  // Premier écran (Accueil, ou celui choisi) connu tout de suite
+  // Premier écran (Accueil, ou celui choisi) et fonctions utilisées connus
+  // tout de suite
   if (user.home) app.data.home = normalizeHome(user.home);
+  if (user.features) app.data.features = normalizeFeatures(user.features);
   openAccount(user).then(() => {
     refreshData({ quiet: true, full: true });
     goLive();
@@ -641,6 +661,8 @@ startShortcuts({
   },
   // [ et ] : liste précédente ou suivante, dans l'ordre du menu de gauche
   onGoList: (delta) => pcSide?.goList(delta),
+  // Notes coupées (Réglages › Fonctions) : N ne mène jamais à une note
+  notesOn: () => notesOn(app.data.features),
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -798,6 +820,12 @@ function show(route) {
     navigate('settings', {}, { replace: true });
     return;
   }
+  // Écran d'une fonction coupée par la personne (Réglages › Fonctions,
+  // features.js : #/notes, une note, la corbeille des notes…) : le premier écran
+  if (!screenAllowed(name, app.data.features)) {
+    navigate(openingScreen(), {}, { replace: true });
+    return;
+  }
 
   switch (name) {
     // Accueil : premier écran (décision du 23 novembre 2026), colonne large
@@ -811,8 +839,9 @@ function show(route) {
     // « À offrir » : liste automatique de mes réservations (gifts.js)
     case 'gifts': mount((onLeave) => renderGifts(onLeave)); break;
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
-    // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
-    // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
+    // Notes (étape 2) : une note s'ouvre à la place des cartes, seule à
+    // l'écran (téléphone) ou dans la colonne (ordinateur, comme une liste
+    // ouverte ; décision du 24 novembre 2026)
     case 'notes': mount((onLeave) => renderNotes(onLeave)); break;
     case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
     // Ancienne adresse (#/notes/corbeille) : remplacée par la nouvelle
@@ -820,8 +849,7 @@ function show(route) {
     case 'note':
     case 'newNote': {
       const id = name === 'note' ? params.id : null;
-      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }));
-      else mount((onLeave) => renderNote(id, onLeave));
+      mount((onLeave) => renderNote(id, onLeave));
       break;
     }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
@@ -860,6 +888,8 @@ function show(route) {
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
     // Réglages › Accueil : tuiles, ordre, Accueil coupé et premier écran
     case 'homeSettings': mount((onLeave) => renderHomeSettings(onLeave)); break;
+    // Réglages › Fonctions : les fonctions utilisées (notes)
+    case 'features': mount((onLeave) => renderFeatures(onLeave)); break;
     // Page Notifications (étape 4) : la cloche de l'Accueil, la tuile Compte
     case 'inbox': mount((onLeave) => renderInbox(onLeave)); break;
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;

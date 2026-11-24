@@ -32,10 +32,20 @@
 // version prévue par le téléphone, il pourrait passer par-dessus le texte de
 // l'autre).
 //
+// Étiquettes (24 novembre 2026, migration 42, server/labels.js) : communes
+// à la note (tous ceux qui la voient les voient), posées par le
+// propriétaire et « Peut modifier » (opération « note.labels »). Changer
+// les étiquettes est discret : ni nouveauté, ni notification, ni nouvelle
+// version du texte (aucun conflit avec un enregistrement du texte) ; seule
+// la date de synchronisation (changed_at) change, pour que les membres
+// reçoivent la note avec ses étiquettes.
+//
 // Les dates sont posées ici, par le serveur. Le texte d'une note n'est
 // jamais écrit dans un journal.
 
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX, NOTES_MAX, NOTE_TRASH_DAYS } from '../public/js/notes.js';
+import { cleanLabelIds, LABELS_PER_NOTE_MAX } from '../public/js/labels.js';
+import { createLabelService, LABEL_NOT_FOUND } from './labels.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -100,6 +110,8 @@ export function noteAccess(user, note) {
 export function createNoteService(ctx, { OpError }) {
   const { db } = ctx;
   const nowIso = () => new Date(ctx.now()).toISOString();
+  // Réserve des étiquettes (server/labels.js), créée une fois
+  const labels = ctx.labels ?? (ctx.labels = createLabelService(ctx, { OpError }));
   const purgeLimit = () => new Date(ctx.now() - NOTE_TRASH_DAYS * DAY).toISOString();
 
   const q = {
@@ -239,6 +251,9 @@ export function createNoteService(ctx, { OpError }) {
       ownerId: note.owner_id,
       access,
       members: membersOf(note),
+      // Étiquettes de la note (numéros ; noms et couleurs : la réserve,
+      // envoyée à part), les mêmes pour tous ceux qui la voient
+      labelIds: labels.idsOfNote(note.id),
       // Lien public en cours ({ expiresAt } ou null) : pour le propriétaire seulement
       ...(access === 'owner' && ctx.noteShares ? { publicLink: ctx.noteShares.badgeFor(note.id) } : {}),
     };
@@ -377,6 +392,22 @@ export function createNoteService(ctx, { OpError }) {
       return {};
     },
 
+    // Étiquettes de la note (propriétaire ou « Peut modifier » ; « Lecture
+    // seule » : 403, comme pour le texte) : labelIds, la liste complète
+    // voulue (10 au plus), qui remplace l'ancienne ; rejouable sans effet.
+    // Une étiquette inconnue (effacée par l'Admin entre-temps) : refus de
+    // toute l'opération. Discret : ni version, ni date de modification, ni
+    // nouveauté, ni notification ; seulement la synchronisation des membres.
+    'note.labels'(user, op) {
+      const { note, access } = noteFor(user, op.noteId);
+      if (access === 'read') throw new OpError(403, 'ops.noteLectureSeule');
+      const ids = cleanLabelIds(op.labelIds);
+      if (!ids) throw new OpError(400, 'ops.etiquettesNoteInvalides', { max: LABELS_PER_NOTE_MAX });
+      if (!labels.allExist(ids)) throw new OpError(404, LABEL_NOT_FOUND);
+      if (labels.setNoteLabels(note.id, ids)) changedForNote(note);
+      return { labelIds: ids };
+    },
+
     // Menu de la note, « Masquer les nouveautés » (muted: true) / « Afficher… »,
     // pour moi seulement, quel que soit mon droit
     'note.mute'(user, op) {
@@ -482,11 +513,13 @@ export function createNoteService(ctx, { OpError }) {
   // --- Synchronisation (ajoutée à GET /api/sync, server/lists.js) ---
   // - notes : celles que je vois (les miennes, corbeille comprise ; celles
   //   qu'on m'a partagées, hors corbeille) qui ont changé depuis « since »
-  //   (texte, corbeille, partage, lien public), texte compris ;
+  //   (texte, corbeille, partage, lien public, étiquettes), texte et
+//   étiquettes compris ;
   // - noteIds : toutes celles que je vois (une note absente de ce tableau a
   //   été effacée, mise à la corbeille par son propriétaire, ou je n'y ai
   //   plus accès) ;
   // - pinnedNotes : celles que j'ai épinglées, en entier ;
+  // - labels : toute la réserve des étiquettes, en entier ;
   // - noteNews : en entier, { unread: notes modifiées par quelqu'un d'autre
   //   depuis ma dernière lecture (rien si « Nouveautés » est désactivé ou
   //   la note en sourdine), muted: celles dont j'ai masqué les nouveautés }.
@@ -510,6 +543,8 @@ export function createNoteService(ctx, { OpError }) {
         && note.version > (state?.last_read_version ?? 0) && (state?.muted_news ?? 0) === 0;
     }).map((note) => note.id) : [];
     return {
+      // Toute la réserve des étiquettes (numéro, nom, couleur), à chaque fois
+      labels: labels.all(),
       notes: visible.filter((note) => (note.changed_at ?? note.updated_at) >= from).map((note) => describeNote(note, user)),
       noteIds: [...byId.keys()],
       pinnedNotes: states.filter((row) => row.pinned === 1).map((row) => row.note_id),

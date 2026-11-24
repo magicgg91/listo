@@ -6,7 +6,8 @@
 //   P  partager la liste           A  ajouter un article  S  sommaire de l'aide
 //   ↓ ↑  article suivant, précédent    Espace  cocher ou décocher
 //   Entrée  ouvrir la fiche        E  modifier            Suppr  supprimer (annulable)
-//   Échap  fermer, effacer la recherche (géré par chaque fenêtre et chaque champ)
+//   Échap  fermer, effacer la recherche (géré par chaque fenêtre et chaque champ) ;
+//          dans une note ouverte, hors saisie : retour aux notes
 //   Ctrl+Z  annuler la dernière action (undo.js)   Ctrl+Entrée  enregistrer
 //   Menu ou Maj+F10 (et clic droit)  menu de la ligne : Modifier, Cocher, Supprimer
 //
@@ -62,13 +63,17 @@ export function keycap(label) {
   return h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, label);
 }
 
+// Notes utilisées par la personne ? (Réglages › Fonctions ; donné par
+// app.js à startShortcuts) : coupées, N ne mène qu'à « Nouvelle liste »
+let notesShown = () => true;
+
 // Liste des raccourcis (fenêtre « ? », aide), lue à l'ouverture (dans la
 // langue choisie)
 export function shortcuts() {
   return [
     { group: t('raccourcis.partout'), keys: [
       [['?'], t('raccourcis.partout.afficher')],
-      [['N'], t('raccourcis.partout.nouvelleListe')],
+      [['N'], t(notesShown() ? 'raccourcis.partout.nouvelleListe' : 'navigation.nouvelleListe')],
       [['/'], t('raccourcis.partout.rechercher')],
       [[','], t('raccourcis.partout.reglages')],
       [[t('raccourcis.touche.echap')], t('raccourcis.partout.fermer')],
@@ -212,7 +217,8 @@ let spaceHandled = false;
 // onGoList(delta) : [ et ], liste précédente ou suivante, dans l'ordre du
 // menu de gauche (pc-side.js : le menu ne nomme plus les listes une à une
 // depuis le 23 novembre 2026, il donne donc lui-même cet ordre)
-export function startShortcuts({ onUndo, onGoList }) {
+export function startShortcuts({ onUndo, onGoList, notesOn = () => true }) {
+  notesShown = notesOn;
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
   // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
@@ -255,6 +261,17 @@ export function startShortcuts({ onUndo, onGoList }) {
       return;
     }
     if (typing || mod || event.altKey) return;
+    // Échap dans une note ouverte (hors saisie, aucune fenêtre ouverte : elle
+    // se ferme d'abord) : appuie sur « Retour aux notes ». Pas une touche de
+    // caractère : reste active quand les raccourcis à une touche sont coupés
+    if (event.key === 'Escape') {
+      const back = $('.pc-col .pc-note__back');
+      if (!topLayer() && visible(back)) {
+        event.preventDefault();
+        back.click();
+      }
+      return;
+    }
     // Menu de la ligne : touche Menu ou Maj+F10
     if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
       const row = rowOf(document.activeElement);
@@ -277,8 +294,9 @@ export function startShortcuts({ onUndo, onGoList }) {
     const run = {
       '?': () => (openShortcuts(), true),
       // N : « Nouvelle liste », ou « Nouvelle note » sur les écrans des notes
-      // (le curseur va alors dans le texte : geste fait pour écrire)
-      n: () => (location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
+      // (le curseur va alors dans le texte : geste fait pour écrire) ;
+      // notes coupées : toujours « Nouvelle liste »
+      n: () => (notesShown() && location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
       '[': () => (onGoList(-1), true),

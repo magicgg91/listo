@@ -41,7 +41,7 @@ export function bell() {
 export function topBell(onLeave) {
   const notifications = bell();
   const paint = () => {
-    notifications.el.hidden = firstScreen(app.data.home) === 'home';
+    notifications.el.hidden = firstScreen(app.data.home, app.data.features) === 'home';
     notifications.paint();
   };
   paint();

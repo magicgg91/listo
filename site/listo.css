@@ -77,6 +77,15 @@
   --shadow-pop: 0 8px 24px rgba(15, 27, 45, 0.14);
   --shadow-sheet: 0 -8px 24px rgba(15, 27, 45, 0.14);
   --shadow-fab: 0 6px 16px rgba(47, 111, 237, 0.32);
+  /* Étiquettes des notes (16.32) : fond doux et encre, lisibles (AA) */
+  --label-gris-bg: #E5E7EB; --label-gris-ink: #374151;
+  --label-rouge-bg: #FDE2E1; --label-rouge-ink: #B42318;
+  --label-orange-bg: #FFEAD5; --label-orange-ink: #B54708;
+  --label-jaune-bg: #FEF3C7; --label-jaune-ink: #854A0E;
+  --label-vert-bg: #DCFCE7; --label-vert-ink: #166534;
+  --label-bleu-bg: #DBEAFE; --label-bleu-ink: #1D4ED8;
+  --label-violet-bg: #EDE9FE; --label-violet-ink: #6D28D9;
+  --label-rose-bg: #FCE7F3; --label-rose-ink: #BE185D;
   color-scheme: light;
 }
 
@@ -107,6 +116,15 @@
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
   --shadow-sheet: 0 -12px 32px rgba(0, 0, 0, 0.5);
   --shadow-fab: 0 6px 16px rgba(0, 0, 0, 0.45);
+  /* Étiquettes des notes (16.32) : fond doux et encre, lisibles (AA) */
+  --label-gris-bg: #2A3447; --label-gris-ink: #D1D9E6;
+  --label-rouge-bg: #44202A; --label-rouge-ink: #FCA5A5;
+  --label-orange-bg: #432A18; --label-orange-ink: #FDBA74;
+  --label-jaune-bg: #3D3416; --label-jaune-ink: #FCD34D;
+  --label-vert-bg: #163A2B; --label-vert-ink: #86EFAC;
+  --label-bleu-bg: #1B2D4F; --label-bleu-ink: #93C5FD;
+  --label-violet-bg: #2E2650; --label-violet-ink: #C4B5FD;
+  --label-rose-bg: #45203A; --label-rose-ink: #F9A8D4;
   color-scheme: dark;
 }
 
@@ -122,6 +140,10 @@
     --color-inverse-text: #0C1422; --color-inverse-accent: #1F55C7; --color-scrim: rgba(3, 8, 16, 0.64);
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.32); --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
     --shadow-sheet: 0 -12px 32px rgba(0, 0, 0, 0.5); --shadow-fab: 0 6px 16px rgba(0, 0, 0, 0.45);
+    --label-gris-bg: #2A3447; --label-gris-ink: #D1D9E6; --label-rouge-bg: #44202A; --label-rouge-ink: #FCA5A5;
+    --label-orange-bg: #432A18; --label-orange-ink: #FDBA74; --label-jaune-bg: #3D3416; --label-jaune-ink: #FCD34D;
+    --label-vert-bg: #163A2B; --label-vert-ink: #86EFAC; --label-bleu-bg: #1B2D4F; --label-bleu-ink: #93C5FD;
+    --label-violet-bg: #2E2650; --label-violet-ink: #C4B5FD; --label-rose-bg: #45203A; --label-rose-ink: #F9A8D4;
     color-scheme: dark;
   }
 }
@@ -710,10 +732,10 @@
 .pc-user__role { font-size: var(--text-sm); color: var(--color-text-2); }
 
 /* En-tête d'une liste (et de « Mes listes »), outils, ajout en haut */
-/* Si la place manque (cartes des notes à côté d'une note ouverte, petit
-   écran, cloche, « Hors ligne · 3 en attente »…), les derniers éléments
-   passent à la ligne, calés à droite : le titre garde au moins 120 px et
-   n'est jamais coupé au milieu d'un mot court */
+/* Si la place manque (petit écran, cloche, « Hors ligne · 3 en
+   attente »…), les derniers éléments passent à la ligne, calés à droite :
+   le titre garde au moins 120 px et n'est jamais coupé au milieu d'un mot
+   court */
 .pc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px var(--pc-gutter) 8px; }
 .pc-head > :last-child:not(:first-child) { margin-left: auto; }
 .pc-head__main { flex: 1; min-width: 120px; }
@@ -877,7 +899,8 @@
      (aria-current="page", texte en couleur d'accent ET pastille : jamais la
      couleur seule) ; il glisse d'un bouton à l'autre avec un petit rebond
      (data-current = 0, 1 ou 2). Mouvement réduit : sans glissement (15).
-   - .tabbar__badge : nombre sur « Échéances » (même aspect que .news-badge).
+   - .tabbar__badge : nombre sur « Échéances » (même aspect que .news-badge) ;
+     deux pastilles depuis le 24 novembre 2026 (16.31).
    - .loupe[aria-expanded="true"] : recherche ouverte, loupe surlignée.
    - .typebar : filtre des types de « Mes listes » (.segmented en verre,
      arrondi complet, choix actif en bleu clair).
@@ -1117,12 +1140,10 @@
    - .note-card : carte du kit ; ligne 1, icône note, titre (deux lignes au
      plus), épingle, heure, menu ⋮ ; puis deux lignes du texte (trois sur
      ordinateur) ; « À vérifier » (.chip, icône d'alerte ET texte) pour une
-     note en conflit pas encore tranché. Toute la carte ouvre la note.
-   - .note-card.is-selected : note ouverte (ordinateur). */
+     note en conflit pas encore tranché. Toute la carte ouvre la note. */
 .notes-section { display: flex; align-items: center; gap: 6px; padding: var(--space-1) var(--space-1) 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
 .note-card-wrap { position: relative; }
 .note-card { display: block; width: 100%; padding: 14px var(--space-1) var(--space-2) var(--space-2); text-align: left; text-decoration: none; color: inherit; }
-.note-card.is-selected { background: var(--color-accent-soft); border-color: var(--color-accent); }
 .note-card__head { display: flex; align-items: flex-start; gap: var(--space-1); padding-right: 40px; }
 .note-card__icon { position: relative; display: inline-flex; align-items: center; flex: none; height: calc(var(--text-lg) * var(--lh-tight)); color: var(--color-accent-ink); }
 .note-card__title { flex: 1; min-width: 0; margin: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: var(--text-lg); font-weight: 650; line-height: var(--lh-tight); overflow-wrap: anywhere; }
@@ -1140,7 +1161,6 @@
 .note-card__news { display: block; margin: 2px 0 0 28px; font-size: var(--text-sm); font-weight: 600; color: var(--color-accent-ink); }
 .note-card__chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .note-card__people { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; color: var(--color-text-2); }
-.note-card.is-selected .avatar { border-color: var(--color-accent-soft); }
 /* Bouton « Partager » (propriétaire) ou « Personnes » de la barre d'une
    note : #i-users et pastilles des personnes ; sur le téléphone le mot est
    dans le nom lu (place), sur ordinateur il est écrit. */
@@ -1221,26 +1241,28 @@
    (maquette pc-notes-1, sans catégories : abandonnées le 23 novembre 2026)
    - Menu de gauche : les quatre entrées fixes (Accueil, Échéances, Listes,
      Notes avec son nombre), « Nouvelle note » (touche N) en bas.
-   - Deux zones dans la colonne commune à tous les écrans (.pc-col,
-     1 040 px ; 24 novembre 2026) : les cartes à gauche, la note ouverte à
-     droite (.pc-note, 560 px), sans voile : elle s'enregistre toute seule,
-     et un clic sur une autre carte l'ouvre. Un trait de chaque côté de la
-     note : elle ne flotte pas au milieu de l'écran. */
-.pc-notes { display: grid; grid-template-columns: minmax(0, 1fr) 560px; flex: 1; min-height: 0; }
-.pc-notes--closed { grid-template-columns: minmax(0, 1fr); }
-.pc-notes__list { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+   - Écran Notes : les cartes seules, l'une sous l'autre (.pc-notes__cards),
+     dans la colonne commune à tous les écrans (.pc-col, 1 040 px).
+   - Note ouverte (.pc-note, décision du 24 novembre 2026) : seule dans la
+     colonne, à la place des cartes, comme une liste ouverte. Barre
+     .pc-note__bar : « Retour aux notes » (.pc-note__back, #i-chev-l) à
+     gauche, la mention « Enregistré », puis « Partager » ou « Personnes »,
+     l'épingle et le menu ⋮. Dessous, le titre, les étiquettes et le texte,
+     alignés après le bouton de retour ; le texte un peu plus grand
+     (--text-lg) et sur 70 caractères au plus, pour une lecture confortable.
+     En bas, « Modifiée par … » sous un trait. */
 .pc-notes__cards { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--pc-gutter) var(--pc-gutter); }
-.pc-notes .notes-section { padding: 8px 0 0; }
-.pc-note { display: flex; flex-direction: column; min-height: 0; border-inline: 1px solid var(--color-border); background: var(--color-surface); }
-.pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 14px 16px 6px 20px; }
+.pc-notes__cards .notes-section { padding: 8px 0 0; }
+.pc-note__bar { display: flex; align-items: center; gap: 8px; padding: 20px var(--pc-gutter) 6px; }
 .pc-note__bar .icon-btn[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
-.pc-note .note-edit { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 28px 24px; }
-.pc-note .note-edit__body { font-size: var(--text-base); }
-.pc-note .note-foot { padding: 12px 20px; border-top: 1px solid var(--color-border); text-align: left; }
+.pc-note > .scroll { padding: 0 var(--pc-gutter) var(--pc-gutter) calc(var(--pc-gutter) + var(--tap-min) + 12px); }
+.pc-note .note-edit { max-width: 70ch; padding: 8px 0 0; font-size: var(--text-lg); }
+.pc-note .note-edit__body { font-size: inherit; }
+.pc-note .note-banner { max-width: 70ch; margin: 0 var(--pc-gutter) 8px calc(var(--pc-gutter) + var(--tap-min) + 12px); }
+.pc-note .note-foot { padding: 12px var(--pc-gutter) 12px calc(var(--pc-gutter) + var(--tap-min) + 12px); border-top: 1px solid var(--color-border); text-align: left; }
 .app--pc .note-card { padding: 12px 8px 14px 16px; }
 .app--pc .note-card__excerpt { -webkit-line-clamp: 3; line-clamp: 3; }
 .app--pc .note-card:hover { border-color: var(--color-control); }
-@media (max-width: 1279.98px) { .pc-notes { grid-template-columns: minmax(0, 1fr) 440px; } .pc-notes--closed { grid-template-columns: minmax(0, 1fr); } }
 
 /* 16.29 Page Notifications (#/notifications : la cloche de l'Accueil, la
    ligne « Notifications » de la tuile Compte ; étape 4, 23 novembre 2026,
@@ -1309,3 +1331,90 @@
 .home-scroll { overscroll-behavior: none; }
 .home-scroll.scroll--fits { overflow-y: hidden; }
 html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { overscroll-behavior: none; }
+
+/* 16.31 Deux pastilles sur « Échéances » (décision du 24 novembre 2026, à
+   la place de la pastille bleue unique) : la rouge compte les tâches en
+   retard, la verte celles du jour ; chacune seulement si son nombre n'est
+   pas nul (« 99+ » au-delà de 99). aria-hidden : les nombres sont dans le
+   nom du bouton (« Échéances, 2 en retard, 1 aujourd'hui »).
+   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône (le
+     reflet de la place d'avant), --today en haut à droite (la place
+     d'avant) ; seule, chacune reste de son côté.
+   - Ordinateur (menu de gauche) : au bout de la ligne « Échéances », la
+     rouge puis la verte, en .count--danger et .count--success (couleurs de
+     la tuile Échéances de l'Accueil), à la taille des pastilles du menu. */
+.tabbar__badge--late { left: auto; right: calc(100% - 8px); background: var(--color-danger); color: var(--color-on-danger); }
+.tabbar__badge--today { background: var(--color-success-ink); color: var(--color-surface); }
+.pc-side__main .count { min-width: 20px; height: 20px; padding: 0 6px; font-size: 12px; }
+.pc-side__main .count + .count { margin-left: -4px; }
+
+/* 16.32 Étiquettes des notes (décisions du 24 novembre 2026 ; maquettes
+   l1 à l4, p1 et p2). Huit couleurs fixes (gris, rouge, orange, jaune,
+   vert, bleu, violet, rose) : variables --label-<couleur>-bg (fond doux) et
+   --label-<couleur>-ink (texte et point), une valeur pour le thème clair et
+   une pour le sombre (sections 2 et 3), contraste AA dans les deux.
+   - .label : pastille d'une étiquette (point de couleur ::before, puis le
+     nom) ; .label--<couleur> choisit sa couleur. Le nom est toujours écrit :
+     la couleur n'est jamais seule à dire de quelle étiquette il s'agit.
+   - .labels : rangée d'étiquettes qui passe à la ligne.
+   - Écran d'une note : .note-labels, sous le titre (étiquettes puis
+     .note-labels__add, « + Étiquette » en pointillés ; zone tactile de
+     44 px par ::after) ; rien quand la note n'a aucune étiquette.
+   - Carte d'une note : les étiquettes à gauche de la ligne du bas
+     (.note-card__foot), les pastilles des personnes à droite, sur la même
+     ligne (correction du propriétaire).
+   - Filtre de l'écran « Notes » (.label-filter) : « Toutes » puis les
+     étiquettes de mes notes, un seul choix (aria-pressed) ; le choix porte
+     une coche ET un contour (jamais la couleur seule). Téléphone : sous la
+     barre du haut, défile de côté ; ordinateur : dans la ligne sous le titre,
+     passe à la ligne.
+   - Feuille « Étiquettes » : lignes .tick-row (case et étiquette), phrase
+     .label-sheet__hint, palette .label-palette (role="radiogroup" : huit
+     ronds .label-swatch de 44 px, le nom dans aria-label ; choisi : anneau
+     de l'encre), aperçu, bouton « Créer « Jardin » ».
+   - Administration › Étiquettes : lignes .label-row (étiquette, nombre de
+     notes, crayon, corbeille). */
+.label { --label-bg: var(--label-bleu-bg); --label-ink: var(--label-bleu-ink); display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 26px; padding: 0 10px; border-radius: var(--radius-pill); background: var(--label-bg); color: var(--label-ink); font-size: var(--text-sm); font-weight: 600; line-height: 1; white-space: nowrap; }
+.label::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.label__name { overflow: hidden; text-overflow: ellipsis; }
+.label--gris { --label-bg: var(--label-gris-bg); --label-ink: var(--label-gris-ink); }
+.label--rouge { --label-bg: var(--label-rouge-bg); --label-ink: var(--label-rouge-ink); }
+.label--orange { --label-bg: var(--label-orange-bg); --label-ink: var(--label-orange-ink); }
+.label--jaune { --label-bg: var(--label-jaune-bg); --label-ink: var(--label-jaune-ink); }
+.label--vert { --label-bg: var(--label-vert-bg); --label-ink: var(--label-vert-ink); }
+.label--bleu { --label-bg: var(--label-bleu-bg); --label-ink: var(--label-bleu-ink); }
+.label--violet { --label-bg: var(--label-violet-bg); --label-ink: var(--label-violet-ink); }
+.label--rose { --label-bg: var(--label-rose-bg); --label-ink: var(--label-rose-ink); }
+.labels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.note-labels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -2px 0 4px; }
+.note-labels__add { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px 0 8px; border: 1px dashed var(--color-control); border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.note-labels__add::after { content: ""; position: absolute; inset: -8px -2px; }
+.note-card__foot .labels { flex: 1 1 auto; }
+.label-filter { display: flex; flex: none; gap: 8px; overflow-x: auto; padding: 0 var(--space-2) 6px; scrollbar-width: none; }
+.label-filter::-webkit-scrollbar { display: none; }
+.label-filter__opt { position: relative; display: inline-flex; flex: none; align-items: center; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; }
+.label-filter__opt .label { gap: 6px; height: 32px; padding: 0 12px; border: 2px solid transparent; }
+.label-filter__opt .label .icon { width: 16px; height: 16px; stroke-width: 3; }
+.label-filter__opt[aria-pressed="true"] .label { border-color: var(--label-ink); }
+.label-filter__opt[aria-pressed="true"] .label::before { display: none; }
+.label--all { --label-bg: var(--color-neutral-soft); --label-ink: var(--color-text-2); }
+.label--all::before { display: none; }
+.label-filter__opt[aria-pressed="true"] .label--all { --label-bg: var(--color-accent-soft); --label-ink: var(--color-accent-ink); }
+.app--pc .label-filter { flex-wrap: wrap; gap: 0 6px; overflow: visible; padding: 0; margin-right: auto; }
+.app--pc .label-filter__opt .label { height: 28px; padding: 0 10px; }
+.label-sheet__hint { margin: 8px 2px 4px; font-size: var(--text-sm); color: var(--color-text-2); }
+.label-sheet__title { margin: 16px 0 4px; font-weight: 700; }
+.label-sheet .tick-row { padding: 0 4px; }
+.label-sheet__limit { margin: 8px 2px 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.label-palette { display: flex; flex-wrap: wrap; justify-content: space-between; margin: 4px -4px 0; }
+.app--pc .label-palette { justify-content: flex-start; gap: 4px; }
+.label-swatch { display: grid; place-items: center; width: var(--tap-min); height: var(--tap-min); padding: 0; border: 0; border-radius: 50%; background: transparent; }
+.label-swatch__dot { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid transparent; border-radius: 50%; background: var(--label-bg); }
+.label-swatch__dot::after { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--label-ink); }
+.label-swatch[aria-checked="true"] .label-swatch__dot { border-color: var(--label-ink); box-shadow: 0 0 0 2px var(--color-surface) inset; }
+.label-swatch:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 0; }
+.label-preview { margin: 12px 0; }
+.label-row { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 8px 0 var(--space-2); border-bottom: 1px solid var(--color-border); }
+.label-row:last-child { border-bottom: 0; }
+.label-row__count { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.label-row__delete { color: var(--color-danger-ink); }

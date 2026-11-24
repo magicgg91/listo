@@ -14,22 +14,29 @@
 //   chercher : la loupe n'est pas affichée.
 // - Une pastille (fond bleu clair) glisse vers le bouton de l'écran affiché,
 //   avec un petit rebond ; sans animation si le téléphone en demande moins.
-// - « Échéances » porte une pastille numérique : tâches en retard et tâches
-//   du jour (deadlines.js), recalculée à chaque changement et à minuit.
+// - « Échéances » porte deux pastilles numériques (décision du 24 novembre
+//   2026) : en haut à gauche de l'icône, la rouge (tâches en retard) ; en
+//   haut à droite, la verte (tâches du jour) ; chacune seulement si son
+//   nombre n'est pas nul (deadlines.js). Recalculées à chaque changement, à
+//   minuit et à chaque minute (une tâche du jour passe « En retard » à son
+//   heure, comme sur l'écran Échéances).
 //
 // Un seul bandeau pour toute la visite (il n'est pas refait à chaque écran :
 // c'est ce qui permet à la pastille de glisser d'un bouton à l'autre).
 //
 // Accueil coupé (Réglages › Accueil, home-tiles.js) : quatre boutons
 // (« Échéances », « Listes », « Notes », « Réglages », tabbar--4), sans
-// « Accueil ». Le bandeau suit le réglage dès qu'il change (sur cet
-// appareil ou sur un autre), sans être refait.
+// « Accueil ». Notes coupées (Réglages › Fonctions, features.js) : sans
+// « Notes » (quatre boutons, ou trois si l'Accueil est aussi coupé ; la
+// pastille de base de listo.css fait un tiers). Le bandeau suit ces
+// réglages dès qu'ils changent (sur cet appareil ou sur un autre), sans
+// être refait.
 
 import { h, icon, replace } from './dom.js';
 import { navigate, goBack } from './router.js';
 import { app, onDataChange } from './app.js';
-import { deadlineBadge } from './deadlines.js';
-import { watchNewDay } from './ui.js';
+import { deadlineBadges, deadlinesLabel, badgeText } from './deadlines.js';
+import { watchNewDay, watchMinute } from './ui.js';
 import { tabScreens } from './home-tiles.js';
 import { t } from './i18n.js';
 
@@ -71,12 +78,6 @@ export function goToTab(name) {
   navigate(name, {}, { replace: current !== 'home' });
 }
 
-// Libellé lu de « Échéances » avec sa pastille
-export function deadlinesLabel(count) {
-  if (!count) return t('navigation.echeances');
-  return t('navigation.echeances.pastille', { count });
-}
-
 // Loupe ronde en verre (bandeau, et barre d'ajout d'une liste).
 // search : { label, isOpen(), toggle() } (search-row.js), ou rien.
 export function loupeButton() {
@@ -112,7 +113,11 @@ let bar = null;
 
 function createTabBar() {
   const pill = h('span', { class: 'tabbar__pill', 'aria-hidden': 'true' });
-  const badge = h('span', { class: 'tabbar__badge', 'aria-hidden': 'true', hidden: true });
+  // Pastilles d'« Échéances » : rouge à gauche (en retard), verte à droite
+  // (aujourd'hui) ; cachées aux lecteurs d'écran (les nombres sont dans le
+  // nom du bouton)
+  const lateBadge = h('span', { class: 'tabbar__badge tabbar__badge--late', 'aria-hidden': 'true', hidden: true });
+  const todayBadge = h('span', { class: 'tabbar__badge tabbar__badge--today', 'aria-hidden': 'true', hidden: true });
   const buttons = new Map();
   for (const [name, iconName, label] of TABS) {
     buttons.set(name, h('button', {
@@ -120,7 +125,7 @@ function createTabBar() {
       type: 'button',
       'data-tab': name,
       onClick: () => goToTab(name),
-    }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? badge : null), h('span', { class: 'tabbar__label' }, label())));
+    }, h('span', { class: 'tabbar__ico' }, icon(iconName), name === 'deadlines' ? [lateBadge, todayBadge] : null), h('span', { class: 'tabbar__label' }, label())));
   }
   const nav = h('nav', { class: 'tabbar glass', 'aria-label': t('navigation.libelle') }, pill);
   const loupe = loupeButton();
@@ -132,10 +137,10 @@ function createTabBar() {
   let current = null; // bouton de l'écran affiché
   const arrange = () => {
     // (réglage du compte, copie locale ; home-tiles.js)
-    const names = tabScreens(app.data.home);
+    const names = tabScreens(app.data.home, app.data.features);
     if (names.join() === shown.join()) return false;
     shown = names;
-    nav.classList.remove(`tabbar--${TABS.length}`, `tabbar--${TABS.length - 1}`);
+    for (let count = 1; count <= TABS.length; count++) nav.classList.remove(`tabbar--${count}`);
     nav.classList.add(`tabbar--${names.length}`);
     replace(nav, pill, names.map((name) => buttons.get(name)));
     return true;
@@ -144,12 +149,14 @@ function createTabBar() {
   // Place de la pastille sous le bouton de l'écran affiché
   const placeOf = () => String(Math.max(shown.indexOf(current), 0));
 
-  // Pastille d'« Échéances »
+  // Pastilles d'« Échéances »
   const drawBadge = () => {
-    const count = app.data.loaded ? deadlineBadge(app.data, undefined, app.user?.id ?? null) : 0;
-    badge.hidden = count === 0;
-    badge.textContent = count > 99 ? '99+' : String(count);
-    buttons.get('deadlines').setAttribute('aria-label', deadlinesLabel(count));
+    const counts = app.data.loaded ? deadlineBadges(app.data, undefined, app.user?.id ?? null) : { late: 0, today: 0 };
+    lateBadge.hidden = counts.late === 0;
+    lateBadge.textContent = badgeText(counts.late);
+    todayBadge.hidden = counts.today === 0;
+    todayBadge.textContent = badgeText(counts.today);
+    buttons.get('deadlines').setAttribute('aria-label', deadlinesLabel(counts));
   };
   onDataChange(() => {
     drawBadge();
@@ -158,6 +165,7 @@ function createTabBar() {
     if (arrange() && nav.dataset.current) nav.dataset.current = placeOf();
   });
   watchNewDay(drawBadge);
+  watchMinute(drawBadge);
   drawBadge();
 
   return {

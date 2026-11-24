@@ -39,7 +39,6 @@ export default {
 
   // Écran d'une note
   'notes.retour': 'Back to notes',
-  'notes.fermer': 'Close the note',
   'notes.champ.titre': 'Title',
   'notes.champ.texte': 'Note text',
   'notes.champ.texte.vide': 'Write here…',
@@ -131,4 +130,33 @@ export default {
   'notes.corbeille.restauree': 'Note “{name}” restored',
   'notes.corbeille.vide.titre': 'Trash is empty',
   'notes.corbeille.vide.texte': 'A note you delete stays here for 30 days: you can restore it during that time.',
+
+  // Labels (24 November 2026, screens/note-labels.js)
+  'notes.menu.etiquettes': 'Labels',
+  'notes.etiquettes.titre': 'Labels',
+  'notes.etiquettes.ajouter': 'Label',
+  'notes.etiquettes.champ': 'Find or create a label',
+  'notes.etiquettes.toutes': 'All labels',
+  'notes.etiquettes.aucune': 'No labels yet: type a name to create one.',
+  'notes.etiquettes.existe': '“{name}” already exists: it is offered instead of creating a second one.',
+  'notes.etiquettes.nouvelle': 'New label: color',
+  'notes.etiquettes.palette': 'Color of the new label',
+  'notes.etiquettes.creer': 'Create “{name}”',
+  'notes.etiquettes.creee': 'Label “{name}” created',
+  'notes.etiquettes.ajoutee': 'Label “{name}” added',
+  'notes.etiquettes.horsLigne': 'Offline: creating a label needs a connection. You can tick the existing ones.',
+  'notes.etiquettes.limite': '{max} labels at most on a note.',
+  'notes.etiquettes.nom.long': 'A label name has {max} characters at most.',
+  'notes.etiquettes.nom.caractere': 'This name contains an invisible character: remove it.',
+  'notes.etiquettes.couleur.gris': 'Gray',
+  'notes.etiquettes.couleur.rouge': 'Red',
+  'notes.etiquettes.couleur.orange': 'Orange',
+  'notes.etiquettes.couleur.jaune': 'Yellow',
+  'notes.etiquettes.couleur.vert': 'Green',
+  'notes.etiquettes.couleur.bleu': 'Blue',
+  'notes.etiquettes.couleur.violet': 'Purple',
+  'notes.etiquettes.couleur.rose': 'Pink',
+  // Filter of the Notes screen
+  'notes.filtre.libelle': 'Filter by label',
+  'notes.filtre.toutes': 'All',
 };

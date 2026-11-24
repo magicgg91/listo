@@ -48,10 +48,12 @@ test('une seule largeur : --pc-col à 1 040 px, plus de variante large ni pleine
   }
 });
 
-test('notes : cartes et note ouverte dans la même colonne ; la note a un trait de chaque côté', () => {
-  const css = read('public/css/listo.css');
-  assert.match(css, /\.pc-notes \{ display: grid; grid-template-columns: minmax\(0, 1fr\) 560px;/);
-  assert.match(css, /\.pc-note \{[^}]*border-inline: 1px solid var\(--color-border\);/);
+test('notes : les cartes seules dans la colonne ; plus de zone de droite (24 novembre 2026)', () => {
+  for (const file of ['public/css/listo.css', 'design/listo.css']) {
+    const css = read(file);
+    assert.match(css, /\.pc-notes__cards \{ display: flex; flex-direction: column;/, file);
+    assert.doesNotMatch(css, /\.pc-notes(--closed|__list)?[ ,{]|\.pc-note \{|minmax\(0, 1fr\) (560|440)px/, file);
+  }
 });
 
 test('« À jour » sur la ligne du titre de chaque écran (ordinateur), jamais dans la ligne d\'outils', () => {

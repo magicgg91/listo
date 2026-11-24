@@ -136,16 +136,17 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [8.3 Deux niveaux d'accord](#claude-niveaux)
 - [8.4 Ce qu'un assistant ne peut jamais faire](#claude-jamais)
 - [8.5 Listes d'envies : aucune réservation](#claude-envies)
-- [8.6 Limites](#claude-limites)
-- [8.7 Connecter un assistant IA](#claude-connecter)
-- [8.8 Voir et déconnecter un assistant IA](#claude-connexions)
-- [8.9 Prudence : vérifier le site](#assistant-site)
-- [8.10 Prudence : les textes piégés](#claude-prudence)
-- [8.11 Dépannage](#faq-claude)
-- [8.12 Un accès désactivé au départ](#claude-activation)
-- [8.13 Activer l'accès sur le serveur](#mcp-serveur)
-- [8.14 Règles et journal](#mcp-regles)
-- [8.15 Premier essai](#mcp-essai)
+- [8.6 Les notes](#claude-notes)
+- [8.7 Limites](#claude-limites)
+- [8.8 Connecter un assistant IA](#claude-connecter)
+- [8.9 Voir et déconnecter un assistant IA](#claude-connexions)
+- [8.10 Prudence : vérifier le site](#assistant-site)
+- [8.11 Prudence : les textes piégés](#claude-prudence)
+- [8.12 Dépannage](#faq-claude)
+- [8.13 Un accès désactivé au départ](#claude-activation)
+- [8.14 Activer l'accès sur le serveur](#mcp-serveur)
+- [8.15 Règles et journal](#mcp-regles)
+- [8.16 Premier essai](#mcp-essai)
 
 </details>
 
@@ -190,7 +191,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 - En français ou en anglais, au choix de chacun dans « Mon compte » ([5.19 Langue : français ou anglais](#langue)) ; cette aide aussi.
 - La page Notifications (la cloche de l'Accueil) garde ce que Listo vous signale. Les notifications sur le téléphone ou l'ordinateur sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
-- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes autorisées lui est envoyé quand vous l'interrogez ([8. Assistants IA (MCP)](#claude)).
+- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [9.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes et des notes autorisées lui est envoyé quand vous l'interrogez ([8. Assistants IA (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -276,6 +277,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Des notes en texte libre, qui s'enregistrent toutes seules, avec des liens cliquables, une épingle et leur corbeille ([5.12 Les notes](#notes)).
 - Une note se partage comme une liste (« Peut modifier » ou « Lecture seule »), ou par un lien public en lecture seule ([5.13 Partager une note](#notes-partage)).
 - Une note rapide depuis l'Accueil, même hors ligne ([5.12 Les notes](#notes)).
+- Un assistant IA peut lire vos notes et, si vous le permettez, en créer ou les compléter ([8.6 Les notes](#claude-notes)).
 
 <a id="p-securite"></a>
 
@@ -293,8 +295,9 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
 - Thème clair, sombre ou automatique ([5.18 Thème clair ou sombre](#theme)).
 - Un Accueil à votre goût : tuiles masquées ou dans un autre ordre, ou pas d'Accueil du tout ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
+- Seulement les fonctions dont vous vous servez : les notes se coupent pour vous seul, sans rien effacer ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
-- Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([8. Assistants IA (MCP)](#claude)).
+- Un assistant IA, par exemple Claude, peut lire vos listes et vos notes et, si vous le permettez, y écrire ([8. Assistants IA (MCP)](#claude)).
 
 <a id="installation"></a>
 
@@ -386,8 +389,8 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([9.9 Savoir qu'une nouvelle version existe](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | absente | Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
-| `LISTO_MCP` | absente : désactivé | `on` active l'accès des assistants IA, par exemple Claude ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
-| `LISTO_MCP_SITES` | absente : tous les assistants IA | Facultative : sites des assistants IA acceptés, séparés par des virgules (par exemple `claude.ai,claude.com`), en plus des applications de l'ordinateur (`localhost`). Absente : tout assistant IA qui suit le standard peut demander l'accès, toujours après votre accord ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Une valeur mal écrite (`https://`, chemin, port, adresse IP, `*`) : Listo ne démarre pas et l'explique dans `docker logs`. |
+| `LISTO_MCP` | absente : désactivé | `on` active l'accès des assistants IA, par exemple Claude ([8.14 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
+| `LISTO_MCP_SITES` | absente : tous les assistants IA | Facultative : sites des assistants IA acceptés, séparés par des virgules (par exemple `claude.ai,claude.com`), en plus des applications de l'ordinateur (`localhost`). Absente : tout assistant IA qui suit le standard peut demander l'accès, toujours après votre accord ([8.14 Activer l'accès sur le serveur](#mcp-serveur)). Une valeur mal écrite (`https://`, chemin, port, adresse IP, `*`) : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_PUSH` | absente : désactivées | `on` active les notifications ([6.8 Activer la fonction sur le serveur](#notif-serveur)) ; clés créées dans `secrets/vapid.json`. Toute autre valeur : désactivées. |
 | `LISTO_OIDC` | absente : désactivée | `on` active la connexion par un fournisseur d'identité OpenID Connect ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) ; demande aussi `LISTO_OIDC_ISSUER` et le fichier `secrets/oidc-client-secret`. Toute autre valeur : désactivée. |
 | `LISTO_OIDC_ISSUER` | absente | Adresse du fournisseur d'identité (son “issuer”), en `https://` (par exemple `https://auth.exemple.fr`). |
@@ -406,7 +409,7 @@ N'importe quel proxy inverse convient, s'il fait ce qui suit. Ces besoins vienne
 3. Laisser passer le temps réel : `/api/events` est une connexion HTTP qui reste ouverte (Server-Sent Events, type `text/event-stream`), pas un WebSocket. Le proxy ne doit ni retenir ni mettre en cache ses réponses (Listo envoie l'en-tête `X-Accel-Buffering: no`, que nginx comprend), et son délai de lecture doit dépasser 25 secondes : Listo envoie un signal toutes les 25 secondes sur cette connexion. Sinon, les changements arrivent en retard ou la connexion est coupée sans cesse.
 4. Accepter des envois d'au moins 2 Mo : une photo d'article fait au plus 2 Mo (Listo la refuse au-delà). Beaucoup de proxys acceptent moins par défaut (nginx : 1 Mo) ; prévoir un peu de marge, par exemple 5 Mo.
 5. Donner l'adresse IP réelle des visiteurs : Listo fait confiance à un seul proxy et lit la dernière adresse de l'en-tête `X-Forwarded-For`, que le proxy doit compléter avec l'adresse de la personne. Elle sert à bloquer les essais de mots de passe répétés. Avec deux proxys l'un derrière l'autre (un service en ligne devant votre proxy, par exemple), Listo verrait l'adresse du premier, et un blocage toucherait tout le monde.
-6. Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès des assistants IA, [8.13 Activer l'accès sur le serveur](#mcp-serveur)) et `Sec-Fetch-Site`.
+6. Transmettre sans les modifier les autres en-têtes de la requête : les cookies, `Authorization` (accès des assistants IA, [8.14 Activer l'accès sur le serveur](#mcp-serveur)) et `Sec-Fetch-Site`.
 7. Ajouter l'en-tête `Strict-Transport-Security` (HSTS), si le proxy le permet : Listo ne l'envoie pas lui-même.
 
 **Limiter l'accès au port de Listo**
@@ -437,7 +440,7 @@ proxy_read_timeout 3600s;
 - `client_max_body_size 5m;` : sans elle, l'envoi des photos est refusé (nginx accepte 1 Mo par défaut ; une photo de Listo fait au plus 2 Mo).
 - Les trois autres servent au temps réel : sans elles, les changements n'arrivent sur l'autre téléphone qu'au bout d'environ une minute.
 - Nginx Proxy Manager complète déjà l'en-tête `X-Forwarded-For` avec l'adresse IP réelle des téléphones : rien à régler.
-- Accès des assistants IA : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([8.13 Activer l'accès sur le serveur](#mcp-serveur)).
+- Accès des assistants IA : ses adresses passent par le même hôte, sans réglage de plus. Elles doivent rester joignables depuis Internet ([8.14 Activer l'accès sur le serveur](#mcp-serveur)).
 - Pare-feu : n'autoriser que l'adresse de Nginx Proxy Manager à joindre le port 13300 ([3.4 Ce que doit faire le proxy](#proxy)).
 
 <a id="demarrage"></a>
@@ -511,7 +514,7 @@ Ce que Listo attend du fournisseur (le standard) :
 - sa description à l'adresse de l'issuer suivie de `/.well-known/openid-configuration`, avec ses adresses sur le même site que l'issuer ;
 - un jeton d'identité signé en RS256, PS256 ou ES256 (un jeton non signé ou signé en HS256 est refusé) ;
 - l'identifiant de la personne dans `preferred_username` et son nom dans `name` (scope `profile`) ;
-- pour autoriser un assistant IA ([8.7 Connecter un assistant IA](#claude-connecter)) depuis une session ouverte par le fournisseur : redemander la connexion quand Listo le demande (`prompt=login`, `max_age=0`) et indiquer son heure (`auth_time`). Sinon la confirmation n'aboutit pas : connectez-vous alors avec votre mot de passe Listo pour autoriser l'assistant.
+- pour autoriser un assistant IA ([8.8 Connecter un assistant IA](#claude-connecter)) depuis une session ouverte par le fournisseur : redemander la connexion quand Listo le demande (`prompt=login`, `max_age=0`) et indiquer son heure (`auth_time`). Sinon la confirmation n'aboutit pas : connectez-vous alors avec votre mot de passe Listo pour autoriser l'assistant.
 
 Double authentification : si le jeton dit qu'elle a été faite chez le fournisseur (`amr` contient `mfa`), Listo ne redemande pas son propre code. Sinon, un compte Listo qui a activé la double authentification de Listo la voit redemandée.
 
@@ -593,7 +596,7 @@ L'icône Listo apparaît. Ouverte depuis l'écran d'accueil, Listo s'affiche en 
 
 ### 4.5 Changer de mot de passe
 
-Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([8.8 Voir et déconnecter un assistant IA](#claude-connexions)).
+Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([8.9 Voir et déconnecter un assistant IA](#claude-connexions)).
 
 <a id="double-auth"></a>
 
@@ -630,7 +633,7 @@ S'il y a un autre Admin, il utilise « Réinitialiser le mot de passe » ([7.1 A
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions d'assistants IA du compte sont coupées ([8.8 Voir et déconnecter un assistant IA](#claude-connexions)). Ce que l'Admin peut faire et ne peut pas faire : [7.1 Admin](#role-admin).
+Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en choisir un nouveau. Si la double authentification est aussi inutilisable, ajouter `--retirer-2fa` à la fin de la commande. Les connexions d'assistants IA du compte sont coupées ([8.9 Voir et déconnecter un assistant IA](#claude-connexions)). Ce que l'Admin peut faire et ne peut pas faire : [7.1 Admin](#role-admin).
 
 <a id="sso"></a>
 
@@ -638,7 +641,7 @@ Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en chois
 
 Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec … », suivi du nom choisi par l'Admin (Authelia, Authentik, Pocket ID… ; « SSO » s'il n'en a pas choisi). Touchez-le, connectez-vous chez ce fournisseur : vous revenez dans Listo, connecté. Votre compte chez le fournisseur ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion par le fournisseur.
 
-Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser un assistant IA se confirme alors aussi chez le fournisseur ([8.7 Connecter un assistant IA](#claude-connecter)).
+Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser un assistant IA se confirme alors aussi chez le fournisseur ([8.8 Connecter un assistant IA](#claude-connecter)).
 
 Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous par le fournisseur. Une demande refusée ne peut pas être refaite avant 30 jours.
 
@@ -805,8 +808,8 @@ Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
 - Si une de vos listes a l'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([5.4 Attribuer une tâche](#attribuer)). Le choix est retenu sur l'appareil.
-- Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu'un d'autre.
-- L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
+- « Échéances » porte deux nombres : en rouge, en haut à gauche de l'icône, les tâches en retard ; en vert, en haut à droite, celles du jour. Chacun n'apparaît que s'il y en a. Les tâches attribuées à quelqu'un d'autre ne comptent pas.
+- L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche, avec les mêmes nombres au bout de la ligne (le rouge, puis le vert).
 
 **Choisir ses tuiles, ou couper l'Accueil**
 
@@ -816,17 +819,35 @@ Réglages, « Accueil » (la première ligne de « Général ») règle l'Accuei
 - « Réordonner » : glissez une tuile par sa poignée, ou utilisez les flèches « Monter » et « Descendre » ; « Terminé » ferme ce mode. L'Accueil suit cet ordre ; sur le téléphone, une tuile restée seule sur sa ligne prend toute la largeur.
 - « Afficher l'Accueil » coupé : Listo s'ouvre sur le « Premier écran » choisi (« Échéances », « Listes » ou « Notes » ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d'« Échéances », de « Listes » et de « Notes » ([6.1 La page Notifications](#notif-page)). Sur ordinateur, l'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.
 
+**Choisir ses fonctions**
+
+Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez ; pour l'instant, les notes. Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.
+
+- Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus de « Corbeille des notes » dans les Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
+- Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
+- Rallumer les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
+
 <a id="notes"></a>
 
 ### 5.12 Les notes
 
-Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.
+Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : elles disparaissent de vos écrans, sans rien effacer.
 
-- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres et les textes.
+- Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres, les textes et les noms des étiquettes.
 - « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » fait de même.
 - Une note s'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.
 - Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s'ouvre dans un nouvel onglet.
-- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
+- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Étiquettes » (si vous pouvez la modifier), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
+
+**Étiquettes**
+
+Une étiquette classe une note : “Recettes”, “Vacances”, “Maison”… Les étiquettes sont communes à tout le foyer : chacun peut en créer et choisir parmi celles des autres. Un nom n'existe qu'une fois, majuscules et accents compris : “Été”, “été” et “ETE” sont la même étiquette.
+
+- Poser des étiquettes : « Étiquette » avec son « + », sous le titre de la note (ou menu ⋮ de la note, « Étiquettes »). Cochez celles qui conviennent, 10 au plus par note ; décochez pour retirer. Cela marche aussi hors ligne.
+- Créer une étiquette : tapez son nom dans le champ de la même fenêtre. Si ce nom existe déjà, Listo le propose au lieu d'en créer un second ; sinon, choisissez une couleur parmi huit, puis « Créer ». Créer demande une connexion (30 caractères au plus).
+- Les étiquettes d'une note sont les mêmes pour tous ceux qui la voient. Le propriétaire et « Peut modifier » les changent ; « Lecture seule » les voit seulement. Changer les étiquettes est discret : ni nouveauté ni notification pour les autres, et la note ne passe pas en “Modifiée par Léa”.
+- Sur l'écran « Notes », les étiquettes d'une note sont en bas de sa carte, à gauche des pastilles des personnes. Au-dessus des cartes, « Toutes » et les étiquettes de vos notes servent de filtre : touchez-en une pour ne voir que ses notes (le choix est gardé sur cet appareil, et se combine avec la recherche).
+- Seul l'Admin renomme, recolore ou supprime une étiquette (Réglages, « Administration », onglet « Étiquettes » : [7.1 Admin](#role-admin)). La page publique d'une note ne montre jamais ses étiquettes.
 
 **Deux personnes en même temps**
 
@@ -838,7 +859,7 @@ La « Corbeille des notes » est dans « Réglages », juste sous la « Corbeill
 
 **Sur ordinateur**
 
-« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. La note ouverte s'affiche à droite des cartes, avec « Partager » ou « Personnes » en haut, et s'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil ») ; la touche « / » cherche dans les notes.
+« Notes » est dans le menu de gauche, avec le nombre de notes (et un point s'il y a des nouveautés) ; sur les écrans des notes, « Nouvelle note » (touche N) remplace « Nouvelle liste » en bas du menu. Une carte ouvre sa note à la place des cartes, seule au centre, comme une liste ouverte : en haut, « Retour aux notes » (la flèche à gauche), la mention « Enregistré », « Partager » ou « Personnes », l'épingle et le menu ⋮ ; dessous, le titre et le texte, en lignes pas trop longues pour se lire facilement. Elle s'enregistre toute seule (hors ligne : « Hors ligne · enregistrée sur cet appareil »). La flèche, Échap (quand vous n'écrivez pas) ou le retour du navigateur ramènent aux cartes. Sur l'écran « Notes », la touche « / » cherche dans les notes.
 
 <a id="notes-partage"></a>
 
@@ -946,7 +967,7 @@ La touche « ? » (ou le bouton « ? » en haut à gauche) affiche la liste. Auc
 | N | Nouvelle liste (nouvelle note sur les écrans des notes) |
 | / | Rechercher (dans la liste, dans les notes, ou dans le menu) |
 | , | Réglages |
-| Échap | Fermer la fenêtre ; vider puis quitter la recherche |
+| Échap | Fermer la fenêtre ; vider puis quitter la recherche ; quitter une note ouverte (retour aux notes) |
 | \[ et \] | Liste précédente, suivante |
 | P | Partager la liste |
 | A | Aller au champ d'ajout |
@@ -1140,11 +1161,18 @@ Réglages, « Administration » (visible seulement pour un Admin).
 - « Rayons » : groupés par magasin, « Tous les magasins » d'abord. Ajouter (en choisissant son magasin), renommer, changer de magasin, désactiver, supprimer s'il n'a jamais été utilisé. Deux magasins peuvent avoir chacun un rayon du même nom ; un rayon de « Tous les magasins » a un nom bien à lui. Un rayon ne va dans un magasin que si aucune liste d'un autre magasin, ou sans magasin, ne s'en sert.
 - « Articles » : la mémoire des noms saisis dans les listes de courses. « Corriger » change un nom partout, « Modifier le rayon » change le rayon habituel, « Retirer » l'enlève des suggestions.
 
+**Onglet « Étiquettes »**
+
+- Les étiquettes des notes, communes à tout le foyer ([5.12 Les notes](#notes)), avec le nombre de notes qui portent chacune (jamais lesquelles). Il reste là même si vous avez coupé les notes pour vous.
+- Le crayon renomme l'étiquette et change sa couleur ; un nom déjà pris par une autre étiquette (majuscules et accents ignorés) est refusé.
+- La corbeille supprime l'étiquette, après confirmation : elle est retirée de ses notes, sans toucher aux notes.
+- Les étiquettes se créent depuis une note, par n'importe quel compte.
+
 **Peut / ne peut pas**
 
-- Peut : gérer les comptes, les magasins, les rayons et les articles ; voir s'il existe une nouvelle version (Réglages › « À propos »).
+- Peut : gérer les comptes, les magasins, les rayons, les articles et les étiquettes des notes ; voir s'il existe une nouvelle version (Réglages › « À propos »).
 - Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([5.12 Les notes](#notes)).
-- Connexions d'assistants IA des autres comptes : voir [8.8 Voir et déconnecter un assistant IA](#claude-connexions).
+- Connexions d'assistants IA des autres comptes : voir [8.9 Voir et déconnecter un assistant IA](#claude-connexions).
 - Savoir qu'une nouvelle version existe : [9.9 Savoir qu'une nouvelle version existe](#version).
 
 <a id="creer"></a>
@@ -1264,11 +1292,11 @@ La personne à qui la liste d'envies est destinée ajoute ses souhaits (si elle 
 
 ### 8.1 À quoi ça sert
 
-Un assistant IA est un programme avec qui l'on discute, par exemple Claude (l'assistant d'Anthropic : claude.ai, l'application mobile, Claude Desktop, Claude Code). Listo suit le standard MCP : tout assistant IA qui accepte un connecteur personnalisé (ou serveur MCP) peut s'y brancher, comme Claude, ChatGPT ou Le Chat de Mistral, selon leurs versions et leurs abonnements. Une fois connecté, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant.
+Un assistant IA est un programme avec qui l'on discute, par exemple Claude (l'assistant d'Anthropic : claude.ai, l'application mobile, Claude Desktop, Claude Code). Listo suit le standard MCP : tout assistant IA qui accepte un connecteur personnalisé (ou serveur MCP) peut s'y brancher, comme Claude, ChatGPT ou Le Chat de Mistral, selon leurs versions et leurs abonnements. Une fois connecté, il peut lire vos listes et, si vous le permettez, y ajouter des éléments, en cocher et les modifier, simplement en le lui demandant. Il peut aussi lire vos notes et, si vous le permettez, en créer, les compléter ou les ranger avec des étiquettes ([8.6 Les notes](#claude-notes)).
 
 L'assistant agit avec votre compte et vos droits, jamais plus : ce qu'il ajoute apparaît à votre nom, comme si vous l'aviez fait vous-même, et il ne voit que les listes que vous lui avez autorisées. Rien ne se fait sans votre accord, donné sur l'écran « Autoriser un assistant IA » de Listo.
 
-Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.12 Un accès désactivé au départ](#claude-activation)). Sinon, la section « Assistants IA » n'apparaît pas dans « Mon compte ».
+Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.13 Un accès désactivé au départ](#claude-activation)). Sinon, la section « Assistants IA » n'apparaît pas dans « Mon compte ».
 
 <a id="claude-phrases"></a>
 
@@ -1285,6 +1313,7 @@ Cet accès n'existe que si la personne qui gère le serveur l'a activé ([8.12 U
 - Renommer ou compléter : “Renomme lait en lait demi-écrémé”, “Ajoute la note bio aux pommes.”
 - Ranger : “Range le lait au rayon crèmerie.”
 - Sous-tâches ([5.21 Sous-tâches](#sous-taches)) : “Ajoute les étapes Lot 1, Lot 2 et Lot 3 sous la tâche Authelia.” “Range Bitwarden sous la tâche Comptes.” “Sors Mac de sa tâche principale.” “Mets Vérifier les sauvegardes en premier sous Authelia.”
+- Notes ([8.6 Les notes](#claude-notes)) : “Qu'y a-t-il dans ma note Codes ?” “Ajoute des piles AA à ma note Courses à prévoir.” “Crée une note Idées cadeaux avec l'étiquette Famille.” “Mets l'étiquette Recettes sur la note Crumble.” “Mets la note Brouillon à la corbeille.”
 
 L'assistant lit d'abord la liste pour connaître ses rayons ou ses magasins, et il ne doit jamais en inventer. Si un article est resté sans rayon ou sans magasin, il doit vous le dire. Son comportement exact dépend de l'assistant lui-même : vérifiez dans Listo.
 
@@ -1294,10 +1323,10 @@ L'assistant lit d'abord la liste pour connaître ses rayons ou ses magasins, et 
 
 Au moment de connecter un assistant, l'écran « Autoriser un assistant IA » de Listo vous laisse choisir :
 
-- « Lecture seule » (choisi au départ) : l'assistant peut lire vos listes, sans rien y changer.
-- « Lecture et écriture » : en plus, l'assistant peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin.
+- « Lecture seule » (choisi au départ) : l'assistant peut lire vos listes et vos notes, sans rien y changer.
+- « Lecture et écriture » : en plus, l'assistant peut ajouter des éléments, en cocher ou décocher, et modifier leur nom, leur quantité, leur note, leur priorité, leur échéance (date, heure, rappel), leur répétition, la personne à qui elles sont attribuées, leur rayon ou leur magasin ; et, pour les notes, en créer, les compléter, remplacer leur texte, poser leurs étiquettes, créer une étiquette ou mettre une note à la corbeille ([8.6 Les notes](#claude-notes)).
 
-Vous choisissez aussi « Toutes mes listes » ou « Certaines listes ». Même en « Lecture et écriture », l'assistant ne peut écrire que dans les listes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste, il ne peut que la lire.
+Vous choisissez aussi « Toutes mes listes et mes notes » ou « Certaines listes ». Avec « Certaines listes », l'assistant ne voit aucune note. Même en « Lecture et écriture », l'assistant ne peut écrire que dans les listes et les notes où vous-même pouvez écrire : avec le droit « Lecture seule » sur une liste ou une note, il ne peut que la lire.
 
 <a id="claude-jamais"></a>
 
@@ -1308,6 +1337,8 @@ Quel que soit le niveau d'accord, un assistant IA ne peut jamais :
 - supprimer un élément, ni changer son lien ou son prix ;
 - créer, renommer, supprimer ou partager une liste ;
 - gérer les personnes, le lien public ou la corbeille ;
+- effacer une note pour de bon, la restaurer, la partager ou gérer son lien public ;
+- renommer, recolorer ou supprimer une étiquette ;
 - voir les photos, ni qui a ajouté quoi.
 
 <a id="claude-envies"></a>
@@ -1316,25 +1347,42 @@ Quel que soit le niveau d'accord, un assistant IA ne peut jamais :
 
 Un assistant IA ne reçoit jamais aucune donnée de réservation, pour personne : ni qui a réservé, ni si un souhait est réservé. La surprise est donc préservée, même si le bénéficiaire interroge son assistant. Dans une liste d'envies, cocher veut dire “reçu” : seuls le bénéficiaire et le propriétaire de la liste le peuvent, avec un assistant comme sans lui.
 
+<a id="claude-notes"></a>
+
+### 8.6 Les notes
+
+Un assistant IA voit vos notes comme vous ([5.12 Les notes](#notes)) : les vôtres et celles qu'on vous a partagées, avec votre droit sur chacune, jamais celles des autres ni votre corbeille. Il agit à votre nom : une note qu'il complète passe en “Modifiée par” vous, et les personnes de la note sont prévenues comme si vous l'aviez fait vous-même ([5.13 Partager une note](#notes-partage)).
+
+- Lire : il voit la liste de vos notes (titre, début du texte, étiquettes, épingle), puis le texte d'une note.
+- Compléter : il ajoute du texte à la fin d'une note, sur une nouvelle ligne, sans toucher au reste. C'est la façon la plus sûre : rien n'est perdu, même si quelqu'un écrit dans la note au même moment.
+- Remplacer tout le texte : seulement si la note n'a pas changé depuis qu'il l'a lue ; sinon, rien n'est écrit et il doit la relire. Il doit vous demander confirmation avant.
+- Créer une note : elle est à vous, partagée avec personne.
+- Étiquettes : il ne pose que des étiquettes qui existent déjà (majuscules et accents ignorés) ; un nom inconnu, et rien n'est fait. Il peut créer une étiquette si vous le lui demandez.
+- Supprimer : seulement vos notes, et seulement vers la corbeille, d'où vous pouvez la restaurer pendant 30 jours ([5.12 Les notes](#notes)). Il doit vous demander confirmation avant ; il ne peut jamais l'effacer pour de bon.
+- Avec le droit « Lecture seule » sur une note, il ne peut que la lire, même en « Lecture et écriture ».
+
+Les notes coupées pour vous dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : l'assistant n'y a plus accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucune note : reconnectez l'assistant avec « Toutes mes listes et mes notes » ([8.8 Connecter un assistant IA](#claude-connecter)).
+
 <a id="claude-limites"></a>
 
-### 8.6 Limites
+### 8.7 Limites
 
 - 20 éléments au plus par demande.
-- Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés. Au-delà, l'assistant reçoit un refus et rien n'est écrit.
+- Par connexion et par heure : 100 ajouts, 300 éléments cochés ou décochés, 300 éléments modifiés, 100 écritures de notes. Au-delà, l'assistant reçoit un refus et rien n'est écrit.
+- Notes : 100 au plus dans une réponse (l'assistant peut chercher ou filtrer par étiquette) ; une note garde 20 000 caractères au plus.
 - 120 appels par minute et par connexion.
 - 5 connexions d'assistants IA actives au plus par compte ; une connexion inutilisée pendant 30 jours se libère toute seule.
 - L'assistant ne crée pas un élément de même nom déjà présent et non coché : il vous le signale.
 
 <a id="claude-connecter"></a>
 
-### 8.7 Connecter un assistant IA
+### 8.8 Connecter un assistant IA
 
 La marche à suivre est la même pour tous les assistants :
 
 1. Dans Listo : Réglages, « Mon compte », section « Assistants IA », « Assistants IA ». Sous « Adresse à saisir dans votre assistant IA », touchez « Copier l'adresse ». Elle ressemble à `https://listo.exemple.fr/mcp`.
 2. Dans votre assistant IA : dans ses réglages, ajoutez un connecteur personnalisé (ou serveur MCP) avec cette adresse. Le nom des menus change d'un assistant à l'autre ; voyez son aide.
-3. L'assistant ouvre l'écran « Autoriser un assistant IA » de Listo. Vérifiez le site affiché sous « La réponse sera envoyée ici » et que c'est bien vous qui venez de lancer la connexion ([8.9 Prudence : vérifier le site](#assistant-site)), choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
+3. L'assistant ouvre l'écran « Autoriser un assistant IA » de Listo. Vérifiez le site affiché sous « La réponse sera envoyée ici » et que c'est bien vous qui venez de lancer la connexion ([8.10 Prudence : vérifier le site](#assistant-site)), choisissez le niveau et les listes, saisissez votre mot de passe (et votre code de double authentification), puis « Autoriser ».
 
 Exemple avec Claude (claude.ai, l'application mobile ou Claude Desktop) : dans ses réglages, ajoutez un connecteur personnalisé avec l'adresse de Listo, puis connectez-le ; sur l'écran « Autoriser un assistant IA », le site affiché est `claude.ai`.
 
@@ -1346,7 +1394,7 @@ Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
 
 <a id="claude-connexions"></a>
 
-### 8.8 Voir et déconnecter un assistant IA
+### 8.9 Voir et déconnecter un assistant IA
 
 Réglages, « Mon compte », « Assistants IA » : chaque connexion autorisée y apparaît, avec l'application, son droit (« Lecture seule » ou « Lecture et écriture »), ses listes, sa date et sa dernière utilisation.
 
@@ -1357,41 +1405,44 @@ Réglages, « Mon compte », « Assistants IA » : chaque connexion autorisée y
 
 <a id="assistant-site"></a>
 
-### 8.9 Prudence : vérifier le site
+### 8.10 Prudence : vérifier le site
 
 > **Attention** : Tout assistant IA qui suit le standard peut demander l'accès à Listo : c'est vous qui décidez, sur l'écran « Autoriser un assistant IA ». Il montre en grand le site qui recevra la réponse (par exemple `claude.ai` pour Claude). Vérifiez que c'est bien celui de votre assistant. Si vous n'avez pas lancé la connexion vous-même, refusez : quelqu'un essaie peut-être d'accéder à vos listes.
 
-Quand l'application choisit elle-même son nom, il est suivi de « nom donné par l'application, non vérifié » : fiez-vous au site, pas au nom. La personne qui gère le serveur peut aussi n'accepter que certains sites ([8.13 Activer l'accès sur le serveur](#mcp-serveur)).
+Quand l'application choisit elle-même son nom, il est suivi de « nom donné par l'application, non vérifié » : fiez-vous au site, pas au nom. La personne qui gère le serveur peut aussi n'accepter que certains sites ([8.14 Activer l'accès sur le serveur](#mcp-serveur)).
 
 <a id="claude-prudence"></a>
 
-### 8.10 Prudence : les textes piégés
+### 8.11 Prudence : les textes piégés
 
-> **Attention** : Une liste partagée peut contenir un texte piégé, écrit par quelqu'un d'autre pour tromper l'assistant IA (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes à l'assistant comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.
+> **Attention** : Une liste ou une note partagée peut contenir un texte piégé, écrit par quelqu'un d'autre pour tromper l'assistant IA (par exemple une note qui lui demande de tout cocher). Listo présente toujours le contenu des listes et des notes à l'assistant comme des données, jamais comme des consignes, mais choisissez « Lecture et écriture » seulement si vous en avez besoin.
 
-Ne demandez à l'assistant de modifier un élément que vous-même ; vérifiez dans Listo ce qu'il a fait.
+Ne demandez à l'assistant de modifier un élément ou une note que vous-même ; vérifiez dans Listo ce qu'il a fait.
 
 <a id="faq-claude"></a>
 
-### 8.11 Dépannage
+### 8.12 Dépannage
 
 - Après une mise à jour de Listo, l'assistant peut garder l'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans l'assistant.
-- Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez l'assistant avec « Toutes mes listes » ([8.7 Connecter un assistant IA](#claude-connecter)).
+- Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez l'assistant avec « Toutes mes listes et mes notes » ([8.8 Connecter un assistant IA](#claude-connecter)).
+- L'assistant ne voit pas vos notes : la connexion est limitée à « Certaines listes », ou les notes sont coupées pour vous dans Réglages, « Fonctions » ([8.6 Les notes](#claude-notes)). Après la mise à jour qui a ajouté les notes, ouvrez une nouvelle conversation pour qu'il connaisse ses nouveaux outils.
+- L'assistant dit qu'une étiquette est inconnue : elle n'existe pas encore. Rien n'a été fait ; demandez-lui de la créer, ou choisissez-en une parmi celles qu'il vous cite.
+- L'assistant dit que la note a changé : quelqu'un l'a modifiée depuis qu'il l'a lue. Rien n'a été écrit ; il doit la relire avant de recommencer.
 - L'assistant refuse d'écrire : la connexion est en « Lecture seule », ou vous n'avez que le droit « Lecture seule » sur cette liste.
-- Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Assistants IA » ([8.8 Voir et déconnecter un assistant IA](#claude-connexions)).
-- Listo affiche « Demande d'autorisation invalide » : la demande de l'assistant n'a pas pu être vérifiée (adresse de retour refusée, demande incomplète), ou son site n'est pas accepté par le serveur ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Relancez la connexion depuis l'assistant ; si cela recommence, prévenez la personne qui gère le serveur.
+- Plus rien ne marche : la connexion a pu être coupée (mot de passe changé, « Déconnecter »). Voyez « Assistants IA » ([8.9 Voir et déconnecter un assistant IA](#claude-connexions)).
+- Listo affiche « Demande d'autorisation invalide » : la demande de l'assistant n'a pas pu être vérifiée (adresse de retour refusée, demande incomplète), ou son site n'est pas accepté par le serveur ([8.14 Activer l'accès sur le serveur](#mcp-serveur)). Relancez la connexion depuis l'assistant ; si cela recommence, prévenez la personne qui gère le serveur.
 - L'assistant dit qu'un rayon ou un magasin est inconnu : il n'existe pas, il est désactivé, ou cette liste ne le propose pas (rayon d'un autre magasin, ou magasin d'une liste « Multi »). Rien n'a été ajouté ; l'assistant doit vous citer les rayons ou magasins valables. Choisissez-en un, ou demandez à l'Admin de le créer (Réglages, « Administration », onglet « Courses »).
 - L'assistant dit qu'un magasin ne se choisit pas dans cette liste : dans une liste à magasin simple, le magasin est celui de la liste ; on choisit le rayon. Le rayon, lui, ne se choisit pas dans une liste « Multi ».
 
 <a id="claude-activation"></a>
 
-### 8.12 Un accès désactivé au départ
+### 8.13 Un accès désactivé au départ
 
-L'accès des assistants IA est désactivé tant que la personne qui gère le serveur n'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([8.13 Activer l'accès sur le serveur](#mcp-serveur)). Désactivé, toutes ses adresses répondent comme si elles n'existaient pas, et la section « Assistants IA » de « Mon compte » n'apparaît pas.
+L'accès des assistants IA est désactivé tant que la personne qui gère le serveur n'a pas mis `LISTO_MCP=on` dans `docker-compose.yml` ([8.14 Activer l'accès sur le serveur](#mcp-serveur)). Désactivé, toutes ses adresses répondent comme si elles n'existaient pas, et la section « Assistants IA » de « Mon compte » n'apparaît pas.
 
 <a id="mcp-serveur"></a>
 
-### 8.13 Activer l'accès sur le serveur
+### 8.14 Activer l'accès sur le serveur
 
 *Pour la personne qui gère le serveur.*
 
@@ -1411,7 +1462,7 @@ Proxy : rien à régler, ces adresses passent par le même hôte. Elles doivent 
 
 <a id="mcp-regles"></a>
 
-### 8.14 Règles et journal
+### 8.15 Règles et journal
 
 *Pour la personne qui gère le serveur.*
 
@@ -1419,21 +1470,21 @@ Proxy : rien à régler, ces adresses passent par le même hôte. Elles doivent 
 - Un jeton d'assistant IA n'ouvre rien d'autre que `/mcp` : ni l'application, ni ses autres adresses.
 - Adresses de retour : https sur un nom de site (jamais une adresse IP), sans identifiant ni fragment, ou l'ordinateur (`localhost`) ; avec `LISTO_MCP_SITES`, seulement ces sites. Elles sont vérifiées à l'enregistrement et à chaque autorisation. Une erreur n'est renvoyée sans écran que vers l'ordinateur ou un site connu (`claude.ai`, `claude.com`, ou ceux de `LISTO_MCP_SITES`) : sinon, Listo affiche sa page d'erreur, pour ne jamais servir de relais vers un autre site.
 - Changer son mot de passe, ou un compte désactivé ou dont le mot de passe est réinitialisé (y compris par la commande de secours) : toutes ses connexions d'assistants IA sont révoquées.
-- Les plafonds ([8.6 Limites](#claude-limites)) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.
+- Les plafonds ([8.7 Limites](#claude-limites)) sont comptés en mémoire : ils repartent de zéro au redémarrage du conteneur.
 - L'Admin ne voit pas les connexions des autres. En secours, il désactive le compte ou réinitialise son mot de passe. Pour tout le monde d'un coup : retirer `LISTO_MCP=on`.
 
 Journal de sécurité (jamais un jeton, un code ni le contenu d'une liste ; les noms commencent par `claude.` pour tous les assistants) : `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (une ligne par appel d'outil, avec le nombre d'éléments, jamais un nom saisi), `claude.token_refused`, `claude.origin_refused`.
 
 <a id="mcp-essai"></a>
 
-### 8.15 Premier essai
+### 8.16 Premier essai
 
 *Pour la personne qui gère le serveur.*
 
 Après l'activation, une fois, avant tout usage régulier (ici avec Claude) :
 
 1. Dans un navigateur : `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` affiche un petit texte avec `"resource": "https://listo.exemple.fr/mcp"`.
-2. Connecter l'assistant ([8.7 Connecter un assistant IA](#claude-connecter)).
+2. Connecter l'assistant ([8.8 Connecter un assistant IA](#claude-connecter)).
 3. Demander à l'assistant “Quelles sont mes listes Listo ?”, puis “Qu'y a-t-il dans les courses ?” : les réponses doivent correspondre à l'application. Avec « Lecture et écriture » : “Ajoute du lait aux courses”, “Coche le pain” ; sur un téléphone ouvert sur la liste, les changements arrivent en direct.
 4. `docker logs listo` : des lignes `claude.connected` et `claude.tool`, aucune erreur. Signaler les lignes `claude.origin_refused` ou `claude.client_refused` s'il y en a.
 5. Plus d'une heure plus tard, reposer une question : elle doit marcher sans nouvelle autorisation.

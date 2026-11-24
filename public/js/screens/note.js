@@ -1,8 +1,9 @@
 // Écran d'une note (#/notes/<id>, et #/notes/nouvelle pour une note pas
 // encore enregistrée ; étape 2 du cadrage, maquettes design/accueil-notes
 // note-1 et note-2, sans catégories : abandonnées le 23 novembre 2026).
-// Sur ordinateur, le même éditeur est la zone de droite de l'écran Notes
-// (maquette pc-notes-1).
+// Sur ordinateur, la note ouverte est seule dans la colonne, comme une
+// liste ouverte (décision du 24 novembre 2026) : « Retour aux notes » à
+// gauche de sa barre, Échap y ramène aussi (shortcuts.js).
 //
 // - Titre puis texte, sans cadre. Aucun curseur mis tout seul à l'ouverture
 //   d'une note existante ; pour une nouvelle note (« + », « Nouvelle note »,
@@ -31,12 +32,17 @@
 //   met à jour en direct. Ouvrir une note la marque « lue » (Nouveautés),
 //   sur tous mes appareils. Bas de la note : « Modifiée par Léa · il y a
 //   5 min ».
+// - Étiquettes (24 novembre 2026, screens/note-labels.js) : sous le titre,
+//   les étiquettes de la note et « + Étiquette » (propriétaire et « Peut
+//   modifier » ; « Lecture seule » : les étiquettes seulement). Une note
+//   sans étiquette n'a pas cette rangée : la première se pose par le menu ⋮,
+//   « Étiquettes ».
 
 import { h, icon, iconButton, replace, avatar } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { dateTimeLabel, relativeTime, namesList } from '../format.js';
-import { app, onDataChange } from '../app.js';
-import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState } from '../ui.js';
+import { app, onDataChange, isDesktop } from '../app.js';
+import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState, offlineBanner } from '../ui.js';
 import { uuid } from '../api.js';
 import { linkParts, noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
 import * as actions from '../actions.js';
@@ -44,12 +50,14 @@ import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
 import { canEditNote, isNoteOwner, notePeople } from '../store.js';
 import { openNoteSharePanel } from './share-panel.js';
+import { noteLabelsSlot, drawNoteLabels } from './note-labels.js';
 
 const SAVE_DELAY_MS = 1000;
 
-// Écran d'une note sur le téléphone (noteId null : nouvelle note)
+// Écran d'une note (noteId null : nouvelle note), sur le téléphone comme
+// sur l'ordinateur
 export function renderNote(noteId, onLeave) {
-  return noteEditor(noteId, onLeave, { pc: false });
+  return noteEditor(noteId, onLeave, { pc: isDesktop() });
 }
 
 // Position du curseur dans le texte affiché, à l'endroit touché (nombre de
@@ -70,8 +78,8 @@ function offsetAt(view, event, length) {
   return length;
 }
 
-// L'éditeur (téléphone : tout l'écran ; ordinateur : zone de droite)
-export function noteEditor(initialId, onLeave, { pc }) {
+// L'éditeur (téléphone : tout l'écran ; ordinateur : toute la colonne)
+function noteEditor(initialId, onLeave, { pc }) {
   let noteId = initialId;
   const isNew = !initialId;
   const note = () => (noteId ? app.data.notes.get(noteId) : null);
@@ -85,9 +93,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
   let body = start?.body ?? '';
 
   // --- Champs ---
-  // Titre lu par les lecteurs d'écran (et titre de l'onglet sur le
-  // téléphone) : celui de la note ; ordinateur : un h2, le h1 est « Notes »
-  const heading = h(pc ? 'h2' : 'h1', { class: 'visually-hidden', id: `note-titre-${Math.random().toString(36).slice(2, 8)}` });
+  // Titre lu par les lecteurs d'écran (et titre de l'onglet) : celui de la note
+  const heading = h('h1', { class: 'visually-hidden' });
   const titleInput = h('input', {
     class: 'note-edit__title', type: 'text', maxlength: String(NOTE_TITLE_MAX), autocomplete: 'off', enterkeyhint: 'next', 'data-fit-keyboard': '',
     'aria-label': t('notes.champ.titre'), placeholder: t('notes.champ.titre'), value: start?.title ?? '',
@@ -154,6 +161,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
     fitInput();
     changed();
   });
+  // Étiquettes de la note, sous le titre (cachées s'il n'y en a aucune)
+  const labelsRow = noteLabelsSlot();
   titleInput.addEventListener('input', changed);
   titleInput.addEventListener('blur', () => save());
 
@@ -260,8 +269,10 @@ export function noteEditor(initialId, onLeave, { pc }) {
       : t('notes.pied.moi', { date: dateTimeLabel(n.updatedAt) });
   }
 
-  // --- Barre : menu (Épingler, Dupliquer, Supprimer) ; ordinateur : épingle, fermer ---
-  const back = () => (pc ? navigate('notes', {}, { replace: true }) : goBack('notes'));
+  // --- Barre : retour, menu (Épingler, Dupliquer, Supprimer) ; ordinateur : épingle ---
+  // Retour : à l'écran précédent (les cartes des notes, d'où la note a été
+  // ouverte), sinon à l'écran Notes
+  const back = () => goBack('notes');
   const afterDelete = () => back();
   const menuButton = iconButton('more', t('notes.plusActions'), () => {
     const n = note();
@@ -387,7 +398,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
     // Ouverte et à l'écran : lue (Nouveautés), sur tous mes appareils
     if (n && !n.deletedAt && document.visibilityState === 'visible') actions.markNoteSeen(n.id);
     heading.textContent = n ? titleOf(n) : t('notes.nouvelle');
-    if (!pc && n) document.title = `${heading.textContent} · Listo`;
+    if (n) document.title = `${heading.textContent} · Listo`;
+    drawNoteLabels(labelsRow, n);
     if (input.hidden) drawView();
     drawStatus();
     drawFoot();
@@ -398,8 +410,8 @@ export function noteEditor(initialId, onLeave, { pc }) {
     h('h2', { class: 'empty__title' }, t('notes.introuvable.titre')),
     h('p', { class: 'empty__text' }, t('notes.introuvable.texte')),
     h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => navigate('notes', {}, { replace: true }) }, t('notes.retour')));
-  const fields = h('div', { class: 'note-edit' }, titleInput, view, input);
-  const scroll = pc ? fields : h('div', { class: 'scroll' }, fields);
+  const fields = h('div', { class: 'note-edit' }, titleInput, labelsRow, view, input);
+  const scroll = h('div', { class: 'scroll' }, fields);
 
   // Changement de données (synchronisation, temps réel, autre écran)
   const onData = () => {
@@ -439,10 +451,14 @@ export function noteEditor(initialId, onLeave, { pc }) {
   // après la mise en place de l'écran
   if (isNew) queueMicrotask(() => edit(0));
 
+  // Ordinateur : la note seule dans la colonne, comme une liste ouverte ;
+  // barre : « Retour aux notes », la mention, Partager ou Personnes,
+  // l'épingle et le menu ⋮ (plus de croix « Fermer »)
   if (pc) {
-    const bar = h('div', { class: 'pc-note__bar' }, status, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton,
-      iconButton('close', t('notes.fermer'), () => navigate('notes', {}, { replace: true })));
-    return h('section', { class: 'pc-note', 'aria-labelledby': heading.id }, heading, bar, banner, scroll, foot);
+    const bar = h('div', { class: 'pc-note__bar' },
+      iconButton('chev-l', t('notes.retour'), () => back(), 'pc-note__back'),
+      status, h('span', { class: 'grow' }), peopleButton, pinButton, menuButton);
+    return h('div', { class: 'screen pc-note' }, heading, bar, offlineBanner(), banner, scroll, foot);
   }
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },

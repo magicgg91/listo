@@ -6,8 +6,9 @@
 // Téléphone : barre du haut (titre, pastille d'état, bouton de tri comme
 // « Listes », « + » Nouvelle note), loupe ronde du bandeau (titres
 // et textes), notes épinglées d'abord puis les autres. Ordinateur : les
-// cartes à gauche, la note ouverte à droite (screens/note.js), « Nouvelle
-// note » en bas du menu de gauche (touche N).
+// cartes seules dans la colonne ; une carte ouvre la note à sa place, seule
+// dans la colonne comme une liste ouverte (screens/note.js, décision du
+// 24 novembre 2026) ; « Nouvelle note » en bas du menu de gauche (touche N).
 //
 // Tout vient de la copie locale (hors ligne compris) ; chaque action passe
 // par la file d'attente (actions.js) et le serveur revérifie les droits.
@@ -18,6 +19,14 @@
 // (propriétaire) et les pastilles des personnes ; menu selon le droit
 // (Partager et Lien public : propriétaire ; Personnes, Quitter la note :
 // les autres ; sourdines des nouveautés et des notifications : chacun).
+//
+// Étiquettes (24 novembre 2026, screens/note-labels.js) : sur la carte, à
+// gauche de la ligne du bas, les pastilles des personnes à droite (même
+// ligne, correction du propriétaire) ; filtre « Toutes » + étiquettes de
+// mes notes (un seul choix, retenu sur cet appareil), sous la barre du
+// haut sur le téléphone, dans la ligne sous le titre sur ordinateur ; il
+// se combine avec la recherche, qui cherche aussi dans les noms des
+// étiquettes. Sans aucune étiquette, l'écran ne change pas (pas de rangée vide).
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
@@ -28,7 +37,7 @@ import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
-import { isSearching, matches } from '../search.js';
+import { isSearching } from '../search.js';
 import { liveNotes, trashedNotes, sortNotes, noteTitle, noteExcerpt, NOTE_SORTS, NOTE_TITLE_MAX } from '../notes.js';
 import * as actions from '../actions.js';
 import { t, compareText } from '../i18n.js';
@@ -37,7 +46,8 @@ import { isNoteUnread, isNoteNewsMuted, isNoteOwner, canEditNote, notePeople } f
 import { isNotePushMuted, setNotePushMuted } from '../push.js';
 import { openNoteSharePanel } from './share-panel.js';
 import { openNoteLinkSheet } from './share.js';
-import { noteEditor } from './note.js';
+import { noteMatches } from '../labels.js';
+import { labelList, labelsOfNote, labelFilterBar, drawLabelFilter, activeLabelFilter, openNoteLabelsSheet } from './note-labels.js';
 
 // --- Tri, gardé sur cet appareil ---
 const SORT_KEY = 'listo-tri-notes';
@@ -68,8 +78,11 @@ export function sortedNotes(sort = loadNoteSort()) {
 // Notes de la corbeille (les miennes), la plus récemment supprimée d'abord
 export const trashed = () => trashedNotes([...app.data.notes.values()]);
 
-// Recherche dans le titre et le texte
-const found = (notes, query) => (isSearching(query) ? notes.filter((note) => matches(note.title, query) || matches(note.body, query)) : notes);
+// Recherche dans le titre, le texte et les noms des étiquettes (labels.js)
+const found = (notes, query) => (isSearching(query) ? notes.filter((note) => noteMatches(note, query, app.data.labels ?? [])) : notes);
+
+// Filtre par étiquette (un seul choix ; « Toutes » : null)
+const withLabel = (notes, labelId) => (labelId ? notes.filter((note) => (note.labelIds ?? []).includes(labelId)) : notes);
 
 // --- Menu d'une note (carte ⋮, clic droit ; écran de la note) ---
 // Dans l'ordre : Épingler / Désépingler (chacun pour soi) ; Partager et
@@ -96,6 +109,8 @@ export function noteMenuItems(note, { onDeleted = () => {}, withPin = true, with
       onSelect: () => openNoteSharePanel(note.id),
     } : null,
     owner ? { icon: 'link', label: t('notes.menu.lienPublic'), onSelect: () => openNoteLinkSheet(note) } : null,
+    // Étiquettes (propriétaire ou « Peut modifier ») : la feuille du choix
+    canEditNote(note) && !note.deletedAt ? { icon: 'tag', label: t('notes.menu.etiquettes'), onSelect: () => openNoteLabelsSheet(note.id) } : null,
     {
       icon: 'copy',
       label: t('notes.menu.dupliquer'),
@@ -186,7 +201,7 @@ export async function askDelete(note, onDeleted = () => {}) {
 
 // --- Carte d'une note (balisage de design/accueil-notes, notes-1) ---
 // Un lien (toute la carte ouvre la note) et, posé dans son coin, le bouton ⋮.
-export function noteCard(note, { selected = false } = {}) {
+export function noteCard(note) {
   const pinned = app.data.pinnedNotes.has(note.id);
   const title = titleOf(note);
   const excerpt = noteExcerpt(note);
@@ -196,11 +211,14 @@ export function noteCard(note, { selected = false } = {}) {
   const people = notePeople(note);
   const readOnly = !canEditNote(note);
   const link = isNoteOwner(note) && note.publicLink && (note.publicLink.expiresAt === null || Date.parse(note.publicLink.expiresAt) > Date.now());
+  // Étiquettes de la note : à gauche de la ligne du bas
+  const labels = labelList(labelsOfNote(note));
   const chips = [
     // Note « À vérifier » (conflit pas encore tranché) : icône ET texte
     check ? h('span', { class: 'chip note-card__check' }, icon('alert', 'icon--xs'), t('notes.aVerifier')) : null,
     // Partagée avec moi en lecture seule : pastille (icône ET texte), comme les listes
     readOnly ? h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), t('notes.carte.lectureSeule')) : null,
+    labels,
   ].filter(Boolean);
   const right = people.length || link
     ? h('span', { class: 'note-card__people' },
@@ -208,13 +226,13 @@ export function noteCard(note, { selected = false } = {}) {
       people.length ? h('span', { class: 'avatars', role: 'img', 'aria-label': t('notes.carte.partagee', { names: namesList(people.map((m) => m.displayName)) }) },
         people.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))) : null)
     : null;
+  // Ouvre la note (nouvelle entrée de l'historique : Retour revient aux cartes)
   const card = h('a', {
-    class: `card note-card${selected ? ' is-selected' : ''}`,
+    class: 'card note-card',
     href: pathFor('note', { id: note.id }),
-    'aria-current': selected ? 'page' : null,
     onClick: (event) => {
       event.preventDefault();
-      navigate('note', { id: note.id }, { replace: selected || app.route?.name === 'note' || app.route?.name === 'newNote' });
+      navigate('note', { id: note.id });
     },
   },
   h('div', { class: 'note-card__head' },
@@ -242,10 +260,10 @@ export function noteCard(note, { selected = false } = {}) {
 }
 
 // Épinglées, puis autres notes (titres de section seulement s'il y a des épinglées)
-function noteSections(notes, { selectedId = null } = {}) {
+function noteSections(notes) {
   const pinned = notes.filter((note) => app.data.pinnedNotes.has(note.id));
   const others = notes.filter((note) => !app.data.pinnedNotes.has(note.id));
-  const card = (note) => noteCard(note, { selected: note.id === selectedId });
+  const card = (note) => noteCard(note);
   if (!pinned.length) return others.map(card);
   return [
     h('h2', { class: 'notes-section' }, icon('pin', 'icon--xs'), t('notes.section.epinglees')),
@@ -299,9 +317,8 @@ function sortButton(onChange) {
 }
 
 // --- Écran « Notes » ---
-// openId : ordinateur, note ouverte à droite ; 'new' : nouvelle note
-export function renderNotes(onLeave, { openId = null } = {}) {
-  if (isDesktop()) return renderNotesPc(onLeave, openId);
+export function renderNotes(onLeave) {
+  if (isDesktop()) return renderNotesPc(onLeave);
   const content = h('div', { class: 'scroll' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, {
@@ -311,6 +328,8 @@ export function renderNotes(onLeave, { openId = null } = {}) {
     onOpen: () => tabBar().loupe.sync(),
   });
   tabBar().loupe.set(search.loupe);
+  // Filtre par étiquette, sous la barre du haut (caché sans étiquette)
+  const filter = labelFilterBar();
 
   const draw = () => {
     if (!app.data.loaded) {
@@ -318,13 +337,14 @@ export function renderNotes(onLeave, { openId = null } = {}) {
       return;
     }
     const all = sortedNotes();
+    drawLabelFilter(filter, all, () => draw());
     if (!all.length) {
       searchMeta.textContent = '';
       search.show(emptyNotes());
       return;
     }
     const query = search.value;
-    const notes = found(all, query);
+    const notes = found(withLabel(all, activeLabelFilter(all)), query);
     searchMeta.textContent = isSearching(query) ? t('notes.recherche.nombre', { count: notes.length }) : '';
     searchMeta.classList.toggle('visually-hidden', notes.length === 0);
     search.show(notes.length ? h('div', { class: 'cards' }, noteSections(notes)) : noResult(query, search));
@@ -344,22 +364,25 @@ export function renderNotes(onLeave, { openId = null } = {}) {
       sortButton(() => draw()),
       iconButton('plus', t('notes.nouvelle'), () => navigate('newNote'), 'icon-btn--accent')),
     search.bar,
+    filter,
     content);
 }
 
 // --- Ordinateur (maquette pc-notes-1, sans catégories) ---
-// À gauche : titre « Notes », « 12 notes », recherche toujours visible,
-// corbeille, pastille d'état, tri, cartes ; à droite : la note ouverte
-// (screens/note.js), sans voile.
+// Titre « Notes », « 12 notes », pastille d'état, recherche toujours
+// visible ; dessous, filtre et tri ; puis les cartes, seules dans la
+// colonne. Une carte ouvre la note à la place des cartes (écran de la
+// note, screens/note.js ; décision du 24 novembre 2026).
 let pcScroll = 0;
-function renderNotesPc(onLeave, openId) {
+function renderNotesPc(onLeave) {
   const content = h('div', { class: 'scroll' });
   const sub = h('p', { class: 'pc-head__sub' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const search = createSearchRow(content, { label: t('notes.recherche.libelle'), onChange: () => draw(), docked: true, placeholder: t('navigation.recherche.placeholder') });
   search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
   search.field.append(keycap('/'));
-  const selectedId = () => (openId && openId !== 'new' ? openId : null);
+  // Filtre par étiquette : dans la ligne sous le titre (caché sans étiquette)
+  const filter = labelFilterBar();
 
   const draw = () => {
     if (!app.data.loaded) {
@@ -368,26 +391,28 @@ function renderNotesPc(onLeave, openId) {
     }
     const all = sortedNotes();
     sub.textContent = t('notes.nombre', { count: all.length });
+    drawLabelFilter(filter, all, () => draw());
     if (!all.length) {
       searchMeta.textContent = '';
       search.show(emptyNotes());
       return;
     }
     const query = search.value;
-    const notes = found(all, query);
+    const notes = found(withLabel(all, activeLabelFilter(all)), query);
     searchMeta.textContent = isSearching(query) ? t('notes.recherche.nombre', { count: notes.length }) : '';
-    search.show(notes.length ? h('div', { class: 'pc-notes__cards' }, noteSections(notes, { selectedId: selectedId() })) : noResult(query, search));
+    search.show(notes.length ? h('div', { class: 'pc-notes__cards' }, noteSections(notes)) : noResult(query, search));
   };
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
   draw();
   refreshData({ quiet: true });
-  // Ouvrir une autre note redessine l'écran : les cartes gardent leur défilement
+  // Retour d'une note : les cartes retrouvent leur défilement (et le filtre,
+  // gardé sur cet appareil)
   onLeave(() => { pcScroll = content.scrollTop; });
   requestAnimationFrame(() => { content.scrollTop = pcScroll; });
 
-  const list = h('div', { class: 'pc-notes__list' },
+  return h('div', { class: 'screen' },
     // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
     // (comme dans une liste ouverte) ; dessous : résultats et tri
     h('header', { class: 'pc-head' },
@@ -395,12 +420,11 @@ function renderNotesPc(onLeave, openId) {
       syncPill(() => refreshData({ full: true })), topBell(onLeave),
       search.field),
     h('div', { class: 'pc-tools' },
+      filter,
       searchMeta,
       h('div', { class: 'pc-tools__end' }, sortButton(() => draw()))),
     offlineBanner(),
     content);
-  const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;
-  return h('div', { class: 'screen' }, h('div', { class: `pc-notes${pane ? '' : ' pc-notes--closed'}` }, list, pane));
 }
 
 // --- Nouvelle note depuis l'Accueil (tuile Notes) ---

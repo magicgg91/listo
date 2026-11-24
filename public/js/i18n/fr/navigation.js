@@ -8,10 +8,13 @@ export default {
   'navigation.echeances': 'Échéances',
   'navigation.reglages': 'Réglages',
   'navigation.notes': 'Notes',
-  'navigation.echeances.pastille': {
-    one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
-    other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
-  },
+  // Nom lu de « Échéances » avec ses pastilles (deadlines.js,
+  // deadlinesLabel) : seulement les nombres non nuls. « en retard » et
+  // « aujourd'hui » ne s'accordent pas, mais les formes du pluriel restent
+  // là pour une autre langue.
+  'navigation.echeances.pastille.retard': { one: 'Échéances, {count} en retard', other: 'Échéances, {count} en retard' },
+  'navigation.echeances.pastille.aujourdhui': { one: 'Échéances, {count} aujourd\'hui', other: 'Échéances, {count} aujourd\'hui' },
+  'navigation.echeances.pastilles': 'Échéances, {late} en retard, {today} aujourd\'hui',
   'navigation.libelle': 'Navigation',
 
   // Menu de gauche : recherche

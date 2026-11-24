@@ -850,6 +850,46 @@ export const MIGRATIONS = [
   ALTER TABLE users ADD COLUMN home_start TEXT NOT NULL DEFAULT 'lists' CHECK (home_start IN ('deadlines', 'lists', 'notes'));
   ALTER TABLE users ADD COLUMN home_tiles TEXT CHECK (home_tiles IS NULL OR length(home_tiles) <= 200);
   `,
+
+  // --- Migration 41 : réglage « Fonctions » de chaque compte (24 novembre 2026) ---
+  // Réglages › Fonctions, le même sur tous les appareils de la personne
+  // (public/js/features.js, server/features.js) : une colonne
+  // <fonction>_enabled par fonction qu'on peut couper pour soi.
+  // - notes_enabled : les notes sont utilisées (1, au départ) ou coupées
+  //   (0 : ni bouton, ni tuile, ni nouveautés, ni notifications des notes
+  //   pour cette personne ; rien n'est effacé).
+  // Les comptes existants gardent les notes : rien ne change.
+  `
+  ALTER TABLE users ADD COLUMN notes_enabled INTEGER NOT NULL DEFAULT 1 CHECK (notes_enabled IN (0, 1));
+  `,
+
+  // --- Migration 42 : étiquettes des notes (24 novembre 2026) ---
+  // labels : la réserve d'étiquettes, commune à tous les comptes
+  // (server/labels.js, public/js/labels.js) : un nom (1 à 30 caractères),
+  // sa forme comparable name_key (sans accents ni majuscules, espaces
+  // regroupés : UNIQUE, « Été » et « ete » sont la même étiquette) et une
+  // couleur parmi huit. Le créateur n'est pas gardé (le journal de sécurité
+  // le dit) : il n'est envoyé à personne.
+  // note_labels : les étiquettes posées sur une note, communes à la note
+  // (tous ceux qui la voient les voient). Effacer une étiquette (Admin) la
+  // retire de ses notes sans toucher aux notes ; effacer une note emporte
+  // ses liens (ON DELETE CASCADE des deux côtés).
+  // Les tables partent vides : rien ne change pour les données existantes.
+  `
+  CREATE TABLE labels (
+    id       INTEGER PRIMARY KEY,
+    name     TEXT    NOT NULL CHECK (length(name) BETWEEN 1 AND 30),
+    name_key TEXT    NOT NULL UNIQUE CHECK (length(name_key) BETWEEN 1 AND 200),
+    color    TEXT    NOT NULL CHECK (color IN ('gris', 'rouge', 'orange', 'jaune', 'vert', 'bleu', 'violet', 'rose')),
+    created_at TEXT  NOT NULL
+  );
+  CREATE TABLE note_labels (
+    note_id  TEXT    NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    label_id INTEGER NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
+    PRIMARY KEY (note_id, label_id)
+  );
+  CREATE INDEX note_labels_label ON note_labels(label_id);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

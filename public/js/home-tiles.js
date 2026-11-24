@@ -12,6 +12,14 @@
 // - hidden : les tuiles masquées (aucune au départ). « Compte » ne se masque
 //   jamais : sur l'Accueil, il n'y a pas de bandeau du bas, et c'est le seul
 //   chemin vers les Réglages.
+//
+// Une fonction coupée par la personne (Réglages › Fonctions, features.js,
+// 24 novembre 2026 ; les notes, par exemple) retire sa tuile, son bouton du
+// bandeau et son premier écran : les fonctions ci-dessous prennent aussi
+// ce réglage-là (features ; absent : tout est utilisé). Le réglage
+// « Accueil » gardé ne change pas (la tuile garde sa place et son état).
+
+import { screenAllowed } from './features.js';
 
 // Les tuiles, dans leur ordre de départ
 export const HOME_TILES = ['deadlines', 'lists', 'gifts', 'notes', 'account'];
@@ -77,25 +85,54 @@ export function applyHomeChange(home, change) {
   });
 }
 
+// Premiers écrans possibles pour cette personne (sans ceux d'une fonction
+// coupée : « Premier écran » de Réglages › Accueil)
+export function startScreens(features) {
+  return START_SCREENS.filter((name) => screenAllowed(name, features));
+}
+
 // Premier écran de Listo : l'Accueil (« home »), ou l'écran choisi quand
-// l'Accueil est coupé (aussi pour #/accueil et une adresse inconnue)
-export function firstScreen(home) {
+// l'Accueil est coupé (aussi pour #/accueil et une adresse inconnue). Écran
+// choisi d'une fonction coupée (« Notes », notes coupées) : « Listes » ; le
+// choix gardé ne change pas (il revient quand la fonction est rallumée).
+export function firstScreen(home, features) {
   const value = normalizeHome(home);
-  return value.enabled ? 'home' : value.start;
+  if (value.enabled) return 'home';
+  return screenAllowed(value.start, features) ? value.start : DEFAULT_START;
 }
 
 // Boutons du bandeau du bas du téléphone (tabbar.js, même ordre que ses
-// TABS) : les cinq, ou quatre sans « Accueil » quand il est coupé
+// TABS) : les cinq ; sans « Accueil » quand il est coupé, sans « Notes »
+// quand les notes sont coupées (quatre, ou trois)
 export const TAB_SCREENS = ['home', 'deadlines', 'lists', 'notes', 'settings'];
-export function tabScreens(home) {
-  const shown = firstScreen(home) === 'home';
-  return TAB_SCREENS.filter((name) => shown || name !== 'home');
+export function tabScreens(home, features) {
+  const shown = firstScreen(home, features) === 'home';
+  return TAB_SCREENS.filter((name) => (shown || name !== 'home') && screenAllowed(name, features));
 }
 
-// Tuiles affichées, dans l'ordre choisi (les tuiles masquées en moins)
-export function shownTiles(home) {
+// Tuiles d'une fonction utilisée, dans l'ordre choisi, masquées comprises
+// (lignes de Réglages › Accueil)
+export function tilesFor(home, features) {
+  return normalizeHome(home).order.filter((name) => screenAllowed(name, features));
+}
+
+// Tuiles affichées, dans l'ordre choisi (les tuiles masquées et celles
+// d'une fonction coupée en moins)
+export function shownTiles(home, features) {
   const value = normalizeHome(home);
-  return value.order.filter((name) => !value.hidden.includes(name));
+  return tilesFor(value, features).filter((name) => !value.hidden.includes(name));
+}
+
+// Ordre complet à enregistrer après « Réordonner » quand une partie des
+// tuiles n'est pas montrée (fonction coupée) : les tuiles déplacées dans
+// leur nouvel ordre, les autres remises à la place qu'elles avaient (rien
+// de perdu quand la fonction revient)
+export function mergeTileOrder(order, visible) {
+  const result = [...visible];
+  order.forEach((name, index) => {
+    if (!visible.includes(name)) result.splice(Math.min(index, result.length), 0, name);
+  });
+  return result;
 }
 
 // Disposition sur les deux colonnes du téléphone : pour chaque tuile

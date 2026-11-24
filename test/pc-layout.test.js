@@ -247,7 +247,7 @@ test('aide (ordinateur) : sommaire fixe à gauche (chapitre en cours repéré), 
   assert.match(help, /h\('div', \{ class: 'help-fabs' \}, topButton, searchButton, tocButton\)\);/);
   // Échap : sur ordinateur la recherche reste affichée
   assert.match(help, /else if \(pc\) releaseFocus\(\); \/\/ ordinateur : la recherche reste affichée/);
-  assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
+  assert.match(read('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\)\); break;/);
 });
 
 test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte « Clavier » (raccourcis) ; thème et Assistants IA dans Mon compte seulement', () => {

@@ -121,7 +121,7 @@ test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) 
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
   assert.match(side, /newList\.hidden = NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
   const app = code('public/js/app.js');
-  assert.match(app, /if \(isDesktop\(\)\) mount\(\(onLeave\) => renderNotes\(onLeave, \{ openId: id \?\? 'new' \}\), \{ full: true \}\);/);
+  assert.match(app, /if \(isDesktop\(\)\) mount\(\(onLeave\) => renderNotes\(onLeave, \{ openId: id \?\? 'new' \}\)\);/);
   const shortcuts = code('public/js/shortcuts.js');
   assert.match(shortcuts, /location\.hash\.startsWith\('#\/notes'\) \? navigate\('newNote'/);
   // Pas de catégories (abandonnées le 23 novembre 2026)

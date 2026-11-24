@@ -309,13 +309,14 @@ test('cloche partagée (bell.js) : sur l\'Accueil, et dans la barre du haut d\'�
   for (const file of ['public/js/screens/home.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js', 'public/js/screens/notes.js']) {
     assert.doesNotMatch(code(file), /icon\('bell'\)/, file);
   }
-  // Téléphone : après la pastille d'état, avant les autres boutons ; ordinateur : dans les outils de l'en-tête
+  // Téléphone : après la pastille d'état, avant les autres boutons ; ordinateur : sur la ligne du titre,
+  // après « À jour », avant la recherche (24 novembre 2026)
   assert.match(code('public/js/screens/lists.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\),\s*sorter\.button,/);
-  assert.match(code('public/js/screens/lists.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), sorter\.button\)/);
+  assert.match(code('public/js/screens/lists.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\),\s*search\.field\),/);
   assert.match(code('public/js/screens/deadlines.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\)\),/);
-  assert.match(code('public/js/screens/deadlines.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), scope, searchMeta\)/);
+  assert.match(code('public/js/screens/deadlines.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\),\s*search\.field\),/);
   assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\),\s*sortButton\(\(\) => draw\(\)\),/);
-  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), sortButton\(\(\) => draw\(\)\)\)/);
+  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\),\s*search\.field\),/);
   // Le bouton caché ne se voit pas : [hidden] l'emporte sur l'affichage des boutons-icônes
   assert.match(read('public/css/app.css'), /\[hidden\] \{ display: none !important; \}/);
 });

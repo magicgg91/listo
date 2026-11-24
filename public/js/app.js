@@ -674,20 +674,21 @@ function pcSideFor(route) {
 }
 
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
-// l'écran de connexion, par exemple). wide : colonne large (ordinateur) ;
-// full : toute la largeur (écran Notes et note ouverte à droite).
+// l'écran de connexion, par exemple). Sur ordinateur, tous les écrans ont
+// la même colonne centrée (.pc-col, 1 040 px au plus ; décision du
+// 24 novembre 2026).
 // Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
 // liste », qui s'ouvrent par-dessus l'écran en cours
 let mountedOnPc = false;
 let mountedListId = null;
-function mount(screen, { withSide = true, wide = false, full = false, listId = null } = {}) {
+function mount(screen, { withSide = true, listId = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
   const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
-  const col = h('div', { class: pc ? `pc-col${wide ? ' pc-col--wide' : ''}${full ? ' pc-col--full' : ''}` : 'shell__col' });
+  const col = h('div', { class: pc ? 'pc-col' : 'shell__col' });
   setOverlayHost(col);
   // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
   if (bar) tabBar().loupe.set(null);
@@ -804,7 +805,7 @@ function show(route) {
     // (Réglages › Accueil) : #/accueil mène au premier écran choisi
     case 'home':
       if (openingScreen() !== 'home') navigate(openingScreen(), {}, { replace: true });
-      else mount((onLeave) => renderHome(onLeave), { wide: true });
+      else mount((onLeave) => renderHome(onLeave));
       break;
     case 'lists': mount((onLeave) => renderLists(onLeave)); break;
     // « À offrir » : liste automatique de mes réservations (gifts.js)
@@ -812,14 +813,14 @@ function show(route) {
     case 'deadlines': mount((onLeave) => renderDeadlines(onLeave)); break;
     // Notes (étape 2) : sur ordinateur, une note s'ouvre dans la zone de
     // droite de l'écran Notes (toute la largeur) ; sur téléphone, en plein écran
-    case 'notes': mount((onLeave) => renderNotes(onLeave), { full: true }); break;
+    case 'notes': mount((onLeave) => renderNotes(onLeave)); break;
     case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
     // Ancienne adresse (#/notes/corbeille) : remplacée par la nouvelle
     case 'oldNoteTrash': navigate('noteTrash', {}, { replace: true }); break;
     case 'note':
     case 'newNote': {
       const id = name === 'note' ? params.id : null;
-      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }), { full: true });
+      if (isDesktop()) mount((onLeave) => renderNotes(onLeave, { openId: id ?? 'new' }));
       else mount((onLeave) => renderNote(id, onLeave));
       break;
     }
@@ -852,9 +853,9 @@ function show(route) {
       else mount((onLeave) => renderTwoFactor(onLeave));
       break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
-    case 'help': mount(() => renderHelp(), { wide: true }); break;
+    case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
-    case 'helpSection': mount(() => renderHelp(params.section), { wide: true }); break;
+    case 'helpSection': mount(() => renderHelp(params.section)); break;
     case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
     // Réglages › Accueil : tuiles, ordre, Accueil coupé et premier écran

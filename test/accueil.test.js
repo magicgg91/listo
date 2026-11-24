@@ -174,7 +174,7 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   assert.match(app, /const next = app\.afterLogin && app\.afterLogin\.name !== 'login' \? app\.afterLogin : \{ name: openingScreen\(\), params: \{\} \};/);
   assert.match(app, /if \(name === 'login'\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /default: navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
-  assert.match(app, /case 'home':\s*if \(openingScreen\(\) !== 'home'\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);\s*else mount\(\(onLeave\) => renderHome\(onLeave\), \{ wide: true \}\);\s*break;/);
+  assert.match(app, /case 'home':\s*if \(openingScreen\(\) !== 'home'\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);\s*else mount\(\(onLeave\) => renderHome\(onLeave\)\);\s*break;/);
   assert.match(app, /case 'lists': mount\(\(onLeave\) => renderLists\(onLeave\)\); break;/);
   assert.match(read('public/js/router.js'), /history\.replaceState\(\{ depth: 0 \}, '', location\.hash \|\| pathFor\('home'\)\);/);
 });

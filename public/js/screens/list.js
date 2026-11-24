@@ -2971,8 +2971,9 @@ export function renderList(listId, onLeave) {
     search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
       // « À jour » sur la ligne du titre, juste avant « Partager » (comme
-      // dans une note) ; la ligne du dessous commence par le compteur
-      h('header', { class: 'pc-head pc-head--list' },
+      // dans une note et sur les autres écrans) ; la ligne du dessous
+      // commence par le compteur
+      h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, title, sub),
         syncPill(() => refreshData({ full: true })),
         shareSlot,

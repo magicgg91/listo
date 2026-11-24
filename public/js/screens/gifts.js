@@ -110,10 +110,11 @@ export function renderGifts(onLeave) {
 
   if (pc) {
     return h('div', { class: 'screen' },
+      // Ligne du titre : titre, « À jour », puis « Automatique » ; dessous : le compteur
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('offrir.titre')), h('p', { class: 'pc-head__sub' }, t('offrir.intro'))),
-        h('div', { class: 'pc-head__tools' }, autoChip())),
-      h('div', { class: 'pc-tools' }, count, h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })))),
+        h('div', { class: 'pc-head__tools' }, syncPill(() => refreshData({ full: true })), autoChip())),
+      h('div', { class: 'pc-tools' }, count),
       offlineBanner(),
       content);
   }

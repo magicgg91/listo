@@ -388,12 +388,15 @@ function renderNotesPc(onLeave, openId) {
   requestAnimationFrame(() => { content.scrollTop = pcScroll; });
 
   const list = h('div', { class: 'pc-notes__list' },
+    // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
+    // (comme dans une liste ouverte) ; dessous : résultats et tri
     h('header', { class: 'pc-head' },
       h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('notes.titre')), sub),
+      syncPill(() => refreshData({ full: true })), topBell(onLeave),
       search.field),
     h('div', { class: 'pc-tools' },
       searchMeta,
-      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), sortButton(() => draw()))),
+      h('div', { class: 'pc-tools__end' }, sortButton(() => draw()))),
     offlineBanner(),
     content);
   const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;

@@ -104,7 +104,7 @@ test('écran d\'une liste : compteur construit avec listProgress, phrase de la c
 
 test('ordinateur : « À jour » sur la ligne du titre, avant « Partager » ; le compteur ouvre la ligne du dessous', () => {
   const list = code('public/js/screens/list.js');
-  assert.match(list, /h\('header', \{ class: 'pc-head pc-head--list' \},\s*h\('div', \{ class: 'pc-head__main' \}, title, sub\),\s*syncPill\(\(\) => refreshData\(\{ full: true \}\)\),\s*shareSlot,\s*search\.field,\s*menuButton\),/);
+  assert.match(list, /h\('header', \{ class: 'pc-head' \},\s*h\('div', \{ class: 'pc-head__main' \}, title, sub\),\s*syncPill\(\(\) => refreshData\(\{ full: true \}\)\),\s*shareSlot,\s*search\.field,\s*menuButton\),/);
   assert.match(list, /h\('div', \{ class: 'pc-tools' \}, progress, searchMeta,\s*h\('div', \{ class: 'pc-tools__end' \}, sortButton, foldAll\)\),/);
   // Une seule pastille par écran (ordinateur : dans l'en-tête ; téléphone : sous le titre)
   assert.equal(list.match(/syncPill\(/g).length, 2);

@@ -39,8 +39,9 @@ test('menu d\'une note selon le droit : Partager et Lien public (propriétaire),
   assert.match(fr['notes.supprimer.texte.partagee'], /disparaît pour tout le monde/);
   // Quitter : en ligne seulement, avec confirmation
   assert.match(notes, /if \(!navigator\.onLine\) \{\s*toast\(t\('notes\.quitter\.horsLigne'\)\);/);
-  for (const key of ['notes.menu.nouveautes.masquer', 'notes.menu.nouveautes.afficher', 'notes.menu.notifications.couper', 'notes.menu.notifications.reactiver']) {
-    assert.match(fr[key], /de cette note$/, key);
+  // Libellés courts (24 novembre 2026) : le menu porte le nom de la note
+  for (const key of ['notes.menu.nouveautes.masquer', 'notes.menu.nouveautes.afficher', 'notes.menu.notifications.couper', 'notes.menu.notifications.reactiver', 'notes.menu.quitter']) {
+    assert.doesNotMatch(fr[key], /note/, key);
   }
 });
 

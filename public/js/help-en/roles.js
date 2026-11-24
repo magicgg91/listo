@@ -50,7 +50,7 @@ export default {
       id: 'modifier',
       title: "Owner: editing the list",
       blocks: [
-        "The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([[sous-taches]]); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.",
+        "The list's ⋮ menu, “Edit”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([[sous-taches]]); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.",
         { ul: [
           "Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.",
           "Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).",
@@ -83,7 +83,7 @@ export default {
           "A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.",
           "Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.",
           "When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([[faq-orphelin]]).",
-          "A wish list can't be copied (“Duplicate list” isn't offered).",
+          "A wish list can't be copied (“Duplicate” isn't offered in its menu).",
         ] },
       ],
     },
@@ -106,8 +106,8 @@ export default {
       title: "Owner: duplicating, deleting, restoring",
       blocks: [
         { ul: [
-          "“Duplicate list” creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.",
-          "“Delete list” (⋮ menu) asks for confirmation, which reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.",
+          "“Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.",
+          "The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.",
           "A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.",
           "“Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.",
           "“Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.",
@@ -120,10 +120,10 @@ export default {
       title: "Contributor (“Can edit”)",
       blocks: [
         { ul: [
-          "Can: check, add, edit and delete items and their photo ([[quotidien]]); create a missing store or aisle; “Duplicate list” (the copy belongs to them); reserve on a wish list (unless they're its recipient).",
+          "Can: check, add, edit and delete items and their photo ([[quotidien]]); create a missing store or aisle; “Duplicate” the list (the copy belongs to them); reserve on a wish list (unless they're its recipient).",
           "Can't: change the title, the type or the options, share, create a public link, delete the list.",
         ] },
-        "Leaving: ⋮ menu, “Leave list”. The list disappears from your lists; your items stay in it. The owner can share it with you again. It needs a network connection.",
+        "Leaving: the list's ⋮ menu, “Leave”. The list disappears from your lists; your items stay in it. The owner can share it with you again. It needs a network connection.",
       ],
     },
     {
@@ -132,7 +132,7 @@ export default {
       blocks: [
         "The list's card and the top of the list show “Read only”.",
         { ul: [
-          "Can: read the list, its items and their photos (tapping a row opens its details); sort and search; reserve a wish on a wish list; “Leave list”.",
+          "Can: read the list, its items and their photos (tapping a row opens its details); sort and search; reserve a wish on a wish list; leave the list (⋮ menu, “Leave”).",
           "Can't: add, check, edit or delete anything.",
         ] },
       ],

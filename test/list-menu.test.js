@@ -17,14 +17,14 @@ import fr from '../public/js/i18n/fr.js';
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
-test('actions d\'une liste : Modifier la liste, Dupliquer la liste, Partager par lien, Supprimer la liste, dans cet ordre, pour le propriétaire', () => {
+test('actions d\'une liste : Modifier, Dupliquer, Partager par lien, Supprimer, dans cet ordre, pour le propriétaire', () => {
   const source = read('public/js/screens/list-actions.js');
   assert.match(source, /const duplicate = \{ icon: 'copy', label: t\('menu\.dupliquer'\), onSelect: \(\) => openDuplicateSheet\(list\) \};/);
   assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\), onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\), onSelect: \(\) => openShareSheet\(list\) \},\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
-  assert.equal(fr['menu.dupliquer'], 'Dupliquer la liste');
-  assert.equal(fr['menu.modifier'], 'Modifier la liste');
+  assert.equal(fr['menu.dupliquer'], 'Dupliquer');
+  assert.equal(fr['menu.modifier'], 'Modifier');
   assert.equal(fr['menu.partagerLien'], 'Partager par lien');
-  assert.equal(fr['menu.supprimer'], 'Supprimer la liste');
+  assert.equal(fr['menu.supprimer'], 'Supprimer');
   // Les deux menus utilisent cette même fonction (mêmes écrans, même ordre)
   const lists = read('public/js/screens/lists.js');
   const list = read('public/js/screens/list.js');

@@ -139,8 +139,8 @@ Mêmes possibilités et mêmes règles que le lien public d'une liste (étape 10
 
 ### 3.9 Nouveautés et notifications
 
-- **Nouveautés** : une note partagée modifiée par quelqu'un d'autre depuis ma dernière lecture porte une pastille sur sa carte (et sur la tuile Notes de l'Accueil, et sur l'entrée « Notes » du menu de gauche sur ordinateur). L'ouvrir vaut « lue » sur tous mes appareils. Même réglage « Nouveautés » que les listes ; sourdine par note dans son menu (« Masquer les nouveautés de cette note »).
-- **Notifications** : catégorie « Modifications » (« Léa a modifié la note « Vacances » », regroupées : une seule notification par note et par quart d'heure), catégorie « Partage » ; « Couper les notifications de cette note » dans son menu. Les réglages, le contenu neutre par défaut et le plafond de 30 par heure ne changent pas.
+- **Nouveautés** : une note partagée modifiée par quelqu'un d'autre depuis ma dernière lecture porte une pastille sur sa carte (et sur la tuile Notes de l'Accueil, et sur l'entrée « Notes » du menu de gauche sur ordinateur). L'ouvrir vaut « lue » sur tous mes appareils. Même réglage « Nouveautés » que les listes ; sourdine par note dans son menu (« Masquer les nouveautés de cette note », « Masquer les nouveautés » depuis le 24 novembre 2026).
+- **Notifications** : catégorie « Modifications » (« Léa a modifié la note « Vacances » », regroupées : une seule notification par note et par quart d'heure), catégorie « Partage » ; « Couper les notifications de cette note » dans son menu (« Couper les notifications » depuis le 24 novembre 2026). Les réglages, le contenu neutre par défaut et le plafond de 30 par heure ne changent pas.
 
 ### 3.10 Limites et hors périmètre
 

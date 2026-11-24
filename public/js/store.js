@@ -680,7 +680,7 @@ function applyNoteOp(state, op, { user, now }) {
     case 'note.seen':
       if (note && Number.isSafeInteger(op.upTo) && op.upTo >= note.version) state.noteNews.unread.delete(note.id);
       return;
-    // « Masquer les nouveautés de cette note » / « Afficher… »
+    // Menu de la note : « Masquer les nouveautés » / « Afficher… »
     case 'note.mute':
       if (!note || typeof op.muted !== 'boolean') return;
       if (op.muted) {

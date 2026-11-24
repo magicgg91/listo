@@ -82,8 +82,8 @@ test('Réglages : une ligne « Aide » ; adresses #/aide et #/aide/<section> ; �
   assert.deepEqual(matchRoute('#/aide'), { name: 'help', params: {} });
   assert.deepEqual(matchRoute('#/aide/sauvegardes'), { name: 'helpSection', params: { section: 'sauvegardes' } });
   assert.ok(ROUTES.some((r) => r.name === 'help' && r.path === '/aide'));
-  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\), \{ wide: true \}\); break;/);
-  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\), \{ wide: true \}\); break;/);
+  assert.match(code('public/js/app.js'), /case 'help': mount\(\(\) => renderHelp\(\)\); break;/);
+  assert.match(code('public/js/app.js'), /case 'helpSection': mount\(\(\) => renderHelp\(params\.section\)\); break;/);
   assert.match(code('public/js/screens/claude-connections.js'), /navigate\('helpSection', \{ section: 'claude' \}\)/);
   assert.match(read('public/index.html'), /<symbol id="i-book"/);
   assert.match(read('public/index.html'), /<symbol id="i-layers"/);
@@ -523,7 +523,7 @@ test('chapitre « Notifications » : son sommaire (la page Notifications en prem
   assert.equal(GUIDE.indexOf(chapter), GUIDE.findIndex((c) => c.id === 'quotidien') + 1, 'juste après « Au quotidien »');
   assert.deepEqual(chapter.sections.map((s) => s.id), ['notif-page', 'notif-activer', 'notif-recevoir', 'notif-detail', 'notif-silencer', 'notif-limites', 'notif-confidentialite', 'notif-serveur', 'notif-depannage']);
   const text = JSON.stringify(chapter);
-  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Couper les notifications de cette liste »', '« Masquer les nouveautés de cette liste »', '30 notifications du téléphone par personne et par heure', 'la page Notifications n\'a pas ce plafond', '30 jours, 300 au plus', 'Ouvrir la page ne marque rien comme lu', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
+  for (const needle of ['Android', 'Ordinateur', 'iPhone', 'accueil', 'une minute', '8 h', '« Afficher le détail dans la notification »', '« Couper les notifications »', '« Masquer les nouveautés »', '30 notifications du téléphone par personne et par heure', 'la page Notifications n\'a pas ce plafond', '30 jours, 300 au plus', 'Ouvrir la page ne marque rien comme lu', 'Apple', 'Google', 'Mozilla', 'Microsoft', 'LISTO_PUSH=on', 'désactivée par défaut', 'refusées', 'Firefox', 'secrets/vapid.json']) {
     assert.ok(text.includes(needle), needle);
   }
   // Dans la recherche du guide

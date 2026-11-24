@@ -284,7 +284,9 @@ export function renderList(listId, onLeave) {
   // Groupes repliables du dernier dessin : { isOpen(), setOpen(open), contains(node) }
   let foldables = [];
   // « Tout replier / Tout déplier » : dans la barre d'état, seulement s'il y
-  // a au moins deux groupes repliables
+  // a au moins deux groupes repliables. Le chevron seul, à droite de la
+  // ligne (décision du 24 novembre 2026) : son nom est lu par les lecteurs
+  // d'écran (aria-label) et montré au survol (title)
   const foldAll = h('button', { class: 'fold-all', type: 'button', hidden: true, onClick: () => {
     const open = !foldables.some((f) => f.isOpen());
     for (const f of foldables) f.setOpen(open);
@@ -294,7 +296,10 @@ export function renderList(listId, onLeave) {
     const anyOpen = foldables.some((f) => f.isOpen());
     foldAll.hidden = foldables.length < 2 || search.active; // masqué pendant la recherche
     foldAll.classList.toggle('fold-all--open', anyOpen);
-    replace(foldAll, icon('chev-d', 'icon--sm'), anyOpen ? t('liste.toutReplier') : t('liste.toutDeplier'));
+    const label = anyOpen ? t('liste.toutReplier') : t('liste.toutDeplier');
+    foldAll.setAttribute('aria-label', label);
+    foldAll.title = label;
+    replace(foldAll, icon('chev-d', 'icon--sm'));
   }
 
   // En-tête de groupe repliable (design : section 16.11) : un vrai bouton
@@ -1115,12 +1120,15 @@ export function renderList(listId, onLeave) {
     toast(t('liste.retirerCoches.fait', { items: countItems(removed, list), count: removed }));
   }
 
-  // Menu ⋮ : les mêmes actions que le menu « ⋯ » d'une carte de « Mes
-  // listes » (list-actions.js). Pour actualiser : la pastille d'état.
+  // Menu ⋮ : les mêmes actions que le menu « ⋯ » d'une carte de « Listes »
+  // (list-actions.js), et le même nom lu par les lecteurs d'écran
+  // (« Actions de la liste Maison ») : les libellés courts (« Modifier »,
+  // « Dupliquer ») gardent ainsi leur contexte. Pour actualiser : la
+  // pastille d'état.
   const menuActions = () => (view ? listActions(view.list, { onDeleted: () => navigate('lists', {}, { replace: true }) }) : []);
   function openListMenu() {
     const items = menuActions();
-    if (items.length) openMenu(items, { label: t('liste.menu') });
+    if (items.length) openMenu(items, { label: t('listes.carte.actions', { name: view.list.name }) });
   }
 
   // --- Ajout d'un article (ou d'un élément) ---
@@ -2963,8 +2971,9 @@ export function renderList(listId, onLeave) {
     search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
       // « À jour » sur la ligne du titre, juste avant « Partager » (comme
-      // dans une note) ; la ligne du dessous commence par le compteur
-      h('header', { class: 'pc-head pc-head--list' },
+      // dans une note et sur les autres écrans) ; la ligne du dessous
+      // commence par le compteur
+      h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, title, sub),
         syncPill(() => refreshData({ full: true })),
         shareSlot,

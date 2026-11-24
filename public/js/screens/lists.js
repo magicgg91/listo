@@ -400,12 +400,15 @@ function renderListsPc(onLeave) {
   refreshData({ quiet: true });
 
   return h('div', { class: 'screen' },
+    // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
+    // (comme dans une liste ouverte) ; dessous : résultats et tri
     h('header', { class: 'pc-head' },
       h('div', { class: 'pc-head__main' }, title, sub),
+      syncPill(() => refreshData({ full: true })), topBell(onLeave),
       search.field),
     h('div', { class: 'pc-tools' },
       searchMeta,
-      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), sorter.button)),
+      h('div', { class: 'pc-tools__end' }, sorter.button)),
     sorter.status,
     offlineBanner(),
     content);

@@ -1,20 +1,22 @@
 // Actions d'une liste, les mêmes dans les deux menus : le menu « ⋯ » d'une
-// carte de « Mes listes » et le menu ⋮ de la liste ouverte. Même ordre, mêmes
-// libellés, mêmes écrans :
-// 1. « Modifier la liste » (propriétaire) : l'écran « Modifier la liste »
+// carte de « Listes » et le menu ⋮ de la liste ouverte. Même ordre, mêmes
+// libellés, mêmes écrans. Libellés courts (décision du 24 novembre 2026) :
+// le menu porte déjà le nom de la liste (« Actions de la liste Maison »,
+// lu par les lecteurs d'écran), inutile de le répéter dans chaque ligne.
+// 1. « Modifier » (propriétaire) : l'écran « Modifier la liste »
 //    (nom, catégorie, magasin, personnes avec qui elle est partagée) ;
-// 2. « Dupliquer la liste » (propriétaire, contributeur) : la
-//    feuille de duplication (en ligne seulement) ;
+// 2. « Dupliquer » (propriétaire, contributeur) : la feuille « Dupliquer
+//    la liste » (en ligne seulement) ;
 // 3. « Partager par lien » (propriétaire) : la feuille du lien public ;
-// 4. « Supprimer la liste » (propriétaire) : en dernier, après un trait, en rouge ;
-//    « Quitter la liste » (contributeur ou invité, à la place) : pareil, avec sa confirmation
+// 4. « Supprimer » (propriétaire) : en dernier, après un trait, en rouge ;
+//    « Quitter » (contributeur ou invité, à la place) : pareil, avec sa confirmation
 //    (en ligne seulement).
-// Un contributeur voit donc « Dupliquer la liste » puis
-// « Quitter la liste » ; un invité en lecture seule, « Quitter la liste »
-// seulement.
-// « Masquer les nouveautés de cette liste » (Nouveautés) et « Couper les
-// notifications de cette liste » (notifications push, si elles sont activées sur le serveur) : pour
-// tout membre, juste avant « Supprimer » ou « Quitter ».
+// Un contributeur voit donc « Dupliquer » puis « Quitter » ; un invité en
+// lecture seule, « Quitter » seulement. Les confirmations gardent le nom
+// complet (« Supprimer la liste « Maison » ? »).
+// « Masquer les nouveautés » (Nouveautés) et « Couper les notifications »
+// (page Notifications et téléphone) : pour tout membre, juste avant
+// « Supprimer » ou « Quitter ».
 // Chaque action n'est proposée qu'à qui y a droit ; le serveur le revérifie
 // à chaque requête. Aucune action : pas de bouton de menu.
 //
@@ -43,8 +45,8 @@ import { t } from '../i18n.js';
 export function listActions(list, { onDeleted } = {}) {
   const duplicate = { icon: 'copy', label: t('menu.dupliquer'), onSelect: () => openDuplicateSheet(list) };
   const wishes = isWishList(list);
-  // Nouveautés : « Masquer les nouveautés de cette liste » / « Signaler cette
-  // liste », pour chaque membre, invité en lecture seule compris (ce n'est
+  // Nouveautés : « Masquer les nouveautés » / « Afficher les nouveautés »,
+  // pour chaque membre, invité en lecture seule compris (ce n'est
   // pas une modification de la liste)
   const mute = newsMuteAction(list);
   const pushMute = pushMuteAction(list);
@@ -78,7 +80,7 @@ export function listActions(list, { onDeleted } = {}) {
 
 // Sourdine des nouveautés d'une liste, pour moi seulement (sur tous mes
 // appareils) : ni pastille, ni halo, ni compte dans le badge de l'icône.
-// Indépendante de « Couper les notifications de cette liste » (deux
+// Indépendante de « Couper les notifications » (deux
 // réglages séparés, en base comme à l'écran ; libellés du 10 novembre 2026).
 function newsMuteAction(list) {
   return isListMuted(app.data, list.id)
@@ -92,9 +94,9 @@ function newsMuteAction(list) {
     } };
 }
 
-// Notifications push : « Couper les notifications de cette liste » (plus aucune notification
-// venant d'elle, quelle que soit la catégorie) / « Réactiver les
-// notifications de cette liste ». Toujours (depuis l'étape 4 du cadrage :
+// Notifications : « Couper les notifications » (plus aucune notification
+// venant de cette liste, quelle que soit la catégorie) / « Réactiver les
+// notifications ». Toujours (depuis l'étape 4 du cadrage :
 // la sourdine vaut aussi pour la page Notifications, même sans LISTO_PUSH) ;
 // en ligne seulement (réglage du compte, gardé par le serveur).
 function pushMuteAction(list) {
@@ -179,7 +181,7 @@ export function openDuplicateSheet(list) {
     h('p', { class: 'field__hint' }, t('menu.dupliquer.prive')),
     error.note,
     h('div', { class: 'sheet__actions' }, submit, cancel));
-  const sheet = openSheet({ title: t('menu.dupliquer'), content: form });
+  const sheet = openSheet({ title: t('menu.dupliquer.feuille'), content: form });
   cancel.addEventListener('click', () => sheet.close());
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

@@ -6,9 +6,9 @@
 //                                   dont les notifications sont coupées
 //   PUT    /api/push/settings      préférences du compte { changes, due, wishes,
 //                                   sharing, detail } (vrai ou faux), page et appareils
-//   PUT    /api/push/mutes/:listId « Couper les notifications de cette liste » { muted } (membres seulement)
-//   PUT    /api/push/note-mutes/:noteId « Couper les notifications de cette
-//                                   note » { muted } (ceux qui voient la note)
+//   PUT    /api/push/mutes/:listId menu de la liste, « Couper les notifications » { muted } (membres seulement)
+//   PUT    /api/push/note-mutes/:noteId menu de la note, « Couper les
+//                                   notifications » { muted } (ceux qui voient la note)
 //
 // Cet appareil (montées seulement avec LISTO_PUSH=on, sinon toutes
 // répondent « Route inconnue » (404) ; pushRoutes) :

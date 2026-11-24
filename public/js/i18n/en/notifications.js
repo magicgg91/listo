@@ -26,7 +26,7 @@ export default {
 
   // Notes sous les cartes
   'notifications.compte.note': 'These settings apply to the Notifications page and to all your devices.',
-  'notifications.parListe.note': 'For a single list: the list\'s ⋮ menu, “Hide what\'s new in this list” or “Turn off notifications for this list”.',
+  'notifications.parListe.note': 'For a single list: the list\'s ⋮ menu, “Hide what\'s new” or “Turn off notifications”.',
   'notifications.confidentialite': 'Notification content is encrypted: only your device can read it. Your device\'s notification service (Apple, Google, Mozilla or Microsoft) only sees the time, the message size, and the device that receives it.',
 
   // Notification test

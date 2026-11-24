@@ -26,7 +26,7 @@ export default {
 
   // Notes sous les cartes
   'notifications.compte.note': 'Ces réglages valent pour la page Notifications et pour tous vos appareils.',
-  'notifications.parListe.note': 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés de cette liste » ou « Couper les notifications de cette liste ».',
+  'notifications.parListe.note': 'Pour une seule liste : menu ⋮ de la liste, « Masquer les nouveautés » ou « Couper les notifications ».',
   'notifications.confidentialite': 'Le contenu des notifications est chiffré : seul votre appareil peut le lire. Le service de notification de votre appareil (Apple, Google, Mozilla ou Microsoft) voit seulement l\'heure, la taille du message et l\'appareil qui le reçoit.',
 
   // Notification test

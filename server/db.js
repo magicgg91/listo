@@ -726,8 +726,8 @@ export const MIGRATIONS = [
   // perd l'accès : épingle, lecture et sourdines partent ensemble) :
   // last_read_version (Nouveautés : la dernière version lue ; une note
   // modifiée par quelqu'un d'autre au-delà est « nouvelle »), muted_news
-  // (« Masquer les nouveautés de cette note ») et muted_push (« Couper les
-  // notifications de cette note »). Deux sourdines séparées, comme
+  // (menu de la note, « Masquer les nouveautés ») et muted_push (« Couper
+  // les notifications »). Deux sourdines séparées, comme
   // list_reads.muted et push_list_mutes pour les listes.
   // note_public_shares : lien public d'une note, mêmes colonnes et mêmes
   // règles que public_shares (empreinte du jeton, jeton chiffré pour le

@@ -240,11 +240,14 @@ export function renderDeadlines(onLeave) {
     input.setAttribute('aria-keyshortcuts', '/');
     search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
+      // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
+      // (comme dans une liste ouverte) ; dessous : « Toutes / Les miennes »
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('echeances.titre')),
           h('p', { class: 'pc-head__sub' }, t('echeances.pc.sousTitre'))),
+        syncPill(() => refreshData({ full: true })), topBell(onLeave),
         search.field),
-      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), scope, searchMeta),
+      h('div', { class: 'pc-tools' }, scope, searchMeta),
       offlineBanner(),
       content);
   }

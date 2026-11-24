@@ -3,8 +3,8 @@
 // abandonnées le 23 novembre 2026) et saisie rapide d'une note (tuile Notes
 // de l'Accueil, maquette accueil-3).
 //
-// Téléphone : barre du haut (titre, pastille d'état, corbeille avec son
-// nombre, ⋮ « Trier », « + » Nouvelle note), loupe ronde du bandeau (titres
+// Téléphone : barre du haut (titre, pastille d'état, bouton de tri comme
+// « Listes », « + » Nouvelle note), loupe ronde du bandeau (titres
 // et textes), notes épinglées d'abord puis les autres. Ordinateur : les
 // cartes à gauche, la note ouverte à droite (screens/note.js), « Nouvelle
 // note » en bas du menu de gauche (touche N).
@@ -19,9 +19,9 @@
 // (Partager et Lien public : propriétaire ; Personnes, Quitter la note :
 // les autres ; sourdines des nouveautés et des notifications : chacun).
 
-import { h, icon, iconButton, avatar } from '../dom.js';
+import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
-import { relativeTime, namesList } from '../format.js';
+import { relativeTime, namesList, listSortButton } from '../format.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
@@ -75,9 +75,9 @@ const found = (notes, query) => (isSearching(query) ? notes.filter((note) => mat
 // Dans l'ordre : Épingler / Désépingler (chacun pour soi) ; Partager et
 // Lien public (propriétaire) ou Personnes (les autres, note partagée) ;
 // Dupliquer (une note à moi, non partagée) ; pour une note partagée,
-// « Masquer les nouveautés de cette note » et « Couper les notifications
-// de cette note » (si elles sont activées sur le serveur) ; enfin, après un
-// trait, Supprimer (propriétaire) ou Quitter la note (les autres). Le
+// « Masquer les nouveautés » et « Couper les notifications » (libellés
+// courts : le menu porte le nom de la note) ; enfin, après un
+// trait, Supprimer (propriétaire) ou Quitter (les autres). Le
 // serveur revérifie chaque droit. onDeleted : après la mise à la corbeille
 // ou le départ. withPin : faux sur ordinateur (bouton épingle à part).
 export function noteMenuItems(note, { onDeleted = () => {}, withPin = true, withPeople = true } = {}) {
@@ -276,21 +276,25 @@ const noResult = (query, search) => h('div', { class: 'empty' },
 
 const loading = () => h('p', { class: 'empty muted', role: 'status' }, t('notes.chargement'));
 
-// Menu ⋮ : « Trier » (plus récentes d'abord, ordre alphabétique)
-function sortMenu(onChange) {
-  const button = iconButton('more', t('notes.plusActions'), () => {
-    const current = loadNoteSort();
-    const pick = (value) => () => {
-      saveNoteSort(value);
-      onChange();
-    };
-    openMenu([
-      { icon: 'clock', label: t('notes.tri.recent'), checked: current === 'recent', onSelect: pick('recent') },
-      { icon: 'az', label: t('notes.tri.alpha'), checked: current === 'alpha', onSelect: pick('alpha') },
-    ], { label: t('notes.trier'), anchor: button });
-  });
-  button.setAttribute('aria-haspopup', 'menu');
-  button.setAttribute('aria-expanded', 'false');
+// Bouton de tri, le même que sur l'écran « Listes » (décision du 24
+// novembre 2026, à la place du menu ⋮ qui ne contenait que le tri) : un
+// appui bascule entre « Plus récentes d'abord » et « Ordre alphabétique ».
+// L'icône montre le tri actif (horloge ou A→Z) ; le nom lu dit le tri
+// actuel et l'effet d'un appui ; le nouveau tri est annoncé et affiché 2 s.
+function sortButton(onChange) {
+  const button = h('button', { class: 'icon-btn', type: 'button', onClick: () => {
+    const next = loadNoteSort() === 'alpha' ? 'recent' : 'alpha';
+    saveNoteSort(next);
+    show();
+    toast(listSortButton(next).message, { duration: 2000 });
+    onChange();
+  } });
+  const show = () => {
+    const { icon: iconName, label } = listSortButton(loadNoteSort());
+    button.setAttribute('aria-label', label);
+    replace(button, icon(iconName));
+  };
+  show();
   return button;
 }
 
@@ -337,7 +341,7 @@ export function renderNotes(onLeave, { openId = null } = {}) {
       syncPill(() => refreshData({ full: true }), { inBar: true }),
       // Cloche des notifications : Accueil coupé seulement (bell.js)
       topBell(onLeave),
-      sortMenu(() => draw()),
+      sortButton(() => draw()),
       iconButton('plus', t('notes.nouvelle'), () => navigate('newNote'), 'icon-btn--accent')),
     search.bar,
     content);
@@ -384,12 +388,15 @@ function renderNotesPc(onLeave, openId) {
   requestAnimationFrame(() => { content.scrollTop = pcScroll; });
 
   const list = h('div', { class: 'pc-notes__list' },
+    // Ligne du titre : titre, « À jour », cloche (Accueil coupé), recherche
+    // (comme dans une liste ouverte) ; dessous : résultats et tri
     h('header', { class: 'pc-head' },
       h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('notes.titre')), sub),
+      syncPill(() => refreshData({ full: true })), topBell(onLeave),
       search.field),
     h('div', { class: 'pc-tools' },
       searchMeta,
-      h('div', { class: 'pc-tools__end' }, syncPill(() => refreshData({ full: true })), topBell(onLeave), sortMenu(() => draw()))),
+      h('div', { class: 'pc-tools__end' }, sortButton(() => draw()))),
     offlineBanner(),
     content);
   const pane = openId ? noteEditor(openId === 'new' ? null : openId, onLeave, { pc: true }) : null;

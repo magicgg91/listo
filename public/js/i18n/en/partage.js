@@ -1,4 +1,4 @@
-// Textes de public/js/screens/share.js et public/js/screens/share-panel.js, en anglais (traduction à l'étape 4).
+// Textes de public/js/screens/share.js, share-panel.js, share-picker.js et public/js/sharing.js, en anglais (traduction à l'étape 4).
 // Mêmes noms que public/js/i18n/fr/partage.js.
 
 export default {
@@ -26,8 +26,8 @@ export default {
   // Copie
   'partage.copie.impossible': 'Can\'t copy: select the text and copy it yourself.',
 
-  // Feuille « Partager par lien »
-  'partage.feuille.titre': 'Share by link',
+  // Feuille « Partager par un lien temporaire »
+  'partage.feuille.titre': 'Share with a temporary link',
   'partage.chargement': 'Loading…',
   'partage.lienActif': 'A public link is active for this list.',
 
@@ -76,23 +76,47 @@ export default {
   'partage.arreter.confirmer': 'Stop',
   'partage.arrete': 'Sharing stopped',
 
-  // Panneau « Partager la liste » (ordinateur, share-panel.js)
-  'partage.panneau.peutModifier': 'Can edit',
-  'partage.panneau.lectureSeule': 'Read only',
-  'partage.panneau.horsLigne': 'Unavailable offline: go back online to change sharing.',
-  'partage.panneau.echec': 'Sharing couldn\'t be changed: {message}',
-  'partage.panneau.vous': '{name} (you)',
-  'partage.panneau.proprietaire': 'Owner',
-  'partage.panneau.destinataire': 'Recipient · Can edit',
-  'partage.panneau.droitDe': 'Access for {name}',
-  'partage.panneau.retirer': 'Remove {name}',
-  'partage.panneau.tousLesComptes': 'All accounts already have access to this list.',
-  'partage.panneau.ajout.personne': 'Person to add',
-  'partage.panneau.ajout.droit': 'Access for the person you add',
-  'partage.panneau.ajouter': 'Add',
-  'partage.panneau.personnes': 'People',
-  'partage.panneau.proprietaireSeul': 'Only the owner chooses the people, their access and the public link.',
-  'partage.panneau.lienPublic': 'Public link',
-  'partage.panneau.titre': 'Share list',
-  'partage.panneau.termine': 'Done',
+  // Entrée des menus (sharing.js) : « Partager » (propriétaire) ou « Personnes » (les autres)
+  'partage.menu.partager': 'Share',
+  'partage.menu.personnes': 'People',
+
+  // Choix « Partager « Maison » » (share-panel.js, 24 novembre 2026)
+  'partage.choix.titre': 'Share “{name}”',
+  'partage.choix.personnes': 'With people on Listo',
+  'partage.choix.lien': 'With a temporary link',
+  'partage.choix.personnes.aucune': 'Only you',
+  'partage.choix.personnes.autres': { one: '{count} other person', other: '{count} other people' },
+  'partage.choix.lien.aucun': 'No link',
+  'partage.choix.lien.actif': 'Active link · {expiry}',
+  'partage.choix.lien.actif.motDePasse': 'Active link · {expiry} · password protected',
+  'partage.choix.lien.illimite': 'Active link · no time limit',
+  'partage.choix.lien.illimite.motDePasse': 'Active link · no time limit · password protected',
+  'partage.choix.lien.jours': { one: 'expires in {count} day', other: 'expires in {count} days' },
+  'partage.choix.lien.heures': { one: 'expires in {count} hour', other: 'expires in {count} hours' },
+  'partage.choix.lien.minutes': { one: 'expires in {count} minute', other: 'expires in {count} minutes' },
+  'partage.choix.lien.bientot': 'expires in less than a minute',
+  'partage.choix.aide.liste': 'People on Listo see and edit the list according to their access. The link gives read-only access, without an account.',
+  'partage.choix.aide.envies': 'People on Listo see and edit the list according to their access. With the link, anyone can see the wishes and reserve one, without an account.',
+  'partage.choix.aide.note': 'People on Listo see and edit the note according to their access. The link gives read-only access, without an account.',
+
+  // Feuille « Partager avec des personnes » (share-picker.js, share-panel.js)
+  'partage.personnes.titre': 'Share with people',
+  'partage.personnes.ok': 'OK',
+  'partage.personnes.vous': '{name} (you)',
+  'partage.personnes.proprietaire': 'Owner',
+  'partage.personnes.destinataire': 'Recipient · Can edit',
+  'partage.personnes.desactive': 'Account disabled',
+  'partage.personnes.horsLigne': 'Unavailable offline: go back online to change sharing.',
+  'partage.personnes.echec': 'Sharing couldn\'t be changed: {message}',
+  'partage.personnes.fait': 'Sharing saved',
+  'partage.droit.modifier': 'Edit',
+  'partage.droit.lire': 'View',
+  'partage.droit.choix': "{name}'s access to the list",
+  'partage.droit.choix.note': "{name}'s access to the note",
+
+  // « Personnes » (les autres membres) : qui partage, en lecture
+  'partage.vue.titre': 'People',
+  'partage.vue.peutModifier': 'Can edit',
+  'partage.vue.lectureSeule': 'Read only',
+  'partage.vue.proprietaireSeul': 'Only the owner chooses the people, their access and the link.',
 };

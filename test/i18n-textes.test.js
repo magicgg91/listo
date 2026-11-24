@@ -47,6 +47,8 @@ const MIGRATED = [
   // Lot 3 : partage, envies, échéances, corbeille, Claude, page publique, modules communs du téléphone
   'public/js/screens/share.js',
   'public/js/screens/share-panel.js',
+  'public/js/screens/share-picker.js',
+  'public/js/sharing.js',
   'public/js/screens/trash.js',
   'public/js/screens/trash-parts.js',
   'public/js/screens/note-trash.js',

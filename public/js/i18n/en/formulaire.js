@@ -12,9 +12,6 @@ export default {
   'formulaire.retour': 'Back',
 
   // Droit d'une personne sur la liste
-  'formulaire.droit.modifier': 'Edit',
-  'formulaire.droit.lire': 'View',
-  'formulaire.droit.choix': "{name}'s access to the list",
 
   // Interrupteurs des options
   'formulaire.option.priorite': 'Priority',
@@ -70,14 +67,6 @@ export default {
   'formulaire.options.elements': 'Options for items',
 
   // Partage
-  'formulaire.partage.destinataire': 'Recipient · Can edit',
-  'formulaire.partage.desactive': 'Account disabled',
-  'formulaire.partage.personne': 'Nobody',
-  'formulaire.partage.vous': '{name} (you)',
-  'formulaire.partage.proprietaire': 'Owner',
-  'formulaire.partage.ok': 'OK',
-  'formulaire.partage': 'Share with',
-  'formulaire.partage.horsLigne': "Sharing isn't available offline: you can save the list, and sharing can be changed once you're back online.",
 
   // Enregistrer, conversion en liste d'envies
   'formulaire.enregistrer': 'Save',
@@ -102,8 +91,6 @@ export default {
   'formulaire.titreListe.obligatoire': 'A name is required',
   'formulaire.pourQui.prenom.obligatoire': 'A first name is required',
   'formulaire.conversion.connexion': 'Turning it into a wish list needs a connection.',
-  'formulaire.partage.echec': "Sharing couldn't be saved: {reason}. The list itself is saved.",
-  'formulaire.partage.echec.horsLigne': 'unavailable offline',
   'formulaire.creee': 'List created',
   'formulaire.creee.annuler': 'Undo',
 };

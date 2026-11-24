@@ -1,6 +1,7 @@
 // Menus d'une liste : le menu « ⋯ » de chaque carte de « Mes listes » et le
 // menu ⋮ de la liste ouverte proposent les MÊMES actions, dans le même ordre
-// (list-actions.js) : « Modifier la liste », « Partager par lien »,
+// (list-actions.js) : « Modifier la liste », « Partager » (le choix des
+// personnes ou du lien temporaire, depuis le 24 novembre 2026),
 // « Supprimer la liste » (en dernier, séparée, en rouge). Chacune ouvre le
 // même écran que l'autre menu ; seulement pour qui y a droit (le
 // propriétaire), et le serveur refuse un invité. « Actualiser » a quitté le
@@ -17,21 +18,23 @@ import fr from '../public/js/i18n/fr.js';
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
-test('actions d\'une liste : Modifier, Dupliquer, Partager par lien, Supprimer, dans cet ordre, pour le propriétaire', () => {
+test('actions d\'une liste : Modifier, Dupliquer, Partager, Supprimer, dans cet ordre, pour le propriétaire', () => {
   const source = read('public/js/screens/list-actions.js');
   assert.match(source, /const duplicate = \{ icon: 'copy', label: t\('menu\.dupliquer'\), onSelect: \(\) => openDuplicateSheet\(list\) \};/);
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\), onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\), onSelect: \(\) => openShareSheet\(list\) \},\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\), onSelect: \(\) => navigate\('editList', \{ id: list\.id \}\) \},\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*share,\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true, onSelect: async \(\) => \{\s*if \(await deleteListWithConfirm\(list\)\) onDeleted\?\.\(\);/);
   assert.equal(fr['menu.dupliquer'], 'Dupliquer');
   assert.equal(fr['menu.modifier'], 'Modifier');
-  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
+  assert.equal(fr['partage.menu.partager'], 'Partager');
   assert.equal(fr['menu.supprimer'], 'Supprimer');
+  // « Partager » (propriétaire) ou « Personnes » (les autres) : le choix ou la vue des personnes
+  assert.match(source, /const share = \{ \.\.\.shareEntry\(\{ owner: Boolean\(list\.isOwner\) \}\), onSelect: \(\) => openListShare\(list\.id\) \};/);
   // Les deux menus utilisent cette même fonction (mêmes écrans, même ordre)
   const lists = read('public/js/screens/lists.js');
   const list = read('public/js/screens/list.js');
   assert.match(lists, /const actions = listActions\(list\);/);
   assert.match(list, /const menuActions = \(\) => \(view \? listActions\(view\.list, \{ onDeleted: \(\) => navigate\('lists', \{\}, \{ replace: true \}\) \}\) : \[\]\);/);
   for (const [file, source] of [['lists.js', lists], ['list.js', list]]) {
-    assert.doesNotMatch(source, /label: 'Modifier la liste'|label: 'Partager par lien'|label: 'Supprimer la liste'|label: t\('menu\.(modifier|partagerLien|supprimer)'\)/, `${file} : pas de seconde liste d'actions`);
+    assert.doesNotMatch(source, /label: 'Modifier la liste'|label: 'Partager'|label: 'Supprimer la liste'|label: t\('menu\.(modifier|supprimer)'\)|shareEntry\(/, `${file} : pas de seconde liste d'actions`);
   }
 });
 

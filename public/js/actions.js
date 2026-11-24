@@ -359,17 +359,6 @@ export async function createLabel({ name, color }) {
   return result;
 }
 
-// Partage (propriétaire) : la composition complète, personnes et droits,
-// envoyée au serveur (en ligne seulement, comme pour une liste), puis
-// relue par la synchronisation
-export async function setNoteMembers(noteId, members) {
-  await put(`/api/notes/${encodeURIComponent(noteId)}/members`, {
-    userIds: members.map((m) => m.id),
-    access: Object.fromEntries(members.map((m) => [m.id, m.access ?? 'lecture'])),
-  });
-  await refreshData({ quiet: true });
-}
-
 // Quitter une note qu'on m'a partagée (en ligne seulement) : ce qui attend
 // dans la file part d'abord ; la note disparaît ensuite de ce téléphone
 export async function leaveNote(noteId) {

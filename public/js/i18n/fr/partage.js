@@ -1,4 +1,4 @@
-// Textes de public/js/screens/share.js et public/js/screens/share-panel.js, en français.
+// Textes de public/js/screens/share.js, share-panel.js, share-picker.js et public/js/sharing.js, en français.
 // Chaque nom commence par « partage. ».
 
 export default {
@@ -26,8 +26,8 @@ export default {
   // Copie
   'partage.copie.impossible': 'Copie impossible : sélectionnez le texte et copiez-le à la main.',
 
-  // Feuille « Partager par lien »
-  'partage.feuille.titre': 'Partager par lien',
+  // Feuille « Partager par un lien temporaire »
+  'partage.feuille.titre': 'Partager par un lien temporaire',
   'partage.chargement': 'Chargement…',
   'partage.lienActif': 'Un lien public est actif pour cette liste.',
 
@@ -76,23 +76,47 @@ export default {
   'partage.arreter.confirmer': 'Arrêter',
   'partage.arrete': 'Partage arrêté',
 
-  // Panneau « Partager la liste » (ordinateur, share-panel.js)
-  'partage.panneau.peutModifier': 'Peut modifier',
-  'partage.panneau.lectureSeule': 'Lecture seule',
-  'partage.panneau.horsLigne': 'Indisponible hors ligne : reconnectez-vous pour changer le partage.',
-  'partage.panneau.echec': 'Le partage n\'a pas pu être changé : {message}',
-  'partage.panneau.vous': '{name} (vous)',
-  'partage.panneau.proprietaire': 'Propriétaire',
-  'partage.panneau.destinataire': 'Destinataire · Peut modifier',
-  'partage.panneau.droitDe': 'Droit de {name}',
-  'partage.panneau.retirer': 'Retirer {name}',
-  'partage.panneau.tousLesComptes': 'Tous les comptes ont déjà accès à cette liste.',
-  'partage.panneau.ajout.personne': 'Personne à ajouter',
-  'partage.panneau.ajout.droit': 'Droit de la personne ajoutée',
-  'partage.panneau.ajouter': 'Ajouter',
-  'partage.panneau.personnes': 'Personnes',
-  'partage.panneau.proprietaireSeul': 'Seul le propriétaire choisit les personnes, leur droit et le lien public.',
-  'partage.panneau.lienPublic': 'Lien public',
-  'partage.panneau.titre': 'Partager la liste',
-  'partage.panneau.termine': 'Terminé',
+  // Entrée des menus (sharing.js) : « Partager » (propriétaire) ou « Personnes » (les autres)
+  'partage.menu.partager': 'Partager',
+  'partage.menu.personnes': 'Personnes',
+
+  // Choix « Partager « Maison » » (share-panel.js, 24 novembre 2026)
+  'partage.choix.titre': 'Partager « {name} »',
+  'partage.choix.personnes': 'Avec des personnes de Listo',
+  'partage.choix.lien': 'Par un lien temporaire',
+  'partage.choix.personnes.aucune': 'Seulement vous',
+  'partage.choix.personnes.autres': { one: '{count} autre personne', other: '{count} autres personnes' },
+  'partage.choix.lien.aucun': 'Aucun lien',
+  'partage.choix.lien.actif': 'Lien actif · {expiry}',
+  'partage.choix.lien.actif.motDePasse': 'Lien actif · {expiry} · protégé par mot de passe',
+  'partage.choix.lien.illimite': 'Lien actif · sans limite',
+  'partage.choix.lien.illimite.motDePasse': 'Lien actif · sans limite · protégé par mot de passe',
+  'partage.choix.lien.jours': { one: 'expire dans {count} jour', other: 'expire dans {count} jours' },
+  'partage.choix.lien.heures': { one: 'expire dans {count} heure', other: 'expire dans {count} heures' },
+  'partage.choix.lien.minutes': { one: 'expire dans {count} minute', other: 'expire dans {count} minutes' },
+  'partage.choix.lien.bientot': 'expire dans moins d\'une minute',
+  'partage.choix.aide.liste': 'Les personnes de Listo voient et modifient la liste selon leur droit. Le lien donne une lecture seule, sans compte.',
+  'partage.choix.aide.envies': 'Les personnes de Listo voient et modifient la liste selon leur droit. Avec le lien, on voit les souhaits et on peut en réserver un, sans compte.',
+  'partage.choix.aide.note': 'Les personnes de Listo voient et modifient la note selon leur droit. Le lien donne une lecture seule, sans compte.',
+
+  // Feuille « Partager avec des personnes » (share-picker.js, share-panel.js)
+  'partage.personnes.titre': 'Partager avec des personnes',
+  'partage.personnes.ok': 'OK',
+  'partage.personnes.vous': '{name} (vous)',
+  'partage.personnes.proprietaire': 'Propriétaire',
+  'partage.personnes.destinataire': 'Destinataire · Peut modifier',
+  'partage.personnes.desactive': 'Compte désactivé',
+  'partage.personnes.horsLigne': 'Indisponible hors ligne : reconnectez-vous pour changer le partage.',
+  'partage.personnes.echec': 'Le partage n\'a pas pu être changé : {message}',
+  'partage.personnes.fait': 'Partage enregistré',
+  'partage.droit.modifier': 'Modifier',
+  'partage.droit.lire': 'Lire',
+  'partage.droit.choix': 'Droit de {name} sur la liste',
+  'partage.droit.choix.note': 'Droit de {name} sur la note',
+
+  // « Personnes » (les autres membres) : qui partage, en lecture
+  'partage.vue.titre': 'Personnes',
+  'partage.vue.peutModifier': 'Peut modifier',
+  'partage.vue.lectureSeule': 'Lecture seule',
+  'partage.vue.proprietaireSeul': 'Seul le propriétaire choisit les personnes, leur droit et le lien.',
 };

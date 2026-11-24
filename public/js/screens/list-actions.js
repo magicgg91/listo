@@ -4,16 +4,19 @@
 // le menu porte déjà le nom de la liste (« Actions de la liste Maison »,
 // lu par les lecteurs d'écran), inutile de le répéter dans chaque ligne.
 // 1. « Modifier » (propriétaire) : l'écran « Modifier la liste »
-//    (nom, catégorie, magasin, personnes avec qui elle est partagée) ;
+//    (nom, type, icône, magasin, options ; le partage n'y est plus depuis
+//    le 24 novembre 2026) ;
 // 2. « Dupliquer » (propriétaire, contributeur) : la feuille « Dupliquer
 //    la liste » (en ligne seulement) ;
-// 3. « Partager par lien » (propriétaire) : la feuille du lien public ;
+// 3. « Partager » (propriétaire) : le choix « Avec des personnes de Listo »
+//    ou « Par un lien temporaire » (share-panel.js) ; « Personnes » (les
+//    autres membres, à la place) : qui partage la liste, en lecture ;
 // 4. « Supprimer » (propriétaire) : en dernier, après un trait, en rouge ;
 //    « Quitter » (contributeur ou invité, à la place) : pareil, avec sa confirmation
 //    (en ligne seulement).
-// Un contributeur voit donc « Dupliquer » puis « Quitter » ; un invité en
-// lecture seule, « Quitter » seulement. Les confirmations gardent le nom
-// complet (« Supprimer la liste « Maison » ? »).
+// Un contributeur voit donc « Dupliquer », « Personnes » puis « Quitter » ;
+// un invité en lecture seule, « Personnes » et « Quitter ». Les
+// confirmations gardent le nom complet (« Supprimer la liste « Maison » ? »).
 // « Masquer les nouveautés » (Nouveautés) et « Couper les notifications »
 // (page Notifications et téléphone) : pour tout membre, juste avant
 // « Supprimer » ou « Quitter ».
@@ -36,7 +39,8 @@ import { canEditList, isListMuted } from '../store.js';
 import { confirmDialog, openSheet, toast } from '../ui.js';
 import { itemWords, deleteListText } from '../words.js';
 import { copyName } from '../format.js';
-import { openShareSheet } from './share.js';
+import { openListShare } from './share-panel.js';
+import { shareEntry } from '../sharing.js';
 import { isListPushMuted, setListPushMuted } from '../push.js';
 import { t } from '../i18n.js';
 
@@ -50,6 +54,8 @@ export function listActions(list, { onDeleted } = {}) {
   // pas une modification de la liste)
   const mute = newsMuteAction(list);
   const pushMute = pushMuteAction(list);
+  // « Partager » (propriétaire) ou « Personnes » (les autres)
+  const share = { ...shareEntry({ owner: Boolean(list.isOwner) }), onSelect: () => openListShare(list.id) };
   if (!list.isOwner) {
     const canEdit = canEditList(list);
     const leave = { icon: 'logout', label: t('menu.quitter'), danger: true, separated: canEdit, onSelect: async () => {
@@ -63,13 +69,13 @@ export function listActions(list, { onDeleted } = {}) {
       onDeleted();
       setTimeout(() => toast(message, { low: true }), 400);
     } };
-    return (canEdit && !wishes ? [duplicate, mute, pushMute, leave] : [mute, pushMute, leave]).filter(Boolean);
+    return (canEdit && !wishes ? [duplicate, share, mute, pushMute, leave] : [share, mute, pushMute, leave]).filter(Boolean);
   }
   return [
     { icon: 'pencil', label: t('menu.modifier'), onSelect: () => navigate('editList', { id: list.id }) },
     // Liste d'envies : pas de duplication (refusée aussi par le serveur) ; lien public permis, sans réservations
     wishes ? null : duplicate,
-    { icon: 'link', label: t('menu.partagerLien'), onSelect: () => openShareSheet(list) },
+    share,
     mute,
     pushMute,
     { icon: 'trash', label: t('menu.supprimer'), danger: true, separated: true, onSelect: async () => {

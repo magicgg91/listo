@@ -70,11 +70,13 @@ export default {
       id: 'partager',
       title: "Owner: sharing and choosing permissions",
       blocks: [
-        "“Edit list”, “Share with” row: a window opens with one row per person. Check a person, then choose their permission at the end of their row. “OK” closes the window; the sharing is saved with “Save”.",
+        "The list's ⋮ menu (or its card's ⋯ menu), “Share”: a small choice opens, with two rows that tell you where things stand. “With people on Listo” shows who the list is shared with (‘Léa and Zoé’, or “Only you”); “With a temporary link”, the state of the public link (“No link”, ‘Active link · expires in 6 days’…, [[lien-public]]).",
+        "“With people on Listo” opens “Share with people”: one row per person. Check a person, then choose their permission at the end of their row; uncheck them to remove them. “OK” saves everything at once and takes you back to the choice; the cross closes without changing anything. You need a network connection.",
         { ul: [
           "“Edit” (“Can edit” permission): the person is a contributor ([[role-contributeur]]).",
           "“View” (“Read only” permission): the person can only read ([[role-lecture]]). This is the starting choice.",
           "You can change the permission or remove a person at any time.",
+          "The other members see “People” instead of “Share”: who the list is shared with, with which permission, without being able to change anything.",
         ] },
       ],
     },
@@ -86,7 +88,7 @@ export default {
         { ul: [
           "“Who is it for?” is chosen when the list is created: “Me”, another account, or “Someone without an account” (a child, for example). It can't be changed afterwards, and the list can't change type anymore.",
           "A shopping or task list can become a wish list: in “Edit list”, choose “Wishes”, then “Who is it for?”. This is permanent, it needs a network connection, and nothing is erased: quantities and due dates are kept without being shown, checked items become “Received”, and an active public link is stopped.",
-          "If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves.",
+          "If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves. In “Share with people”, their row is checked, “Recipient · Can edit”, and can't be unchecked.",
           "A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.",
           "Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.",
           "When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([[faq-orphelin]]).",
@@ -98,7 +100,7 @@ export default {
       id: 'lien-public',
       title: "Owner: the public link",
       blocks: [
-        "“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]). A note has its own public link too, with the same rules: “Public link” in its ⋮ menu ([[notes-partage]]).",
+        "“Share” (⋮ menu), then “With a temporary link”, opens “Share with a temporary link”: “Create link” creates an address that you send to a person without an account. They see the list as read only ([[role-visiteur]]). A note has its own public link too, with the same rules: “Share” in its ⋮ menu ([[notes-partage]]).",
         { ul: [
           "Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.",
           "“Protect with a password”: the password is shown only once. Write it down.",

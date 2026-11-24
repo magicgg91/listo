@@ -1437,7 +1437,10 @@ html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { 
      grisé (jamais la couleur seule).
    Barre de mise en forme .note-tools (role="toolbar") : dix boutons
    .note-tool carrés arrondis de 40 px (zone tactile de 44 px par ::after),
-   défilement de côté si elle ne tient pas ; aria-pressed : fond et contour
+   défilement de côté si elle ne tient pas (ordinateur) ; sur le téléphone
+   (.note-tools--dock), les dix boutons se partagent toute la largeur sans
+   défilement (34 px environ sur un iPhone 16, 44 px au plus ; zones
+   d'appui jointives, 44 px de haut ; décision du 24 novembre 2026) ; aria-pressed : fond et contour
    d'accent. .note-tools--dock : téléphone, en bas de l'écran, posée sur le
    clavier quand il est ouvert (marge de sécurité du bas en dessous, retirée
    clavier ouvert dans app.css) ; .note-tools--top : ordinateur, en haut du
@@ -1469,7 +1472,9 @@ span.nf-task__box::after { display: none; }
 .note-tool__mark { padding: 3px 4px; border-radius: 4px; background: var(--label-jaune-bg); color: var(--color-text); }
 .note-tool__box { display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; }
 .note-tool__box .icon { width: 12px; height: 12px; stroke-width: 3; }
-.note-tools--dock { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.note-tools--dock { gap: 4px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+.note-tools--dock .note-tool { flex: 1 1 0; width: auto; min-width: 0; max-width: 44px; }
+.note-tools--dock .note-tool::after { inset: -2px; }
 .note-foot:has(~ .note-tools--dock:not([hidden])) { padding-bottom: 12px; }
 .screen:has(.note-edit--writing) .note-foot { display: none; }
 .note-tools--top { position: sticky; top: 0; z-index: 1; margin: 2px 0 4px; padding: 6px 0 10px; border-top: 0; border-bottom: 1px solid var(--color-border); }

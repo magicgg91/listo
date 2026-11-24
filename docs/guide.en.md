@@ -838,7 +838,7 @@ A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nob
 - “+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.
 - A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.
 - To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab, and a checkbox gets ticked.
-- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
+- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” (your notes: with people or by a link) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
 
 **Formatting**
 
@@ -878,13 +878,13 @@ Your deleted notes go to the “Trash” in Settings, “Notes” tab (next to t
 
 ### 5.13 Sharing a note
 
-In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens “Share note”, as for a list: add a person from the existing accounts, with “Can edit” or “Read only”, change that access, or remove them. You need a network connection.
+In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens the same choice as for a list ([7.4 Owner: sharing and choosing permissions](#partager)). “With people on Listo”: check a person from the existing accounts, choose “Edit” or “View” at the end of their row, or uncheck them to remove them, then “OK”. “With a temporary link”: the public link (below). You need a network connection.
 
 - Owner: everything, including deleting the note, sharing it and managing its public link.
 - “Can edit”: change the title and the text. Never delete the note, share it or manage its public link.
 - “Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.
 - Everyone except the owner can leave the note: ⋮ menu, “Leave”. Someone who loses access also loses their pin. Each person's pin is never shown to the others.
-- The cards of a shared note show the people's initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
+- The cards of a shared note show the people's initials; “People”, at the top of the note or in its card's ⋮ menu, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
 
 **What's new and notifications**
 
@@ -894,7 +894,7 @@ Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notificati
 
 **A note's public link**
 
-⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
+“Share” (at the top of one of your notes, or ⋮ menu), then “With a temporary link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
 
 <a id="reserver"></a>
 
@@ -966,8 +966,8 @@ In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), L
 - The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - In the middle, every screen (Home, Due, Lists, a list, “To give”, Notes, Settings, Help…) has the same width. At the top, on the title line: the status pill, the screen's buttons and the search; the line below holds the rest (counter, “All” / “Mine”, sort).
 - On the right, the open list: at the top, on the title line, the status pill, “Share” and the search, always shown; below, the counter ([5.9 Groups, sorting and counter](#tri)), then the add field, above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
-- An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
-- “Share list” brings together the people on the list and the public link. The owner chooses each person's access there, adds or removes people, and manages the link; the other members only see the list of people there.
+- An item's details open in a panel on the right; “Share”, “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
+- “Share” (at the top of the list, or P key) opens the same choice as on the phone ([7.4 Owner: sharing and choosing permissions](#partager)): “With people on Listo” or “With a temporary link”. The other members have “People” instead: the list of people and their access, without being able to change anything.
 - Right-click on a row (or the Menu key, or Shift+F10): Edit, Check, Delete, depending on your access.
 
 **Keyboard shortcuts**
@@ -1214,11 +1214,14 @@ The list's ⋮ menu, “Edit”: the title, the type, the store, the icon. For a
 
 ### 7.4 Owner: sharing and choosing permissions
 
-“Edit list”, “Share with” row: a window opens with one row per person. Check a person, then choose their permission at the end of their row. “OK” closes the window; the sharing is saved with “Save”.
+The list's ⋮ menu (or its card's ⋯ menu), “Share”: a small choice opens, with two rows that tell you where things stand. “With people on Listo” shows who the list is shared with (‘Léa and Zoé’, or “Only you”); “With a temporary link”, the state of the public link (“No link”, ‘Active link · expires in 6 days’…, [7.6 Owner: the public link](#lien-public)).
+
+“With people on Listo” opens “Share with people”: one row per person. Check a person, then choose their permission at the end of their row; uncheck them to remove them. “OK” saves everything at once and takes you back to the choice; the cross closes without changing anything. You need a network connection.
 
 - “Edit” (“Can edit” permission): the person is a contributor ([7.8 Contributor (“Can edit”)](#role-contributeur)).
 - “View” (“Read only” permission): the person can only read ([7.9 Read only](#role-lecture)). This is the starting choice.
 - You can change the permission or remove a person at any time.
+- The other members see “People” instead of “Share”: who the list is shared with, with which permission, without being able to change anything.
 
 <a id="envies"></a>
 
@@ -1228,7 +1231,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 - “Who is it for?” is chosen when the list is created: “Me”, another account, or “Someone without an account” (a child, for example). It can't be changed afterwards, and the list can't change type anymore.
 - A shopping or task list can become a wish list: in “Edit list”, choose “Wishes”, then “Who is it for?”. This is permanent, it needs a network connection, and nothing is erased: quantities and due dates are kept without being shown, checked items become “Received”, and an active public link is stopped.
-- If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves.
+- If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves. In “Share with people”, their row is checked, “Recipient · Can edit”, and can't be unchecked.
 - A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.
 - Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.
 - When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([9.11 Wish list: a participant has left](#faq-orphelin)).
@@ -1238,7 +1241,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 ### 7.6 Owner: the public link
 
-“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([7.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Public link” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
+“Share” (⋮ menu), then “With a temporary link”, opens “Share with a temporary link”: “Create link” creates an address that you send to a person without an account. They see the list as read only ([7.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Share” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
 
 - Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.
 - “Protect with a password”: the password is shown only once. Write it down.

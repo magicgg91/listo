@@ -1,7 +1,8 @@
-// Feuille « Partager par lien » (maquettes partage-lien-1 à 7), ouverte
-// depuis le menu d'une liste par son propriétaire. La même feuille sert au
-// lien public d'une note (étape 3 des notes, openNoteLinkSheet) : mêmes
-// écrans et mêmes mots, seules quelques phrases disent « la note ».
+// Contenu de la feuille « Partager par un lien temporaire » (maquettes
+// partage-lien-1 à 7) : le lien public d'une liste (linkPart) ou d'une note
+// (noteLinkPart, mêmes écrans et mêmes mots, seules quelques phrases disent
+// « la note »). La feuille elle-même s'ouvre depuis le choix « Partager »
+// du propriétaire (share-panel.js, décision du 24 novembre 2026).
 //
 // États : aucun lien (choix de la durée, mot de passe ou non, « Créer le
 // lien ») ; lien actif (adresse, copie, expiration, mot de passe montré une
@@ -12,7 +13,7 @@
 import { refreshData } from '../app.js';
 import { get, put, del, errorMessage, NetworkError } from '../api.js';
 import { h, icon, replace, field } from '../dom.js';
-import { openSheet, confirmDialog, toast } from '../ui.js';
+import { confirmDialog, toast } from '../ui.js';
 import { dateTimeLabel, timeLeftLabel } from '../format.js';
 import { hasPublicLink } from './lists.js';
 import { isWishList } from '../list-types.js';
@@ -108,28 +109,10 @@ async function copy(text, done) {
 // seulement, le temps de la visite.
 const lastKnown = new Map();
 
-export function openShareSheet(list) {
-  const part = linkPart(list, () => sheet.close());
-  const sheet = openSheet({
-    title: t('partage.feuille.titre'),
-    content: part.body,
-    scroll: true,
-    onClose: part.dispose,
-  });
-  part.start();
-}
-
-// Lien public d'une note (propriétaire) : la même feuille
-export function openNoteLinkSheet(note) {
-  const part = noteLinkPart(note, () => sheet.close());
-  const sheet = openSheet({
-    title: t('partage.feuille.titre'),
-    content: part.body,
-    scroll: true,
-    onClose: part.dispose,
-  });
-  part.start();
-}
+// Dernier état connu du lien (sans mot de passe), ou undefined : le choix
+// « Partager » y lit si le lien est protégé par un mot de passe (le serveur
+// ne l'envoie pas avec la liste ni la note)
+export const knownLink = (key) => lastKnown.get(key);
 
 // Phrases qui nomment ce qui est partagé : la liste (par défaut) ou la note
 const LIST_TEXTS = {
@@ -145,8 +128,8 @@ const NOTE_TEXTS = {
   open: 'notes.partage.sansMotDePasse',
 };
 
-// Contenu « lien public » d'une note (feuille, ou section du panneau
-// « Partager la note ») : adresse /api/notes/<id>/share, propriétaire seulement
+// Contenu « lien public » d'une note : adresse /api/notes/<id>/share,
+// propriétaire seulement
 export function noteLinkPart(note, close) {
   return linkPart({ id: note.id, publicLink: note.publicLink ?? null }, close, {
     url: `/api/notes/${encodeURIComponent(note.id)}/share`,
@@ -155,8 +138,8 @@ export function noteLinkPart(note, close) {
   });
 }
 
-// Contenu « lien public » (feuille du téléphone, ou section du panneau
-// « Partager la liste » sur ordinateur). close() ferme la fenêtre qui le
+// Contenu « lien public » d'une liste (feuille « Partager par un lien
+// temporaire », téléphone et ordinateur). close() ferme la fenêtre qui le
 // contient. Renvoie { body, start(), dispose() }. Pour une note : url,
 // texts et key (mémoire du dernier état) donnés par noteLinkPart.
 export function linkPart(list, close, { url = `/api/lists/${encodeURIComponent(list.id)}/share`, texts = LIST_TEXTS, key = list.id } = {}) {

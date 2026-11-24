@@ -41,7 +41,9 @@
 // - Note partagée (étape 3) : bouton « Partager » (propriétaire) ou
 //   « Personnes » (les autres) dans la barre, avec les pastilles des
 //   personnes (téléphone : icône et pastilles, le mot dans le nom lu ;
-//   ordinateur : le mot écrit). « Lecture seule » : titre et texte non
+//   ordinateur : le mot écrit). Il ouvre le choix « Partager » (personnes
+//   ou lien temporaire, share-panel.js, 24 novembre 2026) ou, pour les
+//   autres, la liste des personnes en lecture. « Lecture seule » : titre et texte non
 //   modifiables (les liens restent cliquables), épingle permise ; la note se
 //   met à jour en direct. Ouvrir une note la marque « lue » (Nouveautés),
 //   sur tous mes appareils. Bas de la note : « Modifiée par Léa · il y a
@@ -64,7 +66,7 @@ import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
 import { canEditNote, isNoteOwner, notePeople } from '../store.js';
-import { openNoteSharePanel } from './share-panel.js';
+import { openNoteShare } from './share-panel.js';
 import { noteLabelsSlot, drawNoteLabels } from './note-labels.js';
 import { noteToolbar, openLinkSheet } from './note-toolbar.js';
 
@@ -454,10 +456,10 @@ function noteEditor(initialId, onLeave, { pc }) {
     if (n) actions.pinNote(n.id, !app.data.pinnedNotes.has(n.id));
   } }) : null;
 
-  // « Partager » (propriétaire) ou « Personnes » (les autres, note partagée)
+  // « Partager » (propriétaire : le choix) ou « Personnes » (les autres, note partagée)
   const peopleButton = h('button', {
     class: `btn btn--sm btn--secondary note-people`, type: 'button', 'aria-haspopup': 'dialog', hidden: true,
-    onClick: () => { if (note()) openNoteSharePanel(noteId); },
+    onClick: () => { if (note()) openNoteShare(noteId); },
   });
   function drawPeople(n) {
     const people = n ? notePeople(n) : [];

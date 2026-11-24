@@ -106,9 +106,6 @@ export default {
   'notes.conflit.deux.fait': 'Votre texte est dans « {name} »',
 
   // Partage (étape 3) : menus, carte, écran de la note
-  'notes.menu.partager': 'Partager',
-  'notes.menu.personnes': 'Personnes',
-  'notes.menu.lienPublic': 'Lien public',
   'notes.menu.quitter': 'Quitter',
   'notes.menu.nouveautes.masquer': 'Masquer les nouveautés',
   'notes.menu.nouveautes.afficher': 'Afficher les nouveautés',
@@ -136,8 +133,6 @@ export default {
   'notes.personnes.lu.voir': 'Personnes : {names}',
   'notes.statut.lectureSeule': 'Lecture seule',
   // Panneau « Partager la note » (mêmes écrans que pour une liste)
-  'notes.partage.titre': 'Partager la note',
-  'notes.partage.tousLesComptes': 'Tous les comptes ont déjà accès à cette note.',
   'notes.partage.lienActif': 'Un lien public est actif pour cette note.',
   'notes.partage.creation.texte': 'Toute personne avec le lien voit la note en lecture seule, sans compte.',
   'notes.partage.motDePasse.retirer.texte': 'Toute personne avec le lien pourra voir la note.',

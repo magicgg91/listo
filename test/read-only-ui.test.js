@@ -18,43 +18,44 @@ import fr from '../public/js/i18n/fr.js';
 const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
-test('un seul composant : accessChoice, dans le formulaire commun à la création et à « Modifier la liste »', () => {
+test('un seul composant : accessChoice, dans la feuille « Partager avec des personnes » (listes et notes) ; plus de partage dans le formulaire', () => {
   const form = read('public/js/screens/list-form.js');
   // Les deux écrans passent par la même fonction form() (list = null pour la création)
   assert.match(form, /replace\(container, form\(list, users\)\);/);
   assert.equal((form.match(/function form\(/g) ?? []).length, 1);
+  // Plus de partage dans « Nouvelle liste » ni « Modifier la liste » (24 novembre 2026)
+  assert.doesNotMatch(form, /accessChoice|share__summary|\/members`|formulaire\.partage|guests|openShareSheet/);
+  const picker = read('public/js/screens/share-picker.js');
   // Deux petits choix au bout de la ligne de la personne, « Modifier » (Peut
   // modifier) puis « Lire » (Lecture seule) ; le choix actif est en relief
   // (bord, fond, ombre du kit) et s'annonce par aria-checked
-  assert.match(form, /export function accessChoice\(name, value, onChange\) \{/);
-  assert.match(form, /\[\['modification', t\('formulaire\.droit\.modifier'\)\], \['lecture', t\('formulaire\.droit\.lire'\)\]\]/);
-  assert.equal(fr['formulaire.droit.modifier'], 'Modifier');
-  assert.equal(fr['formulaire.droit.lire'], 'Lire');
-  assert.match(form, /for \(const option of options\) option\.setAttribute\('aria-checked', String\(option\.dataset\.value === current\)\);/);
-  assert.match(form, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': t\('formulaire\.droit\.choix', \{ name \}\) \}, options\)/);
-  assert.equal(fr['formulaire.droit.choix'], 'Droit de {name} sur la liste');
+  assert.match(picker, /export function accessChoice\(label, value, onChange\) \{/);
+  assert.match(picker, /\[\['modification', t\('partage\.droit\.modifier'\)\], \['lecture', t\('partage\.droit\.lire'\)\]\]/);
+  assert.equal(fr['partage.droit.modifier'], 'Modifier');
+  assert.equal(fr['partage.droit.lire'], 'Lire');
+  assert.match(picker, /for \(const option of options\) option\.setAttribute\('aria-checked', String\(option\.dataset\.value === current\)\);/);
+  assert.match(picker, /h\('div', \{ class: 'segmented share__access', role: 'radiogroup', 'aria-label': label \}, options\)/);
+  assert.match(picker, /const rightLabel = \(name\) => \(note \? t\('partage\.droit\.choix\.note', \{ name \}\) : t\('partage\.droit\.choix', \{ name \}\)\);/);
+  assert.equal(fr['partage.droit.choix'], 'Droit de {name} sur la liste');
   assert.match(read('public/css/listo.css'), /\.segmented__opt\[aria-checked="true"\] \{ border-color: var\(--color-border\); background: var\(--color-surface\); color: var\(--color-text\); box-shadow: var\(--shadow-1\); \}/);
   // Chaque personne (pas le propriétaire) : son choix, caché (place gardée) tant qu'elle n'est pas cochée ;
   // une personne ajoutée commence en lecture seule
-  assert.match(form, /const access = accessChoice\(person\.displayName, rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\)\);/);
-  assert.match(form, /access\.classList\.toggle\('is-off', !on\);/);
+  assert.match(picker, /const access = beneficiary \? null : accessChoice\(rightLabel\(person\.displayName\), rights\.get\(person\.id\) \?\? 'lecture', \(value\) => rights\.set\(person\.id, value\)\);/);
+  assert.match(picker, /access\?\.classList\.toggle\('is-off', !on\);/);
   assert.match(read('public/css/app.css'), /\.share__access\.is-off \{ visibility: hidden; \}/);
-  assert.equal((form.match(/accessChoice\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois (pour les deux écrans)');
+  assert.equal((picker.match(/accessChoice\(/g) ?? []).length, 2, 'défini une fois, utilisé une fois');
   // Moi : ligne verrouillée « Propriétaire » ; le destinataire d'une liste d'envies aussi
-  assert.match(form, /lockedRow\(me, t\('formulaire\.partage\.vous', \{ name: me\.displayName \}\), t\('formulaire\.partage\.proprietaire'\)\)/);
-  assert.equal(fr['formulaire.partage.vous'], '{name} (vous)');
-  assert.equal(fr['formulaire.partage.proprietaire'], 'Propriétaire');
-  // Le partage s'ouvre dans une fenêtre depuis une ligne de résumé ; « OK » dans l'en-tête
-  assert.match(form, /class: 'input input--select share__summary', type: 'button', 'aria-haspopup': 'dialog', 'aria-labelledby': 'share-label share-summary',/);
-  assert.match(form, /title: t\('formulaire\.partage'\),\s*tools: ok,\s*content: shareList,\s*scroll: true,\s*returnTo: shareButton,/);
-  assert.equal(fr['formulaire.partage'], 'Partager avec');
-  assert.match(form, /summaryText\.textContent = !names\.length \? t\('formulaire\.partage\.personne'\)/);
-  assert.equal(fr['formulaire.partage.personne'], 'Personne');
-  // Envoyé au serveur avec la liste des invités, seulement si quelque chose a changé
-  assert.match(form, /const access = Object\.fromEntries\(\[\.\.\.guests\]\.map\(\(id\) => \[id, rights\.get\(id\) \?\? 'lecture'\]\)\);/);
-  assert.match(form, /\[\.\.\.guests\]\.some\(\(id\) => before\.get\(id\) !== access\[id\]\)/);
-  assert.match(form, /await put\(`\/api\/lists\/\$\{id\}\/members`, \{ userIds: \[\.\.\.guests\], access \}\);/);
-  assert.doesNotMatch(form, /innerHTML|\.focus\(/);
+  assert.match(picker, /lockedRow\(me, t\('partage\.personnes\.vous', \{ name: me\.displayName \}\), t\('partage\.personnes\.proprietaire'\)\)/);
+  assert.equal(fr['partage.personnes.vous'], '{name} (vous)');
+  assert.equal(fr['partage.personnes.proprietaire'], 'Propriétaire');
+  // La feuille : « OK » dans l'en-tête, le nom en sous-titre
+  const panel = read('public/js/screens/share-panel.js');
+  assert.match(panel, /title: t\('partage\.personnes\.titre'\),\s*sub: subject\.name\(item\),\s*tools: ok,/);
+  assert.equal(fr['partage.personnes.titre'], 'Partager avec des personnes');
+  // Envoyé au serveur d'un coup, seulement si quelque chose a changé
+  assert.match(panel, /if \(!membersChanged\(now\.members, payload\)\) \{/);
+  assert.match(panel, /await put\(subject\.url, payload\);/);
+  assert.doesNotMatch(picker + panel + form, /innerHTML|\.focus\(/);
   // 44 px : .segmented__opt (min-height: var(--tap-min)) de listo.css
   assert.match(read('public/css/listo.css'), /\.segmented__opt \{[^}]*min-height: var\(--tap-min\);/);
 });
@@ -120,8 +121,8 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), t\('listes\.carte\.lectureSeule'\)\)/);
   assert.equal(fr['listes.carte.lectureSeule'], 'Lecture seule');
-  // Invité en lecture seule : seulement les sourdines et « Quitter » (« Dupliquer » est réservé au propriétaire et à « Peut modifier »)
-  assert.match(read('public/js/screens/list-actions.js'), /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
+  // Invité en lecture seule : « Personnes », les sourdines et « Quitter » (« Dupliquer » est réservé au propriétaire et à « Peut modifier »)
+  assert.match(read('public/js/screens/list-actions.js'), /return \(canEdit && !wishes \? \[duplicate, share, mute, pushMute, leave\] : \[share, mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   assert.doesNotMatch(list, /innerHTML/);
 });
 

@@ -17,8 +17,9 @@
 // « Modifiée par Léa » (quelqu'un d'autre l'a modifiée depuis ma dernière
 // lecture), « Lecture seule » (œil, comme les listes), le lien public
 // (propriétaire) et les pastilles des personnes ; menu selon le droit
-// (Partager et Lien public : propriétaire ; Personnes, Quitter la note :
-// les autres ; sourdines des nouveautés et des notifications : chacun).
+// (Partager : propriétaire, le choix « Avec des personnes de Listo » ou « Par
+// un lien temporaire », share-panel.js ; Personnes, Quitter la note : les
+// autres ; sourdines des nouveautés et des notifications : chacun).
 //
 // Étiquettes (24 novembre 2026, screens/note-labels.js) : sur la carte, à
 // gauche de la ligne du bas, les pastilles des personnes à droite (même
@@ -44,8 +45,8 @@ import { t, compareText } from '../i18n.js';
 import { errorMessage } from '../api.js';
 import { isNoteUnread, isNoteNewsMuted, isNoteOwner, canEditNote, notePeople } from '../store.js';
 import { isNotePushMuted, setNotePushMuted } from '../push.js';
-import { openNoteSharePanel } from './share-panel.js';
-import { openNoteLinkSheet } from './share.js';
+import { openNoteShare } from './share-panel.js';
+import { shareEntry } from '../sharing.js';
 import { noteMatches } from '../labels.js';
 import { labelList, labelsOfNote, labelFilterBar, drawLabelFilter, activeLabelFilter, openNoteLabelsSheet } from './note-labels.js';
 
@@ -84,15 +85,24 @@ const found = (notes, query) => (isSearching(query) ? notes.filter((note) => not
 // Filtre par étiquette (un seul choix ; « Toutes » : null)
 const withLabel = (notes, labelId) => (labelId ? notes.filter((note) => (note.labelIds ?? []).includes(labelId)) : notes);
 
+// « Partager » (propriétaire) ou « Personnes » (les autres), ou rien
+function sharing(note, owner, withPeople) {
+  const entry = shareEntry({ owner, withPeople });
+  return entry ? { ...entry, onSelect: () => openNoteShare(note.id) } : null;
+}
+
 // --- Menu d'une note (carte ⋮, clic droit ; écran de la note) ---
-// Dans l'ordre : Épingler / Désépingler (chacun pour soi) ; Partager et
-// Lien public (propriétaire) ou Personnes (les autres, note partagée) ;
+// Dans l'ordre : Épingler / Désépingler (chacun pour soi) ; Partager
+// (propriétaire : le choix des personnes ou du lien temporaire, décision du
+// 24 novembre 2026) ou Personnes (les autres, note partagée) ;
 // Dupliquer (une note à moi, non partagée) ; pour une note partagée,
 // « Masquer les nouveautés » et « Couper les notifications » (libellés
 // courts : le menu porte le nom de la note) ; enfin, après un
 // trait, Supprimer (propriétaire) ou Quitter (les autres). Le
 // serveur revérifie chaque droit. onDeleted : après la mise à la corbeille
 // ou le départ. withPin : faux sur ordinateur (bouton épingle à part).
+// withPeople : faux dans la note ouverte, qui a son bouton « Personnes »
+// dans la barre (le propriétaire garde « Partager » dans le menu).
 export function noteMenuItems(note, { onDeleted = () => {}, withPin = true, withPeople = true } = {}) {
   const pinned = app.data.pinnedNotes.has(note.id);
   const owner = isNoteOwner(note);
@@ -103,12 +113,7 @@ export function noteMenuItems(note, { onDeleted = () => {}, withPin = true, with
       label: pinned ? t('notes.menu.desepingler') : t('notes.menu.epingler'),
       onSelect: () => actions.pinNote(note.id, !pinned),
     } : null,
-    withPeople && (owner || shared) ? {
-      icon: 'users',
-      label: owner ? t('notes.menu.partager') : t('notes.menu.personnes'),
-      onSelect: () => openNoteSharePanel(note.id),
-    } : null,
-    owner ? { icon: 'link', label: t('notes.menu.lienPublic'), onSelect: () => openNoteLinkSheet(note) } : null,
+    (owner || shared) && !note.deletedAt ? sharing(note, owner, withPeople) : null,
     // Étiquettes (propriétaire ou « Peut modifier ») : la feuille du choix
     canEditNote(note) && !note.deletedAt ? { icon: 'tag', label: t('notes.menu.etiquettes'), onSelect: () => openNoteLabelsSheet(note.id) } : null,
     {

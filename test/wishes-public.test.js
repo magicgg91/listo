@@ -231,8 +231,10 @@ test('page du visiteur et écran du lien : mots des envies, prix, « Reçu », p
   assert.match(share, /h\('span', \{\}, wishShareWarning\(\)\)/);
   assert.match(share, /h\('p', \{ class: 'note note--danger', id: 'share-wish-warning', role: 'note' \}/);
   assert.equal((share.match(/wishNotes\(\),/g) ?? []).length, 2, 'à la création et pour un lien actif');
-  // Menu : « Partager par lien » proposé aussi pour une liste d'envies ; pas de duplication
+  // Menu : « Partager » (et son lien temporaire) proposé aussi pour une liste d'envies ; pas de duplication
   const actions = code('public/js/screens/list-actions.js');
-  assert.match(actions, /wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\)/);
-  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
+  assert.match(actions, /wishes \? null : duplicate,\s*share,/);
+  assert.equal(fr['partage.menu.partager'], 'Partager');
+  // Le choix dit ce que donne le lien d'une liste d'envies (réserver, sans compte)
+  assert.match(code('public/js/screens/share-panel.js'), /hint: \(list\) => \(isWishList\(list\) \? t\('partage\.choix\.aide\.envies'\) : t\('partage\.choix\.aide\.liste'\)\),/);
 });

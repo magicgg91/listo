@@ -838,7 +838,7 @@ Une note garde un texte libre : un code, une recette, des idées. Au départ, el
 - « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » fait de même.
 - Une note s'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.
 - Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s'ouvre dans un nouvel onglet, et une case se coche.
-- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu'on vous a partagée), « Étiquettes » (si vous pouvez la modifier), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
+- Menu ⋮ d'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » (vos notes : avec des personnes ou par un lien) ou « Personnes » (une note qu'on vous a partagée), « Étiquettes » (si vous pouvez la modifier), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».
 
 **Mise en forme**
 
@@ -878,13 +878,13 @@ Vos notes supprimées vont dans la « Corbeille » des Réglages, onglet « Note
 
 ### 5.13 Partager une note
 
-Dans une de vos notes, « Partager » (en haut de la note, ou menu ⋮) ouvre « Partager la note », comme pour une liste : ajoutez une personne parmi les comptes existants, en « Peut modifier » ou « Lecture seule », changez ce droit, ou retirez-la. Il faut du réseau.
+Dans une de vos notes, « Partager » (en haut de la note, ou menu ⋮) ouvre le même choix que pour une liste ([7.4 Propriétaire : partager et choisir les droits](#partager)). « Avec des personnes de Listo » : cochez une personne parmi les comptes existants, choisissez « Modifier » ou « Lire » au bout de sa ligne, ou décochez-la pour la retirer, puis « OK ». « Par un lien temporaire » : le lien public (plus bas). Il faut du réseau.
 
 - Propriétaire : tout, dont supprimer la note, la partager et gérer son lien public.
 - « Peut modifier » : modifier le titre et le texte. Jamais supprimer la note, la partager ni gérer son lien public.
 - « Lecture seule » : lire la note (les liens s'ouvrent), l'épingler pour soi. La carte le dit avec l'œil « Lecture seule ».
 - Chacun, sauf le propriétaire, peut quitter la note : menu ⋮, « Quitter ». Une personne qui perd l'accès perd aussi son épingle. L'épingle de chacun n'est jamais montrée aux autres.
-- Les cartes d'une note partagée montrent les pastilles des personnes ; « Personnes », en haut de la note, les liste avec leur droit. En bas de la note : “Modifiée par Léa · il y a 5 min”.
+- Les cartes d'une note partagée montrent les pastilles des personnes ; « Personnes », en haut de la note ou dans le menu ⋮ de sa carte, les liste avec leur droit. En bas de la note : “Modifiée par Léa · il y a 5 min”.
 
 **Nouveautés et notifications**
 
@@ -894,7 +894,7 @@ Notifications ([6.3 Ce que vous recevez, et quand](#notif-recevoir)), dans la pa
 
 **Lien public d'une note**
 
-Menu ⋮ d'une de vos notes, « Lien public » : la même feuille que pour une liste ([7.6 Propriétaire : le lien public](#lien-public)) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte mis en forme (liens cliquables, cases qui ne se cochent pas) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n'est plus visible par son lien ; restaurée, le lien remarche s'il n'a pas expiré.
+« Partager » (en haut d'une de vos notes, ou menu ⋮), puis « Par un lien temporaire » : la même feuille que pour une liste ([7.6 Propriétaire : le lien public](#lien-public)) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte mis en forme (liens cliquables, cases qui ne se cochent pas) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n'est plus visible par son lien ; restaurée, le lien remarche s'il n'a pas expiré.
 
 <a id="reserver"></a>
 
@@ -966,8 +966,8 @@ Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tourné
 - Le menu suit l'écran : sur « Listes », dans une liste et sur « À offrir » (Envies mis en avant), il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s'affichent dessous.
 - Au centre, chaque écran (Accueil, Échéances, Listes, une liste, « À offrir », Notes, Réglages, Aide…) a la même largeur. En haut, sur la ligne du titre : la pastille d'état, les boutons de l'écran et la recherche ; la ligne du dessous garde le reste (compteur, « Toutes » / « Les miennes », tri).
 - À droite, la liste ouverte : en haut, sur la ligne du titre, la pastille d'état, « Partager » et la recherche, toujours affichée ; dessous, le compteur ([5.9 Groupes, tri et compteur](#tri)), puis le champ d'ajout, au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l'un au-dessus de l'autre ; sur un écran tactile, ils restent affichés.
-- La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
-- « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
+- La fiche d'un article s'ouvre dans un panneau à droite ; « Partager », « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
+- « Partager » (en haut de la liste, ou touche P) ouvre le même choix que sur le téléphone ([7.4 Propriétaire : partager et choisir les droits](#partager)) : « Avec des personnes de Listo » ou « Par un lien temporaire ». Les autres membres ont « Personnes » à la place : la liste des personnes et de leur droit, sans rien pouvoir changer.
 - Clic droit sur une ligne (ou touche Menu, ou Maj+F10) : Modifier, Cocher, Supprimer, selon vos droits.
 
 **Raccourcis clavier**
@@ -1214,11 +1214,14 @@ Menu ⋮ de la liste, « Modifier » : le titre, le type, le magasin, l'icône. 
 
 ### 7.4 Propriétaire : partager et choisir les droits
 
-« Modifier la liste », ligne « Partager avec » : une fenêtre s'ouvre avec une ligne par personne. Cochez une personne, puis choisissez son droit au bout de sa ligne. « OK » ferme la fenêtre ; le partage est enregistré avec « Enregistrer ».
+Menu ⋮ de la liste (ou ⋯ de sa carte), « Partager » : un petit choix s'ouvre, avec deux lignes qui disent où vous en êtes. « Avec des personnes de Listo » montre avec qui la liste est partagée (“Léa et Zoé”, ou « Seulement vous ») ; « Par un lien temporaire », l'état du lien public (« Aucun lien », “Lien actif · expire dans 6 jours”…, [7.6 Propriétaire : le lien public](#lien-public)).
+
+« Avec des personnes de Listo » ouvre « Partager avec des personnes » : une ligne par personne. Cochez une personne, puis choisissez son droit au bout de sa ligne ; décochez-la pour la retirer. « OK » enregistre tout d'un coup et ramène au choix ; la croix ferme sans rien changer. Il faut du réseau.
 
 - « Modifier » (droit « Peut modifier ») : la personne est contributeur ([7.8 Contributeur (« Peut modifier »)](#role-contributeur)).
 - « Lire » (droit « Lecture seule ») : la personne peut seulement lire ([7.9 Lecture seule](#role-lecture)). C'est le choix de départ.
 - Vous pouvez changer le droit ou retirer une personne à tout moment.
+- Les autres membres voient « Personnes » à la place de « Partager » : qui partage la liste, avec quel droit, sans rien pouvoir changer.
 
 <a id="envies"></a>
 
@@ -1228,7 +1231,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 - « Pour qui ? » se choisit à la création : « Moi », un autre compte, ou « Une personne sans compte » (un enfant, par exemple). Il ne change plus ensuite, et la liste ne change plus de type.
 - Une liste de courses ou de tâches peut devenir une liste d'envies : dans « Modifier la liste », choisissez « Envies », puis « Pour qui ? ». C'est définitif, il faut du réseau, et rien n'est effacé : les quantités et échéances sont gardées sans être affichées, les éléments cochés deviennent « Reçus », et un lien public en cours est arrêté.
-- Si la liste est pour un autre compte, cette personne en fait partie d'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même.
+- Si la liste est pour un autre compte, cette personne en fait partie d'office, avec « Peut modifier » : elle ajoute ses souhaits elle-même. Dans « Partager avec des personnes », sa ligne est cochée, « Destinataire · Peut modifier », et ne se décoche pas.
 - Un souhait a un nom, et si l'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » (dans la monnaie réglée sur le serveur, l'euro par défaut), une note et une photo.
 - Cocher un souhait le range dans « Reçus » : seuls le bénéficiaire et le propriétaire le peuvent ; les réservations n'y sont plus affichées.
 - Quand la liste est pour quelqu'un d'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti ([9.11 Liste d'envies : un participant est parti](#faq-orphelin)).
@@ -1238,7 +1241,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 ### 7.6 Propriétaire : le lien public
 
-« Partager par lien » (menu ⋮) crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([7.10 Visiteur du lien public](#role-visiteur)). Une note a aussi son lien public, avec les mêmes règles : « Lien public » dans son menu ⋮ ([5.13 Partager une note](#notes-partage)).
+« Partager » (menu ⋮), puis « Par un lien temporaire », ouvre « Partager par un lien temporaire » : « Créer le lien » crée une adresse que vous envoyez à une personne sans compte. Elle voit la liste en lecture seule ([7.10 Visiteur du lien public](#role-visiteur)). Une note a aussi son lien public, avec les mêmes règles : « Partager » dans son menu ⋮ ([5.13 Partager une note](#notes-partage)).
 
 - Durée : 1 heure, 24 heures, 7 jours, 30 jours, « Personnalisée » ou « Illimitée ». « Changer la durée » la modifie.
 - « Protéger par mot de passe » : le mot de passe n'est affiché qu'une fois. Notez-le.

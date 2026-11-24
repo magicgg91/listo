@@ -36,10 +36,10 @@ test('interface : « invité » ne désigne jamais une personne qui peut modifie
   assert.equal(fr['menu.dupliquer.prive'], 'La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.');
   assert.match(actions, /text: t\('menu\.quitter\.texte'\)/);
   assert.equal(fr['menu.quitter.texte'], 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.');
-  // Les deux libellés courts du droit dans la fenêtre « Partager avec »
-  assert.match(code('public/js/screens/list-form.js'), /\[\['modification', t\('formulaire\.droit\.modifier'\)\], \['lecture', t\('formulaire\.droit\.lire'\)\]\]/);
-  assert.equal(fr['formulaire.droit.modifier'], 'Modifier');
-  assert.equal(fr['formulaire.droit.lire'], 'Lire');
+  // Les deux libellés courts du droit dans la feuille « Partager avec des personnes »
+  assert.match(code('public/js/screens/share-picker.js'), /\[\['modification', t\('partage\.droit\.modifier'\)\], \['lecture', t\('partage\.droit\.lire'\)\]\]/);
+  assert.equal(fr['partage.droit.modifier'], 'Modifier');
+  assert.equal(fr['partage.droit.lire'], 'Lire');
 });
 
 test('serveur : messages et journal neutres, identifiants internes inchangés', () => {

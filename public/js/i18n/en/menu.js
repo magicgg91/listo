@@ -7,7 +7,6 @@ export default {
   'menu.quitter': 'Leave',
   'menu.quitter.fait': 'You left the list “{name}”',
   'menu.modifier': 'Edit',
-  'menu.partagerLien': 'Share by link',
   'menu.supprimer': 'Delete',
 
   // Nouveautés de la liste

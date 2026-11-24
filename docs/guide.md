@@ -229,7 +229,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Les changements arrivent sur les autres téléphones en quelques secondes. Les articles cochés se rangent en bas, barrés.
 - Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.16 Nouveautés](#nouveautes)).
 - Notifications : modifications (des autres), réservations, partage, résumé des échéances et rappels, dans la page Notifications (la cloche de l'Accueil) et, si vous le voulez, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
-- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte et chaque groupe ([5.9 Groupes, tri et compteur](#tri)).
+- Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte, chaque groupe et en haut de chaque liste ([5.9 Groupes, tri et compteur](#tri)).
 
 <a id="p-courses"></a>
 
@@ -772,6 +772,7 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 - Dans une liste de tâches, « Trier la liste » propose « Ordre alphabétique », « Par priorité », « Par échéance » et « Par personne », selon les options de la liste.
 - Le tri choisi ne vaut que pour vous, sur ce téléphone : il ne change rien pour les autres, et il est permis en lecture seule.
 - « X/Y » donne le nombre d'articles restants sur le total, sur chaque carte et en tête de chaque groupe.
+- Dans une liste ouverte, sous le titre, une petite barre montre la part déjà cochée, suivie du même « X/Y » (sur ordinateur, “5/6 restants”). Quand tout est coché, la barre devient verte et une coche s'ajoute. La recherche et les groupes repliés ne changent pas ces nombres.
 
 <a id="recherche"></a>
 
@@ -929,7 +930,7 @@ Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tourné
 
 - À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l'« Accueil » (Accueil coupé : au premier écran choisi). Les tuiles de l'Accueil y sont sur trois colonnes.
 - Le menu suit l'écran : sur « Listes », dans une liste et sur « À offrir » (Envies mis en avant), il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s'affichent dessous.
-- À droite, la liste ouverte : la recherche est toujours affichée en haut, le champ d'ajout est au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l'un au-dessus de l'autre ; sur un écran tactile, ils restent affichés.
+- À droite, la liste ouverte : en haut, sur la ligne du titre, la pastille d'état, « Partager » et la recherche, toujours affichée ; dessous, le compteur ([5.9 Groupes, tri et compteur](#tri)), puis le champ d'ajout, au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l'un au-dessus de l'autre ; sur un écran tactile, ils restent affichés.
 - La fiche d'un article et « Partager la liste » s'ouvrent dans un panneau à droite ; « Nouvelle liste », « Modifier la liste » et les confirmations dans une fenêtre au centre. Le reste de l'écran est grisé et inactif ; Échap ferme. Une fiche modifiée et pas enregistrée demande « Abandonner les modifications ? » avant de se fermer.
 - « Partager la liste » réunit les personnes de la liste et le lien public. Le propriétaire y choisit le droit de chaque personne, en ajoute ou en retire, et gère le lien ; les autres membres y voient seulement la liste des personnes.
 - Clic droit sur une ligne (ou touche Menu, ou Maj+F10) : Modifier, Cocher, Supprimer, selon vos droits.

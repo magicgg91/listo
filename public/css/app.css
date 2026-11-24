@@ -694,3 +694,31 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .inbox-tools .cart__action[hidden] { display: none; }
 /* Le ⋮ prend la place de l'heure et du point (sinon il les recouvrirait) */
 .app--pc .inbox-item:hover .inbox-row__end, .inbox-item:has(.inbox-row__more:focus-visible) .inbox-row__end { visibility: hidden; }
+
+/* --- Compteur d'avancement d'une liste ouverte (screens/list.js, décision
+   du 24 novembre 2026) ---
+   Sous le titre, à gauche : petite barre (36 px sur le téléphone, 56 px sur
+   ordinateur, 6 px de haut) dont le remplissage est la part cochée (largeur
+   posée par le script), puis « 5/6 » en gras (« 5/6 restants » sur
+   ordinateur, le mot en gris). Tout coché : remplissage vert, chiffres en
+   vert et coche (jamais la couleur seule), comme la carte de « Listes ».
+   Téléphone : la ligne reste sur une seule ligne (« Tout replier » ne passe
+   jamais dessous) ; si la place manque (texte agrandi, « Hors ligne · 3 en
+   attente »), la pastille se réduit d'abord à son icône, puis, en dernier
+   recours, la petite barre rétrécit. */
+.list-progress { display: inline-flex; flex: 0 1 auto; align-items: center; gap: 8px; min-width: 0; min-height: 32px; margin: 0; padding: 0 4px; overflow: hidden; font-size: var(--text-sm); color: var(--color-text-2); white-space: nowrap; }
+.list-progress[hidden] { display: none; }
+.list-progress__track { display: block; flex: 0 1 auto; width: 36px; min-width: 0; height: 6px; overflow: hidden; border-radius: var(--radius-pill); background: var(--color-neutral-soft); }
+.app--pc .list-progress__track { width: 56px; }
+.list-progress__fill { display: block; width: 0; height: 100%; border-radius: var(--radius-pill); background: var(--color-accent); }
+.list-progress__text { flex: none; }
+.list-progress__count { font-weight: 700; color: var(--color-text); }
+.list-progress > .icon { flex: none; }
+.list-progress--done .list-progress__fill { background: var(--color-success-ink); }
+.list-progress--done .list-progress__count, .list-progress--done > .icon { color: var(--color-success-ink); }
+.statusbar--progress { flex-wrap: nowrap; }
+/* La place qui manque est prise d'abord à la pastille (qui se réduit alors
+   à son icône, voir fitPill dans ui.js), presque jamais au compteur */
+.statusbar--progress > .topbar__status { flex: 0 100 auto; }
+.statusbar--progress > .fold-all { flex: none; }
+.statusbar--progress > .list-progress { margin-right: auto; }

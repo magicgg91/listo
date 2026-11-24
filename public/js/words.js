@@ -117,6 +117,15 @@ export function progressText(remaining, total) {
   return `${remaining}/${total}`;
 }
 
+// Part cochée, en pour cent (0 à 100, arrondie), pour la petite barre du
+// compteur d'une liste ouverte : 1 restant sur 6 → 83 ; tout coché → 100 ;
+// liste vide → 0 (le compteur n'est alors pas affiché)
+export function progressShare(remaining, total) {
+  if (!(total > 0)) return 0;
+  const done = Math.min(Math.max(total - remaining, 0), total);
+  return Math.round((100 * done) / total);
+}
+
 // Le même compteur pour les lecteurs d'écran et l'infobulle :
 // « 3 articles restants sur 8 », « 1 élément restant sur 4 »,
 // « 0 article restant sur 5 » (pluriel de la langue, selon les restants)

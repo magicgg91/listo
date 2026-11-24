@@ -183,7 +183,7 @@ test('« Tout replier / Tout déplier » : au moins deux groupes, zone des coch�
   assert.equal(fr['liste.toutDeplier'], 'Tout déplier');
   assert.match(list, /const open = !foldables\.some\(\(f\) => f\.isOpen\(\)\);\s*for \(const f of foldables\) f\.setOpen\(open\);/);
   assert.match(list, /if \(!inSearch\) foldables\.push\(foldable\); \/\/ « Tout replier » la replie aussi/);
-  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\);/);
+  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\), progress, foldAll\);/);
 });
 
 test('ajout dans un groupe replié : le groupe se déplie (toutes les listes)', () => {

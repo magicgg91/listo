@@ -16,7 +16,7 @@ import { GROUP_MS } from '../server/notify.js';
 import { nextInTurn, turnAfterCheck, withoutPerson, isPeopleList, assigneesOf, parsePeople, formatPeople } from '../public/js/assign.js';
 import { emptyState, applyOp } from '../public/js/store.js';
 import { sortTasks } from '../public/js/sorting.js';
-import { computeDeadlines, deadlineBadge } from '../public/js/deadlines.js';
+import { computeDeadlines, deadlineBadges } from '../public/js/deadlines.js';
 import fr from '../public/js/i18n/fr.js';
 
 // Refus : noms des textes ; l'application et Claude les donnent en français
@@ -231,7 +231,7 @@ test('copie locale : le tour passe au coché (hors ligne), « Les miennes » et 
   assert.deepEqual(mine(me), ['Garage']);
   assert.deepEqual(mine(lea), ['Garage']);
   assert.deepEqual(mine(marc), ['Poubelles'], 'une personne : Marc, celle de la dernière fois');
-  assert.equal(deadlineBadge(state, '2030-01-07', lea), 1);
+  assert.deepEqual(deadlineBadges(state, '2030-01-07', lea), { late: 0, today: 1 });
   // Tri « Par personne » : « Moi » si j'en fais partie, sinon « À plusieurs »
   const groups = sortTasks([...state.items.values()], 'person', { people: new Map([[lea, 'Léa'], [marc, 'Marc'], [me, 'Moi']]), me: marc });
   assert.deepEqual(groups.map((group) => group.label), ['Moi', 'À plusieurs']);

@@ -805,8 +805,8 @@ On the phone, the bar at the bottom leads to the main screens: “Home”, “Du
 - “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
 - If one of your lists has assignment turned on, “All” or “Mine” chooses what is shown; “Mine” keeps only the tasks assigned to you ([5.4 Assign a task](#attribuer)). The choice is remembered on the device.
-- The number on “Due” counts overdue tasks and today's tasks, except those assigned to someone else.
-- The screen works offline, like the lists. On a computer, “Due” is in the menu on the left.
+- “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count.
+- The screen works offline, like the lists. On a computer, “Due” is in the menu on the left, with the same numbers at the end of the row (red, then green).
 
 **Choosing your tiles, or turning Home off**
 

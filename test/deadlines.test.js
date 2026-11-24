@@ -10,9 +10,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { emptyState, loadTypeFilter, saveTypeFilter, TYPE_FILTER_KEY } from '../public/js/store.js';
-import { computeDeadlines, deadlineBadge, deadlineGroup, endOfWeek, listHasDeadlines, deadlineGroups } from '../public/js/deadlines.js';
+import { computeDeadlines, deadlineBadges, deadlinesLabel, badgeText, deadlineCounts, deadlineGroup, endOfWeek, listHasDeadlines, deadlineGroups } from '../public/js/deadlines.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
 import fr from '../public/js/i18n/fr.js';
+import { setLocale } from '../public/js/i18n.js';
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
@@ -103,23 +104,89 @@ test('JAMAIS une liste d\'envies ni de courses, même avec des dates gardées en
   }
 });
 
-test('pastille : tâches en retard + tâches du jour (comme le résumé de 8 h)', () => {
+test('pastilles (24 novembre 2026) : rouge pour les tâches en retard, verte pour celles du jour', () => {
   const s = state();
-  assert.equal(deadlineBadge(s, TODAY), 5); // a, b (retard) ; c, d, j (aujourd'hui)
+  // a, b en retard ; c, d, j aujourd'hui (ensemble : comme le résumé de 8 h)
+  assert.deepEqual(deadlineBadges(s, TODAY), { late: 2, today: 3 });
   s.items.get('a').checked = true;
-  assert.equal(deadlineBadge(s, TODAY), 4, 'une tâche cochée ne compte plus');
-  assert.equal(deadlineBadge(s, '2026-11-01'), 0);
-  assert.equal(deadlineBadge(emptyState(), TODAY), 0);
-  // Libellé lu, et pastille cachée à zéro (tabbar.js et menu de l'ordinateur)
+  assert.deepEqual(deadlineBadges(s, TODAY), { late: 1, today: 3 }, 'une tâche cochée ne compte plus');
+  assert.deepEqual(deadlineBadges(s, '2026-11-01'), { late: 0, today: 0 });
+  assert.deepEqual(deadlineBadges(emptyState(), TODAY), { late: 0, today: 0 });
+  // Une tâche du jour dont l'heure est passée est « En retard », comme sur
+  // l'écran Échéances et la tuile de l'Accueil (mêmes groupes)
+  s.items.get('c').dueTime = '09:15';
+  assert.deepEqual(deadlineBadges(s, TODAY, null, '09:00'), { late: 1, today: 3 });
+  assert.deepEqual(deadlineBadges(s, TODAY, null, '09:16'), { late: 2, today: 2 });
+  const counts = deadlineCounts(s, { today: TODAY, now: '09:16' });
+  assert.deepEqual([counts.late, counts.today], [2, 2], 'mêmes nombres que la tuile (personne n\'a d\'attribution ici)');
+  // Seulement en retard ; seulement aujourd'hui ; rien
+  const only = (keep) => {
+    const t = state();
+    for (const id of [...t.items.keys()]) if (!keep.includes(id)) t.items.delete(id);
+    return deadlineBadges(t, TODAY);
+  };
+  assert.deepEqual(only(['a', 'b']), { late: 2, today: 0 });
+  assert.deepEqual(only(['c']), { late: 0, today: 1 });
+  assert.deepEqual(only(['e', 'g']), { late: 0, today: 0 }, 'demain et plus tard ne comptent pas');
+  // « 99+ » au-delà de 99, pour chacune
+  assert.equal(badgeText(1), '1');
+  assert.equal(badgeText(99), '99');
+  assert.equal(badgeText(100), '99+');
+  const many = emptyState();
+  many.lists.set('l', { id: 'l', type: 'tasks', dueEnabled: true });
+  for (let i = 0; i < 120; i += 1) many.items.set(`x${i}`, { id: `x${i}`, listId: 'l', name: `T${i}`, dueDate: i < 100 ? '2026-11-01' : TODAY, checked: false });
+  const big = deadlineBadges(many, TODAY);
+  assert.deepEqual(big, { late: 100, today: 20 });
+  assert.deepEqual([badgeText(big.late), badgeText(big.today)], ['99+', '20']);
+});
+
+test('pastilles : nom lu « Échéances, 2 en retard, 1 aujourd\'hui » (seulement les nombres non nuls), en français et en anglais', () => {
+  assert.equal(deadlinesLabel({ late: 2, today: 1 }), 'Échéances, 2 en retard, 1 aujourd\'hui');
+  assert.equal(deadlinesLabel({ late: 1, today: 0 }), 'Échéances, 1 en retard');
+  assert.equal(deadlinesLabel({ late: 0, today: 3 }), 'Échéances, 3 aujourd\'hui');
+  assert.equal(deadlinesLabel({ late: 0, today: 0 }), 'Échéances');
+  assert.equal(deadlinesLabel(), 'Échéances');
+  assert.equal(deadlinesLabel({ late: 120, today: 0 }), 'Échéances, 120 en retard', 'le vrai nombre (pas « 99+ »)');
+  setLocale('en');
+  try {
+    assert.equal(deadlinesLabel({ late: 2, today: 1 }), 'Due, 2 overdue, 1 today');
+    assert.equal(deadlinesLabel({ late: 1, today: 0 }), 'Due, 1 overdue');
+    assert.equal(deadlinesLabel({ late: 0, today: 1 }), 'Due, 1 today');
+    assert.equal(deadlinesLabel({ late: 0, today: 0 }), 'Due');
+  } finally {
+    setLocale('fr');
+  }
+  assert.equal(fr['navigation.echeances.pastille'], undefined, 'l\'ancienne phrase « … en retard ou pour aujourd\'hui » a disparu');
+});
+
+test('pastilles : deux sur le bouton du téléphone (rouge à gauche, verte à droite), deux au bout de l\'entrée de l\'ordinateur ; cachées aux lecteurs d\'écran', () => {
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /if \(!count\) return t\('navigation\.echeances'\);\s*return t\('navigation\.echeances\.pastille', \{ count \}\);/);
-  assert.equal(fr['navigation.echeances'], 'Échéances');
-  assert.deepEqual(fr['navigation.echeances.pastille'], {
-    one: 'Échéances, {count} tâche en retard ou pour aujourd\'hui',
-    other: 'Échéances, {count} tâches en retard ou pour aujourd\'hui',
-  });
-  assert.match(tabbar, /badge\.hidden = count === 0;/);
-  assert.match(read('public/js/screens/pc-side.js'), /deadlinesCount\.hidden = count === 0;/);
+  assert.match(tabbar, /const lateBadge = h\('span', \{ class: 'tabbar__badge tabbar__badge--late', 'aria-hidden': 'true', hidden: true \}\);/);
+  assert.match(tabbar, /const todayBadge = h\('span', \{ class: 'tabbar__badge tabbar__badge--today', 'aria-hidden': 'true', hidden: true \}\);/);
+  assert.match(tabbar, /icon\(iconName\), name === 'deadlines' \? \[lateBadge, todayBadge\] : null\)/);
+  assert.match(tabbar, /lateBadge\.hidden = counts\.late === 0;\s*lateBadge\.textContent = badgeText\(counts\.late\);\s*todayBadge\.hidden = counts\.today === 0;\s*todayBadge\.textContent = badgeText\(counts\.today\);\s*buttons\.get\('deadlines'\)\.setAttribute\('aria-label', deadlinesLabel\(counts\)\);/);
+  // Recalculées à chaque changement, à minuit et à chaque minute
+  assert.match(tabbar, /onDataChange\(\(\) => \{\s*drawBadge\(\);/);
+  assert.match(tabbar, /watchNewDay\(drawBadge\);\s*watchMinute\(drawBadge\);/);
+  const side = read('public/js/screens/pc-side.js');
+  assert.match(side, /const deadlinesLate = h\('span', \{ class: 'count count--danger', 'aria-hidden': 'true', hidden: true \}\);/);
+  assert.match(side, /const deadlinesToday = h\('span', \{ class: 'count count--success', 'aria-hidden': 'true', hidden: true \}\);/);
+  assert.match(side, /fixedLink\('deadlines', 'calendar', t\('navigation\.echeances'\), deadlinesLate, deadlinesToday\)/);
+  assert.match(side, /deadlinesLate\.hidden = counts\.late === 0;[\s\S]*?deadlinesToday\.hidden = counts\.today === 0;[\s\S]*?deadlinesLink\.setAttribute\('aria-label', deadlinesLabel\(counts\)\);/);
+  assert.match(side, /const stopDay = watchNewDay\(drawFixed\);[\s\S]*?const stopMinute = watchMinute\(drawFixed\);/);
+  assert.match(side, /stopDay\(\);\s*stopMinute\(\);/);
+  // Un seul calcul (deadlines.js) pour le téléphone et l'ordinateur
+  for (const file of ['public/js/tabbar.js', 'public/js/screens/pc-side.js']) {
+    assert.match(read(file), /deadlineBadges\(app\.data, undefined, app\.user\?\.id \?\? null\)/, file);
+    assert.doesNotMatch(read(file), /deadlineBadge\(|> 99 \? '99\+'/, file);
+  }
+  // Kit : couleurs de la tuile Échéances (rouge, vert), rouge en haut à gauche de l'icône
+  for (const file of ['public/css/listo.css', 'design/listo.css']) {
+    const css = read(file);
+    assert.match(css, /\.tabbar__badge--late \{ left: auto; right: calc\(100% - 8px\); background: var\(--color-danger\); color: var\(--color-on-danger\); \}/, file);
+    assert.match(css, /\.tabbar__badge--today \{ background: var\(--color-success-ink\); color: var\(--color-surface\); \}/, file);
+    assert.match(css, /\.tabbar__badge \{ position: absolute; top: -7px; left: calc\(100% - 8px\);/, file);
+  }
 });
 
 test('recherche dans « Échéances » : sur le nom des tâches', () => {

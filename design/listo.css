@@ -877,7 +877,8 @@
      (aria-current="page", texte en couleur d'accent ET pastille : jamais la
      couleur seule) ; il glisse d'un bouton à l'autre avec un petit rebond
      (data-current = 0, 1 ou 2). Mouvement réduit : sans glissement (15).
-   - .tabbar__badge : nombre sur « Échéances » (même aspect que .news-badge).
+   - .tabbar__badge : nombre sur « Échéances » (même aspect que .news-badge) ;
+     deux pastilles depuis le 24 novembre 2026 (16.31).
    - .loupe[aria-expanded="true"] : recherche ouverte, loupe surlignée.
    - .typebar : filtre des types de « Mes listes » (.segmented en verre,
      arrondi complet, choix actif en bleu clair).
@@ -1309,6 +1310,22 @@
 .home-scroll { overscroll-behavior: none; }
 .home-scroll.scroll--fits { overflow-y: hidden; }
 html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { overscroll-behavior: none; }
+
+/* 16.31 Deux pastilles sur « Échéances » (décision du 24 novembre 2026, à
+   la place de la pastille bleue unique) : la rouge compte les tâches en
+   retard, la verte celles du jour ; chacune seulement si son nombre n'est
+   pas nul (« 99+ » au-delà de 99). aria-hidden : les nombres sont dans le
+   nom du bouton (« Échéances, 2 en retard, 1 aujourd'hui »).
+   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône (le
+     reflet de la place d'avant), --today en haut à droite (la place
+     d'avant) ; seule, chacune reste de son côté.
+   - Ordinateur (menu de gauche) : au bout de la ligne « Échéances », la
+     rouge puis la verte, en .count--danger et .count--success (couleurs de
+     la tuile Échéances de l'Accueil), à la taille des pastilles du menu. */
+.tabbar__badge--late { left: auto; right: calc(100% - 8px); background: var(--color-danger); color: var(--color-on-danger); }
+.tabbar__badge--today { background: var(--color-success-ink); color: var(--color-surface); }
+.pc-side__main .count { min-width: 20px; height: 20px; padding: 0 6px; font-size: 12px; }
+.pc-side__main .count + .count { margin-left: -4px; }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

@@ -805,8 +805,8 @@ Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
 - Si une de vos listes a l'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([5.4 Attribuer une tâche](#attribuer)). Le choix est retenu sur l'appareil.
-- Le nombre sur « Échéances » compte les tâches en retard et celles du jour, sauf celles attribuées à quelqu'un d'autre.
-- L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche.
+- « Échéances » porte deux nombres : en rouge, en haut à gauche de l'icône, les tâches en retard ; en vert, en haut à droite, celles du jour. Chacun n'apparaît que s'il y en a. Les tâches attribuées à quelqu'un d'autre ne comptent pas.
+- L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche, avec les mêmes nombres au bout de la ligne (le rouge, puis le vert).
 
 **Choisir ses tuiles, ou couper l'Accueil**
 

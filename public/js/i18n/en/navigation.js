@@ -8,10 +8,10 @@ export default {
   'navigation.echeances': 'Due',
   'navigation.reglages': 'Settings',
   'navigation.notes': 'Notes',
-  'navigation.echeances.pastille': {
-    one: 'Due, {count} task overdue or due today',
-    other: 'Due, {count} tasks overdue or due today',
-  },
+  // Nom lu de « Échéances » avec ses pastilles (deadlines.js, deadlinesLabel)
+  'navigation.echeances.pastille.retard': { one: 'Due, {count} overdue', other: 'Due, {count} overdue' },
+  'navigation.echeances.pastille.aujourdhui': { one: 'Due, {count} today', other: 'Due, {count} today' },
+  'navigation.echeances.pastilles': 'Due, {late} overdue, {today} today',
   'navigation.libelle': 'Navigation',
 
   // Menu de gauche : recherche

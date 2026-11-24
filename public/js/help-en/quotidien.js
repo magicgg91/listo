@@ -182,7 +182,7 @@ export default {
         { sub: 'Choosing your features' },
         'Settings, “Features” (just below “Home”) chooses the features you use; for now, notes. A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.',
         { ul: [
-          'Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.',
+          'Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more tabs in the “Trash” in Settings (only your deleted lists); on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.',
           'With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.',
           'Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.',
         ] },
@@ -222,8 +222,8 @@ export default {
         ] },
         { sub: 'Two people at the same time' },
         'If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just edited this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.',
-        { sub: 'Notes trash' },
-        'The “Notes trash” is in “Settings”, just below the “List trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people\'s notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.',
+        { sub: 'Trash' },
+        'Your deleted notes go to the “Trash” in Settings, “Notes” tab (next to the “Lists” tab): they stay there for 30 days, then they are deleted for good (you never see other people\'s notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.',
         { sub: 'On a computer' },
         '“Notes” is in the menu on the left, with the number of notes (and a dot when there\'s something new); on the notes screens, “New note” (N key) replaces “New list” at the bottom of the menu. A card opens its note in place of the cards, alone in the middle, like an open list: at the top, “Back to notes” (the arrow on the left), the “Saved” status, “Share” or “People”, the pin and the ⋮ menu; below, the title and the text, in lines short enough to read easily. It saves itself (offline: “Offline · saved on this device”). The arrow, Esc (when you\'re not typing) or the browser\'s back button take you back to the cards. On the “Notes” screen, the “/” key searches the notes.',
       ],
@@ -294,7 +294,7 @@ export default {
       blocks: [
         'Without a network, you can keep adding, editing and checking, and writing in your notes ([[notes]]). The changes are sent when the network comes back.',
         'The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.',
-        'Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the list trash, reservations, creating a store or an aisle, and Administration need a connection.',
+        'Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the “Lists” tab of the trash, reservations, creating a store or an aisle, and Administration need a connection.',
       ],
     },
     {

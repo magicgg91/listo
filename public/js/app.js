@@ -17,17 +17,17 @@ import { startLive, stopLive, groupCalls } from './live.js';
 import { renderLogin, renderForcedChange } from './screens/login.js';
 import { renderClaudeConsent } from './screens/claude-consent.js';
 import { renderClaudeConnections } from './screens/claude-connections.js';
-import { renderTrash } from './screens/trash.js';
+import { renderTrash } from './screens/trash-page.js';
 import { renderLists } from './screens/lists.js';
 import { renderGifts } from './screens/gifts.js';
 import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
 import { renderNotes } from './screens/notes.js';
 import { renderNote } from './screens/note.js';
-import { renderNoteTrash } from './screens/note-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { firstScreen, normalizeHome } from './home-tiles.js';
 import { normalizeFeatures, screenAllowed, notesOn } from './features.js';
+import { askedTrashTab } from './trash-tabs.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
@@ -821,7 +821,8 @@ function show(route) {
     return;
   }
   // Écran d'une fonction coupée par la personne (Réglages › Fonctions,
-  // features.js : #/notes, une note, la corbeille des notes…) : le premier écran
+  // features.js : #/notes, une note…) : le premier écran ; l'onglet
+  // « Notes » de la Corbeille mène à la corbeille des listes (plus bas)
   if (!screenAllowed(name, app.data.features)) {
     navigate(openingScreen(), {}, { replace: true });
     return;
@@ -843,9 +844,10 @@ function show(route) {
     // l'écran (téléphone) ou dans la colonne (ordinateur, comme une liste
     // ouverte ; décision du 24 novembre 2026)
     case 'notes': mount((onLeave) => renderNotes(onLeave)); break;
-    case 'noteTrash': mount((onLeave) => renderNoteTrash(onLeave)); break;
-    // Ancienne adresse (#/notes/corbeille) : remplacée par la nouvelle
-    case 'oldNoteTrash': navigate('noteTrash', {}, { replace: true }); break;
+    // Anciennes adresses de la corbeille des notes (#/reglages/corbeille-notes,
+    // #/notes/corbeille) : l'onglet « Notes » de la Corbeille
+    case 'noteTrash':
+    case 'oldNoteTrash': navigate('trashTab', { tab: 'notes' }, { replace: true }); break;
     case 'note':
     case 'newNote': {
       const id = name === 'note' ? params.id : null;
@@ -884,7 +886,16 @@ function show(route) {
     case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section)); break;
-    case 'trash': mount((onLeave) => renderTrash(onLeave)); break;
+    // Corbeille (24 novembre 2026) : une page, onglets « Listes » et
+    // « Notes » (trash-page.js). Onglet inconnu, ou « Notes » quand les
+    // notes sont coupées : la Corbeille sans onglet dans l'adresse
+    case 'trash': mount((onLeave) => renderTrash(null, onLeave)); break;
+    case 'trashTab': {
+      const tab = askedTrashTab(params.tab, notesOn(app.data.features));
+      if (tab) mount((onLeave) => renderTrash(tab, onLeave));
+      else navigate('trash', {}, { replace: true });
+      break;
+    }
     case 'notifications': mount((onLeave) => renderNotifications(onLeave)); break;
     // Réglages › Accueil : tuiles, ordre, Accueil coupé et premier écran
     case 'homeSettings': mount((onLeave) => renderHomeSettings(onLeave)); break;

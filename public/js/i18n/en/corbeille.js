@@ -1,8 +1,18 @@
-// Textes des deux corbeilles (trash.js, note-trash.js, trash-parts.js), en anglais.
+// Textes de la Corbeille (trash-page.js, trash.js, note-trash.js, trash-parts.js), en anglais.
 // Mêmes noms que public/js/i18n/fr/corbeille.js.
 
 export default {
-  // Commun aux deux corbeilles (même écran depuis le 23 novembre 2026)
+  // La page (une seule depuis le 24 novembre 2026) et ses deux onglets
+  'corbeille.titre': 'Trash',
+  'corbeille.onglets': 'Trash contents',
+  'corbeille.onglet.listes': 'Lists',
+  'corbeille.onglet.listes.nombre': { one: 'Lists ({count})', other: 'Lists ({count})' },
+  'corbeille.onglet.listes.label': { one: 'Lists, {count} deleted list', other: 'Lists, {count} deleted lists' },
+  'corbeille.onglet.notes': 'Notes',
+  'corbeille.onglet.notes.nombre': { one: 'Notes ({count})', other: 'Notes ({count})' },
+  'corbeille.onglet.notes.label': { one: 'Notes, {count} deleted note', other: 'Notes, {count} deleted notes' },
+
+  // Commun aux deux onglets (même contenu depuis le 23 novembre 2026)
   'corbeille.vider': 'Empty the trash',
   'corbeille.vider.question': 'Empty the trash?',
   'corbeille.vider.confirmer': 'Empty',
@@ -13,8 +23,7 @@ export default {
   // Ligne : date de suppression (« Nov 21 ») et jours restants
   'corbeille.ligne': { one: 'Deleted {date} · {count} day left', other: 'Deleted {date} · {count} days left' },
 
-  // Corbeille des listes : écran
-  'corbeille.titre': 'List trash',
+  // Onglet « Listes »
   'corbeille.intro': 'Your deleted lists stay here for 30 days, then they\'re erased for good.',
   'corbeille.chargement': 'Loading…',
   'corbeille.nombre': { one: '{count} list', other: '{count} lists' },

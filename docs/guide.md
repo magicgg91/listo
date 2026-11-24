@@ -285,7 +285,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 ### 2.7 Hors ligne, corbeille, lien public
 
 - Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.17 Hors ligne et synchronisation](#hors-ligne)).
-- Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi, depuis la corbeille des notes ([5.12 Les notes](#notes)).
+- Corbeille : une liste supprimée se restaure pendant 30 jours ([7.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi ([5.12 Les notes](#notes)). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes ».
 - Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([7.6 Propriétaire : le lien public](#lien-public)) ; une note aussi ([5.13 Partager une note](#notes-partage)).
 
 <a id="p-confort"></a>
@@ -824,7 +824,7 @@ Réglages, « Accueil » (la première ligne de « Général ») règle l'Accuei
 
 Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez ; pour l'instant, les notes. Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.
 
-- Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus de « Corbeille des notes » dans les Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
+- Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus d'onglets dans la « Corbeille » des Réglages (seulement vos listes supprimées) ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
 - Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
 - Rallumer les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
 
@@ -866,9 +866,9 @@ Une étiquette classe une note : “Recettes”, “Vacances”, “Maison”…
 
 Si la note a été enregistrée ailleurs (par une personne avec qui elle est partagée, ou sur un autre de vos appareils) pendant que vous écriviez, rien n'est écrasé. Un bandeau prévient (“Léa vient de modifier cette note”) ; à l'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note, à vous). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l'appareil et le choix revient quand vous rouvrez la note. Si vous lisez la note sans écrire, elle se met à jour sous vos yeux.
 
-**Corbeille des notes**
+**Corbeille**
 
-La « Corbeille des notes » est dans « Réglages », juste sous la « Corbeille des listes » : vos notes supprimées y restent 30 jours, puis elles sont effacées pour de bon (on n'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.
+Vos notes supprimées vont dans la « Corbeille » des Réglages, onglet « Notes » (à côté de l'onglet « Listes ») : elles y restent 30 jours, puis elles sont effacées pour de bon (on n'y voit jamais les notes des autres). « Restaurer » la remet à sa place (épinglée si elle l'était) ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation. Une note partagée disparaît pour tout le monde ; restaurée, elle revient pour chacun, avec son épingle. Hors ligne, tout cela attend le retour du réseau.
 
 **Sur ordinateur**
 
@@ -940,7 +940,7 @@ Sans réseau, vous pouvez continuer à ajouter, modifier et cocher, et à écrir
 
 La pastille en haut indique l'état : « À jour », « Synchronisation… » ou « Hors ligne », avec le nombre de changements en attente. Touchez-la pour synchroniser.
 
-Le partage (d'une liste ou d'une note), le lien public, la duplication, quitter une liste ou une note, la corbeille des listes, les réservations, la création d'un magasin ou d'un rayon et l'Administration demandent une connexion.
+Le partage (d'une liste ou d'une note), le lien public, la duplication, quitter une liste ou une note, l'onglet « Listes » de la corbeille, les réservations, la création d'un magasin ou d'un rayon et l'Administration demandent une connexion.
 
 <a id="theme"></a>
 
@@ -1253,7 +1253,8 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 
 - « Dupliquer » (menu ⋮ de la liste) crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.
 - Menu ⋮ de la liste, « Supprimer » : une confirmation rappelle d'abord ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s'arrête.
-- Une liste supprimée reste 30 jours dans votre « Corbeille des listes » (Réglages), puis elle est effacée pour de bon. Seul son propriétaire l'y voit ; chaque ligne indique son type, son nombre d'éléments, le jour de sa suppression et le nombre de jours qui restent.
+- Une liste supprimée reste 30 jours dans votre « Corbeille » (Réglages, onglet « Listes »), puis elle est effacée pour de bon. Seul son propriétaire l'y voit ; chaque ligne indique son type, son nombre d'éléments, le jour de sa suppression et le nombre de jours qui restent.
+- La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [5.12 Les notes](#notes)), chacun avec son nombre quand il y en a. Elle s'ouvre sur « Listes », sauf si seules des notes y attendent ; l'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions »), elle n'a pas d'onglets : seulement vos listes.
 - « Restaurer » la remet telle qu'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.
 - « Supprimer définitivement » (la poubelle rouge d'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.
 - Le propriétaire ne quitte pas sa liste : il la supprime, ou la laisse.

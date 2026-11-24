@@ -21,9 +21,12 @@ export const FEATURE_DEFAULTS = { notes: true };
 export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 
 // Écrans (noms du routeur, router.js) qui appartiennent à une fonction :
-// coupée, leurs adresses mènent au premier écran
+// coupée, leurs adresses mènent au premier écran. La corbeille des notes
+// n'en est plus un (24 novembre 2026) : c'est un onglet de la Corbeille,
+// dont l'adresse mène, notes coupées, à la corbeille des listes
+// (trash-tabs.js)
 export const FEATURE_ROUTES = {
-  notes: ['notes', 'newNote', 'note', 'noteTrash', 'oldNoteTrash'],
+  notes: ['notes', 'newNote', 'note'],
 };
 
 // Réglage de départ (aucun choix fait)

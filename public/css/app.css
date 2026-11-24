@@ -464,6 +464,12 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .tabs { overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: 1 0 auto; white-space: nowrap; }
+/* Corbeille (trash-page.js, 24 novembre 2026) : les onglets de
+   l'Administration, deux de même largeur quel que soit leur nombre
+   (« Listes », « Notes (2) ») ; la phrase de l'onglet ne colle pas à leur
+   trait */
+.trash-tabs .tab { flex: 1 1 0; }
+.trash-tabs + .body--flush { padding-top: var(--space-2); }
 
 /* Administration, onglet « Courses » : choix Magasins / Rayons / Articles,
    même composant que les onglets (.tabs, .tab), en plus petit ; 44 px de

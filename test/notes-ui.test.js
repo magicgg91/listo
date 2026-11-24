@@ -20,7 +20,8 @@ const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*
 
 test('adresses des écrans des notes ; la corbeille et « nouvelle » ne sont jamais prises pour une note', () => {
   assert.deepEqual(matchRoute('#/notes'), { name: 'notes', params: {} });
-  // Corbeille des notes : dans Réglages (23 novembre 2026) ; l'ancienne adresse y mène
+  // Anciennes adresses de la corbeille des notes : l'onglet « Notes » de la
+  // Corbeille des Réglages (24 novembre 2026, app.js)
   assert.deepEqual(matchRoute('#/reglages/corbeille-notes'), { name: 'noteTrash', params: {} });
   assert.deepEqual(matchRoute('#/notes/corbeille'), { name: 'oldNoteTrash', params: {} });
   assert.deepEqual(matchRoute('#/notes/nouvelle'), { name: 'newNote', params: {} });
@@ -159,7 +160,7 @@ test('service worker : nouveaux fichiers gardés hors ligne ; icônes ajoutées 
 test('textes : français et anglais, noms des écrans des notes', () => {
   assert.equal(fr['notes.titre'], 'Notes');
   assert.equal(en['notes.nouvelle'], 'New note');
-  assert.equal(en['notes.corbeille.titre'], 'Notes trash');
+  assert.equal(en['notes.corbeille.intro'], 'Your deleted notes stay here for 30 days, then they are deleted for good.');
   assert.equal(en['notes.statut.enregistre'], 'Saved');
   assert.equal(en['notes.statut.enCours'], 'Saving…');
   assert.equal(fr['notes.sansTitre'], 'Note sans titre');

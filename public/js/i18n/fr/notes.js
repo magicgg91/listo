@@ -33,7 +33,7 @@ export default {
   'notes.dupliquee': 'Copie créée : « {name} »',
   'notes.ouvrir': 'Ouvrir',
   'notes.supprimer.question': 'Supprimer la note « {name} » ?',
-  'notes.supprimer.texte': 'Vous pourrez la restaurer pendant 30 jours depuis la corbeille des notes.',
+  'notes.supprimer.texte': 'Vous pourrez la restaurer pendant 30 jours depuis la corbeille des Réglages, onglet « Notes ».',
   'notes.supprimer.confirmer': 'Supprimer',
   'notes.supprimee': 'Note mise à la corbeille',
   'notes.annuler': 'Annuler',
@@ -118,7 +118,7 @@ export default {
   'notes.menu.notifications.reactiver': 'Réactiver les notifications',
   'notes.notifications.coupees': 'Les notifications de cette note sont coupées',
   'notes.notifications.reactivees': 'Les notifications de cette note sont réactivées',
-  'notes.supprimer.texte.partagee': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis la corbeille des notes.',
+  'notes.supprimer.texte.partagee': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis la corbeille des Réglages, onglet « Notes ».',
   'notes.quitter.question': 'Quitter la note « {name} » ?',
   'notes.quitter.texte': 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.',
   'notes.quitter.confirmer': 'Quitter',
@@ -149,8 +149,7 @@ export default {
 
   // Saisie rapide (tuile Notes de l'Accueil)
 
-  // Corbeille des notes
-  'notes.corbeille.titre': 'Corbeille des notes',
+  // Onglet « Notes » de la Corbeille (Réglages)
   'notes.corbeille.intro': 'Vos notes supprimées restent ici 30 jours, puis elles sont effacées pour de bon.',
   'notes.corbeille.vider.texte': {
     one: 'La note de la corbeille sera effacée pour de bon. Cela ne peut pas être annulé.',

@@ -32,7 +32,7 @@ export default {
   'notes.dupliquee': 'Copy created: “{name}”',
   'notes.ouvrir': 'Open',
   'notes.supprimer.question': 'Delete the note “{name}”?',
-  'notes.supprimer.texte': 'You can restore it for 30 days from the notes trash.',
+  'notes.supprimer.texte': 'You can restore it for 30 days from the trash in Settings, “Notes” tab.',
   'notes.supprimer.confirmer': 'Delete',
   'notes.supprimee': 'Note moved to the trash',
   'notes.annuler': 'Undo',
@@ -117,7 +117,7 @@ export default {
   'notes.menu.notifications.reactiver': 'Turn notifications back on',
   'notes.notifications.coupees': 'Notifications for this note are off',
   'notes.notifications.reactivees': 'Notifications for this note are back on',
-  'notes.supprimer.texte.partagee': 'It disappears for everyone. You can restore it for 30 days from the notes trash.',
+  'notes.supprimer.texte.partagee': 'It disappears for everyone. You can restore it for 30 days from the trash in Settings, “Notes” tab.',
   'notes.quitter.question': 'Leave the note “{name}”?',
   'notes.quitter.texte': "You won't see it anymore. The owner can share it with you again.",
   'notes.quitter.confirmer': 'Leave',
@@ -148,8 +148,7 @@ export default {
 
   // Saisie rapide (tuile Notes de l'Accueil)
 
-  // Corbeille des notes
-  'notes.corbeille.titre': 'Notes trash',
+  // Onglet « Notes » de la Corbeille (Réglages)
   'notes.corbeille.intro': 'Your deleted notes stay here for 30 days, then they are deleted for good.',
   'notes.corbeille.vider.texte': {
     one: 'The note in the trash will be deleted for good. This can\'t be undone.',

@@ -50,6 +50,9 @@ const MIGRATED = [
   'public/js/screens/trash.js',
   'public/js/screens/trash-parts.js',
   'public/js/screens/note-trash.js',
+  // Corbeille unique (24 novembre 2026) : la page et ses onglets
+  'public/js/screens/trash-page.js',
+  'public/js/trash-tabs.js',
   'public/js/screens/deadlines.js',
   'public/js/deadlines.js',
   'public/js/screens/claude-connections.js',

@@ -23,8 +23,9 @@ export const ROUTES = [
   // Notes (étape 2, 23 novembre 2026) : l'écran Notes, la corbeille des
   // notes, une nouvelle note (pas encore enregistrée), une note
   { name: 'notes', path: '/notes' },
-  // Corbeille des notes : dans Réglages, à côté de celle des listes
-  // (23 novembre 2026) ; l'ancienne adresse y mène encore
+  // Anciennes adresses de la corbeille des notes (#/reglages/corbeille-notes
+  // du 23 novembre 2026, #/notes/corbeille avant) : elles mènent à l'onglet
+  // « Notes » de la Corbeille (app.js)
   { name: 'noteTrash', path: '/reglages/corbeille-notes' },
   { name: 'oldNoteTrash', path: '/notes/corbeille' },
   { name: 'newNote', path: '/notes/nouvelle' },
@@ -34,8 +35,11 @@ export const ROUTES = [
   { name: 'about', path: '/reglages/a-propos' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
-  // Corbeille des listes : mes listes supprimées depuis moins de 30 jours
+  // Corbeille (24 novembre 2026) : une seule page, onglets « Listes » et
+  // « Notes » (trash-page.js, trash-tabs.js) ; sans onglet dans l'adresse,
+  // l'onglet de départ ; sinon l'onglet choisi (listes ou notes)
   { name: 'trash', path: '/reglages/corbeille' },
+  { name: 'trashTab', path: '/reglages/corbeille/:tab' },
   // Réglages › Notifications (Nouveautés, cet appareil, catégories)
   { name: 'notifications', path: '/reglages/notifications' },
   // Réglages › Accueil (23 novembre 2026) : tuiles affichées et leur
@@ -141,6 +145,14 @@ export function navigate(name, params = {}, { replace = false } = {}) {
     }
     renderRoute(matchRoute(location.hash));
   });
+}
+
+// Change l'adresse de l'écran affiché sans le redessiner ni ajouter
+// d'entrée à l'historique (onglets de la Corbeille) : le retour et
+// l'actualisation retrouvent l'onglet choisi, et le bouton Retour ne fait
+// pas le tour des onglets
+export function replaceAddress(name, params = {}) {
+  history.replaceState(history.state, '', pathFor(name, params));
 }
 
 // Revient à l'écran précédent de Listo s'il y en a un, sinon va à « fallback »

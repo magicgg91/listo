@@ -1,31 +1,32 @@
-// Morceaux communs aux deux corbeilles de Réglages : « Corbeille des listes »
-// (trash.js) et « Corbeille des notes » (note-trash.js). Depuis le 23
-// novembre 2026, les deux écrans sont faits pareil, en compact :
-// - barre du haut des Réglages (retour vers Réglages) ;
+// Morceaux communs aux deux onglets de la Corbeille des Réglages (une seule
+// page depuis le 24 novembre 2026, trash-page.js) : « Listes » (trash.js)
+// et « Notes » (note-trash.js). Les deux onglets sont faits pareil, en
+// compact :
 // - une phrase courte (.page-intro) ;
 // - une ligne d'outils (.page-tools) : le nombre à gauche (« 4 listes »,
 //   « 2 notes »), « Vider la corbeille » à droite ;
 // - une carte .group de lignes .trash-row (titre et actions sur la même
 //   ligne, puis les lignes d'information en petit gris).
+// La page (trash-page.js) pose au-dessus la barre du haut des Réglages et
+// les onglets.
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
 
 import { h, icon } from '../dom.js';
-import { goBack } from '../router.js';
-import { topbar } from './settings.js';
 import { t, formatDate } from '../i18n.js';
 
-// Écran : renvoie ses morceaux pour que chaque corbeille les remplisse.
-// banner (facultatif) : bandeau sous la phrase (hors ligne, listes).
-// onEmpty : « Vider la corbeille » (confirmation faite par l'appelant).
-export function trashScreen({ title, intro, banner = null, onEmpty }) {
+// Contenu d'un onglet : renvoie ses morceaux pour que chaque corbeille les
+// remplisse. panel : le bloc posé dans la page (caché quand l'onglet ne
+// l'est pas). banner (facultatif) : bandeau sous la phrase (hors ligne,
+// listes). onEmpty : « Vider la corbeille » (confirmation faite par
+// l'appelant).
+export function trashPanel({ intro, banner = null, onEmpty }) {
   const count = h('span', { class: 'page-tools__count' });
   const emptyButton = h('button', { class: 'cart__action cart__action--danger', type: 'button', 'data-trash-action': 'empty', onClick: onEmpty },
     icon('trash', 'icon--sm'), t('corbeille.vider'));
   const tools = h('div', { class: 'page-tools', hidden: true }, count, emptyButton);
   const content = h('div', {});
-  const body = h('div', { class: 'body body--flush' }, h('p', { class: 'page-intro' }, intro), banner, tools, content);
-  const screen = h('div', { class: 'screen' }, topbar(title, () => goBack('settings')), body);
-  return { screen, body, tools, count, content };
+  const panel = h('div', {}, h('p', { class: 'page-intro' }, intro), banner, tools, content);
+  return { panel, tools, count, content };
 }
 
 // Une ligne de la corbeille. Ligne 1 : le titre (gras, passe à la ligne)

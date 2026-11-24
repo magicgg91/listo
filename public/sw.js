@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v165-${BUILD ?? 'dev'}`;
+const VERSION = `v166-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -228,6 +228,7 @@ const APP_FILES = [
   '/js/swipe.js',
   '/js/tap.js',
   '/js/theme.js',
+  '/js/trash-tabs.js',
   '/js/trusted.js',
   '/js/ui.js',
   '/js/version.js',
@@ -237,6 +238,7 @@ const APP_FILES = [
   '/js/screens/claude-connections.js',
   '/js/screens/trash.js',
   '/js/screens/trash-parts.js',
+  '/js/screens/trash-page.js',
   '/js/screens/claude-consent.js',
   '/js/screens/admin.js',
   '/js/screens/help.js',

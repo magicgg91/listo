@@ -331,6 +331,40 @@ export function sourceOffset(node, offset) {
   return lineEdge(node, offset >= kids.length);
 }
 
+// Endroit de l'affichage (texte, décalage) d'une position du texte de la
+// note : l'inverse de sourceOffset, pour remettre une sélection après un
+// bouton de la barre (le texte mis en forme reste choisi, et l'on peut
+// enchaîner une autre mise en forme). edge : 'start' (début d'une
+// sélection) ou 'end' (fin). Une position tombée dans une marque (« ** »…)
+// va au texte affiché le plus proche, vers l'intérieur de la sélection.
+// null si l'affichage n'a aucun texte.
+export function domPoint(root, pos, edge = 'start') {
+  const runs = [];
+  const walk = (node) => {
+    if (node.nodeType === 3) {
+      const at = node.parentNode?.getAttribute?.('data-at');
+      if (at !== null && at !== undefined) runs.push({ node, from: Number(at), to: Number(at) + node.data.length });
+      return;
+    }
+    for (const kid of node.childNodes ?? []) walk(kid);
+  };
+  walk(root);
+  if (!runs.length) return null;
+  if (edge === 'start') {
+    const inside = runs.find((r) => pos >= r.from && pos < r.to);
+    if (inside) return [inside.node, pos - inside.from];
+    const next = runs.find((r) => r.from >= pos);
+    if (next) return [next.node, 0];
+    const last = runs[runs.length - 1];
+    return [last.node, last.node.data.length];
+  }
+  const inside = [...runs].reverse().find((r) => pos > r.from && pos <= r.to);
+  if (inside) return [inside.node, pos - inside.from];
+  const before = [...runs].reverse().find((r) => r.to <= pos);
+  if (before) return [before.node, before.node.data.length];
+  return [runs[0].node, 0];
+}
+
 // Premier et dernier texte (avec data-at) dans un élément
 function firstText(node) {
   if (node.nodeType === 3) return node.parentNode?.getAttribute?.('data-at') != null ? node : null;
@@ -459,6 +493,58 @@ function unwrapEdits(text, a, b, type) {
   return null;
 }
 
+// Marques collées autour d'un morceau [a, b] (par exemple « ***== » avant
+// et « ==*** » après) : les mises en forme déjà posées, de l'extérieur vers
+// l'intérieur. Sert à ajouter ou retirer une marque parmi d'autres sans
+// casser l'imbrication (gras, puis italique, puis surligné, puis retirer le
+// gras : il reste italique et surligné, jamais des « * » ou « == » visibles).
+// null si les marques des deux côtés ne se répondent pas.
+const RUN_CHAR = /[*_+=]/;
+const CANON = ['bold', 'underline', 'italic', 'highlight']; // de l'extérieur vers l'intérieur
+function runTokens(run) {
+  const kinds = [];
+  let italic = '*';
+  let i = 0;
+  while (i < run.length) {
+    const c = run[i];
+    if ((c === '+' || c === '=') && run[i + 1] === c) {
+      kinds.push(c === '+' ? 'underline' : 'highlight');
+      i += 2;
+    } else if (c === '_') {
+      kinds.push('italic');
+      italic = '_';
+      i += 1;
+    } else if (c === '*') {
+      let n = 0;
+      while (run[i + n] === '*') n += 1;
+      if (n >= 3) kinds.push('bold', 'italic');
+      else kinds.push(n === 2 ? 'bold' : 'italic');
+      i += Math.min(n, 3);
+      if (n > 3) return null;
+    } else return null;
+  }
+  return { kinds, italic };
+}
+function marksAround(text, a, b) {
+  let from = a;
+  while (from > 0 && RUN_CHAR.test(text[from - 1])) from -= 1;
+  let to = b;
+  while (to < text.length && RUN_CHAR.test(text[to])) to += 1;
+  if (from === a && to === b) return { from, to, kinds: [], italic: '*' };
+  const before = runTokens(text.slice(from, a));
+  const after = runTokens(text.slice(b, to));
+  if (!before || !after) return null;
+  const same = [...before.kinds].sort().join() === [...after.kinds].sort().join();
+  if (!same || new Set(before.kinds).size !== before.kinds.length) return null;
+  return { from, to, kinds: before.kinds, italic: before.italic };
+}
+// Marques rangées dans un ordre que le lecteur comprend toujours
+function runOf(kinds, italic, side) {
+  const order = CANON.filter((kind) => kinds.includes(kind));
+  const marks = order.map((kind) => (kind === 'italic' ? italic : INLINE_MARKS[kind]));
+  return side === 'before' ? marks.join('') : marks.reverse().join('');
+}
+
 // Gras, italique, souligné, surligné : entoure la sélection (chaque ligne
 // sélectionnée à part, sans sa marque de début ni ses espaces de bord), ou
 // la retire si tout est déjà marqué. Sans sélection : la paire est ajoutée
@@ -482,6 +568,21 @@ function applyInline(text, start, end, type) {
     if (a < b) pieces.push([a, b]);
   }
   if (!pieces.length) return { text, start, end };
+  // Marques déjà collées autour de chaque morceau : on ajoute ou retire
+  // celle-ci parmi elles, en gardant les autres bien imbriquées
+  const around = pieces.map(([a, b]) => marksAround(text, a, b));
+  if (around.every((m) => m && m.kinds.length)) {
+    const remove = around.every((m) => m.kinds.includes(type));
+    const edits = [];
+    pieces.forEach(([a, b], i) => {
+      const m = around[i];
+      if (!remove && m.kinds.includes(type)) return;
+      const kinds = remove ? m.kinds.filter((k) => k !== type) : [...m.kinds, type];
+      edits.push({ at: m.from, del: a - m.from, ins: runOf(kinds, m.italic, 'before') });
+      edits.push({ at: b, del: m.to - b, ins: runOf(kinds, m.italic, 'after') });
+    });
+    return applyEdits(text, start, end, edits);
+  }
   const unwraps = pieces.map(([a, b]) => unwrapEdits(text, a, b, type));
   if (unwraps.every(Boolean)) return applyEdits(text, start, end, unwraps.flat());
   const edits = [];

@@ -349,3 +349,35 @@ test('kit : section 16.33 identique dans design/ et public/, fichiers gardés ho
   const sw = read('public/sw.js');
   for (const file of ['/js/note-format.js', '/js/screens/note-toolbar.js']) assert.ok(sw.includes(`'${file}'`), file);
 });
+
+// Retours du propriétaire (24 novembre 2026) : le texte reste choisi après
+// un bouton, et plusieurs mises en forme s'ajoutent puis se retirent une à
+// une sans jamais laisser de marque visible
+test('mises en forme empilées : ajoutées puis retirées une à une, la sélection reste sur le texte', () => {
+  let text = 'Du samedi 11 au';
+  let start = 3;
+  let end = 12;
+  const steps = ['bold', 'underline', 'italic', 'highlight', 'bold', 'italic', 'underline', 'highlight'];
+  for (const kind of steps) {
+    ({ text, start, end } = applyFormat(text, start, end, kind));
+    assert.equal(text.slice(start, end), 'samedi 11', `${kind} : la sélection reste sur le texte`);
+    assert.equal(plainText(text), 'Du samedi 11 au', `${kind} : aucune marque visible`);
+  }
+  assert.equal(text, 'Du samedi 11 au');
+  // Gras, italique, surligné puis retrait du gras : italique et surligné restent
+  let t = 'Du samedi 11 au';
+  let s = 3;
+  let e = 12;
+  for (const kind of ['bold', 'italic', 'highlight', 'bold']) ({ text: t, start: s, end: e } = applyFormat(t, s, e, kind));
+  assert.equal(t, 'Du *==samedi 11==* au');
+  const kinds = [];
+  const walk = (parts) => parts.forEach((p) => { if (p.type !== 'text') kinds.push(p.type); if (p.children) walk(p.children); });
+  walk(parseNoteText(t)[0].parts);
+  assert.deepEqual(kinds, ['italic', 'highlight']);
+});
+
+test('domPoint : retrouve dans l\'affichage l\'endroit d\'une position du texte (pour garder la sélection)', () => {
+  const code = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), '../public/js/screens/note.js'), 'utf8');
+  assert.match(code, /drawView\(\);\s*\/\/ Le texte mis en forme reste choisi[^\n]*\n\s*selectInView\(out\.start, out\.end\);/);
+  assert.match(code, /function selectInView\(start, end\) \{/);
+});

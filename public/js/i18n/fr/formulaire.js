@@ -12,9 +12,6 @@ export default {
   'formulaire.retour': 'Retour',
 
   // Droit d'une personne sur la liste
-  'formulaire.droit.modifier': 'Modifier',
-  'formulaire.droit.lire': 'Lire',
-  'formulaire.droit.choix': 'Droit de {name} sur la liste',
 
   // Interrupteurs des options
   'formulaire.option.priorite': 'Priorité',
@@ -70,14 +67,6 @@ export default {
   'formulaire.options.elements': 'Options des éléments',
 
   // Partage
-  'formulaire.partage.destinataire': 'Destinataire · Peut modifier',
-  'formulaire.partage.desactive': 'Compte désactivé',
-  'formulaire.partage.personne': 'Personne',
-  'formulaire.partage.vous': '{name} (vous)',
-  'formulaire.partage.proprietaire': 'Propriétaire',
-  'formulaire.partage.ok': 'OK',
-  'formulaire.partage': 'Partager avec',
-  'formulaire.partage.horsLigne': 'Partage indisponible hors ligne : la liste peut être enregistrée, le partage se changera avec du réseau.',
 
   // Enregistrer, conversion en liste d'envies
   'formulaire.enregistrer': 'Enregistrer',
@@ -102,8 +91,6 @@ export default {
   'formulaire.titreListe.obligatoire': 'Le nom est obligatoire',
   'formulaire.pourQui.prenom.obligatoire': 'Le prénom est obligatoire',
   'formulaire.conversion.connexion': 'Devenir une liste d\'envies demande une connexion.',
-  'formulaire.partage.echec': 'Le partage n\'a pas pu être enregistré : {reason}. La liste, elle, est enregistrée.',
-  'formulaire.partage.echec.horsLigne': 'indisponible hors ligne',
   'formulaire.creee': 'Liste créée',
   'formulaire.creee.annuler': 'Annuler',
 };

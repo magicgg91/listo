@@ -1,183 +1,269 @@
-// Panneau « Partager la liste » de l'ordinateur (design/maquettes/pc-A,
-// capture 07) : un tiroir à droite qui réunit les personnes de la liste,
-// avec leur droit, et le lien public.
+// Partager une liste ou une note (décision du 24 novembre 2026, option
+// « B » : un petit choix, puis deux feuilles ; le même parcours pour les
+// listes et les notes, sur le téléphone et sur ordinateur).
 //
-// Droits (inchangés, revérifiés par le serveur) :
-// - le propriétaire choisit le droit de chaque personne (« Peut modifier »
-//   ou « Lecture seule »), retire une personne, en ajoute une parmi les
-//   comptes existants (pas d'e-mail : Listo n'a pas d'inscription), et gère
-//   le lien public (même contenu que la feuille du téléphone, share.js) ;
-// - les autres membres voient seulement la liste « Personnes », en lecture,
-//   sans aucun bouton de gestion ni le lien public.
-// Le destinataire d'une liste d'envies reste « Peut modifier », sans choix.
-// Chaque changement part tout de suite par la même route que le formulaire
-// de la liste (PUT /api/lists/:id/members), en ligne seulement.
+// Le propriétaire, depuis l'entrée « Partager » (menu ⋮ d'une liste ou
+// d'une note, menu ⋯ d'une carte, bouton « Partager » de l'en-tête d'une
+// liste sur ordinateur, touche P, bouton des personnes de la barre d'une
+// note), ouvre le choix « Partager « Maison » » (feuille du bas sur le
+// téléphone, petite fenêtre au centre sur ordinateur), avec deux lignes qui
+// disent l'état actuel :
+// - « Avec des personnes de Listo » (« Léa et Zoé », « Seulement vous ») :
+//   la feuille « Partager avec des personnes » (share-picker.js) ; « OK »
+//   envoie tout le partage d'un coup (PUT …/members), en ligne seulement,
+//   puis ramène au choix, mis à jour. La croix, Échap ou Retour ramènent au
+//   choix sans rien changer. Une erreur : le message dans la feuille, rien
+//   n'est changé (le serveur fait tout ou rien) ;
+// - « Par un lien temporaire » (« Aucun lien », « Lien actif · expire dans
+//   6 jours »…) : la feuille du lien public (share.js, linkPart ou
+//   noteLinkPart), inchangée.
+// Les deux feuilles s'ouvrent par-dessus le choix, qui reste dessous.
 //
-// Le même panneau sert au partage d'une note (étape 3 des notes,
-// openNoteSharePanel) : « Partager la note » pour le propriétaire (personnes,
-// droits, lien public), « Personnes » pour les autres. Sur le téléphone, il
-// s'ouvre comme une feuille du bas (une note n'a pas d'écran « Modifier »).
-// Route : PUT /api/notes/:id/members, droits revérifiés par server/notes.js.
+// Les autres membres, depuis « Personnes », voient seulement qui partage,
+// avec le droit de chacun, en lecture : ni choix, ni lien public.
+//
+// Droits (inchangés, revérifiés par le serveur à chaque requête) :
+// server/lists.js setMembers (propriétaire seulement, destinataire d'une
+// liste d'envies jamais retiré, toujours « Peut modifier ») et
+// server/notes.js (propriétaire seulement).
 
-import { h, icon, iconButton, avatar, replace } from '../dom.js';
+import { h, icon, avatar, replace, errorNote } from '../dom.js';
 import { put, errorMessage } from '../api.js';
-import { app, onDataChange, refreshData } from '../app.js';
+import { app, onDataChange, refreshData, pendingCount } from '../app.js';
 import { openSheet, toast } from '../ui.js';
 import { isWishList } from '../list-types.js';
-import { linkPart, noteLinkPart } from './share.js';
-import { setNoteMembers } from '../actions.js';
+import { isNoteOwner } from '../store.js';
 import { noteTitle } from '../notes.js';
+import { linkPart, noteLinkPart, knownLink } from './share.js';
+import { peoplePicker } from './share-picker.js';
+import { peopleSummary, linkSummary, membersChanged } from '../sharing.js';
 import { t, compareText } from '../i18n.js';
 
-// Droits proposés (fonction : les textes sont lus dans la langue choisie)
-const levels = () => [['modification', t('partage.panneau.peutModifier')], ['lecture', t('partage.panneau.lectureSeule')]];
-const levelLabel = (access) => (access === 'lecture' ? t('partage.panneau.lectureSeule') : t('partage.panneau.peutModifier'));
-const compare = (a, b) => compareText(a.displayName, b.displayName, { sensitivity: 'base' });
-
-export function openSharePanel(listId) {
-  const current = () => app.data.lists.get(listId);
-  const start = current();
-  if (!start) return;
-  return peoplePanel({
-    current,
-    owner: Boolean(start.isOwner),
-    name: start.name,
-    // Le destinataire d'une liste d'envies : membre d'office, sans choix
-    beneficiary: (list, person) => isWishList(list) && list.forUserId === person.id,
-    save: async (others) => {
-      await put(`/api/lists/${encodeURIComponent(listId)}/members`, {
-        userIds: others.map((m) => m.id),
-        access: Object.fromEntries(others.map((m) => [m.id, m.access ?? 'modification'])),
-      });
-      await refreshData({ quiet: true });
-    },
-    link: (close) => linkPart(start, close),
-    titles: { owner: t('partage.panneau.titre'), member: t('partage.panneau.personnes') },
-    allIn: t('partage.panneau.tousLesComptes'),
-  });
-}
-
-// Partage d'une note (propriétaire : personnes, droits, lien public ;
-// les autres : les personnes, en lecture)
-export function openNoteSharePanel(noteId) {
-  const current = () => {
-    const note = app.data.notes.get(noteId);
-    return note && !note.deletedAt ? note : null;
+// Ce qui est partagé : une liste…
+function listSubject(listId) {
+  return {
+    current: () => app.data.lists.get(listId) ?? null,
+    owner: (list) => Boolean(list.isOwner),
+    name: (list) => list.name,
+    // Destinataire d'une liste d'envies (un compte) : membre d'office
+    beneficiaryId: (list) => (isWishList(list) ? list.forUserId ?? null : null),
+    note: false,
+    url: `/api/lists/${encodeURIComponent(listId)}/members`,
+    link: (list, close) => linkPart(list, close),
+    linkKey: listId,
+    hint: (list) => (isWishList(list) ? t('partage.choix.aide.envies') : t('partage.choix.aide.liste')),
   };
-  const start = current();
-  if (!start) return null;
-  return peoplePanel({
-    current,
-    owner: start.access === 'owner',
-    name: noteTitle(start) || t('notes.sansTitre'),
-    beneficiary: () => false,
-    save: (others) => setNoteMembers(noteId, others),
-    link: (close) => noteLinkPart(start, close),
-    titles: { owner: t('notes.partage.titre'), member: t('partage.panneau.personnes') },
-    allIn: t('notes.partage.tousLesComptes'),
-  });
 }
 
-// Le panneau lui-même (liste ou note) : current() relit ce qui est partagé
-// (avec ses personnes, members), save(others) envoie la composition voulue
-function peoplePanel({ current, owner, name, beneficiary, save, link: linkOf, titles, allIn }) {
-  let busy = false;
-  const people = h('ul', { class: 'pc-share__people', 'aria-labelledby': 'pc-share-people' });
-  const addRow = h('div', { class: 'share-row share-row--add sheet__keep' }); // jamais tassée dans la feuille du téléphone (app.css)
-  const offlineNote = h('p', { class: 'note', role: 'status' }, icon('cloud-off', 'icon--sm'), h('span', {}, t('partage.panneau.horsLigne')));
+// … ou une note (une note dans la corbeille ne se partage pas)
+function noteSubject(noteId) {
+  return {
+    current: () => {
+      const note = app.data.notes.get(noteId);
+      return note && !note.deletedAt ? note : null;
+    },
+    owner: (note) => isNoteOwner(note),
+    name: (note) => noteTitle(note) || t('notes.sansTitre'),
+    beneficiaryId: () => null,
+    note: true,
+    url: `/api/notes/${encodeURIComponent(noteId)}/members`,
+    link: (note, close) => noteLinkPart(note, close),
+    linkKey: `note:${noteId}`,
+    hint: () => t('partage.choix.aide.note'),
+  };
+}
 
-  // Envoie la nouvelle composition du partage (personnes et droits)
-  async function send(nextMembers) {
-    if (busy) return;
-    busy = true;
-    draw();
-    try {
-      await save(nextMembers.filter((m) => !m.isOwner));
-    } catch (error) {
-      toast(t('partage.panneau.echec', { message: errorMessage(error) }));
-    } finally {
-      busy = false;
-      draw();
-    }
-  }
+// Point d'entrée : le choix pour le propriétaire, « Personnes » pour les autres
+export const openListShare = (listId) => openShare(listSubject(listId));
+export const openNoteShare = (noteId) => openShare(noteSubject(noteId));
 
-  function draw() {
-    const list = current();
-    if (!list) {
-      panel.close();
+function openShare(subject) {
+  const item = subject.current();
+  if (!item) return null;
+  return subject.owner(item) ? openChooser(subject) : openPeopleView(subject);
+}
+
+// --- Le choix « Partager « Maison » » (propriétaire) ---
+function openChooser(subject) {
+  const start = subject.current();
+  const peopleSub = h('span', { class: 'row__sub' });
+  const linkSub = h('span', { class: 'row__sub' });
+  const row = (iconName, title, sub, onClick) => h('button', { class: 'row share-choice__row', type: 'button', 'aria-haspopup': 'dialog', onClick },
+    h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(iconName)),
+    h('span', { class: 'row__body' }, h('span', { class: 'row__title' }, title), sub),
+    icon('chev-r'));
+  const hint = h('p', { class: 'share-choice__hint' });
+
+  function paint() {
+    const item = subject.current();
+    if (!item || !subject.owner(item)) {
+      sheet.close(); // supprimée, ou plus à moi
       return;
     }
-    const offline = !navigator.onLine;
-    const off = busy || offline;
-    const members = (list.members ?? []).filter((m) => m.active || m.isOwner).sort((a, b) => Number(b.isOwner) - Number(a.isOwner) || compare(a, b));
-    replace(people, members.map((person, index) => {
-      const me = person.id === app.user.id;
-      const name = me ? t('partage.panneau.vous', { name: person.displayName }) : person.displayName;
-      let right;
-      if (person.isOwner) right = h('span', { class: 'chip' }, t('partage.panneau.proprietaire'));
-      else if (beneficiary(list, person)) right = h('span', { class: 'chip' }, t('partage.panneau.destinataire'));
-      else if (!owner) right = h('span', { class: 'pc-meta' }, levelLabel(person.access));
-      else {
-        const select = h('select', { class: 'input select--sm', 'aria-label': t('partage.panneau.droitDe', { name: person.displayName }), disabled: off },
-          levels().map(([value, label]) => h('option', { value, selected: (person.access ?? 'modification') === value }, label)));
-        select.addEventListener('change', () => send(members.map((m) => (m.id === person.id ? { ...m, access: select.value } : m))));
-        const remove = iconButton('close', t('partage.panneau.retirer', { name: person.displayName }), () => send(members.filter((m) => m.id !== person.id)));
-        remove.disabled = off;
-        right = [select, remove];
-      }
-      return h('li', { class: 'share-row' },
-        avatar(person.displayName, { second: index > 0 }),
-        h('span', { class: 'grow' }, h('span', { class: 'row__title' }, name)),
-        right);
-    }));
-    // Ajouter une personne : parmi les comptes qui ne sont pas encore membres
-    if (owner) {
-      const candidates = (app.data.users ?? []).filter((u) => !members.some((m) => m.id === u.id)).sort(compare);
-      if (!candidates.length) {
-        replace(addRow, h('p', { class: 'pc-meta' }, allIn));
-      } else {
-        const who = h('select', { class: 'input grow', 'aria-label': t('partage.panneau.ajout.personne'), disabled: off },
-          candidates.map((u) => h('option', { value: String(u.id) }, u.displayName)));
-        const level = h('select', { class: 'input select--sm', 'aria-label': t('partage.panneau.ajout.droit'), disabled: off },
-          levels().map(([value, label]) => h('option', { value, selected: value === 'lecture' }, label)));
-        const add = h('button', { class: 'btn btn--primary', type: 'button', disabled: off, onClick: () => {
-          const user = candidates.find((u) => String(u.id) === who.value);
-          if (user) send([...members, { id: user.id, displayName: user.displayName, access: level.value }]);
-        } }, t('partage.panneau.ajouter'));
-        replace(addRow, who, level, add);
-      }
-    }
-    offlineNote.hidden = !offline || !owner;
+    peopleSub.textContent = peopleSummary(item.members, app.user.id);
+    // Mot de passe : seulement s'il est connu (feuille du lien ouverte
+    // pendant cette visite) et pour ce même lien (même expiration) ; le
+    // serveur ne l'envoie pas avec la liste
+    const known = knownLink(subject.linkKey);
+    const sameLink = Boolean(known && item.publicLink && known.expiresAt === item.publicLink.expiresAt);
+    const link = linkSummary(item.publicLink ?? null, { isProtected: sameLink && Boolean(known.protected) });
+    linkSub.textContent = link.text;
+    linkSub.classList.toggle('share-choice__on', link.active);
+    hint.textContent = subject.hint(item);
   }
 
-  const link = owner ? linkOf(() => panel.close()) : null;
-  const content = [
-    h('h3', { class: 'pc-share__title', id: 'pc-share-people' }, t('partage.panneau.personnes')),
-    offlineNote,
-    people,
-    owner ? addRow : h('p', { class: 'pc-meta' }, t('partage.panneau.proprietaireSeul')),
-    link ? [h('h3', { class: 'pc-share__title' }, t('partage.panneau.lienPublic')), link.body] : null,
-  ];
-  const stop = onDataChange(() => {
-    if (!busy) draw();
+  const stop = onDataChange(() => paint());
+  const sheet = openSheet({
+    title: t('partage.choix.titre', { name: subject.name(start) }),
+    content: [
+      h('div', { class: 'group share-choice sheet__keep' },
+        // Au retour d'une feuille, le choix est redessiné (mot de passe du lien appris entre-temps)
+        row('users', t('partage.choix.personnes'), peopleSub, () => openPeopleSheet(subject, paint)),
+        row('link', t('partage.choix.lien'), linkSub, () => openLinkSheet(subject, paint))),
+      hint,
+    ],
+    pc: 'modal',
+    size: 'sm',
+    onClose: stop,
   });
-  const onNetwork = () => draw();
-  window.addEventListener('online', onNetwork);
-  window.addEventListener('offline', onNetwork);
-  const panel = openSheet({
-    title: owner ? titles.owner : titles.member,
-    sub: name,
-    content,
-    pc: 'drawer',
-    footer: [h('span', { class: 'grow' }), h('button', { class: 'btn btn--primary', type: 'button', onClick: () => panel.close() }, t('partage.panneau.termine'))],
+  paint();
+  return sheet;
+}
+
+// --- « Partager avec des personnes » (propriétaire) ---
+function openPeopleSheet(subject, onClosed) {
+  const item = subject.current();
+  if (!item) return;
+  const picker = peoplePicker({
+    me: app.user,
+    users: app.data.users ?? [],
+    members: item.members,
+    beneficiaryId: subject.beneficiaryId(item),
+    note: subject.note,
+  });
+  const offlineNote = h('p', { class: 'note', role: 'status', hidden: true }, icon('cloud-off', 'icon--sm'), h('span', {}, t('partage.personnes.horsLigne')));
+  const error = errorNote();
+  let busy = false;
+  const ok = h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => apply() }, t('partage.personnes.ok'));
+
+  // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
+  const paintNetwork = () => {
+    const offline = !navigator.onLine;
+    offlineNote.hidden = !offline;
+    picker.element.inert = offline;
+    picker.element.classList.toggle('is-off', offline);
+    ok.disabled = busy || offline;
+  };
+
+  // « OK » : tout le partage d'un coup, seulement s'il a changé
+  async function apply() {
+    const now = subject.current();
+    if (!now || busy) return;
+    const payload = picker.payload();
+    if (!membersChanged(now.members, payload)) {
+      sheet.close();
+      return;
+    }
+    busy = true;
+    error.show('');
+    paintNetwork();
+    try {
+      // Ce qui attend dans la file part d'abord (liste ou note créée hors
+      // ligne : elle doit exister sur le serveur)
+      await refreshData({ quiet: true });
+      if (pendingCount() || !navigator.onLine) {
+        error.show(t('partage.personnes.horsLigne'));
+        return;
+      }
+      await put(subject.url, payload);
+      await refreshData({ quiet: true });
+      sheet.close(); // retour au choix, mis à jour
+      toast(t('partage.personnes.fait'), { low: true });
+    } catch (err) {
+      error.show(t('partage.personnes.echec', { message: errorMessage(err) }));
+    } finally {
+      busy = false;
+      paintNetwork();
+    }
+  }
+
+  // Supprimée, ou plus à moi, pendant que la feuille est ouverte
+  const stop = onDataChange(() => {
+    const now = subject.current();
+    if (!busy && (!now || !subject.owner(now))) sheet.close();
+  });
+  window.addEventListener('online', paintNetwork);
+  window.addEventListener('offline', paintNetwork);
+  const sheet = openSheet({
+    title: t('partage.personnes.titre'),
+    sub: subject.name(item),
+    tools: ok,
+    content: [offlineNote, error.note, picker.element],
+    scroll: true,
+    pc: 'modal',
+    size: 'sm',
     onClose: () => {
       stop();
-      link?.dispose();
-      window.removeEventListener('online', onNetwork);
-      window.removeEventListener('offline', onNetwork);
+      window.removeEventListener('online', paintNetwork);
+      window.removeEventListener('offline', paintNetwork);
+      onClosed?.();
     },
   });
+  paintNetwork();
+}
+
+// --- « Partager par un lien temporaire » (propriétaire) ---
+function openLinkSheet(subject, onClosed) {
+  const item = subject.current();
+  if (!item) return;
+  const part = subject.link(item, () => sheet.close());
+  const sheet = openSheet({
+    title: t('partage.feuille.titre'),
+    content: part.body,
+    scroll: true,
+    pc: 'modal',
+    size: 'sm',
+    onClose: () => {
+      part.dispose();
+      onClosed?.();
+    },
+  });
+  part.start();
+}
+
+// --- « Personnes » (les autres membres) : qui partage, en lecture ---
+const levelLabel = (access) => (access === 'lecture' ? t('partage.vue.lectureSeule') : t('partage.vue.peutModifier'));
+
+function openPeopleView(subject) {
+  const start = subject.current();
+  const people = h('ul', { class: 'share-view' });
+  function draw() {
+    const item = subject.current();
+    if (!item) {
+      sheet.close();
+      return;
+    }
+    const beneficiary = subject.beneficiaryId(item);
+    const members = (item.members ?? []).filter((m) => m.active !== false || m.isOwner)
+      .sort((a, b) => Number(b.isOwner) - Number(a.isOwner) || compareText(a.displayName, b.displayName, { sensitivity: 'base' }));
+    replace(people, members.map((person, index) => h('li', { class: 'share-row' },
+      avatar(person.displayName, { second: index > 0 }),
+      h('span', { class: 'grow' }, h('span', { class: 'row__title' },
+        person.id === app.user.id ? t('partage.personnes.vous', { name: person.displayName }) : person.displayName)),
+      person.isOwner ? h('span', { class: 'chip' }, t('partage.personnes.proprietaire'))
+        : person.id === beneficiary ? h('span', { class: 'chip' }, t('partage.personnes.destinataire'))
+          : h('span', { class: 'pc-meta' }, levelLabel(person.access)))));
+  }
+  const stop = onDataChange(() => draw());
+  const sheet = openSheet({
+    title: t('partage.vue.titre'),
+    sub: subject.name(start),
+    content: [people, h('p', { class: 'share-choice__hint' }, t('partage.vue.proprietaireSeul'))],
+    scroll: true,
+    pc: 'modal',
+    size: 'sm',
+    onClose: stop,
+  });
   draw();
-  link?.start();
-  return panel;
+  return sheet;
 }

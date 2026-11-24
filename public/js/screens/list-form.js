@@ -1,12 +1,16 @@
 // Écran « Nouvelle liste » / « Modifier la liste » (maquettes
 // formulaire-liste-1 à 3, formulaire-liste-multi-1 et 2) : nom, type de
 // liste (Courses, Tâches ou Envies), icône (choisie dans une fenêtre), magasin simple ou « multi » (seulement
-// pour une liste de courses), partage, avec le droit de chaque personne
-// (« Peut modifier » ou « Lecture seule »), priorité et échéance activées ou
-// non (listes de tâches), et suppression de la liste (propriétaire).
+// pour une liste de courses), priorité et échéance activées ou non (listes
+// de tâches), et suppression de la liste (propriétaire).
+// Le partage n'est plus dans ce formulaire (décision du 24 novembre 2026) :
+// il passe seulement par « Partager » (menu ⋮ de la liste, share-panel.js).
+// Le destinataire d'une liste d'envies (« Pour qui ? ») reste ici : le
+// serveur en fait un membre « Peut modifier » à la création (list.create) et
+// à la conversion (POST /api/lists/:id/wishes).
 
-import { h, icon, iconButton, field, errorNote, avatar, replace, multiBadge, LABEL_INPUT } from '../dom.js';
-import { put, errorMessage } from '../api.js';
+import { h, icon, iconButton, field, errorNote, replace, multiBadge, LABEL_INPUT } from '../dom.js';
+import { errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { activeOnly, addModeOf, defaultAddMode, priorityAtStart, aislesOfItems, itemsWithoutAisle } from '../store.js';
 import { askTidy } from '../tidy-aisles.js';
@@ -64,7 +68,7 @@ export function renderListForm(listId, onLeave) {
   onLeave(() => {
     cancelled = true;
   });
-  // Comptes proposés au partage : copie locale (disponible sans réseau)
+  // Comptes proposés pour « Pour qui ? » (envies) : copie locale (disponible sans réseau)
   refreshData({ quiet: true })
     .then(() => {
       const users = app.data.users;
@@ -87,31 +91,6 @@ export function renderListForm(listId, onLeave) {
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => goBack('lists') }, t('formulaire.retour'))));
     });
   return container;
-}
-
-// Droit d'une personne sur la liste, au bout de sa ligne dans la fenêtre
-// « Partager avec » : deux petits choix côte à côte (.segmented), « Modifier »
-// (droit « Peut modifier ») et « Lire » (droit « Lecture seule »). Le choix
-// actif est en relief (bord, fond, ombre : jamais la couleur seule) et
-// s'annonce par aria-checked. Le même composant sert à la création de la
-// liste et à « Modifier la liste » (une seule fonction form() pour les deux
-// écrans). onChange(valeur) reçoit 'modification' ou 'lecture'.
-export function accessChoice(name, value, onChange) {
-  let current = value;
-  const options = [['modification', t('formulaire.droit.modifier')], ['lecture', t('formulaire.droit.lire')]].map(([choice, label]) => {
-    const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
-      current = choice;
-      paint();
-      onChange(choice);
-    } }, label);
-    option.dataset.value = choice;
-    return option;
-  });
-  const paint = () => {
-    for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === current));
-  };
-  paint();
-  return h('div', { class: 'segmented share__access', role: 'radiogroup', 'aria-label': t('formulaire.droit.choix', { name }) }, options);
 }
 
 // Priorité et échéance d'une liste autre que les courses : deux
@@ -231,7 +210,6 @@ function form(list, users) {
     button.addEventListener('click', () => {
       listType = type;
       paint();
-      drawShare(); // le destinataire d'une liste d'envies est verrouillé dans le partage
     });
     button.dataset.type = type;
     return button;
@@ -253,7 +231,6 @@ function form(list, users) {
     row.addEventListener('click', () => {
       forChoice = value;
       paint();
-      drawShare();
     });
     row.dataset.value = String(value);
     forRows.push(row);
@@ -441,112 +418,6 @@ function form(list, users) {
   }, addModeField.row);
   const optionsField = h('div', { class: 'field' }, optionsLabel, optionsCard);
 
-  // --- Partage ---
-  // Dans le formulaire, une seule ligne de résumé, bouton « Partager avec » :
-  // les premières pastilles des personnes, leurs prénoms (« Marie, Paul (+2) »
-  // ou « Personne ») et un chevron. Un appui ouvre une fenêtre du bas avec
-  // une ligne par personne : case à cocher, pastille, prénom, et au bout de
-  // la ligne son droit (accessChoice), visible seulement si elle est cochée
-  // (la place reste réservée). Moi d'abord (toujours inclus, tous les
-  // droits), puis les autres comptes actifs ; une personne déjà présente
-  // mais désactivée reste affichée (et peut être retirée). Une personne
-  // ajoutée commence en « Lecture seule » (« Lire ») ; une personne déjà
-  // présente garde son droit. Fermer la fenêtre (« OK », croix, Échap,
-  // toucher à côté, Retour) garde les choix dans le formulaire : rien n'est
-  // envoyé avant « Enregistrer ».
-  const guests = new Set((list?.members ?? []).filter((m) => !m.isOwner).map((m) => m.id));
-  const rights = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
-  const people = users.filter((u) => u.id !== me.id).map((u) => ({ ...u, active: true }));
-  for (const member of list?.members ?? []) {
-    if (!member.isOwner && !people.some((p) => p.id === member.id)) people.push({ ...member, active: false });
-  }
-  people.sort((a, b) => compareNames(a.displayName, b.displayName));
-
-  // Le compte destinataire d'une liste d'envies est membre d'office, en
-  // « Peut modifier », sans choix (le serveur l'impose aussi)
-  const isLockedBeneficiary = (person) => person.id === beneficiaryId() && (!wishesLocked || list.members.some((m) => m.id === person.id));
-  // Personnes avec qui la liste est partagée (destinataire compris), dans l'ordre affiché
-  const sharedWith = () => people.filter((p) => guests.has(p.id) || isLockedBeneficiary(p));
-
-  // Ligne verrouillée (moi, le destinataire) : cochée, sans choix
-  const lockedRow = (person, title, sub) => h('div', { class: 'share__person' },
-    h('div', { class: 'tick-row', role: 'checkbox', 'aria-checked': 'true', 'aria-disabled': 'true' },
-      h('span', { class: 'tick is-on' }, icon('check')),
-      avatar(person.displayName, { second: person.id !== me.id }),
-      h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, title), h('span', { class: 'row__sub' }, sub))));
-  // Une personne : sa case, sa pastille, son prénom, puis son droit
-  const personRow = (person) => {
-    if (isLockedBeneficiary(person)) return lockedRow(person, person.displayName, t('formulaire.partage.destinataire'));
-    const box = h('span', { class: 'tick' });
-    const tick = h('button', { class: 'tick-row', type: 'button', role: 'checkbox' },
-      box,
-      avatar(person.displayName, { second: true }),
-      h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
-        !person.active ? h('span', { class: 'row__sub' }, t('formulaire.partage.desactive')) : null));
-    const access = accessChoice(person.displayName, rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value));
-    // Mise à jour sur place (la case garde le focus) ; personne non cochée :
-    // son droit est caché (place réservée, hors lecteurs d'écran)
-    const paintRow = () => {
-      const on = guests.has(person.id);
-      tick.setAttribute('aria-checked', String(on));
-      box.classList.toggle('is-on', on);
-      replace(box, on ? icon('check') : null);
-      access.classList.toggle('is-off', !on);
-    };
-    tick.addEventListener('click', () => {
-      if (guests.has(person.id)) guests.delete(person.id);
-      else guests.add(person.id);
-      paintRow();
-    });
-    paintRow();
-    return h('div', { class: 'share__person' }, tick, access);
-  };
-
-  // Ligne de résumé dans le formulaire
-  const summaryText = h('span', { class: 'share__summary-text', id: 'share-summary' });
-  const summaryAvatars = h('span', { class: 'avatars', 'aria-hidden': 'true' });
-  const shareButton = h('button', {
-    class: 'input input--select share__summary', type: 'button', 'aria-haspopup': 'dialog', 'aria-labelledby': 'share-label share-summary',
-    onClick: () => openShareSheet(),
-  }, h('span', { class: 'input__value' }, summaryAvatars, summaryText), icon('chev-r'));
-  function drawShare() {
-    const shared = sharedWith();
-    const shown = shared.length > 4 ? shared.slice(0, 3) : shared; // 4 pastilles au plus, puis « +N »
-    replace(summaryAvatars, shown.map((p) => avatar(p.displayName, { second: true })),
-      shared.length > shown.length ? h('span', { class: 'avatar avatar--b' }, `+${shared.length - shown.length}`) : null);
-    const names = shared.map((p) => p.displayName);
-    summaryText.textContent = !names.length ? t('formulaire.partage.personne')
-      : `${names.slice(0, 2).join(', ')}${names.length > 2 ? ` (+${names.length - 2})` : ''}`;
-  }
-  drawShare();
-
-  // Fenêtre « Partager avec » (même feuille que le choix de l'icône) : « OK »
-  // dans l'en-tête, à côté de la croix ; la liste défile, l'en-tête reste
-  // visible. Focus sur la première case à l'ouverture, rendu au bouton du
-  // résumé à la fermeture (returnTo).
-  let shareList = null;
-  function openShareSheet() {
-    shareList = h('div', { class: 'share share--sheet' },
-      lockedRow(me, t('formulaire.partage.vous', { name: me.displayName }), t('formulaire.partage.proprietaire')),
-      people.map((person) => personRow(person)));
-    shareList.querySelector('button.tick-row')?.setAttribute('data-initial-focus', 'true');
-    const ok = h('button', { class: 'btn btn--primary btn--sm', type: 'button', onClick: () => sheet.close() }, t('formulaire.partage.ok'));
-    const sheet = openSheet({
-      title: t('formulaire.partage'),
-      tools: ok,
-      content: shareList,
-      scroll: true,
-      returnTo: shareButton,
-      onClose: () => {
-        shareList = null;
-        drawShare(); // le résumé suit les choix faits dans la fenêtre
-      },
-    });
-    paintShare();
-  }
-
-  // Hors ligne : le partage ne peut pas être changé (il demande le serveur)
-  const shareNote = h('p', { class: 'field__hint', hidden: true }, t('formulaire.partage.horsLigne'));
   // Conversion en liste d'envies : en ligne seulement (elle dépend du
   // destinataire et arrête un éventuel lien public) ; hors ligne, le bouton
   // « Enregistrer » est inactif, avec une phrase
@@ -560,26 +431,20 @@ function form(list, users) {
     if (blocked) save.setAttribute('aria-describedby', 'convert-offline');
     else save.removeAttribute('aria-describedby');
   };
+  // Réseau perdu ou retrouvé : « Enregistrer » suit (conversion en ligne seulement)
   let painted = false;
-  const paintShare = () => {
-    if (painted && !shareButton.isConnected) { // formulaire quitté
-      window.removeEventListener('online', paintShare);
-      window.removeEventListener('offline', paintShare);
+  const onNetwork = () => {
+    if (painted && !save.isConnected) { // formulaire quitté
+      window.removeEventListener('online', onNetwork);
+      window.removeEventListener('offline', onNetwork);
       return;
     }
     painted = true;
-    const offline = !navigator.onLine;
-    shareNote.hidden = !offline;
-    shareButton.disabled = offline;
-    if (shareList) {
-      shareList.inert = offline;
-      shareList.classList.toggle('is-off', offline);
-    }
     paintConvert();
   };
-  paintShare();
-  window.addEventListener('online', paintShare);
-  window.addEventListener('offline', paintShare);
+  onNetwork();
+  window.addEventListener('online', onNetwork);
+  window.addEventListener('offline', onNetwork);
 
   const error = errorNote();
 
@@ -655,7 +520,6 @@ function form(list, users) {
       forField,
       storeField,
       optionsField,
-      h('div', { class: 'field' }, h('span', { class: 'field__label', id: 'share-label' }, t('formulaire.partage')), shareButton, shareNote),
       error.note,
       deleteButton)),
     h('div', { class: 'footer' }, convertNote, save));
@@ -729,27 +593,6 @@ function form(list, users) {
       const aislesBefore = aislesOfItems(app.data, id);
       if (Object.keys(switches).length) await actions.updateList(id, switches);
       if (shopping) askTidy(id, itemsWithoutAisle(app.data, id, aislesBefore).map((item) => item.id));
-    }
-    // Partage : seulement s'il a changé, et seulement en ligne (route réservée
-    // au propriétaire ; la liste doit d'abord exister sur le serveur)
-    const before = new Map((list?.members ?? []).filter((m) => !m.isOwner).map((m) => [m.id, m.access ?? 'modification']));
-    // Le destinataire (membre d'office) fait toujours partie du partage envoyé
-    const beneficiary = beneficiaryId();
-    if (beneficiary && (!wishesLocked || list.members.some((m) => m.id === beneficiary))) {
-      guests.add(beneficiary);
-      rights.set(beneficiary, 'modification');
-    }
-    const access = Object.fromEntries([...guests].map((id) => [id, rights.get(id) ?? 'lecture']));
-    const changed = before.size !== guests.size || [...guests].some((id) => before.get(id) !== access[id]);
-    if (changed) {
-      await refreshData({ quiet: true }); // envoie la file d'attente
-      try {
-        if (pendingCount()) throw new Error('hors ligne');
-        await put(`/api/lists/${id}/members`, { userIds: [...guests], access });
-        await refreshData({ quiet: true });
-      } catch (err) {
-        toast(t('formulaire.partage.echec', { reason: pendingCount() ? t('formulaire.partage.echec.horsLigne') : errorMessage(err) }));
-      }
     }
     if (!list) {
       navigate('list', { id }, { replace: true });

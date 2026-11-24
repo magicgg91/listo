@@ -317,6 +317,9 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         isBeneficiary: !op.forUserId && !op.forName,
       } : {};
       const store = op.storeId == null || !isShoppingList(type) ? null : state.stores.find((st) => st.id === op.storeId) ?? null;
+      // Destinataire (un autre compte) : membre « Peut modifier » d'office,
+      // comme sur le serveur (le formulaire n'envoie plus le partage)
+      const beneficiary = type === 'wishes' && op.forUserId && op.forUserId !== user.id ? state.users.find((u) => u.id === op.forUserId) : null;
       state.lists.set(op.listId, {
         id: op.listId,
         name: op.name,
@@ -332,7 +335,10 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
         assignEnabled: op.assignEnabled === true,
         subtasksEnabled: op.subtasksEnabled === true,
         addMode: ADD_MODES.includes(op.addMode) ? op.addMode : defaultAddMode(isShoppingList(type)),
-        members: [{ id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' }],
+        members: [
+          { id: user.id, username: user.username, displayName: user.displayName, active: true, isOwner: true, access: 'modification' },
+          ...(beneficiary ? [{ id: beneficiary.id, username: beneficiary.username, displayName: beneficiary.displayName, active: true, isOwner: false, access: 'modification' }] : []),
+        ],
         createdAt: now,
         updatedAt: now,
         lastActivity: now,

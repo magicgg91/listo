@@ -73,6 +73,7 @@ export default {
         { ul: [
           'Read: it sees the list of your notes (title, start of the text, labels, pin), then the text of a note.',
           'Add to a note: it adds text at the end of a note, on a new line, without touching the rest. It\'s the safest way: nothing is lost, even if someone is writing in the note at the same time.',
+          'Formatting: it reads the text with its marks and can use them when writing (for example a checkbox, `- [ ] AA batteries`) ([[notes]]).',
           'Replace the whole text: only if the note hasn\'t changed since it read it; otherwise nothing is written and it has to read it again. It must ask you to confirm first.',
           'Create a note: it\'s yours, shared with no one.',
           'Labels: it only sets labels that already exist (capitals and accents ignored); with an unknown name, nothing is done. It can create a label if you ask it to.',

@@ -72,15 +72,18 @@ test('featuresChangeProblem : seulement des fonctions connues, des booléens ; r
   for (const key of ['ops.fonctionInconnue', 'ops.fonctionsInvalides']) assert.ok(fr[key] && en[key], key);
 });
 
-test('écrans des notes : #/notes, une note, une nouvelle note, la corbeille des notes (et son ancienne adresse)', () => {
-  assert.deepEqual(FEATURE_ROUTES.notes, ['notes', 'newNote', 'note', 'noteTrash', 'oldNoteTrash']);
-  for (const hash of ['#/notes', '#/notes/nouvelle', '#/notes/abc', '#/reglages/corbeille-notes', '#/notes/corbeille']) {
+test('écrans des notes : #/notes, une note, une nouvelle note ; la corbeille des notes n\'en est plus un (onglet de la Corbeille)', () => {
+  assert.deepEqual(FEATURE_ROUTES.notes, ['notes', 'newNote', 'note']);
+  for (const hash of ['#/notes', '#/notes/nouvelle', '#/notes/abc']) {
     const { name } = matchRoute(hash);
     assert.equal(featureOf(name), 'notes', hash);
     assert.equal(screenAllowed(name, OFF), false, hash);
     assert.equal(screenAllowed(name, null), true, hash);
   }
-  for (const hash of ['#/accueil', '#/listes', '#/echeances', '#/reglages', '#/reglages/fonctions', '#/notifications', '#/listes/abc']) {
+  // Corbeille (24 novembre 2026) : toujours ouverte ; notes coupées, l'onglet
+  // « Notes » et les anciennes adresses mènent à la corbeille des listes
+  // (askedTrashTab, app.js ; test/trash-tabs.test.js)
+  for (const hash of ['#/accueil', '#/listes', '#/echeances', '#/reglages', '#/reglages/fonctions', '#/notifications', '#/listes/abc', '#/reglages/corbeille', '#/reglages/corbeille/notes', '#/reglages/corbeille-notes', '#/notes/corbeille']) {
     assert.equal(screenAllowed(matchRoute(hash).name, OFF), true, hash);
   }
   assert.deepEqual(matchRoute('#/reglages/fonctions'), { name: 'features', params: {} });
@@ -427,12 +430,14 @@ test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles 
   assert.match(homeSettings, /const key = JSON\.stringify\(\[home, features, reordering\]\);/);
 });
 
-test('Réglages : « Fonctions » juste après « Accueil » (téléphone et ordinateur) ; « Corbeille des notes » cachée quand les notes sont coupées', () => {
+test('Réglages : « Fonctions » juste après « Accueil » (téléphone et ordinateur) ; une seule ligne « Corbeille » (24 novembre 2026)', () => {
   const settings = code('public/js/screens/settings.js');
   assert.match(settings, /const featuresRow = \(\) => row\(\{ iconName: 'layers', title: t\('reglages\.fonctions'\), sub: t\('reglages\.fonctions\.detail'\), onClick: \(\) => navigate\('features'\) \}\);/);
   assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), generalRows\(isAdmin\)\),/);
   assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), keysRow\(\), generalRows\(isAdmin\)\)/);
-  assert.match(settings, /notesOn\(app\.data\.features\) \? row\(\{ iconName: 'trash', title: t\('reglages\.corbeilleNotes'\), onClick: \(\) => navigate\('noteTrash'\) \}\) : null,/);
+  assert.equal((settings.match(/iconName: 'trash'/g) ?? []).length, 1, 'une seule ligne « Corbeille »');
+  assert.match(settings, /row\(\{ iconName: 'trash', title: t\('reglages\.corbeille'\), onClick: \(\) => navigate\('trash'\) \}\),/);
+  assert.doesNotMatch(settings, /noteTrash|corbeilleNotes/);
   // Icône du sprite fourni
   assert.match(read('design/icons-sprite.html'), /id="i-layers"/);
 });

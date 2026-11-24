@@ -2,7 +2,8 @@
 // (décisions du propriétaire du 24 novembre 2026, migration 42).
 //
 // Ce module ne touche pas à l'écran (il n'importe que la recherche,
-// search.js, elle-même sans écran ni réseau) : le serveur
+// search.js, et la mise en forme des notes, note-format.js, sans écran ni
+// réseau) : le serveur
 // (server/labels.js, server/notes.js) et le téléphone (store.js, écrans des
 // notes et de l'Administration) appliquent ainsi exactement les mêmes
 // règles, testées automatiquement (test/labels.test.js).
@@ -17,6 +18,7 @@
 //   (tous ceux qui la voient les voient).
 
 import { matches } from './search.js';
+import { plainText } from './note-format.js';
 
 // Les huit couleurs, dans l'ordre de la palette (leurs teintes sont des
 // variables du kit de design, section 16.32 de listo.css)
@@ -111,9 +113,10 @@ export function cleanLabelIds(value) {
   return ids.length > LABELS_PER_NOTE_MAX ? null : ids;
 }
 
-// Recherche dans les notes (écran « Notes ») : le titre, le texte et les
-// noms des étiquettes de la note (labels : la réserve)
+// Recherche dans les notes (écran « Notes ») : le titre, le texte (tel
+// qu'il s'affiche, sans ses marques de mise en forme, et tel qu'il est
+// écrit) et les noms des étiquettes de la note (labels : la réserve)
 export function noteMatches(note, query, labels) {
-  return matches(note?.title ?? '', query) || matches(note?.body ?? '', query)
+  return matches(note?.title ?? '', query) || matches(plainText(note?.body ?? ''), query) || matches(note?.body ?? '', query)
     || noteLabels(note, labels).some((label) => matches(label.name, query));
 }

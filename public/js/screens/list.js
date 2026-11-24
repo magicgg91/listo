@@ -67,7 +67,7 @@ import { quantityFor } from '../quantity.js';
 import { openCreateReference } from '../create-reference.js';
 import { takeTidy } from '../tidy-aisles.js';
 import { listActions } from './list-actions.js';
-import { openSharePanel } from './share-panel.js';
+import { openListShare } from './share-panel.js';
 import { recordUndo, forgetUndo, beforeOf } from '../undo.js';
 import { keycap, singleKeysOn } from '../shortcuts.js';
 import { createSearchRow } from '../search-row.js';
@@ -243,8 +243,9 @@ export function renderList(listId, onLeave) {
 
   // --- En-tête de l'ordinateur ---
   // « Partager » (propriétaire) ou « Personnes » (les autres membres), avec
-  // les pastilles des personnes : ouvre le tiroir « Partager la liste »
-  // (share-panel.js ; les autres n'y voient que les personnes, en lecture).
+  // les pastilles des personnes : ouvre le choix « Partager » (personnes ou
+  // lien temporaire, share-panel.js ; les autres n'y voient que les
+  // personnes, en lecture), comme le menu ⋮.
   // Le serveur revérifie de toute façon chaque action.
   const shareSlot = h('div', { class: 'pc-head__share' });
   // Liste d'envies : bandeau qui dit ce que la personne voit (texte ET icône)
@@ -254,7 +255,7 @@ export function renderList(listId, onLeave) {
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
     const people = h('div', { class: 'avatars', role: 'img', 'aria-label': t('liste.pc.partageeAvec', { names: namesList(members.map((m) => m.displayName)) }) },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes')} · P`, onClick: () => openSharePanel(list.id) },
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes')} · P`, onClick: () => openListShare(list.id) },
       icon('users', 'icon--sm'), list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes'), people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur

@@ -33,7 +33,7 @@ export default {
   'notes.dupliquee': 'Copie créée : « {name} »',
   'notes.ouvrir': 'Ouvrir',
   'notes.supprimer.question': 'Supprimer la note « {name} » ?',
-  'notes.supprimer.texte': 'Vous pourrez la restaurer pendant 30 jours depuis la corbeille des notes.',
+  'notes.supprimer.texte': 'Vous pourrez la restaurer pendant 30 jours depuis la corbeille des Réglages, onglet « Notes ».',
   'notes.supprimer.confirmer': 'Supprimer',
   'notes.supprimee': 'Note mise à la corbeille',
   'notes.annuler': 'Annuler',
@@ -56,6 +56,36 @@ export default {
   'notes.introuvable.titre': 'Note introuvable',
   'notes.introuvable.texte': 'Elle a peut-être été supprimée.',
 
+  // Mise en forme du texte (24 novembre 2026) : barre de dix boutons et
+  // feuille « Insérer un lien ». « .court » : ce qui est écrit sur le bouton.
+  'notes.format.barre': 'Mise en forme',
+  'notes.format.h1': 'Titre',
+  'notes.format.h1.court': 'H1',
+  'notes.format.h2': 'Sous-titre',
+  'notes.format.h2.court': 'H2',
+  'notes.format.gras': 'Gras',
+  'notes.format.gras.court': 'G',
+  'notes.format.italique': 'Italique',
+  'notes.format.italique.court': 'I',
+  'notes.format.souligne': 'Souligné',
+  'notes.format.souligne.court': 'S',
+  'notes.format.surligne': 'Surligné',
+  'notes.format.surligne.court': 'ab',
+  'notes.format.puces': 'Liste à puces',
+  'notes.format.puces.court': '•',
+  'notes.format.numeros': 'Liste numérotée',
+  'notes.format.numeros.court': '1.',
+  'notes.format.case': 'Case à cocher',
+  'notes.format.lien': 'Insérer un lien',
+  'notes.lien.titre': 'Insérer un lien',
+  'notes.lien.sous': 'Le texte s\'affiche ; un appui ouvre l\'adresse.',
+  'notes.lien.texte': 'Texte affiché',
+  'notes.lien.texte.exemple': 'Ex. le site du club',
+  'notes.lien.adresse': 'Adresse',
+  'notes.lien.aide': 'Adresses en http ou https seulement.',
+  'notes.lien.invalide': 'Adresse refusée : elle doit commencer par http:// ou https://.',
+  'notes.lien.inserer': 'Insérer',
+
   // Deux enregistrements en même temps (conflit)
   'notes.bandeau.autre': '{name} vient de modifier cette note',
   'notes.bandeau.moi': 'Cette note vient d\'être modifiée sur un autre appareil',
@@ -76,9 +106,6 @@ export default {
   'notes.conflit.deux.fait': 'Votre texte est dans « {name} »',
 
   // Partage (étape 3) : menus, carte, écran de la note
-  'notes.menu.partager': 'Partager',
-  'notes.menu.personnes': 'Personnes',
-  'notes.menu.lienPublic': 'Lien public',
   'notes.menu.quitter': 'Quitter',
   'notes.menu.nouveautes.masquer': 'Masquer les nouveautés',
   'notes.menu.nouveautes.afficher': 'Afficher les nouveautés',
@@ -88,7 +115,7 @@ export default {
   'notes.menu.notifications.reactiver': 'Réactiver les notifications',
   'notes.notifications.coupees': 'Les notifications de cette note sont coupées',
   'notes.notifications.reactivees': 'Les notifications de cette note sont réactivées',
-  'notes.supprimer.texte.partagee': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis la corbeille des notes.',
+  'notes.supprimer.texte.partagee': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis la corbeille des Réglages, onglet « Notes ».',
   'notes.quitter.question': 'Quitter la note « {name} » ?',
   'notes.quitter.texte': 'Vous ne la verrez plus. Le propriétaire pourra de nouveau la partager avec vous.',
   'notes.quitter.confirmer': 'Quitter',
@@ -106,8 +133,6 @@ export default {
   'notes.personnes.lu.voir': 'Personnes : {names}',
   'notes.statut.lectureSeule': 'Lecture seule',
   // Panneau « Partager la note » (mêmes écrans que pour une liste)
-  'notes.partage.titre': 'Partager la note',
-  'notes.partage.tousLesComptes': 'Tous les comptes ont déjà accès à cette note.',
   'notes.partage.lienActif': 'Un lien public est actif pour cette note.',
   'notes.partage.creation.texte': 'Toute personne avec le lien voit la note en lecture seule, sans compte.',
   'notes.partage.motDePasse.retirer.texte': 'Toute personne avec le lien pourra voir la note.',
@@ -119,8 +144,7 @@ export default {
 
   // Saisie rapide (tuile Notes de l'Accueil)
 
-  // Corbeille des notes
-  'notes.corbeille.titre': 'Corbeille des notes',
+  // Onglet « Notes » de la Corbeille (Réglages)
   'notes.corbeille.intro': 'Vos notes supprimées restent ici 30 jours, puis elles sont effacées pour de bon.',
   'notes.corbeille.vider.texte': {
     one: 'La note de la corbeille sera effacée pour de bon. Cela ne peut pas être annulé.',

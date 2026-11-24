@@ -72,14 +72,15 @@ test('écran : réservation montrée seulement si la copie en contient ; lien s�
   // Boutons pleine largeur (.btn, 44 px du kit)
   assert.match(read('public/css/listo.css'), /\.btn \{[^}]*min-height: var\(--tap\);/);
   assert.match(read('public/css/listo.css'), /\.btn--sm \{ min-height: var\(--tap-min\);/);
-  for (const file of ['public/js/screens/list.js', 'public/js/screens/list-form.js', 'public/js/wishes.js']) {
+  for (const file of ['public/js/screens/list.js', 'public/js/screens/list-form.js', 'public/js/screens/share-picker.js', 'public/js/screens/share-panel.js', 'public/js/wishes.js']) {
     assert.doesNotMatch(code(file), /innerHTML|insertAdjacentHTML|outerHTML/, file);
   }
   // Formulaire : « Pour qui ? » seulement pour les envies, fixé ensuite
   const form = code('public/js/screens/list-form.js');
   assert.match(form, /forField\.hidden = !isWishList\(listType\);/);
-  assert.match(form, /if \(isLockedBeneficiary\(person\)\) return lockedRow\(person, person\.displayName, t\('formulaire\.partage\.destinataire'\)\);/);
-  assert.equal(fr['formulaire.partage.destinataire'], 'Destinataire · Peut modifier');
+  // Destinataire : verrouillé dans la feuille « Partager avec des personnes » (share-picker.js)
+  assert.match(code('public/js/screens/share-picker.js'), /if \(beneficiary && lockedBeneficiary\) return lockedRow\(person, person\.displayName, t\('partage\.personnes\.destinataire'\)\);/);
+  assert.equal(fr['partage.personnes.destinataire'], 'Destinataire · Peut modifier');
   assert.match(read('public/js/list-types.js'), /export const WISHES_LOCKED_HINT = 'regles\.envies\.verrouillee';/);
   assert.equal(fr['regles.envies.verrouillee'], 'Le type et la personne à qui la liste est destinée ne changent plus.');
   assert.doesNotMatch(fr['regles.envies.verrouillee'], /réserv/i, 'la phrase ne parle pas des réservations');
@@ -92,7 +93,7 @@ test('formulaire : une liste de courses ou de tâches peut devenir une liste d\'
   // Les trois types pour une liste existante (sauf une liste d'envies, figée)
   assert.match(form, /const offered = wishesLocked \? \['wishes'\] : CREATABLE_TYPES;/);
   assert.match(form, /const converting = \(\) => Boolean\(list\) && !wishesLocked && isWishList\(listType\);/);
-  // « Pour qui ? » comme à la création ; prénom obligatoire ; destinataire verrouillé dans le partage
+  // « Pour qui ? » comme à la création ; prénom obligatoire
   assert.match(form, /const beneficiaryId = \(\) => \(wishesLocked \? list\.forUserId \?\? null : isWishList\(listType\) && typeof forChoice === 'number' \? forChoice : null\);/);
   assert.match(form, /const forName = \(!list \|\| converting\(\)\) && isWishList\(listType\) && forChoice === 'name' \?/);
   assert.match(form, /forNameField\.setError\(forName === '' \? t\('formulaire\.pourQui\.prenom\.obligatoire'\) : null\);/);

@@ -53,7 +53,7 @@ const guideTexts = (locale = 'fr') => {
 test('libellés cités dans le guide : tous présents dans l\'interface', () => {
   const interfaceText = sources();
   const helpText = guideTexts();
-  for (const label of ['Dupliquer', 'Quitter', 'Partager par lien', 'Modifier la liste', 'Lecture seule', 'Peut modifier', 'Lecture et écriture', 'Assistants IA', 'Autoriser un assistant IA', 'Copier l\'adresse', 'Code de démarrage', 'Ajouter un compte']) {
+  for (const label of ['Dupliquer', 'Quitter', 'Partager par un lien temporaire', 'Modifier la liste', 'Lecture seule', 'Peut modifier', 'Lecture et écriture', 'Assistants IA', 'Autoriser un assistant IA', 'Copier l\'adresse', 'Code de démarrage', 'Ajouter un compte']) {
     assert.ok(helpText.includes(`« ${label} »`), `guide : « ${label} »`);
     assert.ok(interfaceText.includes(label), `interface : « ${label} »`);
   }

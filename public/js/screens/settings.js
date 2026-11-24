@@ -13,7 +13,6 @@ import { h, icon, iconButton, field, passwordInput, errorNote, avatar, replace }
 import { post, get, errorMessage } from '../api.js';
 import { navigate, goBack } from '../router.js';
 import { app } from '../app.js';
-import { notesOn } from '../features.js';
 import { aboutVersion } from '../format.js';
 import { toast, onPc } from '../ui.js';
 import { singleKeysOn, setSingleKeys, openShortcuts } from '../shortcuts.js';
@@ -101,9 +100,10 @@ export function renderSettings() {
 
 // « Général » (téléphone et ordinateur) : Accueil (home-settings.js, en
 // premier depuis le 23 novembre 2026 ; sur ordinateur, avant les raccourcis
-// à une touche), notifications (notifications.js), corbeilles des listes
-// (trash.js) et des notes (note-trash.js ; pas quand les notes sont
-// coupées), administration (compte Admin seulement). « Fonctions »
+// à une touche), notifications (notifications.js), « Corbeille » (une seule
+// ligne depuis le 24 novembre 2026 : onglets « Listes » et « Notes »,
+// trash-page.js ; sans onglets quand les notes sont coupées),
+// administration (compte Admin seulement). « Fonctions »
 // (features.js, 24 novembre 2026) suit « Accueil ».
 const homeRow = () => row({ iconName: 'home', title: t('reglages.accueil'), sub: t('reglages.accueil.detail'), onClick: () => navigate('homeSettings') });
 const featuresRow = () => row({ iconName: 'layers', title: t('reglages.fonctions'), sub: t('reglages.fonctions.detail'), onClick: () => navigate('features') });
@@ -111,7 +111,6 @@ function generalRows(isAdmin) {
   return [
     notificationsRow(),
     row({ iconName: 'trash', title: t('reglages.corbeille'), onClick: () => navigate('trash') }),
-    notesOn(app.data.features) ? row({ iconName: 'trash', title: t('reglages.corbeilleNotes'), onClick: () => navigate('noteTrash') }) : null,
     // Pastille : demandes de compte en attente (connexion avec le fournisseur d'identité)
     isAdmin ? row({ iconName: 'shield', title: t('reglages.administration'), end: app.user.accountRequests ? [requestsBadge(app.user.accountRequests), icon('chev-r')] : undefined, onClick: () => navigate('admin', { tab: 'comptes' }) }) : null,
   ];

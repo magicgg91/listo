@@ -137,6 +137,8 @@ html[data-keyboard] .footer { padding-bottom: var(--space-3); }
 html[data-keyboard] .body:last-child,
 html[data-keyboard] .body:has(+ .footer[hidden]) { padding-bottom: var(--space-3); }
 html[data-keyboard] .public-foot { padding-bottom: 0; }
+/* Barre de mise en forme d'une note (16.33), posée sur le clavier */
+html[data-keyboard] .note-tools--dock { padding-bottom: 8px; }
 
 /* Sprite d'icônes : présent dans la page, mais invisible */
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -380,14 +382,13 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .list-card__menu { position: absolute; top: 6px; right: 4px; color: var(--color-text-2); }
 .menu__sep { height: 1px; margin: var(--space-0) 12px; background: var(--color-border); }
 
-/* Droit de chaque personne sur une liste partagée (formulaire de liste) :
-   sous la ligne cochée, deux choix .segmented « Peut modifier / Lecture
-   seule » sur toute la largeur de la carte (la coche et le texte tiennent
-   sur une ligne) */
+/* Feuille « Partager avec des personnes » (share-picker.js, autrefois
+   fenêtre « Partager avec » du formulaire de liste) : une ligne par
+   personne, cochée ou non */
 .share__person { border-bottom: 1px solid var(--color-border); }
 .share__person:last-child { border-bottom: 0; }
 .share__person .tick-row { border-bottom: 0; }
-/* Fenêtre « Partager avec » : une ligne par personne (case, pastille,
+/* Une ligne par personne (case, pastille,
    prénom, puis son droit « Modifier / Lire » au bout de la ligne ; place
    réservée quand la personne n'est pas cochée). Le prénom passe à la ligne
    plutôt que d'être coupé. */
@@ -397,8 +398,18 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .share__access { flex: none; gap: 2px; padding: 2px; }
 .share__access .segmented__opt { flex: none; min-width: var(--tap-min); padding: 0 6px; }
 .share__access.is-off { visibility: hidden; }
-/* Résumé du partage dans le formulaire : pastilles, prénoms sur une ligne, chevron */
-.share__summary-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Choix « Partager « Maison » » (share-panel.js, 24 novembre 2026) : deux
+   lignes (icône, titre, état actuel, chevron) dans un groupe, puis une
+   phrase. Le lien actif : son état en vert, et toujours écrit (« Lien
+   actif · … » : jamais la couleur seule). Le groupe garde sa hauteur dans
+   la feuille du bas (sheet__keep). */
+.share-choice { margin: 0 0 var(--space-1); }
+.share-choice__row { gap: 14px; min-height: 72px; cursor: pointer; }
+.share-choice__row > .icon { flex: none; color: var(--color-text-2); }
+.share-choice__on { color: var(--color-success-ink); }
+.share-choice__hint { margin: 4px 4px var(--space-1); font-size: var(--text-sm); color: var(--color-text-2); }
+/* « Personnes » (les autres membres) : qui partage, en lecture */
+.share-view { margin: 0; padding: 0; list-style: none; }
 
 /* Liste en lecture seule : bandeau sous la barre du haut (.readonly-banner,
    section 16.4), pastille sur la carte de « Mes listes », valeurs en texte
@@ -462,6 +473,12 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 .tabs { overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: 1 0 auto; white-space: nowrap; }
+/* Corbeille (trash-page.js, 24 novembre 2026) : les onglets de
+   l'Administration, deux de même largeur quel que soit leur nombre
+   (« Listes », « Notes (2) ») ; la phrase de l'onglet ne colle pas à leur
+   trait */
+.trash-tabs .tab { flex: 1 1 0; }
+.trash-tabs + .body--flush { padding-top: var(--space-2); }
 
 /* Administration, onglet « Courses » : choix Magasins / Rayons / Articles,
    même composant que les onglets (.tabs, .tab), en plus petit ; 44 px de

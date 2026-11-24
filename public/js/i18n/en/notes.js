@@ -32,7 +32,7 @@ export default {
   'notes.dupliquee': 'Copy created: “{name}”',
   'notes.ouvrir': 'Open',
   'notes.supprimer.question': 'Delete the note “{name}”?',
-  'notes.supprimer.texte': 'You can restore it for 30 days from the notes trash.',
+  'notes.supprimer.texte': 'You can restore it for 30 days from the trash in Settings, “Notes” tab.',
   'notes.supprimer.confirmer': 'Delete',
   'notes.supprimee': 'Note moved to the trash',
   'notes.annuler': 'Undo',
@@ -55,6 +55,36 @@ export default {
   'notes.introuvable.titre': 'Note not found',
   'notes.introuvable.texte': 'It may have been deleted.',
 
+  // Mise en forme du texte (24 novembre 2026) : barre de dix boutons et
+  // feuille « Insérer un lien ». « .court » : ce qui est écrit sur le bouton.
+  'notes.format.barre': 'Formatting',
+  'notes.format.h1': 'Heading',
+  'notes.format.h1.court': 'H1',
+  'notes.format.h2': 'Subheading',
+  'notes.format.h2.court': 'H2',
+  'notes.format.gras': 'Bold',
+  'notes.format.gras.court': 'B',
+  'notes.format.italique': 'Italic',
+  'notes.format.italique.court': 'I',
+  'notes.format.souligne': 'Underline',
+  'notes.format.souligne.court': 'U',
+  'notes.format.surligne': 'Highlight',
+  'notes.format.surligne.court': 'ab',
+  'notes.format.puces': 'Bulleted list',
+  'notes.format.puces.court': '•',
+  'notes.format.numeros': 'Numbered list',
+  'notes.format.numeros.court': '1.',
+  'notes.format.case': 'Checkbox',
+  'notes.format.lien': 'Insert a link',
+  'notes.lien.titre': 'Insert a link',
+  'notes.lien.sous': 'The text is shown; tapping it opens the address.',
+  'notes.lien.texte': 'Text to show',
+  'notes.lien.texte.exemple': 'e.g. the club website',
+  'notes.lien.adresse': 'Address',
+  'notes.lien.aide': 'http or https addresses only.',
+  'notes.lien.invalide': 'Address refused: it must start with http:// or https://.',
+  'notes.lien.inserer': 'Insert',
+
   // Deux enregistrements en même temps (conflit)
   'notes.bandeau.autre': '{name} just edited this note',
   'notes.bandeau.moi': 'This note was just edited on another device',
@@ -75,9 +105,6 @@ export default {
   'notes.conflit.deux.fait': 'Your text is in “{name}”',
 
   // Partage (étape 3) : menus, carte, écran de la note
-  'notes.menu.partager': 'Share',
-  'notes.menu.personnes': 'People',
-  'notes.menu.lienPublic': 'Public link',
   'notes.menu.quitter': 'Leave',
   'notes.menu.nouveautes.masquer': "Hide what's new",
   'notes.menu.nouveautes.afficher': "Show what's new",
@@ -87,7 +114,7 @@ export default {
   'notes.menu.notifications.reactiver': 'Turn notifications back on',
   'notes.notifications.coupees': 'Notifications for this note are off',
   'notes.notifications.reactivees': 'Notifications for this note are back on',
-  'notes.supprimer.texte.partagee': 'It disappears for everyone. You can restore it for 30 days from the notes trash.',
+  'notes.supprimer.texte.partagee': 'It disappears for everyone. You can restore it for 30 days from the trash in Settings, “Notes” tab.',
   'notes.quitter.question': 'Leave the note “{name}”?',
   'notes.quitter.texte': "You won't see it anymore. The owner can share it with you again.",
   'notes.quitter.confirmer': 'Leave',
@@ -105,8 +132,6 @@ export default {
   'notes.personnes.lu.voir': 'People: {names}',
   'notes.statut.lectureSeule': 'Read only',
   // Panneau « Partager la note » (mêmes écrans que pour une liste)
-  'notes.partage.titre': 'Share note',
-  'notes.partage.tousLesComptes': 'Every account already has access to this note.',
   'notes.partage.lienActif': 'A public link is active for this note.',
   'notes.partage.creation.texte': 'Anyone with the link can see the note, read only, without an account.',
   'notes.partage.motDePasse.retirer.texte': 'Anyone with the link will be able to see the note.',
@@ -118,8 +143,7 @@ export default {
 
   // Saisie rapide (tuile Notes de l'Accueil)
 
-  // Corbeille des notes
-  'notes.corbeille.titre': 'Notes trash',
+  // Onglet « Notes » de la Corbeille (Réglages)
   'notes.corbeille.intro': 'Your deleted notes stay here for 30 days, then they are deleted for good.',
   'notes.corbeille.vider.texte': {
     one: 'The note in the trash will be deleted for good. This can\'t be undone.',

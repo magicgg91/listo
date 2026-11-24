@@ -20,7 +20,8 @@ const code = (file) => read(file).split('\n').map((line) => line.replace(/\/\/.*
 
 test('adresses des écrans des notes ; la corbeille et « nouvelle » ne sont jamais prises pour une note', () => {
   assert.deepEqual(matchRoute('#/notes'), { name: 'notes', params: {} });
-  // Corbeille des notes : dans Réglages (23 novembre 2026) ; l'ancienne adresse y mène
+  // Anciennes adresses de la corbeille des notes : l'onglet « Notes » de la
+  // Corbeille des Réglages (24 novembre 2026, app.js)
   assert.deepEqual(matchRoute('#/reglages/corbeille-notes'), { name: 'noteTrash', params: {} });
   assert.deepEqual(matchRoute('#/notes/corbeille'), { name: 'oldNoteTrash', params: {} });
   assert.deepEqual(matchRoute('#/notes/nouvelle'), { name: 'newNote', params: {} });
@@ -33,7 +34,11 @@ test('texte d\'une note : textContent et éléments <a> seulement (http, https),
   for (const file of ['public/js/screens/note.js', 'public/js/screens/notes.js', 'public/js/screens/note-trash.js', 'public/js/notes.js']) {
     assert.doesNotMatch(code(file), /innerHTML|outerHTML|insertAdjacentHTML|document\.write/, file);
   }
-  assert.match(note, /replace\(view, linkParts\(body\)\.map\(\(part\) => \(part\.href\s*\? h\('a', \{ class: 'note-link', href: part\.href, target: '_blank', rel: 'noopener noreferrer' \}, part\.text\)\s*: part\.text\)\)\);/);
+  // Texte mis en forme (24 novembre 2026) : éléments construits par
+  // note-format.js (h et textContent), cases cochables seulement pour qui
+  // peut modifier
+  assert.match(note, /replace\(view, renderNoteText\(body, \{ h, icon, editable: !readOnly\(\) \}\)\);/);
+  assert.doesNotMatch(code('public/js/note-format.js'), /innerHTML|outerHTML|insertAdjacentHTML|document\.write|DOMParser|createContextualFragment/);
   // Un lien touché s'ouvre, sans passer en saisie
   assert.match(note, /if \(event\.target\.closest\('a'\)\) return;/);
 });
@@ -42,8 +47,11 @@ test('curseur : jamais à l\'ouverture d\'une note existante ; seulement pour «
   const note = code('public/js/screens/note.js');
   // Une seule mise en saisie automatique : une nouvelle note
   assert.match(note, /if \(isNew\) queueMicrotask\(\(\) => edit\(0\)\);/);
-  assert.equal((note.match(/\bedit\(/g) ?? []).length, 3, 'nouvelle note, appui sur le texte, Entrée');
-  assert.equal((note.match(/\.focus\(/g) ?? []).length, 1);
+  assert.equal((note.match(/\bedit\(/g) ?? []).length, 4, 'nouvelle note, appui sur le texte, Entrée, bouton de la barre sans rien de choisi');
+  // Curseur remis dans le texte après un bouton de la barre atteint au
+  // clavier (Tab) : geste fait pour écrire
+  assert.equal((note.match(/\.focus\(/g) ?? []).length, 2);
+  assert.match(note, /if \(document\.activeElement !== input\) input\.focus\(\{ preventScroll: true \}\);/);
   assert.match(note, /input\.focus\(\{ preventScroll: true \}\);\s*input\.setSelectionRange\(at, at\);/);
   // Nouvelle note depuis l'Accueil : directement l'écran d'une nouvelle note
   const notes = code('public/js/screens/notes.js');
@@ -152,7 +160,7 @@ test('service worker : nouveaux fichiers gardés hors ligne ; icônes ajoutées 
 test('textes : français et anglais, noms des écrans des notes', () => {
   assert.equal(fr['notes.titre'], 'Notes');
   assert.equal(en['notes.nouvelle'], 'New note');
-  assert.equal(en['notes.corbeille.titre'], 'Notes trash');
+  assert.equal(en['notes.corbeille.intro'], 'Your deleted notes stay here for 30 days, then they are deleted for good.');
   assert.equal(en['notes.statut.enregistre'], 'Saved');
   assert.equal(en['notes.statut.enCours'], 'Saving…');
   assert.equal(fr['notes.sansTitre'], 'Note sans titre');

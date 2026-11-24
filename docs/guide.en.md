@@ -275,6 +275,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.6 Notes
 
 - Notes in free text, that save themselves, with clickable links, a pin and their own trash ([5.12 Notes](#notes)).
+- Simple formatting in notes: headings, bold, italic, underline, highlight, lists, checkboxes and links, with a bar of buttons above the keyboard ([5.12 Notes](#notes)).
 - A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([5.13 Sharing a note](#notes-partage)).
 - A quick note from Home, even offline ([5.12 Notes](#notes)).
 - An AI assistant can read your notes and, if you allow it, create notes or add to them ([8.6 Notes](#claude-notes)).
@@ -284,7 +285,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.7 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
-- Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note, from the notes trash ([5.12 Notes](#notes)).
+- Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes”.
 - Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([7.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
 <a id="p-confort"></a>
@@ -823,7 +824,7 @@ Settings, “Home” (the first row of “General”) sets up the Home screen fo
 
 Settings, “Features” (just below “Home”) chooses the features you use; for now, notes. A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.
 
-- Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
+- Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more tabs in the “Trash” in Settings (only your deleted lists); on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
 - With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
 - Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.
 
@@ -831,13 +832,25 @@ Settings, “Features” (just below “Home”) chooses the features you use; f
 
 ### 5.12 Notes
 
-A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links. Don't use notes? Turn them off for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
+A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text keeps its line breaks and can be formatted: headings, bold, lists, checkboxes, links (see “Formatting” below); web addresses in http or https become links. Don't use notes? Turn them off for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
 
 - “Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles, texts and label names.
 - “+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.
 - A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.
-- To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.
-- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
+- To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab, and a checkbox gets ticked.
+- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” (your notes: with people or by a link) or “People” (a note shared with you), “Labels” (if you can edit it), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
+
+**Formatting**
+
+A note's text can have headings, bold, lists or checkboxes. These are small marks written in the text (Markdown ones, if you know it): while you write, you see them as they are; as soon as you stop writing, the note is shown formatted, without the marks.
+
+- The formatting bar writes the marks for you. On the phone, it is at the bottom of the note, and just above the keyboard when it is open; on a computer, at the top of the text. It only appears if you can edit the note. Its ten buttons, in order: “Heading” (H1), “Subheading” (H2), “Bold” (B), “Italic” (I), “Underline” (U), “Highlight” (ab), “Bulleted list”, “Numbered list”, “Checkbox” and “Insert a link”.
+- A button applies to the chosen text, even without the keyboard: select words in the displayed note, then tap the button. Tapped a second time, it removes the mark; “Subheading” on a heading turns it into a subheading. Line buttons (headings, lists, checkboxes) apply to each chosen line. With nothing chosen, a button starts writing at the end of the note, already formatted.
+- The marks, to type yourself if you prefer: `# Heading` and `## Subheading` at the start of a line; `**bold**`, `*italic*` (or `_italic_`), `++underline++` and `==highlight==` around words; `- ` (or `* `) at the start of a line for a bullet, `1. ` for a numbered list (the numbers stay the ones you type); `- [ ] ` for a checkbox, `- [x] ` for a ticked checkbox. `++underline++` and `==highlight==` aren't standard Markdown, but many note apps know them.
+- Checkboxes: in the displayed note, tap a checkbox to tick or untick it; the note saves as if you had typed. A ticked checkbox is also crossed out. With “Read only” and on the public page, checkboxes show but can't be ticked.
+- Links: “Insert a link” asks for the “Text to show” (already filled with the chosen text) and the “Address”, then “Insert” writes `[text to show](https://…)`; the note only shows the text, which opens the address. Only http or https addresses are accepted: any other (javascript:, data:…) stays text, never a link. An address typed on its own (https://…) stays clickable.
+- A mark that isn't closed shows as it is (`**bold` stays `**bold`), and a line has only one start mark (heading, bullet, number or checkbox). Nothing else is interpreted, not even HTML: it stays text. A note's title is never formatted.
+- Elsewhere, the text reads without its marks: cards on the “Notes” screen, the Home tile, notifications, the title of a copy; search finds the text with or without its marks. A note's public page shows it formatted. An AI assistant reads and writes the text with its marks ([8.6 Notes](#claude-notes)).
 
 **Labels**
 
@@ -853,9 +866,9 @@ A label sorts a note: ‘Recipes’, ‘Holidays’, ‘Home’… Labels are sh
 
 If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just edited this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.
 
-**Notes trash**
+**Trash**
 
-The “Notes trash” is in “Settings”, just below the “List trash”: your deleted notes stay there for 30 days, then they are deleted for good (you never see other people's notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.
+Your deleted notes go to the “Trash” in Settings, “Notes” tab (next to the “Lists” tab): they stay there for 30 days, then they are deleted for good (you never see other people's notes there). “Restore” puts it back in its place (pinned if it was); “Delete for good” and “Empty the trash” ask for confirmation. A shared note disappears for everyone; restored, it comes back for each of them, with their pin. Offline, all this waits for the network to come back.
 
 **On a computer**
 
@@ -865,13 +878,13 @@ The “Notes trash” is in “Settings”, just below the “List trash”: you
 
 ### 5.13 Sharing a note
 
-In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens “Share note”, as for a list: add a person from the existing accounts, with “Can edit” or “Read only”, change that access, or remove them. You need a network connection.
+In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens the same choice as for a list ([7.4 Owner: sharing and choosing permissions](#partager)). “With people on Listo”: check a person from the existing accounts, choose “Edit” or “View” at the end of their row, or uncheck them to remove them, then “OK”. “With a temporary link”: the public link (below). You need a network connection.
 
 - Owner: everything, including deleting the note, sharing it and managing its public link.
 - “Can edit”: change the title and the text. Never delete the note, share it or manage its public link.
 - “Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.
 - Everyone except the owner can leave the note: ⋮ menu, “Leave”. Someone who loses access also loses their pin. Each person's pin is never shown to the others.
-- The cards of a shared note show the people's initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
+- The cards of a shared note show the people's initials; “People”, at the top of the note or in its card's ⋮ menu, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
 
 **What's new and notifications**
 
@@ -881,7 +894,7 @@ Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notificati
 
 **A note's public link**
 
-⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the text (clickable links) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
+“Share” (at the top of one of your notes, or ⋮ menu), then “With a temporary link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
 
 <a id="reserver"></a>
 
@@ -927,7 +940,7 @@ Without a network, you can keep adding, editing and checking, and writing in you
 
 The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.
 
-Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the list trash, reservations, creating a store or an aisle, and Administration need a connection.
+Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the “Lists” tab of the trash, reservations, creating a store or an aisle, and Administration need a connection.
 
 <a id="theme"></a>
 
@@ -953,8 +966,8 @@ In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), L
 - The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - In the middle, every screen (Home, Due, Lists, a list, “To give”, Notes, Settings, Help…) has the same width. At the top, on the title line: the status pill, the screen's buttons and the search; the line below holds the rest (counter, “All” / “Mine”, sort).
 - On the right, the open list: at the top, on the title line, the status pill, “Share” and the search, always shown; below, the counter ([5.9 Groups, sorting and counter](#tri)), then the add field, above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
-- An item's details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
-- “Share list” brings together the people on the list and the public link. The owner chooses each person's access there, adds or removes people, and manages the link; the other members only see the list of people there.
+- An item's details open in a panel on the right; “Share”, “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
+- “Share” (at the top of the list, or P key) opens the same choice as on the phone ([7.4 Owner: sharing and choosing permissions](#partager)): “With people on Listo” or “With a temporary link”. The other members have “People” instead: the list of people and their access, without being able to change anything.
 - Right-click on a row (or the Menu key, or Shift+F10): Edit, Check, Delete, depending on your access.
 
 **Keyboard shortcuts**
@@ -1201,11 +1214,14 @@ The list's ⋮ menu, “Edit”: the title, the type, the store, the icon. For a
 
 ### 7.4 Owner: sharing and choosing permissions
 
-“Edit list”, “Share with” row: a window opens with one row per person. Check a person, then choose their permission at the end of their row. “OK” closes the window; the sharing is saved with “Save”.
+The list's ⋮ menu (or its card's ⋯ menu), “Share”: a small choice opens, with two rows that tell you where things stand. “With people on Listo” shows who the list is shared with (‘Léa and Zoé’, or “Only you”); “With a temporary link”, the state of the public link (“No link”, ‘Active link · expires in 6 days’…, [7.6 Owner: the public link](#lien-public)).
+
+“With people on Listo” opens “Share with people”: one row per person. Check a person, then choose their permission at the end of their row; uncheck them to remove them. “OK” saves everything at once and takes you back to the choice; the cross closes without changing anything. You need a network connection.
 
 - “Edit” (“Can edit” permission): the person is a contributor ([7.8 Contributor (“Can edit”)](#role-contributeur)).
 - “View” (“Read only” permission): the person can only read ([7.9 Read only](#role-lecture)). This is the starting choice.
 - You can change the permission or remove a person at any time.
+- The other members see “People” instead of “Share”: who the list is shared with, with which permission, without being able to change anything.
 
 <a id="envies"></a>
 
@@ -1215,7 +1231,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 - “Who is it for?” is chosen when the list is created: “Me”, another account, or “Someone without an account” (a child, for example). It can't be changed afterwards, and the list can't change type anymore.
 - A shopping or task list can become a wish list: in “Edit list”, choose “Wishes”, then “Who is it for?”. This is permanent, it needs a network connection, and nothing is erased: quantities and due dates are kept without being shown, checked items become “Received”, and an active public link is stopped.
-- If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves.
+- If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves. In “Share with people”, their row is checked, “Recipient · Can edit”, and can't be unchecked.
 - A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.
 - Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.
 - When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([9.11 Wish list: a participant has left](#faq-orphelin)).
@@ -1225,7 +1241,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 ### 7.6 Owner: the public link
 
-“Share by link” (⋮ menu) creates an address that you send to a person without an account. They see the list as read only ([7.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Public link” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
+“Share” (⋮ menu), then “With a temporary link”, opens “Share with a temporary link”: “Create link” creates an address that you send to a person without an account. They see the list as read only ([7.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Share” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
 
 - Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.
 - “Protect with a password”: the password is shown only once. Write it down.
@@ -1240,7 +1256,8 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 - “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
-- A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
+- A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
+- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), each with its number when there are any. It opens on “Lists”, unless only notes are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”), it has no tabs: only your lists.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.
@@ -1355,6 +1372,7 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 
 - Read: it sees the list of your notes (title, start of the text, labels, pin), then the text of a note.
 - Add to a note: it adds text at the end of a note, on a new line, without touching the rest. It's the safest way: nothing is lost, even if someone is writing in the note at the same time.
+- Formatting: it reads the text with its marks and can use them when writing (for example a checkbox, `- [ ] AA batteries`) ([5.12 Notes](#notes)).
 - Replace the whole text: only if the note hasn't changed since it read it; otherwise nothing is written and it has to read it again. It must ask you to confirm first.
 - Create a note: it's yours, shared with no one.
 - Labels: it only sets labels that already exist (capitals and accents ignored); with an unknown name, nothing is done. It can create a label if you ask it to.

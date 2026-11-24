@@ -153,15 +153,15 @@ test('file hors ligne : les opérations de la personne partie sont refusées et 
 test('menus : mêmes actions, même ordre, aux deux endroits, pour chaque profil ; pas de « ⋯ » sans action', () => {
   const source = read('public/js/screens/list-actions.js');
   // Propriétaire : Modifier, Dupliquer, Partager, sourdine (nouveautés), silence (notifications), — Supprimer
-  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\)[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\)[^\n]*\n\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true,/);
+  assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\)[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*share,\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true,/);
   assert.equal(fr['menu.modifier'], 'Modifier');
-  assert.equal(fr['menu.partagerLien'], 'Partager par lien');
+  assert.equal(fr['partage.menu.partager'], 'Partager');
   assert.equal(fr['menu.supprimer'], 'Supprimer');
-  // Invité : « Peut modifier » : Dupliquer, — Quitter ; lecture seule : Quitter (sans trait au-dessus)
+  // Invité : « Peut modifier » : Dupliquer, Personnes, — Quitter ; lecture seule : Personnes, Quitter (sans trait au-dessus)
   assert.match(source, /const leave = \{ icon: 'logout', label: t\('menu\.quitter'\), danger: true, separated: canEdit, onSelect: async \(\) => \{\s*if \(!\(await leaveListWithConfirm\(list\)\)\) return;/);
   assert.equal(fr['menu.quitter'], 'Quitter');
   assert.match(source, /onDeleted\(\);\s*setTimeout\(\(\) => toast\(message, \{ low: true \}\), 400\);/);
-  assert.match(source, /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
+  assert.match(source, /return \(canEdit && !wishes \? \[duplicate, share, mute, pushMute, leave\] : \[share, mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   // Confirmation et hors ligne
   assert.match(source, /title: t\('menu\.quitter\.question', \{ name: list\.name \}\),\s*text: t\('menu\.quitter\.texte'\),\s*confirmLabel: t\('menu\.quitter\.confirmer'\),/);
   assert.equal(fr['menu.quitter.question'], 'Quitter la liste « {name} » ?');

@@ -100,7 +100,7 @@ test('confirmation : nombre d\'éléments, partage, restauration possible 30 jou
   const tasks = { type: 'tasks' };
   assert.deepEqual(deleteListText(tasks, 12, 3), [
     'Elle contient 12 éléments et elle est partagée avec 3 personnes.',
-    'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis Réglages > Corbeille des listes.',
+    'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis Réglages > Corbeille.',
   ]);
   assert.equal(deleteListText({ type: 'shopping' }, 1, 1)[0], 'Elle contient 1 article et elle est partagée avec 1 personne.');
   assert.equal(deleteListText({ type: 'wishes' }, 4, 0)[0], 'Elle contient 4 souhaits.', 'pas de partage : rien sur le partage');
@@ -286,7 +286,7 @@ test('hors ligne : « Restaurer », « Supprimer définitivement » et « Vider 
   const screen = code('public/js/screens/trash.js');
   assert.match(screen, /export const offlineRestore = \(\) => t\('corbeille\.horsLigne\.restaurer'\);/);
   assert.equal(fr['corbeille.horsLigne.restaurer'], 'Restaurer ou supprimer une liste demande une connexion. Les boutons reviendront avec le réseau.');
-  assert.match(screen, /for \(const button of view\.screen\.querySelectorAll\('button\[data-trash-action\]'\)\) button\.disabled = !online \|\| busy;/);
+  assert.match(screen, /for \(const button of view\.panel\.querySelectorAll\('button\[data-trash-action\]'\)\) button\.disabled = !online \|\| busy;/);
   assert.match(screen, /if \(!navigator\.onLine \|\| busy\) return;/);
   assert.match(screen, /window\.addEventListener\('online', onOnline\);\s*window\.addEventListener\('offline', onOffline\);/);
   assert.match(screen, /await post\(`\/api\/lists\/\$\{encodeURIComponent\(list\.id\)\}\/restore`\);\s*await refreshData\(\{ quiet: true \}\);/);
@@ -309,28 +309,33 @@ test('hors ligne : « Restaurer », « Supprimer définitivement » et « Vider 
   assert.doesNotMatch(read('server/lists.js'), /'list\.restore'|'list\.purge'/);
   assert.match(read('public/js/router.js'), /\{ name: 'trash', path: '\/reglages\/corbeille' \}/);
   assert.match(code('public/js/screens/settings.js'), /row\(\{ iconName: 'trash', title: t\('reglages\.corbeille'\), onClick: \(\) => navigate\('trash'\) \}\)/);
-  assert.equal(fr['reglages.corbeille'], 'Corbeille des listes');
-  for (const file of ['trash.js', 'trash-parts.js', 'note-trash.js']) assert.match(read('public/sw.js'), new RegExp(`'/js/screens/${file.replace('.', '\\.')}',`), file);
-  assert.match(read('public/sw.js'), /const VERSION = `v(149|1[5-9]\d|[2-9]\d\d|\d{4,})-/);
+  // Une seule ligne « Corbeille » depuis le 24 novembre 2026 (trash-page.js)
+  assert.equal(fr['reglages.corbeille'], 'Corbeille');
+  assert.equal(en['reglages.corbeille'], 'Trash');
+  for (const file of ['trash.js', 'trash-parts.js', 'note-trash.js', 'trash-page.js']) assert.match(read('public/sw.js'), new RegExp(`'/js/screens/${file.replace('.', '\\.')}',`), file);
+  assert.match(read('public/sw.js'), /'\/js\/trash-tabs\.js',/);
+  assert.match(read('public/sw.js'), /const VERSION = `v(16[6-9]|1[7-9]\d|[2-9]\d\d|\d{4,})-/);
 });
 
-test('les deux corbeilles : le même écran compact (morceaux communs), boutons nommés, textes en français et en anglais', () => {
+test('les deux onglets de la Corbeille : le même contenu compact (morceaux communs), boutons nommés, textes en français et en anglais', () => {
   const parts = code('public/js/screens/trash-parts.js');
   const lists = code('public/js/screens/trash.js');
   const notes = code('public/js/screens/note-trash.js');
   for (const [name, screen] of [['listes', lists], ['notes', notes]]) {
-    assert.match(screen, /import \{ trashScreen, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion \} from '\.\/trash-parts\.js';/, name);
-    assert.match(screen, /trashScreen\(\{ title: t\('/, name);
+    assert.match(screen, /import \{ trashPanel, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion \} from '\.\/trash-parts\.js';/, name);
+    assert.match(screen, /trashPanel\(\{ intro: t\('/, name);
+    assert.match(screen, /return \{ panel: view\.panel, count: \(\) => /, name);
     assert.match(screen, /trashRow\(\{/, name);
     assert.match(screen, /deletedText\(/, name);
     assert.match(screen, /h\('div', \{ class: 'group' \}, /, name);
     assert.doesNotMatch(screen, /innerHTML|outerHTML|insertAdjacentHTML|\.focus\(|note-trash|trash__|row__icon/, name);
   }
   assert.doesNotMatch(parts, /innerHTML|outerHTML|insertAdjacentHTML|\.focus\(/);
-  // Écran : barre des Réglages, phrase, nombre et « Vider la corbeille », carte
-  assert.match(parts, /h\('div', \{ class: 'body body--flush' \}, h\('p', \{ class: 'page-intro' \}, intro\), banner, tools, content\)/);
+  // Contenu d'un onglet : phrase, nombre et « Vider la corbeille », carte
+  // (la barre des Réglages et les onglets : trash-page.js)
+  assert.match(parts, /const panel = h\('div', \{\}, h\('p', \{ class: 'page-intro' \}, intro\), banner, tools, content\);/);
   assert.match(parts, /h\('div', \{ class: 'page-tools', hidden: true \}, count, emptyButton\)/);
-  assert.match(parts, /topbar\(title, \(\) => goBack\('settings'\)\)/);
+  assert.match(code('public/js/screens/trash-page.js'), /topbar\(t\('corbeille\.titre'\), \(\) => goBack\('settings'\)\)/);
   // Ligne : titre, poubelle rouge nommée, « Restaurer » nommé, lignes d'information
   assert.match(parts, /h\('button', \{ class: 'icon-btn trash-row__purge', type: 'button', 'data-trash-action': 'purge', 'aria-label': t\('corbeille\.definitif\.label', \{ name \}\), onClick: onPurge \}, icon\('trash'\)\)/);
   assert.match(parts, /h\('button', \{ class: 'btn btn--sm btn--secondary', type: 'button', 'data-trash-action': 'restore', 'aria-label': restoreLabel, onClick: onRestore \}, t\('corbeille\.restaurer'\)\)/);

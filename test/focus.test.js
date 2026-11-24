@@ -78,6 +78,9 @@ const ALLOWED_FOCUS = new Map([
   // note (ou Entrée) le remplace par le champ, curseur à l'endroit touché
   ['public/js/screens/note.js: input', 'EXCEPTION voulue : texte d\'une note, après « Nouvelle note » (+, N) ou un appui sur le texte affiché'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
+  // Barre de mise en forme d'une note (24 novembre 2026) : flèches,
+  // Début et Fin d'un bouton à l'autre (role="toolbar"), des boutons
+  ['public/js/screens/note-toolbar.js: next', 'flèches dans la barre de mise en forme d\'une note (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: row', 'retour d\'une sous-page : la ligne résumée qui l\'a ouverte (un bouton, jamais un champ)'],
   ['public/js/screens/list.js: moveTarget', '« Réordonner » des sous-tâches : après Monter, Descendre, Réordonner ou Terminé, le focus reste sur le bouton touché (un bouton, jamais un champ)'],
   ['public/js/screens/home-settings.js: target', 'Réglages › Accueil : après un interrupteur, un choix, Monter, Descendre, Réordonner ou Terminé, le focus reste sur le bouton touché (data-key : des boutons seulement, jamais un champ)'],

@@ -31,7 +31,7 @@ export default {
   'mots.suppression.videPartagee': { one: 'Elle est vide et elle est partagée avec {count} personne.', other: 'Elle est vide et elle est partagée avec {count} personnes.' },
   'mots.suppression.vide': 'Elle est vide.',
   'mots.suppression.chemin.reglages': 'Réglages',
-  'mots.suppression.chemin.corbeille': 'Corbeille des listes',
+  'mots.suppression.chemin.corbeille': 'Corbeille',
   'mots.suppression.suite': 'Elle disparaît pour tout le monde. Vous pourrez la restaurer pendant 30 jours depuis {path}.',
 
   // Zone des cochés, en bas de la liste

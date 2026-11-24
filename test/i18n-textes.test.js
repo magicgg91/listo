@@ -47,9 +47,14 @@ const MIGRATED = [
   // Lot 3 : partage, envies, échéances, corbeille, Claude, page publique, modules communs du téléphone
   'public/js/screens/share.js',
   'public/js/screens/share-panel.js',
+  'public/js/screens/share-picker.js',
+  'public/js/sharing.js',
   'public/js/screens/trash.js',
   'public/js/screens/trash-parts.js',
   'public/js/screens/note-trash.js',
+  // Corbeille unique (24 novembre 2026) : la page et ses onglets
+  'public/js/screens/trash-page.js',
+  'public/js/trash-tabs.js',
   'public/js/screens/deadlines.js',
   'public/js/deadlines.js',
   'public/js/screens/claude-connections.js',

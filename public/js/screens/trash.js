@@ -1,8 +1,9 @@
-// Écran « Corbeille des listes » (#/reglages/corbeille), ouvert depuis
-// Réglages. Chaque personne y voit SEULEMENT ses propres listes supprimées
-// (celles dont elle est propriétaire), pendant 30 jours ; le serveur
+// Onglet « Listes » de la Corbeille (Réglages › Corbeille,
+// #/reglages/corbeille/listes ; la page et ses onglets : trash-page.js).
+// Chaque personne y voit SEULEMENT ses propres listes supprimées (celles
+// dont elle est propriétaire), pendant 30 jours ; le serveur
 // (GET /api/lists/deleted) ne renvoie rien d'autre, pas même à l'Admin.
-// Même écran que la corbeille des notes (morceaux communs :
+// Même contenu que l'onglet « Notes » (morceaux communs :
 // trash-parts.js) : nombre de listes et « Vider la corbeille » en haut ;
 // chaque ligne : nom de la liste, « Supprimer définitivement » et
 // « Restaurer », puis « Courses · 9 articles » et « Supprimée le 21 nov. ·
@@ -25,18 +26,23 @@ import { toast, confirmDialog } from '../ui.js';
 import { TYPE_LABELS } from '../list-types.js';
 import { countItems } from '../words.js';
 import { t } from '../i18n.js';
-import { trashScreen, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion } from './trash-parts.js';
+import { trashPanel, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion } from './trash-parts.js';
 
 export const offlineRestore = () => t('corbeille.horsLigne.restaurer');
 
 // « Vider la corbeille » : au plus tant de listes par demande (comme le serveur)
 const PURGE_BATCH = 500;
 
-export function renderTrash(onLeave) {
+// Contenu de l'onglet : renvoie { panel, count } ; count() donne le nombre
+// de listes de la corbeille, ou null tant qu'il n'est pas connu (chargement,
+// hors ligne). onCount() est appelé après chaque chargement (réussi ou non)
+// et chaque changement du nombre : la page met à jour ses onglets.
+export function listTrash(onLeave, onCount = () => {}) {
   const offlineNote = h('div', { class: 'note note-banner', role: 'status', hidden: true }, icon('cloud-off'), h('p', { class: 'note-banner__text' }, offlineRestore()));
   let lists = [];
+  let known = false;
   let busy = false;
-  const view = trashScreen({ title: t('corbeille.titre'), intro: t('corbeille.intro'), banner: offlineNote, onEmpty: () => emptyTrash() });
+  const view = trashPanel({ intro: t('corbeille.intro'), banner: offlineNote, onEmpty: () => emptyTrash() });
   replace(view.content, h('p', { class: 'page-intro' }, t('corbeille.chargement')));
 
   // Boutons (Restaurer, Supprimer définitivement, Vider la corbeille) :
@@ -44,7 +50,7 @@ export function renderTrash(onLeave) {
   const paintOnline = () => {
     const online = navigator.onLine;
     offlineNote.hidden = online;
-    for (const button of view.screen.querySelectorAll('button[data-trash-action]')) button.disabled = !online || busy;
+    for (const button of view.panel.querySelectorAll('button[data-trash-action]')) button.disabled = !online || busy;
   };
 
   // Une demande au serveur, une seule à la fois ; en cas d'échec, le message
@@ -116,16 +122,20 @@ export function renderTrash(onLeave) {
       ? h('div', { class: 'group' }, lists.map(row))
       : trashEmpty('trash', t('corbeille.vide.titre'), t('corbeille.vide.texte')));
     paintOnline();
+    onCount();
   }
 
   async function load() {
     try {
       lists = (await get('/api/lists/deleted')).lists;
+      known = true;
       paint();
     } catch (err) {
+      known = false;
       view.tools.hidden = true;
       replace(view.content, trashEmpty('cloud-off', t('corbeille.horsLigne.titre'), navigator.onLine ? errorMessage(err) : t('corbeille.horsLigne.texte')));
       paintOnline();
+      onCount();
     }
   }
 
@@ -139,5 +149,5 @@ export function renderTrash(onLeave) {
   });
   load();
 
-  return view.screen;
+  return { panel: view.panel, count: () => (known ? lists.length : null) };
 }

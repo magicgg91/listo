@@ -895,6 +895,9 @@
      largeur, le même sur les trois écrans ; la loupe ronde .loupe (56 px)
      flotte 12 px au-dessus, à droite (décision du 11 novembre 2026). Sans
      recherche (Réglages), la loupe n'est pas affichée (.loupe--off).
+   - Coins : bandeau arrondi à 22 px, pastille de l'écran affiché à 16 px
+     (--radius-md, comme les cartes de l'Accueil), loupe ronde (décision du
+     24 novembre 2026 : moins arrondi qu'une pilule).
    - .tabbar__pill : fond bleu clair sous le bouton de l'écran affiché
      (aria-current="page", texte en couleur d'accent ET pastille : jamais la
      couleur seule) ; il glisse d'un bouton à l'autre avec un petit rebond
@@ -935,8 +938,8 @@
 }
 :root { --dock-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px)); }
 .tabdock { position: absolute; left: var(--space-2); right: var(--space-2); bottom: var(--dock-bottom); z-index: 6; }
-.tabbar { position: relative; display: flex; flex: 1; min-width: 0; padding: 5px; border-radius: var(--radius-pill); }
-.tabbar__pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: var(--radius-pill); background: var(--color-accent-soft); transition: transform 380ms cubic-bezier(0.34, 1.45, 0.64, 1); }
+.tabbar { position: relative; display: flex; flex: 1; min-width: 0; padding: 5px; border-radius: 22px; }
+.tabbar__pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: var(--radius-md); background: var(--color-accent-soft); transition: transform 380ms cubic-bezier(0.34, 1.45, 0.64, 1); }
 .tabbar[data-current="1"] .tabbar__pill { transform: translateX(100%); }
 .tabbar[data-current="2"] .tabbar__pill { transform: translateX(200%); }
 .tabbar__tab { position: relative; display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 0 4px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font-size: 12px; font-weight: 600; line-height: 1.2; }
@@ -944,7 +947,7 @@
 .tabbar__ico { position: relative; display: grid; place-items: center; transition: transform 160ms var(--ease); }
 .tabbar__tab:active .tabbar__ico { transform: scale(0.86); }
 .tabbar__label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tabbar__badge { position: absolute; top: -7px; left: calc(100% - 8px); display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 2px solid var(--color-surface); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabbar__badge { position: absolute; top: -8px; left: calc(100% - 2px); display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 2px solid var(--color-surface); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .loupe { display: grid; flex: none; place-items: center; width: 56px; height: 56px; padding: 0; border-radius: var(--radius-pill); color: var(--color-text); transition: transform 160ms var(--ease); }
 .loupe:active { transform: scale(0.92); }
 .loupe[aria-expanded="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
@@ -1337,13 +1340,14 @@ html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { 
    retard, la verte celles du jour ; chacune seulement si son nombre n'est
    pas nul (« 99+ » au-delà de 99). aria-hidden : les nombres sont dans le
    nom du bouton (« Échéances, 2 en retard, 1 aujourd'hui »).
-   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône (le
-     reflet de la place d'avant), --today en haut à droite (la place
-     d'avant) ; seule, chacune reste de son côté.
+   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône,
+     --today en haut à droite, chacune presque entièrement hors de l'icône
+     (2 px de recouvrement : l'icône reste lisible, 24 novembre 2026) ;
+     seule, chacune reste de son côté.
    - Ordinateur (menu de gauche) : au bout de la ligne « Échéances », la
      rouge puis la verte, en .count--danger et .count--success (couleurs de
      la tuile Échéances de l'Accueil), à la taille des pastilles du menu. */
-.tabbar__badge--late { left: auto; right: calc(100% - 8px); background: var(--color-danger); color: var(--color-on-danger); }
+.tabbar__badge--late { left: auto; right: calc(100% - 2px); background: var(--color-danger); color: var(--color-on-danger); }
 .tabbar__badge--today { background: var(--color-success-ink); color: var(--color-surface); }
 .pc-side__main .count { min-width: 20px; height: 20px; padding: 0 6px; font-size: 12px; }
 .pc-side__main .count + .count { margin-left: -4px; }
@@ -1418,3 +1422,64 @@ html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { 
 .label-row:last-child { border-bottom: 0; }
 .label-row__count { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .label-row__delete { color: var(--color-danger-ink); }
+
+/* 16.33 Mise en forme du texte des notes (décisions du 24 novembre 2026 ;
+   maquettes b-barre-au-dessus-du-clavier, c-lecture-mise-en-forme,
+   d-inserer-un-lien, e-pc-barre). Le texte garde des marques Markdown
+   (public/js/note-format.js) ; hors saisie, il est affiché mis en forme :
+   - une ligne de texte : .nf-line (rien de plus qu'avant : une note sans
+     marque s'affiche comme avant) ;
+   - titres : .nf-h1 (h2) et .nf-h2 (h3), en gras, plus grands ;
+   - gras (strong), italique (em), souligné (u), surligné (mark .nf-highlight :
+     fond jaune doux du kit, --label-jaune-bg, texte normal, lisible en
+     clair et en sombre) ; liens .note-link (16.26) ;
+   - listes .nf-list : --bullet (puces), --number (numéros tels qu'écrits,
+     attribut value), --task (cases) ;
+   - case .nf-task : .tick .nf-task__box de 22 px (zone tactile de 44 px
+     par ::after ; un bouton pour qui peut modifier, sinon montrée
+     seulement), texte .nf-task__text ; cochée : .is-done, texte barré ET
+     grisé (jamais la couleur seule).
+   Barre de mise en forme .note-tools (role="toolbar") : dix boutons
+   .note-tool carrés arrondis de 40 px (zone tactile de 44 px par ::after),
+   défilement de côté si elle ne tient pas (ordinateur) ; sur le téléphone
+   (.note-tools--dock), les dix boutons se partagent toute la largeur sans
+   défilement (34 px environ sur un iPhone 16, 44 px au plus ; zones
+   d'appui jointives, 44 px de haut ; décision du 24 novembre 2026) ; aria-pressed : fond et contour
+   d'accent. .note-tools--dock : téléphone, en bas de l'écran, posée sur le
+   clavier quand il est ouvert (marge de sécurité du bas en dessous, retirée
+   clavier ouvert dans app.css) ; .note-tools--top : ordinateur, en haut du
+   texte, reste visible quand le texte défile. */
+.note-edit__body .nf-h1, .note-edit__body .nf-h2 { margin: 6px 0 4px; font-weight: 700; line-height: var(--lh-tight); }
+.note-edit__body .nf-h1 { font-size: 1.3em; }
+.note-edit__body .nf-h2 { font-size: 1.08em; }
+.nf-highlight { padding: 0 2px; border-radius: 3px; background: var(--label-jaune-bg); color: inherit; }
+.nf-list { margin: 0; padding: 0 0 0 1.4em; }
+.nf-list--bullet { list-style: disc; }
+.nf-list--number { padding-left: 1.8em; list-style: decimal; }
+.nf-list--bullet .nf-item::marker, .nf-list--number .nf-item::marker { color: var(--color-text-2); }
+.nf-list--task { padding: 0; list-style: none; }
+.nf-task { display: flex; align-items: flex-start; gap: 10px; padding: 4px 0; }
+.nf-task__box { position: relative; width: 22px; height: 22px; margin-top: calc((1.5em - 22px) / 2); padding: 0; border-radius: 6px; background: transparent; }
+.nf-task__box .icon { width: 14px; height: 14px; }
+.nf-task__box::after { content: ""; position: absolute; inset: -11px; }
+span.nf-task__box::after { display: none; }
+.nf-task__text { flex: 1; min-width: 0; }
+.nf-task.is-done .nf-task__text { color: var(--color-text-2); text-decoration: line-through; }
+.note-tools { display: flex; flex: none; gap: 6px; overflow-x: auto; padding: 8px 12px; border-top: 1px solid var(--color-border); background: var(--color-bg); scrollbar-width: none; }
+.note-tools::-webkit-scrollbar { display: none; }
+.note-tools[hidden] { display: none; }
+.note-tool { position: relative; display: grid; flex: none; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 15px; font-weight: 600; line-height: 1; }
+.note-tool::after { content: ""; position: absolute; inset: -2px -3px; }
+.note-tool[aria-pressed="true"] { border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.note-tool:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.note-tool__italic { font-family: Georgia, "Times New Roman", serif; }
+.note-tool__mark { padding: 3px 4px; border-radius: 4px; background: var(--label-jaune-bg); color: var(--color-text); }
+.note-tool__box { display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 5px; }
+.note-tool__box .icon { width: 12px; height: 12px; stroke-width: 3; }
+.note-tools--dock { gap: 4px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+.note-tools--dock .note-tool { flex: 1 1 0; width: auto; min-width: 0; max-width: 44px; }
+.note-tools--dock .note-tool::after { inset: -2px; }
+.note-foot:has(~ .note-tools--dock:not([hidden])) { padding-bottom: 12px; }
+.screen:has(.note-edit--writing) .note-foot { display: none; }
+.note-tools--top { position: sticky; top: 0; z-index: 1; margin: 2px 0 4px; padding: 6px 0 10px; border-top: 0; border-bottom: 1px solid var(--color-border); }
+.note-link-sheet { padding: 0 4px; }

@@ -25,10 +25,13 @@ test('carte d\'une note partagée : nouveautés (icône ET texte), « Lecture se
   assert.equal(fr['notes.carte.lectureSeule'], 'Lecture seule');
 });
 
-test('menu d\'une note selon le droit : Partager et Lien public (propriétaire), Personnes et Quitter (les autres), sourdines', () => {
+test('menu d\'une note selon le droit : Partager (propriétaire), Personnes et Quitter (les autres), sourdines', () => {
   const notes = code('public/js/screens/notes.js');
-  assert.match(notes, /label: owner \? t\('notes\.menu\.partager'\) : t\('notes\.menu\.personnes'\),/);
-  assert.match(notes, /owner \? \{ icon: 'link', label: t\('notes\.menu\.lienPublic'\), onSelect: \(\) => openNoteLinkSheet\(note\) \} : null,/);
+  // Une seule entrée (24 novembre 2026) : « Partager » ouvre le choix des
+  // personnes ou du lien temporaire ; plus d'entrée « Lien public » à part
+  assert.match(notes, /\(owner \|\| shared\) && !note\.deletedAt \? sharing\(note, owner, withPeople\) : null,/);
+  assert.match(notes, /const entry = shareEntry\(\{ owner, withPeople \}\);\s*return entry \? \{ \.\.\.entry, onSelect: \(\) => openNoteShare\(note\.id\) \} : null;/);
+  assert.doesNotMatch(notes, /lienPublic'\), onSelect|openNoteLinkSheet/);
   assert.match(notes, /\? \{ icon: 'trash', label: t\('notes\.menu\.supprimer'\), danger: true, separated: true, onSelect: \(\) => askDelete\(note, onDeleted\) \}\s*: \{ icon: 'logout', label: t\('notes\.menu\.quitter'\), danger: true, separated: true, onSelect: \(\) => askLeave\(note, onDeleted\) \},/);
   assert.match(notes, /shared \? newsMuteItem\(note\) : null,\s*shared \? pushMuteItem\(note\) : null,/);
   // Notifications : toujours (étape 4 : la sourdine vaut aussi pour la
@@ -81,25 +84,29 @@ test('copie locale : droits, personnes et nouveautés des notes (même règle qu
   assert.ok(state.noteNews.muted.has('n1'));
 });
 
-test('partage d\'une note : même panneau que les listes, même feuille du lien public (textes qui disent « la note »)', () => {
+test('partage d\'une note : même choix que les listes, même feuille du lien public (textes qui disent « la note »)', () => {
   const panel = code('public/js/screens/share-panel.js');
-  assert.match(panel, /export function openNoteSharePanel\(noteId\) \{/);
-  assert.match(panel, /save: \(others\) => setNoteMembers\(noteId, others\),/);
+  assert.match(panel, /export const openNoteShare = \(noteId\) => openShare\(noteSubject\(noteId\)\);/);
+  assert.match(panel, /url: `\/api\/notes\/\$\{encodeURIComponent\(noteId\)\}\/members`,/);
+  assert.match(panel, /link: \(note, close\) => noteLinkPart\(note, close\),/);
+  assert.match(panel, /owner: \(note\) => isNoteOwner\(note\),/);
   const share = code('public/js/screens/share.js');
   assert.match(share, /url: `\/api\/notes\/\$\{encodeURIComponent\(note\.id\)\}\/share`,/);
   for (const key of ['notes.partage.lienActif', 'notes.partage.creation.texte', 'notes.partage.motDePasse.retirer.texte', 'notes.partage.sansMotDePasse']) {
     assert.match(fr[key], /(la|cette) note/, key);
     assert.ok(en[key], key);
   }
-  assert.equal(fr['notes.partage.titre'], 'Partager la note');
-  assert.match(code('public/js/actions.js'), /await put\(`\/api\/notes\/\$\{encodeURIComponent\(noteId\)\}\/members`, \{/);
+  assert.equal(fr['partage.droit.choix.note'], 'Droit de {name} sur la note');
+  assert.equal(fr['partage.choix.aide.note'], 'Les personnes de Listo voient et modifient la note selon leur droit. Le lien donne une lecture seule, sans compte.');
 });
 
 test('page publique d\'une note : textContent et <a> seulement (http, https), nouvel onglet, rien d\'autre que titre, texte et date', () => {
   const pub = code('public/js/public.js');
   assert.doesNotMatch(pub, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
   assert.match(pub, /const isNotePage = root\.dataset\.kind === 'note';/);
-  assert.match(pub, /linkParts\(note\.body\)\.map\(\(part\) => \(part\.href\s*\? h\('a', \{ class: 'note-link', href: part\.href, target: '_blank', rel: 'noopener noreferrer nofollow' \}, part\.text\)\s*: part\.text\)\)/);
+  // Texte mis en forme (24 novembre 2026) : éléments construits par
+  // note-format.js, cases jamais cochables, liens rel « nofollow »
+  assert.match(pub, /renderNoteText\(note\.body, \{ h, icon, editable: false, rel: 'noopener noreferrer nofollow' \}\)/);
   assert.match(pub, /function showNote\(\{ note, expiresAt \}\) \{/);
   for (const lang of ['', 'en/']) {
     const page = read(`server/pages/${lang}lien-note.html`);
@@ -123,9 +130,9 @@ test('service worker : nouvelle version (fichiers changés)', () => {
   assert.match(read('public/sw.js'), /const VERSION = `v1(4[2-9]|[5-9]\d)-/);
 });
 
-test('« Partager la note » sur le téléphone : la rangée « Ajouter » n\'est jamais tassée (le bouton passait sur « Lien public »)', () => {
+test('choix « Partager » sur le téléphone : le groupe des deux lignes n\'est jamais tassé dans la feuille du bas', () => {
   // La feuille du bas est une colonne flexible qui défile : sans flex-shrink: 0,
-  // la rangée, passée sur deux lignes, était ramenée à sa hauteur minimale
-  assert.match(read('public/js/screens/share-panel.js'), /const addRow = h\('div', \{ class: 'share-row share-row--add sheet__keep' \}\);/);
+  // un groupe (overflow: hidden) était ramené à sa hauteur minimale
+  assert.match(read('public/js/screens/share-panel.js'), /h\('div', \{ class: 'group share-choice sheet__keep' \},/);
   assert.match(read('public/css/app.css'), /^\.sheet > \.sheet__keep \{ flex-shrink: 0; \}$/m);
 });

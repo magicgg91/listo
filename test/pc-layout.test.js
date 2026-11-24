@@ -193,30 +193,35 @@ test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer /
   assert.match(list, /pc: 'drawer', \/\/ ordinateur : tiroir à droite, comme la fiche à modifier/);
 });
 
-test('partage (ordinateur) : le propriétaire gère personnes et lien ; les autres voient les personnes, sans gestion ni lien public', () => {
+test('partage (ordinateur et téléphone) : le propriétaire ouvre le choix (personnes ou lien) ; les autres voient les personnes, sans gestion ni lien public', () => {
   const panel = read('public/js/screens/share-panel.js');
-  // Gestion (choix du droit, retrait, ajout, lien) : propriétaire seulement
-  assert.match(panel, /owner: Boolean\(start\.isOwner\),/);
-  assert.match(panel, /owner: start\.access === 'owner',/); // note : propriétaire seulement
-  assert.match(panel, /else if \(!owner\) right = h\('span', \{ class: 'pc-meta' \}, levelLabel\(person\.access\)\);/);
-  assert.match(panel, /if \(owner\) \{\s*const candidates/);
-  assert.match(panel, /const link = owner \? linkOf\(\(\) => panel\.close\(\)\) : null;/);
-  assert.match(panel, /link: \(close\) => linkPart\(start, close\),/);
-  assert.match(panel, /link: \(close\) => noteLinkPart\(start, close\),/);
-  assert.match(panel, /title: owner \? titles\.owner : titles\.member,/);
-  assert.match(panel, /titles: \{ owner: t\('partage\.panneau\.titre'\), member: t\('partage\.panneau\.personnes'\) \},/);
-  assert.equal(fr['partage.panneau.titre'], 'Partager la liste');
-  assert.equal(fr['partage.panneau.personnes'], 'Personnes');
-  // Destinataire d'une liste d'envies : « Peut modifier », sans choix
-  assert.match(panel, /beneficiary: \(list, person\) => isWishList\(list\) && list\.forUserId === person\.id,/);
-  assert.match(panel, /else if \(beneficiary\(list, person\)\) right = h\('span', \{ class: 'chip' \}, t\('partage\.panneau\.destinataire'\)\);/);
-  assert.equal(fr['partage.panneau.destinataire'], 'Destinataire · Peut modifier');
-  // Même route que le formulaire, en ligne seulement ; jamais d'e-mail
-  assert.match(panel, /await put\(`\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`, \{/);
-  assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
-  // Le lien public : le même contenu que la feuille du téléphone
+  // Propriétaire : le choix ; les autres : « Personnes », en lecture
+  assert.match(panel, /return subject\.owner\(item\) \? openChooser\(subject\) : openPeopleView\(subject\);/);
+  assert.match(panel, /owner: \(list\) => Boolean\(list\.isOwner\),/);
+  assert.match(panel, /owner: \(note\) => isNoteOwner\(note\),/); // note : propriétaire seulement
+  // Le choix : deux lignes, puis les deux feuilles (au centre sur ordinateur)
+  assert.match(panel, /row\('users', t\('partage\.choix\.personnes'\), peopleSub, \(\) => openPeopleSheet\(subject, paint\)\),\s*row\('link', t\('partage\.choix\.lien'\), linkSub, \(\) => openLinkSheet\(subject, paint\)\)\),/);
+  assert.equal(fr['partage.choix.personnes'], 'Avec des personnes de Listo');
+  assert.equal(fr['partage.choix.lien'], 'Par un lien temporaire');
+  assert.equal(fr['partage.choix.titre'], 'Partager « {name} »');
+  assert.equal((panel.match(/pc: 'modal',\s*size: 'sm',/g) ?? []).length, 4, 'choix, personnes, lien, « Personnes » : la même petite fenêtre');
+  // Le lien public : le même contenu qu'avant (share.js)
+  assert.match(panel, /link: \(list, close\) => linkPart\(list, close\),/);
+  assert.match(panel, /link: \(note, close\) => noteLinkPart\(note, close\),/);
   assert.match(read('public/js/screens/share.js'), /export function linkPart\(list, close, \{ url = `\/api\/lists\/\$\{encodeURIComponent\(list\.id\)\}\/share`, texts = LIST_TEXTS, key = list\.id \} = \{\}\) \{/);
+  // Les autres : la liste des personnes, sans aucun bouton de gestion ni lien
+  const view = panel.slice(panel.indexOf('function openPeopleView'));
+  assert.doesNotMatch(view, /put\(|linkPart|openPeopleSheet|openLinkSheet|h\('button'/);
+  assert.match(view, /person\.id === beneficiary \? h\('span', \{ class: 'chip' \}, t\('partage\.personnes\.destinataire'\)\)/);
+  assert.equal(fr['partage.personnes.destinataire'], 'Destinataire · Peut modifier');
+  // Même route qu'avant, en ligne seulement ; jamais d'e-mail
+  assert.match(panel, /url: `\/api\/lists\/\$\{encodeURIComponent\(listId\)\}\/members`,/);
+  assert.doesNotMatch(panel.replace(/\/\/.*$/gm, ''), /mail|innerHTML|\.style\b/i);
+  // L'en-tête d'une liste ouverte (« Partager » ou « Personnes », touche P) ouvre le même parcours
+  assert.match(read('public/js/screens/list.js'), /'data-action': 'share',[^\n]*onClick: \(\) => openListShare\(list\.id\) \},/);
   assert.match(read('public/sw.js'), /'\/js\/screens\/share-panel\.js',/);
+  assert.match(read('public/sw.js'), /'\/js\/screens\/share-picker\.js',/);
+  assert.match(read('public/sw.js'), /'\/js\/sharing\.js',/);
 });
 
 test('« Nouvelle liste » et « Modifier la liste » (ordinateur) : fenêtre centrée, adresse gardée, focus sur la fenêtre (jamais sur le champ)', () => {

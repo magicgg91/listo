@@ -1,10 +1,23 @@
-// Textes des deux corbeilles : public/js/screens/trash.js (listes),
-// public/js/screens/note-trash.js (notes) et leurs morceaux communs
+// Textes de la Corbeille : la page et ses onglets
+// (public/js/screens/trash-page.js), l'onglet « Listes »
+// (public/js/screens/trash.js), l'onglet « Notes »
+// (public/js/screens/note-trash.js) et leurs morceaux communs
 // (public/js/screens/trash-parts.js), en français.
 // Chaque nom commence par « corbeille. ».
 
 export default {
-  // Commun aux deux corbeilles (même écran depuis le 23 novembre 2026)
+  // La page (une seule depuis le 24 novembre 2026) et ses deux onglets ;
+  // libellé avec le nombre quand il y en a (« Listes (4) »), et nom lu
+  'corbeille.titre': 'Corbeille',
+  'corbeille.onglets': 'Contenu de la corbeille',
+  'corbeille.onglet.listes': 'Listes',
+  'corbeille.onglet.listes.nombre': { one: 'Listes ({count})', other: 'Listes ({count})' },
+  'corbeille.onglet.listes.label': { one: 'Listes, {count} liste supprimée', other: 'Listes, {count} listes supprimées' },
+  'corbeille.onglet.notes': 'Notes',
+  'corbeille.onglet.notes.nombre': { one: 'Notes ({count})', other: 'Notes ({count})' },
+  'corbeille.onglet.notes.label': { one: 'Notes, {count} note supprimée', other: 'Notes, {count} notes supprimées' },
+
+  // Commun aux deux onglets (même contenu depuis le 23 novembre 2026)
   'corbeille.vider': 'Vider la corbeille',
   'corbeille.vider.question': 'Vider la corbeille ?',
   'corbeille.vider.confirmer': 'Vider',
@@ -15,8 +28,7 @@ export default {
   // Ligne : date de suppression (« 21 nov. ») et jours restants
   'corbeille.ligne': { one: 'Supprimée le {date} · encore {count} jour', other: 'Supprimée le {date} · encore {count} jours' },
 
-  // Corbeille des listes : écran
-  'corbeille.titre': 'Corbeille des listes',
+  // Onglet « Listes »
   'corbeille.intro': 'Vos listes supprimées restent ici 30 jours, puis elles sont effacées pour de bon.',
   'corbeille.chargement': 'Chargement…',
   'corbeille.nombre': { one: '{count} liste', other: '{count} listes' },

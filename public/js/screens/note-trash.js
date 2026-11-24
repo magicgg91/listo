@@ -1,10 +1,11 @@
-// Corbeille des notes (#/reglages/corbeille-notes, dans Réglages juste sous
-// la corbeille des listes depuis le 23 novembre 2026 ; étape 2 du cadrage).
-// L'ancienne adresse #/notes/corbeille y mène encore.
+// Onglet « Notes » de la Corbeille (Réglages › Corbeille,
+// #/reglages/corbeille/notes, depuis le 24 novembre 2026 ; la page et ses
+// onglets : trash-page.js). Les anciennes adresses #/reglages/corbeille-notes
+// et #/notes/corbeille y mènent encore.
 //
 // Mes notes supprimées depuis moins de 30 jours (le serveur n'envoie que
 // les miennes : jamais celles des autres, pas même à l'Admin), la plus
-// récente en haut. Même écran que la corbeille des listes (morceaux
+// récente en haut. Même contenu que l'onglet « Listes » (morceaux
 // communs : trash-parts.js) : nombre et « Vider la corbeille » en haut
 // (confirmation avec le nombre) ; chaque ligne : titre, « Supprimer
 // définitivement » (confirmation) et « Restaurer », puis « Partagée avec
@@ -18,9 +19,13 @@ import { trashDaysLeft } from '../notes.js';
 import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { trashed, titleOf } from './notes.js';
-import { trashScreen, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion } from './trash-parts.js';
+import { trashPanel, trashRow, deletedText, trashEmpty, purgeQuestion, emptyQuestion } from './trash-parts.js';
 
-export function renderNoteTrash(onLeave) {
+// Contenu de l'onglet : renvoie { panel, count } ; count() donne le nombre
+// de notes de la corbeille (null tant que la copie locale n'est pas
+// chargée). onCount() est appelé à chaque dessin : la page met à jour ses
+// onglets.
+export function noteTrash(onLeave, onCount = () => {}) {
   async function emptyTrash() {
     const ids = trashed().map((note) => note.id);
     if (!ids.length) return;
@@ -51,21 +56,19 @@ export function renderNoteTrash(onLeave) {
     onRestore: () => restore(note),
   });
 
-  const view = trashScreen({ title: t('notes.corbeille.titre'), intro: t('notes.corbeille.intro'), onEmpty: () => emptyTrash() });
+  const view = trashPanel({ intro: t('notes.corbeille.intro'), onEmpty: () => emptyTrash() });
 
   const draw = () => {
     const notes = app.data.loaded ? trashed() : [];
     view.tools.hidden = notes.length === 0;
     view.count.textContent = t('notes.nombre', { count: notes.length });
-    if (!notes.length) {
-      replace(view.content, trashEmpty('trash', t('notes.corbeille.vide.titre'), t('notes.corbeille.vide.texte')));
-      return;
-    }
-    replace(view.content, h('div', { class: 'group' }, notes.map(row)));
+    if (!notes.length) replace(view.content, trashEmpty('trash', t('notes.corbeille.vide.titre'), t('notes.corbeille.vide.texte')));
+    else replace(view.content, h('div', { class: 'group' }, notes.map(row)));
+    onCount();
   };
-  const idle = drawWhenIdle(view.body, draw);
+  const idle = drawWhenIdle(view.panel, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);
   draw();
-  return view.screen;
+  return { panel: view.panel, count: () => (app.data.loaded ? trashed().length : null) };
 }

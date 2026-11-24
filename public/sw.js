@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v164-${BUILD ?? 'dev'}`;
+const VERSION = `v168-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -216,6 +216,7 @@ const APP_FILES = [
   '/js/repeat.js',
   '/js/subtasks.js',
   '/js/notes.js',
+  '/js/note-format.js',
   '/js/labels.js',
   '/js/aisles.js',
   '/js/tidy-aisles.js',
@@ -227,6 +228,8 @@ const APP_FILES = [
   '/js/swipe.js',
   '/js/tap.js',
   '/js/theme.js',
+  '/js/trash-tabs.js',
+  '/js/sharing.js',
   '/js/trusted.js',
   '/js/ui.js',
   '/js/version.js',
@@ -236,6 +239,7 @@ const APP_FILES = [
   '/js/screens/claude-connections.js',
   '/js/screens/trash.js',
   '/js/screens/trash-parts.js',
+  '/js/screens/trash-page.js',
   '/js/screens/claude-consent.js',
   '/js/screens/admin.js',
   '/js/screens/help.js',
@@ -248,6 +252,7 @@ const APP_FILES = [
   '/js/screens/note.js',
   '/js/screens/note-trash.js',
   '/js/screens/note-labels.js',
+  '/js/screens/note-toolbar.js',
   '/js/screens/deadlines.js',
   '/js/screens/gifts.js',
   '/js/screens/login.js',
@@ -260,6 +265,7 @@ const APP_FILES = [
   '/js/screens/settings.js',
   '/js/screens/share.js',
   '/js/screens/share-panel.js',
+  '/js/screens/share-picker.js',
 ];
 
 // Installation : copie de tous les fichiers de l'application

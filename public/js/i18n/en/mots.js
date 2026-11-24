@@ -31,7 +31,7 @@ export default {
   'mots.suppression.videPartagee': { one: "It's empty and shared with {count} person.", other: "It's empty and shared with {count} people." },
   'mots.suppression.vide': "It's empty.",
   'mots.suppression.chemin.reglages': 'Settings',
-  'mots.suppression.chemin.corbeille': 'List trash',
+  'mots.suppression.chemin.corbeille': 'Trash',
   'mots.suppression.suite': 'It will disappear for everyone. You can restore it within 30 days from {path}.',
 
   // Zone des cochés, en bas de la liste

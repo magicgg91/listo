@@ -1154,6 +1154,16 @@ export function effectiveSort(list, sort) {
   return availableSorts(list).includes(wanted) ? wanted : defaultSort(list);
 }
 
+// Avancement d'une liste : { remaining, total }. remaining : éléments non
+// cochés ; total : tous les éléments de la copie locale (les supprimés n'y
+// sont plus), cochés compris, sous-tâches comprises. Le seul calcul du
+// compteur « X/Y » : carte de « Listes » et compteur de la liste ouverte
+// (screens/list.js, décision du 24 novembre 2026), toujours les mêmes nombres.
+export function listProgress(state, listId) {
+  const items = itemsOf(state, listId);
+  return { remaining: items.filter((item) => !item.checked).length, total: items.length };
+}
+
 // Cartes de « Mes listes » : nombre d'éléments, restants, dernière activité,
 // triées selon le choix (sort : 'recent' par défaut, ou 'alpha')
 export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
@@ -1163,8 +1173,7 @@ export function computeSummaries(state, { sort = DEFAULT_LIST_SORT } = {}) {
       const lastItem = items.reduce((max, item) => (item.updatedAt > max ? item.updatedAt : max), '');
       return {
         ...list,
-        total: items.length,
-        remaining: items.filter((item) => !item.checked).length,
+        ...listProgress(state, list.id),
         lastActivity: [list.updatedAt, list.lastActivity ?? '', lastItem].sort().at(-1),
       };
     }), sort);

@@ -370,5 +370,6 @@ test('écran Réglages › Accueil : interrupteurs reliés, Compte grisé, Réor
 test('service worker : nouveaux fichiers gardés pour le hors-ligne, version changée', () => {
   const sw = read('public/sw.js');
   for (const file of ['/js/home-tiles.js', '/js/bell.js', '/js/screens/home-settings.js']) assert.ok(sw.includes(`'${file}'`), file);
-  assert.match(sw, /const VERSION = `v156-/);
+  // (v156 ou plus récente : chaque changement suivant l'augmente encore)
+  assert.ok(Number(/const VERSION = `v(\d+)-/.exec(sw)?.[1]) >= 156);
 });

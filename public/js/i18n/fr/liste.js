@@ -33,6 +33,10 @@ export default {
   'liste.envies.visibles': 'Réservations visibles par les personnes qui partagent la liste.',
   'liste.lectureSeule': 'Lecture seule',
 
+  // Compteur d'avancement de l'ordinateur (« 5/6 restants ») : le nombre
+  // « 5/6 » prend la place de {progress} ; pluriel selon les restants
+  'liste.progression.restants': { one: '{progress} restant', other: '{progress} restants' },
+
   // Groupes repliables
   'liste.toutReplier': 'Tout replier',
   'liste.toutDeplier': 'Tout déplier',

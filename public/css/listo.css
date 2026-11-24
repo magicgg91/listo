@@ -712,6 +712,9 @@
 .pc-head__share { display: flex; flex: none; align-items: center; }
 .pc-head .btn .avatars { margin-left: 2px; }
 .pc-head .btn .avatar { width: 26px; height: 26px; font-size: 12px; }
+/* Liste ouverte : « À jour » partage la ligne du titre ; un long titre
+   passe sur deux lignes plutôt que d'être coupé (au-delà : …) */
+.pc-head--list .pc-head__title { display: -webkit-box; white-space: normal; overflow-wrap: anywhere; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .pc-tools { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 var(--pc-gutter) 12px; }
 .pc-tools__end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .pc-add { position: relative; padding: 0 var(--pc-gutter) 12px; }

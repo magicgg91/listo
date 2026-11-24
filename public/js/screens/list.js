@@ -45,12 +45,12 @@ import { navigate, goBack, closeOverlays } from '../router.js';
 import { splitPrefix, todayKey, addDays, dueDateLabel, dueChip, priorityChip, PRIORITY_LABELS, newsMark, namesList } from '../format.js';
 import { normalizeItemName, HABITUAL_LIMIT_KEYBOARD } from '../history.js';
 import { assignablePeople, memberNames, computeListView, canEditList, listOptions, addModeOf, listNews, seenTarget, availableSorts, effectiveSort, computeSuggestions, computeHabitual, checkedNamed, isKnownItem, storeChoices, usualStoreFor, remembersNames, loadItemSort, saveItemSort,
-  offeredAislesFor, groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove } from '../store.js';
+  offeredAislesFor, groupKey, possibleGroupKeys, loadFoldedGroups, saveFoldedGroups, pruneFoldedGroups, isZoneOpen, rememberZone, loadOpenSubtasks, saveOpenSubtasks, checkedToRemove, listProgress } from '../store.js';
 import { progressOf, parentOf } from '../subtasks.js';
 import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
-import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel } from '../words.js';
+import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel, progressShare } from '../words.js';
 import { listIcon } from '../list-icons.js';
 import { isMultiList } from '../sorting.js';
 import { t, compareText, currencyName, lowerFirst, priceIcon } from '../i18n.js';
@@ -131,11 +131,46 @@ export function renderList(listId, onLeave) {
   // données, ni synchro, ni file d'attente touchées, hors ligne compris,
   // lecture seule comprise. Le texte cherché n'appartient qu'à cet écran :
   // changer de liste, quitter l'écran ou refermer la recherche le vide.
-  // Nombre de résultats (annoncé aux lecteurs d'écran) : à droite de
-  // l'indicateur de synchro sur ordinateur, au-dessus des résultats sur le
+  // Nombre de résultats (annoncé aux lecteurs d'écran) : à droite du
+  // compteur d'avancement sur ordinateur, au-dessus des résultats sur le
   // téléphone ; vide hors recherche
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
   const statusbar = h('div', { class: 'statusbar' });
+
+  // --- Compteur d'avancement (décision du 24 novembre 2026) ---
+  // Sous le titre, à gauche : une petite barre (la part cochée) puis « 5/6 »
+  // (téléphone, juste après la pastille d'état) ou « 5/6 restants »
+  // (ordinateur, en tête de la ligne). Les mêmes nombres que la carte de la
+  // liste dans « Listes » (listProgress, store.js : sous-tâches comprises,
+  // supprimés exclus), sans tenir compte de la recherche ni des groupes
+  // repliés. Tout coché : barre verte et coche après le texte (jamais la
+  // couleur seule). Liste vide : pas de compteur. Lecteurs d'écran et
+  // infobulle : la phrase de la carte (« 5 éléments restants sur 6 »).
+  const progressFill = h('span', { class: 'list-progress__fill' });
+  const progress = h('p', { class: 'list-progress', role: 'img', hidden: true });
+  function drawProgress() {
+    const list = app.data.loaded ? app.data.lists.get(listId) : null;
+    const { remaining, total } = list ? listProgress(app.data, listId) : { remaining: 0, total: 0 };
+    progress.hidden = total === 0;
+    if (total === 0) return;
+    const done = remaining === 0;
+    const sentence = progressLabel(remaining, total, list);
+    const label = done ? t('listes.carte.toutCoche', { progress: sentence }) : sentence;
+    progress.setAttribute('aria-label', label);
+    progress.title = label;
+    progress.classList.toggle('list-progress--done', done);
+    progressFill.style.width = `${progressShare(remaining, total)}%`;
+    const count = h('strong', { class: 'list-progress__count' }, progressText(remaining, total));
+    // Ordinateur : « 5/6 restants » (une phrase entière : le nombre prend la
+    // place de {progress}, le pluriel suit les restants)
+    const text = pc
+      ? t('liste.progression.restants', { count: remaining }).split('{progress}').flatMap((part, i) => (i ? [count, part] : [part]))
+      : [count];
+    replace(progress,
+      h('span', { class: 'list-progress__track', 'aria-hidden': 'true' }, progressFill),
+      h('span', { class: 'list-progress__text', 'aria-hidden': 'true' }, text),
+      done ? icon('check', 'icon--sm') : null);
+  }
   const loupe = pc ? null : loupeButton();
   const search = createSearchRow(content, {
     label: t('liste.recherche.label'),
@@ -373,6 +408,7 @@ export function renderList(listId, onLeave) {
     // qu'après le dessin : le cacher un instant au début changeait la hauteur
     // de la zone qui défile pendant le dessin (12 px), et la liste sautait.
     foldables = [];
+    drawProgress(); // compteur : toute la liste, recherche ou pas
     if (!app.data.loaded) {
       search.show(h('p', { class: 'empty muted', role: 'status' }, t('liste.chargement')), { available: false });
       drawFoldAll();
@@ -2828,6 +2864,8 @@ export function renderList(listId, onLeave) {
   // le dessin, et le repère monte (liste à l'écran seulement)
   onLeave(onDataChange(() => takeNews()));
   onLeave(onDataChange(idle.request));
+  // Compteur : tout de suite, même quand le dessin attend la fin d'un appui
+  onLeave(onDataChange(drawProgress));
   // Une tâche du jour à heure précise passe « En retard » à son heure :
   // redessin à la minute, seulement s'il y en a une dans la liste
   onLeave(watchMinute(() => {
@@ -2924,12 +2962,15 @@ export function renderList(listId, onLeave) {
     search.field.querySelector('input').setAttribute('aria-keyshortcuts', '/');
     search.field.append(keycap('/'));
     return h('div', { class: 'screen' },
-      h('header', { class: 'pc-head' },
+      // « À jour » sur la ligne du titre, juste avant « Partager » (comme
+      // dans une note) ; la ligne du dessous commence par le compteur
+      h('header', { class: 'pc-head pc-head--list' },
         h('div', { class: 'pc-head__main' }, title, sub),
+        syncPill(() => refreshData({ full: true })),
         shareSlot,
         search.field,
         menuButton),
-      h('div', { class: 'pc-tools' }, syncPill(() => refreshData({ full: true })), searchMeta,
+      h('div', { class: 'pc-tools' }, progress, searchMeta,
         h('div', { class: 'pc-tools__end' }, sortButton, foldAll)),
       offlineBanner(),
       readOnlyBanner,
@@ -2939,7 +2980,13 @@ export function renderList(listId, onLeave) {
   }
   // Téléphone : barre d'ajout en verre, flottante, toute la largeur, et la
   // loupe ronde au-dessus, à droite (16.15) ; les articles passent dessous
-  replace(statusbar, syncPill(() => refreshData({ full: true })), foldAll);
+  // Ligne sous le titre : pastille d'état, compteur, et à droite « Tout
+  // replier », toujours sur une seule ligne. Si la place manque
+  // (« Synchronisation… », « Hors ligne · 3 en attente » sur un petit écran,
+  // texte agrandi), la pastille se réduit à son icône, comme dans la barre
+  // de « Listes » (son texte reste lu par les lecteurs d'écran)
+  statusbar.classList.add('statusbar--progress');
+  replace(statusbar, syncPill(() => refreshData({ full: true }), { inBar: true }), progress, foldAll);
   addbar.classList.add('addbar--glass', 'glass');
   content.classList.add('scroll--under-dock');
   return h('div', { class: 'screen' },

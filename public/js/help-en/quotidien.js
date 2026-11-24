@@ -134,6 +134,7 @@ export default {
         'In a task list, “Sort list” offers “Alphabetical”, “By priority”, “By due date” and “By person”, depending on the list\'s options.',
         'The sorting you choose applies only to you, on this phone: it changes nothing for the others, and it is allowed with read-only access.',
         '“X/Y” gives the number of items left out of the total, on each card and at the top of each group.',
+        'In an open list, under the title, a small bar shows the share already checked, followed by the same “X/Y” (on a computer, ‘5/6 left’). When everything is checked, the bar turns green and a check mark is added. Searching and collapsed groups do not change these numbers.',
       ] }],
     },
     {
@@ -290,7 +291,7 @@ export default {
         { ul: [
           'On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home” (Home turned off: to the first screen you chose). The Home tiles are shown in three columns there.',
           'The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.',
-          'On the right, the open list: the search is always shown at the top, and the add field is above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
+          'On the right, the open list: at the top, on the title line, the status pill, “Share” and the search, always shown; below, the counter ([[tri]]), then the add field, above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.',
           'An item\'s details and “Share list” open in a panel on the right; “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.',
           '“Share list” brings together the people on the list and the public link. The owner chooses each person\'s access there, adds or removes people, and manages the link; the other members only see the list of people there.',
           'Right-click on a row (or the Menu key, or Shift+F10): Edit, Check, Delete, depending on your access.',

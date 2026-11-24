@@ -55,8 +55,9 @@ test('pastille : texte toujours lu, réduite à l\'icône (et au nombre) seuleme
 
 test('écran d\'une liste : pastille laissée sous la barre (le titre y perdrait la moitié de sa place)', () => {
   const list = read('public/js/screens/list.js');
-  // (à droite, « Tout replier / Tout déplier » quand la liste a des groupes ;
+  // (puis le compteur d'avancement ; à droite, « Tout replier / Tout déplier »
+  // quand la liste a des groupes ;
   // la recherche ouverte prend la place de cette ligne)
-  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\)\), foldAll\);/);
+  assert.match(list, /replace\(statusbar, syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\), progress, foldAll\);/);
   assert.match(list, /statusbar\.hidden = open;/);
 });

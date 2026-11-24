@@ -26,13 +26,16 @@
 //   réseau ; lu sur un appareil = lu sur tous (temps réel).
 // - Ni bandeau du bas ni loupe (maquette) ; sur ordinateur, dans la partie
 //   principale, avec les seules entrées fixes du menu de gauche.
+// - Notes coupées (Réglages › Fonctions, features.js) : les lignes des
+//   notes ne sont pas montrées (gardées : elles reviennent quand les notes
+//   sont rallumées ; inboxShownRows, store.js).
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
 
 import { h, icon, iconButton, replace } from '../dom.js';
 import { navigate, goBack } from '../router.js';
 import { app, onDataChange, refreshData, openingScreen } from '../app.js';
 import * as actions from '../actions.js';
-import { inboxUnread, inboxTargetAvailable } from '../store.js';
+import { inboxUnread, inboxTargetAvailable, inboxShownRows } from '../store.js';
 import { toast, confirmDialog, openMenu, drawWhenIdle, watchNewDay, offlineBanner } from '../ui.js';
 import { createSwipeController } from '../swipe.js';
 import { todayKey, addDays } from '../format.js';
@@ -150,7 +153,8 @@ export function renderInbox(onLeave) {
   }
 
   function draw() {
-    const { rows, loaded } = app.data.inbox ?? { rows: [], loaded: false };
+    const loaded = app.data.inbox?.loaded === true;
+    const rows = inboxShownRows(app.data);
     if (!loaded) {
       replace(tools);
       replace(content, h('p', { class: 'empty muted', role: 'status' }, t('inbox.chargement')));

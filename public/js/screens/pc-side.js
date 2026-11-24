@@ -11,7 +11,8 @@
 //   « Échéances » (avec ses deux pastilles, au bout de la ligne : la rouge
 //   pour les tâches en retard, puis la verte pour celles du jour ; chacune
 //   seulement si son nombre n'est pas nul ; décision du 24 novembre 2026),
-//   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2) ;
+//   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2 ;
+//   absent quand la personne a coupé les notes dans Réglages › Fonctions) ;
 // - dessous, le menu suit l'écran :
 //   · écrans des listes (Listes, une liste, « À offrir ») : seulement « Types », les types
 //     que la personne a (Courses, Tâches, Envies), avec leur nombre de
@@ -23,7 +24,8 @@
 //   · pendant une recherche, sur n'importe quel écran : les listes trouvées,
 //     groupées par type, avec leur compteur « restants/total » ;
 // - en bas : « Nouvelle liste » (touche N), « Nouvelle note » sur les
-//   écrans des notes, le compte connecté et « Réglages ».
+//   écrans des notes (jamais quand les notes sont coupées), le compte
+//   connecté et « Réglages ».
 //
 // Le menu est créé une fois et gardé d'un écran à l'autre (texte cherché et
 // défilement conservés) ; seul ce qui dépend de l'écran change.
@@ -38,6 +40,7 @@ import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
 import { app, onDataChange, openingScreen } from '../app.js';
+import { notesOn } from '../features.js';
 import { drawWhenIdle, watchNewDay, watchMinute } from '../ui.js';
 import { deadlineBadges, deadlinesLabel, badgeText } from '../deadlines.js';
 import { keepFieldFocus } from '../tap.js';
@@ -197,7 +200,10 @@ export function createPcSide() {
     if (notes === null) notesLink.removeAttribute('aria-label');
     else notesLink.setAttribute('aria-label', t(notesNew ? 'notes.nav.nombre.nouveautes' : 'navigation.notes.nombre', { count: notes }));
     markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
-    newList.hidden = NOTE_SCREENS.includes(selected.name);
+    // Notes coupées (Réglages › Fonctions) : ni « Notes », ni « Nouvelle note »
+    const notesUsed = notesOn(app.data.features);
+    notesLink.hidden = !notesUsed;
+    newList.hidden = notesUsed && NOTE_SCREENS.includes(selected.name);
     newNote.hidden = !newList.hidden;
   };
   const stopDay = watchNewDay(drawFixed);

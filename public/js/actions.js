@@ -15,7 +15,7 @@
 import { isShoppingList } from './list-types.js';
 import { app, dataChanged, queueEntry, flushSoon, refreshData, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
 import { uuid, photoUrl, post, put, patch, del } from './api.js';
-import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove } from './store.js';
+import { cleanNoteTitle, cleanNoteBody, applyOp, rememberItem, historyStoreFor, moveItemStore, usualAisleFor, usualStoreFor, remembersNames, listOptions, checkedToRemove, inboxShownRows } from './store.js';
 import { nextDue } from './repeat.js';
 import { modeOf, turnAfterCheck } from './assign.js';
 import { todayKey } from './format.js';
@@ -179,6 +179,9 @@ export const setNewsSettings = (settings) => perform({ type: 'account.news', ...
 // Réglage « Accueil » (Réglages › Accueil, home-tiles.js) : { enabled },
 // { start }, { order } ou { hidden } ; même file d'attente, hors ligne compris
 export const setHome = (change) => perform({ type: 'account.home', ...change });
+// Réglage « Fonctions » (Réglages › Fonctions, features.js) : { notes } ;
+// même file d'attente, hors ligne compris
+export const setFeatures = (change) => perform({ type: 'account.features', ...change });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });
 
 // --- Réservations (listes d'envies) ---
@@ -396,12 +399,18 @@ export function markInboxRead(ids) {
   if (!unread.length) return null;
   return perform({ type: 'inbox.read', ids: unread });
 }
+// Notes coupées (Réglages › Fonctions) : leurs lignes, cachées, ne sont ni
+// lues ni effacées par « Tout… » (seules les lignes montrées sont visées)
 export function markAllInboxRead() {
-  if (!app.data.inbox?.rows.some((row) => !row.read)) return null;
+  const shown = inboxShownRows(app.data);
+  if (!shown.some((row) => !row.read)) return null;
+  if (shown.length < (app.data.inbox?.rows.length ?? 0)) return markInboxRead(shown.map((row) => row.id));
   return perform({ type: 'inbox.read', all: true, upTo: newestInbox() });
 }
 export const deleteInboxRow = (id) => perform({ type: 'inbox.delete', ids: [id] });
 export function clearInbox() {
-  if (!app.data.inbox?.rows.length) return null;
+  const shown = inboxShownRows(app.data);
+  if (!shown.length) return null;
+  if (shown.length < (app.data.inbox?.rows.length ?? 0)) return perform({ type: 'inbox.delete', ids: shown.map((row) => row.id) });
   return perform({ type: 'inbox.delete', all: true, upTo: newestInbox() });
 }

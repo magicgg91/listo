@@ -293,6 +293,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
 - Thème clair, sombre ou automatique ([5.18 Thème clair ou sombre](#theme)).
 - Un Accueil à votre goût : tuiles masquées ou dans un autre ordre, ou pas d'Accueil du tout ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
+- Seulement les fonctions dont vous vous servez : les notes se coupent pour vous seul, sans rien effacer ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
 - Un assistant IA, par exemple Claude, peut lire vos listes et, si vous le permettez, y écrire ([8. Assistants IA (MCP)](#claude)).
 
@@ -816,11 +817,19 @@ Réglages, « Accueil » (la première ligne de « Général ») règle l'Accuei
 - « Réordonner » : glissez une tuile par sa poignée, ou utilisez les flèches « Monter » et « Descendre » ; « Terminé » ferme ce mode. L'Accueil suit cet ordre ; sur le téléphone, une tuile restée seule sur sa ligne prend toute la largeur.
 - « Afficher l'Accueil » coupé : Listo s'ouvre sur le « Premier écran » choisi (« Échéances », « Listes » ou « Notes » ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d'« Échéances », de « Listes » et de « Notes » ([6.1 La page Notifications](#notif-page)). Sur ordinateur, l'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.
 
+**Choisir ses fonctions**
+
+Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez ; pour l'instant, les notes. Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.
+
+- Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus de « Corbeille des notes » dans les Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
+- Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
+- Rallumer les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
+
 <a id="notes"></a>
 
 ### 5.12 Les notes
 
-Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.
+Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : elles disparaissent de vos écrans, sans rien effacer.
 
 - Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres et les textes.
 - « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » fait de même.

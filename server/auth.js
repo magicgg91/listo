@@ -12,6 +12,7 @@
 
 import crypto from 'node:crypto';
 import { homeFromRow } from './home.js';
+import { featuresFromRow } from './features.js';
 
 // Noms des cookies de connexion : session, et connexion en attente du code
 // 2FA. En production (HTTPS), ils portent le préfixe « __Host- » : le
@@ -100,6 +101,9 @@ export function publicUser(user, config, { method = null } = {}) {
     // Réglage « Accueil » (Réglages › Accueil, server/home.js) : le premier
     // écran est connu dès l'ouverture, avant la synchronisation
     home: homeFromRow(user),
+    // Réglage « Fonctions » (Réglages › Fonctions, server/features.js) :
+    // les boutons des fonctions coupées n'apparaissent jamais, même un instant
+    features: featuresFromRow(user),
   };
 }
 

@@ -119,7 +119,7 @@ test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) 
   const side = code('public/js/screens/pc-side.js');
   assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
-  assert.match(side, /newList\.hidden = NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
+  assert.match(side, /newList\.hidden = notesUsed && NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
   const app = code('public/js/app.js');
   assert.match(app, /if \(isDesktop\(\)\) mount\(\(onLeave\) => renderNotes\(onLeave, \{ openId: id \?\? 'new' \}\)\);/);
   const shortcuts = code('public/js/shortcuts.js');

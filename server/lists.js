@@ -34,6 +34,7 @@ import { createNewsService } from './news.js';
 import { createNoteService } from './notes.js';
 import { createInbox, inboxHandlers } from './inbox.js';
 import { createHome } from './home.js';
+import { createFeatures } from './features.js';
 import { translate, compareText } from '../public/js/i18n.js';
 import crypto from 'node:crypto';
 import {
@@ -319,6 +320,8 @@ export function createListService(ctx) {
   const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
   // Réglage « Accueil » de chaque compte (server/home.js, migration 40)
   const home = createHome(db);
+  // Réglage « Fonctions » de chaque compte (server/features.js, migration 41)
+  const features = createFeatures(db);
   const nowIso = () => new Date(ctx.now()).toISOString();
 
   const q = {
@@ -1448,6 +1451,20 @@ export function createListService(ctx) {
       if (changed) changedForMe(null);
       return {};
     },
+
+    // Réglage « Fonctions » (Réglages › Fonctions) : { notes } (booléen),
+    // rien d'autre. Toujours celui de la personne connectée (le compte vient
+    // de la session ; un autre champ, « userId » par exemple, est refusé) ;
+    // fonction inconnue ou valeur qui n'est pas un booléen : refusé (400),
+    // rien n'est écrit. Couper une fonction n'efface rien. Seuls ses autres
+    // appareils sont prévenus (même synchronisation que les nouveautés).
+    'account.features'(user, op) {
+      const { id, type, ...change } = op;
+      const { problem, changed } = features.setFeatures(user.id, change);
+      if (problem) throw new OpError(400, problem);
+      if (changed) changedForMe(null);
+      return {};
+    },
   };
 
   // Opérations des notes (server/notes.js)
@@ -1611,6 +1628,8 @@ export function createListService(ctx) {
       news: news.newsFor(user),
       // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
       home: home.homeFor(user.id),
+      // Mon réglage « Fonctions » (server/features.js), de même
+      features: features.featuresFor(user.id),
       // Réservations des listes d'envies où ce compte a le droit de les voir,
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire

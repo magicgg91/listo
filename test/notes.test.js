@@ -40,9 +40,9 @@ async function household(t) {
 // --- Migration 36 ---
 
 test('migration 36 : tables des notes créées sur une base neuve et sur une base existante, clés étrangères en ordre', (t) => {
-  assert.equal(MIGRATIONS.length, 40); // (37 : partage des notes, test/notes-share.test.js)
+  assert.equal(MIGRATIONS.length, 41); // (37 : partage des notes, test/notes-share.test.js)
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 40);
+  assert.equal(schemaVersion(fresh), 41);
   for (const table of ['notes', 'note_user_state']) {
     assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
   }
@@ -53,7 +53,7 @@ test('migration 36 : tables des notes créées sur une base neuve et sur une bas
   old.prepare("INSERT INTO lists (id, name, type, owner_id) VALUES ('11111111-1111-4111-8111-111111111111', 'Courses', 'shopping', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 40);
+  assert.equal(schemaVersion(db), 41);
   assert.equal(db.prepare('SELECT COUNT(*) FROM notes').pluck().get(), 0);
   assert.equal(db.prepare('SELECT name FROM lists').pluck().get(), 'Courses');
   assert.deepEqual(db.pragma('foreign_key_check'), []);

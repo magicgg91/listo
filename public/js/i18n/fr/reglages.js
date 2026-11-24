@@ -53,6 +53,14 @@ export default {
   'reglages.accueil.position': '« {name} » en position {position} sur {total}',
   'reglages.accueil.premier': 'Premier écran',
 
+  // Réglages › Fonctions (screens/features.js ; features.js)
+  'reglages.fonctions': 'Fonctions',
+  'reglages.fonctions.detail': 'Notes',
+  'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction coupée disparaît de vos écrans ; rien n\'est effacé.',
+  'reglages.fonctions.notes': 'Notes',
+  'reglages.fonctions.notes.detail': 'Des textes libres, à garder pour soi ou à partager.',
+  'reglages.fonctions.note': 'Vaut pour tous vos appareils.',
+
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',
   'reglages.touches.desactivees': 'Raccourcis à une touche désactivés',

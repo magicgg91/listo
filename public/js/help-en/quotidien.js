@@ -179,13 +179,20 @@ export default {
           '“Reorder”: drag a tile by its handle, or use the up and down arrows; “Done” closes this mode. Home follows this order; on the phone, a tile left alone on its row takes the full width.',
           '“Show the Home screen” turned off: Listo opens on the “First screen” you chose (“Due”, “Lists” or “Notes”; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([[notif-page]]). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.',
         ] },
+        { sub: 'Choosing your features' },
+        'Settings, “Features” (just below “Home”) chooses the features you use; for now, notes. A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.',
+        { ul: [
+          'Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.',
+          'With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.',
+          'Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.',
+        ] },
       ],
     },
     {
       id: 'notes',
       title: 'Notes',
       blocks: [
-        'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.',
+        'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links. Don\'t use notes? Turn them off for yourself in Settings, “Features” ([[echeances]]): they disappear from your screens, and nothing is deleted.',
         { ul: [
           '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles and texts.',
           '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.',

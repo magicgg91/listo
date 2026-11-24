@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v160-${BUILD ?? 'dev'}`;
+const VERSION = `v161-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -209,6 +209,7 @@ const APP_FILES = [
   '/js/search-row.js',
   '/js/gifts.js',
   '/js/home-tiles.js',
+  '/js/features.js',
   '/js/bell.js',
   '/js/scroll-lock.js',
   '/js/tabbar.js',
@@ -250,6 +251,7 @@ const APP_FILES = [
   '/js/screens/login.js',
   '/js/screens/notifications.js',
   '/js/screens/home-settings.js',
+  '/js/screens/features.js',
   '/js/screens/inbox.js',
   '/js/screens/pc-side.js',
   '/js/screens/scan.js',

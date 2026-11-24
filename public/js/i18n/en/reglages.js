@@ -53,6 +53,14 @@ export default {
   'reglages.accueil.position': '“{name}” in position {position} of {total}',
   'reglages.accueil.premier': 'First screen',
 
+  // Réglages › Fonctions (screens/features.js ; features.js)
+  'reglages.fonctions': 'Features',
+  'reglages.fonctions.detail': 'Notes',
+  'reglages.fonctions.intro': 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.',
+  'reglages.fonctions.notes': 'Notes',
+  'reglages.fonctions.notes.detail': 'Free-form texts, to keep for yourself or to share.',
+  'reglages.fonctions.note': 'Applies to all your devices.',
+
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',
   'reglages.touches.desactivees': 'Single-key shortcuts disabled',

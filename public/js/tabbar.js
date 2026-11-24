@@ -26,8 +26,11 @@
 //
 // Accueil coupé (Réglages › Accueil, home-tiles.js) : quatre boutons
 // (« Échéances », « Listes », « Notes », « Réglages », tabbar--4), sans
-// « Accueil ». Le bandeau suit le réglage dès qu'il change (sur cet
-// appareil ou sur un autre), sans être refait.
+// « Accueil ». Notes coupées (Réglages › Fonctions, features.js) : sans
+// « Notes » (quatre boutons, ou trois si l'Accueil est aussi coupé ; la
+// pastille de base de listo.css fait un tiers). Le bandeau suit ces
+// réglages dès qu'ils changent (sur cet appareil ou sur un autre), sans
+// être refait.
 
 import { h, icon, replace } from './dom.js';
 import { navigate, goBack } from './router.js';
@@ -134,10 +137,10 @@ function createTabBar() {
   let current = null; // bouton de l'écran affiché
   const arrange = () => {
     // (réglage du compte, copie locale ; home-tiles.js)
-    const names = tabScreens(app.data.home);
+    const names = tabScreens(app.data.home, app.data.features);
     if (names.join() === shown.join()) return false;
     shown = names;
-    nav.classList.remove(`tabbar--${TABS.length}`, `tabbar--${TABS.length - 1}`);
+    for (let count = 1; count <= TABS.length; count++) nav.classList.remove(`tabbar--${count}`);
     nav.classList.add(`tabbar--${names.length}`);
     replace(nav, pill, names.map((name) => buttons.get(name)));
     return true;

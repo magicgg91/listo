@@ -108,8 +108,8 @@ test('disposition du téléphone : une tuile seule sur sa ligne prend toute la l
 
 test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; une base d\'avant migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 40);
-  assert.equal(schemaVersion(db), 40);
+  assert.equal(MIGRATIONS.length, 41);
+  assert.equal(schemaVersion(db), 41);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   const row = db.prepare('SELECT home_enabled, home_start, home_tiles FROM users WHERE id = ?').get(id);
   assert.deepEqual(row, { home_enabled: 1, home_start: 'lists', home_tiles: null });
@@ -126,7 +126,7 @@ test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; 
   old.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('paul', 'Paul', 'x', 'user')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 40);
+  assert.equal(schemaVersion(migrated), 41);
   assert.deepEqual(homeFromRow(migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get()), defaultHome());
   migrated.close();
 });
@@ -245,12 +245,12 @@ test('copie locale : synchronisation, opération hors ligne (mêmes règles), co
 test('Accueil : tuiles dans l\'ordre choisi, sans les masquées, une tuile seule en pleine largeur ; coupé, il mène au premier écran', () => {
   const home = code('public/js/screens/home.js');
   assert.match(home, /import \{ shownTiles, tileLayout, firstScreen \} from '\.\.\/home-tiles\.js';/);
-  assert.match(home, /const present = shownTiles\(app\.data\.home\)\.map\(\(name\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
+  assert.match(home, /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map\(\(name\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
   assert.match(home, /const layout = tileLayout\(present\.map\(\(\[name\]\) => name\)\);/);
   assert.match(home, /el\.classList\.toggle\('tile--wide', layout\[i\]\.wide\)/);
   // « À offrir » n'est plus large d'office dans le code de la tuile
   assert.doesNotMatch(home, /wide: true/);
-  assert.match(home, /const first = firstScreen\(app\.data\.home\);\s*if \(first !== 'home'\) \{/);
+  assert.match(home, /const first = firstScreen\(app\.data\.home, app\.data\.features\);\s*if \(first !== 'home'\) \{/);
   assert.match(home, /if \(app\.route\?\.name === 'home'\) navigate\(first, \{\}, \{ replace: true \}\);/);
   // Sur ordinateur, tile--wide reste sans effet ; sous 340 px, une colonne
   const css = read('public/css/listo.css');
@@ -266,13 +266,13 @@ test('premier écran : #/accueil et une adresse inconnue mènent à l\'écran ch
   assert.deepEqual(matchRoute('#/reglages/accueil'), { name: 'homeSettings', params: {} });
   assert.equal(pathFor('homeSettings'), '#/reglages/accueil');
   const app = code('public/js/app.js');
-  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home\);/);
+  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, app\.data\.features\);/);
   assert.match(app, /case 'home':\s*if \(openingScreen\(\) !== 'home'\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /default: navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /case 'homeSettings': mount\(\(onLeave\) => renderHomeSettings\(onLeave\)\); break;/);
   // Connu dès l'ouverture (/api/me), avant la synchronisation ; la file
   // d'attente est rejouée ensuite
-  assert.match(app, /if \(user\.home\) app\.data\.home = normalizeHome\(user\.home\);\s*queue\?\.stop\(\);\s*queue = makeQueue\(\);/);
+  assert.match(app, /if \(user\.home\) app\.data\.home = normalizeHome\(user\.home\);\s*if \(user\.features\) app\.data\.features = normalizeFeatures\(user\.features\);\s*queue\?\.stop\(\);\s*queue = makeQueue\(\);/);
   // Les retours qui menaient à l'Accueil mènent au premier écran
   assert.match(read('public/js/screens/inbox.js'), /goBack\(openingScreen\(\)\)/);
   const side = code('public/js/screens/pc-side.js');
@@ -289,7 +289,7 @@ test('bandeau du bas : cinq boutons, ou quatre sans « Accueil » quand il est c
   // Mêmes boutons, dans le même ordre, que TABS
   const tabs = [...tabbar.slice(tabbar.indexOf('export const TABS')).matchAll(/^  \['(\w+)', '[\w-]+', \(\) => t\(/gm)].map((m) => m[1]);
   assert.deepEqual(tabs, TAB_SCREENS);
-  assert.match(tabbar, /const names = tabScreens\(app\.data\.home\);/);
+  assert.match(tabbar, /const names = tabScreens\(app\.data\.home, app\.data\.features\);/);
   assert.match(tabbar, /nav\.classList\.add\(`tabbar--\$\{names\.length\}`\);/);
   assert.match(tabbar, /if \(arrange\(\) && nav\.dataset\.current\) nav\.dataset\.current = placeOf\(\);/);
   // Toujours pas de bandeau sur l'Accueil
@@ -303,7 +303,7 @@ test('bandeau du bas : cinq boutons, ou quatre sans « Accueil » quand il est c
 test('cloche partagée (bell.js) : sur l\'Accueil, et dans la barre du haut d\'Échéances, Listes et Notes seulement quand l\'Accueil est coupé', () => {
   const bell = code('public/js/bell.js');
   assert.match(bell, /export function topBell\(onLeave\) \{/);
-  assert.match(bell, /notifications\.el\.hidden = firstScreen\(app\.data\.home\) === 'home';/);
+  assert.match(bell, /notifications\.el\.hidden = firstScreen\(app\.data\.home, app\.data\.features\) === 'home';/);
   assert.match(bell, /onLeave\(onDataChange\(paint\)\);/);
   // Une seule définition de la cloche
   for (const file of ['public/js/screens/home.js', 'public/js/screens/lists.js', 'public/js/screens/deadlines.js', 'public/js/screens/notes.js']) {
@@ -324,8 +324,8 @@ test('cloche partagée (bell.js) : sur l\'Accueil, et dans la barre du haut d\'�
 test('Réglages : « Accueil » en première ligne de « Général » (téléphone et ordinateur)', () => {
   const settings = code('public/js/screens/settings.js');
   assert.match(settings, /const homeRow = \(\) => row\(\{ iconName: 'home', title: t\('reglages\.accueil'\), sub: t\('reglages\.accueil\.detail'\), onClick: \(\) => navigate\('homeSettings'\) \}\);/);
-  assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), generalRows\(isAdmin\)\),/);
-  assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), keysRow\(\), generalRows\(isAdmin\)\)/);
+  assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), generalRows\(isAdmin\)\),/);
+  assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), keysRow\(\), generalRows\(isAdmin\)\)/);
   assert.equal(fr['reglages.accueil'], 'Accueil');
   assert.equal(fr['reglages.accueil.detail'], 'Tuiles affichées, premier écran');
   assert.equal(en['reglages.accueil'], 'Home');
@@ -344,10 +344,10 @@ test('écran Réglages › Accueil : interrupteurs reliés, Compte grisé, Réor
   assert.match(screen, /'btn btn--sm btn--secondary', type: 'button', 'data-key': 'reorder', onClick: \(\) => setReordering\(true\) \}, icon\('menu-lines', 'icon--sm'\), t\('reglages\.accueil\.reordonner'\)/);
   // Monter / Descendre : nommés, grisés aux bouts, focus gardé, place annoncée
   assert.match(screen, /'aria-label': label\(step < 0\),/);
-  assert.match(screen, /disabled: step < 0 \? index === 0 : index === home\.order\.length - 1,/);
+  assert.match(screen, /disabled: step < 0 \? index === 0 : index === tiles\.length - 1,/);
   assert.match(screen, /focusAfterDraw = \[`\[data-key="\$\{step < 0 \? 'up' : 'down'\}-\$\{name\}"\]`, `\[data-key="\$\{step < 0 \? 'down' : 'up'\}-\$\{name\}"\]`\];/);
   assert.match(screen, /announce\(t\('reglages\.accueil\.position'/);
-  assert.match(screen, /handle\.addEventListener\('pointerdown', \(event\) => startDrag\(event, row, home, name\)\);/);
+  assert.match(screen, /handle\.addEventListener\('pointerdown', \(event\) => startDrag\(event, row, home, tiles, name\)\);/);
   // Premier écran : role="radiogroup", role="radio", coche sur le choisi
   assert.match(screen, /h\('div', \{ class: 'group', role: 'radiogroup', 'aria-labelledby': 'accueil-premier' \}/);
   assert.match(screen, /role: 'radio', 'aria-checked': String\(chosen\)/);

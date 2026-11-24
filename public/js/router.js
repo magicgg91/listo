@@ -41,6 +41,9 @@ export const ROUTES = [
   // Réglages › Accueil (23 novembre 2026) : tuiles affichées et leur
   // ordre, Accueil coupé et premier écran (home-settings.js)
   { name: 'homeSettings', path: '/reglages/accueil' },
+  // Réglages › Fonctions (24 novembre 2026) : les fonctions que la
+  // personne utilise, les notes par exemple (screens/features.js)
+  { name: 'features', path: '/reglages/fonctions' },
   // Page Notifications (étape 4, 23 novembre 2026) : ce que Listo m'a
   // signalé ; la cloche de l'Accueil et la tuile Compte y mènent
   { name: 'inbox', path: '/notifications' },

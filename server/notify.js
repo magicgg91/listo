@@ -43,7 +43,9 @@
 //   nommée que par son titre (jamais la première ligne de son texte) ;
 //   avec le détail, le début du texte suit. Toucher la notification ouvre
 //   la note. Droits relus à l'envoi avec noteAccess (server/notes.js) :
-//   une note dans la corbeille ou quittée ne notifie plus rien.
+//   une note dans la corbeille ou quittée ne notifie plus rien, et une
+//   personne qui a coupé les notes (Réglages › Fonctions, migration 41) ne
+//   reçoit plus rien des notes (page Notifications et téléphone).
 // - b) 'due' : un résumé par personne et par jour, vers 8 h (heure du
 //   serveur, variable TZ), « 3 tâches à faire aujourd'hui · 1 en retard » ;
 //   jamais une notification par tâche. Seulement les listes de TÂCHES dont
@@ -204,6 +206,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     note: db.prepare(`SELECT notes.id, notes.title, notes.body, notes.owner_id, notes.version, notes.deleted_at,
         (SELECT access FROM note_members WHERE note_members.note_id = notes.id AND note_members.user_id = :userId) AS member_access,
         (SELECT active FROM users WHERE users.id = :userId) AS user_active,
+        (SELECT notes_enabled FROM users WHERE users.id = :userId) AS notes_enabled,
         COALESCE((SELECT muted_push FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS muted_push,
         COALESCE((SELECT last_read_version FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS read_version
       FROM notes WHERE notes.id = :noteId`),
@@ -286,11 +289,15 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     q.setNoteMuted.run({ noteId, userId, muted: muted ? 1 : 0 });
   }
   // La personne peut-elle recevoir cette notification de note ? La note
-  // (telle qu'elle la voit) ou null.
+  // (telle qu'elle la voit) ou null. Notes coupées par la personne
+  // (Réglages › Fonctions, users.notes_enabled = 0, server/features.js) :
+  // rien, ni sur la page Notifications ni sur le téléphone (les deux
+  // passent par ici, puis par deliver).
   function allowedNote(userId, noteId, category, actorId = null) {
     if (userId === actorId) return null;
     const note = visibleNote(userId, noteId);
     if (!note) return null;
+    if (note.notes_enabled !== 1) return null;
     if (!settingsOf(userId)[category]) return null;
     if (note.muted_push === 1) return null;
     return note;

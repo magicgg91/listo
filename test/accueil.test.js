@@ -170,7 +170,7 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   // Après la connexion : l'écran demandé avant (lien direct), sinon le
   // premier écran (l'Accueil, ou celui choisi quand il est coupé :
   // Réglages › Accueil, test/home-tiles.test.js)
-  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home\);/);
+  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, app\.data\.features\);/);
   assert.match(app, /const next = app\.afterLogin && app\.afterLogin\.name !== 'login' \? app\.afterLogin : \{ name: openingScreen\(\), params: \{\} \};/);
   assert.match(app, /if \(name === 'login'\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /default: navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
@@ -201,7 +201,7 @@ test('Accueil : ni bandeau du bas ni loupe ; nombres lus avec leur libellé ; co
   // Tuiles dans l'ordre choisi (au départ : Échéances, Listes, « À offrir »
   // si j'ai des réservations, Notes, Compte ; test/home-tiles.test.js)
   assert.match(home, /const build = \{ deadlines: deadlinesTile, lists: \(\) => listsTile\(pc\), gifts: giftsTile, notes: \(\) => notesTile\(pc\), account: accountTile \};/);
-  assert.match(home, /const present = shownTiles\(app\.data\.home\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
+  assert.match(home, /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
   assert.match(home, /requests > 0 \? row\(\{/);

@@ -18,7 +18,8 @@
 //   ordre-là, toutes affichées. Deux colonnes sur le téléphone (une sous
 //   340 px) : une tuile restée seule sur sa ligne prend toute la largeur
 //   (tileLayout), jamais de trou ; trois sur ordinateur (quatre au-delà de
-//   1 440 px), où « toute la largeur » n'a pas d'effet.
+//   1 440 px), où « toute la largeur » n'a pas d'effet. Notes coupées
+//   (Réglages › Fonctions, features.js) : pas de tuile Notes.
 // - Accueil coupé dans les Réglages : cet écran mène tout de suite au
 //   premier écran choisi (app.js le fait aussi pour #/accueil).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
@@ -240,7 +241,7 @@ export function renderHome(onLeave) {
     // Accueil coupé (Réglages › Accueil, ici ou sur un autre appareil) :
     // le premier écran choisi le remplace
     // (un instant plus tard : jamais pendant que l'écran se pose)
-    const first = firstScreen(app.data.home);
+    const first = firstScreen(app.data.home, app.data.features);
     if (first !== 'home') {
       if (!leaving) {
         leaving = true;
@@ -251,10 +252,11 @@ export function renderHome(onLeave) {
       return;
     }
     // Tuiles dans l'ordre choisi, sans les masquées ; « À offrir »
-    // seulement si j'ai des réservations ; une tuile seule sur sa ligne du
-    // téléphone prend toute la largeur
+    // seulement si j'ai des réservations ; pas de tuile d'une fonction
+    // coupée (Notes) ; une tuile seule sur sa ligne du téléphone prend
+    // toute la largeur
     const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile };
-    const present = shownTiles(app.data.home).map((name) => [name, build[name]()]).filter(([, el]) => el);
+    const present = shownTiles(app.data.home, app.data.features).map((name) => [name, build[name]()]).filter(([, el]) => el);
     const layout = tileLayout(present.map(([name]) => name));
     present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));
     replace(tiles, present.map(([, el]) => el));

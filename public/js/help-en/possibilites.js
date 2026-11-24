@@ -83,6 +83,7 @@ export default {
         "Automatic backup every night ([[sauvegardes]]).",
         "Light, dark or automatic theme ([[theme]]).",
         "A Home screen your way: tiles hidden or in another order, or no Home screen at all ([[echeances]]).",
+        "Only the features you use: notes can be turned off for you alone, without deleting anything ([[echeances]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
         "An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([[claude]]).",
       ] }],

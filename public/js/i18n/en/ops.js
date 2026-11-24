@@ -84,6 +84,8 @@ export default {
   'ops.accueilPremierEcranInvalide': 'Unknown first screen: Due, Lists or Notes.',
   'ops.accueilTuilesInvalides': 'Invalid Home tiles: each known tile, only once.',
   'ops.accueilCompteToujours': 'The Account tile is always shown.',
+  'ops.fonctionInconnue': 'Unknown feature: notes only.',
+  'ops.fonctionsInvalides': 'Invalid features setting: yes or no for each feature.',
 
   // Créer, modifier une liste
   'ops.listeExisteDeja': 'This list already exists.',

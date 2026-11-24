@@ -84,6 +84,8 @@ export default {
   'ops.accueilPremierEcranInvalide': 'Premier écran inconnu : Échéances, Listes ou Notes.',
   'ops.accueilTuilesInvalides': 'Tuiles de l\'Accueil invalides : chaque tuile connue, une seule fois.',
   'ops.accueilCompteToujours': 'La tuile Compte est toujours affichée.',
+  'ops.fonctionInconnue': 'Fonction inconnue : seulement les notes.',
+  'ops.fonctionsInvalides': 'Réglage des fonctions invalide : oui ou non pour chaque fonction.',
 
   // Créer, modifier une liste
   'ops.listeExisteDeja': 'Cette liste existe déjà.',

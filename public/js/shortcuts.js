@@ -62,13 +62,17 @@ export function keycap(label) {
   return h('kbd', { class: 'keycap', 'aria-hidden': 'true' }, label);
 }
 
+// Notes utilisées par la personne ? (Réglages › Fonctions ; donné par
+// app.js à startShortcuts) : coupées, N ne mène qu'à « Nouvelle liste »
+let notesShown = () => true;
+
 // Liste des raccourcis (fenêtre « ? », aide), lue à l'ouverture (dans la
 // langue choisie)
 export function shortcuts() {
   return [
     { group: t('raccourcis.partout'), keys: [
       [['?'], t('raccourcis.partout.afficher')],
-      [['N'], t('raccourcis.partout.nouvelleListe')],
+      [['N'], t(notesShown() ? 'raccourcis.partout.nouvelleListe' : 'navigation.nouvelleListe')],
       [['/'], t('raccourcis.partout.rechercher')],
       [[','], t('raccourcis.partout.reglages')],
       [[t('raccourcis.touche.echap')], t('raccourcis.partout.fermer')],
@@ -212,7 +216,8 @@ let spaceHandled = false;
 // onGoList(delta) : [ et ], liste précédente ou suivante, dans l'ordre du
 // menu de gauche (pc-side.js : le menu ne nomme plus les listes une à une
 // depuis le 23 novembre 2026, il donne donc lui-même cet ordre)
-export function startShortcuts({ onUndo, onGoList }) {
+export function startShortcuts({ onUndo, onGoList, notesOn = () => true }) {
+  notesShown = notesOn;
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
   // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
@@ -277,8 +282,9 @@ export function startShortcuts({ onUndo, onGoList }) {
     const run = {
       '?': () => (openShortcuts(), true),
       // N : « Nouvelle liste », ou « Nouvelle note » sur les écrans des notes
-      // (le curseur va alors dans le texte : geste fait pour écrire)
-      n: () => (location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
+      // (le curseur va alors dans le texte : geste fait pour écrire) ;
+      // notes coupées : toujours « Nouvelle liste »
+      n: () => (notesShown() && location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
       '[': () => (onGoList(-1), true),

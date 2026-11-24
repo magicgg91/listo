@@ -850,6 +850,18 @@ export const MIGRATIONS = [
   ALTER TABLE users ADD COLUMN home_start TEXT NOT NULL DEFAULT 'lists' CHECK (home_start IN ('deadlines', 'lists', 'notes'));
   ALTER TABLE users ADD COLUMN home_tiles TEXT CHECK (home_tiles IS NULL OR length(home_tiles) <= 200);
   `,
+
+  // --- Migration 41 : réglage « Fonctions » de chaque compte (24 novembre 2026) ---
+  // Réglages › Fonctions, le même sur tous les appareils de la personne
+  // (public/js/features.js, server/features.js) : une colonne
+  // <fonction>_enabled par fonction qu'on peut couper pour soi.
+  // - notes_enabled : les notes sont utilisées (1, au départ) ou coupées
+  //   (0 : ni bouton, ni tuile, ni nouveautés, ni notifications des notes
+  //   pour cette personne ; rien n'est effacé).
+  // Les comptes existants gardent les notes : rien ne change.
+  `
+  ALTER TABLE users ADD COLUMN notes_enabled INTEGER NOT NULL DEFAULT 1 CHECK (notes_enabled IN (0, 1));
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

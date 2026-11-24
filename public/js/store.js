@@ -20,6 +20,7 @@ import { suggest, habitual, hideHabitual, isKnownName, usualAisle, usualStore, r
 import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
 import { normalizeHome, homeChangeProblem, applyHomeChange } from './home-tiles.js';
+import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn } from './features.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -49,6 +50,9 @@ export function emptyState() {
     // sur tous mes appareils ; valeurs de départ avant la première
     // synchronisation (Accueil affiché, toutes les tuiles, ordre de départ)
     home: normalizeHome(null),
+    // Mon réglage « Fonctions » (Réglages › Fonctions, features.js), de
+    // même ; valeurs de départ : tout est utilisé
+    features: normalizeFeatures(null),
     trash: new Map(),       // articles supprimés ici (pour « Annuler »), en mémoire seulement
     // Notes (notes.js, server/notes.js) : celles que je vois, corbeille
     // comprise (deletedAt rempli)
@@ -120,6 +124,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     users: state.users,
     news: state.news,
     home: state.home,
+    features: state.features,
     reservations: state.reservations,
     gifts: { reservedAt: state.gifts.reservedAt, bought: [...state.gifts.bought] },
     notes: [...state.notes.values()],
@@ -149,6 +154,8 @@ export function fromSnapshot(snapshot) {
     // (copie d'avant le réglage « Accueil » : valeurs de départ, remplacées
     // à la synchronisation suivante)
     state.home = normalizeHome(snapshot.home);
+    // (copie d'avant le réglage « Fonctions » : tout est utilisé)
+    state.features = normalizeFeatures(snapshot.features);
     state.reservations = snapshot.reservations ?? {};
     // (copie d'avant « À offrir » : vide, remplie à la synchronisation suivante)
     state.gifts = giftsFrom(snapshot.gifts);
@@ -208,6 +215,7 @@ export function loadSync(state, data) {
   if (data.users) state.users = data.users;
   if (data.news) state.news = data.news;
   if (data.home) state.home = normalizeHome(data.home);
+  if (data.features) state.features = normalizeFeatures(data.features);
   loadNotes(state, data, { full: true });
   state.loaded = true;
   refreshListReferences(state);
@@ -253,6 +261,8 @@ export function mergeSync(state, data) {
   if (data.news) state.news = data.news;
   // Réglage « Accueil » : de même
   if (data.home) state.home = normalizeHome(data.home);
+  // Réglage « Fonctions » : de même
+  if (data.features) state.features = normalizeFeatures(data.features);
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
@@ -384,6 +394,14 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
       if (homeChangeProblem(op)) return;
       state.home = applyHomeChange(state.home, op);
       return;
+    // Réglage « Fonctions » (mêmes règles que le serveur, features.js) :
+    // effet tout de suite, hors ligne compris
+    case 'account.features': {
+      const { id, type, ...change } = op;
+      if (featuresChangeProblem(change)) return;
+      state.features = applyFeaturesChange(state.features, change);
+      return;
+    }
     // « Acheté » dans « À offrir » (propre à moi ; le serveur vérifie que
     // je réserve bien ce souhait en ce moment)
     case 'gift.bought':
@@ -583,8 +601,16 @@ export function loadInbox(state, data) {
   return state;
 }
 
+// Lignes de la page montrées : toutes, sauf celles des notes quand je les
+// ai coupées (Réglages › Fonctions, features.js ; gardées, elles reviennent
+// quand je les rallume)
+export function inboxShownRows(state) {
+  const rows = state.inbox?.rows ?? [];
+  return notesOn(state.features) ? rows : rows.filter((row) => row.targetType !== 'note');
+}
+
 // Nombre de notifications non lues (pastille de la cloche)
-export const inboxUnread = (state) => (state.inbox?.rows ?? []).filter((row) => !row.read).length;
+export const inboxUnread = (state) => inboxShownRows(state).filter((row) => !row.read).length;
 
 // Lignes non lues dont la cible est cette liste (ou un de ses éléments),
 // cette note, ou l'écran Échéances : ouvrir la cible les rend lues (une
@@ -1068,9 +1094,10 @@ export const isListMuted = (state, listId) => Boolean(state.news?.lists?.[listId
 // Nouveautés d'une note : modifiée par quelqu'un d'autre depuis ma dernière
 // lecture (calculé par le serveur), « Nouveautés » activé, note pas en
 // sourdine ni dans la corbeille
+// (notes coupées dans Réglages › Fonctions : jamais de nouveautés)
 export function isNoteUnread(state, noteId) {
   const note = state.notes.get(noteId);
-  return Boolean(note) && !note.deletedAt && state.news?.enabled !== false
+  return Boolean(note) && !note.deletedAt && state.news?.enabled !== false && notesOn(state.features)
     && state.noteNews.unread.has(noteId) && !state.noteNews.muted.has(noteId);
 }
 // Une note au moins a des nouveautés (point de la tuile Notes, du menu de gauche)

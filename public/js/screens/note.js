@@ -266,7 +266,9 @@ export function noteEditor(initialId, onLeave, { pc }) {
   const menuButton = iconButton('more', t('notes.plusActions'), () => {
     const n = note();
     if (!n) return;
-    openMenu(noteMenuItems(n, { onDeleted: afterDelete, withPin: !pc, withPeople: false }), { label: t('notes.plusActions'), anchor: menuButton });
+    // Menu nommé d'après la note (« Actions de Vacances »), comme celui de
+    // sa carte : les libellés courts gardent leur contexte
+    openMenu(noteMenuItems(n, { onDeleted: afterDelete, withPin: !pc, withPeople: false }), { label: t('notes.carte.actions', { name: titleOf(n) }), anchor: menuButton });
   });
   menuButton.setAttribute('aria-haspopup', 'menu');
   menuButton.setAttribute('aria-expanded', 'false');

@@ -575,8 +575,10 @@
    à droite. Replié : chevron tourné vers la droite, liste masquée, et le
    nombre laisse place à « · 2 à acheter » (« · 3 à faire ») après le nom :
    jamais la couleur seule. La zone des cochés (16.5) se replie de la même
-   façon. « Tout replier / Tout déplier » : bouton texte compact .fold-all, à
-   droite de la barre d'état, seulement s'il y a au moins deux groupes. */
+   façon. « Tout replier / Tout déplier » : bouton-icône .fold-all (le
+   chevron seul, zone tactile de --tap-min ; son nom dans aria-label et
+   title ; décision du 24 novembre 2026), à droite de la barre d'état,
+   seulement s'il y a au moins deux groupes. */
 .aisle--fold { padding: 0 var(--space-2); }
 .aisle__toggle { display: flex; align-items: center; gap: var(--space-1); flex: 1; min-width: 0; min-height: var(--tap); padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; text-align: left; color: inherit; }
 .aisle__toggle > .icon { flex: none; transition: transform var(--dur-fast) var(--ease); }
@@ -585,7 +587,7 @@
 .aisle__toggle .aisle__count { margin-left: auto; }
 .aisle__rest { flex: 1; min-width: 0; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .aisle__toggle:active, .fold-all:active { background: var(--color-neutral-soft); }
-.fold-all { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-min); margin-left: auto; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-sm); background: transparent; font-size: var(--text-sm); font-weight: 700; color: var(--color-accent-ink); }
+.fold-all { display: inline-grid; place-items: center; flex: none; width: var(--tap-min); height: var(--tap-min); margin-left: auto; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-accent-ink); }
 .fold-all .icon { transition: transform var(--dur-fast) var(--ease); }
 .fold-all--open .icon { transform: rotate(180deg); }
 /* 16.12 Recherche (design/recherche) : champ .searchfield (48 px de haut,

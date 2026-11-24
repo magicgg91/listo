@@ -127,7 +127,7 @@ export default {
       id: 'tri',
       title: 'Groups, sorting and counter',
       blocks: [{ ul: [
-        'Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([[sous-taches]]).',
+        'Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. The chevron at the end of the row under the list title (“Collapse all”, then “Expand all”) acts on all the groups, and on subtasks ([[sous-taches]]).',
         '“Lists” can be sorted by date or alphabetically (button at the top).',
         'On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([[ordinateur]]).',
         'In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.',
@@ -187,11 +187,11 @@ export default {
       blocks: [
         'A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([[notes-partage]]). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.',
         { ul: [
-          '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. ⋮ menu, “Sort”: “Most recent first” or “Alphabetical order”. The magnifying glass searches titles and texts.',
+          '“Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles and texts.',
           '“+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.',
           'A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.',
           'To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.',
-          'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave note”.',
+          'A note\'s ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.',
         ] },
         { sub: 'Two people at the same time' },
         'If the note was saved elsewhere (by someone it is shared with, or on another of your devices) while you were writing, nothing is overwritten. A banner warns you (‘Léa just edited this note’); when it saves, Listo offers “Keep mine”, “Take theirs” (after confirmation) or “Keep both” (your text becomes a new note of your own). “Decide later” leaves the note “Needs checking”: your text stays on the device and the choice comes back when you reopen the note. If you are reading the note without writing, it updates before your eyes.',
@@ -210,12 +210,12 @@ export default {
           'Owner: everything, including deleting the note, sharing it and managing its public link.',
           '“Can edit”: change the title and the text. Never delete the note, share it or manage its public link.',
           '“Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.',
-          'Everyone except the owner can “Leave note” (⋮ menu). Someone who loses access also loses their pin. Each person\'s pin is never shown to the others.',
+          'Everyone except the owner can leave the note: ⋮ menu, “Leave”. Someone who loses access also loses their pin. Each person\'s pin is never shown to the others.',
           'The cards of a shared note show the people\'s initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.',
         ] },
         { sub: 'What\'s new and notifications' },
-        'When someone else changes a shared note, its card shows a dot and ‘Edited by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It\'s the same “What\'s new” setting as for lists ([[nouveautes]]); ⋮ menu: “Hide what\'s new in this note”.',
-        'Notifications ([[notif-recevoir]]), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note\'s title is named, never its text; with details, the start of the text follows ([[notif-detail]]). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.',
+        'When someone else changes a shared note, its card shows a dot and ‘Edited by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It\'s the same “What\'s new” setting as for lists ([[nouveautes]]); the note\'s ⋮ menu: “Hide what\'s new”.',
+        'Notifications ([[notif-recevoir]]), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note\'s title is named, never its text; with details, the start of the text follows ([[notif-detail]]). The Notifications page only names the title, never the text. The note\'s ⋮ menu: “Turn off notifications”.',
         { sub: 'A note\'s public link' },
         '⋮ menu of one of your notes, “Public link”: the same sheet as for a list ([[lien-public]]): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the text (clickable links) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn\'t expired.',
       ],
@@ -256,7 +256,7 @@ export default {
         'In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.',
         'On “Lists”, a badge on the card\'s icon gives the number of new updates (“30+” after more than a month away).',
         'In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.',
-        'List menu ⋮: “Hide what\'s new in this list”, then “Show what\'s new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list\'s notifications ([[notif-silencer]]).',
+        'List menu ⋮: “Hide what\'s new”, then “Show what\'s new” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list\'s notifications ([[notif-silencer]]).',
         'Settings, “Notifications”, “In the app” part: “What\'s new” turns off all of it; “Include checked items” (shown only when “What\'s new” is on) adds what the others check or uncheck.',
         'On some phones, the icon of the installed app also shows their total. To be told without opening Listo: [[notifications]].',
       ] }],
@@ -267,7 +267,7 @@ export default {
       blocks: [
         'Without a network, you can keep adding, editing and checking, and writing in your notes ([[notes]]). The changes are sent when the network comes back.',
         'The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.',
-        'Sharing (a list or a note), the public link, duplicating, “Leave list” and “Leave note”, the list trash, reservations, creating a store or an aisle, and Administration need a connection.',
+        'Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the list trash, reservations, creating a store or an aisle, and Administration need a connection.',
       ],
     },
     {
@@ -331,7 +331,7 @@ export default {
       blocks: [
         'In a task list, the owner turns on “Subtasks” in “Options for items” ([[modifier]]). A main task can then group subtasks: the list stays short, and each project has its steps.',
         { ul: [
-          'At the end of a main task\'s row, “1/3” says how many subtasks are done. Tap it: the subtasks appear right below, indented. Tap it again to collapse them. “Expand all” and “Collapse all”, under the list title, act on all the main tasks (and on the groups and the done items). This device remembers what is expanded.',
+          'At the end of a main task\'s row, “1/3” says how many subtasks are done. Tap it: the subtasks appear right below, indented. Tap it again to collapse them. The chevron at the end of the row under the list title (“Expand all”, then “Collapse all”) acts on all the main tasks (and on the groups and the done items). This device remembers what is expanded.',
           'To add a subtask: expand the main task and tap “Add a subtask”; or open a task\'s details and tap “Add a subtask”. Enter adds it and leaves the field ready for the next one; Enter on an empty field closes it.',
           'To put an existing task under another one: its details, “Subtask of”, then the main task. “None” takes it out again.',
           'One level only: a subtask has no subtasks. A task that has subtasks, or that repeats, cannot become a subtask.',

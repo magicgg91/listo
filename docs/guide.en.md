@@ -765,7 +765,7 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 ### 5.9 Groups, sorting and counter
 
-- Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. “Collapse all” acts on all the groups, and on subtasks ([5.21 Subtasks](#sous-taches)).
+- Tap the header of an aisle (or of a store, or of a priority) to collapse or expand it. The chevron at the end of the row under the list title (“Collapse all”, then “Expand all”) acts on all the groups, and on subtasks ([5.21 Subtasks](#sous-taches)).
 - “Lists” can be sorted by date or alphabetically (button at the top).
 - On the phone, under the “Lists” title, “All”, “Shopping”, “Tasks” or “Wishes” shows only the lists of that type. Your last choice is remembered on this phone. On a computer, the type is chosen in the menu on the left ([5.20 On a computer](#ordinateur)).
 - In a shopping list, “Sort list” offers “By aisle” (“By store” for a “Multi” store) or “Alphabetical”: the items are then shown in one flat list, under “To buy”. Each item keeps its aisle.
@@ -822,11 +822,11 @@ Settings, “Home” (the first row of “General”) sets up the Home screen fo
 
 A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text stays plain (line breaks kept, no formatting); web addresses in http or https become links.
 
-- “Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. ⋮ menu, “Sort”: “Most recent first” or “Alphabetical order”. The magnifying glass searches titles and texts.
+- “Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles and texts.
 - “+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.
 - A note saves itself: one second after your last keystroke, when you leave the note and when Listo goes to the background. The line under the bar says “Saved”, “Saving…” or “Offline · saved on this phone”; offline, the note is sent when the network comes back.
 - To write in a note, tap its text: the cursor goes to that spot. A link opens in a new tab.
-- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave note”.
+- A note's ⋮ menu (on its card, or in the note): “Pin” or “Unpin”, “Share” and “Public link” (your notes) or “People” (a note shared with you), “Duplicate” (a copy of your own, not shared, whose title ends with ‘(copy)’), “Delete” (your notes) or “Leave”.
 
 **Two people at the same time**
 
@@ -849,14 +849,14 @@ In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens �
 - Owner: everything, including deleting the note, sharing it and managing its public link.
 - “Can edit”: change the title and the text. Never delete the note, share it or manage its public link.
 - “Read only”: read the note (links open), pin it for yourself. The card shows it with the “Read only” eye.
-- Everyone except the owner can “Leave note” (⋮ menu). Someone who loses access also loses their pin. Each person's pin is never shown to the others.
+- Everyone except the owner can leave the note: ⋮ menu, “Leave”. Someone who loses access also loses their pin. Each person's pin is never shown to the others.
 - The cards of a shared note show the people's initials; “People”, at the top of the note, lists them with their access. At the bottom of the note: ‘Edited by Léa · 5 min ago’.
 
 **What's new and notifications**
 
-When someone else changes a shared note, its card shows a dot and ‘Edited by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.16 What's new](#nouveautes)); ⋮ menu: “Hide what's new in this note”.
+When someone else changes a shared note, its card shows a dot and ‘Edited by Léa’ until you open it (it then counts as read on all your devices); the “Notes” tile on Home and, on a computer, the “Notes” entry in the menu on the left show the dot too. It's the same “What's new” setting as for lists ([5.16 What's new](#nouveautes)); the note's ⋮ menu: “Hide what's new”.
 
-Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.4 Details in the notification](#notif-detail)). The Notifications page only names the title, never the text. ⋮ menu: “Turn off notifications for this note”.
+Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notifications page and on your devices: ‘Léa edited the note “Travel”’ (at most one per note every quarter of an hour) and ‘Léa shared the note “Travel” with you’. Without details, only the note's title is named, never its text; with details, the start of the text follows ([6.4 Details in the notification](#notif-detail)). The Notifications page only names the title, never the text. The note's ⋮ menu: “Turn off notifications”.
 
 **A note's public link**
 
@@ -894,7 +894,7 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 - In a shared list, Listo points out what the others added or changed since your last visit. Your own actions and deletions are never pointed out.
 - On “Lists”, a badge on the card's icon gives the number of new updates (“30+” after more than a month away).
 - In the list, each new update is highlighted, with who made it (“Added by Marie”). It stays highlighted during the visit, until you tap the row; when you leave the list, everything counts as seen, on all your devices.
-- List menu ⋮: “Hide what's new in this list”, then “Show what's new in this list” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list's notifications ([6.5 Turning off notifications for a list](#notif-silencer)).
+- List menu ⋮: “Hide what's new”, then “Show what's new” to bring it back. Each person chooses for themselves, read-only access included. This is separate from the list's notifications ([6.5 Turning off notifications for a list](#notif-silencer)).
 - Settings, “Notifications”, “In the app” part: “What's new” turns off all of it; “Include checked items” (shown only when “What's new” is on) adds what the others check or uncheck.
 - On some phones, the icon of the installed app also shows their total. To be told without opening Listo: [6. Notifications](#notifications).
 
@@ -906,7 +906,7 @@ Without a network, you can keep adding, editing and checking, and writing in you
 
 The badge at the top shows the state: “Up to date”, “Syncing…” or “Offline”, with the number of pending changes. Tap it to sync.
 
-Sharing (a list or a note), the public link, duplicating, “Leave list” and “Leave note”, the list trash, reservations, creating a store or an aisle, and Administration need a connection.
+Sharing (a list or a note), the public link, duplicating, leaving a list or a note, the list trash, reservations, creating a store or an aisle, and Administration need a connection.
 
 <a id="theme"></a>
 
@@ -972,7 +972,7 @@ Ctrl+Z does not undo: adding an item (delete the item), a photo, a reservation o
 
 In a task list, the owner turns on “Subtasks” in “Options for items” ([7.3 Owner: editing the list](#modifier)). A main task can then group subtasks: the list stays short, and each project has its steps.
 
-- At the end of a main task's row, “1/3” says how many subtasks are done. Tap it: the subtasks appear right below, indented. Tap it again to collapse them. “Expand all” and “Collapse all”, under the list title, act on all the main tasks (and on the groups and the done items). This device remembers what is expanded.
+- At the end of a main task's row, “1/3” says how many subtasks are done. Tap it: the subtasks appear right below, indented. Tap it again to collapse them. The chevron at the end of the row under the list title (“Expand all”, then “Collapse all”) acts on all the main tasks (and on the groups and the done items). This device remembers what is expanded.
 - To add a subtask: expand the main task and tap “Add a subtask”; or open a task's details and tap “Add a subtask”. Enter adds it and leaves the field ready for the next one; Enter on an empty field closes it.
 - To put an existing task under another one: its details, “Subtask of”, then the main task. “None” takes it out again.
 - One level only: a subtask has no subtasks. A task that has subtasks, or that repeats, cannot become a subtask.
@@ -1048,9 +1048,9 @@ You're never notified about what you do yourself (or about what an AI assistant 
 
 ### 6.5 Turning off notifications for a list
 
-The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.
+The list's ⋮ menu: “Turn off notifications”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu.
 
-This is separate from “Hide what's new in this list” (badges and glow, [5.16 What's new](#nouveautes)): you can keep what's new for a list without getting its notifications, and the other way around.
+This is separate from “Hide what's new”, in the same menu (badges and glow, [5.16 What's new](#nouveautes)): you can keep what's new for a list without getting its notifications, and the other way around.
 
 <a id="notif-limites"></a>
 
@@ -1161,7 +1161,7 @@ On “Lists”, tap “+” at the top right (on a computer: “New list”). Gi
 
 ### 7.3 Owner: editing the list
 
-The list's ⋮ menu, “Edit list”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.21 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
+The list's ⋮ menu, “Edit”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.21 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
 
 - Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.
 - Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).
@@ -1190,7 +1190,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 - A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.
 - Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.
 - When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([9.11 Wish list: a participant has left](#faq-orphelin)).
-- A wish list can't be copied (“Duplicate list” isn't offered).
+- A wish list can't be copied (“Duplicate” isn't offered in its menu).
 
 <a id="lien-public"></a>
 
@@ -1209,8 +1209,8 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 ### 7.7 Owner: duplicating, deleting, restoring
 
-- “Duplicate list” creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
-- “Delete list” (⋮ menu) asks for confirmation, which reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
+- “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
+- The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
 - A deleted list stays in your “List trash” (Settings) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
@@ -1220,10 +1220,10 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 ### 7.8 Contributor (“Can edit”)
 
-- Can: check, add, edit and delete items and their photo ([5. Everyday use](#quotidien)); create a missing store or aisle; “Duplicate list” (the copy belongs to them); reserve on a wish list (unless they're its recipient).
+- Can: check, add, edit and delete items and their photo ([5. Everyday use](#quotidien)); create a missing store or aisle; “Duplicate” the list (the copy belongs to them); reserve on a wish list (unless they're its recipient).
 - Can't: change the title, the type or the options, share, create a public link, delete the list.
 
-Leaving: ⋮ menu, “Leave list”. The list disappears from your lists; your items stay in it. The owner can share it with you again. It needs a network connection.
+Leaving: the list's ⋮ menu, “Leave”. The list disappears from your lists; your items stay in it. The owner can share it with you again. It needs a network connection.
 
 <a id="role-lecture"></a>
 
@@ -1231,7 +1231,7 @@ Leaving: ⋮ menu, “Leave list”. The list disappears from your lists; your i
 
 The list's card and the top of the list show “Read only”.
 
-- Can: read the list, its items and their photos (tapping a row opens its details); sort and search; reserve a wish on a wish list; “Leave list”.
+- Can: read the list, its items and their photos (tapping a row opens its details); sort and search; reserve a wish on a wish list; leave the list (⋮ menu, “Leave”).
 - Can't: add, check, edit or delete anything.
 
 <a id="role-visiteur"></a>

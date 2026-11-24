@@ -314,8 +314,8 @@ test('cloche partagée (bell.js) : sur l\'Accueil, et dans la barre du haut d\'�
   assert.match(code('public/js/screens/lists.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), sorter\.button\)/);
   assert.match(code('public/js/screens/deadlines.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\)\),/);
   assert.match(code('public/js/screens/deadlines.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), scope, searchMeta\)/);
-  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\),\s*sortMenu\(\(\) => draw\(\)\),/);
-  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), sortMenu\(\(\) => draw\(\)\)\)/);
+  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\), \{ inBar: true \}\),\s*topBell\(onLeave\),\s*sortButton\(\(\) => draw\(\)\),/);
+  assert.match(code('public/js/screens/notes.js'), /syncPill\(\(\) => refreshData\(\{ full: true \}\)\), topBell\(onLeave\), sortButton\(\(\) => draw\(\)\)\)/);
   // Le bouton caché ne se voit pas : [hidden] l'emporte sur l'affichage des boutons-icônes
   assert.match(read('public/css/app.css'), /\[hidden\] \{ display: none !important; \}/);
 });

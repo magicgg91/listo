@@ -672,7 +672,7 @@ export const GUIDE = [
         id: 'tri',
         title: 'Groupes, tri et compteur',
         blocks: [{ ul: [
-          'Touchez l\'en-tête d\'un rayon (ou d\'un magasin, ou d\'une priorité) pour le replier ou le déplier. « Tout replier » agit sur tous les groupes, et sur les sous-tâches ([[sous-taches]]).',
+          'Touchez l\'en-tête d\'un rayon (ou d\'un magasin, ou d\'une priorité) pour le replier ou le déplier. Le chevron au bout de la ligne, sous le titre de la liste (« Tout replier », puis « Tout déplier »), agit sur tous les groupes, et sur les sous-tâches ([[sous-taches]]).',
           '« Listes » se trie par date ou par ordre alphabétique (bouton en haut).',
           'Sur le téléphone, sous le titre de « Listes », « Toutes », « Courses », « Tâches » ou « Envies » n\'affiche que les listes de ce type. Le dernier choix est retenu sur ce téléphone. Sur ordinateur, le type se choisit dans le menu de gauche ([[ordinateur]]).',
           'Dans une liste de courses, « Trier la liste » propose « Par rayon » (« Par magasin » pour un magasin « Multi ») ou « Ordre alphabétique » : les articles sont alors à plat, sous « À acheter ». Le rayon de chaque article est gardé.',
@@ -732,11 +732,11 @@ export const GUIDE = [
         blocks: [
           'Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d\'autre ne la voit, pas même l\'Admin ; vous pouvez la partager ([[notes-partage]]). Le texte reste simple (retours à la ligne gardés, sans mise en forme) ; les adresses web en http ou https deviennent des liens.',
           { ul: [
-            'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Menu ⋮, « Trier » : « Plus récentes d\'abord » ou « Ordre alphabétique ». La loupe cherche dans les titres et les textes.',
+            'Écran « Notes » (bandeau du bas, ou tuile « Notes » de l\'Accueil) : les notes « Épinglées » d\'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d\'abord à l\'ordre alphabétique, et inversement. La loupe cherche dans les titres et les textes.',
             '« + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l\'Accueil, « Nouvelle note » fait de même.',
             'Une note s\'enregistre toute seule : une seconde après votre dernière frappe, en quittant la note et quand Listo passe en arrière-plan. La mention sous la barre dit « Enregistré », « Enregistrement… » ou « Hors ligne · enregistrée sur ce téléphone » ; hors ligne, la note part au retour du réseau.',
             'Pour écrire dans une note, touchez son texte : le curseur se place à cet endroit. Un lien, lui, s\'ouvre dans un nouvel onglet.',
-            'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu\'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter la note ».',
+            'Menu ⋮ d\'une note (sur sa carte, ou dans la note) : « Épingler » ou « Désépingler », « Partager » et « Lien public » (vos notes) ou « Personnes » (une note qu\'on vous a partagée), « Dupliquer » (une copie à vous, non partagée, dont le titre finit par “(copie)”), « Supprimer » (vos notes) ou « Quitter ».',
           ] },
           { sub: 'Deux personnes en même temps' },
           'Si la note a été enregistrée ailleurs (par une personne avec qui elle est partagée, ou sur un autre de vos appareils) pendant que vous écriviez, rien n\'est écrasé. Un bandeau prévient (“Léa vient de modifier cette note”) ; à l\'enregistrement, Listo propose « Garder la mienne », « Prendre la leur » (après confirmation) ou « Garder les deux » (votre texte devient une nouvelle note, à vous). « Décider plus tard » laisse la note « À vérifier » : votre texte reste sur l\'appareil et le choix revient quand vous rouvrez la note. Si vous lisez la note sans écrire, elle se met à jour sous vos yeux.',
@@ -755,12 +755,12 @@ export const GUIDE = [
             'Propriétaire : tout, dont supprimer la note, la partager et gérer son lien public.',
             '« Peut modifier » : modifier le titre et le texte. Jamais supprimer la note, la partager ni gérer son lien public.',
             '« Lecture seule » : lire la note (les liens s\'ouvrent), l\'épingler pour soi. La carte le dit avec l\'œil « Lecture seule ».',
-            'Chacun, sauf le propriétaire, peut « Quitter la note » (menu ⋮). Une personne qui perd l\'accès perd aussi son épingle. L\'épingle de chacun n\'est jamais montrée aux autres.',
+            'Chacun, sauf le propriétaire, peut quitter la note : menu ⋮, « Quitter ». Une personne qui perd l\'accès perd aussi son épingle. L\'épingle de chacun n\'est jamais montrée aux autres.',
             'Les cartes d\'une note partagée montrent les pastilles des personnes ; « Personnes », en haut de la note, les liste avec leur droit. En bas de la note : “Modifiée par Léa · il y a 5 min”.',
           ] },
           { sub: 'Nouveautés et notifications' },
-          'Quand quelqu\'un d\'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu\'à ce que vous l\'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l\'Accueil et, sur ordinateur, l\'entrée « Notes » du menu de gauche montrent aussi le point. C\'est le même réglage « Nouveautés » que pour les listes ([[nouveautes]]) ; menu ⋮ : « Masquer les nouveautés de cette note ».',
-          'Notifications ([[notif-recevoir]]), dans la page Notifications et sur vos appareils : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). La page Notifications ne cite que le titre, jamais le texte. Menu ⋮ : « Couper les notifications de cette note ».',
+          'Quand quelqu\'un d\'autre modifie une note partagée, sa carte porte un point et “Modifiée par Léa”, jusqu\'à ce que vous l\'ouvriez (elle est alors lue sur tous vos appareils) ; la tuile « Notes » de l\'Accueil et, sur ordinateur, l\'entrée « Notes » du menu de gauche montrent aussi le point. C\'est le même réglage « Nouveautés » que pour les listes ([[nouveautes]]) ; menu ⋮ de la note : « Masquer les nouveautés ».',
+          'Notifications ([[notif-recevoir]]), dans la page Notifications et sur vos appareils : “Léa a modifié la note « Vacances »” (au plus une par note et par quart d\'heure) et “Léa a partagé la note « Vacances » avec vous”. Sans le détail, seul le titre de la note est cité, jamais son texte ; avec le détail, le début du texte suit ([[notif-detail]]). La page Notifications ne cite que le titre, jamais le texte. Menu ⋮ de la note : « Couper les notifications ».',
           { sub: 'Lien public d\'une note' },
           'Menu ⋮ d\'une de vos notes, « Lien public » : la même feuille que pour une liste ([[lien-public]]) : durée, mot de passe facultatif montré une seule fois, « Arrêter le partage ». La page publique montre le titre, le texte (liens cliquables) et la date de modification, en lecture seule ; jamais les personnes ni les épingles. Mise à la corbeille, la note n\'est plus visible par son lien ; restaurée, le lien remarche s\'il n\'a pas expiré.',
         ],
@@ -801,7 +801,7 @@ export const GUIDE = [
           'Dans une liste partagée, Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite. Vos propres actions et les suppressions ne sont jamais signalées.',
           'Sur « Listes », une pastille sur l\'icône de la carte donne le nombre de nouveautés (“30+” après plus d\'un mois d\'absence).',
           'Dans la liste, chaque nouveauté est surlignée, avec qui l\'a faite (“Ajouté par Marie”). Elle le reste pendant la visite, jusqu\'à ce que vous touchiez la ligne ; en quittant la liste, tout est considéré comme vu, sur tous vos appareils.',
-          'Menu ⋮ de la liste : « Masquer les nouveautés de cette liste », puis « Afficher les nouveautés de cette liste » pour revenir. Chacun choisit pour lui, lecture seule comprise. C\'est indépendant des notifications de la liste ([[notif-silencer]]).',
+          'Menu ⋮ de la liste : « Masquer les nouveautés », puis « Afficher les nouveautés » pour revenir. Chacun choisit pour lui, lecture seule comprise. C\'est indépendant des notifications de la liste ([[notif-silencer]]).',
           'Réglages, « Notifications », partie « Dans l\'application » : « Nouveautés » désactive tout signalement ; « Signaler les éléments cochés » (visible seulement quand « Nouveautés » est activé) ajoute ce que les autres cochent ou décochent.',
           'Sur certains téléphones, l\'icône de l\'application installée montre aussi leur total. Pour être prévenu sans ouvrir Listo : [[notifications]].',
         ] }],
@@ -812,7 +812,7 @@ export const GUIDE = [
         blocks: [
           'Sans réseau, vous pouvez continuer à ajouter, modifier et cocher, et à écrire dans vos notes ([[notes]]). Les changements sont envoyés au retour du réseau.',
           'La pastille en haut indique l\'état : « À jour », « Synchronisation… » ou « Hors ligne », avec le nombre de changements en attente. Touchez-la pour synchroniser.',
-          'Le partage (d\'une liste ou d\'une note), le lien public, la duplication, « Quitter la liste » et « Quitter la note », la corbeille des listes, les réservations, la création d\'un magasin ou d\'un rayon et l\'Administration demandent une connexion.',
+          'Le partage (d\'une liste ou d\'une note), le lien public, la duplication, quitter une liste ou une note, la corbeille des listes, les réservations, la création d\'un magasin ou d\'un rayon et l\'Administration demandent une connexion.',
         ],
       },
       {
@@ -876,7 +876,7 @@ export const GUIDE = [
         blocks: [
           'Dans une liste de tâches, le propriétaire active « Sous-tâches » dans « Options des éléments » ([[modifier]]). Une tâche principale peut alors regrouper des sous-tâches : la liste reste courte, chaque chantier a ses étapes.',
           { ul: [
-            'Au bout de la ligne d\'une tâche principale, “1/3” dit combien de sous-tâches sont faites. Touchez-le : les sous-tâches s\'affichent juste en dessous, en retrait. Touchez-le de nouveau pour les replier. « Tout déplier » et « Tout replier », sous le titre de la liste, agissent sur toutes les tâches principales (et sur les groupes et les terminés). Cet appareil se souvient de ce qui est déplié.',
+            'Au bout de la ligne d\'une tâche principale, “1/3” dit combien de sous-tâches sont faites. Touchez-le : les sous-tâches s\'affichent juste en dessous, en retrait. Touchez-le de nouveau pour les replier. Le chevron au bout de la ligne, sous le titre de la liste (« Tout déplier », puis « Tout replier »), agit sur toutes les tâches principales (et sur les groupes et les terminés). Cet appareil se souvient de ce qui est déplié.',
             'Pour ajouter une sous-tâche : dépliez la tâche principale et touchez « Ajouter une sous-tâche » ; ou ouvrez la fiche d\'une tâche et touchez « Ajouter une sous-tâche ». Entrée ajoute et laisse le champ prêt pour la suivante ; Entrée sur un champ vide ferme.',
             'Pour ranger une tâche qui existe déjà : sa fiche, « Sous-tâche de », puis la tâche principale. « Aucune » la ressort.',
             'Un seul niveau : une sous-tâche n\'a pas de sous-tâches. Une tâche qui a des sous-tâches, ou qui se répète, ne peut pas devenir une sous-tâche.',
@@ -962,8 +962,8 @@ export const GUIDE = [
         id: 'notif-silencer',
         title: 'Couper les notifications d\'une liste',
         blocks: [
-          'Menu ⋮ de la liste : « Couper les notifications de cette liste ». Elle ne vous envoie plus rien, ni dans la page Notifications ni sur vos appareils, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications de cette liste » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮ : « Couper les notifications de cette note ».',
-          'C\'est indépendant de « Masquer les nouveautés de cette liste » (pastilles et halo, [[nouveautes]]) : on peut garder les nouveautés d\'une liste sans recevoir ses notifications, et l\'inverse.',
+          'Menu ⋮ de la liste : « Couper les notifications ». Elle ne vous envoie plus rien, ni dans la page Notifications ni sur vos appareils, quelle que soit la catégorie (résumé des échéances compris). « Réactiver les notifications » les rétablit. Chacun choisit pour lui ; c\'est oublié si vous quittez la liste. Une note partagée a le même choix dans son menu ⋮.',
+          'C\'est indépendant de « Masquer les nouveautés », dans le même menu (pastilles et halo, [[nouveautes]]) : on peut garder les nouveautés d\'une liste sans recevoir ses notifications, et l\'inverse.',
         ],
       },
       {
@@ -1064,7 +1064,7 @@ export const GUIDE = [
         id: 'modifier',
         title: 'Propriétaire : modifier la liste',
         blocks: [
-          'Menu ⋮ de la liste, « Modifier la liste » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l\'échéance, l\'attribution et les sous-tâches ([[sous-taches]]) ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
+          'Menu ⋮ de la liste, « Modifier » : le titre, le type, le magasin, l\'icône. Pour une liste de tâches, « Options des éléments » active ou non la priorité, l\'échéance, l\'attribution et les sous-tâches ([[sous-taches]]) ; pour une liste d\'envies, « Priorité ». « Après l\'ajout » choisit entre « Rester sur la liste » et « Ouvrir la fiche ». Seul le propriétaire modifie la liste.',
           { ul: [
             'Changer le type n\'efface rien. Une liste de courses devenue liste de tâches cache ses rayons, son magasin et ses codes-barres ; une liste de tâches devenue liste de courses cache la priorité et l\'échéance. Tout revient si la liste reprend son type d\'origine. Le formulaire le rappelle avant l\'enregistrement.',
             'Changer de magasin : chaque article garde son rayon s\'il sert aussi dans le nouveau magasin, sinon il va dans le rayon du même nom ; à défaut, il passe « Sans rayon ». La fenêtre « Ranger les articles » s\'ouvre alors pour lui choisir un rayon tout de suite (ou plus tard, depuis sa fiche).',
@@ -1097,7 +1097,7 @@ export const GUIDE = [
             'Un souhait a un nom, et si l\'on veut un lien (« Ouvrir le lien »), un « Prix indicatif » (dans la monnaie réglée sur le serveur, l\'euro par défaut), une note et une photo.',
             'Cocher un souhait le range dans « Reçus » : seuls le bénéficiaire et le propriétaire le peuvent ; les réservations n\'y sont plus affichées.',
             'Quand la liste est pour quelqu\'un d\'autre, son propriétaire voit qui participe et peut « Retirer » un participant ou « Libérer » le souhait (par exemple si quelqu\'un a quitté la liste). Sur une liste « pour moi », personne ne peut retirer un participant parti ([[faq-orphelin]]).',
-            'Une liste d\'envies n\'a pas de copie (« Dupliquer la liste » n\'est pas proposé).',
+            'Une liste d\'envies n\'a pas de copie (« Dupliquer » n\'est pas proposé dans son menu).',
           ] },
         ],
       },
@@ -1120,8 +1120,8 @@ export const GUIDE = [
         title: 'Propriétaire : dupliquer, supprimer, restaurer',
         blocks: [
           { ul: [
-            '« Dupliquer la liste » crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.',
-            '« Supprimer la liste » (menu ⋮) demande une confirmation, qui rappelle ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s\'arrête.',
+            '« Dupliquer » (menu ⋮ de la liste) crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.',
+            'Menu ⋮ de la liste, « Supprimer » : une confirmation rappelle d\'abord ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s\'arrête.',
             'Une liste supprimée reste 30 jours dans votre « Corbeille des listes » (Réglages), puis elle est effacée pour de bon. Seul son propriétaire l\'y voit ; chaque ligne indique son type, son nombre d\'éléments, le jour de sa suppression et le nombre de jours qui restent.',
             '« Restaurer » la remet telle qu\'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.',
             '« Supprimer définitivement » (la poubelle rouge d\'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.',
@@ -1134,10 +1134,10 @@ export const GUIDE = [
         title: 'Contributeur (« Peut modifier »)',
         blocks: [
           { ul: [
-            'Peut : cocher, ajouter, modifier et supprimer des articles et leur photo ([[quotidien]]) ; créer un magasin ou un rayon manquant ; « Dupliquer la liste » (la copie lui appartient) ; réserver sur une liste d\'envies (sauf s\'il en est le bénéficiaire).',
+            'Peut : cocher, ajouter, modifier et supprimer des articles et leur photo ([[quotidien]]) ; créer un magasin ou un rayon manquant ; « Dupliquer » la liste (la copie lui appartient) ; réserver sur une liste d\'envies (sauf s\'il en est le bénéficiaire).',
             'Ne peut pas : changer le titre, le type ou les options, partager, créer un lien public, supprimer la liste.',
           ] },
-          'Quitter : menu ⋮, « Quitter la liste ». La liste disparaît de vos listes ; vos articles y restent. Le propriétaire pourra de nouveau la partager avec vous. Il faut du réseau.',
+          'Quitter : menu ⋮ de la liste, « Quitter ». La liste disparaît de vos listes ; vos articles y restent. Le propriétaire pourra de nouveau la partager avec vous. Il faut du réseau.',
         ],
       },
       {
@@ -1146,7 +1146,7 @@ export const GUIDE = [
         blocks: [
           'La carte de la liste et le haut de la liste portent la mention « Lecture seule ».',
           { ul: [
-            'Peut : lire la liste, ses articles et leurs photos (toucher une ligne ouvre son détail) ; trier et rechercher ; réserver un souhait d\'une liste d\'envies ; « Quitter la liste ».',
+            'Peut : lire la liste, ses articles et leurs photos (toucher une ligne ouvre son détail) ; trier et rechercher ; réserver un souhait d\'une liste d\'envies ; quitter la liste (menu ⋮, « Quitter »).',
             'Ne peut pas : ajouter, cocher, modifier ou supprimer quoi que ce soit.',
           ] },
         ],

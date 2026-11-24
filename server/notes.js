@@ -377,7 +377,7 @@ export function createNoteService(ctx, { OpError }) {
       return {};
     },
 
-    // « Masquer les nouveautés de cette note » (muted: true) / « Afficher… »,
+    // Menu de la note, « Masquer les nouveautés » (muted: true) / « Afficher… »,
     // pour moi seulement, quel que soit mon droit
     'note.mute'(user, op) {
       const { note } = noteFor(user, op.noteId);

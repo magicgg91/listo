@@ -2,32 +2,34 @@
 // Chaque nom commence par « menu. ».
 
 export default {
-  // Actions du menu
-  'menu.dupliquer': 'Dupliquer la liste',
-  'menu.quitter': 'Quitter la liste',
+  // Actions du menu : libellés courts, le menu porte déjà le nom de la
+  // liste (« Actions de la liste Maison » ; décision du 24 novembre 2026)
+  'menu.dupliquer': 'Dupliquer',
+  'menu.quitter': 'Quitter',
   'menu.quitter.fait': 'Vous avez quitté la liste « {name} »',
-  'menu.modifier': 'Modifier la liste',
+  'menu.modifier': 'Modifier',
   'menu.partagerLien': 'Partager par lien',
-  'menu.supprimer': 'Supprimer la liste',
+  'menu.supprimer': 'Supprimer',
 
   // Nouveautés de la liste
-  'menu.nouveautes.afficher': 'Afficher les nouveautés de cette liste',
+  'menu.nouveautes.afficher': 'Afficher les nouveautés',
   'menu.nouveautes.affichees': 'Les nouveautés de cette liste sont de nouveau affichées',
-  'menu.nouveautes.masquer': 'Masquer les nouveautés de cette liste',
+  'menu.nouveautes.masquer': 'Masquer les nouveautés',
   'menu.nouveautes.masquees': 'Les nouveautés de cette liste sont masquées',
 
   // Notifications de la liste
   'menu.notifications.reactivees': 'Les notifications de cette liste sont réactivées',
   'menu.notifications.coupees': 'Les notifications de cette liste sont coupées',
-  'menu.notifications.reactiver': 'Réactiver les notifications de cette liste',
-  'menu.notifications.couper': 'Couper les notifications de cette liste',
+  'menu.notifications.reactiver': 'Réactiver les notifications',
+  'menu.notifications.couper': 'Couper les notifications',
 
   // Supprimer la liste
   'menu.supprimer.question': 'Supprimer la liste « {name} » ?',
   'menu.supprimer.confirmer': 'Supprimer',
   'menu.supprimer.fait': 'Liste supprimée',
 
-  // Dupliquer la liste
+  // Dupliquer la liste (titre de la feuille : le nom complet)
+  'menu.dupliquer.feuille': 'Dupliquer la liste',
   'menu.dupliquer.horsLigne': 'Connexion nécessaire pour dupliquer une liste',
   'menu.dupliquer.titre': 'Titre de la liste',
   'menu.dupliquer.copier': 'Copier les {items}',

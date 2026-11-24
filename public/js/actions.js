@@ -172,7 +172,7 @@ export const updateList = (listId, fields) => perform({ type: 'list.update', lis
 
 // « Vu » : mon repère monte jusqu'au dernier événement connu de la liste
 export const markSeen = (listId, upTo) => perform({ type: 'list.seen', listId, upTo });
-// « Masquer les nouveautés de cette liste » / « Afficher les nouveautés de cette liste »
+// Menu de la liste : « Masquer les nouveautés » / « Afficher les nouveautés »
 export const setListMuted = (listId, muted) => perform({ type: 'list.mute', listId, muted });
 // Réglages du compte : « Nouveautés », « Signaler les éléments cochés »
 export const setNewsSettings = (settings) => perform({ type: 'account.news', ...settings });
@@ -334,7 +334,7 @@ export function markNoteSeen(noteId) {
   return perform({ type: 'note.seen', noteId, upTo: note.version });
 }
 
-// « Masquer les nouveautés de cette note » / « Afficher… » (pour moi seulement)
+// Menu de la note : « Masquer les nouveautés » / « Afficher… » (pour moi seulement)
 export const setNoteNewsMuted = (noteId, muted) => perform({ type: 'note.mute', noteId, muted });
 
 // Partage (propriétaire) : la composition complète, personnes et droits,

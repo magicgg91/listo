@@ -154,12 +154,12 @@ test('menus : mêmes actions, même ordre, aux deux endroits, pour chaque profil
   const source = read('public/js/screens/list-actions.js');
   // Propriétaire : Modifier, Dupliquer, Partager, sourdine (nouveautés), silence (notifications), — Supprimer
   assert.match(source, /return \[\s*\{ icon: 'pencil', label: t\('menu\.modifier'\)[^\n]*\n\s*\/\/[^\n]*\n\s*wishes \? null : duplicate,\s*\{ icon: 'link', label: t\('menu\.partagerLien'\)[^\n]*\n\s*mute,\s*pushMute,\s*\{ icon: 'trash', label: t\('menu\.supprimer'\), danger: true, separated: true,/);
-  assert.equal(fr['menu.modifier'], 'Modifier la liste');
+  assert.equal(fr['menu.modifier'], 'Modifier');
   assert.equal(fr['menu.partagerLien'], 'Partager par lien');
-  assert.equal(fr['menu.supprimer'], 'Supprimer la liste');
+  assert.equal(fr['menu.supprimer'], 'Supprimer');
   // Invité : « Peut modifier » : Dupliquer, — Quitter ; lecture seule : Quitter (sans trait au-dessus)
   assert.match(source, /const leave = \{ icon: 'logout', label: t\('menu\.quitter'\), danger: true, separated: canEdit, onSelect: async \(\) => \{\s*if \(!\(await leaveListWithConfirm\(list\)\)\) return;/);
-  assert.equal(fr['menu.quitter'], 'Quitter la liste');
+  assert.equal(fr['menu.quitter'], 'Quitter');
   assert.match(source, /onDeleted\(\);\s*setTimeout\(\(\) => toast\(message, \{ low: true \}\), 400\);/);
   assert.match(source, /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   // Confirmation et hors ligne

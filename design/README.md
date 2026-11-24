@@ -232,7 +232,7 @@ Styles : section 16.11 de `listo.css`. Balisage : dernière partie de `component
 - Chaque en-tête de groupe (rayon, magasin d'une liste « multi », priorité) devient `.aisle.aisle--fold` et contient un vrai bouton `.aisle__toggle` pleine largeur (48 px) : `aria-expanded`, `aria-controls` (id de la `<ul>` du groupe), `aria-label` du type « Fruits et légumes, 2 articles restants sur 3 » ; chevron `#i-chev-d`, `.aisle__name`, `.aisle__count` à droite.
 - Replié : le chevron pivote à −90°, la `<ul>` est masquée (`hidden`), et `.aisle__count` laisse place à `.aisle__rest` « · 2 à acheter » (« · 3 à faire » hors courses) juste après le nom : l'état ne repose jamais sur la couleur seule. **Remplacé** par le compteur « X/Y », voir « Ajout : compteur X/Y » (`.aisle__rest` n'est plus utilisé).
 - La zone des cochés (`.cart__toggle`, section 16.5) se replie déjà de la même façon.
-- `.fold-all` « Tout replier » / « Tout déplier » : bouton texte compact (44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
+- `.fold-all` « Tout replier » / « Tout déplier » : bouton-icône, le chevron seul (44 × 44 px, `#i-chev-d` tourné vers le haut tant qu'un groupe est ouvert : `.fold-all--open`), son nom dans `aria-label` et `title` (décision du 24 novembre 2026), à droite de la `.statusbar` de l'écran d'une liste, seulement s'il y a au moins deux groupes (zone des cochés comprise).
 - Liste sans groupe (liste de tâches en ordre alphabétique ou par échéance) : aucun en-tête, aucun bouton. La page publique du lien n'est pas concernée (en-têtes simples, en lecture seule).
 
 ## Ajout : fiche d'un article, boutons dans l'en-tête
@@ -254,8 +254,8 @@ Styles : `public/css/app.css`. Balisage : « Ligne glissée vers la gauche » da
 Styles : `public/css/app.css`. Balisage : « Carte avec menu ⋮ » dans `components.html`. Aucune nouvelle icône (`i-more`, `i-trash`).
 
 - `.list-card-wrap` (position relative) : le lien `a.card.list-card` (inchangé), puis le bouton `.icon-btn.list-card__menu` (`#i-more`, 44 px, `aria-label="Actions de la liste <nom>"`, `aria-haspopup="menu"`, `aria-expanded`) posé dans le coin haut droit, hors du lien ; `.list-card__head` laisse sa place. Pas de bouton quand aucune action n'est possible (depuis le 19 octobre 2026, tout membre en a au moins une : voir « Dupliquer la liste » et « Quitter la liste » plus bas).
-- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran). Propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer la liste » (`.menu__item--danger`, `#i-trash`). Contributeur et invité : voir « Dupliquer la liste » et « Quitter la liste » plus bas.
-- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible. Menu complet par profil (dont « Dupliquer la liste » et « Quitter la liste ») : voir plus bas.
+- Menu : le `.menu` existant, placé juste sous le bouton (jamais hors de l'écran). Propriétaire : « Modifier » (`#i-pencil`), « Dupliquer » (`#i-copy`), « Partager par lien » (`#i-link`), un trait `.menu__sep` (`role="separator"`), « Supprimer » (`.menu__item--danger`, `#i-trash`). Contributeur et invité : voir « Dupliquer la liste » et « Quitter la liste » plus bas.
+- Menu ⋮ de la liste ouverte : exactement le même (plus d'« Actualiser » : la pastille d'état fait la même chose). Pas de bouton ⋮ quand aucune action n'est possible. Menu complet par profil (dont « Dupliquer » et « Quitter ») : voir plus bas. Libellés courts depuis le 24 novembre 2026 : le `.menu` porte le nom de la liste (`aria-label="Actions de la liste <nom>"`, carte comme liste ouverte), inutile de le répéter dans chaque ligne.
 - Confirmation : le `.dialog` existant, « Supprimer la liste « <nom> » ? », la même pour les trois chemins.
 
 ## Ajout : droit par personne et liste en lecture seule
@@ -281,9 +281,9 @@ Styles : `public/css/app.css` (ajouts minimes) et composants existants. Balisage
 Styles : `public/css/app.css` (`.list-card--fresh`) et composants existants. Balisage : « Menu d'une liste, par profil », « Feuille « Dupliquer la liste » » et « Confirmation « Quitter la liste » » dans `components.html`. Aucune nouvelle icône (`i-copy`, `i-logout`, déjà dans le sprite).
 
 - Menu ⋮ d'une carte et menu ⋮ de la liste (le même `.menu`, mêmes actions dans le même ordre) :
-  - propriétaire : « Modifier la liste » (`#i-pencil`), « Dupliquer la liste » (`#i-copy`), « Partager par lien » (`#i-link`), un trait, « Supprimer la liste » (`.menu__item--danger`, `#i-trash`) ;
-  - contributeur : « Dupliquer la liste », un trait, « Quitter la liste » (`.menu__item--danger`, `#i-logout`) ;
-  - invité en lecture seule : « Quitter la liste » seulement (sans trait).
+  - propriétaire : « Modifier » (`#i-pencil`), « Dupliquer » (`#i-copy`), « Partager par lien » (`#i-link`), un trait, « Supprimer » (`.menu__item--danger`, `#i-trash`) ;
+  - contributeur : « Dupliquer », un trait, « Quitter » (`.menu__item--danger`, `#i-logout`) ;
+  - invité en lecture seule : « Quitter » seulement (sans trait).
   Le bouton ⋮ d'une carte apparaît donc pour tout membre ; il n'apparaît jamais sans action.
 - Feuille « Dupliquer la liste » (`.sheet`) : `.field` « Titre de la liste » (`.input`, « <nom> (copie) », aucun curseur posé d'office), une `.card.list-options` avec une `.toggle-row` « Copier les articles » / « Copier les éléments » (`.switch`, `role="switch"`, état écrit « Activé · … » / « Désactivé · liste vide »), une aide (`.field__hint`) sur ce qui n'est pas copié, puis `.sheet__actions` : « Dupliquer » (`.btn--primary.btn--block`) et « Annuler » (`.btn--secondary.btn--block`).
 - Après : message (`.toast`) « Liste « <nom> » créée » avec « Ouvrir » (`.toast__action`) ; sur « Mes listes », la nouvelle carte porte `.list-card--fresh` (brève mise en évidence, coupée avec `prefers-reduced-motion`).
@@ -391,7 +391,7 @@ Ce que les autres ont ajouté ou modifié depuis ma dernière visite. Pas de maq
 - Pastille `.news-badge` (`role="img"`, `aria-label` « 3 nouveautés », « plus de 30 nouveautés ») : posée sur le coin haut gauche de `.list-card__icon` (qui devient `position: relative`), forme `--radius-pill`, fond `--color-accent`, chiffres `--color-on-accent` en gras, entourée de `--color-surface` pour se détacher de l'icône. Texte « 3 », ou « 30+ » quand la dernière visite est plus ancienne que le journal gardé. La carte ne grandit pas ; compteur X/Y, symbole du lien public et pastilles des personnes restent visibles.
 - Halo `.item--news` sur la ligne `.item` : fond `--color-accent-soft`, statique (aucune animation), plus le repère texte `.item__news` sous le nom (`--text-sm`, gras, `--color-accent-ink`) : « Ajouté par Marie », « Modifié par Marie », « Coché par Marie », « Décoché par Marie » (jamais la couleur seule ; le repère est aussi lu avec le nom). Zones tactiles inchangées. Un article coché garde son nom barré.
 - Liste en sourdine ou « Nouveautés » désactivé : ni pastille, ni halo.
-- Réglages (10 novembre 2026) : écran Réglages › « Notifications », partie « Dans l'application » (auparavant dans « Mon compte »), avant la partie « Sur cet appareil » des notifications ; mêmes `.toggle-row` et `.switch`. Menu ⋮ : « Masquer les nouveautés de cette liste » / « Afficher les nouveautés de cette liste » (`i-eye-off`, `i-eye`), distinct de « Couper / Réactiver les notifications de cette liste » (`i-bell`).
+- Réglages (10 novembre 2026) : écran Réglages › « Notifications », partie « Dans l'application » (auparavant dans « Mon compte »), avant la partie « Sur cet appareil » des notifications ; mêmes `.toggle-row` et `.switch`. Menu ⋮ : « Masquer les nouveautés » / « Afficher les nouveautés » (`i-eye-off`, `i-eye`), distinct de « Couper / Réactiver les notifications » (`i-bell`) (« … de cette liste » jusqu'au 24 novembre 2026).
 
 ## Ajout : écran « Autoriser un assistant IA » (« Autoriser Claude » jusqu'au 21 novembre 2026)
 

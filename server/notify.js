@@ -279,7 +279,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     if (!note || note.user_active !== 1 || !noteAccess({ id: userId }, note)) return null;
     return note;
   }
-  // « Couper les notifications de cette note » (sourdines des notes que je vois)
+  // Menu d'une note, « Couper les notifications » (sourdines des notes que je vois)
   const mutedNotes = (userId) => q.mutedNotes.all(userId).filter((noteId) => visibleNote(userId, noteId));
   const seesNote = (userId, noteId) => Boolean(visibleNote(userId, noteId));
   function setNoteMuted(userId, noteId, muted) {

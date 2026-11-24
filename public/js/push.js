@@ -40,12 +40,12 @@ export async function savePushSettings(changes) {
   return remember(await put('/api/push/settings', changes)).settings;
 }
 
-// « Couper les notifications de cette liste » / « Réactiver les notifications de cette liste »
+// Menu de la liste : « Couper les notifications » / « Réactiver les notifications »
 export async function setListPushMuted(listId, muted) {
   remember(await put(`/api/push/mutes/${encodeURIComponent(listId)}`, { muted }));
 }
 
-// « Couper les notifications de cette note » / « Réactiver les notifications de cette note »
+// Menu de la note : « Couper les notifications » / « Réactiver les notifications »
 export async function setNotePushMuted(noteId, muted) {
   remember(await put(`/api/push/note-mutes/${encodeURIComponent(noteId)}`, { muted }));
 }

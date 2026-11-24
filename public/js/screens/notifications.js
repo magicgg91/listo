@@ -26,7 +26,7 @@
 // - « Contenu » : « Afficher le détail dans la notification » (désactivé au
 //   départ ; sinon « Léa a modifié « Courses » », sans le nom des éléments).
 // Mêmes interrupteurs que « Nouveautés » (role="switch", aria-checked, titre
-// et description reliés) ; « Couper les notifications de cette liste » est dans le menu ⋮ de
+// et description reliés) ; « Couper les notifications » est dans le menu ⋮ de
 // chaque liste (list-actions.js).
 // Textes posés avec textContent (h()) ; aucun curseur mis tout seul.
 //

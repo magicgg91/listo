@@ -66,8 +66,8 @@ export default {
       id: 'notif-silencer',
       title: 'Turning off notifications for a list',
       blocks: [
-        "The list's ⋮ menu: “Turn off notifications for this list”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on for this list” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu: “Turn off notifications for this note”.",
-        "This is separate from “Hide what's new in this list” (badges and glow, [[nouveautes]]): you can keep what's new for a list without getting its notifications, and the other way around.",
+        "The list's ⋮ menu: “Turn off notifications”. It no longer sends you anything, neither on the Notifications page nor on your devices, whatever its kind (due-date summary included). “Turn notifications back on” brings them back. Everyone chooses for themselves; it's forgotten if you leave the list. A shared note has the same choice in its ⋮ menu.",
+        "This is separate from “Hide what's new”, in the same menu (badges and glow, [[nouveautes]]): you can keep what's new for a list without getting its notifications, and the other way around.",
       ],
     },
     {

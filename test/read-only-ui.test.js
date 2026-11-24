@@ -120,7 +120,7 @@ test('écran en lecture seule : bandeau, ni champ d\'ajout, ni Scanner, ni gliss
   const lists = read('public/js/screens/lists.js');
   assert.match(lists, /canEditList\(list\) \? null : h\('span', \{ class: 'chip chip--readonly' \}, icon\('eye', 'icon--xs'\), t\('listes\.carte\.lectureSeule'\)\)/);
   assert.equal(fr['listes.carte.lectureSeule'], 'Lecture seule');
-  // Invité en lecture seule : seulement « Quitter la liste » (« Dupliquer la liste » est réservé au propriétaire et à « Peut modifier »)
+  // Invité en lecture seule : seulement les sourdines et « Quitter » (« Dupliquer » est réservé au propriétaire et à « Peut modifier »)
   assert.match(read('public/js/screens/list-actions.js'), /return \(canEdit && !wishes \? \[duplicate, mute, pushMute, leave\] : \[mute, pushMute, leave\]\)\.filter\(Boolean\);/);
   assert.doesNotMatch(list, /innerHTML/);
 });

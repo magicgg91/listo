@@ -895,6 +895,9 @@
      largeur, le même sur les trois écrans ; la loupe ronde .loupe (56 px)
      flotte 12 px au-dessus, à droite (décision du 11 novembre 2026). Sans
      recherche (Réglages), la loupe n'est pas affichée (.loupe--off).
+   - Coins : bandeau arrondi à 22 px, pastille de l'écran affiché à 16 px
+     (--radius-md, comme les cartes de l'Accueil), loupe ronde (décision du
+     24 novembre 2026 : moins arrondi qu'une pilule).
    - .tabbar__pill : fond bleu clair sous le bouton de l'écran affiché
      (aria-current="page", texte en couleur d'accent ET pastille : jamais la
      couleur seule) ; il glisse d'un bouton à l'autre avec un petit rebond
@@ -935,8 +938,8 @@
 }
 :root { --dock-bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) - 10px)); }
 .tabdock { position: absolute; left: var(--space-2); right: var(--space-2); bottom: var(--dock-bottom); z-index: 6; }
-.tabbar { position: relative; display: flex; flex: 1; min-width: 0; padding: 5px; border-radius: var(--radius-pill); }
-.tabbar__pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: var(--radius-pill); background: var(--color-accent-soft); transition: transform 380ms cubic-bezier(0.34, 1.45, 0.64, 1); }
+.tabbar { position: relative; display: flex; flex: 1; min-width: 0; padding: 5px; border-radius: 22px; }
+.tabbar__pill { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 3); border-radius: var(--radius-md); background: var(--color-accent-soft); transition: transform 380ms cubic-bezier(0.34, 1.45, 0.64, 1); }
 .tabbar[data-current="1"] .tabbar__pill { transform: translateX(100%); }
 .tabbar[data-current="2"] .tabbar__pill { transform: translateX(200%); }
 .tabbar__tab { position: relative; display: flex; flex: 1; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 54px; padding: 0 4px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font-size: 12px; font-weight: 600; line-height: 1.2; }
@@ -944,7 +947,7 @@
 .tabbar__ico { position: relative; display: grid; place-items: center; transition: transform 160ms var(--ease); }
 .tabbar__tab:active .tabbar__ico { transform: scale(0.86); }
 .tabbar__label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tabbar__badge { position: absolute; top: -7px; left: calc(100% - 8px); display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 2px solid var(--color-surface); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabbar__badge { position: absolute; top: -8px; left: calc(100% - 2px); display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 2px solid var(--color-surface); border-radius: var(--radius-pill); background: var(--color-accent); color: var(--color-on-accent); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .loupe { display: grid; flex: none; place-items: center; width: 56px; height: 56px; padding: 0; border-radius: var(--radius-pill); color: var(--color-text); transition: transform 160ms var(--ease); }
 .loupe:active { transform: scale(0.92); }
 .loupe[aria-expanded="true"] { background: var(--color-accent-soft); color: var(--color-accent-ink); }
@@ -1337,13 +1340,14 @@ html:has(.home-scroll.scroll--fits), html:has(.home-scroll.scroll--fits) body { 
    retard, la verte celles du jour ; chacune seulement si son nombre n'est
    pas nul (« 99+ » au-delà de 99). aria-hidden : les nombres sont dans le
    nom du bouton (« Échéances, 2 en retard, 1 aujourd'hui »).
-   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône (le
-     reflet de la place d'avant), --today en haut à droite (la place
-     d'avant) ; seule, chacune reste de son côté.
+   - Téléphone (.tabbar__badge) : --late en haut à gauche de l'icône,
+     --today en haut à droite, chacune presque entièrement hors de l'icône
+     (2 px de recouvrement : l'icône reste lisible, 24 novembre 2026) ;
+     seule, chacune reste de son côté.
    - Ordinateur (menu de gauche) : au bout de la ligne « Échéances », la
      rouge puis la verte, en .count--danger et .count--success (couleurs de
      la tuile Échéances de l'Accueil), à la taille des pastilles du menu. */
-.tabbar__badge--late { left: auto; right: calc(100% - 8px); background: var(--color-danger); color: var(--color-on-danger); }
+.tabbar__badge--late { left: auto; right: calc(100% - 2px); background: var(--color-danger); color: var(--color-on-danger); }
 .tabbar__badge--today { background: var(--color-success-ink); color: var(--color-surface); }
 .pc-side__main .count { min-width: 20px; height: 20px; padding: 0 6px; font-size: 12px; }
 .pc-side__main .count + .count { margin-left: -4px; }

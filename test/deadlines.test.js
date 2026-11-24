@@ -183,9 +183,9 @@ test('pastilles : deux sur le bouton du téléphone (rouge à gauche, verte à d
   // Kit : couleurs de la tuile Échéances (rouge, vert), rouge en haut à gauche de l'icône
   for (const file of ['public/css/listo.css', 'design/listo.css']) {
     const css = read(file);
-    assert.match(css, /\.tabbar__badge--late \{ left: auto; right: calc\(100% - 8px\); background: var\(--color-danger\); color: var\(--color-on-danger\); \}/, file);
+    assert.match(css, /\.tabbar__badge--late \{ left: auto; right: calc\(100% - 2px\); background: var\(--color-danger\); color: var\(--color-on-danger\); \}/, file);
     assert.match(css, /\.tabbar__badge--today \{ background: var\(--color-success-ink\); color: var\(--color-surface\); \}/, file);
-    assert.match(css, /\.tabbar__badge \{ position: absolute; top: -7px; left: calc\(100% - 8px\);/, file);
+    assert.match(css, /\.tabbar__badge \{ position: absolute; top: -8px; left: calc\(100% - 2px\);/, file);
   }
 });
 

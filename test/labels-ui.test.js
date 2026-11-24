@@ -148,7 +148,7 @@ test('textes : français et anglais, mêmes noms ; erreurs du serveur traduites'
 test('service worker : nouveaux fichiers gardés hors ligne, version changée', () => {
   const sw = read('public/sw.js');
   for (const file of ['/js/labels.js', '/js/screens/note-labels.js']) assert.match(sw, new RegExp(`'${file.replace(/\//g, '\\/')}',`), file);
-  assert.match(sw, /const VERSION = `v162-/);
+  assert.match(sw, /const VERSION = `v(16[2-9]|1[7-9]\d|[2-9]\d\d|\d{4,})-/);
 });
 
 test('aide : les étiquettes dans le chapitre des notes et l\'onglet « Étiquettes » de l\'Administration, en français et en anglais', () => {

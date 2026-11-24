@@ -7,7 +7,7 @@ export default {
       id: 'claude-quoi',
       title: 'What it\'s for',
       blocks: [
-        'An AI assistant is a program you chat with, for example Claude (Anthropic\'s assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral\'s Le Chat, depending on their versions and plans. Once it\'s connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking.',
+        'An AI assistant is a program you chat with, for example Claude (Anthropic\'s assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral\'s Le Chat, depending on their versions and plans. Once it\'s connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking. It can also read your notes and, if you allow it, create notes, add to them or sort them with labels ([[claude-notes]]).',
         'The assistant acts with your account and your rights, never more: what it adds shows up under your name, as if you had done it yourself, and it only sees the lists you allowed it to. Nothing happens without your approval, given on Listo\'s “Authorize an AI assistant” screen.',
         'This access only exists if the person who runs the server has turned it on ([[claude-activation]]). Otherwise, the “AI assistants” section doesn\'t appear in “My account”.',
       ],
@@ -28,6 +28,7 @@ export default {
           'Rename or add details: ‘Rename milk to 2% milk’, ‘Add the note organic to the apples.’',
           'Move to an aisle: ‘Put the milk in the dairy aisle.’',
           'Subtasks ([[sous-taches]]): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’',
+          'Notes ([[claude-notes]]): ‘What\'s in my Codes note?’ ‘Add some AA batteries to my To buy soon note.’ ‘Create a Gift ideas note with the Family label.’ ‘Put the Recipes label on the Crumble note.’ ‘Move the Draft note to the trash.’',
         ] },
         'The assistant first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how it behaves is up to the assistant itself: check in Listo.',
       ],
@@ -38,10 +39,10 @@ export default {
       blocks: [
         'When you connect an assistant, Listo\'s “Authorize an AI assistant” screen lets you choose:',
         { ul: [
-          '“Read only” (selected at first): the assistant can read your lists, without changing anything.',
-          '“Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they\'re assigned to, their aisle or their store.',
+          '“Read only” (selected at first): the assistant can read your lists and your notes, without changing anything.',
+          '“Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they\'re assigned to, their aisle or their store; and, for notes, create notes, add to them, replace their text, set their labels, create a label or move a note to the trash ([[claude-notes]]).',
         ] },
-        'You also choose “All my lists” or “Some lists”. Even with “Read and write”, the assistant can only write in lists where you yourself can write: if you have the “Read only” right on a list, it can only read it.',
+        'You also choose “All my lists and notes” or “Some lists”. With “Some lists”, the assistant sees no notes at all. Even with “Read and write”, the assistant can only write in lists and notes where you yourself can write: if you have the “Read only” right on a list or a note, it can only read it.',
       ],
     },
     {
@@ -53,6 +54,8 @@ export default {
           'delete an item, or change its link or its price;',
           'create, rename, delete or share a list;',
           'manage people, the public link or the trash;',
+          'delete a note for good, restore it, share it or manage its public link;',
+          'rename, recolor or delete a label;',
           'see photos, or who added what.',
         ] },
       ],
@@ -63,11 +66,29 @@ export default {
       blocks: ['An AI assistant never receives any reservation data, for anyone: not who reserved, not even whether a wish is reserved. So the surprise is kept, even if the recipient asks their assistant. In a wish list, checking means ‘received’: only the recipient and the list\'s owner can do it, with or without an assistant.'],
     },
     {
+      id: 'claude-notes',
+      title: 'Notes',
+      blocks: [
+        'An AI assistant sees your notes as you do ([[notes]]): yours and those shared with you, with your right on each one, never other people\'s notes or your trash. It acts on your behalf: a note it adds to shows “Edited by” you, and the people of the note are told just as if you had done it yourself ([[notes-partage]]).',
+        { ul: [
+          'Read: it sees the list of your notes (title, start of the text, labels, pin), then the text of a note.',
+          'Add to a note: it adds text at the end of a note, on a new line, without touching the rest. It\'s the safest way: nothing is lost, even if someone is writing in the note at the same time.',
+          'Replace the whole text: only if the note hasn\'t changed since it read it; otherwise nothing is written and it has to read it again. It must ask you to confirm first.',
+          'Create a note: it\'s yours, shared with no one.',
+          'Labels: it only sets labels that already exist (capitals and accents ignored); with an unknown name, nothing is done. It can create a label if you ask it to.',
+          'Delete: only your notes, and only to the trash, where you can restore it for 30 days ([[notes]]). It must ask you to confirm first; it can never delete it for good.',
+          'With the “Read only” right on a note, it can only read it, even with “Read and write”.',
+        ] },
+        'Notes turned off for you in Settings, “Features” ([[echeances]]): the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists and notes” ([[claude-connecter]]).',
+      ],
+    },
+    {
       id: 'claude-limites',
       title: 'Limits',
       blocks: [{ ul: [
         '20 items at most per request.',
-        'Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited. Beyond that, the assistant gets a refusal and nothing is written.',
+        'Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited, 100 note writes. Beyond that, the assistant gets a refusal and nothing is written.',
+        'Notes: 100 at most in one answer (the assistant can search or filter by label); a note holds 20,000 characters at most.',
         '120 calls per minute per connection.',
         '5 active AI assistant connections at most per account; a connection unused for 30 days frees itself up.',
         'The assistant doesn\'t create an item with the same name as one that\'s already there and not checked: it tells you instead.',
@@ -114,8 +135,8 @@ export default {
       id: 'claude-prudence',
       title: 'Be careful: booby-trapped texts',
       blocks: [
-        { note: 'A shared list can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents list content to the assistant as data, never as instructions, but only choose “Read and write” if you need it.' },
-        'Only ask the assistant to change an item yourself; check in Listo what it did.',
+        { note: 'A shared list or note can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents the content of lists and notes to the assistant as data, never as instructions, but only choose “Read and write” if you need it.' },
+        'Only ask the assistant to change an item or a note yourself; check in Listo what it did.',
       ],
     },
     {
@@ -123,7 +144,10 @@ export default {
       title: 'Troubleshooting',
       blocks: [{ ul: [
         'After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.',
-        'A list is missing: the connection may only allow some lists, or you\'re no longer a member. Reconnect the assistant with “All my lists” ([[claude-connecter]]).',
+        'A list is missing: the connection may only allow some lists, or you\'re no longer a member. Reconnect the assistant with “All my lists and notes” ([[claude-connecter]]).',
+        'The assistant doesn\'t see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([[claude-notes]]). After the update that added notes, start a new conversation so it knows its new tools.',
+        'The assistant says a label is unknown: it doesn\'t exist yet. Nothing was done; ask it to create the label, or choose one of those it lists for you.',
+        'The assistant says the note has changed: someone edited it since it read it. Nothing was written; it has to read it again before trying again.',
         'The assistant refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.',
         'Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([[claude-connexions]]).',
         'Listo shows a page saying the authorization request is invalid: the assistant\'s request couldn\'t be verified (return address refused, incomplete request), or its website isn\'t accepted by the server ([[mcp-serveur]]). Start the connection again from the assistant; if it happens again, tell the person who runs the server.',

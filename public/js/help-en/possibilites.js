@@ -64,6 +64,7 @@ export default {
         "Notes in free text, that save themselves, with clickable links, a pin and their own trash ([[notes]]).",
         "A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([[notes-partage]]).",
         "A quick note from Home, even offline ([[notes]]).",
+        "An AI assistant can read your notes and, if you allow it, create notes or add to them ([[claude-notes]]).",
       ] }],
     },
     {
@@ -85,7 +86,7 @@ export default {
         "A Home screen your way: tiles hidden or in another order, or no Home screen at all ([[echeances]]).",
         "Only the features you use: notes can be turned off for you alone, without deleting anything ([[echeances]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
-        "An AI assistant, for example Claude, can read your lists and, if you allow it, write to them ([[claude]]).",
+        "An AI assistant, for example Claude, can read your lists and notes and, if you allow it, write to them ([[claude]]).",
       ] }],
     },
   ],

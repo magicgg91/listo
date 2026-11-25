@@ -100,6 +100,6 @@ export const data = (res) => res.body.result.structuredContent;
 // Les dix-sept outils des projets, dans l'ordre de tools/list (section 12.2
 // du cadrage docs/cadrage-projets.md)
 export const PROJECT_TOOL_NAMES = [
-  'list_projects', 'read_project', 'read_card', 'create_project', 'rename_project', 'trash_project', 'create_columns', 'update_columns',
+  'list_projects', 'read_project', 'read_card', 'create_project', 'update_project', 'trash_project', 'create_columns', 'update_columns',
   'delete_column', 'create_labels', 'update_labels', 'delete_label', 'create_cards', 'update_cards', 'move_cards', 'add_comments', 'delete_cards',
 ];

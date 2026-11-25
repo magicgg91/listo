@@ -15,7 +15,7 @@
 // set_note_labels, create_label, delete_note (écriture ; corbeille seulement).
 // Projets (étape 5 du cadrage docs/cadrage-projets.md, server/mcp-projects.js) :
 // list_projects, read_project, read_card (lecture) ; create_project,
-// rename_project, trash_project, create_columns, update_columns,
+// update_project, trash_project, create_columns, update_columns,
 // delete_column, create_labels, update_labels, delete_label, create_cards,
 // update_cards, move_cards, add_comments, delete_cards (écriture ; jamais
 // d'effacement définitif ni de partage).

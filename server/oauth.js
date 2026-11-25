@@ -31,6 +31,7 @@
 
 import crypto from 'node:crypto';
 import { hashToken } from './auth.js';
+import { allowedFromRow } from './features.js';
 import { translate } from '../public/js/i18n.js';
 import {
   cimdUrl, checkCimdDocument, fetchClientMetadata, checkRegistration, redirectMatches, redirectHost,
@@ -296,6 +297,13 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
   // 'write', lists: 'all' | [identifiants] } ; listIds déjà vérifiés par
   // l'appelant (listes dont le compte est membre). Renvoie l'adresse de retour.
   function approve(request, user, { scope, allLists, listIds }, ip) {
+    // Compte sans « Assistants IA » (case de l'Admin) : jamais de connexion
+    // (l'écran le dit avant ; revérifié ici, au moment d'écrire)
+    if (!allowedFromRow(user).mcp) {
+      const error = new OAuthError(403, 'access_denied', translate('fr', 'autorisation.compteNonAutorise'));
+      error.key = 'autorisation.compteNonAutorise';
+      throw error;
+    }
     const granted = GRANT_SCOPES[scope];
     const host = describeRequest(request).app.host;
     const redirectHostName = redirectHost(request.redirect_uri);
@@ -346,15 +354,18 @@ export function createOAuthService(ctx, { fetchMetadata = fetchClientMetadata } 
     return { access_token: access, token_type: 'Bearer', expires_in: ACCESS_TTL / SECOND, refresh_token: refresh, scope: grant.scope };
   }
 
-  // Connexion utilisable : non révoquée, compte actif, et site de
-  // l'application toujours accepté (LISTO_MCP_SITES resserrée après
-  // l'accord : refusée, sans être effacée ; elle revient si le site est remis)
+  // Connexion utilisable : non révoquée, compte actif et autorisé à
+  // relier un assistant IA (case « Assistants IA » de l'Admin,
+  // docs/cadrage-comptes.md, étape 2 ; relue à chaque appel : ses connexions
+  // sont aussi révoquées quand l'Admin décoche), et site de l'application
+  // toujours accepté (LISTO_MCP_SITES resserrée après l'accord : refusée,
+  // sans être effacée ; elle revient si le site est remis)
   function liveGrant(grantId) {
     const grant = q.grant.get(grantId);
     if (!grant || grant.revoked_at) return null;
     if (!grantSiteAllowed(grant, sites())) return null;
     const user = q.user.get(grant.user_id);
-    return user?.active === 1 ? { grant, user } : null;
+    return user?.active === 1 && allowedFromRow(user).mcp ? { grant, user } : null;
   }
 
   const invalidGrant = (description) => new OAuthError(400, 'invalid_grant', description);

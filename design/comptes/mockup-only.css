@@ -1,0 +1,30 @@
+/* Présentation des maquettes des comptes uniquement. Ne pas livrer.
+   1. Planche (fond, légendes) et mode capture (capture.mjs).
+   2. Petits réglages de mise en page propres aux pages de référence (une
+      seule page HTML pour tous les écrans ; dans l'application, chaque
+      écran est dessiné seul).
+   Les éléments qui existent déjà dans l'application viennent de
+   public/css/app.css, lu tel quel par les pages de référence. */
+
+/* 1. Planche */
+html, body { height: auto; margin: 0; }
+body { background: var(--color-bg); color: var(--color-text); font-family: var(--font); }
+.board { padding: 32px 40px 48px; background: var(--color-neutral-soft); }
+.board__title { margin: 0 0 4px; font-size: 24px; }
+.board__note { margin: 0 0 24px; color: var(--color-text-2); }
+.board__shots { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px; }
+.board .shot figcaption { margin-bottom: 8px; font-size: 14px; font-weight: 600; color: var(--color-text-2); }
+.board .shot figcaption code { font-size: 13px; color: var(--color-text); }
+.phone > .app, .desk > .app { height: 100%; }
+/* Mode capture : un seul écran, sans cadre, à 0,0 (posé par capture.mjs) */
+.is-capture .phone, .is-capture .desk { border: 0; border-radius: 0; box-shadow: none; }
+.is-capture body { background: var(--color-bg); }
+.is-capture *, .is-capture *::before, .is-capture *::after { animation: none !important; transition: none !important; }
+
+/* 2. Mise en page des pages de référence */
+.phone .screen { height: 100%; }
+.desk .pc { height: 100%; }
+/* La feuille « Partager » d'un projet est plus haute que l'écran avec six
+   personnes : comme dans l'application, elle défile (la carte des
+   personnes ne se tasse pas) ; partage-admin-1 la montre défilée. */
+.sheet > .card { flex-shrink: 0; }

@@ -1,0 +1,69 @@
+/* Listo : comptes invités et discrets (docs/cadrage-comptes.md, maquettes
+   design/comptes/). Nouveaux composants seulement, à ajouter à
+   design/listo.css (et à la copie public/css/listo.css) après validation.
+   Variables du kit uniquement : aucune couleur en dur, clair et sombre
+   suivent le thème.
+
+   16.48 Mention « Discret » · 16.49 Page d'un compte (Administration) ·
+   16.50 Administration sur ordinateur */
+
+/* 16.48 Mention « Discret » (décision à prendre, cadrage section 5) : un
+   compte discret est marqué par l'œil barré (#i-eye-off) ET le mot, jamais
+   l'icône seule.
+   - .chip--discreet : pastille au bout d'une ligne (Administration ›
+     Comptes, carte du compte) ; contour, sans fond (comme .chip--line) ;
+   - .discreet-tag : la même mention dans une ligne de texte (sous le prénom
+     dans la feuille « Partager », vue par l'Admin seulement). */
+.chip--discreet { gap: 4px; background: transparent; border: 1px solid var(--color-border); color: var(--color-text-2); }
+.chip--discreet .icon { width: 16px; height: 16px; }
+.discreet-tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.discreet-tag .icon { width: 14px; height: 14px; }
+/* Avertissement de la feuille « Partager » quand des proches et des comptes
+   discrets se retrouvent dans le même projet (.note du kit) */
+.share-warn { margin-top: var(--space-2); }
+.share-warn p { margin: 0; }
+
+/* 16.49 Page d'un compte (#/administration/comptes/<id>, Admin seulement) :
+   - .acct-card : en tête, pastille, nom, identifiant et préréglage ;
+   - .preset : choix du préréglage (« Famille », « Invité ») : lignes
+     .radio-row du kit, sur deux lignes (nom et phrase) ; le choix actif a
+     le point plein ET le fond doux (jamais la couleur seule) ;
+   - .toggle-row--sub : interrupteur qui dépend de celui du dessus
+     (« Peut créer ses propres projets », sous « Projets ») : décalé ;
+   - .acct-sees : « Ce que Max voit », une phrase, sans aucune donnée
+     (ni nom de projet, ni nom de personne : l'Admin n'a pas de droit sur
+     le contenu). */
+.acct-card { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
+.acct-card .grow { display: flex; flex-direction: column; min-width: 0; }
+.acct-card .row__title { font-size: var(--text-lg); }
+.preset .radio-row { align-items: flex-start; gap: 12px; min-height: 64px; padding: 12px var(--space-2); }
+.preset .radio-row .radio { margin-top: 2px; }
+.preset .radio-row .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.preset .radio-row .row__sub { font-weight: 400; }
+.preset .radio-row.is-on .row__title { font-weight: 700; }
+.toggle-row--sub { padding-left: calc(var(--space-2) + 20px); }
+.toggle-row--sub .row__title { font-size: var(--text-base); font-weight: 600; }
+.toggle-row .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.acct-sees { margin: var(--space-2) var(--space-2) 0; padding: 12px var(--space-2); border-radius: var(--radius-sm); background: var(--color-neutral-soft); }
+.acct-sees__title { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; font-size: var(--text-sm); font-weight: 700; }
+.acct-sees__title .icon { width: 18px; height: 18px; color: var(--color-text-2); }
+.acct-sees__text { margin: 0; color: var(--color-text-2); line-height: var(--lh-base); }
+.acct-field { margin: var(--space-1) var(--space-2) 0; }
+.acct-field .field__hint { margin-top: 2px; }
+
+/* 16.50 Administration sur ordinateur (.app--pc) : dans la colonne de
+   1 040 px, la liste des comptes à gauche (.acct-split__list, 360 px), la
+   page du compte choisi à droite ; le compte choisi a le fond doux ET une
+   barre à gauche (aria-current, jamais la couleur seule). */
+.acct-split { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-2) var(--pc-gutter) var(--pc-gutter); }
+.acct-split .group { margin: 0; }
+.acct-split .section-title { padding-left: 4px; }
+.acct-split .section-title:first-child { margin-top: 0; }
+.acct-split__list .row[aria-current="true"] { position: relative; background: var(--color-accent-soft); }
+.acct-split__list .row[aria-current="true"]::before { content: ""; position: absolute; top: 8px; bottom: 8px; left: 0; width: 4px; border-radius: 0 4px 4px 0; background: var(--color-accent); }
+.acct-split__list .btn { margin-top: var(--space-2); }
+.acct-split__page .acct-card, .acct-split__page .acct-sees, .acct-split__page .acct-field { margin-left: 0; margin-right: 0; }
+.acct-split__page .acct-card { margin-top: 0; }
+.acct-split__page .group { margin: 0; }
+.acct-split__page .group-after { margin-left: 0; margin-right: 0; }
+.acct-split__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }

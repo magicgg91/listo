@@ -30,7 +30,7 @@ import { compareNames } from '../sorting.js';
 import { activeOnly } from '../store.js';
 import { app, refreshData, providerName } from '../app.js';
 import { openSheet, confirmDialog, toast, onPc } from '../ui.js';
-import { ROLES } from '../access.js';
+import { ROLES, PERMISSIONS, defaultAllowed } from '../access.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
 import { t, compareText } from '../i18n.js';
@@ -103,12 +103,15 @@ export function renderAdmin(tabKey, onLeave, { accountId = null } = {}) {
 
   const panel = h('div', { class: 'body admin-list' });
   const footer = h('div', { class: 'footer', hidden: tab.key !== 'comptes' });
+  // Ordinateur, onglet « Comptes » : « 6 comptes · 2 invités » sous le titre
+  // (maquette design/comptes pc-admin-comptes-1) ; rien sur le téléphone
+  const sub = onPc() && tab.key === 'comptes' ? h('p', { class: 'topbar__sub' }) : null;
   let alive = true;
   onLeave(() => {
     alive = false;
   });
   const load = () => {
-    if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive, { selectedId: accountId === null ? null : Number(accountId) });
+    if (tab.key === 'comptes') return loadUsers(panel, footer, () => alive, { selectedId: accountId === null ? null : Number(accountId), sub });
     if (tab.key === 'etiquettes') return loadLabels(panel, () => alive);
     if (tab.key === 'noms') return loadNames(panel, () => alive);
     return loadReferences(tab, panel, () => alive);
@@ -139,7 +142,7 @@ export function renderAdmin(tabKey, onLeave, { accountId = null } = {}) {
   return h('div', { class: 'screen' },
     h('header', { class: 'topbar' },
       iconButton('chev-l', t('administration.retour'), () => goBack('settings')),
-      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('administration.titre')))),
+      h('div', { class: 'topbar__main' }, h('h1', { class: 'topbar__title' }, t('administration.titre')), sub)),
     tabs, choices, panel, footer);
 }
 
@@ -196,8 +199,26 @@ const stateParts = (user) => [
   user.active ? (user.totpEnabled ? t('administration.compte.deuxFacteurs.active') : t('administration.compte.deuxFacteurs.desactive')) : t('administration.compte.desactive'),
   user.authelia ? providerName() : null,
 ];
-// Ligne d'un compte : « Invité · 2FA désactivé »
-const userSub = (user) => [roleWord(user.role), ...stateParts(user)].filter(Boolean).join(' · ');
+// Fonctions autorisées, en quelques mots, sur la ligne d'un compte
+// (maquette design/comptes admin-comptes-1) : pour un invité, ce qui lui
+// est ouvert (« Projets », « Notes, Projets », « aucune fonction ») ; pour
+// un Utilisateur, ce que l'Admin lui a retiré (« sans projets ») ; rien
+// pour un Admin, ni pour un Utilisateur qui a tout.
+const GUEST_ACCESS = { 'notes,projects': 'administration.acces.notesProjets', notes: 'administration.acces.notes', projects: 'administration.acces.projets', '': 'administration.acces.aucune' };
+const USER_ACCESS = { 'notes,projects': 'administration.acces.sansNotesProjets', notes: 'administration.acces.sansNotes', projects: 'administration.acces.sansProjets' };
+function accessPart(user) {
+  if (user.role === 'admin' || !user.allowed) return null;
+  if (user.role === 'guest') return t(GUEST_ACCESS[['notes', 'projects'].filter((name) => user.allowed[name]).join(',')]);
+  const missing = ['notes', 'projects'].filter((name) => !user.allowed[name]).join(',');
+  return missing ? t(USER_ACCESS[missing]) : null;
+}
+// Ligne d'un compte : « Invité · Projets », « Utilisateur · sans projets »,
+// sinon « Utilisateur · 2FA désactivée » ; un compte désactivé le dit
+// toujours (ses fonctions sont sur sa page)
+const userSub = (user) => {
+  const access = user.active ? accessPart(user) : null;
+  return [roleWord(user.role), ...(access ? [access] : stateParts(user))].filter(Boolean).join(' · ');
+};
 
 // Comptes rangés : Admin et Utilisateurs d'abord, puis les invités (sous le
 // titre « Invités »), chaque groupe par prénom
@@ -208,9 +229,9 @@ function accountGroups(users) {
 
 // Charge les comptes ; selectedId : compte dont la page est ouverte à côté
 // de la liste (ordinateur), ou null
-async function loadUsers(panel, footer, alive, { selectedId = null } = {}) {
+async function loadUsers(panel, footer, alive, { selectedId = null, sub = null } = {}) {
   replace(panel, loadingText());
-  const reload = () => loadUsers(panel, footer, alive, { selectedId });
+  const reload = () => loadUsers(panel, footer, alive, { selectedId, sub });
   let users;
   let accountRequests = [];
   let localLogin = true;
@@ -224,6 +245,7 @@ async function loadUsers(panel, footer, alive, { selectedId = null } = {}) {
   // Pastille de Réglages › Administration : le nombre à jour
   if (app.user) app.user.accountRequests = accountRequests.length;
   const { family, guests } = accountGroups(users);
+  if (sub) sub.textContent = guests.length ? `${t('administration.comptes.nombre', { count: users.length })} · ${t('administration.invites.nombre', { count: guests.length })}` : t('administration.comptes.nombre', { count: users.length });
   // Demandes de compte (connexion avec le fournisseur d'identité) : en premier, quand il y en a
   const requests = accountRequests.length
     ? [h('p', { class: 'section-title' }, t('administration.demande.titre', { count: accountRequests.length })),
@@ -314,10 +336,10 @@ export function renderAdminAccount(id, onLeave) {
 
 // Le contenu de la page d'un compte (téléphone et ordinateur) : en tête le
 // nom, l'identifiant, la 2FA (et « Discret » pour un invité) ; le rôle ;
-// puis la sécurité (mot de passe, double authentification, délier,
+// les fonctions autorisées (étape 2 du cadrage ; maquettes admin-compte-1
+// et 2) ; puis la sécurité (mot de passe, double authentification, délier,
 // désactiver, supprimer). Aucun nom de liste, de note, de projet ni de
 // personne : l'Admin n'a aucun droit sur le contenu des autres.
-// (Les « Fonctions autorisées » arrivent à l'étape 2 du cadrage.)
 function accountPage(user, { localLogin = true, reload, pc = false }) {
   const self = user.id === app.user.id;
   const error = errorNote();
@@ -359,14 +381,95 @@ function accountPage(user, { localLogin = true, reload, pc = false }) {
       hint),
   ];
 
+  // Fonctions autorisées : chaque interrupteur envoie tout de suite (un
+  // retrait demande confirmation) ; un Admin a tout (une phrase)
+  const allowedBlock = [
+    h('h2', { class: 'section-title' }, t('administration.fonctions')),
+    user.role === 'admin'
+      ? h('p', { class: 'page-intro' }, t('administration.fonctions.admin'))
+      : [h('p', { class: 'page-intro' }, t(user.role === 'guest' ? 'administration.fonctions.aide.invite' : 'administration.fonctions.aide.utilisateur')),
+        allowedSwitches(user.role, user.allowed, async (name, value) => {
+          if (!value && !(await confirmRemoval(user, name))) return false;
+          return run(() => patch(`/api/admin/users/${user.id}`, { allowed: { [name]: value } }), t('administration.fonctions.enregistrees', { name: user.displayName }));
+        }, { idPrefix: `compte-${user.id}`, self })],
+  ];
+
   const actions = securityActions(user, { localLogin, reload, run });
   const security = [
     h('h2', { class: 'section-title' }, t('administration.compte.securite')),
     actions.length ? h('div', { class: 'group' }, actions) : h('p', { class: 'page-intro' }, t('administration.compte.soiMeme')),
   ];
   return pc
-    ? [head, error.note, h('div', { class: 'acct-split__cols' }, h('div', {}, roleBlock), h('div', {}, security))]
-    : [head, error.note, roleBlock, security];
+    ? [head, error.note, h('div', { class: 'acct-split__cols' }, h('div', {}, roleBlock, allowedBlock), h('div', {}, security))]
+    : [head, error.note, roleBlock, allowedBlock, security];
+}
+
+// Les interrupteurs « Fonctions autorisées » (page d'un compte, « Nouveau
+// compte », demande acceptée ; kit 16.49, .toggle-row et .toggle-row--sub) :
+// Notes, Projets, « Peut créer ses propres projets » (décalé dessous,
+// désactivé quand Projets est décoché), Assistants IA. Pas de ligne
+// « Listes » : un Utilisateur les a toujours (et pour un invité, elles
+// arrivent à l'étape 3 du cadrage). role : rôle du compte (les phrases
+// d'un invité disent « les projets qu'on lui partage ») ; allowed : les
+// cases ; onToggle(nom, valeur) : faux = refusé ou annulé, l'interrupteur
+// revient. Textes posés avec textContent (h()).
+const PERMISSION_TEXT = {
+  notes: { title: 'administration.fonctions.notes', user: 'administration.fonctions.notes.detail', guest: 'administration.fonctions.notes.detail.invite' },
+  projects: { title: 'administration.fonctions.projets', user: 'administration.fonctions.projets.detail', guest: 'administration.fonctions.projets.detail.invite' },
+  projectsCreate: { title: 'administration.fonctions.creer', user: 'administration.fonctions.creer.detail', guest: 'administration.fonctions.creer.detail' },
+  mcp: { title: 'administration.fonctions.ia', user: 'administration.fonctions.ia.detail', guest: 'administration.fonctions.ia.detail' },
+};
+function allowedSwitches(role, allowed, onToggle, { idPrefix, self = false } = {}) {
+  const values = { ...defaultAllowed(role), ...(allowed ?? {}) };
+  const switches = new Map();
+  const paint = () => {
+    for (const [name, button] of switches) {
+      button.setAttribute('aria-checked', String(values[name]));
+      // « Peut créer ses propres projets » n'a de sens qu'avec Projets
+      if (name === 'projectsCreate') button.disabled = self || !values.projects;
+    }
+  };
+  const rowOf = (name) => {
+    const text = PERMISSION_TEXT[name];
+    const id = `${idPrefix}-${name}`;
+    const button = h('button', {
+      class: 'switch', type: 'button', role: 'switch', disabled: self,
+      'aria-labelledby': `${id}-titre`, 'aria-describedby': `${id}-aide`, 'data-key': name,
+      onClick: async () => {
+        const before = values[name];
+        values[name] = !before;
+        paint();
+        if ((await onToggle(name, values[name])) === false) {
+          values[name] = before;
+          paint();
+        }
+      },
+    });
+    switches.set(name, button);
+    return h('div', { class: `toggle-row${name === 'projectsCreate' ? ' toggle-row--sub' : ''}` },
+      h('div', { class: 'grow' },
+        h('span', { class: 'row__title', id: `${id}-titre` }, t(text.title)),
+        h('span', { class: 'row__sub', id: `${id}-aide` }, t(role === 'guest' ? text.guest : text.user))),
+      button);
+  };
+  const group = h('div', { class: 'group list-options' }, PERMISSIONS.map(rowOf));
+  paint();
+  return group;
+}
+
+// Retirer une fonction (cadrage 4.8) : confirmation qui dit ce qui
+// disparaît de SES écrans (rien n'est effacé ; aucun nombre ni nom : l'Admin
+// ne voit pas le contenu des autres). « Peut créer ses propres projets »
+// se retire sans question (ses projets restent à lui).
+const REMOVAL = {
+  notes: ['administration.fonctions.retirer.notes.question', 'administration.fonctions.retirer.notes.texte'],
+  projects: ['administration.fonctions.retirer.projets.question', 'administration.fonctions.retirer.projets.texte'],
+  mcp: ['administration.fonctions.retirer.ia.question', 'administration.fonctions.retirer.ia.texte'],
+};
+function confirmRemoval(user, name) {
+  const keys = REMOVAL[name];
+  if (!keys) return true;
+  return confirmDialog({ title: t(keys[0], { name: user.displayName }), text: t(keys[1], { name: user.displayName }), confirmLabel: t('administration.fonctions.retirer') });
 }
 
 // Confirmation d'un changement de rôle (cadrage 6.1) : Utilisateur ↔
@@ -375,12 +478,28 @@ function accountPage(user, { localLogin = true, reload, pc = false }) {
 async function confirmRole(user, role) {
   const name = user.displayName;
   if (role === 'guest') {
-    return confirmDialog({ title: t('administration.compte.versInvite.question', { name }), text: t('administration.compte.versInvite.texte', { name }), confirmLabel: t('administration.compte.versInvite') });
+    return confirmDialog({ title: t('administration.compte.versInvite.question', { name }), text: [t('administration.compte.versInvite.texte', { name }), ...keptLines(user)], confirmLabel: t('administration.compte.versInvite') });
   }
   if (user.role === 'guest' && role === 'user') {
     return confirmDialog({ title: t('administration.compte.versUtilisateur.question', { name }), text: t('administration.compte.versUtilisateur.texte', { name }), confirmLabel: t('administration.compte.versUtilisateur') });
   }
   return true;
+}
+
+// Ce que garde un Utilisateur qui devient invité (décision du propriétaire
+// du 25 novembre 2026 : ses cases et ses interrupteurs ne changent pas ;
+// l'Admin décoche ensuite) : une ligne par fonction autorisée, avec, pour
+// Notes et Projets, si elle est allumée
+function keptLines(user) {
+  const allowed = user.allowed ?? {};
+  const used = user.used ?? {};
+  const lines = [
+    allowed.notes ? t(used.notes ? 'administration.compte.versInvite.notes.allumees' : 'administration.compte.versInvite.notes.eteintes') : null,
+    allowed.projects ? t(used.projects ? 'administration.compte.versInvite.projets.allumes' : 'administration.compte.versInvite.projets.eteints') : null,
+    allowed.projects && allowed.projectsCreate ? t('administration.compte.versInvite.creer') : null,
+    allowed.mcp ? t('administration.compte.versInvite.ia') : null,
+  ].filter(Boolean);
+  return [t(lines.length ? 'administration.compte.versInvite.garde' : 'administration.compte.versInvite.rien', { name: user.displayName }), ...lines];
 }
 
 // Actions de sécurité d'un compte (pas le sien : son mot de passe et sa 2FA
@@ -447,6 +566,37 @@ function securityActions(user, { localLogin, reload, run }) {
   return actions;
 }
 
+// Champ « Fonctions autorisées » d'un compte à créer (maquette
+// nouveau-compte-1) : les interrupteurs, cochés selon le rôle choisi
+// (Utilisateur : tous ; Invité : aucun) ; rien pour un Admin (il a tout).
+// Renvoie { field, setRole(rôle), value() }.
+function allowedField(idPrefix) {
+  let role = 'user';
+  let values = defaultAllowed(role);
+  const slot = h('div', { class: 'acct-allowed' });
+  const hint = h('span', { class: 'field__hint' });
+  const field = h('div', { class: 'field' }, h('span', { class: 'field__label' }, t('administration.fonctions')), slot, hint);
+  const draw = () => {
+    field.hidden = role === 'admin';
+    hint.textContent = t(role === 'guest' ? 'administration.fonctions.nouveau.aide.invite' : 'administration.fonctions.nouveau.aide.utilisateur');
+    const switches = allowedSwitches(role, values, (name, value) => {
+      values[name] = value;
+      return true;
+    }, { idPrefix });
+    replace(slot, switches);
+  };
+  draw();
+  return {
+    field,
+    setRole(value) {
+      role = value;
+      values = defaultAllowed(role);
+      draw();
+    },
+    value: () => (role === 'admin' ? undefined : { ...values }),
+  };
+}
+
 // Champ « Rôle » d'un compte à créer (nouveau compte, demande acceptée) :
 // le choix « Utilisateur | Invité | Admin » et sa phrase, qui suit le choix
 function roleField(role, onChange, label = t('administration.role')) {
@@ -494,6 +644,7 @@ function openAcceptSheet(request, reload) {
   const username = h('input', { class: 'input', type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', value: request.username });
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100', value: request.displayName });
   let role = 'user';
+  const access = allowedField(`demande-${request.id}`);
   const usernameField = field(t('administration.identifiant'), username, { hint: t('administration.identifiant.aide') });
   const nameField = field(t('administration.nomAffiche'), displayName);
   const error = errorNote();
@@ -501,9 +652,10 @@ function openAcceptSheet(request, reload) {
   const form = h('form', { class: 'stack', novalidate: true },
     h('p', { class: 'muted' }, t('administration.demande.fournisseur', { provider: providerName() })),
     usernameField.field, nameField.field,
-    roleField(role, (value) => { role = value; }),
+    roleField(role, (value) => { role = value; access.setRole(value); }),
+    access.field,
     error.note, submit);
-  const sheet = openSheet({ title: t('administration.demande.accepter.titre'), sub: request.displayName, content: form });
+  const sheet = openSheet({ title: t('administration.demande.accepter.titre'), sub: request.displayName, content: form, scroll: true });
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.show('');
@@ -513,7 +665,7 @@ function openAcceptSheet(request, reload) {
     if (!displayName.value.trim()) return nameField.setError(t('administration.nomAffiche.obligatoire'));
     submit.disabled = true;
     try {
-      await post(`/api/admin/account-requests/${request.id}/accept`, { username: username.value.trim(), displayName: displayName.value.trim(), role });
+      await post(`/api/admin/account-requests/${request.id}/accept`, { username: username.value.trim(), displayName: displayName.value.trim(), role, allowed: access.value() });
       sheet.close();
       toast(t('administration.compte.cree'), { low: true });
       reload();
@@ -546,15 +698,17 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
   const displayName = h('input', { class: 'input', type: 'text', autocomplete: 'off', maxlength: '100' });
   const password = passwordInput({ autocomplete: 'new-password' });
   let role = 'user';
+  const access = allowedField('nouveau-compte');
   const usernameField = field(t('administration.identifiant'), username, { hint: t('administration.identifiant.aide') });
   const nameField = field(t('administration.nomAffiche.facultatif'), displayName);
   const passwordField = field(t('administration.motDePasse.provisoire'), password.wrap, { hint: t('administration.motDePasse.provisoire.aide') });
   const error = errorNote();
   const submit = h('button', { class: 'btn btn--primary btn--block', type: 'submit' }, t('administration.compte.creer'));
-  // Le rôle d'abord (maquette nouveau-compte-1), puis l'identifiant, le nom
-  // et le mot de passe provisoire
+  // Le rôle d'abord (maquette nouveau-compte-1), ses fonctions autorisées,
+  // puis l'identifiant, le nom et le mot de passe provisoire
   const form = h('form', { class: 'stack', novalidate: true },
-    roleField(role, (value) => { role = value; }, t('administration.role.nouveau')),
+    roleField(role, (value) => { role = value; access.setRole(value); }, t('administration.role.nouveau')),
+    access.field,
     usernameField.field, nameField.field,
     localLogin ? passwordField.field : h('p', { class: 'muted' }, t('administration.nouveauCompte.fournisseur', { provider: providerName() })),
     error.note, submit);
@@ -569,7 +723,7 @@ function openNewUserSheet(reload, { localLogin = true } = {}) {
     if (localLogin && [...password.input.value].length < 10) return passwordField.setError(t('administration.motDePasse.court'));
     submit.disabled = true;
     try {
-      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: localLogin ? password.input.value : undefined, role });
+      await post('/api/admin/users', { username: username.value.trim(), displayName: displayName.value.trim() || defaultDisplayName(username.value), password: localLogin ? password.input.value : undefined, role, allowed: access.value() });
       sheet.close();
       toast(t('administration.compte.cree'), { low: true });
       reload();

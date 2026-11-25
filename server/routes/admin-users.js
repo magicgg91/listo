@@ -1,8 +1,11 @@
 // Administration des comptes (réservée aux Admin, voir admin.js) :
 //   GET    /api/admin/users                 lister les comptes
 //   POST   /api/admin/users                 créer un compte
-//   PATCH  /api/admin/users/:id             modifier nom affiché, rôle, actif
-//                                           (rôle : 'user', 'guest' ou 'admin')
+//   PATCH  /api/admin/users/:id             modifier nom affiché, rôle, actif,
+//                                           fonctions autorisées
+//                                           (rôle : 'user', 'guest' ou 'admin' ;
+//                                           allowed : { notes, projects,
+//                                           projectsCreate, mcp })
 //   POST   /api/admin/users/:id/password    réinitialiser le mot de passe
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
 //   DELETE /api/admin/users/:id             supprimer un compte jamais utilisé
@@ -32,6 +35,20 @@
 // - chaque changement est écrit dans le journal (admin_role_changed, en
 //   anglais), et tous les appareils connectés relisent leur annuaire
 //   (« event: refs », sans données).
+//
+// Fonctions autorisées (étape 2 du cadrage, migration 48) : pour un
+// Utilisateur ou un Invité, l'Admin coche Notes, Projets, « Peut créer ses
+// propres projets » et « Assistants IA » (un Admin a tout : pas de cases).
+// Départ : tout coché pour un Utilisateur, rien pour un invité. Pour un
+// invité, une fonction cochée s'allume aussitôt (il peut l'éteindre
+// ensuite) ; pour un Utilisateur, la case autorise seulement (il l'allume
+// lui-même). Rien n'est effacé. Chaque changement : une ligne
+// admin_access_changed dans le journal (cases avant et après, en
+// chiffres), et les appareils relisent leur réglage (« event: refs », sans
+// données : ceux de la personne ; pour un Utilisateur, tous, car les
+// annuaires disent « N'utilise pas les notes »). « Assistants IA » décoché :
+// toutes ses connexions d'assistants IA sont révoquées (et refusées à
+// chaque appel de /mcp, server/oauth.js).
 
 import crypto from 'node:crypto';
 import express from 'express';
@@ -39,7 +56,23 @@ import { hashPassword, passwordProblem } from '../passwords.js';
 import { revokeAllSessions } from '../auth.js';
 import { disableTwoFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName, parseId } from '../validate.js';
-import { accountRole, roleColumns, roleChangeProblem, ROLES } from '../../public/js/access.js';
+import { accountRole, roleColumns, roleChangeProblem, ROLES, PERMISSIONS, defaultAllowed, allowedChangeProblem } from '../../public/js/access.js';
+import { allowedFromRow, featuresFromRow } from '../features.js';
+
+// Cases d'un compte écrites dans le journal (en anglais, en chiffres) :
+// notes=1 projects=0 create=0 mcp=0
+const JOURNAL_NAMES = { notes: 'notes', projects: 'projects', projectsCreate: 'create', mcp: 'mcp' };
+const journalAccess = (allowed) => Object.fromEntries(PERMISSIONS.map((name) => [JOURNAL_NAMES[name], allowed[name] ? 1 : 0]));
+
+// Cases reçues pour un compte à créer (facultatives : sinon celles du
+// rôle) : { allowed } valables, ou { problem }
+function wantedAllowed(role, value) {
+  if (value === undefined) return { allowed: defaultAllowed(role) };
+  if (value && typeof value === 'object' && !Array.isArray(value) && !Object.keys(value).length) return { allowed: defaultAllowed(role) };
+  const problem = allowedChangeProblem(value);
+  if (problem) return { problem };
+  return { allowed: { ...defaultAllowed(role), ...value } };
+}
 
 const LAST_ADMIN = 'comptes.dernierAdmin'; // nom du texte
 
@@ -82,6 +115,11 @@ export function adminUserRoutes(ctx) {
     displayName: user.display_name,
     // Rôle calculé : 'admin', 'user' ou 'guest' (un invité est toujours discret)
     role: accountRole(user),
+    // Fonctions autorisées par l'Admin (un Admin a tout)…
+    allowed: allowedFromRow(user),
+    // … et celles qu'il utilise (autorisées et allumées) : la confirmation
+    // « Faire un invité » dit ce qu'il garde (décision du 25 novembre 2026)
+    used: featuresFromRow(user),
     active: user.active === 1,
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
@@ -124,14 +162,17 @@ export function adminUserRoutes(ctx) {
     if (!ctx.oidc) return res.status(404).json({ error: req.t('comptes.routeInconnue') });
     const id = parseId(req.params.id);
     if (!id) return res.status(404).json({ error: req.t('comptes.demande.introuvable') });
-    const { username, displayName, role = 'user' } = req.body ?? {};
+    const { username, displayName, role = 'user', allowed: askedAllowed } = req.body ?? {};
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = cleanName(displayName);
     if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
     if (!ROLES.includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
+    const { allowed, problem } = wantedAllowed(role, askedAllowed);
+    if (problem) return res.status(400).json({ error: req.t(problem) });
     const result = await ctx.oidc.acceptRequest(id, { username, displayName: name, ...roleColumns(role) });
     if (result.key) return res.status(result.status).json({ error: req.t(result.key, result.params) });
-    audit('account_request_accepted', { admin: req.user.username, user: username, role });
+    const access = ctx.features.initAllowed(result.id, allowed, role);
+    audit('account_request_accepted', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)) });
     res.status(201).json({ user: describe(findUser.get(result.id)) });
   });
 
@@ -160,11 +201,15 @@ export function adminUserRoutes(ctx) {
   // Création d'un compte. Le mot de passe initial est choisi par l'Admin :
   // l'utilisateur devra le changer à sa première connexion.
   router.post('/users', async (req, res) => {
-    const { username, displayName, role = 'user', password } = req.body ?? {};
+    const { username, displayName, role = 'user', password, allowed: askedAllowed } = req.body ?? {};
     if (!isValidUsername(username)) return res.status(400).json({ error: req.t(USERNAME_RULE) });
     const name = displayName === undefined || displayName === '' ? username : cleanName(displayName);
     if (!name) return res.status(400).json({ error: req.t('comptes.nomAffiche.invalide') });
     if (!ROLES.includes(role)) return res.status(400).json({ error: req.t('comptes.role.invalide') });
+    // Fonctions autorisées : celles cochées dans « Nouveau compte », sinon
+    // celles du rôle (tout pour un Utilisateur, rien pour un invité)
+    const { allowed, problem: allowedProblem } = wantedAllowed(role, askedAllowed);
+    if (allowedProblem) return res.status(400).json({ error: req.t(allowedProblem) });
     const columns = roleColumns(role);
     // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : pas de
     // mot de passe provisoire ; la personne entrera avec le fournisseur d'identité (même
@@ -185,7 +230,10 @@ export function adminUserRoutes(ctx) {
       if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: req.t('comptes.identifiant.existe') });
       throw err;
     }
-    audit('admin_account_created', { admin: req.user.username, user: username, role, ip: req.ip });
+    // Cases écrites (et, pour un invité, ses fonctions cochées allumées,
+    // les autres éteintes : rien d'allumé tant que l'Admin n'a rien coché)
+    const access = ctx.features.initAllowed(id, allowed, role);
+    audit('admin_account_created', { admin: req.user.username, user: username, role, ...(role === 'admin' ? {} : journalAccess(access)), ip: req.ip });
     res.status(201).json({ user: describe(findUser.get(id)) });
   });
 
@@ -193,8 +241,8 @@ export function adminUserRoutes(ctx) {
   router.patch('/users/:id', (req, res) => {
     const user = target(req, res);
     if (!user) return;
-    const { displayName, role, active } = req.body ?? {};
-    if (displayName === undefined && role === undefined && active === undefined) {
+    const { displayName, role, active, allowed } = req.body ?? {};
+    if (displayName === undefined && role === undefined && active === undefined && allowed === undefined) {
       return res.status(400).json({ error: req.t('comptes.rienAModifier') });
     }
 
@@ -215,6 +263,13 @@ export function adminUserRoutes(ctx) {
     }
 
     const after = changes.role === undefined ? before : accountRole(changes);
+    // Fonctions autorisées : seulement pour un Utilisateur ou un invité
+    // (un Admin a tout ; rôle d'après le changement demandé en même temps)
+    if (allowed !== undefined) {
+      const problem = allowedChangeProblem(allowed);
+      if (problem) return res.status(400).json({ error: req.t(problem) });
+      if (after === 'admin') return res.status(400).json({ error: req.t('comptes.fonctions.admin') });
+    }
     const losesAdmin = (before === 'admin' && after !== 'admin') || changes.active === 0;
     if (losesAdmin && user.id === req.user.id) {
       return res.status(400).json({ error: req.t('comptes.soiMeme.desactiver') });
@@ -244,6 +299,13 @@ export function adminUserRoutes(ctx) {
     const stoppedNoteLinks = stopLinks ? ctx.noteShares.stopForOwner(user.id) : 0;
     const stopReason = changes.active === 0 ? 'account disabled' : 'account became a guest';
 
+    // Fonctions autorisées (après le rôle : un invité voit ses fonctions
+    // cochées s'allumer aussitôt)
+    const access = allowed !== undefined ? ctx.features.setAllowed(user.id, allowed) : null;
+    const accessChanged = access && PERMISSIONS.some((name) => access.before[name] !== access.after[name]);
+    // « Assistants IA » décoché : ses connexions sont révoquées tout de suite
+    const revokedGrants = access && access.before.mcp && !access.after.mcp ? ctx.oauth.revokeAllForUser(user.id, 'AI assistants no longer allowed by the admin') : 0;
+
     // Journal : une ligne par changement réel
     const who = { admin: req.user.username, user: user.username, ip: req.ip };
     if (changes.display_name !== undefined && changes.display_name !== user.display_name) {
@@ -257,6 +319,17 @@ export function adminUserRoutes(ctx) {
     // tous les appareils connectés relisent (message sans données)
     if (after !== before) ctx.events?.notifyReferences();
     if (changes.active === 1 && user.active === 0) audit('admin_account_reactivated', who);
+    if (accessChanged) {
+      const was = journalAccess(access.before);
+      audit('admin_access_changed', { ...who, ...journalAccess(access.after), previous: Object.entries(was).map(([name, value]) => `${name}=${value}`).join(' '), ...(access.turnedOn.length ? { turned_on: access.turnedOn.join(' ') } : {}), ...(revokedGrants ? { revoked: revokedGrants } : {}) });
+      // Ses appareils relisent leur réglage (boutons, écrans) : message
+      // sans données. Pour un compte visible (Utilisateur), les annuaires
+      // des autres changent aussi (« N'utilise pas les notes » dans
+      // Partager) : tous relisent. Pour un invité, lui seul (la famille ne
+      // le voit pas : rien ne change pour elle, pas même un message).
+      if (after === 'guest') ctx.events?.notifyAccount([user.id]);
+      else ctx.events?.notifyReferences();
+    }
 
     res.json({ user: describe(findUser.get(user.id)) });
   });

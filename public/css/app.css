@@ -325,6 +325,16 @@ html[data-keyboard] .toast--low { bottom: var(--space-3); }
 
 /* Hors ligne : partage d'une liste grisé (il demande le serveur) */
 .share.is-off { opacity: 0.55; }
+/* Personne grisée dans « Partager » : elle n'utilise pas les notes (ou les
+   projets), l'Admin ne les lui a pas autorisés (docs/cadrage-comptes.md
+   7.3) ; la phrase sous le prénom le dit (jamais la couleur seule) */
+.share__person.is-off .row__title { color: var(--color-text-2); }
+.share__person.is-off .tick { opacity: 0.45; }
+.share__person.is-off .tick-row { cursor: not-allowed; }
+/* « Fonctions autorisées » dans « Nouveau compte » (maquette design/comptes
+   nouveau-compte-1) : la carte des interrupteurs, sans marges, sous le
+   libellé du champ */
+.acct-allowed .group { margin: 0; }
 
 /* Bandeau « Nouvelle version disponible » (voir freshness.js) : composant
    .note du kit, posé en haut de l'écran, au-dessus de la barre de titre ; il

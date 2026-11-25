@@ -1911,6 +1911,14 @@ span.nf-task__box::after { display: none; }
 .pc-settings .acct-sees { margin: 0; }
 .acct-field { margin: var(--space-1) var(--space-2) 0; }
 .acct-field .field__hint { margin-top: 2px; }
+/* « Fonctions autorisées » (étape 2 ; maquettes admin-compte-1 et 2,
+   nouveau-compte-1) : les interrupteurs .toggle-row dans .list-options ;
+   .toggle-row--sub, l'interrupteur qui dépend de celui du dessus (« Peut
+   créer ses propres projets », sous « Projets ») : décalé, titre plus
+   petit ; désactivé (Projets décoché), il est pâli ET non cliquable
+   (.switch[disabled] du kit). */
+.toggle-row.toggle-row--sub { padding-left: calc(var(--space-2) + 20px); }
+.toggle-row--sub .row__title { font-size: var(--text-base); font-weight: 600; }
 
 /* 16.50 Administration sur ordinateur (.app--pc ; maquette
    pc-admin-comptes-1) : dans la colonne de 1 040 px, la liste des comptes
@@ -1930,6 +1938,16 @@ span.nf-task__box::after { display: none; }
 .acct-split__page .group { margin: 0; }
 .acct-split__page .group-after, .acct-split__page .page-intro { margin-left: 0; margin-right: 0; }
 .acct-split__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+
+/* 16.51 Invitation de l'Accueil (docs/cadrage-comptes.md 4.4 ; maquette
+   invite-accueil-vide-1) : quand aucune fonction n'est utilisée (un invité
+   à qui rien n'est encore ouvert ou allumé), une carte sur toute la largeur
+   de la grille des tuiles : icône, titre, une phrase, et le bouton qui
+   ouvre Réglages › Fonctions. */
+.home-hint { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-2); }
+.home-hint__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.home-hint__title { margin: 4px 0 0; font-size: var(--text-lg); font-weight: 700; }
+.home-hint__text { margin: 0 0 var(--space-1); color: var(--color-text-2); line-height: var(--lh-base); }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

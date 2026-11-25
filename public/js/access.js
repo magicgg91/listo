@@ -72,22 +72,32 @@ export function roleChangeProblem(from, to) {
   return null;
 }
 
-// --- Fonctions autorisées (étape 2 du cadrage, migration 48) ---
+// --- Fonctions autorisées (étapes 2 et 3 du cadrage, migrations 48 et 49) ---
 //
 // Cochées par l'Admin dans la page d'un compte : ce que la personne PEUT
-// utiliser. « La case de l'Admin autorise, la personne allume » : Notes et
-// Projets s'allument ensuite dans Réglages › Fonctions (features.js) ; une
-// fonction est utilisée si elle est autorisée ET allumée (usedFeatures,
-// features.js). Deux exceptions fixes : un Admin a tout ; un Utilisateur a
-// toujours les Listes (ni case, ni interrupteur). (Étape 3 : « Listes »,
-// pour un invité seulement.)
+// utiliser. « La case de l'Admin autorise, la personne allume » : Listes
+// (invité seulement), Notes et Projets s'allument ensuite dans Réglages ›
+// Fonctions (features.js) ; une fonction est utilisée si elle est
+// autorisée ET allumée (usedFeatures, features.js). Deux exceptions
+// fixes : un Admin a tout ; un Admin et un Utilisateur ont TOUJOURS les
+// Listes (ni case, ni interrupteur : seule la ligne d'un invité en a).
+// - lists : Listes (courses, tâches, envies, Échéances, « À offrir »,
+//   mode scan, mémoire des articles) : invité seulement (étape 3) ;
 // - notes, projects : Notes, Projets (avec un interrupteur de la personne) ;
 // - projectsCreate : « Peut créer ses propres projets » (permission, sans
 //   interrupteur : « Nouveau projet », « Dupliquer le projet ») ;
 // - mcp : « Assistants IA » (permission, sans interrupteur).
-export const PERMISSIONS = ['notes', 'projects', 'projectsCreate', 'mcp'];
+export const PERMISSIONS = ['lists', 'notes', 'projects', 'projectsCreate', 'mcp'];
 // Celles qui ont aussi l'interrupteur de la personne (Réglages › Fonctions)
-export const SWITCHED_PERMISSIONS = ['notes', 'projects'];
+export const SWITCHED_PERMISSIONS = ['lists', 'notes', 'projects'];
+
+// Cases proposées pour un compte de ce rôle (page d'un compte, « Nouveau
+// compte », Réglages › Fonctions) : la ligne « Listes » pour un invité
+// seulement ; aucune pour un Admin (il a tout)
+export function permissionsFor(role) {
+  if (role === 'admin') return [];
+  return role === 'guest' ? [...PERMISSIONS] : PERMISSIONS.filter((name) => name !== 'lists');
+}
 
 // Autorisations de départ d'un nouveau compte : tout pour un Utilisateur
 // (ce qu'ont les comptes existants), rien pour un invité (décision du
@@ -101,41 +111,46 @@ export function defaultAllowed(role) {
 // Autorisations complètes et valables d'un compte de ce rôle, à partir de
 // ce qui est gardé (base, copie du téléphone) ou reçu, même incomplet :
 // Admin, tout ; sinon chaque case gardée, et pour celle qui manque la
-// valeur de départ du rôle.
+// valeur de départ du rôle. Les Listes d'un Admin ou d'un Utilisateur :
+// toujours autorisées, quoi que dise la base.
 export function normalizeAllowed(value, role) {
   const allowed = defaultAllowed(role);
   if (role === 'admin' || !value || typeof value !== 'object') return allowed;
   for (const name of PERMISSIONS) {
     if (typeof value[name] === 'boolean') allowed[name] = value[name];
   }
+  if (role !== 'guest') allowed.lists = true;
   return allowed;
 }
 
-// Problème d'un changement de cases { notes?, projects?, projectsCreate?,
-// mcp? } (Administration) : le nom du texte de refus, ou null. Refusés :
-// autre chose qu'un objet, nom inconnu, valeur qui n'est pas un booléen,
-// rien à modifier.
-export function allowedChangeProblem(change) {
+// Problème d'un changement de cases { lists?, notes?, projects?,
+// projectsCreate?, mcp? } (Administration) : le nom du texte de refus, ou
+// null. Refusés : autre chose qu'un objet, nom inconnu, valeur qui n'est
+// pas un booléen, rien à modifier, et (quand role est donné) une case que
+// ce rôle n'a pas (« Listes » pour un Utilisateur : il les a toujours).
+export function allowedChangeProblem(change, role = null) {
   if (!change || typeof change !== 'object' || Array.isArray(change)) return 'comptes.fonctions.invalides';
   const names = Object.keys(change);
   if (!names.length) return 'comptes.rienAModifier';
   if (!names.every((name) => PERMISSIONS.includes(name))) return 'comptes.fonctions.invalides';
   if (!names.every((name) => typeof change[name] === 'boolean')) return 'comptes.fonctions.invalides';
+  if (role && role !== 'admin' && !names.every((name) => permissionsFor(role).includes(name))) return 'comptes.fonctions.listesInviteSeulement';
   return null;
 }
 
 // Applique un changement valable aux cases d'un compte de ce rôle.
 // Renvoie { allowed, turnOn } : les nouvelles cases, et les fonctions à
 // allumer aussitôt pour la personne. Pour un invité, une fonction cochée
-// (Notes, Projets) s'allume aussitôt (décision du propriétaire du 25
-// novembre 2026) : il pourra l'éteindre lui-même ensuite. Pour un
+// (Listes, Notes, Projets) s'allume aussitôt (décision du propriétaire du
+// 25 novembre 2026) : il pourra l'éteindre lui-même ensuite. Pour un
 // Utilisateur, la case autorise seulement : il l'allume lui-même.
 export function applyAllowedChange(role, allowed, change) {
   const before = normalizeAllowed(allowed, role);
   const next = { ...before };
   for (const name of PERMISSIONS) if (typeof change?.[name] === 'boolean') next[name] = change[name];
-  const turnOn = role === 'guest' ? SWITCHED_PERMISSIONS.filter((name) => next[name] && !before[name]) : [];
-  return { allowed: next, turnOn };
+  const after = normalizeAllowed(next, role);
+  const turnOn = role === 'guest' ? SWITCHED_PERMISSIONS.filter((name) => after[name] && !before[name]) : [];
+  return { allowed: after, turnOn };
 }
 
 // Le compte peut-il créer ses propres projets ? (« Nouveau projet »,
@@ -149,8 +164,7 @@ export const mayCreateProjects = (allowed, used) => Boolean(allowed?.projectsCre
 // (ils ont toujours les Listes) ; pour un invité, quand les Listes sont
 // utilisées par lui, ou quand au moins un projet qu'il voit a l'option
 // « Échéances » allumée (ses cartes suivent ensuite la règle « Afficher
-// dans Échéances »). lists : Listes utilisées (étape 3 du cadrage ; à
-// l'étape 2, un invité a encore toujours les Listes : vrai) ;
+// dans Échéances »). lists : Listes utilisées (features.js) ;
 // projectDeadlines : projets utilisés ET un projet visible à l'option
 // « Échéances » allumée.
 export function deadlinesShown(role, { lists = true, projectDeadlines = false } = {}) {
@@ -161,13 +175,13 @@ export function deadlinesShown(role, { lists = true, projectDeadlines = false } 
 // Invitation de l'Accueil (cadrage 4.4, maquette invite-accueil-vide-1) :
 // quand AUCUNE fonction n'est utilisée (ni Listes, ni Notes, ni Projets ;
 // en pratique un invité seulement : un Utilisateur a toujours les Listes).
-// used : fonctions utilisées ; allowed : autorisations ; lists : Listes
-// utilisées (étape 3 ; vrai jusque-là). Renvoie null (pas d'invitation),
+// used : fonctions utilisées (features.js, usedFeatures : lists, notes,
+// projects) ; allowed : autorisations. Renvoie null (pas d'invitation),
 // ou { kind, feature } : 'one' (une seule fonction autorisée, à nommer :
 // feature), 'several' (plusieurs à choisir), 'none' (rien d'autorisé pour
 // l'instant : l'Admin s'en charge).
-export function welcomeHint(used, allowed, { lists = true } = {}) {
-  if (lists || used?.notes || used?.projects) return null;
+export function welcomeHint(used, allowed) {
+  if (used?.lists !== false || used?.notes || used?.projects) return null;
   const offered = SWITCHED_PERMISSIONS.filter((name) => allowed?.[name]);
   if (offered.length === 1) return { kind: 'one', feature: offered[0] };
   return { kind: offered.length ? 'several' : 'none', feature: null };

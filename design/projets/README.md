@@ -22,7 +22,7 @@ Téléphone :
 - `projets-2` : le même écran avec le bandeau à cinq boutons (proposition B, **non retenue**, gardée pour mémoire : « Réglages » laissait sa place à « Projets »). Cartes des projets : colonnes en pastilles (point de couleur, nom, nombre), « 2 cartes pour vous · 1 en retard », personnes, point des nouveautés, « Lecture seule ».
 - `projet-1` : un projet sur le téléphone, une colonne à la fois : onglets des colonnes en couleur (choisi : fond doux, liseré, gras), cartes (étiquettes, échéance « Aujourd'hui » / en retard / à venir, « 2/3 », liens, commentaires, personnes, nouveautés), barre d'ajout en verre « Ajouter dans « Relecture » », loupe.
 - `projet-2` : « Filtrer les cartes » (personnes, étiquettes ; « Voir 1 carte »).
-- `carte-1`, `carte-2`, `carte-3` : une carte ouverte : titre, colonne (bouton qui ouvre « Déplacer vers… »), Personnes, Échéance (date, heure, rappel, case « Fait »), Étiquettes, Description mise en forme comme les notes (cases = liste de tâches, « 2/3 »), Liens, onglets Commentaires · Historique, commentaire à écrire en bas.
+- `carte-1`, `carte-2`, `carte-3` : une carte ouverte : titre, colonne (bouton qui ouvre « Déplacer vers… »), Personnes, Échéance sur une ligne (case « Fait » puis la date et l'heure ; le rappel dessous, en petit, faute de place à 390 px), Étiquettes, Description mise en forme comme les notes (cases = liste de tâches, « 2/3 »), Liens, onglets Commentaires · Historique, commentaire à écrire en bas.
 - `deplacer-1` : « Déplacer vers… » : colonnes avec leur couleur et leur nombre de cartes, « En haut » / « En bas ».
 - `partage-1` : « Partager » ouvre directement les personnes (pas de choix « lien temporaire » : un projet n'a pas de lien public) ; sous chaque personne cochée, le choix du droit à trois options « Modifier | Contribuer | Lire » (quatre rôles avec le propriétaire), et une phrase par droit sous la carte.
 - `reglages-projet-1` : réglages du projet : nom, colonnes (poignée, couleur, nombre, crayon, « Ajouter une colonne »), étiquettes du projet, option « Priorité », « Supprimer le projet ».
@@ -34,12 +34,12 @@ Ordinateur :
 
 - `pc-projets-1` : « Projets » dans le menu de gauche (après Notes), les projets dessous ; au centre, les cartes des projets ; « Nouveau projet » (N) en bas du menu.
 - `pc-projet-1` : un projet sur toute la largeur : en-tête (À jour, Partager et personnes, recherche, ⋮), filtres Personnes et Étiquettes, colonnes côte à côte (liseré de couleur, nombre, ⋮, « Ajouter une carte », « + Colonne » au bout, défilement de côté) ; une carte tenue (glisser-déposer) et la place où elle tombera.
-- `pc-carte-1` : une carte ouverte dans une fenêtre : à gauche le contenu (un commentaire importé de Planka, en pointillés : « importé de Planka par Guillaume »), à droite Colonne, Ajouter, Actions (« Déplacer vers… » M, Dupliquer, Ne plus suivre, Supprimer).
+- `pc-carte-1` : une carte ouverte dans une fenêtre : à gauche les mêmes champs que sur le téléphone (échéance : case « Fait » puis la date, sur une ligne ; « Ajouter un lien » ; un commentaire importé de Planka, en pointillés : « importé de Planka par Guillaume »), à droite seulement Colonne et Actions (« Déplacer vers… » M, Dupliquer, Ne plus suivre, Supprimer) : plus de boutons « Ajouter » qui doublaient les « + » des champs (remarque du propriétaire du 25 novembre 2026).
 - `pc-reglages-projet-1` : réglages du projet sur deux colonnes.
 
 ## Nouveaux composants
 
-`.c-<couleur>` et `.coldot` (couleur d'une colonne : les huit couleurs des étiquettes) ; `.tabbar--6` ; `.tile--wide`, `.tile__row--two`, `.tile__two`, `.tile__sub` ; `.proj-card`, `.colchip` ; `.coltabs`, `.coltab` ; `.kcards`, `.kcard`, `.kcount`, `.due` (`--late`, `--today`, `--done`), `.kdrop` ; ordinateur : `.kboard`, `.kcol`, `.kfilters`, `.pfilter` ; carte ouverte : `.kc`, `.kc__where`, `.kfield`, `.kadd`, `.kdone`, `.kc__section`, `.klink`, `.kcomment` (`--imported`), `.khist`, `.kdialog`, `.kside`, `.kcompose` ; `.move__count` ; `.col-row`, `.group-title` ; choix du droit à trois options : `.share__person--3`, `.share__access--3`, `.share-roles`. Le reste vient du kit tel quel (tuiles, cartes, étiquettes 16.32, mise en forme des notes 16.33, feuilles, onglets, interrupteurs, barre d'ajout en verre, loupe).
+`.c-<couleur>` et `.coldot` (couleur d'une colonne : les huit couleurs des étiquettes) ; `.tabbar--6` ; `.tile--wide`, `.tile__row--two`, `.tile__two`, `.tile__sub` ; `.proj-card`, `.colchip` ; `.coltabs`, `.coltab` ; `.kcards`, `.kcard`, `.kcount`, `.due` (`--late`, `--today`, `--done`), `.kdrop` ; ordinateur : `.kboard`, `.kcol`, `.kfilters`, `.pfilter` ; carte ouverte : `.kc`, `.kc__where`, `.kfield`, `.kadd`, `.kdue`, `.kdue__date`, `.kdue__remind`, `.kdone`, `.klink--add`, `.kc__section`, `.klink`, `.kcomment` (`--imported`), `.khist`, `.kdialog`, `.kside`, `.kcompose` ; `.move__count` ; `.col-row`, `.group-title` ; choix du droit à trois options : `.share__person--3`, `.share__access--3`, `.share-roles`. Le reste vient du kit tel quel (tuiles, cartes, étiquettes 16.32, mise en forme des notes 16.33, feuilles, onglets, interrupteurs, barre d'ajout en verre, loupe).
 
 ## Choix faits dans les maquettes
 
@@ -54,4 +54,4 @@ Ordinateur :
 
 ## Décisions qui restent
 
-Le propriétaire a répondu le 25 novembre 2026 (section 18 du cadrage). Restent trois petits points (18.2) : le Contributeur attribué à la carte d'un autre, qui peut dupliquer un projet, et le choix du droit à trois options (à valider sur la capture `partage-1`).
+Aucune : le propriétaire a répondu à tout le 25 novembre 2026 (section 18 du cadrage), y compris les trois derniers points (Contributeur sur les cartes qui lui sont attribuées, duplication par tout membre, choix du droit à trois options gardé tel que dans `partage-1`).

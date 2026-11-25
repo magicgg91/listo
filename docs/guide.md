@@ -119,10 +119,11 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [7.4 Une carte ouverte](#projets-carte)
 - [7.5 Commentaires, historique, suivre une carte](#projets-commentaires)
 - [7.6 Nouveautés et notifications des projets](#projets-notifications)
-- [7.7 Colonnes et étiquettes du projet](#projets-colonnes)
-- [7.8 Partager un projet, les quatre rôles](#projets-roles)
-- [7.9 Corbeilles des projets](#projets-corbeilles)
-- [7.10 Sur ordinateur](#projets-ordinateur)
+- [7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)
+- [7.8 Colonnes et étiquettes du projet](#projets-colonnes)
+- [7.9 Partager un projet, les quatre rôles](#projets-roles)
+- [7.10 Corbeilles des projets](#projets-corbeilles)
+- [7.11 Sur ordinateur](#projets-ordinateur)
 
 </details>
 
@@ -302,7 +303,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 ### 2.7 Hors ligne, corbeille, lien public
 
 - Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.17 Hors ligne et synchronisation](#hors-ligne)).
-- Corbeille : une liste supprimée se restaure pendant 30 jours ([8.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi ([5.12 Les notes](#notes)). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes » (et « Projets » quand vous les utilisez : [7.9 Corbeilles des projets](#projets-corbeilles)).
+- Corbeille : une liste supprimée se restaure pendant 30 jours ([8.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi ([5.12 Les notes](#notes)). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes » (et « Projets » quand vous les utilisez : [7.10 Corbeilles des projets](#projets-corbeilles)).
 - Lien public : montrer une liste à quelqu'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([8.6 Propriétaire : le lien public](#lien-public)) ; une note aussi ([5.13 Partager une note](#notes-partage)).
 
 <a id="p-confort"></a>
@@ -823,10 +824,10 @@ Listo s'ouvre sur l'« Accueil » (sauf si vous l'avez coupé, voir plus bas) : 
 
 Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l'Accueil est coupé ; six, avec « Projets », quand vous avez allumé les projets : [7.1 Allumer les projets](#projets-allumer)) ; il descend jusqu'au trait du bas de l'iPhone. Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. Quand tout l'Accueil tient dans l'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
 
-- « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses.
+- « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses. Il peut aussi montrer les cartes datées d'un projet, si vous l'avez choisi pour ce projet ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)).
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
 - Si une de vos listes a l'attribution activée, « Toutes » ou « Les miennes » choisit ce qui s'affiche ; « Les miennes » ne garde que les tâches qui vous sont attribuées ([5.4 Attribuer une tâche](#attribuer)). Le choix est retenu sur l'appareil.
-- « Échéances » porte deux nombres : en rouge, en haut à gauche de l'icône, les tâches en retard ; en vert, en haut à droite, celles du jour. Chacun n'apparaît que s'il y en a. Les tâches attribuées à quelqu'un d'autre ne comptent pas.
+- « Échéances » porte deux nombres : en rouge, en haut à gauche de l'icône, les tâches en retard ; en vert, en haut à droite, celles du jour. Chacun n'apparaît que s'il y en a. Les tâches attribuées à quelqu'un d'autre ne comptent pas. Les cartes des projets montrés dans « Échéances » comptent de même (les vôtres et celles de personne).
 - L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche, avec les mêmes nombres au bout de la ligne (le rouge, puis le vert).
 
 **Choisir ses tuiles, ou couper l'Accueil**
@@ -1086,7 +1087,7 @@ Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications
 | « Modifications » | Quelqu'un d'autre ajoute, modifie ou coche dans une liste partagée avec vous, ou vous attribue une tâche. Les changements d'une minute sont regroupés en une seule notification par liste. Une note partagée modifiée par quelqu'un d'autre : une notification par note et par quart d'heure au plus. Projets : nouvelles cartes, carte attribuée, commentaires et changements d'une carte suivie ([7.6 Nouveautés et notifications des projets](#projets-notifications)). | “Léa a modifié « Courses »”, “Léa vous a attribué une tâche dans « Maison »”, “Léa a modifié la note « Vacances »” |
 | « Envies » | Quelqu'un réserve un souhait ou participe à un cadeau, dans une liste d'envies dont vous voyez les réservations. | “Marc a réservé un souhait” |
 | « Partage » | On vous ajoute à une liste, à une note ou à un projet, ou votre droit change. | “Léa vous a ajouté à « Maison »”, “Léa a partagé la note « Vacances » avec vous” |
-| « Échéances » | Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd'hui et en retard, s'il y en a. Et le rappel d'une tâche, au moment choisi dans sa fiche ([5.2 Heure et rappel](#heure)). | “3 tâches à faire aujourd'hui · 1 en retard”, “Rappel : une tâche aujourd'hui à 14:00” |
+| « Échéances » | Chaque matin vers 8 h, un seul résumé des tâches à faire aujourd'hui et en retard, s'il y en a (avec les cartes des projets montrés dans « Échéances » : [7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)). Et le rappel d'une tâche, au moment choisi dans sa fiche ([5.2 Heure et rappel](#heure)). | “3 tâches à faire aujourd'hui · 1 en retard”, “Rappel : une tâche aujourd'hui à 14:00” |
 
 Vous n'êtes jamais prévenu de ce que vous faites vous-même (ni de ce qu'un assistant IA fait pour vous : [9. Assistants IA (MCP)](#claude)). Ni les décochés ni les suppressions ne sont notifiés. Le résumé des échéances ne compte que les listes de tâches dont l'échéance est activée, et jamais les tâches attribuées à quelqu'un d'autre. Le rappel d'une tâche part vers la personne à qui elle est attribuée, sinon vers tous les membres de la liste.
 
@@ -1155,7 +1156,7 @@ Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googl
 
 ## 7. Projets
 
-Un projet range des cartes en colonnes, comme un tableau d'idées : “Idées”, “Brouillons”, “Relecture”, “Publiés”… Chaque projet a un seul tableau : ses colonnes (un nom et une couleur, dans l'ordre que vous choisissez), et dans chaque colonne ses cartes, dans l'ordre que vous choisissez. Pour plusieurs tableaux, créez plusieurs projets. Un projet se partage avec des personnes de Listo, chacune avec son rôle ([7.8 Partager un projet, les quatre rôles](#projets-roles)) ; il n'a pas de lien public.
+Un projet range des cartes en colonnes, comme un tableau d'idées : “Idées”, “Brouillons”, “Relecture”, “Publiés”… Chaque projet a un seul tableau : ses colonnes (un nom et une couleur, dans l'ordre que vous choisissez), et dans chaque colonne ses cartes, dans l'ordre que vous choisissez. Pour plusieurs tableaux, créez plusieurs projets. Un projet se partage avec des personnes de Listo, chacune avec son rôle ([7.9 Partager un projet, les quatre rôles](#projets-roles)) ; il n'a pas de lien public.
 
 La fonction est coupée au départ, pour chaque compte : rien ne change tant que vous ne l'allumez pas.
 
@@ -1167,7 +1168,7 @@ Réglages, « Fonctions », « Projets » : allumez l'interrupteur. Le choix vau
 
 - Sur le téléphone, le bandeau du bas a alors six boutons : « Accueil », « Échéances », « Listes », « Notes », « Projets » et « Réglages » (cinq si l'Accueil ou les notes sont coupés). Avec un texte agrandi par le téléphone, un libellé peut être coupé (“Échéanc…”) : le nom lu par le lecteur d'écran reste entier.
 - L'Accueil a une tuile « Projets », en bas, sur toute la largeur : le nombre de vos cartes (attribuées à vous, pas faites), et les trois plus urgentes (en retard d'abord, puis par échéance) ; dessous, le projet, la colonne et l'échéance (“En retard” en rouge). Une ligne ouvre la carte ; sans carte pour vous, « Aucune carte pour vous ». Le titre ouvre l'écran « Projets ». Comme les autres tuiles, elle se masque et se déplace dans Réglages, « Accueil » ; « Projets » peut aussi devenir votre premier écran quand l'Accueil est coupé.
-- La « Corbeille » des Réglages a un onglet « Projets » ([7.9 Corbeilles des projets](#projets-corbeilles)).
+- La « Corbeille » des Réglages a un onglet « Projets » ([7.10 Corbeilles des projets](#projets-corbeilles)).
 
 <a id="projets-creer"></a>
 
@@ -1175,7 +1176,7 @@ Réglages, « Fonctions », « Projets » : allumez l'interrupteur. Le choix vau
 
 - Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l'œil « Lecture seule » ou « Contributeur » selon votre rôle, “2 cartes pour vous · 1 en retard” (vos cartes pas faites), et un point quand quelqu'un d'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.
 - « + », en haut à droite (« Nouveau projet » quand vous n'en avez aucun) : donnez un nom (80 caractères au plus), puis « Créer ». Le projet commence avec trois colonnes, « À faire », « En cours » et « Fait », à renommer à votre goût ; il s'ouvre tout de suite.
-- Menu ⋮ d'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), « Couper les notifications » ([7.6 Nouveautés et notifications des projets](#projets-notifications)), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».
+- Menu ⋮ d'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), « Couper les notifications » ([7.6 Nouveautés et notifications des projets](#projets-notifications)), « Afficher dans Échéances » ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».
 - « Dupliquer le projet » (tout membre, même en « Lecture seule ») : un nouveau projet à vous, non partagé, dont le nom finit par “(copie)”, avec les mêmes colonnes, les mêmes étiquettes et la même option « Priorité », mais sans aucune carte. Pratique pour en faire un modèle. Cela marche aussi hors ligne.
 - « Supprimer » (propriétaire) : le projet va dans la « Corbeille » des Réglages pour 30 jours, avec ses cartes ; il disparaît aussi pour les personnes avec qui il est partagé. « Annuler », dans le message qui suit, le remet tout de suite.
 
@@ -1196,7 +1197,7 @@ Sur le téléphone, un projet montre une colonne à la fois. En haut, les onglet
 
 ### 7.4 Une carte ouverte
 
-Chaque champ d'une carte est toujours là, avec son « + » ou, vide, une ligne pour le remplir (« Attribuer », « Ajouter une échéance »…) : il n'y a qu'un seul endroit pour le remplir. Tout s'enregistre tout seul, hors ligne compris. Ce que votre rôle ne permet pas n'a pas de bouton ([7.8 Partager un projet, les quatre rôles](#projets-roles)).
+Chaque champ d'une carte est toujours là, avec son « + » ou, vide, une ligne pour le remplir (« Attribuer », « Ajouter une échéance »…) : il n'y a qu'un seul endroit pour le remplir. Tout s'enregistre tout seul, hors ligne compris. Ce que votre rôle ne permet pas n'a pas de bouton ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
 
 - Personnes : les pastilles et les prénoms des personnes attribuées ; « + » (ou « Attribuer ») ouvre le choix, avec « M'attribuer » en tête. On peut attribuer une carte au propriétaire, à un « Peut modifier » ou à un « Contributeur », jamais à une personne en « Lecture seule » (10 au plus). Une personne qui quitte le projet, en est retirée ou passe en « Lecture seule » est retirée de ses cartes.
 - Échéance, sur une seule ligne : la case « Fait », puis la date et l'heure (touchez-les pour les changer). Sans échéance : « Ajouter une échéance ». L'heure est facultative ; avec une heure, un rappel peut être choisi (à l'heure, 15 min, 30 min, 1 h, 2 h avant, ou la veille), écrit en petit dessous. « Retirer l'échéance » la retire, avec la case « Fait ».
@@ -1232,9 +1233,21 @@ Sous les liens d'une carte ouverte, deux onglets : « Commentaires » (avec leur
 - Menu ⋮ du projet : « Couper les notifications » (page et téléphone, rappels compris), indépendant de « Masquer les nouveautés ».
 - Projets coupés (Réglages, « Fonctions ») : aucune nouveauté ni notification des projets, sauf quand on vous partage un projet : la notification vous invite alors à allumer les projets, et la toucher ouvre Réglages, « Fonctions ».
 
+<a id="projets-echeances"></a>
+
+### 7.7 Les cartes d'un projet dans « Échéances »
+
+Menu ⋮ d'un projet : « Afficher dans Échéances », un interrupteur, coupé au départ (une coche le dit quand il est allumé). C'est votre choix pour ce projet seulement : Léa peut vouloir “Travaux maison” dans ses Échéances, et Guillaume non. Personne d'autre ne le voit ; il se fait aussi hors ligne, quel que soit votre rôle.
+
+- Allumé, les cartes datées et pas faites de ce projet apparaissent dans l'écran « Échéances » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), mêlées aux tâches, dans les mêmes groupes (« En retard », « Aujourd'hui », « Demain », « Cette semaine », « Plus tard »), avec l'icône des projets et “DomoPi Articles · Relecture” (le projet et la colonne) à la place du nom de la liste, puis la priorité (si l'option du projet est allumée), la date et l'heure, et les personnes.
+- Toucher la ligne ouvre la carte. La case coche « Fait » si vous pouvez modifier la carte ([7.9 Partager un projet, les quatre rôles](#projets-roles)) : la carte quitte l'écran, « Annuler » la remet. Sinon, la ligne n'a pas de case.
+- « Les miennes » garde les cartes qui vous sont attribuées et celles qui ne sont attribuées à personne ; « Toutes », toutes les cartes datées de ces projets.
+- Les nombres d'« Échéances » (bandeau du bas, menu de gauche), la tuile « Échéances » de l'Accueil et le résumé du matin les comptent aussi (le résumé dit alors “2 échéances aujourd'hui · 1 en retard” et ouvre « Échéances »). Un projet dont vous avez coupé les notifications reste à l'écran, mais n'est pas dans le résumé.
+- Le rappel d'une carte ne dépend pas de ce choix ([7.6 Nouveautés et notifications des projets](#projets-notifications)). Projets coupés (Réglages, « Fonctions ») : aucune carte dans « Échéances » ; le choix est gardé pour quand vous les rallumez.
+
 <a id="projets-colonnes"></a>
 
-### 7.7 Colonnes et étiquettes du projet
+### 7.8 Colonnes et étiquettes du projet
 
 « Réglages du projet » (menu ⋮ d'un projet ouvert ; propriétaire et « Peut modifier ») :
 
@@ -1247,7 +1260,7 @@ Sous les liens d'une carte ouverte, deux onglets : « Commentaires » (avec leur
 
 <a id="projets-roles"></a>
 
-### 7.8 Partager un projet, les quatre rôles
+### 7.9 Partager un projet, les quatre rôles
 
 Dans un de vos projets, « Partager » (le bouton des personnes en haut, ou le menu ⋮) ouvre directement la liste des comptes de Listo : un projet n'a pas de lien public. Cochez une personne, puis choisissez son droit sous son nom, « Modifier », « Contribuer » ou « Lire » ; décochez-la pour la retirer ; puis « OK ». Une personne ajoutée commence en « Lire ». Il faut du réseau.
 
@@ -1264,14 +1277,14 @@ Dans un de vos projets, « Partager » (le bouton des personnes en haut, ou le m
 
 <a id="projets-corbeilles"></a>
 
-### 7.9 Corbeilles des projets
+### 7.10 Corbeilles des projets
 
 - Projets supprimés : « Corbeille » des Réglages, onglet « Projets » (le propriétaire seulement). Chaque ligne dit quand le projet a été supprimé, combien de jours il lui reste, son nombre de cartes et avec combien de personnes il était partagé. « Restaurer » le remet pour tout le monde, avec ses colonnes et ses cartes ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation et du réseau. Au-delà de 30 jours, il est effacé pour de bon.
 - Cartes supprimées : dans chaque projet (menu ⋮, « Cartes supprimées »), car chacun peut supprimer des cartes. Chaque ligne : titre, colonne d'origine, qui l'a supprimée et quand. « Restaurer » : le propriétaire et « Peut modifier » pour toutes, un Contributeur pour celles qu'il a créées ; la carte revient en bas de sa colonne (ou de la première, si la sienne n'existe plus). « Supprimer définitivement » et « Vider la corbeille » : le propriétaire, avec du réseau. En « Lecture seule », la liste se voit sans bouton.
 
 <a id="projets-ordinateur"></a>
 
-### 7.10 Sur ordinateur
+### 7.11 Sur ordinateur
 
 « Projets » est dans le menu de gauche (après « Notes »), avec le nombre de projets ; sur les écrans des projets, vos projets sont listés dessous (nombre de cartes, point des nouveautés), et le bouton du bas devient « Nouveau projet », ou « Nouvelle carte » dans un projet (touche N).
 
@@ -1403,7 +1416,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 - « Dupliquer » (menu ⋮ de la liste) crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.
 - Menu ⋮ de la liste, « Supprimer » : une confirmation rappelle d'abord ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s'arrête.
 - Une liste supprimée reste 30 jours dans votre « Corbeille » (Réglages, onglet « Listes »), puis elle est effacée pour de bon. Seul son propriétaire l'y voit ; chaque ligne indique son type, son nombre d'éléments, le jour de sa suppression et le nombre de jours qui restent.
-- La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [5.12 Les notes](#notes)), et un troisième, « Projets », quand vous utilisez les projets ([7.9 Corbeilles des projets](#projets-corbeilles)) ; chacun avec son nombre quand il y en a. Elle s'ouvre sur « Listes », sauf si seules des notes (ou des projets) y attendent ; l'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions ») et que les projets le sont aussi, elle n'a pas d'onglets : seulement vos listes.
+- La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [5.12 Les notes](#notes)), et un troisième, « Projets », quand vous utilisez les projets ([7.10 Corbeilles des projets](#projets-corbeilles)) ; chacun avec son nombre quand il y en a. Elle s'ouvre sur « Listes », sauf si seules des notes (ou des projets) y attendent ; l'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions ») et que les projets le sont aussi, elle n'a pas d'onglets : seulement vos listes.
 - « Restaurer » la remet telle qu'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.
 - « Supprimer définitivement » (la poubelle rouge d'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.
 - Le propriétaire ne quitte pas sa liste : il la supprime, ou la laisse.

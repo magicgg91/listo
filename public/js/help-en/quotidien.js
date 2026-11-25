@@ -166,10 +166,10 @@ export default {
         ] },
         'On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off; six, with “Projects”, when you turned projects on: [[projets-allumer]]); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn\'t scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.',
         { ul: [
-          '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.',
+          '“Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists. It can also show a project\'s dated cards, if you chose so for that project ([[projets-echeances]]).',
           'Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([[repeter]]). Tap the row to open the task in its list.',
           'If one of your lists has assignment turned on, “All” or “Mine” chooses what is shown; “Mine” keeps only the tasks assigned to you ([[attribuer]]). The choice is remembered on the device.',
-          '“Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today\'s tasks. Each one only appears when there are some. Tasks assigned to someone else don\'t count.',
+          '“Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today\'s tasks. Each one only appears when there are some. Tasks assigned to someone else don\'t count. The cards of the projects shown in “Due” count the same way (yours and unassigned ones).',
           'The screen works offline, like the lists. On a computer, “Due” is in the menu on the left, with the same numbers at the end of the row (red, then green).',
         ] },
         { sub: 'Choosing your tiles, or turning Home off' },

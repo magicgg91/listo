@@ -26,7 +26,7 @@ export default {
         { ul: [
           '“Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people\'s badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.',
           '“+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.',
-          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([[projets-notifications]]), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.',
+          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([[projets-notifications]]), “Show in Due” ([[projets-echeances]]), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.',
           '“Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.',
           '“Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.',
         ] },
@@ -90,6 +90,20 @@ export default {
           'Never what you do yourself. Without “Show details in the notification”, the phone doesn\'t name the card (‘a card’); a comment\'s text is never in a notification.',
           'Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.',
           'Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.',
+        ] },
+      ],
+    },
+    {
+      id: 'projets-echeances',
+      title: 'A project\'s cards in “Due”',
+      blocks: [
+        'A project\'s ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.',
+        { ul: [
+          'When it is on, this project\'s dated cards that are not done appear on the “Due” screen ([[echeances]]), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list\'s name, then the priority (if the project\'s option is on), the date and time, and the people.',
+          'Tapping the row opens the card. The box checks “Done” if you can edit the card ([[projets-roles]]): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.',
+          '“Mine” keeps the cards assigned to you and the ones assigned to no one; “All”, all the dated cards of these projects.',
+          'The numbers on “Due” (bottom bar, menu on the left), Home\'s “Due” tile and the morning summary count them too (the summary then says ‘2 items due today · 1 overdue’ and opens “Due”). A project whose notifications you turned off stays on the screen, but is not in the summary.',
+          'A card\'s reminder doesn\'t depend on this choice ([[projets-notifications]]). Projects turned off (Settings, “Features”): no cards in “Due”; the choice is kept for when you turn them back on.',
         ] },
       ],
     },

@@ -119,10 +119,11 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [7.4 An open card](#projets-carte)
 - [7.5 Comments, history, following a card](#projets-commentaires)
 - [7.6 Projects' new activity and notifications](#projets-notifications)
-- [7.7 The project's columns and labels](#projets-colonnes)
-- [7.8 Sharing a project, the four roles](#projets-roles)
-- [7.9 Project trash](#projets-corbeilles)
-- [7.10 On a computer](#projets-ordinateur)
+- [7.7 A project's cards in “Due”](#projets-echeances)
+- [7.8 The project's columns and labels](#projets-colonnes)
+- [7.9 Sharing a project, the four roles](#projets-roles)
+- [7.10 Project trash](#projets-corbeilles)
+- [7.11 On a computer](#projets-ordinateur)
 
 </details>
 
@@ -302,7 +303,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.7 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
-- Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.9 Project trash](#projets-corbeilles)).
+- Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.10 Project trash](#projets-corbeilles)).
 - Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([8.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
 <a id="p-confort"></a>
@@ -823,10 +824,10 @@ Listo opens on “Home” (unless you have turned it off, see below): ‘Hello�
 
 On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off; six, with “Projects”, when you turned projects on: [7.1 Turning projects on](#projets-allumer)); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
-- “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
+- “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists. It can also show a project's dated cards, if you chose so for that project ([7.7 A project's cards in “Due”](#projets-echeances)).
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
 - If one of your lists has assignment turned on, “All” or “Mine” chooses what is shown; “Mine” keeps only the tasks assigned to you ([5.4 Assign a task](#attribuer)). The choice is remembered on the device.
-- “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count.
+- “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count. The cards of the projects shown in “Due” count the same way (yours and unassigned ones).
 - The screen works offline, like the lists. On a computer, “Due” is in the menu on the left, with the same numbers at the end of the row (red, then green).
 
 **Choosing your tiles, or turning Home off**
@@ -1086,7 +1087,7 @@ Four kinds of notifications, each turned on or off in Settings, “Notifications
 | “Changes” | Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. Projects: new cards, a card assigned to you, comments and changes of a followed card ([7.6 Projects' new activity and notifications](#projets-notifications)). | ‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’ |
 | “Wishes” | Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations. | ‘Marc reserved a wish’ |
 | “Sharing” | You're added to a list, a note or a project, or your access changes. | ‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’ |
-| “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
+| “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any (with the cards of the projects shown in “Due”: [7.7 A project's cards in “Due”](#projets-echeances)). And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
 
 You're never notified about what you do yourself (or about what an AI assistant does for you: [9. AI assistants (MCP)](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
 
@@ -1155,7 +1156,7 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 
 ## 7. Projects
 
-A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.8 Sharing a project, the four roles](#projets-roles)); it has no public link.
+A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.9 Sharing a project, the four roles](#projets-roles)); it has no public link.
 
 The feature is off at first, for each account: nothing changes until you turn it on.
 
@@ -1167,7 +1168,7 @@ Settings, “Features”, “Projects”: turn the switch on. The choice is your
 
 - On the phone, the bottom bar then has six buttons: “Home”, “Due”, “Lists”, “Notes”, “Projects” and “Settings” (five if Home or notes are turned off). With text enlarged by the phone, a label can be cut short (‘Du…’): the name read by the screen reader stays complete.
 - Home gets a “Projects” tile, at the bottom, across the full width: the number of your cards (assigned to you, not done), and the three most urgent (overdue first, then by due date); below, the project, the column and the due date (‘Overdue’ in red). A row opens the card; with no card for you, “No cards for you”. The title opens the “Projects” screen. Like the other tiles, it can be hidden and moved in Settings, “Home”; “Projects” can also become your first screen when Home is turned off.
-- The “Trash” in Settings gets a “Projects” tab ([7.9 Project trash](#projets-corbeilles)).
+- The “Trash” in Settings gets a “Projects” tab ([7.10 Project trash](#projets-corbeilles)).
 
 <a id="projets-creer"></a>
 
@@ -1175,7 +1176,7 @@ Settings, “Features”, “Projects”: turn the switch on. The choice is your
 
 - “Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people's badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.
 - “+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.
-- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.
+- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), “Show in Due” ([7.7 A project's cards in “Due”](#projets-echeances)), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.
 - “Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.
 - “Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.
 
@@ -1196,7 +1197,7 @@ On the phone, a project shows one column at a time. At the top, the column tabs 
 
 ### 7.4 An open card
 
-Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.8 Sharing a project, the four roles](#projets-roles)).
+Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.9 Sharing a project, the four roles](#projets-roles)).
 
 - People: the badges and first names of the assigned people; “+” (or “Assign”) opens the choice, with “Assign to me” at the top. A card can be assigned to the owner, a “Can edit” or a “Contributor”, never to a person with “Read only” (10 at most). A person who leaves the project, is removed from it or becomes “Read only” is removed from their cards.
 - Due, on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.
@@ -1232,9 +1233,21 @@ Below an open card's links, two tabs: “Comments” (with their number) and “
 - Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.
 - Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.
 
+<a id="projets-echeances"></a>
+
+### 7.7 A project's cards in “Due”
+
+A project's ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.
+
+- When it is on, this project's dated cards that are not done appear on the “Due” screen ([5.11 Getting around: Home, Due](#echeances)), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list's name, then the priority (if the project's option is on), the date and time, and the people.
+- Tapping the row opens the card. The box checks “Done” if you can edit the card ([7.9 Sharing a project, the four roles](#projets-roles)): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.
+- “Mine” keeps the cards assigned to you and the ones assigned to no one; “All”, all the dated cards of these projects.
+- The numbers on “Due” (bottom bar, menu on the left), Home's “Due” tile and the morning summary count them too (the summary then says ‘2 items due today · 1 overdue’ and opens “Due”). A project whose notifications you turned off stays on the screen, but is not in the summary.
+- A card's reminder doesn't depend on this choice ([7.6 Projects' new activity and notifications](#projets-notifications)). Projects turned off (Settings, “Features”): no cards in “Due”; the choice is kept for when you turn them back on.
+
 <a id="projets-colonnes"></a>
 
-### 7.7 The project's columns and labels
+### 7.8 The project's columns and labels
 
 “Project settings” (⋮ menu of an open project; owner and “Can edit”):
 
@@ -1247,7 +1260,7 @@ Below an open card's links, two tabs: “Comments” (with their number) and “
 
 <a id="projets-roles"></a>
 
-### 7.8 Sharing a project, the four roles
+### 7.9 Sharing a project, the four roles
 
 In one of your projects, “Share” (the people button at the top, or the ⋮ menu) opens the list of Listo accounts directly: a project has no public link. Check a person, then choose their access under their name, “Edit”, “Contribute” or “View”; uncheck them to remove them; then “OK”. A person you add starts with “View”. It needs the network.
 
@@ -1264,14 +1277,14 @@ In one of your projects, “Share” (the people button at the top, or the ⋮ m
 
 <a id="projets-corbeilles"></a>
 
-### 7.9 Project trash
+### 7.10 Project trash
 
 - Deleted projects: “Trash” in Settings, “Projects” tab (the owner only). Each row says when the project was deleted, how many days it has left, its number of cards and how many people it was shared with. “Restore” brings it back for everyone, with its columns and cards; “Delete for good” and “Empty the trash” ask for confirmation and need the network. After 30 days, it is erased for good.
 - Deleted cards: in each project (⋮ menu, “Deleted cards”), because anyone can delete cards. Each row: title, original column, who deleted it and when. “Restore”: the owner and “Can edit” for all of them, a Contributor for the ones they created; the card comes back at the bottom of its column (or of the first one, if its own no longer exists). “Delete for good” and “Empty the trash”: the owner, with the network. With “Read only”, the list can be seen, without buttons.
 
 <a id="projets-ordinateur"></a>
 
-### 7.10 On a computer
+### 7.11 On a computer
 
 “Projects” is in the menu on the left (after “Notes”), with the number of projects; on the projects' screens, your projects are listed below it (number of cards, new-activity dot), and the bottom button becomes “New project”, or “New card” in a project (N key).
 
@@ -1403,7 +1416,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 - “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
 - A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
-- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.9 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
+- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.10 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.

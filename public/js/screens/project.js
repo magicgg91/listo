@@ -358,6 +358,9 @@ export function cardFace(card, project) {
     h('h3', { class: 'kcard__title' }, h('a', {
       class: 'kcard__link',
       href: pathFor('projectCard', { id: project.id, cardId: card.id }),
+      // Le navigateur ne fait pas glisser le lien lui-même (vers un autre
+      // onglet) : c'est la carte entière qui se déplace (project-drag.js)
+      draggable: 'false',
       onClick: (event) => {
         event.preventDefault();
         navigate('projectCard', { id: project.id, cardId: card.id });

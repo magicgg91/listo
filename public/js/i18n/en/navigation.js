@@ -38,4 +38,14 @@ export default {
   'navigation.nouvelleListe': 'New list',
   'navigation.nouvelleNote': 'New note',
   'navigation.role.admin': 'Admin',
+  // Projects
+  'navigation.projets': 'Projects',
+  'navigation.projets.nombre': { one: 'Projects, {count} project', other: 'Projects, {count} projects' },
+  'navigation.projets.nombre.nouveautes': { one: 'Projects, {count} project, new activity', other: 'Projects, {count} projects, new activity' },
+  'navigation.projets.libelle': 'My projects',
+  'navigation.projets.aucun': 'No projects',
+  'navigation.projet.lu': { one: '{name}, {count} card', other: '{name}, {count} cards' },
+  'navigation.projet.lu.nouveautes': { one: '{name}, {count} card, new activity', other: '{name}, {count} cards, new activity' },
+  'navigation.nouveauProjet': 'New project',
+  'navigation.nouvelleCarte': 'New card',
 };

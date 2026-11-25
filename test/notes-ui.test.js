@@ -104,8 +104,9 @@ test('conflit : rien n\'est écrasé, mon texte reste sur l\'appareil ; les troi
 test('Accueil : tuile Notes entre Listes et Compte (nombre, dernières notes, « Nouvelle note ») ; nombres hors corbeille', () => {
   const home = code('public/js/screens/home.js');
   // Ordre de départ : Notes entre « À offrir » (seulement si j'ai des
-  // réservations) et Compte ; chacun peut le changer (Réglages › Accueil)
-  assert.deepEqual(HOME_TILES, ['deadlines', 'lists', 'gifts', 'notes', 'account']);
+  // réservations) et Compte ; chacun peut le changer (Réglages › Accueil) ;
+  // « Projets » (25 novembre 2026) vient après, quand la fonction est allumée
+  assert.deepEqual(HOME_TILES, ['deadlines', 'lists', 'gifts', 'notes', 'account', 'projects']);
   assert.match(home, /notes: \(\) => notesTile\(pc\)/);
   assert.match(home, /\.slice\(0, pc \? 4 : 2\)/);
   assert.match(home, /const add = addRow\(t\('accueil\.notes\.nouvelle'\), \(\) => openQuickNote\(\)\);/);
@@ -127,13 +128,13 @@ test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) 
   const side = code('public/js/screens/pc-side.js');
   assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
-  assert.match(side, /newList\.hidden = notesUsed && NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
+  assert.match(side, /newList\.hidden = onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
   const app = code('public/js/app.js');
   // Une note (et une nouvelle note) : son propre écran, sur le téléphone comme sur l'ordinateur
   assert.match(app, /case 'note':\s*case 'newNote': \{\s*const id = name === 'note' \? params\.id : null;\s*mount\(\(onLeave\) => renderNote\(id, onLeave\)\);\s*break;\s*\}/);
   assert.doesNotMatch(app, /openId/);
   const shortcuts = code('public/js/shortcuts.js');
-  assert.match(shortcuts, /location\.hash\.startsWith\('#\/notes'\) \? navigate\('newNote'/);
+  assert.match(shortcuts, /location\.hash\.startsWith\('#\/notes'\)\) navigate\('newNote'/);
   // Pas de catégories (abandonnées le 23 novembre 2026)
   for (const file of ['public/js/screens/notes.js', 'public/js/screens/note.js', 'public/js/screens/pc-side.js', 'public/js/store.js', 'server/notes.js']) {
     assert.doesNotMatch(code(file), /categor|catbar|cat-chip/i, file);

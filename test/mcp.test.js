@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { login, createClient, ORIGIN } from './helpers.js';
-import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, METADATA, household, raw, connect, claude, data } from './mcp-helpers.js';
+import { uuid, SECOND, PASSWORD, MARIE_PASSWORD, METADATA, household, raw, connect, claude, data, PROJECT_TOOL_NAMES } from './mcp-helpers.js';
 import { PROTOCOL_VERSIONS, CALLS_PER_MINUTE } from '../server/mcp.js';
 import { DATA_NOTICE } from '../server/mcp-tools.js';
 import { hashToken } from '../server/auth.js';
@@ -133,11 +133,11 @@ test('protocole : JSON invalide, corps trop gros, lot refusé, requête mal form
   assert.equal(evil.headers.get('access-control-allow-origin'), null, 'pas de CORS');
 });
 
-test('tools/list : cinq outils des listes puis huit des notes, annotations (lecture, ajout, cochage, modification), descriptions sans donnée d\'un compte', async (t) => {
+test('tools/list : cinq outils des listes, huit des notes puis dix-sept des projets, annotations (lecture, ajout, cochage, modification), descriptions sans donnée d\'un compte', async (t) => {
   const h = await household(t);
   const { access_token: token } = await connect(h, h.guillaume, PASSWORD);
   const { tools } = (await claude(h, token).rpc('tools/list')).body.result;
-  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items', 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note']);
+  assert.deepEqual(tools.map((tool) => tool.name), ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items', 'list_notes', 'read_note', 'create_note', 'append_to_note', 'replace_note_text', 'set_note_labels', 'create_label', 'delete_note', ...PROJECT_TOOL_NAMES]);
   const hints = Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]));
   for (const name of ['list_lists', 'read_list']) assert.equal(hints[name].readOnlyHint, true, name);
   for (const name of ['add_items', 'set_checked', 'update_items']) {

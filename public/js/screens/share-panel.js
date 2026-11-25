@@ -22,6 +22,17 @@
 // Les autres membres, depuis « Personnes », voient seulement qui partage,
 // avec le droit de chacun, en lecture : ni choix, ni lien public.
 //
+// Projets (docs/cadrage-projets.md, 4.6) : un projet n'a pas de lien
+// public ; « Partager » ouvre donc directement la feuille des personnes,
+// « Partager « DomoPi Articles » », avec la phrase « Avec des personnes de
+// Listo seulement… » et le choix du droit à trois options sous chaque
+// personne cochée (share-picker.js), puis une phrase par droit. « OK »
+// envoie tout d'un coup (PUT /api/projects/:id/members), en ligne
+// seulement. Les autres membres ont « Personnes » : qui, et avec quel rôle
+// (« Propriétaire », « Peut modifier », « Contributeur », « Lecture seule »).
+// Le serveur revérifie tout (server/projects.js setMembers, propriétaire
+// seulement).
+//
 // Droits (inchangés, revérifiés par le serveur à chaque requête) :
 // server/lists.js setMembers (propriétaire seulement, destinataire d'une
 // liste d'envies jamais retiré, toujours « Peut modifier ») et
@@ -35,7 +46,7 @@ import { isWishList } from '../list-types.js';
 import { isNoteOwner } from '../store.js';
 import { noteTitle } from '../notes.js';
 import { linkPart, noteLinkPart, knownLink } from './share.js';
-import { peoplePicker } from './share-picker.js';
+import { peoplePicker, roleLegend } from './share-picker.js';
 import { peopleSummary, linkSummary, membersChanged } from '../sharing.js';
 import { t, compareText } from '../i18n.js';
 
@@ -73,9 +84,45 @@ function noteSubject(noteId) {
   };
 }
 
+// … ou un projet (pas de lien public ; quatre rôles). Ses personnes, dans
+// la forme des listes et des notes : isOwner, et le droit de chacun
+const ACCESS_OF_ROLE = { editor: 'modification', contributor: 'contribution', reader: 'lecture' };
+const ROLE_TEXTS = { owner: 'projets.role.proprietaire', editor: 'projets.role.modifier', contributor: 'projets.role.contributeur', reader: 'projets.role.lecture' };
+function projectSubject(projectId) {
+  const current = () => {
+    const project = app.data.projects.get(projectId);
+    return project && !project.deletedAt ? project : null;
+  };
+  return {
+    current: () => {
+      const project = current();
+      if (!project) return null;
+      const members = (project.members ?? []).map((m) => ({ ...m, isOwner: m.role === 'owner', access: ACCESS_OF_ROLE[m.role] ?? null }));
+      return { ...project, members };
+    },
+    owner: (project) => project.role === 'owner',
+    name: (project) => project.name,
+    beneficiaryId: () => null,
+    note: false,
+    project: true,
+    url: `/api/projects/${encodeURIComponent(projectId)}/members`,
+    // Titre de la feuille et phrase d'introduction (pas de choix « lien »)
+    sheetTitle: (project) => t('partage.projet.titre', { name: project.name }),
+    intro: () => t('partage.projet.intro'),
+    level: (person) => t(ROLE_TEXTS[person.role] ?? ROLE_TEXTS.reader),
+  };
+}
+
 // Point d'entrée : le choix pour le propriétaire, « Personnes » pour les autres
 export const openListShare = (listId) => openShare(listSubject(listId));
 export const openNoteShare = (noteId) => openShare(noteSubject(noteId));
+// Projet : la feuille des personnes directement (propriétaire), sinon « Personnes »
+export function openProjectShare(projectId) {
+  const subject = projectSubject(projectId);
+  const item = subject.current();
+  if (!item) return null;
+  return subject.owner(item) ? openPeopleSheet(subject) : openPeopleView(subject);
+}
 
 function openShare(subject) {
   const item = subject.current();
@@ -140,6 +187,7 @@ function openPeopleSheet(subject, onClosed) {
     members: item.members,
     beneficiaryId: subject.beneficiaryId(item),
     note: subject.note,
+    project: Boolean(subject.project),
   });
   const offlineNote = h('p', { class: 'note', role: 'status', hidden: true }, icon('cloud-off', 'icon--sm'), h('span', {}, t('partage.personnes.horsLigne')));
   const error = errorNote();
@@ -194,11 +242,15 @@ function openPeopleSheet(subject, onClosed) {
   });
   window.addEventListener('online', paintNetwork);
   window.addEventListener('offline', paintNetwork);
+  // Projet (maquette partage-1) : le titre en entier, la phrase dessous,
+  // « Annuler » et « OK » en bas, sous la phrase de chaque droit
+  if (subject.project) ok.className = 'btn btn--primary';
   const sheet = openSheet({
-    title: t('partage.personnes.titre'),
-    sub: subject.name(item),
-    tools: ok,
-    content: [offlineNote, error.note, picker.element],
+    title: subject.sheetTitle ? subject.sheetTitle(item) : t('partage.personnes.titre'),
+    sub: subject.intro ? subject.intro(item) : subject.name(item),
+    tools: subject.project ? null : ok,
+    content: [offlineNote, error.note, picker.element, subject.project ? [roleLegend(), h('div', { class: 'dialog__actions share-actions' },
+      h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => sheet.close() }, t('fenetres.annuler')), ok)] : null],
     scroll: true,
     pc: 'modal',
     size: 'sm',
@@ -252,13 +304,13 @@ function openPeopleView(subject) {
         person.id === app.user.id ? t('partage.personnes.vous', { name: person.displayName }) : person.displayName)),
       person.isOwner ? h('span', { class: 'chip' }, t('partage.personnes.proprietaire'))
         : person.id === beneficiary ? h('span', { class: 'chip' }, t('partage.personnes.destinataire'))
-          : h('span', { class: 'pc-meta' }, levelLabel(person.access)))));
+          : h('span', { class: 'pc-meta' }, subject.level ? subject.level(person) : levelLabel(person.access)))));
   }
   const stop = onDataChange(() => draw());
   const sheet = openSheet({
     title: t('partage.vue.titre'),
     sub: subject.name(start),
-    content: [people, h('p', { class: 'share-choice__hint' }, t('partage.vue.proprietaireSeul'))],
+    content: [people, h('p', { class: 'share-choice__hint' }, subject.project ? t('partage.vue.proprietaireSeul.projet') : t('partage.vue.proprietaireSeul'))],
     scroll: true,
     pc: 'modal',
     size: 'sm',

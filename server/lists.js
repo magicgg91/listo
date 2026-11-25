@@ -32,6 +32,7 @@
 
 import { createNewsService } from './news.js';
 import { createNoteService } from './notes.js';
+import { createProjectService } from './projects.js';
 import { createInbox, inboxHandlers } from './inbox.js';
 import { createHome } from './home.js';
 import { createFeatures } from './features.js';
@@ -315,6 +316,8 @@ export function createListService(ctx) {
   // Notes (server/notes.js) : leurs opérations passent par la même file
   // (POST /api/ops, applied_ops) et leurs données par la même synchronisation
   const notes = ctx.notes ?? (ctx.notes = createNoteService(ctx, { OpError }));
+  // Projets (server/projects.js, migration 43) : de même
+  const projects = ctx.projects ?? (ctx.projects = createProjectService(ctx, { OpError }));
   // Page Notifications (server/inbox.js) : ses opérations hors ligne
   // (« inbox.read », « inbox.delete ») et son empreinte dans la synchronisation
   const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
@@ -1469,6 +1472,8 @@ export function createListService(ctx) {
 
   // Opérations des notes (server/notes.js)
   for (const [type, handler] of Object.entries(notes.handlers)) handlers[type] = handler;
+  // Opérations des projets (server/projects.js)
+  for (const [type, handler] of Object.entries(projects.handlers)) handlers[type] = handler;
   // Opérations de la page Notifications (server/inbox.js) : lire, effacer
   for (const [type, handler] of Object.entries(inboxHandlers(inbox, { OpError, now: nowIso }))) handlers[type] = handler;
 
@@ -1491,7 +1496,9 @@ export function createListService(ctx) {
     return { id, status, error: translate('fr', key, params), code: key, ...(Object.keys(params).length ? { params } : {}) };
   }
 
-  function applyOne(user, op) {
+  // meta.source : 'app' (l'application) ou 'mcp' (un assistant IA), écrit
+  // dans l'historique des cartes
+  function applyOne(user, op, meta) {
     if (!op || typeof op !== 'object' || Array.isArray(op) || !isUuid(op.id)) {
       return refusal(op?.id ?? null, 400, 'ops.identifiantOperationInvalide');
     }
@@ -1507,19 +1514,22 @@ export function createListService(ctx) {
     touched.clear();
     touchedMine.clear();
     notes.clearNotify();
+    projects.clearNotify();
     try {
       result = db.transaction(() => {
         if (!handler) throw new OpError(400, 'ops.operationInconnue');
-        const value = { id: opId, status: 200, ...handler(user, op) };
+        const value = { id: opId, status: 200, ...handler(user, op, meta) };
         saveApplied.run(opId, user.id, JSON.stringify(value), nowIso());
         return value;
       })();
       notifyTouched(user); // écriture réussie : les membres sont prévenus
       notes.flushNotify();
+      projects.flushNotify();
     } catch (err) {
       touched.clear(); // refus ou panne : rien n'a changé, personne n'est prévenu
       touchedMine.clear();
       notes.clearNotify();
+      projects.clearNotify();
       if (!(err instanceof OpError)) throw err; // vraie panne : erreur 500
       // Un refus est lui aussi mémorisé : renvoyée, l'opération donnera le
       // même refus (sans rien modifier). extra : ce que le refus apporte en
@@ -1530,8 +1540,9 @@ export function createListService(ctx) {
     return result;
   }
 
-  function applyOps(user, ops) {
-    return ops.map((op) => applyOne(user, op));
+  function applyOps(user, ops, { source = 'app' } = {}) {
+    const meta = { source: source === 'mcp' ? 'mcp' : 'app' };
+    return ops.map((op) => applyOne(user, op, meta));
   }
 
   // --- Lectures ---
@@ -1640,6 +1651,9 @@ export function createListService(ctx) {
       gifts: reservations.giftsFor(user),
       // Notes que je vois, mes épingles et mes nouveautés (server/notes.js)
       ...notes.syncFor(user, since),
+      // Projets que je vois, leurs cartes et mes réglages (server/projects.js ;
+      // rien quand j'ai coupé les projets)
+      ...projects.syncFor(user, since),
       // Page Notifications : seulement son empreinte (le téléphone relit la
       // page, GET /api/inbox, quand elle a changé)
       inboxStamp: inbox.stamp(user.id),

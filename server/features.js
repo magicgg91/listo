@@ -1,8 +1,8 @@
 // Réglage « Fonctions » d'un compte (Réglages › Fonctions, migration 41) :
 // les fonctions de Listo qu'une personne peut couper pour elle seule (les
-// notes, pour commencer). Le même sur tous les appareils de la personne :
-// envoyé avec /api/me et chaque synchronisation (/api/sync, « features »),
-// modifié par l'opération « account.features » (/api/ops, file d'attente :
+// notes ; les projets depuis le 25 novembre 2026, coupés au départ). Le
+// même sur tous les appareils de la personne : envoyé avec /api/me et
+// chaque synchronisation (/api/sync, « features »), modifié par l'opération « account.features » (/api/ops, file d'attente :
 // hors ligne compris).
 //
 // Chacun ne lit et ne modifie que son propre réglage : le compte vient
@@ -15,12 +15,14 @@
 // Les notifications des notes ne sont pas remises à une personne qui a
 // coupé les notes : server/notify.js relit users.notes_enabled à chaque
 // envoi (allowedNote), pour la page Notifications comme pour le téléphone.
+// Projets coupés : server/projects.js relit users.projects_enabled à chaque
+// opération et à chaque synchronisation (rien d'envoyé, tout refusé).
 
 import { FEATURES, normalizeFeatures, featuresChangeProblem, applyFeaturesChange } from '../public/js/features.js';
 
 // Colonne de la table users de chaque fonction (liste fixe : jamais un nom
 // venu d'une requête)
-const COLUMNS = { notes: 'notes_enabled' };
+const COLUMNS = { notes: 'notes_enabled', projects: 'projects_enabled' };
 
 // Réglage lu dans une ligne de la table users (complet ; valeurs de départ
 // si une colonne manque). Sert aussi à /api/me (server/auth.js,
@@ -43,7 +45,7 @@ export function createFeatures(db) {
   // Réglage d'une personne
   const featuresFor = (userId) => featuresFromRow(read.get(userId));
 
-  // Modifie le réglage de la personne. change : { notes? }, rien d'autre.
+  // Modifie le réglage de la personne. change : { notes?, projects? }, rien d'autre.
   // Renvoie { problem } (nom du texte de refus) si la modification n'est
   // pas valable (rien n'est écrit), sinon { changed }.
   function setFeatures(userId, change) {

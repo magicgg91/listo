@@ -110,61 +110,80 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 </details>
 
 <details>
-<summary>7. Role by role</summary>
+<summary>7. Projects</summary>
+
+- [Go to chapter](#projets)
+- [7.1 Turning projects on](#projets-allumer)
+- [7.2 Create, duplicate, delete a project](#projets-creer)
+- [7.3 Cards](#projets-cartes)
+- [7.4 An open card](#projets-carte)
+- [7.5 Comments, history, following a card](#projets-commentaires)
+- [7.6 Projects' new activity and notifications](#projets-notifications)
+- [7.7 A project's cards in “Due”](#projets-echeances)
+- [7.8 The project's columns and labels](#projets-colonnes)
+- [7.9 Sharing a project, the four roles](#projets-roles)
+- [7.10 Project trash](#projets-corbeilles)
+- [7.11 On a computer](#projets-ordinateur)
+
+</details>
+
+<details>
+<summary>8. Role by role</summary>
 
 - [Go to chapter](#roles)
-- [7.1 Admin](#role-admin)
-- [7.2 Owner: creating a list](#creer)
-- [7.3 Owner: editing the list](#modifier)
-- [7.4 Owner: sharing and choosing permissions](#partager)
-- [7.5 Owner: wish list](#envies)
-- [7.6 Owner: the public link](#lien-public)
-- [7.7 Owner: duplicating, deleting, restoring](#corbeille)
-- [7.8 Contributor (“Can edit”)](#role-contributeur)
-- [7.9 Read only](#role-lecture)
-- [7.10 Public link visitor](#role-visiteur)
-- [7.11 Recipient of a wish list](#role-beneficiaire)
+- [8.1 Admin](#role-admin)
+- [8.2 Owner: creating a list](#creer)
+- [8.3 Owner: editing the list](#modifier)
+- [8.4 Owner: sharing and choosing permissions](#partager)
+- [8.5 Owner: wish list](#envies)
+- [8.6 Owner: the public link](#lien-public)
+- [8.7 Owner: duplicating, deleting, restoring](#corbeille)
+- [8.8 Contributor (“Can edit”)](#role-contributeur)
+- [8.9 Read only](#role-lecture)
+- [8.10 Public link visitor](#role-visiteur)
+- [8.11 Recipient of a wish list](#role-beneficiaire)
 
 </details>
 
 <details>
-<summary>8. AI assistants (MCP)</summary>
+<summary>9. AI assistants (MCP)</summary>
 
 - [Go to chapter](#claude)
-- [8.1 What it's for](#claude-quoi)
-- [8.2 Example sentences](#claude-phrases)
-- [8.3 Two levels of access](#claude-niveaux)
-- [8.4 What an assistant can never do](#claude-jamais)
-- [8.5 Wish lists: no reservations](#claude-envies)
-- [8.6 Notes](#claude-notes)
-- [8.7 Limits](#claude-limites)
-- [8.8 Connect an AI assistant](#claude-connecter)
-- [8.9 See and disconnect an AI assistant](#claude-connexions)
-- [8.10 Be careful: check the website](#assistant-site)
-- [8.11 Be careful: booby-trapped texts](#claude-prudence)
-- [8.12 Troubleshooting](#faq-claude)
-- [8.13 Access turned off at first](#claude-activation)
-- [8.14 Turn on access on the server](#mcp-serveur)
-- [8.15 Rules and log](#mcp-regles)
-- [8.16 First try](#mcp-essai)
+- [9.1 What it's for](#claude-quoi)
+- [9.2 Example sentences](#claude-phrases)
+- [9.3 Two levels of access](#claude-niveaux)
+- [9.4 What an assistant can never do](#claude-jamais)
+- [9.5 Wish lists: no reservations](#claude-envies)
+- [9.6 Notes](#claude-notes)
+- [9.7 Projects](#claude-projets)
+- [9.8 Limits](#claude-limites)
+- [9.9 Connect an AI assistant](#claude-connecter)
+- [9.10 See and disconnect an AI assistant](#claude-connexions)
+- [9.11 Be careful: check the website](#assistant-site)
+- [9.12 Be careful: booby-trapped texts](#claude-prudence)
+- [9.13 Troubleshooting](#faq-claude)
+- [9.14 Access turned off at first](#claude-activation)
+- [9.15 Turn on access on the server](#mcp-serveur)
+- [9.16 Rules and log](#mcp-regles)
+- [9.17 First try](#mcp-essai)
 
 </details>
 
 <details>
-<summary>9. FAQ and troubleshooting</summary>
+<summary>10. FAQ and troubleshooting</summary>
 
 - [Go to chapter](#faq)
-- [9.1 I have no network](#faq-hors-ligne)
-- [9.2 A photo won't upload](#faq-photo)
-- [9.3 A public link doesn't work anymore](#faq-lien)
-- [9.4 Changes arrive a minute late](#faq-retard)
-- [9.5 Blank screen or frozen app](#faq-blanc)
-- [9.6 I can't sign in](#faq-connexion)
-- [9.7 Two-factor authentication: locked out](#faq-double-auth)
-- [9.8 The secret key was lost](#cle-perdue)
-- [9.9 Knowing a new version exists](#version)
-- [9.10 A typo keeps coming back in the suggestions](#faq-suggestion)
-- [9.11 Wish list: a participant has left](#faq-orphelin)
+- [10.1 I have no network](#faq-hors-ligne)
+- [10.2 A photo won't upload](#faq-photo)
+- [10.3 A public link doesn't work anymore](#faq-lien)
+- [10.4 Changes arrive a minute late](#faq-retard)
+- [10.5 Blank screen or frozen app](#faq-blanc)
+- [10.6 I can't sign in](#faq-connexion)
+- [10.7 Two-factor authentication: locked out](#faq-double-auth)
+- [10.8 The secret key was lost](#cle-perdue)
+- [10.9 Knowing a new version exists](#version)
+- [10.10 A typo keeps coming back in the suggestions](#faq-suggestion)
+- [10.11 Wish list: a participant has left](#faq-orphelin)
 
 </details>
 
@@ -191,7 +210,7 @@ Accounts are created by the Admin, the person who manages Listo: there's no publ
 - In French or English, as each person chooses in “My account” ([5.19 Language: French or English](#langue)); this help is available in both languages too.
 - The Notifications page (the bell on Home) keeps what Listo tells you about. Notifications on your phone or computer are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
 - No payments: for a group gift, Listo shows who's chipping in, never how much.
-- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [9.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists and notes you allow is sent to it when you ask it something ([8. AI assistants (MCP)](#claude)).
+- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [10.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists and notes you allow is sent to it when you ask it something ([9. AI assistants (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -226,7 +245,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 ### 2.1 Lists shared live
 
-- A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([7.4 Owner: sharing and choosing permissions](#partager)).
+- A list can be shared with other accounts, each with their own permission: “Can edit” or “Read only” ([8.4 Owner: sharing and choosing permissions](#partager)).
 - Changes reach the other phones within a few seconds. Checked items move to the bottom, crossed out.
 - What's new: Listo shows what the others have added or changed since your last visit ([5.16 What's new](#nouveautes)).
 - Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([6. Notifications](#notifications)).
@@ -237,15 +256,15 @@ What Listo offers today, by topic. Each point links to the section that explains
 ### 2.2 Shopping: aisles and stores
 
 - Items sorted by aisle; Listo remembers the usual aisle of each item, suggests names you've already typed and “Often added” items ([5.1 Add, edit, check, delete](#ajouter)).
-- “Multi” store: a trip to several shops, where each item has its store instead of an aisle ([7.2 Owner: creating a list](#creer)).
+- “Multi” store: a trip to several shops, where each item has its store instead of an aisle ([8.2 Owner: creating a list](#creer)).
 - An aisle is used in every store (“All stores”), or in a single one: each list offers the aisles of its store and those of all stores.
-- Anyone can create a missing store or aisle; the Admin manages them ([7.1 Admin](#role-admin)).
+- Anyone can create a missing store or aisle; the Admin manages them ([8.1 Admin](#role-admin)).
 
 <a id="p-taches"></a>
 
 ### 2.3 Tasks: priority, due date, time, reminder, repeat, assignment
 
-- Priority (low, normal, high) and due date, turned on list by list ([7.3 Owner: editing the list](#modifier)).
+- Priority (low, normal, high) and due date, turned on list by list ([8.3 Owner: editing the list](#modifier)).
 - A time, and a reminder chosen task by task ([5.2 Time and reminder](#heure)).
 - Tasks that repeat: every day, on certain days of the week, every month, every year ([5.3 Repeating tasks](#repeter)).
 - Assign a task to a person on the list, and see “Mine” ([5.4 Assign a task](#attribuer)).
@@ -256,10 +275,10 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 ### 2.4 Wishes: reserving and chipping in
 
-- For yourself, for another account or for someone without an account; link, approximate price, priority and photo ([7.5 Owner: wish list](#envies)).
+- For yourself, for another account or for someone without an account; link, approximate price, priority and photo ([8.5 Owner: wish list](#envies)).
 - The people close to the recipient reserve a wish, possibly several of them together (chipping in) ([5.14 Reserve a wish, chip in](#reserver)).
-- The person the list is for never sees the reservations ([7.11 Recipient of a wish list](#role-beneficiaire)).
-- Through the public link, a visitor without an account can also reserve or chip in ([7.10 Public link visitor](#role-visiteur)).
+- The person the list is for never sees the reservations ([8.11 Recipient of a wish list](#role-beneficiaire)).
+- Through the public link, a visitor without an account can also reserve or chip in ([8.10 Public link visitor](#role-visiteur)).
 
 <a id="p-saisie"></a>
 
@@ -278,15 +297,15 @@ What Listo offers today, by topic. Each point links to the section that explains
 - Simple formatting in notes: headings, bold, italic, underline, highlight, lists, checkboxes and links, with a bar of buttons above the keyboard ([5.12 Notes](#notes)).
 - A note is shared like a list (“Can edit” or “Read only”), or through a read-only public link ([5.13 Sharing a note](#notes-partage)).
 - A quick note from Home, even offline ([5.12 Notes](#notes)).
-- An AI assistant can read your notes and, if you allow it, create notes or add to them ([8.6 Notes](#claude-notes)).
+- An AI assistant can read your notes and, if you allow it, create notes or add to them ([9.6 Notes](#claude-notes)).
 
 <a id="p-securite"></a>
 
 ### 2.7 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
-- Trash: a deleted list can be restored for 30 days ([7.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes”.
-- Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([7.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
+- Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.10 Project trash](#projets-corbeilles)).
+- Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([8.6 Owner: the public link](#lien-public)); a note too ([5.13 Sharing a note](#notes-partage)).
 
 <a id="p-confort"></a>
 
@@ -298,7 +317,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - A Home screen your way: tiles hidden or in another order, or no Home screen at all ([5.11 Getting around: Home, Due](#echeances)).
 - Only the features you use: notes can be turned off for you alone, without deleting anything ([5.11 Getting around: Home, Due](#echeances)).
 - Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
-- An AI assistant, for example Claude, can read your lists and notes and, if you allow it, write to them ([8. AI assistants (MCP)](#claude)).
+- An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([9. AI assistants (MCP)](#claude)).
 
 <a id="installation"></a>
 
@@ -387,11 +406,11 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_LANG` | not set: `fr` | Default language, `fr` or `en`: the one used by an account set to “Automatic” when the browser doesn't give a known language, and for that account's notifications. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_CURRENCY` | not set: `EUR` | Currency for wish prices, as a three-letter code (`EUR`, `USD`, `CHF`, `GBP`…), with two decimals. Only the display changes: prices already entered are not converted. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_COMMIT` | set by the image | Installed version, shown in Settings › “About”. Don't fill it in. |
-| `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([9.9 Knowing a new version exists](#version)). |
+| `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([10.9 Knowing a new version exists](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | not set: on | `off` turns off scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | not set | Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
-| `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([8.14 Turn on access on the server](#mcp-serveur)). Any other value: off. |
-| `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([8.14 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
+| `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([9.15 Turn on access on the server](#mcp-serveur)). Any other value: off. |
+| `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([9.15 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_PUSH` | not set: off | `on` turns on notifications ([6.8 Turning the feature on on the server](#notif-serveur)); keys created in `secrets/vapid.json`. Any other value: off. |
 | `LISTO_OIDC` | not set: off | `on` turns on sign-in with an OpenID Connect identity provider ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)); also requires `LISTO_OIDC_ISSUER` and the `secrets/oidc-client-secret` file. Any other value: off. |
 | `LISTO_OIDC_ISSUER` | not set | Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`). |
@@ -410,7 +429,7 @@ Any reverse proxy will do, as long as it does the following. These requirements 
 3. Let real-time updates through: `/api/events` is an HTTP connection that stays open (Server-Sent Events, type `text/event-stream`), not a WebSocket. The proxy must neither hold back nor cache its responses (Listo sends the `X-Accel-Buffering: no` header, which nginx understands), and its read timeout must be longer than 25 seconds: Listo sends a signal every 25 seconds on this connection. Otherwise, changes arrive late or the connection keeps getting cut.
 4. Accept uploads of at least 2 MB: an item photo is 2 MB at most (Listo refuses anything bigger). Many proxies accept less by default (nginx: 1 MB); allow a little margin, for example 5 MB.
 5. Pass on the visitors' real IP address: Listo trusts a single proxy and reads the last address in the `X-Forwarded-For` header, which the proxy must fill in with the person's address. It's used to block repeated password attempts. With two proxies one behind the other (an online service in front of your proxy, for example), Listo would see the address of the first one, and a block would hit everyone.
-6. Pass on the other request headers unchanged: cookies, `Authorization` (access for AI assistants, [8.14 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
+6. Pass on the other request headers unchanged: cookies, `Authorization` (access for AI assistants, [9.15 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
 7. Add the `Strict-Transport-Security` (HSTS) header, if the proxy allows it: Listo doesn't send it itself.
 
 **Restrict access to Listo's port**
@@ -441,7 +460,7 @@ proxy_read_timeout 3600s;
 - `client_max_body_size 5m;`: without it, photo uploads are refused (nginx accepts 1 MB by default; a Listo photo is 2 MB at most).
 - The other three are for real-time updates: without them, changes only reach the other phone after about a minute.
 - Nginx Proxy Manager already fills in the `X-Forwarded-For` header with the phones' real IP address: nothing to set.
-- Access for AI assistants: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([8.14 Turn on access on the server](#mcp-serveur)).
+- Access for AI assistants: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([9.15 Turn on access on the server](#mcp-serveur)).
 - Firewall: only allow Nginx Proxy Manager's address to reach port 13300 ([3.4 What the proxy must do](#proxy)).
 
 <a id="demarrage"></a>
@@ -471,7 +490,7 @@ Right after the first start, display the key and copy it into your password mana
 cat /opt/listo/secrets/secret.key
 ```
 
-Without it, after a server failure or a restore on another machine, two-factor authentication can no longer be read: everyone has to set it up again ([9.8 The secret key was lost](#cle-perdue)). Lists, photos and passwords don't depend on it. It is never copied into the nightly backups, on purpose: keep it separately, once and for all.
+Without it, after a server failure or a restore on another machine, two-factor authentication can no longer be read: everyone has to set it up again ([10.8 The secret key was lost](#cle-perdue)). Lists, photos and passwords don't depend on it. It is never copied into the nightly backups, on purpose: keep it separately, once and for all.
 
 With notifications turned on (`LISTO_PUSH=on`), keep `secrets/vapid.json` (notification keys) the same way: without it, every device has to subscribe again ([6.8 Turning the feature on on the server](#notif-serveur)).
 
@@ -515,7 +534,7 @@ What Listo expects from the provider (the standard):
 - its description at the issuer's address followed by `/.well-known/openid-configuration`, with its addresses on the same site as the issuer;
 - an ID token signed with RS256, PS256 or ES256 (an unsigned token or one signed with HS256 is refused);
 - the person's username in `preferred_username` and their name in `name` (`profile` scope);
-- to authorize an AI assistant ([8.8 Connect an AI assistant](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize the assistant.
+- to authorize an AI assistant ([9.9 Connect an AI assistant](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize the assistant.
 
 Two-factor authentication: if the token says it was done at the provider (`amr` contains `mfa`), Listo doesn't ask for its own code again. Otherwise, a Listo account that turned on Listo's two-factor authentication is asked for it again.
 
@@ -560,7 +579,7 @@ The very first time Listo is opened, the “Welcome to Listo” screen asks for:
 - “Password”: at least 10 characters, then “Confirm password”;
 - “Setup code”: the one shown in the server logs ([3.6 First start and setup code](#demarrage)).
 
-Then “Create Admin account”. This account then creates all the others. A new installation has no stores or aisles: the Admin creates them in “Administration”, “Shopping” tab ([7.1 Admin](#role-admin)), or everyone creates them as they go, with “New store…” and “New aisle…”.
+Then “Create Admin account”. This account then creates all the others. A new installation has no stores or aisles: the Admin creates them in “Administration”, “Shopping” tab ([8.1 Admin](#role-admin)), or everyone creates them as they go, with “New store…” and “New aisle…”.
 
 <a id="creer-comptes"></a>
 
@@ -597,7 +616,7 @@ The Listo icon appears. When you open it from the home screen, Listo shows full 
 
 ### 4.5 Changing your password
 
-Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([8.9 See and disconnect an AI assistant](#claude-connexions)).
+Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.10 See and disconnect an AI assistant](#claude-connexions)).
 
 <a id="double-auth"></a>
 
@@ -628,13 +647,13 @@ To turn it off: same screen, “Password” and “Code” (from the app, or a r
 
 *For the person who runs the server.*
 
-If there's another Admin, they use “Reset password” ([7.1 Admin](#role-admin)). Otherwise, on the server (replace `identifiant` with the account's username):
+If there's another Admin, they use “Reset password” ([8.1 Admin](#role-admin)). Otherwise, on the server (replace `identifiant` with the account's username):
 
 ```sh
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([8.9 See and disconnect an AI assistant](#claude-connexions)). What the Admin can and can't do: [7.1 Admin](#role-admin).
+A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([9.10 See and disconnect an AI assistant](#claude-connexions)). What the Admin can and can't do: [8.1 Admin](#role-admin).
 
 <a id="sso"></a>
 
@@ -642,7 +661,7 @@ A temporary password is shown once: sign in with it, then choose a new one. If t
 
 If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.
 
-When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([8.8 Connect an AI assistant](#claude-connecter)).
+When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([9.9 Connect an AI assistant](#claude-connecter)).
 
 No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.
 
@@ -669,7 +688,7 @@ The everyday actions, for anyone who can edit the list (the owner or “Can edit
 
 ### 5.2 Time and reminder
 
-In a task list where the due date is turned on ([7.3 Owner: editing the list](#modifier)), a task that has a date can also have a time: “Time (optional)”, in its details. “Clear” removes the time; clearing the date removes the time too.
+In a task list where the due date is turned on ([8.3 Owner: editing the list](#modifier)), a task that has a date can also have a time: “Time (optional)”, in its details. “Clear” removes the time; clearing the date removes the time too.
 
 - On the row, the badge shows the date and the time: “Today · 6:30 PM”, “Tomorrow · 9:00 AM”.
 - A task with a time becomes “Overdue” as soon as the time has passed, without waiting for the next day. Without a time, nothing changes: it becomes overdue the next day.
@@ -689,7 +708,7 @@ Once the time is chosen, “Reminder” offers: “None” (to start with), “A
 
 ### 5.3 Repeating tasks
 
-In a task list where the due date is turned on ([7.3 Owner: editing the list](#modifier)), the details of a task offer “Repeats”: “Never”, “Every day”, “Every week”, “Every 2 weeks”, “Every month” or “Every year”.
+In a task list where the due date is turned on ([8.3 Owner: editing the list](#modifier)), the details of a task offer “Repeats”: “Never”, “Every day”, “Every week”, “Every 2 weeks”, “Every month” or “Every year”.
 
 - Every week, or every 2 weeks: tap the days you want (Mon, Tue, Wed, Thu, Fri, Sat, Sun), at least one. For example, Monday and Thursday to take out the trash.
 - Every month: choose the day (the 5th of every month). The 31st falls on the last day of shorter months.
@@ -708,7 +727,7 @@ To stop: “Repeats”, “Never” (or clear the due date, or delete the task).
 
 ### 5.4 Assign a task
 
-In a task list, the owner turns on “Assignment” in “Options for items” ([7.3 Owner: editing the list](#modifier)). The details of a task then offer “For”: “Nobody”, “Me”, another person who can edit the list, or “Several people…”.
+In a task list, the owner turns on “Assignment” in “Options for items” ([8.3 Owner: editing the list](#modifier)). The details of a task then offer “For”: “Nobody”, “Me”, another person who can edit the list, or “Several people…”.
 
 - On the row, a badge says whose task it is: “Me” (in blue) or the first name.
 - “Sort list”, “By person”: the tasks of “Me” first, then those of each person, then those of “Nobody”.
@@ -804,12 +823,12 @@ Listo opens on “Home” (unless you have turned it off, see below): ‘Hello�
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
 - A tile's title opens the whole screen. An unknown address also leads to Home (Home turned off: to the first screen you chose); a link to a list always opens that list.
 
-On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
+On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off; six, with “Projects”, when you turned projects on: [7.1 Turning projects on](#projets-allumer)); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
-- “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists.
+- “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists. It can also show a project's dated cards, if you chose so for that project ([7.7 A project's cards in “Due”](#projets-echeances)).
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
 - If one of your lists has assignment turned on, “All” or “Mine” chooses what is shown; “Mine” keeps only the tasks assigned to you ([5.4 Assign a task](#attribuer)). The choice is remembered on the device.
-- “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count.
+- “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count. The cards of the projects shown in “Due” count the same way (yours and unassigned ones).
 - The screen works offline, like the lists. On a computer, “Due” is in the menu on the left, with the same numbers at the end of the row (red, then green).
 
 **Choosing your tiles, or turning Home off**
@@ -818,13 +837,13 @@ Settings, “Home” (the first row of “General”) sets up the Home screen fo
 
 - “Tiles shown”: one switch per tile, to hide or show it (“To give” only appears anyway when you have reserved a gift). The “Account” tile is always shown: there is no bottom bar on Home, and it is the tile that leads to Settings.
 - “Reorder”: drag a tile by its handle, or use the up and down arrows; “Done” closes this mode. Home follows this order; on the phone, a tile left alone on its row takes the full width.
-- “Show the Home screen” turned off: Listo opens on the “First screen” you chose (“Due”, “Lists” or “Notes”; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
+- “Show the Home screen” turned off: Listo opens on the “First screen” you chose (“Due”, “Lists”, “Notes”, or “Projects” when they are on; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
 
 **Choosing your features**
 
-Settings, “Features” (just below “Home”) chooses the features you use; for now, notes. A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.
+Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.
 
-- Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more tabs in the “Trash” in Settings (only your deleted lists); on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
+- Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes” tab in the “Trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
 - With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
 - Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.
 
@@ -850,7 +869,7 @@ A note's text can have headings, bold, lists or checkboxes. These are small mark
 - Checkboxes: in the displayed note, tap a checkbox to tick or untick it; the note saves as if you had typed. A ticked checkbox is also crossed out. With “Read only” and on the public page, checkboxes show but can't be ticked.
 - Links: “Insert a link” asks for the “Text to show” (already filled with the chosen text) and the “Address”, then “Insert” writes `[text to show](https://…)`; the note only shows the text, which opens the address. Only http or https addresses are accepted: any other (javascript:, data:…) stays text, never a link. An address typed on its own (https://…) stays clickable.
 - A mark that isn't closed shows as it is (`**bold` stays `**bold`), and a line has only one start mark (heading, bullet, number or checkbox). Nothing else is interpreted, not even HTML: it stays text. A note's title is never formatted.
-- Elsewhere, the text reads without its marks: cards on the “Notes” screen, the Home tile, notifications, the title of a copy; search finds the text with or without its marks. A note's public page shows it formatted. An AI assistant reads and writes the text with its marks ([8.6 Notes](#claude-notes)).
+- Elsewhere, the text reads without its marks: cards on the “Notes” screen, the Home tile, notifications, the title of a copy; search finds the text with or without its marks. A note's public page shows it formatted. An AI assistant reads and writes the text with its marks ([9.6 Notes](#claude-notes)).
 
 **Labels**
 
@@ -860,7 +879,7 @@ A label sorts a note: ‘Recipes’, ‘Holidays’, ‘Home’… Labels are sh
 - Creating a label: type its name in the field of the same window. If that name already exists, Listo offers it instead of creating a second one; otherwise, choose one of eight colors, then “Create”. Creating needs a connection (30 characters at most).
 - A note's labels are the same for everyone who sees it. The owner and “Can edit” change them; “Read only” only sees them. Changing labels is quiet: nothing new and no notification for the others, and the note does not show ‘Edited by Léa’.
 - On the “Notes” screen, a note's labels are at the bottom of its card, to the left of the people's badges. Above the cards, “All” and the labels of your notes act as a filter: tap one to see only its notes (the choice is kept on this device, and combines with the search).
-- Only the Admin renames, recolors or deletes a label (Settings, “Administration”, “Labels” tab: [7.1 Admin](#role-admin)). A note's public page never shows its labels.
+- Only the Admin renames, recolors or deletes a label (Settings, “Administration”, “Labels” tab: [8.1 Admin](#role-admin)). A note's public page never shows its labels.
 
 **Two people at the same time**
 
@@ -878,7 +897,7 @@ Your deleted notes go to the “Trash” in Settings, “Notes” tab (next to t
 
 ### 5.13 Sharing a note
 
-In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens the same choice as for a list ([7.4 Owner: sharing and choosing permissions](#partager)). “With people on Listo”: check a person from the existing accounts, choose “Edit” or “View” at the end of their row, or uncheck them to remove them, then “OK”. “With a temporary link”: the public link (below). You need a network connection.
+In one of your notes, “Share” (at the top of the note, or ⋮ menu) opens the same choice as for a list ([8.4 Owner: sharing and choosing permissions](#partager)). “With people on Listo”: check a person from the existing accounts, choose “Edit” or “View” at the end of their row, or uncheck them to remove them, then “OK”. “With a temporary link”: the public link (below). You need a network connection.
 
 - Owner: everything, including deleting the note, sharing it and managing its public link.
 - “Can edit”: change the title and the text. Never delete the note, share it or manage its public link.
@@ -894,7 +913,7 @@ Notifications ([6.3 What you get, and when](#notif-recevoir)), on the Notificati
 
 **A note's public link**
 
-“Share” (at the top of one of your notes, or ⋮ menu), then “With a temporary link”: the same sheet as for a list ([7.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
+“Share” (at the top of one of your notes, or ⋮ menu), then “With a temporary link”: the same sheet as for a list ([8.6 Owner: the public link](#lien-public)): duration, optional password shown only once, “Stop sharing”. The public page shows the title, the formatted text (clickable links, checkboxes that can't be ticked) and the date it was changed, read only; never the people or the pins. Moved to the trash, the note can no longer be seen through its link; restored, the link works again if it hasn't expired.
 
 <a id="reserver"></a>
 
@@ -917,7 +936,7 @@ In a wish list, any member can reserve a wish, even with “Read only”, except
 
 - On “Lists”, its card (light blue, “Automatic”) comes first among the wish lists, under “All” and “Wishes”, only if you have at least one reservation. ‘3/5’: 3 gifts still to buy out of 5. It is not a list: nobody can add to it, rename it, share it or delete it, and it is not counted among your lists. On Home, the “To give” tile leads there too.
 - Gifts are grouped by person (‘For Zoé’), with their list, ‘Reserved’ or ‘You're chipping in (2 people)’, and their price.
-- Check “Bought” once you have bought the gift: it is crossed out and moves to the bottom of its group. Only you see this box: not the person the gift is for, not the others, not the notifications, not an AI assistant ([8.5 Wish lists: no reservations](#claude-envies)).
+- Check “Bought” once you have bought the gift: it is crossed out and moves to the bottom of its group. Only you see this box: not the person the gift is for, not the others, not the notifications, not an AI assistant ([9.5 Wish lists: no reservations](#claude-envies)).
 - Tap the row (not the box) to open the wish in its list: that is where you cancel a reservation ([5.14 Reserve a wish, chip in](#reserver)).
 - A gift leaves the list by itself when the person has marked it “Received”, when your reservation or participation ends, or when the wish or its list is deleted.
 
@@ -967,7 +986,7 @@ In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), L
 - In the middle, every screen (Home, Due, Lists, a list, “To give”, Notes, Settings, Help…) has the same width. At the top, on the title line: the status pill, the screen's buttons and the search; the line below holds the rest (counter, “All” / “Mine”, sort).
 - On the right, the open list: at the top, on the title line, the status pill, “Share” and the search, always shown; below, the counter ([5.9 Groups, sorting and counter](#tri)), then the add field, above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
 - An item's details open in a panel on the right; “Share”, “New list”, “Edit list” and confirmations in a window in the middle. The rest of the screen is grayed out and inactive; Esc closes. Item details that were changed and not saved ask “Discard changes?” before closing.
-- “Share” (at the top of the list, or P key) opens the same choice as on the phone ([7.4 Owner: sharing and choosing permissions](#partager)): “With people on Listo” or “With a temporary link”. The other members have “People” instead: the list of people and their access, without being able to change anything.
+- “Share” (at the top of the list, or P key) opens the same choice as on the phone ([8.4 Owner: sharing and choosing permissions](#partager)): “With people on Listo” or “With a temporary link”. The other members have “People” instead: the list of people and their access, without being able to change anything.
 - Right-click on a row (or the Menu key, or Shift+F10): Edit, Check, Delete, depending on your access.
 
 **Keyboard shortcuts**
@@ -1005,7 +1024,7 @@ Ctrl+Z does not undo: adding an item (delete the item), a photo, a reservation o
 
 ### 5.21 Subtasks
 
-In a task list, the owner turns on “Subtasks” in “Options for items” ([7.3 Owner: editing the list](#modifier)). A main task can then group subtasks: the list stays short, and each project has its steps.
+In a task list, the owner turns on “Subtasks” in “Options for items” ([8.3 Owner: editing the list](#modifier)). A main task can then group subtasks: the list stays short, and each project has its steps.
 
 - At the end of a main task's row, “1/3” says how many subtasks are done. Tap it: the subtasks appear right below, indented. Tap it again to collapse them. The chevron at the end of the row under the list title (“Expand all”, then “Collapse all”) acts on all the main tasks (and on the groups and the done items). This device remembers what is expanded.
 - To add a subtask: expand the main task and tap “Add a subtask”; or open a task's details and tap “Add a subtask”. Enter adds it and leaves the field ready for the next one; Enter on an empty field closes it.
@@ -1066,12 +1085,12 @@ Four kinds of notifications, each turned on or off in Settings, “Notifications
 
 | Kind | When | Example |
 | --- | --- | --- |
-| “Changes” | Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. | ‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’ |
+| “Changes” | Someone else adds, edits or checks something in a list shared with you, or assigns you a task. Changes made within a minute are grouped into a single notification per list. A shared note changed by someone else: at most one notification per note every quarter of an hour. Projects: new cards, a card assigned to you, comments and changes of a followed card ([7.6 Projects' new activity and notifications](#projets-notifications)). | ‘Léa edited “Shopping”’, ‘Léa assigned you a task in “Home”’, ‘Léa edited the note “Travel”’ |
 | “Wishes” | Someone reserves a wish or chips in for a gift, in a wish list where you can see the reservations. | ‘Marc reserved a wish’ |
-| “Sharing” | You're added to a list or a note, or your access changes. | ‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’ |
-| “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any. And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
+| “Sharing” | You're added to a list, a note or a project, or your access changes. | ‘Léa added you to “Home”’, ‘Léa shared the note “Travel” with you’ |
+| “Due” | Every morning around 8 AM, a single summary of the tasks due today and overdue, if there are any (with the cards of the projects shown in “Due”: [7.7 A project's cards in “Due”](#projets-echeances)). And a task's reminder, at the time chosen in its details ([5.2 Time and reminder](#heure)). | ‘3 tasks due today · 1 overdue’, ‘Reminder: a task today at 2:00 PM’ |
 
-You're never notified about what you do yourself (or about what an AI assistant does for you: [8. AI assistants (MCP)](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
+You're never notified about what you do yourself (or about what an AI assistant does for you: [9. AI assistants (MCP)](#claude)). Unchecking and deleting are not notified. The due-date summary only counts task lists where due dates are turned on, and never tasks assigned to someone else. A task's reminder goes to the person it's assigned to, otherwise to all the members of the list.
 
 <a id="notif-detail"></a>
 
@@ -1134,9 +1153,150 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 - On a computer, the screen says the browser couldn't register with its notification service: the browser must be able to reach this service over the Internet (Google for Chrome and Brave, Microsoft for Edge, Mozilla for Firefox). A DNS filter (AdGuard, Pi-hole…), an ad blocker (uBlock Origin…), a proxy, a firewall or a VPN can prevent it, even if other sites that are already registered keep getting their notifications. To find out what to unblock: open the filter's query log, turn on notifications in Listo, and allow the addresses refused at that moment; they are the ones of the browser's service, for example …googleapis.com or …google.com for Chrome and Brave, …notify.windows.com or …wns.windows.com for Edge, …push.services.mozilla.com for Firefox. With a blocker in the browser, turn it off for a moment on Listo to try. In Brave, you also need to turn on ‘Use Google services for push messaging’ in its settings (Privacy and security), then restart it. The message gives the details provided by the browser.
 - Also check the phone's ‘Do Not Disturb’ or ‘Focus’ mode, the kind of notification in “Notifications you get”, and that the list's notifications aren't turned off. The screen says “Notifications on devices are turned off on this Listo server”: see [6.8 Turning the feature on on the server](#notif-serveur). In any case, the Notifications page keeps what you would have received ([6.1 The Notifications page](#notif-page)).
 
+<a id="projets"></a>
+
+## 7. Projects
+
+A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.9 Sharing a project, the four roles](#projets-roles)); it has no public link.
+
+The feature is off at first, for each account: nothing changes until you turn it on.
+
+<a id="projets-allumer"></a>
+
+### 7.1 Turning projects on
+
+Settings, “Features”, “Projects”: turn the switch on. The choice is yours alone, on all your devices, and also works offline. Turned off again, projects disappear from your screens without deleting anything: your projects and the ones shared with you come back when you turn them on again.
+
+- On the phone, the bottom bar then has six buttons: “Home”, “Due”, “Lists”, “Notes”, “Projects” and “Settings” (five if Home or notes are turned off). With text enlarged by the phone, a label can be cut short (‘Du…’): the name read by the screen reader stays complete.
+- Home gets a “Projects” tile, at the bottom, across the full width: the number of your cards (assigned to you, not done), and the three most urgent (overdue first, then by due date); below, the project, the column and the due date (‘Overdue’ in red). A row opens the card; with no card for you, “No cards for you”. The title opens the “Projects” screen. Like the other tiles, it can be hidden and moved in Settings, “Home”; “Projects” can also become your first screen when Home is turned off.
+- The “Trash” in Settings gets a “Projects” tab ([7.10 Project trash](#projets-corbeilles)).
+
+<a id="projets-creer"></a>
+
+### 7.2 Create, duplicate, delete a project
+
+- “Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people's badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.
+- “+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.
+- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), “Show in Due” ([7.7 A project's cards in “Due”](#projets-echeances)), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.
+- “Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.
+- “Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.
+
+<a id="projets-cartes"></a>
+
+### 7.3 Cards
+
+On the phone, a project shows one column at a time. At the top, the column tabs (colored dot, name, number of cards): the chosen column has its color as background, an outline and a bold name. Tap a tab, or swipe the screen sideways (starting from the middle, not the left edge) to go to the next column. Listo remembers, on this device, the last column opened in each project.
+
+- Add a card: type its title in the bar at the bottom (it names the column), then “+”; the card goes to the bottom of the column, and the field stays ready for the next one. No bar with “Read only”.
+- The magnifier searches the whole project (titles, descriptions, label names and link titles); while searching, the results are sorted by column.
+- “Filter” opens “Filter cards”: check people (“Me”, each member, or “Nobody” for unassigned cards) and labels, then the ‘Show 3 cards’ button; a card remains if it belongs to one of the checked people AND has one of the checked labels. “Clear” removes the filter. The filter is kept for this project, on this device; the number of filters is written on the button, and the tabs count the cards shown.
+- Move a card: a long press lifts it, then drag it to its new place in the column, or drop it on a tab: it goes to the top of that column. Without dragging, the open card has, in its ⋮ menu, “Move to…” (choose the column, then “At the top” or “At the bottom”, then “Move”), “Move up” and “Move down”.
+- Tapping a card opens it ([7.4 An open card](#projets-carte)): its title (tap it to edit it, 200 characters at most), its column (the button in its color opens “Move to…”), its people, due date, labels, description and links. Its ⋮ menu: “Move to…”, “Move up”, “Move down”, “Duplicate” (a copy right below, yours), “Follow” or “Unfollow” ([7.5 Comments, history, following a card](#projets-commentaires)) and “Delete”. Everything saves on its own, offline included.
+- A card your role doesn't let you edit says so (‘Read only’, or ‘You can read it, not edit it.’): it has no “+”, no typing, and no button that wouldn't work.
+
+<a id="projets-carte"></a>
+
+### 7.4 An open card
+
+Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.9 Sharing a project, the four roles](#projets-roles)).
+
+- People: the badges and first names of the assigned people; “+” (or “Assign”) opens the choice, with “Assign to me” at the top. A card can be assigned to the owner, a “Can edit” or a “Contributor”, never to a person with “Read only” (10 at most). A person who leaves the project, is removed from it or becomes “Read only” is removed from their cards.
+- Due, on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.
+- The “Done” box is the only mark of a done card: the due date stays, in green, with a check mark. A done card is no longer overdue and has no reminder; it doesn't change column: put it away yourself (in ‘Published’, for example), or delete it. An overdue card has its date in red, with a triangle.
+- Labels: “Label” (or its “+”) adds or removes the project's labels (10 at most per card).
+- Priority (when the project's “Priority” option is on): “Low”, “Normal” or “High”. Turned off, the priority is kept without being shown.
+- Description: tap the text to write it (“Add a description” when it is empty); the same formatting as notes, with the formatting bar while typing ([5.12 Notes](#notes)). Checkboxes make a task list: ‘2/3’ above (boxes checked out of boxes), and a box is checked with one tap, without typing, even if someone checks another one at the same moment.
+- If someone changed the description while you were writing, nothing is overwritten: the card is “To check” and you choose “Keep mine”, “Take theirs”, “Keep both” (your text is added below theirs, after a ‘Version by Guillaume, Nov 25 9:04 PM’ line) or “Decide later”.
+- Links: a title (optional) and an address starting with http:// or https:// (20 links at most). Tap the title to open it in a new tab; ⋮: “Edit link”, “Copy address”, “Remove”. Listo never opens these addresses itself.
+- A Contributor on someone else's card assigned to them: they can edit everything on it and move it, and “Remove me” from the people; they can neither assign anyone nor delete it. Once removed, they can only read it.
+
+On the card, in the column: its labels, then the due date (green and ‘Done’ when it is done, red with a triangle when overdue), the priority, an icon when it has a description, ‘2/3’ for its boxes, the number of links, the number of comments, the people's badges, and a blue dot when someone else changed it since your last visit. The screen reader reads all this with the title. Below the open card: the comments and the history ([7.5 Comments, history, following a card](#projets-commentaires)).
+
+<a id="projets-commentaires"></a>
+
+### 7.5 Comments, history, following a card
+
+Below an open card's links, two tabs: “Comments” (with their number) and “History”.
+
+- Write: “Write a comment…”, at the bottom of the screen on the phone (below the comments on a computer, Ctrl+Enter sends), then the arrow. The owner, “Can edit” and Contributors comment on every card; “Read only” reads the comments without being able to write any. A comment is plain text (4,000 characters at most); addresses starting with http:// or https:// become links. Offline included.
+- Your comments have “Edit” (‘edited’ is then written next to the date) and “Delete” (with confirmation). The project's owner can delete someone else's comment, never edit it.
+- A comment imported by an AI assistant (from another tool) is in a dashed bubble, with its original author's name and ‘imported by …’: it isn't linked to any Listo account ([9.7 Projects](#claude-projets)).
+- History: what happened to the card, the most recent at the top, with who and when: created, moved (from one column to another), renamed, description changed, box checked, assigned, due date, “Done”, labels, links, comment added (without its text), deleted, restored; ‘(AI assistant)’ when the action comes from an assistant ([9.7 Projects](#claude-projets)). It can only be read with the network; 300 lines at most per card.
+- Follow: you follow a card you created, that is assigned to you or that you commented on; its ⋮ menu (right column on a computer) has “Follow” for the others, and “Unfollow”, kept even if the card is assigned to you later. Following a card means getting its notifications ([7.6 Projects' new activity and notifications](#projets-notifications)).
+
+<a id="projets-notifications"></a>
+
+### 7.6 Projects' new activity and notifications
+
+- New activity: when someone else created, changed, moved or commented on a card since your last visit, a blue dot says so on the project's card (“Projects” screen), on Home's “Projects” tile, in the menu on the left on a computer, and on each card concerned. Opening the project marks it as seen, on all your devices; the cards' dots stay during this visit. Project ⋮ menu: “Hide new activity”.
+- Notifications (Notifications page, and the phone when they are turned on there: [6. Notifications](#notifications)): a project's new cards (‘Léa added 3 cards to DomoPi Articles’, one line per project that updates), a card assigned to you, the comments and changes (moved, due date, “Done”, description) of a card you follow, grouped once per quarter of an hour, a card's reminder (with the “Due” notifications, to the assigned people, otherwise to everyone; never for a done card), and a project being shared.
+- Never what you do yourself. Without “Show details in the notification”, the phone doesn't name the card (‘a card’); a comment's text is never in a notification.
+- Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.
+- Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.
+
+<a id="projets-echeances"></a>
+
+### 7.7 A project's cards in “Due”
+
+A project's ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.
+
+- When it is on, this project's dated cards that are not done appear on the “Due” screen ([5.11 Getting around: Home, Due](#echeances)), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list's name, then the priority (if the project's option is on), the date and time, and the people.
+- Tapping the row opens the card. The box checks “Done” if you can edit the card ([7.9 Sharing a project, the four roles](#projets-roles)): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.
+- “Mine” keeps the cards assigned to you and the ones assigned to no one; “All”, all the dated cards of these projects.
+- The numbers on “Due” (bottom bar, menu on the left), Home's “Due” tile and the morning summary count them too (the summary then says ‘2 items due today · 1 overdue’ and opens “Due”). A project whose notifications you turned off stays on the screen, but is not in the summary.
+- A card's reminder doesn't depend on this choice ([7.6 Projects' new activity and notifications](#projets-notifications)). Projects turned off (Settings, “Features”): no cards in “Due”; the choice is kept for when you turn them back on.
+
+<a id="projets-colonnes"></a>
+
+### 7.8 The project's columns and labels
+
+“Project settings” (⋮ menu of an open project; owner and “Can edit”):
+
+- Project name (the owner only).
+- Columns: one row per column, with its number of cards. Drag the handle on the left to change the order, or tap the pencil: name (40 characters at most, only once in the project), color among eight, position (before or after its neighbors) and “Delete column”. “Add a column” adds one at the end (20 at most).
+- Deleting an empty column: it goes right away. A column with cards: choose to move its cards to another column, or to delete them with it (they go to the project's “Deleted cards”). A deleted column can't be restored; a project always keeps at least one column.
+- Project labels: specific to this project (the notes' labels don't mix in), a given label existing only once (upper case and accents count the same). “New label”; the pencil renames, changes the color or deletes (the label is then removed from its cards). 50 labels at most per project.
+- “Priority” (the owner): a project option, off at first. Turned on, each card has a priority, “Low”, “Normal” or “High” ([7.4 An open card](#projets-carte)); turned off again, priorities are kept without being shown.
+- “Delete project” (the owner).
+
+<a id="projets-roles"></a>
+
+### 7.9 Sharing a project, the four roles
+
+In one of your projects, “Share” (the people button at the top, or the ⋮ menu) opens the list of Listo accounts directly: a project has no public link. Check a person, then choose their access under their name, “Edit”, “Contribute” or “View”; uncheck them to remove them; then “OK”. A person you add starts with “View”. It needs the network.
+
+| Role | What it allows |
+| --- | --- |
+| “Owner” | everything: rename, share, delete the project, the “Priority” option, erase deleted cards for good |
+| “Can edit” (“Edit” access) | the columns, the project's labels and all the cards; never rename, share or delete the project |
+| “Contributor” (“Contribute” access) | create cards; edit and move the ones they created or that are assigned to them; assign people on their own cards, and only remove themselves from someone else's card; delete and restore only the ones they created; never the columns or the project's labels |
+| “Read only” (“View” access) | see the project, its columns and its cards, without changing anything |
+
+- Any member can duplicate the project, see “People” (who, and with which role) and leave the project (⋮ menu, “Leave project”; except the owner, who deletes it). What belongs to each person (hidden new activity, open column, filters) is never shown to the others.
+- Nobody else, not even the Admin, sees a project that isn't shared with them.
+- A changed role takes effect right away; an action made offline then refused by the server (the role changed in the meantime) is reported, and the screen goes back to the server's state.
+
+<a id="projets-corbeilles"></a>
+
+### 7.10 Project trash
+
+- Deleted projects: “Trash” in Settings, “Projects” tab (the owner only). Each row says when the project was deleted, how many days it has left, its number of cards and how many people it was shared with. “Restore” brings it back for everyone, with its columns and cards; “Delete for good” and “Empty the trash” ask for confirmation and need the network. After 30 days, it is erased for good.
+- Deleted cards: in each project (⋮ menu, “Deleted cards”), because anyone can delete cards. Each row: title, original column, who deleted it and when. “Restore”: the owner and “Can edit” for all of them, a Contributor for the ones they created; the card comes back at the bottom of its column (or of the first one, if its own no longer exists). “Delete for good” and “Empty the trash”: the owner, with the network. With “Read only”, the list can be seen, without buttons.
+
+<a id="projets-ordinateur"></a>
+
+### 7.11 On a computer
+
+“Projects” is in the menu on the left (after “Notes”), with the number of projects; on the projects' screens, your projects are listed below it (number of cards, new-activity dot), and the bottom button becomes “New project”, or “New card” in a project (N key).
+
+- An open project takes the full width: at the top, its name, ‘Project · 5 columns · 55 cards’, “Share” (P key) and the search (/ key); below, the filters by person (“All”, “Me”, each member, “Nobody”) and by label (several choices; ‘+ 2’ shows the others; “Clear filters”); then the columns side by side, which scroll sideways.
+- Each column has its ⋮ menu (owner and “Can edit”): rename and change the color, move left or right, “Delete column”. “Add a card”, at the bottom of a column, opens a field (Enter adds, Escape closes); “Add a column” is at the end.
+- Drag and drop: hold a card with the mouse and drop it in the same column or another one; a dashed place shows where it will land. With the keyboard: the arrows go from card to card (up and down in a column, left and right from one column to the next), Enter opens the card, M opens “Move to…”. Right-click on a card: its menu.
+- A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description, its links, then the comments and the history; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions (“Move to…”, “Duplicate”, “Follow” or “Unfollow”, “Delete”). The address is the card's: you can send it or come back to it. Escape or the cross close it.
+
 <a id="roles"></a>
 
-## 7. Role by role
+## 8. Role by role
 
 On each list, everyone has a role: owner, contributor (“Can edit”), read only, or visitor through the public link. The Admin, for their part, manages the accounts. The table below sums up who can do what; the sections that follow go into detail. A shared note has the same permissions, in a simpler form: [5.13 Sharing a note](#notes-partage).
 
@@ -1158,7 +1318,7 @@ Contributor: an account with the “Can edit” permission on the list. Read onl
 
 <a id="role-admin"></a>
 
-### 7.1 Admin
+### 8.1 Admin
 
 Settings, “Administration” (visible only to an Admin).
 
@@ -1185,12 +1345,12 @@ Settings, “Administration” (visible only to an Admin).
 
 - Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).
 - Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([5.12 Notes](#notes)).
-- Other accounts' AI assistant connections: see [8.9 See and disconnect an AI assistant](#claude-connexions).
-- Finding out that a new version exists: [9.9 Knowing a new version exists](#version).
+- Other accounts' AI assistant connections: see [9.10 See and disconnect an AI assistant](#claude-connexions).
+- Finding out that a new version exists: [10.9 Knowing a new version exists](#version).
 
 <a id="creer"></a>
 
-### 7.2 Owner: creating a list
+### 8.2 Owner: creating a list
 
 On “Lists”, tap “+” at the top right (on a computer: “New list”). Give it a title, choose the type of list (“Shopping”, “Tasks” or “Wishes”) and an icon.
 
@@ -1201,47 +1361,47 @@ On “Lists”, tap “+” at the top right (on a computer: “New list”). Gi
 
 <a id="modifier"></a>
 
-### 7.3 Owner: editing the list
+### 8.3 Owner: editing the list
 
 The list's ⋮ menu, “Edit”: the title, the type, the store, the icon. For a task list, “Options for items” turns priority, due date, assignment and subtasks on or off ([5.21 Subtasks](#sous-taches)); for a wish list, “Priority”. “After adding” chooses between “Stay on the list” and “Open item details”. Only the owner edits the list.
 
 - Changing the type doesn't erase anything. A shopping list that becomes a task list hides its aisles, its store and its barcodes; a task list that becomes a shopping list hides priority and due date. Everything comes back if the list goes back to its original type. The form reminds you of this before saving.
 - Changing the store: each item keeps its aisle if it's also used in the new store, otherwise it goes to the aisle with the same name; failing that, it goes to “No aisle”. The “Put items in aisles” window then opens so you can choose an aisle right away (or later, from the item's details).
 - Priority (low, normal, high) is off to start with, for a task list as well as for a wish list. Everyone sees it. Due dates exist only for task lists.
-- Becoming a wish list, on the other hand, is permanent ([7.5 Owner: wish list](#envies)).
+- Becoming a wish list, on the other hand, is permanent ([8.5 Owner: wish list](#envies)).
 
 <a id="partager"></a>
 
-### 7.4 Owner: sharing and choosing permissions
+### 8.4 Owner: sharing and choosing permissions
 
-The list's ⋮ menu (or its card's ⋯ menu), “Share”: a small choice opens, with two rows that tell you where things stand. “With people on Listo” shows who the list is shared with (‘Léa and Zoé’, or “Only you”); “With a temporary link”, the state of the public link (“No link”, ‘Active link · expires in 6 days’…, [7.6 Owner: the public link](#lien-public)).
+The list's ⋮ menu (or its card's ⋯ menu), “Share”: a small choice opens, with two rows that tell you where things stand. “With people on Listo” shows who the list is shared with (‘Léa and Zoé’, or “Only you”); “With a temporary link”, the state of the public link (“No link”, ‘Active link · expires in 6 days’…, [8.6 Owner: the public link](#lien-public)).
 
 “With people on Listo” opens “Share with people”: one row per person. Check a person, then choose their permission at the end of their row; uncheck them to remove them. “OK” saves everything at once and takes you back to the choice; the cross closes without changing anything. You need a network connection.
 
-- “Edit” (“Can edit” permission): the person is a contributor ([7.8 Contributor (“Can edit”)](#role-contributeur)).
-- “View” (“Read only” permission): the person can only read ([7.9 Read only](#role-lecture)). This is the starting choice.
+- “Edit” (“Can edit” permission): the person is a contributor ([8.8 Contributor (“Can edit”)](#role-contributeur)).
+- “View” (“Read only” permission): the person can only read ([8.9 Read only](#role-lecture)). This is the starting choice.
 - You can change the permission or remove a person at any time.
 - The other members see “People” instead of “Share”: who the list is shared with, with which permission, without being able to change anything.
 
 <a id="envies"></a>
 
-### 7.5 Owner: wish list
+### 8.5 Owner: wish list
 
-A wish list gathers gift ideas for one person, the recipient. The people close to them can reserve a wish ([5.14 Reserve a wish, chip in](#reserver)). The surprise is kept: the recipient never sees that a wish is reserved, nor by whom, nor how many people are chipping in, even if they created the list themselves ([7.11 Recipient of a wish list](#role-beneficiaire)).
+A wish list gathers gift ideas for one person, the recipient. The people close to them can reserve a wish ([5.14 Reserve a wish, chip in](#reserver)). The surprise is kept: the recipient never sees that a wish is reserved, nor by whom, nor how many people are chipping in, even if they created the list themselves ([8.11 Recipient of a wish list](#role-beneficiaire)).
 
 - “Who is it for?” is chosen when the list is created: “Me”, another account, or “Someone without an account” (a child, for example). It can't be changed afterwards, and the list can't change type anymore.
 - A shopping or task list can become a wish list: in “Edit list”, choose “Wishes”, then “Who is it for?”. This is permanent, it needs a network connection, and nothing is erased: quantities and due dates are kept without being shown, checked items become “Received”, and an active public link is stopped.
 - If the list is for another account, that person is automatically part of it, with “Can edit”: they add their wishes themselves. In “Share with people”, their row is checked, “Recipient · Can edit”, and can't be unchecked.
 - A wish has a name and, if you want, a link (“Open link”), an “Approximate price” (in the currency set on the server, euros by default), a note and a photo.
 - Checking a wish moves it to “Received”: only the recipient and the owner can do this; reservations are no longer shown there.
-- When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([9.11 Wish list: a participant has left](#faq-orphelin)).
+- When the list is for someone else, its owner sees who's chipping in and can “Remove” a participant or “Release” the wish (for example if someone has left the list). On a list for yourself (“Me”), nobody can remove a participant who has left ([10.11 Wish list: a participant has left](#faq-orphelin)).
 - A wish list can't be copied (“Duplicate” isn't offered in its menu).
 
 <a id="lien-public"></a>
 
-### 7.6 Owner: the public link
+### 8.6 Owner: the public link
 
-“Share” (⋮ menu), then “With a temporary link”, opens “Share with a temporary link”: “Create link” creates an address that you send to a person without an account. They see the list as read only ([7.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Share” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
+“Share” (⋮ menu), then “With a temporary link”, opens “Share with a temporary link”: “Create link” creates an address that you send to a person without an account. They see the list as read only ([8.10 Public link visitor](#role-visiteur)). A note has its own public link too, with the same rules: “Share” in its ⋮ menu ([5.13 Sharing a note](#notes-partage)).
 
 - Duration: 1 hour, 24 hours, 7 days, 30 days, “Custom” or “Unlimited”. “Change duration” changes it.
 - “Protect with a password”: the password is shown only once. Write it down.
@@ -1252,19 +1412,19 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 
 <a id="corbeille"></a>
 
-### 7.7 Owner: duplicating, deleting, restoring
+### 8.7 Owner: duplicating, deleting, restoring
 
 - “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
 - A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
-- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), each with its number when there are any. It opens on “Lists”, unless only notes are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”), it has no tabs: only your lists.
+- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.10 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.
 
 <a id="role-contributeur"></a>
 
-### 7.8 Contributor (“Can edit”)
+### 8.8 Contributor (“Can edit”)
 
 - Can: check, add, edit and delete items and their photo ([5. Everyday use](#quotidien)); create a missing store or aisle; “Duplicate” the list (the copy belongs to them); reserve on a wish list (unless they're its recipient).
 - Can't: change the title, the type or the options, share, create a public link, delete the list.
@@ -1273,7 +1433,7 @@ Leaving: the list's ⋮ menu, “Leave”. The list disappears from your lists; 
 
 <a id="role-lecture"></a>
 
-### 7.9 Read only
+### 8.9 Read only
 
 The list's card and the top of the list show “Read only”.
 
@@ -1282,42 +1442,42 @@ The list's card and the top of the list show “Read only”.
 
 <a id="role-visiteur"></a>
 
-### 7.10 Public link visitor
+### 8.10 Public link visitor
 
 A person without an account opens the link they were sent, without installing anything.
 
 - Can: read the list; tap an item to open its details (quantity, full note, aisle or store, checked or not, barcode, photo to enlarge, priority and due date if they're turned on, and a task's repeat).
 - Wish list: see the wishes (name, note, link, price, priority, photo) and those already received; “Reserve” a free wish, “Chip in” on a gift open to others, cancel their participation. They're asked for their first name once. They only see whether a wish is reserved, never by whom or how many.
 - Can't: edit the list, see who else has reserved.
-- The link may ask for a password, and it stops working when it expires or when the owner stops sharing ([9.3 A public link doesn't work anymore](#faq-lien)).
+- The link may ask for a password, and it stops working when it expires or when the owner stops sharing ([10.3 A public link doesn't work anymore](#faq-lien)).
 
 <a id="role-beneficiaire"></a>
 
-### 7.11 Recipient of a wish list
+### 8.11 Recipient of a wish list
 
 The person the wish list is for adds their wishes (if they have an account) and marks them “Received”.
 
-- Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through an AI assistant ([8.5 Wish lists: no reservations](#claude-envies)), and not on the public link page when signed in.
+- Never sees: that a wish is reserved, by whom, how many people are chipping in, or “Open to others”. Not in the list, not in What's new, not through an AI assistant ([9.5 Wish lists: no reservations](#claude-envies)), and not on the public link page when signed in.
 - Can't reserve their own wishes.
 - Only someone with access to the server (database files, backups) could read a reservation: don't give this access to the recipient if the surprise matters.
 
 <a id="claude"></a>
 
-## 8. AI assistants (MCP)
+## 9. AI assistants (MCP)
 
 <a id="claude-quoi"></a>
 
-### 8.1 What it's for
+### 9.1 What it's for
 
-An AI assistant is a program you chat with, for example Claude (Anthropic's assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral's Le Chat, depending on their versions and plans. Once it's connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking. It can also read your notes and, if you allow it, create notes, add to them or sort them with labels ([8.6 Notes](#claude-notes)).
+An AI assistant is a program you chat with, for example Claude (Anthropic's assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral's Le Chat, depending on their versions and plans. Once it's connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking. It can also read your notes and, if you allow it, create notes, add to them or sort them with labels ([9.6 Notes](#claude-notes)); and work in your projects: read their cards and, if you allow it, create cards, move them, or bring over a board from another tool ([9.7 Projects](#claude-projets)).
 
 The assistant acts with your account and your rights, never more: what it adds shows up under your name, as if you had done it yourself, and it only sees the lists you allowed it to. Nothing happens without your approval, given on Listo's “Authorize an AI assistant” screen.
 
-This access only exists if the person who runs the server has turned it on ([8.13 Access turned off at first](#claude-activation)). Otherwise, the “AI assistants” section doesn't appear in “My account”.
+This access only exists if the person who runs the server has turned it on ([9.14 Access turned off at first](#claude-activation)). Otherwise, the “AI assistants” section doesn't appear in “My account”.
 
 <a id="claude-phrases"></a>
 
-### 8.2 Example sentences
+### 9.2 Example sentences
 
 - Read: ‘What are my Listo lists?’, ‘What's on the Groceries list?’.
 - Add, with an aisle: ‘Add tomatoes to the produce aisle in Groceries.’
@@ -1330,24 +1490,25 @@ This access only exists if the person who runs the server has turned it on ([8.1
 - Rename or add details: ‘Rename milk to 2% milk’, ‘Add the note organic to the apples.’
 - Move to an aisle: ‘Put the milk in the dairy aisle.’
 - Subtasks ([5.21 Subtasks](#sous-taches)): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’
-- Notes ([8.6 Notes](#claude-notes)): ‘What's in my Codes note?’ ‘Add some AA batteries to my To buy soon note.’ ‘Create a Gift ideas note with the Family label.’ ‘Put the Recipes label on the Crumble note.’ ‘Move the Draft note to the trash.’
+- Notes ([9.6 Notes](#claude-notes)): ‘What's in my Codes note?’ ‘Add some AA batteries to my To buy soon note.’ ‘Create a Gift ideas note with the Family label.’ ‘Put the Recipes label on the Crumble note.’ ‘Move the Draft note to the trash.’
+- Projects ([9.7 Projects](#claude-projets)): ‘Which cards are assigned to me in DomoPi Articles?’ ‘Add a Proxmox 9 card in the Ideas column, for Léa, with the Proxmox label.’ ‘Move the 2FAuth card to Review.’ ‘Recreate my Planka Blog board in Listo.’
 
 The assistant first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how it behaves is up to the assistant itself: check in Listo.
 
 <a id="claude-niveaux"></a>
 
-### 8.3 Two levels of access
+### 9.3 Two levels of access
 
 When you connect an assistant, Listo's “Authorize an AI assistant” screen lets you choose:
 
-- “Read only” (selected at first): the assistant can read your lists and your notes, without changing anything.
-- “Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store; and, for notes, create notes, add to them, replace their text, set their labels, create a label or move a note to the trash ([8.6 Notes](#claude-notes)).
+- “Read only” (selected at first): the assistant can read your lists, your notes and your projects, without changing anything.
+- “Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store; and, for notes, create notes, add to them, replace their text, set their labels, create a label or move a note to the trash ([9.6 Notes](#claude-notes)); and, in your projects, depending on your role, create and edit projects, columns, labels, cards and comments ([9.7 Projects](#claude-projets)).
 
-You also choose “All my lists and notes” or “Some lists”. With “Some lists”, the assistant sees no notes at all. Even with “Read and write”, the assistant can only write in lists and notes where you yourself can write: if you have the “Read only” right on a list or a note, it can only read it.
+You also choose “All my lists, notes and projects” or “Some lists”. With “Some lists”, the assistant sees no notes and no projects at all. Even with “Read and write”, the assistant can only write where you yourself can write: if you have the “Read only” right on a list, a note or a project, it can only read it.
 
 <a id="claude-jamais"></a>
 
-### 8.4 What an assistant can never do
+### 9.4 What an assistant can never do
 
 Whatever the level of access, an AI assistant can never:
 
@@ -1355,18 +1516,19 @@ Whatever the level of access, an AI assistant can never:
 - create, rename, delete or share a list;
 - manage people, the public link or the trash;
 - delete a note for good, restore it, share it or manage its public link;
-- rename, recolor or delete a label;
+- rename, recolor or delete a notes label;
+- share a project, change a role, leave a project, restore or delete for good a project or a card, empty a trash;
 - see photos, or who added what.
 
 <a id="claude-envies"></a>
 
-### 8.5 Wish lists: no reservations
+### 9.5 Wish lists: no reservations
 
 An AI assistant never receives any reservation data, for anyone: not who reserved, not even whether a wish is reserved. So the surprise is kept, even if the recipient asks their assistant. In a wish list, checking means ‘received’: only the recipient and the list's owner can do it, with or without an assistant.
 
 <a id="claude-notes"></a>
 
-### 8.6 Notes
+### 9.6 Notes
 
 An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and those shared with you, with your right on each one, never other people's notes or your trash. It acts on your behalf: a note it adds to shows “Edited by” you, and the people of the note are told just as if you had done it yourself ([5.13 Sharing a note](#notes-partage)).
 
@@ -1379,28 +1541,49 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 - Delete: only your notes, and only to the trash, where you can restore it for 30 days ([5.12 Notes](#notes)). It must ask you to confirm first; it can never delete it for good.
 - With the “Read only” right on a note, it can only read it, even with “Read and write”.
 
-Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists and notes” ([8.8 Connect an AI assistant](#claude-connecter)).
+Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+
+<a id="claude-projets"></a>
+
+### 9.7 Projects
+
+An AI assistant sees your projects as you do ([7. Projects](#projets)): yours and those shared with you, with your role in each one ([7.9 Sharing a project, the four roles](#projets-roles)), never other people's projects or your trash. It acts on your behalf: a card it creates is yours, the card's history adds ‘(AI assistant)’, and the people of the project are told just as if you had done it yourself (a single notification per project and per quarter of an hour, even for 50 cards).
+
+- Read: the list of your projects, then a project (people, columns, labels and cards), then a whole card (description, links, comments, and its history if you ask for it).
+- Projects: create one (it's yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab). It must ask you to confirm before moving it to the trash.
+- The project's columns and labels: add them, rename them, change their color or their order, delete them (owner and “Can edit”). A column that has cards can only be deleted by saying where its cards go: the assistant never deletes a card that way.
+- Cards: create them (up to 50 at once, with their column, labels, people, due date and “Done”, description and links), edit them, move them, or put them in the project's “Deleted cards” (can be restored for 30 days). It must ask you to confirm before creating more than 20 cards, and before deleting any.
+- Comments: it writes them on any card, unless you have the “Read only” role.
+- It has exactly your rights: as a “Contributor”, it only edits and moves the cards you created or that are assigned to you, and only deletes the ones you created; with “Read only”, it can only read.
+- Columns, labels and people: it names them (capitals and accents ignored). With an unknown name, nothing is done: it lists the possible names for you. A person with “Read only” is never given a card.
+
+Example: bringing over a Planka board. If your assistant can read your Planka board, ask it: ‘Recreate my Blog board in Listo, with its columns, labels, cards and their comments.’ It creates the project and its columns (with the closest colors), the labels, then the cards in batches, with people recognized by their first name, and finally the comments. A comment brought over keeps its author's name and its original date, and shows ‘imported by’ you: it isn't linked to any Listo account. The assistant never shares the project: you share it yourself afterwards, choosing each person's role ([7.9 Sharing a project, the four roles](#projets-roles)).
+
+Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what's new, notifications, Due dates).
+
+Projects turned off for you in Settings, “Features” ([7.1 Turning projects on](#projets-allumer)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-limites"></a>
 
-### 8.7 Limits
+### 9.8 Limits
 
 - 20 items at most per request.
 - Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited, 100 note writes. Beyond that, the assistant gets a refusal and nothing is written.
 - Notes: 100 at most in one answer (the assistant can search or filter by label); a note holds 20,000 characters at most.
+- Projects: 50 cards, moves or comments at most per request; per connection and per hour, 1,000 cards created, edited, moved or deleted, 300 comments and 5 projects moved to the trash; 200 cards at most in one answer (the assistant reads the rest page by page).
 - 120 calls per minute per connection.
 - 5 active AI assistant connections at most per account; a connection unused for 30 days frees itself up.
 - The assistant doesn't create an item with the same name as one that's already there and not checked: it tells you instead.
 
 <a id="claude-connecter"></a>
 
-### 8.8 Connect an AI assistant
+### 9.9 Connect an AI assistant
 
 The steps are the same for every assistant:
 
 1. In Listo: Settings, “My account”, “AI assistants” section, “AI assistants”. Under “Address to enter in your AI assistant”, tap “Copy address”. It looks like `https://listo.exemple.fr/mcp`.
 2. In your AI assistant: in its settings, add a custom connector (or MCP server) with this address. Menu names change from one assistant to another; see its help.
-3. The assistant opens Listo's “Authorize an AI assistant” screen. Check the website shown under “The response will be sent here” and that you're the one who just started the connection ([8.10 Be careful: check the website](#assistant-site)), choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
+3. The assistant opens Listo's “Authorize an AI assistant” screen. Check the website shown under “The response will be sent here” and that you're the one who just started the connection ([9.11 Be careful: check the website](#assistant-site)), choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
 
 Example with Claude (claude.ai, the mobile app or Claude Desktop): in its settings, add a custom connector with Listo's address, then connect it; on the “Authorize an AI assistant” screen, the website shown is `claude.ai`.
 
@@ -1412,7 +1595,7 @@ If you didn't start the connection yourself, tap “Deny”.
 
 <a id="claude-connexions"></a>
 
-### 8.9 See and disconnect an AI assistant
+### 9.10 See and disconnect an AI assistant
 
 Settings, “My account”, “AI assistants”: every authorized connection appears there, with the app, its right (“Read only” or “Read and write”), its lists, its date and when it was last used.
 
@@ -1423,44 +1606,47 @@ Settings, “My account”, “AI assistants”: every authorized connection app
 
 <a id="assistant-site"></a>
 
-### 8.10 Be careful: check the website
+### 9.11 Be careful: check the website
 
 > **Warning**: Any AI assistant that follows the standard can ask for access to Listo: you are the one who decides, on the “Authorize an AI assistant” screen. It shows in large type the website that will receive the response (for example `claude.ai` for Claude). Check that it really is your assistant's. If you didn't start the connection yourself, deny: someone may be trying to get into your lists.
 
-When the app chooses its own name, it is followed by “name given by the app, not verified”: trust the website, not the name. The person who runs the server can also accept only some websites ([8.14 Turn on access on the server](#mcp-serveur)).
+When the app chooses its own name, it is followed by “name given by the app, not verified”: trust the website, not the name. The person who runs the server can also accept only some websites ([9.15 Turn on access on the server](#mcp-serveur)).
 
 <a id="claude-prudence"></a>
 
-### 8.11 Be careful: booby-trapped texts
+### 9.12 Be careful: booby-trapped texts
 
-> **Warning**: A shared list or note can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents the content of lists and notes to the assistant as data, never as instructions, but only choose “Read and write” if you need it.
+> **Warning**: A shared list, note or project can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents the content of lists, notes and projects to the assistant as data, never as instructions, but only choose “Read and write” if you need it.
 
-Only ask the assistant to change an item or a note yourself; check in Listo what it did.
+Only ask the assistant to change an item, a note or a card yourself; check in Listo what it did.
 
 <a id="faq-claude"></a>
 
-### 8.12 Troubleshooting
+### 9.13 Troubleshooting
 
 - After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.
-- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists and notes” ([8.8 Connect an AI assistant](#claude-connecter)).
-- The assistant doesn't see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([8.6 Notes](#claude-notes)). After the update that added notes, start a new conversation so it knows its new tools.
+- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+- The assistant doesn't see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([9.6 Notes](#claude-notes)). After the update that added notes, start a new conversation so it knows its new tools.
+- The assistant doesn't see your projects: the connection is limited to “Some lists”, or projects are turned off for you in Settings, “Features” ([9.7 Projects](#claude-projets)). After the update that added projects, start a new conversation so it knows its new tools.
+- The assistant says a column, a project label or a person is unknown: nothing was done; it should list the valid names for you. A person with “Read only” in the project can't be given a card.
+- The assistant says it can't edit a card: as a “Contributor”, you (and it) only edit the cards you created or that are assigned to you ([7.9 Sharing a project, the four roles](#projets-roles)).
 - The assistant says a label is unknown: it doesn't exist yet. Nothing was done; ask it to create the label, or choose one of those it lists for you.
 - The assistant says the note has changed: someone edited it since it read it. Nothing was written; it has to read it again before trying again.
 - The assistant refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.
-- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([8.9 See and disconnect an AI assistant](#claude-connexions)).
-- Listo shows a page saying the authorization request is invalid: the assistant's request couldn't be verified (return address refused, incomplete request), or its website isn't accepted by the server ([8.14 Turn on access on the server](#mcp-serveur)). Start the connection again from the assistant; if it happens again, tell the person who runs the server.
+- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([9.10 See and disconnect an AI assistant](#claude-connexions)).
+- Listo shows a page saying the authorization request is invalid: the assistant's request couldn't be verified (return address refused, incomplete request), or its website isn't accepted by the server ([9.15 Turn on access on the server](#mcp-serveur)). Start the connection again from the assistant; if it happens again, tell the person who runs the server.
 - The assistant says an aisle or a store is unknown: it doesn't exist, it's disabled, or this list doesn't offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; the assistant should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
 - The assistant says a store can't be chosen in this list: in a list with a “Single” store, the store is the list's own; you choose the aisle. The aisle, for its part, can't be chosen in a “Multi” list.
 
 <a id="claude-activation"></a>
 
-### 8.13 Access turned off at first
+### 9.14 Access turned off at first
 
-Access for AI assistants is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([8.14 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “AI assistants” section of “My account” doesn't appear.
+Access for AI assistants is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([9.15 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “AI assistants” section of “My account” doesn't appear.
 
 <a id="mcp-serveur"></a>
 
-### 8.14 Turn on access on the server
+### 9.15 Turn on access on the server
 
 *For the person who runs the server.*
 
@@ -1480,7 +1666,7 @@ Proxy: nothing to set up, these addresses go through the same host. They must st
 
 <a id="mcp-regles"></a>
 
-### 8.15 Rules and log
+### 9.16 Rules and log
 
 *For the person who runs the server.*
 
@@ -1488,21 +1674,21 @@ Proxy: nothing to set up, these addresses go through the same host. They must st
 - An AI assistant's token opens nothing but `/mcp`: not the app, not its other addresses.
 - Return addresses: https on a website name (never an IP address), without a username or fragment, or the computer (`localhost`); with `LISTO_MCP_SITES`, only those websites. They are checked at registration and at every authorization. An error is only sent back without a screen to the computer or a known website (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`): otherwise, Listo shows its error page, so it never acts as a relay to another website.
 - Changing your password, or an account that is disabled or whose password is reset (including with the recovery command): all its AI assistant connections are revoked.
-- The caps ([8.7 Limits](#claude-limites)) are counted in memory: they start again from zero when the container restarts.
+- The caps ([9.8 Limits](#claude-limites)) are counted in memory: they start again from zero when the container restarts.
 - The Admin doesn't see other people's connections. In an emergency, they disable the account or reset its password. For everyone at once: remove `LISTO_MCP=on`.
 
 Security log (never a token, a code or the content of a list; the names start with `claude.` for every assistant): `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (one line per tool call, with the number of items, never a typed name), `claude.token_refused`, `claude.origin_refused`.
 
 <a id="mcp-essai"></a>
 
-### 8.16 First try
+### 9.17 First try
 
 *For the person who runs the server.*
 
 After turning it on, once, before any regular use (here with Claude):
 
 1. In a browser: `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` shows a short text with `"resource": "https://listo.exemple.fr/mcp"`.
-2. Connect the assistant ([8.8 Connect an AI assistant](#claude-connecter)).
+2. Connect the assistant ([9.9 Connect an AI assistant](#claude-connecter)).
 3. Ask the assistant ‘What are my Listo lists?’, then ‘What's on the shopping list?’: the answers must match the app. With “Read and write”: ‘Add milk to the shopping list’, ‘Check off the bread’; on a phone open on the list, the changes show up live.
 4. `docker logs listo`: lines `claude.connected` and `claude.tool`, no errors. Report any `claude.origin_refused` or `claude.client_refused` lines.
 5. More than an hour later, ask another question: it must work without a new authorization.
@@ -1510,36 +1696,36 @@ After turning it on, once, before any regular use (here with Claude):
 
 <a id="faq"></a>
 
-## 9. FAQ and troubleshooting
+## 10. FAQ and troubleshooting
 
 <a id="faq-hors-ligne"></a>
 
-### 9.1 I have no network
+### 10.1 I have no network
 
 Keep going: adding, editing and checking work offline, and the badge at the top counts the pending changes ([5.17 Offline and sync](#hors-ligne)). They go out on their own when the network comes back. Sharing, the public link, the trash and reservations wait for the network.
 
 <a id="faq-photo"></a>
 
-### 9.2 A photo won't upload
+### 10.2 A photo won't upload
 
 - With no network, the photo waits for the network to come back.
 - The message “Photo too large.”: the proxy refuses uploads over 2 MB ([3.4 What the proxy must do](#proxy)). With nginx or Nginx Proxy Manager, the line `client_max_body_size 5m;` is missing ([3.5 Example with Nginx Proxy Manager](#npm)).
 
 <a id="faq-lien"></a>
 
-### 9.3 A public link doesn't work anymore
+### 10.3 A public link doesn't work anymore
 
-It has expired, or its owner stopped it, or the list was deleted (restoring a list doesn't bring its link back), or the note is in the trash. Ask the owner for a new link ([7.6 Owner: the public link](#lien-public)). If it asks for a password, it's the one the owner wrote down when creating it.
+It has expired, or its owner stopped it, or the list was deleted (restoring a list doesn't bring its link back), or the note is in the trash. Ask the owner for a new link ([8.6 Owner: the public link](#lien-public)). If it asks for a password, it's the one the owner wrote down when creating it.
 
 <a id="faq-retard"></a>
 
-### 9.4 Changes arrive a minute late
+### 10.4 Changes arrive a minute late
 
 The proxy is holding back the real-time messages ([3.4 What the proxy must do](#proxy)). With nginx or Nginx Proxy Manager, the lines `proxy_buffering off;`, `proxy_cache off;` and `proxy_read_timeout 3600s;` are missing ([3.5 Example with Nginx Proxy Manager](#npm)).
 
 <a id="faq-blanc"></a>
 
-### 9.5 Blank screen or frozen app
+### 10.5 Blank screen or frozen app
 
 - Close Listo and open it again with a network connection: it picks up the latest version. If the “New version available” banner stays on screen, tap “Reload”.
 - Otherwise: Settings, “My account”, “Reset this phone's data” (on a computer: “Reset this device's data”); pending changes are kept.
@@ -1549,7 +1735,7 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 <a id="faq-connexion"></a>
 
-### 9.6 I can't sign in
+### 10.6 I can't sign in
 
 - “Too many attempts”: 5 wrong passwords block signing in for 15 minutes. Wait, or the person who runs the server restarts Listo (`docker compose restart`).
 - “Request rejected: unknown origin.”: the address you typed isn't exactly the one in `LISTO_PUBLIC_URL` (another subdomain, `http` instead of `https`) ([3.2 The folder and docker-compose.yml](#dossier)).
@@ -1558,17 +1744,17 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 <a id="faq-double-auth"></a>
 
-### 9.7 Two-factor authentication: locked out
+### 10.7 Two-factor authentication: locked out
 
 - Phone changed or lost: sign in with one of your “Recovery codes” (“Use a recovery code”), then turn two-factor authentication back on with the new phone ([4.6 Two-factor authentication and recovery codes](#double-auth)).
 - No phone and no recovery codes left: the Admin chooses “Disable two-factor authentication” on your account (“Administration”, “Accounts”, ⋮ button). You sign in with just your password, then turn it back on.
 - It's the Admin who is locked out: see [4.8 Lost Admin account](#secours) (recovery command with `--remove-2fa`).
 - The 6-digit code is always refused: the phone's clock may be wrong; set it to automatic.
-- Nobody can get their codes accepted anymore after a server failure: the secret key may have been lost ([9.8 The secret key was lost](#cle-perdue)).
+- Nobody can get their codes accepted anymore after a server failure: the secret key may have been lost ([10.8 The secret key was lost](#cle-perdue)).
 
 <a id="cle-perdue"></a>
 
-### 9.8 The secret key was lost
+### 10.8 The secret key was lost
 
 *For the person who runs the server.*
 
@@ -1580,7 +1766,7 @@ Without a copy of `secrets/secret.key`, Listo creates a new key at startup. List
 
 <a id="version"></a>
 
-### 9.9 Knowing a new version exists
+### 10.9 Knowing a new version exists
 
 In Settings, the “About” line shows the installed version, or the “Update” badge when a newer version exists. Tap it: on the “About” page, on the version line, the Admin sees the status of the check:
 
@@ -1593,12 +1779,12 @@ It's the server (not the phone) that asks GitHub, at most once an hour, with no 
 
 <a id="faq-suggestion"></a>
 
-### 9.10 A typo keeps coming back in the suggestions
+### 10.10 A typo keeps coming back in the suggestions
 
 The Admin: Settings, “Administration”, “Shopping” tab, “Items”. Search for the name and “Correct”: Listo says how many items and in how many shopping lists it will be corrected, then corrects it everywhere (if it already exists, the two are merged). “Remove” only takes it out of the suggestions, without touching the lists. A corrected or removed name can come back if someone types it again.
 
 <a id="faq-orphelin"></a>
 
-### 9.11 Wish list: a participant has left
+### 10.11 Wish list: a participant has left
 
 A relative reserved, then left the list or had their account disabled: they remain a participant. On a list created for someone else, the owner sees them and can “Remove” them, or “Release” the whole wish. On a ‘for me’ list, nobody can (the owner is the recipient and doesn't see reservations, that's on purpose): the other participants can only open or close the reservation. If the relative was only disabled, the Admin can turn their account back on long enough for them to “Leave”; otherwise, delete the wish and create it again.

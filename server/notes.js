@@ -65,14 +65,23 @@ export const NOTE_SAVES = ['note.create', 'note.update'];
 // serait dépassé (rien n'est compté alors).
 export function createSaveCounter({ limit = 3600, windowMs = 60 * 60 * 1000, now = Date.now } = {}) {
   const counts = new Map();
+  // Compte en cours de la personne (une nouvelle fenêtre si l'ancienne est finie)
+  function current(userId) {
+    const time = now();
+    let entry = counts.get(userId);
+    if (!entry || time - entry.start >= windowMs) {
+      entry = { start: time, count: 0 };
+      counts.set(userId, entry);
+    }
+    return entry;
+  }
   return {
+    // Reste-t-il de la place pour n enregistrements ? (sans rien prendre)
+    can(userId, n = 1) {
+      return current(userId).count + n <= limit;
+    },
     take(userId, n = 1) {
-      const time = now();
-      let entry = counts.get(userId);
-      if (!entry || time - entry.start >= windowMs) {
-        entry = { start: time, count: 0 };
-        counts.set(userId, entry);
-      }
+      const entry = current(userId);
       if (entry.count + n > limit) return false;
       entry.count += n;
       return true;

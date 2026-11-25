@@ -63,8 +63,8 @@ async function household(t, options = {}) {
 
 test('migration 39 : table gift_bought (clé personne + souhait), effacée avec le compte, le souhait, et la participation (déclencheur)', () => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 42);
-  assert.equal(schemaVersion(db), 42);
+  assert.equal(MIGRATIONS.length, 45);
+  assert.equal(schemaVersion(db), 45);
   const columns = db.prepare('PRAGMA table_info(gift_bought)').all().map((c) => c.name);
   assert.deepEqual(columns, ['user_id', 'item_id', 'created_at']);
   db.prepare("INSERT INTO users (id, username, display_name, password_hash) VALUES (1, 'g', 'G', 'x'), (2, 'm', 'M', 'x')").run();
@@ -348,8 +348,9 @@ test('Accueil : tuile « À offrir » (toute la largeur, après Échéances et L
   assert.match(tile, /const recent = recentGifts\(app\.data, app\.user\.id, 3\);/);
   assert.match(tile, /tile\(t\('offrir\.titre'\), 'gift', \(\) => navigate\('gifts'\)/, 'le titre ouvre la page');
   assert.match(tile, /emptyText\(t\('offrir\.tuile\.toutAchete'\)\)/);
-  // Toujours toute la largeur du téléphone (WIDE_TILES, posé par tileLayout : test/home-tiles.test.js)
-  assert.match(read('public/js/home-tiles.js'), /export const WIDE_TILES = \['gifts'\];/);
+  // Toujours toute la largeur du téléphone (WIDE_TILES, posé par tileLayout :
+  // test/home-tiles.test.js ; « Projets » aussi, depuis le 25 novembre 2026)
+  assert.match(read('public/js/home-tiles.js'), /export const WIDE_TILES = \['gifts', 'projects'\];/);
   assert.match(home, /present\.forEach\(\(\[, el\], i\) => el\.classList\.toggle\('tile--wide', layout\[i\]\.wide\)\);/);
   assert.doesNotMatch(tile, /voirTout|Voir tout/);
   assert.equal(Object.keys(fr).some((k) => /voirTout/i.test(k)), false);

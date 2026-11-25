@@ -24,6 +24,23 @@ export default {
   'inbox.droit.note.lecture': 'La note « {note} » est maintenant en lecture seule pour vous',
   'inbox.droit.note.modification.sansTitre': 'Vous pouvez maintenant modifier une note',
   'inbox.droit.note.lecture.sansTitre': 'Une note est maintenant en lecture seule pour vous',
+  // Projets (étape 3) : nom du projet et titre de la carte relus à
+  // l'affichage (jamais gardés) ; sans eux (accès perdu, carte supprimée) :
+  // « sansNom », « sansTitre ». count : nombre de personnes.
+  'inbox.projet.ajoute': { one: '{people} a ajouté {cards} dans « {project} »', other: '{people} ont ajouté {cards} dans « {project} »' },
+  'inbox.projet.ajoute.sansNom': { one: '{people} a ajouté {cards} dans un projet', other: '{people} ont ajouté {cards} dans un projet' },
+  'inbox.projet.attribue': { one: '{people} vous a attribué {cards}', other: '{people} vous ont attribué {cards}' },
+  'inbox.projet.attribue.nom': { one: '{people} vous a attribué « {card} »', other: '{people} vous ont attribué « {card} »' },
+  'inbox.carte.commente': { one: '{people} a commenté « {card} »', other: '{people} ont commenté « {card} »' },
+  'inbox.carte.commentaires': { one: '{people} a ajouté {comments} sur « {card} »', other: '{people} ont ajouté {comments} sur « {card} »' },
+  'inbox.carte.commente.sansTitre': { one: '{people} a commenté une carte', other: '{people} ont commenté une carte' },
+  'inbox.carte.modifie': { one: '{people} a modifié « {card} »', other: '{people} ont modifié « {card} »' },
+  'inbox.carte.modifie.sansTitre': { one: '{people} a modifié une carte', other: '{people} ont modifié une carte' },
+  'inbox.carte.deplace': { one: '{people} a déplacé « {card} » vers « {column} »', other: '{people} ont déplacé « {card} » vers « {column} »' },
+  'inbox.carte.faite': { one: '{people} a marqué « {card} » comme faite', other: '{people} ont marqué « {card} » comme faite' },
+  'inbox.carte.uneCarte': 'Une carte',
+  'inbox.projet.partage': '{actor} a partagé le projet « {project} » avec vous',
+  'inbox.projet.partage.sansNom': '{actor} a partagé un projet avec vous',
 
   // --- Écran ---
   'inbox.titre': 'Notifications',
@@ -54,6 +71,8 @@ export default {
   'inbox.indisponible.liste': 'Cette liste n\'est plus disponible',
   'inbox.indisponible.element': 'Cet élément n\'est plus disponible',
   'inbox.indisponible.note': 'Cette note n\'est plus disponible',
+  'inbox.indisponible.projet': 'Ce projet n\'est plus disponible',
+  'inbox.indisponible.carte': 'Cette carte n\'est plus disponible',
   // Cloche de l'Accueil
   'inbox.cloche': 'Notifications',
   'inbox.cloche.nonLues': { one: 'Notifications, {count} non lue', other: 'Notifications, {count} non lues' },

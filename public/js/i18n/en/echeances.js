@@ -51,4 +51,20 @@ export default {
   // En-tête
   'echeances.titre': 'Due',
   'echeances.pc.sousTitre': 'Open tasks from all your lists',
+
+  // Cartes des projets montrés dans Échéances (étape 4 du cadrage des projets)
+  'echeances.recherche.label.cartes': 'Search tasks and cards',
+  'echeances.vide.miennes.cartes': 'Nothing for you: no open tasks are assigned to you, and no cards are assigned to you or to no one. “All” also shows other people\'s.',
+  'echeances.vide.texte.cartes': 'Open tasks with a due date show up here, from all your lists, with the dated cards of the projects where “Show in Due” is on.',
+  'echeances.groupe.nombre.cartes': { one: '{count} task or card', other: '{count} tasks or cards' },
+  'echeances.recherche.aucun.texte.cartes': 'No task or card matches “{query}”.',
+  'echeances.pc.sousTitre.cartes': 'Open tasks from all your lists and cards from your projects',
+  // Ligne d'une carte : « DomoPi Articles · Relecture »
+  'echeances.carte.dans': '{project} · {column}',
+  'echeances.carte.lu.dans': 'project {project}, column {column}',
+  'echeances.carte.lu.projet': 'project {project}',
+  'echeances.carte.case': '{name}, “Done” box',
+  'echeances.carte.ouvrir': 'Open card {name}, {details}',
+  // Message après la case « Fait » (avec « Annuler »)
+  'echeances.carte.faite': 'Done: {name}',
 };

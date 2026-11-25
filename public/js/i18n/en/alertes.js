@@ -52,6 +52,34 @@ export default {
   'alertes.note.droit.sansTitre': 'Your access to a note has changed',
   'alertes.noteIntrouvable': 'Note not found.',
 
+  // Projects (step 3): new cards, assignment, comments and changes on a
+  // followed card, reminder, sharing. count: number of people; {cards}:
+  // “3 cards”. Without detail, the card is not named; never a comment's text.
+  'alertes.projet.cartes': { one: '{count} card', other: '{count} cards' },
+  'alertes.projet.ajoute': { one: '{people} added {cards} to “{project}”', other: '{people} added {cards} to “{project}”' },
+  'alertes.projet.attribue': { one: '{people} assigned {cards} to you in “{project}”', other: '{people} assigned {cards} to you in “{project}”' },
+  'alertes.projet.attribue.nom': { one: '{people} assigned “{card}” to you in “{project}”', other: '{people} assigned “{card}” to you in “{project}”' },
+  'alertes.carte.commente': { one: '{people} commented on a card in “{project}”', other: '{people} commented on a card in “{project}”' },
+  'alertes.carte.commente.nom': { one: '{people} commented on “{card}”', other: '{people} commented on “{card}”' },
+  'alertes.carte.commentaires': { one: '{count} comment', other: '{count} comments' },
+  'alertes.carte.modifie': { one: '{people} changed a card in “{project}”', other: '{people} changed a card in “{project}”' },
+  'alertes.carte.modifie.nom': { one: '{people} changed “{card}”', other: '{people} changed “{card}”' },
+  'alertes.carte.change.deplacee': 'Moved to “{column}”',
+  'alertes.carte.change.move': 'Moved',
+  'alertes.carte.change.due': 'Due date changed',
+  'alertes.carte.change.done': 'Done',
+  'alertes.carte.change.undone': 'No longer done',
+  'alertes.carte.change.describe': 'Description changed',
+  'alertes.carte.rappel.aujourdhui': 'Reminder: a card today at {time}',
+  'alertes.carte.rappel.demain': 'Reminder: a card tomorrow at {time}',
+  'alertes.carte.rappel.date': 'Reminder: a card on {date} at {time}',
+  'alertes.carte.dansProjet': 'In “{project}”',
+  'alertes.projet.partage': '{actor} shared the project “{project}” with you',
+  'alertes.projet.droit.modifier': 'You can edit every card and column.',
+  'alertes.projet.droit.contribuer': 'You can add cards and comment.',
+  'alertes.projet.droit.lire': 'Read only.',
+  'alertes.projet.allumer': 'Turn on “Projects” in Settings › Features to see it.',
+
   // b) Résumé quotidien des échéances
   'alertes.echeances.aujourdhui': { one: '{count} task due today', other: '{count} tasks due today' },
   // En retard, après « … à faire aujourd'hui »
@@ -62,6 +90,10 @@ export default {
   'alertes.echeances.heure': '{name} ({time})',
   'alertes.dans': 'In “{list}”',
   'alertes.dansListes': 'In {count} lists',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 du cadrage des projets)
+  'alertes.echeances.aujourdhui.cartes': { one: '{count} item due today', other: '{count} items due today' },
+  'alertes.echeances.retard.seules.cartes': { one: '{count} overdue item', other: '{count} overdue items' },
+  'alertes.echeances.dansListesProjets': 'In {count} lists and projects',
 
   // e) Rappel d'une tâche (sans le détail : titre)
   'alertes.rappel.aujourdhui': 'Reminder: a task today at {time}',

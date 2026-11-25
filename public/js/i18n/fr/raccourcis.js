@@ -48,4 +48,12 @@ export default {
   'raccourcis.menu.cocher': 'Cocher',
   'raccourcis.menu.supprimer': 'Supprimer',
   'raccourcis.menu.titre': 'Actions de {name}',
+  // Projet ouvert (docs/cadrage-projets.md, 14)
+  'raccourcis.projet': 'Dans un projet',
+  'raccourcis.projet.nouvelleCarte': 'Nouvelle carte',
+  'raccourcis.projet.partager': 'Partager le projet',
+  'raccourcis.projet.cartes': 'Carte voisine, colonne voisine',
+  'raccourcis.projet.ouvrir': 'Ouvrir la carte',
+  'raccourcis.projet.deplacer': 'Déplacer la carte vers…',
+  'raccourcis.projet.fermer': 'Fermer la carte',
 };

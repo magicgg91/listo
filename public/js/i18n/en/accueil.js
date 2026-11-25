@@ -15,6 +15,10 @@ export default {
   'accueil.echeances.aujourdhui.lu': { one: 'Today, {count} task', other: 'Today, {count} tasks' },
   'accueil.echeances.plusTard.lu': { one: 'Later, {count} task', other: 'Later, {count} tasks' },
   'accueil.echeances.aucune': 'No due tasks',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 des projets)
+  'accueil.echeances.retard.lu.cartes': { one: 'Overdue, {count} task or card', other: 'Overdue, {count} tasks or cards' },
+  'accueil.echeances.aujourdhui.lu.cartes': { one: 'Today, {count} task or card', other: 'Today, {count} tasks or cards' },
+  'accueil.echeances.plusTard.lu.cartes': { one: 'Later, {count} task or card', other: 'Later, {count} tasks or cards' },
 
   // Tuile « Listes »
   'accueil.listes': 'Lists',
@@ -37,4 +41,13 @@ export default {
     one: 'Account requests, {count} pending',
     other: 'Account requests, {count} pending',
   },
+  // “Projects” tile
+  'accueil.projets': 'Projects',
+  'accueil.projets.aucun': 'No projects',
+  'accueil.projets.nouveau': 'New project',
+  'accueil.projets.aucuneCarte': 'No cards for you',
+  'accueil.projets.retard': 'Overdue',
+  'accueil.projets.cartes.lu': { one: 'Projects, {count} card for you', other: 'Projects, {count} cards for you' },
+  'accueil.projets.cartes.lu.nouveautes': { one: 'Projects, {count} card for you, new activity', other: 'Projects, {count} cards for you, new activity' },
+  'accueil.projets.lu.nouveautes': 'Projects, new activity',
 };

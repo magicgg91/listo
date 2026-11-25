@@ -20,6 +20,14 @@
 //   « Toutes / Les miennes » (retenu sur l'appareil) ; « Les miennes » ne
 //   garde que les tâches qui me sont attribuées. Chaque ligne montre aussi
 //   à qui est la tâche (« Moi » ou le prénom).
+// - Cartes des projets (étape 4 du cadrage docs/cadrage-projets.md,
+//   section 8) : celles des projets où j'ai allumé « Afficher dans
+//   Échéances » (menu ⋮ du projet), mêlées aux tâches, avec l'icône des
+//   projets et « Projet · Colonne » à la place de la liste ; toucher la
+//   ligne ouvre la carte ; la case coche « Fait » pour qui peut modifier
+//   cette carte (cardRights ; le serveur revérifie), sinon pas de case.
+//   « Les miennes » : les cartes attribuées à moi et celles de personne.
+//   Aucun projet allumé (ou projets coupés) : l'écran est celui d'avant.
 
 import { h, icon, replace } from '../dom.js';
 import { navigate } from '../router.js';
@@ -33,7 +41,9 @@ import { syncPill, toast, drawWhenIdle, offlineBanner, watchNewDay, watchMinute 
 import { topBell } from '../bell.js';
 import { createSearchRow } from '../search-row.js';
 import { isSearching, highlightParts, resultsLabel } from '../search.js';
-import { computeDeadlines, assigneesFor, scopeOffered, loadDeadlineScope, saveDeadlineScope } from '../deadlines.js';
+import { computeDeadlines, assigneesFor, scopeOffered, loadDeadlineScope, saveDeadlineScope, deadlineProjects } from '../deadlines.js';
+import { myCardRights } from '../project-store.js';
+import * as projectActions from '../project-actions.js';
 import { tabBar } from '../tabbar.js';
 import { keycap } from '../shortcuts.js';
 import * as actions from '../actions.js';
@@ -41,12 +51,17 @@ import { t, lowerFirst } from '../i18n.js';
 
 export function renderDeadlines(onLeave) {
   const pc = isDesktop();
+  // Des cartes de projets peuvent être montrées : quelques textes le disent
+  // (sinon, ceux d'avant, inchangés)
+  const withCards = () => deadlineProjects(app.data).size > 0;
+  const cardsAtStart = withCards();
   const content = h('div', { class: 'scroll scroll--deadlines' });
   const searchMeta = h('p', { class: 'search-meta', role: 'status' });
+  const searchLabel = cardsAtStart ? t('echeances.recherche.label.cartes') : t('echeances.recherche.label');
   const search = createSearchRow(content, {
-    label: t('echeances.recherche.label'),
+    label: searchLabel,
     docked: pc,
-    placeholder: pc ? t('echeances.recherche.placeholder.pc') : t('echeances.recherche.label'),
+    placeholder: pc ? t('echeances.recherche.placeholder.pc') : searchLabel,
     status: pc ? null : searchMeta,
     onChange: () => draw(),
     onOpen: () => tabBar().loupe.sync(),
@@ -167,6 +182,59 @@ export function renderDeadlines(onLeave) {
           h('span', { class: 'item__meta' }, chips))));
   };
 
+  // --- Cartes des projets ---
+
+  // Cocher « Fait » depuis cet écran : même opération que dans la carte
+  // (file d'attente hors ligne comprise) ; « Annuler » la décoche
+  const markDone = (card) => {
+    projectActions.setCardDone(card.id, true);
+    toast(t('echeances.carte.faite', { name: card.title }), {
+      action: t('echeances.annuler'),
+      onAction: () => {
+        const current = app.data.cards.get(card.id);
+        if (current?.done) projectActions.setCardDone(current.id, false);
+      },
+    });
+  };
+  const openCard = (card) => navigate('projectCard', { id: card.projectId, cardId: card.id });
+
+  // Ligne d'une carte : case « Fait » (seulement pour qui peut modifier la
+  // carte ; sinon une place vide, sans case), titre, puis « Projet ·
+  // Colonne », la priorité (option du projet), la date et les personnes
+  const cardRow = ({ card, project, column }, today) => {
+    const place = column ? t('echeances.carte.dans', { project: project.name, column: column.name }) : project.name;
+    const chips = [h('span', { class: 'chip chip--list' }, icon('kanban', 'icon--xs'), place)];
+    const spoken = [column ? t('echeances.carte.lu.dans', { project: project.name, column: column.name }) : t('echeances.carte.lu.projet', { project: project.name })];
+    const priority = project.priorityEnabled ? priorityChip(card.priority) : null;
+    if (priority) {
+      chips.push(h('span', { class: `chip${card.priority === 'high' ? ' chip--accent' : ''}` }, icon(priority.icon, 'icon--xs'), priority.text));
+      spoken.push(priority.label.toLowerCase());
+    }
+    const due = dueChip(card.dueDate, false, today, card.dueTime);
+    const tone = due.state === 'late' ? ' chip--late' : due.state === 'today' ? ' chip--accent' : '';
+    chips.push(h('span', { class: `chip${tone}` }, icon(due.state === 'late' ? 'alert' : 'calendar', 'icon--xs'), due.text));
+    spoken.push(due.label.toLowerCase());
+    // Personnes attribuées : « Moi » d'abord, puis les prénoms
+    const names = new Map((project.members ?? []).map((member) => [member.id, member.displayName]));
+    const who = (card.assigneeIds ?? [])
+      .map((id) => (id === app.user.id ? { name: t('echeances.moi'), me: true } : names.has(id) ? { name: names.get(id), me: false } : null))
+      .filter(Boolean).sort((a, b) => Number(b.me) - Number(a.me));
+    if (who.length) {
+      const text = who.length <= 2 ? who.map((p) => p.name).join(', ') : t('echeances.personnes.plus', { name: who[0].name, more: who.length - 1 });
+      chips.push(h('span', { class: `chip${who.some((p) => p.me) ? ' chip--accent' : ''}` }, icon(who.length > 1 ? 'users' : 'user', 'icon--xs'), text));
+      spoken.push(t('echeances.lu.pour', { names: who.map((p) => (p.me ? t('echeances.lu.moi') : p.name)).join(', ') }));
+    }
+    const canDone = myCardRights(app.data, card, app.user).edit;
+    return h('li', { class: 'item', 'data-card-id': card.id },
+      canDone
+        ? h('button', { class: 'check', type: 'button', 'aria-pressed': 'false', 'aria-label': t('echeances.carte.case', { name: card.title }), onClick: () => markDone(card) }, h('span', { class: 'check__box' }))
+        : h('span', { class: 'check check--static', 'aria-hidden': 'true' }),
+      h('button', { class: 'item__body', type: 'button', 'aria-label': t('echeances.carte.ouvrir', { name: card.title, details: spoken.join(', ') }), onClick: () => openCard(card) },
+        h('span', { class: 'item__text' },
+          h('span', { class: 'item__name' }, nameOf(card.title)),
+          h('span', { class: 'item__meta' }, chips))));
+  };
+
   const draw = () => {
     if (!app.data.loaded) {
       searchMeta.textContent = '';
@@ -178,22 +246,23 @@ export function renderDeadlines(onLeave) {
     paintScope();
     const groups = computeDeadlines(app.data, { today, query: isSearching(query) ? query : '', mine, me: app.user.id });
     const count = groups.reduce((sum, group) => sum + group.entries.length, 0);
+    const cards = withCards();
     searchMeta.textContent = isSearching(query) ? resultsLabel(count) : '';
     searchMeta.classList.toggle('visually-hidden', isSearching(query) && count === 0);
     if (!count) {
-      search.show(isSearching(query) ? noResults(query) : h('div', { class: 'empty' },
+      search.show(isSearching(query) ? noResults(query, cards) : h('div', { class: 'empty' },
         h('div', { class: 'empty__icon' }, icon('calendar', 'icon--lg')),
         h('h2', { class: 'empty__title' }, t('echeances.vide.titre')),
         h('p', { class: 'empty__text' }, mine
-          ? t('echeances.vide.miennes')
-          : t('echeances.vide.texte'))));
+          ? t(cards ? 'echeances.vide.miennes.cartes' : 'echeances.vide.miennes')
+          : t(cards ? 'echeances.vide.texte.cartes' : 'echeances.vide.texte'))));
       return;
     }
     search.show(groups.map((group) => h('section', { 'data-group': group.key },
       h('h2', { class: 'aisle' },
         h('span', { class: 'aisle__name' }, group.title),
-        h('span', { class: 'aisle__count', 'aria-label': t('echeances.groupe.nombre', { count: group.entries.length }) }, String(group.entries.length))),
-      h('ul', {}, group.entries.map((entry) => row(entry, today))))));
+        h('span', { class: 'aisle__count', 'aria-label': t(cards ? 'echeances.groupe.nombre.cartes' : 'echeances.groupe.nombre', { count: group.entries.length }) }, String(group.entries.length))),
+      h('ul', {}, group.entries.map((entry) => (entry.card ? cardRow(entry, today) : row(entry, today)))))));
     showSection();
   };
   // Ouvert depuis une ligne de la tuile « Échéances » de l'Accueil
@@ -214,10 +283,10 @@ export function renderDeadlines(onLeave) {
     });
   };
   // Aucune tâche trouvée : message, et « Effacer la recherche »
-  const noResults = (query) => h('div', { class: 'empty' },
+  const noResults = (query, cards) => h('div', { class: 'empty' },
     h('div', { class: 'empty__icon' }, icon('search', 'icon--lg')),
     h('h2', { class: 'empty__title' }, t('echeances.recherche.aucun')),
-    h('p', { class: 'empty__text' }, t('echeances.recherche.aucun.texte', { query: query.trim() })),
+    h('p', { class: 'empty__text' }, t(cards ? 'echeances.recherche.aucun.texte.cartes' : 'echeances.recherche.aucun.texte', { query: query.trim() })),
     h('button', {
       class: 'btn btn--secondary',
       type: 'button',
@@ -244,7 +313,7 @@ export function renderDeadlines(onLeave) {
       // (comme dans une liste ouverte) ; dessous : « Toutes / Les miennes »
       h('header', { class: 'pc-head' },
         h('div', { class: 'pc-head__main' }, h('h1', { class: 'pc-head__title' }, t('echeances.titre')),
-          h('p', { class: 'pc-head__sub' }, t('echeances.pc.sousTitre'))),
+          h('p', { class: 'pc-head__sub' }, t(cardsAtStart ? 'echeances.pc.sousTitre.cartes' : 'echeances.pc.sousTitre'))),
         syncPill(() => refreshData({ full: true })), topBell(onLeave),
         search.field),
       h('div', { class: 'pc-tools' }, scope, searchMeta),

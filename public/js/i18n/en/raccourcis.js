@@ -48,4 +48,12 @@ export default {
   'raccourcis.menu.cocher': 'Check',
   'raccourcis.menu.supprimer': 'Delete',
   'raccourcis.menu.titre': 'Actions for {name}',
+  // Open project
+  'raccourcis.projet': 'In a project',
+  'raccourcis.projet.nouvelleCarte': 'New card',
+  'raccourcis.projet.partager': 'Share the project',
+  'raccourcis.projet.cartes': 'Next card, next column',
+  'raccourcis.projet.ouvrir': 'Open the card',
+  'raccourcis.projet.deplacer': 'Move the card to…',
+  'raccourcis.projet.fermer': 'Close the card',
 };

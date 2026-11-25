@@ -54,4 +54,7 @@ export default {
   // Corbeille indisponible (hors ligne)
   'corbeille.horsLigne.titre': 'Unavailable offline',
   'corbeille.horsLigne.texte': 'The trash needs a connection. It will show up as soon as you\'re back online.',
+  'corbeille.onglet.projets': 'Projects',
+  'corbeille.onglet.projets.nombre': { one: 'Projects ({count})', other: 'Projects ({count})' },
+  'corbeille.onglet.projets.label': { one: 'Projects, {count} deleted project', other: 'Projects, {count} deleted projects' },
 };

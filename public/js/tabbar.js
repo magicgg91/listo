@@ -2,13 +2,18 @@
 // verre, et la loupe ronde qui flotte juste au-dessus, à droite.
 // Cinq boutons depuis le 23 novembre 2026 (étape 2), dans cet ordre :
 // « Accueil », « Échéances », « Listes », « Notes », « Réglages » (la classe
-// tabbar--N suit le nombre de boutons).
+// tabbar--N suit le nombre de boutons). Six quand la personne a allumé
+// « Projets » (Réglages › Fonctions ; docs/cadrage-projets.md, 3.2,
+// proposition A retenue le 25 novembre 2026) : « Projets » entre « Notes »
+// et « Réglages » (tabbar--6, libellés en 11 px ; le nom lu reste entier si
+// un texte agrandi coupe le libellé).
 //
 // - Il existe sur Échéances, Listes (et « À offrir », avec « Listes »
-//   marqué), Notes et Réglages ; pas sur l'Accueil (décision du
+//   marqué), Notes, Projets et Réglages ; pas sur l'Accueil (décision du
 //   propriétaire, de nouveau le 23 novembre 2026, après essai : ses tuiles
 //   mènent déjà partout), pas dans une liste (le bas est pris par le champ
-//   d'ajout), et pas sur ordinateur (menu de gauche).
+//   d'ajout ; ni dans un projet ouvert ni dans une carte), et pas sur
+//   ordinateur (menu de gauche).
 // - Il prend toute la largeur et garde la même place : les boutons ne
 //   bougent jamais d'un écran à l'autre. Sur « Réglages », il n'y a rien à
 //   chercher : la loupe n'est pas affichée.
@@ -28,7 +33,9 @@
 // (« Échéances », « Listes », « Notes », « Réglages », tabbar--4), sans
 // « Accueil ». Notes coupées (Réglages › Fonctions, features.js) : sans
 // « Notes » (quatre boutons, ou trois si l'Accueil est aussi coupé ; la
-// pastille de base de listo.css fait un tiers). Le bandeau suit ces
+// pastille de base de listo.css fait un tiers). Projets coupés (c'est le
+// départ) : pas de bouton « Projets » ; notes coupées et projets allumés :
+// « Projets » prend la place de « Notes » (cinq). Le bandeau suit ces
 // réglages dès qu'ils changent (sur cet appareil ou sur un autre), sans
 // être refait.
 
@@ -47,6 +54,7 @@ export const TABS = [
   ['deadlines', 'calendar', () => t('navigation.echeances')],
   ['lists', 'tasks', () => t('navigation.listes')],
   ['notes', 'note', () => t('navigation.notes')],
+  ['projects', 'kanban', () => t('navigation.projets')],
   ['settings', 'sliders', () => t('navigation.reglages')],
 ];
 

@@ -16,6 +16,10 @@ export default {
   'accueil.echeances.aujourdhui.lu': { one: 'Aujourd\'hui, {count} tâche', other: 'Aujourd\'hui, {count} tâches' },
   'accueil.echeances.plusTard.lu': { one: 'Plus tard, {count} tâche', other: 'Plus tard, {count} tâches' },
   'accueil.echeances.aucune': 'Aucune échéance',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 des projets)
+  'accueil.echeances.retard.lu.cartes': { one: 'En retard, {count} tâche ou carte', other: 'En retard, {count} tâches ou cartes' },
+  'accueil.echeances.aujourdhui.lu.cartes': { one: 'Aujourd\'hui, {count} tâche ou carte', other: 'Aujourd\'hui, {count} tâches ou cartes' },
+  'accueil.echeances.plusTard.lu.cartes': { one: 'Plus tard, {count} tâche ou carte', other: 'Plus tard, {count} tâches ou cartes' },
 
   // Tuile « Listes » : une ligne par type (lue « Courses, 3 listes »,
   // textes listes.type.lu)
@@ -39,4 +43,13 @@ export default {
     one: 'Demandes de compte, {count} en attente',
     other: 'Demandes de compte, {count} en attente',
   },
+  // Tuile « Projets » (fonction allumée ; docs/cadrage-projets.md, 3.3)
+  'accueil.projets': 'Projets',
+  'accueil.projets.aucun': 'Aucun projet',
+  'accueil.projets.nouveau': 'Nouveau projet',
+  'accueil.projets.aucuneCarte': 'Aucune carte pour vous',
+  'accueil.projets.retard': 'En retard',
+  'accueil.projets.cartes.lu': { one: 'Projets, {count} carte pour vous', other: 'Projets, {count} cartes pour vous' },
+  'accueil.projets.cartes.lu.nouveautes': { one: 'Projets, {count} carte pour vous, nouveautés', other: 'Projets, {count} cartes pour vous, nouveautés' },
+  'accueil.projets.lu.nouveautes': 'Projets, nouveautés',
 };

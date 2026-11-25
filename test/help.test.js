@@ -104,7 +104,8 @@ test('numérotation calculée : une entrée par chapitre et par section, numéro
   assert.equal(new Set(ids).size, ids.length, 'identifiants uniques');
   for (const id of ids) assert.match(id, /^[a-z][a-z0-9-]*$/, `ancre valable : ${id}`);
   // Ordre demandé : présentation, possibilités et Claude au début ; serveur à la fin
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
+  // (« Projets », 25 novembre 2026 : après « Notifications »)
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'projets', 'roles', 'claude', 'faq']);
   assert.equal(GUIDE.find((c) => c.id === 'claude').title, 'Assistants IA (MCP)');
   assert.deepEqual(entries.filter((e) => e.chapter === 'roles').map((e) => e.id).filter((id) => id.startsWith('role-')),
     ['role-admin', 'role-contributeur', 'role-lecture', 'role-visiteur', 'role-beneficiaire']);
@@ -363,7 +364,7 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   const clear = screen.findAll((n) => n.attrs['aria-label'] === 'Effacer la recherche')[0];
   assert.equal(clear.hidden, true);
   const chapters = () => toggles(screen).map((b) => b.textContent);
-  assert.equal(chapters().length, 9);
+  assert.equal(chapters().length, 10);
   // Taper : seuls les chapitres trouvés, dépliés ; texte surligné ; compteur
   input.value = 'SAUVEGARDÉ';
   input.fire('input');
@@ -386,7 +387,7 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   input.fire('keydown', { key: 'Escape' });
   assert.equal(input.value, '');
   assert.equal(status.textContent, '');
-  assert.equal(chapters().length, 9);
+  assert.equal(chapters().length, 10);
   assert.equal(screen.findAll((n) => n.tag === 'mark').length, 0);
   assert.equal(toggles(screen)[0].getAttribute('aria-expanded'), 'true');
   // La croix aussi
@@ -394,7 +395,7 @@ test('recherche (écran) : champ du kit, résultats surlignés en DOM, « N rés
   input.fire('input');
   assert.ok(chapters().length < 8);
   clear.click();
-  assert.equal(chapters().length, 9);
+  assert.equal(chapters().length, 10);
   assert.equal(clear.hidden, true);
   // Jamais de HTML : le surlignage est posé en DOM
   assert.doesNotMatch(code('public/js/screens/help.js'), /innerHTML|insertAdjacentHTML/);

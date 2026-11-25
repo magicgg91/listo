@@ -117,9 +117,13 @@ test('raccourcis : aucun pendant la saisie, désactivables (gardé sur l\'appare
   assert.ok(keys.indexOf("event.key === 'Enter'") < keys.indexOf('if (typing || mod || event.altKey) return;'));
   // Seulement sur ordinateur
   assert.match(keys, /if \(event\.defaultPrevented \|\| !onPc\(\)\) return;/);
-  // Les 17 raccourcis de la maquette, ni plus ni moins (fenêtre « ? »)
+  // Les 17 raccourcis de la maquette, ni plus ni moins (fenêtre « ? »),
+  // et les 6 d'un projet ouvert
   const listed = [...keys.matchAll(/\[\[((?:(?:'[^']*'|t\('[^']+'\))(?:, )?)+)\], t\(/g)].map((m) => m[1]);
-  assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "t('raccourcis.touche.echap')", "'[', ']'", "t('raccourcis.touche.ctrl'), 'Z'", "t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')", "'P'", "'A'", "'↓', '↑'", "t('raccourcis.touche.espace')", "t('raccourcis.touche.entree')", "'E'", "t('raccourcis.touche.suppr')", "t('raccourcis.touche.menu')", "'S'"]);
+  assert.deepEqual(listed, ["'?'", "'N'", "'/'", "','", "t('raccourcis.touche.echap')", "'[', ']'", "t('raccourcis.touche.ctrl'), 'Z'", "t('raccourcis.touche.ctrl'), t('raccourcis.touche.entree')", "'P'", "'A'", "'↓', '↑'", "t('raccourcis.touche.espace')", "t('raccourcis.touche.entree')", "'E'", "t('raccourcis.touche.suppr')", "t('raccourcis.touche.menu')", "'N'", "'P'", "'↓', '↑', '←', '→'", "t('raccourcis.touche.entree')", "'M'", "t('raccourcis.touche.echap')", "'S'"]);
+  // (puis le groupe « Dans un projet », seulement quand les projets sont
+  // allumés : N, P, flèches, Entrée, M, Échap ; 25 novembre 2026)
+  assert.match(keys, /projectsShown\(\) \? \{ group: t\('raccourcis\.projet'\)/);
   assert.equal(fr['raccourcis.touche.echap'], 'Échap');
   assert.equal(fr['raccourcis.touche.ctrl'], 'Ctrl');
   assert.equal(fr['raccourcis.touche.entree'], 'Entrée');

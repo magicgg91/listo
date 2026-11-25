@@ -29,9 +29,13 @@ import { t } from '../i18n.js';
 // jamais la couleur seule) et s'annonce par aria-checked. onChange(valeur)
 // reçoit 'modification' ou 'lecture'. label : le nom lu par les lecteurs
 // d'écran (« Droit de Léa sur la liste »).
-export function accessChoice(label, value, onChange) {
+// three : les trois droits d'un projet (« Modifier | Contribuer | Lire »).
+export function accessChoice(label, value, onChange, { three = false } = {}) {
   let current = value;
-  const options = [['modification', t('partage.droit.modifier')], ['lecture', t('partage.droit.lire')]].map(([choice, text]) => {
+  const choices = three
+    ? [['modification', t('partage.droit.modifier')], ['contribution', t('partage.droit.contribuer')], ['lecture', t('partage.droit.lire')]]
+    : [['modification', t('partage.droit.modifier')], ['lecture', t('partage.droit.lire')]];
+  const options = choices.map(([choice, text]) => {
     const option = h('button', { class: 'segmented__opt', type: 'button', role: 'radio', onClick: () => {
       current = choice;
       paint();
@@ -44,15 +48,33 @@ export function accessChoice(label, value, onChange) {
     for (const option of options) option.setAttribute('aria-checked', String(option.dataset.value === current));
   };
   paint();
-  return h('div', { class: 'segmented share__access', role: 'radiogroup', 'aria-label': label }, options);
+  return h('div', { class: `segmented share__access${three ? ' share__access--3' : ''}`, role: 'radiogroup', 'aria-label': label }, options);
 }
+
+// Une phrase par droit d'un projet, sous la carte des personnes
+export function roleLegend() {
+  return h('ul', { class: 'share-roles' },
+    [['partage.droit.modifier', 'partage.legende.modifier'], ['partage.droit.contribuer', 'partage.legende.contribuer'], ['partage.droit.lire', 'partage.legende.lire']]
+      .map(([name, text]) => h('li', {}, h('strong', {}, t(name)), t('partage.legende.separateur'), t(text))));
+}
+
+// Projets (décision du 25 novembre 2026, maquette design/projets
+// partage-1) : quatre rôles, donc trois droits à donner, « Modifier |
+// Contribuer | Lire » (droits 'modification', 'contribution', 'lecture').
+// Trois choix ne tiennent pas au bout de la ligne sur 390 px avec le
+// prénom : la ligne garde la case, la pastille et le prénom, et le choix
+// passe dessous, sur toute la largeur (.share__person--3,
+// .share__access--3), seulement pour une personne cochée. Sous la carte,
+// une phrase par droit (.share-roles, roleLegend). Les listes et les notes
+// gardent leurs deux droits : rien ne change pour elles.
 
 // Le choix lui-même. me : le compte connecté (propriétaire) ; users : les
 // comptes actifs (copie locale) ; members : les personnes actuelles
 // (propriétaire compris) ; beneficiaryId : destinataire d'une liste
 // d'envies, ou null ; note : vrai pour une note (« Droit de Léa sur la
-// note »). Renvoie { element, payload() }.
-export function peoplePicker({ me, users, members, beneficiaryId = null, note = false }) {
+// note ») ; project : vrai pour un projet (trois droits, « Droit de Léa sur
+// le projet »). Renvoie { element, payload() }.
+export function peoplePicker({ me, users, members, beneficiaryId = null, note = false, project = false }) {
   const current = (members ?? []).filter((m) => !m.isOwner);
   const guests = new Set(current.map((m) => m.id));
   const rights = new Map(current.map((m) => [m.id, m.access ?? 'modification']));
@@ -63,7 +85,7 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
   people.sort((a, b) => compareNames(a.displayName, b.displayName));
   // Destinataire membre : verrouillé (coché, sans choix)
   const lockedBeneficiary = beneficiaryId !== null && guests.has(beneficiaryId);
-  const rightLabel = (name) => (note ? t('partage.droit.choix.note', { name }) : t('partage.droit.choix', { name }));
+  const rightLabel = (name) => (project ? t('partage.droit.choix.projet', { name }) : note ? t('partage.droit.choix.note', { name }) : t('partage.droit.choix', { name }));
 
   // Ligne verrouillée (moi, le destinataire) : cochée, sans choix
   const lockedRow = (person, title, sub) => h('div', { class: 'share__person' },
@@ -84,15 +106,17 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
       h('span', { class: 'grow share__name' }, h('span', { class: 'row__title' }, person.displayName),
         sub ? h('span', { class: 'row__sub' }, sub) : null));
     // Le destinataire qui a quitté la liste : pas de choix (« Peut modifier »)
-    const access = beneficiary ? null : accessChoice(rightLabel(person.displayName), rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value));
+    const access = beneficiary ? null : accessChoice(rightLabel(person.displayName), rights.get(person.id) ?? 'lecture', (value) => rights.set(person.id, value), { three: project });
     // Mise à jour sur place (la case garde le focus) ; personne non cochée :
-    // son droit est caché (place réservée, hors lecteurs d'écran)
+    // son droit est caché (place réservée, hors lecteurs d'écran ; projet :
+    // le choix sous la ligne n'est montré que pour une personne cochée)
     const paintRow = () => {
       const on = guests.has(person.id);
       tick.setAttribute('aria-checked', String(on));
       box.classList.toggle('is-on', on);
       replace(box, on ? icon('check') : null);
       access?.classList.toggle('is-off', !on);
+      if (project && access) access.hidden = !on;
     };
     tick.addEventListener('click', () => {
       if (guests.has(person.id)) guests.delete(person.id);
@@ -100,7 +124,7 @@ export function peoplePicker({ me, users, members, beneficiaryId = null, note = 
       paintRow();
     });
     paintRow();
-    return h('div', { class: 'share__person' }, tick, access);
+    return h('div', { class: `share__person${project ? ' share__person--3' : ''}` }, tick, access);
   };
 
   const element = h('div', { class: 'share share--sheet' },

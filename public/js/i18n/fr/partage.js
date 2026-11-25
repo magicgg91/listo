@@ -119,4 +119,15 @@ export default {
   'partage.vue.peutModifier': 'Peut modifier',
   'partage.vue.lectureSeule': 'Lecture seule',
   'partage.vue.proprietaireSeul': 'Seul le propriétaire choisit les personnes, leur droit et le lien.',
+  // Projets (docs/cadrage-projets.md, 4.6) : pas de lien public, trois
+  // droits à donner (quatre rôles avec le propriétaire)
+  'partage.droit.contribuer': 'Contribuer',
+  'partage.droit.choix.projet': 'Droit de {name} sur le projet',
+  'partage.legende.separateur': ' : ',
+  'partage.legende.modifier': 'toutes les cartes et les colonnes.',
+  'partage.legende.contribuer': 'ajouter des cartes, commenter, modifier ses cartes et celles qu\'on lui attribue.',
+  'partage.legende.lire': 'voir, sans rien changer.',
+  'partage.projet.titre': 'Partager « {name} »',
+  'partage.projet.intro': 'Avec des personnes de Listo seulement : un projet n\'a pas de lien public. Le droit vaut pour tout le projet.',
+  'partage.vue.proprietaireSeul.projet': 'Seul le propriétaire choisit les personnes et leur droit.',
 };

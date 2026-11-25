@@ -51,4 +51,22 @@ export default {
   // En-tête
   'echeances.titre': 'Échéances',
   'echeances.pc.sousTitre': 'Les tâches à faire de toutes vos listes',
+
+  // Cartes des projets montrés dans Échéances (étape 4 du cadrage des
+  // projets) ; les textes « .cartes » remplacent les autres seulement quand
+  // un projet est montré (sinon l'écran ne change pas)
+  'echeances.recherche.label.cartes': 'Rechercher une tâche ou une carte',
+  'echeances.vide.miennes.cartes': 'Rien pour vous : aucune tâche à faire ne vous est attribuée, ni aucune carte à vous ou à personne. « Toutes » montre aussi celles des autres.',
+  'echeances.vide.texte.cartes': 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues, avec les cartes datées des projets où « Afficher dans Échéances » est allumé.',
+  'echeances.groupe.nombre.cartes': { one: '{count} tâche ou carte', other: '{count} tâches ou cartes' },
+  'echeances.recherche.aucun.texte.cartes': 'Aucune tâche ni carte ne correspond à « {query} ».',
+  'echeances.pc.sousTitre.cartes': 'Les tâches de toutes vos listes et les cartes de vos projets',
+  // Ligne d'une carte : « DomoPi Articles · Relecture »
+  'echeances.carte.dans': '{project} · {column}',
+  'echeances.carte.lu.dans': 'projet {project}, colonne {column}',
+  'echeances.carte.lu.projet': 'projet {project}',
+  'echeances.carte.case': '{name}, case « Fait »',
+  'echeances.carte.ouvrir': 'Ouvrir la carte {name}, {details}',
+  // Message après la case « Fait » (avec « Annuler »)
+  'echeances.carte.faite': 'Fait : {name}',
 };

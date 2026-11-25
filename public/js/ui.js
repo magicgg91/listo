@@ -238,6 +238,14 @@ function overlay(build, { label, role = 'dialog', onClose, returnTo = null, pc =
   return { close, panel, forceClose, setBack: (fn) => { backHandler = fn; } };
 }
 
+// Fenêtre libre posée sur toute l'application (ordinateur : carte d'un
+// projet ouverte, docs/cadrage-projets.md 4.4). build(close) fabrique le
+// panneau ; mêmes règles que les autres fenêtres (Échap, Retour, focus
+// gardé dedans puis rendu à la fermeture). label : son nom lu.
+export function openPanel(build, { label, onClose, history = true } = {}) {
+  return overlay(build, { label, onClose, pc: true, history });
+}
+
 // Feuille qui monte du bas (édition d'article, choix du rayon…).
 // content : éléments à afficher sous le titre.
 // scroll : la feuille défile si son contenu est haut (feuille Article avec photo).
@@ -400,8 +408,9 @@ export function openMenu(items, { label = t('fenetres.menu'), onClose, anchor = 
       items.map((item) => [item.separated ? h('div', { class: 'menu__sep', role: 'separator' }) : null, h('button', {
         class: `menu__item${item.danger ? ' menu__item--danger' : ''}`,
         type: 'button',
-        // Choix exclusif (tri…) : l'option active a une coche ET son texte
-        role: item.checked === undefined ? 'menuitem' : 'menuitemradio',
+        // Choix exclusif (tri…) : l'option active a une coche ET son texte ;
+        // interrupteur (toggle : allumé ou coupé) : de même, une coche
+        role: item.checked === undefined ? 'menuitem' : item.toggle ? 'menuitemcheckbox' : 'menuitemradio',
         'aria-checked': item.checked === undefined ? null : String(item.checked),
         onClick: () => {
           closeMenu();

@@ -10,14 +10,14 @@ export default {
   'claude.application.fourni': 'nom publié par le site de l\'application',
   'claude.local': 'une application sur cet ordinateur (localhost)',
   'claude.chargement': 'Chargement…',
-  'claude.toutesMesListes': 'Toutes mes listes et mes notes',
+  'claude.toutesMesListes': 'Toutes mes listes, mes notes et mes projets',
 
   // Assistants IA : en-tête et adresse
   'claude.connexions.titreLocal': '{host} (cet ordinateur)',
   'claude.connexions.copiee': 'Adresse copiée',
   'claude.connexions.copieImpossible': 'Copie impossible : sélectionnez l\'adresse à la main.',
   'claude.connexions.titre': 'Assistants IA',
-  'claude.connexions.intro': 'Un assistant IA (par exemple Claude : claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous lui avez accordé « Lecture et écriture », y ajouter des éléments, les cocher et les modifier (nom, quantité, note, priorité, échéance), au nom de votre compte. Avec « Toutes mes listes et mes notes », il peut aussi lire vos notes et, en « Lecture et écriture », en créer, les compléter, poser leurs étiquettes ou les mettre à la corbeille. Chaque connexion que vous avez autorisée apparaît ici.',
+  'claude.connexions.intro': 'Un assistant IA (par exemple Claude : claude.ai, l\'application mobile, Claude Desktop, Claude Code) peut lire vos listes et, si vous lui avez accordé « Lecture et écriture », y ajouter des éléments, les cocher et les modifier (nom, quantité, note, priorité, échéance), au nom de votre compte. Avec « Toutes mes listes, mes notes et mes projets », il peut aussi lire vos notes et vos projets et, en « Lecture et écriture », créer des notes, les compléter, poser leurs étiquettes ou les mettre à la corbeille, et, dans vos projets, avec votre rôle dans chacun, créer ou modifier des colonnes, des étiquettes, des cartes et des commentaires. Chaque connexion que vous avez autorisée apparaît ici.',
   'claude.connexions.adresse': 'Adresse à saisir dans votre assistant IA',
   'claude.connexions.adresse.detail': 'À ajouter comme connecteur personnalisé (ou serveur MCP) dans votre assistant IA :',
   'claude.connexions.copier': 'Copier l\'adresse',
@@ -34,7 +34,7 @@ export default {
   'claude.connexions.aucune': 'Aucune connexion',
   'claude.connexions.aucune.texte': 'Ajoutez Listo dans votre assistant IA avec l\'adresse ci-dessus, puis autorisez-le.',
   'claude.connexions.deconnecter.question': 'Déconnecter {name} ?',
-  'claude.connexions.deconnecter.texte': 'L\'assistant IA ne pourra plus lire ni modifier vos listes et vos notes avec cette connexion. Pour le reconnecter, il faudra l\'autoriser de nouveau.',
+  'claude.connexions.deconnecter.texte': 'L\'assistant IA ne pourra plus lire ni modifier vos listes, vos notes et vos projets avec cette connexion. Pour le reconnecter, il faudra l\'autoriser de nouveau.',
   'claude.connexions.deconnecter': 'Déconnecter',
   'claude.connexions.deconnectee': 'Connexion déconnectée',
   'claude.connexions.tout.question': 'Tout déconnecter ?',
@@ -53,9 +53,9 @@ export default {
   'claude.connexions.deconnecter.nom': 'Déconnecter {name}',
 
   // Autoriser un assistant IA : niveaux d'accord
-  'claude.autoriser.lecture.texte': 'L\'assistant IA pourra lire vos listes (et vos notes, avec « Toutes mes listes et mes notes »), sans rien y changer.',
-  'claude.autoriser.ecriture.texte': 'L\'assistant IA pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Avec « Toutes mes listes et mes notes », il pourra aussi lire vos notes, en créer, les compléter ou remplacer leur texte, poser leurs étiquettes et les mettre à la corbeille. Jamais supprimer d\'élément ni de liste, ni effacer une note pour de bon, ni partager.',
-  'claude.autoriser.ecriture.avertissement': 'Une liste ou une note partagée peut contenir un texte piégé, écrit pour tromper l\'assistant IA et lui faire changer vos éléments ou vos notes. C\'est pourquoi ce niveau demande plus de confiance : choisissez-le seulement si vous en avez besoin.',
+  'claude.autoriser.lecture.texte': 'L\'assistant IA pourra lire vos listes (et vos notes et vos projets, avec « Toutes mes listes, mes notes et mes projets »), sans rien y changer.',
+  'claude.autoriser.ecriture.texte': 'L\'assistant IA pourra lire vos listes, y ajouter des éléments, les cocher et modifier leurs éléments (nom, quantité, note, priorité, échéance, répétition). Avec « Toutes mes listes, mes notes et mes projets », il pourra aussi lire vos notes, en créer, les compléter ou remplacer leur texte, poser leurs étiquettes et les mettre à la corbeille ; et, dans vos projets, avec votre rôle dans chacun, créer des projets, des colonnes, des étiquettes, des cartes et des commentaires, les modifier, déplacer des cartes, et mettre des cartes ou un projet à la corbeille. Jamais supprimer d\'élément ni de liste, ni effacer une note, une carte ou un projet pour de bon, ni partager.',
+  'claude.autoriser.ecriture.avertissement': 'Une liste, une note ou un projet partagé peut contenir un texte piégé, écrit pour tromper l\'assistant IA et lui faire changer vos éléments, vos notes ou vos cartes. C\'est pourquoi ce niveau demande plus de confiance : choisissez-le seulement si vous en avez besoin.',
 
   // Autoriser un assistant IA : titre et demande introuvable
   'claude.autoriser.titre': 'Autoriser un assistant IA',
@@ -66,7 +66,7 @@ export default {
   // Autoriser un assistant IA : confirmation chez le fournisseur d'identité
   'claude.autoriser.fournisseur.echec': '{provider} n\'a pas redemandé la connexion : la confirmation n\'a pas abouti. Réessayez.',
   'claude.autoriser.refuser': 'Refuser',
-  'claude.autoriser.intro': 'Un assistant IA demande l\'accès à vos listes et à vos notes Listo. Il agira avec votre compte et vos droits, jamais plus.',
+  'claude.autoriser.intro': 'Un assistant IA demande l\'accès à vos listes, à vos notes et à vos projets Listo. Il agira avec votre compte et vos droits, jamais plus.',
   'claude.autoriser.attention': 'Ne continuez que si vous venez de lancer la connexion depuis votre assistant IA.',
   'claude.autoriser.nomSeul': '« {name} »',
   'claude.autoriser.application': 'Application qui demande l\'accès',

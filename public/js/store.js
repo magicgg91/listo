@@ -21,7 +21,8 @@ import { aislesForStore, offeredAisles, rematchAisle } from './aisles.js';
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX } from './notes.js';
 import { cleanLabelIds } from './labels.js';
 import { normalizeHome, homeChangeProblem, applyHomeChange } from './home-tiles.js';
-import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn } from './features.js';
+import { normalizeFeatures, featuresChangeProblem, applyFeaturesChange, notesOn, projectsOn } from './features.js';
+import { emptyProjects, projectsSnapshot, projectsFromSnapshot, loadProjects, applyProjectOp, PROJECT_OP_TYPES } from './project-store.js';
 
 // --- État vide ---
 export function emptyState() {
@@ -80,6 +81,9 @@ export function emptyState() {
     // serveur, la page est relue quand elle diffère. Gardée sur le
     // téléphone : la page s'affiche hors ligne.
     inbox: emptyInbox(),
+    // Projets (project-store.js, server/projects.js) : ceux que je vois,
+    // leurs cartes et mes réglages ; rien quand j'ai coupé les projets
+    ...emptyProjects(),
   };
 }
 
@@ -139,6 +143,7 @@ export function toSnapshot(state, savedAt = new Date().toISOString()) {
     noteConflicts: [...state.noteConflicts],
     noteNews: { unread: [...state.noteNews.unread], muted: [...state.noteNews.muted] },
     inbox: state.inbox,
+    ...projectsSnapshot(state),
   };
 }
 
@@ -175,6 +180,9 @@ export function fromSnapshot(snapshot) {
     state.noteNews = { unread: new Set(snapshot.noteNews?.unread ?? []), muted: new Set(snapshot.noteNews?.muted ?? []) };
     // (copie d'avant la page Notifications : vide, relue au premier passage du réseau)
     state.inbox = Array.isArray(snapshot.inbox?.rows) ? { rows: snapshot.inbox.rows, stamp: snapshot.inbox.stamp ?? null, loaded: true } : emptyInbox();
+    // (copie d'avant les projets : aucun ; ils arrivent tous quand la
+    // personne allume la fonction, voir projectsReload)
+    projectsFromSnapshot(state, snapshot);
     state.loaded = true;
     refreshListReferences(state);
     return state;
@@ -226,6 +234,7 @@ export function loadSync(state, data) {
   if (data.home) state.home = normalizeHome(data.home);
   if (data.features) state.features = normalizeFeatures(data.features);
   loadNotes(state, data, { full: true });
+  loadProjects(state, data, { full: true });
   state.loaded = true;
   refreshListReferences(state);
   return state;
@@ -272,8 +281,12 @@ export function mergeSync(state, data) {
   if (data.news) state.news = data.news;
   // Réglage « Accueil » : de même
   if (data.home) state.home = normalizeHome(data.home);
-  // Réglage « Fonctions » : de même
-  if (data.features) state.features = normalizeFeatures(data.features);
+  // Réglage « Fonctions » : de même. Projets rallumés (sur un autre
+  // appareil) : tout recharger, le serveur n'en envoyait rien
+  if (data.features) {
+    if (projectsOn(data.features) && !projectsOn(state.features)) state.projectsReload = true;
+    state.features = normalizeFeatures(data.features);
+  }
   // Réservations : en entier à chaque synchronisation (une libération
   // disparaît d'elle-même) ; rien pour une liste où je suis bénéficiaire
   state.reservations = data.reservations ?? {};
@@ -281,6 +294,7 @@ export function mergeSync(state, data) {
   // marque « Acheté »)
   state.gifts = giftsFrom(data.gifts);
   loadNotes(state, data, { full: false });
+  loadProjects(state, data, { full: false });
   refreshListReferences(state);
   // Historique : la ligne du serveur remplace la ligne locale du même article
   // et du même magasin
@@ -303,6 +317,12 @@ export function mergeSync(state, data) {
 // prévu sur le téléphone quand le serveur le choisira lui-même) }.
 // Fonction pure (testée automatiquement) : elle ne parle pas au réseau.
 export function applyOp(state, op, { user, now, hint = {} } = {}) {
+  // Projets (project-store.js, même effet que server/projects.js) ; rien
+  // quand je les ai coupés (le serveur les refuse alors)
+  if (PROJECT_OP_TYPES.includes(op.type)) {
+    if (projectsOn(state.features)) applyProjectOp(state, op, { user, now });
+    return;
+  }
   const item = op.itemId ? state.items.get(op.itemId) : null;
   switch (op.type) {
     case 'list.create': {
@@ -416,7 +436,10 @@ export function applyOp(state, op, { user, now, hint = {} } = {}) {
     case 'account.features': {
       const { id, type, ...change } = op;
       if (featuresChangeProblem(change)) return;
-      state.features = applyFeaturesChange(state.features, change);
+      const next = applyFeaturesChange(state.features, change);
+      // Projets rallumés : la prochaine synchronisation recharge tout
+      if (projectsOn(next) && !projectsOn(state.features)) state.projectsReload = true;
+      state.features = next;
       return;
     }
     // « Acheté » dans « À offrir » (propre à moi ; le serveur vérifie que
@@ -620,11 +643,15 @@ export function loadInbox(state, data) {
 }
 
 // Lignes de la page montrées : toutes, sauf celles des notes quand je les
-// ai coupées (Réglages › Fonctions, features.js ; gardées, elles reviennent
-// quand je les rallume)
+// ai coupées, et celles des projets quand je les ai coupés, sauf
+// « Partage » (l'invitation à les allumer) (Réglages › Fonctions,
+// features.js ; gardées, elles reviennent quand je les rallume)
 export function inboxShownRows(state) {
   const rows = state.inbox?.rows ?? [];
-  return notesOn(state.features) ? rows : rows.filter((row) => row.targetType !== 'note');
+  const notes = notesOn(state.features);
+  const projects = projectsOn(state.features);
+  return rows.filter((row) => (notes || row.targetType !== 'note')
+    && (projects || !['project', 'card'].includes(row.targetType) || row.kind === 'sharing'));
 }
 
 // Nombre de notifications non lues (pastille de la cloche)
@@ -633,11 +660,13 @@ export const inboxUnread = (state) => inboxShownRows(state).filter((row) => !row
 // Lignes non lues dont la cible est cette liste (ou un de ses éléments),
 // cette note, ou l'écran Échéances : ouvrir la cible les rend lues (une
 // notification du téléphone touchée ouvre sa cible)
-export function inboxRowsFor(state, { listId = null, noteId = null, deadlines = false }) {
+export function inboxRowsFor(state, { listId = null, noteId = null, deadlines = false, projectId = null, cardId = null }) {
   return (state.inbox?.rows ?? []).filter((row) => !row.read && row.target && (
     (listId && row.target.listId === listId)
     || (noteId && row.target.noteId === noteId)
-    || (deadlines && row.target.type === 'deadlines'))).map((row) => row.id);
+    || (deadlines && row.target.type === 'deadlines')
+    || (projectId && row.target.type === 'project' && row.target.projectId === projectId)
+    || (cardId && row.target.type === 'card' && row.target.cardId === cardId))).map((row) => row.id);
 }
 
 // Cible d'une ligne encore ouverte sur CE téléphone ? (copie locale : une
@@ -652,6 +681,18 @@ export function inboxTargetAvailable(state, target) {
       const note = state.notes.get(target.noteId);
       return Boolean(note) && !note.deletedAt;
     }
+    // Projets (étape 3) ; « features » : Réglages › Fonctions (partage
+    // d'un projet reçu projets coupés)
+    case 'project': {
+      const project = state.projects?.get(target.projectId);
+      return Boolean(project) && !project.deletedAt;
+    }
+    case 'card': {
+      const card = state.cards?.get(target.cardId);
+      const project = card ? state.projects?.get(card.projectId) : null;
+      return Boolean(card) && !card.deletedAt && Boolean(project) && !project.deletedAt;
+    }
+    case 'features': return true;
     default: return false;
   }
 }

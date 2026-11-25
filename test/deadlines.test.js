@@ -218,9 +218,9 @@ test('écran : cocher seulement avec le droit, par l\'opération de la liste (fi
   assert.match(screen, /onLeave\(watchNewDay\(draw\)\);/);
 });
 
-test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Réglages), même place partout, pas sur l\'Accueil, loupe seulement là où l\'écran la branche', () => {
+test('bandeau du bas : cinq boutons (Accueil, Échéances, Listes, Notes, Réglages ; six avec Projets), même place partout, pas sur l\'Accueil, loupe seulement là où l\'écran la branche', () => {
   const tabbar = read('public/js/tabbar.js');
-  assert.match(tabbar, /\['home', 'home', \(\) => t\('navigation\.accueil'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['lists', 'tasks', \(\) => t\('navigation\.listes'\)\],\s*\['notes', 'note', \(\) => t\('navigation\.notes'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
+  assert.match(tabbar, /\['home', 'home', \(\) => t\('navigation\.accueil'\)\],\s*\['deadlines', 'calendar', \(\) => t\('navigation\.echeances'\)\],\s*\['lists', 'tasks', \(\) => t\('navigation\.listes'\)\],\s*\['notes', 'note', \(\) => t\('navigation\.notes'\)\],\s*\['projects', 'kanban', \(\) => t\('navigation\.projets'\)\],\s*\['settings', 'sliders', \(\) => t\('navigation\.reglages'\)\],/);
   assert.equal(fr['navigation.accueil'], 'Accueil');
   assert.equal(fr['navigation.listes'], 'Listes');
   assert.equal(fr['navigation.echeances'], 'Échéances');

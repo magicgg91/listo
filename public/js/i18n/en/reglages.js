@@ -54,10 +54,12 @@ export default {
 
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Features',
-  'reglages.fonctions.detail': 'Notes',
+  'reglages.fonctions.detail': 'Notes, Projects',
   'reglages.fonctions.intro': 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Free-form texts, to keep for yourself or to share.',
+  'reglages.fonctions.projets': 'Projects',
+  'reglages.fonctions.projets.detail': 'Boards of cards sorted into columns (ideas, in progress, done…), to share.',
   'reglages.fonctions.note': 'Applies to all your devices.',
 
   // Raccourcis à une touche (ordinateur)

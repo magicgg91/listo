@@ -199,8 +199,9 @@ test('Accueil : ni bandeau du bas ni loupe ; nombres lus avec leur libellé ; co
   // Temps réel, minuit et minute (une tâche passe « En retard » à son heure)
   for (const text of ['onLeave(onDataChange(idle.request));', 'onLeave(watchNewDay(draw));', 'onLeave(watchMinute(() => idle.request()));']) assert.ok(home.includes(text), text);
   // Tuiles dans l'ordre choisi (au départ : Échéances, Listes, « À offrir »
-  // si j'ai des réservations, Notes, Compte ; test/home-tiles.test.js)
-  assert.match(home, /const build = \{ deadlines: deadlinesTile, lists: \(\) => listsTile\(pc\), gifts: giftsTile, notes: \(\) => notesTile\(pc\), account: accountTile \};/);
+  // si j'ai des réservations, Notes, Compte, puis Projets quand la
+  // fonction est allumée ; test/home-tiles.test.js)
+  assert.match(home, /const build = \{ deadlines: deadlinesTile, lists: \(\) => listsTile\(pc\), gifts: giftsTile, notes: \(\) => notesTile\(pc\), account: accountTile, projects: projectsTile \};/);
   assert.match(home, /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
@@ -234,8 +235,9 @@ test('« Listes » partout, jamais « Mes listes » (interface en français et e
 
 test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur les écrans des listes ; plus le filtre en haut)', () => {
   const side = code('public/js/screens/pc-side.js');
-  // Entrées fixes, dans l'ordre du bandeau : Accueil, Échéances, Listes, Notes (étape 2)
-  assert.match(side, /const main = h\('div', \{ class: 'pc-side__main' \}, homeLink, deadlinesLink, listsLink, notesLink\);/);
+  // Entrées fixes, dans l'ordre du bandeau : Accueil, Échéances, Listes,
+  // Notes (étape 2), Projets (quand la fonction est allumée, 25 novembre 2026)
+  assert.match(side, /const main = h\('div', \{ class: 'pc-side__main' \}, homeLink, deadlinesLink, listsLink, notesLink, projectsLink\);/);
   assert.match(side, /const homeLink = fixedLink\('home', 'home', t\('navigation\.accueil'\)\);/);
   assert.match(side, /const listsLink = fixedLink\('lists', 'tasks', t\('navigation\.listes'\), listsCount\);/);
   // Écrans des listes seulement : « Types » ; ailleurs, rien de plus

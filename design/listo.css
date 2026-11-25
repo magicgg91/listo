@@ -1510,6 +1510,370 @@ span.nf-task__box::after { display: none; }
 .typebar .segmented__opt { border-radius: var(--radius-md); }
 .chip, .badge-multi, .label, .note-labels__add { border-radius: 8px; }
 
+/* 16.35 Projets (docs/cadrage-projets.md, étape 1 ; maquettes
+   design/projets, 25 novembre 2026) : couleur d'une colonne. Les huit
+   couleurs des étiquettes (16.32), les mêmes variables (--label-<couleur>-bg
+   et -ink, AA en clair et en sombre). .c-<couleur> pose --c-bg (fond doux)
+   et --c-ink (point, liseré, texte). Le nom de la colonne est toujours
+   écrit : la couleur n'est jamais seule à dire de quelle colonne il s'agit. */
+.c-gris { --c-bg: var(--label-gris-bg); --c-ink: var(--label-gris-ink); }
+.c-rouge { --c-bg: var(--label-rouge-bg); --c-ink: var(--label-rouge-ink); }
+.c-orange { --c-bg: var(--label-orange-bg); --c-ink: var(--label-orange-ink); }
+.c-jaune { --c-bg: var(--label-jaune-bg); --c-ink: var(--label-jaune-ink); }
+.c-vert { --c-bg: var(--label-vert-bg); --c-ink: var(--label-vert-ink); }
+.c-bleu { --c-bg: var(--label-bleu-bg); --c-ink: var(--label-bleu-ink); }
+.c-violet { --c-bg: var(--label-violet-bg); --c-ink: var(--label-violet-ink); }
+.c-rose { --c-bg: var(--label-rose-bg); --c-ink: var(--label-rose-ink); }
+.coldot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c-ink, var(--color-text-2)); }
+
+/* 16.36 Bandeau du bas à six boutons (proposition A, retenue par le
+   propriétaire le 25 novembre 2026, quand « Projets » est allumé) :
+   Accueil, Échéances, Listes, Notes, Projets (#i-kanban), Réglages. Même
+   .tabdock, même verre, même pastille qui glisse (data-current = 0 à 5).
+   Boutons d'environ 58 px de large sur un téléphone de 390 px (55 px sur
+   375 px), toujours 54 px de haut ; libellés en 11 px serrés (au lieu de
+   12) pour que « Échéances » tienne en entier (avec un texte agrandi par le
+   téléphone, il est coupé « Échéanc… », le nom lu reste entier). Cinq,
+   quatre ou trois boutons gardent .tabbar--5, --4 et la base (12 px). */
+.tabbar--6 .tabbar__pill { width: calc((100% - 10px) / 6); }
+.tabbar[data-current="5"] .tabbar__pill { transform: translateX(500%); }
+.tabbar--6 .tabbar__tab { padding: 0; font-size: 11px; letter-spacing: -0.02em; }
+
+/* 16.37 Tuile Projets de l'Accueil : toute la largeur (.tile--wide, 16.30),
+   lignes à deux étages (.tile__row--two, .tile__strong, .tile__sub : 16.30).
+   Étape 2 : « mes cartes » (attribuées à moi, pas faites), les trois plus
+   urgentes ; titre de la carte, puis « projet · colonne · échéance ».
+   .tile__sub--late : en retard (texte rouge ET le mot « En retard »). */
+.tile__sub--late { color: var(--color-danger-ink); }
+
+/* 16.38 Écran « Projets » (#/projets) : une carte par projet (.card
+   .proj-card) : icône (point des nouveautés, .news-badge--dot), nom (un
+   lien qui couvre toute la carte), heure, menu ⋮ ; les colonnes en petites
+   pastilles (.colchip : point de couleur, nom, nombre de cartes) ; en bas,
+   « Lecture seule » (œil) ou « Contributeur », et les pastilles des
+   personnes. Ordinateur : les cartes en grille (.pc-cards). */
+.proj-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 12px 8px 12px var(--space-2); }
+.proj-card__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.proj-card__icon { position: relative; display: inline-flex; flex: none; color: var(--color-accent-ink); }
+.proj-card__name { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-size: var(--text-lg); font-weight: 700; line-height: var(--lh-tight); text-overflow: ellipsis; white-space: nowrap; }
+.proj-card__link { color: inherit; text-decoration: none; }
+.proj-card__link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.proj-card__link:focus-visible { outline: none; }
+.proj-card:has(.proj-card__link:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.proj-card .icon-btn { position: relative; z-index: 1; }
+.proj-card__time { flex: none; font-size: var(--text-sm); color: var(--color-text-2); }
+.proj-card__cols { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0 8px 0 0; list-style: none; }
+.colchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text-2); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.colchip .coldot { width: 8px; height: 8px; }
+.colchip b { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.proj-card__foot { display: flex; align-items: center; gap: 8px; min-height: 28px; padding-right: 8px; }
+.proj-card__mine { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.proj-card__mine strong { color: var(--color-danger-ink); font-weight: 600; }
+.proj-card .avatar { width: 28px; height: 28px; font-size: 12px; }
+
+/* 16.39 Écran d'un projet sur le téléphone (#/projets/<id>) : une colonne
+   à la fois. Sous la barre du haut, la ligne d'état (« À jour »,
+   « Filtrer »), puis les onglets des colonnes (.coltabs, role="tablist",
+   défilent de côté ; l'onglet choisi reste visible) : point de couleur,
+   nom, nombre de cartes ; choisi : fond doux de sa couleur, liseré de 2 px
+   et texte en gras (jamais la couleur seule) ; .is-drop : onglet sous une
+   carte tenue (elle ira en haut de cette colonne). Les cartes de la
+   colonne dessous (.kcards, glisser de côté : colonne voisine), la barre
+   d'ajout en verre en bas (« Ajouter dans « Relecture » »), la loupe
+   au-dessus ; pendant une recherche, les résultats rangés par colonne
+   (.kgroup). */
+.coltabs { display: flex; flex: none; gap: 8px; overflow-x: auto; padding: 2px var(--space-2) 10px; scrollbar-width: none; }
+.coltabs::-webkit-scrollbar { display: none; }
+.coltab { display: inline-flex; flex: none; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0 14px; border: 2px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-2); font: inherit; font-size: var(--text-base); font-weight: 600; white-space: nowrap; }
+.coltab__count { font-weight: 600; font-variant-numeric: tabular-nums; }
+.coltab[aria-selected="true"] { border-color: var(--c-ink); background: var(--c-bg); color: var(--c-ink); font-weight: 700; }
+.coltab.is-drop { border-style: dashed; border-color: var(--color-accent); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.kcards { display: flex; flex-direction: column; gap: 10px; padding: 0 var(--space-2); }
+.kswipe { touch-action: pan-y; }
+.kempty { margin: var(--space-3) var(--space-2); color: var(--color-text-2); text-align: center; }
+.kgroup + .kgroup { margin-top: var(--space-2); }
+.kgroup__title { display: flex; align-items: center; gap: 8px; margin: 0 var(--space-2) 8px; font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); }
+
+/* 16.40 Carte (face) : .card .kcard ; titre (trois lignes au plus, un lien
+   qui couvre toute la carte), étiquettes (.labels, 16.32), repères
+   (.kcard__meta : échéance .due, compteurs .kcount, personnes ; 16.46).
+   - .due : date ; --late : en retard (fond rouge doux, texte rouge ET
+     icône d'alerte) ; --done : fait (fond vert plein, coche ET « fait »
+     écrit) ; --today : aujourd'hui (liseré vert).
+   - .kcard.is-news : point des nouveautés en haut à gauche (16.13).
+   - Glisser (project-drag.js) : .kghost, la carte tenue qui suit le doigt
+     (un peu tournée, avec une ombre ; sans rotation si le téléphone
+     demande moins de mouvement) ; .kdrop : la place où elle tombera
+     (pointillés). Une carte ne se sélectionne pas et n'ouvre pas le menu
+     du système à l'appui long. */
+.kcard { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 10px 14px; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.kcard__title { display: -webkit-box; margin: 0; overflow: hidden; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; font-size: var(--text-base); font-weight: 600; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.kcard__link { color: inherit; text-decoration: none; -webkit-touch-callout: none; }
+.kcard__link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.kcard__link:focus-visible { outline: none; }
+.kcard:has(.kcard__link:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.kcard .labels .label { height: 24px; padding: 0 9px; }
+.kcard__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 26px; }
+.kcard__meta .avatars { margin-left: auto; }
+.kcard .avatar { width: 26px; height: 26px; font-size: 11px; }
+.kcount { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.kcard > .news-badge--dot { top: 10px; left: -6px; }
+.due { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border: 2px solid transparent; border-radius: 8px; background: var(--color-neutral-soft); color: var(--color-text-2); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.due .icon { width: 14px; height: 14px; }
+.due--late { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+.due--today { border-color: var(--color-success-ink); color: var(--color-success-ink); background: transparent; }
+.due--done { background: var(--color-success-ink); color: var(--color-surface); }
+.kghost { position: absolute; z-index: 30; margin: 0; pointer-events: none; transform: rotate(2.5deg); box-shadow: var(--shadow-pop); }
+.kdrop { flex: none; min-height: 64px; border: 2px dashed var(--color-accent); border-radius: var(--radius-md); background: var(--color-accent-soft); }
+.is-card-dragging, .is-card-dragging * { cursor: grabbing; }
+@media (prefers-reduced-motion: reduce) {
+  .kghost { transform: none; }
+}
+
+/* 16.41 Ordinateur (.app--pc) : un projet prend TOUTE la largeur de la
+   zone de droite (.pc-col--board, exception à la colonne de 1 040 px
+   validée par le propriétaire le 25 novembre 2026 : les colonnes ont besoin
+   de place) ; colonnes côte à côte (.kboard), défilement de côté.
+   - .kcol : 280 px, fond gris doux, liseré de 4 px de sa couleur en haut ;
+     .kcol__head : point, nom, nombre, menu ⋮ de la colonne (propriétaire
+     et « Peut modifier ») ; ses cartes défilent (.kcol__cards) ; « + Ajouter
+     une carte » en bas (.kcol__add, ou le champ .kcol__form) ; .kcol--new :
+     « + Colonne » au bout.
+   - .kfilters : ligne des filtres sous l'en-tête (étiquettes : 16.32,
+     .label-filter__opt, aria-pressed ; « + 2 » montre les autres ;
+     « Effacer les filtres »).
+   - Menu de gauche : « Projets » après « Notes » ; sur les écrans des
+     projets, les projets dessous (.pc-nav, comme les types des listes). */
+.app--pc .pc-col--board { max-width: none; }
+.kboard { display: flex; flex: 1; align-items: flex-start; gap: 14px; min-height: 0; overflow: auto; padding: 4px var(--pc-gutter) var(--pc-gutter); }
+.kcol { display: flex; flex: none; flex-direction: column; gap: 8px; width: 280px; max-height: 100%; padding: 0 8px 8px; border-top: 4px solid var(--c-ink); border-radius: var(--radius-md); background: var(--color-neutral-soft); }
+.kcol__head { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 0 0 6px; font-weight: 700; }
+.kcol__name { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-size: var(--text-base); text-overflow: ellipsis; white-space: nowrap; }
+.kcol__head .count { min-width: 24px; height: 24px; }
+.kcol__cards { display: flex; flex-direction: column; gap: 8px; min-height: 8px; overflow-y: auto; padding: 2px 4px; margin: -2px -4px; }
+.kcol .kcard { flex: none; padding: 10px 10px 8px 12px; }
+.kcol .kcard__title { font-size: 15px; }
+.kcol__add { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-2); font: inherit; font-weight: 600; text-align: left; }
+.kcol__add:hover { background: var(--color-border); }
+.kcol__form { display: flex; flex-direction: column; gap: 6px; }
+.kcol__formbar { display: flex; gap: 6px; }
+.kcol--new { align-items: center; justify-content: center; flex-direction: row; min-height: 56px; padding: 0 12px; border: 2px dashed var(--color-border); background: transparent; color: var(--color-text-2); font: inherit; font-weight: 700; }
+.kfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 0 var(--pc-gutter) 12px; }
+.kfilters__group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.kfilters__name { margin-right: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.pfilter { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 4px; border: 2px solid transparent; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.pfilter--text { padding-left: 10px; }
+.pfilter[aria-pressed="true"] { border-color: var(--color-accent-ink); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.kfilters .label-filter__opt { min-height: 32px; }
+.kfilters .label-filter__opt .label { height: 28px; padding: 0 10px; }
+.kfilters__clear { margin-left: auto; }
+
+/* 16.42 Carte ouverte (téléphone : écran #/projets/<id>/cartes/<carte> ;
+   ordinateur : fenêtre au centre, .kdialog). Titre en grand (un bouton qui
+   passe en saisie pour qui peut modifier), colonne (.kc__where, bouton dans
+   sa couleur : ouvre « Déplacer vers… »), champs (.kfields, .kfield) ; un
+   seul chemin pour remplir un champ (remarque du 25 novembre 2026) : le
+   champ lui-même, avec son « + » (.kadd). Détails de l'étape 2 (personnes,
+   échéance, priorité, description, liens) : 16.46 ; commentaires et
+   historique : étape 3.
+   Ordinateur : à gauche (.kdialog__main) titre, « dans … », Description,
+   Liens ; à droite (.kdialog__side, 296 px) Colonne, Personnes,
+   Étiquettes, Échéance, Priorité (option), puis Actions (.kside). La
+   fenêtre prend la hauteur de son contenu (900 px au plus de l'écran,
+   moins 56 px en haut et en bas). */
+.kc { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--space-2) var(--space-2); }
+.kc__title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.kc__titlebtn { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.kc__titleinput { display: block; width: 100%; min-height: 64px; padding: 4px 6px; margin: -5px -7px; border: 1px solid var(--color-control); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); resize: vertical; }
+.kc__where { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0 12px; border: 2px solid var(--c-ink); border-radius: var(--radius-sm); background: var(--c-bg); color: var(--c-ink); font: inherit; font-weight: 700; }
+.kc__where .icon { width: 18px; height: 18px; }
+.kc__where.is-static { border-color: transparent; }
+.kc__readonly { margin: 0; }
+.kfields { margin: 0; }
+.kc .group { margin: 0; }
+.kfield { display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 10px 14px; border-bottom: 1px solid var(--color-border); }
+.kfield:last-child { border-bottom: 0; }
+.kfield__name { display: flex; flex: none; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.kfield__name .icon { width: 16px; height: 16px; }
+.kfield__value { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; font-weight: 500; }
+.kfield__empty { font-size: var(--text-sm); color: var(--color-text-2); }
+.kadd { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px 0 8px; border: 1px dashed var(--color-control); border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.kadd::after { content: ""; position: absolute; inset: -8px -2px; }
+.kadd .icon { width: 16px; height: 16px; }
+.kc__section { display: flex; align-items: center; gap: 8px; margin: 4px 2px -4px; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
+.kdialog { position: absolute; top: 56px; left: 50%; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr) 296px; width: 940px; max-width: calc(100% - 2 * var(--pc-gutter, 24px)); max-height: calc(100% - 112px); transform: translateX(-50%); overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); box-shadow: var(--shadow-pop); }
+.kdialog__main { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; padding: 24px 24px 20px 28px; }
+.kdialog__main > * { flex: none; }
+.kdialog__side { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; padding: 18px 18px 18px 16px; border-left: 1px solid var(--color-border); background: var(--color-bg); }
+.kdialog__side .kc__section { margin: 10px 4px 2px; }
+.kdialog__close { align-self: flex-end; margin: -6px -6px 0 0; }
+.kdialog .kc__title { font-size: 24px; }
+.kdialog__sub { margin: -8px 0 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.kside-field { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 40px; padding: 0 4px; }
+.kside { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 600; text-align: left; }
+.kside .icon { width: 18px; height: 18px; color: var(--color-text-2); }
+.kside--danger { color: var(--color-danger-ink); }
+.kside--danger .icon { color: inherit; }
+.kside--col { border: 2px solid var(--c-ink); background: var(--c-bg); color: var(--c-ink); }
+.kside--col .icon { color: inherit; }
+.kside--col.is-static { border-color: transparent; }
+.kside .keycap { margin-left: auto; }
+
+/* 16.43 « Déplacer vers… » (feuille du bas ; petite fenêtre sur
+   ordinateur) : les colonnes du projet en .radio-row, chacune avec son
+   point de couleur, « (actuelle) » et son nombre de cartes ; puis « En
+   haut » / « En bas » (.segmented) ; « Déplacer ». */
+.radio-row .coldot { margin-left: 2px; }
+.move__current { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }
+.move__count { margin-left: auto; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.move__where { display: flex; flex-direction: column; gap: 8px; margin: var(--space-2) 0; }
+
+/* 16.44 Réglages du projet (#/projets/<id>/reglages ; propriétaire et
+   « Peut modifier ») : lignes .col-row (poignée pour changer l'ordre en
+   glissant, point, nom, nombre de cartes, crayon) ; « Avant… » et
+   « Après… » dans la feuille d'une colonne (.col-place : sans glisser).
+   Étiquettes : .label-row du kit (16.32). Ordinateur : deux colonnes
+   (.kset__col). */
+.col-row { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 6px 0 4px; border-bottom: 1px solid var(--color-border); }
+.col-row:last-child { border-bottom: 0; }
+.col-row__grip { display: grid; flex: none; place-items: center; width: 36px; height: var(--tap-min); color: var(--color-text-2); touch-action: none; cursor: grab; }
+.col-row.is-dragging { position: relative; z-index: 2; background: var(--color-surface); box-shadow: var(--shadow-pop); }
+.col-row__name { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.col-row__count { font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-row--add, .label-row--add { width: 100%; border-top: 0; border-right: 0; border-left: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 700; text-align: left; }
+.col-row--add .icon, .label-row--add .icon { margin: 0 6px 0 10px; }
+.col-place { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.col-place .btn { min-height: 56px; white-space: normal; }
+.group-title { display: flex; align-items: baseline; justify-content: space-between; margin: 20px var(--space-2) 8px; }
+.group-title .section-title { margin: 0; padding: 0; }
+.group-title__aside { font-size: var(--text-sm); color: var(--color-text-2); }
+.kset { display: flex; flex-direction: column; padding-bottom: var(--space-3); }
+.kset__name { padding: 4px var(--space-2) 0; }
+.kset__danger { margin: var(--space-3) var(--space-2) 0; }
+.app--pc .kset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; align-items: start; }
+.kset__col { display: flex; flex-direction: column; min-width: 0; }
+.app--pc .kset .group-title, .app--pc .kset__name, .app--pc .kset__danger { margin-inline: 0; padding-inline: 0; }
+
+/* 16.45 Droit à trois choix dans la feuille des personnes d'un projet
+   (décision du 25 novembre 2026 : quatre rôles, le propriétaire et trois
+   droits à donner). Sur une liste ou une note, « Modifier | Lire » tient au
+   bout de la ligne ; trois choix n'y tiennent pas sur 390 px avec le
+   prénom. Ici, la ligne garde la case, la pastille et le prénom, et le
+   choix « Modifier | Contribuer | Lire » (.segmented du kit, aria-checked)
+   passe dessous, aligné sur le prénom, sur toute la largeur ; il n'est
+   montré que pour une personne cochée. .share-roles : une phrase par
+   droit, sous la carte. */
+.share__person--3 { flex-wrap: wrap; row-gap: 0; }
+.share__person--3 .tick-row { flex: 1 1 100%; }
+.share__access.share__access--3 { display: flex; flex: 1 1 100%; margin: 0 0 10px 76px; }
+.share__access.share__access--3[hidden] { display: none; }
+.share__access.share__access--3 .segmented__opt { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+.share-roles { margin: var(--space-2) 2px 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text-2); line-height: var(--lh-tight); }
+.share-roles li + li { margin-top: 4px; }
+.share-roles strong { color: var(--color-text); }
+.share-actions { margin-top: var(--space-2); }
+
+/* 16.46 Détails d'une carte (docs/cadrage-projets.md, étape 2 ; maquettes
+   design/projets carte-1, carte-2, projet-1, projet-2, pc-projet-1 et
+   pc-carte-1, 25 novembre 2026).
+   - Face (16.40) : .kcard__meta, une ligne de repères, cachée aux lecteurs
+     d'écran (ils sont lus avec le titre) : échéance .due (--done : coche ET
+     « Fait » écrit), priorité (.chip, --high), description (#i-menu-lines),
+     « 2/3 » (.kcount ; --all : tout est coché, vert ET nombres), liens,
+     et les pastilles des personnes à droite.
+   - Carte ouverte : Personnes (.kfield__person : pastille et prénom ;
+     « Me retirer » pour un Contributeur sur la carte d'un autre) ;
+     Échéance sur une ligne (.kdue : la case « Fait » .kdone puis la date,
+     un bouton .kdue__date ; le rappel .kdue__remind dessous, en petit) ;
+     Priorité (.segmented .kprio) ; Description (.kc__desc : texte mis en
+     forme des notes, 16.33 ; « + Ajouter une description » ; .kc__check :
+     « À vérifier ») ; Liens (.klink : icône, titre souligné, adresse en
+     petit, ⋮ ; .klink--add). Sections (.kc__block) : titre en capitales
+     (.kc__section) et nombre à droite (.kcount).
+   - Filtre du téléphone (feuille « Filtrer les cartes ») : les étiquettes
+     passent à la ligne (.kfilter__labels) ; la règle en petit dessous. */
+.kcount--all { color: var(--color-success-ink); }
+.due--done .icon { stroke-width: 3; }
+.kcard__meta .chip { height: 24px; padding: 0 8px; }
+.kcard__meta .avatar { border: 0; }
+.kc__block { display: flex; flex-direction: column; gap: 10px; }
+.kc__block .group { margin: 0; }
+.kc__section .kcount { margin-left: auto; letter-spacing: 0; text-transform: none; }
+.kfield__person { display: inline-flex; align-items: center; gap: 6px; }
+.kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kdue { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; min-width: 0; }
+.kdue__date { display: inline-flex; align-items: center; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; }
+.kdue__date .due { height: 28px; font-size: var(--text-base); }
+.kdue__remind { display: flex; flex-basis: 100%; align-items: center; gap: 4px; margin-top: -4px; font-size: var(--text-sm); color: var(--color-text-2); }
+.kdone { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: var(--color-text); font: inherit; font-weight: 600; }
+.kdone .tick { width: 26px; height: 26px; }
+.kdone .tick .icon { width: 16px; height: 16px; stroke-width: 3; }
+.kdone[aria-disabled="true"] { color: var(--color-text-2); }
+.kprio { width: 100%; }
+.kc__desc { display: flex; flex-direction: column; padding: 10px 14px; }
+.kc__desc .note-edit__body { min-height: 0; }
+.kc__desc .note-edit__body--input { min-height: 120px; }
+.kc__desc .note-tools--top { top: -10px; margin: -10px -14px 8px; padding: 8px 10px; background: var(--color-surface); }
+.kc__desc > .klink--add { margin: -10px -14px; width: calc(100% + 28px); }
+.kc__none { margin: 0; padding: 0 2px; }
+.kc__check { margin: 0; }
+.klink { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 4px 6px 14px; border-bottom: 1px solid var(--color-border); }
+.klink:last-child { border-bottom: 0; }
+.klink > .icon { flex: none; color: var(--color-text-2); }
+.klink .icon-btn { flex: none; }
+.klink--add { width: 100%; border-top: 0; border-right: 0; border-left: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 700; text-align: left; }
+.klink--add > .icon { color: inherit; }
+.klink__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.klink__title { overflow: hidden; color: var(--color-accent-ink); font-weight: 600; text-decoration: underline; text-overflow: ellipsis; white-space: nowrap; }
+.klink__url { overflow: hidden; font-size: var(--text-sm); color: var(--color-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.kside-field .kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kside-field .kdue__date .due { height: 26px; font-size: var(--text-sm); }
+.kfilter__labels { flex-wrap: wrap; overflow: visible; padding: 0; }
+.kfilter__rule { margin: var(--space-2) 2px 0; }
+.pfilter .avatar { width: 20px; height: 20px; border: 0; font-size: 10px; }
+
+/* 16.47 Commentaires et historique d'une carte (docs/cadrage-projets.md,
+   étape 3 ; maquettes design/projets carte-2, carte-3 et pc-carte-1,
+   25 novembre 2026). Onglets « Commentaires · 2 » / « Historique » (.tabs
+   du kit, role="tablist") ; un commentaire (.kcomment : pastille, bulle
+   .kcomment__bubble avec le prénom, la date et « modifié », le texte
+   simple, retours à la ligne gardés, adresses cliquables, puis
+   « Modifier » et « Supprimer » .kcomment__acts) ; commentaire importé par
+   un assistant IA : bulle en pointillés (.kcomment--imported) ; historique
+   (.khist : pastille, phrase, date en petit). Écrire : téléphone, la barre
+   en verre en bas (.kc__compose, cachée pendant la saisie de la
+   description) ; ordinateur, sous les commentaires (.kcompose : pastille,
+   champ, « Envoyer »). Point des nouveautés dans le titre d'une tuile
+   (.tile__head .tile__dot). */
+.kc .tabs { margin: 0 -4px; padding: 0; }
+.kc__panel { padding-top: 12px; }
+.kc__panel[hidden] { display: none; }
+.kcomments { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.kcomment { display: flex; gap: 10px; }
+.kcomment .avatar { flex: none; width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcomment__bubble { flex: 1; min-width: 0; padding: 8px 12px 10px; border-radius: var(--radius-md); background: var(--color-neutral-soft); }
+.kcomment__who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-weight: 700; }
+.kcomment__when { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }
+.kcomment__text { margin: 2px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.kcomment__text a { color: var(--color-accent-ink); text-decoration: underline; }
+.kcomment__acts { display: flex; gap: 14px; margin-top: 4px; }
+.kcomment__acts button { position: relative; min-height: 32px; padding: 0; border: 0; background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; text-decoration: underline; }
+.kcomment__acts button::after { content: ""; position: absolute; inset: -6px -6px; }
+.kcomment--imported .kcomment__bubble { border: 1px dashed var(--color-control); background: transparent; }
+.kcomment__edit { min-height: 140px; resize: vertical; }
+.khist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.khist__row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--color-border); }
+.khist__row:last-child { border-bottom: 0; }
+.khist__row .avatar { flex: none; width: 26px; height: 26px; border: 0; font-size: 11px; }
+.khist__text { flex: 1; min-width: 0; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.khist__when { display: block; margin-top: 2px; font-size: var(--text-sm); color: var(--color-text-2); }
+.screen:has(.note-tools--dock:not([hidden])) .kc__compose { display: none; }
+.kcompose { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; }
+.kcompose .avatar { flex: none; width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcompose__form { display: flex; flex: 1; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; }
+.kcompose__input { width: 100%; min-height: 44px; resize: vertical; }
+.tile__head .tile__dot { margin-left: -4px; }
+
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }
 .stage__row[data-theme="dark"] { --stage: #060A12; }

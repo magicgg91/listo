@@ -73,7 +73,7 @@ export default {
       title: "Offline, trash, public link",
       blocks: [{ ul: [
         "Offline: Listo opens and works without a network; changes are sent when the network comes back ([[hors-ligne]]).",
-        "Trash: a deleted list can be restored for 30 days ([[corbeille]]); so can a note ([[notes]]). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes”.",
+        "Trash: a deleted list can be restored for 30 days ([[corbeille]]); so can a note ([[notes]]). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [[projets-corbeilles]]).",
         "Public link: show a list to someone without an account, for a length of time you choose, with a password if needed ([[lien-public]]); a note too ([[notes-partage]]).",
       ] }],
     },
@@ -87,7 +87,7 @@ export default {
         "A Home screen your way: tiles hidden or in another order, or no Home screen at all ([[echeances]]).",
         "Only the features you use: notes can be turned off for you alone, without deleting anything ([[echeances]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
-        "An AI assistant, for example Claude, can read your lists and notes and, if you allow it, write to them ([[claude]]).",
+        "An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([[claude]]).",
       ] }],
     },
   ],

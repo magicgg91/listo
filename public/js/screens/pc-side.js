@@ -12,20 +12,27 @@
 //   pour les tâches en retard, puis la verte pour celles du jour ; chacune
 //   seulement si son nombre n'est pas nul ; décision du 24 novembre 2026),
 //   « Listes » (nombre de listes), « Notes » (nombre de notes, étape 2 ;
-//   absent quand la personne a coupé les notes dans Réglages › Fonctions) ;
+//   absent quand la personne a coupé les notes dans Réglages › Fonctions),
+//   « Projets » (nombre de projets ; seulement quand la personne a allumé
+//   les projets, docs/cadrage-projets.md 3.4) ;
 // - dessous, le menu suit l'écran :
 //   · écrans des listes (Listes, une liste, « À offrir ») : seulement « Types », les types
 //     que la personne a (Courses, Tâches, Envies), avec leur nombre de
 //     listes et le point des nouveautés. Le type choisi montre au centre
 //     seulement ses listes (lists.js) ; une liste ouverte met en avant son
 //     type. L'entrée fixe « Listes » montre toutes les listes ;
+//   · écrans des projets (Projets, un projet, une carte, réglages et cartes
+//     supprimées d'un projet) : « Projets » et la liste de mes projets
+//     (nom, point des nouveautés, nombre de cartes), le projet ouvert mis
+//     en avant ;
 //   · autres écrans (Accueil, Échéances, Notes, Réglages, Aide…) : rien de
 //     plus (catégories des notes : abandonnées le 23 novembre 2026) ;
 //   · pendant une recherche, sur n'importe quel écran : les listes trouvées,
 //     groupées par type, avec leur compteur « restants/total » ;
 // - en bas : « Nouvelle liste » (touche N), « Nouvelle note » sur les
-//   écrans des notes (jamais quand les notes sont coupées), le compte
-//   connecté et « Réglages ».
+//   écrans des notes (jamais quand les notes sont coupées), « Nouveau
+//   projet » sur les écrans des projets et « Nouvelle carte » dans un projet
+//   (pour qui peut créer des cartes), le compte connecté et « Réglages ».
 //
 // Le menu est créé une fois et gardé d'un écran à l'autre (texte cherché et
 // défilement conservés) ; seul ce qui dépend de l'écran change.
@@ -40,7 +47,11 @@ import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
 import { app, onDataChange, openingScreen } from '../app.js';
-import { notesOn } from '../features.js';
+import { notesOn, projectsOn } from '../features.js';
+import { projectRights } from '../projects.js';
+import { cardCount, projectUnread } from '../project-view.js';
+import { projectsInOrder, openNewProject } from './projects.js';
+import { startNewCard } from './project.js';
 import { drawWhenIdle, watchNewDay, watchMinute } from '../ui.js';
 import { deadlineBadges, deadlinesLabel, badgeText } from '../deadlines.js';
 import { keepFieldFocus } from '../tap.js';
@@ -60,13 +71,17 @@ export function setPcListType(type) {
 }
 
 // Noms des premiers écrans possibles (marque, Accueil coupé)
-const SCREEN_NAMES = { deadlines: () => t('navigation.echeances'), lists: () => t('navigation.listes'), notes: () => t('navigation.notes') };
+const SCREEN_NAMES = { deadlines: () => t('navigation.echeances'), lists: () => t('navigation.listes'), notes: () => t('navigation.notes'), projects: () => t('navigation.projets') };
 
 // Écrans des listes : le menu y montre les types (« À offrir » compris :
 // Envies y est mis en avant)
 const LIST_SCREENS = ['lists', 'list', 'editList', 'newList', 'gifts'];
 // Écrans des notes : « Notes » mis en avant, « Nouvelle note » en bas
 export const NOTE_SCREENS = ['notes', 'note', 'newNote'];
+// Écrans des projets : « Projets » mis en avant, les projets dessous
+export const PROJECT_SCREENS = ['projects', 'project', 'projectCard', 'projectSettings', 'projectTrash'];
+// Écrans d'un projet ouvert (« Nouvelle carte » en bas du menu)
+const BOARD_SCREENS = ['project', 'projectCard'];
 
 // Ordre des listes du menu (types dans l'ordre Courses, Tâches, Envies,
 // puis le tri choisi) : celui des touches [ et ] (liste précédente,
@@ -80,7 +95,7 @@ const countNotes = () => liveNotes([...app.data.notes.values()]).length;
 
 // Crée le menu. Renvoie { el, select(route), goList(delta), dispose() }.
 export function createPcSide() {
-  let selected = { name: null, listId: null, key: null };
+  let selected = { name: null, listId: null, projectId: null, key: null };
 
   // --- Recherche des listes (sur le nom, listes partagées comprises) ---
   const input = h('input', {
@@ -147,12 +162,21 @@ export function createPcSide() {
   // depuis ma dernière lecture (dit aussi dans le nom lu)
   const notesNews = h('span', { class: 'news-badge news-badge--dot', 'aria-hidden': 'true', hidden: true });
   const notesLink = fixedLink('notes', 'note', t('navigation.notes'), notesNews, notesCount);
-  const main = h('div', { class: 'pc-side__main' }, homeLink, deadlinesLink, listsLink, notesLink);
+  // « Projets » avec le nombre de projets (lu « Projets, 4 projets »)
+  const projectsCount = h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' });
+  const projectsNews = h('span', { class: 'news-badge news-badge--dot', 'aria-hidden': 'true', hidden: true });
+  const projectsLink = fixedLink('projects', 'kanban', t('navigation.projets'), projectsNews, projectsCount);
+  const main = h('div', { class: 'pc-side__main' }, homeLink, deadlinesLink, listsLink, notesLink, projectsLink);
 
   // Bouton du bas : « Nouvelle liste », ou « Nouvelle note » sur les écrans
   // des notes (même touche N)
   const newList = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', onClick: () => navigate('newList') }, icon('plus', 'icon--sm'), t('navigation.nouvelleListe'), keycap('N'));
   const newNote = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', hidden: true, onClick: () => navigate('newNote', {}, { replace: ['note', 'newNote'].includes(selected.name) }) }, icon('plus', 'icon--sm'), t('navigation.nouvelleNote'), keycap('N'));
+  // Écrans des projets : « Nouveau projet », ou « Nouvelle carte » dans un
+  // projet (le champ « Ajouter une carte » de la colonne qui a le focus,
+  // sinon de la première : geste fait pour écrire)
+  const newProject = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', 'data-shortcut': 'n', hidden: true, onClick: () => openNewProject() }, icon('plus', 'icon--sm'), t('navigation.nouveauProjet'), keycap('N'));
+  const newCard = h('button', { class: 'btn btn--primary btn--block', type: 'button', 'aria-keyshortcuts': 'N', 'data-shortcut': 'n', hidden: true, onClick: () => startNewCard() }, icon('plus', 'icon--sm'), t('navigation.nouvelleCarte'), keycap('N'));
 
   // --- Marque ---
   // La marque mène au premier écran : l'Accueil, ou l'écran choisi quand il
@@ -203,8 +227,23 @@ export function createPcSide() {
     // Notes coupées (Réglages › Fonctions) : ni « Notes », ni « Nouvelle note »
     const notesUsed = notesOn(app.data.features);
     notesLink.hidden = !notesUsed;
-    newList.hidden = notesUsed && NOTE_SCREENS.includes(selected.name);
-    newNote.hidden = !newList.hidden;
+    // Projets coupés (c'est le départ) : ni « Projets », ni leurs boutons
+    const projectsUsed = projectsOn(app.data.features);
+    const projects = app.data.loaded && projectsUsed ? projectsInOrder() : [];
+    projectsLink.hidden = !projectsUsed;
+    projectsCount.textContent = app.data.loaded ? String(projects.length) : '';
+    const projectsNew = projects.some((project) => projectUnread(app.data, project.id));
+    projectsNews.hidden = !projectsNew;
+    if (app.data.loaded) projectsLink.setAttribute('aria-label', t(projectsNew ? 'navigation.projets.nombre.nouveautes' : 'navigation.projets.nombre', { count: projects.length }));
+    else projectsLink.removeAttribute('aria-label');
+    markCurrent(projectsLink, selected.name === 'projects');
+    const onProjects = projectsUsed && PROJECT_SCREENS.includes(selected.name);
+    const board = onProjects && BOARD_SCREENS.includes(selected.name) ? app.data.projects.get(selected.projectId) : null;
+    const canAdd = Boolean(board && !board.deletedAt && projectRights(board.role).createCards);
+    newCard.hidden = !canAdd;
+    newProject.hidden = !onProjects || canAdd;
+    newList.hidden = onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
+    newNote.hidden = onProjects || !(notesUsed && NOTE_SCREENS.includes(selected.name));
   };
   const stopDay = watchNewDay(drawFixed);
   // Une tâche du jour à heure précise passe « En retard » à son heure
@@ -300,6 +339,37 @@ export function createPcSide() {
       return;
     }
     status.textContent = '';
+    // Écrans des projets : « Projets » et mes projets, le projet ouvert mis
+    // en avant (aria-current)
+    if (PROJECT_SCREENS.includes(selected.name) && projectsOn(app.data.features)) {
+      showNav(true);
+      nav.setAttribute('aria-label', t('navigation.projets.libelle'));
+      const projects = projectsInOrder();
+      replace(nav,
+        h('h2', { class: 'pc-nav__group', id: 'pc-nav-projets' }, t('navigation.projets')),
+        projects.length
+          ? h('ul', { 'aria-labelledby': 'pc-nav-projets' }, projects.map((project) => {
+            const current = selected.projectId === project.id;
+            const news = projectUnread(app.data, project.id);
+            const count = cardCount(app.data, project.id);
+            return h('li', {}, h('a', {
+              class: 'pc-nav__item',
+              href: pathFor('project', { id: project.id }),
+              'aria-current': current ? (selected.name === 'project' ? 'page' : 'true') : null,
+              'aria-label': t(news ? 'navigation.projet.lu.nouveautes' : 'navigation.projet.lu', { name: project.name, count }),
+              onClick: (event) => {
+                event.preventDefault();
+                navigate('project', { id: project.id }, { replace: current && selected.name === 'project' });
+              },
+            },
+            h('span', { class: 'pc-nav__icon' }, icon('kanban', 'icon--sm')),
+            h('span', { class: 'pc-nav__name' }, project.name),
+            news ? h('span', { class: 'news-badge news-badge--dot', 'aria-hidden': 'true' }) : null,
+            h('span', { class: 'pc-nav__count', 'aria-hidden': 'true' }, String(count))));
+          }))
+          : h('p', { class: 'pc-nav__empty' }, t('navigation.projets.aucun')));
+      return;
+    }
     // Autres écrans : seulement les entrées fixes
     if (!LIST_SCREENS.includes(selected.name)) {
       showNav(false);
@@ -336,6 +406,8 @@ export function createPcSide() {
     h('div', { class: 'pc-side__foot' },
       newList,
       newNote,
+      newProject,
+      newCard,
       h('div', { class: 'pc-user' },
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },
@@ -351,10 +423,11 @@ export function createPcSide() {
     // ouverte (et son type)
     select(route) {
       const listId = ['list', 'editList'].includes(route?.name) ? route.params.id : null;
+      const projectId = PROJECT_SCREENS.includes(route?.name) ? route.params?.id ?? null : null;
       const name = route?.name ?? null;
-      const key = JSON.stringify([name, listId, pcType]);
+      const key = JSON.stringify([name, listId, projectId, pcType]);
       if (key === selected.key) return;
-      selected = { name, listId, key };
+      selected = { name, listId, projectId, key };
       draw();
     },
     // Touches [ et ] : liste précédente ou suivante, dans l'ordre du menu

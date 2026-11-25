@@ -19,7 +19,9 @@
 //   340 px) : une tuile restée seule sur sa ligne prend toute la largeur
 //   (tileLayout), jamais de trou ; trois sur ordinateur (quatre au-delà de
 //   1 440 px), où « toute la largeur » n'a pas d'effet. Notes coupées
-//   (Réglages › Fonctions, features.js) : pas de tuile Notes.
+//   (Réglages › Fonctions, features.js) : pas de tuile Notes. « Projets »
+//   (docs/cadrage-projets.md, 3.3) : seulement quand la personne a allumé
+//   la fonction ; en dernier, sur toute la largeur.
 // - Accueil coupé dans les Réglages : cet écran mène tout de suite au
 //   premier écran choisi (app.js le fait aussi pour #/accueil).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
@@ -42,9 +44,13 @@ import { TYPE_LABELS } from '../list-types.js';
 import { listCountsByType, saveTypeFilter } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
-import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
+import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope, deadlineProjects } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
+import { projectsInOrder, openNewProject } from './projects.js';
+import { myCards, urgentCards, projectUnread } from '../project-view.js';
+import { cardDue, cardIsNew } from './project.js';
+import { nowTime } from '../due-time.js';
 import { isNoteUnread } from '../store.js';
 import { computeGifts, recentGifts } from '../gifts.js';
 import { openGift, forLabel } from './gifts.js';
@@ -61,9 +67,10 @@ import { t } from '../i18n.js';
 // muette pour les lecteurs d'écran (le nombre est dans spoken)
 // (« toute la largeur » sur le téléphone : tile--wide, posé par renderHome
 // d'après tileLayout)
-function tile(name, iconName, onOpen, rows, { spoken = null, count = null } = {}) {
+function tile(name, iconName, onOpen, rows, { spoken = null, count = null, dot = false } = {}) {
   return h('section', { class: 'card tile', 'aria-label': name },
     h('button', { class: 'tile__head', type: 'button', 'aria-label': spoken, onClick: onOpen }, icon(iconName), h('span', { class: 'tile__name' }, name),
+      dot ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
       count ? h('span', { class: 'count', 'aria-hidden': 'true' }, String(count)) : null),
     rows);
 }
@@ -93,7 +100,8 @@ const emptyText = (text) => h('p', { class: 'tile__empty' }, text);
 
 // Échéances : « En retard » (rouge), « Aujourd'hui » (vert), « Plus tard »
 // (gris) ; mêmes nombres que l'écran Échéances, avec son choix « Toutes /
-// Les miennes » (deadlines.js). Un nombre nul reste gris.
+// Les miennes » (deadlines.js), cartes des projets montrés dans Échéances
+// comprises. Un nombre nul reste gris.
 function deadlinesTile() {
   const open = () => navigate('deadlines');
   const options = { today: todayKey(), mine: effectiveMine(app.data, loadDeadlineScope()), me: app.user.id };
@@ -103,10 +111,13 @@ function deadlinesTile() {
     app.openDeadlines = deadlineSectionFor(app.data, name, options);
     navigate('deadlines');
   };
+  // Des cartes de projets comptent aussi (étape 4 des projets) : le nom lu
+  // le dit (« 2 tâches ou cartes »)
+  const cards = deadlineProjects(app.data).size > 0;
   const lines = [
-    ['late', t('accueil.echeances.retard'), (count) => t('accueil.echeances.retard.lu', { count }), 'danger'],
-    ['today', t('accueil.echeances.aujourdhui'), (count) => t('accueil.echeances.aujourdhui.lu', { count }), 'success'],
-    ['later', t('accueil.echeances.plusTard'), (count) => t('accueil.echeances.plusTard.lu', { count }), ''],
+    ['late', t('accueil.echeances.retard'), (count) => t(cards ? 'accueil.echeances.retard.lu.cartes' : 'accueil.echeances.retard.lu', { count }), 'danger'],
+    ['today', t('accueil.echeances.aujourdhui'), (count) => t(cards ? 'accueil.echeances.aujourdhui.lu.cartes' : 'accueil.echeances.aujourdhui.lu', { count }), 'success'],
+    ['later', t('accueil.echeances.plusTard'), (count) => t(cards ? 'accueil.echeances.plusTard.lu.cartes' : 'accueil.echeances.plusTard.lu', { count }), ''],
   ];
   const total = counts.late + counts.today + counts.later;
   return tile(t('accueil.echeances'), 'calendar', open, total === 0
@@ -198,6 +209,50 @@ function giftsTile() {
   { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null });
 }
 
+// Projets (docs/cadrage-projets.md, 3.3 ; maquette accueil-1) : le nombre
+// de « mes cartes » (attribuées à moi, pas faites) dans la pastille du
+// titre, puis les trois plus urgentes (en retard d'abord, puis par
+// échéance, puis les plus récemment modifiées) : titre de la carte, et
+// dessous « projet · colonne · échéance » (« En retard » en rouge ET
+// écrit) ; une ligne ouvre la carte. Aucune carte pour moi : « Aucune carte
+// pour vous » et « Projets » ; aucun projet : « Aucun projet » et
+// « Nouveau projet ». Le titre ouvre l'écran « Projets ».
+function projectsTile() {
+  const projects = projectsInOrder();
+  const open = () => navigate('projects');
+  // Point des nouveautés (étape 3) : un projet a du nouveau pour moi
+  const news = projects.some((project) => projectUnread(app.data, project.id));
+  if (!projects.length) {
+    return tile(t('accueil.projets'), 'kanban', open,
+      [emptyText(t('accueil.projets.aucun')), rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())])]);
+  }
+  const today = todayKey();
+  const mine = myCards(app.data, app.user.id);
+  if (!mine.length) {
+    return tile(t('accueil.projets'), 'kanban', open,
+      [emptyText(t('accueil.projets.aucuneCarte')), rowsOf([row({ label: t('accueil.projets'), onClick: open })])],
+      { spoken: news ? t('accueil.projets.lu.nouveautes') : null, dot: news });
+  }
+  return tile(t('accueil.projets'), 'kanban', open, rowsOf(urgentCards(app.data, app.user.id, today, nowTime()).map((card) => {
+    const project = projects.find((p) => p.id === card.projectId);
+    const column = (project?.columns ?? []).find((c) => c.id === card.columnId);
+    const due = cardDue(card);
+    const late = due?.state === 'late';
+    const parts = [project?.name ?? '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
+    const fresh = cardIsNew(card);
+    return h('button', {
+      class: 'tile__row tile__row--two', type: 'button',
+      onClick: () => navigate('projectCard', { id: card.projectId, cardId: card.id }),
+    },
+    h('span', { class: 'tile__label' },
+      h('span', { class: 'tile__strong' }, card.title),
+      h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · ')),
+      fresh ? h('span', { class: 'visually-hidden' }, t('projets.face.nouveautes')) : null),
+    fresh ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+    icon('chev-r', 'icon--sm'));
+  })), { spoken: t(news ? 'accueil.projets.cartes.lu.nouveautes' : 'accueil.projets.cartes.lu', { count: mine.length }), count: mine.length, dot: news });
+}
+
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans
 // son nombre : il n'est que sur la cloche), « Réglages » ; pour
 // l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
@@ -255,7 +310,7 @@ export function renderHome(onLeave) {
     // seulement si j'ai des réservations ; pas de tuile d'une fonction
     // coupée (Notes) ; une tuile seule sur sa ligne du téléphone prend
     // toute la largeur
-    const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile };
+    const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile, projects: projectsTile };
     const present = shownTiles(app.data.home, app.data.features).map((name) => [name, build[name]()]).filter(([, el]) => el);
     const layout = tileLayout(present.map(([name]) => name));
     present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));

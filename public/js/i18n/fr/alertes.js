@@ -52,6 +52,35 @@ export default {
   'alertes.note.droit.sansTitre': 'Votre droit sur une note a changé',
   'alertes.noteIntrouvable': 'Note introuvable.',
 
+  // Projets (étape 3) : nouvelles cartes, attribution, commentaires et
+  // modifications d'une carte suivie, rappel, partage. count : nombre de
+  // personnes ; {cards} : « 3 cartes ». Sans le détail, la carte n'est pas
+  // nommée ; jamais le texte d'un commentaire.
+  'alertes.projet.cartes': { one: '{count} carte', other: '{count} cartes' },
+  'alertes.projet.ajoute': { one: '{people} a ajouté {cards} dans « {project} »', other: '{people} ont ajouté {cards} dans « {project} »' },
+  'alertes.projet.attribue': { one: '{people} vous a attribué {cards} dans « {project} »', other: '{people} vous ont attribué {cards} dans « {project} »' },
+  'alertes.projet.attribue.nom': { one: '{people} vous a attribué « {card} » dans « {project} »', other: '{people} vous ont attribué « {card} » dans « {project} »' },
+  'alertes.carte.commente': { one: '{people} a commenté une carte dans « {project} »', other: '{people} ont commenté une carte dans « {project} »' },
+  'alertes.carte.commente.nom': { one: '{people} a commenté « {card} »', other: '{people} ont commenté « {card} »' },
+  'alertes.carte.commentaires': { one: '{count} commentaire', other: '{count} commentaires' },
+  'alertes.carte.modifie': { one: '{people} a modifié une carte dans « {project} »', other: '{people} ont modifié une carte dans « {project} »' },
+  'alertes.carte.modifie.nom': { one: '{people} a modifié « {card} »', other: '{people} ont modifié « {card} »' },
+  'alertes.carte.change.deplacee': 'Déplacée vers « {column} »',
+  'alertes.carte.change.move': 'Déplacée',
+  'alertes.carte.change.due': 'Échéance changée',
+  'alertes.carte.change.done': 'Faite',
+  'alertes.carte.change.undone': 'Plus faite',
+  'alertes.carte.change.describe': 'Description modifiée',
+  'alertes.carte.rappel.aujourdhui': 'Rappel : une carte aujourd\'hui à {time}',
+  'alertes.carte.rappel.demain': 'Rappel : une carte demain à {time}',
+  'alertes.carte.rappel.date': 'Rappel : une carte le {date} à {time}',
+  'alertes.carte.dansProjet': 'Dans « {project} »',
+  'alertes.projet.partage': '{actor} a partagé le projet « {project} » avec vous',
+  'alertes.projet.droit.modifier': 'Vous pouvez modifier toutes les cartes et les colonnes.',
+  'alertes.projet.droit.contribuer': 'Vous pouvez ajouter des cartes et commenter.',
+  'alertes.projet.droit.lire': 'En lecture seule.',
+  'alertes.projet.allumer': 'Allumez « Projets » dans Réglages › Fonctions pour le voir.',
+
   // b) Résumé quotidien des échéances
   'alertes.echeances.aujourdhui': { one: '{count} tâche à faire aujourd\'hui', other: '{count} tâches à faire aujourd\'hui' },
   // En retard, après « … à faire aujourd'hui »
@@ -62,6 +91,11 @@ export default {
   'alertes.echeances.heure': '{name} ({time})',
   'alertes.dans': 'Dans « {list} »',
   'alertes.dansListes': 'Dans {count} listes',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 du cadrage
+  // des projets) : « 3 échéances aujourd'hui · 1 en retard »
+  'alertes.echeances.aujourdhui.cartes': { one: '{count} échéance aujourd\'hui', other: '{count} échéances aujourd\'hui' },
+  'alertes.echeances.retard.seules.cartes': { one: '{count} échéance en retard', other: '{count} échéances en retard' },
+  'alertes.echeances.dansListesProjets': 'Dans {count} listes et projets',
 
   // e) Rappel d'une tâche (sans le détail : titre)
   'alertes.rappel.aujourdhui': 'Rappel : une tâche aujourd\'hui à {time}',

@@ -111,6 +111,6 @@ test('écran d\'une liste : bouton « Trier la liste » dès qu\'il y a un choix
   assert.match(source, /checked: value === activeSort\(\),/);
   assert.match(source, /toast\(message, \{ duration: 2000 \}\)/);
   const ui = fs.readFileSync(new URL('../public/js/ui.js', import.meta.url), 'utf8');
-  assert.match(ui, /role: item\.checked === undefined \? 'menuitem' : 'menuitemradio'/);
+  assert.match(ui, /role: item\.checked === undefined \? 'menuitem' : item\.toggle \? 'menuitemcheckbox' : 'menuitemradio'/);
   assert.equal(compareNames('a', 'B') < 0, true);
 });

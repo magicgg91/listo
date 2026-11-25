@@ -31,20 +31,30 @@ function calls(source, tag, className) {
   return found;
 }
 
-test('une seule largeur : --pc-col à 1 040 px, plus de variante large ni pleine largeur', () => {
+test('une seule largeur : --pc-col à 1 040 px, plus de variante large ni pleine largeur (sauf un projet ouvert)', () => {
   for (const file of ['public/css/listo.css', 'design/listo.css']) {
     const css = read(file);
     assert.deepEqual([...css.matchAll(/--pc-col:\s*([^;]+);/g)].map((m) => m[1]), ['1040px'], file);
     assert.match(css, /\.pc-col \{[^}]*max-width: var\(--pc-col\); margin-inline: auto; \}/, file);
     assert.doesNotMatch(css, /pc-col--(wide|full)/, file);
   }
-  // Aucun écran ne demande une autre largeur
+  // Aucun écran ne demande une autre largeur, sauf UNE exception : un
+  // projet ouvert prend toute la largeur (.pc-col--board ; validée par le
+  // propriétaire le 25 novembre 2026, docs/cadrage-projets.md 3.4 : les
+  // colonnes ont besoin de place). La liste des projets et les réglages
+  // d'un projet gardent la colonne centrée.
   const app = read('public/js/app.js');
-  assert.match(app, /function mount\(screen, \{ withSide = true, listId = null \} = \{\}\) \{/);
-  assert.match(app, /const col = h\('div', \{ class: pc \? 'pc-col' : 'shell__col' \}\);/);
-  assert.doesNotMatch(app, /wide: true|pc-col--/);
+  assert.match(app, /function mount\(screen, \{ withSide = true, listId = null, board = null \} = \{\}\) \{/);
+  assert.match(app, /const col = h\('div', \{ class: pc \? \(board \? 'pc-col pc-col--board' : 'pc-col'\) : 'shell__col' \}\);/);
+  assert.doesNotMatch(app, /wide: true/);
+  assert.deepEqual([...app.matchAll(/pc-col--\w+/g)].map((m) => m[0]), ['pc-col--board', 'pc-col--board'], 'le commentaire de mount et la colonne');
+  assert.deepEqual([...app.matchAll(/board: params\.id/g)].length, 2, 'seulement un projet ouvert (et sa carte ouverte par-dessus)');
+  for (const file of ['public/css/listo.css', 'design/listo.css']) {
+    assert.deepEqual([...read(file).matchAll(/pc-col--\w+/g)].map((m) => m[0]), ['pc-col--board', 'pc-col--board'], file);
+    assert.match(read(file), /\.app--pc \.pc-col--board \{ max-width: none; \}/, file);
+  }
   for (const file of fs.readdirSync(new URL('../public/js/screens/', import.meta.url))) {
-    assert.doesNotMatch(read(`public/js/screens/${file}`), /pc-col--(wide|full)/, file);
+    assert.doesNotMatch(read(`public/js/screens/${file}`), /pc-col--/, file);
   }
 });
 

@@ -28,34 +28,40 @@
 import { h, replace } from '../dom.js';
 import { app, onDataChange } from '../app.js';
 import { navigate, goBack, replaceAddress } from '../router.js';
-import { notesOn } from '../features.js';
+import { notesOn, projectsOn } from '../features.js';
 import { t } from '../i18n.js';
 import { trashTabs, defaultTrashTab } from '../trash-tabs.js';
 import { topbar } from './settings.js';
 import { listTrash } from './trash.js';
 import { noteTrash } from './note-trash.js';
+import { projectTrash } from './project-trash.js';
 
 // Textes d'un onglet : libellé (« Listes », « Listes (4) ») et nom lu
 // (« Listes, 4 listes supprimées »), selon le nombre
 const TAB_TEXTS = {
   listes: { label: 'corbeille.onglet.listes', counted: 'corbeille.onglet.listes.nombre', name: 'corbeille.onglet.listes.label' },
   notes: { label: 'corbeille.onglet.notes', counted: 'corbeille.onglet.notes.nombre', name: 'corbeille.onglet.notes.label' },
+  projets: { label: 'corbeille.onglet.projets', counted: 'corbeille.onglet.projets.nombre', name: 'corbeille.onglet.projets.label' },
 };
+// Fonction (Réglages › Fonctions) dont la page dépend : changée, la page
+// est refaite
+const featuresKey = () => JSON.stringify([notesOn(app.data.features), projectsOn(app.data.features)]);
 
-// tab : l'onglet demandé par l'adresse (« listes », « notes »), ou null
-// pour l'onglet de départ
+// tab : l'onglet demandé par l'adresse (« listes », « notes »,
+// « projets »), ou null pour l'onglet de départ
 export function renderTrash(tab, onLeave) {
   const withNotes = notesOn(app.data.features);
-  const tabs = trashTabs(withNotes);
+  const tabs = trashTabs(withNotes, projectsOn(app.data.features));
+  const shownFeatures = featuresKey();
   let alive = true;
   onLeave(() => {
     alive = false;
   });
 
-  // Fonction « Notes » changée pendant que la page est ouverte : page
-  // refaite (un instant plus tard : jamais pendant un dessin)
+  // Fonction « Notes » ou « Projets » changée pendant que la page est
+  // ouverte : page refaite (un instant plus tard : jamais pendant un dessin)
   onLeave(onDataChange(() => {
-    if (notesOn(app.data.features) === withNotes) return;
+    if (featuresKey() === shownFeatures) return;
     setTimeout(() => {
       if (alive) navigate('trash', {}, { replace: true });
     });
@@ -64,7 +70,7 @@ export function renderTrash(tab, onLeave) {
   const body = h('div', { class: 'body body--flush' });
   const header = topbar(t('corbeille.titre'), () => goBack('settings'));
 
-  // Notes coupées : la corbeille des listes seule, sans onglets
+  // Notes et projets coupés : la corbeille des listes seule, sans onglets
   if (!tabs.length) {
     replace(body, listTrash(onLeave).panel);
     return h('div', { class: 'screen' }, header, body);
@@ -103,12 +109,15 @@ export function renderTrash(tab, onLeave) {
   // des notes à la corbeille, « Chargement… »
   const decide = () => {
     if (tab) return;
-    const notes = panels.notes?.count() ?? null;
-    if (notes === 0 || listsTried) show(defaultTrashTab({ lists: panels.listes?.count() ?? null, notes }));
+    // (un nombre encore inconnu, null, fait attendre ; une corbeille sans
+    // onglet compte pour vide)
+    const notes = panels.notes ? panels.notes.count() : 0;
+    const projects = panels.projets ? panels.projets.count() : 0;
+    if ((notes === 0 && projects === 0) || listsTried) show(defaultTrashTab({ lists: panels.listes?.count() ?? null, notes, projects }));
   };
 
   const changed = () => {
-    if (!alive || !panels.listes || !panels.notes) return;
+    if (!alive || !tabs.every((key) => panels[key])) return;
     paintTabs();
     decide();
   };
@@ -130,7 +139,8 @@ export function renderTrash(tab, onLeave) {
     listsTried = true;
     changed();
   });
-  panels.notes = noteTrash(onLeave, changed);
+  if (tabs.includes('notes')) panels.notes = noteTrash(onLeave, changed);
+  if (tabs.includes('projets')) panels.projets = projectTrash(onLeave, changed);
   for (const key of tabs) panels[key].panel.hidden = true;
   replace(body, loading, tabs.map((key) => panels[key].panel));
 

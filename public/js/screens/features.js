@@ -4,8 +4,9 @@
 // migration 41). Chaque changement part tout de suite par la file
 // d'attente (copie locale, puis serveur) : hors ligne compris.
 //
-// - Une phrase d'explication, puis une ligne par fonction (pour l'instant
-//   « Notes ») : son nom, une phrase dessous, un interrupteur.
+// - Une phrase d'explication, puis une ligne par fonction (« Notes »,
+//   « Projets », coupés au départ) : son nom, une phrase dessous, un
+//   interrupteur.
 // - Une fonction coupée disparaît des écrans de la personne (bandeau du bas,
 //   Accueil, menu de gauche, nouveautés, notifications) ; rien n'est effacé.
 // - D'autres fonctions pourront s'ajouter : une entrée dans FEATURE_INFO
@@ -25,6 +26,7 @@ import { t } from '../i18n.js';
 // d'afficher : la langue est alors choisie)
 const FEATURE_INFO = {
   notes: { name: () => t('reglages.fonctions.notes'), sub: () => t('reglages.fonctions.notes.detail') },
+  projects: { name: () => t('reglages.fonctions.projets'), sub: () => t('reglages.fonctions.projets.detail') },
 };
 
 export function renderFeatures(onLeave = () => {}) {

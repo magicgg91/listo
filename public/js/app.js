@@ -24,9 +24,14 @@ import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
 import { renderNotes } from './screens/notes.js';
 import { renderNote } from './screens/note.js';
+import { renderProjects } from './screens/projects.js';
+import { renderProject } from './screens/project.js';
+import { renderProjectCard, openProjectCardPanel } from './screens/project-card.js';
+import { renderProjectSettings } from './screens/project-settings.js';
+import { renderProjectTrash } from './screens/project-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { firstScreen, normalizeHome } from './home-tiles.js';
-import { normalizeFeatures, screenAllowed, notesOn } from './features.js';
+import { normalizeFeatures, screenAllowed, notesOn, projectsOn } from './features.js';
 import { askedTrashTab } from './trash-tabs.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
@@ -275,6 +280,9 @@ const OPTION_OFF = ['ops.prioriteDesactivee', 'ops.echeanceDesactivee'];
 // Note enregistrée sur une version dépassée (server/notes.js) : pas de
 // message d'erreur, la note passe « À vérifier » (markNoteConflict)
 const NOTE_CONFLICT = 'ops.noteConflit';
+// Description d'une carte enregistrée sur une version dépassée
+// (server/projects.js) : de même, la carte passe « À vérifier »
+const CARD_CONFLICT = 'ops.carteConflit';
 export function refreshData({ quiet = false, full = false } = {}) {
   if (refreshing) {
     again = { full: Boolean(again?.full || full) };
@@ -304,22 +312,28 @@ export function refreshData({ quiet = false, full = false } = {}) {
       let readOnlyRefused = false;
       let optionRefused = false;
       let noteConflict = false;
+      let cardConflict = false;
       if (refusals.length) {
         readOnlyRefused = refusals.some(({ code }) => code === READ_ONLY);
         optionRefused = refusals.some(({ code }) => OPTION_OFF.includes(code));
         noteConflict = refusals.some(({ code }) => code === NOTE_CONFLICT);
-        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
+        cardConflict = refusals.some(({ code }) => code === CARD_CONFLICT);
+        const [first, ...others] = refusals.filter(({ code }) => code !== READ_ONLY && code !== NOTE_CONFLICT && code !== CARD_CONFLICT && !OPTION_OFF.includes(code)).map(({ message }) => message);
         refusals = [];
         full = true;
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
       }
       // 3. Puis récupérer les changements des autres. Copie trop ancienne
-      //    (plus de 25 jours) : tout recharger.
-      const since = !full && app.data.loaded && !isTooOld(app.data) ? app.data.serverTime : null;
+      //    (plus de 25 jours), ou projets qui viennent d'être rallumés (le
+      //    serveur n'en envoyait rien) : tout recharger.
+      const since = !full && app.data.loaded && !isTooOld(app.data) && !app.data.projectsReload ? app.data.serverTime : null;
       const data = await get(since ? `/api/sync?since=${encodeURIComponent(since)}` : '/api/sync');
       if (!app.user) return;
       if (since) mergeSync(app.data, data);
       else loadSync(app.data, data);
+      // Projets rallumés sur un autre appareil (vu à l'instant) : une
+      // synchronisation complète suit
+      if (app.data.projectsReload) again = { full: true };
       // Page Notifications : relue seulement quand son empreinte a changé
       // (une ligne ajoutée, lue ou effacée, ici ou sur un autre appareil)
       if (data.inboxStamp !== undefined && (data.inboxStamp !== app.data.inbox.stamp || !app.data.inbox.loaded)) {
@@ -336,6 +350,9 @@ export function refreshData({ quiet = false, full = false } = {}) {
       // Note « À vérifier » : l'écran de la note ouverte propose le choix ;
       // ailleurs, un message dit de l'ouvrir
       else if (noteConflict && app.route?.name !== 'note' && !app.route?.params?.note) toast(t('application.noteAVerifier'));
+      // Description d'une carte « À vérifier » : même chose (l'écran de la
+      // carte propose le choix)
+      else if (cardConflict && app.route?.name !== 'projectCard') toast(t('application.carteAVerifier'));
       // Page Notifications reçue : celles de l'écran ouvert deviennent lues
       readInboxOfScreen();
     } catch (error) {
@@ -388,6 +405,7 @@ function makeQueue() {
       changed: () => setPendingCount(queue?.count() ?? 0),
       refused: (entry, message, code, result) => {
         if (code === NOTE_CONFLICT) markNoteConflict(entry.op, result?.current);
+        if (code === CARD_CONFLICT) markCardConflict(entry.op, result?.current);
         refusals.push({ message, code });
       },
       dropped: () => {},
@@ -408,6 +426,22 @@ function markNoteConflict(op, current = null) {
   app.data.noteConflicts.set(op.noteId, {
     title: op.title ?? kept?.title ?? note?.title ?? '',
     body: op.body ?? kept?.body ?? note?.body ?? '',
+    at: new Date().toISOString(),
+    byId: current?.updatedBy ?? kept?.byId ?? null,
+    byName: current?.updatedByName ?? kept?.byName ?? null,
+  });
+  dataChanged();
+}
+
+// Enregistrement de la description d'une carte refusé (elle a changé
+// entre-temps) : comme une note, mon texte est gardé sur ce téléphone et
+// la carte passe « À vérifier » jusqu'à mon choix (screens/project-card.js)
+function markCardConflict(op, current = null) {
+  if (op.type !== 'card.describe' || !app.data.cardConflicts) return;
+  const card = app.data.cards.get(op.cardId);
+  const kept = app.data.cardConflicts.get(op.cardId);
+  app.data.cardConflicts.set(op.cardId, {
+    description: op.description ?? kept?.description ?? card?.description ?? '',
     at: new Date().toISOString(),
     byId: current?.updatedBy ?? kept?.byId ?? null,
     byName: current?.updatedByName ?? kept?.byName ?? null,
@@ -663,6 +697,8 @@ startShortcuts({
   onGoList: (delta) => pcSide?.goList(delta),
   // Notes coupées (Réglages › Fonctions) : N ne mène jamais à une note
   notesOn: () => notesOn(app.data.features),
+  // Projets coupés (le départ) : pas de groupe « Projet » dans les raccourcis
+  projectsOn: () => projectsOn(app.data.features),
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -698,19 +734,23 @@ function pcSideFor(route) {
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
 // l'écran de connexion, par exemple). Sur ordinateur, tous les écrans ont
 // la même colonne centrée (.pc-col, 1 040 px au plus ; décision du
-// 24 novembre 2026).
+// 24 novembre 2026), sauf un projet ouvert (board : son identifiant), qui
+// prend toute la largeur (.pc-col--board ; exception validée par le
+// propriétaire le 25 novembre 2026 : les colonnes ont besoin de place).
 // Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
-// liste », qui s'ouvrent par-dessus l'écran en cours
+// liste », qui s'ouvrent par-dessus l'écran en cours, et à une carte
+// ouverte, par-dessus son projet
 let mountedOnPc = false;
 let mountedListId = null;
-function mount(screen, { withSide = true, listId = null } = {}) {
+let mountedBoard = null;
+function mount(screen, { withSide = true, listId = null, board = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
   const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
-  const col = h('div', { class: pc ? 'pc-col' : 'shell__col' });
+  const col = h('div', { class: pc ? (board ? 'pc-col pc-col--board' : 'pc-col') : 'shell__col' });
   setOverlayHost(col);
   // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
   if (bar) tabBar().loupe.set(null);
@@ -721,6 +761,7 @@ function mount(screen, { withSide = true, listId = null } = {}) {
 
   mountedOnPc = pc;
   mountedListId = listId;
+  mountedBoard = pc ? board : null;
   if (pc) {
     replace(root, h('div', { class: 'pc pc--a' }, skipLink(col), pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
     screenShown(col);
@@ -855,6 +896,23 @@ function show(route) {
       break;
     }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
+    // Projets (docs/cadrage-projets.md). Ordinateur : le projet sur toute la
+    // largeur ; une carte s'ouvre dans une fenêtre par-dessus son projet
+    // (qui n'est pas redessiné en la fermant)
+    case 'projects': mount((onLeave) => renderProjects(onLeave)); break;
+    case 'project':
+      if (isDesktop() && mountedOnPc && mountedBoard === params.id) pcSide?.select(route);
+      else mount((onLeave) => renderProject(params.id, onLeave), { board: params.id });
+      break;
+    case 'projectCard':
+      if (isDesktop()) {
+        if (!mountedOnPc || mountedBoard !== params.id) mount((onLeave) => renderProject(params.id, onLeave), { board: params.id });
+        else pcSide?.select(route);
+        openProjectCardPanel(params.id, params.cardId);
+      } else mount((onLeave) => renderProjectCard(params.id, params.cardId, onLeave));
+      break;
+    case 'projectSettings': mount((onLeave) => renderProjectSettings(params.id, onLeave)); break;
+    case 'projectTrash': mount((onLeave) => renderProjectTrash(params.id, onLeave)); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
     // l'écran en cours (ou sur « Listes », sur la liste à modifier)
     case 'newList':
@@ -886,12 +944,12 @@ function show(route) {
     case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section)); break;
-    // Corbeille (24 novembre 2026) : une page, onglets « Listes » et
-    // « Notes » (trash-page.js). Onglet inconnu, ou « Notes » quand les
-    // notes sont coupées : la Corbeille sans onglet dans l'adresse
+    // Corbeille (24 novembre 2026) : une page, onglets « Listes »,
+    // « Notes » et « Projets » (trash-page.js). Onglet inconnu, ou d'une
+    // fonction coupée : la Corbeille sans onglet dans l'adresse
     case 'trash': mount((onLeave) => renderTrash(null, onLeave)); break;
     case 'trashTab': {
-      const tab = askedTrashTab(params.tab, notesOn(app.data.features));
+      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features));
       if (tab) mount((onLeave) => renderTrash(tab, onLeave));
       else navigate('trash', {}, { replace: true });
       break;

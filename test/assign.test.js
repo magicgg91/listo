@@ -349,7 +349,8 @@ test('écran : « Pour » seulement avec l\'option ; pastille « Moi » ou prén
   // Choix « Toutes / Les miennes » : règles dans deadlines.js, partagées
   // avec la tuile « Échéances » de l'Accueil (23 novembre 2026)
   assert.match(read('public/js/deadlines.js'), /export const SCOPE_KEY = 'listo-echeances-miennes';/);
-  assert.match(read('public/js/deadlines.js'), /export const scopeOffered = \(state\) => \[\.\.\.state\.lists\.values\(\)\]\.some\(\(list\) => listOptions\(list\)\.assign\);/);
+  // (ou un projet montré dans Échéances : étape 4 des projets)
+  assert.match(read('public/js/deadlines.js'), /export const scopeOffered = \(state\) => \[\.\.\.state\.lists\.values\(\)\]\.some\(\(list\) => listOptions\(list\)\.assign\)\n  \|\| deadlineProjects\(state\)\.size > 0;/);
   assert.match(read('public/js/screens/deadlines.js'), /const offered = scopeOffered\(app\.data\);/);
   for (const file of ['public/js/screens/list.js', 'public/js/screens/deadlines.js', 'public/js/screens/list-form.js', 'public/js/deadlines.js', 'public/js/sorting.js']) {
     assert.doesNotMatch(read(file).replace(/\/\/.*$/gm, ''), /innerHTML|outerHTML|insertAdjacentHTML/, file);

@@ -87,6 +87,11 @@ const ALLOWED_FOCUS = new Map([
   ['public/js/screens/projects.js: input', 'EXCEPTION voulue : nom d\'un nouveau projet, après « + », « Nouveau projet » ou N'],
   ['public/js/screens/project.js: field', 'EXCEPTION voulue : titre d\'une nouvelle carte, après « + Ajouter une carte », « Nouvelle carte » ou N'],
   ['public/js/screens/project-card.js: input', 'EXCEPTION voulue : titre d\'une carte ouverte, après un appui sur ce titre'],
+  // Description d'une carte (étape 2, 25 novembre 2026) : comme le texte
+  // d'une note, toucher le texte affiché (ou « + Ajouter une description »)
+  // le remplace par le champ, curseur à l'endroit touché ; un bouton de la
+  // barre de mise en forme garde le curseur dans le champ
+  ['public/js/screens/card-description.js: input', 'EXCEPTION voulue : description d\'une carte, après un appui sur son texte affiché ou « + Ajouter une description »'],
   // Barre de mise en forme d'une note (24 novembre 2026) : flèches,
   // Début et Fin d'un bouton à l'autre (role="toolbar"), des boutons
   ['public/js/screens/note-toolbar.js: next', 'flèches dans la barre de mise en forme d\'une note (un bouton, jamais un champ)'],
@@ -105,8 +110,8 @@ const ALLOWED_FOCUS = new Map([
 // Seul setSelectionRange permis : le curseur d'une note, placé à l'endroit
 // touché du texte affiché (geste fait pour écrire, décision du 23 novembre 2026)
 // ; et le titre d'une carte ouverte, curseur à la fin après un appui sur ce
-// titre (projets, 25 novembre 2026)
-const ALLOWED_SELECTION = ['public/js/screens/note.js', 'public/js/screens/project-card.js'];
+// titre (projets, 25 novembre 2026) ; et sa description, à l'endroit touché
+const ALLOWED_SELECTION = ['public/js/screens/note.js', 'public/js/screens/project-card.js', 'public/js/screens/card-description.js'];
 
 test('aucun .select(), autofocus ni setSelectionRange dans l\'interface', () => {
   for (const file of interfaceFiles()) {

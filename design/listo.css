@@ -1541,8 +1541,8 @@ span.nf-task__box::after { display: none; }
 
 /* 16.37 Tuile Projets de l'Accueil : toute la largeur (.tile--wide, 16.30),
    lignes à deux étages (.tile__row--two, .tile__strong, .tile__sub : 16.30).
-   Étape 1 : les trois projets les plus récemment modifiés (nom, nombre de
-   cartes, point des nouveautés) ; « mes cartes » viendra à l'étape 2.
+   Étape 2 : « mes cartes » (attribuées à moi, pas faites), les trois plus
+   urgentes ; titre de la carte, puis « projet · colonne · échéance ».
    .tile__sub--late : en retard (texte rouge ET le mot « En retard »). */
 .tile__sub--late { color: var(--color-danger-ink); }
 
@@ -1595,8 +1595,8 @@ span.nf-task__box::after { display: none; }
 .kgroup__title { display: flex; align-items: center; gap: 8px; margin: 0 var(--space-2) 8px; font-size: var(--text-sm); font-weight: 700; color: var(--color-text-2); }
 
 /* 16.40 Carte (face) : .card .kcard ; titre (trois lignes au plus, un lien
-   qui couvre toute la carte), étiquettes (.labels, 16.32). (Repères de
-   l'étape 2 : échéance .due, compteurs .kcount, personnes.)
+   qui couvre toute la carte), étiquettes (.labels, 16.32), repères
+   (.kcard__meta : échéance .due, compteurs .kcount, personnes ; 16.46).
    - .due : date ; --late : en retard (fond rouge doux, texte rouge ET
      icône d'alerte) ; --done : fait (fond vert plein, coche ET « fait »
      écrit) ; --today : aujourd'hui (liseré vert).
@@ -1673,10 +1673,12 @@ span.nf-task__box::after { display: none; }
    passe en saisie pour qui peut modifier), colonne (.kc__where, bouton dans
    sa couleur : ouvre « Déplacer vers… »), champs (.kfields, .kfield) ; un
    seul chemin pour remplir un champ (remarque du 25 novembre 2026) : le
-   champ lui-même, avec son « + » (.kadd). Étape 1 : la colonne et les
-   étiquettes ; les autres champs arrivent avec les étapes 2 et 3.
-   Ordinateur : à gauche (.kdialog__main) titre et « dans … » ; à droite
-   (.kdialog__side, 296 px) Colonne, Étiquettes, puis Actions (.kside). La
+   champ lui-même, avec son « + » (.kadd). Détails de l'étape 2 (personnes,
+   échéance, priorité, description, liens) : 16.46 ; commentaires et
+   historique : étape 3.
+   Ordinateur : à gauche (.kdialog__main) titre, « dans … », Description,
+   Liens ; à droite (.kdialog__side, 296 px) Colonne, Personnes,
+   Étiquettes, Échéance, Priorité (option), puis Actions (.kside). La
    fenêtre prend la hauteur de son contenu (900 px au plus de l'écran,
    moins 56 px en haut et en bas). */
 .kc { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--space-2) var(--space-2); }
@@ -1770,6 +1772,65 @@ span.nf-task__box::after { display: none; }
 .share-roles li + li { margin-top: 4px; }
 .share-roles strong { color: var(--color-text); }
 .share-actions { margin-top: var(--space-2); }
+
+/* 16.46 Détails d'une carte (docs/cadrage-projets.md, étape 2 ; maquettes
+   design/projets carte-1, carte-2, projet-1, projet-2, pc-projet-1 et
+   pc-carte-1, 25 novembre 2026).
+   - Face (16.40) : .kcard__meta, une ligne de repères, cachée aux lecteurs
+     d'écran (ils sont lus avec le titre) : échéance .due (--done : coche ET
+     « Fait » écrit), priorité (.chip, --high), description (#i-menu-lines),
+     « 2/3 » (.kcount ; --all : tout est coché, vert ET nombres), liens,
+     et les pastilles des personnes à droite.
+   - Carte ouverte : Personnes (.kfield__person : pastille et prénom ;
+     « Me retirer » pour un Contributeur sur la carte d'un autre) ;
+     Échéance sur une ligne (.kdue : la case « Fait » .kdone puis la date,
+     un bouton .kdue__date ; le rappel .kdue__remind dessous, en petit) ;
+     Priorité (.segmented .kprio) ; Description (.kc__desc : texte mis en
+     forme des notes, 16.33 ; « + Ajouter une description » ; .kc__check :
+     « À vérifier ») ; Liens (.klink : icône, titre souligné, adresse en
+     petit, ⋮ ; .klink--add). Sections (.kc__block) : titre en capitales
+     (.kc__section) et nombre à droite (.kcount).
+   - Filtre du téléphone (feuille « Filtrer les cartes ») : les étiquettes
+     passent à la ligne (.kfilter__labels) ; la règle en petit dessous. */
+.kcount--all { color: var(--color-success-ink); }
+.due--done .icon { stroke-width: 3; }
+.kcard__meta .chip { height: 24px; padding: 0 8px; }
+.kcard__meta .avatar { border: 0; }
+.kc__block { display: flex; flex-direction: column; gap: 10px; }
+.kc__block .group { margin: 0; }
+.kc__section .kcount { margin-left: auto; letter-spacing: 0; text-transform: none; }
+.kfield__person { display: inline-flex; align-items: center; gap: 6px; }
+.kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kdue { display: flex; flex-wrap: wrap; align-items: center; gap: 0 10px; min-width: 0; }
+.kdue__date { display: inline-flex; align-items: center; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; }
+.kdue__date .due { height: 28px; font-size: var(--text-base); }
+.kdue__remind { display: flex; flex-basis: 100%; align-items: center; gap: 4px; margin-top: -4px; font-size: var(--text-sm); color: var(--color-text-2); }
+.kdone { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0; border: 0; background: transparent; color: var(--color-text); font: inherit; font-weight: 600; }
+.kdone .tick { width: 26px; height: 26px; }
+.kdone .tick .icon { width: 16px; height: 16px; stroke-width: 3; }
+.kdone[aria-disabled="true"] { color: var(--color-text-2); }
+.kprio { width: 100%; }
+.kc__desc { display: flex; flex-direction: column; padding: 10px 14px; }
+.kc__desc .note-edit__body { min-height: 0; }
+.kc__desc .note-edit__body--input { min-height: 120px; }
+.kc__desc .note-tools--top { top: -10px; margin: -10px -14px 8px; padding: 8px 10px; background: var(--color-surface); }
+.kc__desc > .klink--add { margin: -10px -14px; width: calc(100% + 28px); }
+.kc__none { margin: 0; padding: 0 2px; }
+.kc__check { margin: 0; }
+.klink { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 4px 6px 14px; border-bottom: 1px solid var(--color-border); }
+.klink:last-child { border-bottom: 0; }
+.klink > .icon { flex: none; color: var(--color-text-2); }
+.klink .icon-btn { flex: none; }
+.klink--add { width: 100%; border-top: 0; border-right: 0; border-left: 0; background: transparent; color: var(--color-accent-ink); font: inherit; font-weight: 700; text-align: left; }
+.klink--add > .icon { color: inherit; }
+.klink__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.klink__title { overflow: hidden; color: var(--color-accent-ink); font-weight: 600; text-decoration: underline; text-overflow: ellipsis; white-space: nowrap; }
+.klink__url { overflow: hidden; font-size: var(--text-sm); color: var(--color-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.kside-field .kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kside-field .kdue__date .due { height: 26px; font-size: var(--text-sm); }
+.kfilter__labels { flex-wrap: wrap; overflow: visible; padding: 0; }
+.kfilter__rule { margin: var(--space-2) 2px 0; }
+.pfilter .avatar { width: 20px; height: 20px; border: 0; font-size: 10px; }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

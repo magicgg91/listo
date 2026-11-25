@@ -19,7 +19,7 @@
 import { h, icon, field, errorNote } from '../dom.js';
 import { openSheet } from '../ui.js';
 import { t } from '../i18n.js';
-import { TOOLBAR, linkAddress, linkLabel } from '../note-format.js';
+import { TOOLBAR, linkAddress, linkLabel, sourceOffset } from '../note-format.js';
 
 // Nom lu de chaque bouton
 const NAMES = {
@@ -129,4 +129,31 @@ export function openLinkSheet({ label = '', address: start = '', onInsert }) {
     onInsert(text.value, address.value);
   });
   return sheet;
+}
+
+// --- Texte affiché mis en forme : endroit touché, texte choisi (communs
+// au texte d'une note, screens/note.js, et à la description d'une carte de
+// projet, screens/card-description.js) ---
+
+// Position du curseur dans le texte (marques comprises), à l'endroit
+// touché du texte affiché, ou la fin du texte si le navigateur ne sait pas
+// le dire
+export function offsetAt(view, event, length) {
+  const point = document.caretPositionFromPoint?.(event.clientX, event.clientY);
+  const range = point ? null : document.caretRangeFromPoint?.(event.clientX, event.clientY);
+  const node = point?.offsetNode ?? range?.startContainer;
+  const offset = point?.offset ?? range?.startOffset;
+  if (!node || !view.contains(node)) return length;
+  return Math.min(length, sourceOffset(node, offset) ?? length);
+}
+
+// Texte choisi dans le texte affiché (sélection sans clavier) : [début,
+// fin] dans le texte, marques comprises, ou null
+export function chosenRange(view) {
+  const selection = document.getSelection?.();
+  if (!selection || selection.isCollapsed || !view.contains(selection.anchorNode) || !view.contains(selection.focusNode)) return null;
+  const a = sourceOffset(selection.anchorNode, selection.anchorOffset);
+  const b = sourceOffset(selection.focusNode, selection.focusOffset);
+  if (a === null || b === null || a === b) return null;
+  return [Math.min(a, b), Math.max(a, b)];
 }

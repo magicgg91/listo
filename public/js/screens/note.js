@@ -61,14 +61,14 @@ import { app, onDataChange, isDesktop } from '../app.js';
 import { openMenu, openSheet, confirmDialog, toast, onSyncChange, currentSyncState, offlineBanner } from '../ui.js';
 import { uuid } from '../api.js';
 import { noteTitle, NOTE_TITLE_MAX, NOTE_BODY_MAX } from '../notes.js';
-import { renderNoteText, sourceOffset, domPoint, applyFormat, formatsAt, insertLink, linkAround, toggleTask, LINE_KINDS } from '../note-format.js';
+import { renderNoteText, domPoint, applyFormat, formatsAt, insertLink, linkAround, toggleTask, LINE_KINDS } from '../note-format.js';
 import * as actions from '../actions.js';
 import { t } from '../i18n.js';
 import { noteMenuItems, titleOf } from './notes.js';
 import { canEditNote, isNoteOwner, notePeople } from '../store.js';
 import { openNoteShare } from './share-panel.js';
 import { noteLabelsSlot, drawNoteLabels } from './note-labels.js';
-import { noteToolbar, openLinkSheet } from './note-toolbar.js';
+import { noteToolbar, openLinkSheet, offsetAt, chosenRange } from './note-toolbar.js';
 
 const SAVE_DELAY_MS = 1000;
 
@@ -76,29 +76,6 @@ const SAVE_DELAY_MS = 1000;
 // sur l'ordinateur
 export function renderNote(noteId, onLeave) {
   return noteEditor(noteId, onLeave, { pc: isDesktop() });
-}
-
-// Position du curseur dans le texte (marques comprises), à l'endroit
-// touché du texte affiché, ou la fin du texte si le navigateur ne sait pas
-// le dire
-function offsetAt(view, event, length) {
-  const point = document.caretPositionFromPoint?.(event.clientX, event.clientY);
-  const range = point ? null : document.caretRangeFromPoint?.(event.clientX, event.clientY);
-  const node = point?.offsetNode ?? range?.startContainer;
-  const offset = point?.offset ?? range?.startOffset;
-  if (!node || !view.contains(node)) return length;
-  return Math.min(length, sourceOffset(node, offset) ?? length);
-}
-
-// Texte choisi dans le texte affiché (sélection sans clavier) : [début,
-// fin] dans le texte, marques comprises, ou null
-function chosenRange(view) {
-  const selection = document.getSelection?.();
-  if (!selection || selection.isCollapsed || !view.contains(selection.anchorNode) || !view.contains(selection.focusNode)) return null;
-  const a = sourceOffset(selection.anchorNode, selection.anchorOffset);
-  const b = sourceOffset(selection.focusNode, selection.focusOffset);
-  if (a === null || b === null || a === b) return null;
-  return [Math.min(a, b), Math.max(a, b)];
 }
 
 // L'éditeur (téléphone : tout l'écran ; ordinateur : toute la colonne)

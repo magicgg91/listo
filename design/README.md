@@ -589,16 +589,17 @@ Décisions du propriétaire du 24 novembre 2026 ; maquettes « barre au-dessus d
 
 ## Ajout : Projets (25 novembre 2026)
 
-Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de chaque écran, en clair et en sombre). Les composants de `design/projets/listo-projets.css` sont passés dans `listo.css` (sections 16.35 à 16.45, identiques dans `public/css/listo.css`), ajustés à la construction ; les six icônes de `design/projets/icons-nouvelles.svg.html` sont dans le sprite (`#i-kanban`, `#i-comment`, `#i-move`, `#i-grip`, `#i-filter`, `#i-history`).
+Cadrage `docs/cadrage-projets.md`, maquettes `design/projets/` (référence de chaque écran, en clair et en sombre). Les composants de `design/projets/listo-projets.css` sont passés dans `listo.css` (sections 16.35 à 16.46, identiques dans `public/css/listo.css`), ajustés à la construction ; les six icônes de `design/projets/icons-nouvelles.svg.html` sont dans le sprite (`#i-kanban`, `#i-comment`, `#i-move`, `#i-grip`, `#i-filter`, `#i-history`).
 
 - **16.35** couleur d'une colonne : `.c-<couleur>` (les huit couleurs des étiquettes) et `.coldot` ; le nom est toujours écrit.
 - **16.36** bandeau du bas à six boutons : `.tabbar--6` (libellés en 11 px), pastille sur six places.
 - **16.37** tuile « Projets » de l'Accueil (toute la largeur ; lignes à deux étages de 16.30).
 - **16.38** écran « Projets » : `.proj-card` (le nom est un lien qui couvre la carte), `.colchip`.
 - **16.39** un projet sur le téléphone : `.coltabs`, `.coltab` (choisi : fond doux, liseré, gras ; `.is-drop` sous une carte tenue), `.kcards`, `.kswipe` (glisser de côté), `.kgroup` (résultats d'une recherche).
-- **16.40** face d'une carte : `.kcard`, `.kcard__link`, `.kghost` (carte tenue, sans rotation si le mouvement est réduit), `.kdrop` (place où elle tombera) ; `.due`, `.kcount` pour l'étape 2.
+- **16.40** face d'une carte : `.kcard`, `.kcard__link`, `.kghost` (carte tenue, sans rotation si le mouvement est réduit), `.kdrop` (place où elle tombera) ; `.due`, `.kcount` (repères : 16.46).
 - **16.41** ordinateur : `.pc-col--board` (projet sur toute la largeur), `.kboard`, `.kcol`, `.kcol__cards`, `.kcol__add`, `.kcol--new`, `.kfilters`, `.pfilter`.
 - **16.42** carte ouverte : `.kc`, `.kc__where`, `.kfield`, `.kadd` ; ordinateur `.kdialog` (hauteur de son contenu), `.kside`.
 - **16.43** « Déplacer vers… » : `.move__current`, `.move__count`, `.move__where`.
 - **16.44** réglages du projet : `.col-row` (poignée à glisser), `.col-place`, `.group-title`, `.kset`.
 - **16.45** choix du droit à trois options sous la personne : `.share__person--3`, `.share__access--3`, `.share-roles`.
+- **16.46** détails d'une carte (étape 2) : repères de la face (`.kcard__meta`, `.due--done`, `.kcount--all`), personnes (`.kfield__person`), échéance sur une ligne (`.kdue`, `.kdone`, `.kdue__date`, `.kdue__remind`), priorité (`.kprio`), description (`.kc__block`, `.kc__desc`, `.kc__check`), liens (`.klink`, `.klink--add`), filtre du téléphone (`.kfilter__labels`, `.kfilter__rule`), `.pfilter .avatar`.

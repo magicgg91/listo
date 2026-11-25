@@ -325,8 +325,9 @@ export function createListService(ctx) {
   const inbox = ctx.inbox ?? (ctx.inbox = createInbox(ctx));
   // Réglage « Accueil » de chaque compte (server/home.js, migration 40)
   const home = createHome(db);
-  // Réglage « Fonctions » de chaque compte (server/features.js, migration 41)
-  const features = createFeatures(db);
+  // Réglage « Fonctions » de chaque compte (server/features.js, migrations
+  // 41 et 48 : fonctions utilisées = autorisées par l'Admin et allumées)
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   // Annuaire de chaque compte (server/directory.js) : qui il peut choisir
   // pour partager ou comme destinataire d'une liste d'envies
   const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
@@ -1477,10 +1478,12 @@ export function createListService(ctx) {
     // fonction inconnue ou valeur qui n'est pas un booléen : refusé (400),
     // rien n'est écrit. Couper une fonction n'efface rien. Seuls ses autres
     // appareils sont prévenus (même synchronisation que les nouveautés).
+    // Une fonction que l'Admin n'a pas autorisée pour ce compte (étape 2
+    // de docs/cadrage-comptes.md) : refusée (403), rien n'est écrit.
     'account.features'(user, op) {
       const { id, type, ...change } = op;
-      const { problem, changed } = features.setFeatures(user.id, change);
-      if (problem) throw new OpError(400, problem);
+      const { problem, status, changed } = features.setFeatures(user.id, change);
+      if (problem) throw new OpError(status ?? 400, problem);
       if (changed) changedForMe(null);
       return {};
     },
@@ -1655,8 +1658,12 @@ export function createListService(ctx) {
       news: news.newsFor(user),
       // Mon réglage « Accueil » (server/home.js), en entier à chaque synchronisation
       home: home.homeFor(user.id),
-      // Mon réglage « Fonctions » (server/features.js), de même
+      // Mon réglage « Fonctions » (server/features.js), de même : les
+      // fonctions que j'utilise (autorisées et allumées)…
       features: features.featuresFor(user.id),
+      // … et ce que l'Admin m'a autorisé (Réglages › Fonctions ne propose
+      // que cela ; « Nouveau projet », « Assistants IA »)
+      allowed: features.allowedFor(user.id),
       // Réservations des listes d'envies où ce compte a le droit de les voir,
       // en entier à chaque synchronisation (une libération disparaît donc
       // d'elle-même) ; jamais celles d'une liste dont il est le bénéficiaire

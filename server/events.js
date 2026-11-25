@@ -149,6 +149,17 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const connections of byUser.values()) for (const connection of connections) write(connection, message);
   }
 
+  // Prévient les appareils des comptes donnés que LEUR réglage a changé
+  // (fonctions autorisées par l'Admin, docs/cadrage-comptes.md, étape 2) :
+  // le même « event: refs », sans données, mais à eux seuls ; chacun refait
+  // une synchronisation (qui renvoie ses fonctions et ses autorisations)
+  function notifyAccount(userIds) {
+    const message = 'event: refs\ndata: {}\n\n';
+    for (const userId of new Set(userIds)) {
+      for (const connection of byUser.get(userId) ?? []) write(connection, message);
+    }
+  }
+
   // Coupe les flux d'un compte (désactivation, toutes ses sessions fermées)
   function disconnectUser(userId) {
     for (const connection of [...(byUser.get(userId) ?? [])]) close(connection);
@@ -173,7 +184,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const list of [...byUser.values()]) for (const connection of [...list]) close(connection);
   }
 
-  return { connect, notifyList, notifyUsers, notifyNotes, notifyProjects, notifyInbox, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
+  return { connect, notifyList, notifyUsers, notifyNotes, notifyProjects, notifyInbox, notifyReferences, notifyAccount, disconnectUser, disconnectSession, count, closeAll };
 }
 
 // Refuse un flux demandé depuis un autre site. Un navigateur n'envoie pas

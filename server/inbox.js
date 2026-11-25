@@ -51,6 +51,7 @@ import { wishListOf, beneficiaryId } from '../public/js/wishes.js';
 import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { projectAccess } from './projects.js';
+import { createFeatures } from './features.js';
 
 export const INBOX_DAYS = 30;
 export const INBOX_MAX = 300;
@@ -278,6 +279,8 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
 
 export function createInbox(ctx) {
   const { db } = ctx;
+  // Fonctions de chaque compte (server/features.js), relues à chaque lecture
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   const oldest = () => new Date(ctx.now() - INBOX_DAYS * DAY).toISOString();
 
@@ -318,7 +321,6 @@ export function createInbox(ctx) {
     project: db.prepare(`SELECT projects.id, projects.name, projects.owner_id, projects.deleted_at,
         (SELECT access FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId) AS member_access
       FROM projects WHERE projects.id = :id`),
-    projectsOn: db.prepare('SELECT projects_enabled FROM users WHERE id = ?').pluck(),
     card: db.prepare('SELECT id, title, project_id, deleted_at FROM cards WHERE id = ?'),
     column: db.prepare('SELECT name FROM project_columns WHERE id = ? AND project_id = ?').pluck(),
   };
@@ -385,6 +387,9 @@ export function createInbox(ctx) {
         return { target: item ? { type: 'item', itemId: item.id, listId: item.list_id } : null };
       }
       case 'note': {
+        // Notes pas autorisées par l'Admin : la ligne n'est pas envoyée
+        // (ni titre ni texte)
+        if (!features.allowedFor(user.id).notes) return { hidden: true };
         const note = id ? q.note.get({ userId: user.id, id }) : null;
         const visible = note && noteAccess(user, note) && !note.deleted_at ? note : null;
         return { target: visible ? { type: 'note', noteId: visible.id } : null, note: visible };
@@ -392,7 +397,10 @@ export function createInbox(ctx) {
       case 'project': {
         const project = visibleProject(user, id);
         if (!project) return { target: null };
-        const off = q.projectsOn.get(user.id) !== 1;
+        // Projets pas autorisés par l'Admin (docs/cadrage-comptes.md, étape
+        // 2) : rien, pas même « Partage » (il ne peut pas les allumer)
+        if (!features.allowedFor(user.id).projects) return { hidden: true };
+        const off = !features.featuresFor(user.id).projects;
         // Projets coupés : rien n'est envoyé (ni titre ni nom), sauf la
         // ligne « Partage », qui ouvre Réglages › Fonctions pour les allumer
         if (off && row.category !== 'sharing') return { hidden: true };
@@ -400,8 +408,8 @@ export function createInbox(ctx) {
         return { target: { type: 'project', projectId: project.id }, project };
       }
       case 'card': {
-        // Projets coupés : la ligne d'une carte n'est pas envoyée du tout
-        if (q.projectsOn.get(user.id) !== 1) return { hidden: true };
+        // Projets non utilisés : la ligne d'une carte n'est pas envoyée du tout
+        if (!features.featuresFor(user.id).projects) return { hidden: true };
         const card = id ? q.card.get(id) : null;
         const project = card && !card.deleted_at ? visibleProject(user, card.project_id) : null;
         if (!project) return { target: null };

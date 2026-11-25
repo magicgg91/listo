@@ -57,7 +57,7 @@ export default {
   // un projet est montré (sinon l'écran ne change pas)
   'echeances.recherche.label.cartes': 'Rechercher une tâche ou une carte',
   'echeances.vide.miennes.cartes': 'Rien pour vous : aucune tâche à faire ne vous est attribuée, ni aucune carte à vous ou à personne. « Toutes » montre aussi celles des autres.',
-  'echeances.vide.texte.cartes': 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues, avec les cartes datées des projets où « Afficher dans Échéances » est allumé.',
+  'echeances.vide.texte.cartes': 'Les tâches à faire qui ont une échéance apparaissent ici, toutes listes confondues, avec les cartes datées des projets où « Afficher dans Échéances » est activé.',
   'echeances.groupe.nombre.cartes': { one: '{count} tâche ou carte', other: '{count} tâches ou cartes' },
   'echeances.recherche.aucun.texte.cartes': 'Aucune tâche ni carte ne correspond à « {query} ».',
   'echeances.pc.sousTitre.cartes': 'Les tâches de toutes vos listes et les cartes de vos projets',

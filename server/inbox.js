@@ -156,9 +156,9 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
     // Partage d'une liste : ajouté, ou droit changé
     // (listes éteintes par la personne : l'invitation à les rallumer)
     case 'list.shared':
-      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
+      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: listsOff ? translate(locale, 'alertes.liste.activer') : label };
     case 'list.access':
-      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
+      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: listsOff ? translate(locale, 'alertes.liste.activer') : label };
     // Partage d'une note
     case 'note.shared': {
       const actor = text(p.actor, 100) || translate(locale, 'alertes.quelquun');
@@ -270,7 +270,7 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
       return {
         kind: 'sharing',
         text: project ? translate(locale, 'inbox.projet.partage', { actor, project: project.name }) : translate(locale, 'inbox.projet.partage.sansNom', { actor }),
-        sub: projectsOff && project ? translate(locale, 'alertes.projet.allumer') : label,
+        sub: projectsOff && project ? translate(locale, 'alertes.projet.activer') : label,
       };
     }
     default:

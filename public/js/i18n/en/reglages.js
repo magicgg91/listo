@@ -42,7 +42,7 @@ export default {
   'reglages.accueil.ecran': 'Home screen',
   'reglages.accueil.afficher': 'Show the Home screen',
   'reglages.accueil.afficher.oui': 'The first screen when Listo opens, with its tiles.',
-  'reglages.accueil.afficher.non': 'Off: Listo opens on the screen chosen below, and the Home button leaves the bottom bar.',
+  'reglages.accueil.afficher.non': 'Disabled: Listo opens on the screen chosen below, and the Home button leaves the bottom bar.',
   'reglages.accueil.tuiles': 'Tiles shown',
   'reglages.accueil.reordonner': 'Reorder',
   'reglages.accueil.termine': 'Done',
@@ -59,7 +59,7 @@ export default {
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Features',
   'reglages.fonctions.detail': 'Notes, Projects',
-  'reglages.fonctions.intro': 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.',
+  'reglages.fonctions.intro': 'Choose the features you use. A disabled feature disappears from your screens; nothing is deleted.',
   'reglages.fonctions.listes': 'Lists',
   'reglages.fonctions.listes.detail': 'Shopping, tasks and wishes, with Due and “To give”.',
   'reglages.fonctions.notes': 'Notes',

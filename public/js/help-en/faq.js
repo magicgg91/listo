@@ -82,7 +82,7 @@ export default {
           '“Couldn\'t check”: GitHub didn\'t answer. No consequence: Listo works normally;',
           'the refresh button, at the end of the line, asks again right away (once a minute at most).',
         ] },
-        'It\'s the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To turn off the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.',
+        'It\'s the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To disable the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.',
       ],
     },
     {

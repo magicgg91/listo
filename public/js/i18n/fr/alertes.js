@@ -79,8 +79,8 @@ export default {
   'alertes.projet.droit.modifier': 'Vous pouvez modifier toutes les cartes et les colonnes.',
   'alertes.projet.droit.contribuer': 'Vous pouvez ajouter des cartes et commenter.',
   'alertes.projet.droit.lire': 'En lecture seule.',
-  'alertes.projet.allumer': 'Allumez « Projets » dans Réglages › Fonctions pour le voir.',
-  'alertes.liste.allumer': 'Allumez « Listes » dans Réglages › Fonctions pour la voir.',
+  'alertes.projet.activer': 'Activez « Projets » dans Réglages › Fonctions pour le voir.',
+  'alertes.liste.activer': 'Activez « Listes » dans Réglages › Fonctions pour la voir.',
 
   // b) Résumé quotidien des échéances
   'alertes.echeances.aujourdhui': { one: '{count} tâche à faire aujourd\'hui', other: '{count} tâches à faire aujourd\'hui' },

@@ -501,8 +501,8 @@ function keptLines(user) {
   const lines = [
     // (un Utilisateur a toujours les Listes : il les garde, allumées)
     t('administration.compte.versInvite.listes'),
-    allowed.notes ? t(used.notes ? 'administration.compte.versInvite.notes.allumees' : 'administration.compte.versInvite.notes.eteintes') : null,
-    allowed.projects ? t(used.projects ? 'administration.compte.versInvite.projets.allumes' : 'administration.compte.versInvite.projets.eteints') : null,
+    allowed.notes ? t(used.notes ? 'administration.compte.versInvite.notes.activees' : 'administration.compte.versInvite.notes.desactivees') : null,
+    allowed.projects ? t(used.projects ? 'administration.compte.versInvite.projets.actives' : 'administration.compte.versInvite.projets.desactives') : null,
     allowed.projects && allowed.projectsCreate ? t('administration.compte.versInvite.creer') : null,
     allowed.mcp ? t('administration.compte.versInvite.ia') : null,
   ].filter(Boolean);

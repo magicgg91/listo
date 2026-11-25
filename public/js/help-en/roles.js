@@ -27,7 +27,7 @@ export default {
         ] },
         { sub: "“Labels” tab" },
         { ul: [
-          "Note labels, shared by the whole household ([[notes]]), with the number of notes that carry each one (never which ones). It stays there even if you turned notes off for yourself.",
+          "Note labels, shared by the whole household ([[notes]]), with the number of notes that carry each one (never which ones). It stays there even if you disabled notes for yourself.",
           "The pencil renames the label and changes its color; a name already taken by another label (ignoring capitals and accents) is refused.",
           "The trash can deletes the label, after confirmation: it is removed from its notes, without touching the notes.",
           "Labels are created from a note, by any account.",
@@ -35,7 +35,7 @@ export default {
         { sub: "Can / can't" },
         { ul: [
           "Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).",
-          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]).",
+          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]) and projects ([[projets-roles]]).",
           "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",
         ] },
@@ -119,7 +119,7 @@ export default {
           "“Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.",
           "The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.",
           "A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.",
-          "The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [[notes]]), and a third one, “Projects”, when you use projects ([[projets-corbeilles]]); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.",
+          "The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [[notes]]), and a third one, “Projects”, when you use projects ([[projets-corbeilles]]); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you disabled notes (Settings, “Features”) and projects are disabled too, it has no tabs: only your lists.",
           "“Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.",
           "“Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.",
           "The owner doesn't leave their list: they delete it, or keep it.",

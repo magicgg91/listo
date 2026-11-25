@@ -1,6 +1,6 @@
 # Listo : comptes « invités », accès et comptes discrets (cadrage, sans code)
 
-Document de conception rédigé le 25 novembre 2026, à partir de la demande du propriétaire du même jour ; **mis à jour le même jour avec ses décisions** (section 18 : le rôle remplace les préréglages et l'interrupteur « Compte discret » ; la case de l'Admin **autorise** une fonction, la personne l'**allume** elle-même), puis avec ses **décisions finales** (section 19, qui l'emportent sur le reste du document : seul l'Admin voit les invités, pas d'avertissement dans « Partager », un invité ne partage jamais ce qu'il possède, rien de coché pour un nouvel invité et une fonction cochée pour un invité s'allume aussitôt, règle de l'écran Échéances pour un invité, toutes les questions de la section 17 répondues, une seule PR à la fin des trois étapes). Il ne contient aucun code : il a servi à **décider s'il fallait le faire, et comment**, puis à construire (étape 1 construite le 25 novembre 2026, section 19.3). Les maquettes sont dans [design/comptes/](../design/comptes/README.md). Une fois construit, chaque point rejoint le texte du [cahier des charges](cahier-des-charges.md) (Comptes et rôles, Écrans, Modèle de données, Sécurité), comme pour le [cadrage des projets](cadrage-projets.md).
+Document de conception rédigé le 25 novembre 2026, à partir de la demande du propriétaire du même jour ; **mis à jour le même jour avec ses décisions** (section 18 : le rôle remplace les préréglages et l'interrupteur « Compte discret » ; la case de l'Admin **autorise** une fonction, la personne l'**active** elle-même), puis avec ses **décisions finales** (section 19, qui l'emportent sur le reste du document : seul l'Admin voit les invités, pas d'avertissement dans « Partager », un invité ne partage jamais ce qu'il possède, rien de coché pour un nouvel invité et une fonction cochée pour un invité s'active aussitôt, règle de l'écran Échéances pour un invité, toutes les questions de la section 17 répondues, une seule PR à la fin des trois étapes). Il ne contient aucun code : il a servi à **décider s'il fallait le faire, et comment**, puis à construire (étape 1 construite le 25 novembre 2026, section 19.3). Les maquettes sont dans [design/comptes/](../design/comptes/README.md). Une fois construit, chaque point rejoint le texte du [cahier des charges](cahier-des-charges.md) (Comptes et rôles, Écrans, Modèle de données, Sécurité), comme pour le [cadrage des projets](cadrage-projets.md).
 
 **La demande du propriétaire (25 novembre 2026)**
 
@@ -16,7 +16,7 @@ Document de conception rédigé le 25 novembre 2026, à partir de la demande du 
 
 - **C'est faisable**, sans nouvelle dépendance, en **trois étapes**, dont la plus grosse est la dernière (« pas de listes », pour les invités) ; **une seule PR**, à la fin des trois étapes (décision finale, section 19).
 - **Trois rôles** : **Admin** (tout, rien à régler), **Utilisateur** (la famille, comme aujourd'hui : les **Listes toujours là**, les autres fonctions autorisées au départ, l'Admin peut en retirer) et **Invité** (nouveau : l'Admin coche ce qu'il **peut** utiliser ; **rien de coché à la création**). **Un invité est toujours discret**, par son rôle, sans autre réglage : **seuls les Admin** le voient dans leur liste de personnes, et lui ne voit personne (section 19).
-- **La case de l'Admin autorise, la personne allume** (Utilisateur) : une fonction cochée apparaît dans Réglages › Fonctions de la personne, qui l'allume ou non (Notes allumées au départ, Projets éteints, comme aujourd'hui) ; une fonction décochée disparaît de sa page Fonctions et le serveur la refuse. **Pour un invité** (décision finale, section 19) : quand l'Admin coche Listes, Notes ou Projets, la fonction **s'allume aussitôt** pour lui ; il peut l'éteindre lui-même ensuite dans ses Fonctions. « Peut créer ses propres projets » et « Assistants IA » sont des permissions, sans interrupteur.
+- **La case de l'Admin autorise, la personne active** (Utilisateur) : une fonction cochée apparaît dans Réglages › Fonctions de la personne, qui l'active ou non (Notes activées au départ, Projets désactivés, comme aujourd'hui) ; une fonction décochée disparaît de sa page Fonctions et le serveur la refuse. **Pour un invité** (décision finale, section 19) : quand l'Admin coche Listes, Notes ou Projets, la fonction **s'active aussitôt** pour lui ; il peut l'désactiver lui-même ensuite dans ses Fonctions. « Peut créer ses propres projets » et « Assistants IA » sont des permissions, sans interrupteur.
 - **Une limite à dire clairement** : « discret » cache un compte **de l'annuaire** (les listes de personnes où l'on choisit avec qui partager, ou pour qui est une liste d'envies). Il ne peut pas le cacher **à l'intérieur d'une chose partagée** : si Hugo est membre de « DomoPi Articles » avec Max, Hugo voit Max dans ce projet (personnes, cartes attribuées, commentaires, historique), et Max voit Hugo. Sans cela, on ne pourrait ni attribuer une carte ni savoir qui a écrit un commentaire. C'est normal : **pas d'avertissement** dans « Partager » (décision finale, section 19).
 - **Le risque principal** : un nom qui fuit par un chemin oublié. L'inventaire de la section 3 en compte **une trentaine** ; la plupart sont déjà sûrs (ils ne montrent que les membres d'une chose partagée). Le vrai travail est concentré en **un seul endroit**, l'annuaire (aujourd'hui `activeUsers()`, envoyé tel quel à tous les comptes), plus quatre contrôles du serveur (partage, destinataire d'envies), et protégé par un test « annuaire identique avec ou sans invités », comme le test des réservations.
 - **En base** : recommandé, une **colonne `users.guest`** (0 ou 1) à côté du rôle, ajoutée sans recréer la table des comptes, avec une contrainte qui interdit « invité et Admin » ; le rôle « Invité » est calculé à partir d'elle pour l'API et les écrans (8.1). L'autre voie (une troisième valeur `'guest'` dans `users.role`) oblige à recréer la table des comptes, que 43 tables référencent : risquée.
@@ -29,7 +29,7 @@ Deux constats faits en passant, corrigés à l'étape 1 (3.3) : **l'identifiant 
 1. [Contexte et objectifs](#1-contexte-et-objectifs)
 2. [Vocabulaire](#2-vocabulaire)
 3. [Inventaire : où un compte en voit un autre](#3-inventaire--où-un-compte-en-voit-un-autre)
-4. [Fonctions autorisées par l'Admin, allumées par la personne](#4-fonctions-autorisées-par-ladmin-allumées-par-la-personne)
+4. [Fonctions autorisées par l'Admin, activées par la personne](#4-fonctions-autorisées-par-ladmin-activées-par-la-personne)
 5. [Invité : toujours discret](#5-invité--toujours-discret)
 6. [Les trois rôles](#6-les-trois-rôles)
 7. [Écrans](#7-écrans)
@@ -55,7 +55,7 @@ Listo sert à une famille de six ou sept personnes ; le propriétaire (Guillaume
 
 Buts :
 
-- l'Admin donne à chaque compte un **rôle** (Admin, Utilisateur, Invité) et, pour un Utilisateur ou un Invité, choisit **les fonctions autorisées** ; la personne allume ensuite celles qu'elle veut, comme aujourd'hui dans Réglages › Fonctions ;
+- l'Admin donne à chaque compte un **rôle** (Admin, Utilisateur, Invité) et, pour un Utilisateur ou un Invité, choisit **les fonctions autorisées** ; la personne active ensuite celles qu'elle veut, comme aujourd'hui dans Réglages › Fonctions ;
 - un **Invité** ne peut utiliser **que ce que l'Admin a autorisé** (au départ : les projets qu'on lui partage), et ne voit **personne d'autre que les membres de ce qu'on lui partage** ;
 - **rien ne change pour la famille** : un compte ordinaire reste ce qu'il est (Utilisateur, tout autorisé, ses Fonctions inchangées) ; la famille ne voit simplement pas les invités ;
 - les contrôles sont faits **par le serveur**, à chaque demande ; le téléphone ne fait que cacher les boutons.
@@ -70,8 +70,8 @@ Hors périmètre : des groupes ou des équipes, des droits par liste différents
 | **Annuaire** | la liste des comptes qu'un compte peut **choisir** : personnes proposées dans « Partager » (listes, notes, projets) et « Pour qui ? » d'une liste d'envies. Aujourd'hui : tous les comptes actifs (`activeUsers()`, `server/lists.js`), envoyés à chaque synchronisation (`users`) et par `GET /api/users` |
 | **Contexte partagé** | une liste, une note ou un projet dont deux comptes sont membres. Dans ce contexte, chacun voit le prénom de l'autre : « Personnes », tâches et cartes attribuées, commentaires, historique, Nouveautés (« Léa a ajouté… »), notifications, réservations d'une liste d'envies |
 | **Fonction autorisée** | cochée par l'**Admin** dans la page du compte (nouveau) : la personne **peut** l'utiliser |
-| **Fonction allumée** | choisie par la **personne** dans Réglages › Fonctions (existe : Notes, Projets) |
-| **Fonction utilisée** | autorisée **et** allumée (`allowed ∧ enabled`) : c'est ce que le serveur vérifie |
+| **Fonction activée** | choisie par la **personne** dans Réglages › Fonctions (existe : Notes, Projets) |
+| **Fonction utilisée** | autorisée **et** activée (`allowed ∧ enabled`) : c'est ce que le serveur vérifie |
 | **Discret** | absent de l'annuaire des autres (sauf de celui des Admin), avec un annuaire vide : c'est **toujours** le cas d'un Invité, et seulement de lui (pas de réglage à part) |
 | **Invité** et **Visiteur** | à ne pas confondre : un **Invité** a un compte Listo (rôle) ; un **visiteur** ouvre un lien public, sans compte (existe) |
 
@@ -102,12 +102,12 @@ Relevé dans le code du 25 novembre 2026 (branche `dev`). Pour chaque endroit : 
 | 12 | Commentaires des cartes, commentaires importés | `server/projects.js`, `card-activity.js` | auteur (nom relu à l'affichage) | rien (le nom d'un ancien membre reste lisible : question 7) |
 | 13 | Historique des cartes | `server/projects.js` (`cardHistory`, `allNames`) | noms relus à l'affichage, par id | rien ; un compte supprimé reste « Un ancien compte » |
 | 14 | Nouveautés des listes (« Léa a ajouté… ») | `server/news.js` | auteur, ou « Un ancien membre » | rien |
-| 15 | Page Notifications et notifications push | `server/inbox.js`, `server/notify.js` | prénom de l'auteur (« Guillaume a partagé… », « Léa vous a attribué… ») ; jamais à quelqu'un d'extérieur | rien ; une fonction **non autorisée** : rien n'est remis ; **autorisée mais éteinte** : comme une fonction coupée aujourd'hui (seul « Partage » est remis, avec « Allumez … dans Réglages › Fonctions ») |
+| 15 | Page Notifications et notifications push | `server/inbox.js`, `server/notify.js` | prénom de l'auteur (« Guillaume a partagé… », « Léa vous a attribué… ») ; jamais à quelqu'un d'extérieur | rien ; une fonction **non autorisée** : rien n'est remis ; **autorisée mais désactivée** : comme une fonction désactivée aujourd'hui (seul « Partage » est remis, avec « Activez … dans Réglages › Fonctions ») |
 | 16 | Réservations d'une liste d'envies (participants) | `server/reservations.js` | prénoms des membres qui réservent, aux autres membres (jamais au destinataire) | rien ; un compte sans Listes n'est jamais membre d'une liste |
 | 17 | « À offrir » | `public/js/gifts.js`, `server/reservations.js` | mes réservations seulement | absent sans Listes |
 | 18 | Écran Échéances (« à Léa ») | `public/js/screens/deadlines.js` | personnes attribuées des tâches de mes listes | absent sans Listes (4.3) |
 | 19 | Assistants IA (MCP) : listes | `server/mcp-tools.js` (`people`, `you`, `assigned_to`) | membres des listes de la connexion | outils des listes **refusés** sans Listes (4.7) |
-| 20 | Assistants IA : notes | `server/mcp-notes.js` (`owner`, `updated_by`) | propriétaire, dernier auteur | refusés sans Notes (déjà le cas quand elles sont coupées) |
+| 20 | Assistants IA : notes | `server/mcp-notes.js` (`owner`, `updated_by`) | propriétaire, dernier auteur | refusés sans Notes (déjà le cas quand elles sont désactivées) |
 | 21 | Assistants IA : projets | `server/mcp-projects.js` (`members`, `assignees`, auteurs) | membres du projet | rien ; `assignees` par nom ne cherche que parmi les membres (déjà le cas) |
 | 22 | Temps réel (SSE) | `server/events.js` | aucun nom, aucune donnée | ne plus envoyer `event: list` à un compte sans Listes ; `event: refs` (magasins, rayons) non plus |
 | 23 | Page publique d'une liste ou d'une note | `server/routes/public.js` | prénom du destinataire d'une liste d'envies seulement | rien (un invité n'est jamais destinataire) |
@@ -130,22 +130,22 @@ Relevé dans le code du 25 novembre 2026 (branche `dev`). Pour chaque endroit : 
 
 Bilan : **un seul endroit envoie des noms hors des contextes partagés, l'annuaire (1 à 3)**, plus quatre contrôles du serveur qui l'utilisent sans le dire (5, 6). Tout le reste ne montre que des membres d'une chose partagée.
 
-## 4. Fonctions autorisées par l'Admin, allumées par la personne
+## 4. Fonctions autorisées par l'Admin, activées par la personne
 
 ### 4.1 La règle
 
-Décision du propriétaire du 25 novembre 2026 : **la case de l'Admin autorise, la personne allume.** Une fonction est **utilisée** si elle est **autorisée** (case de l'Admin, dans la page du compte) **ET allumée** (interrupteur de la personne, dans Réglages › Fonctions, comme aujourd'hui). Une seule règle pour tous, avec deux exceptions fixes : un **Admin** a tout autorisé ; un **Utilisateur** a **toujours les Listes** (ni case, ni interrupteur, comme aujourd'hui).
+Décision du propriétaire du 25 novembre 2026 : **la case de l'Admin autorise, la personne active.** Une fonction est **utilisée** si elle est **autorisée** (case de l'Admin, dans la page du compte) **ET activée** (interrupteur de la personne, dans Réglages › Fonctions, comme aujourd'hui). Une seule règle pour tous, avec deux exceptions fixes : un **Admin** a tout autorisé ; un **Utilisateur** a **toujours les Listes** (ni case, ni interrupteur, comme aujourd'hui).
 
 | Fonction | Admin | Utilisateur | Invité |
 | --- | --- | --- | --- |
-| **Listes** (courses, tâches, envies, Échéances, « À offrir », mode scan, mémoire des articles) | toujours | **toujours** : pas de case, pas d'interrupteur (comme aujourd'hui) | case de l'Admin (**non** au départ) ; cochée : **allumée aussitôt**, il peut l'éteindre (décision finale, section 19) |
-| **Notes** | autorisées ; il les allume ou non (allumées au départ) | case de l'Admin (oui au départ) ; il les allume ou non (allumées au départ, comme aujourd'hui) | case (non au départ) ; cochée : allumées aussitôt, il peut les éteindre |
-| **Projets** | autorisés ; il les allume ou non (éteints au départ) | case (oui au départ) ; il les allume ou non (éteints au départ, comme aujourd'hui) | case (**non** au départ (décision finale, section 19)) ; cochée : **allumés aussitôt**, il peut les éteindre |
+| **Listes** (courses, tâches, envies, Échéances, « À offrir », mode scan, mémoire des articles) | toujours | **toujours** : pas de case, pas d'interrupteur (comme aujourd'hui) | case de l'Admin (**non** au départ) ; cochée : **activée aussitôt**, il peut l'désactiver (décision finale, section 19) |
+| **Notes** | autorisées ; il les active ou non (activées au départ) | case de l'Admin (oui au départ) ; il les active ou non (activées au départ, comme aujourd'hui) | case (non au départ) ; cochée : activées aussitôt, il peut les désactiver |
+| **Projets** | autorisés ; il les active ou non (désactivés au départ) | case (oui au départ) ; il les active ou non (désactivés au départ, comme aujourd'hui) | case (**non** au départ (décision finale, section 19)) ; cochée : **activés aussitôt**, il peut les désactiver |
 | **Peut créer ses propres projets** (sous « Projets ») | oui | case (oui au départ) | case (non au départ) |
 | **Assistants IA** (si LISTO_MCP=on) | oui | case (oui au départ) | case (non au départ) |
 
-- **Peut créer ses propres projets** et **Assistants IA** sont des **permissions**, pas des fonctions à allumer : pas d'interrupteur dans Réglages › Fonctions. La personne s'en sert, ou non (« Nouveau projet » ; « Autoriser un assistant IA » dans Mon compte, qu'elle décide elle-même).
-- **Pour un invité, rien n'est coché à la création** (décision finale, section 19) : l'Admin coche ce qu'il ouvre ; une fonction (Listes, Notes, Projets) cochée pour un invité **s'allume aussitôt** pour lui (`*_enabled` = 1), il peut l'éteindre lui-même ensuite dans ses Fonctions. (Premier cadrage : tout éteint au départ, l'invité allumait lui-même ; remplacé par la décision finale.)
+- **Peut créer ses propres projets** et **Assistants IA** sont des **permissions**, pas des fonctions à activer : pas d'interrupteur dans Réglages › Fonctions. La personne s'en sert, ou non (« Nouveau projet » ; « Autoriser un assistant IA » dans Mon compte, qu'elle décide elle-même).
+- **Pour un invité, rien n'est coché à la création** (décision finale, section 19) : l'Admin coche ce qu'il ouvre ; une fonction (Listes, Notes, Projets) cochée pour un invité **s'active aussitôt** pour lui (`*_enabled` = 1), il peut l'désactiver lui-même ensuite dans ses Fonctions. (Premier cadrage : tout désactivé au départ, l'invité activait lui-même ; remplacé par la décision finale.)
 - Rien n'est coché à la création d'un invité (section 19) : tant que l'Admin n'a rien coché, il ne voit que l'Accueil (l'invitation et la tuile Compte) et ses Réglages. « Peut créer ses propres projets » n'a de sens qu'avec « Projets » (case grisée sinon).
 - Hors ligne : non (Administration demande le réseau, comme aujourd'hui).
 - Changer une case prend effet **tout de suite** : le serveur relit les autorisations à chaque demande ; le téléphone de la personne l'apprend à sa synchronisation suivante (« event: refs » à ses seuls appareils, sans donnée).
@@ -154,22 +154,22 @@ Décision du propriétaire du 25 novembre 2026 : **la case de l'Admin autorise, 
 
 - La page ne montre que les fonctions **autorisées** à la personne (une fonction non autorisée en disparaît) ; elle garde son interrupteur et sa valeur pour chacune. Pour un invité, « **Listes** » y apparaît aussi quand l'Admin les autorise (un Utilisateur n'a jamais cette ligne).
 - Une phrase sous la liste, pour un compte dont l'Admin a retiré quelque chose ou pour un invité : « Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées. » (maquette `invite-fonctions-1`).
-- Une fonction **autorisée mais éteinte** se comporte exactement comme une fonction coupée aujourd'hui : rien d'envoyé, rien de remis sauf la notification « Partage » (avec « Allumez … dans Réglages › Fonctions »), adresses vers le premier écran, outils MCP refusés, **rien d'effacé**.
-- Une fonction **non autorisée** : pareil, mais la personne ne peut pas l'allumer, et même « Partage » n'est pas remis (on ne peut de toute façon pas lui partager : 4.7).
+- Une fonction **autorisée mais désactivée** se comporte exactement comme une fonction désactivée aujourd'hui : rien d'envoyé, rien de remis sauf la notification « Partage » (avec « Activez … dans Réglages › Fonctions »), adresses vers le premier écran, outils MCP refusés, **rien d'effacé**.
+- Une fonction **non autorisée** : pareil, mais la personne ne peut pas l'activer, et même « Partage » n'est pas remis (on ne peut de toute façon pas lui partager : 4.7).
 - Décocher puis recocher une fonction ne change pas l'interrupteur de la personne : elle la retrouve dans l'état où elle l'avait laissée.
 
-### 4.3 Ce que voit un invité « projets seulement », projets allumés
+### 4.3 Ce que voit un invité « projets seulement », projets activés
 
-Maquettes `invite-accueil-1`, `invite-projets-1`, `invite-reglages-1`, `pc-invite-1` : **après** qu'il a allumé les projets (avant : 4.4). (Un Utilisateur à qui l'Admin n'a autorisé que les Projets garde ses Listes : seuls les écrans des notes disparaissent.)
+Maquettes `invite-accueil-1`, `invite-projets-1`, `invite-reglages-1`, `pc-invite-1` : **après** qu'il a activé les projets (avant : 4.4). (Un Utilisateur à qui l'Admin n'a autorisé que les Projets garde ses Listes : seuls les écrans des notes disparaissent.)
 
 | Endroit | Ce qu'il voit |
 | --- | --- |
-| Premier écran | l'**Accueil** (comme tout le monde) ; il peut le couper (Réglages › Accueil) : son premier écran est alors « Projets » (seul choix) |
+| Premier écran | l'**Accueil** (comme tout le monde) ; il peut le désactiver (Réglages › Accueil) : son premier écran est alors « Projets » (seul choix) |
 | Accueil | « Bonjour Max », la cloche ; tuiles **Projets** (ses cartes les plus urgentes) et **Compte**, chacune sur toute la largeur (deux tuiles seules) ; ni Échéances, ni Listes, ni Notes ; masquage et ordre comme aujourd'hui |
-| Bandeau du bas | **trois boutons : Accueil, Projets, Réglages** (`.tabbar` de base, trois places ; l'Accueil coupé : deux boutons, Projets et Réglages, cloche dans la barre du haut) ; pas de bandeau sur l'Accueil (inchangé) ; quatre avec Échéances quand un projet qu'il voit a l'option « Échéances » allumée (ligne Échéances ci-dessous) |
+| Bandeau du bas | **trois boutons : Accueil, Projets, Réglages** (`.tabbar` de base, trois places ; l'Accueil désactivé : deux boutons, Projets et Réglages, cloche dans la barre du haut) ; pas de bandeau sur l'Accueil (inchangé) ; quatre avec Échéances quand un projet qu'il voit a l'option « Échéances » activée (ligne Échéances ci-dessous) |
 | Projets | les projets qu'on lui partage ; **pas de « + »** sans « Peut créer ses propres projets » ; pas de « Dupliquer le projet » dans le menu ⋮ ; « Afficher dans Échéances » selon la règle de l'écran Échéances ; « Personnes » à la place de « Partager » pour ses propres projets (il ne partage jamais, section 19) |
 | Un projet | comme aujourd'hui, selon son rôle dans le projet (souvent Contributeur) : les membres du projet, et eux seuls |
-| Échéances | (décision finale, section 19) : l'écran et son bouton existent pour un invité **quand les Listes sont allumées pour lui**, ou **quand au moins un projet qu'il voit a l'option « Échéances » allumée** (ses cartes suivent la règle existante « Afficher dans Échéances ») ; sinon absent |
+| Échéances | (décision finale, section 19) : l'écran et son bouton existent pour un invité **quand les Listes sont activées pour lui**, ou **quand au moins un projet qu'il voit a l'option « Échéances » activée** (ses cartes suivent la règle existante « Afficher dans Échéances ») ; sinon absent |
 | Page Notifications | ses notifications de projets et de partage ; catégories proposées dans Réglages › Notifications : Modifications, Échéances (rappels des cartes), Partage ; **pas** Envies |
 | Réglages | Mon compte (pastille « Invité ») ; Général : Accueil, **Fonctions** (« Projets »), Notifications, Corbeille (sans onglets : ses projets supprimés) ; Informations : Aide, À propos ; ni Administration |
 | Mon compte | nom, identifiant, mot de passe, double authentification, thème, langue, « Se déconnecter » ; une ligne « **Compte invité** : votre accès est réglé par l'Admin. » ; pas « Assistants IA » s'ils ne sont pas autorisés |
@@ -182,11 +182,11 @@ Maquettes `invite-accueil-1`, `invite-projets-1`, `invite-reglages-1`, `pc-invit
 
 Maquettes `invite-accueil-vide-1`, `invite-fonctions-1`.
 
-1. Max se connecte (mot de passe provisoire à changer, comme aujourd'hui). L'Admin a coché « Projets » pour lui : les projets sont **déjà allumés** (décision finale, section 19) ; il voit « DomoPi Articles » tout de suite. Si l'Admin n'a encore rien coché, l'**Accueil** ne montre que la tuile Compte et, en haut, sur toute la largeur, une **invitation** : « Bienvenue, Max. Votre compte est prêt. … », avec le bouton « **Ouvrir Réglages › Fonctions** » (maquette `invite-accueil-vide-1`).
-2. **Réglages › Fonctions** ne propose que ce que l'Admin a autorisé, chaque fonction avec son interrupteur (allumé au départ), et la phrase « Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées. ».
-3. S'il éteint Projets, il les rallume lui-même au même endroit.
+1. Max se connecte (mot de passe provisoire à changer, comme aujourd'hui). L'Admin a coché « Projets » pour lui : les projets sont **déjà activés** (décision finale, section 19) ; il voit « DomoPi Articles » tout de suite. Si l'Admin n'a encore rien coché, l'**Accueil** ne montre que la tuile Compte et, en haut, sur toute la largeur, une **invitation** : « Bienvenue, Max. Votre compte est prêt. … », avec le bouton « **Ouvrir Réglages › Fonctions** » (maquette `invite-accueil-vide-1`).
+2. **Réglages › Fonctions** ne propose que ce que l'Admin a autorisé, chaque fonction avec son interrupteur (activé au départ), et la phrase « Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées. ».
+3. S'il désactivé Projets, il les réactive lui-même au même endroit.
 
-Règle de l'invitation (pour tous les comptes, pas seulement les invités) : elle s'affiche quand **aucune fonction n'est utilisée** (ni Listes, ni Notes, ni Projets) ; elle nomme la fonction autorisée s'il n'y en a qu'une (« Allumez les projets… »), sinon « Allumez une fonction… ». Le bandeau du bas, sur les autres écrans, n'a alors que Réglages (et l'Accueil). Un Utilisateur a toujours les Listes : il ne la voit jamais.
+Règle de l'invitation (pour tous les comptes, pas seulement les invités) : elle s'affiche quand **aucune fonction n'est utilisée** (ni Listes, ni Notes, ni Projets) ; elle nomme la fonction autorisée s'il n'y en a qu'une (« Activez les projets… »), sinon « Activez une fonction… ». Le bandeau du bas, sur les autres écrans, n'a alors que Réglages (et l'Accueil). Un Utilisateur a toujours les Listes : il ne la voit jamais.
 
 ### 4.5 « Peut créer ses propres projets »
 
@@ -196,11 +196,11 @@ Règle de l'invitation (pour tous les comptes, pas seulement les invités) : ell
 ### 4.6 Assistants IA
 
 - Décochée : « Autoriser un assistant IA » absent de Mon compte ; `/oauth/authorize` refuse ce compte (page « Votre compte ne peut pas autoriser d'assistant IA. ») ; **les connexions existantes sont révoquées** (journal `oauth_revoked`, `reason: access`), comme à la désactivation d'un compte.
-- Cochée : la personne autorise elle-même un assistant si elle le veut ; les outils suivent ses fonctions **utilisées**, contrôlées en premier, avant la portée et les droits (même ordre que « projets coupés » aujourd'hui).
+- Cochée : la personne autorise elle-même un assistant si elle le veut ; les outils suivent ses fonctions **utilisées**, contrôlées en premier, avant la portée et les droits (même ordre que « projets désactivés » aujourd'hui).
 
 ### 4.7 « Pas de listes » côté serveur (invités seulement)
 
-Un Utilisateur a toujours les Listes : seul un **invité** peut ne pas les avoir (non autorisées, ou autorisées et éteintes). Les listes sont le cœur de Listo : presque tout les suppose. Pour un invité sans Listes :
+Un Utilisateur a toujours les Listes : seul un **invité** peut ne pas les avoir (non autorisées, ou autorisées et désactivées). Les listes sont le cœur de Listo : presque tout les suppose. Pour un invité sans Listes :
 
 - **Synchronisation** (`changesSince`) : rien de ce qui touche les listes : `lists`, `items`, `listIds` vides ; ni `stores`, `aisles`, `history` (mémoire des articles), `reservations`, `gifts`, ni Nouveautés des listes ; `users` (annuaire) reste (vide, pour un invité).
 - **File d'attente** (`/api/ops`, un seul aiguillage dans `server/lists.js`, `handlers[op.type]`) : toute opération `list.*`, `item.*`, `gift.*` refusée (403, « Les listes ne sont pas ouvertes pour votre compte. ») avant tout traitement ; les autres (`note.*`, `project.*`, `account.*`) selon leur propre fonction.
@@ -211,7 +211,7 @@ Un Utilisateur a toujours les Listes : seul un **invité** peut ne pas les avoir
 - **Assistants IA** : outils des listes refusés (`list_lists`, `read_list`, `add_items`, `set_checked`, `update_items`).
 - **Rien n'est effacé** : s'il possédait des listes ou en était membre (par exemple un Utilisateur devenu invité), elles restent en base et pour leurs autres membres (l'Admin en est prévenu, 4.8) ; elles reviennent quand les Listes sont de nouveau utilisées.
 
-**Effort** : c'est la plus grosse partie (étape 3). Elle ne concerne plus que les invités, mais le travail est presque le même : le serveur doit savoir répondre « pas de listes » partout, et le téléphone savoir s'en passer (bandeau, Accueil, menu de gauche, Échéances, « À offrir », Corbeille sans onglets, catégories de notifications, recherche, raccourcis clavier), à la manière de « Notes coupées » qui existe déjà.
+**Effort** : c'est la plus grosse partie (étape 3). Elle ne concerne plus que les invités, mais le travail est presque le même : le serveur doit savoir répondre « pas de listes » partout, et le téléphone savoir s'en passer (bandeau, Accueil, menu de gauche, Échéances, « À offrir », Corbeille sans onglets, catégories de notifications, recherche, raccourcis clavier), à la manière de « Notes désactivées » qui existe déjà.
 
 ### 4.8 Retirer une fonction d'un compte qui a déjà des données
 
@@ -263,7 +263,7 @@ Le menu « Personnes » d'un projet et les pastilles ne montrent jamais le rôle
 
 ### 5.4 Comment l'Admin partage DomoPi avec Max
 
-1. Administration › Comptes › « Nouveau compte » (maquette `nouveau-compte-1`) : rôle **Invité** ; les fonctions autorisées apparaissent, **rien de coché** au départ (décision finale, section 19) ; l'Admin coche « Projets » (allumés aussitôt pour Max) ; identifiant `max`, nom affiché « Max », mot de passe provisoire (ou compte relié par le fournisseur d'identité).
+1. Administration › Comptes › « Nouveau compte » (maquette `nouveau-compte-1`) : rôle **Invité** ; les fonctions autorisées apparaissent, **rien de coché** au départ (décision finale, section 19) ; l'Admin coche « Projets » (activés aussitôt pour Max) ; identifiant `max`, nom affiché « Max », mot de passe provisoire (ou compte relié par le fournisseur d'identité).
 2. Dans « DomoPi Articles » › Partager : Max et Inès sont dans la liste de **Guillaume** (il est Admin), avec « Invité · discret » sous leur prénom ; il les coche et choisit « Contribuer » (maquette `partage-admin-1`).
 3. Max se connecte : il voit « DomoPi Articles » et ses membres, rien d'autre.
 
@@ -306,9 +306,9 @@ Décision du propriétaire du 25 novembre 2026 : **le rôle donne le réglage**,
 
 | Rôle | Pour qui | Fonctions | Visible de la famille | Voit la famille |
 | --- | --- | --- | --- | --- |
-| **Admin** | le propriétaire (et tout autre Admin) | toutes autorisées, aucune case ; il allume Notes et Projets lui-même, comme aujourd'hui | oui | oui (tous les comptes, invités compris) |
-| **Utilisateur** | la famille (comme aujourd'hui) | **Listes toujours** ; Notes, Projets, création de projets, Assistants IA autorisés au départ, l'Admin peut les retirer ; la personne allume Notes et Projets | oui | oui |
-| **Invité** | les personnes qui aident (DomoPi) | autorisées par l'Admin (**rien de coché au départ**) ; une fonction cochée s'allume aussitôt, il peut l'éteindre (décision finale, section 19) | **non** (sauf des Admin) | **non** |
+| **Admin** | le propriétaire (et tout autre Admin) | toutes autorisées, aucune case ; il active Notes et Projets lui-même, comme aujourd'hui | oui | oui (tous les comptes, invités compris) |
+| **Utilisateur** | la famille (comme aujourd'hui) | **Listes toujours** ; Notes, Projets, création de projets, Assistants IA autorisés au départ, l'Admin peut les retirer ; la personne active Notes et Projets | oui | oui |
+| **Invité** | les personnes qui aident (DomoPi) | autorisées par l'Admin (**rien de coché au départ**) ; une fonction cochée s'active aussitôt, il peut l'désactiver (décision finale, section 19) | **non** (sauf des Admin) | **non** |
 
 ### 6.1 Changer de rôle
 
@@ -316,7 +316,7 @@ Dans la page du compte, le choix « Utilisateur | Invité | Admin » ; chaque ch
 
 | Changement | Confirmation | Effet |
 | --- | --- | --- |
-| Utilisateur → **Invité** | « Faire de Léa un invité ? Léa disparaîtra de la liste des personnes de la famille (Partager, « Pour qui ? ») et ne verra plus les autres comptes. Ce qui est déjà partagé avec Léa reste partagé, et ses membres continueront de l'y voir. Ses fonctions ne changent pas ; ses liens publics sont arrêtés. » (avec, à l'étape 2, ce qui est autorisé et allumé) | discrète tout de suite ; ses cases et ses interrupteurs **ne changent pas** (rien n'est retiré en silence : l'Admin décoche ensuite) ; les Listes deviennent une case (cochée, allumée) ; ses liens publics sont arrêtés (un invité ne partage jamais) ; refusé si une liste d'envies lui est destinée (5.6) |
+| Utilisateur → **Invité** | « Faire de Léa un invité ? Léa disparaîtra de la liste des personnes de la famille (Partager, « Pour qui ? ») et ne verra plus les autres comptes. Ce qui est déjà partagé avec Léa reste partagé, et ses membres continueront de l'y voir. Ses fonctions ne changent pas ; ses liens publics sont arrêtés. » (avec, à l'étape 2, ce qui est autorisé et activé) | discrète tout de suite ; ses cases et ses interrupteurs **ne changent pas** (rien n'est retiré en silence : l'Admin décoche ensuite) ; les Listes deviennent une case (cochée, activée) ; ses liens publics sont arrêtés (un invité ne partage jamais) ; refusé si une liste d'envies lui est destinée (5.6) |
 | Invité → **Utilisateur** | « Rendre Max utilisateur ? Toute la famille pourra le voir et lui partager des listes, des notes et des projets, et il verra tous les comptes de la famille. Il aura toujours les Listes ; ses autres fonctions autorisées ne changent pas. » | visible tout de suite ; Listes toujours là ; autres cases inchangées |
 | Utilisateur → **Admin** | celle d'aujourd'hui | tout autorisé (les cases sont gardées, ignorées) |
 | Admin → **Utilisateur** | celle d'aujourd'hui | les cases gardées reprennent effet (toutes cochées pour un compte qui n'en a jamais eu) |
@@ -331,7 +331,7 @@ Maquettes `admin-comptes-1` (téléphone), `pc-admin-comptes-1` (ordinateur).
 
 - La liste garde sa forme ; la ligne dessous dit le **rôle** et l'état : « Admin · 2FA activée », « Utilisateur · 2FA désactivée », « Utilisateur · sans projets » (quand l'Admin a retiré une fonction), « **Invité · Projets** » (ce qui est autorisé) ; une pastille **« Discret »** avec l'icône de l'œil barré (`#i-eye-off`) **et** le mot sur chaque invité (jamais l'icône seule).
 - Ordre : Admin et Utilisateurs d'abord, puis les invités sous un titre « Invités » (on les retrouve d'un coup d'œil).
-- Toucher un compte ouvre **sa page** (`#/administration/comptes/<id>`, au lieu de la feuille d'aujourd'hui, devenue trop longue) : en tête le nom, l'identifiant, la 2FA (et « Discret » pour un invité) ; **Rôle** (« Utilisateur | Invité | Admin », la phrase qui va avec dessous) ; **Fonctions autorisées** (cases de 4.1 ; « Un Admin a accès à tout. » pour un Admin), avec la ligne « Il choisit ensuite lui-même de les allumer dans Réglages › Fonctions. » ; puis les actions d'aujourd'hui (mot de passe, double authentification, délier, désactiver, supprimer).
+- Toucher un compte ouvre **sa page** (`#/administration/comptes/<id>`, au lieu de la feuille d'aujourd'hui, devenue trop longue) : en tête le nom, l'identifiant, la 2FA (et « Discret » pour un invité) ; **Rôle** (« Utilisateur | Invité | Admin », la phrase qui va avec dessous) ; **Fonctions autorisées** (cases de 4.1 ; « Un Admin a accès à tout. » pour un Admin), avec la ligne « Il choisit ensuite lui-même de les activer dans Réglages › Fonctions. » ; puis les actions d'aujourd'hui (mot de passe, double authentification, délier, désactiver, supprimer).
 - Maquettes : `admin-compte-1` (Max, Invité : Projets seul autorisé, « Admin » grisé), `admin-compte-2` (Hugo, Utilisateur : pas de ligne « Listes » (toujours là), tout le reste autorisé).
 - Sur ordinateur : la liste à gauche, la page du compte choisi à droite, dans la colonne de 1 040 px.
 - Chaque changement est envoyé tout de suite (comme le rôle aujourd'hui), avec un message court (« Fonctions de Max enregistrées ») ; un retrait ou un changement de rôle passe par une confirmation (4.8, 6.1).
@@ -344,11 +344,11 @@ Maquette `nouveau-compte-1` : feuille « Nouveau compte » : **le rôle d'abord*
 
 - **Guillaume** partage « DomoPi Articles » (maquette `partage-admin-1`) : Max et Inès dans la liste, avec « Invité · discret » sous leur prénom ; **pas d'avertissement** (décision finale, section 19).
 - **Léa** partage sa liste « Courses » (maquette `partage-famille-1`) : Guillaume, Hugo, Zoé ; **ni Max ni Inès** : rien à l'écran ne laisse deviner qu'ils existent (pas de « 2 comptes masqués »).
-- Dans le partage d'une **note** ou d'un **projet**, un Utilisateur à qui l'Admin a retiré cette fonction apparaît grisé, avec « N'utilise pas les notes » (ou « … les projets ») : ce n'est pas secret pour un compte visible. Une personne qui l'a **autorisée mais éteinte** n'est pas grisée (règle d'aujourd'hui : elle reçoit « Partage » avec l'invitation à l'allumer).
+- Dans le partage d'une **note** ou d'un **projet**, un Utilisateur à qui l'Admin a retiré cette fonction apparaît grisé, avec « N'utilise pas les notes » (ou « … les projets ») : ce n'est pas secret pour un compte visible. Une personne qui l'a **autorisée mais désactivée** n'est pas grisée (règle d'aujourd'hui : elle reçoit « Partage » avec l'invitation à l'activer).
 
 ### 7.4 Invité à sa première connexion
 
-Maquettes `invite-accueil-vide-1` (Accueil avec l'invitation « Allumez les projets… ») et `invite-fonctions-1` (Réglages › Fonctions : la seule ligne « Projets », éteinte) ; voir 4.4.
+Maquettes `invite-accueil-vide-1` (Accueil avec l'invitation « Activez les projets… ») et `invite-fonctions-1` (Réglages › Fonctions : la seule ligne « Projets », désactivée) ; voir 4.4.
 
 ## 8. Modèle de données
 
@@ -360,7 +360,7 @@ Mêmes conventions que l'existant (colonnes `<chose>_<état>` sur `users`, contr
 | 48 | 2 | `users.notes_allowed`, `users.projects_allowed`, `users.projects_create`, `users.mcp_allowed` : INTEGER NOT NULL DEFAULT 1, CHECK (0, 1) | autorisations de l'Admin ; 1 partout : la famille garde tout ; pour un Admin, ignorées ; pour un nouvel invité, le serveur écrit **0 partout** (décision finale, section 19) |
 | 49 | 3 | `users.lists_allowed`, `users.lists_enabled` : INTEGER NOT NULL DEFAULT 1, CHECK (0, 1) | **lues seulement pour un invité** (un Utilisateur et un Admin ont toujours les Listes) ; pour un nouvel invité : 0 et 0 ; cochée par l'Admin : `lists_enabled` = 1 aussitôt |
 
-Les interrupteurs de la personne existent déjà et restent : `notes_enabled` (1 au départ), `projects_enabled` (0 au départ). **Fonction utilisée = autorisée ET allumée.** Pour un **nouvel invité**, le serveur écrit `notes_enabled` = 0 et `projects_enabled` = 0 ; quand l'Admin coche une fonction pour un invité, il écrit aussi son interrupteur à 1 (allumée aussitôt (décision finale, section 19)). `lists_enabled` est la seule colonne nouvelle côté personne : sans elle, un invité ne pourrait pas éteindre ses Listes.
+Les interrupteurs de la personne existent déjà et restent : `notes_enabled` (1 au départ), `projects_enabled` (0 au départ). **Fonction utilisée = autorisée ET activée.** Pour un **nouvel invité**, le serveur écrit `notes_enabled` = 0 et `projects_enabled` = 0 ; quand l'Admin coche une fonction pour un invité, il écrit aussi son interrupteur à 1 (activée aussitôt (décision finale, section 19)). `lists_enabled` est la seule colonne nouvelle côté personne : sans elle, un invité ne pourrait pas désactiver ses Listes.
 
 ### 8.1 Le rôle Invité en base : une colonne `guest` (recommandé) ou une troisième valeur de `role`
 
@@ -377,7 +377,7 @@ Rien ne s'oppose sérieusement à la colonne : la contrainte croisée garde la r
 ### 8.2 Le reste
 
 - Noms de colonnes pris dans une **liste fixe** (comme `server/features.js`), jamais dans une requête.
-- Règles partagées dans un nouveau fichier `public/js/access.js` (fonctions pures : rôle calculé, fonctions autorisées selon le rôle, fonction utilisée = autorisée ∧ allumée, valeurs de départ par rôle, au moins une fonction autorisée pour un invité, changements de rôle permis), lu par le serveur (`server/access.js`) et les écrans, testé seul, comme `features.js`. `server/features.js` (Réglages › Fonctions) refuse d'allumer une fonction non autorisée.
+- Règles partagées dans un nouveau fichier `public/js/access.js` (fonctions pures : rôle calculé, fonctions autorisées selon le rôle, fonction utilisée = autorisée ∧ activée, valeurs de départ par rôle, au moins une fonction autorisée pour un invité, changements de rôle permis), lu par le serveur (`server/access.js`) et les écrans, testé seul, comme `features.js`. `server/features.js` (Réglages › Fonctions) refuse d'activer une fonction non autorisée.
 - `/api/me` et chaque synchronisation donnent à la personne **son** rôle, **ses** fonctions autorisées et **ses** interrupteurs ; jamais ceux d'un autre.
 - Tout ce qui teste aujourd'hui `role === 'user'` ou `['admin', 'user']` est revu (`admin-users.js` : création, modification, `losesAdmin` ; `oidc.js` : acceptation ; `admin.js` : choix du rôle ; `roleChip`) ; ce qui teste `role === 'admin'` reste juste (un invité n'est jamais Admin).
 - Aucune nouvelle table en première intention (l'option « Visible aussi par… », question 1, demanderait `user_visibility (user_id, viewer_id)`).
@@ -390,12 +390,12 @@ Rien ne s'oppose sérieusement à la colonne : la contrainte croisée garde la r
 | Voir un Admin ou un Utilisateur dans son annuaire | oui | oui | **non** | |
 | Ajouter un invité à une liste, une note, un projet | oui (selon ses fonctions autorisées) | non : « compte inconnu » | non | |
 | En faire le destinataire d'une liste d'envies | **non** (message nommé) | non : « compte inconnu » | — | 5.6 |
-| Listes, Échéances, À offrir, mode scan | toujours | **toujours** | si autorisées (non au départ) **et** allumées (allumées aussitôt cochées ; 403 nommé sinon) ; Échéances aussi par un projet à l'option « Échéances » allumée (section 19) | 4.7 |
-| Notes | s'il les allume | si autorisées (oui au départ) et allumées (oui au départ) | si autorisées (non au départ) et allumées (aussitôt cochées) | |
-| Projets partagés avec lui | s'il les allume | si autorisés (oui) et allumés (non au départ) | si autorisés (**non** au départ) et allumés (aussitôt cochés) | rôles du projet inchangés |
+| Listes, Échéances, À offrir, mode scan | toujours | **toujours** | si autorisées (non au départ) **et** activées (activées aussitôt cochées ; 403 nommé sinon) ; Échéances aussi par un projet à l'option « Échéances » activée (section 19) | 4.7 |
+| Notes | s'il les active | si autorisées (oui au départ) et activées (oui au départ) | si autorisées (non au départ) et activées (aussitôt cochées) | |
+| Projets partagés avec lui | s'il les active | si autorisés (oui) et activés (non au départ) | si autorisés (**non** au départ) et activés (aussitôt cochés) | rôles du projet inchangés |
 | Créer, dupliquer un projet | oui | si autorisé (oui au départ) | si autorisé (**non** au départ ; 403 nommé) | 4.5 |
 | Assistants IA | oui | si autorisés (oui au départ) | si autorisés (non au départ) | 4.6 |
-| Allumer une fonction dans Réglages › Fonctions | oui | les autorisées | les autorisées (Listes compris si autorisées) | 4.2 |
+| Activer une fonction dans Réglages › Fonctions | oui | les autorisées | les autorisées (Listes compris si autorisées) | 4.2 |
 | Régler rôle et fonctions autorisées d'un compte | oui (pas le sien) | non (404, route Admin) | non | |
 | Voir les projets, listes, notes des autres | **non** (404, inchangé) | non | non | l'Admin n'a aucun droit sur le contenu |
 
@@ -408,7 +408,7 @@ Rien ne s'oppose sérieusement à la colonne : la contrainte croisée garde la r
 - **Rien qui fuit par les réponses** : réponses construites champ par champ ; plus d'identifiant de connexion hors Administration ; erreurs identiques pour un compte inconnu et un compte qu'on ne voit pas ; pas de nombre de comptes ailleurs que pour l'Admin (« 6 comptes » n'apparaît nulle part pour la famille) ; le rôle d'un autre compte n'est envoyé qu'à l'Admin.
 - **Synchronisation, temps réel, MCP** : rien d'une fonction non utilisée (4.7) ; SSE inchangé (aucune donnée) mais plus envoyé pour les fonctions fermées ; MCP : contrôle de la fonction en premier, puis « Certaines listes », portée, rôle dans le projet.
 - **Copie locale** : un téléphone qui avait reçu l'ancien annuaire complet le remplace à la synchronisation suivante (la nouvelle version du service worker force une synchronisation complète). À dire au propriétaire : **un compte créé avant cette version a pu recevoir l'annuaire complet**. Comme les invités n'existent pas encore, il suffit de créer Max et Inès **après** la mise à jour.
-- **Journal de sécurité** (en anglais, sans contenu) : `admin_role_changed` (existe ; `role=guest` en plus), `admin_access_changed` (admin, user, et les autorisations : `lists=0 notes=0 projects=1 create=0 mcp=0`), `admin_account_created` (existe ; `role=guest` et les autorisations), `oauth_revoked` (`reason=access`) ; un refus pour fonction fermée n'est pas journalisé (pas d'attaque), un ajout refusé d'un compte non visible l'est avec les nombres seulement (`share_unknown_user`, qui, combien), pour repérer un essai de numéros. Allumer ou éteindre une fonction soi-même n'est pas journalisé (comme aujourd'hui).
+- **Journal de sécurité** (en anglais, sans contenu) : `admin_role_changed` (existe ; `role=guest` en plus), `admin_access_changed` (admin, user, et les autorisations : `lists=0 notes=0 projects=1 create=0 mcp=0`), `admin_account_created` (existe ; `role=guest` et les autorisations), `oauth_revoked` (`reason=access`) ; un refus pour fonction fermée n'est pas journalisé (pas d'attaque), un ajout refusé d'un compte non visible l'est avec les nombres seulement (`share_unknown_user`, qui, combien), pour repérer un essai de numéros. Activer ou désactiver une fonction soi-même n'est pas journalisé (comme aujourd'hui).
 - **Limites** : le partage garde ses plafonds ; aucune nouvelle route sans session.
 - **Listes d'envies** : le test « identique avec ou sans réservation » doit rester vert ; un invité n'est jamais destinataire (5.6).
 - **Ce que ce rôle n'est pas** : une barrière contre l'Admin (il voit tous les comptes, jamais leur contenu, comme aujourd'hui) ; une protection contre un membre qui recopie à la main ce qu'il voit dans un projet partagé.
@@ -424,35 +424,35 @@ Sur les points sensibles, à chaque étape, en plus des tests existants :
 - **Destinataire d'envies** : `list.create` (file d'attente) et la conversion avec Max refusés, pour Léa comme pour l'Admin ; passer en Invité un destinataire refusé.
 - **Changements de rôle** : chaque ligne de 6.1 (permis, refusés : Invité ↔ Admin directement, soi-même, dernier Admin), cases et interrupteurs inchangés, journal.
 - **Contexte partagé** : Hugo, membre de « DomoPi Articles » avec Max, voit Max dans les membres du projet et dans l'historique, **pas** dans son annuaire ; Max voit Guillaume et Hugo dans le projet, pas Léa nulle part.
-- **Autorisé et allumé** : pour chaque fonction, les quatre cas (autorisée ou non × allumée ou non) ; une fonction non autorisée ne peut pas être allumée (`account.features` refusé) ; autorisée mais éteinte : comme une fonction coupée aujourd'hui (rien d'envoyé, « Partage » remis avec l'invitation à l'allumer) ; décocher puis recocher garde l'interrupteur ; Listes toujours là pour un Utilisateur et un Admin, quelles que soient les colonnes.
+- **Autorisé et activé** : pour chaque fonction, les quatre cas (autorisée ou non × activée ou non) ; une fonction non autorisée ne peut pas être activée (`account.features` refusé) ; autorisée mais désactivée : comme une fonction désactivée aujourd'hui (rien d'envoyé, « Partage » remis avec l'invitation à l'activer) ; décocher puis recocher garde l'interrupteur ; Listes toujours là pour un Utilisateur et un Admin, quelles que soient les colonnes.
 - **Invité sans Listes** : chaque route et chaque type d'opération des listes refusés (403), rien des listes dans la synchronisation (ni magasins, rayons, mémoire des articles), aucun événement temps réel, aucune notification ni rappel des listes, outils MCP des listes refusés ; « Peut créer ses propres projets » (création, duplication, MCP) ; Assistants IA (autorisation refusée, connexions révoquées).
-- **Nouvel invité** : tout éteint au départ ; l'Accueil montre l'invitation (4.4) ; Réglages › Fonctions ne propose que les fonctions autorisées.
+- **Nouvel invité** : tout désactivé au départ ; l'Accueil montre l'invitation (4.4) ; Réglages › Fonctions ne propose que les fonctions autorisées.
 - **Règles** (`public/js/access.js`) : rôle calculé, fonction utilisée (toutes les combinaisons), valeurs de départ par rôle, au moins une fonction autorisée pour un invité, changements de rôle permis.
 - **Rien d'effacé** : retirer puis rendre une fonction à un compte qui a des données : tout revient.
 - **Identifiant de connexion** : jamais dans une réponse à un autre compte que l'Admin.
 - **Suppression d'un compte** : impossible s'il possède un projet ou a créé des cartes.
-- **Écrans** : bandeau à trois boutons (et à un bouton, rien d'allumé), Accueil avec l'invitation, menu de gauche réduit, Réglages et Fonctions réduits, page du compte (trois rôles) ; captures du téléphone avant / après pour un Utilisateur **identiques au pixel près** ; textes en français et en anglais.
+- **Écrans** : bandeau à trois boutons (et à un bouton, rien d'activé), Accueil avec l'invitation, menu de gauche réduit, Réglages et Fonctions réduits, page du compte (trois rôles) ; captures du téléphone avant / après pour un Utilisateur **identiques au pixel près** ; textes en français et en anglais.
 - « Identique avec ou sans réservation » (envies) relancé.
 
 ## 12. Aide et documents
 
 À chaque étape, pour ce qu'elle apporte, dans les deux langues :
 
-- **Aide** : dans le chapitre « Comptes » (`public/js/help-content.js`, `public/js/help-en/comptes.js`), une section « Rôles des comptes : Admin, Utilisateur, Invité » (pour l'Admin : fonctions autorisées, la personne qui les allume, invité toujours discret, ce qui reste visible dans un projet partagé, changer de rôle) ; dans « Réglages » (Fonctions) : « seules les fonctions autorisées par l'Admin sont proposées » ; dans « Rôles », une ligne par droit nouveau ; « Mon compte » : la ligne « Compte invité » ; numéros calculés. Anglais : « Admin », « User », « Guest » ; « Allowed features » ; « Can create their own projects » ; « Discreet ».
+- **Aide** : dans le chapitre « Comptes » (`public/js/help-content.js`, `public/js/help-en/comptes.js`), une section « Rôles des comptes : Admin, Utilisateur, Invité » (pour l'Admin : fonctions autorisées, la personne qui les active, invité toujours discret, ce qui reste visible dans un projet partagé, changer de rôle) ; dans « Réglages » (Fonctions) : « seules les fonctions autorisées par l'Admin sont proposées » ; dans « Rôles », une ligne par droit nouveau ; « Mon compte » : la ligne « Compte invité » ; numéros calculés. Anglais : « Admin », « User », « Guest » ; « Allowed features » ; « Can create their own projects » ; « Discreet ».
 - **Guide et site** : `node scripts/guide.js`, puis `node scripts/doc-links.js`.
 - **README.md et README.fr.md** : une ligne dans la liste des fonctions.
 - **Cahier des charges** : Comptes et rôles, Écrans (Administration, Fonctions), Modèle de données (migrations 47 à 49), Sécurité (annuaire, invités) ; `docs/exploitation.md` (migrations).
-- **CLAUDE.md** : une entrée « Rôle Invité » (règle de l'annuaire, `accountRole`, autorisé ∧ allumé, test « annuaire identique »).
+- **CLAUDE.md** : une entrée « Rôle Invité » (règle de l'annuaire, `accountRole`, autorisé ∧ activé, test « annuaire identique »).
 - **Kit de design** : sections 16.48 à 16.51 (`design/listo.css` et la copie de `public/css/`), `design/components.html`.
 - **Service worker** : version augmentée, nouveaux fichiers dans `APP_FILES`.
-- **Annonce aux proches** : aucune nécessaire (rien ne change pour eux). Pour les invités, une phrase d'accueil que le propriétaire leur envoie lui-même (« Connecte-toi, puis allume les Projets dans Réglages › Fonctions »).
+- **Annonce aux proches** : aucune nécessaire (rien ne change pour eux). Pour les invités, une phrase d'accueil que le propriétaire leur envoie lui-même (« Connecte-toi, puis active les Projets dans Réglages › Fonctions »).
 
 ## 13. Découpage en étapes
 
 Chaque étape : un plan court, la construction, les tests, un résumé. **Une seule PR `dev` → `main`, à la fin des trois étapes** (décision finale, section 19) : le propriétaire essaie le tout à la fin. Tailles indicatives (lignes de code et de tests, hors aide), à comparer aux étapes des projets (environ 3 000 à 6 000 lignes chacune).
 
 1. **Rôle Invité et annuaire discret** (migration 47, colonne `guest`) — **petite à moyenne** : `accountRole`, choix du rôle à trois valeurs dans la page du compte et « Nouveau compte », changements de rôle de 6.1, pastilles « Invité » et « Discret », `directoryFor` à la place de `activeUsers` (synchronisation, `GET /api/users`), contrôles des ajouts (listes, notes, projets) et du destinataire d'envies, un invité ne partage jamais ce qu'il possède, invité déjà membre affiché correctement dans le partage, journal ; et les deux constats : **plus d'identifiant de connexion envoyé**, **`accountUsed` compte les projets**. Construite le 25 novembre 2026 (19.3).
-2. **Fonctions autorisées : Notes, Projets, création de projets, Assistants IA** (migration 48) — **moyenne** (environ 1 500 à 2 200 lignes) : `access.js`, « autorisé ∧ allumé » branché sur la mécanique des Fonctions (déjà là pour Notes et Projets), Réglages › Fonctions réduit aux fonctions autorisées, cases dans la page du compte et dans « Nouveau compte » (départ selon le rôle), tout éteint pour un nouvel invité, invitation de l'Accueil (4.4), « Peut créer ses propres projets », Assistants IA (autorisation, révocation), Mon compte. À la fin de cette étape, un invité a encore les Listes (vides : on ne peut rien lui partager ; il pourrait créer les siennes et recevrait la mémoire des articles).
+2. **Fonctions autorisées : Notes, Projets, création de projets, Assistants IA** (migration 48) — **moyenne** (environ 1 500 à 2 200 lignes) : `access.js`, « autorisé ∧ activé » branché sur la mécanique des Fonctions (déjà là pour Notes et Projets), Réglages › Fonctions réduit aux fonctions autorisées, cases dans la page du compte et dans « Nouveau compte » (départ selon le rôle), tout désactivé pour un nouvel invité, invitation de l'Accueil (4.4), « Peut créer ses propres projets », Assistants IA (autorisation, révocation), Mon compte. À la fin de cette étape, un invité a encore les Listes (vides : on ne peut rien lui partager ; il pourrait créer les siennes et recevrait la mémoire des articles).
 3. **Listes des invités** (migration 49) — **grande** (environ 2 800 à 4 000 lignes ; un peu moins qu'avant, car elle ne concerne plus que les invités : pas de « Listes » côté Utilisateur, ni de confirmation « Léa possède 4 listes », ni de partage grisé pour la famille ; mais le serveur doit quand même savoir répondre « pas de listes » partout) : tout 4.7 côté serveur (synchronisation, file d'attente, routes, notifications, rappels, résumé du matin, temps réel, MCP), la ligne « Listes » dans les Fonctions d'un invité, et côté téléphone et ordinateur l'absence des Listes (bandeau à trois boutons, Accueil, menu de gauche, Échéances, « À offrir », Corbeille, catégories de notifications, recherche, raccourcis) ; invité « projets seulement » complet. Captures avant / après pour un Utilisateur.
 
 L'aide, le guide, le site et le cahier des charges suivent à chaque étape (12).
@@ -463,7 +463,7 @@ L'aide, le guide, le site et le cahier des charges suivent à chaque étape (12)
 | --- | --- | --- | --- |
 | Un nom qui fuit par un chemin oublié (nouvel écran, nouvel outil MCP) | moyenne | moyenne (un prénom) | une seule fonction d'annuaire ; test « annuaire identique » qui compare **toutes** les réponses d'un proche ; une règle dans CLAUDE.md pour les écrans à venir |
 | Un endroit qui lit `users.role` sans `guest` et traite un invité en Utilisateur | moyenne | moyenne | une seule fonction `accountRole` ; un test qui refuse toute autre lecture de `role` ; le test « annuaire identique » |
-| Un invité perdu à sa première connexion (tout éteint) | moyenne | faible | invitation de l'Accueil avec le bouton vers Fonctions ; notification « Partage » qui le dit aussi ; phrase d'accueil envoyée par le propriétaire |
+| Un invité perdu à sa première connexion (tout désactivé) | moyenne | faible | invitation de l'Accueil avec le bouton vers Fonctions ; notification « Partage » qui le dit aussi ; phrase d'accueil envoyée par le propriétaire |
 | Un numéro de compte deviné pour partager avec un invité | faible | faible | contrôle par `directoryFor` à chaque ajout, réponse identique à « inconnu » |
 | Le propriétaire croit Max invisible de Hugo alors qu'ils partagent un projet | moyenne | faible | avertissement dans « Partager », phrase sous le rôle, section d'aide |
 | « Pas de listes » oublié quelque part (une route, une notification) | moyenne | faible (Max verrait une liste… qu'on ne peut pas lui partager) | un contrôle par routeur, un dans l'aiguillage des opérations ; tests route par route |
@@ -475,8 +475,8 @@ L'aide, le guide, le site et le cahier des charges suivent à chaque étape (12)
 
 | Solution | Pour | Contre | Avis |
 | --- | --- | --- | --- |
-| **Ce cadrage** : rôle Invité (toujours discret), fonctions autorisées par l'Admin et allumées par la personne | tout au même endroit ; un seul choix (le rôle) donne la visibilité ; la même règle que les Fonctions d'aujourd'hui ; la famille ne voit rien changer | trois PR, dont une grande | **retenue** (décisions du 25 novembre 2026) |
-| **La case de l'Admin allume la fonction** (premier cadrage) | un invité voit ses projets dès la première connexion | deux sens pour une même case ; contraire au choix du propriétaire (« ne lui active pas forcément la fonction ») | non (décision du 25 novembre 2026) |
+| **Ce cadrage** : rôle Invité (toujours discret), fonctions autorisées par l'Admin et activées par la personne | tout au même endroit ; un seul choix (le rôle) donne la visibilité ; la même règle que les Fonctions d'aujourd'hui ; la famille ne voit rien changer | trois PR, dont une grande | **retenue** (décisions du 25 novembre 2026) |
+| **La case de l'Admin active la fonction** (premier cadrage) | un invité voit ses projets dès la première connexion | deux sens pour une même case ; contraire au choix du propriétaire (« ne lui active pas forcément la fonction ») | non (décision du 25 novembre 2026) |
 | **Préréglages + interrupteur « Compte discret »** (premier cadrage) | un invité visible était possible | un réglage de plus, et un sélecteur qui ne sert qu'à la création | remplacé par le rôle (décision du 25 novembre 2026) |
 | **Troisième valeur `'guest'` dans `users.role`** | une seule colonne pour le rôle | recréation de la table des comptes et risque de cascades (8.1) | non : colonne `guest` recommandée |
 | **Une deuxième installation de Listo** (« DomoPi », autre adresse, autre conteneur) | isolation totale, **zéro ligne de code**, possible dès aujourd'hui ; aucun risque pour la famille | deux comptes et deux applications pour Guillaume ; DomoPi absent de son Accueil et de ses Échéances ; sauvegardes, mises à jour et secrets en double ; projets à déplacer (l'assistant IA peut le faire) | **bonne solution de secours**, ou d'attente pendant la construction |
@@ -491,17 +491,17 @@ Dans [`design/comptes/`](../design/comptes/README.md), en clair et en sombre (t�
 | Fichier | Écran |
 | --- | --- |
 | admin-comptes-1 | Administration › Comptes : Admin et Utilisateurs (« Utilisateur · sans projets » pour Zoé), puis « Invités » (Max, Inès : « Invité · Projets ») avec la pastille « Discret » |
-| admin-compte-1 | Page du compte de Max : rôle « Utilisateur \| Invité \| Admin » (Invité ; Admin grisé), « Un invité est toujours discret… », Fonctions autorisées (Projets seul) et « Il choisit ensuite lui-même de les allumer… » |
+| admin-compte-1 | Page du compte de Max : rôle « Utilisateur \| Invité \| Admin » (Invité ; Admin grisé), « Un invité est toujours discret… », Fonctions autorisées (Projets seul) et « Il choisit ensuite lui-même de les activer… » |
 | admin-compte-2 | Page du compte de Hugo : rôle Utilisateur, « Les listes sont toujours là », Notes, Projets, création, Assistants IA autorisés |
 | nouveau-compte-1 | « Nouveau compte » : le rôle (Invité choisi), les fonctions autorisées au départ (Projets seul), identifiant, nom |
-| invite-accueil-vide-1 | **Nouveau** : Accueil de Max à sa première connexion, rien d'allumé : l'invitation « Allumez les projets dans Réglages › Fonctions » et la tuile Compte |
-| invite-fonctions-1 | **Nouveau** : Réglages › Fonctions de Max : la seule ligne « Projets » (éteinte), « Seules les fonctions que l'Admin a autorisées… » |
-| invite-accueil-1 | Accueil de Max, projets allumés : tuiles Projets et Compte, chacune sur toute la largeur |
-| invite-projets-1 | Projets de Max (allumés) : seulement « DomoPi Articles », sans « + » ; bandeau à trois boutons |
+| invite-accueil-vide-1 | **Nouveau** : Accueil de Max à sa première connexion, rien d'activé : l'invitation « Activez les projets dans Réglages › Fonctions » et la tuile Compte |
+| invite-fonctions-1 | **Nouveau** : Réglages › Fonctions de Max : la seule ligne « Projets » (désactivée), « Seules les fonctions que l'Admin a autorisées… » |
+| invite-accueil-1 | Accueil de Max, projets activés : tuiles Projets et Compte, chacune sur toute la largeur |
+| invite-projets-1 | Projets de Max (activés) : seulement « DomoPi Articles », sans « + » ; bandeau à trois boutons |
 | invite-reglages-1 | Réglages de Max : réduits (Fonctions « Projets », pas d'Administration) ; pastille et encadré « Compte invité » |
 | partage-admin-1 | Guillaume partage « DomoPi Articles » : Max et Inès (« Invité · discret »), l'avertissement « Hugo verra Max et Inès… » |
 | partage-famille-1 | Léa partage sa liste « Courses » : Guillaume, Hugo, Zoé ; ni Max ni Inès |
-| pc-invite-1 | Max sur ordinateur (projets allumés) : menu de gauche réduit (Accueil, Projets, ses projets), « DomoPi Articles » ouvert en Contributeur |
+| pc-invite-1 | Max sur ordinateur (projets activés) : menu de gauche réduit (Accueil, Projets, ses projets), « DomoPi Articles » ouvert en Contributeur |
 | pc-admin-comptes-1 | Administration › Comptes sur ordinateur : la liste à gauche, la page de Max à droite (rôle, fonctions autorisées ; sécurité) |
 
 Les nouveaux composants sont dans `design/comptes/listo-comptes.css` (sections 16.48 à 16.51, variables du kit seulement). Aucune nouvelle icône (`#i-eye-off`, `#i-user`, `#i-users`, `#i-shield`, `#i-layers` existent).
@@ -512,16 +512,16 @@ Les nouveaux composants sont dans `design/comptes/listo-comptes.css` (sections 1
 
 - « Un seul interrupteur « Compte discret » pour les deux sens ? » : **c'est le rôle Invité**, toujours discret dans les deux sens.
 - « Préréglages « Famille » et « Invité » ? » : **c'est le rôle** qui donne les autorisations de départ.
-- « La case de l'Admin allume-t-elle la fonction ? » : **non, elle l'autorise** ; la personne l'allume dans Réglages › Fonctions (Utilisateur et Invité).
+- « La case de l'Admin active-t-elle la fonction ? » : **non, elle l'autorise** ; la personne l'active dans Réglages › Fonctions (Utilisateur et Invité).
 - « Listes pour un Utilisateur ? » : **toujours là**, sans case ni interrupteur.
-- « Listes autorisées pour un invité ? » : **comme les autres fonctions** : un interrupteur « Listes » dans ses Fonctions, éteint au départ (règle retenue, 4.1).
+- « Listes autorisées pour un invité ? » : **comme les autres fonctions** : un interrupteur « Listes » dans ses Fonctions, désactivé au départ (règle retenue, 4.1).
 
 **Répondues ensuite (décisions finales, section 19)** : toutes les questions ci-dessous ; la réponse retenue est indiquée après chacune (« → »).
 
 1. **Qui voit un invité dans son annuaire ?** Seulement l'Admin, ou aussi des personnes choisies (« Visible aussi par : Hugo ») pour qu'un proche puisse lui partager son propre projet ? — *Recommandé : seulement l'Admin pour commencer ; « Visible aussi par… » plus tard si le besoin vient (une petite table, une ligne dans la page du compte).* → **Seulement les Admin.**
 2. **Dans un projet partagé, les membres se voient** (Hugo voit Max dans « DomoPi Articles », et inversement), avec un avertissement dans « Partager » ? — *Recommandé : oui (option A de 5.3) ; pour un projet vraiment à part, ne pas y mettre de proche.* Un invité peut-il partager ses propres choses ? Son annuaire est vide : *non, c'est l'Admin qui partage avec lui.* → **Oui, les membres se voient, sans avertissement** ; un invité ne partage **jamais** ce qu'il possède.
-3. **Invité « projets seulement » : l'écran Échéances ?** Sans (trois boutons : Accueil, Projets, Réglages ; les cartes urgentes sont dans la tuile Projets) ou avec, pour les seules cartes datées (quatre boutons) ? — *Recommandé : sans.* → **L'écran Échéances existe pour un invité quand les Listes sont allumées pour lui, ou quand un projet qu'il voit a l'option « Échéances » allumée.**
-4. **Autorisations de départ d'un nouvel invité** : Projets seul, sans création de projet ni assistant IA ? — *Recommandé : oui (« accès uniquement au projet en question ») ; l'Admin coche le reste au besoin.* → **Rien de coché** à la création ; une fonction cochée s'allume aussitôt pour l'invité.
+3. **Invité « projets seulement » : l'écran Échéances ?** Sans (trois boutons : Accueil, Projets, Réglages ; les cartes urgentes sont dans la tuile Projets) ou avec, pour les seules cartes datées (quatre boutons) ? — *Recommandé : sans.* → **L'écran Échéances existe pour un invité quand les Listes sont activées pour lui, ou quand un projet qu'il voit a l'option « Échéances » activée.**
+4. **Autorisations de départ d'un nouvel invité** : Projets seul, sans création de projet ni assistant IA ? — *Recommandé : oui (« accès uniquement au projet en question ») ; l'Admin coche le reste au besoin.* → **Rien de coché** à la création ; une fonction cochée s'active aussitôt pour l'invité.
 5. **Notes autorisées pour un invité : les étiquettes communes** (il verrait « Anniversaire Zoé » et la famille verrait les siennes) ? — *Recommandé : l'accepter et le dire sous la case (pas de nom de personne).* → Recommandation retenue (l'accepter et le dire).
 6. **Listes autorisées pour un invité : la mémoire commune des articles** ? — *Recommandé : de même, l'accepter et le dire ; un filtrage par compte est possible plus tard (coût moyen).* → Recommandation retenue (l'accepter et le dire).
 7. **Ancien membre invité** : quand Max quitte un projet, ses commentaires et l'historique gardent « Max » pour les autres membres ? — *Recommandé : oui (on doit savoir qui a écrit) ; un compte supprimé reste « Un ancien compte ».* → Recommandation retenue (oui).
@@ -542,11 +542,11 @@ Après le premier cadrage (qui proposait des préréglages « Famille » et « I
 
 Puis, le même jour :
 
-4. **La case de l'Admin autorise, elle n'allume pas** : « cocher une fonction pour un utilisateur ne lui active pas forcément la fonction, après il a le choix de l'activer ou non » ; la personne allume ou non dans Réglages › Fonctions, comme aujourd'hui (Notes allumées, Projets éteints au départ) ; une fonction non autorisée disparaît de sa page Fonctions et le serveur la refuse (4.1, 4.2).
+4. **La case de l'Admin autorise, elle n'active pas** : « cocher une fonction pour un utilisateur ne lui active pas forcément la fonction, après il a le choix de l'activer ou non » ; la personne active ou non dans Réglages › Fonctions, comme aujourd'hui (Notes activées, Projets désactivés au départ) ; une fonction non autorisée disparaît de sa page Fonctions et le serveur la refuse (4.1, 4.2).
 5. **Les Listes sont toujours là pour un Utilisateur** (ni case, ni interrupteur) (4.1).
-6. **Pour un invité, de même** : une fonction autorisée, il l'allume lui-même ; les Projets sont donc éteints à sa première connexion, et l'Accueil l'invite à les allumer (4.4). Pour les Listes autorisées à un invité, la règle retenue est la même que pour les autres fonctions : un interrupteur « Listes » dans ses Fonctions, éteint au départ (colonne `lists_enabled`, 8).
+6. **Pour un invité, de même** : une fonction autorisée, il l'active lui-même ; les Projets sont donc désactivés à sa première connexion, et l'Accueil l'invite à les activer (4.4). Pour les Listes autorisées à un invité, la règle retenue est la même que pour les autres fonctions : un interrupteur « Listes » dans ses Fonctions, désactivé au départ (colonne `lists_enabled`, 8).
 
-Ce qui en découle dans ce cadrage : en base, **colonne `users.guest`** recommandée plutôt qu'une troisième valeur de `role` (8.1 ; décision à confirmer, question 12) ; pas de colonne `discreet` ; colonnes d'autorisation `*_allowed` (Admin) à côté des interrupteurs `*_enabled` (personne), fonction utilisée = autorisée ET allumée ; un invité ne devient pas Admin directement (6.1) ; les étapes deviennent : 1. rôle Invité et annuaire discret, avec les deux constats ; 2. fonctions autorisées (Notes, Projets, création de projets, Assistants IA) ; 3. Listes des invités (13).
+Ce qui en découle dans ce cadrage : en base, **colonne `users.guest`** recommandée plutôt qu'une troisième valeur de `role` (8.1 ; décision à confirmer, question 12) ; pas de colonne `discreet` ; colonnes d'autorisation `*_allowed` (Admin) à côté des interrupteurs `*_enabled` (personne), fonction utilisée = autorisée ET activée ; un invité ne devient pas Admin directement (6.1) ; les étapes deviennent : 1. rôle Invité et annuaire discret, avec les deux constats ; 2. fonctions autorisées (Notes, Projets, création de projets, Assistants IA) ; 3. Listes des invités (13).
 
 ## 19. Décisions finales du propriétaire (25 novembre 2026)
 
@@ -555,18 +555,18 @@ Après la relecture du cadrage, le propriétaire a demandé de construire les tr
 1. **Trois rôles, montrés partout** : « Admin », « Utilisateur », « Invité ». En base : `users.role` ('admin' ou 'user') et une colonne à part `users.guest` (0 ou 1, contrainte `guest = 0 OR role = 'user'`), lues par une seule fonction, `accountRole()` ; pas de recréation de la table des comptes.
 2. **Un invité est toujours discret, dans les deux sens, par son rôle** (aucun interrupteur) : absent de l'annuaire de tout le monde **sauf des Admin** ; il ne voit personne dans le sien. Les membres d'une chose partagée avec lui (projet, liste, note) se voient dans cette chose : c'est normal, **sans avertissement** dans « Partager ».
 3. **« Fonctions autorisées »**, réglées par l'Admin dans la page du compte :
-   - Utilisateur : Listes toujours là (sans case) ; cases Notes, Projets, « Peut créer ses propres projets », Assistants IA, **toutes cochées au départ** (ce qu'ont aujourd'hui les comptes existants). Une case **autorise** seulement : l'Utilisateur allume Notes et Projets lui-même dans Réglages › Fonctions (comme aujourd'hui) ; décochée, la fonction disparaît de ses Fonctions et le serveur la refuse.
-   - Invité : cases Listes, Notes, Projets, « Peut créer ses propres projets », Assistants IA, **rien de coché à la création** ; quand l'Admin coche Listes, Notes ou Projets pour un invité, la fonction **s'allume aussitôt** pour lui (interrupteur à 1) ; il peut l'éteindre lui-même ensuite dans ses Fonctions.
+   - Utilisateur : Listes toujours là (sans case) ; cases Notes, Projets, « Peut créer ses propres projets », Assistants IA, **toutes cochées au départ** (ce qu'ont aujourd'hui les comptes existants). Une case **autorise** seulement : l'Utilisateur active Notes et Projets lui-même dans Réglages › Fonctions (comme aujourd'hui) ; décochée, la fonction disparaît de ses Fonctions et le serveur la refuse.
+   - Invité : cases Listes, Notes, Projets, « Peut créer ses propres projets », Assistants IA, **rien de coché à la création** ; quand l'Admin coche Listes, Notes ou Projets pour un invité, la fonction **s'active aussitôt** pour lui (interrupteur à 1) ; il peut l'désactiver lui-même ensuite dans ses Fonctions.
    - « Peut créer ses propres projets » et « Assistants IA » sont des **permissions** (sans interrupteur personnel).
 4. **Un invité ne partage jamais ce qu'il possède** : ni « Partager » pour ses listes, notes et projets (ni personnes, ni lien public), le serveur refuse (même réponse que pour une action interdite) ; il peut être ajouté par l'Admin, et les membres de ce qu'on lui partage le voient là.
-5. **Invité et Échéances** : l'écran (et son bouton) existe pour un invité quand les Listes sont allumées pour lui, ou quand au moins un projet qu'il voit a l'option « Échéances » allumée (ses cartes suivent la règle existante « Afficher dans Échéances »).
-6. **Changements de rôle** : Utilisateur ↔ Invité avec une confirmation qui dit ce qui change (discret / de nouveau visible) ; Admin ↔ Invité jamais directement (passer par Utilisateur). Utilisateur → Invité garde ce qui est autorisé et allumé (montré dans la confirmation) ; refusé si une liste d'envies lui est destinée.
+5. **Invité et Échéances** : l'écran (et son bouton) existe pour un invité quand les Listes sont activées pour lui, ou quand au moins un projet qu'il voit a l'option « Échéances » activée (ses cartes suivent la règle existante « Afficher dans Échéances »).
+6. **Changements de rôle** : Utilisateur ↔ Invité avec une confirmation qui dit ce qui change (discret / de nouveau visible) ; Admin ↔ Invité jamais directement (passer par Utilisateur). Utilisateur → Invité garde ce qui est autorisé et activé (montré dans la confirmation) ; refusé si une liste d'envies lui est destinée.
 7. **Les deux constats sont corrigés à l'étape 1** : l'identifiant de connexion (`username`) n'est plus envoyé aux autres comptes (annuaire, membres : le nom affiché seulement) ; `accountUsed` (`server/routes/admin-users.js`) compte les projets (un compte qui n'a servi qu'aux projets n'est plus « jamais utilisé »).
 8. **Les autres questions** (section 17) : les recommandations du document.
 
 ### 19.1 Ce qui change dans ce document
 
-Les sections 1 à 18 ont été reprises sur ces points : réponse courte, 4.1 (invité : rien de coché, cochée = allumée aussitôt), 4.3 (Échéances, « Personnes »), 4.4 (première connexion), 5.3 (option A sans avertissement), 5.4, 5.7 (un invité ne partage jamais), 6 et 6.1, 7.2, 7.3, 8 (migrations 48 et 49), 9, 13 (une seule PR), 17 (réponses). Les maquettes `partage-admin-1` (avertissement) et `invite-accueil-vide-1`, `invite-fonctions-1` (invité qui allume lui-même) restent comme planches de travail ; l'avertissement n'est pas construit.
+Les sections 1 à 18 ont été reprises sur ces points : réponse courte, 4.1 (invité : rien de coché, cochée = activée aussitôt), 4.3 (Échéances, « Personnes »), 4.4 (première connexion), 5.3 (option A sans avertissement), 5.4, 5.7 (un invité ne partage jamais), 6 et 6.1, 7.2, 7.3, 8 (migrations 48 et 49), 9, 13 (une seule PR), 17 (réponses). Les maquettes `partage-admin-1` (avertissement) et `invite-accueil-vide-1`, `invite-fonctions-1` (invité qui active lui-même) restent comme planches de travail ; l'avertissement n'est pas construit.
 
 ### 19.2 Choix faits pendant la construction, quand le document ne disait rien
 
@@ -588,13 +588,13 @@ Migration 48 (`users.notes_allowed`, `projects_allowed`, `projects_create`, `mcp
 
 Choix faits pendant la construction, quand le document ne disait rien :
 
-- **Notes non autorisées** : le serveur les ferme entièrement (rien des notes dans la synchronisation, ni étiquettes communes ; toute opération et route des notes : 403 « Les notes ne sont pas ouvertes pour votre compte… »). **Autorisées mais éteintes** : exactement comme aujourd'hui (cachées des écrans de la personne, ni nouveautés ni notifications, MCP refusé), pour ne rien changer à la famille. Projets : non utilisés (non autorisés ou éteints) = fermés comme aujourd'hui, avec un texte différent quand ce n'est pas autorisé (« c'est l'Admin qui les autorise »).
-- **Une fonction non autorisée** ne s'allume ni ne s'éteint par la personne (403 « ops.fonctionNonAutorisee ») : son interrupteur reste tel qu'elle l'avait laissé.
-- **Invité, case recochée** : rallumée aussitôt (règle « cochée = allumée » de la section 19), même s'il l'avait éteinte avant que l'Admin la décoche. Un Utilisateur retrouve, lui, son interrupteur tel quel.
+- **Notes non autorisées** : le serveur les ferme entièrement (rien des notes dans la synchronisation, ni étiquettes communes ; toute opération et route des notes : 403 « Les notes ne sont pas ouvertes pour votre compte… »). **Autorisées mais désactivées** : exactement comme aujourd'hui (cachées des écrans de la personne, ni nouveautés ni notifications, MCP refusé), pour ne rien changer à la famille. Projets : non utilisés (non autorisés ou désactivés) = fermés comme aujourd'hui, avec un texte différent quand ce n'est pas autorisé (« c'est l'Admin qui les autorise »).
+- **Une fonction non autorisée** ne s'active ni ne se désactive par la personne (403 « ops.fonctionNonAutorisee ») : son interrupteur reste tel qu'elle l'avait laissé.
+- **Invité, case recochée** : réactivée aussitôt (règle « cochée = activée » de la section 19), même s'il l'avait désactivée avant que l'Admin la décoche. Un Utilisateur retrouve, lui, son interrupteur tel quel.
 - **Assistants IA décochée** : les deux à la fois, la solution la plus sûre : toutes ses connexions sont révoquées tout de suite (journal `claude.revoked`, raison « AI assistants no longer allowed by the admin », et `revoked` dans `admin_access_changed`), et chaque appel de `/mcp` (et chaque renouvellement de jeton) revérifie la case (`liveGrant`). L'écran « Autoriser un assistant IA » répond 403 « Votre compte ne peut pas autoriser d'assistant IA… », l'accord aussi ; « Assistants IA » disparaît de Mon compte (`claudeUrl` absent).
 - **« Peut créer ses propres projets »** : gardée telle quelle quand Projets est décoché (interrupteur grisé) ; elle ne compte que si les projets sont utilisés.
 - **Confirmation d'un retrait** (Notes, Projets, Assistants IA) : sans nombres (l'Admin ne voit rien du contenu des autres) ; le retrait de « Peut créer ses propres projets » se fait sans question.
-- **Confirmation « Faire un invité »** : dit ce qui est autorisé et, pour Notes et Projets, allumé (l'Admin voit les fonctions *utilisées* d'un compte, `used`, jamais ses autres réglages).
+- **Confirmation « Faire un invité »** : dit ce qui est autorisé et, pour Notes et Projets, activé (l'Admin voit les fonctions *utilisées* d'un compte, `used`, jamais ses autres réglages).
 - **Partage** : l'annuaire donne, pour chaque compte visible, ce que l'Admin lui autorise (`uses` : notes, projets) ; la feuille « Partager » d'une note ou d'un projet grise une personne qui ne l'a pas (« N'utilise pas les notes ») et le serveur refuse de l'ajouter (400 nommé : « Zoé n'utilise pas les projets. »). Un membre déjà présent reste.
 - **Temps réel** : les cases d'un invité ne préviennent que ses appareils (« event: refs », sans données : la famille ne reçoit rien) ; celles d'un Utilisateur préviennent tous les appareils (les annuaires changent).
 - **Ligne d'un compte** (Administration) : « Invité · Projets » (ouvert) ou « Utilisateur · sans projets » (retiré) remplace l'état de la 2FA, comme la maquette ; un compte désactivé le dit toujours.
@@ -603,20 +603,20 @@ Choix faits pendant la construction, quand le document ne disait rien :
 
 ### 19.5 Étape 3 construite (25 novembre 2026)
 
-Migration 49 (`users.lists_allowed`, `users.lists_enabled` : lues pour un invité seulement ; 1 au départ, sans effet pour un Admin ou un Utilisateur, qui ont toujours les Listes ; 0 pour les invités créés aux étapes 1 et 2, le choix le plus sûr, aucun n'étant en service). Règles : `public/js/access.js` (`PERMISSIONS` avec `lists`, `permissionsFor` : la case « Listes » d'un invité seulement, `allowedChangeProblem` qui la refuse pour un Utilisateur, `welcomeHint` qui lit les fonctions montrées) et `public/js/features.js` (`lists` dans les fonctions, `FEATURE_ROUTES.lists`, `usedFeatures` avec le rôle, `offeredFeatures`, `screenFeatures` qui branche les Listes d'un invité sur la règle d'Échéances). Côté serveur, **un seul contrôle**, `listsRefusal` (`server/features.js`), repris par : les routes des listes, posé une fois devant elles (`server/app.js`, `LIST_ROUTE_PATHS` : `/api/lists`, `/api/items`, `/api/suggestions`, `/api/stores`, `/api/aisles`, `/api/push/mutes` ; l'annuaire `GET /api/users` n'en fait pas partie) ; les opérations `list.*`, `item.*`, `gift.*`, `habitual.*` (`LIST_OPS`, `server/lists.js`) ; la synchronisation (`syncBody`) ; `myLists` et `readList` (assistants IA, écran d'autorisation) ; les notifications (`allowed`, `server/notify.js`) et la page Notifications (`server/inbox.js`) ; le résumé du matin ; le temps réel (`server/events.js`) ; les outils MCP des listes (`server/mcp-tools.js`). Écrans : bandeau, tuiles, premier écran, menu de gauche, Corbeille (`singleTrash`), Réglages › Notifications, raccourcis, page d'un compte (ligne « Listes » en premier, maquette `admin-compte-1`), « Nouveau compte », confirmation « Faire un invité » (« Listes : autorisées, allumées »). Tests : `test/comptes-listes.test.js` (dont toutes les routes et toutes les opérations des listes, une à une), et le test « annuaire identique » étendu (l'Admin retire puis rend les Listes d'un invité). Les trois étapes sont construites.
+Migration 49 (`users.lists_allowed`, `users.lists_enabled` : lues pour un invité seulement ; 1 au départ, sans effet pour un Admin ou un Utilisateur, qui ont toujours les Listes ; 0 pour les invités créés aux étapes 1 et 2, le choix le plus sûr, aucun n'étant en service). Règles : `public/js/access.js` (`PERMISSIONS` avec `lists`, `permissionsFor` : la case « Listes » d'un invité seulement, `allowedChangeProblem` qui la refuse pour un Utilisateur, `welcomeHint` qui lit les fonctions montrées) et `public/js/features.js` (`lists` dans les fonctions, `FEATURE_ROUTES.lists`, `usedFeatures` avec le rôle, `offeredFeatures`, `screenFeatures` qui branche les Listes d'un invité sur la règle d'Échéances). Côté serveur, **un seul contrôle**, `listsRefusal` (`server/features.js`), repris par : les routes des listes, posé une fois devant elles (`server/app.js`, `LIST_ROUTE_PATHS` : `/api/lists`, `/api/items`, `/api/suggestions`, `/api/stores`, `/api/aisles`, `/api/push/mutes` ; l'annuaire `GET /api/users` n'en fait pas partie) ; les opérations `list.*`, `item.*`, `gift.*`, `habitual.*` (`LIST_OPS`, `server/lists.js`) ; la synchronisation (`syncBody`) ; `myLists` et `readList` (assistants IA, écran d'autorisation) ; les notifications (`allowed`, `server/notify.js`) et la page Notifications (`server/inbox.js`) ; le résumé du matin ; le temps réel (`server/events.js`) ; les outils MCP des listes (`server/mcp-tools.js`). Écrans : bandeau, tuiles, premier écran, menu de gauche, Corbeille (`singleTrash`), Réglages › Notifications, raccourcis, page d'un compte (ligne « Listes » en premier, maquette `admin-compte-1`), « Nouveau compte », confirmation « Faire un invité » (« Listes : autorisées, activées »). Tests : `test/comptes-listes.test.js` (dont toutes les routes et toutes les opérations des listes, une à une), et le test « annuaire identique » étendu (l'Admin retire puis rend les Listes d'un invité). Les trois étapes sont construites.
 
 Choix faits pendant la construction, quand le document ne disait rien :
 
-- **Invités déjà créés** (étapes 1 et 2) : Listes non autorisées et éteintes par la migration (aucun en service ; l'Admin coche « Listes » s'il le faut).
-- **Utilisateur devenu invité** : il garde ses Listes, autorisées et allumées (décision 6 : « garde ce qui est autorisé et allumé ») ; la confirmation le dit ; l'Admin les décoche ensuite s'il le veut.
-- **Listes autorisées mais éteintes par l'invité** : comme pour les projets, la seule notification remise est « Partage » d'une liste (page Notifications et téléphone), avec « Allumez « Listes » dans Réglages › Fonctions pour la voir. », qui ouvre Réglages › Fonctions ; non autorisées : rien, pas même « Partage » (on ne peut d'ailleurs plus lui partager de liste : refus nommé pour l'Admin, « Max n'utilise pas les listes. », et « N'utilise pas les listes » sous son prénom dans « Partager »).
+- **Invités déjà créés** (étapes 1 et 2) : Listes non autorisées et désactivées par la migration (aucun en service ; l'Admin coche « Listes » s'il le faut).
+- **Utilisateur devenu invité** : il garde ses Listes, autorisées et activées (décision 6 : « garde ce qui est autorisé et activé ») ; la confirmation le dit ; l'Admin les décoche ensuite s'il le veut.
+- **Listes autorisées mais désactivées par l'invité** : comme pour les projets, la seule notification remise est « Partage » d'une liste (page Notifications et téléphone), avec « Activez « Listes » dans Réglages › Fonctions pour la voir. », qui ouvre Réglages › Fonctions ; non autorisées : rien, pas même « Partage » (on ne peut d'ailleurs plus lui partager de liste : refus nommé pour l'Admin, « Max n'utilise pas les listes. », et « N'utilise pas les listes » sous son prénom dans « Partager »).
 - **Temps réel** : un invité sans Listes ne reçoit ni « event: list » (pas même le numéro d'une liste), ni le « event: refs » des magasins, rayons et noms d'articles ; il garde le « event: refs » sans données de son propre réglage (l'Admin change ses cases) et des étiquettes des notes, utile s'il a les notes.
 - **Recherche de l'ordinateur** (menu de gauche) : elle ne cherche que des listes ; sans Listes, le champ est caché (les projets ont leur propre recherche sur leurs écrans).
 - **Touche N sans Listes** : « Nouvelle note » sur les écrans des notes, la carte ou le projet sur les écrans des projets, rien ailleurs (jamais de curseur mis tout seul) ; [ et ] sans effet.
 - **Corbeille** : une seule corbeille utilisée (les projets d'un invité, par exemple) : elle s'affiche seule, sans onglets ; aucune : une phrase.
-- **Accueil coupé sans écran possible** (invité sans rien) : l'Accueil reste, avec son invitation.
+- **Accueil désactivé sans écran possible** (invité sans rien) : l'Accueil reste, avec son invitation.
 - **Liens publics** (point ouvert de l'étape 2) : quand l'Admin décoche Notes (pour tout compte) ou Listes (pour un invité), les liens publics de ses notes ou de ses listes s'arrêtent tout de suite (journal `note_link_stopped` ou `public_link_stopped`, raison « notes no longer allowed by the admin » ou « lists no longer allowed by the admin ») ; la confirmation le dit ; recochées, ils ne reviennent pas seuls.
-- **Assistants IA** : les cinq outils des listes refusent en premier, avec « Les listes ne sont pas ouvertes pour ce compte… » ou « … coupées… » ; l'écran d'autorisation d'un compte sans Listes ne propose pas « Certaines listes » (une phrase : « Mes notes et mes projets ») ; « Assistants IA » de Mon compte ne nomme aucune liste.
+- **Assistants IA** : les cinq outils des listes refusent en premier, avec « Les listes ne sont pas ouvertes pour ce compte… » ou « … désactivées… » ; l'écran d'autorisation d'un compte sans Listes ne propose pas « Certaines listes » (une phrase : « Mes notes et mes projets ») ; « Assistants IA » de Mon compte ne nomme aucune liste.
 - **Aide** : la même pour tous (décision du document) : rien n'y est caché.
 
 ### 19.6 Relecture de sécurité (25 novembre 2026)
@@ -624,7 +624,7 @@ Choix faits pendant la construction, quand le document ne disait rien :
 Une relecture indépendante de la fonction a trouvé six points, corrigés sans rien changer pour la famille (tests : `test/comptes-secu.test.js`, un par point, qui échoue sans sa correction) :
 
 - **Liens publics, course** : un lien protégé est créé après le calcul de son mot de passe, qui laisse la main ; l'Admin pouvait entre-temps faire de son propriétaire un invité, lui retirer Notes ou Listes, ou désactiver son compte, et le lien restait. Une seule règle, `publicLinkRefusal` (`server/features.js`), sert aux deux bouts : à la création (`server/shares.js`, `server/note-shares.js`, relue juste avant l'écriture, avec la réponse des contrôles habituels) et à chaque visite (`validShare` : propriétaire désactivé, invité, sans Listes pour une liste, sans Notes autorisées pour une note = la réponse d'un lien inconnu, sans dire pourquoi ; une lecture de sa ligne par requête).
-- **Temps réel** : « event: note » ne part qu'aux comptes dont l'Admin autorise les notes, « event: project » qu'à ceux qui utilisent les projets (`server/events.js`). Choix : les mêmes règles que la synchronisation, donc des notes autorisées mais éteintes par la personne gardent le signal (elles se synchronisent comme avant), des projets éteints ne le reçoivent plus (rien n'en est synchronisé).
+- **Temps réel** : « event: note » ne part qu'aux comptes dont l'Admin autorise les notes, « event: project » qu'à ceux qui utilisent les projets (`server/events.js`). Choix : les mêmes règles que la synchronisation, donc des notes autorisées mais désactivées par la personne gardent le signal (elles se synchronisent comme avant), des projets désactivés ne le reçoivent plus (rien n'en est synchronisé).
 - **Réglages des notifications** (`server/routes/push.js`) : `mutedLists` vide sans Listes, `mutedNotes` vide sans notes autorisées (même choix que la synchronisation) ; la sourdine d'une note répond comme les autres routes des notes (403 `ops.notesNonAutorisees`).
 - **Accord d'un assistant IA** (`server/oauth.js`, `approve`) : le compte et sa case « Assistants IA » sont relus en base au moment d'écrire, après la vérification du mot de passe.
 - **Journal** : `share_unknown_user` (`user`, `list`, `note` ou `project`, `count` : combien de numéros refusés ; jamais de nom) quand un partage ajoute un compte inconnu ou qu'on ne voit pas ; la réponse reste exactement celle d'un numéro inconnu (`directory.unseenCount`, `docs/exploitation.md`).

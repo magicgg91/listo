@@ -260,7 +260,7 @@ test('ni les assistants IA, ni le lien public ne voient ce réglage ; seul serve
   // Le compte vient toujours de la session (user.id), jamais de l'opération
   assert.match(read('server/lists.js'), /'account\.features'\(user, op\) \{\s*const \{ id, type, \.\.\.change \} = op;\s*const \{ problem, status, changed \} = features\.setFeatures\(user\.id, change\);\s*if \(problem\) throw new OpError\(status \?\? 400, problem\);\s*if \(changed\) changedForMe\(null\);/);
   // Dans le cahier des charges : les futurs outils MCP des notes refuseront
-  assert.match(read('docs/cahier-des-charges.md'), /outils MCP des notes devront refuser quand la personne a coupé les notes/);
+  assert.match(read('docs/cahier-des-charges.md'), /outils MCP des notes devront refuser quand la personne a désactivé les notes/);
 });
 
 // --- Notifications des notes (page et téléphone) ---
@@ -484,11 +484,11 @@ test('textes : français et anglais, mêmes noms', () => {
   const keys = ['reglages.fonctions', 'reglages.fonctions.detail', 'reglages.fonctions.intro', 'reglages.fonctions.notes', 'reglages.fonctions.notes.detail', 'reglages.fonctions.note', 'ops.fonctionInconnue', 'ops.fonctionsInvalides'];
   for (const key of keys) assert.ok(typeof fr[key] === 'string' && typeof en[key] === 'string', key);
   assert.equal(fr['reglages.fonctions'], 'Fonctions');
-  assert.equal(fr['reglages.fonctions.intro'], 'Choisissez les fonctions que vous utilisez. Une fonction coupée disparaît de vos écrans ; rien n\'est effacé.');
+  assert.equal(fr['reglages.fonctions.intro'], 'Choisissez les fonctions que vous utilisez. Une fonction désactivée disparaît de vos écrans ; rien n\'est effacé.');
   assert.equal(fr['reglages.fonctions.notes.detail'], 'Des textes libres, à garder pour soi ou à partager.');
   assert.equal(fr['reglages.fonctions.note'], 'Vaut pour tous vos appareils.');
   assert.equal(en['reglages.fonctions'], 'Features');
-  assert.equal(en['reglages.fonctions.intro'], 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.');
+  assert.equal(en['reglages.fonctions.intro'], 'Choose the features you use. A disabled feature disappears from your screens; nothing is deleted.');
   assert.equal(en['reglages.fonctions.notes'], 'Notes');
   assert.equal(en['reglages.fonctions.notes.detail'], 'Free-form texts, to keep for yourself or to share.');
   assert.equal(en['reglages.fonctions.note'], 'Applies to all your devices.');
@@ -497,9 +497,9 @@ test('textes : français et anglais, mêmes noms', () => {
 test('aide : « Fonctions » expliqué dans les deux langues (même structure, vérifiée par help-en.test.js)', () => {
   const text = (guide) => JSON.stringify(guide);
   assert.match(text(GUIDE), /Réglages, « Fonctions »/);
-  assert.match(text(GUIDE), /couper les notes/i);
+  assert.match(text(GUIDE), /désactiver les notes/i);
   assert.match(text(GUIDE_EN), /Settings, “Features”/);
-  assert.match(text(GUIDE_EN), /turn notes off/i);
+  assert.match(text(GUIDE_EN), /disable notes/i);
   for (const file of ['docs/guide.md', 'docs/guide.en.md', 'site/index.html', 'site/fr/index.html']) assert.ok(/Fonctions|Features/.test(read(file)), file);
   assert.match(read('README.md'), /Settings › Features/);
   assert.match(read('README.fr.md'), /Réglages › Fonctions/);

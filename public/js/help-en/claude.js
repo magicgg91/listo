@@ -82,7 +82,7 @@ export default {
           'Delete: only your notes, and only to the trash, where you can restore it for 30 days ([[notes]]). It must ask you to confirm first; it can never delete it for good.',
           'With the “Read only” right on a note, it can only read it, even with “Read and write”.',
         ] },
-        'Notes turned off for you in Settings, “Features” ([[echeances]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
+        'Notes disabled for you in Settings, “Features” ([[echeances]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
       ],
     },
     {
@@ -92,7 +92,7 @@ export default {
         'An AI assistant sees your projects as you do ([[projets]]): yours and those shared with you, with your role in each one ([[projets-roles]]), never other people\'s projects or your trash. It acts on your behalf: a card it creates is yours, the card\'s history adds ‘(AI assistant)’, and the people of the project are told just as if you had done it yourself (a single notification per project and per quarter of an hour, even for 50 cards).',
         { ul: [
           'Read: the list of your projects, then a project (people, columns, labels and cards), then a whole card (description, links, comments, and its history if you ask for it).',
-          'Projects: create one (it\'s yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab), turn its options on or off: “Priority” (owner) and “Due dates” (owner and “Can edit”, [[projets-colonnes]]). It must ask you to confirm before moving it to the trash. On a project whose “Due dates” option is off, it sets no due date and no “Done”: it first offers to turn the option on.',
+          'Projects: create one (it\'s yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab), enable or disable its options: “Priority” (owner) and “Due dates” (owner and “Can edit”, [[projets-colonnes]]). It must ask you to confirm before moving it to the trash. On a project whose “Due dates” option is disabled, it sets no due date and no “Done”: it first offers to enable the option.',
           'The project\'s columns and labels: add them, rename them, change their color or their order, delete them (owner and “Can edit”). A column that has cards can only be deleted by saying where its cards go: the assistant never deletes a card that way.',
           'Cards: create them (up to 50 at once, with their column, labels, people, due date and “Done”, description and links), edit them, move them, or put them in the project\'s “Deleted cards” (can be restored for 30 days). It must ask you to confirm before creating more than 20 cards, and before deleting any.',
           'Comments: it writes them on any card, unless you have the “Read only” role.',
@@ -101,7 +101,7 @@ export default {
         ] },
         'Example: bringing over a Planka board. If your assistant can read your Planka board, ask it: ‘Recreate my Blog board in Listo, with its columns, labels, cards and their comments.’ It creates the project and its columns (with the closest colors), the labels, then the cards in batches, with people recognized by their first name, and finally the comments. A comment brought over keeps its author\'s name and its original date, and shows ‘imported by’ you: it isn\'t linked to any Listo account. The assistant never shares the project: you share it yourself afterwards, choosing each person\'s role ([[projets-roles]]).',
         'Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what\'s new, notifications, Due dates).',
-        'Projects turned off for you in Settings, “Features” ([[projets-allumer]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
+        'Projects disabled for you in Settings, “Features” ([[projets-activer]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
       ],
     },
     {
@@ -132,7 +132,7 @@ export default {
         'Signed in with an identity provider ([[sso]]): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.',
         'If you didn\'t start the connection yourself, tap “Deny”.',
         'No “AI assistants” section in “My account”? The Admin hasn\'t allowed it for your account ([[roles-comptes]]): the “Authorize an AI assistant” screen says so too.',
-        'Guest account without lists: the screen doesn\'t offer “Some lists”, and the assistant only sees your notes and your projects (if they are on); its list tools answer that lists aren\'t open for your account.',
+        'Guest account without lists: the screen doesn\'t offer “Some lists”, and the assistant only sees your notes and your projects (if they are enabled); its list tools answer that lists aren\'t open for your account.',
       ],
     },
     {
@@ -170,8 +170,8 @@ export default {
       blocks: [{ ul: [
         'After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.',
         'A list is missing: the connection may only allow some lists, or you\'re no longer a member. Reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
-        'The assistant doesn\'t see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([[claude-notes]]). After the update that added notes, start a new conversation so it knows its new tools.',
-        'The assistant doesn\'t see your projects: the connection is limited to “Some lists”, or projects are turned off for you in Settings, “Features” ([[claude-projets]]). After the update that added projects, start a new conversation so it knows its new tools.',
+        'The assistant doesn\'t see your notes: the connection is limited to “Some lists”, or notes are disabled for you in Settings, “Features” ([[claude-notes]]). After the update that added notes, start a new conversation so it knows its new tools.',
+        'The assistant doesn\'t see your projects: the connection is limited to “Some lists”, or projects are disabled for you in Settings, “Features” ([[claude-projets]]). After the update that added projects, start a new conversation so it knows its new tools.',
         'The assistant says a column, a project label or a person is unknown: nothing was done; it should list the valid names for you. A person with “Read only” in the project can\'t be given a card.',
         'The assistant says it can\'t edit a card: as a “Contributor”, you (and it) only edit the cards you created or that are assigned to you ([[projets-roles]]).',
         'The assistant says a label is unknown: it doesn\'t exist yet. Nothing was done; ask it to create the label, or choose one of those it lists for you.',
@@ -193,7 +193,7 @@ export default {
       title: 'Turn on access on the server',
       server: true,
       blocks: [
-        'Access for AI assistants is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To turn it off: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven\'t expired). No password or key is needed.',
+        'Access for AI assistants is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To disable it: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven\'t expired). No password or key is needed.',
         'Which assistants: by default, any AI assistant that follows the standard (MCP, with OAuth 2.1 authorization and PKCE) can ask for access, always after the person approves. To accept only some websites, add for example `- LISTO_MCP_SITES=claude.ai,claude.com` (website names separated by commas, without `https://` or a path): only those websites, and apps on the computer (`localhost`, like Claude Code), can then connect. Connections already granted to another website stop working (without being deleted: they come back if you put the website back). A badly written value keeps Listo from starting, with a message in `docker logs listo`. Listo only reads an app\'s identification document (CIMD) on a short list of websites (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`); other assistants register on their own.',
         'Proxy: nothing to set up, these addresses go through the same host. They must stay reachable from the Internet: an online assistant calls them from its servers, an app on the computer (Claude Code) from your computer. Claude as an example: the subdomain must have an IPv4 address (DNS ‘A’ record), because Claude doesn\'t use IPv6; if a firewall filters incoming connections, don\'t copy an address range found somewhere else: Anthropic publishes the up-to-date list of addresses these calls come from on its official [‘IP addresses’](https://platform.claude.com/docs/en/api/ip-addresses) page, section ‘Outbound IP addresses’, and may change it. For another assistant, see its documentation.',
         { table: {

@@ -42,7 +42,7 @@ export default {
   'reglages.accueil.ecran': 'Écran d\'accueil',
   'reglages.accueil.afficher': 'Afficher l\'Accueil',
   'reglages.accueil.afficher.oui': 'Le premier écran à l\'ouverture, avec ses tuiles.',
-  'reglages.accueil.afficher.non': 'Coupé : Listo s\'ouvre sur l\'écran choisi ci-dessous, et le bouton Accueil disparaît du bandeau du bas.',
+  'reglages.accueil.afficher.non': 'Désactivé : Listo s\'ouvre sur l\'écran choisi ci-dessous, et le bouton Accueil disparaît du bandeau du bas.',
   'reglages.accueil.tuiles': 'Tuiles affichées',
   'reglages.accueil.reordonner': 'Réordonner',
   'reglages.accueil.termine': 'Terminé',
@@ -59,7 +59,7 @@ export default {
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Fonctions',
   'reglages.fonctions.detail': 'Notes, Projets',
-  'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction coupée disparaît de vos écrans ; rien n\'est effacé.',
+  'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction désactivée disparaît de vos écrans ; rien n\'est effacé.',
   'reglages.fonctions.listes': 'Listes',
   'reglages.fonctions.listes.detail': 'Courses, tâches et envies, avec Échéances et « À offrir ».',
   'reglages.fonctions.notes': 'Notes',

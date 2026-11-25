@@ -27,8 +27,9 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [2.4 Wishes: reserving and chipping in](#p-envies)
 - [2.5 Quick entry](#p-saisie)
 - [2.6 Notes](#p-notes)
-- [2.7 Offline, trash, public link](#p-securite)
-- [2.8 Security and convenience](#p-confort)
+- [2.7 Projects](#p-projets)
+- [2.8 Offline, trash, public link](#p-securite)
+- [2.9 Security and convenience](#p-confort)
 
 </details>
 
@@ -114,7 +115,7 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 <summary>7. Projects</summary>
 
 - [Go to chapter](#projets)
-- [7.1 Turning projects on](#projets-allumer)
+- [7.1 Enabling projects](#projets-activer)
 - [7.2 Create, duplicate, delete a project](#projets-creer)
 - [7.3 Cards](#projets-cartes)
 - [7.4 An open card](#projets-carte)
@@ -201,6 +202,8 @@ Listo is an app for shared lists: shopping, tasks and gift ideas. It's designed 
 
 When someone checks an item, the others see it checked within a few seconds. Listo is free, with no ads and no tracking.
 
+Listo also keeps notes ([5.12 Notes](#notes)) and, for those who enable them, projects: boards of cards sorted into columns ([7. Projects](#projets)).
+
 Accounts are created by the Admin, the person who manages Listo: there's no public sign-up.
 
 <a id="limites"></a>
@@ -209,9 +212,9 @@ Accounts are created by the Admin, the person who manages Listo: there's no publ
 
 - No online version: you install Listo on your own server (a computer that's always on, at home for example). See [3. Installation](#installation).
 - In French or English, as each person chooses in “My account” ([5.19 Language: French or English](#langue)); this help is available in both languages too.
-- The Notifications page (the bell on Home) keeps what Listo tells you about. Notifications on your phone or computer are optional: turned off by default on the server, then turned on by each person on their own devices ([6. Notifications](#notifications)).
+- The Notifications page (the bell on Home) keeps what Listo tells you about. Notifications on your phone or computer are optional: disabled by default on the server, then enabled by each person on their own devices ([6. Notifications](#notifications)).
 - No payments: for a group gift, Listo shows who's chipping in, never how much.
-- No data is sent anywhere other than your server, with three exceptions you can turn off: checking for a new version (GitHub, [10.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists and notes you allow is sent to it when you ask it something ([9. AI assistants (MCP)](#claude)).
+- No data is sent anywhere other than your server, with three exceptions you can disable: checking for a new version (GitHub, [10.9 Knowing a new version exists](#version)), the name of a scanned product (Open Food Facts, [operations guide in the repository, in French](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) and notifications, turned off by default (the device's notification service sees the time, the size and the device, never the text: [6.7 What Apple, Google, Mozilla and Microsoft see](#notif-confidentialite)). If you connect an AI assistant (Claude, for example), the content of the lists and notes you allow is sent to it when you ask it something ([9. AI assistants (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -234,7 +237,9 @@ You choose the type when you create the list. A shopping list can become a task 
 - Visitor: a person without an account who opens a list's public link.
 - Recipient: the person a wish list is for.
 - Note: free text, separate from the lists, yours alone at first; it can be shared like a list ([5.12 Notes](#notes)).
+- Project: a board of cards sorted into columns, shared with people on Listo; in a project, “Contributor” is a role of its own ([7.9 Sharing a project, the four roles](#projets-roles)).
 - Admin: the account that manages accounts, stores and aisles.
+- User: a family account, for using Listo normally. Guest: a discreet account, for someone who helps you (on a project, for example); only the Admin sees it ([4.3 Account roles: Admin, User, Guest](#roles-comptes)).
 
 <a id="possibilites"></a>
 
@@ -251,6 +256,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - What's new: Listo shows what the others have added or changed since your last visit ([5.16 What's new](#nouveautes)).
 - Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([6. Notifications](#notifications)).
 - An icon of your choice for each list, and a count of what's left on each card, each group and at the top of each list ([5.9 Groups, sorting and counter](#tri)).
+- Three account roles: Admin, User and Guest. A guest is discreet (only the Admin sees them); the Admin chooses, account by account, which features each person may use ([4.3 Account roles: Admin, User, Guest](#roles-comptes)).
 
 <a id="p-courses"></a>
 
@@ -265,7 +271,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 ### 2.3 Tasks: priority, due date, time, reminder, repeat, assignment
 
-- Priority (low, normal, high) and due date, turned on list by list ([8.3 Owner: editing the list](#modifier)).
+- Priority (low, normal, high) and due date, enabled list by list ([8.3 Owner: editing the list](#modifier)).
 - A time, and a reminder chosen task by task ([5.2 Time and reminder](#heure)).
 - Tasks that repeat: every day, on certain days of the week, every month, every year ([5.3 Repeating tasks](#repeter)).
 - Assign a task to a person on the list, and see “Mine” ([5.4 Assign a task](#attribuer)).
@@ -300,9 +306,22 @@ What Listo offers today, by topic. Each point links to the section that explains
 - A quick note from Home, even offline ([5.12 Notes](#notes)).
 - An AI assistant can read your notes and, if you allow it, create notes or add to them ([9.6 Notes](#claude-notes)).
 
+<a id="p-projets"></a>
+
+### 2.7 Projects
+
+- Boards of cards sorted into colored columns (ideas, in progress, done…), disabled at first: each person enables them for themselves in Settings, “Features” ([7.1 Enabling projects](#projets-activer)).
+- Each card has its people, its labels, a due date with a “Done” box, a priority, a formatted description, links, comments and a history ([7.4 An open card](#projets-carte), [7.5 Comments, history, following a card](#projets-commentaires)).
+- A project is shared with people on Listo, with four roles: owner, “Can edit”, “Contributor” and “Read only” ([7.9 Sharing a project, the four roles](#projets-roles)).
+- Two options per project, “Priority” and “Due dates”, enabled or disabled without deleting anything; each person can show a project's dated cards in “Due” ([7.8 The project's columns and labels](#projets-colonnes), [7.7 A project's cards in “Due”](#projets-echeances)).
+- What's new and notifications: new cards, assignments, comments, reminders; “Follow” a card ([7.6 Projects' new activity and notifications](#projets-notifications)).
+- Duplicate a project, its trash and each project's “Deleted cards”, 30 days ([7.2 Create, duplicate, delete a project](#projets-creer), [7.10 Project trash](#projets-corbeilles)).
+- One column at a time on the phone; the whole board on a computer, with drag and drop and the keyboard ([7.11 On a computer](#projets-ordinateur)).
+- An AI assistant can read your projects and, if you allow it, create, move and comment cards in them, or bring over a board from another tool ([9.7 Projects](#claude-projets)).
+
 <a id="p-securite"></a>
 
-### 2.7 Offline, trash, public link
+### 2.8 Offline, trash, public link
 
 - Offline: Listo opens and works without a network; changes are sent when the network comes back ([5.17 Offline and sync](#hors-ligne)).
 - Trash: a deleted list can be restored for 30 days ([8.7 Owner: duplicating, deleting, restoring](#corbeille)); so can a note ([5.12 Notes](#notes)). A single “Trash”, in Settings, with two tabs: “Lists” and “Notes” (and “Projects” when you use them: [7.10 Project trash](#projets-corbeilles)).
@@ -310,13 +329,13 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 <a id="p-confort"></a>
 
-### 2.8 Security and convenience
+### 2.9 Security and convenience
 
 - Two-factor authentication, with recovery codes ([4.7 Two-factor authentication and recovery codes](#double-auth)).
 - Automatic backup every night ([3.8 Backups](#sauvegardes)).
 - Light, dark or automatic theme ([5.18 Light or dark theme](#theme)).
 - A Home screen your way: tiles hidden or in another order, or no Home screen at all ([5.11 Getting around: Home, Due](#echeances)).
-- Only the features you use: notes can be turned off for you alone, without deleting anything ([5.11 Getting around: Home, Due](#echeances)).
+- Only the features you use: notes and projects are enabled or disabled for you alone, without deleting anything ([5.11 Getting around: Home, Due](#echeances)).
 - Install it on your phone's home screen, like an app ([4.5 Installing Listo on your phone](#telephone)).
 - An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([9. AI assistants (MCP)](#claude)).
 
@@ -407,8 +426,8 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_LANG` | not set: `fr` | Default language, `fr` or `en`: the one used by an account set to “Automatic” when the browser doesn't give a known language, and for that account's notifications. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_CURRENCY` | not set: `EUR` | Currency for wish prices, as a three-letter code (`EUR`, `USD`, `CHF`, `GBP`…), with two decimals. Only the display changes: prices already entered are not converted. Any other value: Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_COMMIT` | set by the image | Installed version, shown in Settings › “About”. Don't fill it in. |
-| `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([10.9 Knowing a new version exists](#version)). |
-| `LISTO_PRODUCT_LOOKUP` | not set: on | `off` turns off scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
+| `LISTO_UPDATE_CHECK` | not set: on | `off` disables the update check on GitHub ([10.9 Knowing a new version exists](#version)). |
+| `LISTO_PRODUCT_LOOKUP` | not set: on | `off` disables scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | not set | Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([9.15 Turn on access on the server](#mcp-serveur)). Any other value: off. |
 | `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([9.15 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
@@ -417,7 +436,7 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_OIDC_ISSUER` | not set | Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`). |
 | `LISTO_OIDC_CLIENT_ID` | not set: `listo` | Listo's ID at the identity provider (`client_id`). |
 | `LISTO_OIDC_NAME` | not set: `SSO` | Provider name shown on screen, for example `Authelia`: the “Sign in with …” button, “My account”, Administration (30 characters at most). |
-| `LISTO_LOCAL_LOGIN` | not set: on | `off` turns off sign-in with username and password: you can only get in through the identity provider (requires `LISTO_OIDC=on`), and sessions opened with a password are closed ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)). |
+| `LISTO_LOCAL_LOGIN` | not set: on | `off` disables sign-in with username and password: you can only get in through the identity provider (requires `LISTO_OIDC=on`), and sessions opened with a password are closed ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)). |
 
 <a id="proxy"></a>
 
@@ -610,12 +629,19 @@ A guest never shares what they own: no people, no public link; they see “Peopl
 
 On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.
 
+**What a guest sees**
+
+- Only the features the Admin allowed them. A guest who only has projects has a bottom bar with three buttons, “Home”, “Projects” and “Settings”, and four with “Due” when a project they see has the “Due dates” option enabled; on a computer, a menu on the left reduced the same way.
+- As long as none of their features is enabled, Home greets them with a “Welcome” card: it names the feature to enable (for example ‘Enable projects in Settings › Features to see the ones shared with you’) and leads to Settings, “Features”; with no feature allowed at all, it says the Admin hasn't opened any for them yet.
+- In “Share” and “For whom?”, they see nobody; they only see the members of what's shared with them.
+- AI assistants only if the Admin allowed them ([9.9 Connect an AI assistant](#claude-connecter)).
+
 **Allowed features**
 
-On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.
+On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then enables the feature in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.
 
 - “Lists”: for a guest only, first (a user and an Admin always have lists, without a tick). Without it, the guest sees nothing of lists: no “Lists”, no “To give”, none of the lists shared with them (they stay for the other members), and “Due” only if a project they see has the “Due” option on ([7.7 A project's cards in “Due”](#projets-echeances)). No list can be shared with them: “Doesn't use lists” under their name.
-- “Notes” and “Projects”: for a user, ticked at first; they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) turns on for them right away, and they can turn it off later.
+- “Notes” and “Projects”: for a user, ticked at first; they enable them themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) is enabled for them right away, and they can disable it later.
 - Unticking “Notes” also stops the public links of their notes, and unticking “Lists” those of their lists; the confirmation says so.
 - “Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.
 - “AI assistants”: without it, the person can't connect an AI assistant ([9.9 Connect an AI assistant](#claude-connecter)), and their connections are disconnected right away.
@@ -625,7 +651,7 @@ On an account's page (Administration, “Accounts” tab, ⋮ button), under “
 **Changing an account's role**
 
 - Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.
-- From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
+- From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and enabled features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
 - From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.
 - A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.
 
@@ -739,7 +765,7 @@ Once the time is chosen, “Reminder” offers: “None” (to start with), “A
 - It is sent only once. If you change the date, the time or the reminder, it will be sent again at the new moment. A checked task sends nothing.
 - It follows your settings: “Due” notifications turned on, lists whose notifications you muted.
 - If the server was stopped at the planned moment, the reminder is still sent within the next half hour; after that, it is dropped.
-- If notifications are turned off on the server, the reminder only shows up on the Notifications page.
+- If notifications are disabled on the server, the reminder only shows up on the Notifications page.
 
 <a id="repeter"></a>
 
@@ -851,16 +877,16 @@ In an item's details, “Add a photo” takes a photo or picks one. It is made s
 
 ### 5.11 Getting around: Home, Due
 
-Listo opens on “Home” (unless you have turned it off, see below): ‘Hello’ and your first name, today's date, the status badge and the notification bell (with the number of unread ones: [6.1 The Notifications page](#notif-page)), then tiles that show at a glance what is waiting. They work offline and update by themselves.
+Listo opens on “Home” (unless you have disabled it, see below): ‘Hello’ and your first name, today's date, the status badge and the notification bell (with the number of unread ones: [6.1 The Notifications page](#notif-page)), then tiles that show at a glance what is waiting. They work offline and update by themselves.
 
 - “Due” tile: “Overdue”, “Today” and “Later”, with the number of tasks, the same as on the “Due” screen (with its “All” or “Mine” choice). A row opens “Due” at that spot; with no task to do: “No due tasks”.
 - “Lists” tile: one row per type of list you have (“Shopping”, “Tasks”, “Wishes”), with the number of lists, and a blue dot if one of them has new updates. A row opens “Lists” on that type; with no list: “No lists” and “New list”.
 - “To give” tile, full width, only if you reserve a wish or chip in on a gift: the number of gifts still to buy (at the end of the title, which opens the “To give” page: [5.15 To give: your gifts](#a-offrir)) and the last three reserved and not yet bought (‘For Zoé · reserved’); a row opens the wish in its list. When everything is bought: “All bought”.
 - “Notes” tile: the number of your notes (at the end of the title), the last two changed, four on a computer (a row opens the note) and “New note”, which opens a new note ([5.12 Notes](#notes)); with no note: “No notes”.
 - “Account” tile: “My account”, “Notifications” (the Notifications page, like the bell) and “Settings”. For the Admin, when signing in with an identity provider is turned on, “Account requests” appears with their number when some are pending.
-- A tile's title opens the whole screen. An unknown address also leads to Home (Home turned off: to the first screen you chose); a link to a list always opens that list.
+- A tile's title opens the whole screen. An unknown address also leads to Home (Home disabled: to the first screen you chose); a link to a list always opens that list.
 
-On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is turned off; six, with “Projects”, when you turned projects on: [7.1 Turning projects on](#projets-allumer)); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
+On the phone, the bar at the bottom leads to the main screens: “Home”, “Due”, “Lists”, “Notes” and “Settings” (four buttons, without “Home”, when the Home screen is disabled; six, with “Projects”, when you enabled projects: [7.1 Enabling projects](#projets-activer)); it sits just above the line at the bottom of an iPhone. It is not on Home, whose tiles already lead everywhere. When all of Home fits on the screen, it doesn't scroll (or bounce); otherwise, it scrolls as usual. The round magnifying glass, just above it on the right, opens the search (not on “Settings”). To create a list: “+”, at the top right of “Lists”.
 
 - “Due” gathers the tasks to do that have a due date, from all your task lists where the “Due date” option is turned on: “Overdue”, “Today”, “Tomorrow”, “This week”, then “Later”. Never wish lists or shopping lists. It can also show a project's dated cards, if you chose so for that project ([7.7 A project's cards in “Due”](#projets-echeances)).
 - Each row shows the task, its list, its priority, its date and its time. Tap the box to check it (if you can edit the list): it leaves the screen, and “Undo” brings it back; a repeating task stays, at its next date ([5.3 Repeating tasks](#repeter)). Tap the row to open the task in its list.
@@ -868,29 +894,29 @@ On the phone, the bar at the bottom leads to the main screens: “Home”, “Du
 - “Due” shows two numbers: in red, at the top left of the icon, the overdue tasks; in green, at the top right, today's tasks. Each one only appears when there are some. Tasks assigned to someone else don't count. The cards of the projects shown in “Due” count the same way (yours and unassigned ones).
 - The screen works offline, like the lists. On a computer, “Due” is in the menu on the left, with the same numbers at the end of the row (red, then green).
 
-**Choosing your tiles, or turning Home off**
+**Choosing your tiles, or disabling Home**
 
 Settings, “Home” (the first row of “General”) sets up the Home screen for your account: the choice applies to all your devices, and also works offline.
 
 - “Tiles shown”: one switch per tile, to hide or show it (“To give” only appears anyway when you have reserved a gift). The “Account” tile is always shown: there is no bottom bar on Home, and it is the tile that leads to Settings.
 - “Reorder”: drag a tile by its handle, or use the up and down arrows; “Done” closes this mode. Home follows this order; on the phone, a tile left alone on its row takes the full width.
-- “Show the Home screen” turned off: Listo opens on the “First screen” you chose (“Due”, “Lists”, “Notes”, or “Projects” when they are on; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
+- “Show the Home screen” disabled: Listo opens on the “First screen” you chose (“Due”, “Lists”, “Notes”, or “Projects” when they are enabled; “Lists” at first), and the “Home” button leaves the bottom bar. The notification bell then moves to the top of “Due”, “Lists” and “Notes” ([6.1 The Notifications page](#notif-page)). On a computer, the “Home” entry of the menu on the left goes away, and the logo leads to the first screen you chose.
 
 **Choosing your features**
 
-Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline. Only the features the Admin allowed for your account are offered ([4.3 Account roles: Admin, User, Guest](#roles-comptes)); a guest account also finds “Lists” there, when the Admin opened them to it.
+Settings, “Features” (just below “Home”) chooses the features you use: notes (enabled at first) and projects (disabled at first: [7. Projects](#projets)). A disabled feature disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline. Only the features the Admin allowed for your account are offered ([4.3 Account roles: Admin, User, Guest](#roles-comptes)); a guest account also finds “Lists” there, when the Admin opened them to it.
 
-- Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes” tab in the “Trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
-- With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
-- Turning notes back on brings everything back: your notes, the ones shared with you, your pins and the notifications already received.
-- Guest, lists turned off: no more “Lists” or “To give” button, no more “Lists” tab in the “Trash”, no more “Wishes” switch in Settings, “Notifications”; on a computer, no “Lists”, no list search, no “New list”. “Due” stays if a project you see has the “Due” option on. You get nothing more from lists, except the notice that a list was shared with you (it opens Settings, “Features”).
-- Nothing turned on? Home tells you, with “Open Settings › Features”.
+- Disable notes: no more “Notes” button in the bottom bar (four buttons, or three if Home is also disabled), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes” tab in the “Trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
+- With notes disabled, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
+- Enabling notes again brings everything back: your notes, the ones shared with you, your pins and the notifications already received.
+- Guest, lists disabled: no more “Lists” or “To give” button, no more “Lists” tab in the “Trash”, no more “Wishes” switch in Settings, “Notifications”; on a computer, no “Lists”, no list search, no “New list”. “Due” stays if a project you see has the “Due” option enabled. You get nothing more from lists, except the notice that a list was shared with you (it opens Settings, “Features”).
+- Nothing enabled? Home tells you, with “Open Settings › Features”.
 
 <a id="notes"></a>
 
 ### 5.12 Notes
 
-A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text keeps its line breaks and can be formatted: headings, bold, lists, checkboxes, links (see “Formatting” below); web addresses in http or https become links. Don't use notes? Turn them off for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
+A note keeps free text: a code, a recipe, ideas. At first it is yours alone: nobody else sees it, not even the Admin; you can share it ([5.13 Sharing a note](#notes-partage)). The text keeps its line breaks and can be formatted: headings, bold, lists, checkboxes, links (see “Formatting” below); web addresses in http or https become links. Don't use notes? Disable them for yourself in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): they disappear from your screens, and nothing is deleted.
 
 - “Notes” screen (bottom bar, or the “Notes” tile on Home): “Pinned” notes first, then “Other notes”, most recently changed at the top. The sort button at the top (as in “Lists”) switches between most recent first and alphabetical order. The magnifying glass searches titles, texts and label names.
 - “+”, at the top right, opens a new note: the cursor goes straight into the text. On Home, “New note” does the same.
@@ -1020,7 +1046,7 @@ The names of lists, items, aisles and stores are not translated: they are your d
 
 In a window at least 1,024 pixels wide (a computer, a tablet turned sideways), Listo switches to a two-area layout. Below that, you get the phone layout; switching from one to the other keeps the list open and closes any open windows.
 
-- On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home” (Home turned off: to the first screen you chose). The Home tiles are shown in three columns there.
+- On the left, the menu: “Search lists”, then “Home”, “Due”, “Lists” (with the number of lists) and “Notes” (with the number of notes), and at the bottom “New list” (“New note” on the notes screens), your account and Settings. The logo takes you back to “Home” (Home disabled: to the first screen you chose). The Home tiles are shown in three columns there.
 - The menu follows the screen: on “Lists”, in a list and on “To give” (Wishes highlighted), it also shows “Types” (Shopping, Tasks, Wishes, with their number of lists and the new-updates dot). A type shows only its lists in the middle; “Lists” shows them all. An open list highlights its type. Elsewhere (Home, Due, Notes, Settings…), the menu only has its fixed entries. While you search in the menu, the lists found are shown below.
 - In the middle, every screen (Home, Due, Lists, a list, “To give”, Notes, Settings, Help…) has the same width. At the top, on the title line: the status pill, the screen's buttons and the search; the line below holds the rest (counter, “All” / “Mine”, sort).
 - On the right, the open list: at the top, on the title line, the status pill, “Share” and the search, always shown; below, the counter ([5.9 Groups, sorting and counter](#tri)), then the add field, above the items. When you hover over a row (or when it has the keyboard focus), a pencil and a trash can appear one above the other; on a touch screen, they stay visible.
@@ -1090,7 +1116,7 @@ The Settings screen, “Notifications”, has two parts: “In the app” (what'
 
 ### 6.1 The Notifications page
 
-The bell, at the top of Home (Home turned off: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.
+The bell, at the top of Home (Home disabled: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.
 
 - Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.
 - Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.
@@ -1100,9 +1126,9 @@ The bell, at the top of Home (Home turned off: at the top of “Due”, “Lists
 - Notifications are kept for 30 days, 300 at most (the oldest ones go).
 - Changes made close together in the same list or the same note fit on a single line, which updates (‘Léa added 4 items to “Shopping”’) and becomes unread again.
 
-It fills up even without phone notifications (feature off on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.
+It fills up even without phone notifications (feature disabled on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.
 
-Same settings as the phone: a kind turned off in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.
+Same settings as the phone: a kind disabled in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.
 
 <a id="notif-activer"></a>
 
@@ -1120,7 +1146,7 @@ Each device is turned on separately: a device where you sign out no longer gets 
 
 ### 6.3 What you get, and when
 
-Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.
+Four kinds of notifications, each enabled or disabled in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.
 
 | Kind | When | Example |
 | --- | --- | --- |
@@ -1198,16 +1224,16 @@ The server must be able to reach the notification services over HTTPS (fcm.googl
 
 A project sorts cards into columns, like a board of ideas: ‘Ideas’, ‘Drafts’, ‘Review’, ‘Published’… Each project has a single board: its columns (a name and a color, in the order you choose), and in each column its cards, in the order you choose. For several boards, create several projects. A project is shared with Listo people, each with their role ([7.9 Sharing a project, the four roles](#projets-roles)); it has no public link.
 
-The feature is off at first, for each account: nothing changes until you turn it on.
+The feature is disabled at first, for each account: nothing changes until you enable it.
 
-<a id="projets-allumer"></a>
+<a id="projets-activer"></a>
 
-### 7.1 Turning projects on
+### 7.1 Enabling projects
 
-Settings, “Features”, “Projects”: turn the switch on. The choice is yours alone, on all your devices, and also works offline. Turned off again, projects disappear from your screens without deleting anything: your projects and the ones shared with you come back when you turn them on again.
+Settings, “Features”, “Projects”: enable the switch. The choice is yours alone, on all your devices, and also works offline. Disabled again, projects disappear from your screens without deleting anything: your projects and the ones shared with you come back when you enable them again.
 
-- On the phone, the bottom bar then has six buttons: “Home”, “Due”, “Lists”, “Notes”, “Projects” and “Settings” (five if Home or notes are turned off). With text enlarged by the phone, a label can be cut short (‘Du…’): the name read by the screen reader stays complete.
-- Home gets a “Projects” tile, at the bottom, across the full width: the number of your cards (assigned to you, not done), and the three most urgent (overdue first, then by due date); below, the project, the column and the due date (‘Overdue’ in red). A row opens the card; with no card for you, “No cards for you”. The title opens the “Projects” screen. Like the other tiles, it can be hidden and moved in Settings, “Home”; “Projects” can also become your first screen when Home is turned off.
+- On the phone, the bottom bar then has six buttons: “Home”, “Due”, “Lists”, “Notes”, “Projects” and “Settings” (five if Home or notes are disabled). With text enlarged by the phone, a label can be cut short (‘Du…’): the name read by the screen reader stays complete.
+- Home gets a “Projects” tile, at the bottom, across the full width: the number of your cards (assigned to you, not done), and the three most urgent (overdue first, then by due date); below, the project, the column and the due date (‘Overdue’ in red). A row opens the card; with no card for you, “No cards for you”. The title opens the “Projects” screen. Like the other tiles, it can be hidden and moved in Settings, “Home”; “Projects” can also become your first screen when Home is disabled.
 - The “Trash” in Settings gets a “Projects” tab ([7.10 Project trash](#projets-corbeilles)).
 
 <a id="projets-creer"></a>
@@ -1216,7 +1242,7 @@ Settings, “Features”, “Projects”: turn the switch on. The choice is your
 
 - “Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people's badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.
 - “+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.
-- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Project settings” (owner and “Can edit”, [7.8 The project's columns and labels](#projets-colonnes)), “Duplicate project”, “Deleted cards” ([7.10 Project trash](#projets-corbeilles)), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), “Hide new activity” (shared project), “Show in Due” (when the project's “Due dates” option is on, [7.7 A project's cards in “Due”](#projets-echeances)), then “Delete” (your projects) or “Leave project”. In an open project, the ⋮ menu at the top is the same, without “Open”.
+- A project's ⋮ menu: “Open”, “Share” (your projects) or “People”, “Project settings” (owner and “Can edit”, [7.8 The project's columns and labels](#projets-colonnes)), “Duplicate project”, “Deleted cards” ([7.10 Project trash](#projets-corbeilles)), “Turn off notifications” ([7.6 Projects' new activity and notifications](#projets-notifications)), “Hide new activity” (shared project), “Show in Due” (when the project's “Due dates” option is enabled, [7.7 A project's cards in “Due”](#projets-echeances)), then “Delete” (your projects) or “Leave project”. In an open project, the ⋮ menu at the top is the same, without “Open”.
 - “Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” and “Due dates” options, but without any cards. Handy to make a template. It also works offline.
 - “Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.
 
@@ -1240,10 +1266,10 @@ On the phone, a project shows one column at a time. At the top, the column tabs 
 Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn't allow has no button ([7.9 Sharing a project, the four roles](#projets-roles)).
 
 - People: the badges and first names of the assigned people; “+” (or “Assign”) opens the choice, with “Assign to me” at the top. A card can be assigned to the owner, a “Can edit” or a “Contributor”, never to a person with “Read only” (10 at most). A person who leaves the project, is removed from it or becomes “Read only” is removed from their cards.
-- Due (when the project's “Due dates” option is on, which it is at first), on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.
+- Due (when the project's “Due dates” option is enabled, which it is at first), on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.
 - The “Done” box is the only mark of a done card: the due date stays, in green, with a check mark. A done card is no longer overdue and has no reminder; it doesn't change column: put it away yourself (in ‘Published’, for example), or delete it. An overdue card has its date in red, with a triangle.
 - Labels: “Label” (or its “+”) adds or removes the project's labels (10 at most per card).
-- Priority (when the project's “Priority” option is on): “Low”, “Normal” or “High”. Turned off, the priority is kept without being shown.
+- Priority (when the project's “Priority” option is enabled): “Low”, “Normal” or “High”. Disabled, the priority is kept without being shown.
 - Description: tap the text to write it (“Add a description” when it is empty); the same formatting as notes, with the formatting bar while typing ([5.12 Notes](#notes)). Checkboxes make a task list: ‘2/3’ above (boxes checked out of boxes), and a box is checked with one tap, without typing, even if someone checks another one at the same moment.
 - If someone changed the description while you were writing, nothing is overwritten: the card is “To check” and you choose “Keep mine”, “Take theirs”, “Keep both” (your text is added below theirs, after a ‘Version by Guillaume, Nov 25 9:04 PM’ line) or “Decide later”.
 - Links: a title (optional) and an address starting with http:// or https:// (20 links at most). Tap the title to open it in a new tab; ⋮: “Edit link”, “Copy address”, “Remove”. Listo never opens these addresses itself.
@@ -1271,19 +1297,19 @@ Below an open card's links, two tabs: “Comments” (with their number) and “
 - Notifications (Notifications page, and the phone when they are turned on there: [6. Notifications](#notifications)): a project's new cards (‘Léa added 3 cards to DomoPi Articles’, one line per project that updates), a card assigned to you, the comments and changes (moved, due date, “Done”, description) of a card you follow, grouped once per quarter of an hour, a card's reminder (with the “Due” notifications, to the assigned people, otherwise to everyone; never for a done card), and a project being shared.
 - Never what you do yourself. Without “Show details in the notification”, the phone doesn't name the card (‘a card’); a comment's text is never in a notification.
 - Project ⋮ menu: “Turn off notifications” (page and phone, reminders included), independent of “Hide new activity”.
-- Projects turned off (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to turn projects on, and tapping it opens Settings, “Features”.
+- Projects disabled (Settings, “Features”): no new activity or notifications from projects, except when a project is shared with you: the notification then invites you to enable projects, and tapping it opens Settings, “Features”.
 
 <a id="projets-echeances"></a>
 
 ### 7.7 A project's cards in “Due”
 
-A project's ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on); it is only there when the project's “Due dates” option is on ([7.8 The project's columns and labels](#projets-colonnes)). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.
+A project's ⋮ menu: “Show in Due”, a switch, disabled at first (a check mark says when it is enabled); it is only there when the project's “Due dates” option is enabled ([7.8 The project's columns and labels](#projets-colonnes)). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.
 
-- When it is on, this project's dated cards that are not done appear on the “Due” screen ([5.11 Getting around: Home, Due](#echeances)), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list's name, then the priority (if the project's option is on), the date and time, and the people.
+- When it is enabled, this project's dated cards that are not done appear on the “Due” screen ([5.11 Getting around: Home, Due](#echeances)), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list's name, then the priority (if the project's option is enabled), the date and time, and the people.
 - Tapping the row opens the card. The box checks “Done” if you can edit the card ([7.9 Sharing a project, the four roles](#projets-roles)): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.
 - “Mine” keeps the cards assigned to you and the ones assigned to no one; “All”, all the dated cards of these projects.
 - The numbers on “Due” (bottom bar, menu on the left), Home's “Due” tile and the morning summary count them too (the summary then says ‘2 items due today · 1 overdue’ and opens “Due”). A project whose notifications you turned off stays on the screen, but is not in the summary.
-- A card's reminder doesn't depend on this choice ([7.6 Projects' new activity and notifications](#projets-notifications)). Projects turned off (Settings, “Features”): no cards in “Due”; the choice is kept for when you turn them back on.
+- A card's reminder doesn't depend on this choice ([7.6 Projects' new activity and notifications](#projets-notifications)). Projects disabled (Settings, “Features”): no cards in “Due”; the choice is kept for when you enable them again.
 
 <a id="projets-colonnes"></a>
 
@@ -1295,8 +1321,8 @@ A project's ⋮ menu: “Show in Due”, a switch, off at first (a check mark sa
 - Columns: one row per column, with its number of cards. Drag the handle on the left to change the order, or tap the pencil: name (40 characters at most, only once in the project), color among eight, position (before or after its neighbors) and “Delete column”. “Add a column” adds one at the end (20 at most).
 - Deleting an empty column: it goes right away. A column with cards: choose to move its cards to another column, or to delete them with it (they go to the project's “Deleted cards”). A deleted column can't be restored; a project always keeps at least one column.
 - Project labels: specific to this project (the notes' labels don't mix in), a given label existing only once (upper case and accents count the same). “New label”; the pencil renames, changes the color or deletes (the label is then removed from its cards). 50 labels at most per project.
-- “Priority” (the owner): a project option, off at first. Turned on, each card has a priority, “Low”, “Normal” or “High” ([7.4 An open card](#projets-carte)); turned off again, priorities are kept without being shown.
-- “Due dates” (the owner and “Can edit”): a project option, on at first: a date, a time and a reminder on cards, and the “Done” box ([7.4 An open card](#projets-carte)). Turned off, nothing is erased, but cards no longer have a due date, a reminder or a “Done” box: they are never overdue, no longer go to “Due” or the morning summary, and “Show in Due” leaves the ⋮ menu. Turned back on, everything comes back as it was.
+- “Priority” (the owner): a project option, disabled at first. Enabled, each card has a priority, “Low”, “Normal” or “High” ([7.4 An open card](#projets-carte)); disabled again, priorities are kept without being shown.
+- “Due dates” (the owner and “Can edit”): a project option, enabled at first: a date, a time and a reminder on cards, and the “Done” box ([7.4 An open card](#projets-carte)). Disabled, nothing is erased, but cards no longer have a due date, a reminder or a “Done” box: they are never overdue, no longer go to “Due” or the morning summary, and “Show in Due” leaves the ⋮ menu. Enabled again, everything comes back as it was.
 - “Delete project” (the owner).
 
 <a id="projets-roles"></a>
@@ -1332,7 +1358,7 @@ In one of your projects, “Share” (the people button at the top, or the ⋮ m
 - An open project takes the full width: at the top, its name, ‘Project · 5 columns · 55 cards’, “Share” (P key) and the search (/ key); below, the filters by person (“All”, “Me”, each member, “Nobody”) and by label (several choices; ‘+ 2’ shows the others; “Clear filters”); then the columns side by side, which scroll sideways.
 - Each column has its ⋮ menu (owner and “Can edit”): rename and change the color, move left or right, “Delete column”. “Add a card”, at the bottom of a column, opens a field (Enter adds, Escape closes); “Add a column” is at the end.
 - Drag and drop: hold a card with the mouse and drop it in the same column or another one; a dashed place shows where it will land. With the keyboard: the arrows go from card to card (up and down in a column, left and right from one column to the next), Enter opens the card, M opens “Move to…”. Right-click on a card: its menu.
-- A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description, its links, then the comments and the history; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option on) and the actions (“Move to…”, “Duplicate”, “Follow” or “Unfollow”, “Delete”). The address is the card's: you can send it or come back to it. Escape or the cross close it.
+- A card opens in a window in the middle, over the project: on the left the title and ‘in Review · DomoPi Articles · created by Guillaume on October 2’, its description, its links, then the comments and the history; on the right, in this order, the column, the people, the labels, the due date (“Done” box and date on one line, reminder below), the priority (option enabled) and the actions (“Move to…”, “Duplicate”, “Follow” or “Unfollow”, “Delete”). The address is the card's: you can send it or come back to it. Escape or the cross close it.
 
 <a id="roles"></a>
 
@@ -1377,7 +1403,7 @@ Settings, “Administration” (visible only to an Admin).
 
 **“Labels” tab**
 
-- Note labels, shared by the whole household ([5.12 Notes](#notes)), with the number of notes that carry each one (never which ones). It stays there even if you turned notes off for yourself.
+- Note labels, shared by the whole household ([5.12 Notes](#notes)), with the number of notes that carry each one (never which ones). It stays there even if you disabled notes for yourself.
 - The pencil renames the label and changes its color; a name already taken by another label (ignoring capitals and accents) is refused.
 - The trash can deletes the label, after confirmation: it is removed from its notes, without touching the notes.
 - Labels are created from a note, by any account.
@@ -1385,7 +1411,7 @@ Settings, “Administration” (visible only to an Admin).
 **Can / can't**
 
 - Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).
-- Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([5.12 Notes](#notes)).
+- Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([5.12 Notes](#notes)) and projects ([7.9 Sharing a project, the four roles](#projets-roles)).
 - Other accounts' AI assistant connections: see [9.10 See and disconnect an AI assistant](#claude-connexions).
 - Finding out that a new version exists: [10.9 Knowing a new version exists](#version).
 
@@ -1458,7 +1484,7 @@ A wish list gathers gift ideas for one person, the recipient. The people close t
 - “Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.
 - The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.
 - A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.
-- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.10 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.
+- The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [5.12 Notes](#notes)), and a third one, “Projects”, when you use projects ([7.10 Project trash](#projets-corbeilles)); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you disabled notes (Settings, “Features”) and projects are disabled too, it has no tabs: only your lists.
 - “Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.
 - “Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.
 - The owner doesn't leave their list: they delete it, or keep it.
@@ -1582,7 +1608,7 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 - Delete: only your notes, and only to the trash, where you can restore it for 30 days ([5.12 Notes](#notes)). It must ask you to confirm first; it can never delete it for good.
 - With the “Read only” right on a note, it can only read it, even with “Read and write”.
 
-Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+Notes disabled for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-projets"></a>
 
@@ -1591,7 +1617,7 @@ Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home
 An AI assistant sees your projects as you do ([7. Projects](#projets)): yours and those shared with you, with your role in each one ([7.9 Sharing a project, the four roles](#projets-roles)), never other people's projects or your trash. It acts on your behalf: a card it creates is yours, the card's history adds ‘(AI assistant)’, and the people of the project are told just as if you had done it yourself (a single notification per project and per quarter of an hour, even for 50 cards).
 
 - Read: the list of your projects, then a project (people, columns, labels and cards), then a whole card (description, links, comments, and its history if you ask for it).
-- Projects: create one (it's yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab), turn its options on or off: “Priority” (owner) and “Due dates” (owner and “Can edit”, [7.8 The project's columns and labels](#projets-colonnes)). It must ask you to confirm before moving it to the trash. On a project whose “Due dates” option is off, it sets no due date and no “Done”: it first offers to turn the option on.
+- Projects: create one (it's yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab), enable or disable its options: “Priority” (owner) and “Due dates” (owner and “Can edit”, [7.8 The project's columns and labels](#projets-colonnes)). It must ask you to confirm before moving it to the trash. On a project whose “Due dates” option is disabled, it sets no due date and no “Done”: it first offers to enable the option.
 - The project's columns and labels: add them, rename them, change their color or their order, delete them (owner and “Can edit”). A column that has cards can only be deleted by saying where its cards go: the assistant never deletes a card that way.
 - Cards: create them (up to 50 at once, with their column, labels, people, due date and “Done”, description and links), edit them, move them, or put them in the project's “Deleted cards” (can be restored for 30 days). It must ask you to confirm before creating more than 20 cards, and before deleting any.
 - Comments: it writes them on any card, unless you have the “Read only” role.
@@ -1602,7 +1628,7 @@ Example: bringing over a Planka board. If your assistant can read your Planka bo
 
 Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what's new, notifications, Due dates).
 
-Projects turned off for you in Settings, “Features” ([7.1 Turning projects on](#projets-allumer)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+Projects disabled for you in Settings, “Features” ([7.1 Enabling projects](#projets-activer)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-limites"></a>
 
@@ -1636,7 +1662,7 @@ If you didn't start the connection yourself, tap “Deny”.
 
 No “AI assistants” section in “My account”? The Admin hasn't allowed it for your account ([4.3 Account roles: Admin, User, Guest](#roles-comptes)): the “Authorize an AI assistant” screen says so too.
 
-Guest account without lists: the screen doesn't offer “Some lists”, and the assistant only sees your notes and your projects (if they are on); its list tools answer that lists aren't open for your account.
+Guest account without lists: the screen doesn't offer “Some lists”, and the assistant only sees your notes and your projects (if they are enabled); its list tools answer that lists aren't open for your account.
 
 <a id="claude-connexions"></a>
 
@@ -1671,8 +1697,8 @@ Only ask the assistant to change an item, a note or a card yourself; check in Li
 
 - After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.
 - A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
-- The assistant doesn't see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([9.6 Notes](#claude-notes)). After the update that added notes, start a new conversation so it knows its new tools.
-- The assistant doesn't see your projects: the connection is limited to “Some lists”, or projects are turned off for you in Settings, “Features” ([9.7 Projects](#claude-projets)). After the update that added projects, start a new conversation so it knows its new tools.
+- The assistant doesn't see your notes: the connection is limited to “Some lists”, or notes are disabled for you in Settings, “Features” ([9.6 Notes](#claude-notes)). After the update that added notes, start a new conversation so it knows its new tools.
+- The assistant doesn't see your projects: the connection is limited to “Some lists”, or projects are disabled for you in Settings, “Features” ([9.7 Projects](#claude-projets)). After the update that added projects, start a new conversation so it knows its new tools.
 - The assistant says a column, a project label or a person is unknown: nothing was done; it should list the valid names for you. A person with “Read only” in the project can't be given a card.
 - The assistant says it can't edit a card: as a “Contributor”, you (and it) only edit the cards you created or that are assigned to you ([7.9 Sharing a project, the four roles](#projets-roles)).
 - The assistant says a label is unknown: it doesn't exist yet. Nothing was done; ask it to create the label, or choose one of those it lists for you.
@@ -1695,7 +1721,7 @@ Access for AI assistants is turned off until the person who runs the server puts
 
 *For the person who runs the server.*
 
-Access for AI assistants is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To turn it off: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven't expired). No password or key is needed.
+Access for AI assistants is turned off by default. To turn it on, add `- LISTO_MCP=on` in the `environment:` part of `docker-compose.yml`, then `docker compose up -d`. To disable it: remove the line, then `docker compose up -d`; all its addresses then answer 404, and the connections already granted stop working (they come back if you turn it on again, as long as they haven't expired). No password or key is needed.
 
 Which assistants: by default, any AI assistant that follows the standard (MCP, with OAuth 2.1 authorization and PKCE) can ask for access, always after the person approves. To accept only some websites, add for example `- LISTO_MCP_SITES=claude.ai,claude.com` (website names separated by commas, without `https://` or a path): only those websites, and apps on the computer (`localhost`, like Claude Code), can then connect. Connections already granted to another website stop working (without being deleted: they come back if you put the website back). A badly written value keeps Listo from starting, with a message in `docker logs listo`. Listo only reads an app's identification document (CIMD) on a short list of websites (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`); other assistants register on their own.
 
@@ -1820,7 +1846,7 @@ In Settings, the “About” line shows the installed version, or the “Update�
 - “Couldn't check”: GitHub didn't answer. No consequence: Listo works normally;
 - the refresh button, at the end of the line, asks again right away (once a minute at most).
 
-It's the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To turn off the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.
+It's the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To disable the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.
 
 <a id="faq-suggestion"></a>
 

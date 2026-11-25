@@ -817,7 +817,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     const role = { modification: 'alertes.projet.droit.modifier', contribution: 'alertes.projet.droit.contribuer' }[access] ?? 'alertes.projet.droit.lire';
     deliver(userId, entry, () => buildMessage({
       title: translate(locale, 'alertes.projet.partage', { actor: q.name.get(actorId) ?? translate(locale, 'alertes.quelquun'), project: project.name }),
-      body: translate(locale, off ? 'alertes.projet.allumer' : role),
+      body: translate(locale, off ? 'alertes.projet.activer' : role),
       navigate: off ? `${origin}/#/reglages/fonctions` : projectUrl(projectId), tag: `partage-projet-${projectId}`, locale,
     }));
   }
@@ -874,12 +874,12 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     const message = () => (kind === 'added'
       ? buildMessage({
         title: translate(locale, 'alertes.partage.ajoute', { actor, list: list.name }),
-        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        body: translate(locale, off ? 'alertes.liste.activer' : canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
         navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       })
       : buildMessage({
         title: translate(locale, 'alertes.partage.droit', { list: list.name }),
-        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        body: translate(locale, off ? 'alertes.liste.activer' : canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
         navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       }));
     deliver(userId, entry, message);

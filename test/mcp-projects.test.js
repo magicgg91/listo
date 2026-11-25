@@ -370,11 +370,11 @@ test('option « Échéances » coupée : read_project et read_card sans due ; cr
   const before = f.snapshot();
   const lea = await f.as('lea');
   const created = toolError(await lea.tool('create_cards', { project_id: f.projectId, cards: [{ column: 'Idées', title: 'Sans date' }, { column: 'Idées', title: 'Datée', due: { date: '2026-12-01' } }] }));
-  assert.match(created, /cards\[1\]\.due : L'option « Échéances » de ce projet est coupée/);
+  assert.match(created, /cards\[1\]\.due : L'option « Échéances » de ce projet est désactivée/);
   assert.match(created, /update_project \(deadlines: true\)/);
   for (const due of [{ date: '2026-12-01' }, { done: false }, null]) {
     const out = toolError(await lea.tool('update_cards', { cards: [{ card_id: f.cards.lea, title: 'Renommée' }, { card_id: f.cards.assigned, due }] }));
-    assert.match(out, /cards\[1\]\.due : L'option « Échéances » de ce projet est coupée/, JSON.stringify(due));
+    assert.match(out, /cards\[1\]\.due : L'option « Échéances » de ce projet est désactivée/, JSON.stringify(due));
   }
   assert.equal(f.snapshot(), before, 'rien d\'écrit');
   const kept = f.card(f.cards.assigned);
@@ -457,7 +457,7 @@ test('create_cards : rôles ; étiquettes, personnes, échéance, « Fait », li
     [{ column: 'Idées', title: 'A', assignees: ['Paul'] }, /Personne inconnue/],
     [{ column: 'Idées', title: 'A', links: [{ url: 'javascript:alert(1)' }] }, /adresse http ou https/],
     [{ column: 'Idées', title: 'A', due: { date: '2026-02-30' } }, /échéance invalide/],
-    [{ column: 'Idées', title: 'A', priority: 'high' }, /option « Priorité » de ce projet est coupée/],
+    [{ column: 'Idées', title: 'A', priority: 'high' }, /option « Priorité » de ce projet est désactivée/],
     [{ column: 'Idées', title: 'x'.repeat(201) }, /title : 1 à 200 caractères/],
   ];
   for (const [card, message] of bad) {

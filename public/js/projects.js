@@ -48,6 +48,11 @@ export const LINKS_PER_CARD_MAX = 20;
 export const LINK_TITLE_MAX = 100;
 export const LINK_URL_MAX = 500;
 export const TASK_TEXT_MAX = 200;         // texte d'une case gardé dans l'historique
+// Commentaires (étape 3, migration 45)
+export const COMMENT_MAX = 4000;          // caractères d'un commentaire
+export const COMMENTS_PER_CARD_MAX = 500; // commentaires présents sur une carte
+export const COMMENTS_PER_HOUR = 120;     // commentaires écrits par compte et par heure
+export const IMPORTED_AUTHOR_MAX = 60;    // auteur d'origine d'un commentaire importé (étape 5)
 
 // --- Rôles ---
 
@@ -264,6 +269,43 @@ export function cleanDescription(value) {
   if (typeof value !== 'string') return null;
   const text = value.normalize('NFC');
   return text.length > CARD_DESCRIPTION_MAX ? null : text;
+}
+
+// --- Commentaires (étape 3 : section 5.6) ---
+
+// Caractères refusés dans un commentaire : les mêmes que dans un nom, sauf
+// les retours à la ligne et les tabulations (gardés)
+const COMMENT_FORBIDDEN = /[\p{Co}\p{Cs}]|(?![\n\t])\p{Cc}|(?!\u200D)\p{Cf}/u;
+
+// Texte d'un commentaire tel qu'il est gardé : texte simple (jamais de
+// HTML ni de mise en forme ; retours à la ligne gardés, espaces du début
+// et de la fin retirés), 1 à 4 000 caractères ; null s'il n'est pas valable
+export function cleanComment(value) {
+  if (typeof value !== 'string') return null;
+  const text = value.normalize('NFC').replace(/\r\n?/g, '\n').trim();
+  if (!text || [...text].length > COMMENT_MAX || COMMENT_FORBIDDEN.test(text)) return null;
+  return text;
+}
+
+// Ce que le compte peut faire sur UN commentaire (6) : modifier le sien
+// (jamais celui d'un autre) ; supprimer le sien, ou celui d'un autre s'il
+// est le propriétaire du projet (modération). En « Lecture seule », rien.
+// comment : sur le téléphone, { byMe } ; sur le serveur, { userId }.
+export function commentRights(comment, me, role) {
+  if (!comment || !ROLES.includes(role) || role === 'reader') return { edit: false, remove: false };
+  const mine = comment.byMe === true || (me !== null && me !== undefined && comment.userId === me);
+  return { edit: mine, remove: mine || role === 'owner' };
+}
+
+// --- Suivre une carte (étape 3 : section 9.2) ---
+
+// Je suis une carte ? choice : mon choix explicite (true « Suivre », false
+// « Ne plus suivre », null : aucun) ; sinon, je la suis si je l'ai créée,
+// si elle m'est attribuée ou si je l'ai commentée. « Ne plus suivre » est
+// gardé même si l'on m'attribue la carte ou que je la commente ensuite.
+export function followsCard({ choice = null, created = false, assigned = false, commented = false }) {
+  if (choice === true || choice === false) return choice;
+  return Boolean(created || assigned || commented);
 }
 
 // --- Ordre (colonnes dans un projet, cartes dans une colonne) ---

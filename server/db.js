@@ -1087,7 +1087,83 @@ export const MIGRATIONS = [
     PRIMARY KEY (card_id, user_id)
   );
   `,
+
+  // --- Migration 45 : projets, commentaires, cartes suivies et page
+  // Notifications (25 novembre 2026, docs/cadrage-projets.md, étape 3) ---
+  // card_comments : les commentaires d'une carte (texte simple, 1 à 4 000
+  // caractères ; « modifié » : edited). Supprimé : suppression logique (le
+  // texte est effacé tout de suite, la ligne reste pour que les autres
+  // appareils l'apprennent, puis le ménage l'efface après 30 jours).
+  // imported_author, imported_at, imported_by : un commentaire importé par
+  // un assistant IA (étape 5) garde son auteur d'origine comme simple texte,
+  // jamais relié à un compte.
+  // card_follows : « Suivre » (1) ou « Ne plus suivre » (0), choisi par une
+  // personne pour une carte ; sans ligne, elle suit les cartes qu'elle a
+  // créées, qui lui sont attribuées ou qu'elle a commentées.
+  // inbox : target_type accepte aussi 'project' et 'card' (table recréée,
+  // toutes ses lignes gardées : voir inboxProjectTargetsMigration).
+  (db) => inboxProjectTargetsMigration(db),
 ];
+
+// Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la
+// table inbox recréée pour accepter les cibles 'project' et 'card' (SQLite
+// ne sait pas changer une contrainte CHECK). Rien ne pointe vers inbox :
+// on copie ses lignes dans une nouvelle table, on efface l'ancienne, puis
+// on renomme la nouvelle et on refait ses index. Les numéros (id, num) sont
+// gardés tels quels.
+export function inboxProjectTargetsMigration(db) {
+  db.exec(`
+    CREATE TABLE card_comments (
+      id              TEXT    PRIMARY KEY,
+      card_id         TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      user_id         INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      body            TEXT    NOT NULL DEFAULT '',
+      imported_author TEXT    CHECK (imported_author IS NULL OR length(imported_author) BETWEEN 1 AND 60),
+      imported_at     TEXT,
+      imported_by     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      created_at      TEXT    NOT NULL,
+      updated_at      TEXT    NOT NULL,
+      edited          INTEGER NOT NULL DEFAULT 0 CHECK (edited IN (0, 1)),
+      deleted_at      TEXT,
+      CHECK (length(body) <= 4000 AND (deleted_at IS NOT NULL OR length(body) >= 1))
+    );
+    CREATE INDEX card_comments_card ON card_comments(card_id, created_at);
+    CREATE INDEX card_comments_updated ON card_comments(updated_at);
+    CREATE INDEX card_comments_deleted ON card_comments(deleted_at) WHERE deleted_at IS NOT NULL;
+
+    CREATE TABLE card_follows (
+      card_id   TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+      user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      following INTEGER NOT NULL CHECK (following IN (0, 1)),
+      PRIMARY KEY (card_id, user_id)
+    );
+    CREATE INDEX card_follows_user ON card_follows(user_id);
+
+    CREATE TABLE inbox_new (
+      id          INTEGER PRIMARY KEY,
+      user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      num         INTEGER NOT NULL CHECK (num >= 1),
+      category    TEXT    NOT NULL CHECK (category IN ('changes', 'due', 'wishes', 'sharing')),
+      text_key    TEXT    NOT NULL CHECK (length(text_key) BETWEEN 1 AND 60),
+      params      TEXT    NOT NULL DEFAULT '{}' CHECK (length(params) <= 4000),
+      target_type TEXT    CHECK (target_type IN ('list', 'item', 'note', 'deadlines', 'project', 'card')),
+      target_id   TEXT,
+      group_key   TEXT,
+      count       INTEGER NOT NULL DEFAULT 1 CHECK (count >= 1),
+      created_at  TEXT    NOT NULL,
+      updated_at  TEXT    NOT NULL,
+      read_at     TEXT
+    );
+    INSERT INTO inbox_new (id, user_id, num, category, text_key, params, target_type, target_id, group_key, count, created_at, updated_at, read_at)
+      SELECT id, user_id, num, category, text_key, params, target_type, target_id, group_key, count, created_at, updated_at, read_at FROM inbox;
+    DROP TABLE inbox;
+    ALTER TABLE inbox_new RENAME TO inbox;
+    CREATE UNIQUE INDEX inbox_user_num ON inbox(user_id, num);
+    CREATE INDEX inbox_user ON inbox(user_id, updated_at);
+    CREATE INDEX inbox_group ON inbox(user_id, group_key) WHERE group_key IS NOT NULL;
+    CREATE INDEX inbox_updated ON inbox(updated_at);
+  `);
+}
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et
 // sans la contrainte UNIQUE sur le nom. Les identifiants sont gardés : les

@@ -78,9 +78,9 @@ const statusOf = (res) => [res.status, res.code ?? null];
 // --- Migration 43 ---
 
 test('migration 43 : tables des projets, projects_enabled coupé au départ, home_start accepte « projects » ; base existante mise à jour, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 44);
+  assert.equal(MIGRATIONS.length, 45);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 44);
+  assert.equal(schemaVersion(fresh), 45);
   for (const table of ['projects', 'project_members', 'project_columns', 'project_labels', 'cards', 'card_labels', 'card_assignees', 'card_events', 'project_user_state']) {
     assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
     assert.equal(fresh.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get(), 0, `${table} vide : une installation n'a aucun projet`);
@@ -91,7 +91,7 @@ test('migration 43 : tables des projets, projects_enabled coupé au départ, hom
   old.prepare("INSERT INTO users (username, display_name, password_hash, home_enabled, home_start, notes_enabled) VALUES ('anne', 'Anne', 'x', 0, 'notes', 0), ('bob', 'Bob', 'x', 1, 'deadlines', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 44);
+  assert.equal(schemaVersion(db), 45);
   assert.deepEqual(db.prepare('SELECT username, home_enabled, home_start, notes_enabled, projects_enabled FROM users ORDER BY id').all(), [
     { username: 'anne', home_enabled: 0, home_start: 'notes', notes_enabled: 0, projects_enabled: 0 },
     { username: 'bob', home_enabled: 1, home_start: 'deadlines', notes_enabled: 1, projects_enabled: 0 },

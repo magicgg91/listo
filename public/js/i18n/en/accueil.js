@@ -39,9 +39,9 @@ export default {
   },
   // “Projects” tile
   'accueil.projets': 'Projects',
-  'accueil.projets.lu': { one: 'Projects, {count} project', other: 'Projects, {count} projects' },
   'accueil.projets.aucun': 'No projects',
   'accueil.projets.nouveau': 'New project',
-  'accueil.projets.cartes': { one: '{count} card', other: '{count} cards' },
-  'accueil.projets.ligne.nouveautes': '{name}, {cards}, new activity',
+  'accueil.projets.aucuneCarte': 'No cards for you',
+  'accueil.projets.retard': 'Overdue',
+  'accueil.projets.cartes.lu': { one: 'Projects, {count} card for you', other: 'Projects, {count} cards for you' },
 };

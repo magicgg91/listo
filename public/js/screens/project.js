@@ -21,17 +21,19 @@
 //   « Peut modifier », Contributeur ; pas en Lecture seule) ; loupe ronde
 //   au-dessus : cherche dans tout le projet (titres, étiquettes), résultats
 //   rangés par colonne.
-// - « Filtrer » (feuille « Filtrer les cartes ») : les étiquettes du projet,
-//   plusieurs choix ; une carte est montrée si elle porte une des
-//   étiquettes choisies ; retenu pour ce projet sur cet appareil ; les
-//   nombres des onglets suivent (« 2 sur 5 » dans le nom lu). Le filtre par
-//   personne viendra avec les personnes attribuées (étape 2).
+// - « Filtrer » (feuille « Filtrer les cartes », maquette projet-2) :
+//   Personnes (Moi, chaque membre, « Personne » : carte sans attribution)
+//   et Étiquettes, plusieurs choix ; une carte est montrée si elle est à
+//   une des personnes cochées ET porte une des étiquettes choisies ;
+//   retenu pour ce projet sur cet appareil ; les nombres des onglets
+//   suivent (« 2 sur 5 » dans le nom lu).
 //
 // Ordinateur : le projet prend TOUTE la largeur (exception à la colonne de
 // 1 040 px, validée par le propriétaire le 25 novembre 2026) : en-tête
 // (nom, « Projet · 5 colonnes · 55 cartes », « À jour », « Partager » avec
 // les personnes (touche P), recherche (touche /), ⋮), filtres par
-// étiquette, puis les colonnes côte à côte (280 px), qui défilent de côté ;
+// personne (Tout, Moi, chaque membre, Personne) et par étiquette, puis les
+// colonnes côte à côte (280 px), qui défilent de côté ;
 // « + Ajouter une carte » en bas de chacune (curseur dans le champ : geste
 // fait pour écrire), « + Colonne » au bout (propriétaire et « Peut
 // modifier »), menu ⋮ de chaque colonne (Renommer, Couleur, Déplacer à
@@ -46,7 +48,8 @@
 
 import { h, icon, iconButton, avatar, replace } from '../dom.js';
 import { navigate, goBack, pathFor } from '../router.js';
-import { namesList } from '../format.js';
+import { namesList, dueDateLabel, todayKey } from '../format.js';
+import { nowTime, timeLabel } from '../due-time.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, offlineBanner, onPc, isTextField } from '../ui.js';
 import { createSearchRow } from '../search-row.js';
@@ -56,8 +59,8 @@ import { isSearching } from '../search.js';
 import { t } from '../i18n.js';
 import { projectRights, cardRights, byPosition, afterIdForStep, cleanCardTitle, CARD_TITLE_MAX } from '../projects.js';
 import {
-  visibleCards, liveCards, cardCount, otherMembers, cleanLabelFilter, loadProjectFilter, saveProjectFilter,
-  loadProjectColumn, saveProjectColumn, startColumn, neighbourColumn,
+  visibleCards, liveCards, cardCount, otherMembers, cleanFilter, loadProjectFilter, saveProjectFilter, emptyFilter, filterCount, cardShown, NO_ONE,
+  loadProjectColumn, saveProjectColumn, startColumn, neighbourColumn, cardDueState, cardMarkers,
 } from '../project-view.js';
 import { columnCards } from '../project-store.js';
 import * as projectActions from '../project-actions.js';
@@ -182,42 +185,78 @@ export function openMoveSheet(cardId) {
   return sheet;
 }
 
-// --- « Filtrer les cartes » (maquette projet-2) : les étiquettes du
-// projet, plusieurs choix ; « Effacer », « Voir 3 cartes » ---
+// --- « Filtrer les cartes » (maquette projet-2) : les personnes (Moi,
+// chaque membre, « Personne ») et les étiquettes du projet, plusieurs
+// choix ; « Effacer », « Voir 3 cartes » ---
+
+// Personnes proposées au filtre : moi d'abord, les autres membres, puis
+// « Personne » (carte sans attribution)
+export function filterPeople(project) {
+  const members = (project.members ?? []).filter((member) => member.active !== false);
+  const me = members.find((member) => member.id === app.user?.id);
+  return [
+    ...(me ? [{ id: me.id, name: t('projets.filtre.moi', { name: me.displayName }), short: t('projets.filtre.moiCourt'), initial: me.displayName, me: true }] : []),
+    ...members.filter((member) => member.id !== app.user?.id).map((member) => ({ id: member.id, name: member.displayName, short: member.displayName, initial: member.displayName })),
+    { id: NO_ONE, name: t('projets.filtre.personne'), short: t('projets.filtre.personneCourt'), initial: null },
+  ];
+}
+
 function openFilterSheet(project, current, onApply) {
-  const chosen = new Set(current);
-  const rows = (project.labels ?? []).map((label) => {
+  const chosen = { people: new Set(current.people), labels: new Set(current.labels) };
+  const tickRow = (kind, id, ...content) => {
     const tick = h('span', { class: 'tick', 'aria-hidden': 'true' });
     const row = h('button', { class: 'tick-row', type: 'button', role: 'checkbox', onClick: () => {
-      if (chosen.has(label.id)) chosen.delete(label.id);
-      else chosen.add(label.id);
+      if (chosen[kind].has(id)) chosen[kind].delete(id);
+      else chosen[kind].add(id);
       paint();
-    } }, tick, labelChip(label));
-    row.dataset.label = label.id;
-    return { row, tick, id: label.id };
+    } }, tick, ...content);
+    return { row, tick, kind, id };
+  };
+  const personRows = filterPeople(project).map((person) => tickRow('people', person.id,
+    person.initial ? avatar(person.initial, { second: !person.me }) : h('span', { class: 'avatar avatar--b', 'aria-hidden': 'true' }, '–'),
+    h('span', {}, person.name)));
+  const labelRows = (project.labels ?? []).map((label) => {
+    const opt = h('button', { class: 'label-filter__opt', type: 'button', onClick: () => {
+      if (chosen.labels.has(label.id)) chosen.labels.delete(label.id);
+      else chosen.labels.add(label.id);
+      paint();
+    } });
+    return { opt, label };
   });
   const showButton = h('button', { class: 'btn btn--primary', type: 'button', onClick: () => {
     sheet.close();
-    onApply([...chosen]);
+    onApply({ people: [...chosen.people], labels: [...chosen.labels] });
   } });
   const paint = () => {
-    for (const { row, tick, id } of rows) {
-      const on = chosen.has(id);
+    for (const { row, tick, kind, id } of personRows) {
+      const on = chosen[kind].has(id);
       row.setAttribute('aria-checked', String(on));
       tick.classList.toggle('is-on', on);
       replace(tick, on ? icon('check') : null);
     }
-    const count = liveCards(app.data, project.id).filter((card) => !chosen.size || (card.labelIds ?? []).some((id) => chosen.has(id))).length;
+    for (const { opt, label } of labelRows) {
+      const on = chosen.labels.has(label.id);
+      opt.setAttribute('aria-pressed', String(on));
+      replace(opt, labelChip(label, { extra: on ? icon('check') : null }));
+    }
+    const filter = { people: [...chosen.people], labels: [...chosen.labels] };
+    const count = liveCards(app.data, project.id).filter((card) => cardShown(card, filter)).length;
     showButton.textContent = t('projets.filtre.voir', { count });
   };
   const sheet = openSheet({
     title: t('projets.filtre.titre'),
     content: [
+      h('h3', { class: 'label-sheet__title' }, t('projets.personnes')),
+      h('div', { class: 'group' }, personRows.map((r) => r.row)),
       h('h3', { class: 'label-sheet__title' }, t('projets.etiquettes')),
-      rows.length ? h('div', { class: 'group' }, rows.map((r) => r.row)) : h('p', { class: 'muted' }, t('projets.filtre.aucuneEtiquette')),
+      labelRows.length
+        ? h('div', { class: 'label-filter kfilter__labels', role: 'group', 'aria-label': t('projets.etiquettes') }, labelRows.map((r) => r.opt))
+        : h('p', { class: 'muted' }, t('projets.filtre.aucuneEtiquette')),
+      h('p', { class: 'field__hint kfilter__rule' }, t('projets.filtre.regle')),
       h('div', { class: 'dialog__actions' },
         h('button', { class: 'btn btn--secondary', type: 'button', onClick: () => {
-          chosen.clear();
+          chosen.people.clear();
+          chosen.labels.clear();
           paint();
         } }, t('projets.filtre.effacer')),
         showButton),
@@ -230,13 +269,57 @@ function openFilterSheet(project, current, onApply) {
   return sheet;
 }
 
+// --- Échéance d'une carte (face et carte ouverte) ---
+// { state ('done', 'late', 'today', 'later'), icon, when (« sam. 28 nov. ·
+// 18:00 », « Aujourd'hui »), label (lu) } ; null sans échéance
+export function cardDue(card) {
+  const today = todayKey();
+  const state = cardDueState(card, today, nowTime());
+  if (!state) return null;
+  const time = card.dueTime ? timeLabel(card.dueTime) : '';
+  const day = card.dueDate === today ? t('format.echeance.aujourdhui') : dueDateLabel(card.dueDate, today);
+  const spokenDay = card.dueDate === today ? t('format.echeance.aujourdhui.parle') : day;
+  const when = time ? t('format.echeance.jourHeure', { day, time }) : day;
+  const spoken = time ? t('format.jourAHeure', { day: spokenDay, time }) : spokenDay;
+  const label = { done: 'projets.echeance.lu.fait', late: 'projets.echeance.lu.retard' }[state] ?? 'projets.echeance.lu';
+  return { state, icon: { done: 'check', late: 'alert' }[state] ?? 'calendar', when, label: t(label, { when: spoken }) };
+}
+
+// Priorité d'une carte (option du projet allumée)
+export const PRIORITY_TEXTS = { low: 'projets.priorite.basse', normal: 'projets.priorite.normale', high: 'projets.priorite.elevee' };
+
 // --- Face d'une carte (maquettes projet-1, pc-projet-1) : titre (trois
-// lignes au plus), étiquettes. Toute la carte ouvre la carte (lien) ; une
-// carte que je ne peux pas modifier le dit au lecteur d'écran. (Échéance,
-// cases « 2/3 », liens, commentaires et personnes viendront avec
-// l'étape 2.) ---
+// lignes au plus), étiquettes, puis une ligne de repères : échéance (fait :
+// coche ET « Fait » ; en retard : icône d'alerte ET « en retard » lu),
+// priorité (option du projet ; élevée et basse), description présente,
+// « 2/3 » (cases), nombre de liens, et les pastilles des personnes à
+// droite. Toute la carte ouvre la carte (lien) ; ses repères sont lus avec
+// son titre (« 2FAuth…, échéance samedi 28 nov. à 18:00, 2 cases cochées
+// sur 3, 2 liens, attribuée à Guillaume et Hugo »). ---
 export function cardFace(card, project) {
   const can = rightsOn(card, project);
+  const due = cardDue(card);
+  const marks = cardMarkers(card);
+  const priority = project.priorityEnabled && card.priority && card.priority !== 'normal' ? card.priority : null;
+  const people = (card.assigneeIds ?? []).map((id) => (project.members ?? []).find((m) => m.id === id)?.displayName ?? t('projets.personnes.ancien'));
+  const spoken = [
+    due ? due.label : null,
+    priority ? t(PRIORITY_TEXTS[priority]) : null,
+    marks.described ? t('projets.face.description') : null,
+    marks.tasks ? t('projets.cases.lu', { done: marks.tasks.done, count: marks.tasks.total }) : null,
+    marks.links ? t('projets.face.liens', { count: marks.links }) : null,
+    people.length ? t('projets.face.personnes', { names: namesList(people) }) : null,
+    can.edit ? null : t('projets.carte.lectureSeulePourVous.court'),
+  ].filter(Boolean);
+  const meta = due || priority || marks.described || marks.tasks || marks.links || people.length
+    ? h('div', { class: 'kcard__meta', 'aria-hidden': 'true' },
+      due ? h('span', { class: `due due--${due.state}` }, icon(due.icon), due.state === 'done' ? t('projets.echeance.faitLe', { when: due.when }) : due.when) : null,
+      priority ? h('span', { class: `chip kprio-chip${priority === 'high' ? ' chip--high' : ''}` }, icon(priority === 'high' ? 'arrow-up' : 'arrow-down', 'icon--xs'), t(PRIORITY_TEXTS[priority])) : null,
+      marks.described ? h('span', { class: 'kcount' }, icon('menu-lines', 'icon--sm')) : null,
+      marks.tasks ? h('span', { class: `kcount${marks.tasks.done === marks.tasks.total ? ' kcount--all' : ''}` }, icon('check', 'icon--sm'), `${marks.tasks.done}/${marks.tasks.total}`) : null,
+      marks.links ? h('span', { class: 'kcount' }, icon('link', 'icon--sm'), String(marks.links)) : null,
+      people.length ? h('span', { class: 'avatars' }, people.slice(0, 3).map((name, i) => avatar(name, { second: (card.assigneeIds ?? [])[i] !== app.user?.id }))) : null)
+    : null;
   const face = h('article', { class: 'card kcard', 'data-card': card.id },
     h('h3', { class: 'kcard__title' }, h('a', {
       class: 'kcard__link',
@@ -245,8 +328,9 @@ export function cardFace(card, project) {
         event.preventDefault();
         navigate('projectCard', { id: project.id, cardId: card.id });
       },
-    }, card.title, can.edit ? null : h('span', { class: 'visually-hidden' }, t('projets.carte.lectureSeulePourVous')))),
-    labelRow(cardLabels(card, project)));
+    }, card.title, spoken.length ? h('span', { class: 'visually-hidden' }, `, ${spoken.join(', ')}`) : null)),
+    labelRow(cardLabels(card, project)),
+    meta);
   // Ordinateur : clic droit, même menu que la carte ouverte
   face.addEventListener('contextmenu', (event) => {
     if (!onPc()) return;
@@ -292,7 +376,7 @@ export function renderProject(projectId, onLeave) {
 function renderPhone(projectId, onLeave) {
   const project = () => liveProject(projectId);
   let columnId = null;
-  let labelFilter = loadProjectFilter(projectId);
+  let filter = loadProjectFilter(projectId);
   let lastShownColumn = null;
 
   const titleText = h('h1', { class: 'topbar__title' });
@@ -308,9 +392,9 @@ function renderPhone(projectId, onLeave) {
   const filterText = h('span', {});
   const filterButton = h('button', { class: 'btn btn--sm btn--secondary', type: 'button', 'aria-haspopup': 'dialog', onClick: () => {
     const p = project();
-    if (p) openFilterSheet(p, labelFilter, (ids) => {
-      labelFilter = ids;
-      saveProjectFilter(projectId, ids);
+    if (p) openFilterSheet(p, filter, (chosen) => {
+      filter = chosen;
+      saveProjectFilter(projectId, chosen);
       draw();
     });
   } }, icon('filter', 'icon--sm'), filterText);
@@ -385,9 +469,9 @@ function renderPhone(projectId, onLeave) {
     document.title = `${p.name} · Listo`;
     sub.textContent = projectSub(p, false);
     peopleButton.setAttribute('aria-label', peopleLabel(p));
-    labelFilter = cleanLabelFilter(p, labelFilter);
-    filterButton.hidden = !(p.labels ?? []).length && !labelFilter.length;
-    filterText.textContent = labelFilter.length ? t('projets.filtrer.nombre', { count: labelFilter.length }) : t('projets.filtrer');
+    filter = cleanFilter(p, filter);
+    const filtering = filterCount(filter) > 0;
+    filterText.textContent = filtering ? t('projets.filtrer.nombre', { count: filterCount(filter) }) : t('projets.filtrer');
     const column = startColumn(p, columnId ?? loadProjectColumn(projectId));
     columnId = column?.id ?? null;
     const query = search.value;
@@ -401,7 +485,7 @@ function renderPhone(projectId, onLeave) {
     tabs.hidden = searching;
     if (searching) {
       panel.removeAttribute('role');
-      const groups = columns.map((c) => [c, visibleCards(app.data, p, c.id, { labelIds: labelFilter, query })]).filter(([, cards]) => cards.length);
+      const groups = columns.map((c) => [c, visibleCards(app.data, p, c.id, { filter, query })]).filter(([, cards]) => cards.length);
       const total = groups.reduce((sum, [, cards]) => sum + cards.length, 0);
       searchMeta.textContent = t('projets.recherche.cartes', { count: total });
       replace(panel, groups.length
@@ -415,7 +499,7 @@ function renderPhone(projectId, onLeave) {
     panel.setAttribute('role', 'tabpanel');
     replace(tabs, columns.map((c) => {
       const all = columnCards(app.data, c.id).length;
-      const shown = labelFilter.length ? visibleCards(app.data, p, c.id, { labelIds: labelFilter }).length : all;
+      const shown = filtering ? visibleCards(app.data, p, c.id, { filter }).length : all;
       const selected = c.id === columnId;
       const tab = h('button', {
         class: `coltab c-${c.color}`,
@@ -425,7 +509,7 @@ function renderPhone(projectId, onLeave) {
         'aria-selected': String(selected),
         'aria-controls': panelId,
         tabindex: selected ? '0' : '-1',
-        'aria-label': labelFilter.length ? t('projets.onglet.filtre', { name: c.name, shown, count: all }) : t('projets.onglet', { name: c.name, count: all }),
+        'aria-label': filtering ? t('projets.onglet.filtre', { name: c.name, shown, count: all }) : t('projets.onglet', { name: c.name, count: all }),
         onClick: () => selectColumn(c.id),
       }, h('span', { class: 'coldot', 'aria-hidden': 'true' }), c.name, h('span', { class: 'coltab__count', 'aria-hidden': 'true' }, String(shown)));
       return tab;
@@ -437,10 +521,10 @@ function renderPhone(projectId, onLeave) {
     }
     panel.setAttribute('aria-label', column?.name ?? '');
     panel.dataset.column = columnId ?? '';
-    const cards = column ? visibleCards(app.data, p, column.id, { labelIds: labelFilter }) : [];
+    const cards = column ? visibleCards(app.data, p, column.id, { filter }) : [];
     replace(panel, cards.length
       ? cards.map((card) => cardFace(card, p))
-      : h('p', { class: 'kempty' }, labelFilter.length ? t('projets.colonne.videFiltre') : t('projets.colonne.vide', { name: column?.name ?? '' })));
+      : h('p', { class: 'kempty' }, filtering ? t('projets.colonne.videFiltre') : t('projets.colonne.vide', { name: column?.name ?? '' })));
   };
 
   // Appui long et glisser ; glissement de côté pour changer de colonne
@@ -483,7 +567,7 @@ function renderPhone(projectId, onLeave) {
 // --- Ordinateur : toute la largeur, colonnes côte à côte ---
 function renderBoard(projectId, onLeave) {
   const project = () => liveProject(projectId);
-  let labelFilter = loadProjectFilter(projectId);
+  let filter = loadProjectFilter(projectId);
   let showAllLabels = false;
   let adding = null; // colonne où l'on écrit une nouvelle carte (curseur dans son champ)
 
@@ -516,43 +600,46 @@ function renderBoard(projectId, onLeave) {
     await projectActions.createCard(p.id, columnId, titleValue);
   }
 
-  // Filtres par étiquette (les six premières, « + 2 » montre les autres)
+  // Filtres : Personnes (Tout, Moi, chaque membre, Personne) et
+  // Étiquettes (les six premières, « + 2 » montre les autres) ; choix
+  // multiples, aria-pressed (coche ET contour, jamais la couleur seule)
   function drawFilters(p) {
     const labels = p.labels ?? [];
-    filters.hidden = !labels.length;
-    if (!labels.length) {
-      replace(filters);
-      return;
-    }
-    const shown = showAllLabels ? labels : labels.slice(0, 6);
-    const toggle = (id) => {
-      labelFilter = labelFilter.includes(id) ? labelFilter.filter((x) => x !== id) : [...labelFilter, id];
-      saveProjectFilter(projectId, labelFilter);
+    filters.hidden = false;
+    const set = (next) => {
+      filter = next;
+      saveProjectFilter(projectId, filter);
       draw();
     };
+    const togglePerson = (id) => set({ ...filter, people: filter.people.includes(id) ? filter.people.filter((x) => x !== id) : [...filter.people, id] });
+    const toggleLabel = (id) => set({ ...filter, labels: filter.labels.includes(id) ? filter.labels.filter((x) => x !== id) : [...filter.labels, id] });
+    const shown = showAllLabels ? labels : labels.slice(0, 6);
     replace(filters,
-      h('div', { class: 'kfilters__group', role: 'group', 'aria-label': t('projets.etiquettes') },
+      h('div', { class: 'kfilters__group', role: 'group', 'aria-label': t('projets.personnes') },
+        h('span', { class: 'kfilters__name', 'aria-hidden': 'true' }, t('projets.personnes')),
+        h('button', { class: 'pfilter pfilter--text', type: 'button', 'aria-pressed': String(!filter.people.length), onClick: () => set({ ...filter, people: [] }) }, t('projets.filtre.tout')),
+        filterPeople(p).map((person) => h('button', {
+          class: `pfilter${person.initial ? '' : ' pfilter--text'}`, type: 'button', 'aria-pressed': String(filter.people.includes(person.id)),
+          'aria-label': person.name, onClick: () => togglePerson(person.id),
+        }, person.initial ? avatar(person.initial, { second: !person.me }) : null, person.short))),
+      labels.length ? h('div', { class: 'kfilters__group', role: 'group', 'aria-label': t('projets.etiquettes') },
         h('span', { class: 'kfilters__name', 'aria-hidden': 'true' }, t('projets.etiquettes')),
         shown.map((label) => {
-          const on = labelFilter.includes(label.id);
-          return h('button', { class: 'label-filter__opt', type: 'button', 'aria-pressed': String(on), 'data-label': label.id, onClick: () => toggle(label.id) },
+          const on = filter.labels.includes(label.id);
+          return h('button', { class: 'label-filter__opt', type: 'button', 'aria-pressed': String(on), 'data-label': label.id, onClick: () => toggleLabel(label.id) },
             labelChip(label, { extra: on ? icon('check') : null }));
         }),
         labels.length > shown.length ? h('button', { class: 'pfilter pfilter--text', type: 'button', onClick: () => {
           showAllLabels = true;
           draw();
-        } }, t('projets.filtre.plus', { count: labels.length - shown.length })) : null),
-      labelFilter.length ? h('button', { class: 'btn btn--sm btn--ghost kfilters__clear', type: 'button', onClick: () => {
-        labelFilter = [];
-        saveProjectFilter(projectId, []);
-        draw();
-      } }, t('projets.filtre.effacerTout')) : null);
+        } }, t('projets.filtre.plus', { count: labels.length - shown.length })) : null) : null,
+      filterCount(filter) ? h('button', { class: 'btn btn--sm btn--ghost kfilters__clear', type: 'button', onClick: () => set(emptyFilter()) }, t('projets.filtre.effacerTout')) : null);
   }
 
   // Une colonne : liseré de sa couleur, nom, nombre, ⋮ (propriétaire et
   // « Peut modifier »), ses cartes, « + Ajouter une carte »
   function columnEl(p, column, rights, query) {
-    const cards = visibleCards(app.data, p, column.id, { labelIds: labelFilter, query });
+    const cards = visibleCards(app.data, p, column.id, { filter, query });
     const all = columnCards(app.data, column.id).length;
     const columns = byPosition(p.columns ?? []);
     const at = columns.findIndex((c) => c.id === column.id);
@@ -604,7 +691,7 @@ function renderBoard(projectId, onLeave) {
       h('div', { class: 'kcol__head' },
         h('span', { class: 'coldot', 'aria-hidden': 'true' }),
         h('h2', { class: 'kcol__name' }, column.name),
-        h('span', { class: 'count', 'aria-hidden': 'true' }, String(labelFilter.length || isSearching(query) ? cards.length : all)),
+        h('span', { class: 'count', 'aria-hidden': 'true' }, String(filterCount(filter) || isSearching(query) ? cards.length : all)),
         colMenu),
       list,
       foot);
@@ -631,7 +718,7 @@ function renderBoard(projectId, onLeave) {
     shareText.textContent = rights.share ? t('projets.menu.partager') : t('projets.menu.personnes');
     shareButton.setAttribute('aria-label', peopleLabel(p));
     replace(shareFaces, people.length > 1 ? people.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })) : null);
-    labelFilter = cleanLabelFilter(p, labelFilter);
+    filter = cleanFilter(p, filter);
     drawFilters(p);
     const query = search.value;
     const columns = byPosition(p.columns ?? []);
@@ -640,7 +727,7 @@ function renderBoard(projectId, onLeave) {
     const scrollLeft = board.scrollLeft;
     const scrolls = new Map([...board.querySelectorAll('.kcol__cards')].map((el) => [el.dataset.column, el.scrollTop]));
     searchMeta.textContent = isSearching(query)
-      ? t('projets.recherche.cartes', { count: columns.reduce((sum, c) => sum + visibleCards(app.data, p, c.id, { labelIds: labelFilter, query }).length, 0) })
+      ? t('projets.recherche.cartes', { count: columns.reduce((sum, c) => sum + visibleCards(app.data, p, c.id, { filter, query }).length, 0) })
       : '';
     replace(board,
       columns.map((column) => columnEl(p, column, rights, query)),

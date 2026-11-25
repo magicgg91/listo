@@ -123,15 +123,18 @@ test('colonne ouverte et filtres : gardés sur cet appareil seulement, stockage 
   const store = () => ({ getItem: (k) => box.get(k) ?? null, setItem: (k, v) => box.set(k, v), removeItem: (k) => box.delete(k) });
   saveProjectColumn(P, 'c2', store);
   assert.equal(loadProjectColumn(P, store), 'c2');
-  saveProjectFilter(P, ['l1'], store);
-  assert.deepEqual(loadProjectFilter(P, store), ['l1']);
-  saveProjectFilter(P, [], store);
-  assert.deepEqual(loadProjectFilter(P, store), []);
+  saveProjectFilter(P, { people: [7, 'none'], labels: ['l1'] }, store);
+  assert.deepEqual(loadProjectFilter(P, store), { people: [7, 'none'], labels: ['l1'] });
+  saveProjectFilter(P, { people: [], labels: [] }, store);
+  assert.deepEqual(loadProjectFilter(P, store), { people: [], labels: [] });
+  // Filtre gardé par l'étape 1 (étiquettes seulement) : relu comme { labels }
+  box.set(`listo-projet-filtre-${P}`, JSON.stringify(['l1']));
+  assert.deepEqual(loadProjectFilter(P, store), { people: [], labels: ['l1'] });
   box.set(`listo-projet-filtre-${P}`, 'abîmé');
-  assert.deepEqual(loadProjectFilter(P, store), []);
+  assert.deepEqual(loadProjectFilter(P, store), { people: [], labels: [] });
   const broken = () => { throw new Error('bloqué'); };
   assert.equal(loadProjectColumn(P, broken), null);
-  assert.deepEqual(loadProjectFilter(P, broken), []);
+  assert.deepEqual(loadProjectFilter(P, broken), { people: [], labels: [] });
   assert.doesNotThrow(() => saveProjectFilter(P, ['x'], broken));
 });
 
@@ -167,14 +170,19 @@ test('Accueil et premier écran : tuile « Projets » en dernier, toute la large
   assert.deepEqual(startScreens(null), ['deadlines', 'lists', 'notes']);
   assert.equal(firstScreen({ enabled: false, start: 'projects' }, on), 'projects');
   assert.equal(firstScreen({ enabled: false, start: 'projects' }, null), 'lists');
-  // La tuile : nombre de projets, les trois derniers, « Nouveau projet » sans projet
+  // La tuile (étape 2) : nombre de « mes cartes », les trois plus urgentes
+  // (une ligne ouvre la carte), « Aucune carte pour vous », « Nouveau
+  // projet » sans projet
   const home = code('public/js/screens/home.js');
   assert.match(home, /function projectsTile\(\) \{/);
-  assert.match(home, /projects\.slice\(0, 3\)/);
+  assert.match(home, /urgentCards\(app\.data, app\.user\.id, today, nowTime\(\)\)/);
+  assert.match(home, /navigate\('projectCard', \{ id: card\.projectId, cardId: card\.id \}\)/);
+  assert.match(home, /tile__sub\$\{late \? ' tile__sub--late' : ''\}/);
+  assert.match(home, /emptyText\(t\('accueil\.projets\.aucuneCarte'\)\)/);
   assert.match(home, /addRow\(t\('accueil\.projets\.nouveau'\), \(\) => openNewProject\(\)\)/);
   assert.match(code('public/js/screens/home-settings.js'), /projects: \{ iconName: 'kanban', name: \(\) => t\('accueil\.projets'\) \},/);
-  assert.equal(translate('fr', 'accueil.projets.lu', { count: 4 }), 'Projets, 4 projets');
-  assert.equal(translate('en', 'accueil.projets.lu', { count: 1 }), 'Projects, 1 project');
+  assert.equal(translate('fr', 'accueil.projets.cartes.lu', { count: 5 }), 'Projets, 5 cartes pour vous');
+  assert.equal(translate('en', 'accueil.projets.cartes.lu', { count: 1 }), 'Projects, 1 card for you');
 });
 
 test('adresses : écrans des projets, tous fermés quand la fonction est coupée', () => {
@@ -276,8 +284,12 @@ test('accessibilité : onglets des colonnes (tablist, aria-selected, flèches), 
   // Le nom de la colonne est toujours écrit ; le nombre dans le nom lu (« 2 sur 5 » avec un filtre)
   assert.equal(translate('fr', 'projets.onglet.filtre', { name: 'Relecture', shown: 2, count: 5 }), 'Relecture, 2 sur 5 cartes');
   assert.match(project, /'aria-pressed': String\(on\)/);
-  // Une carte que je ne peux pas modifier le dit au lecteur d'écran
-  assert.match(project, /can\.edit \? null : h\('span', \{ class: 'visually-hidden' \}, t\('projets\.carte\.lectureSeulePourVous'\)\)/);
+  // Une carte est lue avec ses repères (échéance, cases, liens, personnes)
+  // et, si je ne peux pas la modifier, le dit au lecteur d'écran ; les
+  // repères visibles sont cachés aux lecteurs d'écran (déjà lus)
+  assert.match(project, /can\.edit \? null : t\('projets\.carte\.lectureSeulePourVous\.court'\),/);
+  assert.match(project, /h\('span', \{ class: 'visually-hidden' \}, `, \$\{spoken\.join\(', '\)\}`\)/);
+  assert.match(project, /h\('div', \{ class: 'kcard__meta', 'aria-hidden': 'true' \},/);
   // Ordinateur : flèches, M ; carte ouverte : M, Échap (fenêtre du kit)
   assert.match(project, /if \(event\.key\.toLowerCase\(\) === 'm' && singleKeysOn\(\)\) \{/);
   assert.match(code('public/js/screens/project-card.js'), /'data-shortcut': 'm', 'aria-keyshortcuts': 'M'/);

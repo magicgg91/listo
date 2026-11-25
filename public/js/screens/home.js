@@ -48,7 +48,9 @@ import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } 
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
 import { projectsInOrder, openNewProject } from './projects.js';
-import { cardCount, projectUnread } from '../project-view.js';
+import { myCards, urgentCards } from '../project-view.js';
+import { cardDue } from './project.js';
+import { nowTime } from '../due-time.js';
 import { isNoteUnread } from '../store.js';
 import { computeGifts, recentGifts } from '../gifts.js';
 import { openGift, forLabel } from './gifts.js';
@@ -202,13 +204,14 @@ function giftsTile() {
   { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null });
 }
 
-// Projets (étape 1 du cadrage des projets : les projets récents ; « mes
-// cartes », les plus urgentes, viendront avec les personnes attribuées et
-// les échéances, étape 2) : le nombre de projets dans la pastille du titre
-// (« Projets, 4 projets » au lecteur d'écran), les trois derniers modifiés
-// (nom, et dessous le nombre de cartes ; point des nouveautés), chacun
-// ouvre son projet ; aucun projet : « Aucun projet » et « Nouveau projet ».
-// Le titre ouvre l'écran « Projets ».
+// Projets (docs/cadrage-projets.md, 3.3 ; maquette accueil-1) : le nombre
+// de « mes cartes » (attribuées à moi, pas faites) dans la pastille du
+// titre, puis les trois plus urgentes (en retard d'abord, puis par
+// échéance, puis les plus récemment modifiées) : titre de la carte, et
+// dessous « projet · colonne · échéance » (« En retard » en rouge ET
+// écrit) ; une ligne ouvre la carte. Aucune carte pour moi : « Aucune carte
+// pour vous » et « Projets » ; aucun projet : « Aucun projet » et
+// « Nouveau projet ». Le titre ouvre l'écran « Projets ».
 function projectsTile() {
   const projects = projectsInOrder();
   const open = () => navigate('projects');
@@ -216,20 +219,27 @@ function projectsTile() {
     return tile(t('accueil.projets'), 'kanban', open,
       [emptyText(t('accueil.projets.aucun')), rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())])]);
   }
-  return tile(t('accueil.projets'), 'kanban', open, rowsOf(projects.slice(0, 3).map((project) => {
-    const news = projectUnread(app.data, project.id);
-    const cards = t('accueil.projets.cartes', { count: cardCount(app.data, project.id) });
+  const today = todayKey();
+  const mine = myCards(app.data, app.user.id);
+  if (!mine.length) {
+    return tile(t('accueil.projets'), 'kanban', open,
+      [emptyText(t('accueil.projets.aucuneCarte')), rowsOf([row({ label: t('accueil.projets'), onClick: open })])]);
+  }
+  return tile(t('accueil.projets'), 'kanban', open, rowsOf(urgentCards(app.data, app.user.id, today, nowTime()).map((card) => {
+    const project = projects.find((p) => p.id === card.projectId);
+    const column = (project?.columns ?? []).find((c) => c.id === card.columnId);
+    const due = cardDue(card);
+    const late = due?.state === 'late';
+    const parts = [project?.name ?? '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
     return h('button', {
       class: 'tile__row tile__row--two', type: 'button',
-      'aria-label': news ? t('accueil.projets.ligne.nouveautes', { name: project.name, cards }) : null,
-      onClick: () => navigate('project', { id: project.id }),
+      onClick: () => navigate('projectCard', { id: card.projectId, cardId: card.id }),
     },
     h('span', { class: 'tile__label' },
-      h('span', { class: 'tile__strong' }, project.name),
-      h('span', { class: 'tile__sub' }, cards)),
-    news ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+      h('span', { class: 'tile__strong' }, card.title),
+      h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · '))),
     icon('chev-r', 'icon--sm'));
-  })), { spoken: t('accueil.projets.lu', { count: projects.length }), count: projects.length });
+  })), { spoken: t('accueil.projets.cartes.lu', { count: mine.length }), count: mine.length });
 }
 
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans

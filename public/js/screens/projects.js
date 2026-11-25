@@ -14,9 +14,9 @@
 // Carte d'un projet : icône (avec le point des nouveautés), nom, heure de
 // la dernière activité, menu ⋮ ; les colonnes en petites pastilles (point
 // de couleur, nom, nombre de cartes) ; en bas, « Lecture seule » (œil) ou
-// « Contributeur » selon mon rôle, et les pastilles des personnes. (« 2
-// cartes pour vous · 1 en retard » viendra avec les personnes attribuées et
-// les échéances, à l'étape 2.)
+// « Contributeur » selon mon rôle, « 2 cartes pour vous · 1 en retard »
+// (mes cartes : attribuées à moi, pas faites ; « en retard » en rouge ET
+// écrit), et les pastilles des personnes.
 //
 // Tout vient de la copie locale (hors ligne compris) ; chaque action passe
 // par la file d'attente (project-actions.js) et le serveur revérifie les
@@ -24,7 +24,8 @@
 
 import { h, icon, iconButton, avatar, replace, field, errorNote } from '../dom.js';
 import { navigate, pathFor } from '../router.js';
-import { relativeTime, namesList } from '../format.js';
+import { relativeTime, namesList, todayKey } from '../format.js';
+import { nowTime } from '../due-time.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, toast, drawWhenIdle, openMenu, openSheet, confirmDialog, offlineBanner, onPc } from '../ui.js';
 import { topBell } from '../bell.js';
@@ -35,7 +36,7 @@ import { isSearching } from '../search.js';
 import { errorMessage } from '../api.js';
 import { t, compareText } from '../i18n.js';
 import { projectRights, cleanProjectName, PROJECT_NAME_MAX } from '../projects.js';
-import { sortedProjects, projectMatches, columnCounts, cardCount, otherMembers, projectUnread, projectNewsMuted, lastActivity } from '../project-view.js';
+import { sortedProjects, projectMatches, columnCounts, cardCount, otherMembers, projectUnread, projectNewsMuted, lastActivity, myCardCounts } from '../project-view.js';
 import * as projectActions from '../project-actions.js';
 import { openProjectShare } from './share-panel.js';
 
@@ -187,6 +188,7 @@ function projectCard(project) {
   const people = (project.members ?? []).filter((member) => member.active !== false);
   const shared = otherMembers(project, app.user.id).length > 0;
   const cols = columnCounts(app.data, project);
+  const mine = myCardCounts(app.data, app.user.id, project.id, todayKey(), nowTime());
   const roleChip = project.role === 'reader'
     ? h('span', { class: 'chip chip--readonly' }, icon('eye', 'icon--xs'), t('projets.carte.lectureSeule'))
     : project.role === 'contributor' ? h('span', { class: 'chip' }, t('projets.carte.contributeur')) : null;
@@ -212,8 +214,10 @@ function projectCard(project) {
     cols.length ? h('ul', { class: 'proj-card__cols', 'aria-label': t('projets.carte.colonnes') },
       cols.map(({ column, count }) => h('li', { class: `colchip c-${column.color}` },
         h('span', { class: 'coldot', 'aria-hidden': 'true' }), column.name, ' ', h('b', {}, String(count))))) : null,
-    roleChip || shared ? h('div', { class: 'proj-card__foot' },
-      h('span', { class: 'proj-card__mine' }, roleChip),
+    roleChip || shared || mine.count ? h('div', { class: 'proj-card__foot' },
+      h('span', { class: 'proj-card__mine' }, roleChip,
+        mine.count ? [roleChip ? ' ' : null, t('projets.pourVous', { count: mine.count }),
+          mine.late ? [' · ', h('strong', {}, t('projets.pourVous.retard', { count: mine.late }))] : null] : null),
       shared ? h('span', { class: 'avatars', role: 'img', 'aria-label': t('projets.carte.partage', { names: namesList(people.map((m) => m.displayName)) }) },
         people.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 }))) : null) : null);
   // Ordinateur : clic droit sur la carte, même menu

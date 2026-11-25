@@ -30,18 +30,32 @@
 // d'une carte. Rien du contenu d'un projet n'est écrit dans le journal de
 // sécurité (seulement des identifiants et des nombres).
 //
+// Détails d'une carte (étape 2, migration 44) : description (marques des
+// notes, numéro de version : jamais d'écrasement, comme une note ; une case
+// se coche seule, par son numéro et son texte, sans gêner une autre case
+// cochée en même temps), échéance (date, heure et rappel facultatifs) et
+// case « Fait » (la seule marque de « fait »), priorité (option du projet),
+// liens (http et https seulement, vérifiés ici, jamais appelés par le
+// serveur). Rappels : choisis ici (takeCardReminders, une fois par
+// personne et par signature date + heure + délai, jamais pour une carte
+// faite) ; leur remise par server/notify.js arrive avec les notifications
+// des projets (étape 3).
+//
 // Les dates sont posées ici, par le serveur.
 
 import crypto from 'node:crypto';
 import {
   PROJECT_ACCESS, PROJECTS_MAX, COLUMNS_MAX, CARDS_MAX, PROJECT_LABELS_MAX, PROJECT_MEMBERS_MAX,
   PROJECT_TRASH_DAYS, CARD_HISTORY_MAX, DEFAULT_COLUMNS, DEFAULT_COLUMN_COLOR, PROJECT_NAME_MAX,
-  LABELS_PER_CARD_MAX, ASSIGNEES_MAX,
+  LABELS_PER_CARD_MAX, ASSIGNEES_MAX, LINKS_PER_CARD_MAX, CARD_DESCRIPTION_MAX, TASK_TEXT_MAX,
+  cleanCardDue, isCardPriority, cleanLinkUrl, cleanLinkTitle, cleanDescription,
   roleOfAccess, projectRights, cardRights, assignChangeAllowed, assignableRole, isColumnColor,
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, nameKey,
   cleanCardLabelIds, cleanAssigneeIds, placeFor, byPosition, isUuid,
 } from '../public/js/projects.js';
 import { DEFAULT_LABEL_COLOR } from '../public/js/labels.js';
+import { setTaskAt } from '../public/js/note-format.js';
+import { reminderAt } from '../public/js/due-time.js';
 import { translate } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
 
@@ -60,10 +74,21 @@ export const CARD_DELETE_OWN = 'ops.carteSupprimerSiennes';
 export const CARD_RESTORE_OWN = 'ops.carteRestaurerSiennes';
 export const CARD_ASSIGN_OWN = 'ops.carteAttribuerSiennes';
 export const PROJECTS_OFF = 'ops.projetsCoupes';
+export const CARD_CONFLICT = 'ops.carteConflit';
+export const LINK_NOT_FOUND = 'ops.lienIntrouvable';
 
 // Opérations des projets (file d'attente, POST /api/ops). Les créations et
 // duplications de projets sont comptées par un plafond (route POST /api/ops).
 export const PROJECT_CREATIONS = ['project.create', 'project.duplicate'];
+// Enregistrements de la description d'une carte (et cases cochées) :
+// comptés par un plafond, comme les notes (route POST /api/ops)
+export const CARD_SAVES = ['card.describe', 'card.task'];
+// Rappel d'une carte envoyé avec moins de 30 minutes de retard (serveur
+// arrêté au bon moment), sinon abandonné, comme les tâches
+const REMIND_LATE_MS = 30 * 60 * 1000;
+// Plusieurs enregistrements de la description par la même personne en un
+// quart d'heure : une seule ligne d'historique
+const DESCRIBE_EVENT_MS = 15 * 60 * 1000;
 
 // Droit écrit dans le journal de sécurité, toujours en anglais
 const JOURNAL_ACCESS = { modification: 'edit', contribution: 'contribute', lecture: 'read' };
@@ -168,6 +193,28 @@ export function createProjectService(ctx, { OpError }) {
     // Cartes d'un projet attribuées à une personne (elle part, ou passe en lecture seule)
     assignedIn: db.prepare(`SELECT cards.id FROM card_assignees JOIN cards ON cards.id = card_assignees.card_id
       WHERE cards.project_id = ? AND card_assignees.user_id = ?`).pluck(),
+
+    // Détails (étape 2) : description, échéance, « Fait », priorité
+    describeCard: db.prepare(`UPDATE cards SET description = ?, description_version = description_version + 1, description_by = ?, description_at = ?,
+      updated_at = ?, updated_by = ? WHERE id = ?`),
+    setDue: db.prepare('UPDATE cards SET due_date = ?, due_time = ?, remind_before = ?, due_done = ?, due_done_at = ?, updated_at = ?, updated_by = ? WHERE id = ?'),
+    setCardPriority: db.prepare('UPDATE cards SET priority = ?, updated_at = ?, updated_by = ? WHERE id = ?'),
+    copyDetails: db.prepare(`UPDATE cards SET description = ?, description_by = ?, description_at = ?, priority = ?, due_date = ?, due_time = ?, remind_before = ?
+      WHERE id = ?`),
+    // Enregistrement précédent encore en file sur le téléphone (afterOp)
+    applied: db.prepare('SELECT user_id, result FROM applied_ops WHERE id = ?'),
+    lastCardEvent: db.prepare('SELECT * FROM card_events WHERE card_id = ? ORDER BY id DESC LIMIT 1'),
+    // Liens d'une carte (toujours cherchés DANS la carte)
+    links: db.prepare('SELECT * FROM card_links WHERE card_id = ? ORDER BY position, created_at, id'),
+    link: db.prepare('SELECT * FROM card_links WHERE id = ? AND card_id = ?'),
+    anyLink: db.prepare('SELECT card_id FROM card_links WHERE id = ?').pluck(),
+    countLinks: db.prepare('SELECT COUNT(*) FROM card_links WHERE card_id = ?').pluck(),
+    nextLinkPosition: db.prepare('SELECT COALESCE(MAX(position), -1) + 1 FROM card_links WHERE card_id = ?').pluck(),
+    insertLink: db.prepare('INSERT INTO card_links (id, card_id, title, url, position, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    updateLink: db.prepare('UPDATE card_links SET title = ?, url = ? WHERE id = ?'),
+    deleteLink: db.prepare('DELETE FROM card_links WHERE id = ?'),
+    projectLinks: db.prepare(`SELECT card_links.* FROM card_links JOIN cards ON cards.id = card_links.card_id
+      WHERE cards.project_id = ? ORDER BY card_links.position, card_links.created_at, card_links.id`),
 
     // Historique et réglages propres à chacun
     insertEvent: db.prepare('INSERT INTO card_events (project_id, card_id, user_id, type, params, source, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
@@ -376,7 +423,7 @@ export function createProjectService(ctx, { OpError }) {
   // Une carte. createdByMe : vrai pour les cartes que j'ai créées (avec mon
   // rôle et les personnes attribuées, le téléphone applique cardRights ; le
   // serveur revérifie toujours). Jamais le numéro du compte qui l'a créée.
-  function describeCard(card, user, { labelsOf, assigneesOf, names }) {
+  function describeCard(card, user, { labelsOf, assigneesOf, linksOf, names }) {
     return {
       id: card.id,
       projectId: card.project_id,
@@ -393,6 +440,20 @@ export function createProjectService(ctx, { OpError }) {
       deletedAt: card.deleted_at ?? null,
       deletedByName: card.deleted_by ? names.get(card.deleted_by) ?? null : null,
       deletedColumnName: card.deleted_column_name ?? null,
+      // Détails (étape 2). descriptionByMe / descriptionByName : qui a écrit
+      // la version actuelle de la description (choix d'un conflit)
+      description: card.description ?? '',
+      descriptionVersion: card.description_version ?? 1,
+      descriptionByMe: card.description_by === user.id,
+      descriptionByName: card.description_by ? names.get(card.description_by) ?? null : null,
+      descriptionAt: card.description_at ?? null,
+      priority: card.priority ?? 'normal',
+      dueDate: card.due_date ?? null,
+      dueTime: card.due_time ?? null,
+      remindBefore: card.remind_before ?? null,
+      done: card.due_done === 1,
+      doneAt: card.due_done_at ?? null,
+      links: (linksOf?.get(card.id) ?? []).map((link) => ({ id: link.id, title: link.title, url: link.url })),
     };
   }
 
@@ -409,7 +470,12 @@ export function createProjectService(ctx, { OpError }) {
       if (!assigneesOf.has(row.card_id)) assigneesOf.set(row.card_id, []);
       assigneesOf.get(row.card_id).push(row.user_id);
     }
-    return { labelsOf, assigneesOf };
+    const linksOf = new Map();
+    for (const row of q.projectLinks.all(projectId)) {
+      if (!linksOf.has(row.card_id)) linksOf.set(row.card_id, []);
+      linksOf.get(row.card_id).push(row);
+    }
+    return { labelsOf, assigneesOf, linksOf };
   }
 
   // --- Vérification des champs ---
@@ -483,6 +549,56 @@ export function createProjectService(ctx, { OpError }) {
       logEvent(card, user, 'label', { label: id, name: label.name, color: label.color }, source);
     }
     return added.length + removed.length > 0;
+  }
+
+  // --- Détails d'une carte (étape 2) ---
+
+  // Description actuelle d'une carte, jointe au refus d'un enregistrement
+  // en conflit (le téléphone propose alors le choix, comme pour une note)
+  function cardConflict(card) {
+    const err = new OpError(409, CARD_CONFLICT);
+    err.extra = {
+      current: {
+        version: card.description_version,
+        description: card.description,
+        updatedAt: card.description_at ?? card.updated_at,
+        updatedBy: card.description_by ?? null,
+        updatedByName: card.description_by ? q.userName.get(card.description_by) ?? null : null,
+      },
+    };
+    return err;
+  }
+
+  // Ligne d'historique « description modifiée » : une seule par personne et
+  // par quart d'heure (l'enregistrement automatique écrit souvent)
+  function logDescribe(card, user, source) {
+    const last = q.lastCardEvent.get(card.id);
+    if (last?.type === 'describe' && last.user_id === user.id && last.source === source && Date.parse(last.created_at) > ctx.now() - DESCRIBE_EVENT_MS) return;
+    logEvent(card, user, 'describe', {}, source);
+  }
+
+  // Écrit une nouvelle description (version + 1) ; renvoie la version
+  function writeDescription(card, text, user) {
+    const now = nowIso();
+    q.describeCard.run(text, user.id, now, now, user.id, card.id);
+    return card.description_version + 1;
+  }
+
+  // Un lien de CETTE carte (un lien d'une autre carte : 404)
+  function linkOf(card, linkId) {
+    const link = q.link.get(requireUuid(linkId), card.id);
+    if (!link) throw new OpError(404, LINK_NOT_FOUND);
+    return link;
+  }
+  function linkUrlOf(value) {
+    const url = cleanLinkUrl(value);
+    if (!url) throw new OpError(400, 'ops.adresseLienInvalide');
+    return url;
+  }
+  function linkTitleOf(value) {
+    const title = cleanLinkTitle(value);
+    if (title === null) throw new OpError(400, 'ops.titreLienInvalide');
+    return title;
   }
 
   const requireCardRoom = (project) => {
@@ -810,15 +926,158 @@ export function createProjectService(ctx, { OpError }) {
       return {};
     },
 
-    // Renommer (titre) : seulement si mon rôle permet de modifier CETTE carte
+    // Modifier les champs simples d'une carte, seulement ceux qui changent
+    // (la dernière modification reçue gagne, champ par champ) : title ;
+    // due ({ date, time?, remindBefore? } ou null : retirée, « Fait »
+    // compris) ; priority ('low', 'normal', 'high' : option « Priorité » du
+    // projet allumée). Seulement si mon rôle permet de modifier CETTE carte.
+    // Tout est vérifié avant la moindre écriture.
     'card.update'(user, op, meta) {
       const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
       if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
-      if (op.title === undefined) throw new OpError(400, 'ops.rienAModifier');
-      const title = cardTitleOf(op.title);
-      if (title === card.title) return {};
-      q.renameCard.run(title, nowIso(), user.id, card.id);
-      logEvent(card, user, 'rename', {}, meta.source);
+      if (op.title === undefined && op.due === undefined && op.priority === undefined) throw new OpError(400, 'ops.rienAModifier');
+      const title = op.title === undefined ? undefined : cardTitleOf(op.title);
+      const due = op.due === undefined ? undefined : cleanCardDue(op.due);
+      if (op.due !== undefined && due === undefined) throw new OpError(400, 'ops.echeanceCarteInvalide');
+      if (op.priority !== undefined && !isCardPriority(op.priority)) throw new OpError(400, 'ops.prioriteCarteInvalide');
+      if (op.priority !== undefined && project.priority_enabled !== 1) throw new OpError(400, 'ops.prioriteProjetCoupee');
+      const now = nowIso();
+      let changed = false;
+      if (title !== undefined && title !== card.title) {
+        q.renameCard.run(title, now, user.id, card.id);
+        logEvent(card, user, 'rename', {}, meta.source);
+        changed = true;
+      }
+      if (due !== undefined) {
+        const same = due === null
+          ? card.due_date === null
+          : card.due_date === due.date && card.due_time === due.time && card.remind_before === due.remindBefore;
+        if (!same) {
+          // Sans échéance, pas de case « Fait » ; une échéance changée garde
+          // sa case
+          const done = due === null ? 0 : card.due_done;
+          q.setDue.run(due?.date ?? null, due?.time ?? null, due?.remindBefore ?? null, done, done ? card.due_done_at : null, now, user.id, card.id);
+          logEvent(card, user, 'due', due === null ? { date: null } : { date: due.date, time: due.time }, meta.source);
+          changed = true;
+        }
+      }
+      if (op.priority !== undefined && op.priority !== card.priority) {
+        q.setCardPriority.run(op.priority, now, user.id, card.id);
+        changed = true;
+      }
+      if (changed) changedForProject(project);
+      return {};
+    },
+
+    // Case « Fait » de l'échéance (la seule marque de « fait ») : done,
+    // vrai ou faux ; une carte sans échéance n'en a pas (refus)
+    'card.done'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      if (typeof op.done !== 'boolean') throw new OpError(400, 'ops.faitInvalide');
+      if (!card.due_date) throw new OpError(400, 'ops.carteSansEcheance');
+      if ((card.due_done === 1) === op.done) return {};
+      const now = nowIso();
+      q.setDue.run(card.due_date, card.due_time, card.remind_before, Number(op.done), op.done ? now : null, now, user.id, card.id);
+      logEvent(card, user, op.done ? 'done' : 'undone', {}, meta.source);
+      changedForProject(project);
+      return {};
+    },
+
+    // Enregistrer la description (comme le texte d'une note) : baseVersion,
+    // la version sur laquelle le texte a été écrit ; si la description a
+    // changé entre-temps, ou si l'enregistrement précédent de ce téléphone
+    // (afterOp) a été refusé, refus 409 avec la version actuelle : rien
+    // n'est écrasé.
+    'card.describe'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      if (!Number.isSafeInteger(op.baseVersion) || op.baseVersion < 1) throw new OpError(400, 'ops.versionCarteInvalide');
+      const text = cleanDescription(op.description);
+      if (text === null) throw new OpError(400, 'ops.descriptionInvalide', { max: CARD_DESCRIPTION_MAX });
+      if (op.afterOp !== undefined && op.afterOp !== null) {
+        const previous = q.applied.get(requireUuid(op.afterOp, 'ops.identifiantOperationInvalide'));
+        if (previous && previous.user_id === user.id && JSON.parse(previous.result).status !== 200) throw cardConflict(card);
+      }
+      if (card.description_version !== op.baseVersion) throw cardConflict(card);
+      if (text === card.description) return { version: card.description_version };
+      const version = writeDescription(card, text, user);
+      logDescribe(card, user, meta.source);
+      changedForProject(project);
+      return { version };
+    },
+
+    // Cocher ou décocher UNE case de la description (sans passer en
+    // saisie) : index (son numéro), text (son texte, tel qu'il est montré),
+    // checked. Seule cette case change, sur le texte actuel : deux
+    // personnes qui cochent deux cases en même temps ne se gênent pas. La
+    // case n'est plus là : refus nommé, rien d'écrasé.
+    'card.task'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      if (!Number.isSafeInteger(op.index) || op.index < 0 || typeof op.text !== 'string' || op.text.length > CARD_DESCRIPTION_MAX || typeof op.checked !== 'boolean') {
+        throw new OpError(400, 'ops.caseInvalide');
+      }
+      const next = setTaskAt(card.description, op.index, op.text, op.checked);
+      if (next === null) throw new OpError(409, 'ops.caseIntrouvable');
+      if (next === card.description) return { version: card.description_version };
+      const version = writeDescription(card, next, user);
+      // Le texte de la case est gardé (comme dans l'écran), 200 caractères au plus
+      logEvent(card, user, 'task', { text: [...op.text].slice(0, TASK_TEXT_MAX).join(''), checked: op.checked }, meta.source);
+      changedForProject(project);
+      return { version };
+    },
+
+    // --- Liens d'une carte (20 au plus ; mêmes droits que modifier la carte) ---
+
+    // linkId : choisi par le téléphone (hors ligne) ; title facultatif ;
+    // url http ou https (jamais appelée par le serveur)
+    'link.create'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      const id = requireUuid(op.linkId);
+      const url = linkUrlOf(op.url);
+      const title = linkTitleOf(op.title);
+      const owner = q.anyLink.get(id);
+      if (owner === card.id) return {}; // déjà ajouté (opération rejouée)
+      if (owner) throw new OpError(409, 'ops.lienExisteDeja');
+      if (q.countLinks.get(card.id) >= LINKS_PER_CARD_MAX) throw new OpError(400, 'ops.liensLimite', { max: LINKS_PER_CARD_MAX });
+      const now = nowIso();
+      q.insertLink.run(id, card.id, title, url, q.nextLinkPosition.get(card.id), user.id, now);
+      q.touchCard.run(now, user.id, card.id);
+      logEvent(card, user, 'link', { link: id }, meta.source);
+      changedForProject(project);
+      return {};
+    },
+
+    // Modifier le titre ou l'adresse d'un lien de cette carte
+    'link.update'(user, op) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      const link = linkOf(card, op.linkId);
+      if (op.title === undefined && op.url === undefined) throw new OpError(400, 'ops.rienAModifier');
+      const title = op.title === undefined ? link.title : linkTitleOf(op.title);
+      const url = op.url === undefined ? link.url : linkUrlOf(op.url);
+      if (title === link.title && url === link.url) return {};
+      q.updateLink.run(title, url, link.id);
+      q.touchCard.run(nowIso(), user.id, card.id);
+      changedForProject(project);
+      return {};
+    },
+
+    // Retirer un lien (déjà retiré : rien ne change, rejouable)
+    'link.delete'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
+      const id = requireUuid(op.linkId);
+      const link = q.link.get(id, card.id);
+      if (!link) {
+        if (q.anyLink.get(id)) throw new OpError(404, LINK_NOT_FOUND);
+        return {};
+      }
+      q.deleteLink.run(link.id);
+      q.touchCard.run(nowIso(), user.id, card.id);
+      logEvent(card, user, 'unlink', { link: link.id }, meta.source);
       changedForProject(project);
       return {};
     },
@@ -883,13 +1142,23 @@ export function createProjectService(ctx, { OpError }) {
 
     // Dupliquer (tous sauf Lecture seule ; la copie est à qui duplique) :
     // même colonne, juste dessous, titre « (copie) » (choisi par le
-    // téléphone, sinon dans la langue du compte), mêmes étiquettes et
-    // personnes ; ni commentaires ni historique
+    // téléphone, sinon dans la langue du compte), mêmes étiquettes,
+    // personnes, description, priorité, échéance (case « Fait » décochée) et
+    // liens (linkIds : { <lien d'origine> : <nouvel identifiant> }, choisis
+    // par le téléphone, hors ligne ; sinon posés ici) ; ni commentaires ni
+    // historique
     'card.duplicate'(user, op, meta) {
       const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
       if (!can.duplicate) throw cardDenied(role, CARD_EDIT_OWN);
       const id = requireUuid(op.newCardId);
       if (q.card.get(id)) throw new OpError(409, 'ops.carteExisteDeja');
+      if (op.linkIds !== undefined && (!op.linkIds || typeof op.linkIds !== 'object' || Array.isArray(op.linkIds))) throw new OpError(400, 'ops.identifiantInvalide');
+      const links = q.links.all(card.id).map((link) => {
+        const wanted = op.linkIds && Object.hasOwn(op.linkIds, link.id) ? requireUuid(op.linkIds[link.id]) : newId();
+        if (q.anyLink.get(wanted)) throw new OpError(409, 'ops.lienExisteDeja');
+        return { ...link, id: wanted };
+      });
+      if (new Set(links.map((link) => link.id)).size !== links.length) throw new OpError(400, 'ops.identifiantInvalide');
       const title = op.title === undefined
         ? cleanCardTitle(translate(localeOf(user), 'format.copie', { name: card.title.slice(0, 190).trimEnd() }))
         : cardTitleOf(op.title);
@@ -900,6 +1169,8 @@ export function createProjectService(ctx, { OpError }) {
       q.insertCard.run(id, project.id, card.column_id, place.position, title, user.id, now, now, user.id);
       for (const labelId of q.cardLabelIds.all(card.id)) q.addCardLabel.run(id, labelId);
       q.cardAssignees.all(card.id).forEach((userId, index) => q.addAssignee.run(id, userId, index));
+      q.copyDetails.run(card.description, card.description ? user.id : null, card.description ? now : null, card.priority, card.due_date, card.due_time, card.remind_before, id);
+      for (const link of links) q.insertLink.run(link.id, id, link.title, link.url, link.position, user.id, now);
       logEvent(q.card.get(id), user, 'duplicate', { from: card.id }, meta.source);
       changedForProject(project);
       return {};
@@ -1155,6 +1426,54 @@ export function createProjectService(ctx, { OpError }) {
     return { projects, projectIds: visible.map((project) => project.id), cards, projectMine };
   }
 
+  // --- Rappels des cartes (section 9.3) ---
+  // Cartes à faire (pas « Fait »), présentes, d'un projet présent, avec date,
+  // heure et délai, autour d'aujourd'hui ; le moment exact est calculé
+  // ensuite, en heure locale du serveur (comme les tâches)
+  const reminderCards = db.prepare(`SELECT cards.id, cards.project_id, cards.due_date, cards.due_time, cards.remind_before
+    FROM cards JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL
+    WHERE cards.deleted_at IS NULL AND cards.due_done = 0 AND cards.due_time IS NOT NULL AND cards.remind_before IS NOT NULL
+      AND cards.due_date BETWEEN ? AND ?`);
+  // « Rappel remis à cette personne pour cette signature » : noté AVANT la
+  // remise ; changes = 0 : déjà fait
+  const claimReminder = db.prepare(`INSERT INTO card_reminders (card_id, user_id, signature, sent_at) VALUES (:cardId, :userId, :signature, :now)
+    ON CONFLICT (card_id, user_id) DO UPDATE SET signature = :signature, sent_at = :now WHERE card_reminders.signature <> :signature`);
+  const activeUser = db.prepare('SELECT active, projects_enabled FROM users WHERE id = ?');
+
+  // Les rappels à remettre maintenant : [{ cardId, projectId, userId,
+  // signature }], chacun noté dans card_reminders (une seule fois par
+  // personne et par signature « date heure délai » ; changer l'échéance ou
+  // le délai donne une nouvelle signature). Destinataires : les personnes
+  // attribuées, sinon tous les membres du projet (comme les tâches) ;
+  // seulement les comptes actifs qui ont les projets allumés et voient
+  // toujours le projet. Jamais pour une carte faite, supprimée, ou dont le
+  // moment est passé depuis plus de 30 minutes (serveur arrêté).
+  // (La remise par server/notify.js, deliver, arrive avec les
+  // notifications des projets, étape 3.)
+  function takeCardReminders(now = ctx.now()) {
+    const day = (ms) => {
+      const date = new Date(ms);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    };
+    const out = [];
+    const stamp = new Date(now).toISOString();
+    for (const card of reminderCards.all(day(now - DAY), day(now + 2 * DAY))) {
+      const at = reminderAt(card.due_date, card.due_time, card.remind_before);
+      if (at === null || at > now || now - at > REMIND_LATE_MS) continue;
+      const signature = `${card.due_date} ${card.due_time} ${card.remind_before}`;
+      const project = q.project.get(card.project_id);
+      const assigned = q.cardAssignees.all(card.id);
+      const people = assigned.length ? assigned : [project.owner_id, ...q.memberIds.all(project.id)];
+      for (const userId of people) {
+        const person = activeUser.get(userId);
+        if (person?.active !== 1 || person.projects_enabled !== 1 || !roleOfUser(project, userId)) continue;
+        if (!claimReminder.run({ cardId: card.id, userId, signature, now: stamp }).changes) continue;
+        out.push({ cardId: card.id, projectId: project.id, userId, signature });
+      }
+    }
+    return out;
+  }
+
   // --- Ménage : projets et cartes dans une corbeille depuis plus de 30 jours ---
   // (avec leurs colonnes, étiquettes, personnes et historique, ON DELETE
   // CASCADE). Les projets dont une carte est effacée voient leur structure
@@ -1177,6 +1496,6 @@ export function createProjectService(ctx, { OpError }) {
   // handler(user, op, { source }).)
   return {
     handlers, syncFor, purgeDeleted, flushNotify, clearNotify, projectFor, cardFor, setMembers, leaveProject,
-    purgeProjects, purgeProject, purgeCards, describeProject,
+    purgeProjects, purgeProject, purgeCards, describeProject, takeCardReminders,
   };
 }

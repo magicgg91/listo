@@ -31,7 +31,7 @@ import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
 import { requestLocale } from '../locale.js';
 import { NOTE_SAVES } from '../notes.js';
-import { PROJECT_CREATIONS } from '../projects.js';
+import { PROJECT_CREATIONS, CARD_SAVES } from '../projects.js';
 
 // Résultat d'une opération pour le téléphone : un refus (code : nom de son
 // texte) est dit dans la langue de la requête ; ses valeurs (params) restent
@@ -177,6 +177,12 @@ export function listRoutes(ctx) {
     const creations = ops.filter((op) => PROJECT_CREATIONS.includes(op?.type)).length;
     if (creations && !ctx.projectCreations.take(req.user.id, creations)) {
       return res.status(429).json({ error: req.t('ops.projetsTropVite') });
+    }
+    // Plafond des enregistrements de la description des cartes (et des
+    // cases cochées) : comme les notes, tout le lot reste en file
+    const cardSaves = ops.filter((op) => CARD_SAVES.includes(op?.type)).length;
+    if (cardSaves && !ctx.cardSaves.take(req.user.id, cardSaves)) {
+      return res.status(429).json({ error: req.t('ops.cartesTropVite') });
     }
     res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });

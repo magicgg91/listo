@@ -78,9 +78,9 @@ const statusOf = (res) => [res.status, res.code ?? null];
 // --- Migration 43 ---
 
 test('migration 43 : tables des projets, projects_enabled coupé au départ, home_start accepte « projects » ; base existante mise à jour, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 43);
+  assert.equal(MIGRATIONS.length, 44);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 43);
+  assert.equal(schemaVersion(fresh), 44);
   for (const table of ['projects', 'project_members', 'project_columns', 'project_labels', 'cards', 'card_labels', 'card_assignees', 'card_events', 'project_user_state']) {
     assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
     assert.equal(fresh.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get(), 0, `${table} vide : une installation n'a aucun projet`);
@@ -91,7 +91,7 @@ test('migration 43 : tables des projets, projects_enabled coupé au départ, hom
   old.prepare("INSERT INTO users (username, display_name, password_hash, home_enabled, home_start, notes_enabled) VALUES ('anne', 'Anne', 'x', 0, 'notes', 0), ('bob', 'Bob', 'x', 1, 'deadlines', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 43);
+  assert.equal(schemaVersion(db), 44);
   assert.deepEqual(db.prepare('SELECT username, home_enabled, home_start, notes_enabled, projects_enabled FROM users ORDER BY id').all(), [
     { username: 'anne', home_enabled: 0, home_start: 'notes', notes_enabled: 0, projects_enabled: 0 },
     { username: 'bob', home_enabled: 1, home_start: 'deadlines', notes_enabled: 1, projects_enabled: 0 },
@@ -662,7 +662,9 @@ test('synchronisation : seulement mes projets, champ par champ ; mon rôle, crea
     assert.deepEqual(Object.keys(project.members[0]).sort(), ['active', 'displayName', 'id', 'role']);
     assert.deepEqual(project.labels, [{ id: p.labelId, name: 'Sécurité', color: 'rouge' }]);
     const card = data.cards.find((c) => c.id === leaCard);
-    assert.deepEqual(Object.keys(card).sort(), ['assigneeIds', 'columnId', 'createdAt', 'createdByMe', 'createdByName', 'deletedAt', 'deletedByName', 'deletedColumnName', 'id', 'labelIds', 'position', 'projectId', 'title', 'updatedAt', 'updatedByName']);
+    assert.deepEqual(Object.keys(card).sort(), ['assigneeIds', 'columnId', 'createdAt', 'createdByMe', 'createdByName', 'deletedAt', 'deletedByName', 'deletedColumnName',
+      'description', 'descriptionAt', 'descriptionByMe', 'descriptionByName', 'descriptionVersion', 'done', 'doneAt', 'dueDate', 'dueTime',
+      'id', 'labelIds', 'links', 'position', 'priority', 'projectId', 'remindBefore', 'title', 'updatedAt', 'updatedByName']);
     assert.equal(card.createdByMe, who === 'lea');
     assert.equal(card.createdByName, 'Léa');
     assert.deepEqual(card.labelIds, [p.labelId]);

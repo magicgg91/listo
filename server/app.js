@@ -172,6 +172,9 @@ export function createApp({
     // Créations et duplications de projets : 20 par heure et par compte au
     // plus (server/projects.js, compté par la route POST /api/ops)
     projectCreations: createSaveCounter({ limit: PROJECT_CREATIONS_PER_HOUR, now }),
+    // Enregistrements de la description des cartes et cases cochées : 3 600
+    // par heure et par compte au plus, comme les notes
+    cardSaves: createSaveCounter({ now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -398,6 +401,7 @@ export function createApp({
     ctx.projects.purgeDeleted();  // projets et cartes dans une corbeille depuis plus de 30 jours
     ctx.noteSaves.prune();
     ctx.projectCreations.prune();
+    ctx.cardSaves.prune();
     ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();

@@ -7,13 +7,14 @@
    16.48 Mention « Discret » · 16.49 Page d'un compte (Administration) ·
    16.50 Administration sur ordinateur */
 
-/* 16.48 Mention « Discret » (décision à prendre, cadrage section 5) : un
-   compte discret est marqué par l'œil barré (#i-eye-off) ET le mot, jamais
-   l'icône seule.
+/* 16.48 Mention « Discret » (cadrage section 5 ; décision du propriétaire
+   du 25 novembre 2026 : un compte au rôle « Invité » est toujours discret) :
+   marqué par l'œil barré (#i-eye-off) ET le mot, jamais l'icône seule.
    - .chip--discreet : pastille au bout d'une ligne (Administration ›
      Comptes, carte du compte) ; contour, sans fond (comme .chip--line) ;
    - .discreet-tag : la même mention dans une ligne de texte (sous le prénom
-     dans la feuille « Partager », vue par l'Admin seulement). */
+     dans la feuille « Partager », vue par l'Admin seulement :
+     « Invité · discret »). */
 .chip--discreet { gap: 4px; background: transparent; border: 1px solid var(--color-border); color: var(--color-text-2); }
 .chip--discreet .icon { width: 16px; height: 16px; }
 .discreet-tag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
@@ -24,23 +25,19 @@
 .share-warn p { margin: 0; }
 
 /* 16.49 Page d'un compte (#/administration/comptes/<id>, Admin seulement) :
-   - .acct-card : en tête, pastille, nom, identifiant et préréglage ;
-   - .preset : choix du préréglage (« Famille », « Invité ») : lignes
-     .radio-row du kit, sur deux lignes (nom et phrase) ; le choix actif a
-     le point plein ET le fond doux (jamais la couleur seule) ;
+   - .acct-card : en tête, pastille, nom, identifiant ;
+   - choix du rôle (« Utilisateur | Invité | Admin ») : .segmented du kit ;
+     un choix impossible (« Admin » pour un invité : il passe d'abord par
+     « Utilisateur ») est désactivé, pâli ET expliqué par la phrase dessous ;
    - .toggle-row--sub : interrupteur qui dépend de celui du dessus
      (« Peut créer ses propres projets », sous « Projets ») : décalé ;
-   - .acct-sees : « Ce que Max voit », une phrase, sans aucune donnée
-     (ni nom de projet, ni nom de personne : l'Admin n'a pas de droit sur
-     le contenu). */
+   - .acct-sees : encadré d'une phrase (« Compte invité » dans les Réglages
+     de l'invité), sans aucune donnée (ni nom de projet, ni nom de
+     personne). */
 .acct-card { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-1) var(--space-2) 0; padding: var(--space-2); }
 .acct-card .grow { display: flex; flex-direction: column; min-width: 0; }
 .acct-card .row__title { font-size: var(--text-lg); }
-.preset .radio-row { align-items: flex-start; gap: 12px; min-height: 64px; padding: 12px var(--space-2); }
-.preset .radio-row .radio { margin-top: 2px; }
-.preset .radio-row .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.preset .radio-row .row__sub { font-weight: 400; }
-.preset .radio-row.is-on .row__title { font-weight: 700; }
+.segmented__opt:disabled { opacity: 0.45; cursor: not-allowed; }
 .toggle-row--sub { padding-left: calc(var(--space-2) + 20px); }
 .toggle-row--sub .row__title { font-size: var(--text-base); font-weight: 600; }
 .toggle-row .grow { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

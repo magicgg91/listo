@@ -314,12 +314,16 @@ export function refreshData({ quiet = false, full = false } = {}) {
         if (first) toast(others.length ? t('application.refus.etAutres', { message: first, count: others.length }) : t('application.refus', { message: first }));
       }
       // 3. Puis récupérer les changements des autres. Copie trop ancienne
-      //    (plus de 25 jours) : tout recharger.
-      const since = !full && app.data.loaded && !isTooOld(app.data) ? app.data.serverTime : null;
+      //    (plus de 25 jours), ou projets qui viennent d'être rallumés (le
+      //    serveur n'en envoyait rien) : tout recharger.
+      const since = !full && app.data.loaded && !isTooOld(app.data) && !app.data.projectsReload ? app.data.serverTime : null;
       const data = await get(since ? `/api/sync?since=${encodeURIComponent(since)}` : '/api/sync');
       if (!app.user) return;
       if (since) mergeSync(app.data, data);
       else loadSync(app.data, data);
+      // Projets rallumés sur un autre appareil (vu à l'instant) : une
+      // synchronisation complète suit
+      if (app.data.projectsReload) again = { full: true };
       // Page Notifications : relue seulement quand son empreinte a changé
       // (une ligne ajoutée, lue ou effacée, ici ou sur un autre appareil)
       if (data.inboxStamp !== undefined && (data.inboxStamp !== app.data.inbox.stamp || !app.data.inbox.loaded)) {

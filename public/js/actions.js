@@ -28,7 +28,7 @@ const now = () => new Date().toISOString();
 
 // Met une opération en file (enregistrée sur le téléphone d'abord : fermer
 // l'application juste après ne perd rien), puis l'applique ici
-async function perform(operation, { hint } = {}) {
+export async function perform(operation, { hint } = {}) {
   const op = { id: uuid(), ...operation };
   await queueEntry({ kind: 'op', op, hint });
   applyOp(app.data, op, { user: app.user, now: now(), hint });
@@ -179,7 +179,7 @@ export const setNewsSettings = (settings) => perform({ type: 'account.news', ...
 // Réglage « Accueil » (Réglages › Accueil, home-tiles.js) : { enabled },
 // { start }, { order } ou { hidden } ; même file d'attente, hors ligne compris
 export const setHome = (change) => perform({ type: 'account.home', ...change });
-// Réglage « Fonctions » (Réglages › Fonctions, features.js) : { notes } ;
+// Réglage « Fonctions » (Réglages › Fonctions, features.js) : { notes }, { projects } ;
 // même file d'attente, hors ligne compris
 export const setFeatures = (change) => perform({ type: 'account.features', ...change });
 export const deleteList = (listId) => perform({ type: 'list.delete', listId });

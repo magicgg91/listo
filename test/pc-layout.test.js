@@ -321,7 +321,7 @@ test('guide : section « Sur ordinateur » dans « Au quotidien » (disposition,
   const keys = section.blocks.find((b) => b.table).table.rows.map((r) => r[0]);
   assert.deepEqual(keys, ['?', 'N', '/', ',', 'Échap', '[ et ]', 'P', 'A', '↓ et ↑', 'Espace', 'Entrée', 'E', 'Suppr', 'Ctrl+Z', 'Ctrl+Entrée', 'S']);
   // Toujours 9 chapitres, dans l'ordre demandé (Notifications ajouté le 10 novembre 2026)
-  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'roles', 'claude', 'faq']);
+  assert.deepEqual(GUIDE.map((c) => c.id), ['presentation', 'possibilites', 'installation', 'comptes', 'quotidien', 'notifications', 'projets', 'roles', 'claude', 'faq']);
 });
 
 test('photo agrandie : la zone de la photo a une hauteur définie, la photo tient dans la fenêtre sur un écran large (18 novembre 2026)', () => {

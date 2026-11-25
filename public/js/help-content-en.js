@@ -21,6 +21,7 @@ import installation from './help-en/installation.js';
 import comptes from './help-en/comptes.js';
 import quotidien from './help-en/quotidien.js';
 import notifications from './help-en/notifications.js';
+import projets from './help-en/projets.js';
 import roles from './help-en/roles.js';
 import claude from './help-en/claude.js';
 import faq from './help-en/faq.js';
@@ -28,7 +29,7 @@ import faq from './help-en/faq.js';
 export { ROLES, PERMISSIONS, PERMISSIONS_NOTE, SERVER_NOTE } from './help-en/tableau.js';
 
 // Les chapitres, dans l'ordre du guide français
-export const GUIDE = [presentation, possibilites, installation, comptes, quotidien, notifications, roles, claude, faq];
+export const GUIDE = [presentation, possibilites, installation, comptes, quotidien, notifications, projets, roles, claude, faq];
 
 // Textes des copies du guide hors de l'application (docs/guide.en.md et la
 // page publique en anglais, fabriqués par scripts/guide.js) : mêmes noms que

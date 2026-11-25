@@ -235,7 +235,7 @@ export const GUIDE = [
         title: 'Hors ligne, corbeille, lien public',
         blocks: [{ ul: [
           'Hors ligne : Listo s\'ouvre et s\'utilise sans réseau ; les changements partent au retour du réseau ([[hors-ligne]]).',
-          'Corbeille : une liste supprimée se restaure pendant 30 jours ([[corbeille]]) ; une note aussi ([[notes]]). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes ».',
+          'Corbeille : une liste supprimée se restaure pendant 30 jours ([[corbeille]]) ; une note aussi ([[notes]]). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes » (et « Projets » quand vous les utilisez : [[projets-corbeilles]]).',
           'Lien public : montrer une liste à quelqu\'un sans compte, pour une durée choisie, avec un mot de passe si besoin ([[lien-public]]) ; une note aussi ([[notes-partage]]).',
         ] }],
       },
@@ -712,7 +712,7 @@ export const GUIDE = [
             'Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l\'Admin, quand la connexion par un fournisseur d\'identité est activée, « Demandes de compte » apparaît avec leur nombre s\'il y en a en attente.',
             'Le titre d\'une tuile ouvre l\'écran entier. Une adresse inconnue mène aussi à l\'Accueil (Accueil coupé : au premier écran choisi) ; un lien vers une liste ouvre toujours cette liste.',
           ] },
-          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l\'Accueil est coupé) ; il descend jusqu\'au trait du bas de l\'iPhone. Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. Quand tout l\'Accueil tient dans l\'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
+          'Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l\'Accueil est coupé ; six, avec « Projets », quand vous avez allumé les projets : [[projets-allumer]]) ; il descend jusqu\'au trait du bas de l\'iPhone. Il n\'est pas sur l\'Accueil, dont les tuiles mènent déjà partout. Quand tout l\'Accueil tient dans l\'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».',
           { ul: [
             '« Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l\'option « Échéance » est activée : « En retard », « Aujourd\'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d\'envies ni de courses.',
             'Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l\'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([[repeter]]). Touchez la ligne pour ouvrir la tâche dans sa liste.',
@@ -725,12 +725,12 @@ export const GUIDE = [
           { ul: [
             '« Tuiles affichées » : un interrupteur par tuile, pour la masquer ou l\'afficher (« À offrir » n\'apparaît de toute façon que si vous avez réservé un cadeau). La tuile « Compte » est toujours affichée : sur l\'Accueil, il n\'y a pas de bandeau du bas, et c\'est elle qui mène aux Réglages.',
             '« Réordonner » : glissez une tuile par sa poignée, ou utilisez les flèches « Monter » et « Descendre » ; « Terminé » ferme ce mode. L\'Accueil suit cet ordre ; sur le téléphone, une tuile restée seule sur sa ligne prend toute la largeur.',
-            '« Afficher l\'Accueil » coupé : Listo s\'ouvre sur le « Premier écran » choisi (« Échéances », « Listes » ou « Notes » ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d\'« Échéances », de « Listes » et de « Notes » ([[notif-page]]). Sur ordinateur, l\'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.',
+            '« Afficher l\'Accueil » coupé : Listo s\'ouvre sur le « Premier écran » choisi (« Échéances », « Listes », « Notes », ou « Projets » quand ils sont allumés ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d\'« Échéances », de « Listes » et de « Notes » ([[notif-page]]). Sur ordinateur, l\'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.',
           ] },
           { sub: 'Choisir ses fonctions' },
-          'Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez ; pour l\'instant, les notes. Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n\'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.',
+          'Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [[projets]]). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n\'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.',
           { ul: [
-            'Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l\'Accueil est aussi coupé), plus de tuile « Notes » sur l\'Accueil ni dans Réglages, « Accueil », plus d\'onglets dans la « Corbeille » des Réglages (seulement vos listes supprimées) ; sur ordinateur, plus d\'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s\'ouvre sur « Listes ».',
+            'Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l\'Accueil est aussi coupé), plus de tuile « Notes » sur l\'Accueil ni dans Réglages, « Accueil », plus d\'onglet « Notes » dans la « Corbeille » des Réglages ; sur ordinateur, plus d\'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s\'ouvre sur « Listes ».',
             'Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.',
             'Rallumer les notes ramène tout : vos notes, celles qu\'on vous a partagées, vos épingles et les notifications déjà reçues.',
           ] },
@@ -1043,7 +1043,116 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 7. Rôle par rôle ============
+  // ============ 7. Projets ============
+  {
+    id: 'projets',
+    title: 'Projets',
+    blocks: [
+      'Un projet range des cartes en colonnes, comme un tableau d\'idées : “Idées”, “Brouillons”, “Relecture”, “Publiés”… Chaque projet a un seul tableau : ses colonnes (un nom et une couleur, dans l\'ordre que vous choisissez), et dans chaque colonne ses cartes, dans l\'ordre que vous choisissez. Pour plusieurs tableaux, créez plusieurs projets. Un projet se partage avec des personnes de Listo, chacune avec son rôle ([[projets-roles]]) ; il n\'a pas de lien public.',
+      'La fonction est coupée au départ, pour chaque compte : rien ne change tant que vous ne l\'allumez pas.',
+    ],
+    sections: [
+      {
+        id: 'projets-allumer',
+        title: 'Allumer les projets',
+        blocks: [
+          'Réglages, « Fonctions », « Projets » : allumez l\'interrupteur. Le choix vaut pour vous seul, sur tous vos appareils, et se fait aussi hors ligne. Coupés de nouveau, les projets disparaissent de vos écrans sans rien effacer : vos projets et ceux qu\'on vous a partagés reviennent quand vous les rallumez.',
+          { ul: [
+            'Sur le téléphone, le bandeau du bas a alors six boutons : « Accueil », « Échéances », « Listes », « Notes », « Projets » et « Réglages » (cinq si l\'Accueil ou les notes sont coupés). Avec un texte agrandi par le téléphone, un libellé peut être coupé (“Échéanc…”) : le nom lu par le lecteur d\'écran reste entier.',
+            'L\'Accueil a une tuile « Projets », en bas, sur toute la largeur : le nombre de vos projets, et les trois plus récemment modifiés (avec leur nombre de cartes, et un point s\'il y a du nouveau). Le titre ouvre l\'écran « Projets ». Comme les autres tuiles, elle se masque et se déplace dans Réglages, « Accueil » ; « Projets » peut aussi devenir votre premier écran quand l\'Accueil est coupé.',
+            'La « Corbeille » des Réglages a un onglet « Projets » ([[projets-corbeilles]]).',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-creer',
+        title: 'Créer, dupliquer, supprimer un projet',
+        blocks: [
+          { ul: [
+            'Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l\'œil « Lecture seule » ou « Contributeur » selon votre rôle, et un point quand quelqu\'un d\'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.',
+            '« + », en haut à droite (« Nouveau projet » quand vous n\'en avez aucun) : donnez un nom (80 caractères au plus), puis « Créer ». Le projet commence avec trois colonnes, « À faire », « En cours » et « Fait », à renommer à votre goût ; il s\'ouvre tout de suite.',
+            'Menu ⋮ d\'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».',
+            '« Dupliquer le projet » (tout membre, même en « Lecture seule ») : un nouveau projet à vous, non partagé, dont le nom finit par “(copie)”, avec les mêmes colonnes, les mêmes étiquettes et la même option « Priorité », mais sans aucune carte. Pratique pour en faire un modèle. Cela marche aussi hors ligne.',
+            '« Supprimer » (propriétaire) : le projet va dans la « Corbeille » des Réglages pour 30 jours, avec ses cartes ; il disparaît aussi pour les personnes avec qui il est partagé. « Annuler », dans le message qui suit, le remet tout de suite.',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-cartes',
+        title: 'Les cartes',
+        blocks: [
+          'Sur le téléphone, un projet montre une colonne à la fois. En haut, les onglets des colonnes (point de couleur, nom, nombre de cartes) : la colonne choisie a le fond de sa couleur, un contour et un nom en gras. Touchez un onglet, ou faites glisser l\'écran de côté (en partant du milieu, pas du bord gauche) pour passer à la colonne voisine. Listo retient, sur cet appareil, la dernière colonne ouverte de chaque projet.',
+          { ul: [
+            'Ajouter une carte : tapez son titre dans la barre du bas (“Ajouter dans « Relecture »”), puis « + » ; la carte va en bas de la colonne, et le champ reste prêt pour la suivante. Pas de barre en « Lecture seule ».',
+            'La loupe cherche dans tout le projet (titres et noms des étiquettes) ; pendant la recherche, les résultats sont rangés par colonne.',
+            '« Filtrer » (quand le projet a des étiquettes) ouvre « Filtrer les cartes » : cochez une ou plusieurs étiquettes, puis le bouton “Voir 3 cartes” ; seules les cartes qui portent une des étiquettes cochées restent. « Effacer » retire le filtre. Le filtre est gardé pour ce projet, sur cet appareil ; le nombre de filtres est écrit sur le bouton, et les onglets comptent les cartes montrées.',
+            'Déplacer une carte : un appui long la soulève, puis faites-la glisser à sa nouvelle place dans la colonne, ou posez-la sur un onglet : elle va en haut de cette colonne. Sans glisser, la carte ouverte a, dans son menu ⋮, « Déplacer vers… » (choisissez la colonne, puis « En haut » ou « En bas », puis « Déplacer »), « Monter » et « Descendre ».',
+            'Toucher une carte l\'ouvre : son titre (touchez-le pour le modifier, 200 caractères au plus), sa colonne (le bouton de sa couleur ouvre « Déplacer vers… ») et ses étiquettes (« + Étiquette » pour en poser ou en retirer, 10 au plus). Son menu ⋮ : « Déplacer vers… », « Monter », « Descendre », « Dupliquer » (une copie juste dessous, à vous) et « Supprimer ». Tout s\'enregistre tout seul, hors ligne compris.',
+            'Une carte que votre rôle ne permet pas de modifier le dit (“Lecture seule”, ou “Vous pouvez la lire, pas la modifier.”) : elle n\'a ni « + », ni saisie, ni bouton qui ne marcherait pas.',
+          ] },
+          'Les personnes attribuées, l\'échéance avec la case “Fait”, la description, les liens, les commentaires et l\'historique d\'une carte arriveront avec les prochaines étapes des projets.',
+        ],
+      },
+      {
+        id: 'projets-colonnes',
+        title: 'Colonnes et étiquettes du projet',
+        blocks: [
+          '« Réglages du projet » (menu ⋮ d\'un projet ouvert ; propriétaire et « Peut modifier ») :',
+          { ul: [
+            'Nom du projet (le propriétaire seulement).',
+            'Colonnes : une ligne par colonne, avec son nombre de cartes. Glissez la poignée à gauche pour changer l\'ordre, ou touchez le crayon : nom (40 caractères au plus, une seule fois dans le projet), couleur parmi huit, place (“Avant « Brouillons »”, “Après « Planifiés »”) et « Supprimer la colonne ». « Ajouter une colonne » en ajoute une à la fin (20 au plus).',
+            'Supprimer une colonne vide : elle part tout de suite. Une colonne qui a des cartes : choisissez de déplacer ses cartes vers une autre colonne, ou de les supprimer avec elle (elles vont dans les « Cartes supprimées » du projet). Une colonne supprimée ne se restaure pas ; un projet garde toujours au moins une colonne.',
+            'Étiquettes du projet : propres à ce projet (les étiquettes des notes ne s\'y mélangent pas), une même étiquette ne pouvant exister qu\'une fois (majuscules et accents comptent pareil). « Nouvelle étiquette » ; le crayon renomme, change la couleur ou supprime (l\'étiquette est alors retirée de ses cartes). 50 étiquettes au plus par projet.',
+            '« Priorité » (le propriétaire) : une option du projet, coupée au départ ; elle servira avec les détails des cartes.',
+            '« Supprimer le projet » (le propriétaire).',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-roles',
+        title: 'Partager un projet, les quatre rôles',
+        blocks: [
+          'Dans un de vos projets, « Partager » (le bouton des personnes en haut, ou le menu ⋮) ouvre directement la liste des comptes de Listo : un projet n\'a pas de lien public. Cochez une personne, puis choisissez son droit sous son nom, « Modifier », « Contribuer » ou « Lire » ; décochez-la pour la retirer ; puis « OK ». Une personne ajoutée commence en « Lire ». Il faut du réseau.',
+          { table: { head: ['Rôle', 'Ce qu\'il permet'], rows: [
+            ['« Propriétaire »', 'tout : renommer, partager, supprimer le projet, l\'option « Priorité », effacer pour de bon les cartes supprimées'],
+            ['« Peut modifier » (droit « Modifier »)', 'les colonnes, les étiquettes du projet et toutes les cartes ; jamais renommer, partager ni supprimer le projet'],
+            ['« Contributeur » (droit « Contribuer »)', 'créer des cartes ; modifier et déplacer celles qu\'il a créées ou qui lui sont attribuées ; supprimer et restaurer seulement celles qu\'il a créées ; jamais les colonnes ni les étiquettes du projet'],
+            ['« Lecture seule » (droit « Lire »)', 'voir le projet, ses colonnes et ses cartes, sans rien changer'],
+          ] } },
+          { ul: [
+            'Tout membre peut dupliquer le projet, voir « Personnes » (qui, et avec quel rôle) et quitter le projet (menu ⋮, « Quitter le projet » ; sauf le propriétaire, qui le supprime). Ce qui est à chacun (nouveautés masquées, colonne ouverte, filtres) n\'est jamais montré aux autres.',
+            'Personne d\'autre, pas même l\'Admin, ne voit un projet qui ne lui est pas partagé.',
+            'Un rôle changé prend effet tout de suite ; une action faite hors ligne puis refusée par le serveur (le rôle a changé entre-temps) est signalée, et l\'écran reprend l\'état du serveur.',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-corbeilles',
+        title: 'Corbeilles des projets',
+        blocks: [
+          { ul: [
+            'Projets supprimés : « Corbeille » des Réglages, onglet « Projets » (le propriétaire seulement). Chaque ligne dit quand le projet a été supprimé, combien de jours il lui reste, son nombre de cartes et avec combien de personnes il était partagé. « Restaurer » le remet pour tout le monde, avec ses colonnes et ses cartes ; « Supprimer définitivement » et « Vider la corbeille » demandent une confirmation et du réseau. Au-delà de 30 jours, il est effacé pour de bon.',
+            'Cartes supprimées : dans chaque projet (menu ⋮, « Cartes supprimées »), car chacun peut supprimer des cartes. Chaque ligne : titre, colonne d\'origine, qui l\'a supprimée et quand. « Restaurer » : le propriétaire et « Peut modifier » pour toutes, un Contributeur pour celles qu\'il a créées ; la carte revient en bas de sa colonne (ou de la première, si la sienne n\'existe plus). « Supprimer définitivement » et « Vider la corbeille » : le propriétaire, avec du réseau. En « Lecture seule », la liste se voit sans bouton.',
+          ] },
+        ],
+      },
+      {
+        id: 'projets-ordinateur',
+        title: 'Sur ordinateur',
+        blocks: [
+          '« Projets » est dans le menu de gauche (après « Notes »), avec le nombre de projets ; sur les écrans des projets, vos projets sont listés dessous (nombre de cartes, point des nouveautés), et le bouton du bas devient « Nouveau projet », ou « Nouvelle carte » dans un projet (touche N).',
+          { ul: [
+            'Un projet ouvert prend toute la largeur : en haut, son nom, « Projet · 5 colonnes · 55 cartes », « Partager » (touche P) et la recherche (touche /) ; dessous, les filtres par étiquette (plusieurs choix ; “+ 2” montre les autres ; « Effacer les filtres ») ; puis les colonnes côte à côte, qui défilent de côté.',
+            'Chaque colonne a son menu ⋮ (propriétaire et « Peut modifier ») : renommer et changer la couleur, déplacer à gauche ou à droite, « Supprimer la colonne ». « Ajouter une carte », en bas d\'une colonne, ouvre un champ (Entrée ajoute, Échap referme) ; « Ajouter une colonne » est au bout.',
+            'Glisser-déposer : tenez une carte avec la souris et posez-la dans la même colonne ou dans une autre ; une place en pointillés montre où elle tombera. Au clavier : les flèches passent d\'une carte à l\'autre (haut et bas dans une colonne, gauche et droite d\'une colonne à l\'autre), Entrée ouvre la carte, M ouvre « Déplacer vers… ». Clic droit sur une carte : son menu.',
+            'Une carte s\'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, à droite la colonne, les étiquettes et les actions. L\'adresse est celle de la carte : on peut l\'envoyer ou y revenir. Échap ou la croix la ferment.',
+          ] },
+        ],
+      },
+    ],
+  },
+
+  // ============ 8. Rôle par rôle ============
   {
     id: 'roles',
     title: 'Rôle par rôle',
@@ -1163,7 +1272,7 @@ export const GUIDE = [
             '« Dupliquer » (menu ⋮ de la liste) crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.',
             'Menu ⋮ de la liste, « Supprimer » : une confirmation rappelle d\'abord ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s\'arrête.',
             'Une liste supprimée reste 30 jours dans votre « Corbeille » (Réglages, onglet « Listes »), puis elle est effacée pour de bon. Seul son propriétaire l\'y voit ; chaque ligne indique son type, son nombre d\'éléments, le jour de sa suppression et le nombre de jours qui restent.',
-            'La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [[notes]]), chacun avec son nombre quand il y en a. Elle s\'ouvre sur « Listes », sauf si seules des notes y attendent ; l\'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions »), elle n\'a pas d\'onglets : seulement vos listes.',
+            'La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [[notes]]), et un troisième, « Projets », quand vous utilisez les projets ([[projets-corbeilles]]) ; chacun avec son nombre quand il y en a. Elle s\'ouvre sur « Listes », sauf si seules des notes (ou des projets) y attendent ; l\'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions ») et que les projets le sont aussi, elle n\'a pas d\'onglets : seulement vos listes.',
             '« Restaurer » la remet telle qu\'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.',
             '« Supprimer définitivement » (la poubelle rouge d\'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.',
             'Le propriétaire ne quitte pas sa liste : il la supprime, ou la laisse.',
@@ -1220,7 +1329,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 8. Assistants IA (MCP) ============
+  // ============ 9. Assistants IA (MCP) ============
   {
     id: 'claude',
     title: 'Assistants IA (MCP)',
@@ -1438,7 +1547,7 @@ export const GUIDE = [
     ],
   },
 
-  // ============ 9. Questions fréquentes ============
+  // ============ 10. Questions fréquentes ============
   {
     id: 'faq',
     title: 'Questions fréquentes et dépannage',

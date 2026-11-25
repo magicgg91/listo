@@ -13,7 +13,7 @@
 //   scrypt, montré une seule fois au propriétaire.
 // - Un lien n'est valable que s'il n'est ni arrêté ni expiré, que sa note
 //   existe et n'est pas dans la corbeille, et que son propriétaire est
-//   actif. Ce contrôle est refait à chaque requête (validShare), avec
+//   actif, n'est pas un invité et a les Notes autorisées. Ce contrôle est refait à chaque requête (validShare), avec
 //   l'horloge du serveur. Note mise à la corbeille : le lien ne mène plus à
 //   rien ; restaurée, il remarche s'il n'a pas expiré entre-temps. Note
 //   effacée : le lien part avec elle.
@@ -94,12 +94,20 @@ export function createNoteShareService(ctx) {
 
   // Crée le lien (note du propriétaire, hors corbeille : vérifié par
   // l'appelant). Un ancien lien expiré (mais pas encore arrêté) est arrêté.
+  // Renvoie { share, password }, null si un lien est déjà actif, ou
+  // { refusal: { status, key } } si le propriétaire ne peut plus en avoir.
   async function create(user, note, { durationHours, protect }) {
     const password = protect ? generateSharePassword() : null;
     const passwordHash = password ? await hashPassword(password) : null;
     const token = newShareToken();
     const now = nowIso();
+    let refusal = null;
     const share = db.transaction(() => {
+      // Relu APRÈS le calcul du mot de passe (qui laisse la main) : l'Admin
+      // a pu entre-temps faire de lui un invité, lui retirer les Notes ou
+      // désactiver son compte (server/features.js)
+      refusal = ctx.features?.publicLinkRefusal(user.id, 'notes') ?? null;
+      if (refusal) return null;
       const old = q.openShare.get(note.id);
       if (old && !isExpired(old)) return null; // un lien est déjà actif
       if (old) q.revoke.run(now, old.id);
@@ -110,6 +118,7 @@ export function createNoteShareService(ctx) {
         expiresIn(durationHours), user.id, now);
       return q.byId.get(lastInsertRowid);
     })();
+    if (refusal) return { refusal };
     if (!share) return null;
     return { share: asNoteShare(share), password };
   }
@@ -166,10 +175,14 @@ export function createNoteShareService(ctx) {
   // --- Côté visiteur ---
   // Le lien valable correspondant à ce jeton, ou null. Contrôle complet à
   // chaque appel : forme du jeton, arrêt, expiration (horloge du serveur),
-  // note dans la corbeille ou effacée, propriétaire désactivé.
+  // note dans la corbeille ou effacée, propriétaire désactivé, devenu
+  // invité ou sans Notes autorisées (server/features.js, une lecture de sa
+  // ligne) : la même réponse qu'un lien inconnu, sans jamais dire pourquoi.
   function validShare(token) {
     if (typeof token !== 'string' || !TOKEN_PATTERN.test(token)) return null;
-    return asNoteShare(q.validByHash.get({ hash: hashToken(token), now: nowIso() }));
+    const share = q.validByHash.get({ hash: hashToken(token), now: nowIso() });
+    if (share && ctx.features?.publicLinkRefusal(share.created_by, 'notes')) return null;
+    return asNoteShare(share);
   }
 
   // --- Nettoyage : liens arrêtés ou expirés depuis plus de 30 jours ---

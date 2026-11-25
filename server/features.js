@@ -39,7 +39,7 @@
 // notifications, page Notifications, temps réel, assistants IA).
 
 import { FEATURES, normalizeFeatures, featuresChangeProblem, applyFeaturesChange, usedFeatures } from '../public/js/features.js';
-import { accountRole, normalizeAllowed, PERMISSIONS, allowedChangeProblem, applyAllowedChange } from '../public/js/access.js';
+import { accountRole, normalizeAllowed, PERMISSIONS, allowedChangeProblem, applyAllowedChange, mayShareOwn } from '../public/js/access.js';
 
 // Colonne de la table users de chaque fonction (liste fixe : jamais un nom
 // venu d'une requête) : l'interrupteur de la personne…
@@ -52,6 +52,8 @@ export const ALLOWED_COLUMNS = { lists: 'lists_allowed', notes: 'notes_allowed',
 // (Réglages › Fonctions)
 export const LISTS_NOT_ALLOWED = 'ops.listesNonAutorisees';
 export const LISTS_OFF = 'ops.listesCoupees';
+// Refus des notes non autorisées par l'Admin (repris par server/notes.js)
+export const NOTES_NOT_ALLOWED = 'ops.notesNonAutorisees';
 
 // Adresses de l'API qui appartiennent aux listes (sous /api) : listes et
 // leur partage, lien public, mode scan, articles, photos, réservations,
@@ -103,7 +105,7 @@ export function featuresFromRow(row) {
 }
 
 export function createFeatures(db) {
-  const columns = ['role', 'guest', ...FEATURES.map((name) => COLUMNS[name]), ...PERMISSIONS.map((name) => ALLOWED_COLUMNS[name])];
+  const columns = ['active', 'role', 'guest', ...FEATURES.map((name) => COLUMNS[name]), ...PERMISSIONS.map((name) => ALLOWED_COLUMNS[name])];
   const read = db.prepare(`SELECT ${columns.join(', ')} FROM users WHERE id = ?`);
   // Une requête préparée par fonction (colonne de la liste fixe ci-dessus)
   const writes = Object.fromEntries(FEATURES.map((name) => [name, db.prepare(`UPDATE users SET ${COLUMNS[name]} = ? WHERE id = ?`)]));
@@ -122,12 +124,37 @@ export function createFeatures(db) {
   // base à chaque demande : un changement de l'Admin compte tout de suite.
   // Un compte inconnu n'a pas de listes.
   function listsRefusal(userId) {
-    const row = read.get(userId);
+    return listsRefusalOf(read.get(userId));
+  }
+  // (la même règle, sur une ligne déjà lue)
+  function listsRefusalOf(row) {
     if (!row) return LISTS_NOT_ALLOWED;
     if (!allowedFromRow(row).lists) return LISTS_NOT_ALLOWED;
     return featuresFromRow(row).lists ? null : LISTS_OFF;
   }
   const listsUsed = (userId) => listsRefusal(userId) === null;
+
+  // Le propriétaire d'un lien public peut-il (encore) en avoir un ? kind :
+  // 'lists' (lien d'une liste) ou 'notes' (lien d'une note). Renvoie null
+  // s'il le peut, sinon { status, key } : la réponse des contrôles
+  // habituels (compte désactivé : celle d'une session fermée ; invité :
+  // « ne partage jamais » ; listes non utilisées ; notes non autorisées).
+  // Une seule lecture de sa ligne (par son numéro). Sert deux fois :
+  // - à la création du lien, APRÈS le calcul du mot de passe (qui laisse
+  //   la main) : l'Admin a pu faire de lui un invité, lui retirer Notes ou
+  //   Listes, ou désactiver son compte entre-temps ;
+  // - à chaque visite du lien (/p/<jeton>, photos, réservations) : un lien
+  //   dont le propriétaire ne le peut plus ne mène à rien, avec la même
+  //   réponse qu'un lien expiré ou inconnu (le visiteur n'apprend jamais
+  //   pourquoi).
+  function publicLinkRefusal(userId, kind) {
+    const row = read.get(userId);
+    if (!row || row.active !== 1) return { status: 401, key: 'comptes.connexionRequise' };
+    if (!mayShareOwn(accountRole(row))) return { status: 403, key: 'ops.invitePartageInterdit' };
+    if (kind === 'notes') return allowedFromRow(row).notes ? null : { status: 403, key: NOTES_NOT_ALLOWED };
+    const refusal = listsRefusalOf(row);
+    return refusal ? { status: 403, key: refusal } : null;
+  }
 
   // Modifie le réglage de la personne. change : { lists?, notes?, projects? },
   // rien d'autre (« Listes » : un invité seulement).
@@ -197,5 +224,5 @@ export function createFeatures(db) {
     })();
   }
 
-  return { featuresFor, allowedFor, switchesFor, listsRefusal, listsUsed, setFeatures, setAllowed, initAllowed, keepListsForNewGuest };
+  return { featuresFor, allowedFor, switchesFor, listsRefusal, listsUsed, publicLinkRefusal, setFeatures, setAllowed, initAllowed, keepListsForNewGuest };
 }

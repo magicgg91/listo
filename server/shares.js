@@ -7,8 +7,9 @@
 // - Mot de passe facultatif : 16 caractères tirés par Listo, haché avec
 //   scrypt, montré une seule fois au propriétaire.
 // - Un lien n'est valable que s'il n'est ni arrêté ni expiré, que sa liste
-//   existe encore et que son propriétaire est actif. Ce contrôle est refait à
-//   chaque requête (validShare), avec l'horloge du serveur.
+//   existe encore et que son propriétaire est actif, n'est pas un invité et
+//   a les Listes. Ce contrôle est refait à chaque requête (validShare), avec
+//   l'horloge du serveur.
 // - Le journal cite le numéro du partage, jamais le jeton ni le mot de passe.
 
 import crypto from 'node:crypto';
@@ -139,12 +140,20 @@ export function createShareService(ctx) {
   }
 
   // Crée le lien. Un ancien lien expiré (mais pas encore arrêté) est arrêté.
+  // Renvoie { share, password }, null si un lien est déjà actif, ou
+  // { refusal: { status, key } } si le propriétaire ne peut plus en avoir.
   async function create(user, list, { durationHours, protect }) {
     const password = protect ? generateSharePassword() : null;
     const passwordHash = password ? await hashPassword(password) : null;
     const token = newShareToken();
     const now = nowIso();
+    let refusal = null;
     const share = db.transaction(() => {
+      // Relu APRÈS le calcul du mot de passe (qui laisse la main) : l'Admin
+      // a pu entre-temps faire de lui un invité, lui retirer les Listes ou
+      // désactiver son compte (server/features.js)
+      refusal = ctx.features?.publicLinkRefusal(user.id, 'lists') ?? null;
+      if (refusal) return null;
       const old = q.openShare.get(list.id);
       if (old && !isExpired(old)) return null; // un lien est déjà actif
       if (old) q.revoke.run(now, old.id);
@@ -155,6 +164,7 @@ export function createShareService(ctx) {
         expiresIn(durationHours), user.id, now);
       return db.prepare('SELECT * FROM public_shares WHERE id = ?').get(lastInsertRowid);
     })();
+    if (refusal) return { refusal };
     if (!share) return null;
     listChanged(list.id); // après l'écriture
     return { share, password };
@@ -222,10 +232,14 @@ export function createShareService(ctx) {
 
   // Le lien valable correspondant à ce jeton, ou null. Contrôle complet à
   // chaque appel : forme du jeton, arrêt, expiration (horloge du serveur),
-  // liste supprimée, propriétaire désactivé.
+  // liste supprimée, propriétaire désactivé, devenu invité ou sans Listes
+  // (server/features.js, une lecture de sa ligne) : la même réponse qu'un
+  // lien inconnu, sans jamais dire pourquoi.
   function validShare(token) {
     if (typeof token !== 'string' || !TOKEN_PATTERN.test(token)) return null;
-    return q.validByHash.get({ hash: hashToken(token), now: nowIso() }) ?? null;
+    const share = q.validByHash.get({ hash: hashToken(token), now: nowIso() }) ?? null;
+    if (share && ctx.features?.publicLinkRefusal(share.created_by, 'lists')) return null;
+    return share;
   }
 
   // --- Nettoyage ---

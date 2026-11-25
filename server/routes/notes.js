@@ -89,6 +89,9 @@ export function noteRoutes(ctx) {
         durationHours: durationHours === undefined ? DEFAULT_DURATION_HOURS : durationHours,
         protect: body.protect === true,
       });
+      // Propriétaire devenu invité, sans Notes ou désactivé pendant le
+      // calcul du mot de passe : la réponse des contrôles habituels
+      if (created?.refusal) return res.status(created.refusal.status).json({ error: req.t(created.refusal.key) });
       if (!created) return res.status(409).json({ error: req.t('liens.dejaActifNote') });
       notes().touchForOwner(req.note); // icône « lien » de la carte
       audit('note_link_created', { ...who(req, created.share), duration: created.share.expires_at ? `${durationHours ?? DEFAULT_DURATION_HOURS} h` : 'unlimited', password_protected: created.password !== null });

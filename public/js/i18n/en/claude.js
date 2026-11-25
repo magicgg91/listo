@@ -10,14 +10,14 @@ export default {
   'claude.application.fourni': 'name published by the app\'s website',
   'claude.local': 'an app on this computer (localhost)',
   'claude.chargement': 'Loading…',
-  'claude.toutesMesListes': 'All my lists and notes',
+  'claude.toutesMesListes': 'All my lists, notes and projects',
 
   // Assistants IA : en-tête et adresse
   'claude.connexions.titreLocal': '{host} (this computer)',
   'claude.connexions.copiee': 'Address copied',
   'claude.connexions.copieImpossible': 'Can\'t copy: select the address and copy it yourself.',
   'claude.connexions.titre': 'AI assistants',
-  'claude.connexions.intro': 'An AI assistant (for example Claude: claude.ai, the mobile app, Claude Desktop, Claude Code) can read your lists and, if you gave it “Read and write”, add items, check them and edit them (name, quantity, note, priority, due date), on behalf of your account. With “All my lists and notes”, it can also read your notes and, with “Read and write”, create notes, add to them, set their labels or move them to the trash. Every connection you have authorized shows up here.',
+  'claude.connexions.intro': 'An AI assistant (for example Claude: claude.ai, the mobile app, Claude Desktop, Claude Code) can read your lists and, if you gave it “Read and write”, add items, check them and edit them (name, quantity, note, priority, due date), on behalf of your account. With “All my lists, notes and projects”, it can also read your notes and projects and, with “Read and write”, create notes, add to them, set their labels or move them to the trash, and, in your projects, with your role in each one, create or edit columns, labels, cards and comments. Every connection you have authorized shows up here.',
   'claude.connexions.adresse': 'Address to enter in your AI assistant',
   'claude.connexions.adresse.detail': 'Add it as a custom connector (or MCP server) in your AI assistant:',
   'claude.connexions.copier': 'Copy address',
@@ -34,7 +34,7 @@ export default {
   'claude.connexions.aucune': 'No connections',
   'claude.connexions.aucune.texte': 'Add Listo in your AI assistant with the address above, then authorize it.',
   'claude.connexions.deconnecter.question': 'Disconnect {name}?',
-  'claude.connexions.deconnecter.texte': 'The AI assistant will no longer be able to read or change your lists and notes through this connection. To reconnect it, you\'ll have to authorize it again.',
+  'claude.connexions.deconnecter.texte': 'The AI assistant will no longer be able to read or change your lists, notes and projects through this connection. To reconnect it, you\'ll have to authorize it again.',
   'claude.connexions.deconnecter': 'Disconnect',
   'claude.connexions.deconnectee': 'Disconnected',
   'claude.connexions.tout.question': 'Disconnect all?',
@@ -53,9 +53,9 @@ export default {
   'claude.connexions.deconnecter.nom': 'Disconnect {name}',
 
   // Autoriser un assistant IA : niveaux d'accord
-  'claude.autoriser.lecture.texte': 'The AI assistant will be able to read your lists (and your notes, with “All my lists and notes”), without changing anything.',
-  'claude.autoriser.ecriture.texte': 'The AI assistant will be able to read your lists, add items, check them and edit their items (name, quantity, note, priority, due date, repeat). With “All my lists and notes”, it will also be able to read your notes, create notes, add to them or replace their text, set their labels and move them to the trash. It can never delete an item or a list, delete a note for good, or share anything.',
-  'claude.autoriser.ecriture.avertissement': 'A shared list or note can contain booby-trapped text, written to trick the AI assistant into changing your items or notes. That\'s why this level requires more trust: choose it only if you need it.',
+  'claude.autoriser.lecture.texte': 'The AI assistant will be able to read your lists (and your notes and projects, with “All my lists, notes and projects”), without changing anything.',
+  'claude.autoriser.ecriture.texte': 'The AI assistant will be able to read your lists, add items, check them and edit their items (name, quantity, note, priority, due date, repeat). With “All my lists, notes and projects”, it will also be able to read your notes, create notes, add to them or replace their text, set their labels and move them to the trash; and, in your projects, with your role in each one, create projects, columns, labels, cards and comments, edit them, move cards, and move cards or a project to the trash. It can never delete an item or a list, delete a note, a card or a project for good, or share anything.',
+  'claude.autoriser.ecriture.avertissement': 'A shared list, note or project can contain booby-trapped text, written to trick the AI assistant into changing your items, notes or cards. That\'s why this level requires more trust: choose it only if you need it.',
 
   // Autoriser un assistant IA : titre et demande introuvable
   'claude.autoriser.titre': 'Authorize an AI assistant',
@@ -66,7 +66,7 @@ export default {
   // Autoriser un assistant IA : confirmation chez le fournisseur d'identité
   'claude.autoriser.fournisseur.echec': '{provider} didn\'t ask you to sign in again: the confirmation didn\'t go through. Try again.',
   'claude.autoriser.refuser': 'Deny',
-  'claude.autoriser.intro': 'An AI assistant is asking for access to your Listo lists and notes. It will act with your account and your permissions, never more.',
+  'claude.autoriser.intro': 'An AI assistant is asking for access to your Listo lists, notes and projects. It will act with your account and your permissions, never more.',
   'claude.autoriser.attention': 'Only continue if you just started the connection from your AI assistant.',
   'claude.autoriser.nomSeul': '“{name}”',
   'claude.autoriser.application': 'App requesting access',

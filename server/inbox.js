@@ -368,7 +368,8 @@ export function createInbox(ctx) {
   // Cible d'une ligne, revérifiée avec les droits du moment. Renvoie
   // { target, note, hidden } : target null si elle n'est plus disponible ;
   // hidden : ligne d'une liste d'envies dont la personne est le
-  // bénéficiaire (filet de sécurité : jamais montrée)
+  // bénéficiaire (filet de sécurité : jamais montrée), ou ligne d'un projet
+  // ou d'une carte quand la personne a coupé les projets (sauf « Partage »)
   function resolve(user, row) {
     const id = row.target_id;
     switch (row.target_type) {
@@ -392,12 +393,15 @@ export function createInbox(ctx) {
         const project = visibleProject(user, id);
         if (!project) return { target: null };
         const off = q.projectsOn.get(user.id) !== 1;
-        // Projets coupés : seule la ligne « Partage » ouvre quelque chose
-        // (Réglages › Fonctions, pour les allumer)
-        if (off) return { target: row.category === 'sharing' ? { type: 'features' } : null, project, projectsOff: true };
+        // Projets coupés : rien n'est envoyé (ni titre ni nom), sauf la
+        // ligne « Partage », qui ouvre Réglages › Fonctions pour les allumer
+        if (off && row.category !== 'sharing') return { hidden: true };
+        if (off) return { target: { type: 'features' }, project, projectsOff: true };
         return { target: { type: 'project', projectId: project.id }, project };
       }
       case 'card': {
+        // Projets coupés : la ligne d'une carte n'est pas envoyée du tout
+        if (q.projectsOn.get(user.id) !== 1) return { hidden: true };
         const card = id ? q.card.get(id) : null;
         const project = card && !card.deleted_at ? visibleProject(user, card.project_id) : null;
         if (!project) return { target: null };
@@ -408,7 +412,6 @@ export function createInbox(ctx) {
           params = {};
         }
         const column = typeof params.column === 'string' ? q.column.get(params.column, project.id) ?? null : null;
-        if (q.projectsOn.get(user.id) !== 1) return { target: null, project, card, column, projectsOff: true };
         return { target: { type: 'card', projectId: project.id, cardId: card.id }, project, card, column };
       }
       default: return { target: null };

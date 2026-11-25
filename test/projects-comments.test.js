@@ -247,6 +247,16 @@ test('limites : 500 commentaires par carte ; 120 commentaires par heure et par c
   }
   const late = await h.people.zoe.client.post('/api/ops', { ops: [{ id: uuid(), type: 'comment.create', cardId: other, commentId: uuid(), text: 'trop' }] });
   assert.equal(late.status, 429);
+  // Un lot refusé n'use aucun autre plafond : renvoyé 25 fois (création de
+  // projet + commentaire), il ne consomme pas les 20 créations de l'heure
+  for (let i = 0; i < 25; i += 1) {
+    const mixed = await h.people.zoe.client.post('/api/ops', { ops: [
+      { id: uuid(), type: 'project.create', projectId: uuid(), name: 'Essai' },
+      { id: uuid(), type: 'comment.create', cardId: other, commentId: uuid(), text: 'trop' },
+    ] });
+    assert.equal(mixed.status, 429);
+  }
+  assert.equal((await h.one('zoe', { type: 'project.create', projectId: uuid(), name: 'Seul' })).status, 200);
 });
 
 // --- Suivre ---
@@ -433,6 +443,16 @@ test('partage : remis même projets coupés, avec l\'invitation à les allumer (
   await h.tick();
   assert.equal((await h.inbox('paul', { all: true })).length, 1);
   assert.equal(h.pushes('paul').length, 1);
+  // Des lignes reçues avant de couper les projets ne sont plus envoyées du
+  // tout (ni titre de carte ni nom de projet) : seule la ligne « Partage » reste
+  await h.card(p, 'lea', { assignees: ['hugo'] });
+  await h.tick();
+  assert.ok((await h.inbox('hugo')).some((r) => ['card', 'project'].includes(r.targetType)), 'Hugo a des lignes de carte');
+  h.app.db.prepare('UPDATE users SET projects_enabled = 0 WHERE id = ?').run(h.people.hugo.id);
+  const hidden = (await h.people.hugo.client.get('/api/inbox')).body.rows;
+  assert.deepEqual(hidden.map((r) => [r.category, r.target]), [['sharing', { type: 'features' }]]);
+  assert.ok(!JSON.stringify(hidden).includes(TITLE), 'jamais le titre d\'une carte');
+  h.app.db.prepare('UPDATE users SET projects_enabled = 1 WHERE id = ?').run(h.people.hugo.id);
   // Rallumés : la ligne ouvre le projet
   h.app.db.prepare('UPDATE users SET projects_enabled = 1 WHERE id = ?').run(h.people.paul.id);
   assert.deepEqual((await h.inbox('paul', { all: true })).at(-1).target, { type: 'project', projectId: p.projectId });

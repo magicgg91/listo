@@ -5,7 +5,7 @@
    suivent le thème.
 
    16.48 Mention « Discret » · 16.49 Page d'un compte (Administration) ·
-   16.50 Administration sur ordinateur */
+   16.50 Administration sur ordinateur · 16.51 Invitation de l'Accueil */
 
 /* 16.48 Mention « Discret » (cadrage section 5 ; décision du propriétaire
    du 25 novembre 2026 : un compte au rôle « Invité » est toujours discret) :
@@ -62,5 +62,14 @@
 .acct-split__page .acct-card, .acct-split__page .acct-sees, .acct-split__page .acct-field { margin-left: 0; margin-right: 0; }
 .acct-split__page .acct-card { margin-top: 0; }
 .acct-split__page .group { margin: 0; }
-.acct-split__page .group-after { margin-left: 0; margin-right: 0; }
+.acct-split__page .group-after, .acct-split__page .page-intro { margin-left: 0; margin-right: 0; }
 .acct-split__cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+
+/* 16.51 Invitation de l'Accueil (cadrage 4.4) : quand aucune fonction
+   n'est allumée (un invité à sa première connexion), une carte sur toute la
+   largeur de la grille des tuiles : icône, titre, une phrase, et le bouton
+   qui ouvre Réglages › Fonctions. Rien d'autre à faire sur l'Accueil. */
+.home-hint { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-2); }
+.home-hint__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.home-hint__title { margin: 4px 0 0; font-size: var(--text-lg); font-weight: 700; }
+.home-hint__text { margin: 0 0 var(--space-1); color: var(--color-text-2); line-height: var(--lh-base); }

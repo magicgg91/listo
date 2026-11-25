@@ -11,7 +11,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 // Playwright préinstallé (hors du projet) : chargé par require
 const { chromium } = createRequire(import.meta.url)('playwright');
 const SHOTS = [
-  ['reference-telephone.html', ['admin-comptes-1', 'admin-compte-1', 'admin-compte-2', 'nouveau-compte-1', 'invite-accueil-1', 'invite-projets-1', 'invite-reglages-1', 'partage-admin-1', 'partage-famille-1'], { width: 390, height: 844 }],
+  ['reference-telephone.html', ['admin-comptes-1', 'admin-compte-1', 'admin-compte-2', 'nouveau-compte-1', 'invite-accueil-vide-1', 'invite-fonctions-1', 'invite-accueil-1', 'invite-projets-1', 'invite-reglages-1', 'partage-admin-1', 'partage-famille-1'], { width: 390, height: 844 }],
   ['reference-ordinateur.html', ['pc-invite-1', 'pc-admin-comptes-1'], { width: 1440, height: 900 }],
 ];
 const THEMES = [['light', 'clair'], ['dark', 'sombre']];

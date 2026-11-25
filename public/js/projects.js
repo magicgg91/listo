@@ -24,6 +24,8 @@
 //   toute la colonne est renumérotée.
 
 import { LABEL_COLORS, labelKey } from './labels.js';
+import { safeLink } from './note-format.js';
+import { isDueTime, isReminder } from './due-time.js';
 
 // --- Limites (cadrage, sections 5.1, 10 et 13, validées le 25 novembre 2026) ---
 export const PROJECT_NAME_MAX = 80;
@@ -40,6 +42,12 @@ export const ASSIGNEES_MAX = 10;          // personnes attribuées à une carte
 export const PROJECT_TRASH_DAYS = 30;     // projets et cartes supprimés, ensuite effacés
 export const CARD_HISTORY_MAX = 300;      // lignes d'historique gardées par carte
 export const PROJECT_CREATIONS_PER_HOUR = 20; // créations et duplications, par compte
+// Détails d'une carte (étape 2, migration 44)
+export const CARD_DESCRIPTION_MAX = 20000;
+export const LINKS_PER_CARD_MAX = 20;
+export const LINK_TITLE_MAX = 100;
+export const LINK_URL_MAX = 500;
+export const TASK_TEXT_MAX = 200;         // texte d'une case gardé dans l'historique
 
 // --- Rôles ---
 
@@ -79,8 +87,8 @@ export function projectRights(role) {
 }
 
 // Ce que le compte me peut faire sur CETTE carte, selon son rôle (6) :
-// - edit : titre, étiquettes posées (et, à l'étape 2, description, cases,
-//   échéance, « Fait », priorité, liens) ;
+// - edit : titre, étiquettes posées, description, cases, échéance,
+//   « Fait », priorité, liens (étape 2) ;
 // - move : déplacer, ordonner ;
 // - assign : attribuer ou retirer n'importe quelle personne permise ;
 // - unassignSelf : seulement se retirer soi-même des personnes ;
@@ -195,6 +203,67 @@ export function cleanAssigneeIds(value) {
   if (!Array.isArray(value) || !value.every((id) => Number.isSafeInteger(id) && id > 0)) return null;
   const ids = [...new Set(value)];
   return ids.length > ASSIGNEES_MAX ? null : ids;
+}
+
+// --- Détails d'une carte (étape 2 : sections 5.1 à 5.5) ---
+
+// Priorité d'une carte (option « Priorité » du projet, coupée au départ) :
+// basse, normale (par défaut), élevée, comme les tâches
+export const CARD_PRIORITIES = ['low', 'normal', 'high'];
+export const isCardPriority = (value) => CARD_PRIORITIES.includes(value);
+
+// Vraie date AAAA-MM-JJ (pas de 30 février), du 1er janvier 2000 au
+// 31 décembre 2100 (même règle que les tâches, server/lists.js)
+export function isCardDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (value < '2000-01-01' || value > '2100-12-31') return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+// Échéance demandée pour une carte : null (retirée), ou { date, time,
+// remindBefore } (heure « HH:MM » facultative ; rappel facultatif, parmi
+// 0, 15, 30, 60, 120 ou 1 440 minutes avant, seulement avec une heure).
+// undefined si elle n'est pas valable.
+export function cleanCardDue(value) {
+  if (value === null) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value) || !isCardDate(value.date)) return undefined;
+  const time = value.time ?? null;
+  const remindBefore = value.remindBefore ?? null;
+  if (time !== null && !isDueTime(time)) return undefined;
+  if (remindBefore !== null && (time === null || !isReminder(remindBefore))) return undefined;
+  return { date: value.date, time, remindBefore };
+}
+
+// Une carte faite ? La case « Fait » de l'échéance est la SEULE marque de
+// « fait » (5.3) : une carte sans échéance n'est jamais faite
+export const cardDone = (card) => Boolean(card?.dueDate) && card.done === true;
+
+// Adresse d'un lien de carte : http ou https seulement (jamais
+// javascript:, data:, file:…), avec un nom de site, sans identifiant ni
+// mot de passe, 500 caractères au plus, sans espace ni caractère de
+// contrôle. Renvoie l'adresse telle qu'elle est gardée, ou null.
+export function cleanLinkUrl(value) {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw || raw.length > LINK_URL_MAX || /[\s\p{Cc}]/u.test(raw) || !/^https?:\/\//i.test(raw)) return null;
+  const href = safeLink(raw);
+  return href && href.length <= LINK_URL_MAX ? href : null;
+}
+// Titre d'un lien : facultatif ('' : l'adresse est montrée), une ligne,
+// 100 caractères au plus ; null s'il n'est pas valable
+export function cleanLinkTitle(value) {
+  if (value === undefined || value === null || (typeof value === 'string' && !value.trim())) return '';
+  return cleanName(value, LINK_TITLE_MAX);
+}
+
+// Description : un texte simple (marques des notes), 20 000 caractères au
+// plus ; null s'il n'est pas valable
+export function cleanDescription(value) {
+  if (typeof value !== 'string') return null;
+  const text = value.normalize('NFC');
+  return text.length > CARD_DESCRIPTION_MAX ? null : text;
 }
 
 // --- Ordre (colonnes dans un projet, cartes dans une colonne) ---

@@ -143,8 +143,8 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
 
 test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; une base en version 40 migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 43);
-  assert.equal(schemaVersion(db), 43);
+  assert.equal(MIGRATIONS.length, 44);
+  assert.equal(schemaVersion(db), 44);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT notes_enabled FROM users WHERE id = ?').pluck().get(id), 1);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), defaultFeatures());
@@ -159,7 +159,7 @@ test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; un
   old.prepare("INSERT INTO users (username, display_name, password_hash, role, home_enabled, home_start) VALUES ('paul', 'Paul', 'x', 'user', 0, 'notes')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 43);
+  assert.equal(schemaVersion(migrated), 44);
   const paul = migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get();
   assert.equal(paul.notes_enabled, 1);
   assert.equal(paul.home_enabled, 0);

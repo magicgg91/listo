@@ -30,6 +30,7 @@ const TABLES = [
   'labels', 'note_labels', // étiquettes des notes (migration 42)
   // projets (migration 43)
   'projects', 'project_members', 'project_columns', 'project_labels', 'cards', 'card_labels', 'card_assignees', 'card_events', 'project_user_state',
+  'card_links', 'card_reminders', // détails des cartes (migration 44)
 ];
 
 // Base en mémoire avec un compte et une liste, pour les tests
@@ -40,7 +41,7 @@ function sampleDb() {
   return db;
 }
 
-test('les quarante-six tables du cahier des charges sont créées (plus de catégories : migration 32 ; page Notifications : migration 38 ; « À offrir » : migration 39 ; étiquettes : migration 42 ; projets : migration 43)', () => {
+test('les quarante-huit tables du cahier des charges sont créées (plus de catégories : migration 32 ; page Notifications : migration 38 ; « À offrir » : migration 39 ; étiquettes : migration 42 ; projets : migrations 43 et 44)', () => {
   const db = openDatabase(':memory:');
   // (sqlite_sequence : table interne de SQLite, qui retient le dernier numéro
   // du journal des nouveautés, AUTOINCREMENT)

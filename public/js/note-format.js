@@ -688,3 +688,39 @@ export function toggleTask(text, lineStart) {
   const at = line.start + 3;
   return source.slice(0, at) + (source[at] === ' ' ? 'x' : ' ') + source.slice(at + 1);
 }
+
+// --- Cases à cocher comme liste de tâches (description d'une carte de
+// projet, docs/cadrage-projets.md, 5.1 et 11.3) ---
+
+// Les cases du texte, dans l'ordre : { index (0, 1, 2…), start (début de
+// leur ligne), text (le texte de la case, sans les marques), checked }
+export function taskLines(source) {
+  return parseNoteText(source)
+    .filter((line) => line.kind === 'task')
+    .map((line, index) => ({ index, start: line.start, text: flat(line.parts), checked: line.checked }));
+}
+
+// « x/y » : cases cochées et nombre de cases ({ done, total })
+export function taskCount(source) {
+  const tasks = taskLines(source);
+  return { done: tasks.filter((task) => task.checked).length, total: tasks.length };
+}
+
+// Coche (checked vrai) ou décoche UNE case, désignée par son numéro et son
+// texte : sur le texte actuel, la case de ce numéro si son texte est
+// toujours le même, sinon la seule case qui porte ce texte (une ligne
+// ajoutée au-dessus entre-temps). Renvoie le nouveau texte (inchangé si la
+// case est déjà dans cet état), ou null si la case n'est plus là (rien
+// n'est écrasé). Deux personnes qui cochent deux cases différentes en même
+// temps ne se gênent pas : chacune ne touche que la sienne.
+export function setTaskAt(source, index, text, checked) {
+  const tasks = taskLines(source);
+  let task = tasks[index];
+  if (!task || task.text !== text) {
+    const same = tasks.filter((t) => t.text === text);
+    task = same.length === 1 ? same[0] : null;
+  }
+  if (!task) return null;
+  if (task.checked === checked) return String(source ?? '');
+  return toggleTask(source, task.start);
+}

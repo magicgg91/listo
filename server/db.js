@@ -1039,6 +1039,54 @@ export const MIGRATIONS = [
   );
   CREATE INDEX project_user_state_user ON project_user_state(user_id);
   `,
+
+  // --- Migration 44 : projets, détails de la carte (25 novembre 2026,
+  // docs/cadrage-projets.md, étape 2) ---
+  // cards : description (marques des notes, 20 000 caractères au plus) et
+  // son numéro de version (jamais d'écrasement : comme une note), qui l'a
+  // écrite et quand (choix « Garder les deux ») ; priorité (basse, normale,
+  // élevée : montrée seulement quand l'option du projet est allumée) ;
+  // échéance (date, heure et rappel facultatifs) et case « Fait » (la seule
+  // marque de « fait », avec la date du coché). Une carte sans échéance
+  // n'est jamais faite.
+  // card_links : les liens d'une carte (titre facultatif, adresse http ou
+  // https vérifiée par le serveur, jamais appelée par lui).
+  // card_reminders : rappel d'une carte déjà remis à une personne, pour
+  // cette signature (date + heure + délai) : jamais deux fois (comme
+  // push_reminders pour les tâches).
+  // (card_assignees existe depuis la migration 43.)
+  `
+  ALTER TABLE cards ADD COLUMN description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 20000);
+  ALTER TABLE cards ADD COLUMN description_version INTEGER NOT NULL DEFAULT 1 CHECK (description_version >= 1);
+  ALTER TABLE cards ADD COLUMN description_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+  ALTER TABLE cards ADD COLUMN description_at TEXT;
+  ALTER TABLE cards ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high'));
+  ALTER TABLE cards ADD COLUMN due_date TEXT CHECK (due_date IS NULL OR length(due_date) = 10);
+  ALTER TABLE cards ADD COLUMN due_time TEXT CHECK (due_time IS NULL OR (due_date IS NOT NULL AND length(due_time) = 5));
+  ALTER TABLE cards ADD COLUMN remind_before INTEGER CHECK (remind_before IS NULL OR (due_time IS NOT NULL AND remind_before IN (0, 15, 30, 60, 120, 1440)));
+  ALTER TABLE cards ADD COLUMN due_done INTEGER NOT NULL DEFAULT 0 CHECK (due_done IN (0, 1) AND (due_done = 0 OR due_date IS NOT NULL));
+  ALTER TABLE cards ADD COLUMN due_done_at TEXT;
+  CREATE INDEX cards_due ON cards(due_date) WHERE due_date IS NOT NULL;
+
+  CREATE TABLE card_links (
+    id         TEXT    PRIMARY KEY,
+    card_id    TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    title      TEXT    NOT NULL DEFAULT '' CHECK (length(title) <= 100),
+    url        TEXT    NOT NULL CHECK (length(url) BETWEEN 8 AND 500 AND (url LIKE 'http://%' OR url LIKE 'https://%')),
+    position   INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT    NOT NULL
+  );
+  CREATE INDEX card_links_card ON card_links(card_id, position);
+
+  CREATE TABLE card_reminders (
+    card_id   TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    signature TEXT    NOT NULL CHECK (length(signature) <= 40),
+    sent_at   TEXT    NOT NULL,
+    PRIMARY KEY (card_id, user_id)
+  );
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

@@ -131,7 +131,8 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
   assert.deepEqual(tilesFor(home, OFF), ['lists', 'account', 'deadlines', 'gifts']);
   assert.deepEqual(shownTiles(home, OFF), ['lists', 'account', 'deadlines']);
   assert.deepEqual(shownTiles(home, null), ['notes', 'lists', 'account', 'deadlines']);
-  assert.deepEqual(shownTiles(null, OFF), HOME_TILES.filter((name) => name !== 'notes'));
+  // (« Projets » : coupés au départ et dans OFF, leur tuile non plus)
+  assert.deepEqual(shownTiles(null, OFF), HOME_TILES.filter((name) => name !== 'notes' && name !== 'projects'));
   // Réordonner sans la tuile Notes : elle garde sa place dans l'ordre complet
   assert.deepEqual(mergeTileOrder(['deadlines', 'lists', 'gifts', 'notes', 'account'], ['deadlines', 'lists', 'account', 'gifts']), ['deadlines', 'lists', 'account', 'notes', 'gifts']);
   assert.deepEqual(mergeTileOrder(['notes', 'deadlines', 'lists', 'gifts', 'account'], ['account', 'deadlines', 'lists', 'gifts']), ['notes', 'account', 'deadlines', 'lists', 'gifts']);
@@ -419,9 +420,12 @@ test('adresses des notes : menées au premier écran quand les notes sont coupé
 test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles sont coupées', () => {
   assert.match(code('public/js/screens/home.js'), /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map/);
   const side = code('public/js/screens/pc-side.js');
-  assert.match(side, /const notesUsed = notesOn\(app\.data\.features\);\s*notesLink\.hidden = !notesUsed;\s*newList\.hidden = notesUsed && NOTE_SCREENS\.includes\(selected\.name\);\s*newNote\.hidden = !newList\.hidden;/);
+  // (« Nouvelle liste » et « Nouvelle note » laissent la place à « Nouveau
+  // projet » ou « Nouvelle carte » sur les écrans des projets, 25 novembre 2026)
+  assert.match(side, /const notesUsed = notesOn\(app\.data\.features\);\s*notesLink\.hidden = !notesUsed;/);
+  assert.match(side, /newList\.hidden = onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
   const shortcuts = code('public/js/shortcuts.js');
-  assert.match(shortcuts, /n: \(\) => \(notesShown\(\) && location\.hash\.startsWith\('#\/notes'\) \?/);
+  assert.match(shortcuts, /if \(notesShown\(\) && location\.hash\.startsWith\('#\/notes'\)\) navigate\('newNote'/);
   assert.match(shortcuts, /\[\['N'\], t\(notesShown\(\) \? 'raccourcis\.partout\.nouvelleListe' : 'navigation\.nouvelleListe'\)\]/);
   assert.match(code('public/js/app.js'), /notesOn: \(\) => notesOn\(app\.data\.features\),/);
   // La recherche du menu de gauche ne cherche que des listes

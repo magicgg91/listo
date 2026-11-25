@@ -19,7 +19,9 @@
 //   340 px) : une tuile restée seule sur sa ligne prend toute la largeur
 //   (tileLayout), jamais de trou ; trois sur ordinateur (quatre au-delà de
 //   1 440 px), où « toute la largeur » n'a pas d'effet. Notes coupées
-//   (Réglages › Fonctions, features.js) : pas de tuile Notes.
+//   (Réglages › Fonctions, features.js) : pas de tuile Notes. « Projets »
+//   (docs/cadrage-projets.md, 3.3) : seulement quand la personne a allumé
+//   la fonction ; en dernier, sur toute la largeur.
 // - Accueil coupé dans les Réglages : cet écran mène tout de suite au
 //   premier écran choisi (app.js le fait aussi pour #/accueil).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
@@ -45,6 +47,8 @@ import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from 
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
+import { projectsInOrder, openNewProject } from './projects.js';
+import { cardCount, projectUnread } from '../project-view.js';
 import { isNoteUnread } from '../store.js';
 import { computeGifts, recentGifts } from '../gifts.js';
 import { openGift, forLabel } from './gifts.js';
@@ -198,6 +202,36 @@ function giftsTile() {
   { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null });
 }
 
+// Projets (étape 1 du cadrage des projets : les projets récents ; « mes
+// cartes », les plus urgentes, viendront avec les personnes attribuées et
+// les échéances, étape 2) : le nombre de projets dans la pastille du titre
+// (« Projets, 4 projets » au lecteur d'écran), les trois derniers modifiés
+// (nom, et dessous le nombre de cartes ; point des nouveautés), chacun
+// ouvre son projet ; aucun projet : « Aucun projet » et « Nouveau projet ».
+// Le titre ouvre l'écran « Projets ».
+function projectsTile() {
+  const projects = projectsInOrder();
+  const open = () => navigate('projects');
+  if (!projects.length) {
+    return tile(t('accueil.projets'), 'kanban', open,
+      [emptyText(t('accueil.projets.aucun')), rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())])]);
+  }
+  return tile(t('accueil.projets'), 'kanban', open, rowsOf(projects.slice(0, 3).map((project) => {
+    const news = projectUnread(app.data, project.id);
+    const cards = t('accueil.projets.cartes', { count: cardCount(app.data, project.id) });
+    return h('button', {
+      class: 'tile__row tile__row--two', type: 'button',
+      'aria-label': news ? t('accueil.projets.ligne.nouveautes', { name: project.name, cards }) : null,
+      onClick: () => navigate('project', { id: project.id }),
+    },
+    h('span', { class: 'tile__label' },
+      h('span', { class: 'tile__strong' }, project.name),
+      h('span', { class: 'tile__sub' }, cards)),
+    news ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+    icon('chev-r', 'icon--sm'));
+  })), { spoken: t('accueil.projets.lu', { count: projects.length }), count: projects.length });
+}
+
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans
 // son nombre : il n'est que sur la cloche), « Réglages » ; pour
 // l'Admin, « Demandes de compte » quand il y en a en attente (connexion avec
@@ -255,7 +289,7 @@ export function renderHome(onLeave) {
     // seulement si j'ai des réservations ; pas de tuile d'une fonction
     // coupée (Notes) ; une tuile seule sur sa ligne du téléphone prend
     // toute la largeur
-    const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile };
+    const build = { deadlines: deadlinesTile, lists: () => listsTile(pc), gifts: giftsTile, notes: () => notesTile(pc), account: accountTile, projects: projectsTile };
     const present = shownTiles(app.data.home, app.data.features).map((name) => [name, build[name]()]).filter(([, el]) => el);
     const layout = tileLayout(present.map(([name]) => name));
     present.forEach(([, el], i) => el.classList.toggle('tile--wide', layout[i].wide));

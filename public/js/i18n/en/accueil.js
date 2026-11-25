@@ -37,4 +37,11 @@ export default {
     one: 'Account requests, {count} pending',
     other: 'Account requests, {count} pending',
   },
+  // “Projects” tile
+  'accueil.projets': 'Projects',
+  'accueil.projets.lu': { one: 'Projects, {count} project', other: 'Projects, {count} projects' },
+  'accueil.projets.aucun': 'No projects',
+  'accueil.projets.nouveau': 'New project',
+  'accueil.projets.cartes': { one: '{count} card', other: '{count} cards' },
+  'accueil.projets.ligne.nouveautes': '{name}, {cards}, new activity',
 };

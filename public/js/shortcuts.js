@@ -4,6 +4,9 @@
 //   ?  fenêtre des raccourcis      N  nouvelle liste      /  rechercher
 //   ,  Réglages                    [ ]  liste précédente, suivante
 //   P  partager la liste           A  ajouter un article  S  sommaire de l'aide
+//   Projet ouvert (docs/cadrage-projets.md, 14) : N nouvelle carte, P
+//   partager, flèches d'une carte à l'autre, Entrée ouvrir, M « Déplacer
+//   vers… » (screens/project.js et project-card.js)
 //   ↓ ↑  article suivant, précédent    Espace  cocher ou décocher
 //   Entrée  ouvrir la fiche        E  modifier            Suppr  supprimer (annulable)
 //   Échap  fermer, effacer la recherche (géré par chaque fenêtre et chaque champ) ;
@@ -66,6 +69,9 @@ export function keycap(label) {
 // Notes utilisées par la personne ? (Réglages › Fonctions ; donné par
 // app.js à startShortcuts) : coupées, N ne mène qu'à « Nouvelle liste »
 let notesShown = () => true;
+// Projets utilisés ? (coupés au départ) : sinon, pas de groupe « Projet »
+// dans la fenêtre des raccourcis
+let projectsShown = () => false;
 
 // Liste des raccourcis (fenêtre « ? », aide), lue à l'ouverture (dans la
 // langue choisie)
@@ -91,10 +97,18 @@ export function shortcuts() {
       [[t('raccourcis.touche.suppr')], t('raccourcis.liste.supprimer')],
       [[t('raccourcis.touche.menu')], t('raccourcis.liste.menu')],
     ] },
+    projectsShown() ? { group: t('raccourcis.projet'), keys: [
+      [['N'], t('raccourcis.projet.nouvelleCarte')],
+      [['P'], t('raccourcis.projet.partager')],
+      [['↓', '↑', '←', '→'], t('raccourcis.projet.cartes')],
+      [[t('raccourcis.touche.entree')], t('raccourcis.projet.ouvrir')],
+      [['M'], t('raccourcis.projet.deplacer')],
+      [[t('raccourcis.touche.echap')], t('raccourcis.projet.fermer')],
+    ] } : null,
     { group: t('raccourcis.aide'), keys: [
       [['S'], t('raccourcis.aide.sommaire')],
     ] },
-  ];
+  ].filter(Boolean);
 }
 
 // Fenêtre « Raccourcis clavier »
@@ -217,8 +231,9 @@ let spaceHandled = false;
 // onGoList(delta) : [ et ], liste précédente ou suivante, dans l'ordre du
 // menu de gauche (pc-side.js : le menu ne nomme plus les listes une à une
 // depuis le 23 novembre 2026, il donne donc lui-même cet ordre)
-export function startShortcuts({ onUndo, onGoList, notesOn = () => true }) {
+export function startShortcuts({ onUndo, onGoList, notesOn = () => true, projectsOn = () => false }) {
   notesShown = notesOn;
+  projectsShown = projectsOn;
   paintKeys();
   // Espace sur un bouton « clique » au relâchement : sur une ligne, il coche
   // (voir keydown) et ne doit rien faire de plus au relâchement, quel que
@@ -295,8 +310,19 @@ export function startShortcuts({ onUndo, onGoList, notesOn = () => true }) {
       '?': () => (openShortcuts(), true),
       // N : « Nouvelle liste », ou « Nouvelle note » sur les écrans des notes
       // (le curseur va alors dans le texte : geste fait pour écrire) ;
-      // notes coupées : toujours « Nouvelle liste »
-      n: () => (notesShown() && location.hash.startsWith('#/notes') ? navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) }) : navigate('newList'), true),
+      // notes coupées : toujours « Nouvelle liste ». Écrans des projets : le
+      // bouton du bas du menu de gauche, « Nouveau projet » ou « Nouvelle
+      // carte » (seulement s'il existe pour le rôle)
+      n: () => {
+        const project = $('.pc-side__foot [data-shortcut="n"]:not([hidden])');
+        if (location.hash.startsWith('#/projets') && visible(project)) {
+          project.click();
+          return true;
+        }
+        if (notesShown() && location.hash.startsWith('#/notes')) navigate('newNote', {}, { replace: /^#\/notes\/(?!corbeille)/.test(location.hash) });
+        else navigate('newList');
+        return true;
+      },
       '/': () => focusSearch(),
       ',': () => (navigate('settings'), true),
       '[': () => (onGoList(-1), true),

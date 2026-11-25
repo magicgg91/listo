@@ -24,9 +24,14 @@ import { renderHome } from './screens/home.js';
 import { renderDeadlines } from './screens/deadlines.js';
 import { renderNotes } from './screens/notes.js';
 import { renderNote } from './screens/note.js';
+import { renderProjects } from './screens/projects.js';
+import { renderProject } from './screens/project.js';
+import { renderProjectCard, openProjectCardPanel } from './screens/project-card.js';
+import { renderProjectSettings } from './screens/project-settings.js';
+import { renderProjectTrash } from './screens/project-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { firstScreen, normalizeHome } from './home-tiles.js';
-import { normalizeFeatures, screenAllowed, notesOn } from './features.js';
+import { normalizeFeatures, screenAllowed, notesOn, projectsOn } from './features.js';
 import { askedTrashTab } from './trash-tabs.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
@@ -667,6 +672,8 @@ startShortcuts({
   onGoList: (delta) => pcSide?.goList(delta),
   // Notes coupées (Réglages › Fonctions) : N ne mène jamais à une note
   notesOn: () => notesOn(app.data.features),
+  // Projets coupés (le départ) : pas de groupe « Projet » dans les raccourcis
+  projectsOn: () => projectsOn(app.data.features),
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -702,19 +709,23 @@ function pcSideFor(route) {
 // Affiche un écran. withSide : menu de gauche sur ordinateur (pas sur
 // l'écran de connexion, par exemple). Sur ordinateur, tous les écrans ont
 // la même colonne centrée (.pc-col, 1 040 px au plus ; décision du
-// 24 novembre 2026).
+// 24 novembre 2026), sauf un projet ouvert (board : son identifiant), qui
+// prend toute la largeur (.pc-col--board ; exception validée par le
+// propriétaire le 25 novembre 2026 : les colonnes ont besoin de place).
 // Écran posé (ordinateur) : sert à « Nouvelle liste » et « Modifier la
-// liste », qui s'ouvrent par-dessus l'écran en cours
+// liste », qui s'ouvrent par-dessus l'écran en cours, et à une carte
+// ouverte, par-dessus son projet
 let mountedOnPc = false;
 let mountedListId = null;
-function mount(screen, { withSide = true, listId = null } = {}) {
+let mountedBoard = null;
+function mount(screen, { withSide = true, listId = null, board = null } = {}) {
   // Changement d'écran : aucun champ ne garde le curseur (clavier replié)
   releaseFocus();
   for (const fn of cleanup) fn();
   cleanup = [];
   const pc = Boolean(app.user) && withSide && isDesktop();
   const bar = !pc && Boolean(app.user) && withSide && hasTabs(app.route?.name);
-  const col = h('div', { class: pc ? 'pc-col' : 'shell__col' });
+  const col = h('div', { class: pc ? (board ? 'pc-col pc-col--board' : 'pc-col') : 'shell__col' });
   setOverlayHost(col);
   // Bandeau du bas : sans loupe tant que l'écran n'y branche pas sa recherche
   if (bar) tabBar().loupe.set(null);
@@ -725,6 +736,7 @@ function mount(screen, { withSide = true, listId = null } = {}) {
 
   mountedOnPc = pc;
   mountedListId = listId;
+  mountedBoard = pc ? board : null;
   if (pc) {
     replace(root, h('div', { class: 'pc pc--a' }, skipLink(col), pcSideFor(app.route), h('main', { class: 'pc-main' }, col)));
     screenShown(col);
@@ -859,6 +871,23 @@ function show(route) {
       break;
     }
     case 'list': mount((onLeave) => renderList(params.id, onLeave), { listId: params.id }); break;
+    // Projets (docs/cadrage-projets.md). Ordinateur : le projet sur toute la
+    // largeur ; une carte s'ouvre dans une fenêtre par-dessus son projet
+    // (qui n'est pas redessiné en la fermant)
+    case 'projects': mount((onLeave) => renderProjects(onLeave)); break;
+    case 'project':
+      if (isDesktop() && mountedOnPc && mountedBoard === params.id) pcSide?.select(route);
+      else mount((onLeave) => renderProject(params.id, onLeave), { board: params.id });
+      break;
+    case 'projectCard':
+      if (isDesktop()) {
+        if (!mountedOnPc || mountedBoard !== params.id) mount((onLeave) => renderProject(params.id, onLeave), { board: params.id });
+        else pcSide?.select(route);
+        openProjectCardPanel(params.id, params.cardId);
+      } else mount((onLeave) => renderProjectCard(params.id, params.cardId, onLeave));
+      break;
+    case 'projectSettings': mount((onLeave) => renderProjectSettings(params.id, onLeave)); break;
+    case 'projectTrash': mount((onLeave) => renderProjectTrash(params.id, onLeave)); break;
     // Ordinateur : le formulaire s'ouvre dans une fenêtre centrée, sur
     // l'écran en cours (ou sur « Listes », sur la liste à modifier)
     case 'newList':
@@ -890,12 +919,12 @@ function show(route) {
     case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section)); break;
-    // Corbeille (24 novembre 2026) : une page, onglets « Listes » et
-    // « Notes » (trash-page.js). Onglet inconnu, ou « Notes » quand les
-    // notes sont coupées : la Corbeille sans onglet dans l'adresse
+    // Corbeille (24 novembre 2026) : une page, onglets « Listes »,
+    // « Notes » et « Projets » (trash-page.js). Onglet inconnu, ou d'une
+    // fonction coupée : la Corbeille sans onglet dans l'adresse
     case 'trash': mount((onLeave) => renderTrash(null, onLeave)); break;
     case 'trashTab': {
-      const tab = askedTrashTab(params.tab, notesOn(app.data.features));
+      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features));
       if (tab) mount((onLeave) => renderTrash(tab, onLeave));
       else navigate('trash', {}, { replace: true });
       break;

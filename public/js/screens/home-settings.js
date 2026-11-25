@@ -40,6 +40,7 @@ const TILE_INFO = {
   lists: { iconName: 'tasks', name: () => t('accueil.listes') },
   gifts: { iconName: 'gift', name: () => t('offrir.titre'), sub: () => t('reglages.accueil.offrir.detail') },
   notes: { iconName: 'note', name: () => t('accueil.notes') },
+  projects: { iconName: 'kanban', name: () => t('accueil.projets') },
   account: { iconName: 'user', name: () => t('accueil.compte'), sub: () => t('reglages.accueil.compte.detail') },
 };
 // Premiers écrans possibles : icône et nom (ceux du bandeau du bas)
@@ -47,6 +48,7 @@ const START_INFO = {
   deadlines: { iconName: 'calendar', name: () => t('navigation.echeances') },
   lists: { iconName: 'tasks', name: () => t('navigation.listes') },
   notes: { iconName: 'note', name: () => t('navigation.notes') },
+  projects: { iconName: 'kanban', name: () => t('navigation.projets') },
 };
 
 export function renderHomeSettings(onLeave = () => {}) {

@@ -42,4 +42,14 @@ export default {
   'navigation.nouvelleListe': 'Nouvelle liste',
   'navigation.nouvelleNote': 'Nouvelle note',
   'navigation.role.admin': 'Admin',
+  // Projets (docs/cadrage-projets.md, 3.2 et 3.4)
+  'navigation.projets': 'Projets',
+  'navigation.projets.nombre': { one: 'Projets, {count} projet', other: 'Projets, {count} projets' },
+  'navigation.projets.nombre.nouveautes': { one: 'Projets, {count} projet, nouveautés', other: 'Projets, {count} projets, nouveautés' },
+  'navigation.projets.libelle': 'Mes projets',
+  'navigation.projets.aucun': 'Aucun projet',
+  'navigation.projet.lu': { one: '{name}, {count} carte', other: '{name}, {count} cartes' },
+  'navigation.projet.lu.nouveautes': { one: '{name}, {count} carte, nouveautés', other: '{name}, {count} cartes, nouveautés' },
+  'navigation.nouveauProjet': 'Nouveau projet',
+  'navigation.nouvelleCarte': 'Nouvelle carte',
 };

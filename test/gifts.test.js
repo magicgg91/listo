@@ -348,8 +348,9 @@ test('Accueil : tuile « À offrir » (toute la largeur, après Échéances et L
   assert.match(tile, /const recent = recentGifts\(app\.data, app\.user\.id, 3\);/);
   assert.match(tile, /tile\(t\('offrir\.titre'\), 'gift', \(\) => navigate\('gifts'\)/, 'le titre ouvre la page');
   assert.match(tile, /emptyText\(t\('offrir\.tuile\.toutAchete'\)\)/);
-  // Toujours toute la largeur du téléphone (WIDE_TILES, posé par tileLayout : test/home-tiles.test.js)
-  assert.match(read('public/js/home-tiles.js'), /export const WIDE_TILES = \['gifts'\];/);
+  // Toujours toute la largeur du téléphone (WIDE_TILES, posé par tileLayout :
+  // test/home-tiles.test.js ; « Projets » aussi, depuis le 25 novembre 2026)
+  assert.match(read('public/js/home-tiles.js'), /export const WIDE_TILES = \['gifts', 'projects'\];/);
   assert.match(home, /present\.forEach\(\(\[, el\], i\) => el\.classList\.toggle\('tile--wide', layout\[i\]\.wide\)\);/);
   assert.doesNotMatch(tile, /voirTout|Voir tout/);
   assert.equal(Object.keys(fr).some((k) => /voirTout/i.test(k)), false);

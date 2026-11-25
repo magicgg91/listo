@@ -30,14 +30,23 @@ export const ROUTES = [
   { name: 'oldNoteTrash', path: '/notes/corbeille' },
   { name: 'newNote', path: '/notes/nouvelle' },
   { name: 'note', path: '/notes/:id' },
+  // Projets (docs/cadrage-projets.md, 25 novembre 2026) : l'écran Projets,
+  // un projet, une carte ouverte, les réglages d'un projet et ses cartes
+  // supprimées (fonction « Projets » coupée : app.js mène au premier écran)
+  { name: 'projects', path: '/projets' },
+  { name: 'projectSettings', path: '/projets/:id/reglages' },
+  { name: 'projectTrash', path: '/projets/:id/corbeille' },
+  { name: 'projectCard', path: '/projets/:id/cartes/:cardId' },
+  { name: 'project', path: '/projets/:id' },
   { name: 'settings', path: '/reglages' },
   { name: 'account', path: '/reglages/compte' },
   { name: 'about', path: '/reglages/a-propos' },
   { name: 'password', path: '/reglages/mot-de-passe' },
   { name: 'twoFactor', path: '/reglages/double-authentification' },
-  // Corbeille (24 novembre 2026) : une seule page, onglets « Listes » et
-  // « Notes » (trash-page.js, trash-tabs.js) ; sans onglet dans l'adresse,
-  // l'onglet de départ ; sinon l'onglet choisi (listes ou notes)
+  // Corbeille (24 novembre 2026) : une seule page, onglets « Listes »,
+  // « Notes » et « Projets » (trash-page.js, trash-tabs.js) ; sans onglet
+  // dans l'adresse, l'onglet de départ ; sinon l'onglet choisi (listes,
+  // notes ou projets)
   { name: 'trash', path: '/reglages/corbeille' },
   { name: 'trashTab', path: '/reglages/corbeille/:tab' },
   // Réglages › Notifications (Nouveautés, cet appareil, catégories)

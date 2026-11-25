@@ -39,4 +39,11 @@ export default {
     one: 'Demandes de compte, {count} en attente',
     other: 'Demandes de compte, {count} en attente',
   },
+  // Tuile « Projets » (fonction allumée ; docs/cadrage-projets.md, 3.3)
+  'accueil.projets': 'Projets',
+  'accueil.projets.lu': { one: 'Projets, {count} projet', other: 'Projets, {count} projets' },
+  'accueil.projets.aucun': 'Aucun projet',
+  'accueil.projets.nouveau': 'Nouveau projet',
+  'accueil.projets.cartes': { one: '{count} carte', other: '{count} cartes' },
+  'accueil.projets.ligne.nouveautes': '{name}, {cards}, nouveautés',
 };

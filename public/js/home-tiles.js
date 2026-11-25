@@ -21,14 +21,18 @@
 
 import { screenAllowed } from './features.js';
 
-// Les tuiles, dans leur ordre de départ
-export const HOME_TILES = ['deadlines', 'lists', 'gifts', 'notes', 'account'];
+// Les tuiles, dans leur ordre de départ. « Projets » (docs/cadrage-projets.md,
+// 3.3) est ajoutée en dernier : l'ordre déjà choisi par chacun ne change
+// pas (une tuile connue absente de l'ordre gardé va à la fin).
+export const HOME_TILES = ['deadlines', 'lists', 'gifts', 'notes', 'account', 'projects'];
 // La tuile toujours affichée
 export const ALWAYS_SHOWN = 'account';
-// Tuile qui prend toujours toute la largeur du téléphone (« À offrir »)
-export const WIDE_TILES = ['gifts'];
-// Écrans possibles quand l'Accueil est coupé
-export const START_SCREENS = ['deadlines', 'lists', 'notes'];
+// Tuiles qui prennent toujours toute la largeur du téléphone (« À offrir »,
+// « Projets » : ses lignes ont deux étages)
+export const WIDE_TILES = ['gifts', 'projects'];
+// Écrans possibles quand l'Accueil est coupé (« Projets » seulement quand
+// la fonction est allumée, startScreens)
+export const START_SCREENS = ['deadlines', 'lists', 'notes', 'projects'];
 export const DEFAULT_START = 'lists';
 
 // Réglage de départ (aucun choix fait)
@@ -102,9 +106,11 @@ export function firstScreen(home, features) {
 }
 
 // Boutons du bandeau du bas du téléphone (tabbar.js, même ordre que ses
-// TABS) : les cinq ; sans « Accueil » quand il est coupé, sans « Notes »
-// quand les notes sont coupées (quatre, ou trois)
-export const TAB_SCREENS = ['home', 'deadlines', 'lists', 'notes', 'settings'];
+// TABS) : un par écran allumé, toujours dans cet ordre ; tout allumé, six
+// (« Projets » est coupé au départ : cinq) ; sans « Accueil » quand il est
+// coupé, sans « Notes » ni « Projets » quand la fonction est coupée (cinq,
+// quatre ou trois)
+export const TAB_SCREENS = ['home', 'deadlines', 'lists', 'notes', 'projects', 'settings'];
 export function tabScreens(home, features) {
   const shown = firstScreen(home, features) === 'home';
   return TAB_SCREENS.filter((name) => (shown || name !== 'home') && screenAllowed(name, features));

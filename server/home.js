@@ -45,7 +45,13 @@ export function createHome(db) {
   // checkProject(projectId) : appelée pour « Un projet », une fois la
   // forme vérifiée et avant d'écrire ; elle lève une erreur si la personne
   // ne voit pas ce projet (opération « account.home », server/lists.js).
-  function setHome(userId, change, { checkProject = null } = {}) {
+  function setHome(userId, rawChange, { checkProject = null } = {}) {
+    // Identifiant du projet enregistré en minuscules, comme partout ailleurs
+    // (sinon la tuile ne le reconnaîtrait pas et montrerait « Mes cartes »)
+    const tile = rawChange?.projectsTile;
+    const change = typeof tile?.projectId === 'string'
+      ? { ...rawChange, projectsTile: { ...tile, projectId: tile.projectId.toLowerCase() } }
+      : rawChange;
     const problem = homeChangeProblem(change);
     if (problem) return { problem };
     if (change.projectsTile?.mode === 'project') checkProject?.(change.projectsTile.projectId);

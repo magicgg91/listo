@@ -233,6 +233,10 @@ test('serveur : chacun choisit pour lui ; « Un projet » seulement pour un proj
   assert.deepEqual((await h.sync('guillaume')).home.projectsTile, { mode: 'projects', projectId: null });
   assert.deepEqual(await h.run('guillaume', { type: 'account.home', projectsTile: { mode: 'project', projectId: mine } }), { status: 200 });
   assert.deepEqual(h.stored('guillaume'), { home_projects: 'project', home_project_id: mine });
+  // Identifiant envoyé en majuscules : enregistré en minuscules (sinon la
+  // tuile ne reconnaîtrait pas le projet)
+  assert.deepEqual(await h.run('guillaume', { type: 'account.home', projectsTile: { mode: 'project', projectId: mine.toUpperCase() } }), { status: 200 });
+  assert.deepEqual(h.stored('guillaume'), { home_projects: 'project', home_project_id: mine });
   assert.deepEqual((await h.people.guillaume.client.get('/api/me')).body.user.home.projectsTile, { mode: 'project', projectId: mine });
   // Le projet de Léa, que Guillaume ne voit pas (même l'Admin) : la réponse
   // d'un projet inconnu, rien n'est écrit

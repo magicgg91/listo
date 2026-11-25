@@ -1,0 +1,249 @@
+/* ==========================================================================
+   Listo : projets (tableaux de cartes), maquettes du 25 novembre 2026.
+   Nouveaux composants seulement, à ajouter à design/listo.css (sections
+   16.35 à 16.44) après validation du cadrage docs/cadrage-projets.md.
+   Variables du kit uniquement (aucune couleur écrite en dur) : le clair, le
+   sombre et l'automatique suivent tout seuls.
+   ========================================================================== */
+
+/* 16.35 Couleur d'une colonne : les huit couleurs des étiquettes (16.32),
+   les mêmes variables (--label-<couleur>-bg et -ink, AA en clair et en
+   sombre). .c-<couleur> pose --c-bg (fond doux) et --c-ink (point, liseré,
+   texte). Le nom de la colonne est toujours écrit : la couleur n'est jamais
+   seule à dire de quelle colonne il s'agit. */
+.c-gris { --c-bg: var(--label-gris-bg); --c-ink: var(--label-gris-ink); }
+.c-rouge { --c-bg: var(--label-rouge-bg); --c-ink: var(--label-rouge-ink); }
+.c-orange { --c-bg: var(--label-orange-bg); --c-ink: var(--label-orange-ink); }
+.c-jaune { --c-bg: var(--label-jaune-bg); --c-ink: var(--label-jaune-ink); }
+.c-vert { --c-bg: var(--label-vert-bg); --c-ink: var(--label-vert-ink); }
+.c-bleu { --c-bg: var(--label-bleu-bg); --c-ink: var(--label-bleu-ink); }
+.c-violet { --c-bg: var(--label-violet-bg); --c-ink: var(--label-violet-ink); }
+.c-rose { --c-bg: var(--label-rose-bg); --c-ink: var(--label-rose-ink); }
+.coldot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c-ink, var(--color-text-2)); }
+
+/* 16.36 Bandeau du bas à six boutons (proposition A) : Accueil, Échéances,
+   Listes, Notes, Projets (#i-kanban), Réglages. Même .tabdock, même verre,
+   même pastille qui glisse (data-current = 0 à 5). Boutons d'environ 58 px
+   de large sur un téléphone de 390 px (55 px sur 375 px), toujours 54 px de
+   haut ; libellés en 11 px serrés (au lieu de 12) pour que « Échéances »
+   tienne en entier (56 px pour 58 : juste ; avec un texte agrandi par le
+   téléphone, il est coupé « Échéanc… », le nom lu reste entier). Proposition B : cinq boutons (.tabbar--5, inchangé), « Réglages »
+   passe dans la tuile Compte de l'Accueil (voir le cadrage, 2.2). */
+.tabbar--6 .tabbar__pill { width: calc((100% - 10px) / 6); }
+.tabbar[data-current="5"] .tabbar__pill { transform: translateX(500%); }
+.tabbar--6 .tabbar__tab { padding: 0; font-size: 11px; letter-spacing: -0.02em; }
+
+/* 16.37 Tuile Projets de l'Accueil : toute la largeur (.tile--wide, les
+   lignes ont deux étages) ; « mes cartes » (attribuées à moi, pas faites),
+   les plus urgentes d'abord, trois au plus. Ligne : titre de la carte, puis
+   « projet · colonne · échéance » en petit (.tile__sub ; --late : en retard,
+   texte rouge ET le mot « En retard »). */
+.tile--wide { grid-column: 1 / -1; }
+.tile__row--two { min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
+.tile__two { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.tile__two .tile__label { flex: none; font-weight: 600; }
+.tile__sub { overflow: hidden; font-size: var(--text-sm); color: var(--color-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.tile__sub--late { color: var(--color-danger-ink); }
+
+/* 16.38 Écran « Projets » (#/projets) : une carte par projet (.card
+   .proj-card) : icône, nom, heure, menu ⋮ ; les colonnes en petites
+   pastilles (point de couleur, nom, nombre de cartes) ; en bas, « 3 cartes
+   pour vous · 1 en retard » et les pastilles des personnes. Point des
+   nouveautés sur l'icône (.news-badge--dot), œil « Lecture seule ». */
+.proj-card { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 12px 8px 12px var(--space-2); }
+.proj-card__head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.proj-card__icon { position: relative; display: inline-flex; flex: none; color: var(--color-accent-ink); }
+.proj-card__name { flex: 1; min-width: 0; overflow: hidden; font-size: var(--text-lg); font-weight: 700; line-height: var(--lh-tight); text-overflow: ellipsis; white-space: nowrap; }
+.proj-card__time { flex: none; font-size: var(--text-sm); color: var(--color-text-2); }
+.proj-card__cols { display: flex; flex-wrap: wrap; gap: 6px; padding-right: 8px; }
+.colchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text-2); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.colchip .coldot { width: 8px; height: 8px; }
+.colchip b { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.proj-card__foot { display: flex; align-items: center; gap: 8px; min-height: 28px; padding-right: 8px; }
+.proj-card__mine { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text-2); }
+.proj-card__mine strong { color: var(--color-danger-ink); font-weight: 600; }
+.proj-card .avatar { width: 28px; height: 28px; font-size: 12px; }
+
+/* 16.39 Écran d'un projet sur le téléphone (#/projets/<id>) : une colonne
+   à la fois. Sous la barre du haut, les onglets des colonnes (.coltabs,
+   role="tablist", défilent de côté ; l'onglet choisi reste visible) :
+   point de couleur, nom, nombre de cartes ; choisi : fond doux de sa
+   couleur, liseré de 2 px et texte en gras (jamais la couleur seule). Les
+   cartes de la colonne dessous (.kcards), la barre d'ajout en verre en bas
+   (« Ajouter une carte dans « Relecture » »), la loupe au-dessus. */
+.coltabs { display: flex; flex: none; gap: 8px; overflow-x: auto; padding: 2px var(--space-2) 10px; scrollbar-width: none; }
+.coltabs::-webkit-scrollbar { display: none; }
+.coltab { display: inline-flex; flex: none; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0 14px; border: 2px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text-2); font: inherit; font-size: var(--text-base); font-weight: 600; white-space: nowrap; }
+.coltab__count { font-weight: 600; font-variant-numeric: tabular-nums; }
+.coltab[aria-selected="true"] { border-color: var(--c-ink); background: var(--c-bg); color: var(--c-ink); font-weight: 700; }
+.coltab--add { border-style: dashed; color: var(--color-text-2); }
+.kcards { display: flex; flex-direction: column; gap: 10px; padding: 0 var(--space-2); }
+.kfilterbar { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 var(--space-2) 10px; }
+.kfilterbar__text { flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--color-text-2); }
+
+/* 16.40 Carte (face) : .card .kcard ; titre (trois lignes au plus), étiquettes
+   (.labels, 16.32), puis une ligne de repères : échéance (.due), compteurs
+   (.kcount : description, cases « 2/3 », liens, commentaires ; icône ET
+   nombre, nom lu complet) et les pastilles des personnes à droite.
+   - .due : date (« ven. 28 nov. », heure si elle existe) ; --late : en
+     retard (fond rouge doux, texte rouge ET icône d'alerte) ; --done : fait
+     (fond vert plein, coche ET texte barré non : « fait » écrit) ; --today :
+     aujourd'hui (liseré vert).
+   - .kcard.is-news : point des nouveautés en haut à gauche (16.13).
+   - .kcard.is-dragging : la carte tenue (ordinateur : un peu tournée,
+     ombre) ; .kdrop : la place où elle tombera (pointillés). */
+.kcard { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 12px 12px 10px 14px; }
+.kcard__title { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; font-size: var(--text-base); font-weight: 600; line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.kcard .labels .label { height: 24px; padding: 0 9px; }
+.kcard__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 26px; }
+.kcard__meta .avatars { margin-left: auto; }
+.kcard .avatar { width: 26px; height: 26px; font-size: 11px; }
+.kcount { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.kcount--all { color: var(--color-success-ink); }
+.kcard > .news-badge--dot { top: 10px; left: -6px; }
+.due { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border: 2px solid transparent; border-radius: 8px; background: var(--color-neutral-soft); color: var(--color-text-2); font-size: var(--text-sm); font-weight: 600; white-space: nowrap; }
+.due .icon { width: 14px; height: 14px; }
+.due--late { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+.due--today { border-color: var(--color-success-ink); color: var(--color-success-ink); background: transparent; }
+.due--done { background: var(--color-success-ink); color: var(--color-surface); }
+.due--done .icon { stroke-width: 3; }
+.kcard.is-dragging { transform: rotate(2.5deg); box-shadow: var(--shadow-pop); }
+.kdrop { min-height: 64px; border: 2px dashed var(--color-accent); border-radius: var(--radius-md); background: var(--color-accent-soft); }
+
+/* 16.41 Ordinateur (.app--pc) : un projet prend toute la largeur de la zone
+   de droite (pas la colonne centrée .pc-col : les colonnes du projet ont
+   besoin de place) ; colonnes côte à côte (.kboard), défilement de côté.
+   - .kcol : 280 px, fond gris doux, liseré de 4 px de sa couleur en haut ;
+     .kcol__head : point, nom, nombre, menu ⋮ de la colonne ; « + Ajouter
+     une carte » en bas ; .kcol--new : « + Colonne » au bout.
+   - .kfilters : ligne des filtres sous l'en-tête : Personnes (Tout, Moi,
+     Personne, les membres) et Étiquettes (16.32, .label-filter__opt),
+     choix multiples, aria-pressed ; « Effacer les filtres ».
+   - Menu de gauche : « Projets » après « Notes » ; sur les écrans des
+     projets, les projets dessous (.pc-nav, comme les types des listes). */
+.kboard { display: flex; flex: 1; align-items: flex-start; gap: 14px; min-height: 0; overflow: auto; padding: 4px var(--pc-gutter) var(--pc-gutter); }
+.kcol { display: flex; flex: none; flex-direction: column; gap: 8px; width: 280px; max-height: 100%; padding: 0 8px 8px; border-top: 4px solid var(--c-ink); border-radius: var(--radius-md); background: var(--color-neutral-soft); }
+.kcol__head { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 0 0 6px; font-weight: 700; }
+.kcol__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kcol__head .count { min-width: 24px; height: 24px; }
+.kcol .kcard { padding: 10px 10px 8px 12px; }
+.kcol .kcard__title { font-size: 15px; }
+.kcol__add { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-2); font: inherit; font-weight: 600; text-align: left; }
+.kcol__add:hover { background: var(--color-border); }
+.kcol--new { border-top-color: transparent; background: transparent; border: 2px dashed var(--color-border); padding-top: 4px; }
+.kfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding: 0 var(--pc-gutter) 12px; }
+.kfilters__group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.kfilters__name { margin-right: 4px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.pfilter { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 4px; border: 2px solid transparent; border-radius: var(--radius-pill); background: var(--color-neutral-soft); color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.pfilter--text { padding-left: 10px; }
+.pfilter .avatar { width: 20px; height: 20px; border: 0; font-size: 10px; }
+.pfilter[aria-pressed="true"] { border-color: var(--color-accent-ink); background: var(--color-accent-soft); color: var(--color-accent-ink); }
+.kfilters .label-filter__opt { min-height: 32px; }
+.kfilters .label-filter__opt .label { height: 28px; padding: 0 10px; }
+.kfilters__clear { margin-left: auto; }
+.pc-head__tools .searchfield { width: 240px; }
+
+/* 16.42 Carte ouverte (téléphone : écran #/projets/<id>/cartes/<carte> ;
+   ordinateur : fenêtre au centre, .kdialog). Titre en grand (champ sans
+   cadre, comme une note), « dans Relecture » (bouton : ouvre « Déplacer
+   vers… ») ; champs en lignes (.kfields) : Personnes, Échéance (date,
+   heure, rappel, case « Fait »), Étiquettes, Liens ; Description (mise en
+   forme des notes, 16.33 : les cases sont la liste de tâches, « 2/3 ») ;
+   onglets Commentaires · Historique (.tabs du kit) ; commentaire à écrire
+   en bas, dans la barre en verre (.addbar--glass). */
+.kc { display: flex; flex-direction: column; gap: 12px; padding: 0 var(--space-2) var(--space-2); }
+.kc__title { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.kc__where { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0 12px; border: 2px solid var(--c-ink); border-radius: var(--radius-sm); background: var(--c-bg); color: var(--c-ink); font: inherit; font-weight: 700; }
+.kc__where .icon { width: 18px; height: 18px; }
+.kfields { margin: 0; }
+.kc .group { margin: 0; }
+.kfield { display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 10px 14px; border-bottom: 1px solid var(--color-border); }
+.kfield:last-child { border-bottom: 0; }
+.kfield__name { display: flex; flex: none; align-items: center; gap: 6px; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); }
+.kfield__name .icon { width: 16px; height: 16px; }
+.kfield__value { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; font-weight: 500; }
+.kfield__person { display: inline-flex; align-items: center; gap: 6px; }
+.kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kadd { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px 0 8px; border: 1px dashed var(--color-control); border-radius: var(--radius-pill); background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; }
+.kadd::after { content: ""; position: absolute; inset: -8px -2px; }
+.kadd .icon { width: 16px; height: 16px; }
+.kdone { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-min); padding: 0 4px; border: 0; background: transparent; color: var(--color-text); font: inherit; font-weight: 600; }
+.kdone .tick { width: 26px; height: 26px; }
+.kdone .tick .icon { width: 16px; height: 16px; stroke-width: 3; }
+.kc__section { display: flex; align-items: center; gap: 8px; margin: 4px 2px -4px; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
+.kc__section .kcount { margin-left: auto; letter-spacing: 0; text-transform: none; }
+.kc__desc { padding: 10px 14px; }
+.kc__desc .note-edit__body { min-height: 0; }
+.klink { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 4px 6px 14px; border-bottom: 1px solid var(--color-border); }
+.klink:last-child { border-bottom: 0; }
+.klink__body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.klink__title { overflow: hidden; color: var(--color-accent-ink); font-weight: 600; text-decoration: underline; text-overflow: ellipsis; white-space: nowrap; }
+.klink__url { overflow: hidden; font-size: var(--text-sm); color: var(--color-text-2); text-overflow: ellipsis; white-space: nowrap; }
+.kc .tabs { margin: 0 -4px; padding: 0; }
+.kcomment { display: flex; gap: 10px; }
+.kcomment .avatar { width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcomment__bubble { flex: 1; min-width: 0; padding: 8px 12px 10px; border-radius: var(--radius-md); background: var(--color-neutral-soft); }
+.kcomment__who { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-weight: 700; }
+.kcomment__when { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-2); }
+.kcomment__text { margin-top: 2px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.kcomment__acts { display: flex; gap: 14px; margin-top: 4px; }
+.kcomment__acts button { min-height: 32px; padding: 0; border: 0; background: transparent; color: var(--color-text-2); font: inherit; font-size: var(--text-sm); font-weight: 600; text-decoration: underline; }
+.kcomment--imported .kcomment__bubble { border: 1px dashed var(--color-control); background: transparent; }
+.khist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.khist__row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--color-border); }
+.khist__row:last-child { border-bottom: 0; }
+.khist__row .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.khist__text { flex: 1; min-width: 0; line-height: var(--lh-tight); }
+.khist__when { display: block; margin-top: 2px; font-size: var(--text-sm); color: var(--color-text-2); }
+.khist__more { align-self: center; }
+
+/* Ordinateur : la carte ouverte dans une fenêtre au centre (940 px), deux
+   zones : à gauche le contenu, à droite les actions (.kdialog__side) :
+   Colonne, Ajouter (Personnes, Étiquettes, Échéance, Lien), Actions
+   (Déplacer, Dupliquer, Suivre, Supprimer). */
+.kdialog { position: absolute; top: 56px; bottom: 56px; left: 50%; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr) 248px; width: 940px; margin-left: -470px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); box-shadow: var(--shadow-pop); }
+.kdialog__main > * { flex: none; }
+.kdialog__main { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; padding: 24px 24px 20px 28px; }
+.kdialog__side { display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 18px 16px; border-left: 1px solid var(--color-border); background: var(--color-bg); }
+.kdialog__side .kc__section { margin: 10px 4px 2px; }
+.kdialog__side .kc__section:first-of-type { margin-top: 0; }
+.kdialog__close { align-self: flex-end; margin: -6px -6px 0 0; }
+.kside { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 600; text-align: left; }
+.kside .icon { width: 18px; height: 18px; color: var(--color-text-2); }
+.kside--danger { color: var(--color-danger-ink); }
+.kside--danger .icon { color: inherit; }
+.kside--col { border: 2px solid var(--c-ink); background: var(--c-bg); color: var(--c-ink); }
+.kside--col .icon { color: inherit; }
+.kside .keycap { margin-left: auto; }
+.kdialog .kfields { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); justify-content: start; gap: 6px 28px; }
+.kdialog .kfield { align-items: flex-start; padding: 0; border: 0; }
+.kdialog .kfield__name { width: auto; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+.kdialog .kc__title { font-size: 24px; }
+.kdialog__sub { margin-top: -10px; font-size: var(--text-sm); color: var(--color-text-2); }
+.kcompose { display: flex; align-items: flex-start; gap: 10px; }
+.kcompose .avatar { width: 30px; height: 30px; border: 0; font-size: 12px; }
+.kcompose .input { flex: 1; }
+
+/* 16.43 « Déplacer vers… » (feuille du bas ; petite fenêtre sur
+   ordinateur) : les colonnes du projet en .radio-row, chacune avec son
+   point de couleur et son nombre de cartes ; puis « En haut » / « En bas »
+   (.segmented) ; « Déplacer ». */
+.radio-row .coldot { margin-left: 2px; }
+.move__count { margin-left: auto; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-2); font-variant-numeric: tabular-nums; }
+.move__where { display: flex; flex-direction: column; gap: 8px; }
+
+/* 16.44 Réglages du projet (#/projets/<id>/reglages ; propriétaire et
+   « Peut modifier » pour les colonnes et les étiquettes) : lignes .col-row
+   (poignée pour changer l'ordre, point, nom, nombre de cartes, crayon) ;
+   « Monter » et « Descendre » dans la feuille d'une colonne (sans glisser).
+   Étiquettes : .label-row du kit (16.32). */
+.col-row { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 6px 0 4px; border-bottom: 1px solid var(--color-border); }
+.col-row:last-child { border-bottom: 0; }
+.col-row__grip { display: grid; flex: none; place-items: center; width: 36px; height: var(--tap-min); color: var(--color-text-2); }
+.col-row__name { flex: 1; min-width: 0; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.col-row__count { font-size: var(--text-sm); color: var(--color-text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-row--add, .label-row--add { color: var(--color-accent-ink); font-weight: 700; }
+.col-row--add .icon, .label-row--add .icon { margin: 0 6px 0 10px; }
+.group-title { display: flex; align-items: baseline; justify-content: space-between; margin: 20px var(--space-2) 8px; }
+.group-title .section-title { margin: 0; padding: 0; }
+.group-title__aside { font-size: var(--text-sm); color: var(--color-text-2); }

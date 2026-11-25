@@ -128,7 +128,7 @@ test('ordinateur : « Notes » dans les entrées fixes, « Nouvelle note » (N) 
   const side = code('public/js/screens/pc-side.js');
   assert.match(side, /const notesLink = fixedLink\('notes', 'note', t\('navigation\.notes'\), notesNews, notesCount\);/);
   assert.match(side, /export const NOTE_SCREENS = \['notes', 'note', 'newNote'\];/);
-  assert.match(side, /newList\.hidden = onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
+  assert.match(side, /newList\.hidden = !listsUsed \|\| onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
   const app = code('public/js/app.js');
   // Une note (et une nouvelle note) : son propre écran, sur le téléphone comme sur l'ordinateur
   assert.match(app, /case 'note':\s*case 'newNote': \{\s*const id = name === 'note' \? params\.id : null;\s*mount\(\(onLeave\) => renderNote\(id, onLeave\)\);\s*break;\s*\}/);

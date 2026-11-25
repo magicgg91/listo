@@ -33,8 +33,8 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const code = (file) => read(file).split('\n').map((line) => line.replace(/^\s*\/\/.*$/, '')).join('\n');
 const pass = (name) => `MotDePasse-${name}`;
 const columns = () => [{ columnId: uuid(), name: 'À faire', color: 'gris' }, { columnId: uuid(), name: 'Fait', color: 'vert' }];
-const NONE = { notes: false, projects: false, projectsCreate: false, mcp: false };
-const ALL = { notes: true, projects: true, projectsCreate: true, mcp: true };
+const NONE = { lists: false, notes: false, projects: false, projectsCreate: false, mcp: false };
+const ALL = { lists: true, notes: true, projects: true, projectsCreate: true, mcp: true };
 
 async function ops(client, list) {
   const res = await client.post('/api/ops', { ops: list.map((op) => ({ id: uuid(), ...op })) });
@@ -74,11 +74,12 @@ async function addGuest(h, name, display, allowed) {
 }
 const setAllowed = (h, name, allowed, client = h.guillaume) => client.request('PATCH', `/api/admin/users/${h.ids[name]}`, { allowed });
 const row = (h, name) => h.app.db.prepare('SELECT notes_allowed, projects_allowed, projects_create, mcp_allowed, notes_enabled, projects_enabled FROM users WHERE id = ?').get(h.ids[name]);
+const listsRow = (h, name) => h.app.db.prepare('SELECT lists_allowed, lists_enabled FROM users WHERE id = ?').get(h.ids[name]);
 
 // --- Règles pures (public/js/access.js, public/js/features.js) ---
 
 test('règles : cases de départ par rôle, changement valable, invité allumé aussitôt, Utilisateur seulement autorisé', () => {
-  assert.deepEqual(PERMISSIONS, ['notes', 'projects', 'projectsCreate', 'mcp']);
+  assert.deepEqual(PERMISSIONS, ['lists', 'notes', 'projects', 'projectsCreate', 'mcp']);
   assert.deepEqual(defaultAllowed('user'), ALL);
   assert.deepEqual(defaultAllowed('admin'), ALL);
   assert.deepEqual(defaultAllowed('guest'), NONE);
@@ -87,7 +88,12 @@ test('règles : cases de départ par rôle, changement valable, invité allumé 
   assert.deepEqual(normalizeAllowed({ notes: false }, 'user'), { ...ALL, notes: false });
   assert.deepEqual(normalizeAllowed({ projects: true }, 'guest'), { ...NONE, projects: true });
   assert.deepEqual(normalizeAllowed(null, 'guest'), NONE);
-  for (const bad of [null, [], 'x', { lists: true }, { notes: 'oui' }]) assert.equal(allowedChangeProblem(bad), 'comptes.fonctions.invalides', JSON.stringify(bad));
+  for (const bad of [null, [], 'x', { listes: true }, { notes: 'oui' }]) assert.equal(allowedChangeProblem(bad), 'comptes.fonctions.invalides', JSON.stringify(bad));
+  // « Listes » : la case d'un invité seulement (étape 3)
+  assert.equal(allowedChangeProblem({ lists: false }, 'user'), 'comptes.fonctions.listesInviteSeulement');
+  assert.equal(allowedChangeProblem({ lists: true }, 'guest'), null);
+  assert.deepEqual(applyAllowedChange('guest', NONE, { lists: true }), { allowed: { ...NONE, lists: true }, turnOn: ['lists'] });
+  assert.deepEqual(normalizeAllowed({ ...ALL, lists: false }, 'user'), ALL, 'un Utilisateur a toujours les listes');
   assert.equal(allowedChangeProblem({}), 'comptes.rienAModifier');
   assert.equal(allowedChangeProblem({ notes: true, mcp: false }), null);
   // Invité : Notes et Projets cochés s'allument aussitôt ; pas les permissions
@@ -107,7 +113,10 @@ test('fonction utilisée = autorisée ET allumée (les quatre cas, notes et proj
   for (const allowed of [true, false]) {
     for (const on of [true, false]) {
       const used = usedFeatures({ notes: on, projects: on }, { notes: allowed, projects: allowed });
-      assert.deepEqual(used, { notes: allowed && on, projects: allowed && on }, `autorisée ${allowed}, allumée ${on}`);
+      assert.deepEqual(used, { lists: true, notes: allowed && on, projects: allowed && on }, `autorisée ${allowed}, allumée ${on}`);
+      // Listes : un invité seulement (un Utilisateur les a toujours)
+      assert.equal(usedFeatures({ lists: on }, { lists: allowed }, 'guest').lists, allowed && on);
+      assert.equal(usedFeatures({ lists: on }, { lists: allowed }, 'user').lists, true);
     }
   }
   assert.equal(featuresChangeProblem({ projects: true }, { notes: true, projects: false }), 'ops.fonctionNonAutorisee');
@@ -123,23 +132,30 @@ test('Échéances (décision 5) : toujours pour la famille ; pour un invité, se
   assert.equal(deadlinesShown('guest', { lists: false, projectDeadlines: true }), true);
   assert.equal(deadlinesShown('guest', { lists: false, projectDeadlines: false }), false);
   const data = (deadlines, projects = true) => ({ features: { notes: false, projects }, projects: new Map([['p', { id: 'p', deadlinesEnabled: deadlines }]]) });
-  // Étape 2 : un invité a encore les Listes, Échéances est donc là
-  assert.equal(screenFeatures(data(false), 'guest').deadlines, true);
+  // Invité : ses Listes, ou un projet à l'option « Échéances » allumée
+  assert.equal(screenFeatures(data(false), 'guest').deadlines, true, 'Listes reçues allumées');
+  const noLists = (deadlines, projects = true) => ({ ...data(deadlines, projects), features: { lists: false, notes: false, projects } });
+  assert.equal(screenFeatures(noLists(false), 'guest').deadlines, false);
+  assert.equal(screenFeatures(noLists(true), 'guest').deadlines, true);
+  assert.equal(screenFeatures(noLists(true, false), 'guest').deadlines, false, 'projets éteints : rien');
+  assert.equal(screenFeatures(noLists(false), 'user').lists, true, 'jamais sans listes pour la famille');
   assert.equal(screenFeatures(data(true), 'user').deadlines, true);
   // La règle elle-même se lit dans screenAllowed (étape 3 : sans Listes)
   assert.equal(screenAllowed('deadlines', { deadlines: false }), false);
   assert.equal(screenAllowed('deadlines', {}), true);
   assert.deepEqual(tabScreens({ enabled: true }, { notes: false, projects: true, deadlines: false }), ['home', 'lists', 'projects', 'settings']);
-  assert.match(code('public/js/features.js'), /return \{ \.\.\.features, deadlines: deadlinesShown\(role, \{ lists: true, projectDeadlines \}\) \};/);
+  assert.match(code('public/js/features.js'), /return \{ \.\.\.features, deadlines: deadlinesShown\(role, \{ lists: features\.lists, projectDeadlines \}\) \};/);
 });
 
 test('invitation de l\'Accueil : seulement quand aucune fonction n\'est utilisée ; nomme la seule fonction autorisée', () => {
-  assert.equal(welcomeHint({ notes: false, projects: false }, NONE), null, 'les Listes sont là (étape 2)');
-  assert.equal(welcomeHint({ notes: false, projects: true }, { ...NONE, projects: true }, { lists: false }), null);
-  assert.deepEqual(welcomeHint({ notes: false, projects: false }, { ...NONE, projects: true }, { lists: false }), { kind: 'one', feature: 'projects' });
-  assert.deepEqual(welcomeHint({ notes: false, projects: false }, { ...NONE, notes: true, projects: true }, { lists: false }), { kind: 'several', feature: null });
-  assert.deepEqual(welcomeHint({ notes: false, projects: false }, NONE, { lists: false }), { kind: 'none', feature: null });
-  for (const key of ['accueil.bienvenue.titre', 'accueil.bienvenue.projets', 'accueil.bienvenue.notes', 'accueil.bienvenue.plusieurs', 'accueil.bienvenue.aucune', 'accueil.bienvenue.bouton']) assert.ok(fr[key] && en[key], key);
+  assert.equal(welcomeHint({ notes: false, projects: false }, NONE), null, 'Listes inconnues : comme avant, là');
+  assert.equal(welcomeHint({ lists: true, notes: false, projects: false }, NONE), null, 'les Listes sont là');
+  assert.equal(welcomeHint({ lists: false, notes: false, projects: true }, { ...NONE, projects: true }), null);
+  assert.deepEqual(welcomeHint({ lists: false, notes: false, projects: false }, { ...NONE, projects: true }), { kind: 'one', feature: 'projects' });
+  assert.deepEqual(welcomeHint({ lists: false, notes: false, projects: false }, { ...NONE, lists: true }), { kind: 'one', feature: 'lists' });
+  assert.deepEqual(welcomeHint({ lists: false, notes: false, projects: false }, { ...NONE, notes: true, projects: true }), { kind: 'several', feature: null });
+  assert.deepEqual(welcomeHint({ lists: false, notes: false, projects: false }, NONE), { kind: 'none', feature: null });
+  for (const key of ['accueil.bienvenue.titre', 'accueil.bienvenue.projets', 'accueil.bienvenue.notes', 'accueil.bienvenue.listes', 'accueil.bienvenue.plusieurs', 'accueil.bienvenue.aucune', 'accueil.bienvenue.bouton']) assert.ok(fr[key] && en[key], key);
 });
 
 // --- Migration 48 ---
@@ -154,16 +170,16 @@ test('migration 48 : quatre colonnes à 1 pour les comptes existants, 0 ou 1 seu
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(schemaVersion(db), 48);
-  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(schemaVersion(db), 49);
+  assert.equal(MIGRATIONS.length, 49);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, ...rest }) => rest), before);
   for (const user of after) assert.deepEqual([user.notes_allowed, user.projects_allowed, user.projects_create, user.mcp_allowed], [1, 1, 1, 1]);
   for (const column of ['notes_allowed', 'projects_allowed', 'projects_create', 'mcp_allowed']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 2`).run(), /CHECK/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
 });
 
 test('nouveau compte : Utilisateur tout autorisé ; invité rien d\'autorisé ni d\'allumé ; cases choisies dans « Nouveau compte », allumées pour un invité ; journal', async (t) => {
@@ -174,19 +190,20 @@ test('nouveau compte : Utilisateur tout autorisé ; invité rien d\'autorisé ni
   const max = await addGuest(h, 'max', 'Max');
   assert.deepEqual(max.allowed, NONE);
   assert.deepEqual(row(h, 'max'), { notes_allowed: 0, projects_allowed: 0, projects_create: 0, mcp_allowed: 0, notes_enabled: 0, projects_enabled: 0 });
-  assert.deepEqual((await h.max.get('/api/me')).body.user.features, { notes: false, projects: false });
+  assert.deepEqual((await h.max.get('/api/me')).body.user.features, { lists: false, notes: false, projects: false });
+  assert.deepEqual(listsRow(h, 'max'), { lists_allowed: 0, lists_enabled: 0 });
   assert.deepEqual((await h.max.get('/api/me')).body.user.allowed, NONE);
   const ines = await addGuest(h, 'ines', 'Inès', { projects: true });
   assert.deepEqual(ines.allowed, { ...NONE, projects: true });
-  assert.deepEqual((await h.ines.get('/api/sync')).body.features, { notes: false, projects: true }, 'cochés : allumés aussitôt');
+  assert.deepEqual((await h.ines.get('/api/sync')).body.features, { lists: false, notes: false, projects: true }, 'cochés : allumés aussitôt');
   assert.deepEqual((await h.ines.get('/api/sync')).body.allowed, { ...NONE, projects: true });
   // Cases invalides : rien n'est créé
-  const bad = await h.guillaume.post('/api/admin/users', { username: 'x.login', role: 'guest', password: pass('x'), allowed: { lists: true } });
+  const bad = await h.guillaume.post('/api/admin/users', { username: 'x.login', role: 'user', password: pass('x'), allowed: { lists: false } });
   assert.equal(bad.status, 400);
   assert.equal(h.app.db.prepare("SELECT COUNT(*) FROM users WHERE username = 'x.login'").pluck().get(), 0);
   const journal = h.app.logs.join('\n');
-  assert.match(journal, /admin_account_created admin="g\.admin" user="ines\.login" role="guest" notes=0 projects=1 create=0 mcp=0/);
-  assert.match(journal, /admin_account_created admin="g\.admin" user="paul\.login" role="user" notes=1 projects=1 create=1 mcp=1/);
+  assert.match(journal, /admin_account_created admin="g\.admin" user="ines\.login" role="guest" lists=0 notes=0 projects=1 create=0 mcp=0/);
+  assert.match(journal, /admin_account_created admin="g\.admin" user="paul\.login" role="user" lists=1 notes=1 projects=1 create=1 mcp=1/);
 });
 
 // --- Route de l'Admin ---
@@ -210,7 +227,7 @@ test('route des cases : Admin seulement ; invité allumé aussitôt, Utilisateur
   // Utilisateur : la case autorise seulement
   await ok(h.zoe, { type: 'account.features', notes: false });
   assert.equal((await setAllowed(h, 'zoe', { notes: false, projects: false })).status, 200);
-  assert.deepEqual((await h.zoe.get('/api/sync')).body.features, { notes: false, projects: false });
+  assert.deepEqual((await h.zoe.get('/api/sync')).body.features, { lists: true, notes: false, projects: false });
   assert.equal((await setAllowed(h, 'zoe', { notes: true, projects: true })).status, 200);
   assert.deepEqual(row(h, 'zoe'), { notes_allowed: 1, projects_allowed: 1, projects_create: 1, mcp_allowed: 1, notes_enabled: 0, projects_enabled: 0 }, 'interrupteurs de Zoé inchangés');
   // Un Admin : pas de cases ; valeurs invalides : refusées, rien d'écrit
@@ -220,8 +237,8 @@ test('route des cases : Admin seulement ; invité allumé aussitôt, Utilisateur
   assert.equal((await setAllowed(h, 'zoe', {})).status, 400);
   assert.equal((await h.guillaume.request('PATCH', '/api/admin/users/99999', { allowed: { notes: false } })).status, 404);
   const journal = h.app.logs.join('\n');
-  assert.match(journal, /admin_access_changed admin="g\.admin" user="max\.login" ip="[^"]+" notes=0 projects=1 create=0 mcp=0 previous="notes=0 projects=0 create=0 mcp=0" turned_on="projects"/);
-  assert.match(journal, /admin_access_changed admin="g\.admin" user="zoe\.login" ip="[^"]+" notes=0 projects=0 create=1 mcp=1 previous="notes=1 projects=1 create=1 mcp=1"/);
+  assert.match(journal, /admin_access_changed admin="g\.admin" user="max\.login" ip="[^"]+" lists=0 notes=0 projects=1 create=0 mcp=0 previous="lists=0 notes=0 projects=0 create=0 mcp=0" turned_on="projects"/);
+  assert.match(journal, /admin_access_changed admin="g\.admin" user="zoe\.login" ip="[^"]+" lists=1 notes=0 projects=0 create=1 mcp=1 previous="lists=1 notes=1 projects=1 create=1 mcp=1"/);
   assert.doesNotMatch(journal, /admin_access_changed[^\n]*Zoé|admin_access_changed[^\n]*Max"/, 'jamais le nom affiché, seulement les identifiants');
   // Une fonction non autorisée ne s'allume ni ne s'éteint par la personne
   assert.equal((await setAllowed(h, 'zoe', { projects: false })).status, 200);
@@ -259,7 +276,7 @@ test('projets : autorisés × allumés (synchronisation, opérations, routes) ; 
   assert.deepEqual([refused.status, refused.error], [403, fr['ops.projetsNonAutorises']]);
   assert.equal((await h.max.post(`/api/projects/${project}/leave`)).status, 403);
   assert.equal((await h.max.get(`/api/projects/${project}/cards/${uuid()}/history`)).status, 403);
-  assert.deepEqual((await h.max.get('/api/sync')).body.features, { notes: false, projects: false });
+  assert.deepEqual((await h.max.get('/api/sync')).body.features, { lists: false, notes: false, projects: false });
   // Rien n'est effacé : membre, cartes ; recochés, tout revient (allumés aussitôt)
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM project_members WHERE user_id = ?').pluck().get(h.ids.max), 1);
   assert.equal((await setAllowed(h, 'max', { projects: true })).status, 200);
@@ -270,7 +287,7 @@ test('projets : autorisés × allumés (synchronisation, opérations, routes) ; 
   const add = await h.guillaume.request('PUT', `/api/projects/${project}/members`, { userIds: [h.ids.max, h.ids.zoe] });
   assert.deepEqual([add.status, add.body.error], [400, fr['ops.personneSansProjets'].replace('{name}', 'Zoé')]);
   const lea = (await h.lea.get('/api/users')).body.users;
-  assert.deepEqual(lea.find((u) => u.id === h.ids.zoe).uses, { notes: true, projects: false });
+  assert.deepEqual(lea.find((u) => u.id === h.ids.zoe).uses, { lists: true, notes: true, projects: false });
 });
 
 test('« Peut créer ses propres projets » : sans elle, ni créer, ni dupliquer (application et assistant IA) ; les projets partagés restent', async (t) => {
@@ -435,17 +452,17 @@ test('temps réel : les cases d\'un invité ne préviennent que lui ; celles d\'
 
 test('écrans : Réglages › Fonctions ne propose que l\'autorisé ; page d\'un compte avec ses cases ; « Nouveau compte » avec les cases du rôle ; aucun HTML', () => {
   const features = code('public/js/screens/features.js');
-  assert.match(features, /const offered = FEATURES\.filter\(\(name\) => allowed\[name\]\);/);
+  assert.match(features, /const offered = offeredFeatures\(allowed, role\);/);
   assert.match(features, /: h\('div', \{ class: 'group group--pad' \}, h\('p', \{ class: 'muted' \}, t\('reglages\.fonctions\.aucune'\)\)\),/);
   const admin = code('public/js/screens/admin.js');
   for (const file of [features, admin, code('public/js/screens/home.js'), code('public/js/screens/share-picker.js')]) {
     assert.doesNotMatch(file, /innerHTML|insertAdjacentHTML|outerHTML|setAttribute\('style'|\.style\./);
   }
   // Interrupteurs : rôle switch, reliés à leur titre et leur phrase ; « Peut
-  // créer » désactivé sans Projets ; pas de ligne « Listes » (étape 3)
+  // créer » désactivé sans Projets ; la ligne « Listes » d'un invité seulement (étape 3 : access.js, permissionsFor)
   assert.match(admin, /class: 'switch', type: 'button', role: 'switch', disabled: self,\s*'aria-labelledby': `\$\{id\}-titre`, 'aria-describedby': `\$\{id\}-aide`/);
   assert.match(admin, /if \(name === 'projectsCreate'\) button\.disabled = self \|\| !values\.projects;/);
-  assert.doesNotMatch(admin, /administration\.fonctions\.listes/);
+  assert.match(admin, /permissionsFor\(role\)\.map\(rowOf\)/);
   assert.match(admin, /user\.role === 'admin'\s*\? h\('p', \{ class: 'page-intro' \}, t\('administration\.fonctions\.admin'\)\)/);
   // « Nouveau compte » et demande acceptée : les cases suivent le rôle
   assert.equal((admin.match(/access\.setRole\(value\)/g) ?? []).length, 2);

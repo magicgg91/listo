@@ -63,9 +63,9 @@ async function family(t, { mcp = false } = {}) {
 
 // Un invité créé par l'Admin, par la route (mot de passe provisoire effacé
 // ensuite, pour qu'il puisse agir tout de suite). allowed : ses fonctions
-// autorisées (étape 2) ; ici, par défaut, toutes cochées (allumées
-// aussitôt pour lui), pour essayer les règles de l'étape 1
-const ALL_ALLOWED = { notes: true, projects: true, projectsCreate: true, mcp: true };
+// autorisées (étapes 2 et 3) ; ici, par défaut, toutes cochées (allumées
+// aussitôt pour lui, Listes comprises), pour essayer les règles de l'étape 1
+const ALL_ALLOWED = { lists: true, notes: true, projects: true, projectsCreate: true, mcp: true };
 async function addGuest(h, name, display, allowed = ALL_ALLOWED) {
   const res = await h.guillaume.post('/api/admin/users', { username: LOGINS[name], displayName: display, role: 'guest', password: pass(name), allowed });
   assert.equal(res.status, 201, res.text);
@@ -130,10 +130,12 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   migrate(db);
   t.after(() => db.close());
   assert.equal(schemaVersion(db), MIGRATIONS.length);
-  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(MIGRATIONS.length, 49);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
   // (migrations 47 et 48 : guest, puis les fonctions autorisées, tout à 1)
-  assert.deepEqual(after.map(({ guest, notes_allowed, projects_allowed, projects_create, mcp_allowed, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ guest, notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, ...rest }) => rest), before);
+  // (migration 49 : les Listes, lues pour un invité seulement : 1 pour la famille)
+  assert.deepEqual(after.map((row) => [row.lists_allowed, row.lists_enabled]), [[1, 1], [1, 1]]);
   assert.deepEqual(after.map((row) => [row.notes_allowed, row.projects_allowed, row.projects_create, row.mcp_allowed]), [[1, 1, 1, 1], [1, 1, 1, 1]]);
   assert.deepEqual(after.map((row) => row.guest), [0, 0]);
   // Contrainte : jamais invité et Admin (ni l'un ni l'autre ordre)
@@ -143,7 +145,7 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   assert.throws(() => db.prepare('UPDATE users SET guest = 2 WHERE id = 2').run(), /CHECK/);
   // Relancer les migrations ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
 });
 
 // --- Une seule lecture du rôle ---
@@ -195,7 +197,7 @@ test('annuaire : l\'Admin voit tout le monde avec le rôle, la famille ne voit p
   // Champ par champ : id, prénom et fonctions autorisées (étape 2 : notes,
   // projets), ni rôle ni identifiant
   for (const u of lea) assert.deepEqual(Object.keys(u).sort(), ['displayName', 'id', 'uses']);
-  for (const u of lea) assert.deepEqual(Object.keys(u.uses).sort(), ['notes', 'projects']);
+  for (const u of lea) assert.deepEqual(Object.keys(u.uses).sort(), ['lists', 'notes', 'projects']);
   assert.deepEqual(await sync(h.lea), lea);
 
   assert.deepEqual(await users(h.max), []);
@@ -314,7 +316,8 @@ test('annuaire identique avec ou sans invités : Léa (famille) reçoit exacteme
   // Étape 2 (fonctions autorisées) : l'Admin change les cases d'un invité
   // (retire puis rend les notes, retire les assistants IA, la création de
   // projets) : rien n'en parvient à Léa, pas même un message temps réel
-  for (const allowed of [{ notes: false }, { notes: true }, { mcp: false, projectsCreate: false }]) {
+  // (étape 3 : de même pour ses Listes, retirées puis rendues)
+  for (const allowed of [{ notes: false }, { notes: true }, { mcp: false, projectsCreate: false }, { lists: false }, { lists: true }]) {
     const res = await h.guillaume.request('PATCH', `/api/admin/users/${h.ids.max}`, { allowed });
     assert.equal(res.status, 200, res.text);
   }
@@ -551,8 +554,9 @@ test('changements de rôle : Admin seulement ; Utilisateur ↔ Invité ; jamais 
   assert.equal(res.body.user.role, 'guest');
   assert.equal(h.app.db.prepare('SELECT guest, role FROM users WHERE id = ?').get(h.ids.zoe).guest, 1);
   assert.equal(h.app.db.prepare('SELECT COUNT(*) FROM public_shares WHERE list_id = ? AND revoked_at IS NULL').pluck().get(zlist), 0);
-  // Fonctions inchangées
-  assert.deepEqual((await h.zoe.get('/api/me')).body.user.features, { notes: true, projects: false });
+  // Fonctions inchangées : elle garde ses Listes (autorisées, allumées ; étape 3)
+  assert.deepEqual((await h.zoe.get('/api/me')).body.user.features, { lists: true, notes: true, projects: false });
+  assert.deepEqual(h.app.db.prepare('SELECT lists_allowed, lists_enabled FROM users WHERE id = ?').get(h.ids.zoe), { lists_allowed: 1, lists_enabled: 1 });
   assert.equal((await h.zoe.get('/api/me')).body.user.role, 'guest');
   // Invité → Admin : jamais directement (route et base)
   const direct = await patch(h.guillaume, h.ids.zoe, { role: 'admin' });
@@ -606,7 +610,7 @@ test('nouveau compte : rôle Invité créé discret ; rôle de chacun dans /api/
 
 test('écrans : Administration à trois rôles, « Discret », page d\'un compte ; « Invité · discret » dans le partage de l\'Admin ; encadré « Compte invité »', () => {
   const admin = read('public/js/screens/admin.js');
-  assert.match(admin, /import \{ ROLES, PERMISSIONS, defaultAllowed \} from '\.\.\/access\.js';/);
+  assert.match(admin, /import \{ ROLES, permissionsFor, defaultAllowed \} from '\.\.\/access\.js';/);
   // Admin ↔ Invité désactivé, son propre rôle aussi
   assert.match(admin, /disabled: \(value\) => self \|\| \(user\.role === 'guest' && value === 'admin'\) \|\| \(user\.role === 'admin' && value === 'guest'\)/);
   // « Discret » : l'œil barré ET le mot

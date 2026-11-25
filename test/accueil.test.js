@@ -242,7 +242,7 @@ test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur
   assert.match(side, /const listsLink = fixedLink\('lists', 'tasks', t\('navigation\.listes'\), listsCount\);/);
   // Écrans des listes seulement : « Types » ; ailleurs, rien de plus
   assert.match(side, /const LIST_SCREENS = \['lists', 'list', 'editList', 'newList', 'gifts'\];/);
-  assert.match(side, /if \(!LIST_SCREENS\.includes\(selected\.name\)\) \{\s*showNav\(false\);/);
+  assert.match(side, /if \(!LIST_SCREENS\.includes\(selected\.name\) \|\| !shownFeatures\(\)\.lists\) \{\s*showNav\(false\);/);
   assert.match(side, /const types = listCountsByType\(app\.data\);/);
   // Plus de liste nommée une à une dans le menu, sauf les résultats d'une recherche
   assert.equal((side.match(/entry\(list, query\)/g) ?? []).length, 1);
@@ -265,7 +265,7 @@ test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur
   assert.match(phone, /filter\.el,/);
   // Touches [ et ] : liste voisine, dans l'ordre que donne le menu
   const shortcuts = read('public/js/shortcuts.js');
-  assert.match(shortcuts, /'\[': \(\) => \(onGoList\(-1\), true\),\s*'\]': \(\) => \(onGoList\(1\), true\),/);
+  assert.match(shortcuts, /'\[': \(\) => listsShown\(\) && \(onGoList\(-1\), true\),\s*'\]': \(\) => listsShown\(\) && \(onGoList\(1\), true\),/);
   assert.match(read('public/js/app.js'), /onGoList: \(delta\) => pcSide\?\.goList\(delta\),/);
   assert.match(side, /goList\(delta\) \{/);
 });

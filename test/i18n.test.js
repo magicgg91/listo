@@ -128,7 +128,7 @@ test('configuration : LISTO_LANG (fr par défaut, fr ou en) et LISTO_CURRENCY (E
 
 test('migration 34 : langue du compte, vide au départ (automatique), seulement fr ou en', () => {
   const db = openDatabase(':memory:');
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT locale FROM users WHERE id = ?').pluck().get(id), null);
   db.prepare("UPDATE users SET locale = 'en' WHERE id = ?").run(id);

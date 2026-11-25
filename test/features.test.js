@@ -35,7 +35,7 @@ const uuid = () => crypto.randomUUID();
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 // Code sans les commentaires de ligne
 const code = (file) => read(file).split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
-const OFF = { notes: false, projects: false };
+const OFF = { lists: true, notes: false, projects: false };
 
 // Résultat d'une opération, sans son identifiant
 async function run(client, op) {
@@ -46,11 +46,11 @@ async function run(client, op) {
 // --- Règles partagées (public/js/features.js) ---
 
 test('réglage de départ : les notes sont utilisées ; valeurs abîmées ou inconnues écartées', () => {
-  assert.deepEqual(FEATURES, ['notes', 'projects']);
-  assert.deepEqual(defaultFeatures(), { notes: true, projects: false }, 'les projets sont coupés au départ');
-  for (const value of [null, undefined, 'abîmé', 42, {}, [], { notes: 'non' }, { notes: 0 }]) assert.deepEqual(normalizeFeatures(value), { notes: true, projects: false }, JSON.stringify(value));
-  assert.deepEqual(normalizeFeatures({ notes: false, projets: true }), { notes: false, projects: false });
-  assert.deepEqual(normalizeFeatures({ projects: true }), { notes: true, projects: true });
+  assert.deepEqual(FEATURES, ['lists', 'notes', 'projects']);
+  assert.deepEqual(defaultFeatures(), { lists: true, notes: true, projects: false }, 'les projets sont coupés au départ');
+  for (const value of [null, undefined, 'abîmé', 42, {}, [], { notes: 'non' }, { notes: 0 }]) assert.deepEqual(normalizeFeatures(value), { lists: true, notes: true, projects: false }, JSON.stringify(value));
+  assert.deepEqual(normalizeFeatures({ notes: false, projets: true }), { lists: true, notes: false, projects: false });
+  assert.deepEqual(normalizeFeatures({ projects: true }), { lists: true, notes: true, projects: true });
   assert.equal(projectsOn(null), false);
   assert.equal(projectsOn({ projects: true }), true);
   assert.equal(notesOn(null), true);
@@ -71,8 +71,8 @@ test('featuresChangeProblem : seulement des fonctions connues, des booléens ; r
   assert.equal(featuresChangeProblem({ projets: true }), 'ops.fonctionInconnue');
   assert.equal(featuresChangeProblem({ notes: false, userId: 1 }), 'ops.fonctionInconnue');
   assert.deepEqual(applyFeaturesChange(null, OFF), OFF);
-  assert.deepEqual(applyFeaturesChange(OFF, { notes: true }), { notes: true, projects: false });
-  assert.deepEqual(applyFeaturesChange(OFF, { projects: true }), { notes: false, projects: true });
+  assert.deepEqual(applyFeaturesChange(OFF, { notes: true }), { lists: true, notes: true, projects: false });
+  assert.deepEqual(applyFeaturesChange(OFF, { projects: true }), { lists: true, notes: false, projects: true });
   for (const key of ['ops.fonctionInconnue', 'ops.fonctionsInvalides']) assert.ok(fr[key] && en[key], key);
 });
 
@@ -144,8 +144,8 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
 
 test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; une base en version 40 migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 48);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(MIGRATIONS.length, 49);
+  assert.equal(schemaVersion(db), 49);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT notes_enabled FROM users WHERE id = ?').pluck().get(id), 1);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), defaultFeatures());
@@ -156,14 +156,14 @@ test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; un
   // Utilisateur : tout autorisé ; une ligne sans rôle n'est jamais crue,
   // traitée en invité, docs/cadrage-comptes.md)
   assert.deepEqual(featuresFromRow({ id: 1, role: 'user', guest: 0 }), defaultFeatures());
-  assert.deepEqual(featuresFromRow({ id: 1 }), OFF);
+  assert.deepEqual(featuresFromRow({ id: 1 }), { ...OFF, lists: false });
   // Base en version 40 : les comptes existants gardent les notes
   const file = path.join(tempDir(t), 'listo.db');
   const old = databaseAt(file, 40);
   old.prepare("INSERT INTO users (username, display_name, password_hash, role, home_enabled, home_start) VALUES ('paul', 'Paul', 'x', 'user', 0, 'notes')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 48);
+  assert.equal(schemaVersion(migrated), 49);
   const paul = migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get();
   assert.equal(paul.notes_enabled, 1);
   assert.equal(paul.home_enabled, 0);
@@ -256,7 +256,7 @@ test('ni les assistants IA, ni le lien public ne voient ce réglage ; seul serve
   assert.doesNotMatch(read('server/routes/admin-users.js'), /notes_enabled|projects_enabled|account\.features|featuresFor/);
   for (const file of ['server/lists.js', 'server/auth.js', 'server/routes/me.js']) assert.doesNotMatch(read(file), /notes_enabled/, file);
   const service = read('server/features.js');
-  assert.match(service, /const COLUMNS = \{ notes: 'notes_enabled', projects: 'projects_enabled' \};/);
+  assert.match(service, /const COLUMNS = \{ lists: 'lists_enabled', notes: 'notes_enabled', projects: 'projects_enabled' \};/);
   // Le compte vient toujours de la session (user.id), jamais de l'opération
   assert.match(read('server/lists.js'), /'account\.features'\(user, op\) \{\s*const \{ id, type, \.\.\.change \} = op;\s*const \{ problem, status, changed \} = features\.setFeatures\(user\.id, change\);\s*if \(problem\) throw new OpError\(status \?\? 400, problem\);\s*if \(changed\) changedForMe\(null\);/);
   // Dans le cahier des charges : les futurs outils MCP des notes refuseront
@@ -363,11 +363,11 @@ test('copie locale : synchronisation, opération hors ligne (mêmes règles), co
   loadSync(state, { serverTime: 't', listIds: [], lists: [], items: [], stores: [], aisles: [], history: [], features: OFF });
   assert.deepEqual(state.features, OFF);
   applyOp(state, { id: uuid(), type: 'account.features', notes: true }, { user: { id: 1 } });
-  assert.deepEqual(state.features, { notes: true, projects: false });
+  assert.deepEqual(state.features, { lists: true, notes: true, projects: false });
   // Refusées par les mêmes règles : rien ne change
   applyOp(state, { id: uuid(), type: 'account.features', notes: 'non' }, { user: { id: 1 } });
   applyOp(state, { id: uuid(), type: 'account.features', notes: false, userId: 2 }, { user: { id: 1 } });
-  assert.deepEqual(state.features, { notes: true, projects: false });
+  assert.deepEqual(state.features, { lists: true, notes: true, projects: false });
   applyOp(state, { id: uuid(), type: 'account.features', notes: false }, { user: { id: 1 } });
   assert.deepEqual(state.features, OFF);
   // Gardée sur le téléphone et relue à l'identique
@@ -436,10 +436,10 @@ test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles 
   // (« Nouvelle liste » et « Nouvelle note » laissent la place à « Nouveau
   // projet » ou « Nouvelle carte » sur les écrans des projets, 25 novembre 2026)
   assert.match(side, /const notesUsed = notesOn\(app\.data\.features\);\s*notesLink\.hidden = !notesUsed;/);
-  assert.match(side, /newList\.hidden = onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
+  assert.match(side, /newList\.hidden = !listsUsed \|\| onProjects \|\| \(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);\s*newNote\.hidden = onProjects \|\| !\(notesUsed && NOTE_SCREENS\.includes\(selected\.name\)\);/);
   const shortcuts = code('public/js/shortcuts.js');
   assert.match(shortcuts, /if \(notesShown\(\) && location\.hash\.startsWith\('#\/notes'\)\) navigate\('newNote'/);
-  assert.match(shortcuts, /\[\['N'\], t\(notesShown\(\) \? 'raccourcis\.partout\.nouvelleListe' : 'navigation\.nouvelleListe'\)\]/);
+  assert.match(shortcuts, /if \(listsShown\(\)\) return t\(notesShown\(\) \? 'raccourcis\.partout\.nouvelleListe' : 'navigation\.nouvelleListe'\);/);
   assert.match(code('public/js/app.js'), /notesOn: \(\) => notesOn\(app\.data\.features\),/);
   // La recherche du menu de gauche ne cherche que des listes
   assert.doesNotMatch(read('public/js/search.js'), /notes/i);
@@ -474,7 +474,7 @@ test('écran Réglages › Fonctions : interrupteur relié à son titre et sa ph
   assert.match(screen, /if \(held\) body\.querySelector\(`\[data-key="\$\{held\}"\]`\)\?\.focus\(\);/);
   assert.match(screen, /h\('p', \{ class: 'page-intro' \}, t\('reglages\.fonctions\.intro'\)\)/);
   // Seulement les fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
-  assert.match(screen, /const offered = FEATURES\.filter\(\(name\) => allowed\[name\]\);/);
+  assert.match(screen, /const offered = offeredFeatures\(allowed, role\);/);
   assert.match(screen, /offered\.map\(\(name\) => featureRow\(features, name\)\)/);
   assert.match(screen, /h\('div', \{ class: 'group-after' \}, h\('p', \{ class: 'muted' \}, t\(limited \? 'reglages\.fonctions\.note\.autorisees' : 'reglages\.fonctions\.note'\)\)\)/);
   assert.match(screen, /topbar\(t\('reglages\.fonctions'\), \(\) => goBack\('settings'\)\)/);

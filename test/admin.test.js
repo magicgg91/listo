@@ -140,7 +140,7 @@ test('créer un compte : validations, mot de passe à changer à la première co
       mustChangePassword: true, createdAt: '', inUse: false, authelia: false,
       // Fonctions autorisées (docs/cadrage-comptes.md, étape 2) : tout pour un
       // Utilisateur ; utilisées : les notes (allumées au départ)
-      allowed: { notes: true, projects: true, projectsCreate: true, mcp: true }, used: { notes: true, projects: false } },
+      allowed: { lists: true, notes: true, projects: true, projectsCreate: true, mcp: true }, used: { lists: true, notes: true, projects: false } },
   );
   assert.ok(!res.text.includes('scrypt'), "l'empreinte du mot de passe n'est jamais renvoyée");
 

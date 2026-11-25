@@ -78,7 +78,7 @@ const statusOf = (res) => [res.status, res.code ?? null];
 // --- Migration 43 ---
 
 test('migration 43 : tables des projets, projects_enabled coupé au départ, home_start accepte « projects » ; base existante mise à jour, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(MIGRATIONS.length, 49);
   const fresh = openDatabase(':memory:');
   assert.equal(schemaVersion(fresh), MIGRATIONS.length);
   for (const table of ['projects', 'project_members', 'project_columns', 'project_labels', 'cards', 'card_labels', 'card_assignees', 'card_events', 'project_user_state']) {
@@ -91,7 +91,7 @@ test('migration 43 : tables des projets, projects_enabled coupé au départ, hom
   old.prepare("INSERT INTO users (username, display_name, password_hash, home_enabled, home_start, notes_enabled) VALUES ('anne', 'Anne', 'x', 0, 'notes', 0), ('bob', 'Bob', 'x', 1, 'deadlines', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
   assert.deepEqual(db.prepare('SELECT username, home_enabled, home_start, notes_enabled, projects_enabled FROM users ORDER BY id').all(), [
     { username: 'anne', home_enabled: 0, home_start: 'notes', notes_enabled: 0, projects_enabled: 0 },
     { username: 'bob', home_enabled: 1, home_start: 'deadlines', notes_enabled: 1, projects_enabled: 0 },
@@ -120,9 +120,9 @@ test('migration 43 : tables des projets, projects_enabled coupé au départ, hom
 
 test('projets coupés (au départ) : rien d\'envoyé, opérations et routes refusées (403), rien d\'effacé ; rallumés, tout revient', async (t) => {
   const h = await household(t, { projectsOn: false });
-  assert.deepEqual((await h.people.lea.client.get('/api/me')).body.user.features, { notes: true, projects: false });
+  assert.deepEqual((await h.people.lea.client.get('/api/me')).body.user.features, { lists: true, notes: true, projects: false });
   let data = await h.sync('lea');
-  assert.deepEqual([data.features, data.projects, data.projectIds, data.cards, data.projectMine], [{ notes: true, projects: false }, [], [], [], {}]);
+  assert.deepEqual([data.features, data.projects, data.projectIds, data.cards, data.projectMine], [{ lists: true, notes: true, projects: false }, [], [], [], {}]);
   const projectId = uuid();
   const refused = await h.one('lea', { type: 'project.create', projectId, name: 'Secret' });
   assert.deepEqual(statusOf(refused), [403, 'ops.projetsCoupes']);

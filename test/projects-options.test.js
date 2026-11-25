@@ -97,9 +97,9 @@ async function household(t) {
 // --- Migration 46 ---
 
 test('migration 46 : projects.deadlines_enabled, allumée au départ (projets existants compris), 0 ou 1 seulement ; une base 45 migre sans rien changer', (t) => {
-  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(MIGRATIONS.length, 49);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 48);
+  assert.equal(schemaVersion(fresh), 49);
   const column = fresh.prepare('PRAGMA table_info(projects)').all().find((c) => c.name === 'deadlines_enabled');
   assert.deepEqual([column.notnull, column.dflt_value], [1, '1']);
   const file = path.join(tempDir(t), 'old.db');
@@ -110,7 +110,7 @@ test('migration 46 : projects.deadlines_enabled, allumée au départ (projets ex
   old.prepare("INSERT INTO cards (id, project_id, column_id, position, title, created_by, created_at, updated_at, due_date, due_done) VALUES ('k', 'p', 'c', 1, 'T', 1, 'x', 'x', '2026-11-28', 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
   assert.deepEqual({ ...db.prepare('SELECT name, priority_enabled, deadlines_enabled FROM projects').get() }, { name: 'P', priority_enabled: 1, deadlines_enabled: 1 }, 'un projet d\'avant : option allumée, le reste inchangé');
   assert.deepEqual({ ...db.prepare('SELECT due_date, due_done FROM cards').get() }, { due_date: '2026-11-28', due_done: 1 });
   for (const bad of [2, -1, null]) assert.throws(() => db.prepare('UPDATE projects SET deadlines_enabled = ?').run(bad), /constraint/i, String(bad));

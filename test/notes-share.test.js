@@ -54,9 +54,9 @@ async function sharedNote(t) {
 // --- Migration 37 ---
 
 test('migration 37 : membres, lien public, lecture et sourdines ; base existante mise à jour, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(MIGRATIONS.length, 49);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 48);
+  assert.equal(schemaVersion(fresh), 49);
   for (const table of ['note_members', 'note_public_shares']) {
     assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
   }
@@ -71,7 +71,7 @@ test('migration 37 : membres, lien public, lecture et sourdines ; base existante
   old.prepare("INSERT INTO note_user_state (note_id, user_id, pinned) VALUES ('n1', 1, 1)").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 48);
+  assert.equal(schemaVersion(db), 49);
   assert.deepEqual(db.prepare('SELECT title, changed_at FROM notes').get(), { title: 'Codes', changed_at: '2026-11-02T00:00:00.000Z' });
   assert.deepEqual(db.prepare('SELECT pinned, last_read_version, muted_news, muted_push FROM note_user_state').get(), { pinned: 1, last_read_version: 0, muted_news: 0, muted_push: 0 });
   assert.equal(db.prepare('SELECT COUNT(*) FROM note_members').pluck().get(), 0, 'aucune note partagée au départ');

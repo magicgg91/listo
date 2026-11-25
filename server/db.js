@@ -1113,6 +1113,57 @@ export const MIGRATIONS = [
   `
   ALTER TABLE projects ADD COLUMN deadlines_enabled INTEGER NOT NULL DEFAULT 1 CHECK (deadlines_enabled IN (0, 1));
   `,
+
+  // --- Migration 47 : rôle « Invité » (25 novembre 2026,
+  // docs/cadrage-comptes.md, étape 1) ---
+  // users.guest : 1 pour un invité (toujours discret : absent de l'annuaire
+  // des autres sauf des Admin, annuaire vide). users.role garde ses deux
+  // valeurs ('admin', 'user') : une colonne ajoutée, sans recréer la table
+  // des comptes (que 43 tables référencent). La contrainte interdit
+  // « invité et Admin ». 0 pour tous les comptes existants : rien ne change
+  // pour eux. Le rôle se lit seulement par accountRole()
+  // (public/js/access.js).
+  `
+  ALTER TABLE users ADD COLUMN guest INTEGER NOT NULL DEFAULT 0 CHECK (guest IN (0, 1) AND (guest = 0 OR role = 'user'));
+  `,
+
+  // --- Migration 48 : fonctions autorisées par l'Admin (25 novembre 2026,
+  // docs/cadrage-comptes.md, étape 2) ---
+  // Cases de la page d'un compte (Administration › Comptes) : ce que la
+  // personne PEUT utiliser. Elle allume ensuite elle-même Notes et Projets
+  // dans Réglages › Fonctions (notes_enabled, projects_enabled, qui
+  // existent déjà) ; une fonction est utilisée si elle est autorisée ET
+  // allumée (public/js/features.js, usedFeatures).
+  // - notes_allowed, projects_allowed : Notes, Projets ;
+  // - projects_create : « Peut créer ses propres projets » (permission,
+  //   sans interrupteur personnel) ;
+  // - mcp_allowed : « Assistants IA » (permission).
+  // 1 pour tous les comptes existants : la famille garde tout ce qu'elle a.
+  // Ignorées pour un Admin (il a tout). Un nouvel invité reçoit 0 partout,
+  // écrit par le serveur à la création (public/js/access.js, defaultAllowed).
+  `
+  ALTER TABLE users ADD COLUMN notes_allowed INTEGER NOT NULL DEFAULT 1 CHECK (notes_allowed IN (0, 1));
+  ALTER TABLE users ADD COLUMN projects_allowed INTEGER NOT NULL DEFAULT 1 CHECK (projects_allowed IN (0, 1));
+  ALTER TABLE users ADD COLUMN projects_create INTEGER NOT NULL DEFAULT 1 CHECK (projects_create IN (0, 1));
+  ALTER TABLE users ADD COLUMN mcp_allowed INTEGER NOT NULL DEFAULT 1 CHECK (mcp_allowed IN (0, 1));
+  `,
+
+  // --- Migration 49 : les Listes d'un invité (25 novembre 2026,
+  // docs/cadrage-comptes.md, étape 3) ---
+  // - lists_allowed : case « Listes » de l'Admin (page du compte) ;
+  // - lists_enabled : interrupteur « Listes » de la personne (Réglages ›
+  //   Fonctions).
+  // Lues pour un INVITÉ seulement : un Admin et un Utilisateur ont
+  // toujours les Listes, quelles que soient ces valeurs (public/js/
+  // access.js et features.js). 1 au départ (un nouveau compte de la
+  // famille, sans effet) ; pour les invités déjà créés (étapes 1 et 2,
+  // aucun en service), le choix le plus sûr : Listes NON autorisées et
+  // éteintes (l'Admin les coche s'il le veut).
+  `
+  ALTER TABLE users ADD COLUMN lists_allowed INTEGER NOT NULL DEFAULT 1 CHECK (lists_allowed IN (0, 1));
+  ALTER TABLE users ADD COLUMN lists_enabled INTEGER NOT NULL DEFAULT 1 CHECK (lists_enabled IN (0, 1));
+  UPDATE users SET lists_allowed = 0, lists_enabled = 0 WHERE guest = 1;
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

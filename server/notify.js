@@ -116,6 +116,7 @@ import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { noteTitle, noteExcerpt } from '../public/js/notes.js';
 import { projectAccess } from './projects.js';
+import { createFeatures, LISTS_NOT_ALLOWED } from './features.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -160,6 +161,10 @@ function peopleList(locale, names) {
 // ctx.inbox : la page Notifications (server/inbox.js)
 export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {}) {
   const { db } = ctx;
+  // Fonctions de chaque compte (server/features.js) : une notification des
+  // notes ou des projets n'est remise que pour une fonction UTILISÉE
+  // (autorisée par l'Admin ET allumée), relue à chaque envoi
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   const hasDevices = (userId) => Boolean(push?.hasDevices(userId));
   const origin = new URL(ctx.config.publicUrl).origin;
   const listUrl = (listId) => `${origin}/#/listes/${encodeURIComponent(listId)}`;
@@ -218,7 +223,8 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
         AND NOT EXISTS (SELECT 1 FROM push_list_mutes WHERE push_list_mutes.list_id = lists.id AND push_list_mutes.user_id = :userId)
       ORDER BY items.due_date, COALESCE(items.due_time, '99:99'), items.name COLLATE NOCASE`),
     // Cartes des projets montrés dans Échéances (étape 4 du cadrage des
-    // projets, section 8), relues de même : projets allumés pour ce compte,
+    // projets, section 8), relues de même : projets utilisés par ce compte
+    // (autorisés et allumés : vérifié avant, server/features.js),
     // projet présent dont il est propriétaire ou membre, « Afficher dans
     // Échéances » allumé par lui, option « Échéances » du projet allumée
     // (migration 46 ; public/js/projects.js, deadlinesOn), notifications du
@@ -228,7 +234,6 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     dueCards: db.prepare(`SELECT cards.id, cards.title AS name, cards.due_date, cards.due_time, projects.id AS project_id, projects.name AS project_name
       FROM cards
       JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL AND projects.deadlines_enabled = 1
-      JOIN users ON users.id = :userId AND users.projects_enabled = 1
       JOIN project_user_state ON project_user_state.project_id = projects.id AND project_user_state.user_id = :userId
         AND project_user_state.in_deadlines = 1 AND project_user_state.muted_push = 0
       WHERE (projects.owner_id = :userId OR EXISTS (SELECT 1 FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId))
@@ -254,7 +259,6 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     note: db.prepare(`SELECT notes.id, notes.title, notes.body, notes.owner_id, notes.version, notes.deleted_at,
         (SELECT access FROM note_members WHERE note_members.note_id = notes.id AND note_members.user_id = :userId) AS member_access,
         (SELECT active FROM users WHERE users.id = :userId) AS user_active,
-        (SELECT notes_enabled FROM users WHERE users.id = :userId) AS notes_enabled,
         COALESCE((SELECT muted_push FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS muted_push,
         COALESCE((SELECT last_read_version FROM note_user_state WHERE note_user_state.note_id = notes.id AND note_user_state.user_id = :userId), 0) AS read_version
       FROM notes WHERE notes.id = :noteId`),
@@ -269,7 +273,6 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     project: db.prepare(`SELECT projects.id, projects.name, projects.owner_id, projects.deleted_at,
         (SELECT access FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId) AS member_access,
         (SELECT active FROM users WHERE users.id = :userId) AS user_active,
-        (SELECT projects_enabled FROM users WHERE users.id = :userId) AS projects_enabled,
         COALESCE((SELECT muted_push FROM project_user_state WHERE project_user_state.project_id = projects.id AND project_user_state.user_id = :userId), 0) AS muted_push,
         COALESCE((SELECT last_seen_event FROM project_user_state WHERE project_user_state.project_id = projects.id AND project_user_state.user_id = :userId), 0) AS seen
       FROM projects WHERE projects.id = :projectId`),
@@ -321,11 +324,19 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
   }
 
   // La personne peut-elle recevoir une notification de cette catégorie pour
-  // cette liste ? Renvoie la liste (telle qu'elle la voit) ou null.
+  // cette liste ? Renvoie la liste (telle qu'elle la voit) ou null. Listes
+  // non utilisées (un invité sans « Listes », docs/cadrage-comptes.md, étape
+  // 3 ; server/features.js) : rien, ni sur la page Notifications ni sur le
+  // téléphone, sauf « Partage » quand l'Admin les autorise et que la
+  // personne les a éteintes (l'invitation à les rallumer, comme pour les
+  // projets) ; listsOff : ce cas (ajouté à la liste rendue).
   function allowed(userId, listId, category, actorId = null) {
     if (userId === actorId) return null;                       // jamais l'auteur
     const list = q.memberList.get({ userId, listId });
     if (!list) return null;                                     // plus membre, compte inactif, liste supprimée
+    const refusal = features.listsRefusal(userId);
+    if (refusal === LISTS_NOT_ALLOWED) return null;              // pas autorisées : rien, pas même « Partage »
+    if (refusal && category !== 'sharing') return null;          // éteintes : seulement « Partage »
     if (!settingsOf(userId)[category]) return null;             // catégorie coupée
     if (q.muted.get(listId, userId)) return null;               // liste silencée
     if (list.type === 'wishes') {
@@ -336,7 +347,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       if (category === 'wishes' && !seesReservations(userId, wish)) return null;
     }
     if (category === 'wishes' && list.type !== 'wishes') return null;
-    return list;
+    return refusal ? { ...list, listsOff: true } : list;
   }
 
   // --- Notes : réglages ---
@@ -353,15 +364,15 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     q.setNoteMuted.run({ noteId, userId, muted: muted ? 1 : 0 });
   }
   // La personne peut-elle recevoir cette notification de note ? La note
-  // (telle qu'elle la voit) ou null. Notes coupées par la personne
-  // (Réglages › Fonctions, users.notes_enabled = 0, server/features.js) :
-  // rien, ni sur la page Notifications ni sur le téléphone (les deux
-  // passent par ici, puis par deliver).
+  // (telle qu'elle la voit) ou null. Notes non utilisées par la personne
+  // (pas autorisées par l'Admin, ou coupées dans Réglages › Fonctions ;
+  // server/features.js) : rien, ni sur la page Notifications ni sur le
+  // téléphone (les deux passent par ici, puis par deliver).
   function allowedNote(userId, noteId, category, actorId = null) {
     if (userId === actorId) return null;
     const note = visibleNote(userId, noteId);
     if (!note) return null;
-    if (note.notes_enabled !== 1) return null;
+    if (!features.featuresFor(userId).notes) return null;
     if (!settingsOf(userId)[category]) return null;
     if (note.muted_push === 1) return null;
     return note;
@@ -369,14 +380,18 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
 
   // --- Projets : la personne peut-elle recevoir cette notification ? ---
   // Le projet (tel qu'elle le voit) ou null : jamais l'auteur ; compte
-  // actif, membre (projectAccess), projet hors corbeille ; projets allumés
-  // (sauf « Partage » : remise même projets coupés, décision du 25
-  // novembre 2026) ; catégorie allumée ; projet dont elle n'a pas coupé
-  // les notifications.
+  // actif, membre (projectAccess), projet hors corbeille ; projets
+  // autorisés par l'Admin (docs/cadrage-comptes.md, étape 2 : sinon rien,
+  // même pas « Partage ») et allumés (sauf « Partage » : remise même
+  // projets coupés, décision du 25 novembre 2026) ; catégorie allumée ;
+  // projet dont elle n'a pas coupé les notifications. projects_enabled :
+  // projets utilisés (ajouté à la ligne rendue).
   function allowedProject(userId, projectId, category, actorId = null) {
     if (userId === actorId) return null;
-    const project = q.project.get({ userId, projectId });
-    if (!project || project.user_active !== 1 || project.deleted_at || !projectAccess({ id: userId }, project)) return null;
+    const row = q.project.get({ userId, projectId });
+    if (!row || row.user_active !== 1 || row.deleted_at || !projectAccess({ id: userId }, row)) return null;
+    if (!features.allowedFor(userId).projects) return null;
+    const project = { ...row, projects_enabled: features.featuresFor(userId).projects ? 1 : 0 };
     if (category !== 'sharing' && project.projects_enabled !== 1) return null;
     if (!settingsOf(userId)[category]) return null;
     if (category !== 'sharing' && project.muted_push === 1) return null;
@@ -853,16 +868,19 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       targetType: 'list',
       targetId: listId,
     };
+    // Listes éteintes par la personne (invité) : l'invitation à les
+    // rallumer, qui ouvre Réglages › Fonctions
+    const off = list.listsOff === true;
     const message = () => (kind === 'added'
       ? buildMessage({
         title: translate(locale, 'alertes.partage.ajoute', { actor, list: list.name }),
-        body: translate(locale, canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
-        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.ajoute.modification' : 'alertes.partage.ajoute.lecture'),
+        navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       })
       : buildMessage({
         title: translate(locale, 'alertes.partage.droit', { list: list.name }),
-        body: translate(locale, canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
-        navigate: listUrl(listId), tag: `partage-${listId}`, locale,
+        body: translate(locale, off ? 'alertes.liste.allumer' : canEdit ? 'alertes.partage.droit.modification' : 'alertes.partage.droit.lecture'),
+        navigate: off ? `${origin}/#/reglages/fonctions` : listUrl(listId), tag: `partage-${listId}`, locale,
       }));
     deliver(userId, entry, message);
   }
@@ -913,8 +931,10 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
       if (!q.claimDigest.run({ userId, day: today }).changes) continue;
       const settings = settingsOf(userId);
       if (!settings.due) continue;
-      const tasks = q.dueTasks.all({ userId, today });
-      const cards = q.dueCards.all({ userId, today });
+      // Tâches : seulement listes utilisées (un invité sans « Listes » : aucune)
+      const tasks = features.listsUsed(userId) ? q.dueTasks.all({ userId, today }) : [];
+      // Cartes : seulement projets utilisés (autorisés et allumés)
+      const cards = features.featuresFor(userId).projects ? q.dueCards.all({ userId, today }) : [];
       if (!tasks.length && !cards.length) continue;
       const dueToday = [...tasks, ...cards].filter((task) => task.due_date === today).length;
       // (les nombres seulement : ni nom de tâche, ni titre de carte en base)

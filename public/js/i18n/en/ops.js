@@ -85,6 +85,8 @@ export default {
   'ops.accueilTuilesInvalides': 'Invalid Home tiles: each known tile, only once.',
   'ops.accueilCompteToujours': 'The Account tile is always shown.',
   'ops.fonctionInconnue': 'Unknown feature: notes and projects only.',
+  // Features allowed by the Admin (docs/cadrage-comptes.md, step 2)
+  'ops.fonctionNonAutorisee': 'This feature isn\'t open for your account: the Admin allows it.',
   'ops.fonctionsInvalides': 'Invalid features setting: yes or no for each feature.',
 
   // Créer, modifier une liste
@@ -92,6 +94,14 @@ export default {
   'ops.magasinCoursesSeulement': 'A store can only be chosen for a shopping list.',
   'ops.pourQuiPasIci': '“Who is it for?” can only be set for a wish list.',
   'ops.utilisateurInconnu': 'Unknown or disabled user.',
+  // Comptes invités (docs/cadrage-comptes.md) : un invité ne partage jamais
+  // ce qu'il possède ; il n'est jamais destinataire d'une liste d'envies
+  // (refus nommé pour l'Admin, seul à voir les invités)
+  'ops.invitePartageInterdit': 'A guest account can\'t share: the Admin takes care of it.',
+  'ops.personneSansNotes': '{name} doesn\'t use notes.',
+  'ops.personneSansProjets': '{name} doesn\'t use projects.',
+  'ops.personneSansListes': '{name} doesn\'t use lists.',
+  'ops.inviteDestinataire': 'A guest can\'t receive a wish list.',
   'ops.compteOuPersonne': 'Choose an account or a person without an account, not both.',
   'ops.destinataireFixe': "The person the list is for can't be changed.",
   'ops.rienAModifier': 'Nothing to change.',
@@ -169,6 +179,11 @@ export default {
   'ops.carteRestaurerSiennes': 'You can only restore the cards you created.',
   'ops.carteAttribuerSiennes': "On a card you didn't create, you can only remove yourself from the people.",
   'ops.projetsCoupes': 'Projects are turned off for your account (Settings › Features).',
+  'ops.projetsNonAutorises': 'Projects aren\'t open for your account: the Admin allows them.',
+  'ops.creationProjetInterdite': 'Your account can\'t create projects.',
+  'ops.listesNonAutorisees': 'Lists aren\'t open for your account: the Admin allows them.',
+  'ops.listesCoupees': 'Lists are turned off for your account (Settings › Features).',
+  'ops.notesNonAutorisees': 'Notes aren\'t open for your account: the Admin allows them.',
   'ops.projetExisteDeja': 'This project already exists.',
   'ops.projetsLimite': 'You already have {max} projects, trash included: delete some before creating another.',
   'ops.projetsTropVite': 'Too many projects created or duplicated right now. Try again in an hour.',

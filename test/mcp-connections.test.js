@@ -136,10 +136,10 @@ test('écran et aide : entrée de Mon compte et rubrique d\'aide seulement si l\
   // Ancienne adresse (favoris, anciens liens) : remplacée par la nouvelle
   assert.deepEqual(matchRoute('#/reglages/claude'), { name: 'oldClaudeConnections', params: {} });
   const account = read('public/js/screens/account.js');
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
+  assert.match(account, /user\.claudeUrl && allowedNow\(\)\.mcp \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   assert.match(account, /navigate\('claudeConnections'\)/);
   const app = read('public/js/app.js');
-  assert.match(app, /case 'claudeConnections':\s*if \(app\.user\.claudeUrl\) mount\(\(\) => renderClaudeConnections\(\)\);\s*else navigate\('account', \{\}, \{ replace: true \}\);/);
+  assert.match(app, /case 'claudeConnections':\s*if \(app\.user\.claudeUrl && allowedNow\(\)\.mcp\) mount\(\(\) => renderClaudeConnections\(\)\);\s*else navigate\('account', \{\}, \{ replace: true \}\);/);
   assert.match(app, /case 'oldClaudeConnections': navigate\('claudeConnections', \{\}, \{ replace: true \}\); break;/);
   assert.equal(fr['compte.claude'], 'Assistants IA');
   assert.equal(fr['compte.claude.connexions'], 'Assistants IA');

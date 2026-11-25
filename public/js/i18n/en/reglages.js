@@ -10,6 +10,10 @@ export default {
   },
   'reglages.role.admin': 'Admin',
   'reglages.role.utilisateur': 'User',
+  'reglages.role.invite': 'Guest',
+  // Encadré « Compte invité » des Réglages (un invité seulement)
+  'reglages.invite.titre': 'Guest account',
+  'reglages.invite.texte': 'Your access is set by the Admin: you see what\'s shared with you, and its members.',
 
   // Réglages (téléphone)
   'reglages.titre': 'Settings',
@@ -56,11 +60,23 @@ export default {
   'reglages.fonctions': 'Features',
   'reglages.fonctions.detail': 'Notes, Projects',
   'reglages.fonctions.intro': 'Choose the features you use. A feature you turn off disappears from your screens; nothing is deleted.',
+  'reglages.fonctions.listes': 'Lists',
+  'reglages.fonctions.listes.detail': 'Shopping, tasks and wishes, with Due and “To give”.',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Free-form texts, to keep for yourself or to share.',
   'reglages.fonctions.projets': 'Projects',
   'reglages.fonctions.projets.detail': 'Boards of cards sorted into columns (ideas, in progress, done…), to share.',
   'reglages.fonctions.note': 'Applies to all your devices.',
+  // Features allowed by the Admin (docs/cadrage-comptes.md, step 2)
+  'reglages.fonctions.note.autorisees': 'Only the features the Admin allowed for your account are offered. Applies to all your devices.',
+  'reglages.fonctions.aucune': 'No feature is open for your account yet: the Admin takes care of it.',
+  'reglages.fonctions.detail.notes': 'Notes',
+  'reglages.fonctions.detail.projets': 'Projects',
+  'reglages.fonctions.detail.aucune': 'None for now',
+  'reglages.fonctions.detail.listes': 'Lists',
+  'reglages.fonctions.detail.listesNotes': 'Lists, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Lists, Projects',
+  'reglages.fonctions.detail.tout': 'Lists, Notes, Projects',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Single-key shortcuts enabled',

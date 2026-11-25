@@ -19,6 +19,7 @@
 
 import express from 'express';
 import { checkDuration, DEFAULT_DURATION_HOURS } from '../shares.js';
+import { accountRole, mayShareOwn } from '../../public/js/access.js';
 
 // Noms des messages (public/js/i18n/fr/liens.js), traduits par req.t
 const LIST_NOT_FOUND = 'liens.listeIntrouvable';
@@ -43,6 +44,9 @@ export function shareRoutes(ctx) {
   });
 
   router.put('/lists/:id/share', ownList, async (req, res) => {
+    // Un invité ne partage jamais ce qu'il possède : pas de lien public
+    // (docs/cadrage-comptes.md) ; il peut arrêter un ancien lien
+    if (!mayShareOwn(accountRole(req.user))) return res.status(403).json({ error: req.t('ops.invitePartageInterdit') });
     // Liste d'envies : lien public permis (lecture seule ; la page publique
     // ne lit jamais les réservations, voir routes/public.js)
     const body = req.body ?? {};
@@ -60,6 +64,9 @@ export function shareRoutes(ctx) {
         durationHours: durationHours === undefined ? DEFAULT_DURATION_HOURS : durationHours,
         protect: body.protect === true,
       });
+      // Propriétaire devenu invité, sans Listes ou désactivé pendant le
+      // calcul du mot de passe : la réponse des contrôles habituels
+      if (created?.refusal) return res.status(created.refusal.status).json({ error: req.t(created.refusal.key) });
       if (!created) return res.status(409).json({ error: req.t('liens.dejaActif') });
       audit('public_link_created', { ...who(req, created.share), duration: created.share.expires_at ? `${durationHours ?? DEFAULT_DURATION_HOURS} h` : 'unlimited', password_protected: created.password !== null });
       return res.status(201).json({ share: shares.describe(created.share, { password: created.password }) });

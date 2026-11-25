@@ -31,14 +31,15 @@ import { renderProjectSettings } from './screens/project-settings.js';
 import { renderProjectTrash } from './screens/project-trash.js';
 import { tabBar, hasTabs, tabOf } from './tabbar.js';
 import { firstScreen, normalizeHome } from './home-tiles.js';
-import { normalizeFeatures, screenAllowed, notesOn, projectsOn } from './features.js';
+import { normalizeFeatures, screenAllowed, notesOn, projectsOn, screenFeatures } from './features.js';
+import { normalizeAllowed, mayCreateProjects } from './access.js';
 import { askedTrashTab } from './trash-tabs.js';
 import { createPcSide } from './screens/pc-side.js';
 import { renderList } from './screens/list.js';
 import { renderListForm, openListFormPanel } from './screens/list-form.js';
 import { renderSettings, renderAbout, renderPassword, renderTwoFactor } from './screens/settings.js';
 import { renderAccount } from './screens/account.js';
-import { renderAdmin } from './screens/admin.js';
+import { renderAdmin, renderAdminAccount } from './screens/admin.js';
 import { renderHelp } from './screens/help.js';
 import { renderNotifications } from './screens/notifications.js';
 import { renderHomeSettings } from './screens/home-settings.js';
@@ -81,7 +82,18 @@ export const app = {
 // quand elle l'a coupé (Réglages › Accueil, home-tiles.js ; réglage du
 // compte, gardé avec la copie locale : hors ligne compris). Écran d'une
 // fonction coupée (Réglages › Fonctions, features.js) : « Listes ».
-export const openingScreen = () => firstScreen(app.data.home, app.data.features);
+export const openingScreen = () => firstScreen(app.data.home, shownFeatures());
+
+// Ce que les écrans montrent (features.js, screenFeatures) : les fonctions
+// utilisées (autorisées par l'Admin et allumées), et la règle de l'écran
+// « Échéances » d'un invité (docs/cadrage-comptes.md, décision 5)
+export const shownFeatures = () => screenFeatures(app.data, app.user?.role);
+// Ce que l'Admin m'a autorisé (access.js) : reçu avec la synchronisation,
+// sinon avec /api/me, sinon les valeurs de départ de mon rôle
+export const allowedNow = () => normalizeAllowed(app.data.allowed ?? app.user?.allowed, app.user?.role);
+// « Nouveau projet », « Dupliquer le projet » : la permission de l'Admin
+// (« Peut créer ses propres projets ») et les projets utilisés
+export const canCreateProjects = () => mayCreateProjects(allowedNow(), app.data.features);
 
 // Abonnements aux changements de données (les écrans se redessinent)
 const listeners = new Set();
@@ -95,11 +107,11 @@ export function onDataChange(listener) {
 // instant plus tard : jamais pendant que les écrans se redessinent)
 let leavingScreen = false;
 onDataChange(() => {
-  if (leavingScreen || !app.user || !app.route || screenAllowed(app.route.name, app.data.features)) return;
+  if (leavingScreen || !app.user || !app.route || screenAllowed(app.route.name, shownFeatures())) return;
   leavingScreen = true;
   setTimeout(() => {
     leavingScreen = false;
-    if (app.user && app.route && !screenAllowed(app.route.name, app.data.features)) navigate(openingScreen(), {}, { replace: true });
+    if (app.user && app.route && !screenAllowed(app.route.name, shownFeatures())) navigate(openingScreen(), {}, { replace: true });
   });
 });
 export function dataChanged() {
@@ -220,8 +232,9 @@ async function openAccount(user) {
   // récent que la copie (changé sur un autre appareil) ; la file d'attente,
   // rejouée juste après, y remet un changement pas encore envoyé
   if (user.home) app.data.home = normalizeHome(user.home);
-  // Réglage « Fonctions » : de même
+  // Réglage « Fonctions » : de même (et ce que l'Admin a autorisé)
   if (user.features) app.data.features = normalizeFeatures(user.features);
+  if (user.allowed) app.data.allowed = { ...user.allowed };
   // File d'attente du compte : ce qui n'était pas encore envoyé repartira
   queue?.stop();
   queue = makeQueue();
@@ -583,6 +596,7 @@ export function loggedIn(user) {
   // tout de suite
   if (user.home) app.data.home = normalizeHome(user.home);
   if (user.features) app.data.features = normalizeFeatures(user.features);
+  if (user.allowed) app.data.allowed = { ...user.allowed };
   openAccount(user).then(() => {
     refreshData({ quiet: true, full: true });
     goLive();
@@ -699,6 +713,9 @@ startShortcuts({
   notesOn: () => notesOn(app.data.features),
   // Projets coupés (le départ) : pas de groupe « Projet » dans les raccourcis
   projectsOn: () => projectsOn(app.data.features),
+  // Listes non utilisées (un invité sans « Listes ») : ni groupe « Liste »,
+  // ni [ et ], et N ne crée pas de liste
+  listsOn: () => shownFeatures().lists,
 });
 desktop.addEventListener('change', () => {
   // Fenêtres ouvertes refermées d'abord (tiroir, fenêtre centrée, feuille),
@@ -857,14 +874,14 @@ function show(route) {
     navigate(openingScreen(), {}, { replace: true });
     return;
   }
-  if (name === 'admin' && app.user.role !== 'admin') {
+  if ((name === 'admin' || name === 'adminAccount') && app.user.role !== 'admin') {
     navigate('settings', {}, { replace: true });
     return;
   }
   // Écran d'une fonction coupée par la personne (Réglages › Fonctions,
   // features.js : #/notes, une note…) : le premier écran ; l'onglet
   // « Notes » de la Corbeille mène à la corbeille des listes (plus bas)
-  if (!screenAllowed(name, app.data.features)) {
+  if (!screenAllowed(name, shownFeatures())) {
     navigate(openingScreen(), {}, { replace: true });
     return;
   }
@@ -941,6 +958,12 @@ function show(route) {
       else mount((onLeave) => renderTwoFactor(onLeave));
       break;
     case 'admin': mount((onLeave) => renderAdmin(params.tab, onLeave)); break;
+    // Page d'un compte : un écran sur le téléphone ; sur ordinateur, à
+    // droite de la liste des comptes (onglet « Comptes »)
+    case 'adminAccount':
+      if (isDesktop()) mount((onLeave) => renderAdmin('comptes', onLeave, { accountId: params.id }));
+      else mount((onLeave) => renderAdminAccount(params.id, onLeave));
+      break;
     case 'help': mount(() => renderHelp()); break;
     // Aide ouverte sur une section précise (renvoi depuis un autre écran)
     case 'helpSection': mount(() => renderHelp(params.section)); break;
@@ -949,7 +972,7 @@ function show(route) {
     // fonction coupée : la Corbeille sans onglet dans l'adresse
     case 'trash': mount((onLeave) => renderTrash(null, onLeave)); break;
     case 'trashTab': {
-      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features));
+      const tab = askedTrashTab(params.tab, notesOn(app.data.features), projectsOn(app.data.features), shownFeatures().lists);
       if (tab) mount((onLeave) => renderTrash(tab, onLeave));
       else navigate('trash', {}, { replace: true });
       break;
@@ -964,7 +987,7 @@ function show(route) {
     case 'authorize': mount(() => renderClaudeConsent(params.id), { withSide: false }); break;
     // Assistants IA : seulement si l'accès est activé sur le serveur
     case 'claudeConnections':
-      if (app.user.claudeUrl) mount(() => renderClaudeConnections());
+      if (app.user.claudeUrl && allowedNow().mcp) mount(() => renderClaudeConnections());
       else navigate('account', {}, { replace: true });
       break;
     // Ancienne adresse (#/reglages/claude) : remplacée par la nouvelle

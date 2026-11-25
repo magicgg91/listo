@@ -41,7 +41,7 @@
 
 import { h, icon, replace } from './dom.js';
 import { navigate, goBack } from './router.js';
-import { app, onDataChange } from './app.js';
+import { app, onDataChange, shownFeatures } from './app.js';
 import { deadlineBadges, deadlinesLabel, badgeText } from './deadlines.js';
 import { watchNewDay, watchMinute } from './ui.js';
 import { tabScreens } from './home-tiles.js';
@@ -145,7 +145,7 @@ function createTabBar() {
   let current = null; // bouton de l'écran affiché
   const arrange = () => {
     // (réglage du compte, copie locale ; home-tiles.js)
-    const names = tabScreens(app.data.home, app.data.features);
+    const names = tabScreens(app.data.home, shownFeatures());
     if (names.join() === shown.join()) return false;
     shown = names;
     for (let count = 1; count <= TABS.length; count++) nav.classList.remove(`tabbar--${count}`);

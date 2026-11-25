@@ -23,6 +23,14 @@
 //   le flux est coupé ;
 // - un message ne part qu'aux membres actifs de la liste, après l'écriture
 //   réussie en base ;
+// - un compte qui n'utilise pas les listes (un invité sans « Listes »,
+//   docs/cadrage-comptes.md, étape 3) ne reçoit ni « event: list », ni le
+//   « event: refs » des magasins et rayons (LE contrôle de
+//   server/features.js, relu à chaque envoi) ; il garde « event: refs »
+//   sans données pour son propre réglage et les étiquettes des notes ;
+// - de même, « event: note » ne part qu'aux comptes dont l'Admin autorise
+//   les notes, et « event: project » qu'aux comptes qui utilisent les
+//   projets (comme la synchronisation) ;
 // - 5 connexions au plus par compte : au-delà, la plus ancienne est fermée ;
 // - une connexion fermée est retirée tout de suite (aucune fuite de mémoire).
 
@@ -94,10 +102,24 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     res.on('error', () => close(connection));
   }
 
-  // Prévient les comptes donnés qu'une liste a changé
+  // Le compte utilise-t-il les listes ? (server/features.js ; sans ce
+  // service, comme avant : oui)
+  const usesLists = (userId) => ctx.features?.listsUsed(userId) ?? true;
+  // Les mêmes règles que la synchronisation (server/features.js) : notes
+  // AUTORISÉES par l'Admin (autorisées mais éteintes par la personne, elles
+  // se synchronisent comme avant, donc le signal part aussi), projets
+  // UTILISÉS (autorisés et allumés : sinon la synchronisation n'en envoie
+  // rien)
+  const usesNotes = (userId) => ctx.features?.allowedFor(userId).notes ?? true;
+  const usesProjects = (userId) => ctx.features?.featuresFor(userId).projects ?? true;
+
+  // Prévient les comptes donnés qu'une liste a changé (jamais un compte
+  // qui n'utilise pas les listes : il n'en apprend rien, pas même le
+  // numéro de la liste)
   function notifyUsers(userIds, listId) {
     const message = `event: list\ndata: ${JSON.stringify({ listId })}\n\n`;
     for (const userId of new Set(userIds)) {
+      if (!byUser.has(userId) || !usesLists(userId)) continue;
       for (const connection of byUser.get(userId) ?? []) write(connection, message);
     }
   }
@@ -108,6 +130,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   function notifyNotes(userIds) {
     const message = 'event: note\ndata: {}\n\n';
     for (const userId of new Set(userIds)) {
+      if (!byUser.has(userId) || !usesNotes(userId)) continue;
       for (const connection of byUser.get(userId) ?? []) write(connection, message);
     }
   }
@@ -119,6 +142,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   function notifyProjects(userIds) {
     const message = 'event: project\ndata: {}\n\n';
     for (const userId of new Set(userIds)) {
+      if (!byUser.has(userId) || !usesProjects(userId)) continue;
       for (const connection of byUser.get(userId) ?? []) write(connection, message);
     }
   }
@@ -143,10 +167,26 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
   // Prévient tous les téléphones connectés que les données de référence
   // (catégories, magasins, rayons) ont changé : chacun refait une
   // synchronisation, qui les renvoie en entier. Le message ne dit pas quoi
-  // (aucune donnée), comme pour une liste.
-  function notifyReferences() {
+  // (aucune donnée), comme pour une liste. lists : changement qui ne
+  // concerne que les listes (magasins, rayons, noms des articles) : pas
+  // envoyé à un compte qui ne les utilise pas.
+  function notifyReferences({ lists = false } = {}) {
     const message = 'event: refs\ndata: {}\n\n';
-    for (const connections of byUser.values()) for (const connection of connections) write(connection, message);
+    for (const [userId, connections] of byUser) {
+      if (lists && !usesLists(userId)) continue;
+      for (const connection of connections) write(connection, message);
+    }
+  }
+
+  // Prévient les appareils des comptes donnés que LEUR réglage a changé
+  // (fonctions autorisées par l'Admin, docs/cadrage-comptes.md, étape 2) :
+  // le même « event: refs », sans données, mais à eux seuls ; chacun refait
+  // une synchronisation (qui renvoie ses fonctions et ses autorisations)
+  function notifyAccount(userIds) {
+    const message = 'event: refs\ndata: {}\n\n';
+    for (const userId of new Set(userIds)) {
+      for (const connection of byUser.get(userId) ?? []) write(connection, message);
+    }
   }
 
   // Coupe les flux d'un compte (désactivation, toutes ses sessions fermées)
@@ -173,7 +213,7 @@ export function createEventHub(ctx, { keepaliveMs = KEEPALIVE_MS, maxPerUser = M
     for (const list of [...byUser.values()]) for (const connection of [...list]) close(connection);
   }
 
-  return { connect, notifyList, notifyUsers, notifyNotes, notifyProjects, notifyInbox, notifyReferences, disconnectUser, disconnectSession, count, closeAll };
+  return { connect, notifyList, notifyUsers, notifyNotes, notifyProjects, notifyInbox, notifyReferences, notifyAccount, disconnectUser, disconnectSession, count, closeAll };
 }
 
 // Refuse un flux demandé depuis un autre site. Un navigateur n'envoie pas

@@ -5,7 +5,15 @@
 // ligne). Aucun texte ici, aucune page touchée : des fonctions « pures »,
 // testées automatiquement (test/features.test.js).
 //
-// Le réglage : { notes, projects } (vrai : la fonction est utilisée).
+// Le réglage : { lists, notes, projects } (vrai : la fonction est utilisée).
+// - lists : les listes (docs/cadrage-comptes.md, étape 3) : TOUJOURS
+//   utilisées par un Admin et un Utilisateur (ni case, ni interrupteur) ;
+//   pour un invité, autorisées par l'Admin et allumées par lui (allumées
+//   aussitôt quand l'Admin les coche). Non utilisées : rien des listes
+//   n'est envoyé à ses appareils (listes, articles, envies, « À offrir »,
+//   mémoire des articles, magasins et rayons), tout est refusé par le
+//   serveur ; ni bouton « Listes », ni tuiles Listes et « À offrir », ni
+//   onglet « Listes » de la Corbeille. Rien n'est effacé.
 // - notes : les notes (vrai au départ). Coupées, elles disparaissent des
 //   écrans de cette personne seulement : ni bouton « Notes » dans le
 //   bandeau du bas, ni tuile, ni entrée du menu de gauche, ni nouveautés,
@@ -22,8 +30,11 @@
 // <nom>_enabled dans la table users, une entrée ici) ; chacune a sa valeur
 // de départ.
 
+import { deadlinesShown } from './access.js';
+import { deadlinesOn } from './projects.js';
+
 // Les fonctions, dans l'ordre de l'écran, avec leur valeur de départ
-export const FEATURE_DEFAULTS = { notes: true, projects: false };
+export const FEATURE_DEFAULTS = { lists: true, notes: true, projects: false };
 export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 
 // Écrans (noms du routeur, router.js) qui appartiennent à une fonction :
@@ -32,6 +43,7 @@ export const FEATURES = Object.keys(FEATURE_DEFAULTS);
 // dont l'adresse mène, notes coupées, à la corbeille des listes
 // (trash-tabs.js)
 export const FEATURE_ROUTES = {
+  lists: ['lists', 'list', 'newList', 'editList', 'gifts'],
   notes: ['notes', 'newNote', 'note'],
   projects: ['projects', 'project', 'projectCard', 'projectSettings', 'projectTrash'],
 };
@@ -54,17 +66,46 @@ export function normalizeFeatures(value) {
   return features;
 }
 
-// Problème d'une modification { notes?, projects? } (le contenu d'une opération
+// Problème d'une modification { lists?, notes?, projects? } (le contenu d'une opération
 // « account.features », sans son identifiant ni son type) : le nom du texte
 // de refus, ou null si tout va bien. Refusés : autre chose qu'un objet,
-// nom inconnu, valeur qui n'est pas un booléen, rien à modifier.
-export function featuresChangeProblem(change) {
+// nom inconnu, valeur qui n'est pas un booléen, rien à modifier, et (quand
+// allowed est donné : les autorisations de l'Admin, access.js) une
+// fonction que l'Admin n'a pas autorisée pour ce compte (on ne l'allume ni
+// ne l'éteint : elle n'est pas proposée). « Listes » : seulement pour un
+// invité (role ; un Admin et un Utilisateur n'ont pas cet interrupteur,
+// ils les ont toujours).
+export function featuresChangeProblem(change, allowed = null, role = null) {
   if (!change || typeof change !== 'object' || Array.isArray(change)) return 'ops.fonctionsInvalides';
   const names = Object.keys(change);
   if (!names.length) return 'ops.rienAModifier';
   if (!names.every((name) => FEATURES.includes(name))) return 'ops.fonctionInconnue';
+  if (role && role !== 'guest' && names.includes('lists')) return 'ops.fonctionInconnue';
   if (!names.every((name) => typeof change[name] === 'boolean')) return 'ops.fonctionsInvalides';
+  if (allowed && !names.every((name) => allowed[name] === true)) return 'ops.fonctionNonAutorisee';
   return null;
+}
+
+// Fonctions UTILISÉES (docs/cadrage-comptes.md, étape 2) : autorisées par
+// l'Admin (allowed, access.js) ET allumées par la personne (switches, son
+// réglage). C'est ce que le serveur vérifie partout et envoie aux écrans
+// sous le nom « features » : tout ce qui demande « notes utilisées ? » ou
+// « projets utilisés ? » (notesOn, projectsOn, screenAllowed…) suit ainsi
+// les deux à la fois. Une fonction autorisée a, dans ce réglage, la
+// valeur de son interrupteur (Réglages › Fonctions ne montre qu'elles).
+// Les Listes d'un Admin ou d'un Utilisateur (role) : toujours utilisées.
+export function usedFeatures(switches, allowed, role = 'user') {
+  const on = normalizeFeatures(switches);
+  const used = Object.fromEntries(FEATURES.map((name) => [name, on[name] && allowed?.[name] !== false]));
+  if (role !== 'guest') used.lists = true;
+  return used;
+}
+
+// Fonctions proposées dans Réglages › Fonctions (dans l'ordre de
+// FEATURES) : celles que l'Admin autorise ; « Listes » pour un invité
+// seulement (un Admin et un Utilisateur les ont toujours, sans ligne)
+export function offeredFeatures(allowed, role) {
+  return FEATURES.filter((name) => allowed?.[name] === true && (name !== 'lists' || role === 'guest'));
 }
 
 // Applique une modification valable à un réglage (renvoie un nouveau réglage)
@@ -74,6 +115,7 @@ export function applyFeaturesChange(features, change) {
 
 // La fonction est-elle utilisée ? (réglage absent : valeur de départ)
 export const featureOn = (features, name) => normalizeFeatures(features)[name] === true;
+export const listsOn = (features) => featureOn(features, 'lists');
 export const notesOn = (features) => featureOn(features, 'notes');
 export const projectsOn = (features) => featureOn(features, 'projects');
 
@@ -84,8 +126,27 @@ export function featureOf(name) {
 }
 
 // L'écran est-il ouvert à la personne ? (toujours, sauf s'il appartient à
-// une fonction qu'elle a coupée)
+// une fonction qu'elle n'utilise pas). « Échéances » suit une règle
+// calculée (screenFeatures, ci-dessous) : features.deadlines, faux
+// seulement quand la règle le dit.
 export function screenAllowed(name, features) {
+  if (name === 'deadlines') return features?.deadlines !== false;
   const feature = featureOf(name);
   return !feature || featureOn(features, feature);
+}
+
+// Ce que les écrans montrent (bandeau du bas, tuiles, menu de gauche,
+// premier écran, adresses) : les fonctions utilisées (data.features), plus
+// la règle de l'écran « Échéances » pour un invité (access.js,
+// deadlinesShown ; décision du propriétaire du 25 novembre 2026) : un
+// projet qu'il voit à l'option « Échéances » allumée. data : la copie
+// locale (store.js) ; role : le rôle du compte connecté. Les Listes d'un
+// invité (étape 3 du cadrage) : « lists », reçu du serveur (un Admin et
+// un Utilisateur les ont toujours).
+export function screenFeatures(data, role) {
+  const features = normalizeFeatures(data?.features);
+  if (role !== 'guest') features.lists = true;
+  const projectDeadlines = features.projects
+    && [...(data?.projects?.values?.() ?? [])].some((project) => !project.deletedAt && deadlinesOn(project));
+  return { ...features, deadlines: deadlinesShown(role, { lists: features.lists, projectDeadlines }) };
 }

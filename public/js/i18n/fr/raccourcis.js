@@ -6,6 +6,7 @@ export default {
   'raccourcis.partout': 'Partout',
   'raccourcis.partout.afficher': 'Afficher les raccourcis',
   'raccourcis.partout.nouvelleListe': 'Nouvelle liste (nouvelle note sur les écrans des notes)',
+  'raccourcis.partout.nouvelleNote': 'Nouvelle note (sur les écrans des notes)',
   'raccourcis.partout.rechercher': 'Rechercher',
   'raccourcis.partout.reglages': 'Réglages',
   'raccourcis.touche.echap': 'Échap',

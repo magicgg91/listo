@@ -27,6 +27,7 @@ import express from 'express';
 import { createUploadCounter } from '../photos.js';
 import { isUuid } from '../lists.js';
 import { userLocale } from '../locale.js';
+import { NOTES_NOT_ALLOWED } from '../features.js';
 
 // Messages : noms des textes (public/js/i18n/fr/alertes.js), écrits dans
 // la langue de la requête (req.t)
@@ -54,7 +55,7 @@ export function notificationSettingsRoutes(ctx) {
   ctx.pushCounters.push(prefs);
   const notify = ctx.notify;
 
-  router.get('/push/settings', (req, res) => res.json(settingsState(notify, req.user.id)));
+  router.get('/push/settings', (req, res) => res.json(settingsState(ctx, req.user.id)));
 
   router.put('/push/settings', (req, res) => {
     if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
@@ -75,6 +76,9 @@ export function notificationSettingsRoutes(ctx) {
 
   router.put('/push/note-mutes/:noteId', (req, res) => {
     if (!prefs.take(req.user.id)) return res.status(429).json({ error: req.t(TOO_MANY) });
+    // Notes pas autorisées par l'Admin : le refus de toutes les routes des
+    // notes (server/notes.js)
+    if (!ctx.features.allowedFor(req.user.id).notes) return res.status(403).json({ error: req.t(NOTES_NOT_ALLOWED) });
     const noteId = String(req.params.noteId).toLowerCase();
     // Note inconnue, dans la corbeille, ou qu'on ne voit pas : la même réponse
     if (!isUuid(noteId) || !notify.seesNote(req.user.id, noteId)) return res.status(404).json({ error: req.t(NOTE_NOT_FOUND) });
@@ -86,11 +90,14 @@ export function notificationSettingsRoutes(ctx) {
   return router;
 }
 
-// Réglages lus par l'écran (champ par champ)
-const settingsState = (notify, userId) => ({
-  settings: notify.settingsOf(userId),
-  mutedLists: notify.mutedLists(userId),
-  mutedNotes: notify.mutedNotes(userId),
+// Réglages lus par l'écran (champ par champ). Rien des listes pour un
+// compte qui ne les utilise pas (un invité sans « Listes »), rien des notes
+// pour un compte dont l'Admin ne les autorise pas : les mêmes règles que la
+// synchronisation (server/features.js)
+const settingsState = (ctx, userId) => ({
+  settings: ctx.notify.settingsOf(userId),
+  mutedLists: ctx.features.listsUsed(userId) ? ctx.notify.mutedLists(userId) : [],
+  mutedNotes: ctx.features.allowedFor(userId).notes ? ctx.notify.mutedNotes(userId) : [],
 });
 
 // Cet appareil (LISTO_PUSH=on seulement)
@@ -101,12 +108,11 @@ export function pushRoutes(ctx) {
   const changes = createUploadCounter({ limit: 30, now: ctx.now });
   const tests = createUploadCounter({ limit: 10, now: ctx.now });
   ctx.pushCounters.push(changes, tests);
-  const notify = ctx.notify;
 
   const state = (req) => ({
     publicKey: push.publicKey,
     device: { subscribed: push.subscribed(req.sessionId) },
-    ...settingsState(notify, req.user.id),
+    ...settingsState(ctx, req.user.id),
   });
 
   router.get('/push', (req, res) => res.json(state(req)));

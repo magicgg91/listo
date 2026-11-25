@@ -10,6 +10,10 @@ export default {
   },
   'reglages.role.admin': 'Admin',
   'reglages.role.utilisateur': 'Utilisateur',
+  'reglages.role.invite': 'Invité',
+  // Encadré « Compte invité » des Réglages (un invité seulement)
+  'reglages.invite.titre': 'Compte invité',
+  'reglages.invite.texte': 'Votre accès est réglé par l\'Admin : vous voyez ce qu\'on vous partage, et ses membres.',
 
   // Réglages (téléphone)
   'reglages.titre': 'Réglages',
@@ -56,11 +60,23 @@ export default {
   'reglages.fonctions': 'Fonctions',
   'reglages.fonctions.detail': 'Notes, Projets',
   'reglages.fonctions.intro': 'Choisissez les fonctions que vous utilisez. Une fonction coupée disparaît de vos écrans ; rien n\'est effacé.',
+  'reglages.fonctions.listes': 'Listes',
+  'reglages.fonctions.listes.detail': 'Courses, tâches et envies, avec Échéances et « À offrir ».',
   'reglages.fonctions.notes': 'Notes',
   'reglages.fonctions.notes.detail': 'Des textes libres, à garder pour soi ou à partager.',
   'reglages.fonctions.projets': 'Projets',
   'reglages.fonctions.projets.detail': 'Des tableaux de cartes rangées en colonnes (idées, en cours, fait…), à partager.',
   'reglages.fonctions.note': 'Vaut pour tous vos appareils.',
+  // Fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
+  'reglages.fonctions.note.autorisees': 'Seules les fonctions que l\'Admin a autorisées pour votre compte sont proposées. Vaut pour tous vos appareils.',
+  'reglages.fonctions.aucune': 'Aucune fonction n\'est encore ouverte pour votre compte : l\'Admin s\'en charge.',
+  'reglages.fonctions.detail.notes': 'Notes',
+  'reglages.fonctions.detail.projets': 'Projets',
+  'reglages.fonctions.detail.aucune': 'Aucune pour l\'instant',
+  'reglages.fonctions.detail.listes': 'Listes',
+  'reglages.fonctions.detail.listesNotes': 'Listes, Notes',
+  'reglages.fonctions.detail.listesProjets': 'Listes, Projets',
+  'reglages.fonctions.detail.tout': 'Listes, Notes, Projets',
 
   // Raccourcis à une touche (ordinateur)
   'reglages.touches.activees': 'Raccourcis à une touche activés',

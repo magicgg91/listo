@@ -12,7 +12,8 @@
 
 import crypto from 'node:crypto';
 import { homeFromRow } from './home.js';
-import { featuresFromRow } from './features.js';
+import { featuresFromRow, allowedFromRow } from './features.js';
+import { accountRole } from '../public/js/access.js';
 
 // Noms des cookies de connexion : session, et connexion en attente du code
 // 2FA. En production (HTTPS), ils portent le préfixe « __Host- » : le
@@ -81,13 +82,16 @@ export function publicUser(user, config, { method = null } = {}) {
     id: user.id,
     username: user.username,
     displayName: user.display_name,
-    role: user.role,
+    // Rôle calculé (public/js/access.js) : 'admin', 'user' ou 'guest'
+    role: accountRole(user),
     totpEnabled: user.totp_enabled === 1,
     mustChangePassword: user.must_change_password === 1,
     productLookup: config?.productLookup !== false,
     // Accès depuis Claude (LISTO_MCP=on) : l'adresse à saisir dans Claude,
     // pour afficher l'écran « Connexions Claude » et l'aide ; null sinon
-    claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
+    // (null aussi pour un compte sans « Assistants IA », case de l'Admin :
+    // ni « Assistants IA » dans Mon compte, ni écran des connexions)
+    claudeUrl: config?.mcp && allowedFromRow(user).mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
     // Notifications push activées sur le serveur (LISTO_PUSH=on)
     push: config?.push === true,
     // Comment cette session a été ouverte : 'oidc' (fournisseur d'identité : mot de passe
@@ -102,8 +106,13 @@ export function publicUser(user, config, { method = null } = {}) {
     // écran est connu dès l'ouverture, avant la synchronisation
     home: homeFromRow(user),
     // Réglage « Fonctions » (Réglages › Fonctions, server/features.js) :
-    // les boutons des fonctions coupées n'apparaissent jamais, même un instant
+    // les fonctions utilisées (autorisées par l'Admin et allumées) ; les
+    // boutons des autres n'apparaissent jamais, même un instant
     features: featuresFromRow(user),
+    // Ce que l'Admin a autorisé à ce compte (docs/cadrage-comptes.md,
+    // étape 2) : Notes, Projets, « Peut créer ses propres projets »,
+    // « Assistants IA » (un Admin a tout)
+    allowed: allowedFromRow(user),
   };
 }
 
@@ -225,7 +234,7 @@ export function requirePasswordChanged(req, res, next) {
 
 // Refuse un compte qui n'est pas Admin (403)
 export function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') return res.status(403).json({ error: req.t('comptes.reserveAdmin') });
+  if (!req.user || accountRole(req.user) !== 'admin') return res.status(403).json({ error: req.t('comptes.reserveAdmin') });
   next();
 }
 

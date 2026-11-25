@@ -49,6 +49,7 @@ export default {
 
   // Corbeille vide
   'corbeille.vide.titre': 'No deleted lists.',
+  'corbeille.vide.aucune': 'No trash yet: your account doesn\'t use any feature.',
   'corbeille.vide.texte': 'A list you delete stays here for 30 days: you can restore it during that time.',
 
   // Corbeille indisponible (hors ligne)

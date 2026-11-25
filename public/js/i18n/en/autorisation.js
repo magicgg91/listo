@@ -17,6 +17,8 @@ export default {
   'autorisation.codeIncorrect': 'Incorrect code.',
   // Accord refusé par oauth.js ({max} : nombre maximal de connexions)
   'autorisation.tropDeConnexions': 'You already have {max} active AI assistant connections (the maximum). A connection unused for 30 days frees up its spot on its own.',
+  // Account without « AI assistants » (Admin's tick, docs/cadrage-comptes.md)
+  'autorisation.compteNonAutorise': 'Your account can\'t authorize an AI assistant: the Listo Admin allows it.',
 
   // Écran « Assistants IA »
   'autorisation.connexionIntrouvable': 'Connection not found.',

@@ -24,6 +24,8 @@ import { photoRoutes } from './routes/photos.js';
 import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
+import { createDirectory } from './directory.js';
+import { createFeatures, requireLists, LIST_ROUTE_PATHS } from './features.js';
 import { createSaveCounter } from './notes.js';
 import { PROJECT_CREATIONS_PER_HOUR, COMMENTS_PER_HOUR } from '../public/js/projects.js';
 import { createShareService, createPublicAccess } from './shares.js';
@@ -179,6 +181,12 @@ export function createApp({
     // (server/projects.js, compté par la route POST /api/ops)
     commentWrites: createSaveCounter({ limit: COMMENTS_PER_HOUR, now }),
   };
+  // Annuaire de chaque compte (server/directory.js) : qui il peut choisir
+  // pour partager ; un invité n'y apparaît que pour les Admin
+  ctx.directory = createDirectory(db);
+  // Fonctions de chaque compte (server/features.js) : autorisées par
+  // l'Admin, allumées par la personne ; relues en base à chaque demande
+  ctx.features = createFeatures(db);
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
   // Liens publics (étape 10) et cookies de consultation des visiteurs
@@ -306,6 +314,12 @@ export function createApp({
   api.use(requirePasswordChanged);
   api.use(logoutRoute(ctx));
   api.use(meRoutes(ctx));
+  // Listes non utilisées par ce compte (un invité sans « Listes »,
+  // docs/cadrage-comptes.md, étape 3) : toutes les routes des listes et de
+  // ce qui en dépend (articles, photos, réservations, lien public, mode
+  // scan, suggestions, magasins et rayons, sourdine d'une liste) répondent
+  // 403 avant tout traitement. Un seul contrôle (server/features.js).
+  api.use(LIST_ROUTE_PATHS, requireLists(ctx));
   api.use(listRoutes(ctx));
   api.use(productRoutes(ctx)); // mode scan (après listRoutes : utilise ctx.lists)
   api.use(referenceRoutes(ctx)); // nouveau magasin ou rayon (après listRoutes : utilise ctx.lists)

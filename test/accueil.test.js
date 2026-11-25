@@ -170,7 +170,7 @@ test('premier écran : l\'Accueil, après la connexion aussi ; liens directs int
   // Après la connexion : l'écran demandé avant (lien direct), sinon le
   // premier écran (l'Accueil, ou celui choisi quand il est coupé :
   // Réglages › Accueil, test/home-tiles.test.js)
-  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, app\.data\.features\);/);
+  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, shownFeatures\(\)\);/);
   assert.match(app, /const next = app\.afterLogin && app\.afterLogin\.name !== 'login' \? app\.afterLogin : \{ name: openingScreen\(\), params: \{\} \};/);
   assert.match(app, /if \(name === 'login'\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /default: navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
@@ -202,7 +202,7 @@ test('Accueil : ni bandeau du bas ni loupe ; nombres lus avec leur libellé ; co
   // si j'ai des réservations, Notes, Compte, puis Projets quand la
   // fonction est allumée ; test/home-tiles.test.js)
   assert.match(home, /const build = \{ deadlines: deadlinesTile, lists: \(\) => listsTile\(pc\), gifts: giftsTile, notes: \(\) => notesTile\(pc\), account: accountTile, projects: projectsTile \};/);
-  assert.match(home, /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
+  assert.match(home, /const present = shownTiles\(app\.data\.home, shownFeatures\(\)\)\.map\(\(\[?name\]?\) => \[name, build\[name\]\(\)\]\)\.filter\(\(\[, el\]\) => el\);/);
   // « Demandes de compte » : Admin seulement, et seulement s'il y en a
   assert.match(home, /const requests = app\.user\.role === 'admin' \? app\.user\.accountRequests \?\? 0 : 0;/);
   assert.match(home, /requests > 0 \? row\(\{/);
@@ -242,7 +242,7 @@ test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur
   assert.match(side, /const listsLink = fixedLink\('lists', 'tasks', t\('navigation\.listes'\), listsCount\);/);
   // Écrans des listes seulement : « Types » ; ailleurs, rien de plus
   assert.match(side, /const LIST_SCREENS = \['lists', 'list', 'editList', 'newList', 'gifts'\];/);
-  assert.match(side, /if \(!LIST_SCREENS\.includes\(selected\.name\)\) \{\s*showNav\(false\);/);
+  assert.match(side, /if \(!LIST_SCREENS\.includes\(selected\.name\) \|\| !shownFeatures\(\)\.lists\) \{\s*showNav\(false\);/);
   assert.match(side, /const types = listCountsByType\(app\.data\);/);
   // Plus de liste nommée une à une dans le menu, sauf les résultats d'une recherche
   assert.equal((side.match(/entry\(list, query\)/g) ?? []).length, 1);
@@ -265,7 +265,7 @@ test('ordinateur : menu de gauche qui suit l\'écran (entrées fixes ; Types sur
   assert.match(phone, /filter\.el,/);
   // Touches [ et ] : liste voisine, dans l'ordre que donne le menu
   const shortcuts = read('public/js/shortcuts.js');
-  assert.match(shortcuts, /'\[': \(\) => \(onGoList\(-1\), true\),\s*'\]': \(\) => \(onGoList\(1\), true\),/);
+  assert.match(shortcuts, /'\[': \(\) => listsShown\(\) && \(onGoList\(-1\), true\),\s*'\]': \(\) => listsShown\(\) && \(onGoList\(1\), true\),/);
   assert.match(read('public/js/app.js'), /onGoList: \(delta\) => pcSide\?\.goList\(delta\),/);
   assert.match(side, /goList\(delta\) \{/);
 });

@@ -27,7 +27,7 @@ test('actions d\'une liste : Modifier, Dupliquer, Partager, Supprimer, dans cet 
   assert.equal(fr['partage.menu.partager'], 'Partager');
   assert.equal(fr['menu.supprimer'], 'Supprimer');
   // « Partager » (propriétaire) ou « Personnes » (les autres) : le choix ou la vue des personnes
-  assert.match(source, /const share = \{ \.\.\.shareEntry\(\{ owner: Boolean\(list\.isOwner\) \}\), onSelect: \(\) => openListShare\(list\.id\) \};/);
+  assert.match(source, /const share = \{ \.\.\.shareEntry\(\{ owner: Boolean\(list\.isOwner\) && mayShareOwn\(app\.user\?\.role\) \}\), onSelect: \(\) => openListShare\(list\.id\) \};/);
   // Les deux menus utilisent cette même fonction (mêmes écrans, même ordre)
   const lists = read('public/js/screens/lists.js');
   const list = read('public/js/screens/list.js');

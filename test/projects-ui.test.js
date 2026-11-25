@@ -217,7 +217,7 @@ test('partager un projet : directement la feuille des personnes, trois droits so
   assert.match(picker, /export function roleLegend\(\) \{/);
   const panel = code('public/js/screens/share-panel.js');
   // Pas de choix « lien » pour un projet : la feuille des personnes ou « Personnes »
-  assert.match(panel, /return subject\.owner\(item\) \? openPeopleSheet\(subject\) : openPeopleView\(subject\);/);
+  assert.match(panel, /return subject\.owner\(item\) && sharesOwn\(\) \? openPeopleSheet\(subject\) : openPeopleView\(subject\);/);
   assert.match(panel, /url: `\/api\/projects\/\$\{encodeURIComponent\(projectId\)\}\/members`,/);
   assert.match(panel, /const ACCESS_OF_ROLE = \{ editor: 'modification', contributor: 'contribution', reader: 'lecture' \};/);
   // Les listes et les notes : toujours le choix, puis deux droits
@@ -246,9 +246,9 @@ test('rôles dans l\'interface : seulement les boutons permis (la règle partag�
   assert.equal(cardRights({ createdByMe: true, assigneeIds: [] }, 2, 'contributor').remove, true);
   // Menu ⋮ d'un projet : la règle partagée (project-view.js, projectMenuEntries ; test/projects-options.test.js)
   const view = code('public/js/project-view.js');
-  assert.match(view, /rights\.share \? 'share' : 'people',/);
+  assert.match(view, /rights\.share && canShare \? 'share' : 'people',/);
   assert.match(view, /rights\.settings \? 'settings' : null,/);
-  assert.match(view, /rights\.duplicate \? 'duplicate' : null,/);
+  assert.match(view, /rights\.duplicate && canCreate \? 'duplicate' : null,/);
   assert.match(view, /rights\.trash \? 'delete' : 'leave',/);
   const projects = code('public/js/screens/projects.js');
   assert.match(projects, /share: \(\) => \(\{ icon: 'users', label: t\('projets\.menu\.partager'\)/);

@@ -46,6 +46,9 @@
 import { NOTE_TITLE_MAX, NOTE_BODY_MAX, NOTES_MAX, NOTE_TRASH_DAYS } from '../public/js/notes.js';
 import { cleanLabelIds, LABELS_PER_NOTE_MAX } from '../public/js/labels.js';
 import { createLabelService, LABEL_NOT_FOUND } from './labels.js';
+import { createDirectory } from './directory.js';
+import { createFeatures, NOTES_NOT_ALLOWED } from './features.js';
+import { accountRole, mayShareOwn } from '../public/js/access.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -53,6 +56,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Refus (noms des textes, public/js/i18n/fr/ops.js)
 export const NOTE_NOT_FOUND = 'ops.noteIntrouvable';
 export const NOTE_CONFLICT = 'ops.noteConflit';
+// Notes non autorisées par l'Admin pour ce compte (docs/cadrage-comptes.md,
+// étape 2 ; texte défini dans server/features.js, qui s'en sert aussi)
+export { NOTES_NOT_ALLOWED };
 
 // Opérations de notes qui écrivent un texte : comptées par le plafond de
 // débit (createSaveCounter, route POST /api/ops)
@@ -118,6 +124,11 @@ export function noteAccess(user, note) {
 
 export function createNoteService(ctx, { OpError }) {
   const { db } = ctx;
+  // Annuaire de chaque compte (server/directory.js) : contrôle des partages
+  const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
+  // Fonctions de chaque compte (server/features.js) : notes autorisées par
+  // l'Admin (relu à chaque demande)
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   // Réserve des étiquettes (server/labels.js), créée une fois
   const labels = ctx.labels ?? (ctx.labels = createLabelService(ctx, { OpError }));
@@ -215,10 +226,21 @@ export function createNoteService(ctx, { OpError }) {
   // Note que le compte a le droit de voir (dans la corbeille comprise pour
   // le propriétaire), avec son droit ; sinon 404, comme une note inconnue
   function noteFor(user, noteId) {
+    requireNotesAllowed(user);
     const note = q.noteFor.get({ userId: user.id, noteId: requireUuid(noteId) });
     const access = noteAccess(user, note);
     if (!access) throw new OpError(404, NOTE_NOT_FOUND);
     return { note, access };
+  }
+
+  // Notes autorisées par l'Admin pour ce compte (docs/cadrage-comptes.md,
+  // étape 2) ? Sinon, refus (403) de toute opération et de toute route des
+  // notes : il n'en reçoit rien, il n'y change rien (rien n'est effacé ;
+  // elles reviennent quand l'Admin les autorise de nouveau). Des notes
+  // autorisées mais coupées par la personne (Réglages › Fonctions) restent
+  // comme avant : cachées de ses écrans, sans nouveautés ni notifications.
+  function requireNotesAllowed(user) {
+    if (!features.allowedFor(user.id).notes) throw new OpError(403, NOTES_NOT_ALLOWED);
   }
 
   // Note du propriétaire seulement (supprimer, restaurer, partager, lien
@@ -429,6 +451,13 @@ export function createNoteService(ctx, { OpError }) {
       return {};
     },
   };
+  // Toute opération des notes : notes autorisées d'abord
+  for (const [type, handler] of Object.entries(handlers)) {
+    handlers[type] = (user, ...rest) => {
+      requireNotesAllowed(user);
+      return handler(user, ...rest);
+    };
+  }
 
   // --- Partage (PUT /api/notes/:id/members, propriétaire seulement) ---
   //
@@ -444,6 +473,8 @@ export function createNoteService(ctx, { OpError }) {
   function setMembers(user, noteId, userIds, access = {}) {
     const note = ownNote(user, noteId);
     if (note.deleted_at) throw new OpError(404, NOTE_NOT_FOUND);
+    // Un invité ne partage jamais ce qu'il possède (l'Admin partage avec lui)
+    if (!mayShareOwn(accountRole(user))) throw new OpError(403, 'ops.invitePartageInterdit');
     if (!Array.isArray(userIds) || userIds.length > NOTE_MEMBERS_MAX || !userIds.every((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0 && String(Number(id)) === String(id))) {
       throw new OpError(400, 'ops.listePersonnesInvalide');
     }
@@ -461,8 +492,17 @@ export function createNoteService(ctx, { OpError }) {
     const before = new Map(q.members.all(note.id).map((m) => [m.id, m.access]));
     for (const id of wanted) {
       if (before.has(id)) continue;
-      const guest = q.user.get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
+      // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
+      // sinon, exactement la réponse d'un compte qui n'existe pas
+      if (!directory.canSee(user, id)) {
+        // Journal (qui, combien ; jamais un nom) : repérer un essai de
+        // numéros. La réponse reste exactement celle d'un numéro inconnu.
+        ctx.audit('share_unknown_user', { user: user.username, note: note.id, count: directory.unseenCount(user, [...wanted].filter((n) => !before.has(n))) });
+        throw new OpError(400, 'ops.utilisateurInconnu');
+      }
+      // … et avoir les notes autorisées par l'Admin (sinon elle ne la
+      // verrait jamais) : refus nommé, elle est dans mon annuaire
+      if (!features.allowedFor(id).notes) throw new OpError(400, 'ops.personneSansNotes', { name: q.user.get(id)?.display_name ?? '' });
     }
     const added = [...wanted].filter((id) => !before.has(id));
     const removed = [...before.keys()].filter((id) => !wanted.has(id));
@@ -540,6 +580,9 @@ export function createNoteService(ctx, { OpError }) {
   `);
   const stateQuery = db.prepare('SELECT note_id, pinned, last_read_version, muted_news FROM note_user_state WHERE user_id = ?');
   function syncFor(user, since) {
+    // Notes non autorisées par l'Admin : rien des notes (ni étiquettes
+    // communes, ni nouveautés) ; la copie du téléphone les oublie
+    if (!features.allowedFor(user.id).notes) return { labels: [], notes: [], noteIds: [], pinnedNotes: [], noteNews: { unread: [], muted: [] } };
     const from = since ?? '';
     const visible = visibleQuery.all({ me: user.id }).filter((note) => noteAccess(user, note));
     const byId = new Map(visible.map((note) => [note.id, note]));

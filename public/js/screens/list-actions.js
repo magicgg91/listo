@@ -33,6 +33,7 @@ import { isWishList } from '../list-types.js';
 import * as actions from '../actions.js';
 import { post, errorMessage } from '../api.js';
 import { app, refreshData } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { h, field, errorNote, LABEL_INPUT } from '../dom.js';
 import { navigate } from '../router.js';
 import { canEditList, isListMuted } from '../store.js';
@@ -54,8 +55,9 @@ export function listActions(list, { onDeleted } = {}) {
   // pas une modification de la liste)
   const mute = newsMuteAction(list);
   const pushMute = pushMuteAction(list);
-  // « Partager » (propriétaire) ou « Personnes » (les autres)
-  const share = { ...shareEntry({ owner: Boolean(list.isOwner) }), onSelect: () => openListShare(list.id) };
+  // « Partager » (propriétaire) ou « Personnes » (les autres, et un
+  // propriétaire invité, qui ne partage jamais : docs/cadrage-comptes.md)
+  const share = { ...shareEntry({ owner: Boolean(list.isOwner) && mayShareOwn(app.user?.role) }), onSelect: () => openListShare(list.id) };
   if (!list.isOwner) {
     const canEdit = canEditList(list);
     const leave = { icon: 'logout', label: t('menu.quitter'), danger: true, separated: canEdit, onSelect: async () => {

@@ -13,7 +13,7 @@ import fr from '../public/js/i18n/fr.js';
 import en from '../public/js/i18n/en.js';
 import { translate } from '../public/js/i18n.js';
 import { matchRoute, pathFor } from '../public/js/router.js';
-import { TRASH_TABS, trashTabs, defaultTrashTab, askedTrashTab } from '../public/js/trash-tabs.js';
+import { TRASH_TABS, trashTabs, defaultTrashTab, askedTrashTab, singleTrash } from '../public/js/trash-tabs.js';
 import { screenAllowed } from '../public/js/features.js';
 
 const ROOT = new URL('..', import.meta.url).pathname;
@@ -56,6 +56,16 @@ test('onglet demandé par l\'adresse : « listes » toujours, « notes » seulem
   for (const tab of ['', 'Notes', 'NOTES', 'corbeille', 'constructor', '__proto__', 'toString', undefined, null]) {
     assert.equal(askedTrashTab(tab, true), null, String(tab));
   }
+  // Invité sans Listes (docs/cadrage-comptes.md, étape 3) : pas d'onglet
+  // « Listes » ; une seule corbeille restante s'affiche seule
+  assert.deepEqual(trashTabs(true, true, false), ['notes', 'projets']);
+  assert.deepEqual(trashTabs(false, true, false), [], 'projets seuls : pas d\'onglets');
+  assert.equal(singleTrash(false, true, false), 'projets');
+  assert.equal(singleTrash(true, false, false), 'notes');
+  assert.equal(singleTrash(false, false, false), null, 'rien d\'utilisé : aucune corbeille');
+  assert.equal(singleTrash(false, false), 'listes', 'famille : la corbeille des listes');
+  assert.equal(askedTrashTab('listes', true, true, false), null);
+  assert.equal(askedTrashTab('projets', true, true, false), 'projets');
 });
 
 test('adresses : #/reglages/corbeille, un onglet, les anciennes adresses de la corbeille des notes ; jamais réservées à la fonction « Notes »', () => {
@@ -70,7 +80,7 @@ test('adresses : #/reglages/corbeille, un onglet, les anciennes adresses de la c
   const app = code('public/js/app.js');
   assert.match(app, /case 'noteTrash':\s*case 'oldNoteTrash': navigate\('trashTab', \{ tab: 'notes' \}, \{ replace: true \}\); break;/);
   assert.match(app, /case 'trash': mount\(\(onLeave\) => renderTrash\(null, onLeave\)\); break;/);
-  assert.match(app, /case 'trashTab': \{\s*const tab = askedTrashTab\(params\.tab, notesOn\(app\.data\.features\), projectsOn\(app\.data\.features\)\);\s*if \(tab\) mount\(\(onLeave\) => renderTrash\(tab, onLeave\)\);\s*else navigate\('trash', \{\}, \{ replace: true \}\);/);
+  assert.match(app, /case 'trashTab': \{\s*const tab = askedTrashTab\(params\.tab, notesOn\(app\.data\.features\), projectsOn\(app\.data\.features\), shownFeatures\(\)\.lists\);\s*if \(tab\) mount\(\(onLeave\) => renderTrash\(tab, onLeave\)\);\s*else navigate\('trash', \{\}, \{ replace: true \}\);/);
   assert.match(app, /import \{ renderTrash \} from '\.\/screens\/trash-page\.js';/);
   assert.doesNotMatch(app, /renderNoteTrash/);
   // L'onglet choisi est posé dans l'adresse sans redessiner ni ajouter d'entrée
@@ -109,11 +119,13 @@ test('page : onglets de l\'Administration (nav, aria-current), nombres, contenu 
   assert.match(page, /buttons\[key\]\.textContent = count \? t\(texts\.counted, \{ count \}\) : t\(texts\.label\);/);
   assert.match(page, /if \(count\) buttons\[key\]\.setAttribute\('aria-label', t\(texts\.name, \{ count \}\)\);/);
   // Onglet de départ : la règle pure
-  assert.match(page, /show\(defaultTrashTab\(\{ lists: panels\.listes\?\.count\(\) \?\? null, notes, projects \}\)\)/);
+  assert.match(page, /const lists = panels\.listes \? panels\.listes\.count\(\) : 0;/);
+  assert.match(page, /const wanted = defaultTrashTab\(\{ lists, notes, projects \}\);\s*show\(tabs\.includes\(wanted\) \? wanted : tabs\[0\]\);/);
   assert.match(page, /import \{ projectTrash \} from '\.\/project-trash\.js';/);
   assert.match(page, /if \(tabs\.includes\('projets'\)\) panels\.projets = projectTrash\(onLeave, changed\);/);
-  // Notes coupées : la corbeille des listes seule, sans onglets
-  assert.match(page, /if \(!tabs\.length\) \{\s*replace\(body, listTrash\(onLeave\)\.panel\);\s*return h\('div', \{ class: 'screen' \}, header, body\);\s*\}/);
+  // Une seule corbeille (notes et projets coupés : celle des listes ; un
+  // invité sans Listes, projets seuls : celle des projets) : sans onglets
+  assert.match(page, /if \(!tabs\.length\) \{\s*const only = \{ listes: \(\) => listTrash\(onLeave\), notes: \(\) => noteTrash\(onLeave, \(\) => \{\}\), projets: \(\) => projectTrash\(onLeave, \(\) => \{\}\) \}\[singleTrash\(withNotes, withProjects, withLists\)\];/);
   // Fonction changée sur un autre appareil : page refaite
   assert.match(page, /if \(featuresKey\(\) === shownFeatures\) return;/);
   // Deux onglets de même largeur, phrase détachée de leur trait

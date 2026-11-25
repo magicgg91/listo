@@ -104,7 +104,7 @@ test('migration 44 : description et version, priorité, échéance et « Fait »
   old.prepare("INSERT INTO cards (id, project_id, column_id, position, title, created_by, created_at, updated_at) VALUES ('k', 'p', 'c', 1, 'T', 1, 'x', 'x')").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 46);
+  assert.equal(schemaVersion(db), 49);
   assert.deepEqual(db.prepare('SELECT description, description_version, priority, due_date, due_time, remind_before, due_done FROM cards').get(),
     { description: '', description_version: 1, priority: 'normal', due_date: null, due_time: null, remind_before: null, due_done: 0 }, 'une carte d\'avant garde ses valeurs, avec les nouvelles à leur défaut');
   for (const table of ['card_links', 'card_reminders']) assert.equal(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get(), 0, table);

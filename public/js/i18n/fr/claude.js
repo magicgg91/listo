@@ -80,6 +80,7 @@ export default {
   'claude.autoriser.aucuneListe': 'Vous n\'avez encore aucune liste.',
   'claude.autoriser.listes': 'Listes',
   'claude.autoriser.certainesListes': 'Certaines listes',
+  'claude.autoriser.sansListes': 'Mes notes et mes projets (les listes ne sont pas ouvertes pour votre compte)',
   'claude.autoriser.motDePasse': 'Mot de passe',
   'claude.autoriser.code': 'Code',
   'claude.autoriser.code.aide': 'Code à 6 chiffres de l\'application, ou l\'un de vos codes de secours.',

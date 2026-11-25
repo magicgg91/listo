@@ -51,6 +51,7 @@ import { wishListOf, beneficiaryId } from '../public/js/wishes.js';
 import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { projectAccess } from './projects.js';
+import { createFeatures, LISTS_NOT_ALLOWED } from './features.js';
 
 export const INBOX_DAYS = 30;
 export const INBOX_MAX = 300;
@@ -110,7 +111,7 @@ export function mergeParams(old, next) {
 // card, column : le projet, la carte et la colonne tels que la personne
 // les voit encore (ou null), relus de même ; projectsOff : elle a coupé
 // les projets.
-export function renderRow(textKey, params, category, locale, { note = null, project = null, card = null, column = null, projectsOff = false } = {}) {
+export function renderRow(textKey, params, category, locale, { note = null, project = null, card = null, column = null, projectsOff = false, listsOff = false } = {}) {
   const p = params && typeof params === 'object' ? params : {};
   const label = translate(locale, CATEGORY_LABELS[category] ?? CATEGORY_LABELS.changes);
   const withContext = (context) => (context ? translate(locale, 'inbox.sous', { label, context }) : label);
@@ -153,10 +154,11 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
       };
     }
     // Partage d'une liste : ajouté, ou droit changé
+    // (listes éteintes par la personne : l'invitation à les rallumer)
     case 'list.shared':
-      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: label };
+      return { kind: 'sharing', text: translate(locale, 'inbox.partage.liste', { actor: text(p.actor, 100) || translate(locale, 'alertes.quelquun'), list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
     case 'list.access':
-      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: label };
+      return { kind: 'sharing', text: translate(locale, p.access === 'modification' ? 'inbox.droit.liste.modification' : 'inbox.droit.liste.lecture', { list }), sub: listsOff ? translate(locale, 'alertes.liste.allumer') : label };
     // Partage d'une note
     case 'note.shared': {
       const actor = text(p.actor, 100) || translate(locale, 'alertes.quelquun');
@@ -278,6 +280,8 @@ export function renderRow(textKey, params, category, locale, { note = null, proj
 
 export function createInbox(ctx) {
   const { db } = ctx;
+  // Fonctions de chaque compte (server/features.js), relues à chaque lecture
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   const oldest = () => new Date(ctx.now() - INBOX_DAYS * DAY).toISOString();
 
@@ -318,7 +322,6 @@ export function createInbox(ctx) {
     project: db.prepare(`SELECT projects.id, projects.name, projects.owner_id, projects.deleted_at,
         (SELECT access FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId) AS member_access
       FROM projects WHERE projects.id = :id`),
-    projectsOn: db.prepare('SELECT projects_enabled FROM users WHERE id = ?').pluck(),
     card: db.prepare('SELECT id, title, project_id, deleted_at FROM cards WHERE id = ?'),
     column: db.prepare('SELECT name FROM project_columns WHERE id = ? AND project_id = ?').pluck(),
   };
@@ -373,18 +376,37 @@ export function createInbox(ctx) {
   function resolve(user, row) {
     const id = row.target_id;
     switch (row.target_type) {
-      case 'deadlines': return { target: { type: 'deadlines' } };
+      case 'deadlines': {
+        // Résumé du matin : caché à un compte qui n'utilise ni les listes ni
+        // les projets (un invité sans « Listes » ni projets) ; la même règle
+        // que le résumé lui-même (server/notify.js : tâches si les listes
+        // sont utilisées, cartes si les projets le sont)
+        if (!features.listsUsed(user.id) && !features.featuresFor(user.id).projects) return { hidden: true };
+        return { target: { type: 'deadlines' } };
+      }
       case 'list': {
+        // Listes non utilisées (un invité sans « Listes », docs/cadrage-
+        // comptes.md, étape 3) : rien, sauf la ligne « Partage » quand
+        // l'Admin les autorise (l'invitation à les rallumer, qui ouvre
+        // Réglages › Fonctions)
+        const refusal = features.listsRefusal(user.id);
+        if (refusal && (refusal === LISTS_NOT_ALLOWED || row.category !== 'sharing')) return { hidden: true };
         const list = id ? q.list.get({ userId: user.id, id }) : null;
         if (list && hiddenFor(user, list, row)) return { hidden: true };
+        if (refusal) return { target: list ? { type: 'features' } : null, listsOff: true };
         return { target: list ? { type: 'list', listId: list.id } : null };
       }
       case 'item': {
+        // Listes non utilisées : la ligne d'un article n'est pas envoyée
+        if (!features.listsUsed(user.id)) return { hidden: true };
         const item = id ? q.item.get({ userId: user.id, id }) : null;
         if (item && hiddenFor(user, item, row)) return { hidden: true };
         return { target: item ? { type: 'item', itemId: item.id, listId: item.list_id } : null };
       }
       case 'note': {
+        // Notes pas autorisées par l'Admin : la ligne n'est pas envoyée
+        // (ni titre ni texte)
+        if (!features.allowedFor(user.id).notes) return { hidden: true };
         const note = id ? q.note.get({ userId: user.id, id }) : null;
         const visible = note && noteAccess(user, note) && !note.deleted_at ? note : null;
         return { target: visible ? { type: 'note', noteId: visible.id } : null, note: visible };
@@ -392,7 +414,10 @@ export function createInbox(ctx) {
       case 'project': {
         const project = visibleProject(user, id);
         if (!project) return { target: null };
-        const off = q.projectsOn.get(user.id) !== 1;
+        // Projets pas autorisés par l'Admin (docs/cadrage-comptes.md, étape
+        // 2) : rien, pas même « Partage » (il ne peut pas les allumer)
+        if (!features.allowedFor(user.id).projects) return { hidden: true };
+        const off = !features.featuresFor(user.id).projects;
         // Projets coupés : rien n'est envoyé (ni titre ni nom), sauf la
         // ligne « Partage », qui ouvre Réglages › Fonctions pour les allumer
         if (off && row.category !== 'sharing') return { hidden: true };
@@ -400,8 +425,8 @@ export function createInbox(ctx) {
         return { target: { type: 'project', projectId: project.id }, project };
       }
       case 'card': {
-        // Projets coupés : la ligne d'une carte n'est pas envoyée du tout
-        if (q.projectsOn.get(user.id) !== 1) return { hidden: true };
+        // Projets non utilisés : la ligne d'une carte n'est pas envoyée du tout
+        if (!features.featuresFor(user.id).projects) return { hidden: true };
         const card = id ? q.card.get(id) : null;
         const project = card && !card.deleted_at ? visibleProject(user, card.project_id) : null;
         if (!project) return { target: null };
@@ -443,9 +468,9 @@ export function createInbox(ctx) {
       const row = stored.text_key === 'project.assigned' && Array.isArray(params.cards) && params.cards.length > 1 && typeof params.project === 'string'
         ? { ...stored, target_type: 'project', target_id: params.project }
         : stored;
-      const { target, note = null, hidden = false, project = null, card = null, column = null, projectsOff = false } = resolve(user, row);
+      const { target, note = null, hidden = false, project = null, card = null, column = null, projectsOff = false, listsOff = false } = resolve(user, row);
       if (hidden) continue;
-      const rendered = renderRow(row.text_key, params, row.category, locale, { note, project, card, column, projectsOff });
+      const rendered = renderRow(row.text_key, params, row.category, locale, { note, project, card, column, projectsOff, listsOff });
       out.push({
         id: row.num,
         category: row.category,

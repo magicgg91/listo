@@ -17,6 +17,7 @@
 
 import express from 'express';
 import { OpError } from '../lists.js';
+import { NOTES_NOT_ALLOWED } from '../notes.js';
 
 // Refus d'une règle (OpError) : son texte, dans la langue de la requête
 const guard = (handler) => (req, res) => {
@@ -31,6 +32,9 @@ const guard = (handler) => (req, res) => {
 export function labelRoutes(ctx) {
   const router = express.Router();
   router.post('/labels', guard((req, res) => {
+    // Les étiquettes appartiennent aux notes : un compte à qui l'Admin n'a
+    // pas autorisé les notes n'en crée pas (docs/cadrage-comptes.md, étape 2)
+    if (!ctx.features.allowedFor(req.user.id).notes) throw new OpError(403, NOTES_NOT_ALLOWED);
     const result = ctx.labels.create(req.user, req.body ?? {});
     res.status(result.existing ? 200 : 201).json(result);
   }));

@@ -210,7 +210,7 @@ function referenceRouter(ctx, type) {
       admin: req.user.username, name, ...(type.hasMultiFlag && isMulti ? { multi: true } : {}),
       ...(type.hasStore && place.storeId !== null ? { store: findStore.get(place.storeId).name } : {}), ip: req.ip,
     });
-    ctx.events?.notifyReferences(); // les téléphones connectés se mettent à jour
+    ctx.events?.notifyReferences({ lists: true }); // les téléphones connectés se mettent à jour
     res.status(201).json({ item: describe(find.get(id)) });
   });
 
@@ -294,7 +294,7 @@ function referenceRouter(ctx, type) {
     // l'identifiant ; les téléphones connectés refont leur synchronisation,
     // qui renvoie toutes les catégories, magasins et rayons (et ceux hors
     // ligne le feront à leur retour)
-    ctx.events?.notifyReferences();
+    ctx.events?.notifyReferences({ lists: true });
     res.json({ item: describe(find.get(row.id)) });
   });
 
@@ -314,7 +314,7 @@ function referenceRouter(ctx, type) {
       throw err;
     }
     audit(`admin_${type.label}_deleted`, { admin: req.user.username, name: row.name, ip: req.ip });
-    ctx.events?.notifyReferences();
+    ctx.events?.notifyReferences({ lists: true });
     res.status(204).end();
   });
 

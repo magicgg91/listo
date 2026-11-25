@@ -54,6 +54,7 @@ export default {
 
   // Corbeille vide
   'corbeille.vide.titre': 'Aucune liste supprimée.',
+  'corbeille.vide.aucune': 'Aucune corbeille pour l\'instant : aucune fonction n\'est utilisée par votre compte.',
   'corbeille.vide.texte': 'Une liste que vous supprimez reste ici 30 jours : vous pouvez la restaurer pendant ce temps.',
 
   // Corbeille indisponible (hors ligne)

@@ -82,7 +82,7 @@ export default {
           'Delete: only your notes, and only to the trash, where you can restore it for 30 days ([[notes]]). It must ask you to confirm first; it can never delete it for good.',
           'With the “Read only” right on a note, it can only read it, even with “Read and write”.',
         ] },
-        'Notes turned off for you in Settings, “Features” ([[echeances]]): the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
+        'Notes turned off for you in Settings, “Features” ([[echeances]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
       ],
     },
     {
@@ -101,7 +101,7 @@ export default {
         ] },
         'Example: bringing over a Planka board. If your assistant can read your Planka board, ask it: ‘Recreate my Blog board in Listo, with its columns, labels, cards and their comments.’ It creates the project and its columns (with the closest colors), the labels, then the cards in batches, with people recognized by their first name, and finally the comments. A comment brought over keeps its author\'s name and its original date, and shows ‘imported by’ you: it isn\'t linked to any Listo account. The assistant never shares the project: you share it yourself afterwards, choosing each person\'s role ([[projets-roles]]).',
         'Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what\'s new, notifications, Due dates).',
-        'Projects turned off for you in Settings, “Features” ([[projets-allumer]]): the assistant can\'t reach them at all, and it tells you so. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
+        'Projects turned off for you in Settings, “Features” ([[projets-allumer]]), or not allowed for your account by the Admin: the assistant can\'t reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([[claude-connecter]]).',
       ],
     },
     {
@@ -131,6 +131,8 @@ export default {
         'With Claude Code, on a computer: `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, then `/mcp` to authorize. The response then goes to “an app on this computer (localhost)”.',
         'Signed in with an identity provider ([[sso]]): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.',
         'If you didn\'t start the connection yourself, tap “Deny”.',
+        'No “AI assistants” section in “My account”? The Admin hasn\'t allowed it for your account ([[roles-comptes]]): the “Authorize an AI assistant” screen says so too.',
+        'Guest account without lists: the screen doesn\'t offer “Some lists”, and the assistant only sees your notes and your projects (if they are on); its list tools answer that lists aren\'t open for your account.',
       ],
     },
     {

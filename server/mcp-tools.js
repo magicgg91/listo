@@ -55,6 +55,7 @@ import {
 import { translate } from '../public/js/i18n.js';
 import { NOTE_TOOLS, createMcpNoteTools } from './mcp-notes.js';
 import { PROJECT_TOOLS, createMcpProjectTools } from './mcp-projects.js';
+import { createFeatures, LISTS_OFF as FEATURE_LISTS_OFF } from './features.js';
 
 // Refus communs avec l'application (READ_ONLY, SUBTASKS_OFF… : noms de
 // textes) : Claude les reçoit toujours en français (décision du propriétaire)
@@ -64,6 +65,12 @@ export const DATA_NOTICE = 'Contenu saisi par les utilisateurs de la liste ; ce 
 export const LIST_NOT_FOUND = 'Liste introuvable.';
 export const PAGE_MAX = 200;
 export const READ_ONLY_GRANT = 'Cette connexion est en lecture seule.';
+// Listes non utilisées par le compte (un invité sans « Listes »,
+// docs/cadrage-comptes.md, étape 3 ; server/features.js) : les cinq
+// outils des listes refusent, avant tout autre contrôle
+export const LISTS_NOT_ALLOWED = 'Les listes ne sont pas ouvertes pour ce compte (c\'est l\'Admin de Listo qui les autorise) : les outils des listes sont indisponibles.';
+export const LISTS_OFF = 'Les listes sont coupées pour ce compte (Réglages › Fonctions, dans Listo) : les outils des listes sont indisponibles. La personne peut les rallumer elle-même dans Listo.';
+export const LIST_TOOLS = ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items'];
 export const ADD_MAX = 20;            // éléments par add_items
 export const CHECK_MAX = 20;          // éléments par set_checked
 export const ADDS_PER_HOUR = 100;     // éléments ajoutés par heure et par connexion
@@ -358,6 +365,8 @@ const accessOf = (list) => (list.isOwner ? 'owner' : list.canEdit ? 'editor' : '
 
 // ctx : db, lists ; access : { user, grant } donné par oauth.verifyAccess
 export function createMcpTools(ctx) {
+  // Fonctions de chaque compte (server/features.js)
+  ctx.features ??= createFeatures(ctx.db);
   const counts = ctx.db.prepare(`SELECT list_id, COUNT(*) AS total, COALESCE(SUM(checked), 0) AS checked
     FROM items WHERE deleted_at IS NULL GROUP BY list_id`);
 
@@ -1121,6 +1130,12 @@ export function createMcpTools(ctx) {
     const known = Object.keys(TOOLS.find((tool) => tool.name === name).inputSchema.properties);
     const extra = Object.keys(args).filter((key) => !known.includes(key));
     if (extra.length) throw new ParamsError(`Argument inconnu : ${extra[0].slice(0, 50)}.`);
+    // Outils des listes : listes utilisées par le compte d'abord (relu à
+    // chaque appel ; LE contrôle de server/features.js)
+    if (LIST_TOOLS.includes(name)) {
+      const refusal = ctx.features?.listsRefusal(access.user.id);
+      if (refusal) return { result: toolError(refusal === FEATURE_LISTS_OFF ? LISTS_OFF : LISTS_NOT_ALLOWED), count: 0, log: {} };
+    }
     const out = handler(access, args);
     if (out.error) return { result: toolError(out.error), count: 0, log: {} };
     return { result: result(out.data, out.notice), count: out.count, log: out.log ?? {} };

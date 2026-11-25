@@ -31,7 +31,8 @@ export function emptyProjects() {
     // inDeadlines, lastEvent, unread }), remplacés en entier à chaque
     // synchronisation
     projectMine: {},
-    // Vrai quand les projets viennent d'être rallumés : la prochaine
+    // Vrai quand les projets viennent d'être rallumés (ou les notes
+    // autorisées de nouveau par l'Admin, store.js) : la prochaine
     // synchronisation doit tout recharger (le serveur n'envoyait rien tant
     // qu'ils étaient coupés)
     projectsReload: false,

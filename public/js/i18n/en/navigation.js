@@ -38,6 +38,7 @@ export default {
   'navigation.nouvelleListe': 'New list',
   'navigation.nouvelleNote': 'New note',
   'navigation.role.admin': 'Admin',
+  'navigation.role.invite': 'Guest',
   // Projects
   'navigation.projets': 'Projects',
   'navigation.projets.nombre': { one: 'Projects, {count} project', other: 'Projects, {count} projects' },

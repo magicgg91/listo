@@ -30,7 +30,7 @@ test('menu d\'une note selon le droit : Partager (propriétaire), Personnes et Q
   // Une seule entrée (24 novembre 2026) : « Partager » ouvre le choix des
   // personnes ou du lien temporaire ; plus d'entrée « Lien public » à part
   assert.match(notes, /\(owner \|\| shared\) && !note\.deletedAt \? sharing\(note, owner, withPeople\) : null,/);
-  assert.match(notes, /const entry = shareEntry\(\{ owner, withPeople \}\);\s*return entry \? \{ \.\.\.entry, onSelect: \(\) => openNoteShare\(note\.id\) \} : null;/);
+  assert.match(notes, /const entry = shareEntry\(\{ owner: owner && mayShareOwn\(app\.user\?\.role\), withPeople \}\);\s*return entry \? \{ \.\.\.entry, onSelect: \(\) => openNoteShare\(note\.id\) \} : null;/);
   assert.doesNotMatch(notes, /lienPublic'\), onSelect|openNoteLinkSheet/);
   assert.match(notes, /\? \{ icon: 'trash', label: t\('notes\.menu\.supprimer'\), danger: true, separated: true, onSelect: \(\) => askDelete\(note, onDeleted\) \}\s*: \{ icon: 'logout', label: t\('notes\.menu\.quitter'\), danger: true, separated: true, onSelect: \(\) => askLeave\(note, onDeleted\) \},/);
   assert.match(notes, /shared \? newsMuteItem\(note\) : null,\s*shared \? pushMuteItem\(note\) : null,/);

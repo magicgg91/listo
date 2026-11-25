@@ -78,6 +78,9 @@ import { setTaskAt } from '../public/js/note-format.js';
 import { reminderAt } from '../public/js/due-time.js';
 import { translate } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
+import { createDirectory } from './directory.js';
+import { createFeatures } from './features.js';
+import { accountRole, mayShareOwn } from '../public/js/access.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -94,6 +97,10 @@ export const CARD_DELETE_OWN = 'ops.carteSupprimerSiennes';
 export const CARD_RESTORE_OWN = 'ops.carteRestaurerSiennes';
 export const CARD_ASSIGN_OWN = 'ops.carteAttribuerSiennes';
 export const PROJECTS_OFF = 'ops.projetsCoupes';
+// Projets non autorisés par l'Admin, création de projets non autorisée
+// (docs/cadrage-comptes.md, étape 2)
+export const PROJECTS_NOT_ALLOWED = 'ops.projetsNonAutorises';
+export const PROJECT_CREATION_DENIED = 'ops.creationProjetInterdite';
 export const CARD_CONFLICT = 'ops.carteConflit';
 export const LINK_NOT_FOUND = 'ops.lienIntrouvable';
 export const COMMENT_NOT_FOUND = 'ops.commentaireIntrouvable';
@@ -139,6 +146,11 @@ export function projectAccess(user, project) {
 
 export function createProjectService(ctx, { OpError }) {
   const { db } = ctx;
+  // Annuaire de chaque compte (server/directory.js) : contrôle des partages
+  const directory = ctx.directory ?? (ctx.directory = createDirectory(db));
+  // Fonctions de chaque compte (server/features.js) : projets autorisés par
+  // l'Admin ET allumés par la personne, relus à chaque demande
+  const features = ctx.features ?? (ctx.features = createFeatures(db));
   const nowIso = () => new Date(ctx.now()).toISOString();
   const purgeLimit = () => new Date(ctx.now() - PROJECT_TRASH_DAYS * DAY).toISOString();
   const newId = () => crypto.randomUUID();
@@ -170,7 +182,6 @@ export function createProjectService(ctx, { OpError }) {
     addMember: db.prepare('INSERT INTO project_members (project_id, user_id, access, added_at) VALUES (?, ?, ?, ?)'),
     removeMember: db.prepare('DELETE FROM project_members WHERE project_id = ? AND user_id = ?'),
     setAccess: db.prepare('UPDATE project_members SET access = ? WHERE project_id = ? AND user_id = ?'),
-    projectsEnabled: db.prepare('SELECT projects_enabled FROM users WHERE id = ?').pluck(),
     newsEnabled: db.prepare('SELECT news_enabled FROM users WHERE id = ?').pluck(),
     locale: db.prepare('SELECT locale FROM users WHERE id = ?').pluck(),
 
@@ -326,12 +337,22 @@ export function createProjectService(ctx, { OpError }) {
     return value.toLowerCase();
   }
 
-  // Fonction « Projets » utilisée par le compte ? Sinon, refus (403) : il
-  // ne voit rien des projets, il n'y change rien
+  // Fonction « Projets » utilisée par le compte (autorisée par l'Admin ET
+  // allumée par la personne) ? Sinon, refus (403) : il ne voit rien des
+  // projets, il n'y change rien. Le texte dit pourquoi : pas autorisés
+  // (l'Admin s'en charge), ou coupés (Réglages › Fonctions).
   function requireProjectsOn(user) {
-    if (q.projectsEnabled.get(user.id) !== 1) throw new OpError(403, PROJECTS_OFF);
+    if (!features.allowedFor(user.id).projects) throw new OpError(403, PROJECTS_NOT_ALLOWED);
+    if (!features.featuresFor(user.id).projects) throw new OpError(403, PROJECTS_OFF);
   }
-  const projectsOn = (userId) => q.projectsEnabled.get(userId) === 1;
+  const projectsOn = (userId) => features.featuresFor(userId).projects;
+  // « Peut créer ses propres projets » (case de l'Admin) : créer et
+  // dupliquer un projet (dupliquer crée un projet à soi) ; sinon 403. Les
+  // projets qu'on lui partage restent utilisables, selon son rôle.
+  function requireProjectCreation(user) {
+    requireProjectsOn(user);
+    if (!features.allowedFor(user.id).projectsCreate) throw new OpError(403, PROJECT_CREATION_DENIED);
+  }
 
   const localeOf = (user) => userLocale({ locale: q.locale.get(user.id) }, ctx.config);
 
@@ -719,7 +740,7 @@ export function createProjectService(ctx, { OpError }) {
     // données par le téléphone (identifiants créés hors ligne), sinon
     // « À faire », « En cours », « Fait ». Partagé avec personne.
     'project.create'(user, op) {
-      requireProjectsOn(user);
+      requireProjectCreation(user);
       const id = requireUuid(op.projectId);
       if (q.project.get(id)) throw new OpError(409, 'ops.projetExisteDeja');
       const name = projectNameOf(op.name);
@@ -759,6 +780,7 @@ export function createProjectService(ctx, { OpError }) {
     // <nouvel identifiant> }, choisis par le téléphone (hors ligne) ; une
     // colonne ou une étiquette sans nouvel identifiant en reçoit un ici.
     'project.duplicate'(user, op) {
+      requireProjectCreation(user);
       const { project: source } = projectFor(user, op.projectId);
       const id = requireUuid(op.newProjectId);
       if (q.project.get(id)) throw new OpError(409, 'ops.projetExisteDeja');
@@ -1455,6 +1477,8 @@ export function createProjectService(ctx, { OpError }) {
   function setMembers(user, projectId, userIds, access = {}) {
     const { project, role } = projectFor(user, projectId);
     if (role !== 'owner') throw deny(role, true);
+    // Un invité ne partage jamais ce qu'il possède (l'Admin partage avec lui)
+    if (!mayShareOwn(accountRole(user))) throw new OpError(403, 'ops.invitePartageInterdit');
     if (!Array.isArray(userIds) || userIds.length > PROJECT_MEMBERS_MAX || !userIds.every((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0 && String(Number(id)) === String(id))) {
       throw new OpError(400, 'ops.listePersonnesInvalide');
     }
@@ -1472,8 +1496,17 @@ export function createProjectService(ctx, { OpError }) {
     const before = new Map(q.members.all(project.id).map((m) => [m.id, m.access]));
     for (const id of wanted) {
       if (before.has(id)) continue;
-      const guest = q.user.get(id);
-      if (!guest || guest.active !== 1) throw new OpError(400, 'ops.utilisateurInconnu');
+      // Une personne ajoutée doit être dans MON annuaire (server/directory.js) :
+      // sinon, exactement la réponse d'un compte qui n'existe pas
+      if (!directory.canSee(user, id)) {
+        // Journal (qui, combien ; jamais un nom) : repérer un essai de
+        // numéros. La réponse reste exactement celle d'un numéro inconnu.
+        ctx.audit('share_unknown_user', { user: user.username, project: project.id, count: directory.unseenCount(user, [...wanted].filter((n) => !before.has(n))) });
+        throw new OpError(400, 'ops.utilisateurInconnu');
+      }
+      // … et avoir les projets autorisés par l'Admin (sinon elle ne les
+      // verrait jamais) : refus nommé, elle est dans mon annuaire
+      if (!features.allowedFor(id).projects) throw new OpError(400, 'ops.personneSansProjets', { name: q.userName.get(id) ?? '' });
     }
     const added = [...wanted].filter((id) => !before.has(id));
     const removed = [...before.keys()].filter((id) => !wanted.has(id));
@@ -1746,7 +1779,7 @@ export function createProjectService(ctx, { OpError }) {
   // remise ; changes = 0 : déjà fait
   const claimReminder = db.prepare(`INSERT INTO card_reminders (card_id, user_id, signature, sent_at) VALUES (:cardId, :userId, :signature, :now)
     ON CONFLICT (card_id, user_id) DO UPDATE SET signature = :signature, sent_at = :now WHERE card_reminders.signature <> :signature`);
-  const activeUser = db.prepare('SELECT active, projects_enabled FROM users WHERE id = ?');
+  const activeUser = db.prepare('SELECT active FROM users WHERE id = ?').pluck();
 
   // Les rappels à remettre maintenant : [{ cardId, projectId, userId,
   // signature }], chacun noté dans card_reminders (une seule fois par
@@ -1772,8 +1805,7 @@ export function createProjectService(ctx, { OpError }) {
       const assigned = q.cardAssignees.all(card.id);
       const people = assigned.length ? assigned : [project.owner_id, ...q.memberIds.all(project.id)];
       for (const userId of people) {
-        const person = activeUser.get(userId);
-        if (person?.active !== 1 || person.projects_enabled !== 1 || !roleOfUser(project, userId)) continue;
+        if (activeUser.get(userId) !== 1 || !projectsOn(userId) || !roleOfUser(project, userId)) continue;
         if (!claimReminder.run({ cardId: card.id, userId, signature, now: stamp }).changes) continue;
         out.push({ cardId: card.id, projectId: project.id, userId, signature });
       }

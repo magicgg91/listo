@@ -129,4 +129,14 @@ export default {
   'partage.projet.titre': 'Share “{name}”',
   'partage.projet.intro': 'With Listo people only: a project has no public link. The access applies to the whole project.',
   'partage.vue.proprietaireSeul.projet': 'Only the owner chooses the people and their access.',
+
+  // Comptes invités (docs/cadrage-comptes.md) : « Invité · discret » sous le
+  // prénom, dans la feuille de l'Admin seulement ; « Personnes » d'un
+  // propriétaire invité (il ne partage jamais)
+  'partage.personnes.invite': 'Guest · discreet',
+  // Doesn't have the feature (Admin's tick, docs/cadrage-comptes.md 7.3)
+  'partage.personnes.sansListes': 'Doesn\'t use lists',
+  'partage.personnes.sansNotes': 'Doesn\'t use notes',
+  'partage.personnes.sansProjets': 'Doesn\'t use projects',
+  'partage.vue.invite': 'A guest account doesn\'t share: the Admin takes care of it.',
 };

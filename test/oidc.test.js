@@ -319,6 +319,28 @@ test('configuration : LISTO_OIDC=on exige l\'adresse d\'Authelia (https en produ
   assert.match(full.oidcSecretPath, /oidc-client-secret$/);
 });
 
+// Comptes invités (docs/cadrage-comptes.md) : « Accepter » propose aussi le
+// rôle Invité ; jamais Admin et invité à la fois
+test('Administration : une demande acceptée avec le rôle Invité crée un compte discret, qui entre avec le fournisseur', async (t) => {
+  const fake = fakeAuthelia({ users: PEOPLE });
+  const app = await oidcApp(t, fake);
+  const admin = await setupAdmin(app);
+  assert.equal(await signIn(app.client(), fake, 'nouveau'), '/#/connexion?authelia=demande');
+  const request = (await admin.get('/api/admin/users')).body.accountRequests[0];
+  assert.equal((await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'nouveau', displayName: 'Nouveau', role: 'chef' })).status, 400);
+  const accepted = await admin.post(`/api/admin/account-requests/${request.id}/accept`, { username: 'nouveau', displayName: 'Nouveau', role: 'guest' });
+  assert.equal(accepted.status, 201);
+  assert.equal(accepted.body.user.role, 'guest');
+  assert.deepEqual(app.db.prepare('SELECT role, guest FROM users WHERE id = ?').get(accepted.body.user.id), { role: 'user', guest: 1 });
+  assert.match(app.logs.join('\n'), /account_request_accepted .*user="nouveau" role="guest"/);
+  const browser = app.client();
+  assert.equal(await signIn(browser, fake, 'nouveau'), '/#/listes');
+  assert.equal((await browser.get('/api/me')).body.user.role, 'guest');
+  // Son annuaire est vide ; celui de l'Admin le contient, avec son rôle
+  assert.deepEqual((await browser.get('/api/users')).body.users, []);
+  assert.equal((await admin.get('/api/users')).body.users.find((u) => u.displayName === 'Nouveau').role, 'guest');
+});
+
 test('Administration : l\'Admin voit la demande, l\'accepte (identifiant corrigé) ; la personne entre ensuite avec Authelia ; pastille de Réglages', async (t) => {
   const fake = fakeAuthelia({ users: PEOPLE });
   const app = await oidcApp(t, fake);

@@ -85,6 +85,8 @@ export default {
   'ops.accueilTuilesInvalides': 'Tuiles de l\'Accueil invalides : chaque tuile connue, une seule fois.',
   'ops.accueilCompteToujours': 'La tuile Compte est toujours affichée.',
   'ops.fonctionInconnue': 'Fonction inconnue : seulement les notes et les projets.',
+  // Fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
+  'ops.fonctionNonAutorisee': 'Cette fonction n\'est pas ouverte pour votre compte : c\'est l\'Admin qui l\'autorise.',
   'ops.fonctionsInvalides': 'Réglage des fonctions invalide : oui ou non pour chaque fonction.',
 
   // Créer, modifier une liste
@@ -92,6 +94,14 @@ export default {
   'ops.magasinCoursesSeulement': 'Un magasin ne se choisit que pour une liste de courses.',
   'ops.pourQuiPasIci': '« Pour qui ? » ne se choisit que pour une liste d\'envies.',
   'ops.utilisateurInconnu': 'Utilisateur inconnu ou désactivé.',
+  // Comptes invités (docs/cadrage-comptes.md) : un invité ne partage jamais
+  // ce qu'il possède ; il n'est jamais destinataire d'une liste d'envies
+  // (refus nommé pour l'Admin, seul à voir les invités)
+  'ops.invitePartageInterdit': 'Un compte invité ne peut pas partager : l\'Admin s\'en charge.',
+  'ops.personneSansNotes': '{name} n\'utilise pas les notes.',
+  'ops.personneSansProjets': '{name} n\'utilise pas les projets.',
+  'ops.personneSansListes': '{name} n\'utilise pas les listes.',
+  'ops.inviteDestinataire': 'Un invité ne peut pas recevoir une liste d\'envies.',
   'ops.compteOuPersonne': 'Choisissez un compte ou une personne sans compte, pas les deux.',
   'ops.destinataireFixe': 'La personne à qui la liste est destinée ne change pas.',
   'ops.rienAModifier': 'Rien à modifier.',
@@ -169,6 +179,11 @@ export default {
   'ops.carteRestaurerSiennes': 'Vous ne pouvez restaurer que les cartes que vous avez créées.',
   'ops.carteAttribuerSiennes': 'Sur une carte que vous n\'avez pas créée, vous pouvez seulement vous retirer des personnes.',
   'ops.projetsCoupes': 'Les projets sont coupés pour votre compte (Réglages › Fonctions).',
+  'ops.projetsNonAutorises': 'Les projets ne sont pas ouverts pour votre compte : c\'est l\'Admin qui les autorise.',
+  'ops.creationProjetInterdite': 'Votre compte ne peut pas créer de projet.',
+  'ops.listesNonAutorisees': 'Les listes ne sont pas ouvertes pour votre compte : c\'est l\'Admin qui les autorise.',
+  'ops.listesCoupees': 'Les listes sont coupées pour votre compte (Réglages › Fonctions).',
+  'ops.notesNonAutorisees': 'Les notes ne sont pas ouvertes pour votre compte : c\'est l\'Admin qui les autorise.',
   'ops.projetExisteDeja': 'Ce projet existe déjà.',
   'ops.projetsLimite': 'Vous avez déjà {max} projets, corbeille comprise : supprimez-en avant d\'en créer un autre.',
   'ops.projetsTropVite': 'Trop de projets créés ou dupliqués pour le moment. Réessayez dans une heure.',

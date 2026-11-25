@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v178-${BUILD ?? 'dev'}`;
+const VERSION = `v181-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -72,6 +72,7 @@ const APP_FILES = [
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',
+  '/js/access.js',
   '/js/actions.js',
   '/js/api.js',
   '/js/app-height.js',

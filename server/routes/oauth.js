@@ -29,6 +29,7 @@ import { attemptKeys } from '../auth.js';
 import { checkSecondFactor } from '../twofactor.js';
 import { OAuthError, SCOPES, PKCE_CHALLENGE, parseScope, withParams, REQUEST_ID } from '../oauth.js';
 import { requestLocale } from '../locale.js';
+import { allowedFromRow } from '../features.js';
 
 const PAGES = new URL('../pages/', import.meta.url);
 // Noms des messages de l'écran « Autoriser un assistant IA »
@@ -200,9 +201,18 @@ export function oauthConsentRoutes(ctx) {
     return request;
   };
 
+  // Compte sans « Assistants IA » (case de l'Admin, docs/cadrage-comptes.md,
+  // étape 2) : l'écran d'autorisation le dit, et l'accord est refusé (403)
+  const mcpAllowed = (req, res) => {
+    if (allowedFromRow(req.user).mcp) return true;
+    res.status(403).json({ error: req.t('autorisation.compteNonAutorise') });
+    return false;
+  };
+
   // Ce qu'il faut afficher : application, adresse de retour, portées
   // possibles, compte connecté, ses listes (identifiant, nom, icône et type)
   router.get('/oauth/demandes/:id', (req, res) => {
+    if (!mcpAllowed(req, res)) return;
     const request = findRequest(req, res);
     if (!request) return;
     const lists = ctx.lists.myLists(req.user).map((list) => ({
@@ -217,11 +227,15 @@ export function oauthConsentRoutes(ctx) {
       confirmWith: req.sessionMethod === 'oidc' && ctx.oidc ? 'authelia' : 'password',
       confirmed: req.sessionMethod === 'oidc' && ctx.oidc ? ctx.oidc.confirmed(request.id, req.user.id) : false,
       lists,
+      // Listes utilisées par ce compte (un invité sans « Listes » : l'écran
+      // ne propose pas « Certaines listes », docs/cadrage-comptes.md, 4.3)
+      listsUsed: ctx.features.listsUsed(req.user.id),
     });
   });
 
   // Accord : portée, listes, puis mot de passe (et code 2FA) redemandés
   router.post('/oauth/demandes/:id/accord', async (req, res) => {
+    if (!mcpAllowed(req, res)) return;
     const request = findRequest(req, res);
     if (!request) return;
     const { password, code, scope, lists } = req.body ?? {};

@@ -99,10 +99,15 @@ export function startScreens(features) {
 // l'Accueil est coupé (aussi pour #/accueil et une adresse inconnue). Écran
 // choisi d'une fonction coupée (« Notes », notes coupées) : « Listes » ; le
 // choix gardé ne change pas (il revient quand la fonction est rallumée).
+// Un invité sans « Listes » (docs/cadrage-comptes.md, étape 3) : le
+// premier écran possible (« Projets »…), sinon l'Accueil (rien n'est
+// utilisé : l'invitation y est).
 export function firstScreen(home, features) {
   const value = normalizeHome(home);
   if (value.enabled) return 'home';
-  return screenAllowed(value.start, features) ? value.start : DEFAULT_START;
+  if (screenAllowed(value.start, features)) return value.start;
+  if (screenAllowed(DEFAULT_START, features)) return DEFAULT_START;
+  return startScreens(features)[0] ?? 'home';
 }
 
 // Boutons du bandeau du bas du téléphone (tabbar.js, même ordre que ses

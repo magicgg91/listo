@@ -42,6 +42,7 @@ export default {
   'navigation.nouvelleListe': 'Nouvelle liste',
   'navigation.nouvelleNote': 'Nouvelle note',
   'navigation.role.admin': 'Admin',
+  'navigation.role.invite': 'Invité',
   // Projets (docs/cadrage-projets.md, 3.2 et 3.4)
   'navigation.projets': 'Projets',
   'navigation.projets.nombre': { one: 'Projets, {count} projet', other: 'Projets, {count} projets' },

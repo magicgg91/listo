@@ -12,6 +12,7 @@ import QRCode from 'qrcode';
 import { hashPassword, verifyPassword, passwordProblem } from '../passwords.js';
 import { startSession, revokeAllSessions, attemptKeys, publicUser } from '../auth.js';
 import { isLocale } from '../../public/js/i18n.js';
+import { accountRole } from '../../public/js/access.js';
 import { generateTotpSecret, toBase32, otpauthUri } from '../totp.js';
 import {
   sealTotpSecret, openTotpSecret, useTotpCode, createRecoveryCodes, checkSecondFactor, disableTwoFactor,
@@ -29,7 +30,7 @@ export function meRoutes(ctx) {
   const pendingRequests = ctx.db.prepare("SELECT COUNT(*) FROM account_requests WHERE status = 'pending'").pluck();
   router.get('/me', (req, res) => {
     const user = publicUser(req.user, ctx.config, { method: req.sessionMethod });
-    if (ctx.oidc && req.user.role === 'admin') user.accountRequests = pendingRequests.get();
+    if (ctx.oidc && accountRole(req.user) === 'admin') user.accountRequests = pendingRequests.get();
     res.json({ user });
   });
 

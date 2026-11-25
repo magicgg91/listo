@@ -49,6 +49,7 @@ import { assignablePeople, memberNames, computeListView, canEditList, listOption
 import { progressOf, parentOf } from '../subtasks.js';
 import { announce } from '../announce.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
+import { mayShareOwn } from '../access.js';
 import { syncPill, openSheet, openMenu, confirmDialog, confirmSheet, toast, openLightbox, drawWhenIdle, releaseFocus, onPc, offlineBanner, watchMinute } from '../ui.js';
 import { itemWords, wordKind, byKind, countItems, doneZoneWords, progressText, progressLabel, progressShare } from '../words.js';
 import { listIcon } from '../list-icons.js';
@@ -255,8 +256,10 @@ export function renderList(listId, onLeave) {
     members.sort((a, b) => Number(b.isOwner) - Number(a.isOwner));
     const people = h('div', { class: 'avatars', role: 'img', 'aria-label': t('liste.pc.partageeAvec', { names: namesList(members.map((m) => m.displayName)) }) },
       members.slice(0, 4).map((m, i) => avatar(m.displayName, { second: i > 0 })));
-    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes')} · P`, onClick: () => openListShare(list.id) },
-      icon('users', 'icon--sm'), list.isOwner ? t('liste.pc.partager') : t('liste.pc.personnes'), people));
+    // Un propriétaire invité ne partage jamais : « Personnes »
+    const sharer = list.isOwner && mayShareOwn(app.user?.role);
+    replace(shareSlot, h('button', { class: 'btn btn--secondary btn--sm', type: 'button', 'aria-haspopup': 'dialog', 'aria-keyshortcuts': 'P', 'data-action': 'share', 'data-pc-tip': `${sharer ? t('liste.pc.partager') : t('liste.pc.personnes')} · P`, onClick: () => openListShare(list.id) },
+      icon('users', 'icon--sm'), sharer ? t('liste.pc.partager') : t('liste.pc.personnes'), people));
     shareSlot.hidden = false;
     // Envies : le bénéficiaire ne reçoit jamais les réservations (le serveur
     // ne les envoie pas) ; les autres membres les voient

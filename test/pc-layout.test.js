@@ -72,7 +72,7 @@ test('bascule : app--pc à partir de 1 024 px, même écran redessiné, menu gar
 test('menu de gauche : liens réels, liste ouverte repérée, Admin seulement comme rôle de compte, aucun focus forcé', () => {
   const side = read('public/js/screens/pc-side.js');
   assert.match(side, /href: pathFor\('list', \{ id: list\.id \}\),\s*'aria-current': current \? 'page' : null,/);
-  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, t\('navigation\.role\.admin'\)\) : null/);
+  assert.match(side, /user\.role === 'admin' \? h\('span', \{ class: 'pc-user__role' \}, t\('navigation\.role\.admin'\)\)\s*: user\.role === 'guest' \? h\('span', \{ class: 'pc-user__role' \}, t\('navigation\.role\.invite'\)\) : null/);
   assert.equal(fr['navigation.role.admin'], 'Admin');
   assert.match(side, /'aria-label': t\('navigation\.recherche\.libelle'\)/);
   assert.equal(fr['navigation.recherche.libelle'], 'Rechercher une liste');
@@ -93,7 +93,7 @@ test('liste : actions de ligne seulement si modifiable ; « Réserver » seuleme
   assert.equal(fr['liste.supprimer.nom'], 'Supprimer {name}');
   assert.equal(fr['liste.pc.supprimer.astuce'], 'Supprimer · Suppr');
   // « Partager » (propriétaire) ou « Personnes » (les autres) : le tiroir du partage
-  assert.match(list, /list\.isOwner \? t\('liste\.pc\.partager'\) : t\('liste\.pc\.personnes'\), people\)\);/);
+  assert.match(list, /const sharer = list\.isOwner && mayShareOwn\(app\.user\?\.role\);[\s\S]*sharer \? t\('liste\.pc\.partager'\) : t\('liste\.pc\.personnes'\), people\)\);/);
   assert.equal(fr['liste.pc.partager'], 'Partager');
   assert.equal(fr['liste.pc.personnes'], 'Personnes');
   // Bandeau du bénéficiaire : il ne voit jamais les réservations
@@ -196,7 +196,7 @@ test('fiche d\'un article (ordinateur) : tiroir, deux colonnes, pied Supprimer /
 test('partage (ordinateur et téléphone) : le propriétaire ouvre le choix (personnes ou lien) ; les autres voient les personnes, sans gestion ni lien public', () => {
   const panel = read('public/js/screens/share-panel.js');
   // Propriétaire : le choix ; les autres : « Personnes », en lecture
-  assert.match(panel, /return subject\.owner\(item\) \? openChooser\(subject\) : openPeopleView\(subject\);/);
+  assert.match(panel, /return subject\.owner\(item\) && sharesOwn\(\) \? openChooser\(subject\) : openPeopleView\(subject\);/);
   assert.match(panel, /owner: \(list\) => Boolean\(list\.isOwner\),/);
   assert.match(panel, /owner: \(note\) => isNoteOwner\(note\),/); // note : propriétaire seulement
   // Le choix : deux lignes, puis les deux feuilles (au centre sur ordinateur)
@@ -283,7 +283,7 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');
   assert.match(account, /h\('h2', \{ class: 'section-title' \}, t\('compte\.apparence'\)\),/);
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
+  assert.match(account, /user\.claudeUrl && allowedNow\(\)\.mcp \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
   // Deux différences seulement : « Cet appareil », et la confirmation de
   // « Se déconnecter », sur le téléphone seulement (décision du 11 novembre 2026)

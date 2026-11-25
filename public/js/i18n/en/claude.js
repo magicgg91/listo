@@ -80,6 +80,7 @@ export default {
   'claude.autoriser.aucuneListe': 'You don\'t have any lists yet.',
   'claude.autoriser.listes': 'Lists',
   'claude.autoriser.certainesListes': 'Some lists',
+  'claude.autoriser.sansListes': 'My notes and my projects (lists aren\'t open for your account)',
   'claude.autoriser.motDePasse': 'Password',
   'claude.autoriser.code': 'Code',
   'claude.autoriser.code.aide': '6-digit code from your authenticator app, or one of your recovery codes.',

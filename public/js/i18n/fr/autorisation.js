@@ -17,6 +17,8 @@ export default {
   'autorisation.codeIncorrect': 'Code incorrect.',
   // Accord refusé par oauth.js ({max} : nombre maximal de connexions)
   'autorisation.tropDeConnexions': 'Vous avez déjà {max} connexions d\'assistants IA actives (le maximum). Une connexion inutilisée pendant 30 jours se libère d\'elle-même.',
+  // Compte sans « Assistants IA » (case de l'Admin, docs/cadrage-comptes.md)
+  'autorisation.compteNonAutorise': 'Votre compte ne peut pas autoriser d\'assistant IA : c\'est l\'Admin de Listo qui l\'autorise.',
 
   // Écran « Assistants IA »
   'autorisation.connexionIntrouvable': 'Connexion introuvable.',

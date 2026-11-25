@@ -46,7 +46,7 @@ import { listIcon } from '../list-icons.js';
 import { LIST_TYPES, TYPE_LABELS, TYPE_ICONS, typeOf, isListType } from '../list-types.js';
 import { computeSummaries, loadListSort, newsBadge, listCountsByType, notesHaveNews } from '../store.js';
 import { liveNotes } from '../notes.js';
-import { app, onDataChange, openingScreen } from '../app.js';
+import { app, onDataChange, openingScreen, shownFeatures, canCreateProjects } from '../app.js';
 import { notesOn, projectsOn } from '../features.js';
 import { projectRights } from '../projects.js';
 import { cardCount, projectUnread } from '../project-view.js';
@@ -118,6 +118,9 @@ export function createPcSide() {
     onMousedown: keepFieldFocus.mousedown,
     onClick: () => setQuery(''),
   }, icon('x-circle'));
+  // Le champ (caché pour un invité sans « Listes » : il ne cherche que des
+  // listes)
+  const searchField = h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/'));
   // Nombre de listes trouvées, annoncé aux lecteurs d'écran
   const status = h('p', { class: 'visually-hidden', role: 'status' });
   const setQuery = (value) => {
@@ -216,6 +219,9 @@ export function createPcSide() {
     brandScreen.textContent = ` ${first === 'home' ? t('navigation.marque.accueil') : t('navigation.marque.ecran', { name: SCREEN_NAMES[first]() })}`;
     markCurrent(homeLink, selected.name === 'home');
     markCurrent(deadlinesLink, selected.name === 'deadlines');
+    // Échéances : toujours, sauf pour un invité sans rien de daté
+    // (features.js, screenFeatures ; docs/cadrage-comptes.md, décision 5)
+    deadlinesLink.hidden = !shownFeatures().deadlines;
     markCurrent(listsLink, selected.name === 'lists' && pcType === 'all');
     const notes = app.data.loaded ? countNotes() : null;
     notesCount.textContent = notes === null ? '' : String(notes);
@@ -224,6 +230,16 @@ export function createPcSide() {
     if (notes === null) notesLink.removeAttribute('aria-label');
     else notesLink.setAttribute('aria-label', t(notesNew ? 'notes.nav.nombre.nouveautes' : 'navigation.notes.nombre', { count: notes }));
     markCurrent(notesLink, NOTE_SCREENS.includes(selected.name));
+    // Listes non utilisées (un invité sans « Listes », docs/cadrage-
+    // comptes.md, étape 3) : ni « Listes », ni « Nouvelle liste », ni
+    // recherche des listes, ni « Types »
+    const listsUsed = shownFeatures().lists;
+    listsLink.hidden = !listsUsed;
+    searchField.hidden = !listsUsed;
+    if (!listsUsed && input.value) {
+      input.value = '';
+      clearButton.hidden = true;
+    }
     // Notes coupées (Réglages › Fonctions) : ni « Notes », ni « Nouvelle note »
     const notesUsed = notesOn(app.data.features);
     notesLink.hidden = !notesUsed;
@@ -241,8 +257,10 @@ export function createPcSide() {
     const board = onProjects && BOARD_SCREENS.includes(selected.name) ? app.data.projects.get(selected.projectId) : null;
     const canAdd = Boolean(board && !board.deletedAt && projectRights(board.role).createCards);
     newCard.hidden = !canAdd;
-    newProject.hidden = !onProjects || canAdd;
-    newList.hidden = onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
+    // « Nouveau projet » : seulement avec « Peut créer ses propres
+    // projets » (case de l'Admin, docs/cadrage-comptes.md, étape 2)
+    newProject.hidden = !onProjects || canAdd || !canCreateProjects();
+    newList.hidden = !listsUsed || onProjects || (notesUsed && NOTE_SCREENS.includes(selected.name));
     newNote.hidden = onProjects || !(notesUsed && NOTE_SCREENS.includes(selected.name));
   };
   const stopDay = watchNewDay(drawFixed);
@@ -370,8 +388,9 @@ export function createPcSide() {
           : h('p', { class: 'pc-nav__empty' }, t('navigation.projets.aucun')));
       return;
     }
-    // Autres écrans : seulement les entrées fixes
-    if (!LIST_SCREENS.includes(selected.name)) {
+    // Autres écrans : seulement les entrées fixes (et rien des listes pour
+    // un compte qui ne les utilise pas)
+    if (!LIST_SCREENS.includes(selected.name) || !shownFeatures().lists) {
       showNav(false);
       replace(nav);
       return;
@@ -398,7 +417,7 @@ export function createPcSide() {
     h('div', { class: 'pc-brand' }, home, h('button', {
       class: 'icon-btn', type: 'button', 'aria-label': t('navigation.raccourcis'), 'aria-haspopup': 'dialog', 'aria-keyshortcuts': '?', 'data-pc-tip': t('navigation.raccourcis.infobulle'), onClick: () => openShortcuts(),
     }, icon('help'))),
-    h('label', { class: 'searchfield' }, icon('search', 'icon--sm'), input, clearButton, keycap('/')),
+    searchField,
     status,
     main,
     nav,
@@ -412,8 +431,10 @@ export function createPcSide() {
         avatar(user.displayName),
         h('span', { class: 'pc-user__text' },
           h('span', { class: 'pc-user__name' }, user.displayName ?? ''),
-          // Rôle du compte (pas un droit sur une liste) : « Admin » seulement
-          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, t('navigation.role.admin')) : null),
+          // Rôle du compte (pas un droit sur une liste) : « Admin » ou
+          // « Invité » (docs/cadrage-comptes.md, 4.3) ; rien pour un Utilisateur
+          user.role === 'admin' ? h('span', { class: 'pc-user__role' }, t('navigation.role.admin'))
+            : user.role === 'guest' ? h('span', { class: 'pc-user__role' }, t('navigation.role.invite')) : null),
         iconButton('sliders', t('navigation.reglages'), () => navigate('settings')))));
   draw();
 

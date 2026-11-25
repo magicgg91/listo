@@ -69,7 +69,9 @@ test('un invité voit uniquement les listes partagées avec lui', async (t) => {
   assert.deepEqual(await listNames(h.guillaume), ['Partagée avec Marie', 'Privée de Guillaume']);
   const sharedForMarie = (await h.marie.get('/api/lists')).body.lists.find((l) => l.id === shared);
   assert.equal(sharedForMarie.isOwner, false);
-  assert.deepEqual(sharedForMarie.members.map((m) => m.username).sort(), ['guillaume', 'marie']);
+  assert.deepEqual(sharedForMarie.members.map((m) => m.id).sort(), [h.ids.guillaume, h.ids.marie].sort());
+  // Jamais l'identifiant de connexion d'un autre compte (docs/cadrage-comptes.md, 3.3)
+  assert.ok(sharedForMarie.members.every((m) => !('username' in m)));
 });
 
 test('un non-membre reçoit 404 sur la liste et sur tous ses articles, en lecture comme en modification', async (t) => {
@@ -193,7 +195,7 @@ test("partage : propriétaire toujours membre, comptes désactivés ou inconnus 
 
   // Retirer tout le monde laisse le propriétaire
   const res = await share(h.guillaume, listId, []);
-  assert.deepEqual(res.body.list.members.map((m) => m.username), ['guillaume']);
+  assert.deepEqual(res.body.list.members.map((m) => m.id), [h.ids.guillaume]);
 
   for (const bad of [[999], ['abc'], 'marie', [h.ids.marie, -1]]) {
     assert.equal((await share(h.guillaume, listId, bad)).status, 400, JSON.stringify(bad));
@@ -208,11 +210,11 @@ test("partage : propriétaire toujours membre, comptes désactivés ou inconnus 
   await h.guillaume.request('PATCH', `/api/admin/users/${h.ids.marie}`, { active: false });
   const kept = await share(h.guillaume, listId, [h.ids.marie]);
   assert.equal(kept.status, 200);
-  assert.equal(kept.body.list.members.find((m) => m.username === 'marie').active, false);
+  assert.equal(kept.body.list.members.find((m) => m.id === h.ids.marie).active, false);
 
   // Les comptes actifs proposés au partage
-  const users = (await h.guillaume.get('/api/users')).body.users.map((u) => u.username);
-  assert.deepEqual(users, ['guillaume']);
+  const users = (await h.guillaume.get('/api/users')).body.users.map((u) => u.id);
+  assert.deepEqual(users, [h.ids.guillaume]);
 });
 
 // --- Articles, historique et rayon automatique ---

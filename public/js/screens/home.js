@@ -44,7 +44,7 @@ import { TYPE_LABELS } from '../list-types.js';
 import { listCountsByType, saveTypeFilter } from '../store.js';
 import { app, onDataChange, refreshData, isDesktop } from '../app.js';
 import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from '../ui.js';
-import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope } from '../deadlines.js';
+import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope, deadlineProjects } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
 import { projectsInOrder, openNewProject } from './projects.js';
@@ -100,7 +100,8 @@ const emptyText = (text) => h('p', { class: 'tile__empty' }, text);
 
 // Échéances : « En retard » (rouge), « Aujourd'hui » (vert), « Plus tard »
 // (gris) ; mêmes nombres que l'écran Échéances, avec son choix « Toutes /
-// Les miennes » (deadlines.js). Un nombre nul reste gris.
+// Les miennes » (deadlines.js), cartes des projets montrés dans Échéances
+// comprises. Un nombre nul reste gris.
 function deadlinesTile() {
   const open = () => navigate('deadlines');
   const options = { today: todayKey(), mine: effectiveMine(app.data, loadDeadlineScope()), me: app.user.id };
@@ -110,10 +111,13 @@ function deadlinesTile() {
     app.openDeadlines = deadlineSectionFor(app.data, name, options);
     navigate('deadlines');
   };
+  // Des cartes de projets comptent aussi (étape 4 des projets) : le nom lu
+  // le dit (« 2 tâches ou cartes »)
+  const cards = deadlineProjects(app.data).size > 0;
   const lines = [
-    ['late', t('accueil.echeances.retard'), (count) => t('accueil.echeances.retard.lu', { count }), 'danger'],
-    ['today', t('accueil.echeances.aujourdhui'), (count) => t('accueil.echeances.aujourdhui.lu', { count }), 'success'],
-    ['later', t('accueil.echeances.plusTard'), (count) => t('accueil.echeances.plusTard.lu', { count }), ''],
+    ['late', t('accueil.echeances.retard'), (count) => t(cards ? 'accueil.echeances.retard.lu.cartes' : 'accueil.echeances.retard.lu', { count }), 'danger'],
+    ['today', t('accueil.echeances.aujourdhui'), (count) => t(cards ? 'accueil.echeances.aujourdhui.lu.cartes' : 'accueil.echeances.aujourdhui.lu', { count }), 'success'],
+    ['later', t('accueil.echeances.plusTard'), (count) => t(cards ? 'accueil.echeances.plusTard.lu.cartes' : 'accueil.echeances.plusTard.lu', { count }), ''],
   ];
   const total = counts.late + counts.today + counts.later;
   return tile(t('accueil.echeances'), 'calendar', open, total === 0

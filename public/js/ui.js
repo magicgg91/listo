@@ -408,8 +408,9 @@ export function openMenu(items, { label = t('fenetres.menu'), onClose, anchor = 
       items.map((item) => [item.separated ? h('div', { class: 'menu__sep', role: 'separator' }) : null, h('button', {
         class: `menu__item${item.danger ? ' menu__item--danger' : ''}`,
         type: 'button',
-        // Choix exclusif (tri…) : l'option active a une coche ET son texte
-        role: item.checked === undefined ? 'menuitem' : 'menuitemradio',
+        // Choix exclusif (tri…) : l'option active a une coche ET son texte ;
+        // interrupteur (toggle : allumé ou coupé) : de même, une coche
+        role: item.checked === undefined ? 'menuitem' : item.toggle ? 'menuitemcheckbox' : 'menuitemradio',
         'aria-checked': item.checked === undefined ? null : String(item.checked),
         onClick: () => {
           closeMenu();

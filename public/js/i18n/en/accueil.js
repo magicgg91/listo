@@ -15,6 +15,10 @@ export default {
   'accueil.echeances.aujourdhui.lu': { one: 'Today, {count} task', other: 'Today, {count} tasks' },
   'accueil.echeances.plusTard.lu': { one: 'Later, {count} task', other: 'Later, {count} tasks' },
   'accueil.echeances.aucune': 'No due tasks',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 des projets)
+  'accueil.echeances.retard.lu.cartes': { one: 'Overdue, {count} task or card', other: 'Overdue, {count} tasks or cards' },
+  'accueil.echeances.aujourdhui.lu.cartes': { one: 'Today, {count} task or card', other: 'Today, {count} tasks or cards' },
+  'accueil.echeances.plusTard.lu.cartes': { one: 'Later, {count} task or card', other: 'Later, {count} tasks or cards' },
 
   // Tuile « Listes »
   'accueil.listes': 'Lists',

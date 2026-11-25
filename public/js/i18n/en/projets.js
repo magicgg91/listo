@@ -407,4 +407,8 @@ export default {
   'projets.menu.notifications.reactiver': 'Turn notifications back on',
   'projets.notifications.coupees': 'Notifications for this project turned off',
   'projets.notifications.reactivees': 'Notifications for this project turned back on',
+  // « Afficher dans Échéances » (menu ⋮ du projet, étape 4) : interrupteur à moi
+  'projets.menu.echeances': 'Show in Due',
+  'projets.echeances.ajoute': 'Dated cards of “{name}” now appear in Due',
+  'projets.echeances.retire': 'Cards of “{name}” no longer appear in Due',
 };

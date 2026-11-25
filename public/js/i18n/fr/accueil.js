@@ -16,6 +16,10 @@ export default {
   'accueil.echeances.aujourdhui.lu': { one: 'Aujourd\'hui, {count} tâche', other: 'Aujourd\'hui, {count} tâches' },
   'accueil.echeances.plusTard.lu': { one: 'Plus tard, {count} tâche', other: 'Plus tard, {count} tâches' },
   'accueil.echeances.aucune': 'Aucune échéance',
+  // Avec des cartes des projets montrés dans Échéances (étape 4 des projets)
+  'accueil.echeances.retard.lu.cartes': { one: 'En retard, {count} tâche ou carte', other: 'En retard, {count} tâches ou cartes' },
+  'accueil.echeances.aujourdhui.lu.cartes': { one: 'Aujourd\'hui, {count} tâche ou carte', other: 'Aujourd\'hui, {count} tâches ou cartes' },
+  'accueil.echeances.plusTard.lu.cartes': { one: 'Plus tard, {count} tâche ou carte', other: 'Plus tard, {count} tâches ou cartes' },
 
   // Tuile « Listes » : une ligne par type (lue « Courses, 3 listes »,
   // textes listes.type.lu)

@@ -409,4 +409,8 @@ export default {
   'projets.menu.notifications.reactiver': 'Réactiver les notifications',
   'projets.notifications.coupees': 'Notifications de ce projet coupées',
   'projets.notifications.reactivees': 'Notifications de ce projet réactivées',
+  // « Afficher dans Échéances » (menu ⋮ du projet, étape 4) : interrupteur à moi
+  'projets.menu.echeances': 'Afficher dans Échéances',
+  'projets.echeances.ajoute': 'Les cartes datées de « {name} » apparaissent dans Échéances',
+  'projets.echeances.retire': 'Les cartes de « {name} » n\'apparaissent plus dans Échéances',
 };

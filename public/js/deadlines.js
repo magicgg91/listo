@@ -22,10 +22,23 @@
 // Attribution (décisions du 11 novembre 2026) : « Les miennes » ne garde que
 // les tâches qui me sont attribuées ; « Toutes » montre tout. Une
 // attribution ne compte que si l'option est activée pour la liste.
+//
+// Cartes des projets (étape 4 du cadrage docs/cadrage-projets.md, section
+// 8, décisions du 25 novembre 2026) : un projet où J'AI allumé « Afficher
+// dans Échéances » (réglage à moi, projectMine.inDeadlines) ajoute ses
+// cartes datées et pas faites (case « Fait ») aux mêmes groupes, mêlées
+// aux tâches. « Les miennes » garde les cartes attribuées à moi ET celles
+// attribuées à personne ; les pastilles, la tuile de l'Accueil et le
+// résumé du matin (server/notify.js) les comptent de même, pour que les
+// nombres soient toujours égaux. Projets coupés (Réglages › Fonctions) :
+// aucune carte, nulle part. Une entrée est { item, list } (tâche) ou
+// { card, project, column } (carte).
 
 import { assigneesOf } from './assign.js';
 import { typeOf } from './list-types.js';
 import { listOptions } from './store.js';
+import { projectsOn } from './features.js';
+import { cardDone } from './projects.js';
 import { addDays, todayKey } from './format.js';
 import { compareNames } from './sorting.js';
 import { matches } from './search.js';
@@ -65,45 +78,79 @@ export function listHasDeadlines(list) {
   return Boolean(list) && typeOf(list) === 'tasks' && listOptions(list).due;
 }
 
-const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
-
 // Personnes à qui la tâche est en ce moment ([] : personne, ou attribution
 // désactivée pour sa liste) : une, plusieurs, ou celle de cette fois
 // (chacun son tour) ; assign.js
 export const assigneesFor = (item, list) => (listOptions(list).assign ? assigneesOf(item) : []);
 
-// Tâches retenues, chacune avec sa liste : [{ item, list }], triées.
-// keep(item, list) : filtre de plus, facultatif.
-function collect(state, keep = () => true) {
+// Projets dont les cartes datées vont dans Échéances : ceux que je vois
+// (pas dans la corbeille) où j'ai allumé l'option ; aucun quand j'ai coupé
+// les projets (même si la copie locale en garde encore)
+export function deadlineProjects(state) {
+  if (!projectsOn(state.features) || !state.projects) return new Map();
+  const mine = state.projectMine ?? {};
+  return new Map([...state.projects.values()]
+    .filter((project) => !project.deletedAt && state.projectIds?.has(project.id) && mine[project.id]?.inDeadlines === true)
+    .map((project) => [project.id, project]));
+}
+
+// La carte est-elle pour moi ? Attribuée à moi, ou à personne (« Les
+// miennes », décision du 25 novembre 2026)
+export const cardForMe = (card, me) => { const who = card.assigneeIds ?? []; return who.length === 0 || who.includes(me); };
+
+// Ce qui sert au tri et aux groupes, pour une tâche comme pour une carte
+const dueOf = (entry) => entry.item ?? entry.card;
+const nameOf = (entry) => (entry.item ? entry.item.name : entry.card.title);
+const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
+const priorityOf = (entry) => {
+  if (entry.item) return listOptions(entry.list).priority ? PRIORITY_RANK[entry.item.priority] ?? 1 : 1;
+  return entry.project.priorityEnabled ? PRIORITY_RANK[entry.card.priority] ?? 1 : 1;
+};
+
+// Tâches et cartes retenues : [{ item, list }] et [{ card, project,
+// column }], triées ensemble. keepTask(item, list), keepCard(card,
+// project) : filtres de plus, facultatifs.
+function collect(state, { keepTask = () => true, keepCard = () => true } = {}) {
   const found = [];
   for (const item of state.items.values()) {
     if (item.checked || !item.dueDate) continue;
     const list = state.lists.get(item.listId);
-    if (!listHasDeadlines(list) || !keep(item, list)) continue;
+    if (!listHasDeadlines(list) || !keepTask(item, list)) continue;
     found.push({ item, list });
   }
-  const priority = (entry) => (listOptions(entry.list).priority ? PRIORITY_RANK[entry.item.priority] ?? 1 : 1);
-  return found.sort((a, b) => compareDue(a.item.dueDate, a.item.dueTime, b.item.dueDate, b.item.dueTime)
-    || priority(a) - priority(b)
-    || compareNames(a.item.name, b.item.name));
+  const projects = deadlineProjects(state);
+  if (projects.size) {
+    for (const card of state.cards.values()) {
+      const project = projects.get(card.projectId);
+      if (!project || card.deletedAt || !card.dueDate || cardDone(card) || !keepCard(card, project)) continue;
+      const column = (project.columns ?? []).find((c) => c.id === card.columnId) ?? null;
+      found.push({ card, project, column });
+    }
+  }
+  return found.sort((a, b) => compareDue(dueOf(a).dueDate, dueOf(a).dueTime, dueOf(b).dueDate, dueOf(b).dueTime)
+    || priorityOf(a) - priorityOf(b)
+    || compareNames(nameOf(a), nameOf(b)));
 }
 
 // Groupes à afficher (vides retirés) : [{ key, title, entries }].
-// query : texte cherché (nom de la tâche), facultatif ; mine : seulement les
-// tâches attribuées à me (« Les miennes »).
+// query : texte cherché (nom de la tâche, titre de la carte), facultatif ;
+// mine : seulement les tâches attribuées à moi et les cartes attribuées à
+// moi ou à personne (« Les miennes »).
 export function computeDeadlines(state, { today = todayKey(), query = '', mine = false, me = null, now = nowTime() } = {}) {
-  const keep = mine ? (item, list) => assigneesFor(item, list).includes(me) : undefined;
-  const entries = collect(state, keep).filter((entry) => !query || matches(entry.item.name, query));
+  const keep = mine ? { keepTask: (item, list) => assigneesFor(item, list).includes(me), keepCard: (card) => cardForMe(card, me) } : undefined;
+  const entries = collect(state, keep).filter((entry) => !query || matches(nameOf(entry), query));
   return deadlineGroups()
-    .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(entry.item.dueDate, today, entry.item.dueTime, now) === key) }))
+    .map(([key, title]) => ({ key, title, entries: entries.filter((entry) => deadlineGroup(dueOf(entry).dueDate, today, dueOf(entry).dueTime, now) === key) }))
     .filter((group) => group.entries.length > 0);
 }
 
 // --- Choix « Toutes / Les miennes » (écran Échéances et tuile de l'Accueil) ---
 
 // Le choix n'est proposé que si une de mes listes de tâches a l'attribution
-// activée ; sinon, « Toutes » quel que soit le choix gardé
-export const scopeOffered = (state) => [...state.lists.values()].some((list) => listOptions(list).assign);
+// activée, ou si un projet montre ses cartes dans Échéances (une carte peut
+// toujours être attribuée) ; sinon, « Toutes » quel que soit le choix gardé
+export const scopeOffered = (state) => [...state.lists.values()].some((list) => listOptions(list).assign)
+  || deadlineProjects(state).size > 0;
 
 // Choix « Les miennes » retenu sur cet appareil (jamais envoyé au serveur ;
 // stockage indisponible : « Toutes » pour la visite)
@@ -160,12 +207,14 @@ export function deadlineSectionFor(state, row, { today = todayKey(), mine = fals
 // personne (pas celles attribuées à quelqu'un d'autre). Mêmes groupes que
 // l'écran : une tâche du jour dont l'heure est passée est « En retard »
 // (deadlineGroup) ; ensemble, ce sont toujours les tâches dont l'échéance
-// est aujourd'hui ou avant.
+// est aujourd'hui ou avant. Les cartes des projets montrés dans Échéances
+// comptent de même (les miennes et celles de personne).
 export function deadlineBadges(state, today = todayKey(), me = null, now = nowTime()) {
-  const keep = (item, list) => { const who = assigneesFor(item, list); return who.length === 0 || who.includes(me); };
+  const keepTask = (item, list) => { const who = assigneesFor(item, list); return who.length === 0 || who.includes(me); };
   const counts = { late: 0, today: 0 };
-  for (const { item } of collect(state, keep)) {
-    const group = deadlineGroup(item.dueDate, today, item.dueTime, now);
+  for (const entry of collect(state, { keepTask, keepCard: (card) => cardForMe(card, me) })) {
+    const { dueDate, dueTime } = dueOf(entry);
+    const group = deadlineGroup(dueDate, today, dueTime, now);
     if (group === 'late' || group === 'today') counts[group] += 1;
   }
   return counts;

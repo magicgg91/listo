@@ -59,13 +59,16 @@ export function roleLabel(role) {
 // Personnes (les autres), Réglages du projet (propriétaire et « Peut
 // modifier », dans le projet), Dupliquer le projet (tout membre), Cartes
 // supprimées (dans le projet), Masquer / Afficher les nouveautés (projet
-// partagé), Couper / Réactiver les notifications ; après un trait, Supprimer (propriétaire) ou Quitter le projet.
+// partagé), Couper / Réactiver les notifications, « Afficher dans
+// Échéances » (interrupteur à moi, étape 4) ; après un trait, Supprimer
+// (propriétaire) ou Quitter le projet.
 // Seulement ce que mon rôle permet ; le serveur revérifie chaque droit.
 export function projectMenuItems(project, { inside = false, onGone = () => {} } = {}) {
   const rights = projectRights(project.role);
   const shared = (project.members ?? []).length > 1;
   const muted = projectNewsMuted(app.data, project.id);
   const pushMuted = Boolean(app.data.projectMine?.[project.id]?.mutedPush);
+  const inDeadlines = app.data.projectMine?.[project.id]?.inDeadlines === true;
   return [
     inside ? null : { icon: 'kanban', label: t('projets.menu.ouvrir'), onSelect: () => navigate('project', { id: project.id }) },
     rights.share
@@ -91,6 +94,19 @@ export function projectMenuItems(project, { inside = false, onGone = () => {} } 
       onSelect: () => {
         projectActions.setProjectState(project.id, { mutedPush: !pushMuted });
         toast(pushMuted ? t('projets.notifications.reactivees') : t('projets.notifications.coupees'), { low: true });
+      },
+    },
+    // « Afficher dans Échéances » (étape 4, section 8) : interrupteur, coupé
+    // au départ, réglage à moi pour ce projet (jamais transmis aux autres) ;
+    // allumé, ses cartes datées et pas faites vont dans l'écran Échéances
+    {
+      icon: 'calendar',
+      label: t('projets.menu.echeances'),
+      toggle: true,
+      checked: inDeadlines,
+      onSelect: () => {
+        projectActions.setProjectState(project.id, { inDeadlines: !inDeadlines });
+        toast(inDeadlines ? t('projets.echeances.retire', { name: project.name }) : t('projets.echeances.ajoute', { name: project.name }), { low: true });
       },
     },
     rights.trash

@@ -175,7 +175,7 @@ test('Accueil et premier écran : tuile « Projets » en dernier, toute la large
   // projet » sans projet
   const home = code('public/js/screens/home.js');
   assert.match(home, /function projectsTile\(\) \{/);
-  assert.match(home, /urgentCards\(app\.data, app\.user\.id, today, nowTime\(\)\)/);
+  assert.match(home, /urgentCards\(app\.data, app\.user\.id, todayKey\(\), nowTime\(\), TILE_ROWS\)/);
   assert.match(home, /navigate\('projectCard', \{ id: card\.projectId, cardId: card\.id \}\)/);
   assert.match(home, /tile__sub\$\{late \? ' tile__sub--late' : ''\}/);
   assert.match(home, /emptyText\(t\('accueil\.projets\.aucuneCarte'\)\)/);

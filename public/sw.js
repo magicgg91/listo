@@ -51,7 +51,7 @@
 // VERSION quand un fichier de l'application ou leur liste change.
 
 const BUILD = null; // remplacé par le serveur (null : développement)
-const VERSION = `v182-${BUILD ?? 'dev'}`;
+const VERSION = `v183-${BUILD ?? 'dev'}`;
 const APP_CACHE = `listo-app-${VERSION}`;
 const PHOTO_CACHE = 'listo-photos';
 // Lecteur de codes-barres : le nom du cache suit le dossier de sa version
@@ -224,6 +224,7 @@ const APP_FILES = [
   '/js/project-store.js',
   '/js/project-actions.js',
   '/js/project-view.js',
+  '/js/projects-tile.js',
   '/js/project-drag.js',
   '/js/screens/projects.js',
   '/js/screens/project.js',

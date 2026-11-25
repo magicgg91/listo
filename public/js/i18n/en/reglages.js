@@ -55,6 +55,19 @@ export default {
   'reglages.accueil.glisser': 'Drag to move',
   'reglages.accueil.position': '“{name}” in position {position} of {total}',
   'reglages.accueil.premier': 'First screen',
+  // “Projects” row and “Projects tile” sheet (25 November 2026)
+  'reglages.accueil.projets.cartes': 'My cards',
+  'reglages.accueil.projets.projets': 'My projects',
+  'reglages.accueil.projets.projet': 'One project',
+  'reglages.accueil.projets.projetNomme': 'One project: {name}',
+  'reglages.accueil.projets.cartes.detail': 'Your most urgent cards, across all projects',
+  'reglages.accueil.projets.projets.detail': 'One row per project, with its cards',
+  'reglages.accueil.projets.projet.detail': 'The columns and your cards of a chosen project',
+  'reglages.accueil.projets.aucun': 'No projects yet',
+  'reglages.accueil.projets.titre': 'Projects tile',
+  'reglages.accueil.projets.choix': 'Tile content',
+  'reglages.accueil.projets.section': 'Project',
+  'reglages.accueil.projets.ouvrir': 'Projects, tile content: {choice}',
 
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Features',

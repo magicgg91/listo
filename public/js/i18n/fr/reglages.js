@@ -55,6 +55,19 @@ export default {
   'reglages.accueil.glisser': 'Glisser pour déplacer',
   'reglages.accueil.position': '« {name} » en position {position} sur {total}',
   'reglages.accueil.premier': 'Premier écran',
+  // Ligne « Projets » et feuille « Tuile Projets » (25 novembre 2026)
+  'reglages.accueil.projets.cartes': 'Mes cartes',
+  'reglages.accueil.projets.projets': 'Mes projets',
+  'reglages.accueil.projets.projet': 'Un projet',
+  'reglages.accueil.projets.projetNomme': 'Un projet : {name}',
+  'reglages.accueil.projets.cartes.detail': 'Vos cartes les plus urgentes, tous projets confondus',
+  'reglages.accueil.projets.projets.detail': 'Une ligne par projet, avec ses cartes',
+  'reglages.accueil.projets.projet.detail': 'Les colonnes et vos cartes d\'un projet choisi',
+  'reglages.accueil.projets.aucun': 'Aucun projet pour l\'instant',
+  'reglages.accueil.projets.titre': 'Tuile Projets',
+  'reglages.accueil.projets.choix': 'Contenu de la tuile',
+  'reglages.accueil.projets.section': 'Projet',
+  'reglages.accueil.projets.ouvrir': 'Projets, contenu de la tuile : {choice}',
 
   // Réglages › Fonctions (screens/features.js ; features.js)
   'reglages.fonctions': 'Fonctions',

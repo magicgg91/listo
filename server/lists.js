@@ -1464,13 +1464,19 @@ export function createListService(ctx) {
     },
 
     // Réglage « Accueil » (Réglages › Accueil) : Accueil affiché (enabled),
-    // premier écran quand il est coupé (start), ordre des tuiles (order),
-    // tuiles masquées (hidden). Toujours celui de la personne connectée ;
-    // tuile inconnue ou en double, « Compte » masqué, premier écran
-    // inconnu : refusé (400), rien n'est écrit. Ses autres appareils sont
-    // prévenus (même synchronisation que les nouveautés).
+    // premier écran quand il est désactivé (start), ordre des tuiles
+    // (order), tuiles masquées (hidden), contenu de la tuile « Projets »
+    // (projectsTile). Toujours celui de la personne connectée ; tuile
+    // inconnue ou en double, « Compte » masqué, premier écran ou contenu
+    // inconnu : refusé (400), rien n'est écrit. « Un projet » : un projet
+    // que la personne voit (projectFor : projets non autorisés ou
+    // désactivés, 403 ; projet inconnu, d'un autre ou dans la corbeille,
+    // 404 comme un projet qui n'existe pas). Ses autres appareils sont
+    // prévenus (même synchronisation que les nouveautés) ; personne d'autre
+    // ne reçoit ce réglage.
     'account.home'(user, op) {
-      const { problem, changed } = home.setHome(user.id, { enabled: op.enabled, start: op.start, order: op.order, hidden: op.hidden });
+      const change = { enabled: op.enabled, start: op.start, order: op.order, hidden: op.hidden, projectsTile: op.projectsTile };
+      const { problem, changed } = home.setHome(user.id, change, { checkProject: (projectId) => projects.projectFor(user, projectId) });
       if (problem) throw new OpError(400, problem);
       if (changed) changedForMe(null);
       return {};

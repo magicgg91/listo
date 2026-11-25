@@ -109,9 +109,9 @@ test('couleurs, liste des étiquettes d\'une note, ordre, étiquettes utilisées
 // --- Migration 42 ---
 
 test('migration 42 : tables labels et note_labels ; une base en version 41 migre sans rien changer ; nom unique, couleur, cascades', (t) => {
-  assert.equal(MIGRATIONS.length, 49);
+  assert.equal(MIGRATIONS.length, 50);
   const fresh = openDatabase(':memory:');
-  assert.equal(schemaVersion(fresh), 49);
+  assert.equal(schemaVersion(fresh), 50);
   for (const table of ['labels', 'note_labels']) assert.ok(fresh.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table), table);
   const file = path.join(tempDir(t), 'old.db');
   const old = databaseAt(file, 41);
@@ -119,7 +119,7 @@ test('migration 42 : tables labels et note_labels ; une base en version 41 migre
   old.prepare("INSERT INTO notes (id, owner_id, title, body, version, created_at, updated_at, changed_at) VALUES ('n1', 1, 'Codes', 'secret', 3, '2026-11-01T00:00:00.000Z', '2026-11-02T00:00:00.000Z', '2026-11-02T00:00:00.000Z')").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(schemaVersion(db), 50);
   assert.deepEqual(db.prepare('SELECT title, body, version, updated_at, changed_at FROM notes').get(), { title: 'Codes', body: 'secret', version: 3, updated_at: '2026-11-02T00:00:00.000Z', changed_at: '2026-11-02T00:00:00.000Z' });
   assert.equal(db.prepare('SELECT COUNT(*) FROM labels').pluck().get(), 0);
   const add = db.prepare("INSERT INTO labels (name, name_key, color, created_at) VALUES (?, ?, ?, '2026-11-24T00:00:00.000Z')");

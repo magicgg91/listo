@@ -41,7 +41,7 @@ import { projectMenuEntries, sortedProjects, projectMatches, columnCounts, cardC
 import * as projectActions from '../project-actions.js';
 import { openProjectShare } from './share-panel.js';
 
-const compareNames = (a, b) => compareText(a, b, { sensitivity: 'base', numeric: true });
+export const compareNames = (a, b) => compareText(a, b, { sensitivity: 'base', numeric: true });
 
 // Projets visibles, les plus récemment modifiés d'abord
 export const projectsInOrder = () => sortedProjects(app.data, compareNames);

@@ -58,4 +58,14 @@ export default {
   'accueil.projets.cartes.lu': { one: 'Projects, {count} card for you', other: 'Projects, {count} cards for you' },
   'accueil.projets.cartes.lu.nouveautes': { one: 'Projects, {count} card for you, new activity', other: 'Projects, {count} cards for you, new activity' },
   'accueil.projets.lu.nouveautes': 'Projects, new activity',
+  // “Projects” tile, chosen by each person (Settings › Home): “My
+  // projects” (one row per project) and “One project”
+  'accueil.projets.ligne.cartes': { one: '{count} card', other: '{count} cards' },
+  'accueil.projets.ligne.pourVous': '{count} for you',
+  'accueil.projets.ligne.lectureSeule': 'read only',
+  'accueil.projets.tous': 'All projects',
+  'accueil.projets.projet.lu': { one: '{name}, {count} card for you', other: '{name}, {count} cards for you' },
+  'accueil.projets.projet.lu.nouveautes': { one: '{name}, {count} card for you, new activity', other: '{name}, {count} cards for you, new activity' },
+  'accueil.projets.projet.nouveautes': '{name}, new activity',
+  'accueil.projets.colonnes.autres': { one: '{count} more column', other: '{count} more columns' },
 };

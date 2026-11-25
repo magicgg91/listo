@@ -144,8 +144,8 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
 
 test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; une base en version 40 migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 49);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(MIGRATIONS.length, 50);
+  assert.equal(schemaVersion(db), 50);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT notes_enabled FROM users WHERE id = ?').pluck().get(id), 1);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), defaultFeatures());
@@ -163,7 +163,7 @@ test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; un
   old.prepare("INSERT INTO users (username, display_name, password_hash, role, home_enabled, home_start) VALUES ('paul', 'Paul', 'x', 'user', 0, 'notes')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 49);
+  assert.equal(schemaVersion(migrated), 50);
   const paul = migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get();
   assert.equal(paul.notes_enabled, 1);
   assert.equal(paul.home_enabled, 0);
@@ -448,7 +448,7 @@ test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles 
   assert.match(homeSettings, /const tiles = tilesFor\(home, features\);/);
   assert.match(homeSettings, /startScreens\(features\)\.map\(/);
   assert.match(homeSettings, /actions\.setHome\(\{ order: mergeTileOrder\(home\.order, order\) \}\);/);
-  assert.match(homeSettings, /const key = JSON\.stringify\(\[home, features, reordering\]\);/);
+  assert.match(homeSettings, /const key = JSON\.stringify\(\[home, features, reordering, home\.order\.includes\('projects'\) \? choiceText\(home\) : ''\]\);/);
 });
 
 test('Réglages : « Fonctions » juste après « Accueil » (téléphone et ordinateur) ; une seule ligne « Corbeille » (24 novembre 2026)', () => {

@@ -84,6 +84,7 @@ export default {
   'ops.accueilPremierEcranInvalide': 'Unknown first screen: Due, Lists or Notes.',
   'ops.accueilTuilesInvalides': 'Invalid Home tiles: each known tile, only once.',
   'ops.accueilCompteToujours': 'The Account tile is always shown.',
+  'ops.accueilTuileProjetsInvalide': 'Invalid Projects tile content: My cards, My projects or One project.',
   'ops.fonctionInconnue': 'Unknown feature: notes and projects only.',
   // Features allowed by the Admin (docs/cadrage-comptes.md, step 2)
   'ops.fonctionNonAutorisee': 'This feature isn\'t open for your account: the Admin allows it.',

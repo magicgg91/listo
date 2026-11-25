@@ -1164,6 +1164,24 @@ export const MIGRATIONS = [
   ALTER TABLE users ADD COLUMN lists_enabled INTEGER NOT NULL DEFAULT 1 CHECK (lists_enabled IN (0, 1));
   UPDATE users SET lists_allowed = 0, lists_enabled = 0 WHERE guest = 1;
   `,
+
+  // --- Migration 50 : contenu de la tuile « Projets » de l'Accueil
+  // (25 novembre 2026, décision du propriétaire) ---
+  // Réglages › Accueil, choix de chacun (public/js/home-tiles.js,
+  // server/home.js), le même sur tous ses appareils :
+  // - home_projects : 'cards' « Mes cartes » (au départ : la tuile
+  //   d'avant), 'projects' « Mes projets », 'project' « Un projet » ;
+  // - home_project_id : le projet choisi pour « Un projet » (vide sinon).
+  //   Pas de lien vers la table des projets : un projet effacé laisse son
+  //   numéro, et la tuile montre alors « Mes cartes » (comme pour un projet
+  //   quitté ou dans la corbeille).
+  // Deux colonnes plutôt que le texte home_tiles (limité à 200 caractères,
+  // trop juste avec un identifiant de projet). Rien ne change pour les
+  // comptes existants.
+  `
+  ALTER TABLE users ADD COLUMN home_projects TEXT NOT NULL DEFAULT 'cards' CHECK (home_projects IN ('cards', 'projects', 'project'));
+  ALTER TABLE users ADD COLUMN home_project_id TEXT CHECK (home_project_id IS NULL OR (home_projects = 'project' AND length(home_project_id) BETWEEN 1 AND 64));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

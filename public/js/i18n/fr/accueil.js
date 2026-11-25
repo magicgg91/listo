@@ -60,4 +60,14 @@ export default {
   'accueil.projets.cartes.lu': { one: 'Projets, {count} carte pour vous', other: 'Projets, {count} cartes pour vous' },
   'accueil.projets.cartes.lu.nouveautes': { one: 'Projets, {count} carte pour vous, nouveautés', other: 'Projets, {count} cartes pour vous, nouveautés' },
   'accueil.projets.lu.nouveautes': 'Projets, nouveautés',
+  // Tuile « Projets » au choix (Réglages › Accueil, 25 novembre 2026) :
+  // « Mes projets » (une ligne par projet) et « Un projet »
+  'accueil.projets.ligne.cartes': { one: '{count} carte', other: '{count} cartes' },
+  'accueil.projets.ligne.pourVous': '{count} pour vous',
+  'accueil.projets.ligne.lectureSeule': 'lecture seule',
+  'accueil.projets.tous': 'Tous les projets',
+  'accueil.projets.projet.lu': { one: '{name}, {count} carte pour vous', other: '{name}, {count} cartes pour vous' },
+  'accueil.projets.projet.lu.nouveautes': { one: '{name}, {count} carte pour vous, nouveautés', other: '{name}, {count} cartes pour vous, nouveautés' },
+  'accueil.projets.projet.nouveautes': '{name}, nouveautés',
+  'accueil.projets.colonnes.autres': { one: '{count} autre colonne', other: '{count} autres colonnes' },
 };

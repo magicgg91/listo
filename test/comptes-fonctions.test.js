@@ -170,16 +170,16 @@ test('migration 48 : quatre colonnes à 1 pour les comptes existants, 0 ou 1 seu
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(schemaVersion(db), 49);
-  assert.equal(MIGRATIONS.length, 49);
+  assert.equal(schemaVersion(db), 50);
+  assert.equal(MIGRATIONS.length, 50);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, home_projects, home_project_id, ...rest }) => rest), before);
   for (const user of after) assert.deepEqual([user.notes_allowed, user.projects_allowed, user.projects_create, user.mcp_allowed], [1, 1, 1, 1]);
   for (const column of ['notes_allowed', 'projects_allowed', 'projects_create', 'mcp_allowed']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 2`).run(), /CHECK/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(schemaVersion(db), 50);
 });
 
 test('nouveau compte : Utilisateur tout autorisé ; invité rien d\'autorisé ni d\'allumé ; cases choisies dans « Nouveau compte », allumées pour un invité ; journal', async (t) => {

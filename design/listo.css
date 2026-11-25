@@ -1027,8 +1027,9 @@
    - .tiles : grille de tuiles .card.tile, deux colonnes de même hauteur
      par rangée (une colonne sous 340 px). Ordre fixe : Échéances, Listes,
      (Notes), Compte.
-   - .tile__head : le titre de la tuile est un vrai bouton (44 px), icône
-     en couleur d'accent ; il ouvre l'écran entier.
+   - .tile__head : le titre de la tuile est un vrai bouton (38 px, zone
+     touchée de 44 px ; condensé le 25 novembre 2026), icône en couleur
+     d'accent ; il ouvre l'écran entier.
    - .tile__row : chaque ligne est un bouton gris clair en pilule (48 px) :
      libellé à gauche, à droite un nombre .count (--danger « En retard »,
      --success « Aujourd'hui », gris pour le reste et pour zéro) ou un
@@ -1052,7 +1053,13 @@
 .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 10px; padding: 4px var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 339.98px) { .tiles { grid-template-columns: minmax(0, 1fr); } }
 .tile { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 4px var(--space-1) 6px; }
-.tile__head { display: flex; align-items: center; gap: var(--space-1); width: 100%; min-height: var(--tap-min); padding: 0 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text); font-size: var(--text-lg); font-weight: 700; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
+/* Titre condensé (décision du 25 novembre 2026, avec la tuile « Projets »
+   au choix) : un peu moins haut (38 px, 30 px à la souris) et un peu plus
+   petit (17 px, 16 px sur ordinateur) ; la zone qu'on touche garde 44 px
+   (36 px à la souris) grâce à ::after, qui déborde dans la marge du haut
+   de la tuile et l'espace sous le titre. */
+.tile__head { position: relative; display: flex; align-items: center; gap: var(--space-1); width: 100%; min-height: calc(var(--tap-min) - 6px); padding: 0 6px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-text); font-size: var(--text-item); font-weight: 700; line-height: var(--lh-tight); text-align: left; text-decoration: none; }
+.tile__head::after { content: ""; position: absolute; inset: -4px 0 -2px; }
 .tile__head:active { background: var(--color-neutral-soft); }
 .tile__head .icon { color: var(--color-accent-ink); }
 .tile__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1948,6 +1955,43 @@ span.nf-task__box::after { display: none; }
 .home-hint__icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm); background: var(--color-accent-soft); color: var(--color-accent-ink); }
 .home-hint__title { margin: 4px 0 0; font-size: var(--text-lg); font-weight: 700; }
 .home-hint__text { margin: 0 0 var(--space-1); color: var(--color-text-2); line-height: var(--lh-base); }
+
+/* 16.52 Tuile « Projets » au choix (décision du propriétaire du 25 novembre
+   2026 ; Réglages › Accueil). Chacun choisit ce que montre la tuile :
+   « Mes cartes » (16.37), « Mes projets » ou « Un projet ».
+   - « Mes projets » : une ligne .tile__row--two par projet, l'icône du
+     projet devant (.tile__lead, couleur d'accent comme le titre) ;
+     « 1 en retard » en rouge ET écrit (.tile__late, jamais la couleur
+     seule).
+   - « Un projet » : les colonnes en pastilles .colchip (16.38) dans
+     .tile__cols, simple repère (pas des boutons : le titre ouvre le
+     projet), deux lignes au plus ; les colonnes de trop sont cachées et la
+     dernière pastille .colchip--more dit combien (« +2 »).
+   - Réglages › Accueil : la ligne « Projets » a deux zones (.row--split) :
+     la partie gauche .row__open (icône, nom, choix actuel en couleur
+     d'accent, chevron) ouvre la feuille « Tuile Projets » ; l'interrupteur
+     reste à part, après un trait .row__sep.
+   - Feuille « Tuile Projets » : choix sur deux lignes .radio-row--two
+     (.radio-row__body, __title, __sub ; titre en gras sur le choix actif),
+     titre de section .sheet__section (« Projet »), une ligne par projet
+     avec son icône. */
+.tile__row > .icon.tile__lead { color: var(--color-accent-ink); }
+.tile__sub .tile__late { color: var(--color-danger-ink); font-weight: 600; }
+.tile__cols { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 4px; padding: 0 6px; list-style: none; }
+.colchip--more { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.row--split { gap: 8px; }
+.row__open { display: flex; flex: 1; align-items: center; gap: 12px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.row__open > .icon { flex: none; color: var(--color-text-2); }
+.row__open .row__sub { color: var(--color-accent-ink); font-weight: 600; }
+.row__sep { flex: none; align-self: stretch; width: 1px; margin: 6px 0; background: var(--color-border); }
+.radio-row--two { min-height: 68px; padding-top: 10px; padding-bottom: 10px; }
+.radio-row__body { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.radio-row__title { font-weight: 600; line-height: 1.3; }
+.radio-row.is-on .radio-row__title { font-weight: 700; }
+.radio-row__sub { font-size: var(--text-sm); font-weight: 400; line-height: 1.3; color: var(--color-text-2); }
+.radio-row > .icon { flex: none; color: var(--color-accent-ink); }
+.radio-row:disabled { opacity: 0.55; }
+.sheet__section { margin: var(--space-1) 4px 0; font-size: var(--text-sm); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-text-2); }
 
 /* ---------- 17. Présentation des maquettes (inutile en production) ---------- */
 .stage-light, .stage__row[data-theme="light"] { --stage: #E6ECF5; }

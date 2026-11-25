@@ -84,6 +84,7 @@ export default {
   'ops.accueilPremierEcranInvalide': 'Premier écran inconnu : Échéances, Listes ou Notes.',
   'ops.accueilTuilesInvalides': 'Tuiles de l\'Accueil invalides : chaque tuile connue, une seule fois.',
   'ops.accueilCompteToujours': 'La tuile Compte est toujours affichée.',
+  'ops.accueilTuileProjetsInvalide': 'Contenu de la tuile Projets invalide : Mes cartes, Mes projets ou Un projet.',
   'ops.fonctionInconnue': 'Fonction inconnue : seulement les notes et les projets.',
   // Fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
   'ops.fonctionNonAutorisee': 'Cette fonction n\'est pas ouverte pour votre compte : c\'est l\'Admin qui l\'autorise.',

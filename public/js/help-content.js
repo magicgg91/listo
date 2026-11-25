@@ -1059,7 +1059,7 @@ export const GUIDE = [
           'Réglages, « Fonctions », « Projets » : allumez l\'interrupteur. Le choix vaut pour vous seul, sur tous vos appareils, et se fait aussi hors ligne. Coupés de nouveau, les projets disparaissent de vos écrans sans rien effacer : vos projets et ceux qu\'on vous a partagés reviennent quand vous les rallumez.',
           { ul: [
             'Sur le téléphone, le bandeau du bas a alors six boutons : « Accueil », « Échéances », « Listes », « Notes », « Projets » et « Réglages » (cinq si l\'Accueil ou les notes sont coupés). Avec un texte agrandi par le téléphone, un libellé peut être coupé (“Échéanc…”) : le nom lu par le lecteur d\'écran reste entier.',
-            'L\'Accueil a une tuile « Projets », en bas, sur toute la largeur : le nombre de vos projets, et les trois plus récemment modifiés (avec leur nombre de cartes, et un point s\'il y a du nouveau). Le titre ouvre l\'écran « Projets ». Comme les autres tuiles, elle se masque et se déplace dans Réglages, « Accueil » ; « Projets » peut aussi devenir votre premier écran quand l\'Accueil est coupé.',
+            'L\'Accueil a une tuile « Projets », en bas, sur toute la largeur : le nombre de vos cartes (attribuées à vous, pas faites), et les trois plus urgentes (en retard d\'abord, puis par échéance) ; dessous, le projet, la colonne et l\'échéance (“En retard” en rouge). Une ligne ouvre la carte ; sans carte pour vous, « Aucune carte pour vous ». Le titre ouvre l\'écran « Projets ». Comme les autres tuiles, elle se masque et se déplace dans Réglages, « Accueil » ; « Projets » peut aussi devenir votre premier écran quand l\'Accueil est coupé.',
             'La « Corbeille » des Réglages a un onglet « Projets » ([[projets-corbeilles]]).',
           ] },
         ],
@@ -1069,7 +1069,7 @@ export const GUIDE = [
         title: 'Créer, dupliquer, supprimer un projet',
         blocks: [
           { ul: [
-            'Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l\'œil « Lecture seule » ou « Contributeur » selon votre rôle, et un point quand quelqu\'un d\'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.',
+            'Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l\'œil « Lecture seule » ou « Contributeur » selon votre rôle, “2 cartes pour vous · 1 en retard” (vos cartes pas faites), et un point quand quelqu\'un d\'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.',
             '« + », en haut à droite (« Nouveau projet » quand vous n\'en avez aucun) : donnez un nom (80 caractères au plus), puis « Créer ». Le projet commence avec trois colonnes, « À faire », « En cours » et « Fait », à renommer à votre goût ; il s\'ouvre tout de suite.',
             'Menu ⋮ d\'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Dupliquer le projet », « Masquer les nouveautés » (projet partagé), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le même menu a aussi « Réglages du projet » et « Cartes supprimées ».',
             '« Dupliquer le projet » (tout membre, même en « Lecture seule ») : un nouveau projet à vous, non partagé, dont le nom finit par “(copie)”, avec les mêmes colonnes, les mêmes étiquettes et la même option « Priorité », mais sans aucune carte. Pratique pour en faire un modèle. Cela marche aussi hors ligne.',
@@ -1084,13 +1084,31 @@ export const GUIDE = [
           'Sur le téléphone, un projet montre une colonne à la fois. En haut, les onglets des colonnes (point de couleur, nom, nombre de cartes) : la colonne choisie a le fond de sa couleur, un contour et un nom en gras. Touchez un onglet, ou faites glisser l\'écran de côté (en partant du milieu, pas du bord gauche) pour passer à la colonne voisine. Listo retient, sur cet appareil, la dernière colonne ouverte de chaque projet.',
           { ul: [
             'Ajouter une carte : tapez son titre dans la barre du bas (“Ajouter dans « Relecture »”), puis « + » ; la carte va en bas de la colonne, et le champ reste prêt pour la suivante. Pas de barre en « Lecture seule ».',
-            'La loupe cherche dans tout le projet (titres et noms des étiquettes) ; pendant la recherche, les résultats sont rangés par colonne.',
-            '« Filtrer » (quand le projet a des étiquettes) ouvre « Filtrer les cartes » : cochez une ou plusieurs étiquettes, puis le bouton “Voir 3 cartes” ; seules les cartes qui portent une des étiquettes cochées restent. « Effacer » retire le filtre. Le filtre est gardé pour ce projet, sur cet appareil ; le nombre de filtres est écrit sur le bouton, et les onglets comptent les cartes montrées.',
+            'La loupe cherche dans tout le projet (titres, descriptions, noms des étiquettes et titres des liens) ; pendant la recherche, les résultats sont rangés par colonne.',
+            '« Filtrer » ouvre « Filtrer les cartes » : cochez des personnes (« Moi », chaque membre, ou « Personne » pour les cartes sans attribution) et des étiquettes, puis le bouton “Voir 3 cartes” ; une carte reste si elle est à une des personnes cochées ET porte une des étiquettes cochées. « Effacer » retire le filtre. Le filtre est gardé pour ce projet, sur cet appareil ; le nombre de filtres est écrit sur le bouton, et les onglets comptent les cartes montrées.',
             'Déplacer une carte : un appui long la soulève, puis faites-la glisser à sa nouvelle place dans la colonne, ou posez-la sur un onglet : elle va en haut de cette colonne. Sans glisser, la carte ouverte a, dans son menu ⋮, « Déplacer vers… » (choisissez la colonne, puis « En haut » ou « En bas », puis « Déplacer »), « Monter » et « Descendre ».',
-            'Toucher une carte l\'ouvre : son titre (touchez-le pour le modifier, 200 caractères au plus), sa colonne (le bouton de sa couleur ouvre « Déplacer vers… ») et ses étiquettes (« + Étiquette » pour en poser ou en retirer, 10 au plus). Son menu ⋮ : « Déplacer vers… », « Monter », « Descendre », « Dupliquer » (une copie juste dessous, à vous) et « Supprimer ». Tout s\'enregistre tout seul, hors ligne compris.',
+            'Toucher une carte l\'ouvre ([[projets-carte]]) : son titre (touchez-le pour le modifier, 200 caractères au plus), sa colonne (le bouton de sa couleur ouvre « Déplacer vers… »), ses personnes, son échéance, ses étiquettes, sa description et ses liens. Son menu ⋮ : « Déplacer vers… », « Monter », « Descendre », « Dupliquer » (une copie juste dessous, à vous) et « Supprimer ». Tout s\'enregistre tout seul, hors ligne compris.',
             'Une carte que votre rôle ne permet pas de modifier le dit (“Lecture seule”, ou “Vous pouvez la lire, pas la modifier.”) : elle n\'a ni « + », ni saisie, ni bouton qui ne marcherait pas.',
           ] },
-          'Les personnes attribuées, l\'échéance avec la case “Fait”, la description, les liens, les commentaires et l\'historique d\'une carte arriveront avec les prochaines étapes des projets.',
+        ],
+      },
+      {
+        id: 'projets-carte',
+        title: 'Une carte ouverte',
+        blocks: [
+          'Chaque champ d\'une carte est toujours là, avec son « + » ou, vide, une ligne pour le remplir (« Attribuer », « Ajouter une échéance »…) : il n\'y a qu\'un seul endroit pour le remplir. Tout s\'enregistre tout seul, hors ligne compris. Ce que votre rôle ne permet pas n\'a pas de bouton ([[projets-roles]]).',
+          { ul: [
+            'Personnes : les pastilles et les prénoms des personnes attribuées ; « + » (ou « Attribuer ») ouvre le choix, avec « M\'attribuer » en tête. On peut attribuer une carte au propriétaire, à un « Peut modifier » ou à un « Contributeur », jamais à une personne en « Lecture seule » (10 au plus). Une personne qui quitte le projet, en est retirée ou passe en « Lecture seule » est retirée de ses cartes.',
+            'Échéance, sur une seule ligne : la case « Fait », puis la date et l\'heure (touchez-les pour les changer). Sans échéance : « Ajouter une échéance ». L\'heure est facultative ; avec une heure, un rappel peut être choisi (à l\'heure, 15 min, 30 min, 1 h, 2 h avant, ou la veille), écrit en petit dessous. « Retirer l\'échéance » la retire, avec la case « Fait ».',
+            'La case « Fait » est la seule marque d\'une carte faite : l\'échéance reste, en vert, avec une coche. Une carte faite n\'est plus en retard et n\'a plus de rappel ; elle ne change pas de colonne : rangez-la vous-même (dans « Publiés », par exemple), ou supprimez-la. Une carte en retard a sa date en rouge, avec un triangle.',
+            'Étiquettes : « Étiquette » (ou son « + ») pose ou retire les étiquettes du projet (10 au plus par carte).',
+            'Priorité (quand l\'option « Priorité » du projet est allumée) : « Basse », « Normale » ou « Élevée ». Coupée, la priorité est gardée sans être montrée.',
+            'Description : touchez le texte pour l\'écrire (« Ajouter une description » quand il est vide) ; la même mise en forme que les notes, avec la barre de mise en forme pendant la saisie ([[notes]]). Les cases à cocher font une liste de tâches : « 2/3 » au-dessus (cases cochées sur cases), et une case se coche d\'un toucher, sans passer en saisie, même si quelqu\'un en coche une autre au même moment.',
+            'Si quelqu\'un a changé la description pendant que vous écriviez, rien n\'est écrasé : la carte est « À vérifier » et vous choisissez « Garder la mienne », « Prendre la leur », « Garder les deux » (votre texte est ajouté sous le leur, après une ligne “Version de Guillaume, 25 nov. 21:04”) ou « Décider plus tard ».',
+            'Liens : un titre (facultatif) et une adresse qui commence par http:// ou https:// (20 liens au plus). Touchez le titre pour l\'ouvrir dans un nouvel onglet ; ⋮ : « Modifier le lien », « Copier l\'adresse », « Retirer ». Listo n\'ouvre jamais ces adresses lui-même.',
+            'Contributeur sur la carte d\'un autre qui lui est attribuée : il peut tout y modifier et la déplacer, et « Me retirer » des personnes ; il ne peut ni attribuer quelqu\'un ni la supprimer. Retiré, il ne peut plus que la lire.',
+          ] },
+          'Sur la carte, dans la colonne : ses étiquettes, puis l\'échéance (verte et “Fait” quand elle est faite, rouge avec un triangle en retard), la priorité, une icône quand elle a une description, “2/3” pour ses cases, le nombre de liens, et les pastilles des personnes. Le lecteur d\'écran lit tout cela avec le titre. (Les commentaires et l\'historique arriveront avec la prochaine étape des projets.)',
         ],
       },
       {
@@ -1103,7 +1121,7 @@ export const GUIDE = [
             'Colonnes : une ligne par colonne, avec son nombre de cartes. Glissez la poignée à gauche pour changer l\'ordre, ou touchez le crayon : nom (40 caractères au plus, une seule fois dans le projet), couleur parmi huit, place (“Avant « Brouillons »”, “Après « Planifiés »”) et « Supprimer la colonne ». « Ajouter une colonne » en ajoute une à la fin (20 au plus).',
             'Supprimer une colonne vide : elle part tout de suite. Une colonne qui a des cartes : choisissez de déplacer ses cartes vers une autre colonne, ou de les supprimer avec elle (elles vont dans les « Cartes supprimées » du projet). Une colonne supprimée ne se restaure pas ; un projet garde toujours au moins une colonne.',
             'Étiquettes du projet : propres à ce projet (les étiquettes des notes ne s\'y mélangent pas), une même étiquette ne pouvant exister qu\'une fois (majuscules et accents comptent pareil). « Nouvelle étiquette » ; le crayon renomme, change la couleur ou supprime (l\'étiquette est alors retirée de ses cartes). 50 étiquettes au plus par projet.',
-            '« Priorité » (le propriétaire) : une option du projet, coupée au départ ; elle servira avec les détails des cartes.',
+            '« Priorité » (le propriétaire) : une option du projet, coupée au départ. Allumée, chaque carte a une priorité, « Basse », « Normale » ou « Élevée » ([[projets-carte]]) ; coupée de nouveau, les priorités sont gardées sans être montrées.',
             '« Supprimer le projet » (le propriétaire).',
           ] },
         ],
@@ -1116,7 +1134,7 @@ export const GUIDE = [
           { table: { head: ['Rôle', 'Ce qu\'il permet'], rows: [
             ['« Propriétaire »', 'tout : renommer, partager, supprimer le projet, l\'option « Priorité », effacer pour de bon les cartes supprimées'],
             ['« Peut modifier » (droit « Modifier »)', 'les colonnes, les étiquettes du projet et toutes les cartes ; jamais renommer, partager ni supprimer le projet'],
-            ['« Contributeur » (droit « Contribuer »)', 'créer des cartes ; modifier et déplacer celles qu\'il a créées ou qui lui sont attribuées ; supprimer et restaurer seulement celles qu\'il a créées ; jamais les colonnes ni les étiquettes du projet'],
+            ['« Contributeur » (droit « Contribuer »)', 'créer des cartes ; modifier et déplacer celles qu\'il a créées ou qui lui sont attribuées ; y attribuer des personnes sur les siennes, et seulement se retirer d\'une carte d\'un autre ; supprimer et restaurer seulement celles qu\'il a créées ; jamais les colonnes ni les étiquettes du projet'],
             ['« Lecture seule » (droit « Lire »)', 'voir le projet, ses colonnes et ses cartes, sans rien changer'],
           ] } },
           { ul: [
@@ -1142,10 +1160,10 @@ export const GUIDE = [
         blocks: [
           '« Projets » est dans le menu de gauche (après « Notes »), avec le nombre de projets ; sur les écrans des projets, vos projets sont listés dessous (nombre de cartes, point des nouveautés), et le bouton du bas devient « Nouveau projet », ou « Nouvelle carte » dans un projet (touche N).',
           { ul: [
-            'Un projet ouvert prend toute la largeur : en haut, son nom, « Projet · 5 colonnes · 55 cartes », « Partager » (touche P) et la recherche (touche /) ; dessous, les filtres par étiquette (plusieurs choix ; “+ 2” montre les autres ; « Effacer les filtres ») ; puis les colonnes côte à côte, qui défilent de côté.',
+            'Un projet ouvert prend toute la largeur : en haut, son nom, « Projet · 5 colonnes · 55 cartes », « Partager » (touche P) et la recherche (touche /) ; dessous, les filtres par personne (« Tout », « Moi », chaque membre, « Personne ») et par étiquette (plusieurs choix ; “+ 2” montre les autres ; « Effacer les filtres ») ; puis les colonnes côte à côte, qui défilent de côté.',
             'Chaque colonne a son menu ⋮ (propriétaire et « Peut modifier ») : renommer et changer la couleur, déplacer à gauche ou à droite, « Supprimer la colonne ». « Ajouter une carte », en bas d\'une colonne, ouvre un champ (Entrée ajoute, Échap referme) ; « Ajouter une colonne » est au bout.',
             'Glisser-déposer : tenez une carte avec la souris et posez-la dans la même colonne ou dans une autre ; une place en pointillés montre où elle tombera. Au clavier : les flèches passent d\'une carte à l\'autre (haut et bas dans une colonne, gauche et droite d\'une colonne à l\'autre), Entrée ouvre la carte, M ouvre « Déplacer vers… ». Clic droit sur une carte : son menu.',
-            'Une carte s\'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, à droite la colonne, les étiquettes et les actions. L\'adresse est celle de la carte : on peut l\'envoyer ou y revenir. Échap ou la croix la ferment.',
+            'Une carte s\'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, sa description et ses liens ; à droite, dans cet ordre, la colonne, les personnes, les étiquettes, l\'échéance (case « Fait » et date sur une ligne, rappel dessous), la priorité (option allumée) et les actions. L\'adresse est celle de la carte : on peut l\'envoyer ou y revenir. Échap ou la croix la ferment.',
           ] },
         ],
       },

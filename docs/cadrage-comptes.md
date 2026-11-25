@@ -618,3 +618,16 @@ Choix faits pendant la construction, quand le document ne disait rien :
 - **Liens publics** (point ouvert de l'étape 2) : quand l'Admin décoche Notes (pour tout compte) ou Listes (pour un invité), les liens publics de ses notes ou de ses listes s'arrêtent tout de suite (journal `note_link_stopped` ou `public_link_stopped`, raison « notes no longer allowed by the admin » ou « lists no longer allowed by the admin ») ; la confirmation le dit ; recochées, ils ne reviennent pas seuls.
 - **Assistants IA** : les cinq outils des listes refusent en premier, avec « Les listes ne sont pas ouvertes pour ce compte… » ou « … coupées… » ; l'écran d'autorisation d'un compte sans Listes ne propose pas « Certaines listes » (une phrase : « Mes notes et mes projets ») ; « Assistants IA » de Mon compte ne nomme aucune liste.
 - **Aide** : la même pour tous (décision du document) : rien n'y est caché.
+
+### 19.6 Relecture de sécurité (25 novembre 2026)
+
+Une relecture indépendante de la fonction a trouvé six points, corrigés sans rien changer pour la famille (tests : `test/comptes-secu.test.js`, un par point, qui échoue sans sa correction) :
+
+- **Liens publics, course** : un lien protégé est créé après le calcul de son mot de passe, qui laisse la main ; l'Admin pouvait entre-temps faire de son propriétaire un invité, lui retirer Notes ou Listes, ou désactiver son compte, et le lien restait. Une seule règle, `publicLinkRefusal` (`server/features.js`), sert aux deux bouts : à la création (`server/shares.js`, `server/note-shares.js`, relue juste avant l'écriture, avec la réponse des contrôles habituels) et à chaque visite (`validShare` : propriétaire désactivé, invité, sans Listes pour une liste, sans Notes autorisées pour une note = la réponse d'un lien inconnu, sans dire pourquoi ; une lecture de sa ligne par requête).
+- **Temps réel** : « event: note » ne part qu'aux comptes dont l'Admin autorise les notes, « event: project » qu'à ceux qui utilisent les projets (`server/events.js`). Choix : les mêmes règles que la synchronisation, donc des notes autorisées mais éteintes par la personne gardent le signal (elles se synchronisent comme avant), des projets éteints ne le reçoivent plus (rien n'en est synchronisé).
+- **Réglages des notifications** (`server/routes/push.js`) : `mutedLists` vide sans Listes, `mutedNotes` vide sans notes autorisées (même choix que la synchronisation) ; la sourdine d'une note répond comme les autres routes des notes (403 `ops.notesNonAutorisees`).
+- **Accord d'un assistant IA** (`server/oauth.js`, `approve`) : le compte et sa case « Assistants IA » sont relus en base au moment d'écrire, après la vérification du mot de passe.
+- **Journal** : `share_unknown_user` (`user`, `list`, `note` ou `project`, `count` : combien de numéros refusés ; jamais de nom) quand un partage ajoute un compte inconnu ou qu'on ne voit pas ; la réponse reste exactement celle d'un numéro inconnu (`directory.unseenCount`, `docs/exploitation.md`).
+- **Page Notifications** (`server/inbox.js`) : le résumé du matin est caché à un compte qui n'utilise ni les listes ni les projets (la règle du résumé lui-même : tâches si les listes sont utilisées, cartes si les projets le sont).
+
+Non changé (question de conception pour le propriétaire) : magasins, rayons et « Souvent ajoutés » d'un invité qui a les Listes.

@@ -45,6 +45,6 @@ Ordinateur :
 - Le bandeau à trois boutons est le bandeau de base du kit (trois places) : rien à dessiner.
 - Les écrans d'un invité qui a aussi les Notes, ou d'un Utilisateur à qui l'Admin a décoché une fonction, ne sont pas dessinés : ce sont les écrans d'aujourd'hui, avec les seules fonctions ouvertes.
 
-## Décisions qui restent
+## Décisions finales (25 novembre 2026)
 
-Les questions de la section 17 du cadrage, chacune avec une réponse recommandée (celles des préréglages et de l'interrupteur « discret » sont répondues : c'est le rôle ; celles des cases : elles autorisent, la personne allume ; Listes toujours là pour un Utilisateur).
+Toutes les questions de la section 17 du cadrage sont répondues (section 19 du cadrage, qui l'emporte sur le reste) : seuls les Admin voient les invités ; **pas d'avertissement** dans « Partager » (celui de `partage-admin-1` n'est pas construit) ; un invité ne partage jamais ce qu'il possède ; rien de coché pour un nouvel invité, et une fonction cochée pour un invité s'allume aussitôt (les maquettes `invite-accueil-vide-1` et `invite-fonctions-1`, où l'invité allume lui-même, restent des planches de travail) ; l'écran Échéances existe pour un invité quand les Listes sont allumées pour lui ou qu'un projet qu'il voit a l'option « Échéances » allumée.

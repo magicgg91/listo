@@ -4,7 +4,8 @@
 //   PATCH  /api/admin/users/:id             modifier nom affiché, rôle, actif,
 //                                           fonctions autorisées
 //                                           (rôle : 'user', 'guest' ou 'admin' ;
-//                                           allowed : { notes, projects,
+//                                           allowed : { lists (invité
+//                                           seulement), notes, projects,
 //                                           projectsCreate, mcp })
 //   POST   /api/admin/users/:id/password    réinitialiser le mot de passe
 //   DELETE /api/admin/users/:id/2fa         désactiver la 2FA (téléphone perdu)
@@ -49,6 +50,14 @@
 // annuaires disent « N'utilise pas les notes »). « Assistants IA » décoché :
 // toutes ses connexions d'assistants IA sont révoquées (et refusées à
 // chaque appel de /mcp, server/oauth.js).
+//
+// Listes (étape 3 du cadrage, migration 49) : une case « Listes » pour un
+// invité seulement (un Utilisateur les a toujours ; la case lui est
+// refusée). Un Utilisateur qui devient invité garde ses Listes (autorisées
+// et allumées). Décocher Notes (tout compte) ou Listes (invité) arrête
+// aussi les liens publics de ses notes ou de ses listes (journal
+// note_link_stopped ou public_link_stopped, raison en anglais) : ce qui
+// n'est plus autorisé ne reste pas ouvert à des visiteurs.
 
 import crypto from 'node:crypto';
 import express from 'express';
@@ -61,7 +70,7 @@ import { allowedFromRow, featuresFromRow } from '../features.js';
 
 // Cases d'un compte écrites dans le journal (en anglais, en chiffres) :
 // notes=1 projects=0 create=0 mcp=0
-const JOURNAL_NAMES = { notes: 'notes', projects: 'projects', projectsCreate: 'create', mcp: 'mcp' };
+const JOURNAL_NAMES = { lists: 'lists', notes: 'notes', projects: 'projects', projectsCreate: 'create', mcp: 'mcp' };
 const journalAccess = (allowed) => Object.fromEntries(PERMISSIONS.map((name) => [JOURNAL_NAMES[name], allowed[name] ? 1 : 0]));
 
 // Cases reçues pour un compte à créer (facultatives : sinon celles du
@@ -69,7 +78,7 @@ const journalAccess = (allowed) => Object.fromEntries(PERMISSIONS.map((name) => 
 function wantedAllowed(role, value) {
   if (value === undefined) return { allowed: defaultAllowed(role) };
   if (value && typeof value === 'object' && !Array.isArray(value) && !Object.keys(value).length) return { allowed: defaultAllowed(role) };
-  const problem = allowedChangeProblem(value);
+  const problem = allowedChangeProblem(value, role);
   if (problem) return { problem };
   return { allowed: { ...defaultAllowed(role), ...value } };
 }
@@ -266,9 +275,9 @@ export function adminUserRoutes(ctx) {
     // Fonctions autorisées : seulement pour un Utilisateur ou un invité
     // (un Admin a tout ; rôle d'après le changement demandé en même temps)
     if (allowed !== undefined) {
-      const problem = allowedChangeProblem(allowed);
-      if (problem) return res.status(400).json({ error: req.t(problem) });
       if (after === 'admin') return res.status(400).json({ error: req.t('comptes.fonctions.admin') });
+      const problem = allowedChangeProblem(allowed, after);
+      if (problem) return res.status(400).json({ error: req.t(problem) });
     }
     const losesAdmin = (before === 'admin' && after !== 'admin') || changes.active === 0;
     if (losesAdmin && user.id === req.user.id) {
@@ -299,10 +308,18 @@ export function adminUserRoutes(ctx) {
     const stoppedNoteLinks = stopLinks ? ctx.noteShares.stopForOwner(user.id) : 0;
     const stopReason = changes.active === 0 ? 'account disabled' : 'account became a guest';
 
+    // Utilisateur devenu invité : il garde ses Listes (autorisées et
+    // allumées), comme le reste (décision du 25 novembre 2026)
+    if (becomesGuest) ctx.features.keepListsForNewGuest(user.id);
     // Fonctions autorisées (après le rôle : un invité voit ses fonctions
     // cochées s'allumer aussitôt)
     const access = allowed !== undefined ? ctx.features.setAllowed(user.id, allowed) : null;
     const accessChanged = access && PERMISSIONS.some((name) => access.before[name] !== access.after[name]);
+    // Notes (tout compte) ou Listes (invité) décochées : les liens publics
+    // de ce qu'il possède s'arrêtent (rien n'est effacé)
+    const removed = (name) => Boolean(access && access.before[name] && !access.after[name]);
+    const stoppedForNotes = !stopLinks && removed('notes') ? ctx.noteShares.stopForOwner(user.id) : 0;
+    const stoppedForLists = !stopLinks && removed('lists') ? ctx.shares.stopForOwner(user.id) : 0;
     // « Assistants IA » décoché : ses connexions sont révoquées tout de suite
     const revokedGrants = access && access.before.mcp && !access.after.mcp ? ctx.oauth.revokeAllForUser(user.id, 'AI assistants no longer allowed by the admin') : 0;
 
@@ -315,6 +332,8 @@ export function adminUserRoutes(ctx) {
     if (changes.active === 0 && user.active === 1) audit('admin_account_disabled', who);
     if (stoppedLinks) audit('public_link_stopped', { ...who, count: stoppedLinks, reason: stopReason });
     if (stoppedNoteLinks) audit('note_link_stopped', { ...who, count: stoppedNoteLinks, reason: stopReason });
+    if (stoppedForLists) audit('public_link_stopped', { ...who, count: stoppedForLists, reason: 'lists no longer allowed by the admin' });
+    if (stoppedForNotes) audit('note_link_stopped', { ...who, count: stoppedForNotes, reason: 'notes no longer allowed by the admin' });
     // Rôle changé : les annuaires changent (le sien, et celui des autres) ;
     // tous les appareils connectés relisent (message sans données)
     if (after !== before) ctx.events?.notifyReferences();

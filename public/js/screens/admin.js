@@ -30,7 +30,7 @@ import { compareNames } from '../sorting.js';
 import { activeOnly } from '../store.js';
 import { app, refreshData, providerName } from '../app.js';
 import { openSheet, confirmDialog, toast, onPc } from '../ui.js';
-import { ROLES, PERMISSIONS, defaultAllowed } from '../access.js';
+import { ROLES, permissionsFor, defaultAllowed } from '../access.js';
 import { defaultDisplayName, savedNameSub, renameImpactText, renameDoneText } from '../format.js';
 import { itemWords, countItems } from '../words.js';
 import { t, compareText } from '../i18n.js';
@@ -201,14 +201,17 @@ const stateParts = (user) => [
 ];
 // Fonctions autorisées, en quelques mots, sur la ligne d'un compte
 // (maquette design/comptes admin-comptes-1) : pour un invité, ce qui lui
-// est ouvert (« Projets », « Notes, Projets », « aucune fonction ») ; pour
+// est ouvert (« Projets », « Listes, Projets », « aucune fonction ») ; pour
 // un Utilisateur, ce que l'Admin lui a retiré (« sans projets ») ; rien
 // pour un Admin, ni pour un Utilisateur qui a tout.
-const GUEST_ACCESS = { 'notes,projects': 'administration.acces.notesProjets', notes: 'administration.acces.notes', projects: 'administration.acces.projets', '': 'administration.acces.aucune' };
+const GUEST_ACCESS = {
+  'notes,projects': 'administration.acces.notesProjets', notes: 'administration.acces.notes', projects: 'administration.acces.projets', '': 'administration.acces.aucune',
+  lists: 'administration.acces.listes', 'lists,notes': 'administration.acces.listesNotes', 'lists,projects': 'administration.acces.listesProjets', 'lists,notes,projects': 'administration.acces.listesNotesProjets',
+};
 const USER_ACCESS = { 'notes,projects': 'administration.acces.sansNotesProjets', notes: 'administration.acces.sansNotes', projects: 'administration.acces.sansProjets' };
 function accessPart(user) {
   if (user.role === 'admin' || !user.allowed) return null;
-  if (user.role === 'guest') return t(GUEST_ACCESS[['notes', 'projects'].filter((name) => user.allowed[name]).join(',')]);
+  if (user.role === 'guest') return t(GUEST_ACCESS[['lists', 'notes', 'projects'].filter((name) => user.allowed[name]).join(',')]);
   const missing = ['notes', 'projects'].filter((name) => !user.allowed[name]).join(',');
   return missing ? t(USER_ACCESS[missing]) : null;
 }
@@ -406,14 +409,15 @@ function accountPage(user, { localLogin = true, reload, pc = false }) {
 
 // Les interrupteurs « Fonctions autorisées » (page d'un compte, « Nouveau
 // compte », demande acceptée ; kit 16.49, .toggle-row et .toggle-row--sub) :
-// Notes, Projets, « Peut créer ses propres projets » (décalé dessous,
-// désactivé quand Projets est décoché), Assistants IA. Pas de ligne
-// « Listes » : un Utilisateur les a toujours (et pour un invité, elles
-// arrivent à l'étape 3 du cadrage). role : rôle du compte (les phrases
+// Listes (invité seulement, en premier, maquette admin-compte-1 : un
+// Utilisateur les a toujours), Notes, Projets, « Peut créer ses propres
+// projets » (décalé dessous, désactivé quand Projets est décoché),
+// Assistants IA (access.js, permissionsFor). role : rôle du compte (les phrases
 // d'un invité disent « les projets qu'on lui partage ») ; allowed : les
 // cases ; onToggle(nom, valeur) : faux = refusé ou annulé, l'interrupteur
 // revient. Textes posés avec textContent (h()).
 const PERMISSION_TEXT = {
+  lists: { title: 'administration.fonctions.listes', user: 'administration.fonctions.listes.detail.invite', guest: 'administration.fonctions.listes.detail.invite' },
   notes: { title: 'administration.fonctions.notes', user: 'administration.fonctions.notes.detail', guest: 'administration.fonctions.notes.detail.invite' },
   projects: { title: 'administration.fonctions.projets', user: 'administration.fonctions.projets.detail', guest: 'administration.fonctions.projets.detail.invite' },
   projectsCreate: { title: 'administration.fonctions.creer', user: 'administration.fonctions.creer.detail', guest: 'administration.fonctions.creer.detail' },
@@ -452,7 +456,7 @@ function allowedSwitches(role, allowed, onToggle, { idPrefix, self = false } = {
         h('span', { class: 'row__sub', id: `${id}-aide` }, t(role === 'guest' ? text.guest : text.user))),
       button);
   };
-  const group = h('div', { class: 'group list-options' }, PERMISSIONS.map(rowOf));
+  const group = h('div', { class: 'group list-options' }, permissionsFor(role).map(rowOf));
   paint();
   return group;
 }
@@ -462,6 +466,7 @@ function allowedSwitches(role, allowed, onToggle, { idPrefix, self = false } = {
 // ne voit pas le contenu des autres). « Peut créer ses propres projets »
 // se retire sans question (ses projets restent à lui).
 const REMOVAL = {
+  lists: ['administration.fonctions.retirer.listes.question', 'administration.fonctions.retirer.listes.texte'],
   notes: ['administration.fonctions.retirer.notes.question', 'administration.fonctions.retirer.notes.texte'],
   projects: ['administration.fonctions.retirer.projets.question', 'administration.fonctions.retirer.projets.texte'],
   mcp: ['administration.fonctions.retirer.ia.question', 'administration.fonctions.retirer.ia.texte'],
@@ -494,6 +499,8 @@ function keptLines(user) {
   const allowed = user.allowed ?? {};
   const used = user.used ?? {};
   const lines = [
+    // (un Utilisateur a toujours les Listes : il les garde, allumées)
+    t('administration.compte.versInvite.listes'),
     allowed.notes ? t(used.notes ? 'administration.compte.versInvite.notes.allumees' : 'administration.compte.versInvite.notes.eteintes') : null,
     allowed.projects ? t(used.projects ? 'administration.compte.versInvite.projets.allumes' : 'administration.compte.versInvite.projets.eteints') : null,
     allowed.projects && allowed.projectsCreate ? t('administration.compte.versInvite.creer') : null,
@@ -593,7 +600,8 @@ function allowedField(idPrefix) {
       values = defaultAllowed(role);
       draw();
     },
-    value: () => (role === 'admin' ? undefined : { ...values }),
+    // (seulement les cases de ce rôle : « Listes » pour un invité)
+    value: () => (role === 'admin' ? undefined : Object.fromEntries(permissionsFor(role).map((name) => [name, values[name]]))),
   };
 }
 

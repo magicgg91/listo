@@ -299,10 +299,11 @@ function openFilterSheet(project, current, onApply) {
 
 // --- Échéance d'une carte (face et carte ouverte) ---
 // { state ('done', 'late', 'today', 'later'), icon, when (« sam. 28 nov. ·
-// 18:00 », « Aujourd'hui »), label (lu) } ; null sans échéance
-export function cardDue(card) {
+// 18:00 », « Aujourd'hui »), label (lu) } ; null sans échéance, ou quand
+// l'option « Échéances » du projet est coupée (project : le projet de la carte)
+export function cardDue(card, project) {
   const today = todayKey();
-  const state = cardDueState(card, today, nowTime());
+  const state = cardDueState(card, today, nowTime(), project);
   if (!state) return null;
   const time = card.dueTime ? timeLabel(card.dueTime) : '';
   const day = card.dueDate === today ? t('format.echeance.aujourdhui') : dueDateLabel(card.dueDate, today);
@@ -326,7 +327,7 @@ export const PRIORITY_TEXTS = { low: 'projets.priorite.basse', normal: 'projets.
 // sur 3, 2 liens, attribuée à Guillaume et Hugo »). ---
 export function cardFace(card, project) {
   const can = rightsOn(card, project);
-  const due = cardDue(card);
+  const due = cardDue(card, project);
   const marks = cardMarkers(card);
   const priority = project.priorityEnabled && card.priority && card.priority !== 'normal' ? card.priority : null;
   const people = (card.assigneeIds ?? []).map((id) => (project.members ?? []).find((m) => m.id === id)?.displayName ?? t('projets.personnes.ancien'));

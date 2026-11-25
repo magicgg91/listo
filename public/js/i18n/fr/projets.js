@@ -212,6 +212,8 @@ export default {
   'projets.reglages.options': 'Options',
   'projets.reglages.priorite': 'Priorité',
   'projets.reglages.priorite.aide': 'Basse, normale ou élevée sur chaque carte.',
+  'projets.reglages.echeances': 'Échéances',
+  'projets.reglages.echeances.aide': 'Une date, une heure et un rappel sur les cartes ; la case « Fait ».',
   'projets.reglages.supprimer': 'Supprimer le projet',
 
   // --- Corbeilles ---

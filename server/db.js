@@ -1103,6 +1103,16 @@ export const MIGRATIONS = [
   // inbox : target_type accepte aussi 'project' et 'card' (table recréée,
   // toutes ses lignes gardées : voir inboxProjectTargetsMigration).
   (db) => inboxProjectTargetsMigration(db),
+
+  // --- Migration 46 : projets, option « Échéances » (25 novembre 2026,
+  // décision du propriétaire après l'essai) ---
+  // projects.deadlines_enabled : comme l'option « Priorité », mais allumée
+  // au départ (projets existants compris). Coupée, l'échéance, l'heure, le
+  // rappel et la case « Fait » des cartes sont gardés, ni montrés ni
+  // comptés (public/js/projects.js, deadlinesOn).
+  `
+  ALTER TABLE projects ADD COLUMN deadlines_enabled INTEGER NOT NULL DEFAULT 1 CHECK (deadlines_enabled IN (0, 1));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

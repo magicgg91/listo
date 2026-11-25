@@ -210,6 +210,8 @@ export default {
   'projets.reglages.options': 'Options',
   'projets.reglages.priorite': 'Priority',
   'projets.reglages.priorite.aide': 'Low, normal or high on each card.',
+  'projets.reglages.echeances': 'Due dates',
+  'projets.reglages.echeances.aide': 'A date, a time and a reminder on cards; the “Done” box.',
   'projets.reglages.supprimer': 'Delete project',
 
   // --- Trash ---

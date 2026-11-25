@@ -220,13 +220,14 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     // Cartes des projets montrés dans Échéances (étape 4 du cadrage des
     // projets, section 8), relues de même : projets allumés pour ce compte,
     // projet présent dont il est propriétaire ou membre, « Afficher dans
-    // Échéances » allumé par lui, notifications du projet non coupées ;
-    // carte présente, pas faite, échéance aujourd'hui ou passée, attribuée
-    // à lui ou à personne (comme « Les miennes » et les pastilles de
-    // l'écran Échéances, public/js/deadlines.js)
+    // Échéances » allumé par lui, option « Échéances » du projet allumée
+    // (migration 46 ; public/js/projects.js, deadlinesOn), notifications du
+    // projet non coupées ; carte présente, pas faite, échéance aujourd'hui
+    // ou passée, attribuée à lui ou à personne (comme « Les miennes » et
+    // les pastilles de l'écran Échéances, public/js/deadlines.js)
     dueCards: db.prepare(`SELECT cards.id, cards.title AS name, cards.due_date, cards.due_time, projects.id AS project_id, projects.name AS project_name
       FROM cards
-      JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL
+      JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL AND projects.deadlines_enabled = 1
       JOIN users ON users.id = :userId AND users.projects_enabled = 1
       JOIN project_user_state ON project_user_state.project_id = projects.id AND project_user_state.user_id = :userId
         AND project_user_state.in_deadlines = 1 AND project_user_state.muted_push = 0

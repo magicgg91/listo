@@ -4,9 +4,11 @@
 //
 // Étape 2 : en plus du titre, de la colonne et des étiquettes, les
 // personnes attribuées, l'échéance (case « Fait » puis la date et l'heure,
-// sur une ligne ; le rappel dessous, en petit), la priorité (quand l'option
-// du projet est allumée), la description (mise en forme des notes, cases
-// et « 2/3 », screens/card-description.js) et les liens.
+// sur une ligne ; le rappel dessous, en petit ; seulement quand l'option
+// « Échéances » du projet est allumée, décision du 25 novembre 2026 après
+// l'essai), la priorité (quand l'option du projet est allumée), la
+// description (mise en forme des notes, cases et « 2/3 »,
+// screens/card-description.js) et les liens.
 //
 // Étape 3 : les onglets « Commentaires » et « Historique »
 // (screens/card-activity.js ; écrire un commentaire : la barre en verre en
@@ -60,7 +62,7 @@ import { t, formatDate } from '../i18n.js';
 import { dueDateLabel, namesList } from '../format.js';
 import { REMINDERS, isDueTime, timeLabel } from '../due-time.js';
 import {
-  projectRights, cleanCardTitle, cleanLinkUrl, cleanLinkTitle, assignableRole, isCardPriority, CARD_PRIORITIES,
+  projectRights, cleanCardTitle, cleanLinkUrl, cleanLinkTitle, assignableRole, isCardPriority, CARD_PRIORITIES, deadlinesOn,
   CARD_TITLE_MAX, LABELS_PER_CARD_MAX, ASSIGNEES_MAX, LINKS_PER_CARD_MAX, LINK_TITLE_MAX, LINK_URL_MAX,
 } from '../projects.js';
 import * as projectActions from '../project-actions.js';
@@ -256,7 +258,7 @@ const REMIND_TEXTS = { 0: 'projets.rappel.aLHeure', 15: 'projets.rappel.15', 30:
 // l'échéance » quand il y en a une
 export function openDueSheet(cardId) {
   const start = foundCard(cardId);
-  if (!start || !rightsOn(start.card, start.project).edit) return null;
+  if (!start || !rightsOn(start.card, start.project).edit || !deadlinesOn(start.project)) return null;
   let date = start.card.dueDate ?? null;
   let time = start.card.dueTime ?? null;
   let remind = start.card.remindBefore ?? null;
@@ -351,7 +353,7 @@ function dueValue(card, project) {
       ? h('button', { class: 'kadd', type: 'button', 'aria-haspopup': 'dialog', onClick: () => openDueSheet(card.id) }, icon('plus'), t('projets.echeance.ajouter'))
       : h('span', { class: 'kfield__empty' }, t('projets.echeance.aucune'));
   }
-  const due = cardDue(card);
+  const due = cardDue(card, project);
   const done = Boolean(card.done);
   const tickBox = h('span', { class: `tick${done ? ' is-on' : ''}`, 'aria-hidden': 'true' }, done ? icon('check') : null);
   const doneBox = can
@@ -615,7 +617,7 @@ export function renderProjectCard(projectId, cardId, onLeave) {
     replace(head, columnPart(card, project, 'kc__where'), readOnlyNote(card, project));
     replace(fields,
       phoneField('users', t('projets.personnes'), peopleValue(card, project)),
-      phoneField('calendar', t('projets.echeance'), dueValue(card, project)),
+      deadlinesOn(project) ? phoneField('calendar', t('projets.echeance'), dueValue(card, project)) : null,
       phoneField('tag', t('projets.etiquettes'), labelsValue(card, project)),
       project.priorityEnabled ? phoneField('flag', t('projets.priorite'), priorityValue(card, project)) : null);
     replace(links, linksPart(card, project));
@@ -727,8 +729,7 @@ export function openProjectCardPanel(projectId, cardId) {
       h('div', { class: 'kside-field', role: 'group', 'aria-label': peopleSpoken(card, project) }, peopleValue(card, project)),
       section(t('projets.etiquettes')),
       h('div', { class: 'kside-field' }, labelsValue(card, project)),
-      section(t('projets.echeance')),
-      h('div', { class: 'kside-field' }, dueValue(card, project)),
+      deadlinesOn(project) ? [section(t('projets.echeance')), h('div', { class: 'kside-field' }, dueValue(card, project))] : null,
       project.priorityEnabled ? [section(t('projets.priorite')), h('div', { class: 'kside-field' }, priorityValue(card, project))] : null,
       actions.length ? [section(t('projets.carte.actionsTitre')), actions] : null);
   };

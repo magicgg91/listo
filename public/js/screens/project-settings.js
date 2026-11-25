@@ -6,7 +6,8 @@
 // Propriétaire et « Peut modifier » seulement (Contributeur et Lecture
 // seule n'ont pas cet écran : l'adresse ramène au projet). Le nom, l'option
 // « Priorité » et « Supprimer le projet » : propriétaire seulement (« Peut
-// modifier » voit le nom sans pouvoir le changer).
+// modifier » voit le nom sans pouvoir le changer) ; l'option « Échéances » :
+// propriétaire et « Peut modifier ».
 //
 // - Nom du projet (1 à 80 caractères) : enregistré en quittant le champ ou
 //   avec Entrée.
@@ -22,8 +23,11 @@
 // - Étiquettes du projet (propres au projet : décision du 25 novembre
 //   2026) : une ligne par étiquette (nombre de cartes, crayon : nom,
 //   couleur, supprimer avec « retirée de 4 cartes ») ; « Nouvelle étiquette ».
-// - Options : « Priorité » (propriétaire ; coupée au départ ; les cartes
-//   la montreront à l'étape 2).
+// - Options : « Priorité » (propriétaire ; coupée au départ) et
+//   « Échéances » (propriétaire et « Peut modifier » ; allumée au départ ;
+//   coupée, les cartes n'ont plus ni échéance, ni rappel, ni case « Fait »,
+//   rien n'est effacé : décision du 25 novembre 2026, après l'essai). Le
+//   même interrupteur pour les deux.
 // - « Supprimer le projet » (propriétaire).
 //
 // Tout passe par la file d'attente (hors ligne compris) ; le serveur
@@ -35,7 +39,7 @@ import { app, onDataChange, isDesktop } from '../app.js';
 import { openSheet, toast, confirmDialog, drawWhenIdle, offlineBanner } from '../ui.js';
 import { t } from '../i18n.js';
 import {
-  projectRights, byPosition, cleanProjectName, cleanColumnName, cleanProjectLabelName, nameTaken,
+  projectRights, deadlinesOn, byPosition, cleanProjectName, cleanColumnName, cleanProjectLabelName, nameTaken,
   PROJECT_NAME_MAX, COLUMN_NAME_MAX, PROJECT_LABEL_NAME_MAX, COLUMNS_MAX, PROJECT_LABELS_MAX, DEFAULT_COLUMN_COLOR,
 } from '../projects.js';
 import { DEFAULT_LABEL_COLOR } from '../labels.js';
@@ -374,17 +378,25 @@ export function renderProjectSettings(projectId, onLeave) {
     ];
   };
 
-  const optionsPart = (p) => [
+  // Une option : son nom, sa ligne d'aide et son interrupteur
+  const optionRow = (key, title, help, on, onClick) => h('div', { class: 'toggle-row' },
+    h('div', { class: 'grow' },
+      h('span', { class: 'row__title', id: `projet-${key}-titre` }, title),
+      h('span', { class: 'row__sub', id: `projet-${key}-aide` }, help)),
+    h('button', {
+      class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(on),
+      'aria-labelledby': `projet-${key}-titre`, 'aria-describedby': `projet-${key}-aide`, 'data-key': key,
+      onClick,
+    }));
+  // Options : « Priorité » (propriétaire), puis « Échéances » (propriétaire
+  // et « Peut modifier »)
+  const optionsPart = (p, rights) => [
     groupTitle(t('projets.reglages.options'), ''),
-    h('div', { class: 'group list-options' }, h('div', { class: 'toggle-row' },
-      h('div', { class: 'grow' },
-        h('span', { class: 'row__title', id: 'projet-priorite-titre' }, t('projets.reglages.priorite')),
-        h('span', { class: 'row__sub', id: 'projet-priorite-aide' }, t('projets.reglages.priorite.aide'))),
-      h('button', {
-        class: 'switch', type: 'button', role: 'switch', 'aria-checked': String(Boolean(p.priorityEnabled)),
-        'aria-labelledby': 'projet-priorite-titre', 'aria-describedby': 'projet-priorite-aide', 'data-key': 'priority',
-        onClick: () => projectActions.setProjectPriority(projectId, !p.priorityEnabled),
-      }))),
+    h('div', { class: 'group list-options' },
+      rights.priority ? optionRow('priorite', t('projets.reglages.priorite'), t('projets.reglages.priorite.aide'), Boolean(p.priorityEnabled),
+        () => projectActions.setProjectPriority(projectId, !p.priorityEnabled)) : null,
+      rights.deadlines ? optionRow('echeances', t('projets.reglages.echeances'), t('projets.reglages.echeances.aide'), deadlinesOn(p),
+        () => projectActions.setProjectDeadlines(projectId, !deadlinesOn(p))) : null),
   ];
 
   let drawn = '';
@@ -404,7 +416,7 @@ export function renderProjectSettings(projectId, onLeave) {
     // Redessiné seulement quand quelque chose de l'écran a changé
     const counts = (p.columns ?? []).map((c) => columnCards(app.data, c.id).length).join();
     const uses = (p.labels ?? []).map((l) => labelUse(app.data, projectId, l.id)).join();
-    const key = JSON.stringify([p.name, p.role, p.priorityEnabled, p.columns, p.labels, counts, uses]);
+    const key = JSON.stringify([p.name, p.role, p.priorityEnabled, deadlinesOn(p), p.columns, p.labels, counts, uses]);
     if (key === drawn) return;
     drawn = key;
     if (shownName !== p.name && document.activeElement !== nameInput) {
@@ -415,7 +427,7 @@ export function renderProjectSettings(projectId, onLeave) {
     const held = body.contains(document.activeElement) ? document.activeElement.dataset?.key : null;
     const namePart = h('div', { class: 'kset__name' }, nameField.field,
       rights.rename ? null : h('p', { class: 'field__hint' }, t('projets.reglages.nomProprietaire')));
-    const main = [namePart, columnsPart(p), rights.priority ? optionsPart(p) : null,
+    const main = [namePart, columnsPart(p), rights.priority || rights.deadlines ? optionsPart(p, rights) : null,
       rights.trash ? h('div', { class: 'kset__danger' }, h('button', { class: 'btn btn--danger-outline btn--block', type: 'button', onClick: () => askDelete(p, () => navigate('projects', {}, { replace: true })) },
         icon('trash', 'icon--sm'), t('projets.reglages.supprimer'))) : null];
     if (pc) replace(body, h('div', { class: 'kset__col' }, main), h('div', { class: 'kset__col' }, labelsPart(p)));

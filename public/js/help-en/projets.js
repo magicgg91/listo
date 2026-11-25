@@ -26,8 +26,8 @@ export default {
         { ul: [
           '“Projects” screen: one card per project, the most recently changed at the top, with its columns (colored dot, name, number of cards), the people\'s badges, the “Read only” eye or “Contributor” depending on your role, ‘2 cards for you · 1 overdue’ (your cards not done), and a dot when someone else did something there since your last visit. The magnifier searches for a project by its name.',
           '“+”, at the top right (“New project” when you have none): give a name (80 characters at most), then “Create”. The project starts with three columns, “To do”, “In progress” and “Done”, which you can rename as you like; it opens right away.',
-          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Duplicate project”, “Hide new activity” (shared project), “Turn off notifications” ([[projets-notifications]]), “Show in Due” ([[projets-echeances]]), then “Delete” (your projects) or “Leave project”. In an open project, the same menu also has “Project settings” and “Deleted cards”.',
-          '“Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” option, but without any cards. Handy to make a template. It also works offline.',
+          'A project\'s ⋮ menu: “Open”, “Share” (your projects) or “People”, “Project settings” (owner and “Can edit”, [[projets-colonnes]]), “Duplicate project”, “Deleted cards” ([[projets-corbeilles]]), “Turn off notifications” ([[projets-notifications]]), “Hide new activity” (shared project), “Show in Due” (when the project\'s “Due dates” option is on, [[projets-echeances]]), then “Delete” (your projects) or “Leave project”. In an open project, the ⋮ menu at the top is the same, without “Open”.',
+          '“Duplicate project” (any member, even “Read only”): a new project of yours, not shared, whose name ends with ‘(copy)’, with the same columns, the same labels and the same “Priority” and “Due dates” options, but without any cards. Handy to make a template. It also works offline.',
           '“Delete” (owner): the project goes to the “Trash” in Settings for 30 days, with its cards; it also disappears for the people it is shared with. “Cancel”, in the message that follows, puts it back right away.',
         ] },
       ],
@@ -54,7 +54,7 @@ export default {
         'Each field of a card is always there, with its “+” or, when empty, a line to fill it (“Assign”, “Add a due date”…): there is only one place to fill it. Everything saves on its own, offline included. What your role doesn\'t allow has no button ([[projets-roles]]).',
         { ul: [
           'People: the badges and first names of the assigned people; “+” (or “Assign”) opens the choice, with “Assign to me” at the top. A card can be assigned to the owner, a “Can edit” or a “Contributor”, never to a person with “Read only” (10 at most). A person who leaves the project, is removed from it or becomes “Read only” is removed from their cards.',
-          'Due, on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.',
+          'Due (when the project\'s “Due dates” option is on, which it is at first), on a single line: the “Done” box, then the date and time (tap them to change them). Without a due date: “Add a due date”. The time is optional; with a time, a reminder can be chosen (at the time, 15 min, 30 min, 1 h, 2 h before, or the day before), written small below. “Remove due date” removes it, with the “Done” box.',
           'The “Done” box is the only mark of a done card: the due date stays, in green, with a check mark. A done card is no longer overdue and has no reminder; it doesn\'t change column: put it away yourself (in ‘Published’, for example), or delete it. An overdue card has its date in red, with a triangle.',
           'Labels: “Label” (or its “+”) adds or removes the project\'s labels (10 at most per card).',
           'Priority (when the project\'s “Priority” option is on): “Low”, “Normal” or “High”. Turned off, the priority is kept without being shown.',
@@ -97,7 +97,7 @@ export default {
       id: 'projets-echeances',
       title: 'A project\'s cards in “Due”',
       blocks: [
-        'A project\'s ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.',
+        'A project\'s ⋮ menu: “Show in Due”, a switch, off at first (a check mark says when it is on); it is only there when the project\'s “Due dates” option is on ([[projets-colonnes]]). It is your choice for this project only: Léa may want ‘Home repairs’ in her Due screen, and Guillaume not. Nobody else sees it; it also works offline, whatever your role.',
         { ul: [
           'When it is on, this project\'s dated cards that are not done appear on the “Due” screen ([[echeances]]), mixed with the tasks, in the same groups (“Overdue”, “Today”, “Tomorrow”, “This week”, “Later”), with the projects icon and ‘DomoPi Articles · Review’ (the project and the column) instead of the list\'s name, then the priority (if the project\'s option is on), the date and time, and the people.',
           'Tapping the row opens the card. The box checks “Done” if you can edit the card ([[projets-roles]]): the card leaves the screen, and “Undo” brings it back. Otherwise, the row has no box.',
@@ -118,6 +118,7 @@ export default {
           'Deleting an empty column: it goes right away. A column with cards: choose to move its cards to another column, or to delete them with it (they go to the project\'s “Deleted cards”). A deleted column can\'t be restored; a project always keeps at least one column.',
           'Project labels: specific to this project (the notes\' labels don\'t mix in), a given label existing only once (upper case and accents count the same). “New label”; the pencil renames, changes the color or deletes (the label is then removed from its cards). 50 labels at most per project.',
           '“Priority” (the owner): a project option, off at first. Turned on, each card has a priority, “Low”, “Normal” or “High” ([[projets-carte]]); turned off again, priorities are kept without being shown.',
+          '“Due dates” (the owner and “Can edit”): a project option, on at first: a date, a time and a reminder on cards, and the “Done” box ([[projets-carte]]). Turned off, nothing is erased, but cards no longer have a due date, a reminder or a “Done” box: they are never overdue, no longer go to “Due” or the morning summary, and “Show in Due” leaves the ⋮ menu. Turned back on, everything comes back as it was.',
           '“Delete project” (the owner).',
         ] },
       ],
@@ -129,7 +130,7 @@ export default {
         'In one of your projects, “Share” (the people button at the top, or the ⋮ menu) opens the list of Listo accounts directly: a project has no public link. Check a person, then choose their access under their name, “Edit”, “Contribute” or “View”; uncheck them to remove them; then “OK”. A person you add starts with “View”. It needs the network.',
         { table: { head: ['Role', 'What it allows'], rows: [
           ['“Owner”', 'everything: rename, share, delete the project, the “Priority” option, erase deleted cards for good'],
-          ['“Can edit” (“Edit” access)', 'the columns, the project\'s labels and all the cards; never rename, share or delete the project'],
+          ['“Can edit” (“Edit” access)', 'the columns, the project\'s labels, the “Due dates” option and all the cards; never rename, share or delete the project'],
           ['“Contributor” (“Contribute” access)', 'create cards; edit and move the ones they created or that are assigned to them; assign people on their own cards, and only remove themselves from someone else\'s card; delete and restore only the ones they created; never the columns or the project\'s labels'],
           ['“Read only” (“View” access)', 'see the project, its columns and its cards, without changing anything'],
         ] } },

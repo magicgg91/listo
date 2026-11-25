@@ -16,7 +16,7 @@ import {
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, cleanCardLabelIds, cleanAssigneeIds,
   isColumnColor, DEFAULT_COLUMN_COLOR, COLUMNS_MAX, PROJECT_LABELS_MAX,
   cleanCardDue, isCardPriority, cleanDescription, cleanLinkUrl, cleanLinkTitle, LINKS_PER_CARD_MAX,
-  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX,
+  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX, deadlinesOn,
 } from './projects.js';
 import { DEFAULT_LABEL_COLOR } from './labels.js';
 import { setTaskAt } from './note-format.js';
@@ -222,18 +222,28 @@ export function applyProjectOp(state, op, { user, now }) {
         id: column.columnId, name: cleanColumnName(column.name) ?? '', color: isColumnColor(column.color) ? column.color : DEFAULT_COLUMN_COLOR, position: 1024 * (index + 1),
       }));
       setProject({
-        id: op.projectId, name, role: 'owner', priorityEnabled: false, createdAt: now, updatedAt: now, deletedAt: null,
+        id: op.projectId, name, role: 'owner', priorityEnabled: false, deadlinesEnabled: true, createdAt: now, updatedAt: now, deletedAt: null,
         members: user ? [{ id: user.id, displayName: user.displayName, active: true, role: 'owner' }] : [],
         columns, labels: [], cardIds: [],
       });
       state.projectIds.add(op.projectId);
       return;
     }
+    // Nom et option « Priorité » : propriétaire ; option « Échéances » :
+    // propriétaire et « Peut modifier » (comme le serveur : tout ou rien)
     case 'project.update': {
-      if (!project || !rights.rename) return;
+      if (!project) return;
+      if (op.name !== undefined && !rights.rename) return;
+      if (op.priorityEnabled !== undefined && (!rights.priority || typeof op.priorityEnabled !== 'boolean')) return;
+      if (op.deadlinesEnabled !== undefined && (!rights.deadlines || typeof op.deadlinesEnabled !== 'boolean')) return;
       const name = op.name === undefined ? project.name : cleanProjectName(op.name);
       if (!name) return;
-      setProject({ ...project, name, ...(typeof op.priorityEnabled === 'boolean' ? { priorityEnabled: op.priorityEnabled } : {}), updatedAt: now });
+      setProject({
+        ...project, name,
+        ...(op.priorityEnabled !== undefined ? { priorityEnabled: op.priorityEnabled } : {}),
+        ...(op.deadlinesEnabled !== undefined ? { deadlinesEnabled: op.deadlinesEnabled } : {}),
+        updatedAt: now,
+      });
       return;
     }
     // Copie à moi : mêmes colonnes et étiquettes (identifiants choisis ici,
@@ -242,7 +252,7 @@ export function applyProjectOp(state, op, { user, now }) {
       const name = cleanProjectName(op.name);
       if (!project || !rights.duplicate || !name || state.projects.has(op.newProjectId)) return;
       setProject({
-        id: op.newProjectId, name, role: 'owner', priorityEnabled: project.priorityEnabled, createdAt: now, updatedAt: now, deletedAt: null,
+        id: op.newProjectId, name, role: 'owner', priorityEnabled: project.priorityEnabled, deadlinesEnabled: deadlinesOn(project), createdAt: now, updatedAt: now, deletedAt: null,
         members: user ? [{ id: user.id, displayName: user.displayName, active: true, role: 'owner' }] : [],
         columns: (project.columns ?? []).map((column) => ({ ...column, id: op.columnIds?.[column.id] ?? column.id })),
         labels: (project.labels ?? []).map((label) => ({ ...label, id: op.labelIds?.[label.id] ?? label.id })),
@@ -256,7 +266,7 @@ export function applyProjectOp(state, op, { user, now }) {
     case 'project.delete': {
       if (!project || project.role !== 'owner') return;
       const cards = projectCards(state, project.id);
-      setProject({ id: project.id, name: project.name, role: 'owner', priorityEnabled: project.priorityEnabled, createdAt: project.createdAt, updatedAt: project.updatedAt, deletedAt: now, cardCount: cards.length, memberCount: Math.max(0, (project.members?.length ?? 1) - 1) });
+      setProject({ id: project.id, name: project.name, role: 'owner', priorityEnabled: project.priorityEnabled, deadlinesEnabled: deadlinesOn(project), createdAt: project.createdAt, updatedAt: project.updatedAt, deletedAt: now, cardCount: cards.length, memberCount: Math.max(0, (project.members?.length ?? 1) - 1) });
       for (const card of [...state.cards.values()]) if (card.projectId === project.id) state.cards.delete(card.id);
       return;
     }
@@ -392,7 +402,8 @@ function applyCardOp(state, op, { user, me, now }) {
   const set = (next) => state.cards.set(card.id, { ...card, ...next, updatedAt: now, updatedByName: user?.displayName ?? null });
   switch (op.type) {
     // Seulement les champs donnés : titre, échéance (null : retirée, avec
-    // « Fait »), priorité (option du projet allumée)
+    // « Fait » ; option « Échéances » du projet allumée), priorité (option
+    // « Priorité » allumée)
     case 'card.update': {
       if (card.deletedAt || !can.edit) return;
       const next = {};
@@ -403,7 +414,7 @@ function applyCardOp(state, op, { user, me, now }) {
       }
       if (op.due !== undefined) {
         const due = cleanCardDue(op.due);
-        if (due === undefined) return;
+        if (due === undefined || !deadlinesOn(project)) return;
         Object.assign(next, { dueDate: due?.date ?? null, dueTime: due?.time ?? null, remindBefore: due?.remindBefore ?? null });
         if (due === null) Object.assign(next, { done: false, doneAt: null });
       }
@@ -415,7 +426,7 @@ function applyCardOp(state, op, { user, me, now }) {
       return;
     }
     case 'card.done': {
-      if (card.deletedAt || !can.edit || typeof op.done !== 'boolean' || !card.dueDate) return;
+      if (card.deletedAt || !can.edit || typeof op.done !== 'boolean' || !card.dueDate || !deadlinesOn(project)) return;
       if (Boolean(card.done) !== op.done) set({ done: op.done, doneAt: op.done ? now : null });
       return;
     }

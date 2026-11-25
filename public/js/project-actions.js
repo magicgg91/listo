@@ -35,6 +35,8 @@ export async function createProject(name) {
 
 export const renameProject = (projectId, name) => perform({ type: 'project.update', projectId, name });
 export const setProjectPriority = (projectId, priorityEnabled) => perform({ type: 'project.update', projectId, priorityEnabled });
+// Option « Échéances » du projet (propriétaire et « Peut modifier »)
+export const setProjectDeadlines = (projectId, deadlinesEnabled) => perform({ type: 'project.update', projectId, deadlinesEnabled });
 
 // Dupliquer (tout membre) : un projet à moi, « (copie) », mêmes colonnes et
 // étiquettes, sans cartes. Renvoie l'identifiant de la copie.

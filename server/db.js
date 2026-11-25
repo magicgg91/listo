@@ -1126,6 +1126,27 @@ export const MIGRATIONS = [
   `
   ALTER TABLE users ADD COLUMN guest INTEGER NOT NULL DEFAULT 0 CHECK (guest IN (0, 1) AND (guest = 0 OR role = 'user'));
   `,
+
+  // --- Migration 48 : fonctions autorisées par l'Admin (25 novembre 2026,
+  // docs/cadrage-comptes.md, étape 2) ---
+  // Cases de la page d'un compte (Administration › Comptes) : ce que la
+  // personne PEUT utiliser. Elle allume ensuite elle-même Notes et Projets
+  // dans Réglages › Fonctions (notes_enabled, projects_enabled, qui
+  // existent déjà) ; une fonction est utilisée si elle est autorisée ET
+  // allumée (public/js/features.js, usedFeatures).
+  // - notes_allowed, projects_allowed : Notes, Projets ;
+  // - projects_create : « Peut créer ses propres projets » (permission,
+  //   sans interrupteur personnel) ;
+  // - mcp_allowed : « Assistants IA » (permission).
+  // 1 pour tous les comptes existants : la famille garde tout ce qu'elle a.
+  // Ignorées pour un Admin (il a tout). Un nouvel invité reçoit 0 partout,
+  // écrit par le serveur à la création (public/js/access.js, defaultAllowed).
+  `
+  ALTER TABLE users ADD COLUMN notes_allowed INTEGER NOT NULL DEFAULT 1 CHECK (notes_allowed IN (0, 1));
+  ALTER TABLE users ADD COLUMN projects_allowed INTEGER NOT NULL DEFAULT 1 CHECK (projects_allowed IN (0, 1));
+  ALTER TABLE users ADD COLUMN projects_create INTEGER NOT NULL DEFAULT 1 CHECK (projects_create IN (0, 1));
+  ALTER TABLE users ADD COLUMN mcp_allowed INTEGER NOT NULL DEFAULT 1 CHECK (mcp_allowed IN (0, 1));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

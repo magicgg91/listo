@@ -20,14 +20,21 @@
 //
 // Réponses construites champ par champ : id et nom affiché, plus le rôle
 // pour un Admin seulement ; jamais l'identifiant de connexion (username),
-// qui ne sert qu'à se connecter. Rien n'est gardé en mémoire d'un compte à
-// l'autre : l'annuaire est relu en base à chaque demande.
+// qui ne sert qu'à se connecter. Depuis l'étape 2 (fonctions autorisées),
+// aussi « uses » : { notes, projects }, ce que l'Admin a autorisé à ce
+// compte (pas ce qu'il a allumé, qui reste à lui) : la feuille « Partager »
+// d'une note ou d'un projet grise une personne qui n'y a pas droit
+// (« N'utilise pas les notes »), et le serveur refuse de l'ajouter. Ce
+// n'est pas un secret pour un compte qu'on voit déjà (cadrage 7.3). Rien
+// n'est gardé en mémoire d'un compte à l'autre : l'annuaire est relu en
+// base à chaque demande.
 
 import { accountRole, directorySees } from '../public/js/access.js';
 import { compareText } from '../public/js/i18n.js';
+import { allowedFromRow } from './features.js';
 
 export function createDirectory(db) {
-  const actives = db.prepare('SELECT id, display_name, role, guest FROM users WHERE active = 1');
+  const actives = db.prepare('SELECT id, display_name, role, guest, notes_allowed, projects_allowed FROM users WHERE active = 1');
   const account = db.prepare('SELECT id, role, guest, active FROM users WHERE id = ?');
 
   // Annuaire de viewer (sa ligne de la table users, ou au moins id, role,
@@ -37,11 +44,15 @@ export function createDirectory(db) {
     const viewerRole = accountRole(viewer);
     if (viewerRole === 'guest') return [];
     const admin = viewerRole === 'admin';
+    const uses = (row) => {
+      const allowed = allowedFromRow(row);
+      return { notes: allowed.notes, projects: allowed.projects };
+    };
     return actives.all()
       .filter((row) => directorySees(viewerRole, accountRole(row)))
       .map((row) => (admin
-        ? { id: row.id, displayName: row.display_name, role: accountRole(row) }
-        : { id: row.id, displayName: row.display_name }))
+        ? { id: row.id, displayName: row.display_name, role: accountRole(row), uses: uses(row) }
+        : { id: row.id, displayName: row.display_name, uses: uses(row) }))
       .sort((a, b) => compareText(a.displayName, b.displayName, { locale: 'fr' }));
   }
 

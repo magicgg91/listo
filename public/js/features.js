@@ -22,6 +22,9 @@
 // <nom>_enabled dans la table users, une entrée ici) ; chacune a sa valeur
 // de départ.
 
+import { deadlinesShown } from './access.js';
+import { deadlinesOn } from './projects.js';
+
 // Les fonctions, dans l'ordre de l'écran, avec leur valeur de départ
 export const FEATURE_DEFAULTS = { notes: true, projects: false };
 export const FEATURES = Object.keys(FEATURE_DEFAULTS);
@@ -57,14 +60,30 @@ export function normalizeFeatures(value) {
 // Problème d'une modification { notes?, projects? } (le contenu d'une opération
 // « account.features », sans son identifiant ni son type) : le nom du texte
 // de refus, ou null si tout va bien. Refusés : autre chose qu'un objet,
-// nom inconnu, valeur qui n'est pas un booléen, rien à modifier.
-export function featuresChangeProblem(change) {
+// nom inconnu, valeur qui n'est pas un booléen, rien à modifier, et (quand
+// allowed est donné : les autorisations de l'Admin, access.js) une
+// fonction que l'Admin n'a pas autorisée pour ce compte (on ne l'allume ni
+// ne l'éteint : elle n'est pas proposée).
+export function featuresChangeProblem(change, allowed = null) {
   if (!change || typeof change !== 'object' || Array.isArray(change)) return 'ops.fonctionsInvalides';
   const names = Object.keys(change);
   if (!names.length) return 'ops.rienAModifier';
   if (!names.every((name) => FEATURES.includes(name))) return 'ops.fonctionInconnue';
   if (!names.every((name) => typeof change[name] === 'boolean')) return 'ops.fonctionsInvalides';
+  if (allowed && !names.every((name) => allowed[name] === true)) return 'ops.fonctionNonAutorisee';
   return null;
+}
+
+// Fonctions UTILISÉES (docs/cadrage-comptes.md, étape 2) : autorisées par
+// l'Admin (allowed, access.js) ET allumées par la personne (switches, son
+// réglage). C'est ce que le serveur vérifie partout et envoie aux écrans
+// sous le nom « features » : tout ce qui demande « notes utilisées ? » ou
+// « projets utilisés ? » (notesOn, projectsOn, screenAllowed…) suit ainsi
+// les deux à la fois. Une fonction autorisée a, dans ce réglage, la
+// valeur de son interrupteur (Réglages › Fonctions ne montre qu'elles).
+export function usedFeatures(switches, allowed) {
+  const on = normalizeFeatures(switches);
+  return Object.fromEntries(FEATURES.map((name) => [name, on[name] && allowed?.[name] !== false]));
 }
 
 // Applique une modification valable à un réglage (renvoie un nouveau réglage)
@@ -84,8 +103,25 @@ export function featureOf(name) {
 }
 
 // L'écran est-il ouvert à la personne ? (toujours, sauf s'il appartient à
-// une fonction qu'elle a coupée)
+// une fonction qu'elle n'utilise pas). « Échéances » suit une règle
+// calculée (screenFeatures, ci-dessous) : features.deadlines, faux
+// seulement quand la règle le dit.
 export function screenAllowed(name, features) {
+  if (name === 'deadlines') return features?.deadlines !== false;
   const feature = featureOf(name);
   return !feature || featureOn(features, feature);
+}
+
+// Ce que les écrans montrent (bandeau du bas, tuiles, menu de gauche,
+// premier écran, adresses) : les fonctions utilisées (data.features), plus
+// la règle de l'écran « Échéances » pour un invité (access.js,
+// deadlinesShown ; décision du propriétaire du 25 novembre 2026) : un
+// projet qu'il voit à l'option « Échéances » allumée. data : la copie
+// locale (store.js) ; role : le rôle du compte connecté. (Étape 3 du
+// cadrage : les Listes d'un invité s'ajouteront ici, « lists ».)
+export function screenFeatures(data, role) {
+  const features = normalizeFeatures(data?.features);
+  const projectDeadlines = features.projects
+    && [...(data?.projects?.values?.() ?? [])].some((project) => !project.deletedAt && deadlinesOn(project));
+  return { ...features, deadlines: deadlinesShown(role, { lists: true, projectDeadlines }) };
 }

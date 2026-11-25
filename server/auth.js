@@ -12,7 +12,7 @@
 
 import crypto from 'node:crypto';
 import { homeFromRow } from './home.js';
-import { featuresFromRow } from './features.js';
+import { featuresFromRow, allowedFromRow } from './features.js';
 import { accountRole } from '../public/js/access.js';
 
 // Noms des cookies de connexion : session, et connexion en attente du code
@@ -89,7 +89,9 @@ export function publicUser(user, config, { method = null } = {}) {
     productLookup: config?.productLookup !== false,
     // Accès depuis Claude (LISTO_MCP=on) : l'adresse à saisir dans Claude,
     // pour afficher l'écran « Connexions Claude » et l'aide ; null sinon
-    claudeUrl: config?.mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
+    // (null aussi pour un compte sans « Assistants IA », case de l'Admin :
+    // ni « Assistants IA » dans Mon compte, ni écran des connexions)
+    claudeUrl: config?.mcp && allowedFromRow(user).mcp ? `${new URL(config.publicUrl).origin}/mcp` : null,
     // Notifications push activées sur le serveur (LISTO_PUSH=on)
     push: config?.push === true,
     // Comment cette session a été ouverte : 'oidc' (fournisseur d'identité : mot de passe
@@ -104,8 +106,13 @@ export function publicUser(user, config, { method = null } = {}) {
     // écran est connu dès l'ouverture, avant la synchronisation
     home: homeFromRow(user),
     // Réglage « Fonctions » (Réglages › Fonctions, server/features.js) :
-    // les boutons des fonctions coupées n'apparaissent jamais, même un instant
+    // les fonctions utilisées (autorisées par l'Admin et allumées) ; les
+    // boutons des autres n'apparaissent jamais, même un instant
     features: featuresFromRow(user),
+    // Ce que l'Admin a autorisé à ce compte (docs/cadrage-comptes.md,
+    // étape 2) : Notes, Projets, « Peut créer ses propres projets »,
+    // « Assistants IA » (un Admin a tout)
+    allowed: allowedFromRow(user),
   };
 }
 

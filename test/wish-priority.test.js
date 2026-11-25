@@ -50,7 +50,8 @@ test('formulaire : aucune valeur forcée ni liée au type ; création sans prior
   assert.doesNotMatch(read('server/mcp-tools.js'), /list\.create/, 'Claude ne crée pas de liste');
   assert.match(read('public/sw.js'), /const VERSION = `v(6[2-9]|[7-9]\d|\d{3,})-/);
   // Aucune migration ne touche au réglage des listes existantes
-  assert.ok(!MIGRATIONS.slice(19).some((m) => /priority_enabled/.test(String(m))));
+  // (la migration 43 crée projects.priority_enabled : l'option d'un projet, pas d'une liste)
+  assert.ok(!MIGRATIONS.slice(19).some((m) => /lists[^;]*priority_enabled/.test(String(m))));
 });
 
 test('serveur : une conversion garde le réglage actuel (tâches avec priorité : gardée ; courses : sans) ; le propriétaire peut le changer en convertissant ; listes d\'envies existantes inchangées', async (t) => {

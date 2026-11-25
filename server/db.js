@@ -890,6 +890,155 @@ export const MIGRATIONS = [
   );
   CREATE INDEX note_labels_label ON note_labels(label_id);
   `,
+
+  // --- Migration 43 : projets, le socle (25 novembre 2026, docs/cadrage-projets.md) ---
+  // users.projects_enabled : la fonction « Projets » (Réglages › Fonctions),
+  // COUPÉE au départ pour tous les comptes, anciens et nouveaux.
+  // users.home_start accepte aussi « projects » (premier écran quand
+  // l'Accueil est coupé) : SQLite ne sait pas changer une contrainte CHECK,
+  // la colonne est donc refaite (nouvelle colonne, valeurs recopiées,
+  // ancienne retirée, nouvelle renommée) ; la table users n'est pas recréée.
+  // projects : un projet (UUID créé par le téléphone), son propriétaire, son
+  // nom, l'option « Priorité », le projet d'origine d'une copie, la
+  // corbeille, changed_at (dernier changement de sa STRUCTURE pour la
+  // synchronisation : nom, partage, colonnes, étiquettes, cartes effacées)
+  // et cards_reset_at (projet restauré : ses membres reçoivent de nouveau
+  // toutes ses cartes).
+  // project_members : les personnes avec qui il est partagé et leur droit
+  // ('modification' : « Peut modifier », 'contribution' : « Contributeur »,
+  // 'lecture' : « Lecture seule ») ; le propriétaire n'y figure pas ;
+  // added_at : depuis quand (la personne reçoit alors toutes les cartes).
+  // project_columns, project_labels : colonnes (nom unique dans le projet,
+  // majuscules et accents ignorés : name_key, couleur, position réelle) et
+  // étiquettes propres au projet (même règle de nom).
+  // cards : les cartes (colonne, position, titre, qui l'a créée : c'est ce
+  // qui donne ses droits au Contributeur ; corbeille du projet, avec le nom
+  // de sa colonne d'alors). Une carte présente a toujours une colonne.
+  // card_labels, card_assignees : étiquettes posées et personnes attribuées
+  // (la table des personnes est créée dès cette étape : les droits du
+  // Contributeur en dépendent).
+  // card_events : l'historique des cartes et les Nouveautés des projets
+  // (type dans une liste fermée, valeurs construites champ par champ :
+  // jamais un titre, une description ni un commentaire).
+  // project_user_state : ce qui est propre à chaque personne (dernier
+  // événement vu, deux sourdines, « Afficher dans Échéances »), jamais
+  // transmis aux autres, effacé quand elle perd l'accès.
+  // Les tables partent vides : une installation n'a aucun projet.
+  `
+  ALTER TABLE users ADD COLUMN projects_enabled INTEGER NOT NULL DEFAULT 0 CHECK (projects_enabled IN (0, 1));
+  ALTER TABLE users ADD COLUMN home_start_next TEXT NOT NULL DEFAULT 'lists' CHECK (home_start_next IN ('deadlines', 'lists', 'notes', 'projects'));
+  UPDATE users SET home_start_next = home_start;
+  ALTER TABLE users DROP COLUMN home_start;
+  ALTER TABLE users RENAME COLUMN home_start_next TO home_start;
+
+  CREATE TABLE projects (
+    id               TEXT    PRIMARY KEY,
+    owner_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name             TEXT    NOT NULL CHECK (length(name) BETWEEN 1 AND 80),
+    priority_enabled INTEGER NOT NULL DEFAULT 0 CHECK (priority_enabled IN (0, 1)),
+    duplicated_from  TEXT,
+    created_at       TEXT    NOT NULL,
+    updated_at       TEXT    NOT NULL,
+    changed_at       TEXT    NOT NULL,
+    cards_reset_at   TEXT,
+    deleted_at       TEXT,
+    deleted_by       INTEGER REFERENCES users(id) ON DELETE SET NULL
+  );
+  CREATE INDEX projects_owner ON projects(owner_id);
+  CREATE INDEX projects_deleted ON projects(deleted_at) WHERE deleted_at IS NOT NULL;
+
+  CREATE TABLE project_members (
+    project_id TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    access     TEXT    NOT NULL DEFAULT 'lecture' CHECK (access IN ('modification', 'contribution', 'lecture')),
+    added_at   TEXT    NOT NULL,
+    PRIMARY KEY (project_id, user_id)
+  );
+  CREATE INDEX project_members_user ON project_members(user_id);
+
+  CREATE TABLE project_columns (
+    id         TEXT    PRIMARY KEY,
+    project_id TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name       TEXT    NOT NULL CHECK (length(name) BETWEEN 1 AND 40),
+    name_key   TEXT    NOT NULL CHECK (length(name_key) BETWEEN 1 AND 400),
+    color      TEXT    NOT NULL CHECK (color IN ('gris', 'rouge', 'orange', 'jaune', 'vert', 'bleu', 'violet', 'rose')),
+    position   REAL    NOT NULL,
+    created_at TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL
+  );
+  CREATE INDEX project_columns_project ON project_columns(project_id, position);
+  CREATE UNIQUE INDEX project_columns_name ON project_columns(project_id, name_key);
+
+  CREATE TABLE project_labels (
+    id         TEXT    PRIMARY KEY,
+    project_id TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name       TEXT    NOT NULL CHECK (length(name) BETWEEN 1 AND 30),
+    name_key   TEXT    NOT NULL CHECK (length(name_key) BETWEEN 1 AND 300),
+    color      TEXT    NOT NULL CHECK (color IN ('gris', 'rouge', 'orange', 'jaune', 'vert', 'bleu', 'violet', 'rose')),
+    created_at TEXT    NOT NULL
+  );
+  CREATE UNIQUE INDEX project_labels_name ON project_labels(project_id, name_key);
+
+  CREATE TABLE cards (
+    id                  TEXT    PRIMARY KEY,
+    project_id          TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    column_id           TEXT    REFERENCES project_columns(id) ON DELETE SET NULL,
+    position            REAL    NOT NULL,
+    title               TEXT    NOT NULL CHECK (length(title) BETWEEN 1 AND 200),
+    created_by          INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at          TEXT    NOT NULL,
+    updated_at          TEXT    NOT NULL,
+    updated_by          INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    deleted_at          TEXT,
+    deleted_by          INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    deleted_column_name TEXT    CHECK (deleted_column_name IS NULL OR length(deleted_column_name) <= 40),
+    CHECK (column_id IS NOT NULL OR deleted_at IS NOT NULL)
+  );
+  CREATE INDEX cards_project ON cards(project_id, updated_at);
+  CREATE INDEX cards_column ON cards(column_id, position);
+  CREATE INDEX cards_created_by ON cards(project_id, created_by);
+  CREATE INDEX cards_deleted ON cards(deleted_at) WHERE deleted_at IS NOT NULL;
+
+  CREATE TABLE card_labels (
+    card_id  TEXT NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    label_id TEXT NOT NULL REFERENCES project_labels(id) ON DELETE CASCADE,
+    PRIMARY KEY (card_id, label_id)
+  );
+  CREATE INDEX card_labels_label ON card_labels(label_id);
+
+  CREATE TABLE card_assignees (
+    card_id  TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (card_id, user_id)
+  );
+  CREATE INDEX card_assignees_user ON card_assignees(user_id);
+
+  CREATE TABLE card_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    card_id    TEXT    NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    type       TEXT    NOT NULL CHECK (type IN ('create', 'move', 'rename', 'describe', 'task', 'assign', 'unassign', 'due', 'done', 'undone',
+                 'label', 'unlabel', 'link', 'unlink', 'comment', 'delete', 'restore', 'duplicate')),
+    params     TEXT    NOT NULL DEFAULT '{}' CHECK (length(params) <= 2000),
+    source     TEXT    NOT NULL DEFAULT 'app' CHECK (source IN ('app', 'mcp')),
+    created_at TEXT    NOT NULL
+  );
+  CREATE INDEX card_events_card ON card_events(card_id, id);
+  CREATE INDEX card_events_project ON card_events(project_id, id);
+
+  CREATE TABLE project_user_state (
+    project_id      TEXT    NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    last_seen_event INTEGER NOT NULL DEFAULT 0 CHECK (last_seen_event >= 0),
+    muted_news      INTEGER NOT NULL DEFAULT 0 CHECK (muted_news IN (0, 1)),
+    muted_push      INTEGER NOT NULL DEFAULT 0 CHECK (muted_push IN (0, 1)),
+    in_deadlines    INTEGER NOT NULL DEFAULT 0 CHECK (in_deadlines IN (0, 1)),
+    PRIMARY KEY (project_id, user_id)
+  );
+  CREATE INDEX project_user_state_user ON project_user_state(user_id);
+  `,
 ];
 
 // Migration 35 : la table aisles est recréée avec la colonne store_id et

@@ -79,3 +79,56 @@ test('serveur : messages et journal neutres, identifiants internes inchangés', 
   // Droits internes inchangés
   assert.match(lists, /row\.member_access === 'modification'/);
 });
+
+// Fonctions et options (décision du 25 novembre 2026) : on les « active » et
+// on les « désactive » (Listes, Notes, Projets, Accueil, options « Priorité »
+// et « Échéances » d'un projet, « Afficher dans Échéances »…), jamais
+// « allumer », « éteindre » ni « couper ». Restent permis : la sourdine
+// « Couper les notifications » (d'une liste, d'une note, d'un projet) et
+// les autres sens (un ordinateur allumé, une connexion coupée, un libellé
+// coupé à l'écran).
+const SWITCH_WORDS = /(?<!\p{L})(?:r?allum\p{L}*|éteint\p{L}*|éteind\p{L}*|coup(?:e|é|ée|és|ées|er|ez|ent)(?!\p{L}))/giu;
+const ALLOWED_SWITCH_WORDS = [
+  /Couper les notifications/g,                                  // sourdine d'une liste, d'une note, d'un projet
+  /coupé les notifications/g,                                   // « dont vous avez coupé les notifications »
+  /[Nn]otifications (?:de (?:cette|la) (?:liste|note)|de ce projet)(?: ne)? (?:sont )?(?:pas )?coupées/g,
+  /ordinateur toujours allumé/g,                                // le serveur
+  /connexions? [^.;:]{0,45}coupées?/g,                          // connexions d'assistants IA, réseau
+  /« Déconnecter » coupe une connexion/g,
+  /les coupe toutes/g,
+  /libellé peut être coupé/g,                                   // texte agrandi
+  /Pour couper un lien/g,                                        // lien public qui a circulé
+];
+const switchWords = (text) => {
+  let rest = text;
+  for (const allowed of ALLOWED_SWITCH_WORDS) rest = rest.replace(allowed, '');
+  return rest.match(SWITCH_WORDS) ?? [];
+};
+// Toutes les chaînes d'une valeur (textes de l'aide : chaînes, tableaux, objets)
+const allStrings = (value) => (typeof value === 'string' ? [value]
+  : Array.isArray(value) ? value.flatMap(allStrings)
+    : value && typeof value === 'object' ? Object.values(value).flatMap(allStrings) : []);
+
+test('fonctions et options : « activer / désactiver », jamais « allumer / éteindre / couper »', async () => {
+  // Textes de l'interface (français)
+  for (const [key, value] of Object.entries(fr)) {
+    for (const text of allStrings(value)) assert.deepEqual(switchWords(text), [], `${key} : ${text}`);
+  }
+  // Aide (français) : chaque texte du guide
+  const help = await import('../public/js/help-content.js');
+  for (const text of allStrings([help.GUIDE, help.ROLES, help.PERMISSIONS, help.PERMISSIONS_NOTE, help.SERVER_NOTE, help.DOC])) {
+    assert.deepEqual(switchWords(text), [], text);
+  }
+  // Messages des outils MCP (en français)
+  for (const file of ['server/mcp.js', 'server/mcp-tools.js', 'server/mcp-notes.js', 'server/mcp-projects.js']) {
+    assert.deepEqual(switchWords(code(file)), [], file);
+  }
+  // Le garde-fou voit bien les mots interdits, et laisse la sourdine
+  assert.deepEqual(switchWords('Allumez « Projets ». Notes coupées. Il peut les éteindre.'), ['Allumez', 'coupées', 'éteindre']);
+  assert.deepEqual(switchWords('Menu ⋮ : « Couper les notifications ». Les notifications de cette liste sont coupées'), []);
+  // Section de l'aide renommée (l'ancienne adresse n'existe plus)
+  assert.ok(allStrings(help.GUIDE).includes('projets-activer'));
+  assert.ok(!allStrings(help.GUIDE).includes('projets-allumer'));
+  // Fichiers servis changés : nouvelle version du service worker
+  assert.ok(Number(/const VERSION = `v(\d+)-/.exec(read('public/sw.js'))?.[1]) >= 182);
+});

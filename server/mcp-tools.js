@@ -69,7 +69,7 @@ export const READ_ONLY_GRANT = 'Cette connexion est en lecture seule.';
 // docs/cadrage-comptes.md, étape 3 ; server/features.js) : les cinq
 // outils des listes refusent, avant tout autre contrôle
 export const LISTS_NOT_ALLOWED = 'Les listes ne sont pas ouvertes pour ce compte (c\'est l\'Admin de Listo qui les autorise) : les outils des listes sont indisponibles.';
-export const LISTS_OFF = 'Les listes sont coupées pour ce compte (Réglages › Fonctions, dans Listo) : les outils des listes sont indisponibles. La personne peut les rallumer elle-même dans Listo.';
+export const LISTS_OFF = 'Les listes sont désactivées pour ce compte (Réglages › Fonctions, dans Listo) : les outils des listes sont indisponibles. La personne peut les réactiver elle-même dans Listo.';
 export const LIST_TOOLS = ['list_lists', 'read_list', 'add_items', 'set_checked', 'update_items'];
 export const ADD_MAX = 20;            // éléments par add_items
 export const CHECK_MAX = 20;          // éléments par set_checked

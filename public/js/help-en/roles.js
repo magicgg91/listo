@@ -15,9 +15,10 @@ export default {
         { sub: "“Accounts” tab" },
         { ul: [
           "“Add account” ([[creer-comptes]]).",
-          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.",
+          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”, or “Lists, Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status; and “… only” for an account that signs in with the identity provider only.",
           "An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([[roles-comptes]]), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).",
           "Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.",
+          "“Sign-in” (only with an identity provider, [[sso-serveur]]): “Password or …” (the default) or “… only” (…: the provider's name). Switching to “… only” asks for confirmation and signs out their devices signed in with a password right away; “Reset password” goes away. For an “… only” account that has never signed in through the provider, the page says so: the person will need to use the same username there. The choice is greyed out, with its reason, for your own account (another Admin changes it), for the last Admin who signs in with a password (they keep it, to get in if the provider is down), and when password sign-in is disabled on the server (`LISTO_LOCAL_LOGIN=off`: everyone is already “… only”).",
         ] },
         { sub: "“Shopping” tab" },
         { ul: [
@@ -27,7 +28,7 @@ export default {
         ] },
         { sub: "“Labels” tab" },
         { ul: [
-          "Note labels, shared by the whole household ([[notes]]), with the number of notes that carry each one (never which ones). It stays there even if you turned notes off for yourself.",
+          "Note labels, shared by the whole household ([[notes]]), with the number of notes that carry each one (never which ones). It stays there even if you disabled notes for yourself.",
           "The pencil renames the label and changes its color; a name already taken by another label (ignoring capitals and accents) is refused.",
           "The trash can deletes the label, after confirmation: it is removed from its notes, without touching the notes.",
           "Labels are created from a note, by any account.",
@@ -35,7 +36,7 @@ export default {
         { sub: "Can / can't" },
         { ul: [
           "Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).",
-          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]).",
+          "Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([[notes]]) and projects ([[projets-roles]]).",
           "Other accounts' AI assistant connections: see [[claude-connexions]].",
           "Finding out that a new version exists: [[version]].",
         ] },
@@ -119,7 +120,7 @@ export default {
           "“Duplicate” (the list's ⋮ menu) creates a copy in your name, with or without its items (all unchecked). The copy is private: the people the list is shared with, the public link and the photos are not copied.",
           "The list's ⋮ menu, “Delete”: a confirmation first reminds you what the list contains and who it's shared with. The list then disappears for everyone, and its public link stops.",
           "A deleted list stays in your “Trash” (Settings, “Lists” tab) for 30 days, then it's erased for good. Only its owner sees it there; each row shows its type, its number of items, the day it was deleted and the number of days left.",
-          "The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [[notes]]), and a third one, “Projects”, when you use projects ([[projets-corbeilles]]); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you turned notes off (Settings, “Features”) and projects are off too, it has no tabs: only your lists.",
+          "The “Trash” has two tabs, “Lists” and “Notes” (your deleted notes: [[notes]]), and a third one, “Projects”, when you use projects ([[projets-corbeilles]]); each with its number when there are any. It opens on “Lists”, unless only notes (or projects) are waiting there; the chosen tab stays when you go back. If you disabled notes (Settings, “Features”) and projects are disabled too, it has no tabs: only your lists.",
           "“Restore” puts it back the way it was, for everyone it was shared with: items, each person's permission, settings, photos, reservations. It needs a network connection. Its public link doesn't come back: create it again if needed.",
           "“Delete for good” (a row's red trash can) erases the list right away, with its items and photos; “Empty the trash”, at the top, erases all the lists shown. Both ask for confirmation and need a network connection, and nothing comes back afterwards: the list can no longer be restored.",
           "The owner doesn't leave their list: they delete it, or keep it.",

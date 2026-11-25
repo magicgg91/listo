@@ -13,6 +13,7 @@ export default {
         "What's new: Listo shows what the others have added or changed since your last visit ([[nouveautes]]).",
         "Notifications: changes (by others), reservations, sharing, the due-date summary and reminders, on the Notifications page (the bell on Home) and, if you want, on your phone or your computer ([[notifications]]).",
         "An icon of your choice for each list, and a count of what's left on each card, each group and at the top of each list ([[tri]]).",
+        "Three account roles: Admin, User and Guest. A guest is discreet (only the Admin sees them); the Admin chooses, account by account, which features each person may use ([[roles-comptes]]).",
       ] }],
     },
     {
@@ -29,7 +30,7 @@ export default {
       id: 'p-taches',
       title: "Tasks: priority, due date, time, reminder, repeat, assignment",
       blocks: [{ ul: [
-        "Priority (low, normal, high) and due date, turned on list by list ([[modifier]]).",
+        "Priority (low, normal, high) and due date, enabled list by list ([[modifier]]).",
         "A time, and a reminder chosen task by task ([[heure]]).",
         "Tasks that repeat: every day, on certain days of the week, every month, every year ([[repeter]]).",
         "Assign a task to a person on the list, and see “Mine” ([[attribuer]]).",
@@ -69,6 +70,20 @@ export default {
       ] }],
     },
     {
+      id: 'p-projets',
+      title: "Projects",
+      blocks: [{ ul: [
+        "Boards of cards sorted into colored columns (ideas, in progress, done…), disabled at first: each person enables them for themselves in Settings, “Features” ([[projets-activer]]).",
+        "Each card has its people, its labels, a due date with a “Done” box, a priority, a formatted description, links, comments and a history ([[projets-carte]], [[projets-commentaires]]).",
+        "A project is shared with people on Listo, with four roles: owner, “Can edit”, “Contributor” and “Read only” ([[projets-roles]]).",
+        "Two options per project, “Priority” and “Due dates”, enabled or disabled without deleting anything; each person can show a project's dated cards in “Due” ([[projets-colonnes]], [[projets-echeances]]).",
+        "What's new and notifications: new cards, assignments, comments, reminders; “Follow” a card ([[projets-notifications]]).",
+        "Duplicate a project, its trash and each project's “Deleted cards”, 30 days ([[projets-creer]], [[projets-corbeilles]]).",
+        "One column at a time on the phone; the whole board on a computer, with drag and drop and the keyboard ([[projets-ordinateur]]).",
+        "An AI assistant can read your projects and, if you allow it, create, move and comment cards in them, or bring over a board from another tool ([[claude-projets]]).",
+      ] }],
+    },
+    {
       id: 'p-securite',
       title: "Offline, trash, public link",
       blocks: [{ ul: [
@@ -85,7 +100,7 @@ export default {
         "Automatic backup every night ([[sauvegardes]]).",
         "Light, dark or automatic theme ([[theme]]).",
         "A Home screen your way: tiles hidden or in another order, or no Home screen at all ([[echeances]]).",
-        "Only the features you use: notes can be turned off for you alone, without deleting anything ([[echeances]]).",
+        "Only the features you use: notes and projects are enabled or disabled for you alone, without deleting anything ([[echeances]]).",
         "Install it on your phone's home screen, like an app ([[telephone]]).",
         "An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([[claude]]).",
       ] }],

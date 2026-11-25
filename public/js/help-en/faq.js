@@ -44,6 +44,7 @@ export default {
         '“Too many attempts”: 5 wrong passwords block signing in for 15 minutes. Wait, or the person who runs the server restarts Listo (`docker compose restart`).',
         '“Request rejected: unknown origin.”: the address you typed isn\'t exactly the one in `LISTO_PUBLIC_URL` (another subdomain, `http` instead of `https`) ([[dossier]]).',
         'Forgotten password, lost phone: [[oubli]].',
+        '“This account signs in with” followed by the provider\'s name: the Admin chose “… only” for your account; use “Sign in with …” ([[sso]]).',
         'Offline mode or installing on the home screen doesn\'t work: Listo isn\'t opened over HTTPS. Always go through `https://listo.exemple.fr`, never through `http://IP:13300`.',
       ] }],
     },
@@ -82,7 +83,7 @@ export default {
           '“Couldn\'t check”: GitHub didn\'t answer. No consequence: Listo works normally;',
           'the refresh button, at the end of the line, asks again right away (once a minute at most).',
         ] },
-        'It\'s the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To turn off the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.',
+        'It\'s the server (not the phone) that asks GitHub, at most once an hour, with no account or token, which is the latest commit whose image was built. Listo never updates itself. Other accounts only see the version. To disable the check: `LISTO_UPDATE_CHECK=off` in `docker-compose.yml` (the line is already there, commented out), then `docker compose up -d`.',
       ],
     },
     {

@@ -11,7 +11,7 @@ export default {
       id: 'notif-page',
       title: 'The Notifications page',
       blocks: [
-        "The bell, at the top of Home (Home turned off: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.",
+        "The bell, at the top of Home (Home disabled: at the top of “Due”, “Lists” and “Notes”), opens the Notifications page; its badge gives the number of unread notifications (9+ above 9). The “Notifications” row of the “Account” tile leads there too. At the top right of the page, the settings button opens Settings, “Notifications”.",
         { ul: [
           "Notifications are grouped by day (“Today”, “Yesterday”, then the date), newest first. An unread notification is in bold, with a blue dot; “3 unread” says so at the top.",
           "Tapping a notification marks it as read and opens what it's about: the list, the task, the note or the due tasks. If the list was deleted or is no longer shared with you: “This list is no longer available”.",
@@ -21,8 +21,8 @@ export default {
           "Notifications are kept for 30 days, 300 at most (the oldest ones go).",
           "Changes made close together in the same list or the same note fit on a single line, which updates (‘Léa added 4 items to “Shopping”’) and becomes unread again.",
         ] },
-        "It fills up even without phone notifications (feature off on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.",
-        "Same settings as the phone: a kind turned off in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.",
+        "It fills up even without phone notifications (feature disabled on the server, device not signed up): nothing is sent anywhere but your server to fill it. Offline, it shows the last copy received; “Mark all as read” and “Clear” go out when the network is back.",
+        "Same settings as the phone: a kind disabled in “Notifications you get”, or a list or a note whose notifications you turned off, doesn't show up on the page either. The page always gives the details (name of the task, of the wish); “Show details in the notification” only concerns the phone's screen. For a note, it only names the title, never the text.",
       ],
     },
     {
@@ -42,7 +42,7 @@ export default {
       id: 'notif-recevoir',
       title: 'What you get, and when',
       blocks: [
-        "Four kinds of notifications, each turned on or off in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.",
+        "Four kinds of notifications, each enabled or disabled in Settings, “Notifications”, “Notifications you get” section. These settings apply to the Notifications page and to all your devices.",
         { table: {
           head: ['Kind', 'When', 'Example'],
           rows: [

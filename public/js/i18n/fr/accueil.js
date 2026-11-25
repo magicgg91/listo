@@ -43,16 +43,16 @@ export default {
     one: 'Demandes de compte, {count} en attente',
     other: 'Demandes de compte, {count} en attente',
   },
-  // Tuile « Projets » (fonction allumée ; docs/cadrage-projets.md, 3.3)
+  // Tuile « Projets » (fonction activée ; docs/cadrage-projets.md, 3.3)
   'accueil.projets': 'Projets',
   'accueil.projets.aucun': 'Aucun projet',
   'accueil.projets.nouveau': 'Nouveau projet',
   // Invitation (aucune fonction utilisée : un invité, docs/cadrage-comptes.md 4.4)
   'accueil.bienvenue.titre': 'Bienvenue, {name}',
-  'accueil.bienvenue.projets': 'Votre compte est prêt. Allumez les projets dans Réglages › Fonctions pour voir ceux qu\'on vous partage.',
-  'accueil.bienvenue.notes': 'Votre compte est prêt. Allumez les notes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
-  'accueil.bienvenue.listes': 'Votre compte est prêt. Allumez les listes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
-  'accueil.bienvenue.plusieurs': 'Votre compte est prêt. Allumez une fonction dans Réglages › Fonctions pour commencer.',
+  'accueil.bienvenue.projets': 'Votre compte est prêt. Activez les projets dans Réglages › Fonctions pour voir ceux qu\'on vous partage.',
+  'accueil.bienvenue.notes': 'Votre compte est prêt. Activez les notes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
+  'accueil.bienvenue.listes': 'Votre compte est prêt. Activez les listes dans Réglages › Fonctions pour voir celles qu\'on vous partage.',
+  'accueil.bienvenue.plusieurs': 'Votre compte est prêt. Activez une fonction dans Réglages › Fonctions pour commencer.',
   'accueil.bienvenue.aucune': 'Votre compte est prêt. L\'Admin ne vous a encore ouvert aucune fonction : il s\'en charge.',
   'accueil.bienvenue.bouton': 'Ouvrir Réglages › Fonctions',
   'accueil.projets.aucuneCarte': 'Aucune carte pour vous',
@@ -60,4 +60,14 @@ export default {
   'accueil.projets.cartes.lu': { one: 'Projets, {count} carte pour vous', other: 'Projets, {count} cartes pour vous' },
   'accueil.projets.cartes.lu.nouveautes': { one: 'Projets, {count} carte pour vous, nouveautés', other: 'Projets, {count} cartes pour vous, nouveautés' },
   'accueil.projets.lu.nouveautes': 'Projets, nouveautés',
+  // Tuile « Projets » au choix (Réglages › Accueil, 25 novembre 2026) :
+  // « Mes projets » (une ligne par projet) et « Un projet »
+  'accueil.projets.ligne.cartes': { one: '{count} carte', other: '{count} cartes' },
+  'accueil.projets.ligne.pourVous': '{count} pour vous',
+  'accueil.projets.ligne.lectureSeule': 'lecture seule',
+  'accueil.projets.tous': 'Tous les projets',
+  'accueil.projets.projet.lu': { one: '{name}, {count} carte pour vous', other: '{name}, {count} cartes pour vous' },
+  'accueil.projets.projet.lu.nouveautes': { one: '{name}, {count} carte pour vous, nouveautés', other: '{name}, {count} cartes pour vous, nouveautés' },
+  'accueil.projets.projet.nouveautes': '{name}, nouveautés',
+  'accueil.projets.colonnes.autres': { one: '{count} autre colonne', other: '{count} autres colonnes' },
 };

@@ -30,7 +30,7 @@ export default {
   'demarrage.config.https': 'In production, LISTO_PUBLIC_URL must start with https:// (currently “{value}”). Fix it in docker-compose.yml, then restart Listo.',
   'demarrage.config.langue': 'LISTO_LANG must be fr or en (currently “{value}”).',
   'demarrage.config.monnaie': 'LISTO_CURRENCY must be the three-letter code of a currency with two decimals (EUR, USD, CHF…); currently “{value}”.',
-  'demarrage.config.connexionLocale': 'LISTO_LOCAL_LOGIN=off turns off password sign-in: LISTO_OIDC=on (sign-in with an identity provider) is then required, otherwise nobody can get in.',
+  'demarrage.config.connexionLocale': 'LISTO_LOCAL_LOGIN=off disables password sign-in: LISTO_OIDC=on (sign-in with an identity provider) is then required, otherwise nobody can get in.',
   'demarrage.config.oidcAdresse': 'LISTO_OIDC=on needs LISTO_OIDC_ISSUER, the address of the identity provider (currently “{value}”). Example: https://auth.exemple.fr',
   'demarrage.config.oidcHttps': 'LISTO_OIDC_ISSUER must start with https:// (currently “{value}”).',
   'demarrage.config.oidcSimple': 'LISTO_OIDC_ISSUER: a plain address is expected, without a username, “?” or “#”.',

@@ -212,9 +212,10 @@ export function myCardCounts(state, meId, projectId, today, now) {
 
 // Les plus urgentes de mes cartes (tuile de l'Accueil, 3.3) : en retard
 // d'abord, puis par échéance (les cartes sans échéance après), puis les
-// plus récemment modifiées
-export function urgentCards(state, meId, today, now, limit = 3) {
-  return myCards(state, meId)
+// plus récemment modifiées ; projectId : seulement celles de ce projet
+// (tuile « Un projet », projects-tile.js)
+export function urgentCards(state, meId, today, now, limit = 3, projectId = null) {
+  return myCards(state, meId, projectId)
     .map((card) => ({ card, late: dueStateIn(state, card, today, now) === 'late', dated: cardDated(card, state.projects.get(card.projectId)) }))
     .sort((a, b) => Number(b.late) - Number(a.late)
       || Number(!a.dated) - Number(!b.dated)

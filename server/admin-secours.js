@@ -7,7 +7,8 @@
 //
 // Un mot de passe provisoire est tiré au hasard et affiché UNE fois : il faut
 // le changer à la connexion suivante. Les sessions du compte sont fermées et
-// ses connexions Claude révoquées.
+// ses connexions Claude révoquées. Un compte « … seulement » (connexion avec
+// le fournisseur d'identité seulement) repasse à « Mot de passe ou … ».
 // Avec --remove-2fa (ou son ancien nom français --retirer-2fa, toujours
 // accepté), la double authentification du compte est aussi désactivée. Chaque action est écrite dans le journal de sécurité.
 // Seul quelqu'un qui a déjà la main sur le serveur peut lancer cette commande.
@@ -60,6 +61,10 @@ const password = generateSharePassword();
 const hash = await hashPassword(password);
 db.transaction(() => {
   db.prepare('UPDATE users SET password_hash = ?, must_change_password = 1 WHERE id = ?').run(hash, user.id);
+  // Compte « … seulement » (migration 51) : de nouveau « Mot de passe ou … »,
+  // sinon le mot de passe provisoire ne servirait à rien (fournisseur
+  // d'identité en panne, par exemple)
+  if (user.sso_only === 1) db.prepare('UPDATE users SET sso_only = 0 WHERE id = ?').run(user.id);
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
   // Connexions Claude du compte révoquées, avec leurs jetons (migration 17)
   const now = new Date().toISOString();
@@ -71,7 +76,7 @@ db.transaction(() => {
   }
 })();
 db.close();
-audit('rescue_temporary_password', { user: user.username });
+audit('rescue_temporary_password', { user: user.username, ...(user.sso_only === 1 ? { login: 'password or sso', previous: 'sso only' } : {}) });
 if (removeTwoFactor) audit('rescue_2fa_removed', { user: user.username });
 
 console.log(translate(lang, 'demarrage.secours.motDePasse', { username: user.username }));

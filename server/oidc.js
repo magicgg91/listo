@@ -436,9 +436,9 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
   });
 
   // Demande acceptée par l'Admin : création du compte, relié à ce compte du
-  // fournisseur d'identité, avec un mot de passe aléatoire que personne ne connaît (la
-  // connexion par mot de passe reste fermée tant que l'Admin n'en donne pas
-  // un provisoire). Renvoie l'identifiant du compte, ou une erreur
+  // fournisseur d'identité, avec un mot de passe aléatoire que personne ne connaît, et
+  // « … seulement » (l'Admin peut choisir ensuite « Mot de passe ou … »,
+  // puis lui donner un mot de passe provisoire). Renvoie l'identifiant du compte, ou une erreur
   // { key, params, status } (texte traduit par la route avec req.t).
   // role, guest : colonnes du rôle choisi (roleColumns, public/js/access.js :
   // Utilisateur, Invité ou Admin)
@@ -449,7 +449,9 @@ export function createOidc(ctx, { request = fetchOidc, clientSecret = '' } = {})
       if (!pending) return { key: 'comptes.demande.introuvable', status: 404 };
       if (q.byName.get(username)) return { key: 'comptes.identifiant.pris', status: 409 };
       if (q.bySub.get(pending.oidc_sub)) return { key: 'comptes.fournisseur.dejaRelie', params: { provider: config.oidcName }, status: 409 };
-      const id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, guest, oidc_sub) VALUES (?, ?, ?, ?, ?, ?)')
+      // « … seulement » d'office (sso_only, migration 51 : décision du
+      // 25 novembre 2026) : ce compte n'a pas de mot de passe Listo
+      const id = db.prepare('INSERT INTO users (username, display_name, password_hash, role, guest, oidc_sub, sso_only) VALUES (?, ?, ?, ?, ?, ?, 1)')
         .run(username, displayName, hash, role, guest, pending.oidc_sub).lastInsertRowid;
       db.prepare('DELETE FROM account_requests WHERE id = ?').run(requestId);
       return { id };

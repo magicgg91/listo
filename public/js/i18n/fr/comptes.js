@@ -66,4 +66,13 @@ export default {
   'comptes.soiMeme.deuxFacteurs': 'Désactivez votre propre 2FA depuis vos réglages.',
   'comptes.soiMeme.supprimer': 'Vous ne pouvez pas supprimer votre propre compte.',
   'comptes.dejaServi': 'Ce compte a déjà servi : il peut être désactivé, pas supprimé.',
+
+  // Connexion « … seulement » (Administration › compte, « Connexion » ;
+  // server/auth.js, passwordLoginAllowed)
+  'comptes.connexion.fournisseurSeulement': 'Ce compte se connecte avec {provider} : utilisez « Se connecter avec {provider} ».',
+  'comptes.connexion.invalide': 'Connexion invalide (ssoOnly : true ou false).',
+  'comptes.connexion.serveurFournisseur': 'La connexion par mot de passe est désactivée sur ce serveur : tout le monde se connecte déjà avec {provider}.',
+  'comptes.connexion.soiMeme': 'Votre propre connexion se change depuis le compte d\'un autre Admin.',
+  'comptes.connexion.dernierAdmin': 'Il doit toujours rester au moins un Admin actif qui se connecte avec son mot de passe : il pourra entrer si {provider} est en panne.',
+  'comptes.motDePasse.fournisseurSeulement': '{name} se connecte avec {provider} seulement : pas de mot de passe Listo à réinitialiser.',
 };

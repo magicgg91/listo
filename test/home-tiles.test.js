@@ -45,7 +45,7 @@ test('réglage de départ : Accueil affiché, toutes les tuiles dans l\'ordre d\
   assert.deepEqual(HOME_TILES, ['deadlines', 'lists', 'gifts', 'notes', 'account', 'projects']);
   assert.deepEqual(START_SCREENS, ['deadlines', 'lists', 'notes', 'projects']);
   assert.deepEqual(WIDE_TILES, ['gifts', 'projects']);
-  assert.deepEqual(defaultHome(), { enabled: true, start: 'lists', order: HOME_TILES, hidden: [] });
+  assert.deepEqual(defaultHome(), { enabled: true, start: 'lists', order: HOME_TILES, hidden: [], projectsTile: { mode: 'cards', projectId: null } });
   for (const value of [null, undefined, 'abîmé', 42, {}]) assert.deepEqual(normalizeHome(value), defaultHome());
   assert.equal(firstScreen(null), 'home');
   assert.deepEqual(shownTiles(null), HOME_TILES.filter((name) => name !== 'projects'));
@@ -57,7 +57,7 @@ test('normalizeHome : tuiles inconnues et doublons écartés, tuiles manquantes 
   assert.deepEqual(normalizeHome({ hidden: ['account', 'notes', 'x', 'notes'] }).hidden, ['notes']);
   assert.equal(normalizeHome({ start: 'settings' }).start, 'lists');
   assert.equal(normalizeHome({ enabled: 'non' }).enabled, true);
-  assert.deepEqual(normalizeHome({ enabled: false, start: 'notes' }), { enabled: false, start: 'notes', order: HOME_TILES, hidden: [] });
+  assert.deepEqual(normalizeHome({ enabled: false, start: 'notes' }), { enabled: false, start: 'notes', order: HOME_TILES, hidden: [], projectsTile: { mode: 'cards', projectId: null } });
 });
 
 test('homeChangeProblem : tuile inconnue, en double, Compte masqué, premier écran inconnu, rien à modifier', () => {
@@ -76,7 +76,7 @@ test('homeChangeProblem : tuile inconnue, en double, Compte masqué, premier éc
   assert.equal(homeChangeProblem({ start: 'notes' }), null);
   assert.equal(homeChangeProblem({ order: ['notes', 'lists'] }), null);
   assert.deepEqual(applyHomeChange(null, { order: ['notes', 'lists'] }).order, ['notes', 'lists', 'deadlines', 'gifts', 'account', 'projects']);
-  assert.deepEqual(applyHomeChange({ enabled: false, start: 'notes' }, { hidden: ['gifts'] }), { enabled: false, start: 'notes', order: HOME_TILES, hidden: ['gifts'] });
+  assert.deepEqual(applyHomeChange({ enabled: false, start: 'notes' }, { hidden: ['gifts'] }), { enabled: false, start: 'notes', order: HOME_TILES, hidden: ['gifts'], projectsTile: { mode: 'cards', projectId: null } });
   // Textes de refus, dans les deux langues
   for (const key of ['ops.accueilReglageInvalide', 'ops.accueilPremierEcranInvalide', 'ops.accueilTuilesInvalides', 'ops.accueilCompteToujours']) {
     assert.ok(fr[key] && en[key], key);
@@ -114,8 +114,8 @@ test('disposition du téléphone : une tuile seule sur sa ligne prend toute la l
 
 test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; une base d\'avant migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 49);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(MIGRATIONS.length, 51);
+  assert.equal(schemaVersion(db), 51);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   const row = db.prepare('SELECT home_enabled, home_start, home_tiles FROM users WHERE id = ?').get(id);
   assert.deepEqual(row, { home_enabled: 1, home_start: 'lists', home_tiles: null });
@@ -132,7 +132,7 @@ test('migration 40 : trois colonnes sur users, valeurs de départ, contrôles ; 
   old.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('paul', 'Paul', 'x', 'user')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 49);
+  assert.equal(schemaVersion(migrated), 51);
   assert.deepEqual(homeFromRow(migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get()), defaultHome());
   migrated.close();
 });
@@ -152,7 +152,7 @@ test('serveur : chacun modifie son seul réglage ; /api/me et la synchronisation
   assert.deepEqual(await run(admin, { type: 'account.home', hidden: ['notes'] }), { status: 200 });
   assert.deepEqual(await run(admin, { type: 'account.home', order: ['lists', 'notes', 'deadlines', 'gifts', 'account'] }), { status: 200 });
   assert.deepEqual(await run(admin, { type: 'account.home', enabled: false, start: 'notes' }), { status: 200 });
-  const expected = { enabled: false, start: 'notes', order: ['lists', 'notes', 'deadlines', 'gifts', 'account', 'projects'], hidden: ['notes'] };
+  const expected = { enabled: false, start: 'notes', order: ['lists', 'notes', 'deadlines', 'gifts', 'account', 'projects'], hidden: ['notes'], projectsTile: { mode: 'cards', projectId: null } };
   assert.deepEqual((await admin.get('/api/sync')).body.home, expected);
   assert.deepEqual((await admin.get('/api/me')).body.user.home, expected);
   // Un autre appareil du même compte reçoit le même réglage
@@ -201,7 +201,7 @@ test('serveur : une tuile connue absente de l\'ordre est remise à la fin ; reto
   assert.deepEqual(JSON.parse(app.db.prepare('SELECT home_tiles FROM users WHERE id = 1').pluck().get()), { order: ['notes', 'lists', 'deadlines', 'gifts', 'account', 'projects'], hidden: [] });
   // Une ancienne valeur gardée sans une tuile (ajoutée plus tard) : complétée à la lecture
   app.db.prepare('UPDATE users SET home_tiles = ? WHERE id = 1').run(JSON.stringify({ order: ['account', 'lists'], hidden: ['lists', 'inconnue'] }));
-  assert.deepEqual((await admin.get('/api/sync')).body.home, { enabled: true, start: 'lists', order: ['account', 'lists', 'deadlines', 'gifts', 'notes', 'projects'], hidden: ['lists'] });
+  assert.deepEqual((await admin.get('/api/sync')).body.home, { enabled: true, start: 'lists', order: ['account', 'lists', 'deadlines', 'gifts', 'notes', 'projects'], hidden: ['lists'], projectsTile: { mode: 'cards', projectId: null } });
   assert.deepEqual(await run(admin, { type: 'account.home', order: HOME_TILES, hidden: [] }), { status: 200 });
   assert.equal(app.db.prepare('SELECT home_tiles FROM users WHERE id = 1').pluck().get(), null);
 });
@@ -213,9 +213,9 @@ test('ni les assistants IA, ni le lien public, ni l\'administration ne voient ce
   }
   // Seul server/home.js lit et écrit les colonnes
   for (const file of ['server/lists.js', 'server/auth.js', 'server/routes/me.js']) assert.doesNotMatch(read(file), /home_enabled|home_start|home_tiles/, file);
-  assert.match(read('server/home.js'), /UPDATE users SET home_enabled = \?, home_start = \?, home_tiles = \? WHERE id = \?/);
+  assert.match(read('server/home.js'), /UPDATE users SET home_enabled = \?, home_start = \?, home_tiles = \?, home_projects = \?, home_project_id = \? WHERE id = \?/);
   // Le compte vient toujours de la session (user.id), jamais de l'opération
-  assert.match(read('server/lists.js'), /const \{ problem, changed \} = home\.setHome\(user\.id, \{ enabled: op\.enabled, start: op\.start, order: op\.order, hidden: op\.hidden \}\);/);
+  assert.match(read('server/lists.js'), /const change = \{ enabled: op\.enabled, start: op\.start, order: op\.order, hidden: op\.hidden, projectsTile: op\.projectsTile \};\s*const \{ problem, changed \} = home\.setHome\(user\.id, change, \{ checkProject: \(projectId\) => projects\.projectFor\(user, projectId\) \}\);/);
 });
 
 // --- Copie locale du téléphone ---
@@ -224,7 +224,7 @@ test('copie locale : synchronisation, opération hors ligne (mêmes règles), co
   const state = emptyState();
   assert.deepEqual(state.home, defaultHome());
   loadSync(state, { serverTime: 't', listIds: [], lists: [], items: [], stores: [], aisles: [], history: [], home: { enabled: false, start: 'notes', order: ['notes'], hidden: [] } });
-  assert.deepEqual(state.home, { enabled: false, start: 'notes', order: ['notes', 'deadlines', 'lists', 'gifts', 'account', 'projects'], hidden: [] });
+  assert.deepEqual(state.home, { enabled: false, start: 'notes', order: ['notes', 'deadlines', 'lists', 'gifts', 'account', 'projects'], hidden: [], projectsTile: { mode: 'cards', projectId: null } });
   applyOp(state, { type: 'account.home', enabled: true, hidden: ['gifts'] }, { user: { id: 1 } });
   assert.equal(state.home.enabled, true);
   assert.deepEqual(state.home.hidden, ['gifts']);
@@ -359,8 +359,8 @@ test('écran Réglages › Accueil : interrupteurs reliés, Compte grisé, Réor
   assert.match(screen, /role: 'radio', 'aria-checked': String\(chosen\)/);
   assert.match(screen, /chosen \? icon\('check', 'home-start__check'\) : null/);
   // Tout passe par la file d'attente (hors ligne compris)
-  // (Accueil affiché, tuile masquée, ordre, premier écran)
-  assert.equal((screen.match(/actions\.setHome\(/g) ?? []).length, 4);
+  // (Accueil affiché, tuile masquée, ordre, premier écran, contenu de la tuile « Projets »)
+  assert.equal((screen.match(/actions\.setHome\(/g) ?? []).length, 5);
   assert.doesNotMatch(screen, /\bput\(|\bpost\(|fetch\(/);
   // Textes
   assert.equal(translate('fr', 'reglages.accueil.monter', { name: 'Notes' }), 'Monter Notes');

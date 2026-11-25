@@ -20,8 +20,10 @@
 //   (tileLayout), jamais de trou ; trois sur ordinateur (quatre au-delà de
 //   1 440 px), où « toute la largeur » n'a pas d'effet. Notes coupées
 //   (Réglages › Fonctions, features.js) : pas de tuile Notes. « Projets »
-//   (docs/cadrage-projets.md, 3.3) : seulement quand la personne a allumé
-//   la fonction ; en dernier, sur toute la largeur.
+//   (docs/cadrage-projets.md, 3.3) : seulement quand la personne a activé
+//   la fonction ; en dernier, sur toute la largeur ; son contenu (« Mes
+//   cartes », « Mes projets » ou « Un projet ») est choisi par chacun dans
+//   Réglages › Accueil (25 novembre 2026, projects-tile.js).
 // - Accueil coupé dans les Réglages : cet écran mène tout de suite au
 //   premier écran choisi (app.js le fait aussi pour #/accueil).
 // - Chaque ligne est un vrai bouton (au moins 44 px), lu avec son nombre
@@ -48,8 +50,9 @@ import { syncPill, drawWhenIdle, offlineBanner, watchNewDay, watchMinute } from 
 import { deadlineCounts, deadlineSectionFor, effectiveMine, loadDeadlineScope, deadlineProjects } from '../deadlines.js';
 import { setPcListType } from './pc-side.js';
 import { sortedNotes, titleOf, openQuickNote } from './notes.js';
-import { projectsInOrder, openNewProject } from './projects.js';
-import { myCards, urgentCards, projectUnread } from '../project-view.js';
+import { projectsInOrder, openNewProject, compareNames } from './projects.js';
+import { myCards, urgentCards, projectUnread, columnCounts } from '../project-view.js';
+import { projectsTileShown, projectRows, projectTileCards, chipsShown, TILE_ROWS } from '../projects-tile.js';
 import { cardDue, cardIsNew } from './project.js';
 import { nowTime } from '../due-time.js';
 import { isNoteUnread } from '../store.js';
@@ -210,50 +213,140 @@ function giftsTile() {
   { spoken: toBuy ? t('offrir.tuile.lu', { count: toBuy }) : t('offrir.tuile.lu.toutAchete'), count: toBuy || null });
 }
 
-// Projets (docs/cadrage-projets.md, 3.3 ; maquette accueil-1) : le nombre
-// de « mes cartes » (attribuées à moi, pas faites) dans la pastille du
-// titre, puis les trois plus urgentes (en retard d'abord, puis par
-// échéance, puis les plus récemment modifiées) : titre de la carte, et
-// dessous « projet · colonne · échéance » (« En retard » en rouge ET
-// écrit) ; une ligne ouvre la carte. Aucune carte pour moi : « Aucune carte
-// pour vous » et « Projets » ; aucun projet : « Aucun projet » et
-// « Nouveau projet ». Le titre ouvre l'écran « Projets ».
+// Projets (docs/cadrage-projets.md, 3.3 ; maquette accueil-1) : son
+// contenu est choisi par chacun dans Réglages › Accueil (décision du
+// 25 novembre 2026 ; projects-tile.js) : « Mes cartes » (au départ),
+// « Mes projets » ou « Un projet ». Aucun projet : « Aucun projet » et
+// « Nouveau projet » (quel que soit le choix). Le titre ouvre l'écran
+// « Projets » (« Un projet » : ce projet).
 function projectsTile() {
   const projects = projectsInOrder();
   const open = () => navigate('projects');
-  // Point des nouveautés (étape 3) : un projet a du nouveau pour moi
-  const news = projects.some((project) => projectUnread(app.data, project.id));
   if (!projects.length) {
     return tile(t('accueil.projets'), 'kanban', open,
       // (« Nouveau projet » : seulement avec « Peut créer ses propres
       // projets », case de l'Admin)
       [emptyText(t('accueil.projets.aucun')), canCreateProjects() ? rowsOf([addRow(t('accueil.projets.nouveau'), () => openNewProject())]) : null]);
   }
-  const today = todayKey();
+  const shown = projectsTileShown(app.data.home, app.data);
+  if (shown.mode === 'projects') return myProjectsTile(open);
+  if (shown.mode === 'project') return oneProjectTile(shown.project);
+  return myCardsTile(projects, open);
+}
+
+// Ligne d'une de mes cartes : titre, et dessous « projet · colonne ·
+// échéance » (« En retard » en rouge ET écrit ; sans le projet dans la
+// tuile « Un projet ») ; elle ouvre la carte
+function cardRow(card, project, { withProject = true } = {}) {
+  const column = (project?.columns ?? []).find((c) => c.id === card.columnId);
+  const due = cardDue(card, project);
+  const late = due?.state === 'late';
+  const parts = [withProject ? project?.name ?? '' : '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
+  const fresh = cardIsNew(card);
+  return h('button', {
+    class: 'tile__row tile__row--two', type: 'button',
+    onClick: () => navigate('projectCard', { id: card.projectId, cardId: card.id }),
+  },
+  h('span', { class: 'tile__label' },
+    h('span', { class: 'tile__strong' }, card.title),
+    h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · ')),
+    fresh ? h('span', { class: 'visually-hidden' }, t('projets.face.nouveautes')) : null),
+  fresh ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+  icon('chev-r', 'icon--sm'));
+}
+
+// « Mes cartes » : le nombre de mes cartes (attribuées à moi, pas faites)
+// dans la pastille du titre, puis les trois plus urgentes (en retard
+// d'abord, puis par échéance, puis les plus récemment modifiées). Aucune
+// carte pour moi : « Aucune carte pour vous » et « Projets ».
+function myCardsTile(projects, open) {
+  // Point des nouveautés (étape 3) : un projet a du nouveau pour moi
+  const news = projects.some((project) => projectUnread(app.data, project.id));
   const mine = myCards(app.data, app.user.id);
   if (!mine.length) {
     return tile(t('accueil.projets'), 'kanban', open,
       [emptyText(t('accueil.projets.aucuneCarte')), rowsOf([row({ label: t('accueil.projets'), onClick: open })])],
       { spoken: news ? t('accueil.projets.lu.nouveautes') : null, dot: news });
   }
-  return tile(t('accueil.projets'), 'kanban', open, rowsOf(urgentCards(app.data, app.user.id, today, nowTime()).map((card) => {
-    const project = projects.find((p) => p.id === card.projectId);
-    const column = (project?.columns ?? []).find((c) => c.id === card.columnId);
-    const due = cardDue(card, project);
-    const late = due?.state === 'late';
-    const parts = [project?.name ?? '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
-    const fresh = cardIsNew(card);
-    return h('button', {
+  return tile(t('accueil.projets'), 'kanban', open,
+    rowsOf(urgentCards(app.data, app.user.id, todayKey(), nowTime(), TILE_ROWS).map((card) => cardRow(card, projects.find((p) => p.id === card.projectId)))),
+    { spoken: t(news ? 'accueil.projets.cartes.lu.nouveautes' : 'accueil.projets.cartes.lu', { count: mine.length }), count: mine.length, dot: news });
+}
+
+// « Mes projets » : une ligne par projet (icône, nom, et dessous « 55
+// cartes · 3 pour vous · 1 en retard » : « pour vous » seulement s'il y en
+// a, « en retard » en rouge ET écrit, seulement s'il y en a ; en lecture
+// seule, « 10 cartes · lecture seule »), le point des nouveautés ; une
+// ligne ouvre le projet. Trois lignes au plus : au-delà de trois projets,
+// deux projets et « Tous les projets ». Pas de nombre sur le titre (le
+// point seulement).
+function myProjectsTile(open) {
+  const { rows, more } = projectRows(app.data, app.user.id, todayKey(), nowTime(), compareNames);
+  const news = projectsInOrder().some((project) => projectUnread(app.data, project.id));
+  return tile(t('accueil.projets'), 'kanban', open, rowsOf([
+    ...rows.map(({ project, cards, mine, late, readOnly, unread }) => h('button', {
       class: 'tile__row tile__row--two', type: 'button',
-      onClick: () => navigate('projectCard', { id: card.projectId, cardId: card.id }),
+      onClick: () => navigate('project', { id: project.id }),
     },
+    icon('kanban', 'icon--sm tile__lead'),
     h('span', { class: 'tile__label' },
-      h('span', { class: 'tile__strong' }, card.title),
-      h('span', { class: `tile__sub${late ? ' tile__sub--late' : ''}` }, parts.join(' · ')),
-      fresh ? h('span', { class: 'visually-hidden' }, t('projets.face.nouveautes')) : null),
-    fresh ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
-    icon('chev-r', 'icon--sm'));
-  })), { spoken: t(news ? 'accueil.projets.cartes.lu.nouveautes' : 'accueil.projets.cartes.lu', { count: mine.length }), count: mine.length, dot: news });
+      h('span', { class: 'tile__strong' }, project.name),
+      h('span', { class: 'tile__sub' },
+        t('accueil.projets.ligne.cartes', { count: cards }),
+        readOnly ? [' · ', t('accueil.projets.ligne.lectureSeule')] : null,
+        !readOnly && mine ? [' · ', t('accueil.projets.ligne.pourVous', { count: mine })] : null,
+        late ? [' · ', h('span', { class: 'tile__late' }, t('projets.pourVous.retard', { count: late }))] : null),
+      unread ? h('span', { class: 'visually-hidden' }, t('projets.carte.nouveautes')) : null),
+    unread ? h('span', { class: 'tile__dot', 'aria-hidden': 'true' }) : null,
+    icon('chev-r', 'icon--sm'))),
+    more ? row({ label: t('accueil.projets.tous'), onClick: open }) : null,
+  ].filter(Boolean)), { spoken: news ? t('accueil.projets.lu.nouveautes') : null, dot: news });
+}
+
+// « Un projet » : le titre est le nom du projet (il ouvre le projet), avec
+// le nombre de mes cartes de ce projet ; dessous, ses colonnes en pastilles
+// (point de couleur, nom, nombre de cartes ; simple repère, pas des
+// boutons) sur deux lignes au plus (fitChips : « +N » pour les autres),
+// puis mes deux cartes les plus urgentes de ce projet, ou « Aucune carte
+// pour vous ».
+function oneProjectTile(project) {
+  const open = () => navigate('project', { id: project.id });
+  const { count, urgent } = projectTileCards(app.data, app.user.id, project.id, todayKey(), nowTime());
+  const news = projectUnread(app.data, project.id);
+  const cols = columnCounts(app.data, project);
+  const spoken = count
+    ? t(news ? 'accueil.projets.projet.lu.nouveautes' : 'accueil.projets.projet.lu', { name: project.name, count })
+    : news ? t('accueil.projets.projet.nouveautes', { name: project.name }) : null;
+  return tile(project.name, 'kanban', open, [
+    cols.length ? h('ul', { class: 'tile__cols', 'aria-label': t('projets.carte.colonnes') },
+      cols.map(({ column, count: cards }) => h('li', { class: `colchip c-${column.color}` },
+        h('span', { class: 'coldot', 'aria-hidden': 'true' }), column.name, ' ', h('b', {}, String(cards)))),
+      h('li', { class: 'colchip colchip--more', hidden: true })) : null,
+    urgent.length
+      ? rowsOf(urgent.map((card) => cardRow(card, project, { withProject: false })))
+      : emptyText(t('accueil.projets.aucuneCarte')),
+  ], { spoken, count: count || null, dot: news });
+}
+
+// Pastilles des colonnes de la tuile « Un projet » sur deux lignes au plus
+// (projects-tile.js, chipsShown) : mesurées une fois la tuile posée, et de
+// nouveau quand la largeur change (téléphone tourné, fenêtre élargie).
+// Les colonnes de trop sont cachées (aux lecteurs d'écran aussi), et la
+// dernière pastille dit combien (« +2 », lue « 2 autres colonnes »).
+function fitChips(list) {
+  const chips = [...list.children].filter((el) => !el.classList.contains('colchip--more'));
+  const more = list.querySelector('.colchip--more');
+  if (!more) return;
+  const lines = () => new Set([...list.children].filter((el) => !el.hidden).map((el) => Math.round(el.getBoundingClientRect().top))).size;
+  const linesFor = (shown, withMore) => {
+    chips.forEach((chip, i) => { chip.hidden = i >= shown; });
+    more.hidden = !withMore;
+    more.textContent = `+${chips.length - shown}`;
+    return lines();
+  };
+  const shown = chipsShown(chips.length, linesFor);
+  linesFor(shown, shown < chips.length);
+  more.setAttribute('aria-label', t('accueil.projets.colonnes.autres', { count: chips.length - shown }));
 }
 
 // Compte : « Mon compte », « Notifications » (la page Notifications, sans
@@ -341,8 +434,21 @@ export function renderHome(onLeave) {
     // Aucune fonction utilisée : l'invitation en tête (access.js, welcomeHint)
     const hint = welcomeHint(shownFeatures(), allowedNow());
     replace(tiles, hint ? welcomeCard(hint) : null, present.map(([, el]) => el));
+    // Pastilles des colonnes de la tuile « Un projet » : deux lignes au plus
+    tiles.querySelectorAll('.tile__cols').forEach(fitChips);
     fit.update();
   };
+  // Largeur changée (téléphone tourné, fenêtre élargie) : les pastilles
+  // sont mesurées de nouveau (seulement si la largeur a changé)
+  let width = 0;
+  const resized = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    if (tiles.clientWidth === width) return;
+    width = tiles.clientWidth;
+    tiles.querySelectorAll('.tile__cols').forEach(fitChips);
+    fit.update();
+  }) : null;
+  resized?.observe(tiles);
+  onLeave(() => resized?.disconnect());
   const idle = drawWhenIdle(content, draw);
   onLeave(onDataChange(idle.request));
   onLeave(idle.stop);

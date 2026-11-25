@@ -1164,6 +1164,38 @@ export const MIGRATIONS = [
   ALTER TABLE users ADD COLUMN lists_enabled INTEGER NOT NULL DEFAULT 1 CHECK (lists_enabled IN (0, 1));
   UPDATE users SET lists_allowed = 0, lists_enabled = 0 WHERE guest = 1;
   `,
+
+  // --- Migration 50 : contenu de la tuile « Projets » de l'Accueil
+  // (25 novembre 2026, décision du propriétaire) ---
+  // Réglages › Accueil, choix de chacun (public/js/home-tiles.js,
+  // server/home.js), le même sur tous ses appareils :
+  // - home_projects : 'cards' « Mes cartes » (au départ : la tuile
+  //   d'avant), 'projects' « Mes projets », 'project' « Un projet » ;
+  // - home_project_id : le projet choisi pour « Un projet » (vide sinon).
+  //   Pas de lien vers la table des projets : un projet effacé laisse son
+  //   numéro, et la tuile montre alors « Mes cartes » (comme pour un projet
+  //   quitté ou dans la corbeille).
+  // Deux colonnes plutôt que le texte home_tiles (limité à 200 caractères,
+  // trop juste avec un identifiant de projet). Rien ne change pour les
+  // comptes existants.
+  `
+  ALTER TABLE users ADD COLUMN home_projects TEXT NOT NULL DEFAULT 'cards' CHECK (home_projects IN ('cards', 'projects', 'project'));
+  ALTER TABLE users ADD COLUMN home_project_id TEXT CHECK (home_project_id IS NULL OR (home_projects = 'project' AND length(home_project_id) BETWEEN 1 AND 64));
+  `,
+
+  // --- Migration 51 : connexion « … seulement », compte par compte
+  // (25 novembre 2026, décision du propriétaire) ---
+  // users.sso_only : 1 = ce compte se connecte SEULEMENT avec le
+  // fournisseur d'identité (LISTO_OIDC=on) : pas de connexion par mot de
+  // passe, pas de session par mot de passe, ni changement de mot de passe,
+  // ni double authentification Listo, ni réinitialisation par l'Admin.
+  // Choisi par l'Admin (page du compte, « Connexion ») ; 1 d'office pour
+  // un compte accepté depuis une demande faite chez le fournisseur. Une
+  // seule règle le lit : passwordLoginAllowed (server/auth.js). 0 pour les
+  // comptes existants : rien ne change.
+  `
+  ALTER TABLE users ADD COLUMN sso_only INTEGER NOT NULL DEFAULT 0 CHECK (sso_only IN (0, 1));
+  `,
 ];
 
 // Migration 45 (étape 3 des projets) : commentaires, cartes suivies, et la

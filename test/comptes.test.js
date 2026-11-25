@@ -130,10 +130,10 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   migrate(db);
   t.after(() => db.close());
   assert.equal(schemaVersion(db), MIGRATIONS.length);
-  assert.equal(MIGRATIONS.length, 49);
+  assert.equal(MIGRATIONS.length, 51);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
   // (migrations 47 et 48 : guest, puis les fonctions autorisées, tout à 1)
-  assert.deepEqual(after.map(({ guest, notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ guest, notes_allowed, projects_allowed, projects_create, mcp_allowed, lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, ...rest }) => rest), before);
   // (migration 49 : les Listes, lues pour un invité seulement : 1 pour la famille)
   assert.deepEqual(after.map((row) => [row.lists_allowed, row.lists_enabled]), [[1, 1], [1, 1]]);
   assert.deepEqual(after.map((row) => [row.notes_allowed, row.projects_allowed, row.projects_create, row.mcp_allowed]), [[1, 1, 1, 1], [1, 1, 1, 1]]);
@@ -145,7 +145,7 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   assert.throws(() => db.prepare('UPDATE users SET guest = 2 WHERE id = 2').run(), /CHECK/);
   // Relancer les migrations ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(schemaVersion(db), 51);
 });
 
 // --- Une seule lecture du rôle ---

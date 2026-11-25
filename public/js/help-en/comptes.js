@@ -26,7 +26,8 @@ export default {
           "“Allowed features”: what the account can use, ticked according to the role (everything for a user, nothing for a guest) ([[roles-comptes]]);",
           "“Username”: what the person will type to sign in;",
           "“Display name (optional)”: the first name shown to the others (‘Added by Marie’);",
-          "“Temporary password”: to give to the person; they'll replace it the first time they sign in.",
+          "“Sign-in” (only with an identity provider, [[sso-serveur]]): “Password or …” (the default, guests included) or “… only”: the person will get in through the provider, with the same username, without a Listo password;",
+          "“Temporary password”: to give to the person; they'll replace it the first time they sign in. Not asked for an “… only” account.",
         ] },
       ],
     },
@@ -43,11 +44,18 @@ export default {
         "In a list, a note or a project shared with a guest, the members see each other, as for everyone (people, assigned tasks and cards, comments, history). A family member who shares a project with a guest therefore sees them in that project, and only there.",
         "A guest never shares what they own: no people, no public link; they see “People” instead of “Share”. The Admin shares with them. They're never the person a wish list is meant for either.",
         "On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.",
+        { sub: "What a guest sees" },
+        { ul: [
+          "Only the features the Admin allowed them. A guest who only has projects has a bottom bar with three buttons, “Home”, “Projects” and “Settings”, and four with “Due” when a project they see has the “Due dates” option enabled; on a computer, a menu on the left reduced the same way.",
+          "As long as none of their features is enabled, Home greets them with a “Welcome” card: it names the feature to enable (for example ‘Enable projects in Settings › Features to see the ones shared with you’) and leads to Settings, “Features”; with no feature allowed at all, it says the Admin hasn't opened any for them yet.",
+          "In “Share” and “For whom?”, they see nobody; they only see the members of what's shared with them.",
+          "AI assistants only if the Admin allowed them ([[claude-connecter]]).",
+        ] },
         { sub: "Allowed features" },
-        "On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([[echeances]]). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.",
+        "On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then enables the feature in Settings, “Features” ([[echeances]]). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.",
         { ul: [
           "“Lists”: for a guest only, first (a user and an Admin always have lists, without a tick). Without it, the guest sees nothing of lists: no “Lists”, no “To give”, none of the lists shared with them (they stay for the other members), and “Due” only if a project they see has the “Due” option on ([[projets-echeances]]). No list can be shared with them: “Doesn't use lists” under their name.",
-          "“Notes” and “Projects”: for a user, ticked at first; they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) turns on for them right away, and they can turn it off later.",
+          "“Notes” and “Projects”: for a user, ticked at first; they enable them themselves. For a guest, nothing is ticked at first; a ticked feature (“Lists”, “Notes” or “Projects”) is enabled for them right away, and they can disable it later.",
           "Unticking “Notes” also stops the public links of their notes, and unticking “Lists” those of their lists; the confirmation says so.",
           "“Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.",
           "“AI assistants”: without it, the person can't connect an AI assistant ([[claude-connecter]]), and their connections are disconnected right away.",
@@ -57,7 +65,7 @@ export default {
         { sub: "Changing an account's role" },
         { ul: [
           "Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.",
-          "From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
+          "From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and enabled features don't change, lists included: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
           "From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.",
           "A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.",
         ] },
@@ -88,7 +96,7 @@ export default {
     {
       id: 'mot-de-passe',
       title: "Changing your password",
-      blocks: ["Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([[claude-connexions]])."],
+      blocks: ["Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([[claude-connexions]]). When you're signed in through an identity provider, or with an “… only” account, “My account” has neither “Password” nor “Two-factor authentication”: they're managed at the provider ([[sso]])."],
     },
     {
       id: 'double-auth',
@@ -130,6 +138,7 @@ export default {
       blocks: [
         "If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.",
         "When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([[claude-connecter]]).",
+        "The Admin can reserve your account for the provider: “… only”. You then get in only with “Sign in with …”; with your Listo password, even the right one, the screen answers “This account signs in with” followed by the provider's name, and doesn't sign you in. “My account” has neither “Password” nor “Two-factor authentication”. If the provider is down, ask the Admin ([[sso-serveur]]).",
         "No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.",
       ],
     },

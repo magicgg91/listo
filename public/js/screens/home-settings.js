@@ -14,7 +14,13 @@
 //   « Monter » / « Descendre » (clavier, lecture à voix haute ; grisés aux
 //   bouts), focus gardé sur le bouton touché, nouvelle place annoncée ;
 //   « Terminé » ferme le mode.
-// - Accueil coupé : « Premier écran », trois choix (Échéances, Listes,
+// - Ligne « Projets » (25 novembre 2026) : deux zones. La partie gauche
+//   (icône, nom, choix actuel en dessous, chevron) ouvre la feuille « Tuile
+//   Projets » : trois choix (« Mes cartes », « Mes projets », « Un projet »)
+//   et, pour « Un projet », la liste des projets ; appliqué tout de suite
+//   (pas de « OK »), comme le reste de cet écran. L'interrupteur reste à
+//   part (tuile affichée ou masquée).
+// - Accueil désactivé : « Premier écran », trois choix (Échéances, Listes,
 //   Notes ; une coche sur le choisi), à la place des tuiles.
 // - Notes coupées (Réglages › Fonctions, features.js) : ni la tuile Notes
 //   dans la liste (sa place et son état sont gardés), ni « Notes » parmi
@@ -27,7 +33,9 @@ import { goBack } from '../router.js';
 import { app, onDataChange, shownFeatures } from '../app.js';
 import * as actions from '../actions.js';
 import { announce } from '../announce.js';
-import { drawWhenIdle } from '../ui.js';
+import { drawWhenIdle, openSheet } from '../ui.js';
+import { projectsTileShown } from '../projects-tile.js';
+import { projectsInOrder } from './projects.js';
 import { normalizeHome, ALWAYS_SHOWN, tilesFor, startScreens, firstScreen, mergeTileOrder } from '../home-tiles.js';
 import { topbar } from './settings.js';
 import { t } from '../i18n.js';
@@ -101,17 +109,115 @@ export function renderHomeSettings(onLeave = () => {}) {
     const always = name === ALWAYS_SHOWN;
     const shown = always || !home.hidden.includes(name);
     const key = `tile-${name}`;
+    const toggle = switchButton(key, shown, {
+      disabled: always,
+      help: Boolean(info.sub),
+      onToggle: () => actions.setHome({ hidden: shown ? [...home.hidden, name] : home.hidden.filter((other) => other !== name) }),
+    });
+    // « Projets » : la partie gauche ouvre la feuille « Tuile Projets »,
+    // avec le choix actuel dessous ; l'interrupteur reste à part
+    if (name === 'projects') {
+      const choice = choiceText(home);
+      return h('div', { class: 'row row--split' },
+        h('button', {
+          class: 'row__open', type: 'button', 'aria-haspopup': 'dialog', 'data-key': 'projects-tile',
+          'aria-label': t('reglages.accueil.projets.ouvrir', { choice }),
+          onClick: (event) => openProjectsTile(event.currentTarget),
+        },
+        h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(info.iconName)),
+        h('span', { class: 'row__body' },
+          h('span', { class: 'row__title', id: `accueil-${key}-titre` }, info.name()),
+          h('span', { class: 'row__sub' }, choice)),
+        icon('chev-r', 'icon--sm')),
+        h('span', { class: 'row__sep', 'aria-hidden': 'true' }),
+        toggle);
+    }
     return h('div', { class: 'row' },
       h('span', { class: 'row__icon', 'aria-hidden': 'true' }, icon(info.iconName)),
       h('span', { class: 'row__body' },
         h('span', { class: 'row__title', id: `accueil-${key}-titre` }, info.name()),
         info.sub ? h('span', { class: 'row__sub', id: `accueil-${key}-aide` }, info.sub()) : null),
-      switchButton(key, shown, {
-        disabled: always,
-        help: Boolean(info.sub),
-        onToggle: () => actions.setHome({ hidden: shown ? [...home.hidden, name] : home.hidden.filter((other) => other !== name) }),
-      }));
+      toggle);
   };
+
+  // Choix actuel de la tuile « Projets », tel qu'il s'affiche (un projet
+  // que je ne vois plus : « Mes cartes », comme sur l'Accueil)
+  const choiceText = (home) => {
+    const shown = projectsTileShown(home, app.data);
+    if (shown.mode === 'project') return t('reglages.accueil.projets.projetNomme', { name: shown.project.name });
+    return t(shown.mode === 'projects' ? 'reglages.accueil.projets.projets' : 'reglages.accueil.projets.cartes');
+  };
+
+  // Feuille « Tuile Projets » (petite fenêtre sur ordinateur) : trois
+  // choix exclusifs (rond plein ET texte en gras sur le choix actif, jamais
+  // la couleur seule), puis, pour « Un projet », un choix parmi mes projets
+  // (la plus récente activité d'abord). Chaque appui part tout de suite par
+  // la file d'attente (hors ligne compris). « Un projet » sans projet
+  // encore choisi (ou plus visible) : le premier de la liste ; aucun
+  // projet : « Un projet » grisé.
+  function openProjectsTile(opener) {
+    const projects = projectsInOrder();
+    const shown = projectsTileShown(app.data.home, app.data);
+    let mode = shown.mode;
+    let projectId = shown.project?.id ?? null;
+    const radio = () => h('span', { class: 'radio', 'aria-hidden': 'true' });
+    const choose = (next, nextProject = null) => {
+      mode = next;
+      projectId = next === 'project' ? nextProject ?? projectId ?? projects[0]?.id ?? null : null;
+      if (mode === 'project' && !projectId) return;
+      actions.setHome({ projectsTile: mode === 'project' ? { mode, projectId } : { mode } });
+      paint();
+    };
+    const modeRow = (value, title, sub, disabled = false) => h('button', {
+      class: 'radio-row radio-row--two', type: 'button', role: 'radio', 'data-mode': value, disabled,
+      onClick: () => choose(value),
+    },
+    radio(),
+    h('span', { class: 'radio-row__body' },
+      h('span', { class: 'radio-row__title' }, title),
+      h('span', { class: 'radio-row__sub' }, sub)));
+    const modes = [
+      modeRow('cards', t('reglages.accueil.projets.cartes'), t('reglages.accueil.projets.cartes.detail')),
+      modeRow('projects', t('reglages.accueil.projets.projets'), t('reglages.accueil.projets.projets.detail')),
+      modeRow('project', t('reglages.accueil.projets.projet'), projects.length ? t('reglages.accueil.projets.projet.detail') : t('reglages.accueil.projets.aucun'), !projects.length),
+    ];
+    const projectRows = projects.map((project) => h('button', {
+      class: 'radio-row', type: 'button', role: 'radio', 'data-project': project.id,
+      onClick: () => choose('project', project.id),
+    }, radio(), icon('kanban', 'icon--sm'), h('span', { class: 'radio-row__body' }, h('span', { class: 'radio-row__title' }, project.name))));
+    const sectionId = `tuile-projets-${Math.random().toString(36).slice(2, 8)}`;
+    const projectPart = h('div', {},
+      h('h3', { class: 'sheet__section', id: sectionId }, t('reglages.accueil.projets.section')),
+      h('div', { class: 'group', role: 'radiogroup', 'aria-labelledby': sectionId }, projectRows));
+    const paintRow = (row, on) => {
+      row.setAttribute('aria-checked', String(on));
+      row.classList.toggle('is-on', on);
+      row.querySelector('.radio').classList.toggle('is-on', on);
+    };
+    function paint() {
+      for (const row of modes) paintRow(row, row.dataset.mode === mode);
+      for (const row of projectRows) paintRow(row, mode === 'project' && row.dataset.project === projectId);
+      projectPart.hidden = mode !== 'project';
+    }
+    paint();
+    openSheet({
+      title: t('reglages.accueil.projets.titre'),
+      content: [
+        h('div', { class: 'group', role: 'radiogroup', 'aria-label': t('reglages.accueil.projets.choix') }, modes),
+        projectPart,
+      ],
+      scroll: true,
+      pc: 'modal',
+      size: 'sm',
+      returnTo: opener,
+      // L'écran a été redessiné derrière (choix changé) : le focus revient
+      // sur la nouvelle ligne « Projets »
+      onClose: () => {
+        const projectsRow = opener.isConnected ? null : body.querySelector('[data-key="projects-tile"]');
+        projectsRow?.focus({ preventScroll: true });
+      },
+    });
+  }
 
   // Mode « Réordonner » : poignée, icône, nom, Monter, Descendre
   // (tiles : les tuiles montrées, dans leur ordre)
@@ -240,7 +346,8 @@ export function renderHomeSettings(onLeave = () => {}) {
   function draw(force = false) {
     const home = normalizeHome(app.data.home);
     const features = shownFeatures();
-    const key = JSON.stringify([home, features, reordering]);
+    // (le choix de la tuile « Projets » se lit avec le nom du projet)
+    const key = JSON.stringify([home, features, reordering, home.order.includes('projects') ? choiceText(home) : '']);
     if (!force && key === drawn) return;
     drawn = key;
     const held = body.contains(document.activeElement) ? document.activeElement.dataset?.key : null;

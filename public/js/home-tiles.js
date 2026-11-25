@@ -4,14 +4,20 @@
 // Aucun texte ici, aucune page touchée : des fonctions « pures », testées
 // automatiquement (test/home-tiles.test.js).
 //
-// Le réglage : { enabled, start, order, hidden }
+// Le réglage : { enabled, start, order, hidden, projectsTile }
 // - enabled : l'Accueil est affiché (vrai au départ) ; coupé, Listo s'ouvre
 //   sur l'écran « start » et le bouton Accueil disparaît du bandeau du bas ;
 // - start : le premier écran quand l'Accueil est coupé (« Listes » au départ) ;
 // - order : l'ordre des tuiles (celui d'avant le réglage au départ) ;
 // - hidden : les tuiles masquées (aucune au départ). « Compte » ne se masque
 //   jamais : sur l'Accueil, il n'y a pas de bandeau du bas, et c'est le seul
-//   chemin vers les Réglages.
+//   chemin vers les Réglages ;
+// - projectsTile : ce que montre la tuile « Projets » (25 novembre 2026,
+//   choix de chacun) : { mode: 'cards' } « Mes cartes » (au départ),
+//   { mode: 'projects' } « Mes projets », ou { mode: 'project', projectId }
+//   « Un projet ». Un projet que la personne ne voit plus (quitté,
+//   supprimé, dans la corbeille, projets désactivés) : la tuile montre
+//   « Mes cartes », sans rien dire (projects-tile.js, projectsTileShown).
 //
 // Une fonction coupée par la personne (Réglages › Fonctions, features.js,
 // 24 novembre 2026 ; les notes, par exemple) retire sa tuile, son bouton du
@@ -34,23 +40,54 @@ export const WIDE_TILES = ['gifts', 'projects'];
 // la fonction est allumée, startScreens)
 export const START_SCREENS = ['deadlines', 'lists', 'notes', 'projects'];
 export const DEFAULT_START = 'lists';
+// Contenus possibles de la tuile « Projets » : « Mes cartes », « Mes
+// projets », « Un projet »
+export const PROJECTS_TILE_MODES = ['cards', 'projects', 'project'];
+// Identifiant d'un projet (un UUID ; contrôle de forme seulement : le
+// serveur vérifie en plus que la personne voit ce projet)
+const PROJECT_ID = /^[0-9A-Za-z-]{1,64}$/;
+
+// Contenu de départ de la tuile « Projets »
+export const defaultProjectsTile = () => ({ mode: 'cards', projectId: null });
 
 // Réglage de départ (aucun choix fait)
 export function defaultHome() {
-  return { enabled: true, start: DEFAULT_START, order: [...HOME_TILES], hidden: [] };
+  return { enabled: true, start: DEFAULT_START, order: [...HOME_TILES], hidden: [], projectsTile: defaultProjectsTile() };
 }
 
 const isTile = (name) => typeof name === 'string' && HOME_TILES.includes(name);
 const unique = (names) => new Set(names).size === names.length;
 
-// Problème d'une modification { enabled?, start?, order?, hidden? } (le
-// contenu d'une opération « account.home ») : le nom du texte de refus, ou
-// null si tout va bien. Refusés : tuile inconnue, tuile en double, « Compte »
-// masqué, écran de départ inconnu, rien à modifier. Une tuile connue absente
-// de « order » est simplement remise à la fin (normalizeHome).
+// Contenu de la tuile « Projets » complet et valable, à partir de ce qui
+// est gardé ou reçu : un choix inconnu ou abîmé donne « Mes cartes »
+export function normalizeProjectsTile(value) {
+  if (!value || typeof value !== 'object') return defaultProjectsTile();
+  if (value.mode === 'projects') return { mode: 'projects', projectId: null };
+  if (value.mode === 'project' && typeof value.projectId === 'string' && PROJECT_ID.test(value.projectId)) return { mode: 'project', projectId: value.projectId };
+  return defaultProjectsTile();
+}
+
+// Vrai si le contenu demandé pour la tuile « Projets » n'est pas valable :
+// rien d'autre que { mode } et, pour « Un projet » seulement, { projectId }
+function projectsTileInvalid(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return true;
+  if (!Object.keys(value).every((key) => key === 'mode' || key === 'projectId')) return true;
+  if (!PROJECTS_TILE_MODES.includes(value.mode)) return true;
+  if (value.mode === 'project') return typeof value.projectId !== 'string' || !PROJECT_ID.test(value.projectId);
+  return value.projectId !== undefined && value.projectId !== null;
+}
+
+// Problème d'une modification { enabled?, start?, order?, hidden?,
+// projectsTile? } (le contenu d'une opération « account.home ») : le nom
+// du texte de refus, ou null si tout va bien. Refusés : tuile inconnue,
+// tuile en double, « Compte » masqué, écran de départ inconnu, contenu de
+// la tuile « Projets » inconnu, rien à modifier. Une tuile connue absente
+// de « order » est simplement remise à la fin (normalizeHome). (Le projet
+// choisi pour « Un projet » est en plus vérifié par le serveur : un projet
+// que la personne voit, sinon la réponse d'un projet inconnu.)
 export function homeChangeProblem(change) {
-  const { enabled, start, order, hidden } = change ?? {};
-  if (enabled === undefined && start === undefined && order === undefined && hidden === undefined) return 'ops.rienAModifier';
+  const { enabled, start, order, hidden, projectsTile } = change ?? {};
+  if (enabled === undefined && start === undefined && order === undefined && hidden === undefined && projectsTile === undefined) return 'ops.rienAModifier';
   if (enabled !== undefined && typeof enabled !== 'boolean') return 'ops.accueilReglageInvalide';
   if (start !== undefined && !START_SCREENS.includes(start)) return 'ops.accueilPremierEcranInvalide';
   for (const names of [order, hidden]) {
@@ -58,6 +95,7 @@ export function homeChangeProblem(change) {
     if (!Array.isArray(names) || names.length > HOME_TILES.length || !names.every(isTile) || !unique(names)) return 'ops.accueilTuilesInvalides';
   }
   if (hidden?.includes(ALWAYS_SHOWN)) return 'ops.accueilCompteToujours';
+  if (projectsTile !== undefined && projectsTileInvalid(projectsTile)) return 'ops.accueilTuileProjetsInvalide';
   return null;
 }
 
@@ -65,7 +103,7 @@ export function homeChangeProblem(change) {
 // téléphone) ou reçu, même incomplet ou ancien : valeurs de départ pour ce
 // qui manque ; tuiles inconnues et doublons écartés ; tuiles connues
 // absentes de l'ordre ajoutées à la fin, dans l'ordre de départ ; « Compte »
-// jamais masqué.
+// jamais masqué ; contenu de la tuile « Projets » inconnu : « Mes cartes ».
 export function normalizeHome(value) {
   const home = defaultHome();
   if (!value || typeof value !== 'object') return home;
@@ -75,6 +113,7 @@ export function normalizeHome(value) {
   home.order = [...order, ...HOME_TILES.filter((name) => !order.includes(name))];
   const hidden = Array.isArray(value.hidden) ? value.hidden : [];
   home.hidden = HOME_TILES.filter((name) => name !== ALWAYS_SHOWN && hidden.includes(name));
+  home.projectsTile = normalizeProjectsTile(value.projectsTile);
   return home;
 }
 
@@ -86,6 +125,7 @@ export function applyHomeChange(home, change) {
     start: change.start ?? current.start,
     order: change.order ?? current.order,
     hidden: change.hidden ?? current.hidden,
+    projectsTile: change.projectsTile ?? current.projectsTile,
   });
 }
 

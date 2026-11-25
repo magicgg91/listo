@@ -166,7 +166,7 @@ Mêmes possibilités et mêmes règles que le lien public d'une liste (étape 10
 | Partage | « Léa a partagé la liste « Courses » avec vous », « … la note « Vacances » … » |
 
 - **Indépendante des notifications du téléphone** : elle se remplit même sans appareil inscrit et même si le serveur n'envoie aucune notification push (LISTO_PUSH absent) ; rien n'est envoyé ailleurs que sur votre serveur pour la remplir. Le résumé du matin et les rappels sont donc calculés aussi sans LISTO_PUSH.
-- **Même filtre que les notifications push** : une catégorie coupée dans Réglages › Notifications, ou une liste (ou une note) dont j'ai coupé les notifications, n'apparaît pas non plus dans la page. Proposé : un seul jeu de réglages pour les deux, pour ne pas multiplier les interrupteurs.
+- **Même filtre que les notifications push** : une catégorie désactivée dans Réglages › Notifications, ou une liste (ou une note) dont j'ai coupé les notifications, n'apparaît pas non plus dans la page. Proposé : un seul jeu de réglages pour les deux, pour ne pas multiplier les interrupteurs.
 - **Toujours le détail** dans la page (nom de la liste, de la tâche, de la personne), puisqu'on est connecté ; le contenu neutre par défaut ne concerne que l'écran verrouillé du téléphone.
 - **Regroupées par jour** (« Aujourd'hui », « Hier », puis « Lundi 16 novembre »), la plus récente en haut. Chaque ligne : icône de la catégorie, texte, heure, point de couleur si non lue. Les modifications rapprochées d'une même liste se regroupent en une ligne qui se met à jour (« Léa a ajouté 4 articles dans Courses »), comme les notifications push.
 - **Toucher une ligne** ouvre la liste, la tâche (fiche), la note ou l'écran concerné, et la marque lue. Une cible qui n'existe plus (liste supprimée, partage retiré) : « Cette liste n'est plus disponible ».
@@ -251,7 +251,7 @@ Le propriétaire a validé les propositions :
 
 1. **Curseur dans « Nouvelle note »** : oui, le curseur va dans le texte quand on touche « Nouvelle note » (geste fait pour écrire, comme la loupe) ; ajouté aux exceptions de `test/focus.test.js`.
 2. **Ouvrir la page Notifications** ne marque rien comme lu : on marque en touchant une ligne ou « Tout marquer comme lu ».
-3. **Réglages communs** à la page et au téléphone : une catégorie coupée, ou une liste ou une note dont on a coupé les notifications, disparaît des deux.
+3. **Réglages communs** à la page et au téléphone : une catégorie désactivée, ou une liste ou une note dont on a coupé les notifications, disparaît des deux.
 4. **Tuiles** : ni cachables ni déplaçables pour l'instant.
 5. **Notes et assistants IA (MCP)** : plus tard.
 6. **Catégories des notes** (décision prise pendant l'étape 2) : abandonnées, et aucune n'est prévue pour l'instant ; à reprendre si le besoin vient. Les maquettes les montrent encore : les ignorer.

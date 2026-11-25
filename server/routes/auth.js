@@ -9,7 +9,7 @@
 import express from 'express';
 import { hashPassword, verifyPassword, getDummyHash, passwordProblem } from '../passwords.js';
 import {
-  startSession, endSession, requireAuth, attemptKeys, publicUser, safeEqual, normalizeCode,
+  startSession, endSession, requireAuth, attemptKeys, publicUser, safeEqual, normalizeCode, passwordLoginAllowed,
 } from '../auth.js';
 import { checkSecondFactor } from '../twofactor.js';
 import { isValidUsername, USERNAME_RULE, cleanName } from '../validate.js';
@@ -17,6 +17,8 @@ import { isValidUsername, USERNAME_RULE, cleanName } from '../validate.js';
 // Réponses identiques que l'identifiant existe ou non (noms des textes)
 const BAD_LOGIN = 'comptes.connexion.incorrecte';
 const BLOCKED = 'comptes.tropDeTentatives';
+// Mot de passe juste, compte « … seulement » : « Ce compte se connecte avec … »
+const SSO_ONLY = 'comptes.connexion.fournisseurSeulement';
 
 
 const countUsers = (db) => db.prepare('SELECT COUNT(*) FROM users').pluck().get();
@@ -122,6 +124,27 @@ export function publicAuthRoutes(ctx) {
       return res.status(401).json({ error: req.t(BAD_LOGIN) });
     }
 
+    // Compte « … seulement » (choisi par l'Admin, passwordLoginAllowed) : le
+    // mot de passe est juste, mais ce compte se connecte avec le fournisseur
+    // d'identité. Ni session, ni étape du code à 6 chiffres. La tentative
+    // reste comptée (mêmes limites qu'un échec). Un mauvais mot de passe a
+    // reçu plus haut exactement la réponse habituelle : rien ne distingue
+    // ce compte tant que le mot de passe n'est pas le bon.
+    // code : reconnu par l'écran de connexion (message sans champ en erreur)
+    // Le compte est relu après le calcul du mot de passe (qui prend un peu de
+    // temps) : un Admin qui vient de le passer en « … seulement » ou de le
+    // désactiver pendant ce temps est pris en compte (sinon une session par
+    // mot de passe serait ouverte sur un état dépassé)
+    const current = findUser.get(username);
+    if (!current || current.active !== 1) {
+      audit('login_failure', { ...who, ip: req.ip });
+      return res.status(401).json({ error: req.t(BAD_LOGIN) });
+    }
+    if (!passwordLoginAllowed(current, ctx.config)) {
+      audit('password_login_refused', { ...who, reason: 'account signs in with the identity provider only', ip: req.ip });
+      return res.status(403).json({ error: req.t(SSO_ONLY, { provider: ctx.config.oidcName }), code: SSO_ONLY });
+    }
+
     // Compte avec 2FA : pas de session tant que le code n'est pas donné.
     // La tentative comptée d'avance est retirée (le mot de passe est bon),
     // mais le compteur n'est remis à zéro qu'une fois le code accepté : se
@@ -144,9 +167,15 @@ export function publicAuthRoutes(ctx) {
     const pending = ctx.pending.find(req);
     if (!pending) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
 
-    // Relu au dernier moment : le compte a pu changer entre-temps
+    // Relu au dernier moment : le compte a pu changer entre-temps (et passer
+    // en « … seulement » : une connexion commencée par mot de passe s'arrête)
     const user = db.prepare('SELECT * FROM users WHERE id = ? AND active = 1 AND totp_enabled = 1').get(pending.userId);
     if (!user) return res.status(401).json({ error: req.t('comptes.connexion.expiree') });
+    if (pending.method !== 'oidc' && !passwordLoginAllowed(user, ctx.config)) {
+      ctx.pending.finish(ctx, res, pending.key);
+      audit('password_login_refused', { user: user.username, reason: 'account signs in with the identity provider only', ip: req.ip, step: '2fa' });
+      return res.status(403).json({ error: req.t(SSO_ONLY, { provider: ctx.config.oidcName }), code: SSO_ONLY });
+    }
 
     const keys = attemptKeys(req, user.username);
     if (limiter.isBlocked(keys)) {

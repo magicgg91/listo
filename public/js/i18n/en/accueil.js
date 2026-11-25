@@ -47,10 +47,10 @@ export default {
   'accueil.projets.nouveau': 'New project',
   // Welcome card (no feature in use: a guest, docs/cadrage-comptes.md 4.4)
   'accueil.bienvenue.titre': 'Welcome, {name}',
-  'accueil.bienvenue.projets': 'Your account is ready. Turn on projects in Settings › Features to see the ones shared with you.',
-  'accueil.bienvenue.notes': 'Your account is ready. Turn on notes in Settings › Features to see the ones shared with you.',
-  'accueil.bienvenue.listes': 'Your account is ready. Turn on lists in Settings › Features to see the ones shared with you.',
-  'accueil.bienvenue.plusieurs': 'Your account is ready. Turn on a feature in Settings › Features to get started.',
+  'accueil.bienvenue.projets': 'Your account is ready. Enable projects in Settings › Features to see the ones shared with you.',
+  'accueil.bienvenue.notes': 'Your account is ready. Enable notes in Settings › Features to see the ones shared with you.',
+  'accueil.bienvenue.listes': 'Your account is ready. Enable lists in Settings › Features to see the ones shared with you.',
+  'accueil.bienvenue.plusieurs': 'Your account is ready. Enable a feature in Settings › Features to get started.',
   'accueil.bienvenue.aucune': 'Your account is ready. The Admin hasn\'t opened any feature for you yet: they take care of it.',
   'accueil.bienvenue.bouton': 'Open Settings › Features',
   'accueil.projets.aucuneCarte': 'No cards for you',
@@ -58,4 +58,14 @@ export default {
   'accueil.projets.cartes.lu': { one: 'Projects, {count} card for you', other: 'Projects, {count} cards for you' },
   'accueil.projets.cartes.lu.nouveautes': { one: 'Projects, {count} card for you, new activity', other: 'Projects, {count} cards for you, new activity' },
   'accueil.projets.lu.nouveautes': 'Projects, new activity',
+  // “Projects” tile, chosen by each person (Settings › Home): “My
+  // projects” (one row per project) and “One project”
+  'accueil.projets.ligne.cartes': { one: '{count} card', other: '{count} cards' },
+  'accueil.projets.ligne.pourVous': '{count} for you',
+  'accueil.projets.ligne.lectureSeule': 'read only',
+  'accueil.projets.tous': 'All projects',
+  'accueil.projets.projet.lu': { one: '{name}, {count} card for you', other: '{name}, {count} cards for you' },
+  'accueil.projets.projet.lu.nouveautes': { one: '{name}, {count} card for you, new activity', other: '{name}, {count} cards for you, new activity' },
+  'accueil.projets.projet.nouveautes': '{name}, new activity',
+  'accueil.projets.colonnes.autres': { one: '{count} more column', other: '{count} more columns' },
 };

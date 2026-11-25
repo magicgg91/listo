@@ -103,17 +103,17 @@ test('migration 49 : lists_allowed et lists_enabled, 1 pour la famille, 0 pour u
   db.pragma('foreign_keys = ON');
   migrate(db);
   t.after(() => db.close());
-  assert.equal(MIGRATIONS.length, 49);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(MIGRATIONS.length, 51);
+  assert.equal(schemaVersion(db), 51);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, ...rest }) => rest), before);
+  assert.deepEqual(after.map(({ lists_allowed, lists_enabled, home_projects, home_project_id, sso_only, ...rest }) => rest), before);
   assert.deepEqual(after.map((row) => [row.lists_allowed, row.lists_enabled]), [[1, 1], [1, 1], [0, 0]], 'invité déjà créé : listes non autorisées (le plus sûr)');
   for (const column of ['lists_allowed', 'lists_enabled']) {
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = 2 WHERE id = 3`).run(), /CHECK/, column);
     assert.throws(() => db.prepare(`UPDATE users SET ${column} = NULL WHERE id = 3`).run(), /NOT NULL/, column);
   }
   migrate(db);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(schemaVersion(db), 51);
 });
 
 // --- Règles pures ---
@@ -179,7 +179,7 @@ test('écrans sans Listes : bandeau à 3, 4, 5 ou 6 boutons ; tuiles ; premier �
   assert.equal(welcomeHint(projectsOnly, { lists: false, notes: false, projects: true }), null);
   assert.deepEqual(welcomeHint({ lists: false, notes: false, projects: false }, { lists: true, notes: false, projects: false }), { kind: 'one', feature: 'lists' });
   assert.equal(welcomeHint(family, { lists: true }), null);
-  for (const key of ['accueil.bienvenue.listes', 'reglages.fonctions.listes', 'reglages.fonctions.listes.detail', 'administration.fonctions.listes', 'administration.fonctions.listes.detail.invite', 'administration.fonctions.retirer.listes.question', 'administration.fonctions.retirer.listes.texte', 'administration.acces.listesProjets', 'administration.compte.versInvite.listes', 'ops.listesNonAutorisees', 'ops.listesCoupees', 'ops.personneSansListes', 'partage.personnes.sansListes', 'alertes.liste.allumer', 'corbeille.vide.aucune', 'raccourcis.partout.nouvelleNote', 'claude.autoriser.sansListes', 'comptes.fonctions.listesInviteSeulement']) {
+  for (const key of ['accueil.bienvenue.listes', 'reglages.fonctions.listes', 'reglages.fonctions.listes.detail', 'administration.fonctions.listes', 'administration.fonctions.listes.detail.invite', 'administration.fonctions.retirer.listes.question', 'administration.fonctions.retirer.listes.texte', 'administration.acces.listesProjets', 'administration.compte.versInvite.listes', 'ops.listesNonAutorisees', 'ops.listesCoupees', 'ops.personneSansListes', 'partage.personnes.sansListes', 'alertes.liste.activer', 'corbeille.vide.aucune', 'raccourcis.partout.nouvelleNote', 'claude.autoriser.sansListes', 'comptes.fonctions.listesInviteSeulement']) {
     assert.ok(fr[key] && en[key] && fr[key] !== en[key], key);
   }
 });
@@ -472,7 +472,7 @@ test('notifications : rien des listes sans Listes (modifications, partage non au
   // ouvre Réglages › Fonctions) ; plus rien de nouveau, sauf un partage
   await ok(h.max, { type: 'account.features', lists: false });
   let rows = await page();
-  assert.deepEqual(rows.map((row) => [row.kind, row.target, row.sub]), [['sharing', { type: 'features' }, fr['alertes.liste.allumer']]]);
+  assert.deepEqual(rows.map((row) => [row.kind, row.target, row.sub]), [['sharing', { type: 'features' }, fr['alertes.liste.activer']]]);
   await ops(h.guillaume, [{ type: 'item.create', listId, itemId: uuid(), name: 'Écrous' }]);
   const other = uuid();
   await ops(h.guillaume, [{ type: 'list.create', listId: other, name: 'Garage', listType: 'tasks' }]);
@@ -636,7 +636,7 @@ test('écrans : Réglages › Fonctions (« Listes » d\'un invité), page d\'un
   // Accueil : l'invitation suit les fonctions montrées (Listes comprises)
   assert.match(code('public/js/screens/home.js'), /const hint = welcomeHint\(shownFeatures\(\), allowedNow\(\)\);/);
   // Service worker : nouvelle version
-  assert.match(read('public/sw.js'), /const VERSION = `v181-/);
+  assert.ok(Number(/const VERSION = `v(\d+)-/.exec(read('public/sw.js'))?.[1]) >= 181);
 });
 
 test('un seul contrôle des listes : listsRefusal (server/features.js), repris par les routes, la file d\'attente, la synchronisation, les notifications, le temps réel et les assistants IA', () => {

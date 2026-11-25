@@ -99,6 +99,10 @@ export function publicUser(user, config, { method = null } = {}) {
     loginMethod: method,
     // Connexion par mot de passe possible sur ce serveur (LISTO_LOCAL_LOGIN)
     localLogin: config?.localLogin !== false,
+    // Connexion par mot de passe possible pour CE compte (passwordLoginAllowed) :
+    // faux pour un compte « … seulement » (ni mot de passe ni double
+    // authentification dans Mon compte)
+    passwordLogin: passwordLoginAllowed(user, config),
     // Langue choisie dans « Mon compte » (« fr », « en »), ou null :
     // automatique (navigateur, sinon langue de l'installation)
     locale: user.locale ?? null,
@@ -114,6 +118,21 @@ export function publicUser(user, config, { method = null } = {}) {
     // « Assistants IA » (un Admin a tout)
     allowed: allowedFromRow(user),
   };
+}
+
+// --- Connexion par mot de passe : une seule règle ---
+
+// Ce compte peut-il se connecter avec son mot de passe Listo ? Non quand la
+// connexion par mot de passe est désactivée sur le serveur
+// (LISTO_LOCAL_LOGIN=off), ni pour un compte « … seulement » (users.sso_only,
+// migration 51, choisi par l'Admin), tant que la connexion avec le
+// fournisseur d'identité est activée (LISTO_OIDC=on ; sans elle, le réglage
+// est gardé mais sans effet). Lue partout : connexion, sessions ouvertes par
+// mot de passe, Mon compte (mot de passe, double authentification),
+// Administration (réinitialisation), réponse /api/me.
+export function passwordLoginAllowed(user, config) {
+  if (config?.localLogin === false) return false;
+  return !(config?.oidc === true && user?.sso_only === 1);
 }
 
 // --- Sessions ---
@@ -152,6 +171,19 @@ export function revokeAllSessions(ctx, userId, reason = 'account sessions closed
   ctx.oauth?.revokeAllForUser(userId, reason);
 }
 
+// Ferme les sessions d'un compte ouvertes par mot de passe (compte passé
+// en « … seulement ») ; celles ouvertes par le fournisseur d'identité
+// restent. Leurs flux temps réel sont coupés. Renvoie leur nombre.
+export function closePasswordSessions(ctx, userId) {
+  const ids = ctx.db.prepare("SELECT id FROM sessions WHERE user_id = ? AND method != 'oidc'").pluck().all(userId);
+  const drop = ctx.db.prepare('DELETE FROM sessions WHERE id = ?');
+  for (const id of ids) {
+    drop.run(id);
+    ctx.events?.disconnectSession(id);
+  }
+  return ids.length;
+}
+
 // Efface les sessions expirées (appelé au démarrage puis toutes les heures)
 export function purgeExpiredSessions(ctx) {
   ctx.db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(new Date(ctx.now()).toISOString());
@@ -179,9 +211,11 @@ export function loadSession(ctx) {
     const now = ctx.now();
     const row = findSession.get(hashToken(token), new Date(now).toISOString());
     if (!row) return next();
-    // Connexion par mot de passe coupée (LISTO_LOCAL_LOGIN=off) : une session
-    // ouverte par mot de passe est fermée ; il faut passer par le fournisseur d'identité
-    if (ctx.config.localLogin === false && row.session_method !== 'oidc') {
+    // Connexion par mot de passe désactivée (LISTO_LOCAL_LOGIN=off), ou compte
+    // « … seulement » (users.sso_only) : une session ouverte par mot de passe
+    // est fermée ; il faut passer par le fournisseur d'identité. Revérifié à
+    // chaque requête (même règle que la connexion : passwordLoginAllowed).
+    if (row.session_method !== 'oidc' && !passwordLoginAllowed(row, ctx.config)) {
       drop.run(row.session_id);
       return next();
     }

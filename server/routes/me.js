@@ -10,7 +10,7 @@
 import express from 'express';
 import QRCode from 'qrcode';
 import { hashPassword, verifyPassword, passwordProblem } from '../passwords.js';
-import { startSession, revokeAllSessions, attemptKeys, publicUser } from '../auth.js';
+import { startSession, revokeAllSessions, attemptKeys, publicUser, passwordLoginAllowed } from '../auth.js';
 import { isLocale } from '../../public/js/i18n.js';
 import { accountRole } from '../../public/js/access.js';
 import { generateTotpSecret, toBase32, otpauthUri } from '../totp.js';
@@ -48,9 +48,11 @@ export function meRoutes(ctx) {
   // est ouverte pour l'appareil qui a fait le changement.
   // Session ouverte avec le fournisseur d'identité : le mot de passe et la double
   // authentification se gèrent chez le fournisseur d'identité, pas ici (décision du
-  // 15 novembre 2026) ; refusé aussi par le serveur, pas seulement masqué
+  // 15 novembre 2026) ; refusé aussi par le serveur, pas seulement masqué.
+  // De même pour un compte « … seulement » (passwordLoginAllowed : choisi
+  // par l'Admin), quelle que soit la session
   router.use(['/me/password', '/me/2fa'], (req, res, next) => {
-    if (req.sessionMethod === 'oidc') return res.status(403).json({ error: req.t('comptes.fournisseur.gere', { provider: ctx.config.oidcName }) });
+    if (req.sessionMethod === 'oidc' || !passwordLoginAllowed(req.user, ctx.config)) return res.status(403).json({ error: req.t('comptes.fournisseur.gere', { provider: ctx.config.oidcName }) });
     next();
   });
 
@@ -75,6 +77,12 @@ export function meRoutes(ctx) {
     }
 
     const hash = await hashPassword(newPassword);
+    // Compte relu après les calculs du mot de passe : passé en « … seulement »
+    // ou désactivé entre-temps par un Admin, plus de mot de passe ni de session
+    const fresh = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+    if (!fresh || fresh.active !== 1 || !passwordLoginAllowed(fresh, ctx.config)) {
+      return res.status(403).json({ error: req.t('comptes.fournisseur.gere', { provider: ctx.config.oidcName }) });
+    }
     db.prepare('UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?').run(hash, req.user.id);
     revokeAllSessions(ctx, req.user.id, 'password changed');
     startSession(ctx, res, req.user.id);

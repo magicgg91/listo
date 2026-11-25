@@ -27,8 +27,9 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [2.4 Envies : réservation et cotisation](#p-envies)
 - [2.5 Saisie rapide](#p-saisie)
 - [2.6 Notes](#p-notes)
-- [2.7 Hors ligne, corbeille, lien public](#p-securite)
-- [2.8 Sécurité et confort](#p-confort)
+- [2.7 Projets](#p-projets)
+- [2.8 Hors ligne, corbeille, lien public](#p-securite)
+- [2.9 Sécurité et confort](#p-confort)
 
 </details>
 
@@ -114,7 +115,7 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 <summary>7. Projets</summary>
 
 - [Aller au chapitre](#projets)
-- [7.1 Allumer les projets](#projets-allumer)
+- [7.1 Activer les projets](#projets-activer)
 - [7.2 Créer, dupliquer, supprimer un projet](#projets-creer)
 - [7.3 Les cartes](#projets-cartes)
 - [7.4 Une carte ouverte](#projets-carte)
@@ -201,6 +202,8 @@ Listo est une application de listes partagées : courses, tâches et idées de c
 
 Quand quelqu'un coche un article, les autres le voient coché en quelques secondes. Listo est gratuit, sans publicité et sans suivi.
 
+Listo garde aussi des notes ([5.12 Les notes](#notes)) et, pour qui les active, des projets : des tableaux de cartes rangées en colonnes ([7. Projets](#projets)).
+
 Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas d'inscription publique.
 
 <a id="limites"></a>
@@ -211,7 +214,7 @@ Les comptes sont créés par l'Admin, la personne qui gère Listo : il n'y a pas
 - En français ou en anglais, au choix de chacun dans « Mon compte » ([5.19 Langue : français ou anglais](#langue)) ; cette aide aussi.
 - La page Notifications (la cloche de l'Accueil) garde ce que Listo vous signale. Les notifications sur le téléphone ou l'ordinateur sont facultatives : désactivées par défaut sur le serveur, puis activées par chacun sur ses appareils ([6. Notifications](#notifications)).
 - Pas de paiement : pour un cadeau commun, Listo dit qui participe, jamais combien.
-- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut couper : la vérification d'une nouvelle version (GitHub, [10.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes et des notes autorisées lui est envoyé quand vous l'interrogez ([9. Assistants IA (MCP)](#claude)).
+- Aucune donnée envoyée ailleurs que sur votre serveur, sauf trois exceptions que l'on peut désactiver : la vérification d'une nouvelle version (GitHub, [10.9 Savoir qu'une nouvelle version existe](#version)), le nom d'un produit scanné (Open Food Facts, [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)) et les notifications, désactivées par défaut (le service de notification de l'appareil voit l'heure, la taille et l'appareil, jamais le texte : [6.7 Ce que voient Apple, Google, Mozilla et Microsoft](#notif-confidentialite)). Si vous connectez un assistant IA (Claude, par exemple), le contenu des listes et des notes autorisées lui est envoyé quand vous l'interrogez ([9. Assistants IA (MCP)](#claude)).
 
 <a id="types"></a>
 
@@ -234,7 +237,9 @@ Le type se choisit à la création de la liste. Une liste de courses peut deveni
 - Visiteur : une personne sans compte qui ouvre le lien public d'une liste.
 - Bénéficiaire : la personne à qui une liste d'envies est destinée.
 - Note : un texte libre, à part des listes, à vous seul au départ ; elle se partage comme une liste ([5.12 Les notes](#notes)).
+- Projet : un tableau de cartes rangées en colonnes, partagé avec des personnes de Listo ; dans un projet, « Contributeur » est un rôle à part ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
 - Admin : le compte qui gère les comptes, les magasins et les rayons.
+- Utilisateur : un compte de la famille, qui se sert de Listo normalement. Invité : un compte discret, pour une personne qui vous aide (sur un projet, par exemple) ; seul l'Admin le voit ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)).
 
 <a id="possibilites"></a>
 
@@ -251,6 +256,7 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Nouveautés : Listo signale ce que les autres ont ajouté ou modifié depuis votre dernière visite ([5.16 Nouveautés](#nouveautes)).
 - Notifications : modifications (des autres), réservations, partage, résumé des échéances et rappels, dans la page Notifications (la cloche de l'Accueil) et, si vous le voulez, sur le téléphone ou l'ordinateur ([6. Notifications](#notifications)).
 - Une icône au choix pour chaque liste, et un compteur des restants sur chaque carte, chaque groupe et en haut de chaque liste ([5.9 Groupes, tri et compteur](#tri)).
+- Trois rôles de compte : Admin, Utilisateur et Invité. Un invité est discret (seul l'Admin le voit) ; l'Admin choisit, compte par compte, les fonctions que chacun peut utiliser ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)).
 
 <a id="p-courses"></a>
 
@@ -300,9 +306,22 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 - Une note rapide depuis l'Accueil, même hors ligne ([5.12 Les notes](#notes)).
 - Un assistant IA peut lire vos notes et, si vous le permettez, en créer ou les compléter ([9.6 Les notes](#claude-notes)).
 
+<a id="p-projets"></a>
+
+### 2.7 Projets
+
+- Des tableaux de cartes rangées en colonnes de couleur (idées, en cours, fait…), désactivés au départ : chacun les active pour lui dans Réglages, « Fonctions » ([7.1 Activer les projets](#projets-activer)).
+- Chaque carte a ses personnes, ses étiquettes, son échéance avec une case « Fait », sa priorité, une description mise en forme, des liens, des commentaires et un historique ([7.4 Une carte ouverte](#projets-carte), [7.5 Commentaires, historique, suivre une carte](#projets-commentaires)).
+- Un projet se partage avec des personnes de Listo, selon quatre rôles : propriétaire, « Peut modifier », « Contributeur » et « Lecture seule » ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
+- Deux options par projet, « Priorité » et « Échéances », activées ou désactivées sans rien effacer ; chacun peut montrer les cartes datées d'un projet dans « Échéances » ([7.8 Colonnes et étiquettes du projet](#projets-colonnes), [7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)).
+- Nouveautés et notifications : nouvelles cartes, attributions, commentaires, rappels ; « Suivre » une carte ([7.6 Nouveautés et notifications des projets](#projets-notifications)).
+- Dupliquer un projet, sa corbeille et les « Cartes supprimées » de chaque projet, 30 jours ([7.2 Créer, dupliquer, supprimer un projet](#projets-creer), [7.10 Corbeilles des projets](#projets-corbeilles)).
+- Une colonne à la fois sur le téléphone ; tout le tableau sur ordinateur, avec le glisser-déposer et le clavier ([7.11 Sur ordinateur](#projets-ordinateur)).
+- Un assistant IA peut lire vos projets et, si vous le permettez, y créer, déplacer et commenter des cartes, ou y reprendre un tableau d'un autre outil ([9.7 Les projets](#claude-projets)).
+
 <a id="p-securite"></a>
 
-### 2.7 Hors ligne, corbeille, lien public
+### 2.8 Hors ligne, corbeille, lien public
 
 - Hors ligne : Listo s'ouvre et s'utilise sans réseau ; les changements partent au retour du réseau ([5.17 Hors ligne et synchronisation](#hors-ligne)).
 - Corbeille : une liste supprimée se restaure pendant 30 jours ([8.7 Propriétaire : dupliquer, supprimer, restaurer](#corbeille)) ; une note aussi ([5.12 Les notes](#notes)). Une seule « Corbeille », dans Réglages, avec deux onglets : « Listes » et « Notes » (et « Projets » quand vous les utilisez : [7.10 Corbeilles des projets](#projets-corbeilles)).
@@ -310,13 +329,13 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 <a id="p-confort"></a>
 
-### 2.8 Sécurité et confort
+### 2.9 Sécurité et confort
 
 - Double authentification, avec des codes de secours ([4.7 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
 - Thème clair, sombre ou automatique ([5.18 Thème clair ou sombre](#theme)).
 - Un Accueil à votre goût : tuiles masquées ou dans un autre ordre, ou pas d'Accueil du tout ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
-- Seulement les fonctions dont vous vous servez : les notes se coupent pour vous seul, sans rien effacer ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
+- Seulement les fonctions dont vous vous servez : les notes et les projets s'activent ou se désactivent pour vous seul, sans rien effacer ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
 - Installation sur l'écran d'accueil du téléphone, comme une application ([4.5 Installer Listo sur le téléphone](#telephone)).
 - Un assistant IA, par exemple Claude, peut lire vos listes, vos notes et vos projets et, si vous le permettez, y écrire ([9. Assistants IA (MCP)](#claude)).
 
@@ -407,8 +426,8 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_LANG` | absente : `fr` | Langue par défaut, `fr` ou `en` : celle d'un compte en « Automatique » quand le navigateur ne donne pas une langue connue, et celle des notifications d'un tel compte. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_CURRENCY` | absente : `EUR` | Monnaie du prix des envies, en code de trois lettres (`EUR`, `USD`, `CHF`, `GBP`…), à deux décimales. Seul l'affichage change : les prix déjà saisis ne sont pas convertis. Une autre valeur : Listo ne démarre pas et l'explique dans `docker logs`. |
 | `LISTO_COMMIT` | posée par l'image | Version installée, affichée dans Réglages › « À propos ». Ne pas la remplir. |
-| `LISTO_UPDATE_CHECK` | absente : activée | `off` coupe la vérification de mise à jour sur GitHub ([10.9 Savoir qu'une nouvelle version existe](#version)). |
-| `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` coupe le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
+| `LISTO_UPDATE_CHECK` | absente : activée | `off` désactive la vérification de mise à jour sur GitHub ([10.9 Savoir qu'une nouvelle version existe](#version)). |
+| `LISTO_PRODUCT_LOOKUP` | absente : activé | `off` désactive le mode scan : bouton masqué, plus aucune demande vers Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | absente | Facultative : adresse e-mail ou adresse web de contact envoyée à Open Food Facts ([guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_MCP` | absente : désactivé | `on` active l'accès des assistants IA, par exemple Claude ([9.15 Activer l'accès sur le serveur](#mcp-serveur)). Toute autre valeur : désactivé. |
 | `LISTO_MCP_SITES` | absente : tous les assistants IA | Facultative : sites des assistants IA acceptés, séparés par des virgules (par exemple `claude.ai,claude.com`), en plus des applications de l'ordinateur (`localhost`). Absente : tout assistant IA qui suit le standard peut demander l'accès, toujours après votre accord ([9.15 Activer l'accès sur le serveur](#mcp-serveur)). Une valeur mal écrite (`https://`, chemin, port, adresse IP, `*`) : Listo ne démarre pas et l'explique dans `docker logs`. |
@@ -417,7 +436,7 @@ La partie `environment:` du fichier, telle qu'elle est livrée (les lignes en co
 | `LISTO_OIDC_ISSUER` | absente | Adresse du fournisseur d'identité (son “issuer”), en `https://` (par exemple `https://auth.exemple.fr`). |
 | `LISTO_OIDC_CLIENT_ID` | absente : `listo` | Identifiant de Listo chez le fournisseur d'identité (`client_id`). |
 | `LISTO_OIDC_NAME` | absente : `SSO` | Nom du fournisseur affiché à l'écran, par exemple `Authelia` : bouton « Se connecter avec … », « Mon compte », Administration (30 caractères au plus). |
-| `LISTO_LOCAL_LOGIN` | absente : activée | `off` coupe la connexion par identifiant et mot de passe : on n'entre plus que par le fournisseur d'identité (exige `LISTO_OIDC=on`), et les sessions ouvertes par mot de passe sont fermées ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)). |
+| `LISTO_LOCAL_LOGIN` | absente : activée | `off` désactive la connexion par identifiant et mot de passe : on n'entre plus que par le fournisseur d'identité (exige `LISTO_OIDC=on`), et les sessions ouvertes par mot de passe sont fermées ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)). |
 
 <a id="proxy"></a>
 
@@ -564,6 +583,8 @@ Le serveur Listo doit joindre le fournisseur à son adresse publique (`LISTO_OID
 
 Pour n'entrer QUE par le fournisseur, ajoutez `LISTO_LOCAL_LOGIN=off` ([3.3 Les réglages (variables)](#variables)) : l'écran de connexion ne montre plus que « Se connecter avec … », la connexion par mot de passe est refusée et les sessions ouvertes par mot de passe sont fermées ; dans l'Administration, « Ajouter un compte » ne demande plus de mot de passe (la personne entre par le fournisseur, même identifiant). Si le fournisseur est en panne, plus personne n'entre : retirez la ligne (ou mettez `on`), puis `docker compose up -d`, pour retrouver la connexion par mot de passe.
 
+Pour n'imposer le fournisseur qu'à certains comptes, sans `LISTO_LOCAL_LOGIN=off` : l'Admin choisit « … seulement » dans la section « Connexion » de leur page ([8.1 Admin](#role-admin)) ; les autres gardent « Mot de passe ou … ». Un compte « … seulement » ne se connecte plus avec son mot de passe Listo, ses sessions ouvertes par mot de passe sont fermées tout de suite, et ni lui ni l'Admin ne peuvent plus changer ou réinitialiser son mot de passe. Un compte créé à partir d'une demande de compte l'est d'office. Listo garde toujours au moins un Admin actif qui se connecte avec son mot de passe : il entre encore si le fournisseur est en panne, remet les comptes concernés sur « Mot de passe ou … » et leur donne un mot de passe provisoire (« Réinitialiser le mot de passe »). En dernier recours, la commande de secours ([4.9 Compte Admin perdu](#secours)) remet aussi le compte sur « Mot de passe ou … ».
+
 > **Attention** : Le compte chez le fournisseur ouvre le compte Listo qui porte le même identifiant (majuscules ignorées) : créez-y les comptes avec les identifiants de Listo. À la première connexion, Listo retient ce compte : un autre compte du même nom, plus tard, est refusé (l'Admin peut « Délier le compte … », dans Administration › Comptes).
 
 <a id="comptes"></a>
@@ -592,7 +613,8 @@ L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un c
 - « Fonctions autorisées » : ce que le compte peut utiliser, cochées selon le rôle (tout pour un utilisateur, rien pour un invité) ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ;
 - « Identifiant » : ce que la personne tapera pour se connecter ;
 - « Nom affiché (facultatif) » : le prénom montré aux autres (“Ajouté par Marie”) ;
-- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion.
+- « Connexion » (seulement avec un fournisseur d'identité, [3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) : « Mot de passe ou … » (au départ, invité compris) ou « … seulement » : la personne entrera avec le fournisseur, même identifiant, sans mot de passe Listo ;
+- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion. Pas demandé pour un compte « … seulement ».
 
 <a id="roles-comptes"></a>
 
@@ -610,12 +632,19 @@ Un invité ne partage jamais ce qu'il possède : ni personnes, ni lien public ; 
 
 Sur son compte, un invité voit la pastille « Invité » (Réglages, « Mon compte ») et l'encadré « Compte invité ».
 
+**Ce que voit un invité**
+
+- Seulement les fonctions que l'Admin lui a autorisées. Un invité qui n'a que les projets a un bandeau du bas à trois boutons, « Accueil », « Projets » et « Réglages », et quatre avec « Échéances » quand un projet qu'il voit a l'option « Échéances » activée ; sur ordinateur, un menu de gauche réduit de même.
+- Tant qu'aucune de ses fonctions n'est activée, l'Accueil l'accueille par une carte « Bienvenue » : elle nomme la fonction à activer (par exemple “Activez les projets dans Réglages › Fonctions pour voir ceux qu'on vous partage”) et mène à Réglages, « Fonctions » ; sans aucune fonction autorisée, elle dit que l'Admin ne lui en a encore ouvert aucune.
+- Dans « Partager » et « Pour qui ? », il ne voit personne ; il ne voit que les membres de ce qu'on lui partage.
+- Les assistants IA seulement si l'Admin les lui a autorisés ([9.9 Connecter un assistant IA](#claude-connecter)).
+
 **Fonctions autorisées**
 
-Sur la page d'un compte (Administration, onglet « Comptes », bouton ⋮), sous « Rôle », l'Admin coche ce que la personne peut utiliser. La case autorise ; c'est la personne qui allume ensuite la fonction dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)). Décochée, la fonction disparaît de ses écrans et Listo la refuse ; rien n'est effacé, tout revient si vous la cochez de nouveau.
+Sur la page d'un compte (Administration, onglet « Comptes », bouton ⋮), sous « Rôle », l'Admin coche ce que la personne peut utiliser. La case autorise ; c'est la personne qui active ensuite la fonction dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)). Décochée, la fonction disparaît de ses écrans et Listo la refuse ; rien n'est effacé, tout revient si vous la cochez de nouveau.
 
-- « Listes » : pour un invité seulement, en premier (un utilisateur et un Admin ont toujours les listes, sans case). Sans elle, l'invité ne voit rien des listes : ni « Listes », ni « À offrir », ni les listes qu'on lui a partagées (elles restent pour les autres membres), et « Échéances » seulement si un projet qu'il voit a l'option « Échéances » allumée ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)). On ne peut pas lui partager de liste : « N'utilise pas les listes » sous son prénom.
-- « Notes » et « Projets » : pour un utilisateur, cochées au départ ; il les allume lui-même. Pour un invité, rien n'est coché au départ ; une fonction cochée (« Listes », « Notes » ou « Projets ») s'allume aussitôt pour lui, et il peut l'éteindre ensuite.
+- « Listes » : pour un invité seulement, en premier (un utilisateur et un Admin ont toujours les listes, sans case). Sans elle, l'invité ne voit rien des listes : ni « Listes », ni « À offrir », ni les listes qu'on lui a partagées (elles restent pour les autres membres), et « Échéances » seulement si un projet qu'il voit a l'option « Échéances » activée ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)). On ne peut pas lui partager de liste : « N'utilise pas les listes » sous son prénom.
+- « Notes » et « Projets » : pour un utilisateur, cochées au départ ; il les active lui-même. Pour un invité, rien n'est coché au départ ; une fonction cochée (« Listes », « Notes » ou « Projets ») s'active aussitôt pour lui, et il peut la désactiver ensuite.
 - Décocher « Notes » arrête aussi les liens publics de ses notes, et décocher « Listes » ceux de ses listes ; la confirmation le dit.
 - « Peut créer ses propres projets » (sous « Projets ») : sans elle, ni « Nouveau projet », ni « Dupliquer le projet » ; les projets qu'on lui partage restent utilisables.
 - « Assistants IA » : sans elle, la personne ne peut pas relier d'assistant IA ([9.9 Connecter un assistant IA](#claude-connecter)), et ses connexions sont déconnectées tout de suite.
@@ -625,7 +654,7 @@ Sur la page d'un compte (Administration, onglet « Comptes », bouton ⋮), sous
 **Changer le rôle d'un compte**
 
 - Administration, onglet « Comptes », bouton ⋮ du compte : sa page s'ouvre (sur ordinateur, à droite de la liste). Touchez « Utilisateur », « Invité » ou « Admin ».
-- D'« Utilisateur » à « Invité » : une confirmation dit ce qui change, et ce qu'elle garde (ses fonctions autorisées et allumées ne changent pas, listes comprises : décochez ensuite ce qu'il faut). Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu'une liste d'envies lui est destinée.
+- D'« Utilisateur » à « Invité » : une confirmation dit ce qui change, et ce qu'elle garde (ses fonctions autorisées et activées ne changent pas, listes comprises : décochez ensuite ce qu'il faut). Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu'une liste d'envies lui est destinée.
 - D'« Invité » à « Utilisateur » : une confirmation dit qu'elle sera de nouveau visible de toute la famille, et verra tous les comptes.
 - Un invité ne devient pas Admin directement, ni un Admin invité : on passe d'abord par « Utilisateur ». Personne ne change son propre rôle, et il reste toujours au moins un Admin actif.
 
@@ -653,7 +682,7 @@ L'icône Listo apparaît. Ouverte depuis l'écran d'accueil, Listo s'affiche en 
 
 ### 4.6 Changer de mot de passe
 
-Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([9.10 Voir et déconnecter un assistant IA](#claude-connexions)).
+Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([9.10 Voir et déconnecter un assistant IA](#claude-connexions)). Connecté avec un fournisseur d'identité, ou avec un compte « … seulement », « Mon compte » n'a ni « Mot de passe » ni « Double authentification » : ils se gèrent chez le fournisseur ([4.10 Se connecter avec un fournisseur d'identité](#sso)).
 
 <a id="double-auth"></a>
 
@@ -700,6 +729,8 @@ Si le serveur le propose, l'écran de connexion montre aussi « Se connecter ave
 
 Connecté par le fournisseur, « Mon compte » le dit (« Connecté avec … ») : votre mot de passe et votre double authentification se changent chez le fournisseur, pas dans Listo. Autoriser un assistant IA se confirme alors aussi chez le fournisseur ([9.9 Connecter un assistant IA](#claude-connecter)).
 
+L'Admin peut réserver votre compte au fournisseur : « … seulement ». Vous entrez alors uniquement avec « Se connecter avec … » ; avec votre mot de passe Listo, même juste, l'écran répond « Ce compte se connecte avec … », sans vous connecter. « Mon compte » n'a ni « Mot de passe » ni « Double authentification ». Si le fournisseur est en panne, demandez à l'Admin ([3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)).
+
 Pas encore de compte Listo : « Votre demande de compte est envoyée à l'Admin ». L'Admin la voit dans Réglages, « Administration » (pastille), onglet « Comptes », section « Demande de compte » : « Accepter » (il peut corriger l'identifiant et le nom, et choisir le rôle), ou « Refuser ». Une fois acceptée, reconnectez-vous par le fournisseur. Une demande refusée ne peut pas être refaite avant 30 jours.
 
 <a id="quotidien"></a>
@@ -739,7 +770,7 @@ Une fois l'heure choisie, « Rappel » propose : « Aucun » (au départ), « À
 - Il ne part qu'une fois. Si vous changez la date, l'heure ou le rappel, il repartira au nouveau moment. Une tâche cochée n'envoie rien.
 - Il suit vos réglages : catégorie « Échéances », liste dont vous avez coupé les notifications.
 - Si le serveur était arrêté au moment prévu, le rappel part encore dans la demi-heure qui suit ; après, il est abandonné.
-- Si les notifications sont coupées sur le serveur, le rappel arrive seulement dans la page Notifications.
+- Si les notifications sont désactivées sur le serveur, le rappel arrive seulement dans la page Notifications.
 
 <a id="repeter"></a>
 
@@ -851,16 +882,16 @@ Dans la fiche d'un article, « Ajouter une photo » prend une photo ou en choisi
 
 ### 5.11 Se déplacer : Accueil, Échéances
 
-Listo s'ouvre sur l'« Accueil » (sauf si vous l'avez coupé, voir plus bas) : « Bonjour » et votre prénom, la date du jour, la pastille d'état et la cloche des notifications (avec le nombre de non lues : [6.1 La page Notifications](#notif-page)), puis des tuiles qui montrent d'un coup d'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.
+Listo s'ouvre sur l'« Accueil » (sauf si vous l'avez désactivé, voir plus bas) : « Bonjour » et votre prénom, la date du jour, la pastille d'état et la cloche des notifications (avec le nombre de non lues : [6.1 La page Notifications](#notif-page)), puis des tuiles qui montrent d'un coup d'œil ce qui attend. Elles marchent hors ligne et se mettent à jour toutes seules.
 
 - Tuile « Échéances » : « En retard », « Aujourd'hui » et « Plus tard », avec le nombre de tâches, les mêmes que sur l'écran « Échéances » (avec son choix « Toutes » ou « Les miennes »). Une ligne ouvre « Échéances » à cet endroit ; sans tâche à faire : « Aucune échéance ».
 - Tuile « Listes » : une ligne par type de liste que vous avez (« Courses », « Tâches », « Envies »), avec le nombre de listes, et un point bleu si l'une d'elles a des nouveautés. Une ligne ouvre « Listes » sur ce type ; sans liste : « Aucune liste » et « Nouvelle liste ».
 - Tuile « À offrir », sur toute la largeur, seulement si vous réservez un souhait ou participez à un cadeau : le nombre de cadeaux encore à acheter (au bout du titre, qui ouvre la page « À offrir » : [5.15 À offrir : vos cadeaux](#a-offrir)) et les trois derniers réservés pas encore achetés (“Pour Zoé · réservé”) ; une ligne ouvre le souhait dans sa liste. Quand tout est acheté : « Tout est acheté ».
 - Tuile « Notes » : le nombre de vos notes (au bout du titre), les deux dernières modifiées, quatre sur ordinateur (une ligne ouvre la note) et « Nouvelle note », qui ouvre une nouvelle note ([5.12 Les notes](#notes)) ; sans note : « Aucune note ».
 - Tuile « Compte » : « Mon compte », « Notifications » (la page Notifications, comme la cloche) et « Réglages ». Pour l'Admin, quand la connexion par un fournisseur d'identité est activée, « Demandes de compte » apparaît avec leur nombre s'il y en a en attente.
-- Le titre d'une tuile ouvre l'écran entier. Une adresse inconnue mène aussi à l'Accueil (Accueil coupé : au premier écran choisi) ; un lien vers une liste ouvre toujours cette liste.
+- Le titre d'une tuile ouvre l'écran entier. Une adresse inconnue mène aussi à l'Accueil (Accueil désactivé : au premier écran choisi) ; un lien vers une liste ouvre toujours cette liste.
 
-Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l'Accueil est coupé ; six, avec « Projets », quand vous avez allumé les projets : [7.1 Allumer les projets](#projets-allumer)) ; il descend jusqu'au trait du bas de l'iPhone. Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. Quand tout l'Accueil tient dans l'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
+Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil », « Échéances », « Listes », « Notes » et « Réglages » (quatre boutons, sans « Accueil », quand l'Accueil est désactivé ; six, avec « Projets », quand vous avez activé les projets : [7.1 Activer les projets](#projets-activer)) ; il descend jusqu'au trait du bas de l'iPhone. Il n'est pas sur l'Accueil, dont les tuiles mènent déjà partout. Quand tout l'Accueil tient dans l'écran, il ne défile pas (et ne rebondit pas) ; sinon, il défile normalement. La loupe ronde, juste au-dessus à droite, ouvre la recherche (pas sur « Réglages »). Pour créer une liste : « + », en haut à droite de « Listes ».
 
 - « Échéances » réunit les tâches à faire qui ont une échéance, dans toutes vos listes de tâches où l'option « Échéance » est activée : « En retard », « Aujourd'hui », « Demain », « Cette semaine », puis « Plus tard ». Jamais les listes d'envies ni de courses. Il peut aussi montrer les cartes datées d'un projet, si vous l'avez choisi pour ce projet ([7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)).
 - Chaque ligne montre la tâche, sa liste, sa priorité, sa date et son heure. Touchez la case pour la cocher (si vous pouvez modifier la liste) : elle quitte l'écran, « Annuler » la remet ; une tâche qui se répète reste, à sa date suivante ([5.3 Tâches qui se répètent](#repeter)). Touchez la ligne pour ouvrir la tâche dans sa liste.
@@ -868,29 +899,30 @@ Sur le téléphone, le bandeau du bas mène aux écrans principaux : « Accueil 
 - « Échéances » porte deux nombres : en rouge, en haut à gauche de l'icône, les tâches en retard ; en vert, en haut à droite, celles du jour. Chacun n'apparaît que s'il y en a. Les tâches attribuées à quelqu'un d'autre ne comptent pas. Les cartes des projets montrés dans « Échéances » comptent de même (les vôtres et celles de personne).
 - L'écran marche hors ligne, comme les listes. Sur ordinateur, « Échéances » est dans le menu de gauche, avec les mêmes nombres au bout de la ligne (le rouge, puis le vert).
 
-**Choisir ses tuiles, ou couper l'Accueil**
+**Choisir ses tuiles, ou désactiver l'Accueil**
 
 Réglages, « Accueil » (la première ligne de « Général ») règle l'Accueil de votre compte : le choix vaut pour tous vos appareils, et se fait aussi hors ligne.
 
 - « Tuiles affichées » : un interrupteur par tuile, pour la masquer ou l'afficher (« À offrir » n'apparaît de toute façon que si vous avez réservé un cadeau). La tuile « Compte » est toujours affichée : sur l'Accueil, il n'y a pas de bandeau du bas, et c'est elle qui mène aux Réglages.
+- Tuile « Projets » (quand vous avez activé les projets) : touchez la ligne « Projets » elle-même (pas son interrupteur) pour choisir ce que montre la tuile ; le choix actuel est écrit dessous, et s'applique tout de suite. « Mes cartes » (au départ) : vos trois cartes les plus urgentes, tous projets confondus. « Mes projets » : une ligne par projet, la plus récente activité d'abord, avec le nombre de cartes, celles pour vous et celles en retard (en rouge), ou « lecture seule » ; au-delà de trois projets, les deux premiers et « Tous les projets ». « Un projet », choisi dans la liste de vos projets : le titre de la tuile est son nom (il ouvre le projet), puis ses colonnes avec leur nombre de cartes (sur deux lignes au plus, “+2” pour les autres) et vos deux cartes les plus urgentes de ce projet. Si vous ne voyez plus ce projet (quitté, supprimé, projets désactivés), la tuile revient d'elle-même à « Mes cartes ».
 - « Réordonner » : glissez une tuile par sa poignée, ou utilisez les flèches « Monter » et « Descendre » ; « Terminé » ferme ce mode. L'Accueil suit cet ordre ; sur le téléphone, une tuile restée seule sur sa ligne prend toute la largeur.
-- « Afficher l'Accueil » coupé : Listo s'ouvre sur le « Premier écran » choisi (« Échéances », « Listes », « Notes », ou « Projets » quand ils sont allumés ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d'« Échéances », de « Listes » et de « Notes » ([6.1 La page Notifications](#notif-page)). Sur ordinateur, l'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.
+- « Afficher l'Accueil » désactivé : Listo s'ouvre sur le « Premier écran » choisi (« Échéances », « Listes », « Notes », ou « Projets » quand ils sont activés ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d'« Échéances », de « Listes » et de « Notes » ([6.1 La page Notifications](#notif-page)). Sur ordinateur, l'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.
 
 **Choisir ses fonctions**
 
-Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [7. Projets](#projets)). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne. Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ; un compte invité y trouve aussi « Listes », quand l'Admin les lui a ouvertes.
+Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (activées au départ) et les projets (désactivés au départ : [7. Projets](#projets)). Une fonction désactivée disparaît de vos écrans, pour vous seul ; rien n'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne. Seules les fonctions que l'Admin a autorisées pour votre compte sont proposées ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ; un compte invité y trouve aussi « Listes », quand l'Admin les lui a ouvertes.
 
-- Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi coupé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus d'onglet « Notes » dans la « Corbeille » des Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
-- Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
-- Rallumer les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
-- Invité, listes coupées : plus de bouton « Listes » ni d'« À offrir », plus d'onglet « Listes » dans la « Corbeille », plus de catégorie « Envies » dans Réglages, « Notifications » ; sur ordinateur, ni « Listes », ni recherche des listes, ni « Nouvelle liste ». « Échéances » reste si un projet que vous voyez a l'option « Échéances » allumée. Vous ne recevez plus rien des listes, sauf l'avis qu'une liste vous est partagée (il ouvre Réglages, « Fonctions »).
-- Rien n'est allumé ? L'Accueil vous le dit, avec « Ouvrir Réglages › Fonctions ».
+- Désactiver les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l'Accueil est aussi désactivé), plus de tuile « Notes » sur l'Accueil ni dans Réglages, « Accueil », plus d'onglet « Notes » dans la « Corbeille » des Réglages ; sur ordinateur, plus d'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s'ouvre sur « Listes ».
+- Notes désactivées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.
+- Réactiver les notes ramène tout : vos notes, celles qu'on vous a partagées, vos épingles et les notifications déjà reçues.
+- Invité, listes désactivées : plus de bouton « Listes » ni d'« À offrir », plus d'onglet « Listes » dans la « Corbeille », plus de catégorie « Envies » dans Réglages, « Notifications » ; sur ordinateur, ni « Listes », ni recherche des listes, ni « Nouvelle liste ». « Échéances » reste si un projet que vous voyez a l'option « Échéances » activée. Vous ne recevez plus rien des listes, sauf l'avis qu'une liste vous est partagée (il ouvre Réglages, « Fonctions »).
+- Rien n'est activé ? L'Accueil vous le dit, avec « Ouvrir Réglages › Fonctions ».
 
 <a id="notes"></a>
 
 ### 5.12 Les notes
 
-Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte garde ses retours à la ligne et peut être mis en forme : titres, gras, listes, cases à cocher, liens (voir « Mise en forme » plus bas) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Coupez-les pour vous seul dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : elles disparaissent de vos écrans, sans rien effacer.
+Une note garde un texte libre : un code, une recette, des idées. Au départ, elle est à vous seul : personne d'autre ne la voit, pas même l'Admin ; vous pouvez la partager ([5.13 Partager une note](#notes-partage)). Le texte garde ses retours à la ligne et peut être mis en forme : titres, gras, listes, cases à cocher, liens (voir « Mise en forme » plus bas) ; les adresses web en http ou https deviennent des liens. Vous ne vous servez pas des notes ? Désactivez-les pour vous seul dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)) : elles disparaissent de vos écrans, sans rien effacer.
 
 - Écran « Notes » (bandeau du bas, ou tuile « Notes » de l'Accueil) : les notes « Épinglées » d'abord, puis les « Autres notes », les plus récemment modifiées en haut. Le bouton de tri en haut (comme dans « Listes ») passe des plus récentes d'abord à l'ordre alphabétique, et inversement. La loupe cherche dans les titres, les textes et les noms des étiquettes.
 - « + », en haut à droite, ouvre une nouvelle note : le curseur va tout de suite dans le texte. Sur l'Accueil, « Nouvelle note » fait de même.
@@ -1020,7 +1052,7 @@ Les noms des listes, des articles, des rayons et des magasins ne sont pas tradui
 
 Dans une fenêtre d'au moins 1 024 pixels de large (ordinateur, tablette tournée en largeur), Listo prend une disposition en deux zones. En dessous, c'est l'affichage du téléphone ; passer de l'un à l'autre garde la liste ouverte et ferme les fenêtres ouvertes.
 
-- À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l'« Accueil » (Accueil coupé : au premier écran choisi). Les tuiles de l'Accueil y sont sur trois colonnes.
+- À gauche, le menu : « Rechercher une liste », puis « Accueil », « Échéances », « Listes » (avec le nombre de listes) et « Notes » (avec le nombre de notes), et en bas « Nouvelle liste » (« Nouvelle note » sur les écrans des notes), votre compte et Réglages. Le logo ramène à l'« Accueil » (Accueil désactivé : au premier écran choisi). Les tuiles de l'Accueil y sont sur trois colonnes.
 - Le menu suit l'écran : sur « Listes », dans une liste et sur « À offrir » (Envies mis en avant), il montre aussi « Types » (Courses, Tâches, Envies, avec leur nombre de listes et le point des nouveautés). Un type ne montre au centre que ses listes ; « Listes » les montre toutes. Une liste ouverte met en avant son type. Ailleurs (Accueil, Échéances, Notes, Réglages…), le menu n'a que ses entrées fixes. Pendant une recherche dans le menu, les listes trouvées s'affichent dessous.
 - Au centre, chaque écran (Accueil, Échéances, Listes, une liste, « À offrir », Notes, Réglages, Aide…) a la même largeur. En haut, sur la ligne du titre : la pastille d'état, les boutons de l'écran et la recherche ; la ligne du dessous garde le reste (compteur, « Toutes » / « Les miennes », tri).
 - À droite, la liste ouverte : en haut, sur la ligne du titre, la pastille d'état, « Partager » et la recherche, toujours affichée ; dessous, le compteur ([5.9 Groupes, tri et compteur](#tri)), puis le champ d'ajout, au-dessus des articles. Au survol d'une ligne (ou quand elle a le focus du clavier), un crayon et une corbeille apparaissent l'un au-dessus de l'autre ; sur un écran tactile, ils restent affichés.
@@ -1090,7 +1122,7 @@ L'écran Réglages, « Notifications » a deux parties : « Dans l'application �
 
 ### 6.1 La page Notifications
 
-La cloche, en haut de l'Accueil (Accueil coupé : en haut d'« Échéances », de « Listes » et de « Notes »), ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».
+La cloche, en haut de l'Accueil (Accueil désactivé : en haut d'« Échéances », de « Listes » et de « Notes »), ouvre la page Notifications ; sa pastille donne le nombre de notifications non lues (« 9+ » au-delà de 9). La ligne « Notifications » de la tuile « Compte » y mène aussi. En haut à droite de la page, le bouton des réglages ouvre Réglages, « Notifications ».
 
 - Les notifications sont groupées par jour (« Aujourd'hui », « Hier », puis la date), la plus récente en haut. Une notification non lue est en gras, avec un point bleu ; « 3 non lues » le dit en haut.
 - Toucher une notification la marque comme lue et ouvre ce qu'elle concerne : la liste, la tâche, la note ou les échéances. Si la liste a été supprimée ou ne vous est plus partagée : « Cette liste n'est plus disponible ».
@@ -1100,9 +1132,9 @@ La cloche, en haut de l'Accueil (Accueil coupé : en haut d'« Échéances », d
 - Les notifications sont gardées 30 jours, 300 au plus (les plus anciennes partent).
 - Les modifications rapprochées d'une même liste ou d'une même note tiennent sur une seule ligne, qui se met à jour (“Léa a ajouté 4 articles dans « Courses »”) et redevient non lue.
 
-Elle se remplit même sans les notifications du téléphone (fonction coupée sur le serveur, appareil non inscrit) : rien n'est envoyé ailleurs que sur votre serveur pour la remplir. Hors ligne, elle montre la dernière copie reçue ; « Tout marquer comme lu » et « Effacer » partent au retour du réseau.
+Elle se remplit même sans les notifications du téléphone (fonction désactivée sur le serveur, appareil non inscrit) : rien n'est envoyé ailleurs que sur votre serveur pour la remplir. Hors ligne, elle montre la dernière copie reçue ; « Tout marquer comme lu » et « Effacer » partent au retour du réseau.
 
-Mêmes réglages que le téléphone : une catégorie coupée dans « Notifications reçues », ou une liste ou une note dont vous avez coupé les notifications, n'apparaît pas non plus dans la page. La page donne toujours le détail (nom de la tâche, du souhait) ; « Afficher le détail dans la notification » ne concerne que l'écran du téléphone. D'une note, elle ne cite que le titre, jamais le texte.
+Mêmes réglages que le téléphone : une catégorie désactivée dans « Notifications reçues », ou une liste ou une note dont vous avez coupé les notifications, n'apparaît pas non plus dans la page. La page donne toujours le détail (nom de la tâche, du souhait) ; « Afficher le détail dans la notification » ne concerne que l'écran du téléphone. D'une note, elle ne cite que le titre, jamais le texte.
 
 <a id="notif-activer"></a>
 
@@ -1120,7 +1152,7 @@ Chaque appareil s'active à part : un appareil où vous vous déconnectez ne re�
 
 ### 6.3 Ce que vous recevez, et quand
 
-Quatre catégories, chacune activée ou coupée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour la page Notifications et pour tous vos appareils.
+Quatre catégories, chacune activée ou désactivée dans Réglages, « Notifications », section « Notifications reçues ». Ces réglages valent pour la page Notifications et pour tous vos appareils.
 
 | Catégorie | Quand | Exemple |
 | --- | --- | --- |
@@ -1198,16 +1230,16 @@ Le serveur doit pouvoir joindre en HTTPS les services de notification (fcm.googl
 
 Un projet range des cartes en colonnes, comme un tableau d'idées : “Idées”, “Brouillons”, “Relecture”, “Publiés”… Chaque projet a un seul tableau : ses colonnes (un nom et une couleur, dans l'ordre que vous choisissez), et dans chaque colonne ses cartes, dans l'ordre que vous choisissez. Pour plusieurs tableaux, créez plusieurs projets. Un projet se partage avec des personnes de Listo, chacune avec son rôle ([7.9 Partager un projet, les quatre rôles](#projets-roles)) ; il n'a pas de lien public.
 
-La fonction est coupée au départ, pour chaque compte : rien ne change tant que vous ne l'allumez pas.
+La fonction est désactivée au départ, pour chaque compte : rien ne change tant que vous ne l'activez pas.
 
-<a id="projets-allumer"></a>
+<a id="projets-activer"></a>
 
-### 7.1 Allumer les projets
+### 7.1 Activer les projets
 
-Réglages, « Fonctions », « Projets » : allumez l'interrupteur. Le choix vaut pour vous seul, sur tous vos appareils, et se fait aussi hors ligne. Coupés de nouveau, les projets disparaissent de vos écrans sans rien effacer : vos projets et ceux qu'on vous a partagés reviennent quand vous les rallumez.
+Réglages, « Fonctions », « Projets » : activez l'interrupteur. Le choix vaut pour vous seul, sur tous vos appareils, et se fait aussi hors ligne. Désactivés de nouveau, les projets disparaissent de vos écrans sans rien effacer : vos projets et ceux qu'on vous a partagés reviennent quand vous les réactivez.
 
-- Sur le téléphone, le bandeau du bas a alors six boutons : « Accueil », « Échéances », « Listes », « Notes », « Projets » et « Réglages » (cinq si l'Accueil ou les notes sont coupés). Avec un texte agrandi par le téléphone, un libellé peut être coupé (“Échéanc…”) : le nom lu par le lecteur d'écran reste entier.
-- L'Accueil a une tuile « Projets », en bas, sur toute la largeur : le nombre de vos cartes (attribuées à vous, pas faites), et les trois plus urgentes (en retard d'abord, puis par échéance) ; dessous, le projet, la colonne et l'échéance (“En retard” en rouge). Une ligne ouvre la carte ; sans carte pour vous, « Aucune carte pour vous ». Le titre ouvre l'écran « Projets ». Comme les autres tuiles, elle se masque et se déplace dans Réglages, « Accueil » ; « Projets » peut aussi devenir votre premier écran quand l'Accueil est coupé.
+- Sur le téléphone, le bandeau du bas a alors six boutons : « Accueil », « Échéances », « Listes », « Notes », « Projets » et « Réglages » (cinq si l'Accueil ou les notes sont désactivés). Avec un texte agrandi par le téléphone, un libellé peut être coupé (“Échéanc…”) : le nom lu par le lecteur d'écran reste entier.
+- L'Accueil a une tuile « Projets », en bas, sur toute la largeur : au départ, le nombre de vos cartes (attribuées à vous, pas faites), et les trois plus urgentes (en retard d'abord, puis par échéance) ; dessous, le projet, la colonne et l'échéance (“En retard” en rouge). Une ligne ouvre la carte ; sans carte pour vous, « Aucune carte pour vous ». Le titre ouvre l'écran « Projets ». Dans Réglages, « Accueil », la ligne « Projets » choisit ce qu'elle montre : « Mes cartes », « Mes projets » ou « Un projet » ([5.11 Se déplacer : Accueil, Échéances](#echeances)). Comme les autres tuiles, elle s'y masque et s'y déplace ; « Projets » peut aussi devenir votre premier écran quand l'Accueil est désactivé.
 - La « Corbeille » des Réglages a un onglet « Projets » ([7.10 Corbeilles des projets](#projets-corbeilles)).
 
 <a id="projets-creer"></a>
@@ -1216,7 +1248,7 @@ Réglages, « Fonctions », « Projets » : allumez l'interrupteur. Le choix vau
 
 - Écran « Projets » : une carte par projet, les plus récemment modifiés en haut, avec ses colonnes (point de couleur, nom, nombre de cartes), les pastilles des personnes, l'œil « Lecture seule » ou « Contributeur » selon votre rôle, “2 cartes pour vous · 1 en retard” (vos cartes pas faites), et un point quand quelqu'un d'autre y a fait quelque chose depuis votre dernière visite. La loupe cherche un projet par son nom.
 - « + », en haut à droite (« Nouveau projet » quand vous n'en avez aucun) : donnez un nom (80 caractères au plus), puis « Créer ». Le projet commence avec trois colonnes, « À faire », « En cours » et « Fait », à renommer à votre goût ; il s'ouvre tout de suite.
-- Menu ⋮ d'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Réglages du projet » (propriétaire et « Peut modifier », [7.8 Colonnes et étiquettes du projet](#projets-colonnes)), « Dupliquer le projet », « Cartes supprimées » ([7.10 Corbeilles des projets](#projets-corbeilles)), « Couper les notifications » ([7.6 Nouveautés et notifications des projets](#projets-notifications)), « Masquer les nouveautés » (projet partagé), « Afficher dans Échéances » (quand l'option « Échéances » du projet est allumée, [7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le menu ⋮ du haut est le même, sans « Ouvrir ».
+- Menu ⋮ d'un projet : « Ouvrir », « Partager » (vos projets) ou « Personnes », « Réglages du projet » (propriétaire et « Peut modifier », [7.8 Colonnes et étiquettes du projet](#projets-colonnes)), « Dupliquer le projet », « Cartes supprimées » ([7.10 Corbeilles des projets](#projets-corbeilles)), « Couper les notifications » ([7.6 Nouveautés et notifications des projets](#projets-notifications)), « Masquer les nouveautés » (projet partagé), « Afficher dans Échéances » (quand l'option « Échéances » du projet est activée, [7.7 Les cartes d'un projet dans « Échéances »](#projets-echeances)), puis « Supprimer » (vos projets) ou « Quitter le projet ». Dans un projet ouvert, le menu ⋮ du haut est le même, sans « Ouvrir ».
 - « Dupliquer le projet » (tout membre, même en « Lecture seule ») : un nouveau projet à vous, non partagé, dont le nom finit par “(copie)”, avec les mêmes colonnes, les mêmes étiquettes et les mêmes options « Priorité » et « Échéances », mais sans aucune carte. Pratique pour en faire un modèle. Cela marche aussi hors ligne.
 - « Supprimer » (propriétaire) : le projet va dans la « Corbeille » des Réglages pour 30 jours, avec ses cartes ; il disparaît aussi pour les personnes avec qui il est partagé. « Annuler », dans le message qui suit, le remet tout de suite.
 
@@ -1240,10 +1272,10 @@ Sur le téléphone, un projet montre une colonne à la fois. En haut, les onglet
 Chaque champ d'une carte est toujours là, avec son « + » ou, vide, une ligne pour le remplir (« Attribuer », « Ajouter une échéance »…) : il n'y a qu'un seul endroit pour le remplir. Tout s'enregistre tout seul, hors ligne compris. Ce que votre rôle ne permet pas n'a pas de bouton ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
 
 - Personnes : les pastilles et les prénoms des personnes attribuées ; « + » (ou « Attribuer ») ouvre le choix, avec « M'attribuer » en tête. On peut attribuer une carte au propriétaire, à un « Peut modifier » ou à un « Contributeur », jamais à une personne en « Lecture seule » (10 au plus). Une personne qui quitte le projet, en est retirée ou passe en « Lecture seule » est retirée de ses cartes.
-- Échéance (quand l'option « Échéances » du projet est allumée, ce qui est le cas au départ), sur une seule ligne : la case « Fait », puis la date et l'heure (touchez-les pour les changer). Sans échéance : « Ajouter une échéance ». L'heure est facultative ; avec une heure, un rappel peut être choisi (à l'heure, 15 min, 30 min, 1 h, 2 h avant, ou la veille), écrit en petit dessous. « Retirer l'échéance » la retire, avec la case « Fait ».
+- Échéance (quand l'option « Échéances » du projet est activée, ce qui est le cas au départ), sur une seule ligne : la case « Fait », puis la date et l'heure (touchez-les pour les changer). Sans échéance : « Ajouter une échéance ». L'heure est facultative ; avec une heure, un rappel peut être choisi (à l'heure, 15 min, 30 min, 1 h, 2 h avant, ou la veille), écrit en petit dessous. « Retirer l'échéance » la retire, avec la case « Fait ».
 - La case « Fait » est la seule marque d'une carte faite : l'échéance reste, en vert, avec une coche. Une carte faite n'est plus en retard et n'a plus de rappel ; elle ne change pas de colonne : rangez-la vous-même (dans « Publiés », par exemple), ou supprimez-la. Une carte en retard a sa date en rouge, avec un triangle.
 - Étiquettes : « Étiquette » (ou son « + ») pose ou retire les étiquettes du projet (10 au plus par carte).
-- Priorité (quand l'option « Priorité » du projet est allumée) : « Basse », « Normale » ou « Élevée ». Coupée, la priorité est gardée sans être montrée.
+- Priorité (quand l'option « Priorité » du projet est activée) : « Basse », « Normale » ou « Élevée ». Désactivée, la priorité est gardée sans être montrée.
 - Description : touchez le texte pour l'écrire (« Ajouter une description » quand il est vide) ; la même mise en forme que les notes, avec la barre de mise en forme pendant la saisie ([5.12 Les notes](#notes)). Les cases à cocher font une liste de tâches : « 2/3 » au-dessus (cases cochées sur cases), et une case se coche d'un toucher, sans passer en saisie, même si quelqu'un en coche une autre au même moment.
 - Si quelqu'un a changé la description pendant que vous écriviez, rien n'est écrasé : la carte est « À vérifier » et vous choisissez « Garder la mienne », « Prendre la leur », « Garder les deux » (votre texte est ajouté sous le leur, après une ligne “Version de Guillaume, 25 nov. 21:04”) ou « Décider plus tard ».
 - Liens : un titre (facultatif) et une adresse qui commence par http:// ou https:// (20 liens au plus). Touchez le titre pour l'ouvrir dans un nouvel onglet ; ⋮ : « Modifier le lien », « Copier l'adresse », « Retirer ». Listo n'ouvre jamais ces adresses lui-même.
@@ -1271,19 +1303,19 @@ Sous les liens d'une carte ouverte, deux onglets : « Commentaires » (avec leur
 - Notifications (page Notifications, et le téléphone quand elles y sont activées : [6. Notifications](#notifications)) : les nouvelles cartes d'un projet (“Léa a ajouté 3 cartes dans « DomoPi Articles »”, une ligne par projet qui se met à jour), une carte qu'on vous attribue, les commentaires et les changements (déplacée, échéance, « Fait », description) d'une carte que vous suivez, regroupés une fois par quart d'heure, le rappel d'une carte (catégorie « Échéances », aux personnes attribuées, sinon à tous ; jamais pour une carte faite), et le partage d'un projet.
 - Jamais ce que vous faites vous-même. Sans « Afficher le détail dans la notification », le téléphone ne nomme pas la carte (“une carte”) ; le texte d'un commentaire n'est jamais dans une notification.
 - Menu ⋮ du projet : « Couper les notifications » (page et téléphone, rappels compris), indépendant de « Masquer les nouveautés ».
-- Projets coupés (Réglages, « Fonctions ») : aucune nouveauté ni notification des projets, sauf quand on vous partage un projet : la notification vous invite alors à allumer les projets, et la toucher ouvre Réglages, « Fonctions ».
+- Projets désactivés (Réglages, « Fonctions ») : aucune nouveauté ni notification des projets, sauf quand on vous partage un projet : la notification vous invite alors à activer les projets, et la toucher ouvre Réglages, « Fonctions ».
 
 <a id="projets-echeances"></a>
 
 ### 7.7 Les cartes d'un projet dans « Échéances »
 
-Menu ⋮ d'un projet : « Afficher dans Échéances », un interrupteur, coupé au départ (une coche le dit quand il est allumé) ; il n'y est que si l'option « Échéances » du projet est allumée ([7.8 Colonnes et étiquettes du projet](#projets-colonnes)). C'est votre choix pour ce projet seulement : Léa peut vouloir “Travaux maison” dans ses Échéances, et Guillaume non. Personne d'autre ne le voit ; il se fait aussi hors ligne, quel que soit votre rôle.
+Menu ⋮ d'un projet : « Afficher dans Échéances », un interrupteur, désactivé au départ (une coche le dit quand il est activé) ; il n'y est que si l'option « Échéances » du projet est activée ([7.8 Colonnes et étiquettes du projet](#projets-colonnes)). C'est votre choix pour ce projet seulement : Léa peut vouloir “Travaux maison” dans ses Échéances, et Guillaume non. Personne d'autre ne le voit ; il se fait aussi hors ligne, quel que soit votre rôle.
 
-- Allumé, les cartes datées et pas faites de ce projet apparaissent dans l'écran « Échéances » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), mêlées aux tâches, dans les mêmes groupes (« En retard », « Aujourd'hui », « Demain », « Cette semaine », « Plus tard »), avec l'icône des projets et “DomoPi Articles · Relecture” (le projet et la colonne) à la place du nom de la liste, puis la priorité (si l'option du projet est allumée), la date et l'heure, et les personnes.
+- Activé, les cartes datées et pas faites de ce projet apparaissent dans l'écran « Échéances » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), mêlées aux tâches, dans les mêmes groupes (« En retard », « Aujourd'hui », « Demain », « Cette semaine », « Plus tard »), avec l'icône des projets et “DomoPi Articles · Relecture” (le projet et la colonne) à la place du nom de la liste, puis la priorité (si l'option du projet est activée), la date et l'heure, et les personnes.
 - Toucher la ligne ouvre la carte. La case coche « Fait » si vous pouvez modifier la carte ([7.9 Partager un projet, les quatre rôles](#projets-roles)) : la carte quitte l'écran, « Annuler » la remet. Sinon, la ligne n'a pas de case.
 - « Les miennes » garde les cartes qui vous sont attribuées et celles qui ne sont attribuées à personne ; « Toutes », toutes les cartes datées de ces projets.
 - Les nombres d'« Échéances » (bandeau du bas, menu de gauche), la tuile « Échéances » de l'Accueil et le résumé du matin les comptent aussi (le résumé dit alors “2 échéances aujourd'hui · 1 en retard” et ouvre « Échéances »). Un projet dont vous avez coupé les notifications reste à l'écran, mais n'est pas dans le résumé.
-- Le rappel d'une carte ne dépend pas de ce choix ([7.6 Nouveautés et notifications des projets](#projets-notifications)). Projets coupés (Réglages, « Fonctions ») : aucune carte dans « Échéances » ; le choix est gardé pour quand vous les rallumez.
+- Le rappel d'une carte ne dépend pas de ce choix ([7.6 Nouveautés et notifications des projets](#projets-notifications)). Projets désactivés (Réglages, « Fonctions ») : aucune carte dans « Échéances » ; le choix est gardé pour quand vous les réactivez.
 
 <a id="projets-colonnes"></a>
 
@@ -1295,8 +1327,8 @@ Menu ⋮ d'un projet : « Afficher dans Échéances », un interrupteur, coupé 
 - Colonnes : une ligne par colonne, avec son nombre de cartes. Glissez la poignée à gauche pour changer l'ordre, ou touchez le crayon : nom (40 caractères au plus, une seule fois dans le projet), couleur parmi huit, place (“Avant « Brouillons »”, “Après « Planifiés »”) et « Supprimer la colonne ». « Ajouter une colonne » en ajoute une à la fin (20 au plus).
 - Supprimer une colonne vide : elle part tout de suite. Une colonne qui a des cartes : choisissez de déplacer ses cartes vers une autre colonne, ou de les supprimer avec elle (elles vont dans les « Cartes supprimées » du projet). Une colonne supprimée ne se restaure pas ; un projet garde toujours au moins une colonne.
 - Étiquettes du projet : propres à ce projet (les étiquettes des notes ne s'y mélangent pas), une même étiquette ne pouvant exister qu'une fois (majuscules et accents comptent pareil). « Nouvelle étiquette » ; le crayon renomme, change la couleur ou supprime (l'étiquette est alors retirée de ses cartes). 50 étiquettes au plus par projet.
-- « Priorité » (le propriétaire) : une option du projet, coupée au départ. Allumée, chaque carte a une priorité, « Basse », « Normale » ou « Élevée » ([7.4 Une carte ouverte](#projets-carte)) ; coupée de nouveau, les priorités sont gardées sans être montrées.
-- « Échéances » (le propriétaire et « Peut modifier ») : une option du projet, allumée au départ : une date, une heure et un rappel sur les cartes, et la case « Fait » ([7.4 Une carte ouverte](#projets-carte)). Coupée, rien n'est effacé, mais les cartes n'ont plus ni échéance, ni rappel, ni case « Fait » : elles ne sont plus en retard, ne vont plus dans « Échéances » ni dans le résumé du matin, et « Afficher dans Échéances » disparaît du menu ⋮. Rallumée, tout revient tel quel.
+- « Priorité » (le propriétaire) : une option du projet, désactivée au départ. Activée, chaque carte a une priorité, « Basse », « Normale » ou « Élevée » ([7.4 Une carte ouverte](#projets-carte)) ; désactivée de nouveau, les priorités sont gardées sans être montrées.
+- « Échéances » (le propriétaire et « Peut modifier ») : une option du projet, activée au départ : une date, une heure et un rappel sur les cartes, et la case « Fait » ([7.4 Une carte ouverte](#projets-carte)). Désactivée, rien n'est effacé, mais les cartes n'ont plus ni échéance, ni rappel, ni case « Fait » : elles ne sont plus en retard, ne vont plus dans « Échéances » ni dans le résumé du matin, et « Afficher dans Échéances » disparaît du menu ⋮. Réactivée, tout revient tel quel.
 - « Supprimer le projet » (le propriétaire).
 
 <a id="projets-roles"></a>
@@ -1332,7 +1364,7 @@ Dans un de vos projets, « Partager » (le bouton des personnes en haut, ou le m
 - Un projet ouvert prend toute la largeur : en haut, son nom, « Projet · 5 colonnes · 55 cartes », « Partager » (touche P) et la recherche (touche /) ; dessous, les filtres par personne (« Tout », « Moi », chaque membre, « Personne ») et par étiquette (plusieurs choix ; “+ 2” montre les autres ; « Effacer les filtres ») ; puis les colonnes côte à côte, qui défilent de côté.
 - Chaque colonne a son menu ⋮ (propriétaire et « Peut modifier ») : renommer et changer la couleur, déplacer à gauche ou à droite, « Supprimer la colonne ». « Ajouter une carte », en bas d'une colonne, ouvre un champ (Entrée ajoute, Échap referme) ; « Ajouter une colonne » est au bout.
 - Glisser-déposer : tenez une carte avec la souris et posez-la dans la même colonne ou dans une autre ; une place en pointillés montre où elle tombera. Au clavier : les flèches passent d'une carte à l'autre (haut et bas dans une colonne, gauche et droite d'une colonne à l'autre), Entrée ouvre la carte, M ouvre « Déplacer vers… ». Clic droit sur une carte : son menu.
-- Une carte s'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, sa description, ses liens, puis les commentaires et l'historique ; à droite, dans cet ordre, la colonne, les personnes, les étiquettes, l'échéance (case « Fait » et date sur une ligne, rappel dessous), la priorité (option allumée) et les actions (« Déplacer vers… », « Dupliquer », « Suivre » ou « Ne plus suivre », « Supprimer »). L'adresse est celle de la carte : on peut l'envoyer ou y revenir. Échap ou la croix la ferment.
+- Une carte s'ouvre dans une fenêtre au centre, par-dessus le projet : à gauche le titre et “dans Relecture · DomoPi Articles · créée par Guillaume le 2 octobre”, sa description, ses liens, puis les commentaires et l'historique ; à droite, dans cet ordre, la colonne, les personnes, les étiquettes, l'échéance (case « Fait » et date sur une ligne, rappel dessous), la priorité (option activée) et les actions (« Déplacer vers… », « Dupliquer », « Suivre » ou « Ne plus suivre », « Supprimer »). L'adresse est celle de la carte : on peut l'envoyer ou y revenir. Échap ou la croix la ferment.
 
 <a id="roles"></a>
 
@@ -1365,9 +1397,10 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Onglet « Comptes »**
 
 - « Ajouter un compte » ([4.2 Créer les autres comptes](#creer-comptes)).
-- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets », ou « Listes, Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification.
+- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets », ou « Listes, Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l'état de la double authentification ; et « … seulement » pour un compte qui se connecte avec le fournisseur d'identité seulement.
 - Bouton ⋮ d'un compte : sa page, avec son « Rôle » et ses « Fonctions autorisées » ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)), et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).
 - Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.
+- « Connexion » (seulement avec un fournisseur d'identité, [3.10 Connexion avec un fournisseur d'identité (facultative)](#sso-serveur)) : « Mot de passe ou … » (au départ) ou « … seulement » (… : le nom du fournisseur). Passer à « … seulement » demande confirmation et déconnecte tout de suite ses appareils connectés par mot de passe ; « Réinitialiser le mot de passe » disparaît. Pour un compte « … seulement » qui ne s'est encore jamais connecté avec le fournisseur, la page le dit : la personne devra y utiliser le même identifiant. Le choix est pâli, avec sa raison, pour votre propre compte (un autre Admin le change), pour le dernier Admin qui se connecte avec son mot de passe (il le garde, pour entrer si le fournisseur est en panne), et quand la connexion par mot de passe est désactivée sur le serveur (`LISTO_LOCAL_LOGIN=off` : tout le monde est déjà « … seulement »).
 
 **Onglet « Courses »**
 
@@ -1377,7 +1410,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 
 **Onglet « Étiquettes »**
 
-- Les étiquettes des notes, communes à tout le foyer ([5.12 Les notes](#notes)), avec le nombre de notes qui portent chacune (jamais lesquelles). Il reste là même si vous avez coupé les notes pour vous.
+- Les étiquettes des notes, communes à tout le foyer ([5.12 Les notes](#notes)), avec le nombre de notes qui portent chacune (jamais lesquelles). Il reste là même si vous avez désactivé les notes pour vous.
 - Le crayon renomme l'étiquette et change sa couleur ; un nom déjà pris par une autre étiquette (majuscules et accents ignorés) est refusé.
 - La corbeille supprime l'étiquette, après confirmation : elle est retirée de ses notes, sans toucher aux notes.
 - Les étiquettes se créent depuis une note, par n'importe quel compte.
@@ -1385,7 +1418,7 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Peut / ne peut pas**
 
 - Peut : gérer les comptes, les magasins, les rayons, les articles et les étiquettes des notes ; voir s'il existe une nouvelle version (Réglages › « À propos »).
-- Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([5.12 Les notes](#notes)).
+- Ne peut pas : voir le contenu, le nom ou les membres des listes des autres. Un Admin voit une liste seulement si elle est partagée avec lui, avec le droit choisi par son propriétaire. De même pour les notes ([5.12 Les notes](#notes)) et les projets ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
 - Connexions d'assistants IA des autres comptes : voir [9.10 Voir et déconnecter un assistant IA](#claude-connexions).
 - Savoir qu'une nouvelle version existe : [10.9 Savoir qu'une nouvelle version existe](#version).
 
@@ -1458,7 +1491,7 @@ Une liste d'envies rassemble des idées de cadeaux pour une personne, le bénéf
 - « Dupliquer » (menu ⋮ de la liste) crée une copie à votre nom, avec ou sans ses articles (tous décochés). La copie est privée : ni les personnes avec qui la liste est partagée, ni le lien public, ni les photos ne sont copiés.
 - Menu ⋮ de la liste, « Supprimer » : une confirmation rappelle d'abord ce que contient la liste et avec qui elle est partagée. La liste disparaît alors pour tout le monde, et son lien public s'arrête.
 - Une liste supprimée reste 30 jours dans votre « Corbeille » (Réglages, onglet « Listes »), puis elle est effacée pour de bon. Seul son propriétaire l'y voit ; chaque ligne indique son type, son nombre d'éléments, le jour de sa suppression et le nombre de jours qui restent.
-- La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [5.12 Les notes](#notes)), et un troisième, « Projets », quand vous utilisez les projets ([7.10 Corbeilles des projets](#projets-corbeilles)) ; chacun avec son nombre quand il y en a. Elle s'ouvre sur « Listes », sauf si seules des notes (ou des projets) y attendent ; l'onglet choisi reste en revenant en arrière. Si vous avez coupé les notes (Réglages, « Fonctions ») et que les projets le sont aussi, elle n'a pas d'onglets : seulement vos listes.
+- La « Corbeille » a deux onglets, « Listes » et « Notes » (vos notes supprimées : [5.12 Les notes](#notes)), et un troisième, « Projets », quand vous utilisez les projets ([7.10 Corbeilles des projets](#projets-corbeilles)) ; chacun avec son nombre quand il y en a. Elle s'ouvre sur « Listes », sauf si seules des notes (ou des projets) y attendent ; l'onglet choisi reste en revenant en arrière. Si vous avez désactivé les notes (Réglages, « Fonctions ») et que les projets le sont aussi, elle n'a pas d'onglets : seulement vos listes.
 - « Restaurer » la remet telle qu'elle était, pour toutes les personnes avec qui elle était partagée : éléments, droits de chacun, réglages, photos, réservations. Il faut du réseau. Son lien public ne revient pas : recréez-le si besoin.
 - « Supprimer définitivement » (la poubelle rouge d'une ligne) efface la liste tout de suite, avec ses éléments et ses photos ; « Vider la corbeille », en haut, efface toutes les listes affichées. Les deux demandent une confirmation et du réseau, et rien ne revient ensuite : la liste ne peut plus être restaurée.
 - Le propriétaire ne quitte pas sa liste : il la supprime, ou la laisse.
@@ -1582,7 +1615,7 @@ Un assistant IA voit vos notes comme vous ([5.12 Les notes](#notes)) : les vôtr
 - Supprimer : seulement vos notes, et seulement vers la corbeille, d'où vous pouvez la restaurer pendant 30 jours ([5.12 Les notes](#notes)). Il doit vous demander confirmation avant ; il ne peut jamais l'effacer pour de bon.
 - Avec le droit « Lecture seule » sur une note, il ne peut que la lire, même en « Lecture et écriture ».
 
-Les notes coupées pour vous dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), ou que l'Admin n'a pas autorisées pour votre compte : l'assistant n'y a plus accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucune note : reconnectez l'assistant avec « Toutes mes listes, mes notes et mes projets » ([9.9 Connecter un assistant IA](#claude-connecter)).
+Les notes désactivées pour vous dans Réglages, « Fonctions » ([5.11 Se déplacer : Accueil, Échéances](#echeances)), ou que l'Admin n'a pas autorisées pour votre compte : l'assistant n'y a plus accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucune note : reconnectez l'assistant avec « Toutes mes listes, mes notes et mes projets » ([9.9 Connecter un assistant IA](#claude-connecter)).
 
 <a id="claude-projets"></a>
 
@@ -1591,7 +1624,7 @@ Les notes coupées pour vous dans Réglages, « Fonctions » ([5.11 Se déplacer
 Un assistant IA voit vos projets comme vous ([7. Projets](#projets)) : les vôtres et ceux qu'on vous a partagés, avec votre rôle dans chacun ([7.9 Partager un projet, les quatre rôles](#projets-roles)), jamais ceux des autres ni votre corbeille. Il agit à votre nom : une carte qu'il crée est à vous, l'historique de la carte ajoute « (assistant IA) », et les personnes du projet sont prévenues comme si vous l'aviez fait vous-même (une seule notification par projet et par quart d'heure, même pour 50 cartes).
 
 - Lire : la liste de vos projets, puis un projet (personnes, colonnes, étiquettes et cartes), puis une carte entière (description, liens, commentaires, et son historique si vous le demandez).
-- Projets : en créer un (il est à vous, partagé avec personne), le renommer ou le mettre à la corbeille (propriétaire seulement ; vous pouvez le restaurer pendant 30 jours, Réglages, « Corbeille », onglet « Projets »), allumer ou couper ses options : « Priorité » (propriétaire) et « Échéances » (propriétaire et « Peut modifier », [7.8 Colonnes et étiquettes du projet](#projets-colonnes)). Il doit vous demander confirmation avant de le mettre à la corbeille. Sur un projet dont l'option « Échéances » est coupée, il ne pose ni échéance ni « Fait » : il vous propose d'abord d'allumer l'option.
+- Projets : en créer un (il est à vous, partagé avec personne), le renommer ou le mettre à la corbeille (propriétaire seulement ; vous pouvez le restaurer pendant 30 jours, Réglages, « Corbeille », onglet « Projets »), activer ou désactiver ses options : « Priorité » (propriétaire) et « Échéances » (propriétaire et « Peut modifier », [7.8 Colonnes et étiquettes du projet](#projets-colonnes)). Il doit vous demander confirmation avant de le mettre à la corbeille. Sur un projet dont l'option « Échéances » est désactivée, il ne pose ni échéance ni « Fait » : il vous propose d'abord d'activer l'option.
 - Colonnes et étiquettes du projet : les ajouter, les renommer, changer leur couleur ou leur ordre, les supprimer (propriétaire et « Peut modifier »). Une colonne qui a des cartes ne se supprime qu'en disant où vont ses cartes : l'assistant ne supprime jamais une carte de cette façon.
 - Cartes : en créer (jusqu'à 50 d'un coup, avec leur colonne, leurs étiquettes, leurs personnes, leur échéance et « Fait », leur description et leurs liens), les modifier, les déplacer, ou les mettre dans les « Cartes supprimées » du projet (restaurables 30 jours). Il doit vous demander confirmation avant de créer plus de 20 cartes, et avant d'en supprimer.
 - Commentaires : il en écrit sur toute carte, sauf si vous avez le rôle « Lecture seule ».
@@ -1602,7 +1635,7 @@ Exemple : reprendre un tableau Planka. Si votre assistant peut lire votre tablea
 
 Jamais : partager un projet, changer un rôle, quitter un projet, restaurer, effacer pour de bon un projet ou une carte, vider une corbeille, ni toucher à vos réglages à vous (nouveautés, notifications, Échéances).
 
-Les projets coupés pour vous dans Réglages, « Fonctions » ([7.1 Allumer les projets](#projets-allumer)), ou que l'Admin n'a pas autorisés pour votre compte : l'assistant n'y a pas accès du tout, et il vous le dit ; sans « Peut créer ses propres projets », il ne crée pas de projet. Une connexion limitée à « Certaines listes » ne voit aucun projet : reconnectez l'assistant avec « Toutes mes listes, mes notes et mes projets » ([9.9 Connecter un assistant IA](#claude-connecter)).
+Les projets désactivés pour vous dans Réglages, « Fonctions » ([7.1 Activer les projets](#projets-activer)), ou que l'Admin n'a pas autorisés pour votre compte : l'assistant n'y a pas accès du tout, et il vous le dit ; sans « Peut créer ses propres projets », il ne crée pas de projet. Une connexion limitée à « Certaines listes » ne voit aucun projet : reconnectez l'assistant avec « Toutes mes listes, mes notes et mes projets » ([9.9 Connecter un assistant IA](#claude-connecter)).
 
 <a id="claude-limites"></a>
 
@@ -1636,7 +1669,7 @@ Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
 
 Pas de section « Assistants IA » dans « Mon compte » ? L'Admin ne l'a pas autorisée pour votre compte ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) : l'écran « Autoriser un assistant IA » le dit aussi.
 
-Compte invité sans listes : l'écran ne propose pas « Certaines listes », et l'assistant ne voit que vos notes et vos projets (s'ils sont allumés) ; ses outils des listes répondent que les listes ne sont pas ouvertes pour votre compte.
+Compte invité sans listes : l'écran ne propose pas « Certaines listes », et l'assistant ne voit que vos notes et vos projets (s'ils sont activés) ; ses outils des listes répondent que les listes ne sont pas ouvertes pour votre compte.
 
 <a id="claude-connexions"></a>
 
@@ -1671,8 +1704,8 @@ Ne demandez à l'assistant de modifier un élément, une note ou une carte que v
 
 - Après une mise à jour de Listo, l'assistant peut garder l'ancienne liste de ses outils : ouvrez une nouvelle conversation, ou déconnectez puis reconnectez le connecteur dans l'assistant.
 - Une liste manque : la connexion n'autorise peut-être que certaines listes, ou vous n'en êtes plus membre. Reconnectez l'assistant avec « Toutes mes listes, mes notes et mes projets » ([9.9 Connecter un assistant IA](#claude-connecter)).
-- L'assistant ne voit pas vos notes : la connexion est limitée à « Certaines listes », ou les notes sont coupées pour vous dans Réglages, « Fonctions » ([9.6 Les notes](#claude-notes)). Après la mise à jour qui a ajouté les notes, ouvrez une nouvelle conversation pour qu'il connaisse ses nouveaux outils.
-- L'assistant ne voit pas vos projets : la connexion est limitée à « Certaines listes », ou les projets sont coupés pour vous dans Réglages, « Fonctions » ([9.7 Les projets](#claude-projets)). Après la mise à jour qui a ajouté les projets, ouvrez une nouvelle conversation pour qu'il connaisse ses nouveaux outils.
+- L'assistant ne voit pas vos notes : la connexion est limitée à « Certaines listes », ou les notes sont désactivées pour vous dans Réglages, « Fonctions » ([9.6 Les notes](#claude-notes)). Après la mise à jour qui a ajouté les notes, ouvrez une nouvelle conversation pour qu'il connaisse ses nouveaux outils.
+- L'assistant ne voit pas vos projets : la connexion est limitée à « Certaines listes », ou les projets sont désactivés pour vous dans Réglages, « Fonctions » ([9.7 Les projets](#claude-projets)). Après la mise à jour qui a ajouté les projets, ouvrez une nouvelle conversation pour qu'il connaisse ses nouveaux outils.
 - L'assistant dit qu'une colonne, une étiquette du projet ou une personne est inconnue : rien n'a été fait ; il doit vous citer les noms valables. Une personne en « Lecture seule » dans le projet ne peut pas recevoir de carte.
 - L'assistant dit qu'il ne peut pas modifier une carte : en « Contributeur », vous (et lui) ne modifiez que les cartes que vous avez créées ou qui vous sont attribuées ([7.9 Partager un projet, les quatre rôles](#projets-roles)).
 - L'assistant dit qu'une étiquette est inconnue : elle n'existe pas encore. Rien n'a été fait ; demandez-lui de la créer, ou choisissez-en une parmi celles qu'il vous cite.
@@ -1695,7 +1728,7 @@ L'accès des assistants IA est désactivé tant que la personne qui gère le ser
 
 *Pour la personne qui gère le serveur.*
 
-L'accès des assistants IA est désactivé par défaut. Pour l'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le couper : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l'on réactive, tant qu'elles n'ont pas expiré). Aucun mot de passe ni aucune clé n'est à fournir.
+L'accès des assistants IA est désactivé par défaut. Pour l'activer, ajoutez `- LISTO_MCP=on` dans la partie `environment:` de `docker-compose.yml`, puis `docker compose up -d`. Pour le désactiver : retirez la ligne, puis `docker compose up -d` ; toutes ses adresses répondent alors 404, et les connexions accordées ne servent plus (elles reviennent si l'on réactive, tant qu'elles n'ont pas expiré). Aucun mot de passe ni aucune clé n'est à fournir.
 
 Quels assistants : par défaut, tout assistant IA qui suit le standard (MCP, avec l'autorisation OAuth 2.1 et PKCE) peut demander l'accès, toujours après l'accord de la personne. Pour n'accepter que certains sites, ajoutez par exemple `- LISTO_MCP_SITES=claude.ai,claude.com` (noms de sites séparés par des virgules, sans `https://` ni chemin) : seuls ces sites, et les applications de l'ordinateur (`localhost`, comme Claude Code), peuvent alors se connecter. Les connexions déjà accordées à un autre site cessent de marcher (sans être effacées : elles reviennent si l'on remet le site). Une valeur mal écrite empêche Listo de démarrer, avec un message dans `docker logs listo`. Listo ne lit le document d'identification d'une application (CIMD) que sur une liste courte de sites (`claude.ai`, `claude.com`, ou ceux de `LISTO_MCP_SITES`) ; les autres assistants s'enregistrent tout seuls.
 
@@ -1785,6 +1818,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 - « Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
 - « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
 - Mot de passe oublié, téléphone perdu : [4.8 Mot de passe oublié, téléphone perdu](#oubli).
+- « Ce compte se connecte avec … » : l'Admin a choisi « … seulement » pour votre compte ; utilisez « Se connecter avec … » ([4.10 Se connecter avec un fournisseur d'identité](#sso)).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.
 
 <a id="faq-double-auth"></a>
@@ -1820,7 +1854,7 @@ Dans Réglages, la ligne « À propos » montre la version installée, ou la pas
 - « Vérification impossible » : GitHub n'a pas répondu. Sans conséquence : Listo marche normalement ;
 - le bouton d'actualisation, au bout de la ligne, refait la demande tout de suite (une fois par minute au plus).
 
-C'est le serveur (pas le téléphone) qui demande à GitHub, au plus une fois par heure, sans compte ni jeton, quel est le dernier commit dont l'image a été construite. Listo ne se met jamais à jour tout seul. Les autres comptes ne voient que la version. Pour couper la vérification : `LISTO_UPDATE_CHECK=off` dans `docker-compose.yml` (la ligne est déjà prête, en commentaire), puis `docker compose up -d`.
+C'est le serveur (pas le téléphone) qui demande à GitHub, au plus une fois par heure, sans compte ni jeton, quel est le dernier commit dont l'image a été construite. Listo ne se met jamais à jour tout seul. Les autres comptes ne voient que la version. Pour désactiver la vérification : `LISTO_UPDATE_CHECK=off` dans `docker-compose.yml` (la ligne est déjà prête, en commentaire), puis `docker compose up -d`.
 
 <a id="faq-suggestion"></a>
 

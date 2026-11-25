@@ -130,7 +130,7 @@ test('migration 45 : commentaires et cartes suivies ; inbox recréée avec ses l
   old.prepare("INSERT INTO cards (id, project_id, column_id, position, title, created_by, created_at, updated_at) VALUES ('k', 'p', 'c', 1, 'T', 1, 'x', 'x')").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 49);
+  assert.equal(schemaVersion(db), 51);
   assert.deepEqual(db.prepare('SELECT user_id, num, category, text_key, params, target_type, target_id, group_key, count, created_at, updated_at, read_at FROM inbox').get(),
     { user_id: 1, num: 7, category: 'changes', text_key: 'note.changes', params: '{"actors":["Léa"]}', target_type: 'note', target_id: 'n1', group_key: 'changes:note:n1', count: 3, created_at: 'a', updated_at: 'b', read_at: 'c' },
     'une ligne d\'avant est gardée telle quelle');
@@ -432,8 +432,8 @@ test('partage : remis même projets coupés, avec l\'invitation à les allumer (
   await h.share(p.projectId, { zoe: 'modification', hugo: 'contribution', marc: 'lecture', paul: 'contribution' });
   await h.app.ctx.push.idle();
   const rows = await h.inbox('paul', { all: true });
-  assert.deepEqual(rows.map((r) => [r.text, r.sub, r.target]), [['Léa a partagé le projet « DomoPi Articles » avec vous', 'Allumez « Projets » dans Réglages › Fonctions pour le voir.', { type: 'features' }]]);
-  assert.deepEqual(h.pushes('paul').map((n) => [n.title, n.body]), [['Léa a partagé le projet « DomoPi Articles » avec vous', 'Allumez « Projets » dans Réglages › Fonctions pour le voir.']]);
+  assert.deepEqual(rows.map((r) => [r.text, r.sub, r.target]), [['Léa a partagé le projet « DomoPi Articles » avec vous', 'Activez « Projets » dans Réglages › Fonctions pour le voir.', { type: 'features' }]]);
+  assert.deepEqual(h.pushes('paul').map((n) => [n.title, n.body]), [['Léa a partagé le projet « DomoPi Articles » avec vous', 'Activez « Projets » dans Réglages › Fonctions pour le voir.']]);
   assert.ok(h.pushes('paul')[0].navigate.endsWith('/#/reglages/fonctions'));
   // Zoé, Hugo et Marc ont été prévenus à leur ajout (droit écrit)
   assert.deepEqual(h.pushes('hugo').map((n) => n.body), ['Vous pouvez ajouter des cartes et commenter.']);

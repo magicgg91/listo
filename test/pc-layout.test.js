@@ -283,7 +283,7 @@ test('Réglages (ordinateur) : même rangement que sur le téléphone ; carte «
   // Ils restent dans « Mon compte », le même écran sur téléphone et sur ordinateur
   const account = read('public/js/screens/account.js');
   assert.match(account, /h\('h2', \{ class: 'section-title' \}, t\('compte\.apparence'\)\),/);
-  assert.match(account, /user\.claudeUrl \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
+  assert.match(account, /user\.claudeUrl && allowedNow\(\)\.mcp \? \[\s*h\('h2', \{ class: 'section-title' \}, t\('compte\.claude'\)\),/);
   // Seule différence (décision du 10 novembre 2026) : « Cet appareil » sur ordinateur
   // Deux différences seulement : « Cet appareil », et la confirmation de
   // « Se déconnecter », sur le téléphone seulement (décision du 11 novembre 2026)

@@ -248,7 +248,7 @@ test('rôles dans l\'interface : seulement les boutons permis (la règle partag�
   const view = code('public/js/project-view.js');
   assert.match(view, /rights\.share && canShare \? 'share' : 'people',/);
   assert.match(view, /rights\.settings \? 'settings' : null,/);
-  assert.match(view, /rights\.duplicate \? 'duplicate' : null,/);
+  assert.match(view, /rights\.duplicate && canCreate \? 'duplicate' : null,/);
   assert.match(view, /rights\.trash \? 'delete' : 'leave',/);
   const projects = code('public/js/screens/projects.js');
   assert.match(projects, /share: \(\) => \(\{ icon: 'users', label: t\('projets\.menu\.partager'\)/);

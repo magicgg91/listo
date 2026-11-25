@@ -62,9 +62,12 @@ async function family(t, { mcp = false } = {}) {
 }
 
 // Un invité créé par l'Admin, par la route (mot de passe provisoire effacé
-// ensuite, pour qu'il puisse agir tout de suite)
-async function addGuest(h, name, display) {
-  const res = await h.guillaume.post('/api/admin/users', { username: LOGINS[name], displayName: display, role: 'guest', password: pass(name) });
+// ensuite, pour qu'il puisse agir tout de suite). allowed : ses fonctions
+// autorisées (étape 2) ; ici, par défaut, toutes cochées (allumées
+// aussitôt pour lui), pour essayer les règles de l'étape 1
+const ALL_ALLOWED = { notes: true, projects: true, projectsCreate: true, mcp: true };
+async function addGuest(h, name, display, allowed = ALL_ALLOWED) {
+  const res = await h.guillaume.post('/api/admin/users', { username: LOGINS[name], displayName: display, role: 'guest', password: pass(name), allowed });
   assert.equal(res.status, 201, res.text);
   assert.equal(res.body.user.role, 'guest');
   h.app.db.prepare('UPDATE users SET must_change_password = 0 WHERE id = ?').run(res.body.user.id);
@@ -127,9 +130,11 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   migrate(db);
   t.after(() => db.close());
   assert.equal(schemaVersion(db), MIGRATIONS.length);
-  assert.equal(MIGRATIONS.length, 47);
+  assert.equal(MIGRATIONS.length, 48);
   const after = db.prepare('SELECT * FROM users ORDER BY id').all();
-  assert.deepEqual(after.map(({ guest, ...rest }) => rest), before);
+  // (migrations 47 et 48 : guest, puis les fonctions autorisées, tout à 1)
+  assert.deepEqual(after.map(({ guest, notes_allowed, projects_allowed, projects_create, mcp_allowed, ...rest }) => rest), before);
+  assert.deepEqual(after.map((row) => [row.notes_allowed, row.projects_allowed, row.projects_create, row.mcp_allowed]), [[1, 1, 1, 1], [1, 1, 1, 1]]);
   assert.deepEqual(after.map((row) => row.guest), [0, 0]);
   // Contrainte : jamais invité et Admin (ni l'un ni l'autre ordre)
   assert.throws(() => db.prepare('UPDATE users SET guest = 1 WHERE id = 1').run(), /CHECK/);
@@ -138,7 +143,7 @@ test('migration 47 : colonne guest à 0 pour tous, rien d\'autre ne change ; la 
   assert.throws(() => db.prepare('UPDATE users SET guest = 2 WHERE id = 2').run(), /CHECK/);
   // Relancer les migrations ne refait rien
   migrate(db);
-  assert.equal(schemaVersion(db), 47);
+  assert.equal(schemaVersion(db), 48);
 });
 
 // --- Une seule lecture du rôle ---
@@ -187,8 +192,10 @@ test('annuaire : l\'Admin voit tout le monde avec le rôle, la famille ne voit p
 
   const lea = await users(h.lea);
   assert.deepEqual(lea.map((u) => u.displayName).sort(), ['Guillaume', 'Hugo', 'Léa', 'Zoé']);
-  // Champ par champ : id et prénom, ni rôle ni identifiant
-  for (const u of lea) assert.deepEqual(Object.keys(u).sort(), ['displayName', 'id']);
+  // Champ par champ : id, prénom et fonctions autorisées (étape 2 : notes,
+  // projets), ni rôle ni identifiant
+  for (const u of lea) assert.deepEqual(Object.keys(u).sort(), ['displayName', 'id', 'uses']);
+  for (const u of lea) assert.deepEqual(Object.keys(u.uses).sort(), ['notes', 'projects']);
   assert.deepEqual(await sync(h.lea), lea);
 
   assert.deepEqual(await users(h.max), []);
@@ -304,6 +311,13 @@ test('annuaire identique avec ou sans invités : Léa (famille) reçoit exacteme
   const gnote = uuid();
   await ops(h.guillaume, [{ type: 'note.create', noteId: gnote, title: 'Codes', body: '1234' }]);
   assert.equal((await h.guillaume.request('PUT', `/api/notes/${gnote}/members`, { userIds: [h.ids.ines], access: { [h.ids.ines]: 'lecture' } })).status, 200);
+  // Étape 2 (fonctions autorisées) : l'Admin change les cases d'un invité
+  // (retire puis rend les notes, retire les assistants IA, la création de
+  // projets) : rien n'en parvient à Léa, pas même un message temps réel
+  for (const allowed of [{ notes: false }, { notes: true }, { mcp: false, projectsCreate: false }]) {
+    const res = await h.guillaume.request('PATCH', `/api/admin/users/${h.ids.max}`, { allowed });
+    assert.equal(res.status, 200, res.text);
+  }
   await h.app.ctx.notify?.flushDue?.();
   await pause(150);
 
@@ -592,7 +606,7 @@ test('nouveau compte : rôle Invité créé discret ; rôle de chacun dans /api/
 
 test('écrans : Administration à trois rôles, « Discret », page d\'un compte ; « Invité · discret » dans le partage de l\'Admin ; encadré « Compte invité »', () => {
   const admin = read('public/js/screens/admin.js');
-  assert.match(admin, /import \{ ROLES \} from '\.\.\/access\.js';/);
+  assert.match(admin, /import \{ ROLES, PERMISSIONS, defaultAllowed \} from '\.\.\/access\.js';/);
   // Admin ↔ Invité désactivé, son propre rôle aussi
   assert.match(admin, /disabled: \(value\) => self \|\| \(user\.role === 'guest' && value === 'admin'\) \|\| \(user\.role === 'admin' && value === 'guest'\)/);
   // « Discret » : l'œil barré ET le mot

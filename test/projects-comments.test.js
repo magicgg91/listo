@@ -130,7 +130,7 @@ test('migration 45 : commentaires et cartes suivies ; inbox recréée avec ses l
   old.prepare("INSERT INTO cards (id, project_id, column_id, position, title, created_by, created_at, updated_at) VALUES ('k', 'p', 'c', 1, 'T', 1, 'x', 'x')").run();
   old.close();
   const db = openDatabase(file);
-  assert.equal(schemaVersion(db), 47);
+  assert.equal(schemaVersion(db), 48);
   assert.deepEqual(db.prepare('SELECT user_id, num, category, text_key, params, target_type, target_id, group_key, count, created_at, updated_at, read_at FROM inbox').get(),
     { user_id: 1, num: 7, category: 'changes', text_key: 'note.changes', params: '{"actors":["Léa"]}', target_type: 'note', target_id: 'n1', group_key: 'changes:note:n1', count: 3, created_at: 'a', updated_at: 'b', read_at: 'c' },
     'une ligne d\'avant est gardée telle quelle');

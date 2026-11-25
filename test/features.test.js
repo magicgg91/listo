@@ -112,7 +112,8 @@ test('bandeau du bas : Accueil affiché ou coupé × notes utilisées ou coupée
   // Le bandeau ôte toutes les anciennes classes tabbar--N avant d'en poser une
   const tabbar = code('public/js/tabbar.js');
   assert.match(tabbar, /for \(let count = 1; count <= TABS\.length; count\+\+\) nav\.classList\.remove\(`tabbar--\$\{count\}`\);/);
-  assert.match(tabbar, /const names = tabScreens\(app\.data\.home, app\.data\.features\);/);
+  // (fonctions utilisées et règle d'« Échéances » : shownFeatures, app.js)
+  assert.match(tabbar, /const names = tabScreens\(app\.data\.home, shownFeatures\(\)\);/);
 });
 
 test('premier écran : « Notes » choisi puis notes coupées → « Listes » (le choix gardé revient avec les notes)', () => {
@@ -143,23 +144,26 @@ test('tuiles : la tuile Notes n\'est ni affichée ni proposée quand les notes s
 
 test('migration 41 : colonne notes_enabled (1 au départ, 0 ou 1 seulement) ; une base en version 40 migre sans rien changer', (t) => {
   const db = openDatabase(':memory:');
-  assert.equal(MIGRATIONS.length, 47);
-  assert.equal(schemaVersion(db), 47);
+  assert.equal(MIGRATIONS.length, 48);
+  assert.equal(schemaVersion(db), 48);
   const id = db.prepare("INSERT INTO users (username, display_name, password_hash, role) VALUES ('lea', 'Léa', 'x', 'user')").run().lastInsertRowid;
   assert.equal(db.prepare('SELECT notes_enabled FROM users WHERE id = ?').pluck().get(id), 1);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), defaultFeatures());
   for (const bad of [2, -1, null]) assert.throws(() => db.prepare('UPDATE users SET notes_enabled = ? WHERE id = ?').run(bad, id), /CHECK|NOT NULL/);
   db.prepare('UPDATE users SET notes_enabled = 0 WHERE id = ?').run(id);
   assert.deepEqual(featuresFromRow(db.prepare('SELECT * FROM users WHERE id = ?').get(id)), OFF);
-  // Ligne sans la colonne (avant la migration) : valeurs de départ
-  assert.deepEqual(featuresFromRow({ id: 1 }), defaultFeatures());
+  // Ligne sans la colonne (avant la migration) : valeurs de départ (un
+  // Utilisateur : tout autorisé ; une ligne sans rôle n'est jamais crue,
+  // traitée en invité, docs/cadrage-comptes.md)
+  assert.deepEqual(featuresFromRow({ id: 1, role: 'user', guest: 0 }), defaultFeatures());
+  assert.deepEqual(featuresFromRow({ id: 1 }), OFF);
   // Base en version 40 : les comptes existants gardent les notes
   const file = path.join(tempDir(t), 'listo.db');
   const old = databaseAt(file, 40);
   old.prepare("INSERT INTO users (username, display_name, password_hash, role, home_enabled, home_start) VALUES ('paul', 'Paul', 'x', 'user', 0, 'notes')").run();
   old.close();
   const migrated = openDatabase(file);
-  assert.equal(schemaVersion(migrated), 47);
+  assert.equal(schemaVersion(migrated), 48);
   const paul = migrated.prepare("SELECT * FROM users WHERE username = 'paul'").get();
   assert.equal(paul.notes_enabled, 1);
   assert.equal(paul.home_enabled, 0);
@@ -240,15 +244,21 @@ test('serveur : nom inconnu, autre champ (userId), valeur non booléenne, rien �
   assert.equal((await run(admin, { type: 'account.features', notes: 'no' })).error, en['ops.fonctionsInvalides']);
 });
 
-test('ni les assistants IA, ni le lien public, ni l\'administration ne voient ce réglage ; seul server/features.js lit et écrit la colonne', () => {
-  for (const file of ['server/mcp-tools.js', 'server/mcp.js', 'server/routes/public.js', 'server/routes/admin-users.js', 'server/shares.js', 'server/note-shares.js']) {
+test('ni les assistants IA, ni le lien public ne voient ce réglage ; seul server/features.js lit et écrit la colonne', () => {
+  for (const file of ['server/mcp-tools.js', 'server/mcp.js', 'server/routes/public.js', 'server/shares.js', 'server/note-shares.js']) {
     assert.doesNotMatch(read(file), /notes_enabled|account\.features|featuresFor|featuresFromRow/, file);
   }
+  // L'administration (Admin seulement) ne lit ni n'écrit les interrupteurs :
+  // elle voit seulement les fonctions UTILISÉES d'un compte (featuresFromRow,
+  // pour la confirmation « Faire un invité », décision du propriétaire du 25
+  // novembre 2026, docs/cadrage-comptes.md 6.1) et change ses cases par
+  // server/features.js (setAllowed, initAllowed)
+  assert.doesNotMatch(read('server/routes/admin-users.js'), /notes_enabled|projects_enabled|account\.features|featuresFor/);
   for (const file of ['server/lists.js', 'server/auth.js', 'server/routes/me.js']) assert.doesNotMatch(read(file), /notes_enabled/, file);
   const service = read('server/features.js');
   assert.match(service, /const COLUMNS = \{ notes: 'notes_enabled', projects: 'projects_enabled' \};/);
   // Le compte vient toujours de la session (user.id), jamais de l'opération
-  assert.match(read('server/lists.js'), /'account\.features'\(user, op\) \{\s*const \{ id, type, \.\.\.change \} = op;\s*const \{ problem, changed \} = features\.setFeatures\(user\.id, change\);\s*if \(problem\) throw new OpError\(400, problem\);\s*if \(changed\) changedForMe\(null\);/);
+  assert.match(read('server/lists.js'), /'account\.features'\(user, op\) \{\s*const \{ id, type, \.\.\.change \} = op;\s*const \{ problem, status, changed \} = features\.setFeatures\(user\.id, change\);\s*if \(problem\) throw new OpError\(status \?\? 400, problem\);\s*if \(changed\) changedForMe\(null\);/);
   // Dans le cahier des charges : les futurs outils MCP des notes refuseront
   assert.match(read('docs/cahier-des-charges.md'), /outils MCP des notes devront refuser quand la personne a coupé les notes/);
 });
@@ -337,8 +347,9 @@ test('notes coupées : ni partage ni modifications remis (page Notifications et 
 
 test('le filtre est fait par le serveur, à l\'envoi (allowedNote, pour la page comme pour le téléphone)', () => {
   const notify = code('server/notify.js');
-  assert.match(notify, /\(SELECT notes_enabled FROM users WHERE users\.id = :userId\) AS notes_enabled,/);
-  assert.match(notify, /function allowedNote\(userId, noteId, category, actorId = null\) \{\s*if \(userId === actorId\) return null;\s*const note = visibleNote\(userId, noteId\);\s*if \(!note\) return null;\s*if \(note\.notes_enabled !== 1\) return null;/);
+  // Notes utilisées (autorisées par l'Admin ET allumées), relues à chaque
+  // envoi par server/features.js
+  assert.match(notify, /function allowedNote\(userId, noteId, category, actorId = null\) \{\s*if \(userId === actorId\) return null;\s*const note = visibleNote\(userId, noteId\);\s*if \(!note\) return null;\s*if \(!features\.featuresFor\(userId\)\.notes\) return null;/);
   // Toutes les notifications des notes passent par allowedNote
   assert.equal((notify.match(/targetType: 'note'/g) ?? []).length, 2);
   assert.equal((notify.match(/allowedNote\(/g) ?? []).length, 3);
@@ -374,8 +385,8 @@ test('copie locale : synchronisation, opération hors ligne (mêmes règles), co
   assert.match(read('public/js/actions.js'), /export const setFeatures = \(change\) => perform\(\{ type: 'account\.features', \.\.\.change \}\);/);
   // Connu dès l'ouverture (/api/me), avant la synchronisation
   const app = code('public/js/app.js');
-  assert.match(app, /if \(user\.features\) app\.data\.features = normalizeFeatures\(user\.features\);\s*queue\?\.stop\(\);/);
-  assert.match(app, /if \(user\.home\) app\.data\.home = normalizeHome\(user\.home\);\s*if \(user\.features\) app\.data\.features = normalizeFeatures\(user\.features\);\s*openAccount\(user\)/);
+  assert.match(app, /if \(user\.features\) app\.data\.features = normalizeFeatures\(user\.features\);\s*if \(user\.allowed\) app\.data\.allowed = \{ \.\.\.user\.allowed \};\s*queue\?\.stop\(\);/);
+  assert.match(app, /if \(user\.home\) app\.data\.home = normalizeHome\(user\.home\);\s*if \(user\.features\) app\.data\.features = normalizeFeatures\(user\.features\);\s*if \(user\.allowed\) app\.data\.allowed = \{ \.\.\.user\.allowed \};\s*openAccount\(user\)/);
 });
 
 test('notes coupées : aucune nouveauté de note ; lignes des notes de la page cachées (gardées), pastille de la cloche sans elles', () => {
@@ -409,16 +420,18 @@ test('notes coupées : aucune nouveauté de note ; lignes des notes de la page c
 
 test('adresses des notes : menées au premier écran quand les notes sont coupées (aussi quand c\'est fait sur un autre appareil)', () => {
   const app = code('public/js/app.js');
-  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, app\.data\.features\);/);
-  assert.match(app, /if \(!screenAllowed\(name, app\.data\.features\)\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);\s*return;\s*\}/);
+  // (shownFeatures : fonctions utilisées et règle d'« Échéances », features.js)
+  assert.match(app, /export const openingScreen = \(\) => firstScreen\(app\.data\.home, shownFeatures\(\)\);/);
+  assert.match(app, /export const shownFeatures = \(\) => screenFeatures\(app\.data, app\.user\?\.role\);/);
+  assert.match(app, /if \(!screenAllowed\(name, shownFeatures\(\)\)\) \{\s*navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);\s*return;\s*\}/);
   // La vérification passe avant le choix de l'écran
-  assert.ok(app.indexOf('if (!screenAllowed(name, app.data.features))') < app.indexOf("case 'notes': mount("));
-  assert.match(app, /if \(app\.user && app\.route && !screenAllowed\(app\.route\.name, app\.data\.features\)\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
+  assert.ok(app.indexOf('if (!screenAllowed(name, shownFeatures()))') < app.indexOf("case 'notes': mount("));
+  assert.match(app, /if \(app\.user && app\.route && !screenAllowed\(app\.route\.name, shownFeatures\(\)\)\) navigate\(openingScreen\(\), \{\}, \{ replace: true \}\);/);
   assert.match(app, /case 'features': mount\(\(onLeave\) => renderFeatures\(onLeave\)\); break;/);
 });
 
 test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles sont coupées', () => {
-  assert.match(code('public/js/screens/home.js'), /const present = shownTiles\(app\.data\.home, app\.data\.features\)\.map/);
+  assert.match(code('public/js/screens/home.js'), /const present = shownTiles\(app\.data\.home, shownFeatures\(\)\)\.map/);
   const side = code('public/js/screens/pc-side.js');
   // (« Nouvelle liste » et « Nouvelle note » laissent la place à « Nouveau
   // projet » ou « Nouvelle carte » sur les écrans des projets, 25 novembre 2026)
@@ -440,7 +453,7 @@ test('Accueil, bandeau, menu de gauche, raccourcis : rien des notes quand elles 
 
 test('Réglages : « Fonctions » juste après « Accueil » (téléphone et ordinateur) ; une seule ligne « Corbeille » (24 novembre 2026)', () => {
   const settings = code('public/js/screens/settings.js');
-  assert.match(settings, /const featuresRow = \(\) => row\(\{ iconName: 'layers', title: t\('reglages\.fonctions'\), sub: t\('reglages\.fonctions\.detail'\), onClick: \(\) => navigate\('features'\) \}\);/);
+  assert.match(settings, /const featuresRow = \(\) => row\(\{ iconName: 'layers', title: t\('reglages\.fonctions'\), sub: featuresDetail\(\), onClick: \(\) => navigate\('features'\) \}\);/);
   assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), generalRows\(isAdmin\)\),/);
   assert.match(settings, /h\('div', \{ class: 'group' \}, homeRow\(\), featuresRow\(\), keysRow\(\), generalRows\(isAdmin\)\)/);
   assert.equal((settings.match(/iconName: 'trash'/g) ?? []).length, 1, 'une seule ligne « Corbeille »');
@@ -460,8 +473,10 @@ test('écran Réglages › Fonctions : interrupteur relié à son titre et sa ph
   // Le focus n'est rendu qu'à l'interrupteur qui l'avait (jamais un curseur mis tout seul)
   assert.match(screen, /if \(held\) body\.querySelector\(`\[data-key="\$\{held\}"\]`\)\?\.focus\(\);/);
   assert.match(screen, /h\('p', \{ class: 'page-intro' \}, t\('reglages\.fonctions\.intro'\)\)/);
-  assert.match(screen, /FEATURES\.map\(\(name\) => featureRow\(features, name\)\)/);
-  assert.match(screen, /h\('div', \{ class: 'group-after' \}, h\('p', \{ class: 'muted' \}, t\('reglages\.fonctions\.note'\)\)\)/);
+  // Seulement les fonctions autorisées par l'Admin (docs/cadrage-comptes.md, étape 2)
+  assert.match(screen, /const offered = FEATURES\.filter\(\(name\) => allowed\[name\]\);/);
+  assert.match(screen, /offered\.map\(\(name\) => featureRow\(features, name\)\)/);
+  assert.match(screen, /h\('div', \{ class: 'group-after' \}, h\('p', \{ class: 'muted' \}, t\(limited \? 'reglages\.fonctions\.note\.autorisees' : 'reglages\.fonctions\.note'\)\)\)/);
   assert.match(screen, /topbar\(t\('reglages\.fonctions'\), \(\) => goBack\('settings'\)\)/);
 });
 

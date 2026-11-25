@@ -213,17 +213,25 @@
 .khist__more { align-self: center; }
 
 /* Ordinateur : la carte ouverte dans une fenêtre au centre (940 px), deux
-   zones : à gauche le contenu (les mêmes champs que sur le téléphone), à
-   droite (.kdialog__side) seulement Colonne et Actions (Déplacer vers…,
-   Dupliquer, Ne plus suivre, Supprimer) : plus de boutons « Ajouter »
-   qui doublaient les champs (remarque du 25 novembre 2026). */
-.kdialog { position: absolute; top: 56px; bottom: 56px; left: 50%; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr) 248px; width: 940px; margin-left: -470px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); box-shadow: var(--shadow-pop); }
+   zones (remarques du propriétaire du 25 novembre 2026) :
+   - à gauche (.kdialog__main) : titre, ligne « dans … », Description,
+     Liens, Commentaires · Historique ;
+   - à droite (.kdialog__side, 296 px) : Colonne, puis les champs courts,
+     chacun avec sa valeur et son « + » (.kside-field) : Personnes,
+     Étiquettes, Échéance (case « Fait » puis la date, sur une ligne ;
+     rappel dessous), Priorité quand l'option du projet est allumée ; puis
+     Actions (Déplacer vers…, Dupliquer, Ne plus suivre, Supprimer).
+     Aucun bouton « Ajouter » en double : on remplit un champ à sa place. */
+.kdialog { position: absolute; top: 56px; bottom: 56px; left: 50%; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr) 296px; width: 940px; margin-left: -470px; overflow: hidden; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-surface); box-shadow: var(--shadow-pop); }
 .kdialog__main > * { flex: none; }
 .kdialog__main { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; padding: 24px 24px 20px 28px; }
 .kdialog__side { display: flex; flex-direction: column; gap: 6px; padding: 18px 18px 18px 16px; border-left: 1px solid var(--color-border); background: var(--color-bg); }
 .kdialog__side .kc__section { margin: 10px 4px 2px; }
 .kdialog__side .kc__section:first-of-type { margin-top: 0; }
 .kdialog__close { align-self: flex-end; margin: -6px -6px 0 0; }
+.kside-field { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 40px; padding: 0 4px; }
+.kside-field .kfield__person .avatar { width: 26px; height: 26px; border: 0; font-size: 11px; }
+.kside-field .kdue__remind { margin-top: -4px; }
 .kside { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); font: inherit; font-weight: 600; text-align: left; }
 .kside .icon { width: 18px; height: 18px; color: var(--color-text-2); }
 .kside--danger { color: var(--color-danger-ink); }
@@ -231,9 +239,6 @@
 .kside--col { border: 2px solid var(--c-ink); background: var(--c-bg); color: var(--c-ink); }
 .kside--col .icon { color: inherit; }
 .kside .keycap { margin-left: auto; }
-.kdialog .kfields { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); justify-content: start; gap: 6px 28px; }
-.kdialog .kfield { align-items: flex-start; padding: 0; border: 0; }
-.kdialog .kfield__name { width: auto; font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
 .kdialog .kc__title { font-size: 24px; }
 .kdialog__sub { margin-top: -10px; font-size: var(--text-sm); color: var(--color-text-2); }
 .kcompose { display: flex; align-items: flex-start; gap: 10px; }

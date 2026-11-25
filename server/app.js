@@ -25,7 +25,7 @@ import { reservationRoutes } from './routes/reservations.js';
 import { createPhotoStore, createUploadCounter } from './photos.js';
 import { createEventHub, sameSiteOnly } from './events.js';
 import { createSaveCounter } from './notes.js';
-import { PROJECT_CREATIONS_PER_HOUR } from '../public/js/projects.js';
+import { PROJECT_CREATIONS_PER_HOUR, COMMENTS_PER_HOUR } from '../public/js/projects.js';
 import { createShareService, createPublicAccess } from './shares.js';
 import { shareRoutes } from './routes/shares.js';
 import { createNoteShareService } from './note-shares.js';
@@ -175,6 +175,9 @@ export function createApp({
     // Enregistrements de la description des cartes et cases cochées : 3 600
     // par heure et par compte au plus, comme les notes
     cardSaves: createSaveCounter({ now }),
+    // Commentaires des cartes : 120 par heure et par compte au plus
+    // (server/projects.js, compté par la route POST /api/ops)
+    commentWrites: createSaveCounter({ limit: COMMENTS_PER_HOUR, now }),
   };
   // Temps réel (flux SSE) : connexions ouvertes et envoi des messages
   ctx.events = createEventHub(ctx, eventOptions);
@@ -402,6 +405,7 @@ export function createApp({
     ctx.noteSaves.prune();
     ctx.projectCreations.prune();
     ctx.cardSaves.prune();
+    ctx.commentWrites.prune();
     ctx.lists.news.purgeOld();   // nouveautés : journal de plus de 30 jours, 500 événements par liste
     ctx.limiter.prune();
     ctx.uploads.prune();

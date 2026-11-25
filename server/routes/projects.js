@@ -12,6 +12,9 @@
 //   POST /api/projects/:id/cards/purge  supprimer définitivement des cartes
 //                                       supprimées du projet { cardIds }
 //                                       (propriétaire du projet)
+//   GET  /api/projects/:id/cards/:cardId/history
+//                                       historique d'une carte (tout membre,
+//                                       Lecture seule compris ; étape 3)
 //
 // Tout le reste (créer, renommer, colonnes, étiquettes, cartes, corbeille,
 // restaurer) passe par la file d'attente (POST /api/ops, server/projects.js),
@@ -60,6 +63,13 @@ export function projectRoutes(ctx) {
 
   router.post('/projects/:id/cards/purge', guard((req, res) => {
     res.json(projects().purgeCards(req.user, req.params.id, req.body?.cardIds));
+  }));
+
+  // Historique d'une carte : lignes construites champ par champ par
+  // server/projects.js (cardHistory), jamais un titre ni un texte
+  router.get('/projects/:id/cards/:cardId/history', guard((req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(projects().cardHistory(req.user, req.params.id, req.params.cardId));
   }));
 
   return router;

@@ -20,6 +20,23 @@ export default {
   'inbox.droit.note.lecture': 'The note “{note}” is now read-only for you',
   'inbox.droit.note.modification.sansTitre': 'You can now edit a note',
   'inbox.droit.note.lecture.sansTitre': 'A note is now read-only for you',
+  // Projects (step 3): project name and card title read again when shown
+  // (never stored); without them (access lost, card deleted): “sansNom”,
+  // “sansTitre”. count: number of people.
+  'inbox.projet.ajoute': { one: '{people} added {cards} to “{project}”', other: '{people} added {cards} to “{project}”' },
+  'inbox.projet.ajoute.sansNom': { one: '{people} added {cards} to a project', other: '{people} added {cards} to a project' },
+  'inbox.projet.attribue': { one: '{people} assigned {cards} to you', other: '{people} assigned {cards} to you' },
+  'inbox.projet.attribue.nom': { one: '{people} assigned “{card}” to you', other: '{people} assigned “{card}” to you' },
+  'inbox.carte.commente': { one: '{people} commented on “{card}”', other: '{people} commented on “{card}”' },
+  'inbox.carte.commentaires': { one: '{people} added {comments} on “{card}”', other: '{people} added {comments} on “{card}”' },
+  'inbox.carte.commente.sansTitre': { one: '{people} commented on a card', other: '{people} commented on a card' },
+  'inbox.carte.modifie': { one: '{people} changed “{card}”', other: '{people} changed “{card}”' },
+  'inbox.carte.modifie.sansTitre': { one: '{people} changed a card', other: '{people} changed a card' },
+  'inbox.carte.deplace': { one: '{people} moved “{card}” to “{column}”', other: '{people} moved “{card}” to “{column}”' },
+  'inbox.carte.faite': { one: '{people} marked “{card}” as done', other: '{people} marked “{card}” as done' },
+  'inbox.carte.uneCarte': 'A card',
+  'inbox.projet.partage': '{actor} shared the project “{project}” with you',
+  'inbox.projet.partage.sansNom': '{actor} shared a project with you',
 
   // --- Écran ---
   'inbox.titre': 'Notifications',
@@ -48,6 +65,8 @@ export default {
   'inbox.indisponible.liste': 'This list is no longer available',
   'inbox.indisponible.element': 'This item is no longer available',
   'inbox.indisponible.note': 'This note is no longer available',
+  'inbox.indisponible.projet': 'This project is no longer available',
+  'inbox.indisponible.carte': 'This card is no longer available',
   'inbox.cloche': 'Notifications',
   'inbox.cloche.nonLues': { one: 'Notifications, {count} unread', other: 'Notifications, {count} unread' },
 };

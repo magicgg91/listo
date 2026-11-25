@@ -32,6 +32,14 @@
 // regroupée et bornée à 300 lignes ; un plafond y ferait perdre des lignes
 // sans le dire.
 //
+// Projets (étape 3 du cadrage docs/cadrage-projets.md, migration 45) :
+// cibles 'project' et 'card'. Ni le nom du projet, ni le titre d'une carte,
+// ni le texte d'un commentaire ne sont gardés : relus à l'affichage, avec
+// les droits du moment (projet quitté, carte supprimée : la ligne reste,
+// sans nom, et n'ouvre plus rien). Une personne qui a coupé les projets
+// garde la ligne « Partage » d'un projet, qui ouvre alors Réglages ›
+// Fonctions (cible 'features').
+//
 // Lu sur un appareil = lu sur tous : chaque changement prévient les
 // appareils de la personne par le temps réel (« event: inbox », sans
 // données), qui relisent la page.
@@ -42,12 +50,13 @@ import { noteTitle } from '../public/js/notes.js';
 import { wishListOf, beneficiaryId } from '../public/js/wishes.js';
 import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
+import { projectAccess } from './projects.js';
 
 export const INBOX_DAYS = 30;
 export const INBOX_MAX = 300;
 export const INBOX_GROUP_MS = 30 * 60 * 1000;
 export const INBOX_CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
-export const INBOX_TARGETS = ['list', 'item', 'note', 'deadlines'];
+export const INBOX_TARGETS = ['list', 'item', 'note', 'deadlines', 'project', 'card'];
 const DAY = 24 * 60 * 60 * 1000;
 const NAMES_MAX = 8;          // noms cités au plus dans une ligne
 const PARAMS_MAX = 4000;      // taille du JSON des valeurs (contrainte de la base)
@@ -96,9 +105,12 @@ export function mergeParams(old, next) {
 
 // Phrase d'une ligne, dans la langue locale : { kind, text, sub }.
 // kind : l'icône de la ligne ('changes', 'turn', 'reminder', 'digest',
-// 'wishes', 'sharing'). note : la note telle que la personne la voit
-// encore (ou null) ; son titre n'est jamais gardé en base.
-export function renderRow(textKey, params, category, locale, { note = null } = {}) {
+// 'wishes', 'sharing', 'comment'). note : la note telle que la personne la
+// voit encore (ou null) ; son titre n'est jamais gardé en base. project,
+// card, column : le projet, la carte et la colonne tels que la personne
+// les voit encore (ou null), relus de même ; projectsOff : elle a coupé
+// les projets.
+export function renderRow(textKey, params, category, locale, { note = null, project = null, card = null, column = null, projectsOff = false } = {}) {
   const p = params && typeof params === 'object' ? params : {};
   const label = translate(locale, CATEGORY_LABELS[category] ?? CATEGORY_LABELS.changes);
   const withContext = (context) => (context ? translate(locale, 'inbox.sous', { label, context }) : label);
@@ -193,6 +205,70 @@ export function renderRow(textKey, params, category, locale, { note = null } = {
       } else sentence = translate(locale, 'inbox.rappel.aujourdhui', { name, time });
       return { kind: 'reminder', text: sentence, sub: translate(locale, 'inbox.sous', { label: translate(locale, 'inbox.rappel'), context: list }) };
     }
+    // --- Projets (étape 3) ---
+    // Nouvelles cartes d'un projet (regroupées)
+    case 'project.cards': {
+      const actors = names(p.actors);
+      const values = { people: peopleList(locale, actors), count: actors.length, cards: translate(locale, 'alertes.projet.cartes', { count: count(p.added) || 1 }) };
+      return {
+        kind: 'changes',
+        text: project ? translate(locale, 'inbox.projet.ajoute', { ...values, project: project.name }) : translate(locale, 'inbox.projet.ajoute.sansNom', values),
+        sub: label,
+      };
+    }
+    // Cartes qui me sont attribuées (une : son titre ; plusieurs : le nombre)
+    case 'project.assigned': {
+      const actors = names(p.actors);
+      const cards = Array.isArray(p.cards) ? p.cards.length : 0;
+      const values = { people: peopleList(locale, actors), count: actors.length };
+      let sentence;
+      if (cards <= 1 && card) sentence = translate(locale, 'inbox.projet.attribue.nom', { ...values, card: card.title });
+      else sentence = translate(locale, 'inbox.projet.attribue', { ...values, cards: translate(locale, 'alertes.projet.cartes', { count: Math.max(1, cards) }) });
+      return { kind: 'changes', text: sentence, sub: withContext(project?.name ?? '') };
+    }
+    // Commentaires d'une carte suivie (jamais leur texte)
+    case 'card.comments': {
+      const actors = names(p.actors);
+      const n = count(p.count) || 1;
+      const values = { people: peopleList(locale, actors), count: actors.length, card: card?.title ?? '', comments: translate(locale, 'alertes.carte.commentaires', { count: n }) };
+      const key = !card ? 'inbox.carte.commente.sansTitre' : n === 1 ? 'inbox.carte.commente' : 'inbox.carte.commentaires';
+      return { kind: 'comment', text: translate(locale, key, values), sub: withContext(project?.name ?? '') };
+    }
+    // Modifications d'une carte suivie : déplacée (seulement), faite
+    // (seulement), ou modifiée
+    case 'card.changes': {
+      const actors = names(p.actors);
+      const kinds = names(p.kinds);
+      const values = { people: peopleList(locale, actors), count: actors.length, card: card?.title ?? '', column: column ?? '' };
+      let key = 'inbox.carte.modifie';
+      if (!card) key = 'inbox.carte.modifie.sansTitre';
+      else if (kinds.length === 1 && kinds[0] === 'move' && column) key = 'inbox.carte.deplace';
+      else if (kinds.length === 1 && kinds[0] === 'done') key = 'inbox.carte.faite';
+      return { kind: 'changes', text: translate(locale, key, values), sub: withContext(project?.name ?? '') };
+    }
+    // Rappel d'une carte : « 2FAuth à 18:00 », « … demain à 18:00 »…
+    case 'card.reminder': {
+      const time = timeLabel(text(p.time, 5), { locale });
+      const name = card?.title ?? translate(locale, 'inbox.carte.uneCarte');
+      let sentence;
+      if (p.when === 'tomorrow') sentence = translate(locale, 'inbox.rappel.demain', { name, time });
+      else if (p.when === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(text(p.date, 10))) {
+        const [y, m, d] = p.date.split('-').map(Number);
+        const date = formatDate(new Date(Date.UTC(y, m - 1, d)), { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }, { locale });
+        sentence = translate(locale, 'inbox.rappel.date', { name, time, date });
+      } else sentence = translate(locale, 'inbox.rappel.aujourdhui', { name, time });
+      const rappel = translate(locale, 'inbox.rappel');
+      return { kind: 'reminder', text: sentence, sub: project ? translate(locale, 'inbox.sous', { label: rappel, context: project.name }) : rappel };
+    }
+    // Partage d'un projet ; projets coupés : l'invitation à les allumer
+    case 'project.shared': {
+      const actor = text(p.actor, 100) || translate(locale, 'alertes.quelquun');
+      return {
+        kind: 'sharing',
+        text: project ? translate(locale, 'inbox.projet.partage', { actor, project: project.name }) : translate(locale, 'inbox.projet.partage.sansNom', { actor }),
+        sub: projectsOff && project ? translate(locale, 'alertes.projet.allumer') : label,
+      };
+    }
     default:
       return { kind: 'changes', text: label, sub: '' };
   }
@@ -235,6 +311,14 @@ export function createInbox(ctx) {
         (SELECT access FROM note_members WHERE note_members.note_id = notes.id AND note_members.user_id = :userId) AS member_access
       FROM notes WHERE notes.id = :id`),
     locale: db.prepare('SELECT locale FROM users WHERE id = ?').pluck(),
+    // Projets : le projet tel que la personne le voit (son droit), et si
+    // elle a allumé les projets ; une carte ; une colonne
+    project: db.prepare(`SELECT projects.id, projects.name, projects.owner_id, projects.deleted_at,
+        (SELECT access FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId) AS member_access
+      FROM projects WHERE projects.id = :id`),
+    projectsOn: db.prepare('SELECT projects_enabled FROM users WHERE id = ?').pluck(),
+    card: db.prepare('SELECT id, title, project_id, deleted_at FROM cards WHERE id = ?'),
+    column: db.prepare('SELECT name FROM project_columns WHERE id = ? AND project_id = ?').pluck(),
   };
 
   const changed = (userId) => ctx.events?.notifyInbox?.([userId]);
@@ -302,8 +386,36 @@ export function createInbox(ctx) {
         const visible = note && noteAccess(user, note) && !note.deleted_at ? note : null;
         return { target: visible ? { type: 'note', noteId: visible.id } : null, note: visible };
       }
+      case 'project': {
+        const project = visibleProject(user, id);
+        if (!project) return { target: null };
+        const off = q.projectsOn.get(user.id) !== 1;
+        // Projets coupés : seule la ligne « Partage » ouvre quelque chose
+        // (Réglages › Fonctions, pour les allumer)
+        if (off) return { target: row.category === 'sharing' ? { type: 'features' } : null, project, projectsOff: true };
+        return { target: { type: 'project', projectId: project.id }, project };
+      }
+      case 'card': {
+        const card = id ? q.card.get(id) : null;
+        const project = card && !card.deleted_at ? visibleProject(user, card.project_id) : null;
+        if (!project) return { target: null };
+        let params = {};
+        try {
+          params = JSON.parse(row.params);
+        } catch {
+          params = {};
+        }
+        const column = typeof params.column === 'string' ? q.column.get(params.column, project.id) ?? null : null;
+        if (q.projectsOn.get(user.id) !== 1) return { target: null, project, card, column, projectsOff: true };
+        return { target: { type: 'card', projectId: project.id, cardId: card.id }, project, card, column };
+      }
       default: return { target: null };
     }
+  }
+  // Un projet que la personne voit encore (projectAccess, hors corbeille)
+  function visibleProject(user, projectId) {
+    const project = projectId ? q.project.get({ userId: user.id, id: projectId }) : null;
+    return project && !project.deleted_at && projectAccess(user, project) ? project : null;
   }
   function hiddenFor(user, list, row) {
     if (list.type !== 'wishes' || row.category === 'sharing') return false;
@@ -315,16 +427,20 @@ export function createInbox(ctx) {
   function rowsFor(user) {
     const locale = userLocale({ locale: q.locale.get(user.id) }, ctx.config);
     const out = [];
-    for (const row of q.rows.all(user.id, oldest())) {
-      const { target, note = null, hidden = false } = resolve(user, row);
-      if (hidden) continue;
+    for (const stored of q.rows.all(user.id, oldest())) {
       let params = {};
       try {
-        params = JSON.parse(row.params);
+        params = JSON.parse(stored.params);
       } catch {
         params = {};
       }
-      const rendered = renderRow(row.text_key, params, row.category, locale, { note });
+      // Plusieurs cartes attribuées regroupées : la ligne ouvre le projet
+      const row = stored.text_key === 'project.assigned' && Array.isArray(params.cards) && params.cards.length > 1 && typeof params.project === 'string'
+        ? { ...stored, target_type: 'project', target_id: params.project }
+        : stored;
+      const { target, note = null, hidden = false, project = null, card = null, column = null, projectsOff = false } = resolve(user, row);
+      if (hidden) continue;
+      const rendered = renderRow(row.text_key, params, row.category, locale, { note, project, card, column, projectsOff });
       out.push({
         id: row.num,
         category: row.category,

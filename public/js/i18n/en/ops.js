@@ -217,6 +217,14 @@ export default {
   'ops.adresseLienInvalide': 'Invalid address: only a web address starting with http:// or https:// (500 characters at most).',
   'ops.titreLienInvalide': 'Invalid link title: 100 characters at most, no invisible special character.',
   'ops.cartesTropVite': 'Too many card saves right now. Try again in a moment.',
+  // Comments and followed cards (step 3)
+  'ops.commentaireIntrouvable': 'Comment not found, perhaps deleted in the meantime.',
+  'ops.commentaireSiensSeulement': 'You can only edit or delete your own comments.',
+  'ops.commentaireExisteDeja': 'This comment already exists.',
+  'ops.commentaireInvalide': 'A comment has 1 to {max} characters, as plain text.',
+  'ops.commentairesLimite': 'A card has at most {max} comments.',
+  'ops.commentairesTropVite': 'Too many comments right now. Try again in a moment.',
+  'ops.suivreInvalide': 'Invalid “following” value (true or false).',
 
   // Page Notifications (server/inbox.js)
   'ops.inboxInvalide': 'Invalid choice of notifications.',

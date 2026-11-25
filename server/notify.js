@@ -67,6 +67,26 @@
 //   n'en déclenche pas un second. Serveur arrêté à 8 h : envoi au
 //   redémarrage s'il a lieu avant midi le même jour, sinon rien ce jour-là.
 //
+// - Projets (étape 3 du cadrage docs/cadrage-projets.md, section 9.3) :
+//   tout passe par deliver, comme le reste. 'changes' : nouvelles cartes
+//   (« Léa a ajouté 3 cartes dans « DomoPi Articles » », à tous les
+//   membres), cartes qui me sont attribuées, commentaires et modifications
+//   (déplacée, échéance, « Fait », description) d'une carte que je SUIS
+//   (server/projects.js, followerIds) ; regroupés comme les notes : la
+//   première une minute après la première action, puis une seule par
+//   projet (ou par carte) et par personne par quart d'heure ; déjà vu (le
+//   projet ouvert a dépassé ces changements) : rien. 'due' : le rappel
+//   d'une carte (choisi par server/projects.js, takeCardReminders, une fois
+//   par signature, jamais pour une carte faite). 'sharing' : on m'ajoute à
+//   un projet ; SEULE notification remise à une personne qui a coupé les
+//   projets (Réglages › Fonctions), avec l'invitation à les allumer
+//   (décision du 25 novembre 2026). « Couper les notifications » d'un projet
+//   (project_user_state.muted_push). Jamais le titre d'une carte ni le
+//   texte d'un commentaire dans la page Notifications (la carte y est
+//   désignée par son identifiant, son titre relu à l'affichage) ; sans le
+//   détail, le téléphone ne nomme pas la carte (« une carte »), comme une
+//   tâche ; jamais le texte d'un commentaire, même avec le détail.
+//
 // Règles communes, vérifiées AU MOMENT DE L'ENVOI (relues en base) :
 // - jamais la personne qui a fait l'action ;
 // - compte actif, toujours membre de la liste, liste non supprimée ;
@@ -89,6 +109,7 @@ import { translate, formatDate, formatList } from '../public/js/i18n.js';
 import { userLocale } from './locale.js';
 import { noteAccess } from './notes.js';
 import { noteTitle, noteExcerpt } from '../public/js/notes.js';
+import { projectAccess } from './projects.js';
 
 export const CATEGORIES = ['changes', 'due', 'wishes', 'sharing'];
 export const DEFAULT_SETTINGS = { changes: true, due: true, wishes: true, sharing: true, detail: false };
@@ -137,6 +158,8 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
   const origin = new URL(ctx.config.publicUrl).origin;
   const listUrl = (listId) => `${origin}/#/listes/${encodeURIComponent(listId)}`;
   const noteUrl = (noteId) => `${origin}/#/notes/${encodeURIComponent(noteId)}`;
+  const projectUrl = (projectId) => `${origin}/#/projets/${encodeURIComponent(projectId)}`;
+  const cardUrl = (projectId, cardId) => `${projectUrl(projectId)}/cartes/${encodeURIComponent(cardId)}`;
 
   const q = {
     settings: db.prepare('SELECT changes, due, wishes, sharing, detail FROM push_settings WHERE user_id = ?'),
@@ -215,6 +238,22 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     mutedNotes: db.prepare('SELECT note_id FROM note_user_state WHERE user_id = ? AND muted_push = 1').pluck(),
     setNoteMuted: db.prepare(`INSERT INTO note_user_state (note_id, user_id, muted_push) VALUES (:noteId, :userId, :muted)
       ON CONFLICT (note_id, user_id) DO UPDATE SET muted_push = :muted`),
+    // --- Projets ---
+    // Le projet tel que ce compte le voit (droit lu dans project_members),
+    // avec l'état de ce compte et ses réglages pour ce projet
+    project: db.prepare(`SELECT projects.id, projects.name, projects.owner_id, projects.deleted_at,
+        (SELECT access FROM project_members WHERE project_members.project_id = projects.id AND project_members.user_id = :userId) AS member_access,
+        (SELECT active FROM users WHERE users.id = :userId) AS user_active,
+        (SELECT projects_enabled FROM users WHERE users.id = :userId) AS projects_enabled,
+        COALESCE((SELECT muted_push FROM project_user_state WHERE project_user_state.project_id = projects.id AND project_user_state.user_id = :userId), 0) AS muted_push,
+        COALESCE((SELECT last_seen_event FROM project_user_state WHERE project_user_state.project_id = projects.id AND project_user_state.user_id = :userId), 0) AS seen
+      FROM projects WHERE projects.id = :projectId`),
+    projectPeople: db.prepare('SELECT owner_id FROM projects WHERE id = ? UNION SELECT user_id FROM project_members WHERE project_id = ?').pluck(),
+    projectAccess: db.prepare('SELECT access FROM project_members WHERE project_id = ? AND user_id = ?').pluck(),
+    // Une carte présente d'un projet
+    liveCard: db.prepare('SELECT id, title, project_id, due_date, due_time FROM cards WHERE id = ? AND project_id = ? AND deleted_at IS NULL'),
+    cardAssigned: db.prepare('SELECT 1 FROM card_assignees WHERE card_id = ? AND user_id = ?').pluck(),
+    columnName: db.prepare('SELECT name FROM project_columns WHERE id = ? AND project_id = ?').pluck(),
   };
 
   // Langue des notifications d'une personne : celle de son compte, sinon
@@ -301,6 +340,22 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
     if (!settingsOf(userId)[category]) return null;
     if (note.muted_push === 1) return null;
     return note;
+  }
+
+  // --- Projets : la personne peut-elle recevoir cette notification ? ---
+  // Le projet (tel qu'elle le voit) ou null : jamais l'auteur ; compte
+  // actif, membre (projectAccess), projet hors corbeille ; projets allumés
+  // (sauf « Partage » : remise même projets coupés, décision du 25
+  // novembre 2026) ; catégorie allumée ; projet dont elle n'a pas coupé
+  // les notifications.
+  function allowedProject(userId, projectId, category, actorId = null) {
+    if (userId === actorId) return null;
+    const project = q.project.get({ userId, projectId });
+    if (!project || project.user_active !== 1 || project.deleted_at || !projectAccess({ id: userId }, project)) return null;
+    if (category !== 'sharing' && project.projects_enabled !== 1) return null;
+    if (!settingsOf(userId)[category]) return null;
+    if (category !== 'sharing' && project.muted_push === 1) return null;
+    return project;
   }
 
   async function send(userId, message, options) {
@@ -431,7 +486,7 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
   // Envoie les groupes dont la fenêtre de 60 s est passée (listes), puis
   // ceux des notes qui sont mûrs
   async function flushDue() {
-    await Promise.all([flushLists(), flushNotes()]);
+    await Promise.all([flushLists(), flushNotes(), flushProjects()]);
   }
   async function flushLists() {
     const due = [...groups.values()].filter((group) => ctx.now() - group.firstAt >= GROUP_MS);
@@ -542,6 +597,189 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
         navigate: noteUrl(noteId), tag: `partage-note-${noteId}`, locale,
       }));
     deliver(userId, entry, message);
+  }
+
+  // --- Projets : activité (server/projects.js, après chaque écriture réussie) ---
+  // Ce qui est gardé en attendant l'envoi : des identifiants seulement,
+  // jamais un titre ni un texte. Deux sortes de groupes :
+  // - par personne et par projet : nouvelles cartes (tous les membres) et
+  //   cartes qui m'ont été attribuées ;
+  // - par personne et par carte suivie : commentaires et modifications.
+  const projectGroups = new Map(); // `${compte}:${projet}` -> groupe
+  const cardGroups = new Map();    // `${compte}:${carte}` -> groupe
+  const projectSentAt = new Map(); // `p:${compte}:${projet}` ou `c:${compte}:${carte}` -> dernier envoi
+  // Modifications d'une carte suivie, et leur texte (téléphone)
+  const CHANGE_TEXTS = {
+    move: 'alertes.carte.change.move', due: 'alertes.carte.change.due', done: 'alertes.carte.change.done',
+    undone: 'alertes.carte.change.undone', describe: 'alertes.carte.change.describe',
+  };
+  const CARD_CHANGES = Object.keys(CHANGE_TEXTS);
+  function projectActivity({ kind, projectId, cardId, actorId, eventId = 0, userId = null, columnId = null }) {
+    if (!actorId || !projectId || !cardId) return;
+    if (kind === 'card' || kind === 'assign') {
+      const people = kind === 'card' ? q.projectPeople.all(projectId, projectId) : [userId];
+      for (const person of people) {
+        if (!person || person === actorId) continue;
+        const key = `${person}:${projectId}`;
+        let group = projectGroups.get(key);
+        if (!group) {
+          group = { userId: person, projectId, firstAt: ctx.now(), addedBy: [], assignedBy: [], added: [], assigned: [], lastEventId: 0 };
+          projectGroups.set(key, group);
+        }
+        const actors = kind === 'card' ? group.addedBy : group.assignedBy;
+        if (!actors.includes(actorId)) actors.push(actorId);
+        const bucket = kind === 'card' ? group.added : group.assigned;
+        if (!bucket.includes(cardId)) bucket.push(cardId);
+        group.lastEventId = Math.max(group.lastEventId, eventId);
+      }
+      return;
+    }
+    if (kind !== 'comment' && !CARD_CHANGES.includes(kind)) return;
+    for (const person of ctx.projects?.followerIds(cardId) ?? []) {
+      if (person === actorId) continue;
+      const key = `${person}:${cardId}`;
+      let group = cardGroups.get(key);
+      if (!group) {
+        group = { userId: person, projectId, cardId, firstAt: ctx.now(), commentedBy: [], changedBy: [], comments: 0, kinds: [], columnId: null, lastEventId: 0 };
+        cardGroups.set(key, group);
+      }
+      const actors = kind === 'comment' ? group.commentedBy : group.changedBy;
+      if (!actors.includes(actorId)) actors.push(actorId);
+      if (kind === 'comment') group.comments += 1;
+      else {
+        if (!group.kinds.includes(kind)) group.kinds.push(kind);
+        if (kind === 'move') group.columnId = columnId;
+      }
+      group.lastEventId = Math.max(group.lastEventId, eventId);
+    }
+  }
+
+  // Prénoms des auteurs (relus maintenant)
+  const actorNames = (ids) => ids.map((id) => q.name.get(id)).filter(Boolean);
+  const people = (ids, locale) => peopleList(locale, ids.map((id) => q.name.get(id) ?? translate(locale, 'alertes.ancienMembre')));
+  // Mûr ? une minute après la première action, et jamais deux fois en un
+  // quart d'heure pour le même groupe et la même personne
+  const ripe = (group, sentKey, now) => now - group.firstAt >= GROUP_MS && now - (projectSentAt.get(sentKey) ?? -Infinity) >= NOTE_QUIET_MS;
+
+  async function flushProjects() {
+    const now = ctx.now();
+    const work = [];
+    for (const [key, group] of [...projectGroups]) {
+      if (!ripe(group, `p:${key}`, now)) continue;
+      projectGroups.delete(key);
+      const project = allowedProject(group.userId, group.projectId, 'changes');
+      if (!project || project.seen >= group.lastEventId) continue; // déjà vu
+      const assigned = group.assigned.filter((id) => q.liveCard.get(id, project.id) && q.cardAssigned.get(id, group.userId));
+      // Une carte nouvelle ET attribuée à moi : dite une fois (« vous a attribué »)
+      const added = group.added.filter((id) => !assigned.includes(id) && q.liveCard.get(id, project.id));
+      if (!added.length && !assigned.length) continue;
+      projectSentAt.set(`p:${key}`, now);
+      const { detail } = settingsOf(group.userId);
+      const locale = localeOf(group.userId);
+      const titles = (ids) => ids.map((id) => q.liveCard.get(id, project.id)?.title).filter(Boolean);
+      if (added.length) {
+        const entry = {
+          category: 'changes',
+          textKey: 'project.cards',
+          params: { actors: actorNames(group.addedBy), added: added.length },
+          targetType: 'project',
+          targetId: project.id,
+          groupKey: `changes:project:${project.id}`,
+        };
+        work.push(deliver(group.userId, entry, () => buildMessage({
+          title: translate(locale, 'alertes.projet.ajoute', { people: people(group.addedBy, locale), count: group.addedBy.length, cards: translate(locale, 'alertes.projet.cartes', { count: added.length }), project: project.name }),
+          body: detail ? nameList(locale, titles(added)) : '',
+          navigate: projectUrl(project.id), tag: `projet-${project.id}`, locale,
+        })));
+      }
+      if (assigned.length) {
+        const entry = {
+          category: 'changes',
+          textKey: 'project.assigned',
+          params: { actors: actorNames(group.assignedBy), cards: assigned, project: project.id },
+          targetType: assigned.length === 1 ? 'card' : 'project',
+          targetId: assigned.length === 1 ? assigned[0] : project.id,
+          groupKey: `assigned:project:${project.id}`,
+        };
+        const single = assigned.length === 1 ? q.liveCard.get(assigned[0], project.id) : null;
+        work.push(deliver(group.userId, entry, () => buildMessage({
+          title: detail && single
+            ? translate(locale, 'alertes.projet.attribue.nom', { people: people(group.assignedBy, locale), count: group.assignedBy.length, card: single.title, project: project.name })
+            : translate(locale, 'alertes.projet.attribue', { people: people(group.assignedBy, locale), count: group.assignedBy.length, cards: translate(locale, 'alertes.projet.cartes', { count: assigned.length }), project: project.name }),
+          body: detail && !single ? nameList(locale, titles(assigned)) : '',
+          navigate: single ? cardUrl(project.id, single.id) : projectUrl(project.id), tag: `projet-attribue-${project.id}`, locale,
+        })));
+      }
+    }
+    for (const [key, group] of [...cardGroups]) {
+      if (!ripe(group, `c:${key}`, now)) continue;
+      cardGroups.delete(key);
+      const project = allowedProject(group.userId, group.projectId, 'changes');
+      if (!project || project.seen >= group.lastEventId) continue;
+      const card = q.liveCard.get(group.cardId, project.id);
+      if (!card || !ctx.projects?.followerIds(card.id).has(group.userId)) continue; // supprimée, ou plus suivie
+      projectSentAt.set(`c:${key}`, now);
+      const { detail } = settingsOf(group.userId);
+      const locale = localeOf(group.userId);
+      const values = (actors) => ({ people: people(actors, locale), count: actors.length, card: card.title, project: project.name });
+      if (group.comments) {
+        const entry = {
+          category: 'changes',
+          textKey: 'card.comments',
+          params: { actors: actorNames(group.commentedBy), count: group.comments },
+          targetType: 'card',
+          targetId: card.id,
+          groupKey: `comments:card:${card.id}`,
+        };
+        work.push(deliver(group.userId, entry, () => buildMessage({
+          title: translate(locale, detail ? 'alertes.carte.commente.nom' : 'alertes.carte.commente', values(group.commentedBy)),
+          body: translate(locale, 'alertes.carte.commentaires', { count: group.comments }),
+          navigate: cardUrl(project.id, card.id), tag: `carte-commentaires-${card.id}`, locale,
+        })));
+      }
+      if (group.kinds.length) {
+        const column = group.columnId ? q.columnName.get(group.columnId, project.id) ?? null : null;
+        const entry = {
+          category: 'changes',
+          textKey: 'card.changes',
+          params: { actors: actorNames(group.changedBy), kinds: group.kinds, column: group.columnId },
+          targetType: 'card',
+          targetId: card.id,
+          groupKey: `changes:card:${card.id}`,
+        };
+        const body = group.kinds.map((kind) => (kind === 'move' && column ? translate(locale, 'alertes.carte.change.deplacee', { column }) : translate(locale, CHANGE_TEXTS[kind])));
+        work.push(deliver(group.userId, entry, () => buildMessage({
+          title: translate(locale, detail ? 'alertes.carte.modifie.nom' : 'alertes.carte.modifie', values(group.changedBy)),
+          body: body.join(' · '),
+          navigate: cardUrl(project.id, card.id), tag: `carte-${card.id}`, locale,
+        })));
+      }
+    }
+    await Promise.all(work);
+  }
+
+  // --- Projets : partage (on m'ajoute à un projet) ---
+  // Remise même si la personne a coupé les projets : avec l'invitation à
+  // les allumer (la ligne de la page ouvre alors Réglages › Fonctions)
+  function projectShared({ projectId, userId, actorId }) {
+    const project = allowedProject(userId, projectId, 'sharing', actorId);
+    if (!project) return;
+    const locale = localeOf(userId);
+    const off = project.projects_enabled !== 1;
+    const access = q.projectAccess.get(projectId, userId);
+    const entry = {
+      category: 'sharing',
+      textKey: 'project.shared',
+      params: { actor: q.name.get(actorId) ?? null },
+      targetType: 'project',
+      targetId: projectId,
+    };
+    const role = { modification: 'alertes.projet.droit.modifier', contribution: 'alertes.projet.droit.contribuer' }[access] ?? 'alertes.projet.droit.lire';
+    deliver(userId, entry, () => buildMessage({
+      title: translate(locale, 'alertes.projet.partage', { actor: q.name.get(actorId) ?? translate(locale, 'alertes.quelquun'), project: project.name }),
+      body: translate(locale, off ? 'alertes.projet.allumer' : role),
+      navigate: off ? `${origin}/#/reglages/fonctions` : projectUrl(projectId), tag: `partage-projet-${projectId}`, locale,
+    }));
   }
 
   // --- c) Envies : réservation ou participation ---
@@ -703,7 +941,39 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
         work.push(deliver(userId, reminderEntry(task, list, today), () => reminderMessage(task, list, settingsOf(userId).detail, today, localeOf(userId))));
       }
     }
+    // Rappels des cartes : choisis (et notés, une fois par signature) par
+    // server/projects.js ; ici, les réglages de chacun
+    for (const reminder of ctx.projects?.takeCardReminders(now) ?? []) {
+      const project = allowedProject(reminder.userId, reminder.projectId, 'due');
+      const card = project ? q.liveCard.get(reminder.cardId, project.id) : null;
+      if (!card) continue;
+      work.push(deliver(reminder.userId, cardReminderEntry(card, today), () => cardReminderMessage(card, project, settingsOf(reminder.userId).detail, today, localeOf(reminder.userId))));
+    }
     await Promise.all(work);
+  }
+
+  // Rappel d'une carte : page Notifications (le titre de la carte n'est pas
+  // gardé : relu à l'affichage) ; téléphone : comme une tâche (sans le
+  // détail, « une carte »)
+  function cardReminderEntry(card, today) {
+    const when = card.due_date === today ? 'today' : card.due_date === dayShift(today, 1) ? 'tomorrow' : 'date';
+    return { category: 'due', textKey: 'card.reminder', params: { time: card.due_time, date: card.due_date, when }, targetType: 'card', targetId: card.id };
+  }
+  function cardReminderMessage(card, project, detail, today, locale) {
+    const time = timeLabel(card.due_time, { locale });
+    const when = card.due_date === today ? 'aujourdhui' : card.due_date === dayShift(today, 1) ? 'demain' : 'date';
+    const [y, m, d] = card.due_date.split('-').map(Number);
+    const date = formatDate(new Date(Date.UTC(y, m - 1, d)), { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }, { locale });
+    const values = { time, date, list: project.name, project: project.name };
+    const keys = {
+      aujourdhui: ['alertes.carte.rappel.aujourdhui', 'alertes.rappel.detail.aujourdhui'],
+      demain: ['alertes.carte.rappel.demain', 'alertes.rappel.detail.demain'],
+      date: ['alertes.carte.rappel.date', 'alertes.rappel.detail.date'],
+    }[when];
+    const message = detail
+      ? { title: translate(locale, 'alertes.rappel.detail', { name: card.title }), body: translate(locale, keys[1], values) }
+      : { title: translate(locale, keys[0], values), body: translate(locale, 'alertes.carte.dansProjet', values) };
+    return buildMessage({ ...message, navigate: cardUrl(project.id, card.id), tag: `rappel-carte-${card.id}`, locale });
   }
 
   // Vérifications régulières (arrêtées avec Listo) : groupes toutes les 5 s,
@@ -724,11 +994,12 @@ export function createNotifier(ctx, { push = ctx.push, inbox = ctx.inbox } = {})
 
   return {
     activity, assigned, wish, sharing, flushDue, runDigest, runReminders, settingsOf, setSettings, mutedLists, setMuted, isMember,
-    noteChanged, noteShared, mutedNotes, setNoteMuted, seesNote,
-    pending: () => groups.size + noteGroups.size,
+    noteChanged, noteShared, mutedNotes, setNoteMuted, seesNote, projectActivity, projectShared,
+    pending: () => groups.size + noteGroups.size + projectGroups.size + cardGroups.size,
     prune: () => {
       for (const [userId, times] of sentAt) if (!times.some((t) => t > ctx.now() - HOUR)) sentAt.delete(userId);
       for (const [key, at] of noteSentAt) if (ctx.now() - at >= NOTE_QUIET_MS) noteSentAt.delete(key);
+      for (const [key, at] of projectSentAt) if (ctx.now() - at >= NOTE_QUIET_MS) projectSentAt.delete(key);
     },
     stop: () => {
       clearInterval(timer);

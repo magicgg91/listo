@@ -217,6 +217,14 @@ export default {
   'ops.adresseLienInvalide': 'Adresse invalide : seulement une adresse web qui commence par http:// ou https:// (500 caractères au plus).',
   'ops.titreLienInvalide': 'Titre du lien invalide : 100 caractères au plus, sans caractère spécial invisible.',
   'ops.cartesTropVite': 'Trop d\'enregistrements de cartes pour le moment. Réessayez dans un moment.',
+  // Commentaires et cartes suivies (étape 3)
+  'ops.commentaireIntrouvable': 'Commentaire introuvable, peut-être supprimé entre-temps.',
+  'ops.commentaireSiensSeulement': 'Vous ne pouvez modifier ou supprimer que vos propres commentaires.',
+  'ops.commentaireExisteDeja': 'Ce commentaire existe déjà.',
+  'ops.commentaireInvalide': 'Un commentaire compte de 1 à {max} caractères, en texte simple.',
+  'ops.commentairesLimite': 'Une carte compte {max} commentaires au plus.',
+  'ops.commentairesTropVite': 'Trop de commentaires pour le moment. Réessayez dans un moment.',
+  'ops.suivreInvalide': 'Valeur « following » invalide (true ou false).',
 
   // Page Notifications (server/inbox.js)
   'ops.inboxInvalide': 'Choix des notifications invalide.',

@@ -38,8 +38,20 @@
 // liens (http et https seulement, vérifiés ici, jamais appelés par le
 // serveur). Rappels : choisis ici (takeCardReminders, une fois par
 // personne et par signature date + heure + délai, jamais pour une carte
-// faite) ; leur remise par server/notify.js arrive avec les notifications
-// des projets (étape 3).
+// faite), remis par server/notify.js (runReminders, deliver).
+//
+// Commentaires, historique, cartes suivies, notifications (étape 3,
+// migration 45) : écrire un commentaire (propriétaire, « Peut modifier »,
+// Contributeur, sur toutes les cartes ; jamais en « Lecture seule »),
+// modifier le sien, supprimer le sien (le propriétaire du projet peut
+// supprimer celui d'un autre : modération, jamais le modifier) ; le texte
+// d'un commentaire ne sort jamais du projet (ni journal, ni historique, ni
+// page Notifications). « Suivre » / « Ne plus suivre » une carte
+// (card_follows, propre à chacun). L'historique d'une carte est lu en
+// ligne (cardHistory), phrase par phrase construites par le téléphone à
+// partir de valeurs choisies champ par champ. Après chaque écriture
+// réussie, ce qui peut donner une notification est confié à
+// server/notify.js (projectActivity), qui choisit qui la reçoit.
 //
 // Les dates sont posées ici, par le serveur.
 
@@ -52,6 +64,7 @@ import {
   roleOfAccess, projectRights, cardRights, assignChangeAllowed, assignableRole, isColumnColor,
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, nameKey,
   cleanCardLabelIds, cleanAssigneeIds, placeFor, byPosition, isUuid,
+  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX, COMMENT_MAX,
 } from '../public/js/projects.js';
 import { DEFAULT_LABEL_COLOR } from '../public/js/labels.js';
 import { setTaskAt } from '../public/js/note-format.js';
@@ -76,6 +89,8 @@ export const CARD_ASSIGN_OWN = 'ops.carteAttribuerSiennes';
 export const PROJECTS_OFF = 'ops.projetsCoupes';
 export const CARD_CONFLICT = 'ops.carteConflit';
 export const LINK_NOT_FOUND = 'ops.lienIntrouvable';
+export const COMMENT_NOT_FOUND = 'ops.commentaireIntrouvable';
+export const COMMENT_OWN = 'ops.commentaireSiensSeulement';
 
 // Opérations des projets (file d'attente, POST /api/ops). Les créations et
 // duplications de projets sont comptées par un plafond (route POST /api/ops).
@@ -83,6 +98,13 @@ export const PROJECT_CREATIONS = ['project.create', 'project.duplicate'];
 // Enregistrements de la description d'une carte (et cases cochées) :
 // comptés par un plafond, comme les notes (route POST /api/ops)
 export const CARD_SAVES = ['card.describe', 'card.task'];
+// Commentaires écrits : comptés par un plafond (120 par heure et par
+// compte, route POST /api/ops)
+export const COMMENT_WRITES = ['comment.create'];
+// Lignes d'historique rendues par cardHistory (les plus récentes d'abord)
+const HISTORY_SHOWN = 300;
+// Plus de nouveautés listées carte par carte au-delà (le point du projet suffit)
+const NEW_CARDS_MAX = 500;
 // Rappel d'une carte envoyé avec moins de 30 minutes de retard (serveur
 // arrêté au bon moment), sinon abandonné, comme les tâches
 const REMIND_LATE_MS = 30 * 60 * 1000;
@@ -230,6 +252,33 @@ export function createProjectService(ctx, { OpError }) {
     setMutedPush: db.prepare('UPDATE project_user_state SET muted_push = ? WHERE project_id = ? AND user_id = ?'),
     setInDeadlines: db.prepare('UPDATE project_user_state SET in_deadlines = ? WHERE project_id = ? AND user_id = ?'),
     dropState: db.prepare('DELETE FROM project_user_state WHERE project_id = ? AND user_id = ?'),
+    newCards: db.prepare(`SELECT DISTINCT card_id FROM card_events WHERE project_id = ? AND id > ? AND (user_id IS NULL OR user_id <> ?)
+      LIMIT ${NEW_CARDS_MAX}`).pluck(),
+
+    // Commentaires (étape 3), toujours cherchés DANS la carte
+    comment: db.prepare('SELECT * FROM card_comments WHERE id = ? AND card_id = ?'),
+    anyComment: db.prepare('SELECT card_id FROM card_comments WHERE id = ?').pluck(),
+    countComments: db.prepare('SELECT COUNT(*) FROM card_comments WHERE card_id = ? AND deleted_at IS NULL').pluck(),
+    insertComment: db.prepare('INSERT INTO card_comments (id, card_id, user_id, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'),
+    editComment: db.prepare('UPDATE card_comments SET body = ?, edited = 1, updated_at = ? WHERE id = ?'),
+    // Supprimé : le texte part tout de suite ; la ligne reste (synchronisation)
+    dropComment: db.prepare("UPDATE card_comments SET body = '', deleted_at = ?, updated_at = ? WHERE id = ?"),
+    commented: db.prepare('SELECT 1 FROM card_comments WHERE card_id = ? AND user_id = ? LIMIT 1').pluck(),
+    commenters: db.prepare('SELECT DISTINCT user_id FROM card_comments WHERE card_id = ? AND user_id IS NOT NULL').pluck(),
+    commentsSince: db.prepare(`SELECT card_comments.*, cards.project_id FROM card_comments JOIN cards ON cards.id = card_comments.card_id
+      WHERE cards.project_id = ? AND card_comments.updated_at >= ?`),
+    allComments: db.prepare(`SELECT card_comments.*, cards.project_id FROM card_comments JOIN cards ON cards.id = card_comments.card_id
+      WHERE cards.project_id = ?`),
+    // Cartes suivies (choix explicites ; propres à chacun)
+    follow: db.prepare('SELECT following FROM card_follows WHERE card_id = ? AND user_id = ?').pluck(),
+    follows: db.prepare('SELECT user_id, following FROM card_follows WHERE card_id = ?'),
+    setFollow: db.prepare(`INSERT INTO card_follows (card_id, user_id, following) VALUES (?, ?, ?)
+      ON CONFLICT (card_id, user_id) DO UPDATE SET following = excluded.following`),
+    myFollows: db.prepare(`SELECT card_follows.card_id, card_follows.following FROM card_follows
+      JOIN cards ON cards.id = card_follows.card_id WHERE card_follows.user_id = ? AND cards.project_id = ?`),
+    dropFollows: db.prepare('DELETE FROM card_follows WHERE user_id = ? AND card_id IN (SELECT id FROM cards WHERE project_id = ?)'),
+    // Historique d'une carte, le plus récent d'abord
+    history: db.prepare(`SELECT id, user_id, type, params, source, created_at FROM card_events WHERE card_id = ? ORDER BY id DESC LIMIT ${HISTORY_SHOWN}`),
   };
 
   // --- Prévenir les appareils (temps réel), après l'écriture réussie ---
@@ -241,11 +290,20 @@ export function createProjectService(ctx, { OpError }) {
     changedFor(project.owner_id);
     for (const id of q.memberIds.all(project.id)) changedFor(id);
   };
+  // Ce qui peut donner une notification (server/notify.js, projectActivity),
+  // confié seulement après une écriture réussie : des identifiants, jamais
+  // un titre ni un texte
+  const activity = [];
+  const notifyLater = (entry) => activity.push(entry);
   function flushNotify() {
     if (touched.size) ctx.events?.notifyProjects?.([...touched]);
     touched.clear();
+    for (const entry of activity.splice(0)) ctx.notify?.projectActivity?.(entry);
   }
-  const clearNotify = () => touched.clear();
+  const clearNotify = () => {
+    touched.clear();
+    activity.length = 0;
+  };
 
   // --- Petits outils ---
 
@@ -357,9 +415,41 @@ export function createProjectService(ctx, { OpError }) {
 
   // Ligne d'historique d'une carte (300 au plus par carte : les plus
   // anciennes partent). params : construit champ par champ par l'appelant.
+  // Renvoie le numéro de la ligne écrite.
   function logEvent(card, user, type, params, source) {
-    q.insertEvent.run(card.project_id, card.id, user?.id ?? null, type, JSON.stringify(params ?? {}), source, nowIso());
+    const id = Number(q.insertEvent.run(card.project_id, card.id, user?.id ?? null, type, JSON.stringify(params ?? {}), source, nowIso()).lastInsertRowid);
     q.trimEvents.run({ cardId: card.id, keep: CARD_HISTORY_MAX });
+    return id;
+  }
+
+  // Ceux qui suivent une carte (9.2) : parmi les personnes qui voient le
+  // projet, celles qui l'ont choisi, ou qui l'ont créée, y sont attribuées
+  // ou l'ont commentée, sauf « Ne plus suivre »
+  function followerIds(cardId) {
+    const card = q.card.get(cardId);
+    const project = card ? q.project.get(card.project_id) : null;
+    if (!card || !project || project.deleted_at) return new Set();
+    const choices = new Map(q.follows.all(card.id).map((row) => [row.user_id, row.following === 1]));
+    const assigned = new Set(q.cardAssignees.all(card.id));
+    const commenters = new Set(q.commenters.all(card.id));
+    const out = new Set();
+    for (const userId of [project.owner_id, ...q.memberIds.all(project.id)]) {
+      const follows = followsCard({
+        choice: choices.has(userId) ? choices.get(userId) : null,
+        created: card.created_by === userId,
+        assigned: assigned.has(userId),
+        commented: commenters.has(userId),
+      });
+      if (follows) out.add(userId);
+    }
+    return out;
+  }
+
+  // Une activité d'une carte à confier aux notifications : kind ('card'
+  // nouvelle carte, 'assign', 'comment', 'move', 'due', 'done', 'undone',
+  // 'describe') ; eventId : la ligne d'historique (Nouveautés : déjà vu ?)
+  function cardActivity(kind, card, user, eventId, extra = {}) {
+    notifyLater({ kind, projectId: card.project_id, cardId: card.id, actorId: user.id, eventId, ...extra });
   }
 
   // Une personne n'a plus le droit d'être attribuée dans ce projet (partie,
@@ -920,9 +1010,10 @@ export function createProjectService(ctx, { OpError }) {
       for (const row of place.renumber ?? []) q.renumberCard.run(row.position, now, row.id);
       q.insertCard.run(id, project.id, column.id, place.position, title, user.id, now, now, user.id);
       const card = q.card.get(id);
-      logEvent(card, user, 'create', { column: column.id, columnName: column.name }, meta.source);
+      const eventId = logEvent(card, user, 'create', { column: column.id, columnName: column.name }, meta.source);
       for (const labelId of labels) q.addCardLabel.run(id, labelId);
       changedForProject(project);
+      cardActivity('card', card, user, eventId);
       return {};
     },
 
@@ -957,7 +1048,7 @@ export function createProjectService(ctx, { OpError }) {
           // sa case
           const done = due === null ? 0 : card.due_done;
           q.setDue.run(due?.date ?? null, due?.time ?? null, due?.remindBefore ?? null, done, done ? card.due_done_at : null, now, user.id, card.id);
-          logEvent(card, user, 'due', due === null ? { date: null } : { date: due.date, time: due.time }, meta.source);
+          cardActivity('due', card, user, logEvent(card, user, 'due', due === null ? { date: null } : { date: due.date, time: due.time }, meta.source));
           changed = true;
         }
       }
@@ -979,7 +1070,7 @@ export function createProjectService(ctx, { OpError }) {
       if ((card.due_done === 1) === op.done) return {};
       const now = nowIso();
       q.setDue.run(card.due_date, card.due_time, card.remind_before, Number(op.done), op.done ? now : null, now, user.id, card.id);
-      logEvent(card, user, op.done ? 'done' : 'undone', {}, meta.source);
+      cardActivity(op.done ? 'done' : 'undone', card, user, logEvent(card, user, op.done ? 'done' : 'undone', {}, meta.source));
       changedForProject(project);
       return {};
     },
@@ -1003,6 +1094,7 @@ export function createProjectService(ctx, { OpError }) {
       if (text === card.description) return { version: card.description_version };
       const version = writeDescription(card, text, user);
       logDescribe(card, user, meta.source);
+      cardActivity('describe', card, user, q.lastEvent.get(project.id));
       changedForProject(project);
       return { version };
     },
@@ -1023,7 +1115,7 @@ export function createProjectService(ctx, { OpError }) {
       if (next === card.description) return { version: card.description_version };
       const version = writeDescription(card, next, user);
       // Le texte de la case est gardé (comme dans l'écran), 200 caractères au plus
-      logEvent(card, user, 'task', { text: [...op.text].slice(0, TASK_TEXT_MAX).join(''), checked: op.checked }, meta.source);
+      cardActivity('describe', card, user, logEvent(card, user, 'task', { text: [...op.text].slice(0, TASK_TEXT_MAX).join(''), checked: op.checked }, meta.source));
       changedForProject(project);
       return { version };
     },
@@ -1095,7 +1187,9 @@ export function createProjectService(ctx, { OpError }) {
       const now = nowIso();
       const from = q.column.get(card.column_id, project.id);
       if (placeCard(card, column, after, user, now) === null) return {};
-      if (from.id !== column.id) logEvent(card, user, 'move', { from: from.id, fromName: from.name, to: column.id, toName: column.name }, meta.source);
+      if (from.id !== column.id) {
+        cardActivity('move', card, user, logEvent(card, user, 'move', { from: from.id, fromName: from.name, to: column.id, toName: column.name }, meta.source), { columnId: column.id });
+      }
       changedForProject(project);
       return {};
     },
@@ -1171,7 +1265,8 @@ export function createProjectService(ctx, { OpError }) {
       q.cardAssignees.all(card.id).forEach((userId, index) => q.addAssignee.run(id, userId, index));
       q.copyDetails.run(card.description, card.description ? user.id : null, card.description ? now : null, card.priority, card.due_date, card.due_time, card.remind_before, id);
       for (const link of links) q.insertLink.run(link.id, id, link.title, link.url, link.position, user.id, now);
-      logEvent(q.card.get(id), user, 'duplicate', { from: card.id }, meta.source);
+      const copy = q.card.get(id);
+      cardActivity('card', copy, user, logEvent(copy, user, 'duplicate', { from: card.id }, meta.source));
       changedForProject(project);
       return {};
     },
@@ -1219,14 +1314,93 @@ export function createProjectService(ctx, { OpError }) {
       ids.forEach((id, index) => {
         if (added.includes(id)) {
           q.addAssignee.run(card.id, id, index);
-          logEvent(card, user, 'assign', { user: id }, meta.source);
+          const eventId = logEvent(card, user, 'assign', { user: id }, meta.source);
+          if (id !== user.id) cardActivity('assign', card, user, eventId, { userId: id });
         }
       });
       q.touchCard.run(nowIso(), user.id, card.id);
       changedForProject(project);
       return {};
     },
+
+    // --- Commentaires (étape 3, section 5.6) ---
+
+    // Écrire (propriétaire, « Peut modifier », Contributeur : toutes les
+    // cartes ; jamais en « Lecture seule ») : commentId choisi par le
+    // téléphone (hors ligne) ; texte simple, 1 à 4 000 caractères ; 500 au
+    // plus par carte. Le texte ne va ni dans l'historique ni dans le journal.
+    'comment.create'(user, op, meta) {
+      const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (!can.comment) throw cardDenied(role, PROJECT_READ_ONLY);
+      const id = requireUuid(op.commentId);
+      const owner = q.anyComment.get(id);
+      if (owner === card.id && q.comment.get(id, card.id).user_id === user.id) return {}; // déjà écrit (opération rejouée)
+      if (owner) throw new OpError(409, 'ops.commentaireExisteDeja');
+      const body = commentOf(op.text);
+      if (q.countComments.get(card.id) >= COMMENTS_PER_CARD_MAX) throw new OpError(400, 'ops.commentairesLimite', { max: COMMENTS_PER_CARD_MAX });
+      const now = nowIso();
+      q.insertComment.run(id, card.id, user.id, body, now, now);
+      const eventId = logEvent(card, user, 'comment', {}, meta.source);
+      changedForProject(project);
+      cardActivity('comment', card, user, eventId);
+      return {};
+    },
+
+    // Modifier SON commentaire (jamais celui d'un autre, même le
+    // propriétaire) ; « modifié » écrit à côté de la date. Un commentaire
+    // supprimé entre-temps : refusé (404).
+    'comment.update'(user, op) {
+      const { card, project, role } = cardFor(user, op.cardId, { projectId: op.projectId });
+      const comment = existingComment(card, op.commentId);
+      if (!commentRights({ userId: comment.user_id }, user.id, role).edit) throw role === 'reader' ? new OpError(403, PROJECT_READ_ONLY) : new OpError(403, COMMENT_OWN);
+      const body = commentOf(op.text);
+      if (body === comment.body) return {};
+      q.editComment.run(body, nowIso(), comment.id);
+      changedForProject(project);
+      return {};
+    },
+
+    // Supprimer : le sien ; le propriétaire du projet, aussi celui d'un
+    // autre (modération). Déjà supprimé : rien ne change (rejouable).
+    'comment.delete'(user, op) {
+      const { card, project, role } = cardFor(user, op.cardId, { projectId: op.projectId });
+      const id = requireUuid(op.commentId);
+      const comment = q.comment.get(id, card.id);
+      if (!comment) throw new OpError(404, COMMENT_NOT_FOUND);
+      if (!commentRights({ userId: comment.user_id }, user.id, role).remove) throw role === 'reader' ? new OpError(403, PROJECT_READ_ONLY) : new OpError(403, COMMENT_OWN);
+      if (comment.deleted_at) return {};
+      const now = nowIso();
+      q.dropComment.run(now, now, comment.id);
+      changedForProject(project);
+      return {};
+    },
+
+    // « Suivre » (following: true) ou « Ne plus suivre » (false) une carte
+    // (tous les rôles, Lecture seule compris) : propre à chacun, jamais
+    // transmis aux autres
+    'card.follow'(user, op) {
+      const { card } = cardFor(user, op.cardId, { projectId: op.projectId });
+      if (typeof op.following !== 'boolean') throw new OpError(400, 'ops.suivreInvalide');
+      if (q.follow.get(card.id, user.id) === Number(op.following)) return {};
+      q.setFollow.run(card.id, user.id, Number(op.following));
+      changedFor(user.id);
+      return {};
+    },
   };
+
+  // Texte d'un commentaire (1 à 4 000 caractères, texte simple)
+  function commentOf(value) {
+    const body = cleanComment(value);
+    if (body === null) throw new OpError(400, 'ops.commentaireInvalide', { max: COMMENT_MAX });
+    return body;
+  }
+  // Un commentaire présent de CETTE carte (d'une autre carte, inconnu ou
+  // supprimé : 404)
+  function existingComment(card, commentId) {
+    const comment = q.comment.get(requireUuid(commentId), card.id);
+    if (!comment || comment.deleted_at) throw new OpError(404, COMMENT_NOT_FOUND);
+    return comment;
+  }
 
   // --- Partage (PUT /api/projects/:id/members, propriétaire seulement) ---
   //
@@ -1279,6 +1453,7 @@ export function createProjectService(ctx, { OpError }) {
           unassignEverywhere(project, id, user, 'app', now);
           q.removeMember.run(project.id, id);
           q.dropState.run(project.id, id);
+          q.dropFollows.run(id, project.id);
         }
         for (const [id, value] of changedRights) {
           q.setAccess.run(value, project.id, id);
@@ -1294,6 +1469,9 @@ export function createProjectService(ctx, { OpError }) {
     for (const id of added) ctx.audit('project_shared', { user: user.username, project: project.id, member: usernameOf(id), change: 'added', access: JOURNAL_ACCESS[rights.get(id) ?? 'lecture'] });
     for (const id of removed) ctx.audit('project_shared', { user: user.username, project: project.id, member: usernameOf(id), change: 'removed' });
     for (const [id, value] of changedRights) ctx.audit('project_shared', { user: user.username, project: project.id, member: usernameOf(id), change: 'access', access: JOURNAL_ACCESS[value] });
+    // « Partage » : la personne ajoutée est prévenue, même si elle a coupé
+    // les projets (avec l'invitation à les allumer ; décision du 25 novembre 2026)
+    for (const id of added) ctx.notify?.projectShared?.({ projectId: project.id, userId: id, actorId: user.id });
     return describeProject(q.projectFor.get({ userId: user.id, projectId: project.id }), user);
   }
 
@@ -1309,6 +1487,7 @@ export function createProjectService(ctx, { OpError }) {
       unassignEverywhere(project, user.id, user, 'app', now);
       q.removeMember.run(project.id, user.id);
       q.dropState.run(project.id, user.id);
+      q.dropFollows.run(user.id, project.id);
       q.touch.run(now, project.id);
     })();
     ctx.events?.notifyProjects?.([project.owner_id, ...q.memberIds.all(project.id), user.id]);
@@ -1395,7 +1574,7 @@ export function createProjectService(ctx, { OpError }) {
   const allCards = db.prepare('SELECT * FROM cards WHERE project_id = ?');
   const allNames = db.prepare('SELECT id, display_name FROM users');
   function syncFor(user, since) {
-    if (!projectsOn(user.id)) return { projects: [], projectIds: [], cards: [], projectMine: {} };
+    if (!projectsOn(user.id)) return { projects: [], projectIds: [], cards: [], comments: [], cardFollows: [], projectMine: {} };
     const from = since ?? '';
     const visible = visibleQuery.all({ me: user.id }).filter((project) => projectAccess(user, project));
     const names = new Map(allNames.all().map((row) => [row.id, row.display_name]));
@@ -1403,6 +1582,8 @@ export function createProjectService(ctx, { OpError }) {
     const newsOn = q.newsEnabled.get(user.id) === 1;
     const projects = [];
     const cards = [];
+    const comments = [];
+    const cardFollows = [];
     const projectMine = {};
     for (const project of visible) {
       const fresh = !since || (project.member_added_at ?? '') >= from || (project.cards_reset_at ?? '') >= from;
@@ -1413,17 +1594,105 @@ export function createProjectService(ctx, { OpError }) {
         const links = { ...cardLinks(project.id), names };
         for (const card of rows) cards.push(describeCard(card, user, links));
       }
+      for (const comment of fresh ? q.allComments.all(project.id) : q.commentsSince.all(project.id, from)) comments.push(describeComment(comment, user, names));
+      // Mes choix « Suivre » / « Ne plus suivre » (en entier : jamais ceux des autres)
+      for (const row of q.myFollows.all(user.id, project.id)) cardFollows.push([row.card_id, row.following === 1]);
       const state = states.get(project.id);
       const lastSeen = state?.last_seen_event ?? 0;
+      const unread = newsOn && state?.muted_news !== 1 && q.lastOthersEvent.get(project.id, user.id) > lastSeen;
       projectMine[project.id] = {
         mutedNews: state?.muted_news === 1,
         mutedPush: state?.muted_push === 1,
         inDeadlines: state?.in_deadlines === 1,
         lastEvent: q.lastEvent.get(project.id),
-        unread: newsOn && state?.muted_news !== 1 && q.lastOthersEvent.get(project.id, user.id) > lastSeen,
+        unread,
+        // Cartes changées par les autres depuis ma dernière visite (point
+        // sur chaque carte concernée, 9.1)
+        newCards: unread ? q.newCards.all(project.id, lastSeen, user.id) : [],
       };
     }
-    return { projects, projectIds: visible.map((project) => project.id), cards, projectMine };
+    return { projects, projectIds: visible.map((project) => project.id), cards, comments, cardFollows, projectMine };
+  }
+
+  // Un commentaire, champ par champ : auteur (prénom relu maintenant ;
+  // byMe : le mien), texte (vide s'il est supprimé), dates, « modifié » ;
+  // commentaire importé (étape 5) : l'auteur d'origine comme simple texte.
+  // Jamais le numéro d'un compte.
+  function describeComment(comment, user, names) {
+    return {
+      id: comment.id,
+      cardId: comment.card_id,
+      projectId: comment.project_id,
+      byMe: comment.user_id === user.id,
+      authorName: comment.user_id ? names.get(comment.user_id) ?? null : null,
+      text: comment.deleted_at ? '' : comment.body,
+      importedAuthor: comment.imported_author ?? null,
+      importedAt: comment.imported_at ?? null,
+      importedByName: comment.imported_by ? names.get(comment.imported_by) ?? null : null,
+      createdAt: comment.created_at,
+      updatedAt: comment.updated_at,
+      edited: comment.edited === 1,
+      deletedAt: comment.deleted_at ?? null,
+    };
+  }
+
+  // --- Historique d'une carte (GET /api/projects/:id/cards/:cardId/history,
+  // en ligne seulement ; tout membre, Lecture seule compris) ---
+  // Les lignes, la plus récente d'abord, construites champ par champ : le
+  // type (liste fermée), qui (prénom relu maintenant ; « Un ancien compte »
+  // s'il a disparu : null), « (assistant IA) » (source), la date, et
+  // seulement les valeurs que le type permet (noms de colonnes d'alors,
+  // date et heure, personne relue, étiquette d'alors, texte d'une case).
+  // Jamais le titre, la description ni un commentaire.
+  function cardHistory(user, projectId, cardId) {
+    const { card, project } = cardFor(user, cardId, { projectId });
+    const names = new Map(allNames.all().map((row) => [row.id, row.display_name]));
+    const lines = q.history.all(card.id).map((row) => {
+      let p = {};
+      try {
+        p = JSON.parse(row.params);
+      } catch {
+        p = {};
+      }
+      const text = (value, max = 200) => (typeof value === 'string' ? [...value].slice(0, max).join('') : null);
+      const person = (value) => (Number.isSafeInteger(value) ? { name: names.get(value) ?? null, me: value === user.id } : null);
+      const params = {};
+      switch (row.type) {
+        case 'create': case 'delete': case 'restore':
+          params.column = text(p.columnName, 40);
+          break;
+        case 'move':
+          params.from = text(p.fromName, 40);
+          params.to = text(p.toName, 40);
+          break;
+        case 'due':
+          params.date = typeof p.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(p.date) ? p.date : null;
+          params.time = typeof p.time === 'string' && /^\d{2}:\d{2}$/.test(p.time) ? p.time : null;
+          break;
+        case 'task':
+          params.text = text(p.text);
+          params.checked = p.checked === true;
+          break;
+        case 'assign': case 'unassign':
+          params.person = person(p.user);
+          break;
+        case 'label': case 'unlabel':
+          params.label = text(p.name, 30);
+          params.color = typeof p.color === 'string' && /^[a-z]{2,10}$/.test(p.color) ? p.color : null;
+          break;
+        default:
+      }
+      return {
+        id: row.id,
+        type: row.type,
+        actorName: row.user_id ? names.get(row.user_id) ?? null : null,
+        byMe: row.user_id === user.id,
+        ai: row.source === 'mcp',
+        at: row.created_at,
+        params,
+      };
+    });
+    return { projectId: project.id, cardId: card.id, lines };
   }
 
   // --- Rappels des cartes (section 9.3) ---
@@ -1448,8 +1717,7 @@ export function createProjectService(ctx, { OpError }) {
   // seulement les comptes actifs qui ont les projets allumés et voient
   // toujours le projet. Jamais pour une carte faite, supprimée, ou dont le
   // moment est passé depuis plus de 30 minutes (serveur arrêté).
-  // (La remise par server/notify.js, deliver, arrive avec les
-  // notifications des projets, étape 3.)
+  // (Remis par server/notify.js, runReminders, avec deliver.)
   function takeCardReminders(now = ctx.now()) {
     const day = (ms) => {
       const date = new Date(ms);
@@ -1483,6 +1751,8 @@ export function createProjectService(ctx, { OpError }) {
     const projects = db.prepare('DELETE FROM projects WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes;
     const touchedProjects = db.prepare('SELECT DISTINCT project_id FROM cards WHERE deleted_at IS NOT NULL AND deleted_at < ?').pluck().all(limit);
     const cards = db.prepare('DELETE FROM cards WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit).changes;
+    // Commentaires supprimés (texte déjà effacé) : la ligne part après 30 jours
+    db.prepare('DELETE FROM card_comments WHERE deleted_at IS NOT NULL AND deleted_at < ?').run(limit);
     const now = nowIso();
     for (const id of touchedProjects) {
       q.touch.run(now, id);
@@ -1496,6 +1766,6 @@ export function createProjectService(ctx, { OpError }) {
   // handler(user, op, { source }).)
   return {
     handlers, syncFor, purgeDeleted, flushNotify, clearNotify, projectFor, cardFor, setMembers, leaveProject,
-    purgeProjects, purgeProject, purgeCards, describeProject, takeCardReminders,
+    purgeProjects, purgeProject, purgeCards, describeProject, takeCardReminders, followerIds, cardHistory,
   };
 }

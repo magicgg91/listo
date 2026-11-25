@@ -31,7 +31,7 @@ import express from 'express';
 import { createListService, MAX_OPS_PER_BATCH, OpError } from '../lists.js';
 import { requestLocale } from '../locale.js';
 import { NOTE_SAVES } from '../notes.js';
-import { PROJECT_CREATIONS, CARD_SAVES } from '../projects.js';
+import { PROJECT_CREATIONS, CARD_SAVES, COMMENT_WRITES } from '../projects.js';
 
 // Résultat d'une opération pour le téléphone : un refus (code : nom de son
 // texte) est dit dans la langue de la requête ; ses valeurs (params) restent
@@ -183,6 +183,11 @@ export function listRoutes(ctx) {
     const cardSaves = ops.filter((op) => CARD_SAVES.includes(op?.type)).length;
     if (cardSaves && !ctx.cardSaves.take(req.user.id, cardSaves)) {
       return res.status(429).json({ error: req.t('ops.cartesTropVite') });
+    }
+    // Plafond des commentaires des cartes (120 par heure) : de même
+    const commentWrites = ops.filter((op) => COMMENT_WRITES.includes(op?.type)).length;
+    if (commentWrites && !ctx.commentWrites.take(req.user.id, commentWrites)) {
+      return res.status(429).json({ error: req.t('ops.commentairesTropVite') });
     }
     res.json({ results: service.applyOps(req.user, ops).map((result) => localized(req, result)) });
   });

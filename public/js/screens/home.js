@@ -236,7 +236,7 @@ function projectsTile() {
   return tile(t('accueil.projets'), 'kanban', open, rowsOf(urgentCards(app.data, app.user.id, today, nowTime()).map((card) => {
     const project = projects.find((p) => p.id === card.projectId);
     const column = (project?.columns ?? []).find((c) => c.id === card.columnId);
-    const due = cardDue(card);
+    const due = cardDue(card, project);
     const late = due?.state === 'late';
     const parts = [project?.name ?? '', column?.name ?? '', late ? t('accueil.projets.retard') : due?.when].filter(Boolean);
     const fresh = cardIsNew(card);

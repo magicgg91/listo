@@ -78,6 +78,15 @@ const ALLOWED_FOCUS = new Map([
   // note (ou Entrée) le remplace par le champ, curseur à l'endroit touché
   ['public/js/screens/note.js: input', 'EXCEPTION voulue : texte d\'une note, après « Nouvelle note » (+, N) ou un appui sur le texte affiché'],
   ['public/js/screens/list.js: heading', 'titre d\'une sous-page de la fiche (tabindex="-1"), après un appui sur sa ligne'],
+  // Projets (docs/cadrage-projets.md, 14 ; 25 novembre 2026) : gestes faits
+  // pour écrire. « Nouveau projet » (« + », bouton du menu de gauche, N) :
+  // le nom ; « + Ajouter une carte » d'une colonne, « Nouvelle carte » ou N
+  // (ordinateur) : le titre de la carte ; toucher le titre d'une carte
+  // ouverte : son champ, curseur à la fin. Jamais à l'ouverture d'un projet
+  // ni d'une carte.
+  ['public/js/screens/projects.js: input', 'EXCEPTION voulue : nom d\'un nouveau projet, après « + », « Nouveau projet » ou N'],
+  ['public/js/screens/project.js: field', 'EXCEPTION voulue : titre d\'une nouvelle carte, après « + Ajouter une carte », « Nouvelle carte » ou N'],
+  ['public/js/screens/project-card.js: input', 'EXCEPTION voulue : titre d\'une carte ouverte, après un appui sur ce titre'],
   // Barre de mise en forme d'une note (24 novembre 2026) : flèches,
   // Début et Fin d'un bouton à l'autre (role="toolbar"), des boutons
   ['public/js/screens/note-toolbar.js: next', 'flèches dans la barre de mise en forme d\'une note (un bouton, jamais un champ)'],
@@ -95,7 +104,9 @@ const ALLOWED_FOCUS = new Map([
 
 // Seul setSelectionRange permis : le curseur d'une note, placé à l'endroit
 // touché du texte affiché (geste fait pour écrire, décision du 23 novembre 2026)
-const ALLOWED_SELECTION = ['public/js/screens/note.js'];
+// ; et le titre d'une carte ouverte, curseur à la fin après un appui sur ce
+// titre (projets, 25 novembre 2026)
+const ALLOWED_SELECTION = ['public/js/screens/note.js', 'public/js/screens/project-card.js'];
 
 test('aucun .select(), autofocus ni setSelectionRange dans l\'interface', () => {
   for (const file of interfaceFiles()) {

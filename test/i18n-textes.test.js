@@ -89,6 +89,17 @@ const MIGRATED = [
   'public/js/quantity.js',
   'public/js/aisles.js',
   'public/js/tidy-aisles.js',
+  // Projets (étape 1, 25 novembre 2026) : écrans et règles d'affichage
+  'public/js/screens/projects.js',
+  'public/js/screens/project.js',
+  'public/js/screens/project-card.js',
+  'public/js/screens/project-settings.js',
+  'public/js/screens/project-trash.js',
+  'public/js/project-view.js',
+  'public/js/project-drag.js',
+  'public/js/project-actions.js',
+  'public/js/project-store.js',
+  'public/js/projects.js',
 ];
 
 test('lecture des chaînes et repérage du texte : exemples', () => {

@@ -16,6 +16,7 @@ import {
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, cleanCardLabelIds, cleanAssigneeIds,
   isColumnColor, DEFAULT_COLUMN_COLOR, COLUMNS_MAX, PROJECT_LABELS_MAX,
   cleanCardDue, isCardPriority, cleanDescription, cleanLinkUrl, cleanLinkTitle, LINKS_PER_CARD_MAX,
+  cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX,
 } from './projects.js';
 import { DEFAULT_LABEL_COLOR } from './labels.js';
 import { setTaskAt } from './note-format.js';
@@ -39,6 +40,12 @@ export function emptyProjects() {
     // reste sur ce téléphone jusqu'à mon choix, jamais effacé par une
     // synchronisation (comme les notes)
     cardConflicts: new Map(),
+    // Commentaires des cartes (étape 3) : id -> commentaire (supprimés
+    // compris : deletedAt, texte vide)
+    cardComments: new Map(),
+    // MES choix « Suivre » (true) / « Ne plus suivre » (false), par carte ;
+    // remplacés en entier à chaque synchronisation (jamais ceux des autres)
+    cardFollows: new Map(),
   };
 }
 
@@ -51,6 +58,8 @@ export function projectsSnapshot(state) {
     projectMine: state.projectMine,
     projectsReload: state.projectsReload,
     cardConflicts: [...state.cardConflicts],
+    cardComments: [...state.cardComments.values()],
+    cardFollows: [...state.cardFollows],
   };
 }
 
@@ -62,6 +71,8 @@ export function projectsFromSnapshot(state, snapshot) {
   state.projectMine = snapshot.projectMine && typeof snapshot.projectMine === 'object' ? snapshot.projectMine : {};
   state.projectsReload = snapshot.projectsReload === true;
   state.cardConflicts = new Map(Array.isArray(snapshot.cardConflicts) ? snapshot.cardConflicts : []);
+  state.cardComments = new Map((Array.isArray(snapshot.cardComments) ? snapshot.cardComments : []).map((comment) => [comment.id, comment]));
+  state.cardFollows = new Map(Array.isArray(snapshot.cardFollows) ? snapshot.cardFollows : []);
 }
 
 // Ce que la synchronisation apporte (full : synchronisation complète ;
@@ -76,6 +87,7 @@ export function loadProjects(state, data, { full }) {
   if (full) {
     state.projects = new Map();
     state.cards = new Map();
+    state.cardComments = new Map();
     state.projectsReload = false;
   }
   for (const project of data.projects ?? []) if (state.projectIds.has(project.id)) state.projects.set(project.id, project);
@@ -102,6 +114,13 @@ export function loadProjects(state, data, { full }) {
       state.cards.set(id, { ...card, labelIds: card.labelIds.filter((labelId) => known.has(labelId)) });
     }
   }
+  // Commentaires : ceux qui arrivent, puis ceux d'une carte que le
+  // téléphone n'a plus (effacée, projet quitté) partent avec elle
+  for (const comment of data.comments ?? []) {
+    if (state.cards.has(comment.cardId)) state.cardComments.set(comment.id, comment);
+  }
+  for (const [id, comment] of [...state.cardComments]) if (!state.cards.has(comment.cardId)) state.cardComments.delete(id);
+  if (Array.isArray(data.cardFollows)) state.cardFollows = new Map(data.cardFollows.filter((row) => Array.isArray(row) && typeof row[1] === 'boolean'));
   state.projectMine = data.projectMine && typeof data.projectMine === 'object' ? data.projectMine : {};
 }
 
@@ -165,7 +184,27 @@ export const PROJECT_OP_TYPES = [
   'label.create', 'label.update', 'label.delete',
   'card.create', 'card.update', 'card.move', 'card.delete', 'card.restore', 'card.duplicate', 'card.labels', 'card.assign',
   'card.done', 'card.describe', 'card.task', 'link.create', 'link.update', 'link.delete',
+  'comment.create', 'comment.update', 'comment.delete', 'card.follow',
 ];
+
+// --- Commentaires et cartes suivies (étape 3) ---
+
+// Commentaires d'une carte (supprimés exclus), du plus ancien au plus récent
+export const cardCommentsOf = (state, cardId) => [...(state.cardComments?.values() ?? [])]
+  .filter((comment) => comment.cardId === cardId && !comment.deletedAt)
+  .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+// Je suis cette carte ? (règle partagée avec le serveur, followsCard)
+export function followingCard(state, card, me) {
+  if (!card) return false;
+  const choice = state.cardFollows?.has(card.id) ? state.cardFollows.get(card.id) : null;
+  return followsCard({
+    choice,
+    created: card.createdByMe === true,
+    assigned: (card.assigneeIds ?? []).includes(me),
+    // (un commentaire supprimé compte aussi, comme sur le serveur)
+    commented: [...(state.cardComments?.values() ?? [])].some((comment) => comment.cardId === card.id && comment.byMe),
+  });
+}
 
 // Applique une opération des projets à la copie locale. Ce que mon rôle ne
 // permet pas, ou une opération mal formée, ne change rien (le serveur la
@@ -237,7 +276,7 @@ export function applyProjectOp(state, op, { user, now }) {
     }
     case 'project.seen': {
       const mine = project ? state.projectMine[project.id] : null;
-      if (mine && Number.isSafeInteger(op.upTo) && op.upTo >= (mine.lastEvent ?? 0)) state.projectMine = { ...state.projectMine, [project.id]: { ...mine, unread: false } };
+      if (mine && Number.isSafeInteger(op.upTo) && op.upTo >= (mine.lastEvent ?? 0)) state.projectMine = { ...state.projectMine, [project.id]: { ...mine, unread: false, newCards: [] } };
       return;
     }
 
@@ -472,6 +511,35 @@ function applyCardOp(state, op, { user, me, now }) {
     }
     // Personnes : membres qui ne sont pas en lecture seule ; un Contributeur
     // sur une carte qu'il n'a pas créée peut seulement se retirer
+    // Commentaires : tous les rôles sauf Lecture seule, sur toutes les cartes
+    case 'comment.create': {
+      const text = cleanComment(op.text);
+      if (card.deletedAt || !can.comment || !text || state.cardComments.has(op.commentId)) return;
+      if (cardCommentsOf(state, card.id).length >= COMMENTS_PER_CARD_MAX) return;
+      state.cardComments.set(op.commentId, {
+        id: op.commentId, cardId: card.id, projectId: card.projectId, byMe: true, authorName: user?.displayName ?? null, text,
+        importedAuthor: null, importedAt: null, importedByName: null, createdAt: now, updatedAt: now, edited: false, deletedAt: null,
+      });
+      return;
+    }
+    case 'comment.update': {
+      const comment = state.cardComments.get(op.commentId);
+      const text = cleanComment(op.text);
+      if (!comment || comment.cardId !== card.id || comment.deletedAt || !text || !commentRights(comment, me, project.role).edit) return;
+      if (text !== comment.text) state.cardComments.set(comment.id, { ...comment, text, edited: true, updatedAt: now });
+      return;
+    }
+    case 'comment.delete': {
+      const comment = state.cardComments.get(op.commentId);
+      if (!comment || comment.cardId !== card.id || comment.deletedAt || !commentRights(comment, me, project.role).remove) return;
+      state.cardComments.set(comment.id, { ...comment, text: '', deletedAt: now, updatedAt: now });
+      return;
+    }
+    // « Suivre » / « Ne plus suivre » : mon choix, tous les rôles
+    case 'card.follow': {
+      if (typeof op.following === 'boolean') state.cardFollows.set(card.id, op.following);
+      return;
+    }
     case 'card.assign': {
       const ids = cleanAssigneeIds(op.userIds);
       if (card.deletedAt || !ids || !assignChangeAllowed(can, card.assigneeIds ?? [], ids, me)) return;

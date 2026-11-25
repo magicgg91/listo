@@ -643,11 +643,15 @@ export function loadInbox(state, data) {
 }
 
 // Lignes de la page montrées : toutes, sauf celles des notes quand je les
-// ai coupées (Réglages › Fonctions, features.js ; gardées, elles reviennent
-// quand je les rallume)
+// ai coupées, et celles des projets quand je les ai coupés, sauf
+// « Partage » (l'invitation à les allumer) (Réglages › Fonctions,
+// features.js ; gardées, elles reviennent quand je les rallume)
 export function inboxShownRows(state) {
   const rows = state.inbox?.rows ?? [];
-  return notesOn(state.features) ? rows : rows.filter((row) => row.targetType !== 'note');
+  const notes = notesOn(state.features);
+  const projects = projectsOn(state.features);
+  return rows.filter((row) => (notes || row.targetType !== 'note')
+    && (projects || !['project', 'card'].includes(row.targetType) || row.kind === 'sharing'));
 }
 
 // Nombre de notifications non lues (pastille de la cloche)
@@ -656,11 +660,13 @@ export const inboxUnread = (state) => inboxShownRows(state).filter((row) => !row
 // Lignes non lues dont la cible est cette liste (ou un de ses éléments),
 // cette note, ou l'écran Échéances : ouvrir la cible les rend lues (une
 // notification du téléphone touchée ouvre sa cible)
-export function inboxRowsFor(state, { listId = null, noteId = null, deadlines = false }) {
+export function inboxRowsFor(state, { listId = null, noteId = null, deadlines = false, projectId = null, cardId = null }) {
   return (state.inbox?.rows ?? []).filter((row) => !row.read && row.target && (
     (listId && row.target.listId === listId)
     || (noteId && row.target.noteId === noteId)
-    || (deadlines && row.target.type === 'deadlines'))).map((row) => row.id);
+    || (deadlines && row.target.type === 'deadlines')
+    || (projectId && row.target.type === 'project' && row.target.projectId === projectId)
+    || (cardId && row.target.type === 'card' && row.target.cardId === cardId))).map((row) => row.id);
 }
 
 // Cible d'une ligne encore ouverte sur CE téléphone ? (copie locale : une
@@ -675,6 +681,18 @@ export function inboxTargetAvailable(state, target) {
       const note = state.notes.get(target.noteId);
       return Boolean(note) && !note.deletedAt;
     }
+    // Projets (étape 3) ; « features » : Réglages › Fonctions (partage
+    // d'un projet reçu projets coupés)
+    case 'project': {
+      const project = state.projects?.get(target.projectId);
+      return Boolean(project) && !project.deletedAt;
+    }
+    case 'card': {
+      const card = state.cards?.get(target.cardId);
+      const project = card ? state.projects?.get(card.projectId) : null;
+      return Boolean(card) && !card.deletedAt && Boolean(project) && !project.deletedAt;
+    }
+    case 'features': return true;
     default: return false;
   }
 }

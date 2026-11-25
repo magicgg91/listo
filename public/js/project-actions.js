@@ -13,7 +13,7 @@
 // définitivement, vider une corbeille.
 
 import { app, refreshData, dataChanged, flushSoon, queuedEntries, replaceQueuedOp, isQueuedSending } from './app.js';
-import { uuid, post, put } from './api.js';
+import { uuid, get, post, put } from './api.js';
 import { perform } from './actions.js';
 import { copyName } from './format.js';
 import { t } from './i18n.js';
@@ -246,4 +246,27 @@ export async function keepBothCardDescriptions(cardId, heading) {
   const theirs = card.description ?? '';
   const joined = `${theirs}${theirs && !theirs.endsWith('\n') ? '\n' : ''}${theirs ? '\n' : ''}${heading}\n${kept.description}`.slice(0, CARD_DESCRIPTION_MAX);
   await perform({ type: 'card.describe', cardId, description: joined, baseVersion: card.descriptionVersion });
+}
+
+// --- Commentaires, cartes suivies, historique (étape 3) ---
+
+// Écrire un commentaire (identifiant créé ici : hors ligne compris).
+// Renvoie son identifiant.
+export async function addComment(cardId, text) {
+  const commentId = uuid();
+  await perform({ type: 'comment.create', cardId, commentId, text });
+  return commentId;
+}
+// Modifier MON commentaire
+export const editComment = (cardId, commentId, text) => perform({ type: 'comment.update', cardId, commentId, text });
+// Supprimer mon commentaire (ou, propriétaire du projet, celui d'un autre)
+export const deleteComment = (cardId, commentId) => perform({ type: 'comment.delete', cardId, commentId });
+// « Suivre » (true) / « Ne plus suivre » (false) une carte
+export const followCard = (cardId, following) => perform({ type: 'card.follow', cardId, following });
+
+// Historique d'une carte : en ligne seulement (jamais copié sur le
+// téléphone). Renvoie les lignes, la plus récente d'abord.
+export async function loadCardHistory(projectId, cardId) {
+  const result = await get(`/api/projects/${enc(projectId)}/cards/${enc(cardId)}/history`);
+  return Array.isArray(result?.lines) ? result.lines : [];
 }

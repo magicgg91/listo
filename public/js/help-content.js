@@ -467,6 +467,7 @@ export const GUIDE = [
           'L\'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un compte ».',
           { ul: [
             '« Rôle » : « Utilisateur », « Invité » ou « Admin » ([[roles-comptes]]) ;',
+            '« Fonctions autorisées » : ce que le compte peut utiliser, cochées selon le rôle (tout pour un utilisateur, rien pour un invité) ([[roles-comptes]]) ;',
             '« Identifiant » : ce que la personne tapera pour se connecter ;',
             '« Nom affiché (facultatif) » : le prénom montré aux autres (“Ajouté par Marie”) ;',
             '« Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion.',
@@ -486,10 +487,19 @@ export const GUIDE = [
           'Dans une liste, une note ou un projet partagé avec un invité, les membres se voient, comme pour tout le monde (personnes, tâches et cartes attribuées, commentaires, historique). Un proche membre d\'un projet avec un invité le voit donc dans ce projet, et seulement là.',
           'Un invité ne partage jamais ce qu\'il possède : ni personnes, ni lien public ; il voit « Personnes » à la place de « Partager ». C\'est l\'Admin qui partage avec lui. Il n\'est jamais non plus la personne à qui est destinée une liste d\'envies.',
           'Sur son compte, un invité voit la pastille « Invité » (Réglages, « Mon compte ») et l\'encadré « Compte invité ».',
+          { sub: 'Fonctions autorisées' },
+          'Sur la page d\'un compte (Administration, onglet « Comptes », bouton ⋮), sous « Rôle », l\'Admin coche ce que la personne peut utiliser. La case autorise ; c\'est la personne qui allume ensuite la fonction dans Réglages, « Fonctions » ([[echeances]]). Décochée, la fonction disparaît de ses écrans et Listo la refuse ; rien n\'est effacé, tout revient si vous la cochez de nouveau.',
+          { ul: [
+            '« Notes » et « Projets » : pour un utilisateur, cochées au départ (les listes sont toujours là, sans case) ; il les allume lui-même. Pour un invité, rien n\'est coché au départ ; une fonction cochée s\'allume aussitôt pour lui, et il peut l\'éteindre ensuite.',
+            '« Peut créer ses propres projets » (sous « Projets ») : sans elle, ni « Nouveau projet », ni « Dupliquer le projet » ; les projets qu\'on lui partage restent utilisables.',
+            '« Assistants IA » : sans elle, la personne ne peut pas relier d\'assistant IA ([[claude-connecter]]), et ses connexions sont déconnectées tout de suite.',
+            'Les étiquettes des notes sont communes au foyer : un invité qui a les notes les voit.',
+            'Un Admin a accès à tout : sa page n\'a pas de cases.',
+          ] },
           { sub: 'Changer le rôle d\'un compte' },
           { ul: [
             'Administration, onglet « Comptes », bouton ⋮ du compte : sa page s\'ouvre (sur ordinateur, à droite de la liste). Touchez « Utilisateur », « Invité » ou « Admin ».',
-            'D\'« Utilisateur » à « Invité » : une confirmation dit ce qui change. Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu\'une liste d\'envies lui est destinée.',
+            'D\'« Utilisateur » à « Invité » : une confirmation dit ce qui change, et ce qu\'elle garde (ses fonctions autorisées et allumées ne changent pas : décochez ensuite ce qu\'il faut). Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu\'une liste d\'envies lui est destinée.',
             'D\'« Invité » à « Utilisateur » : une confirmation dit qu\'elle sera de nouveau visible de toute la famille, et verra tous les comptes.',
             'Un invité ne devient pas Admin directement, ni un Admin invité : on passe d\'abord par « Utilisateur ». Personne ne change son propre rôle, et il reste toujours au moins un Admin actif.',
           ] },
@@ -750,7 +760,7 @@ export const GUIDE = [
             '« Afficher l\'Accueil » coupé : Listo s\'ouvre sur le « Premier écran » choisi (« Échéances », « Listes », « Notes », ou « Projets » quand ils sont allumés ; « Listes » au départ), et le bouton « Accueil » disparaît du bandeau du bas. La cloche des notifications passe alors en haut d\'« Échéances », de « Listes » et de « Notes » ([[notif-page]]). Sur ordinateur, l\'entrée « Accueil » du menu de gauche disparaît, et le logo mène au premier écran choisi.',
           ] },
           { sub: 'Choisir ses fonctions' },
-          'Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [[projets]]). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n\'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne.',
+          'Réglages, « Fonctions » (juste sous « Accueil ») choisit les fonctions que vous utilisez : les notes (allumées au départ) et les projets (coupés au départ : [[projets]]). Une fonction coupée disparaît de vos écrans, pour vous seul ; rien n\'est effacé. Le choix vaut pour tous vos appareils, et se fait aussi hors ligne. Seules les fonctions que l\'Admin a autorisées pour votre compte sont proposées ([[roles-comptes]]).',
           { ul: [
             'Couper les notes : plus de bouton « Notes » dans le bandeau du bas (quatre boutons, ou trois si l\'Accueil est aussi coupé), plus de tuile « Notes » sur l\'Accueil ni dans Réglages, « Accueil », plus d\'onglet « Notes » dans la « Corbeille » des Réglages ; sur ordinateur, plus d\'entrée « Notes » ni de « Nouvelle note » dans le menu de gauche (la touche N ouvre toujours « Nouvelle liste »). Un lien vers une note mène au premier écran ; si « Notes » était votre premier écran, Listo s\'ouvre sur « Listes ».',
             'Notes coupées, vous ne recevez plus rien des notes : ni nouveautés, ni notifications (page Notifications et téléphone). Les autres peuvent toujours partager une note avec vous ; rien ne change pour eux.',
@@ -1251,8 +1261,8 @@ export const GUIDE = [
           { sub: 'Onglet « Comptes »' },
           { ul: [
             '« Ajouter un compte » ([[creer-comptes]]).',
-            'Les comptes : Admin et Utilisateurs d\'abord, puis les invités sous « Invités », avec la pastille « Discret ».',
-            'Bouton ⋮ d\'un compte : sa page, avec son « Rôle » ([[roles-comptes]]) et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s\'il n\'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).',
+            'Les comptes : Admin et Utilisateurs d\'abord, puis les invités sous « Invités », avec la pastille « Discret ». Sous le prénom : le rôle, puis ce qui est ouvert à un invité (par exemple « Projets ») ou retiré à un utilisateur (par exemple « sans projets »), sinon l\'état de la double authentification.',
+            'Bouton ⋮ d\'un compte : sa page, avec son « Rôle » et ses « Fonctions autorisées » ([[roles-comptes]]), et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s\'il n\'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).',
             'Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.',
           ] },
           { sub: 'Onglet « Courses »' },
@@ -1496,7 +1506,7 @@ export const GUIDE = [
             'Supprimer : seulement vos notes, et seulement vers la corbeille, d\'où vous pouvez la restaurer pendant 30 jours ([[notes]]). Il doit vous demander confirmation avant ; il ne peut jamais l\'effacer pour de bon.',
             'Avec le droit « Lecture seule » sur une note, il ne peut que la lire, même en « Lecture et écriture ».',
           ] },
-          'Les notes coupées pour vous dans Réglages, « Fonctions » ([[echeances]]) : l\'assistant n\'y a plus accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucune note : reconnectez l\'assistant avec « Toutes mes listes, mes notes et mes projets » ([[claude-connecter]]).',
+          'Les notes coupées pour vous dans Réglages, « Fonctions » ([[echeances]]), ou que l\'Admin n\'a pas autorisées pour votre compte : l\'assistant n\'y a plus accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucune note : reconnectez l\'assistant avec « Toutes mes listes, mes notes et mes projets » ([[claude-connecter]]).',
         ],
       },
       {
@@ -1515,7 +1525,7 @@ export const GUIDE = [
           ] },
           'Exemple : reprendre un tableau Planka. Si votre assistant peut lire votre tableau Planka, demandez-lui : “Recrée mon tableau Blog dans Listo, avec ses colonnes, ses étiquettes, ses cartes et leurs commentaires.” Il crée le projet et ses colonnes (avec les couleurs les plus proches), les étiquettes, puis les cartes par lots, avec les personnes reconnues par leur prénom, et enfin les commentaires. Un commentaire repris garde le nom de son auteur et sa date d\'origine, et s\'affiche « importé par » vous : il n\'est relié à aucun compte de Listo. L\'assistant ne partage jamais le projet : vous le partagez ensuite vous-même, en choisissant le rôle de chacun ([[projets-roles]]).',
           'Jamais : partager un projet, changer un rôle, quitter un projet, restaurer, effacer pour de bon un projet ou une carte, vider une corbeille, ni toucher à vos réglages à vous (nouveautés, notifications, Échéances).',
-          'Les projets coupés pour vous dans Réglages, « Fonctions » ([[projets-allumer]]) : l\'assistant n\'y a pas accès du tout, et il vous le dit. Une connexion limitée à « Certaines listes » ne voit aucun projet : reconnectez l\'assistant avec « Toutes mes listes, mes notes et mes projets » ([[claude-connecter]]).',
+          'Les projets coupés pour vous dans Réglages, « Fonctions » ([[projets-allumer]]), ou que l\'Admin n\'a pas autorisés pour votre compte : l\'assistant n\'y a pas accès du tout, et il vous le dit ; sans « Peut créer ses propres projets », il ne crée pas de projet. Une connexion limitée à « Certaines listes » ne voit aucun projet : reconnectez l\'assistant avec « Toutes mes listes, mes notes et mes projets » ([[claude-connecter]]).',
         ],
       },
       {
@@ -1545,6 +1555,7 @@ export const GUIDE = [
           'Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser. La réponse va alors à « une application sur cet ordinateur (localhost) ».',
           'Connecté par un fournisseur d\'identité ([[sso]]) : pas de mot de passe à cette étape. L\'écran demande d\'abord « Confirmer avec … » : le fournisseur vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».',
           'Si vous n\'avez pas lancé vous-même la connexion, touchez « Refuser ».',
+          'Pas de section « Assistants IA » dans « Mon compte » ? L\'Admin ne l\'a pas autorisée pour votre compte ([[roles-comptes]]) : l\'écran « Autoriser un assistant IA » le dit aussi.',
         ],
       },
       {

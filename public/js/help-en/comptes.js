@@ -23,6 +23,7 @@ export default {
         "The Admin goes to Settings, “Administration”, “Accounts” tab, “Add account”.",
         { ul: [
           "“Role”: “User”, “Guest” or “Admin” ([[roles-comptes]]);",
+          "“Allowed features”: what the account can use, ticked according to the role (everything for a user, nothing for a guest) ([[roles-comptes]]);",
           "“Username”: what the person will type to sign in;",
           "“Display name (optional)”: the first name shown to the others (‘Added by Marie’);",
           "“Temporary password”: to give to the person; they'll replace it the first time they sign in.",
@@ -42,10 +43,19 @@ export default {
         "In a list, a note or a project shared with a guest, the members see each other, as for everyone (people, assigned tasks and cards, comments, history). A family member who shares a project with a guest therefore sees them in that project, and only there.",
         "A guest never shares what they own: no people, no public link; they see “People” instead of “Share”. The Admin shares with them. They're never the person a wish list is meant for either.",
         "On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.",
+        { sub: "Allowed features" },
+        "On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([[echeances]]). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.",
+        { ul: [
+          "“Notes” and “Projects”: for a user, ticked at first (lists are always there, without a tick); they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature turns on for them right away, and they can turn it off later.",
+          "“Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.",
+          "“AI assistants”: without it, the person can't connect an AI assistant ([[claude-connecter]]), and their connections are disconnected right away.",
+          "Note labels are shared by the household: a guest who has notes sees them.",
+          "An Admin has access to everything: their page has no ticks.",
+        ] },
         { sub: "Changing an account's role" },
         { ul: [
           "Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.",
-          "From “User” to “Guest”: a confirmation says what changes. What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
+          "From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
           "From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.",
           "A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.",
         ] },

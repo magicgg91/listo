@@ -589,6 +589,7 @@ Then “Create Admin account”. This account then creates all the others. A new
 The Admin goes to Settings, “Administration”, “Accounts” tab, “Add account”.
 
 - “Role”: “User”, “Guest” or “Admin” ([4.3 Account roles: Admin, User, Guest](#roles-comptes));
+- “Allowed features”: what the account can use, ticked according to the role (everything for a user, nothing for a guest) ([4.3 Account roles: Admin, User, Guest](#roles-comptes));
 - “Username”: what the person will type to sign in;
 - “Display name (optional)”: the first name shown to the others (‘Added by Marie’);
 - “Temporary password”: to give to the person; they'll replace it the first time they sign in.
@@ -609,10 +610,20 @@ A guest never shares what they own: no people, no public link; they see “Peopl
 
 On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.
 
+**Allowed features**
+
+On an account's page (Administration, “Accounts” tab, ⋮ button), under “Role”, the Admin ticks what the person can use. The tick allows; the person then turns the feature on in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)). Unticked, the feature disappears from their screens and Listo refuses it; nothing is erased, everything comes back if you tick it again.
+
+- “Notes” and “Projects”: for a user, ticked at first (lists are always there, without a tick); they turn them on themselves. For a guest, nothing is ticked at first; a ticked feature turns on for them right away, and they can turn it off later.
+- “Can create their own projects” (under “Projects”): without it, neither “New project” nor “Duplicate project”; projects shared with them stay usable.
+- “AI assistants”: without it, the person can't connect an AI assistant ([9.9 Connect an AI assistant](#claude-connecter)), and their connections are disconnected right away.
+- Note labels are shared by the household: a guest who has notes sees them.
+- An Admin has access to everything: their page has no ticks.
+
 **Changing an account's role**
 
 - Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.
-- From “User” to “Guest”: a confirmation says what changes. What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
+- From “User” to “Guest”: a confirmation says what changes, and what they keep (their allowed and turned-on features don't change: untick what's needed afterwards). What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
 - From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.
 - A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.
 
@@ -865,7 +876,7 @@ Settings, “Home” (the first row of “General”) sets up the Home screen fo
 
 **Choosing your features**
 
-Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline.
+Settings, “Features” (just below “Home”) chooses the features you use: notes (on at first) and projects (off at first: [7. Projects](#projets)). A feature you turn off disappears from your screens, for you only; nothing is deleted. The choice applies to all your devices, and also works offline. Only the features the Admin allowed for your account are offered ([4.3 Account roles: Admin, User, Guest](#roles-comptes)).
 
 - Turn notes off: no more “Notes” button in the bottom bar (four buttons, or three if Home is also turned off), no more “Notes” tile on Home or in Settings, “Home”, no more “Notes” tab in the “Trash” in Settings; on a computer, no more “Notes” entry or “New note” in the menu on the left (the N key always opens “New list”). A link to a note leads to the first screen; if “Notes” was your first screen, Listo opens on “Lists”.
 - With notes turned off, you get nothing from notes: no new updates, no notifications (Notifications page and phone). Other people can still share a note with you; nothing changes for them.
@@ -1350,8 +1361,8 @@ Settings, “Administration” (visible only to an Admin).
 **“Accounts” tab**
 
 - “Add account” ([4.2 Creating the other accounts](#creer-comptes)).
-- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge.
-- An account's ⋮ button: its page, with its “Role” ([4.3 Account roles: Admin, User, Guest](#roles-comptes)) and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).
+- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge. Under the name: the role, then what is open to a guest (for example “Projects”) or removed from a user (for example “no projects”), otherwise the two-factor authentication status.
+- An account's ⋮ button: its page, with its “Role” and its “Allowed features” ([4.3 Account roles: Admin, User, Guest](#roles-comptes)), and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).
 - Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.
 
 **“Shopping” tab**
@@ -1567,7 +1578,7 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 - Delete: only your notes, and only to the trash, where you can restore it for 30 days ([5.12 Notes](#notes)). It must ask you to confirm first; it can never delete it for good.
 - With the “Read only” right on a note, it can only read it, even with “Read and write”.
 
-Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-projets"></a>
 
@@ -1587,7 +1598,7 @@ Example: bringing over a Planka board. If your assistant can read your Planka bo
 
 Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what's new, notifications, Due dates).
 
-Projects turned off for you in Settings, “Features” ([7.1 Turning projects on](#projets-allumer)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+Projects turned off for you in Settings, “Features” ([7.1 Turning projects on](#projets-allumer)), or not allowed for your account by the Admin: the assistant can't reach them at all, and it tells you so; without “Can create their own projects”, it creates no project. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-limites"></a>
 
@@ -1618,6 +1629,8 @@ With Claude Code, on a computer: `claude mcp add --transport http listo https://
 Signed in with an identity provider ([4.10 Signing in with an identity provider](#sso)): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.
 
 If you didn't start the connection yourself, tap “Deny”.
+
+No “AI assistants” section in “My account”? The Admin hasn't allowed it for your account ([4.3 Account roles: Admin, User, Guest](#roles-comptes)): the “Authorize an AI assistant” screen says so too.
 
 <a id="claude-connexions"></a>
 

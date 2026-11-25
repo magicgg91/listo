@@ -203,6 +203,16 @@ export function cardDrag(root, { canMove, onDrop, scrollers = () => [] }) {
   const onContext = (event) => {
     if (press?.touch || drag) event.preventDefault();
   };
+  // Ordinateur : le navigateur sait glisser lui-même un lien ou une image
+  // (pour les déposer ailleurs). Ce glisser-là arrêterait le nôtre (il
+  // envoie pointercancel et la carte retombe à sa place) : jamais sur une
+  // carte. Pendant l'appui de la souris, pas de sélection de texte non plus.
+  const onNativeDrag = (event) => {
+    if (event.target.closest?.('[data-card]')) event.preventDefault();
+  };
+  const onSelect = (event) => {
+    if ((press && !press.touch) || drag) event.preventDefault();
+  };
   const onKey = (event) => {
     if (drag && event.key === 'Escape') {
       event.preventDefault();
@@ -217,6 +227,8 @@ export function cardDrag(root, { canMove, onDrop, scrollers = () => [] }) {
   window.addEventListener('pointercancel', onCancel);
   root.addEventListener('click', onClick, true);
   root.addEventListener('contextmenu', onContext);
+  root.addEventListener('dragstart', onNativeDrag);
+  document.addEventListener('selectstart', onSelect);
   document.addEventListener('keydown', onKey);
   return {
     dragging: () => Boolean(drag),
@@ -230,6 +242,8 @@ export function cardDrag(root, { canMove, onDrop, scrollers = () => [] }) {
       window.removeEventListener('pointercancel', onCancel);
       root.removeEventListener('click', onClick, true);
       root.removeEventListener('contextmenu', onContext);
+      root.removeEventListener('dragstart', onNativeDrag);
+      document.removeEventListener('selectstart', onSelect);
       document.removeEventListener('keydown', onKey);
     },
   };

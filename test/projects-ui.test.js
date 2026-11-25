@@ -262,6 +262,11 @@ test('rôles dans l\'interface : seulement les boutons permis (la règle partag�
   // Une carte qui ne peut pas être déplacée ne se soulève pas
   assert.match(project, /canMove: \(cardId\) => \{/);
   assert.match(code('public/js/project-drag.js'), /if \(!canMove\(card\.dataset\.card\)\) return;/);
+  // Ordinateur : le glisser du navigateur (lien de la carte) n'interrompt
+  // jamais celui de la carte (il enverrait pointercancel : carte retombée)
+  assert.match(project, /class: 'kcard__link',[\s\S]{0,300}draggable: 'false',/);
+  assert.match(code('public/js/project-drag.js'), /root\.addEventListener\('dragstart', onNativeDrag\);/);
+  assert.match(code('public/js/project-drag.js'), /if \(event\.target\.closest\?\.\('\[data-card\]'\)\) event\.preventDefault\(\);/);
   // Carte ouverte : « + » et saisie seulement pour qui peut modifier ; la ligne qui le dit sinon
   const card = code('public/js/screens/project-card.js');
   assert.match(card, /if \(rightsOn\(card, project\)\.edit\) return null;/);

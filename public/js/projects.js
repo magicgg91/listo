@@ -77,6 +77,7 @@ export function projectRights(role) {
     view: member,             // voir le projet, ses colonnes, cartes, étiquettes, personnes
     rename: owner,            // nom du projet
     priority: owner,          // option « Priorité »
+    deadlines: manager,       // option « Échéances » (25 novembre 2026, après l'essai)
     share: owner,             // partager, changer un rôle, retirer une personne
     trash: owner,             // supprimer (corbeille), restaurer, supprimer définitivement
     leave: member && !owner,  // quitter le projet
@@ -241,9 +242,29 @@ export function cleanCardDue(value) {
   return { date: value.date, time, remindBefore };
 }
 
+// --- Option « Échéances » du projet (décision du propriétaire du
+// 25 novembre 2026, après l'essai ; migration 46) ---
+// Allumée au départ, changée par le propriétaire et « Peut modifier »
+// (projectRights, deadlines). Coupée, rien n'est effacé, mais l'échéance,
+// l'heure, le rappel et la case « Fait » des cartes du projet ne sont ni
+// montrés ni comptés nulle part (face des cartes, carte ouverte, écran
+// Échéances et ses pastilles, tuiles de l'Accueil, « cartes pour vous »,
+// résumé du matin, rappels) : la carte se lit comme une carte sans
+// échéance. LA règle, la même partout (téléphone et serveur).
+// project : { deadlinesEnabled } (téléphone) ou { deadlines_enabled }
+// (ligne de la base) ; une copie locale d'avant la migration 46, sans le
+// champ, vaut « allumée » (la valeur de départ).
+export const deadlinesOn = (project) => project?.deadlinesEnabled !== false && project?.deadlines_enabled !== 0;
+
+// L'échéance de la carte compte-t-elle ? (une date, ET l'option du projet
+// allumée). Sans project : seulement la date (copie d'une carte isolée).
+export const cardDated = (card, project) => Boolean(card?.dueDate) && deadlinesOn(project);
+
 // Une carte faite ? La case « Fait » de l'échéance est la SEULE marque de
-// « fait » (5.3) : une carte sans échéance n'est jamais faite
-export const cardDone = (card) => Boolean(card?.dueDate) && card.done === true;
+// « fait » (5.3) : une carte sans échéance n'est jamais faite, ni une carte
+// d'un projet dont l'option « Échéances » est coupée (sa case est gardée,
+// elle revient quand l'option est rallumée)
+export const cardDone = (card, project) => cardDated(card, project) && card.done === true;
 
 // Adresse d'un lien de carte : http ou https seulement (jamais
 // javascript:, data:, file:…), avec un nom de site, sans identifiant ni

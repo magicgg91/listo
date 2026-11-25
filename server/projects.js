@@ -53,6 +53,13 @@
 // réussie, ce qui peut donner une notification est confié à
 // server/notify.js (projectActivity), qui choisit qui la reçoit.
 //
+// Option « Échéances » du projet (décision du 25 novembre 2026, après
+// l'essai ; migration 46) : comme « Priorité », mais allumée au départ et
+// changée par le propriétaire et « Peut modifier ». Coupée, rien n'est
+// effacé, mais une échéance ou « Fait » sont refusés (400) et les cartes
+// du projet ne donnent plus de rappel (règle commune : deadlinesOn,
+// public/js/projects.js ; résumé du matin : server/notify.js).
+//
 // Les dates sont posées ici, par le serveur.
 
 import crypto from 'node:crypto';
@@ -61,7 +68,7 @@ import {
   PROJECT_TRASH_DAYS, CARD_HISTORY_MAX, DEFAULT_COLUMNS, DEFAULT_COLUMN_COLOR, PROJECT_NAME_MAX,
   LABELS_PER_CARD_MAX, ASSIGNEES_MAX, LINKS_PER_CARD_MAX, CARD_DESCRIPTION_MAX, TASK_TEXT_MAX,
   cleanCardDue, isCardPriority, cleanLinkUrl, cleanLinkTitle, cleanDescription,
-  roleOfAccess, projectRights, cardRights, assignChangeAllowed, assignableRole, isColumnColor,
+  roleOfAccess, projectRights, cardRights, deadlinesOn, assignChangeAllowed, assignableRole, isColumnColor,
   cleanProjectName, cleanColumnName, cleanCardTitle, cleanProjectLabelName, nameKey,
   cleanCardLabelIds, cleanAssigneeIds, placeFor, byPosition, isUuid,
   cleanComment, commentRights, followsCard, COMMENTS_PER_CARD_MAX, COMMENT_MAX, cleanImportedAuthor, cleanImportedAt,
@@ -91,6 +98,8 @@ export const CARD_CONFLICT = 'ops.carteConflit';
 export const LINK_NOT_FOUND = 'ops.lienIntrouvable';
 export const COMMENT_NOT_FOUND = 'ops.commentaireIntrouvable';
 export const COMMENT_OWN = 'ops.commentaireSiensSeulement';
+export const DEADLINES_OFF = 'ops.echeancesProjetCoupees';
+export const DEADLINES_MANAGERS_ONLY = 'ops.echeancesProjetModifierSeulement';
 
 // Opérations des projets (file d'attente, POST /api/ops). Les créations et
 // duplications de projets sont comptées par un plafond (route POST /api/ops).
@@ -141,10 +150,11 @@ export function createProjectService(ctx, { OpError }) {
       FROM projects WHERE projects.id = :projectId`),
     project: db.prepare('SELECT * FROM projects WHERE id = ?'),
     countOwned: db.prepare('SELECT COUNT(*) FROM projects WHERE owner_id = ?').pluck(),
-    insertProject: db.prepare(`INSERT INTO projects (id, owner_id, name, priority_enabled, duplicated_from, created_at, updated_at, changed_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`),
+    insertProject: db.prepare(`INSERT INTO projects (id, owner_id, name, priority_enabled, deadlines_enabled, duplicated_from, created_at, updated_at, changed_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`),
     renameProject: db.prepare('UPDATE projects SET name = ?, updated_at = ?, changed_at = ? WHERE id = ?'),
     setPriority: db.prepare('UPDATE projects SET priority_enabled = ?, updated_at = ?, changed_at = ? WHERE id = ?'),
+    setDeadlines: db.prepare('UPDATE projects SET deadlines_enabled = ?, updated_at = ?, changed_at = ? WHERE id = ?'),
     trashProject: db.prepare('UPDATE projects SET deleted_at = ?, deleted_by = ?, changed_at = ? WHERE id = ?'),
     untrashProject: db.prepare('UPDATE projects SET deleted_at = NULL, deleted_by = NULL, changed_at = ?, cards_reset_at = ? WHERE id = ?'),
     // La structure a changé (partage, colonnes, étiquettes, cartes effacées)
@@ -496,6 +506,7 @@ export function createProjectService(ctx, { OpError }) {
       name: project.name,
       role,
       priorityEnabled: project.priority_enabled === 1,
+      deadlinesEnabled: project.deadlines_enabled !== 0,
       createdAt: project.created_at,
       updatedAt: project.updated_at,
       deletedAt: project.deleted_at ?? null,
@@ -715,29 +726,35 @@ export function createProjectService(ctx, { OpError }) {
       const columns = columnsOf(op.columns, user);
       if (q.countOwned.get(user.id) >= PROJECTS_MAX) throw new OpError(400, 'ops.projetsLimite', { max: PROJECTS_MAX });
       const now = nowIso();
-      q.insertProject.run(id, user.id, name, 0, null, now, now, now);
+      q.insertProject.run(id, user.id, name, 0, 1, null, now, now, now);
       insertColumns(id, columns, now);
       changedFor(user.id);
       ctx.audit('project_created', { user: user.username, project: id });
       return { columnIds: columns.map((column) => column.id) };
     },
 
-    // Renommer, option « Priorité » : propriétaire seulement
+    // Renommer, option « Priorité » : propriétaire seulement ; option
+    // « Échéances » (décision du 25 novembre 2026, après l'essai) :
+    // propriétaire et « Peut modifier ». Tout est vérifié avant d'écrire.
     'project.update'(user, op) {
-      const { project, role } = projectFor(user, op.projectId);
-      if (role !== 'owner') throw deny(role, true);
+      const { project, role, rights } = projectFor(user, op.projectId);
       const name = op.name === undefined ? undefined : projectNameOf(op.name);
       const priority = booleanOf(op.priorityEnabled, 'ops.prioriteProjetInvalide');
-      if (name === undefined && priority === undefined) throw new OpError(400, 'ops.rienAModifier');
+      const deadlines = booleanOf(op.deadlinesEnabled, 'ops.echeancesProjetInvalide');
+      if (name === undefined && priority === undefined && deadlines === undefined) throw new OpError(400, 'ops.rienAModifier');
+      if ((name !== undefined && !rights.rename) || (priority !== undefined && !rights.priority)) throw deny(role, true);
+      if (deadlines !== undefined && !rights.deadlines) throw cardDenied(role, DEADLINES_MANAGERS_ONLY);
       const now = nowIso();
       if (name !== undefined && name !== project.name) q.renameProject.run(name, now, now, project.id);
       if (priority !== undefined && Number(priority) !== project.priority_enabled) q.setPriority.run(Number(priority), now, now, project.id);
+      if (deadlines !== undefined && Number(deadlines) !== project.deadlines_enabled) q.setDeadlines.run(Number(deadlines), now, now, project.id);
       changedForProject(project);
       return {};
     },
 
     // Dupliquer (tout membre, Lecture seule compris) : un projet à moi, non
-    // partagé, avec les mêmes colonnes, étiquettes et option « Priorité »,
+    // partagé, avec les mêmes colonnes, étiquettes et options « Priorité »
+    // et « Échéances »,
     // sans aucune carte. columnIds / labelIds : { <identifiant d'origine> :
     // <nouvel identifiant> }, choisis par le téléphone (hors ligne) ; une
     // colonne ou une étiquette sans nouvel identifiant en reçoit un ici.
@@ -763,7 +780,7 @@ export function createProjectService(ctx, { OpError }) {
       };
       if (q.countOwned.get(user.id) >= PROJECTS_MAX) throw new OpError(400, 'ops.projetsLimite', { max: PROJECTS_MAX });
       const now = nowIso();
-      q.insertProject.run(id, user.id, name, source.priority_enabled, source.id, now, now, now);
+      q.insertProject.run(id, user.id, name, source.priority_enabled, source.deadlines_enabled, source.id, now, now, now);
       insertColumns(id, byPosition(q.columns.all(source.id)).map((column) => ({
         id: fresh(Object.hasOwn(columnIds, column.id) ? columnIds[column.id] : undefined), name: column.name, color: column.color, position: column.position,
       })), now);
@@ -1024,8 +1041,9 @@ export function createProjectService(ctx, { OpError }) {
     // Modifier les champs simples d'une carte, seulement ceux qui changent
     // (la dernière modification reçue gagne, champ par champ) : title ;
     // due ({ date, time?, remindBefore? } ou null : retirée, « Fait »
-    // compris) ; priority ('low', 'normal', 'high' : option « Priorité » du
-    // projet allumée). Seulement si mon rôle permet de modifier CETTE carte.
+    // compris ; option « Échéances » du projet allumée) ; priority ('low',
+    // 'normal', 'high' : option « Priorité » du projet allumée). Seulement si
+    // mon rôle permet de modifier CETTE carte.
     // Tout est vérifié avant la moindre écriture.
     'card.update'(user, op, meta) {
       const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
@@ -1034,6 +1052,7 @@ export function createProjectService(ctx, { OpError }) {
       const title = op.title === undefined ? undefined : cardTitleOf(op.title);
       const due = op.due === undefined ? undefined : cleanCardDue(op.due);
       if (op.due !== undefined && due === undefined) throw new OpError(400, 'ops.echeanceCarteInvalide');
+      if (op.due !== undefined && !deadlinesOn(project)) throw new OpError(400, DEADLINES_OFF);
       if (op.priority !== undefined && !isCardPriority(op.priority)) throw new OpError(400, 'ops.prioriteCarteInvalide');
       if (op.priority !== undefined && project.priority_enabled !== 1) throw new OpError(400, 'ops.prioriteProjetCoupee');
       const now = nowIso();
@@ -1065,11 +1084,13 @@ export function createProjectService(ctx, { OpError }) {
     },
 
     // Case « Fait » de l'échéance (la seule marque de « fait ») : done,
-    // vrai ou faux ; une carte sans échéance n'en a pas (refus)
+    // vrai ou faux ; une carte sans échéance n'en a pas (refus), ni une
+    // carte d'un projet dont l'option « Échéances » est coupée
     'card.done'(user, op, meta) {
       const { card, project, role, can } = cardFor(user, op.cardId, { projectId: op.projectId });
       if (!can.edit) throw cardDenied(role, CARD_EDIT_OWN);
       if (typeof op.done !== 'boolean') throw new OpError(400, 'ops.faitInvalide');
+      if (!deadlinesOn(project)) throw new OpError(400, DEADLINES_OFF);
       if (!card.due_date) throw new OpError(400, 'ops.carteSansEcheance');
       if ((card.due_done === 1) === op.done) return {};
       const now = nowIso();
@@ -1713,11 +1734,12 @@ export function createProjectService(ctx, { OpError }) {
   }
 
   // --- Rappels des cartes (section 9.3) ---
-  // Cartes à faire (pas « Fait »), présentes, d'un projet présent, avec date,
-  // heure et délai, autour d'aujourd'hui ; le moment exact est calculé
-  // ensuite, en heure locale du serveur (comme les tâches)
+  // Cartes à faire (pas « Fait »), présentes, d'un projet présent dont
+  // l'option « Échéances » est allumée, avec date, heure et délai, autour
+  // d'aujourd'hui ; le moment exact est calculé ensuite, en heure locale du
+  // serveur (comme les tâches)
   const reminderCards = db.prepare(`SELECT cards.id, cards.project_id, cards.due_date, cards.due_time, cards.remind_before
-    FROM cards JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL
+    FROM cards JOIN projects ON projects.id = cards.project_id AND projects.deleted_at IS NULL AND projects.deadlines_enabled = 1
     WHERE cards.deleted_at IS NULL AND cards.due_done = 0 AND cards.due_time IS NOT NULL AND cards.remind_before IS NOT NULL
       AND cards.due_date BETWEEN ? AND ?`);
   // « Rappel remis à cette personne pour cette signature » : noté AVANT la

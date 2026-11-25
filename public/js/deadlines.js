@@ -31,14 +31,16 @@
 // attribuées à personne ; les pastilles, la tuile de l'Accueil et le
 // résumé du matin (server/notify.js) les comptent de même, pour que les
 // nombres soient toujours égaux. Projets coupés (Réglages › Fonctions) :
-// aucune carte, nulle part. Une entrée est { item, list } (tâche) ou
+// aucune carte, nulle part ; de même pour un projet dont l'option
+// « Échéances » est coupée (décision du 25 novembre 2026, après l'essai ;
+// projects.js, deadlinesOn). Une entrée est { item, list } (tâche) ou
 // { card, project, column } (carte).
 
 import { assigneesOf } from './assign.js';
 import { typeOf } from './list-types.js';
 import { listOptions } from './store.js';
 import { projectsOn } from './features.js';
-import { cardDone } from './projects.js';
+import { cardDone, deadlinesOn } from './projects.js';
 import { addDays, todayKey } from './format.js';
 import { compareNames } from './sorting.js';
 import { matches } from './search.js';
@@ -84,13 +86,14 @@ export function listHasDeadlines(list) {
 export const assigneesFor = (item, list) => (listOptions(list).assign ? assigneesOf(item) : []);
 
 // Projets dont les cartes datées vont dans Échéances : ceux que je vois
-// (pas dans la corbeille) où j'ai allumé l'option ; aucun quand j'ai coupé
-// les projets (même si la copie locale en garde encore)
+// (pas dans la corbeille) où j'ai allumé « Afficher dans Échéances » et
+// dont l'option « Échéances » est allumée ; aucun quand j'ai coupé les
+// projets (même si la copie locale en garde encore)
 export function deadlineProjects(state) {
   if (!projectsOn(state.features) || !state.projects) return new Map();
   const mine = state.projectMine ?? {};
   return new Map([...state.projects.values()]
-    .filter((project) => !project.deletedAt && state.projectIds?.has(project.id) && mine[project.id]?.inDeadlines === true)
+    .filter((project) => !project.deletedAt && state.projectIds?.has(project.id) && deadlinesOn(project) && mine[project.id]?.inDeadlines === true)
     .map((project) => [project.id, project]));
 }
 
@@ -122,7 +125,7 @@ function collect(state, { keepTask = () => true, keepCard = () => true } = {}) {
   if (projects.size) {
     for (const card of state.cards.values()) {
       const project = projects.get(card.projectId);
-      if (!project || card.deletedAt || !card.dueDate || cardDone(card) || !keepCard(card, project)) continue;
+      if (!project || card.deletedAt || !card.dueDate || cardDone(card, project) || !keepCard(card, project)) continue;
       const column = (project.columns ?? []).find((c) => c.id === card.columnId) ?? null;
       found.push({ card, project, column });
     }

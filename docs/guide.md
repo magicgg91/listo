@@ -55,13 +55,14 @@ Le mode d'emploi complet de Listo, le même que la page « Aide » de l'applicat
 - [Aller au chapitre](#comptes)
 - [4.1 Le premier Admin](#premier-admin)
 - [4.2 Créer les autres comptes](#creer-comptes)
-- [4.3 Première connexion](#premiere-connexion)
-- [4.4 Installer Listo sur le téléphone](#telephone)
-- [4.5 Changer de mot de passe](#mot-de-passe)
-- [4.6 Double authentification et codes de secours](#double-auth)
-- [4.7 Mot de passe oublié, téléphone perdu](#oubli)
-- [4.8 Compte Admin perdu](#secours)
-- [4.9 Se connecter avec un fournisseur d'identité](#sso)
+- [4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)
+- [4.4 Première connexion](#premiere-connexion)
+- [4.5 Installer Listo sur le téléphone](#telephone)
+- [4.6 Changer de mot de passe](#mot-de-passe)
+- [4.7 Double authentification et codes de secours](#double-auth)
+- [4.8 Mot de passe oublié, téléphone perdu](#oubli)
+- [4.9 Compte Admin perdu](#secours)
+- [4.10 Se connecter avec un fournisseur d'identité](#sso)
 
 </details>
 
@@ -311,12 +312,12 @@ Ce que Listo offre aujourd'hui, par thème. Chaque point renvoie à la section q
 
 ### 2.8 Sécurité et confort
 
-- Double authentification, avec des codes de secours ([4.6 Double authentification et codes de secours](#double-auth)).
+- Double authentification, avec des codes de secours ([4.7 Double authentification et codes de secours](#double-auth)).
 - Sauvegarde automatique chaque nuit ([3.8 Sauvegardes](#sauvegardes)).
 - Thème clair, sombre ou automatique ([5.18 Thème clair ou sombre](#theme)).
 - Un Accueil à votre goût : tuiles masquées ou dans un autre ordre, ou pas d'Accueil du tout ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
 - Seulement les fonctions dont vous vous servez : les notes se coupent pour vous seul, sans rien effacer ([5.11 Se déplacer : Accueil, Échéances](#echeances)).
-- Installation sur l'écran d'accueil du téléphone, comme une application ([4.4 Installer Listo sur le téléphone](#telephone)).
+- Installation sur l'écran d'accueil du téléphone, comme une application ([4.5 Installer Listo sur le téléphone](#telephone)).
 - Un assistant IA, par exemple Claude, peut lire vos listes, vos notes et vos projets et, si vous le permettez, y écrire ([9. Assistants IA (MCP)](#claude)).
 
 <a id="installation"></a>
@@ -517,7 +518,7 @@ La copie de la nuit ne contient ni les photos (`data/photos/`), ni le journal (`
 4. Une sauvegarde : le lendemain matin, `ls -l /opt/listo/data/backups` montre une copie de la nuit, et `docker logs listo | grep backup` la ligne `backup_success`.
 5. Une restauration d'essai, une fois, avec la copie de la nuit : [guide d'exploitation, dans le dépôt](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
 6. Le port fermé : voir [3.4 Ce que doit faire le proxy](#proxy).
-7. Le téléphone : installation sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
+7. Le téléphone : installation sur l'écran d'accueil ([4.5 Installer Listo sur le téléphone](#telephone)), puis la liste “Vérifier sur les téléphones” de [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
 
 <a id="sso-serveur"></a>
 
@@ -587,14 +588,37 @@ Puis « Créer le compte Admin ». Ce compte crée ensuite tous les autres. Une 
 
 L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un compte ».
 
+- « Rôle » : « Utilisateur », « Invité » ou « Admin » ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) ;
 - « Identifiant » : ce que la personne tapera pour se connecter ;
 - « Nom affiché (facultatif) » : le prénom montré aux autres (“Ajouté par Marie”) ;
-- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion ;
-- « Rôle » : « Utilisateur » ou « Admin ».
+- « Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion.
+
+<a id="roles-comptes"></a>
+
+### 4.3 Rôles des comptes : Admin, Utilisateur, Invité
+
+Chaque compte a un rôle, choisi par l'Admin :
+
+- « Admin » : tout, Administration comprise ([8.1 Admin](#role-admin)) ;
+- « Utilisateur » : la famille, qui se sert de Listo normalement ;
+- « Invité » : une personne qui vous aide (sur un projet, par exemple). Un invité est toujours discret : seul l'Admin le voit dans la liste des personnes (« Partager », « Pour qui ? »), avec « Invité · discret » sous son prénom ; la famille ne le voit pas, et lui ne voit personne dans cette liste.
+
+Dans une liste, une note ou un projet partagé avec un invité, les membres se voient, comme pour tout le monde (personnes, tâches et cartes attribuées, commentaires, historique). Un proche membre d'un projet avec un invité le voit donc dans ce projet, et seulement là.
+
+Un invité ne partage jamais ce qu'il possède : ni personnes, ni lien public ; il voit « Personnes » à la place de « Partager ». C'est l'Admin qui partage avec lui. Il n'est jamais non plus la personne à qui est destinée une liste d'envies.
+
+Sur son compte, un invité voit la pastille « Invité » (Réglages, « Mon compte ») et l'encadré « Compte invité ».
+
+**Changer le rôle d'un compte**
+
+- Administration, onglet « Comptes », bouton ⋮ du compte : sa page s'ouvre (sur ordinateur, à droite de la liste). Touchez « Utilisateur », « Invité » ou « Admin ».
+- D'« Utilisateur » à « Invité » : une confirmation dit ce qui change. Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu'une liste d'envies lui est destinée.
+- D'« Invité » à « Utilisateur » : une confirmation dit qu'elle sera de nouveau visible de toute la famille, et verra tous les comptes.
+- Un invité ne devient pas Admin directement, ni un Admin invité : on passe d'abord par « Utilisateur ». Personne ne change son propre rôle, et il reste toujours au moins un Admin actif.
 
 <a id="premiere-connexion"></a>
 
-### 4.3 Première connexion
+### 4.4 Première connexion
 
 1. Ouvrez l'adresse de Listo (par exemple `https://listo.exemple.fr`).
 2. Saisissez votre « Identifiant » et votre « Mot de passe », puis « Se connecter ».
@@ -603,7 +627,7 @@ L'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un c
 
 <a id="telephone"></a>
 
-### 4.4 Installer Listo sur le téléphone
+### 4.5 Installer Listo sur le téléphone
 
 Ouvrez l'adresse de Listo et connectez-vous, puis :
 
@@ -614,13 +638,13 @@ L'icône Listo apparaît. Ouverte depuis l'écran d'accueil, Listo s'affiche en 
 
 <a id="mot-de-passe"></a>
 
-### 4.5 Changer de mot de passe
+### 4.6 Changer de mot de passe
 
 Réglages, « Mon compte », « Mot de passe » : « Mot de passe actuel », « Nouveau mot de passe » (au moins 10 caractères), « Confirmation », puis « Enregistrer ». Vos autres appareils sont alors déconnectés, ainsi que vos connexions d'assistants IA ([9.10 Voir et déconnecter un assistant IA](#claude-connexions)).
 
 <a id="double-auth"></a>
 
-### 4.6 Double authentification et codes de secours
+### 4.7 Double authentification et codes de secours
 
 Conseillée pour l'Admin. Il faut une application d'authentification sur le téléphone (Aegis, Google Authenticator, Microsoft Authenticator…).
 
@@ -634,16 +658,16 @@ Pour la retirer : même écran, « Mot de passe » et « Code » (de l'applicati
 
 <a id="oubli"></a>
 
-### 4.7 Mot de passe oublié, téléphone perdu
+### 4.8 Mot de passe oublié, téléphone perdu
 
 - Mot de passe oublié : demandez à l'Admin. Dans « Administration », « Comptes », bouton ⋮ de votre compte, « Réinitialiser le mot de passe » : il vous donne un mot de passe provisoire, à changer à la connexion suivante. Il n'y a pas d'envoi par e-mail.
 - Téléphone de double authentification perdu, et plus de codes de secours : l'Admin choisit « Désactiver la double authentification » sur votre compte ; vous pourrez la réactiver ensuite.
 - Trop d'essais : 5 mauvais mots de passe bloquent la connexion pendant 15 minutes.
-- L'Admin a lui-même perdu son mot de passe : voir [4.8 Compte Admin perdu](#secours).
+- L'Admin a lui-même perdu son mot de passe : voir [4.9 Compte Admin perdu](#secours).
 
 <a id="secours"></a>
 
-### 4.8 Compte Admin perdu
+### 4.9 Compte Admin perdu
 
 *Pour la personne qui gère le serveur.*
 
@@ -657,7 +681,7 @@ Un mot de passe provisoire s'affiche une fois : se connecter avec, puis en chois
 
 <a id="sso"></a>
 
-### 4.9 Se connecter avec un fournisseur d'identité
+### 4.10 Se connecter avec un fournisseur d'identité
 
 Si le serveur le propose, l'écran de connexion montre aussi « Se connecter avec … », suivi du nom choisi par l'Admin (Authelia, Authentik, Pocket ID… ; « SSO » s'il n'en a pas choisi). Touchez-le, connectez-vous chez ce fournisseur : vous revenez dans Listo, connecté. Votre compte chez le fournisseur ouvre le compte Listo qui a le même identifiant. L'identifiant et le mot de passe Listo restent possibles. Si l'Admin vous avait donné un mot de passe provisoire, il est effacé à la première connexion par le fournisseur.
 
@@ -1071,9 +1095,9 @@ Mêmes réglages que le téléphone : une catégorie coupée dans « Notificatio
 
 Réglages, « Notifications », partie « Sur cet appareil », puis l'interrupteur « Recevoir les notifications sur cet appareil ». Le navigateur demande alors votre accord : acceptez. Il ne le demande qu'à ce moment-là, jamais tout seul. « Envoyer une notification test » vérifie que tout marche.
 
-- Android : dans Chrome (ou un autre navigateur), ou depuis Listo installé sur l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)).
+- Android : dans Chrome (ou un autre navigateur), ou depuis Listo installé sur l'écran d'accueil ([4.5 Installer Listo sur le téléphone](#telephone)).
 - Ordinateur : Chrome, Edge, Firefox ou Safari. La notification s'affiche dans le coin de l'écran ou le centre de notifications du système.
-- iPhone et iPad : ajoutez d'abord Listo à l'écran d'accueil ([4.4 Installer Listo sur le téléphone](#telephone)), puis ouvrez-le depuis son icône. Dans un simple onglet de Safari, l'écran l'explique et l'interrupteur reste grisé. Il faut iOS 16.4 ou plus récent.
+- iPhone et iPad : ajoutez d'abord Listo à l'écran d'accueil ([4.5 Installer Listo sur le téléphone](#telephone)), puis ouvrez-le depuis son icône. Dans un simple onglet de Safari, l'écran l'explique et l'interrupteur reste grisé. Il faut iOS 16.4 ou plus récent.
 
 Chaque appareil s'active à part : un appareil où vous vous déconnectez ne reçoit plus rien. Toucher une notification ouvre Listo sur la liste concernée.
 
@@ -1326,8 +1350,9 @@ Réglages, « Administration » (visible seulement pour un Admin).
 **Onglet « Comptes »**
 
 - « Ajouter un compte » ([4.2 Créer les autres comptes](#creer-comptes)).
-- Bouton ⋮ d'un compte : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi.
-- Rôle : « Utilisateur » ou « Admin ». Il reste toujours au moins un Admin actif.
+- Les comptes : Admin et Utilisateurs d'abord, puis les invités sous « Invités », avec la pastille « Discret ».
+- Bouton ⋮ d'un compte : sa page, avec son « Rôle » ([4.3 Rôles des comptes : Admin, Utilisateur, Invité](#roles-comptes)) et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s'il n'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).
+- Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.
 
 **Onglet « Courses »**
 
@@ -1590,7 +1615,7 @@ Exemple avec Claude (claude.ai, l'application mobile ou Claude Desktop) : dans s
 
 Avec Claude Code, sur un ordinateur : `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, puis `/mcp` pour autoriser. La réponse va alors à « une application sur cet ordinateur (localhost) ».
 
-Connecté par un fournisseur d'identité ([4.9 Se connecter avec un fournisseur d'identité](#sso)) : pas de mot de passe à cette étape. L'écran demande d'abord « Confirmer avec … » : le fournisseur vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».
+Connecté par un fournisseur d'identité ([4.10 Se connecter avec un fournisseur d'identité](#sso)) : pas de mot de passe à cette étape. L'écran demande d'abord « Confirmer avec … » : le fournisseur vous redemande de vous connecter, puis vous revenez choisir le niveau et les listes, et « Autoriser ».
 
 Si vous n'avez pas lancé vous-même la connexion, touchez « Refuser ».
 
@@ -1740,16 +1765,16 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 
 - « Trop de tentatives » : 5 mauvais mots de passe bloquent la connexion 15 minutes. Attendez, ou la personne qui gère le serveur redémarre Listo (`docker compose restart`).
 - « Requête refusée : origine inconnue. » : l'adresse tapée n'est pas exactement celle de `LISTO_PUBLIC_URL` (autre sous-domaine, `http` au lieu de `https`) ([3.2 Le dossier et docker-compose.yml](#dossier)).
-- Mot de passe oublié, téléphone perdu : [4.7 Mot de passe oublié, téléphone perdu](#oubli).
+- Mot de passe oublié, téléphone perdu : [4.8 Mot de passe oublié, téléphone perdu](#oubli).
 - Le mode hors ligne ou l'installation sur l'écran d'accueil ne marchent pas : Listo n'est pas ouvert en HTTPS. Passez toujours par `https://listo.exemple.fr`, jamais par `http://IP:13300`.
 
 <a id="faq-double-auth"></a>
 
 ### 10.7 Double authentification : plus d'accès
 
-- Téléphone changé ou perdu : connectez-vous avec un de vos « Codes de secours » (« Utiliser un code de secours »), puis réactivez la double authentification avec le nouveau téléphone ([4.6 Double authentification et codes de secours](#double-auth)).
+- Téléphone changé ou perdu : connectez-vous avec un de vos « Codes de secours » (« Utiliser un code de secours »), puis réactivez la double authentification avec le nouveau téléphone ([4.7 Double authentification et codes de secours](#double-auth)).
 - Plus de téléphone ni de codes de secours : l'Admin choisit « Désactiver la double authentification » sur votre compte (« Administration », « Comptes », bouton ⋮). Vous vous connectez avec votre seul mot de passe, puis vous la réactivez.
-- C'est l'Admin qui est bloqué : voir [4.8 Compte Admin perdu](#secours) (commande de secours avec `--retirer-2fa`).
+- C'est l'Admin qui est bloqué : voir [4.9 Compte Admin perdu](#secours) (commande de secours avec `--retirer-2fa`).
 - Le code à 6 chiffres est toujours refusé : l'heure du téléphone est peut-être fausse ; mettez-la en réglage automatique.
 - Plus personne ne peut valider ses codes après une panne du serveur : la clé secrète a peut-être été perdue ([10.8 La clé secrète a été perdue](#cle-perdue)).
 
@@ -1761,7 +1786,7 @@ Le proxy retient les messages du temps réel ([3.4 Ce que doit faire le proxy](#
 
 Sans copie de `secrets/secret.key`, Listo crée une nouvelle clé au démarrage. Les listes, articles, photos et mots de passe ne sont pas touchés, mais :
 
-- les doubles authentifications ne se lisent plus : l'Admin la désactive pour les autres comptes (« Désactiver la double authentification »), pour lui-même avec la commande de secours et `--retirer-2fa` ([4.8 Compte Admin perdu](#secours)), puis chacun la réactive ;
+- les doubles authentifications ne se lisent plus : l'Admin la désactive pour les autres comptes (« Désactiver la double authentification »), pour lui-même avec la commande de secours et `--retirer-2fa` ([4.9 Compte Admin perdu](#secours)), puis chacun la réactive ;
 - les liens publics déjà créés marchent encore, mais leur adresse ne peut plus être réaffichée : les arrêter et en créer de nouveaux ;
 - gardez cette fois une copie de la nouvelle clé ([3.7 Garder la clé secrète](#cle)).
 

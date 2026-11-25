@@ -15,8 +15,9 @@ export default {
         { sub: "“Accounts” tab" },
         { ul: [
           "“Add account” ([[creer-comptes]]).",
-          "An account's ⋮ button: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used.",
-          "Role: “User” or “Admin”. There's always at least one active Admin.",
+          "The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge.",
+          "An account's ⋮ button: its page, with its “Role” ([[roles-comptes]]) and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).",
+          "Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.",
         ] },
         { sub: "“Shopping” tab" },
         { ul: [

@@ -466,10 +466,32 @@ export const GUIDE = [
         blocks: [
           'L\'Admin : Réglages, « Administration », onglet « Comptes », « Ajouter un compte ».',
           { ul: [
+            '« Rôle » : « Utilisateur », « Invité » ou « Admin » ([[roles-comptes]]) ;',
             '« Identifiant » : ce que la personne tapera pour se connecter ;',
             '« Nom affiché (facultatif) » : le prénom montré aux autres (“Ajouté par Marie”) ;',
-            '« Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion ;',
-            '« Rôle » : « Utilisateur » ou « Admin ».',
+            '« Mot de passe provisoire » : à transmettre à la personne ; elle le remplacera à sa première connexion.',
+          ] },
+        ],
+      },
+      {
+        id: 'roles-comptes',
+        title: 'Rôles des comptes : Admin, Utilisateur, Invité',
+        blocks: [
+          'Chaque compte a un rôle, choisi par l\'Admin :',
+          { ul: [
+            '« Admin » : tout, Administration comprise ([[role-admin]]) ;',
+            '« Utilisateur » : la famille, qui se sert de Listo normalement ;',
+            '« Invité » : une personne qui vous aide (sur un projet, par exemple). Un invité est toujours discret : seul l\'Admin le voit dans la liste des personnes (« Partager », « Pour qui ? »), avec « Invité · discret » sous son prénom ; la famille ne le voit pas, et lui ne voit personne dans cette liste.',
+          ] },
+          'Dans une liste, une note ou un projet partagé avec un invité, les membres se voient, comme pour tout le monde (personnes, tâches et cartes attribuées, commentaires, historique). Un proche membre d\'un projet avec un invité le voit donc dans ce projet, et seulement là.',
+          'Un invité ne partage jamais ce qu\'il possède : ni personnes, ni lien public ; il voit « Personnes » à la place de « Partager ». C\'est l\'Admin qui partage avec lui. Il n\'est jamais non plus la personne à qui est destinée une liste d\'envies.',
+          'Sur son compte, un invité voit la pastille « Invité » (Réglages, « Mon compte ») et l\'encadré « Compte invité ».',
+          { sub: 'Changer le rôle d\'un compte' },
+          { ul: [
+            'Administration, onglet « Comptes », bouton ⋮ du compte : sa page s\'ouvre (sur ordinateur, à droite de la liste). Touchez « Utilisateur », « Invité » ou « Admin ».',
+            'D\'« Utilisateur » à « Invité » : une confirmation dit ce qui change. Ce qui est déjà partagé avec la personne le reste ; ses liens publics sont arrêtés. Impossible tant qu\'une liste d\'envies lui est destinée.',
+            'D\'« Invité » à « Utilisateur » : une confirmation dit qu\'elle sera de nouveau visible de toute la famille, et verra tous les comptes.',
+            'Un invité ne devient pas Admin directement, ni un Admin invité : on passe d\'abord par « Utilisateur ». Personne ne change son propre rôle, et il reste toujours au moins un Admin actif.',
           ] },
         ],
       },
@@ -1229,8 +1251,9 @@ export const GUIDE = [
           { sub: 'Onglet « Comptes »' },
           { ul: [
             '« Ajouter un compte » ([[creer-comptes]]).',
-            'Bouton ⋮ d\'un compte : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s\'il n\'a jamais servi.',
-            'Rôle : « Utilisateur » ou « Admin ». Il reste toujours au moins un Admin actif.',
+            'Les comptes : Admin et Utilisateurs d\'abord, puis les invités sous « Invités », avec la pastille « Discret ».',
+            'Bouton ⋮ d\'un compte : sa page, avec son « Rôle » ([[roles-comptes]]) et sa « Sécurité » : « Réinitialiser le mot de passe », « Désactiver la double authentification », « Désactiver le compte » ou « Réactiver le compte », « Supprimer le compte » s\'il n\'a jamais servi (un compte qui possède un projet, en est membre ou y a écrit a servi).',
+            'Rôle : « Utilisateur », « Invité » ou « Admin ». Il reste toujours au moins un Admin actif.',
           ] },
           { sub: 'Onglet « Courses »' },
           { ul: [

@@ -55,13 +55,14 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [Go to chapter](#comptes)
 - [4.1 The first Admin](#premier-admin)
 - [4.2 Creating the other accounts](#creer-comptes)
-- [4.3 Signing in for the first time](#premiere-connexion)
-- [4.4 Installing Listo on your phone](#telephone)
-- [4.5 Changing your password](#mot-de-passe)
-- [4.6 Two-factor authentication and recovery codes](#double-auth)
-- [4.7 Forgotten password, lost phone](#oubli)
-- [4.8 Lost Admin account](#secours)
-- [4.9 Signing in with an identity provider](#sso)
+- [4.3 Account roles: Admin, User, Guest](#roles-comptes)
+- [4.4 Signing in for the first time](#premiere-connexion)
+- [4.5 Installing Listo on your phone](#telephone)
+- [4.6 Changing your password](#mot-de-passe)
+- [4.7 Two-factor authentication and recovery codes](#double-auth)
+- [4.8 Forgotten password, lost phone](#oubli)
+- [4.9 Lost Admin account](#secours)
+- [4.10 Signing in with an identity provider](#sso)
 
 </details>
 
@@ -311,12 +312,12 @@ What Listo offers today, by topic. Each point links to the section that explains
 
 ### 2.8 Security and convenience
 
-- Two-factor authentication, with recovery codes ([4.6 Two-factor authentication and recovery codes](#double-auth)).
+- Two-factor authentication, with recovery codes ([4.7 Two-factor authentication and recovery codes](#double-auth)).
 - Automatic backup every night ([3.8 Backups](#sauvegardes)).
 - Light, dark or automatic theme ([5.18 Light or dark theme](#theme)).
 - A Home screen your way: tiles hidden or in another order, or no Home screen at all ([5.11 Getting around: Home, Due](#echeances)).
 - Only the features you use: notes can be turned off for you alone, without deleting anything ([5.11 Getting around: Home, Due](#echeances)).
-- Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
+- Install it on your phone's home screen, like an app ([4.5 Installing Listo on your phone](#telephone)).
 - An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([9. AI assistants (MCP)](#claude)).
 
 <a id="installation"></a>
@@ -517,7 +518,7 @@ The nightly copy contains neither the photos (`data/photos/`), nor the log (`dat
 4. A backup: the next morning, `ls -l /opt/listo/data/backups` shows a copy from the night, and `docker logs listo | grep backup` shows the `backup_success` line.
 5. A test restore, once, with the nightly copy: [operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#restauration).
 6. The port is closed: see [3.4 What the proxy must do](#proxy).
-7. The phone: installing on the Home Screen ([4.4 Installing Listo on your phone](#telephone)), then the ‘Vérifier sur les téléphones’ checklist (in French) in [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
+7. The phone: installing on the Home Screen ([4.5 Installing Listo on your phone](#telephone)), then the ‘Vérifier sur les téléphones’ checklist (in French) in [docs/developpement.md](https://github.com/magicgg91/listo/blob/main/docs/developpement.md#vérifier-sur-les-téléphones).
 
 <a id="sso-serveur"></a>
 
@@ -587,14 +588,37 @@ Then “Create Admin account”. This account then creates all the others. A new
 
 The Admin goes to Settings, “Administration”, “Accounts” tab, “Add account”.
 
+- “Role”: “User”, “Guest” or “Admin” ([4.3 Account roles: Admin, User, Guest](#roles-comptes));
 - “Username”: what the person will type to sign in;
 - “Display name (optional)”: the first name shown to the others (‘Added by Marie’);
-- “Temporary password”: to give to the person; they'll replace it the first time they sign in;
-- “Role”: “User” or “Admin”.
+- “Temporary password”: to give to the person; they'll replace it the first time they sign in.
+
+<a id="roles-comptes"></a>
+
+### 4.3 Account roles: Admin, User, Guest
+
+Each account has a role, chosen by the Admin:
+
+- “Admin”: everything, Administration included ([8.1 Admin](#role-admin));
+- “User”: the family, who use Listo normally;
+- “Guest”: someone who helps you (on a project, for example). A guest is always discreet: only the Admin sees them in the list of people (“Share”, “For whom?”), with “Guest · discreet” under their name; the family doesn't see them, and they see nobody in that list.
+
+In a list, a note or a project shared with a guest, the members see each other, as for everyone (people, assigned tasks and cards, comments, history). A family member who shares a project with a guest therefore sees them in that project, and only there.
+
+A guest never shares what they own: no people, no public link; they see “People” instead of “Share”. The Admin shares with them. They're never the person a wish list is meant for either.
+
+On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.
+
+**Changing an account's role**
+
+- Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.
+- From “User” to “Guest”: a confirmation says what changes. What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.
+- From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.
+- A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.
 
 <a id="premiere-connexion"></a>
 
-### 4.3 Signing in for the first time
+### 4.4 Signing in for the first time
 
 1. Open Listo's address (for example `https://listo.exemple.fr`).
 2. Enter your “Username” and your “Password”, then “Sign in”.
@@ -603,7 +627,7 @@ The Admin goes to Settings, “Administration”, “Accounts” tab, “Add acc
 
 <a id="telephone"></a>
 
-### 4.4 Installing Listo on your phone
+### 4.5 Installing Listo on your phone
 
 Open Listo's address and sign in, then:
 
@@ -614,13 +638,13 @@ The Listo icon appears. When you open it from the home screen, Listo shows full 
 
 <a id="mot-de-passe"></a>
 
-### 4.5 Changing your password
+### 4.6 Changing your password
 
 Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.10 See and disconnect an AI assistant](#claude-connexions)).
 
 <a id="double-auth"></a>
 
-### 4.6 Two-factor authentication and recovery codes
+### 4.7 Two-factor authentication and recovery codes
 
 Recommended for the Admin. You need an authenticator app on your phone (Aegis, Google Authenticator, Microsoft Authenticator…).
 
@@ -634,16 +658,16 @@ To turn it off: same screen, “Password” and “Code” (from the app, or a r
 
 <a id="oubli"></a>
 
-### 4.7 Forgotten password, lost phone
+### 4.8 Forgotten password, lost phone
 
 - Forgotten password: ask the Admin. In “Administration”, “Accounts”, the ⋮ button of your account, “Reset password”: they give you a temporary password, to change the next time you sign in. Nothing is sent by email.
 - Lost the phone you use for two-factor authentication, and no recovery codes left: the Admin chooses “Disable two-factor authentication” on your account; you can turn it on again afterwards.
 - Too many attempts: 5 wrong passwords block signing in for 15 minutes.
-- The Admin has lost their own password: see [4.8 Lost Admin account](#secours).
+- The Admin has lost their own password: see [4.9 Lost Admin account](#secours).
 
 <a id="secours"></a>
 
-### 4.8 Lost Admin account
+### 4.9 Lost Admin account
 
 *For the person who runs the server.*
 
@@ -657,7 +681,7 @@ A temporary password is shown once: sign in with it, then choose a new one. If t
 
 <a id="sso"></a>
 
-### 4.9 Signing in with an identity provider
+### 4.10 Signing in with an identity provider
 
 If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.
 
@@ -1071,9 +1095,9 @@ Same settings as the phone: a kind turned off in “Notifications you get”, or
 
 Settings, “Notifications”, “On this device” part, then the “Get notifications on this device” switch. The browser then asks for your permission: accept. It only asks at that moment, never on its own. “Send a test notification” checks that everything works.
 
-- Android: in Chrome (or another browser), or from Listo installed on the Home Screen ([4.4 Installing Listo on your phone](#telephone)).
+- Android: in Chrome (or another browser), or from Listo installed on the Home Screen ([4.5 Installing Listo on your phone](#telephone)).
 - Computer: Chrome, Edge, Firefox or Safari. The notification appears in the corner of the screen or in the system's notification center.
-- iPhone and iPad: first add Listo to the Home Screen ([4.4 Installing Listo on your phone](#telephone)), then open it from its icon. In a plain Safari tab, the screen explains this and the switch stays grayed out. You need iOS 16.4 or later.
+- iPhone and iPad: first add Listo to the Home Screen ([4.5 Installing Listo on your phone](#telephone)), then open it from its icon. In a plain Safari tab, the screen explains this and the switch stays grayed out. You need iOS 16.4 or later.
 
 Each device is turned on separately: a device where you sign out no longer gets anything. Tapping a notification opens Listo on the list in question.
 
@@ -1326,8 +1350,9 @@ Settings, “Administration” (visible only to an Admin).
 **“Accounts” tab**
 
 - “Add account” ([4.2 Creating the other accounts](#creer-comptes)).
-- An account's ⋮ button: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used.
-- Role: “User” or “Admin”. There's always at least one active Admin.
+- The accounts: Admin and Users first, then the guests under “Guests”, with the “Discreet” badge.
+- An account's ⋮ button: its page, with its “Role” ([4.3 Account roles: Admin, User, Guest](#roles-comptes)) and its “Security”: “Reset password”, “Disable two-factor authentication”, “Disable account” or “Re-enable account”, “Delete account” if it has never been used (an account that owns a project, is a member of one or wrote in one has been used).
+- Role: “User”, “Guest” or “Admin”. There's always at least one active Admin.
 
 **“Shopping” tab**
 
@@ -1590,7 +1615,7 @@ Example with Claude (claude.ai, the mobile app or Claude Desktop): in its settin
 
 With Claude Code, on a computer: `claude mcp add --transport http listo https://listo.exemple.fr/mcp`, then `/mcp` to authorize. The response then goes to “an app on this computer (localhost)”.
 
-Signed in with an identity provider ([4.9 Signing in with an identity provider](#sso)): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.
+Signed in with an identity provider ([4.10 Signing in with an identity provider](#sso)): no password at this step. The screen first asks “Confirm with …”: the provider asks you to sign in again, then you come back to choose the level and the lists, and “Authorize”.
 
 If you didn't start the connection yourself, tap “Deny”.
 
@@ -1740,16 +1765,16 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 - “Too many attempts”: 5 wrong passwords block signing in for 15 minutes. Wait, or the person who runs the server restarts Listo (`docker compose restart`).
 - “Request rejected: unknown origin.”: the address you typed isn't exactly the one in `LISTO_PUBLIC_URL` (another subdomain, `http` instead of `https`) ([3.2 The folder and docker-compose.yml](#dossier)).
-- Forgotten password, lost phone: [4.7 Forgotten password, lost phone](#oubli).
+- Forgotten password, lost phone: [4.8 Forgotten password, lost phone](#oubli).
 - Offline mode or installing on the home screen doesn't work: Listo isn't opened over HTTPS. Always go through `https://listo.exemple.fr`, never through `http://IP:13300`.
 
 <a id="faq-double-auth"></a>
 
 ### 10.7 Two-factor authentication: locked out
 
-- Phone changed or lost: sign in with one of your “Recovery codes” (“Use a recovery code”), then turn two-factor authentication back on with the new phone ([4.6 Two-factor authentication and recovery codes](#double-auth)).
+- Phone changed or lost: sign in with one of your “Recovery codes” (“Use a recovery code”), then turn two-factor authentication back on with the new phone ([4.7 Two-factor authentication and recovery codes](#double-auth)).
 - No phone and no recovery codes left: the Admin chooses “Disable two-factor authentication” on your account (“Administration”, “Accounts”, ⋮ button). You sign in with just your password, then turn it back on.
-- It's the Admin who is locked out: see [4.8 Lost Admin account](#secours) (recovery command with `--remove-2fa`).
+- It's the Admin who is locked out: see [4.9 Lost Admin account](#secours) (recovery command with `--remove-2fa`).
 - The 6-digit code is always refused: the phone's clock may be wrong; set it to automatic.
 - Nobody can get their codes accepted anymore after a server failure: the secret key may have been lost ([10.8 The secret key was lost](#cle-perdue)).
 
@@ -1761,7 +1786,7 @@ The proxy is holding back the real-time messages ([3.4 What the proxy must do](#
 
 Without a copy of `secrets/secret.key`, Listo creates a new key at startup. Lists, items, photos and passwords aren't affected, but:
 
-- two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--remove-2fa` ([4.8 Lost Admin account](#secours)), then everyone turns it back on;
+- two-factor authentication can no longer be read: the Admin disables it for the other accounts (“Disable two-factor authentication”), for themselves with the recovery command and `--remove-2fa` ([4.9 Lost Admin account](#secours)), then everyone turns it back on;
 - public links already created still work, but their address can no longer be shown again: stop them and create new ones;
 - this time, keep a copy of the new key ([3.7 Keep the secret key safe](#cle)).
 

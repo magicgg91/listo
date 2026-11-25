@@ -22,10 +22,32 @@ export default {
       blocks: [
         "The Admin goes to Settings, “Administration”, “Accounts” tab, “Add account”.",
         { ul: [
+          "“Role”: “User”, “Guest” or “Admin” ([[roles-comptes]]);",
           "“Username”: what the person will type to sign in;",
           "“Display name (optional)”: the first name shown to the others (‘Added by Marie’);",
-          "“Temporary password”: to give to the person; they'll replace it the first time they sign in;",
-          "“Role”: “User” or “Admin”.",
+          "“Temporary password”: to give to the person; they'll replace it the first time they sign in.",
+        ] },
+      ],
+    },
+    {
+      id: 'roles-comptes',
+      title: "Account roles: Admin, User, Guest",
+      blocks: [
+        "Each account has a role, chosen by the Admin:",
+        { ul: [
+          "“Admin”: everything, Administration included ([[role-admin]]);",
+          "“User”: the family, who use Listo normally;",
+          "“Guest”: someone who helps you (on a project, for example). A guest is always discreet: only the Admin sees them in the list of people (“Share”, “For whom?”), with “Guest · discreet” under their name; the family doesn't see them, and they see nobody in that list.",
+        ] },
+        "In a list, a note or a project shared with a guest, the members see each other, as for everyone (people, assigned tasks and cards, comments, history). A family member who shares a project with a guest therefore sees them in that project, and only there.",
+        "A guest never shares what they own: no people, no public link; they see “People” instead of “Share”. The Admin shares with them. They're never the person a wish list is meant for either.",
+        "On their account, a guest sees the “Guest” badge (Settings, “My account”) and the “Guest account” box.",
+        { sub: "Changing an account's role" },
+        { ul: [
+          "Administration, “Accounts” tab, the account's ⋮ button: its page opens (on a computer, to the right of the list). Tap “User”, “Guest” or “Admin”.",
+          "From “User” to “Guest”: a confirmation says what changes. What's already shared with the person stays shared; their public links are stopped. Not possible while a wish list is meant for them.",
+          "From “Guest” to “User”: a confirmation says they'll be visible to the whole family again, and will see all the accounts.",
+          "A guest doesn't become an Admin directly, nor an Admin a guest: go through “User” first. Nobody changes their own role, and there's always at least one active Admin.",
         ] },
       ],
     },

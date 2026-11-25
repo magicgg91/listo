@@ -155,16 +155,17 @@ The complete Listo manual, the same as the app's “Help” page (Settings › �
 - [9.4 What an assistant can never do](#claude-jamais)
 - [9.5 Wish lists: no reservations](#claude-envies)
 - [9.6 Notes](#claude-notes)
-- [9.7 Limits](#claude-limites)
-- [9.8 Connect an AI assistant](#claude-connecter)
-- [9.9 See and disconnect an AI assistant](#claude-connexions)
-- [9.10 Be careful: check the website](#assistant-site)
-- [9.11 Be careful: booby-trapped texts](#claude-prudence)
-- [9.12 Troubleshooting](#faq-claude)
-- [9.13 Access turned off at first](#claude-activation)
-- [9.14 Turn on access on the server](#mcp-serveur)
-- [9.15 Rules and log](#mcp-regles)
-- [9.16 First try](#mcp-essai)
+- [9.7 Projects](#claude-projets)
+- [9.8 Limits](#claude-limites)
+- [9.9 Connect an AI assistant](#claude-connecter)
+- [9.10 See and disconnect an AI assistant](#claude-connexions)
+- [9.11 Be careful: check the website](#assistant-site)
+- [9.12 Be careful: booby-trapped texts](#claude-prudence)
+- [9.13 Troubleshooting](#faq-claude)
+- [9.14 Access turned off at first](#claude-activation)
+- [9.15 Turn on access on the server](#mcp-serveur)
+- [9.16 Rules and log](#mcp-regles)
+- [9.17 First try](#mcp-essai)
 
 </details>
 
@@ -316,7 +317,7 @@ What Listo offers today, by topic. Each point links to the section that explains
 - A Home screen your way: tiles hidden or in another order, or no Home screen at all ([5.11 Getting around: Home, Due](#echeances)).
 - Only the features you use: notes can be turned off for you alone, without deleting anything ([5.11 Getting around: Home, Due](#echeances)).
 - Install it on your phone's home screen, like an app ([4.4 Installing Listo on your phone](#telephone)).
-- An AI assistant, for example Claude, can read your lists and notes and, if you allow it, write to them ([9. AI assistants (MCP)](#claude)).
+- An AI assistant, for example Claude, can read your lists, notes and projects and, if you allow it, write to them ([9. AI assistants (MCP)](#claude)).
 
 <a id="installation"></a>
 
@@ -408,8 +409,8 @@ The `environment:` part of the file, as shipped (the commented-out lines, starti
 | `LISTO_UPDATE_CHECK` | not set: on | `off` turns off the update check on GitHub ([10.9 Knowing a new version exists](#version)). |
 | `LISTO_PRODUCT_LOOKUP` | not set: on | `off` turns off scan mode: button hidden, no more requests to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
 | `LISTO_PRODUCT_CONTACT` | not set | Optional: contact email address or web address sent to Open Food Facts ([operations guide (in French), in the repository](https://github.com/magicgg91/listo/blob/main/docs/exploitation.md#scan-serveur)). |
-| `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([9.14 Turn on access on the server](#mcp-serveur)). Any other value: off. |
-| `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([9.14 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
+| `LISTO_MCP` | not set: off | `on` turns on access for AI assistants, for example Claude ([9.15 Turn on access on the server](#mcp-serveur)). Any other value: off. |
+| `LISTO_MCP_SITES` | not set: all AI assistants | Optional: websites of the AI assistants that are accepted, separated by commas (for example `claude.ai,claude.com`), on top of apps on the computer (`localhost`). Not set: any AI assistant that follows the standard can ask for access, always after your approval ([9.15 Turn on access on the server](#mcp-serveur)). A badly written value (`https://`, path, port, IP address, `*`): Listo doesn't start and explains why in `docker logs`. |
 | `LISTO_PUSH` | not set: off | `on` turns on notifications ([6.8 Turning the feature on on the server](#notif-serveur)); keys created in `secrets/vapid.json`. Any other value: off. |
 | `LISTO_OIDC` | not set: off | `on` turns on sign-in with an OpenID Connect identity provider ([3.10 Sign-in with an identity provider (optional)](#sso-serveur)); also requires `LISTO_OIDC_ISSUER` and the `secrets/oidc-client-secret` file. Any other value: off. |
 | `LISTO_OIDC_ISSUER` | not set | Address of the identity provider (its ‘issuer’), starting with `https://` (for example `https://auth.exemple.fr`). |
@@ -428,7 +429,7 @@ Any reverse proxy will do, as long as it does the following. These requirements 
 3. Let real-time updates through: `/api/events` is an HTTP connection that stays open (Server-Sent Events, type `text/event-stream`), not a WebSocket. The proxy must neither hold back nor cache its responses (Listo sends the `X-Accel-Buffering: no` header, which nginx understands), and its read timeout must be longer than 25 seconds: Listo sends a signal every 25 seconds on this connection. Otherwise, changes arrive late or the connection keeps getting cut.
 4. Accept uploads of at least 2 MB: an item photo is 2 MB at most (Listo refuses anything bigger). Many proxies accept less by default (nginx: 1 MB); allow a little margin, for example 5 MB.
 5. Pass on the visitors' real IP address: Listo trusts a single proxy and reads the last address in the `X-Forwarded-For` header, which the proxy must fill in with the person's address. It's used to block repeated password attempts. With two proxies one behind the other (an online service in front of your proxy, for example), Listo would see the address of the first one, and a block would hit everyone.
-6. Pass on the other request headers unchanged: cookies, `Authorization` (access for AI assistants, [9.14 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
+6. Pass on the other request headers unchanged: cookies, `Authorization` (access for AI assistants, [9.15 Turn on access on the server](#mcp-serveur)) and `Sec-Fetch-Site`.
 7. Add the `Strict-Transport-Security` (HSTS) header, if the proxy allows it: Listo doesn't send it itself.
 
 **Restrict access to Listo's port**
@@ -459,7 +460,7 @@ proxy_read_timeout 3600s;
 - `client_max_body_size 5m;`: without it, photo uploads are refused (nginx accepts 1 MB by default; a Listo photo is 2 MB at most).
 - The other three are for real-time updates: without them, changes only reach the other phone after about a minute.
 - Nginx Proxy Manager already fills in the `X-Forwarded-For` header with the phones' real IP address: nothing to set.
-- Access for AI assistants: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([9.14 Turn on access on the server](#mcp-serveur)).
+- Access for AI assistants: its addresses go through the same host, with no extra setting. They must stay reachable from the Internet ([9.15 Turn on access on the server](#mcp-serveur)).
 - Firewall: only allow Nginx Proxy Manager's address to reach port 13300 ([3.4 What the proxy must do](#proxy)).
 
 <a id="demarrage"></a>
@@ -533,7 +534,7 @@ What Listo expects from the provider (the standard):
 - its description at the issuer's address followed by `/.well-known/openid-configuration`, with its addresses on the same site as the issuer;
 - an ID token signed with RS256, PS256 or ES256 (an unsigned token or one signed with HS256 is refused);
 - the person's username in `preferred_username` and their name in `name` (`profile` scope);
-- to authorize an AI assistant ([9.8 Connect an AI assistant](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize the assistant.
+- to authorize an AI assistant ([9.9 Connect an AI assistant](#claude-connecter)) from a session opened through the provider: ask for sign-in again when Listo asks for it (`prompt=login`, `max_age=0`) and give its time (`auth_time`). Otherwise the confirmation doesn't go through: in that case, sign in with your Listo password to authorize the assistant.
 
 Two-factor authentication: if the token says it was done at the provider (`amr` contains `mfa`), Listo doesn't ask for its own code again. Otherwise, a Listo account that turned on Listo's two-factor authentication is asked for it again.
 
@@ -615,7 +616,7 @@ The Listo icon appears. When you open it from the home screen, Listo shows full 
 
 ### 4.5 Changing your password
 
-Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.9 See and disconnect an AI assistant](#claude-connexions)).
+Settings, “My account”, “Password”: “Current password”, “New password” (at least 10 characters), “Confirm password”, then “Save”. Your other devices are then signed out, and so are your AI assistant connections ([9.10 See and disconnect an AI assistant](#claude-connexions)).
 
 <a id="double-auth"></a>
 
@@ -652,7 +653,7 @@ If there's another Admin, they use “Reset password” ([8.1 Admin](#role-admin
 docker exec -u node listo node server/admin-secours.js identifiant
 ```
 
-A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([9.9 See and disconnect an AI assistant](#claude-connexions)). What the Admin can and can't do: [8.1 Admin](#role-admin).
+A temporary password is shown once: sign in with it, then choose a new one. If two-factor authentication can't be used either, add `--remove-2fa` at the end of the command. The account's AI assistant connections are cut off ([9.10 See and disconnect an AI assistant](#claude-connexions)). What the Admin can and can't do: [8.1 Admin](#role-admin).
 
 <a id="sso"></a>
 
@@ -660,7 +661,7 @@ A temporary password is shown once: sign in with it, then choose a new one. If t
 
 If the server offers it, the sign-in screen also shows “Sign in with …”, followed by the name chosen by the Admin (Authelia, Authentik, Pocket ID…; “SSO” if they didn't choose one). Tap it and sign in with that provider: you come back to Listo, signed in. Your account with the provider opens the Listo account that has the same username. Your Listo username and password still work. If the Admin had given you a temporary password, it's erased the first time you sign in through the provider.
 
-When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([9.8 Connect an AI assistant](#claude-connecter)).
+When you're signed in through the provider, “My account” says so (“Signed in with …”): your password and two-factor authentication are changed with the provider, not in Listo. Authorizing an AI assistant is then also confirmed with the provider ([9.9 Connect an AI assistant](#claude-connecter)).
 
 No Listo account yet: “Your account request has been sent to the Admin”. The Admin sees it in Settings, “Administration” (badge), “Accounts” tab, “Account request” section: “Accept” (they can correct the username and name, and choose the role), or “Decline”. Once it's accepted, sign in again through the provider. A declined request can't be made again for 30 days.
 
@@ -1219,8 +1220,8 @@ Below an open card's links, two tabs: “Comments” (with their number) and “
 
 - Write: “Write a comment…”, at the bottom of the screen on the phone (below the comments on a computer, Ctrl+Enter sends), then the arrow. The owner, “Can edit” and Contributors comment on every card; “Read only” reads the comments without being able to write any. A comment is plain text (4,000 characters at most); addresses starting with http:// or https:// become links. Offline included.
 - Your comments have “Edit” (‘edited’ is then written next to the date) and “Delete” (with confirmation). The project's owner can delete someone else's comment, never edit it.
-- A comment imported by an AI assistant (from another tool) is in a dashed bubble, with its original author's name and ‘imported by …’: it isn't linked to any Listo account ([9. AI assistants (MCP)](#claude)).
-- History: what happened to the card, the most recent at the top, with who and when: created, moved (from one column to another), renamed, description changed, box checked, assigned, due date, “Done”, labels, links, comment added (without its text), deleted, restored; ‘(AI assistant)’ when the action comes from an assistant ([9. AI assistants (MCP)](#claude)). It can only be read with the network; 300 lines at most per card.
+- A comment imported by an AI assistant (from another tool) is in a dashed bubble, with its original author's name and ‘imported by …’: it isn't linked to any Listo account ([9.7 Projects](#claude-projets)).
+- History: what happened to the card, the most recent at the top, with who and when: created, moved (from one column to another), renamed, description changed, box checked, assigned, due date, “Done”, labels, links, comment added (without its text), deleted, restored; ‘(AI assistant)’ when the action comes from an assistant ([9.7 Projects](#claude-projets)). It can only be read with the network; 300 lines at most per card.
 - Follow: you follow a card you created, that is assigned to you or that you commented on; its ⋮ menu (right column on a computer) has “Follow” for the others, and “Unfollow”, kept even if the card is assigned to you later. Following a card means getting its notifications ([7.6 Projects' new activity and notifications](#projets-notifications)).
 
 <a id="projets-notifications"></a>
@@ -1344,7 +1345,7 @@ Settings, “Administration” (visible only to an Admin).
 
 - Can: manage accounts, stores, aisles, items and note labels; see whether a new version exists (Settings › “About”).
 - Can't: see the content, the name or the members of other people's lists. An Admin sees a list only if it's shared with them, with the permission chosen by its owner. The same goes for notes ([5.12 Notes](#notes)).
-- Other accounts' AI assistant connections: see [9.9 See and disconnect an AI assistant](#claude-connexions).
+- Other accounts' AI assistant connections: see [9.10 See and disconnect an AI assistant](#claude-connexions).
 - Finding out that a new version exists: [10.9 Knowing a new version exists](#version).
 
 <a id="creer"></a>
@@ -1468,11 +1469,11 @@ The person the wish list is for adds their wishes (if they have an account) and 
 
 ### 9.1 What it's for
 
-An AI assistant is a program you chat with, for example Claude (Anthropic's assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral's Le Chat, depending on their versions and plans. Once it's connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking. It can also read your notes and, if you allow it, create notes, add to them or sort them with labels ([9.6 Notes](#claude-notes)).
+An AI assistant is a program you chat with, for example Claude (Anthropic's assistant: claude.ai, the mobile app, Claude Desktop, Claude Code). Listo follows the MCP standard: any AI assistant that accepts a custom connector (or MCP server) can plug into it, such as Claude, ChatGPT or Mistral's Le Chat, depending on their versions and plans. Once it's connected, it can read your lists and, if you allow it, add items to them, check them and edit them, just by asking. It can also read your notes and, if you allow it, create notes, add to them or sort them with labels ([9.6 Notes](#claude-notes)); and work in your projects: read their cards and, if you allow it, create cards, move them, or bring over a board from another tool ([9.7 Projects](#claude-projets)).
 
 The assistant acts with your account and your rights, never more: what it adds shows up under your name, as if you had done it yourself, and it only sees the lists you allowed it to. Nothing happens without your approval, given on Listo's “Authorize an AI assistant” screen.
 
-This access only exists if the person who runs the server has turned it on ([9.13 Access turned off at first](#claude-activation)). Otherwise, the “AI assistants” section doesn't appear in “My account”.
+This access only exists if the person who runs the server has turned it on ([9.14 Access turned off at first](#claude-activation)). Otherwise, the “AI assistants” section doesn't appear in “My account”.
 
 <a id="claude-phrases"></a>
 
@@ -1490,6 +1491,7 @@ This access only exists if the person who runs the server has turned it on ([9.1
 - Move to an aisle: ‘Put the milk in the dairy aisle.’
 - Subtasks ([5.21 Subtasks](#sous-taches)): ‘Add the steps Batch 1, Batch 2 and Batch 3 under the Authelia task.’ ‘Put Bitwarden under the Accounts task.’ ‘Take Mac out of its main task.’ ‘Put Check backups first under Authelia.’
 - Notes ([9.6 Notes](#claude-notes)): ‘What's in my Codes note?’ ‘Add some AA batteries to my To buy soon note.’ ‘Create a Gift ideas note with the Family label.’ ‘Put the Recipes label on the Crumble note.’ ‘Move the Draft note to the trash.’
+- Projects ([9.7 Projects](#claude-projets)): ‘Which cards are assigned to me in DomoPi Articles?’ ‘Add a Proxmox 9 card in the Ideas column, for Léa, with the Proxmox label.’ ‘Move the 2FAuth card to Review.’ ‘Recreate my Planka Blog board in Listo.’
 
 The assistant first reads the list to learn its aisles or stores, and it must never make any up. If an item was left without an aisle or a store, it must tell you. Exactly how it behaves is up to the assistant itself: check in Listo.
 
@@ -1499,10 +1501,10 @@ The assistant first reads the list to learn its aisles or stores, and it must ne
 
 When you connect an assistant, Listo's “Authorize an AI assistant” screen lets you choose:
 
-- “Read only” (selected at first): the assistant can read your lists and your notes, without changing anything.
-- “Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store; and, for notes, create notes, add to them, replace their text, set their labels, create a label or move a note to the trash ([9.6 Notes](#claude-notes)).
+- “Read only” (selected at first): the assistant can read your lists, your notes and your projects, without changing anything.
+- “Read and write”: on top of that, the assistant can add items, check or uncheck them, and change their name, quantity, note, priority, due date (date, time, reminder), repeat, the person they're assigned to, their aisle or their store; and, for notes, create notes, add to them, replace their text, set their labels, create a label or move a note to the trash ([9.6 Notes](#claude-notes)); and, in your projects, depending on your role, create and edit projects, columns, labels, cards and comments ([9.7 Projects](#claude-projets)).
 
-You also choose “All my lists and notes” or “Some lists”. With “Some lists”, the assistant sees no notes at all. Even with “Read and write”, the assistant can only write in lists and notes where you yourself can write: if you have the “Read only” right on a list or a note, it can only read it.
+You also choose “All my lists, notes and projects” or “Some lists”. With “Some lists”, the assistant sees no notes and no projects at all. Even with “Read and write”, the assistant can only write where you yourself can write: if you have the “Read only” right on a list, a note or a project, it can only read it.
 
 <a id="claude-jamais"></a>
 
@@ -1514,7 +1516,8 @@ Whatever the level of access, an AI assistant can never:
 - create, rename, delete or share a list;
 - manage people, the public link or the trash;
 - delete a note for good, restore it, share it or manage its public link;
-- rename, recolor or delete a label;
+- rename, recolor or delete a notes label;
+- share a project, change a role, leave a project, restore or delete for good a project or a card, empty a trash;
 - see photos, or who added what.
 
 <a id="claude-envies"></a>
@@ -1538,28 +1541,49 @@ An AI assistant sees your notes as you do ([5.12 Notes](#notes)): yours and thos
 - Delete: only your notes, and only to the trash, where you can restore it for 30 days ([5.12 Notes](#notes)). It must ask you to confirm first; it can never delete it for good.
 - With the “Read only” right on a note, it can only read it, even with “Read and write”.
 
-Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists and notes” ([9.8 Connect an AI assistant](#claude-connecter)).
+Notes turned off for you in Settings, “Features” ([5.11 Getting around: Home, Due](#echeances)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no notes: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
+
+<a id="claude-projets"></a>
+
+### 9.7 Projects
+
+An AI assistant sees your projects as you do ([7. Projects](#projets)): yours and those shared with you, with your role in each one ([7.9 Sharing a project, the four roles](#projets-roles)), never other people's projects or your trash. It acts on your behalf: a card it creates is yours, the card's history adds ‘(AI assistant)’, and the people of the project are told just as if you had done it yourself (a single notification per project and per quarter of an hour, even for 50 cards).
+
+- Read: the list of your projects, then a project (people, columns, labels and cards), then a whole card (description, links, comments, and its history if you ask for it).
+- Projects: create one (it's yours, shared with no one), rename it or move it to the trash (owner only; you can restore it for 30 days, Settings, “Trash”, “Projects” tab). It must ask you to confirm before moving it to the trash.
+- The project's columns and labels: add them, rename them, change their color or their order, delete them (owner and “Can edit”). A column that has cards can only be deleted by saying where its cards go: the assistant never deletes a card that way.
+- Cards: create them (up to 50 at once, with their column, labels, people, due date and “Done”, description and links), edit them, move them, or put them in the project's “Deleted cards” (can be restored for 30 days). It must ask you to confirm before creating more than 20 cards, and before deleting any.
+- Comments: it writes them on any card, unless you have the “Read only” role.
+- It has exactly your rights: as a “Contributor”, it only edits and moves the cards you created or that are assigned to you, and only deletes the ones you created; with “Read only”, it can only read.
+- Columns, labels and people: it names them (capitals and accents ignored). With an unknown name, nothing is done: it lists the possible names for you. A person with “Read only” is never given a card.
+
+Example: bringing over a Planka board. If your assistant can read your Planka board, ask it: ‘Recreate my Blog board in Listo, with its columns, labels, cards and their comments.’ It creates the project and its columns (with the closest colors), the labels, then the cards in batches, with people recognized by their first name, and finally the comments. A comment brought over keeps its author's name and its original date, and shows ‘imported by’ you: it isn't linked to any Listo account. The assistant never shares the project: you share it yourself afterwards, choosing each person's role ([7.9 Sharing a project, the four roles](#projets-roles)).
+
+Never: share a project, change a role, leave a project, restore, delete a project or a card for good, empty a trash, or touch your own settings (what's new, notifications, Due dates).
+
+Projects turned off for you in Settings, “Features” ([7.1 Turning projects on](#projets-allumer)): the assistant can't reach them at all, and it tells you so. A connection limited to “Some lists” sees no projects: reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 
 <a id="claude-limites"></a>
 
-### 9.7 Limits
+### 9.8 Limits
 
 - 20 items at most per request.
 - Per connection and per hour: 100 additions, 300 items checked or unchecked, 300 items edited, 100 note writes. Beyond that, the assistant gets a refusal and nothing is written.
 - Notes: 100 at most in one answer (the assistant can search or filter by label); a note holds 20,000 characters at most.
+- Projects: 50 cards, moves or comments at most per request; per connection and per hour, 1,000 cards created, edited, moved or deleted, 300 comments and 5 projects moved to the trash; 200 cards at most in one answer (the assistant reads the rest page by page).
 - 120 calls per minute per connection.
 - 5 active AI assistant connections at most per account; a connection unused for 30 days frees itself up.
 - The assistant doesn't create an item with the same name as one that's already there and not checked: it tells you instead.
 
 <a id="claude-connecter"></a>
 
-### 9.8 Connect an AI assistant
+### 9.9 Connect an AI assistant
 
 The steps are the same for every assistant:
 
 1. In Listo: Settings, “My account”, “AI assistants” section, “AI assistants”. Under “Address to enter in your AI assistant”, tap “Copy address”. It looks like `https://listo.exemple.fr/mcp`.
 2. In your AI assistant: in its settings, add a custom connector (or MCP server) with this address. Menu names change from one assistant to another; see its help.
-3. The assistant opens Listo's “Authorize an AI assistant” screen. Check the website shown under “The response will be sent here” and that you're the one who just started the connection ([9.10 Be careful: check the website](#assistant-site)), choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
+3. The assistant opens Listo's “Authorize an AI assistant” screen. Check the website shown under “The response will be sent here” and that you're the one who just started the connection ([9.11 Be careful: check the website](#assistant-site)), choose the level and the lists, enter your password (and your two-factor authentication code), then “Authorize”.
 
 Example with Claude (claude.ai, the mobile app or Claude Desktop): in its settings, add a custom connector with Listo's address, then connect it; on the “Authorize an AI assistant” screen, the website shown is `claude.ai`.
 
@@ -1571,7 +1595,7 @@ If you didn't start the connection yourself, tap “Deny”.
 
 <a id="claude-connexions"></a>
 
-### 9.9 See and disconnect an AI assistant
+### 9.10 See and disconnect an AI assistant
 
 Settings, “My account”, “AI assistants”: every authorized connection appears there, with the app, its right (“Read only” or “Read and write”), its lists, its date and when it was last used.
 
@@ -1582,44 +1606,47 @@ Settings, “My account”, “AI assistants”: every authorized connection app
 
 <a id="assistant-site"></a>
 
-### 9.10 Be careful: check the website
+### 9.11 Be careful: check the website
 
 > **Warning**: Any AI assistant that follows the standard can ask for access to Listo: you are the one who decides, on the “Authorize an AI assistant” screen. It shows in large type the website that will receive the response (for example `claude.ai` for Claude). Check that it really is your assistant's. If you didn't start the connection yourself, deny: someone may be trying to get into your lists.
 
-When the app chooses its own name, it is followed by “name given by the app, not verified”: trust the website, not the name. The person who runs the server can also accept only some websites ([9.14 Turn on access on the server](#mcp-serveur)).
+When the app chooses its own name, it is followed by “name given by the app, not verified”: trust the website, not the name. The person who runs the server can also accept only some websites ([9.15 Turn on access on the server](#mcp-serveur)).
 
 <a id="claude-prudence"></a>
 
-### 9.11 Be careful: booby-trapped texts
+### 9.12 Be careful: booby-trapped texts
 
-> **Warning**: A shared list or note can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents the content of lists and notes to the assistant as data, never as instructions, but only choose “Read and write” if you need it.
+> **Warning**: A shared list, note or project can contain a booby-trapped text, written by someone else to trick the AI assistant (for example a note asking it to check everything). Listo always presents the content of lists, notes and projects to the assistant as data, never as instructions, but only choose “Read and write” if you need it.
 
-Only ask the assistant to change an item or a note yourself; check in Listo what it did.
+Only ask the assistant to change an item, a note or a card yourself; check in Listo what it did.
 
 <a id="faq-claude"></a>
 
-### 9.12 Troubleshooting
+### 9.13 Troubleshooting
 
 - After a Listo update, the assistant may keep its old list of tools: start a new conversation, or disconnect and reconnect the connector in the assistant.
-- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists and notes” ([9.8 Connect an AI assistant](#claude-connecter)).
+- A list is missing: the connection may only allow some lists, or you're no longer a member. Reconnect the assistant with “All my lists, notes and projects” ([9.9 Connect an AI assistant](#claude-connecter)).
 - The assistant doesn't see your notes: the connection is limited to “Some lists”, or notes are turned off for you in Settings, “Features” ([9.6 Notes](#claude-notes)). After the update that added notes, start a new conversation so it knows its new tools.
+- The assistant doesn't see your projects: the connection is limited to “Some lists”, or projects are turned off for you in Settings, “Features” ([9.7 Projects](#claude-projets)). After the update that added projects, start a new conversation so it knows its new tools.
+- The assistant says a column, a project label or a person is unknown: nothing was done; it should list the valid names for you. A person with “Read only” in the project can't be given a card.
+- The assistant says it can't edit a card: as a “Contributor”, you (and it) only edit the cards you created or that are assigned to you ([7.9 Sharing a project, the four roles](#projets-roles)).
 - The assistant says a label is unknown: it doesn't exist yet. Nothing was done; ask it to create the label, or choose one of those it lists for you.
 - The assistant says the note has changed: someone edited it since it read it. Nothing was written; it has to read it again before trying again.
 - The assistant refuses to write: the connection is “Read only”, or you only have the “Read only” right on this list.
-- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([9.9 See and disconnect an AI assistant](#claude-connexions)).
-- Listo shows a page saying the authorization request is invalid: the assistant's request couldn't be verified (return address refused, incomplete request), or its website isn't accepted by the server ([9.14 Turn on access on the server](#mcp-serveur)). Start the connection again from the assistant; if it happens again, tell the person who runs the server.
+- Nothing works anymore: the connection may have been cut (password changed, “Disconnect”). See “AI assistants” ([9.10 See and disconnect an AI assistant](#claude-connexions)).
+- Listo shows a page saying the authorization request is invalid: the assistant's request couldn't be verified (return address refused, incomplete request), or its website isn't accepted by the server ([9.15 Turn on access on the server](#mcp-serveur)). Start the connection again from the assistant; if it happens again, tell the person who runs the server.
 - The assistant says an aisle or a store is unknown: it doesn't exist, it's disabled, or this list doesn't offer it (an aisle from another store, or a store in a “Multi” list). Nothing was added; the assistant should list the valid aisles or stores for you. Choose one, or ask the Admin to create it (Settings, “Administration”, “Shopping” tab).
 - The assistant says a store can't be chosen in this list: in a list with a “Single” store, the store is the list's own; you choose the aisle. The aisle, for its part, can't be chosen in a “Multi” list.
 
 <a id="claude-activation"></a>
 
-### 9.13 Access turned off at first
+### 9.14 Access turned off at first
 
-Access for AI assistants is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([9.14 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “AI assistants” section of “My account” doesn't appear.
+Access for AI assistants is turned off until the person who runs the server puts `LISTO_MCP=on` in `docker-compose.yml` ([9.15 Turn on access on the server](#mcp-serveur)). While it's off, all its addresses answer as if they didn't exist, and the “AI assistants” section of “My account” doesn't appear.
 
 <a id="mcp-serveur"></a>
 
-### 9.14 Turn on access on the server
+### 9.15 Turn on access on the server
 
 *For the person who runs the server.*
 
@@ -1639,7 +1666,7 @@ Proxy: nothing to set up, these addresses go through the same host. They must st
 
 <a id="mcp-regles"></a>
 
-### 9.15 Rules and log
+### 9.16 Rules and log
 
 *For the person who runs the server.*
 
@@ -1647,21 +1674,21 @@ Proxy: nothing to set up, these addresses go through the same host. They must st
 - An AI assistant's token opens nothing but `/mcp`: not the app, not its other addresses.
 - Return addresses: https on a website name (never an IP address), without a username or fragment, or the computer (`localhost`); with `LISTO_MCP_SITES`, only those websites. They are checked at registration and at every authorization. An error is only sent back without a screen to the computer or a known website (`claude.ai`, `claude.com`, or those in `LISTO_MCP_SITES`): otherwise, Listo shows its error page, so it never acts as a relay to another website.
 - Changing your password, or an account that is disabled or whose password is reset (including with the recovery command): all its AI assistant connections are revoked.
-- The caps ([9.7 Limits](#claude-limites)) are counted in memory: they start again from zero when the container restarts.
+- The caps ([9.8 Limits](#claude-limites)) are counted in memory: they start again from zero when the container restarts.
 - The Admin doesn't see other people's connections. In an emergency, they disable the account or reset its password. For everyone at once: remove `LISTO_MCP=on`.
 
 Security log (never a token, a code or the content of a list; the names start with `claude.` for every assistant): `claude.connected`, `claude.refused`, `claude.revoked`, `claude.refresh`, `claude.registered`, `claude.client_refused`, `claude.tool` (one line per tool call, with the number of items, never a typed name), `claude.token_refused`, `claude.origin_refused`.
 
 <a id="mcp-essai"></a>
 
-### 9.16 First try
+### 9.17 First try
 
 *For the person who runs the server.*
 
 After turning it on, once, before any regular use (here with Claude):
 
 1. In a browser: `https://listo.exemple.fr/.well-known/oauth-protected-resource/mcp` shows a short text with `"resource": "https://listo.exemple.fr/mcp"`.
-2. Connect the assistant ([9.8 Connect an AI assistant](#claude-connecter)).
+2. Connect the assistant ([9.9 Connect an AI assistant](#claude-connecter)).
 3. Ask the assistant ‘What are my Listo lists?’, then ‘What's on the shopping list?’: the answers must match the app. With “Read and write”: ‘Add milk to the shopping list’, ‘Check off the bread’; on a phone open on the list, the changes show up live.
 4. `docker logs listo`: lines `claude.connected` and `claude.tool`, no errors. Report any `claude.origin_refused` or `claude.client_refused` lines.
 5. More than an hour later, ask another question: it must work without a new authorization.
